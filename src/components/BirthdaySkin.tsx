@@ -1,9 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Calendar, CalendarPlus, Clock, MapPin, MessageSquare, Sparkles } from "lucide-react";
+import type { ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   EVENT_SKIN_ACTIONS_CLASS,
   EVENT_SKIN_CONTENT_TOP_PADDING_CLASS,
@@ -12,12 +12,14 @@ import {
   EVENT_SKIN_FOOTER_TEXT_CLASS,
 } from "@/components/event-skin-layout";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
+import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
 import {
   ensureReadableTextColor,
   mixHexColors,
   normalizeScannedInvitePalette,
 } from "@/lib/scanned-invite-palette";
+import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
 
 type CalendarLinks = {
   google: string;
@@ -79,16 +81,20 @@ function buildRsvpHref({
   rsvpUrl,
   rsvpPhone,
   rsvpEmail,
-}: Pick<Props, "rsvpUrl" | "rsvpPhone" | "rsvpEmail">): string | null {
+  title,
+  shareUrl,
+}: Pick<Props, "rsvpUrl" | "rsvpPhone" | "rsvpEmail" | "title" | "shareUrl">): string | null {
   const url = String(rsvpUrl || "").trim();
   if (url) return url;
-  const phone = String(rsvpPhone || "")
-    .replace(/[^\d+]/g, "")
-    .trim();
-  if (phone) return `tel:${phone}`;
-  const email = String(rsvpEmail || "").trim();
-  if (email) return `mailto:${email}`;
-  return null;
+  const contact = `${String(rsvpEmail || "").trim()} ${String(rsvpPhone || "").trim()}`.trim();
+  const href = buildLiveCardRsvpOutboundHref({
+    rsvpContact: contact,
+    eventTitle: title,
+    responseLabel: "RSVP",
+    shareUrl: shareUrl || "",
+    category: "Birthday",
+  });
+  return href || null;
 }
 
 function extractHonoreeName(title: string, honoreeName?: string | null) {
@@ -143,7 +149,7 @@ export default function BirthdaySkin({
   const displayTime = String(timeLabel || "").trim() || "Time TBD";
   const displayLocation = String(location || "").trim() || "Location TBD";
   const directionsHref = buildMapsHref(location);
-  const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail });
+  const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail, title, shareUrl });
   const hasRsvpAction = Boolean(directRsvpHref);
   const displayPlanCopy = String(planCopy || "").trim() || "Games, Food & Fun!";
   const displayAttire = String(attire || "").trim();
@@ -315,7 +321,7 @@ export default function BirthdaySkin({
                   label="RSVP to"
                   title={String(rsvpName || rsvpEmail || "Host")}
                   subtitle={
-                    String(rsvpPhone || rsvpEmail || "").trim() ||
+                    String(rsvpEmail || rsvpPhone || "").trim() ||
                     "Contact details available on request"
                   }
                   divider
@@ -628,6 +634,19 @@ function ActionTile({
     : "flex flex-col items-center gap-4";
 
   if (href && !disabled) {
+    if (isRsvpMailtoHref(href)) {
+      return (
+        <button
+          type="button"
+          onClick={() => openRsvpMailtoHref(href)}
+          className={className}
+          style={{ backgroundColor, color: textColor }}
+        >
+          <div className={contentClassName}>{content}</div>
+        </button>
+      );
+    }
+
     return (
       <a
         href={href}

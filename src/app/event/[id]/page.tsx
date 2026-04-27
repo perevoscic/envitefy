@@ -1760,6 +1760,7 @@ export default async function EventPage({
           timeLabel={formattedTimeAndDate.time || null}
           location={locationText || venueText || null}
           imageUrl={scannedInviteImageUrl}
+          shareUrl={shareUrl}
           calendarLinks={calendarLinks}
           skinId={ocrSkin?.skinId || null}
           palette={ocrSkin?.palette || null}
@@ -1785,6 +1786,7 @@ export default async function EventPage({
         timeLabel={formattedTimeAndDate.time || null}
         location={locationText || venueText || null}
         imageUrl={scannedInviteImageUrl}
+        shareUrl={shareUrl}
         calendarLinks={calendarLinks}
         skinId={ocrSkin?.skinId || null}
         palette={ocrSkin?.palette || null}
@@ -2166,6 +2168,7 @@ export default async function EventPage({
                     rsvpEmail={rsvpEmail}
                     rsvpUrl={rsvpUrl}
                     eventTitle={title}
+                    eventCategory={categoryRaw || categoryNormalized}
                     shareUrl={shareUrl}
                   />
                 </dd>

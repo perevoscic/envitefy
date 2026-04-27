@@ -9,7 +9,11 @@ import {
   generateStudioLiveCardWithOpenAi,
 } from "@/lib/studio/openai";
 import { resolveStudioProvider } from "@/lib/studio/provider";
-import { buildInvitationImagePrompt, buildLiveCardPrompt } from "@/lib/studio/prompts";
+import {
+  buildInvitationImagePrompt,
+  buildLiveCardPrompt,
+  sanitizeStudioLiveCardVisibleCopy,
+} from "@/lib/studio/prompts";
 import { resolveStudioReferenceImages } from "@/lib/studio/reference-image-url";
 import {
   applyStudioThemeNormalization,
@@ -113,8 +117,8 @@ export async function generateStudioInvitation(
         : await studioGenerationDeps.generateStudioLiveCardWithGemini(textPrompt);
     warnings.push(...textResult.warnings);
     if (textResult.ok) {
-      liveCard = textResult.liveCard;
-      invitation = textResult.liveCard.invitation;
+      liveCard = sanitizeStudioLiveCardVisibleCopy(normalizedRequest.event, textResult.liveCard);
+      invitation = liveCard.invitation;
     } else {
       errors.text = textResult.error;
       warnings.push("Invitation text generation failed.");

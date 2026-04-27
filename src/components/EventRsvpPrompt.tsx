@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useTheme } from "@/app/providers";
+import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
+import { openRsvpMailtoHref } from "@/utils/rsvp-mailto";
 
 type ResponseIntent = "attend" | "decline" | "maybe" | null;
 
@@ -19,6 +21,7 @@ type EventRsvpPromptProps = {
   rsvpEmail?: string | null;
   rsvpUrl?: string | null;
   eventTitle?: string | null;
+  eventCategory?: string | null;
   shareUrl?: string | null;
   variant?: "default" | "wedding-scan";
 };
@@ -42,6 +45,19 @@ const initialSender: StoredSender = {
   phone: "",
 };
 
+function responseKeyForIntent(intent: NonNullable<ResponseIntent>): "yes" | "no" | "maybe" {
+  if (intent === "attend") return "yes";
+  if (intent === "decline") return "no";
+  return "maybe";
+}
+
+function responseLabelForIntent(intent: NonNullable<ResponseIntent>): string {
+  const key = responseKeyForIntent(intent);
+  if (key === "yes") return "Yes";
+  if (key === "no") return "No";
+  return "Maybe";
+}
+
 export default function EventRsvpPrompt({
   eventId,
   rsvpName,
@@ -49,6 +65,7 @@ export default function EventRsvpPrompt({
   rsvpEmail,
   rsvpUrl,
   eventTitle,
+  eventCategory,
   shareUrl,
   variant = "default",
 }: EventRsvpPromptProps) {
@@ -115,7 +132,32 @@ export default function EventRsvpPrompt({
     return null;
   }
 
-  const contactMode: "sms" | "email" = hasPhone ? "sms" : "email";
+  const contactMode: "sms" | "email" = hasEmail ? "email" : "sms";
+  const rsvpContactForMode = contactMode === "email" ? rsvpEmail || "" : rsvpPhone || "";
+  const resolvedCategory = eventCategory || (isWeddingScanVariant ? "Wedding" : null);
+
+  const buildOutboundHrefForIntent = (nextIntent: NonNullable<ResponseIntent>) => {
+    const senderName = `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
+    return buildLiveCardRsvpOutboundHref({
+      rsvpContact: rsvpContactForMode,
+      eventTitle: eventTitle?.trim() || "the event",
+      responseLabel: responseLabelForIntent(nextIntent),
+      responseKey: responseKeyForIntent(nextIntent),
+      shareUrl: shareUrl || "",
+      category: resolvedCategory,
+      hostName: rsvpName,
+      senderName,
+      guestName: sender.forWho,
+      senderPhone: sender.phone,
+    });
+  };
+
+  const openOutboundComposerForIntent = (nextIntent: NonNullable<ResponseIntent>) => {
+    const href = buildOutboundHrefForIntent(nextIntent);
+    if (!href) return;
+    if (openRsvpMailtoHref(href)) return;
+    window.location.href = href;
+  };
 
   const _handleDecline = async () => {
     // Submit "no" RSVP to API if eventId is available
@@ -201,7 +243,7 @@ export default function EventRsvpPrompt({
           body: JSON.stringify({
             response: rsvpResponse,
             name: senderName,
-            email: sender.phone.trim() ? undefined : rsvpEmail || undefined,
+            phone: sender.phone.trim() || undefined,
           }),
         });
         const data = await res.json();
@@ -220,62 +262,7 @@ export default function EventRsvpPrompt({
       }
     }
 
-    // For decline, do not open composers; just close the modal
-    if (intent === "decline") {
-      setModalOpen(false);
-      setIntent(null);
-      return;
-    }
-
-    const eventLabel = eventTitle?.trim() || "the event";
-    const salutation = rsvpName?.trim() || "there";
-    const senderName =
-      `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
-    const guest = sender.forWho.trim();
-    const guestPhraseAttend = guest ? `${guest} will attend` : "I will attend";
-    const guestPhraseMaybe = guest
-      ? `${guest} might be able to attend`
-      : "I might be able to attend";
-
-    if (contactMode === "email") {
-      let bodyCore = "";
-      if (intent === "attend") {
-        bodyCore = `I'm excited to attend ${eventLabel}.`;
-      } else if (intent === "maybe") {
-        bodyCore = `I might be able to attend ${eventLabel}, and I'll confirm soon.`;
-      }
-      const lines = [`Hi ${salutation},`, "", `${senderName}: ${bodyCore}`];
-      if (shareUrl) lines.push("", `Event link: ${shareUrl}`);
-      lines.push("", "Sent via SnapMyDate · envitefy.com");
-      const subject = `RSVP for ${eventTitle?.trim() || "your event"}`;
-      const mailto = `mailto:${encodeURIComponent(
-        rsvpEmail || ""
-      )}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
-        lines.join("\n")
-      )}`;
-      window.location.href = mailto;
-      setModalOpen(false);
-      setIntent(null);
-      return;
-    }
-
-    // SMS flow
-    let bodyCore = "";
-    if (intent === "attend") {
-      bodyCore = `${guestPhraseAttend} ${eventLabel}! Looking forward to it.`;
-    } else if (intent === "maybe") {
-      bodyCore = `${guestPhraseMaybe} ${eventLabel}, but we're not sure yet. We'll confirm soon!`;
-    }
-    const intro = `Hi ${salutation}, this is ${senderName}.`;
-    const contactLine = `You can reach me at ${sender.phone.trim()}.`;
-    const footer = shareUrl ? `\n${shareUrl}` : "";
-    const smsMessage = `${intro} ${bodyCore} ${contactLine}`.trim();
-    const fullMessage = `${smsMessage}${footer}`.trim();
-    const href = `sms:${encodeURIComponent(
-      rsvpPhone || ""
-    )}?&body=${encodeURIComponent(fullMessage)}`;
-    window.location.href = href;
-
+    openOutboundComposerForIntent(intent);
     setModalOpen(false);
     setIntent(null);
   };
@@ -341,7 +328,7 @@ export default function EventRsvpPrompt({
     )}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
       lines.join("\n")
     )}`;
-    window.location.href = href;
+    openRsvpMailtoHref(href);
   };
 
   const clearAndClose = () => {
@@ -551,7 +538,7 @@ export default function EventRsvpPrompt({
                       body: JSON.stringify({
                         response: "no",
                         name: senderName,
-                        email: rsvpEmail || undefined,
+                        phone: sender.phone.trim() || undefined,
                       }),
                     });
                     const data = await res.json();
@@ -562,6 +549,7 @@ export default function EventRsvpPrompt({
                     }
                   } catch {}
                 }
+                openOutboundComposerForIntent("decline");
                 setDeclineModalOpen(false);
                 setDeclineLines([]);
                 setIntent(null);
@@ -743,7 +731,7 @@ export default function EventRsvpPrompt({
                 <span className="text-foreground/70">Your phone number</span>
                 <input
                   type="tel"
-                  required
+                  required={contactMode === "sms"}
                   value={sender.phone}
                   onChange={(event) =>
                     setSender((prev) => ({

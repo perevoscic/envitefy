@@ -7,7 +7,6 @@ import {
   Loader2,
   Pencil,
   PanelLeft,
-  Share2,
   Trash2,
   WandSparkles,
   X,
@@ -44,6 +43,7 @@ import {
   pickFirst,
   refreshLiveCardInvitationData,
   resolveStudioGenerationSurface,
+  sanitizeStudioDesignIdea,
 } from "./studio-workspace-builders";
 import {
   CATEGORY_FIELDS,
@@ -516,7 +516,7 @@ export default function StudioWorkspace() {
       return true;
     }
 
-    if (!clean(details.detailsDescription) || !clean(details.theme)) {
+    if (!clean(details.detailsDescription) || !sanitizeStudioDesignIdea(details.theme)) {
       return false;
     }
 
@@ -1321,7 +1321,10 @@ export default function StudioWorkspace() {
       type,
       url: existingItem?.url,
       data: existingItem?.data,
-      theme: pickFirst(currentDetails.theme, `${currentDetails.category} Event`),
+      theme: pickFirst(
+        sanitizeStudioDesignIdea(currentDetails.theme),
+        `${currentDetails.category} Event`,
+      ),
       status: "loading",
       details: currentDetails,
       createdAt: existingItem?.createdAt || new Date().toISOString(),
@@ -2073,22 +2076,6 @@ export default function StudioWorkspace() {
                   title="Download"
                 >
                   <Download className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void shareMedia(activePageRecord)}
-                  disabled={sharingId === activePageRecord.id}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-transform hover:scale-105 disabled:cursor-wait disabled:opacity-80"
-                  aria-label={sharingId === activePageRecord.id ? "Creating share link" : "Share live card"}
-                  title={sharingId === activePageRecord.id ? "Creating share link" : "Share"}
-                >
-                  {sharingId === activePageRecord.id ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : copySuccess ? (
-                    <Share2 className="h-5 w-5 text-emerald-600" />
-                  ) : (
-                    <Share2 className="h-5 w-5" />
-                  )}
                 </button>
               </div>
             ) : null}

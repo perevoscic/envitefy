@@ -75,12 +75,24 @@ test("studio live-card sanitizer and publish payload preserve heroTextMode", () 
 test("studio preview uses floating glass controls for poster-first live cards", () => {
   const workspaceSource = readSource("src/app/studio/StudioWorkspace.tsx");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
+  const locationSource = readSource("src/lib/live-card-locations.ts");
 
   assert.match(surfaceSource, /export function isPosterFirstHeroCard/);
   assert.match(surfaceSource, /function getRegistryActionLabel/);
+  assert.match(surfaceSource, /buildLiveCardLocationActions/);
+  assert.match(surfaceSource, /buildLiveCardDirectionsHref/);
   assert.match(surfaceSource, /label: registryActionLabel/);
   assert.match(surfaceSource, /visible: Boolean\(registryHref\)/);
+  assert.match(surfaceSource, /"registryLink",/);
   assert.match(surfaceSource, /Visit \{registryActionLabel\}/);
+  assert.match(surfaceSource, /locationActions\.length > 1/);
+  assert.match(surfaceSource, /locationActions\.map/);
+  assert.match(surfaceSource, /primaryLocationAction\.label/);
+  assert.match(surfaceSource, /Get Directions/);
+  assert.match(locationSource, /INLINE_STREET_ADDRESS_PATTERN/);
+  assert.match(locationSource, /detailsDescription/);
+  assert.match(locationSource, /SECONDARY_DESTINATION_PATTERN/);
+  assert.doesNotMatch(locationSource, /theme/);
   assert.match(surfaceSource, /invitationData\?\.heroTextMode !== "image"/);
   assert.match(
     surfaceSource,

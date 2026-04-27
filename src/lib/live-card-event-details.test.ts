@@ -10,6 +10,7 @@ test("birthday welcome includes ordinal age and venue", () => {
       name: "Lara",
       age: "7",
       venueName: "The Park Cafe",
+      location: "123 Main Street, Chicago, IL",
       eventDate: "2026-05-23",
       startTime: "12:00",
     },
@@ -18,6 +19,42 @@ test("birthday welcome includes ordinal age and venue", () => {
   assert.equal(
     msg,
     "Join us to celebrate Lara's 7th birthday at The Park Cafe on Saturday, May 23rd at 12PM.",
+  );
+});
+
+test("birthday welcome parses venue from inline venue and address location", () => {
+  const msg = buildLiveCardDetailsWelcomeMessage(
+    {
+      category: "Birthday",
+      name: "Lara",
+      age: "7",
+      location: "AMC Boulevard 10 465 Grand Boulevard, Miramar Beach, FL",
+      eventDate: "2026-05-23",
+      startTime: "13:00",
+    },
+    "Lara's Birthday",
+  );
+  assert.equal(
+    msg,
+    "Join us to celebrate Lara's 7th birthday at AMC Boulevard 10 on Saturday, May 23rd at 1PM.",
+  );
+});
+
+test("birthday welcome falls back to address when no venue label is available", () => {
+  const msg = buildLiveCardDetailsWelcomeMessage(
+    {
+      category: "Birthday",
+      name: "Lara",
+      age: "7",
+      location: "465 Grand Boulevard, Miramar Beach, FL",
+      eventDate: "2026-05-23",
+      startTime: "13:00",
+    },
+    "Lara's Birthday",
+  );
+  assert.equal(
+    msg,
+    "Join us to celebrate Lara's 7th birthday at 465 Grand Boulevard, Miramar Beach, FL on Saturday, May 23rd at 1PM.",
   );
 });
 

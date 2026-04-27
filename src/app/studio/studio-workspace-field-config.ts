@@ -471,14 +471,14 @@ export const STUDIO_COMPACT_CATEGORY_FORM_CONFIG: Record<
 > = {
   Birthday: {
     primaryFields: [
-      ...pickCategoryFields("Birthday", ["name", "age", "registryLink"]),
+      ...pickCategoryFields("Birthday", ["name", "age"]),
       STUDIO_COMPACT_RSVP_CONTACT_FIELD,
     ],
     supportsRsvp: true,
   },
   Wedding: {
     primaryFields: [
-      ...pickCategoryFields("Wedding", ["coupleNames", "eventTitle", "registryLink"]),
+      ...pickCategoryFields("Wedding", ["coupleNames", "eventTitle"]),
       STUDIO_COMPACT_RSVP_CONTACT_FIELD,
     ],
     supportsRsvp: true,
@@ -499,14 +499,14 @@ export const STUDIO_COMPACT_CATEGORY_FORM_CONFIG: Record<
   },
   "Bridal Shower": {
     primaryFields: [
-      ...pickCategoryFields("Bridal Shower", ["honoreeNames", "hostedBy", "registryLink"]),
+      ...pickCategoryFields("Bridal Shower", ["honoreeNames", "hostedBy"]),
       STUDIO_COMPACT_RSVP_CONTACT_FIELD,
     ],
     supportsRsvp: true,
   },
   Housewarming: {
     primaryFields: [
-      ...pickCategoryFields("Housewarming", ["honoreeNames", "registryLink"]),
+      ...pickCategoryFields("Housewarming", ["honoreeNames"]),
       STUDIO_COMPACT_RSVP_CONTACT_FIELD,
     ],
     secondaryFields: pickCategoryFields("Housewarming", ["message"]),

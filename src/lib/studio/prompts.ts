@@ -2,6 +2,7 @@ import type {
   StudioEventDetails,
   StudioGenerationGuidance,
   StudioGenerateSurface,
+  StudioInvitationText,
   StudioLiveCardMetadata,
 } from "@/lib/studio/types";
 import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
@@ -13,11 +14,18 @@ function line(label: string, value: string | null | undefined): string {
   return `${label}: ${value?.trim().length ? value.trim() : "Not provided"}`;
 }
 
+const DESIGN_IDEA_HELPER_TEXT_PATTERN =
+  /\bDescribe the visual\/theme direction for the invite(?:\. Flyer uploads can leave this blank if the flyer already sets the look)?\.?/gi;
+
 function sanitizeImagePromptBriefText(value: string | null | undefined): string | undefined {
   if (!value?.trim()) return undefined;
   return value
+    .replace(DESIGN_IDEA_HELPER_TEXT_PATTERN, "")
+    .replace(/^\s*Design\s+Idea\b:?\s*/i, "")
     .replace(/\bDesign\s+Idea\b/gi, "private visual direction")
-    .replace(/\bEvent\s+Details\b/gi, "supporting event details");
+    .replace(/\bEvent\s+Details\b/gi, "supporting event details")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function renderLinks(links: StudioEventDetails["links"]): string {
@@ -29,8 +37,8 @@ function renderCoreCreativeInputs(event: StudioEventDetails): string {
   return [
     "Core creative inputs:",
     line("Selected Event Type", event.category || event.occasion),
-    line("Design Idea", event.userIdea),
-    line("Event Details", event.description),
+    line("Design Idea", sanitizeImagePromptBriefText(event.userIdea)),
+    line("Event Details", sanitizeImagePromptBriefText(event.description)),
     line("Honoree / Couple / Main Person", event.honoreeName),
     line("Sport", event.sportType),
     line("Team / Host", event.teamName),
@@ -409,9 +417,10 @@ export function buildInvitationTextPrompt(
     `- \`scheduleLine\` is for visible date/time only. Prefer ${CARD_SCHEDULE_EXAMPLE}; if time is missing, use ${CARD_SCHEDULE_DATE_ONLY_EXAMPLE}. Keep venue/location on the next line or separate field, not inside \`scheduleLine\`.`,
     "- Visible card schedule/date lines should omit the year unless the user explicitly typed year wording that must be preserved.",
     "- Build the invitation around the selected event type first.",
-    "- Treat the Design Idea as the primary creative concept when one is provided.",
-    "- Treat Event Details as supporting context for specificity and copy, not as a replacement for the Design Idea.",
+    "- Treat the Design Idea as private art direction for themeStyle, palette, and artwork concept when one is provided.",
+    "- Treat Event Details, names, date/time, venue, and RSVP fields as the source of guest-facing copy.",
     "- Design Idea is private art direction, not default visible invitation copy.",
+    "- Guest-facing invitation copy fields must not introduce Design Idea-only nouns, motifs, props, animals, places, or prompt fragments.",
     "- Do not quote, restate, or lightly paraphrase raw Design Idea wording as a title, subtitle, theme line, opening line, schedule line, or other visible invitation copy unless the user explicitly asked for that exact wording to appear.",
     "- If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of printing it as guest-facing copy.",
     "- If an age or milestone is provided, incorporate it naturally into the invitation concept or copy when helpful.",
@@ -423,7 +432,7 @@ export function buildInvitationTextPrompt(
     ...(posterFirstLiveCard
       ? [
           "- Keep the invitation hierarchy short, cinematic, and poster-ready rather than reading like flat form fields.",
-          "- Treat the Design Idea as the dominant art direction for the wording and mood.",
+          "- Treat the Design Idea as dominant art direction for themeStyle, palette, and artwork mood; derive visible wording from event details.",
           "- Make the wording read unmistakably as a hosted celebration invitation, not just a description of a place, backdrop, or scene.",
           "- Bring celebration energy into the copy with event-oriented language, invitation intent, and occasion cues.",
           "- Never add the year to schedule/date wording unless the user's custom wording explicitly includes that year.",
@@ -453,8 +462,8 @@ export function buildInvitationTextPrompt(
     line("Opponent", event.opponentName),
     line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
-    line("Design Idea", event.userIdea),
-    line("Event Details", event.description),
+    line("Design Idea", sanitizeImagePromptBriefText(event.userIdea)),
+    line("Event Details", sanitizeImagePromptBriefText(event.description)),
     line("Date", event.date),
     line("Start Time", event.startTime),
     line("End Time", event.endTime),
@@ -536,9 +545,10 @@ export function buildLiveCardPrompt(
     `- \`invitation.scheduleLine\` is for visible date/time only. Prefer ${CARD_SCHEDULE_EXAMPLE}; if time is missing, use ${CARD_SCHEDULE_DATE_ONLY_EXAMPLE}. Keep venue/location on \`invitation.locationLine\`, not inside \`invitation.scheduleLine\`.`,
     "- Visible card schedule/date lines should omit the year unless the user explicitly typed year wording that must be preserved.",
     "- Build the live card around the selected event type first, then express the Design Idea through that celebration type.",
-    "- Treat the Design Idea as the main creative concept when one is provided.",
-    "- Treat Event Details as supporting context for specificity and copy, not as a replacement for the Design Idea.",
+    "- Treat the Design Idea as private art direction for themeStyle, palette, and artwork concept when one is provided.",
+    "- Treat Event Details, names, date/time, venue, and RSVP fields as the source of guest-facing copy.",
     "- Design Idea is private art direction, not default visible invitation copy.",
+    "- Guest-facing invitation copy fields must not introduce Design Idea-only nouns, motifs, props, animals, places, or prompt fragments.",
     "- Do not quote, restate, or lightly paraphrase raw Design Idea wording as a title, subtitle, theme line, opening line, schedule line, or other visible invitation copy unless the user explicitly asked for that exact wording to appear.",
     "- If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of printing it as guest-facing copy.",
     "- If an age or milestone is provided, work it into the copy or concept naturally when it adds clarity.",
@@ -548,7 +558,7 @@ export function buildLiveCardPrompt(
     ...(posterFirstLiveCard
       ? [
           "- For live cards, write short cinematic invitation copy with a poster-like hierarchy instead of flat form-field phrasing.",
-          "- Treat the Design Idea as the dominant art direction for the copy and invitation mood.",
+          "- Treat the Design Idea as dominant art direction for themeStyle, palette, and artwork mood; derive visible wording from event details.",
           "- Make the result read first as a real celebration invite for this event type, not simply a stylish scene description.",
           "- Bring clear party / celebration / hosted-event energy into the concept and invitation copy.",
           "- Do not invent venue brands, marquee names, signage wording, or unsupported event facts in the copy.",
@@ -595,8 +605,8 @@ export function buildLiveCardPrompt(
     line("Opponent", event.opponentName),
     line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
-    line("Design Idea", event.userIdea),
-    line("Event Details", event.description),
+    line("Design Idea", sanitizeImagePromptBriefText(event.userIdea)),
+    line("Event Details", sanitizeImagePromptBriefText(event.description)),
     line("Date", event.date),
     line("Start Time", event.startTime),
     line("End Time", event.endTime),
@@ -638,11 +648,302 @@ function trimOrEmpty(value: string | null | undefined): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+const PRIVATE_VISUAL_DIRECTION_COPY_STOP_WORDS = new Set([
+  "about",
+  "above",
+  "after",
+  "again",
+  "against",
+  "all",
+  "also",
+  "and",
+  "any",
+  "are",
+  "around",
+  "art",
+  "at",
+  "back",
+  "background",
+  "bash",
+  "beautiful",
+  "bold",
+  "bright",
+  "card",
+  "celebrate",
+  "celebration",
+  "classic",
+  "clean",
+  "color",
+  "colors",
+  "concept",
+  "copy",
+  "dark",
+  "day",
+  "design",
+  "direction",
+  "elegant",
+  "event",
+  "festive",
+  "for",
+  "fun",
+  "gold",
+  "golden",
+  "guest",
+  "guests",
+  "high",
+  "idea",
+  "image",
+  "in",
+  "invite",
+  "invitation",
+  "join",
+  "layout",
+  "light",
+  "lighting",
+  "like",
+  "look",
+  "make",
+  "modern",
+  "mood",
+  "night",
+  "one",
+  "party",
+  "photo",
+  "photorealistic",
+  "playful",
+  "premium",
+  "real",
+  "realistic",
+  "romantic",
+  "scene",
+  "soft",
+  "style",
+  "stylized",
+  "theme",
+  "the",
+  "to",
+  "tone",
+  "under",
+  "vibe",
+  "visual",
+  "warm",
+  "with",
+  "you",
+  "your",
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+]);
+
+function normalizeVisibleCopyToken(value: string): string {
+  let token = value
+    .toLowerCase()
+    .replace(/^['-]+|['-]+$/g, "")
+    .replace(/'s$/g, "");
+  if (token.length > 4 && token.endsWith("ies")) {
+    token = `${token.slice(0, -3)}y`;
+  } else if (token.length > 3 && token.endsWith("s")) {
+    token = token.slice(0, -1);
+  }
+  return token;
+}
+
+function collectVisibleCopyTokens(value: string | null | undefined): Set<string> {
+  const tokens = new Set<string>();
+  const matches = trimOrEmpty(value).match(/[a-z0-9]+(?:['-][a-z0-9]+)?/gi) || [];
+  for (const raw of matches) {
+    const token = normalizeVisibleCopyToken(raw);
+    if (token.length < 3 || PRIVATE_VISUAL_DIRECTION_COPY_STOP_WORDS.has(token)) continue;
+    tokens.add(token);
+  }
+  return tokens;
+}
+
+function buildEventVisibleCopySource(event: StudioEventDetails): string {
+  return [
+    event.title,
+    event.category,
+    event.occasion,
+    event.eventYear,
+    event.hostName,
+    event.honoreeName,
+    event.sportType,
+    event.teamName,
+    event.opponentName,
+    event.leagueDivision,
+    event.broadcastInfo,
+    event.parkingInfo,
+    event.ageOrMilestone,
+    event.description,
+    event.date,
+    event.startTime,
+    event.endTime,
+    event.timezone,
+    event.venueName,
+    event.venueAddress,
+    event.dressCode,
+    event.rsvpBy,
+    event.rsvpContact,
+    event.registryNote,
+    ...(event.links || []).flatMap((item) => [item.label, item.url]),
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function getPrivateVisualDirectionOnlyTokens(event: StudioEventDetails): Set<string> {
+  const privateTokens = collectVisibleCopyTokens(event.userIdea);
+  if (privateTokens.size === 0) return privateTokens;
+  const allowedTokens = collectVisibleCopyTokens(buildEventVisibleCopySource(event));
+  return new Set([...privateTokens].filter((token) => !allowedTokens.has(token)));
+}
+
+function containsPrivateVisualDirectionOnlyToken(
+  event: StudioEventDetails,
+  value: string | null | undefined,
+): boolean {
+  const privateOnlyTokens = getPrivateVisualDirectionOnlyTokens(event);
+  if (privateOnlyTokens.size === 0) return false;
+  const valueTokens = collectVisibleCopyTokens(value);
+  if ([...valueTokens].some((token) => privateOnlyTokens.has(token))) return true;
+  const rawValue = trimOrEmpty(value);
+  if (!rawValue.includes("#")) return false;
+  const compactValue = rawValue
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  return [...privateOnlyTokens].some(
+    (token) =>
+      compactValue === token ||
+      compactValue.endsWith(token) ||
+      compactValue.endsWith(`${token}s`) ||
+      compactValue.startsWith(`${token}s`),
+  );
+}
+
+function removePrivateVisualDirectionOnlyTokens(
+  event: StudioEventDetails,
+  value: string,
+): string {
+  const privateOnlyTokens = getPrivateVisualDirectionOnlyTokens(event);
+  if (privateOnlyTokens.size === 0) return value;
+  const withoutPrivateTerms = value.replace(
+    /[a-z0-9]+(?:['-][a-z0-9]+)?/gi,
+    (raw) => (privateOnlyTokens.has(normalizeVisibleCopyToken(raw)) ? "" : raw),
+  );
+  return withoutPrivateTerms
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/,\s*,+/g, ",")
+    .replace(/,\s*(and|or)\s*([,.;:!?])/gi, "$2")
+    .replace(/(^|[.!?]\s+)(and|or)\s+/gi, "$1")
+    .replace(/\b(for|with|featuring|including)\s+(and|or)\s+/gi, "$1 ")
+    .replace(/\b(the|a|an)\s*([,.;:!?])/gi, "$2")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/\b(with|for|at|in|on|to|of|from|by|featuring|including)\s*([.!?])?$/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\(\s*\)/g, "")
+    .replace(/\[\s*\]/g, "")
+    .replace(/\s+$/g, "")
+    .replace(/^\s*[,.;:!?]\s*/g, "")
+    .trim();
+}
+
+function sanitizeVisibleCopyLineForPrivateVisualDirection(
+  event: StudioEventDetails,
+  value: string | null | undefined,
+): string {
+  const trimmed = trimOrEmpty(value);
+  if (!trimmed) return "";
+  if (!containsPrivateVisualDirectionOnlyToken(event, trimmed)) return trimmed;
+  const cleaned = removePrivateVisualDirectionOnlyTokens(event, trimmed);
+  return collectVisibleCopyTokens(cleaned).size > 0 ? cleaned : "";
+}
+
+function sanitizeStudioInvitationVisibleCopy(
+  event: StudioEventDetails,
+  invitation: StudioInvitationText,
+): StudioInvitationText {
+  return {
+    title: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.title) || trimOrEmpty(event.title),
+    subtitle: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.subtitle),
+    openingLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.openingLine),
+    scheduleLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.scheduleLine),
+    locationLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.locationLine),
+    detailsLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.detailsLine),
+    callToAction: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.callToAction),
+    socialCaption: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.socialCaption),
+    hashtags: invitation.hashtags.filter(
+      (tag) => !containsPrivateVisualDirectionOnlyToken(event, tag),
+    ),
+  };
+}
+
+export function sanitizeStudioLiveCardVisibleCopy(
+  event: StudioEventDetails,
+  liveCard: StudioLiveCardMetadata,
+): StudioLiveCardMetadata {
+  const invitation = sanitizeStudioInvitationVisibleCopy(event, liveCard.invitation);
+  const title =
+    sanitizeVisibleCopyLineForPrivateVisualDirection(event, liveCard.title) ||
+    invitation.title ||
+    trimOrEmpty(event.title) ||
+    liveCard.title;
+  const description =
+    sanitizeVisibleCopyLineForPrivateVisualDirection(event, liveCard.description) ||
+    sanitizeVisibleCopyLineForPrivateVisualDirection(event, event.description) ||
+    invitation.openingLine ||
+    title;
+  const ctaLabel =
+    sanitizeVisibleCopyLineForPrivateVisualDirection(event, liveCard.interactiveMetadata.ctaLabel) ||
+    invitation.callToAction ||
+    "RSVP";
+  const shareNote =
+    sanitizeVisibleCopyLineForPrivateVisualDirection(event, liveCard.interactiveMetadata.shareNote) ||
+    invitation.socialCaption ||
+    description;
+
+  return {
+    ...liveCard,
+    title,
+    description,
+    interactiveMetadata: {
+      ...liveCard.interactiveMetadata,
+      rsvpMessage:
+        sanitizeVisibleCopyLineForPrivateVisualDirection(
+          event,
+          liveCard.interactiveMetadata.rsvpMessage,
+        ) || "Let us know if you can make it.",
+      funFacts: liveCard.interactiveMetadata.funFacts.filter(
+        (item) => !containsPrivateVisualDirectionOnlyToken(event, item),
+      ),
+      ctaLabel,
+      shareNote,
+    },
+    invitation,
+  };
+}
+
 function buildApprovedVisibleCopySection(
   event: StudioEventDetails,
   liveCard?: StudioLiveCardMetadata | null,
 ): string {
-  const invitationOpeningLine = trimOrEmpty(liveCard?.invitation?.openingLine);
+  const visibleLiveCard = liveCard ? sanitizeStudioLiveCardVisibleCopy(event, liveCard) : null;
+  const invitationOpeningLine = trimOrEmpty(visibleLiveCard?.invitation?.openingLine);
   const shortOpeningLine =
     invitationOpeningLine &&
     invitationOpeningLine.split(/\s+/).length <= 8 &&
@@ -652,12 +953,14 @@ function buildApprovedVisibleCopySection(
   const lines = [
     line(
       "Main Title",
-      trimOrEmpty(liveCard?.title) || trimOrEmpty(liveCard?.invitation?.title) || trimOrEmpty(event.title),
+      trimOrEmpty(visibleLiveCard?.title) ||
+        trimOrEmpty(visibleLiveCard?.invitation?.title) ||
+        trimOrEmpty(event.title),
     ),
-    line("Subtitle / Theme Line", trimOrEmpty(liveCard?.invitation?.subtitle)),
+    line("Subtitle / Theme Line", trimOrEmpty(visibleLiveCard?.invitation?.subtitle)),
     line("Opening Line", shortOpeningLine),
-    line("Schedule Line", trimOrEmpty(liveCard?.invitation?.scheduleLine)),
-    line("Location Line", trimOrEmpty(liveCard?.invitation?.locationLine)),
+    line("Schedule Line", trimOrEmpty(visibleLiveCard?.invitation?.scheduleLine)),
+    line("Location Line", trimOrEmpty(visibleLiveCard?.invitation?.locationLine)),
   ].filter((item) => !item.endsWith("Not provided"));
 
   if (lines.length === 0) return "";
@@ -736,9 +1039,11 @@ export function buildInvitationImagePrompt(
     ...(approvedVisibleCopy
       ? [
           "- Use only the approved invitation copy below for visible wording in the artwork. Preserve spelling exactly and do not duplicate lines.",
+          "- The approved invitation copy is the complete visible-text whitelist. Do not add extra visible words from Private Visual Direction, Theme Style, Style guidance, or other internal art-direction fields.",
         ]
       : [
           "- If visible copy is needed, use only directly supported event details from this prompt. Do not invent unsupported slogans, RSVP lines, footer labels, or extra wording.",
+          "- Private Visual Direction may influence imagery, props, styling, and mood, but it is not a source for visible invitation words.",
         ]),
     ...(refCount > 0 ? buildReferencePhotoPromptRules(guidance, refCount) : []),
     ...(pageSurface
@@ -820,6 +1125,7 @@ export function buildInvitationImagePrompt(
     "- Let supporting event details sharpen specificity and approved wording, but do not let them replace the private visual direction.",
     "- The private visual direction is art direction only, not default visible invitation copy in the artwork.",
     "- Never print raw private visual direction wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy.",
+    "- If the private visual direction includes a noun or motif that is absent from the approved invitation copy and event details, show it visually only; do not print that noun or motif as text.",
     "- If the private visual direction contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text.",
     ...(pageSurface && isEditingExistingImage
       ? []

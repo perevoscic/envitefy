@@ -26,6 +26,7 @@ type Props = {
   timeLabel?: string | null;
   location?: string | null;
   imageUrl?: string | null;
+  shareUrl?: string | null;
   calendarLinks?: CalendarLinks | null;
   skinId?: string | null;
   palette?: Palette;
@@ -47,6 +48,7 @@ export default function GraduationSkin({
   timeLabel,
   location,
   imageUrl,
+  shareUrl,
   calendarLinks,
   skinId,
   palette,
@@ -80,6 +82,7 @@ export default function GraduationSkin({
       timeLabel={timeLabel}
       location={location}
       imageUrl={imageUrl}
+      shareUrl={shareUrl}
       calendarLinks={calendarLinks}
       skinId={skinId}
       palette={graduationPalette}

@@ -406,6 +406,7 @@ export default function ScannedWeddingInviteView({
                       rsvpEmail={rsvpEmail}
                       rsvpUrl={rsvpUrl}
                       eventTitle={title}
+                      eventCategory="Wedding"
                       shareUrl={previewMode ? null : shareUrl}
                       variant="wedding-scan"
                     />

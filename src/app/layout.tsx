@@ -22,9 +22,10 @@ const siteUrl = (
 ).replace(/\/+$/, "");
 
 export const metadata: Metadata = {
-  // Title must match Google OAuth consent screen app name exactly: "Envitefy"
   metadataBase: new URL(siteUrl),
   title: "Envitefy | Event Pages, Invitations & RSVPs",
+  // Application name must match Google OAuth consent screen app name exactly: "Envitefy".
+  applicationName: "Envitefy",
   description:
     "Create invitation designs, live cards, hosted event pages, RSVPs, registry links, schedules, and gymnastics meet pages from uploads or from scratch.",
   keywords: [
@@ -49,6 +50,7 @@ export const metadata: Metadata = {
   ],
   manifest: "/manifest.webmanifest?v=v8",
   other: {
+    "apple-mobile-web-app-capable": "yes",
     "google-adsense-account": "ca-pub-8853590530457369",
     "impact-site-verification": "4423e484-94c7-440d-9dba-4fd92408244a",
   },
@@ -127,6 +129,53 @@ export default async function RootLayout({
   const htmlStyle = Object.fromEntries(
     Object.entries(cssVariables).map(([key, value]) => [key, value]),
   ) as CSSProperties;
+  const websiteLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Envitefy",
+    url: siteUrl,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `https://www.google.com/search?q=site%3A${new URL(siteUrl).hostname}+{search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
+  const organizationLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Envitefy",
+    url: siteUrl,
+    logo: `${siteUrl}/Logo_stacked.png`,
+    description:
+      "Envitefy turns invites, flyers, PDFs, schedules, and studio-created cards into hosted live event pages with RSVPs, calendar saves, maps, registry links, and gymnastics meet pages.",
+    sameAs: ["https://www.youtube.com/@Envitefy"],
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      url: `${siteUrl}/contact`,
+    },
+  };
+  const softwareApplicationLd = {
+    "@context": "https://schema.org",
+    "@type": ["WebApplication", "SoftwareApplication"],
+    name: "Envitefy",
+    url: siteUrl,
+    applicationCategory: "EventManagementApplication",
+    operatingSystem: "Web",
+    description:
+      "Create hosted live event pages, live card invitations, RSVP pages, Snap/upload pages from PDFs and flyers, and gymnastics meet pages.",
+    publisher: {
+      "@type": "Organization",
+      name: "Envitefy",
+      url: siteUrl,
+      logo: `${siteUrl}/Logo_stacked.png`,
+    },
+    offers: {
+      "@type": "Offer",
+      category: "SaaS",
+      url: `${siteUrl}/snap`,
+    },
+  };
 
   return (
     <html
@@ -136,75 +185,28 @@ export default async function RootLayout({
       style={{ ...htmlStyle, backgroundColor: themeColorPalette.background }}
       suppressHydrationWarning
     >
-      <head>
-        <title>Envitefy | Event Pages, Invitations & RSVPs</title>
+      <body className={`${fontVarsClass} antialiased`}>
         <Script
           id="ld-website"
           type="application/ld+json"
           strategy="beforeInteractive"
         >
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            name: "Envitefy",
-            url: siteUrl,
-            potentialAction: {
-              "@type": "SearchAction",
-              target: `https://www.google.com/search?q=site%3A${new URL(siteUrl).hostname}+{search_term_string}`,
-              "query-input": "required name=search_term_string",
-            },
-          })}
+          {JSON.stringify(websiteLd)}
         </Script>
         <Script
           id="ld-organization"
           type="application/ld+json"
           strategy="beforeInteractive"
         >
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            name: "Envitefy",
-            url: siteUrl,
-            logo: `${siteUrl}/Logo_stacked.png`,
-            description:
-              "Envitefy turns invites, flyers, PDFs, schedules, and studio-created cards into hosted live event pages with RSVPs, calendar saves, maps, registry links, and gymnastics meet pages.",
-            sameAs: ["https://www.youtube.com/@Envitefy"],
-            contactPoint: {
-              "@type": "ContactPoint",
-              contactType: "customer support",
-              url: `${siteUrl}/contact`,
-            },
-          })}
+          {JSON.stringify(organizationLd)}
         </Script>
         <Script
           id="ld-software-application"
           type="application/ld+json"
           strategy="beforeInteractive"
         >
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": ["WebApplication", "SoftwareApplication"],
-            name: "Envitefy",
-            url: siteUrl,
-            applicationCategory: "EventManagementApplication",
-            operatingSystem: "Web",
-            description:
-              "Create hosted live event pages, live card invitations, RSVP pages, Snap/upload pages from PDFs and flyers, and gymnastics meet pages.",
-            publisher: {
-              "@type": "Organization",
-              name: "Envitefy",
-              url: siteUrl,
-              logo: `${siteUrl}/Logo_stacked.png`,
-            },
-            offers: {
-              "@type": "Offer",
-              category: "SaaS",
-              url: `${siteUrl}/snap`,
-            },
-          })}
+          {JSON.stringify(softwareApplicationLd)}
         </Script>
-      </head>
-      <body className={`${fontVarsClass} antialiased`}>
         <Script id="pwa-bridge" strategy="beforeInteractive">{`
           (function(){
             try {

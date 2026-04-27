@@ -932,6 +932,7 @@ export default function BirthdayTemplateView({
         onClose={() => setIsRsvpModalOpen(false)}
         eventId={eventId}
         eventTitle={eventTitle}
+        eventCategory="Birthday"
         rsvpDeadline={eventData?.rsvpDeadline}
         rsvpName={_rsvpName}
         rsvpPhone={rsvpPhone}

@@ -42,6 +42,18 @@ export function clean(value: string | null | undefined) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+const DESIGN_IDEA_HELPER_TEXT_PATTERN =
+  /\bDescribe the visual\/theme direction for the invite(?:\. Flyer uploads can leave this blank if the flyer already sets the look)?\.?/gi;
+
+export function sanitizeStudioDesignIdea(value: string | null | undefined) {
+  const stripped = clean(value)
+    .replace(/^\s*Design\s+Idea\b:?\s*/i, "")
+    .replace(DESIGN_IDEA_HELPER_TEXT_PATTERN, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return stripped;
+}
+
 export function pickFirst(...values: Array<string | null | undefined>) {
   for (const value of values) {
     const trimmed = clean(value);
@@ -149,9 +161,18 @@ export function getAgeOrMilestone(details: EventDetails) {
 
 export function getStudioThemeLine(details: EventDetails) {
   if (details.category === "Birthday") {
-    return pickFirst(details.theme, details.activityNote, buildDescription(details), details.category);
+    return pickFirst(
+      sanitizeStudioDesignIdea(details.theme),
+      details.activityNote,
+      buildDescription(details),
+      details.category,
+    );
   }
-  return pickFirst(buildDescription(details), details.theme, details.category);
+  return pickFirst(
+    buildDescription(details),
+    sanitizeStudioDesignIdea(details.theme),
+    details.category,
+  );
 }
 
 export function buildStudioSubtitleFallback(details: EventDetails) {
@@ -465,21 +486,21 @@ function buildStudioThemeFramingGuidance(details: EventDetails) {
 }
 
 export function buildStudioVisualDirection(details: EventDetails) {
-  const customIdea = clean(details.theme);
+  const customIdea = sanitizeStudioDesignIdea(details.theme);
   const extraPreferences = clean(details.visualPreferences);
   const eventDetails = clean(details.detailsDescription);
   const combinedDirection = [customIdea, extraPreferences].filter(Boolean).join(". ");
   const instructions: string[] = [];
 
   if (combinedDirection) {
-    instructions.push(`Highest-priority visual direction from the user: ${combinedDirection}.`);
+    instructions.push(`Highest-priority private visual direction from the user: ${combinedDirection}.`);
     instructions.push(
-      "Treat the Design Idea as the theme of the invitation, while still expressing the selected category clearly.",
+      "Apply the Design Idea to artwork, palette, composition, mood, and themeStyle while still expressing the selected category clearly.",
     );
     instructions.push(buildStudioThemeFramingGuidance(details));
     if (eventDetails) {
       instructions.push(
-        "Use Event Details only as supporting context for guest-facing specificity, invitation copy, and factual grounding. Do not let Event Details override the Design Idea.",
+        "Use Event Details as the source for guest-facing specificity, invitation copy, and factual grounding. Do not let Design Idea-only nouns become visible copy.",
       );
     }
   }
@@ -690,6 +711,7 @@ export function buildStudioRequest(
   sourceImageDataUrl?: string,
 ): StudioGenerateRequest {
   const refinement = clean(editPrompt);
+  const designIdea = sanitizeStudioDesignIdea(details.theme);
   const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);
   const baseDescription = buildDescription(details);
   const sanitizedGuestImageUrls = hasStudioSubjectReferencePhotos(details)
@@ -733,7 +755,7 @@ export function buildStudioRequest(
       broadcastInfo: clean(details.broadcastInfo) || null,
       parkingInfo: clean(details.parkingInfo) || null,
       ageOrMilestone: getAgeOrMilestone(details) || null,
-      userIdea: clean(details.theme) || null,
+      userIdea: designIdea || null,
       description:
         [baseDescription, refinement ? `Edit request: ${refinement}` : "", guestPhotoHint]
           .filter(Boolean)

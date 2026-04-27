@@ -3,6 +3,7 @@
 import { useState, FormEvent, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
+import { openRsvpMailtoHref } from "@/utils/rsvp-mailto";
 
 export type RsvpResponse = "yes" | "no" | "maybe" | null;
 
@@ -11,6 +12,7 @@ interface GuestRsvpModalProps {
   onClose: () => void;
   eventId: string;
   eventTitle: string;
+  eventCategory?: string | null;
   rsvpDeadline?: string;
   initialResponse?: Exclude<RsvpResponse, null> | null;
   rsvpName?: string | null;
@@ -39,6 +41,7 @@ export default function GuestRsvpModal({
   onClose,
   eventId,
   eventTitle,
+  eventCategory,
   rsvpDeadline,
   initialResponse,
   rsvpName,
@@ -117,7 +120,7 @@ export default function GuestRsvpModal({
       ? "No"
       : "";
 
-  const followUpContact = (rsvpPhone || "").trim() || (rsvpEmail || "").trim();
+  const followUpContact = (rsvpEmail || "").trim() || (rsvpPhone || "").trim();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -162,7 +165,12 @@ export default function GuestRsvpModal({
               rsvpContact: followUpContact,
               eventTitle,
               responseLabel,
+              responseKey: response,
               shareUrl: shareUrl || "",
+              category: eventCategory,
+              hostName: rsvpName,
+              senderName: `${firstName.trim()} ${lastName.trim()}`.trim(),
+              senderPhone: phone,
             })
           : "";
         const nextFollowUpKind = outboundHref.startsWith("sms:")
@@ -367,13 +375,24 @@ export default function GuestRsvpModal({
                     {rsvpName?.trim() || "the host"} too?
                   </p>
                   <div className="mx-auto flex max-w-sm flex-col gap-3">
-                    <a
-                      href={followUpHref}
-                      className="flex h-[54px] w-full items-center justify-center rounded-full px-6 text-base font-black text-white shadow-xl transition-all hover:scale-[1.01] active:scale-[0.98]"
-                      style={{ backgroundColor: primaryColor, color: "#fff" }}
-                    >
-                      {followUpKind === "sms" ? "Open Text Message" : "Open Email Draft"}
-                    </a>
+                    {followUpKind === "email" ? (
+                      <button
+                        type="button"
+                        onClick={() => openRsvpMailtoHref(followUpHref)}
+                        className="flex h-[54px] w-full items-center justify-center rounded-full px-6 text-base font-black text-white shadow-xl transition-all hover:scale-[1.01] active:scale-[0.98]"
+                        style={{ backgroundColor: primaryColor, color: "#fff" }}
+                      >
+                        Open Email Draft
+                      </button>
+                    ) : (
+                      <a
+                        href={followUpHref}
+                        className="flex h-[54px] w-full items-center justify-center rounded-full px-6 text-base font-black text-white shadow-xl transition-all hover:scale-[1.01] active:scale-[0.98]"
+                        style={{ backgroundColor: primaryColor, color: "#fff" }}
+                      >
+                        Open Text Message
+                      </a>
+                    )}
                     <button
                       type="button"
                       onClick={closeModal}

@@ -29,11 +29,11 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   );
   assert.match(
     source,
-    /Treat the Design Idea as the theme of the invitation, while still expressing the selected category clearly\./,
+    /Apply the Design Idea to artwork, palette, composition, mood, and themeStyle while still expressing the selected category clearly\./,
   );
   assert.match(
     source,
-    /Use Event Details only as supporting context for guest-facing specificity, invitation copy, and factual grounding\. Do not let Event Details override the Design Idea\./,
+    /Use Event Details as the source for guest-facing specificity, invitation copy, and factual grounding\. Do not let Design Idea-only nouns become visible copy\./,
   );
   assert.match(
     source,
@@ -59,7 +59,8 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   assert.match(source, /return \{\s*mode,\s*surface,\s*event:/s);
   assert.match(source, /category:\s*details\.category,/);
   assert.match(source, /ageOrMilestone:\s*getAgeOrMilestone\(details\)\s*\|\|\s*null,/);
-  assert.match(source, /userIdea:\s*clean\(details\.theme\)\s*\|\|\s*null,/);
+  assert.match(source, /const designIdea = sanitizeStudioDesignIdea\(details\.theme\);/);
+  assert.match(source, /userIdea:\s*designIdea\s*\|\|\s*null,/);
   assert.match(
     source,
     /subjectTransformMode:\s*sanitizedGuestImageUrls\.length > 0 \? "premium_makeover" : undefined,/,
@@ -242,6 +243,7 @@ test("studio prompt sources require baked-in invitation text while keeping the b
     /Visible invitation text is required in the final raster for page\/live-card images, but keep it sparse, readable, and intentionally designed\./,
   );
   assert.match(promptSource, /line\("Age or Milestone", event\.ageOrMilestone\)/);
+  assert.match(promptSource, /DESIGN_IDEA_HELPER_TEXT_PATTERN/);
   assert.match(promptSource, /line\("Private Visual Direction", sanitizeImagePromptBriefText\(event\.userIdea\)\)/);
   assert.match(promptSource, /line\("Supporting Context", sanitizeImagePromptBriefText\(event\.description\)\)/);
   assert.match(promptSource, /line\("Image Finish Preset", imageFinishPreset\?\.label\)/);

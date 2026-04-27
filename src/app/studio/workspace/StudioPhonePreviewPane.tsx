@@ -149,7 +149,7 @@ export function StudioPhonePreviewPane({
                         type="button"
                         onClick={saveCurrentProjectToLibrary}
                         disabled={saveCurrentProjectDisabled}
-                        className="absolute right-3 top-5 z-20 inline-flex min-h-8.5 items-center justify-center rounded-full bg-white/94 px-3 py-1.5 text-[8px] font-semibold uppercase tracking-[0.22em] text-[var(--studio-ink,#1A1A1A)] shadow-[0_14px_34px_rgba(49,32,17,0.18)] backdrop-blur-md transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
+                        className="absolute left-3 top-5 z-20 inline-flex min-h-8.5 items-center justify-center rounded-full bg-white/94 px-3 py-1.5 text-[8px] font-semibold uppercase tracking-[0.22em] text-[var(--studio-ink,#1A1A1A)] shadow-[0_14px_34px_rgba(49,32,17,0.18)] backdrop-blur-md transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
                       >
                         {currentProjectSaveLabel}
                       </button>

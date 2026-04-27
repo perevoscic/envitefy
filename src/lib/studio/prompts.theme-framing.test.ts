@@ -1,7 +1,21 @@
 import assert from "node:assert/strict";
+import { registerHooks } from "node:module";
+import path from "node:path";
 import test from "node:test";
+import { pathToFileURL } from "node:url";
 
-import { buildInvitationImagePrompt, buildLiveCardPrompt } from "./prompts.ts";
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier.startsWith("@/")) {
+      const resolvedPath = path.join(process.cwd(), "src", specifier.slice(2));
+      const withExtension = /\.[a-z]+$/i.test(resolvedPath) ? resolvedPath : `${resolvedPath}.ts`;
+      return nextResolve(pathToFileURL(withExtension).href, context);
+    }
+    return nextResolve(specifier, context);
+  },
+});
+
+const { buildInvitationImagePrompt, buildLiveCardPrompt } = await import("./prompts.ts");
 
 test("studio live-card prompt keeps birthday themes tied to the celebration type", () => {
   const prompt = buildLiveCardPrompt(
@@ -27,12 +41,19 @@ test("studio live-card prompt keeps birthday themes tied to the celebration type
   assert.match(prompt, /Design Idea: Jurassic Park/);
   assert.match(prompt, /Event Details: Jurassic Park theme/);
   assert.match(prompt, /Age or Milestone: 7/);
-  assert.match(prompt, /Treat the Design Idea as the main creative concept when one is provided\./);
   assert.match(
     prompt,
-    /Treat Event Details as supporting context for specificity and copy, not as a replacement for the Design Idea\./,
+    /Treat the Design Idea as private art direction for themeStyle, palette, and artwork concept when one is provided\./,
+  );
+  assert.match(
+    prompt,
+    /Treat Event Details, names, date\/time, venue, and RSVP fields as the source of guest-facing copy\./,
   );
   assert.match(prompt, /Design Idea is private art direction, not default visible invitation copy\./);
+  assert.match(
+    prompt,
+    /Guest-facing invitation copy fields must not introduce Design Idea-only nouns, motifs, props, animals, places, or prompt fragments\./,
+  );
   assert.match(
     prompt,
     /Do not quote, restate, or lightly paraphrase raw Design Idea wording as a title, subtitle, theme line, opening line, schedule line, or other visible invitation copy unless the user explicitly asked for that exact wording to appear\./,
@@ -125,6 +146,61 @@ test("studio prompts treat raw design-idea fragments as visual direction instead
   assert.match(
     imagePrompt,
     /If the private visual direction contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text\./,
+  );
+
+  const imagePromptWithGeneratedCopy = buildInvitationImagePrompt(
+    {
+      title: "Lara's 7th Birthday Bash",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Lara",
+      ageOrMilestone: "7",
+      userIdea: "realistic festive cats at the movie",
+      description: "Join us for popcorn, pizza, and fun. We are going to watch a movie, then lunch.",
+      date: "05/23",
+      venueName: "AMC Boulevard 10",
+      links: [],
+    },
+    {
+      style:
+        "Highest-priority visual direction from the user: realistic festive cats at the movie. Treat the user's words as the theme of the invitation.",
+    },
+    {
+      title: "Lara's 7th Birthday Bash",
+      description: "Movie birthday with cats.",
+      palette: {
+        primary: "#111827",
+        secondary: "#F9FAFB",
+        accent: "#F59E0B",
+      },
+      themeStyle: "realistic movie cats",
+      interactiveMetadata: {
+        rsvpMessage: "Tell us if you can join the cats.",
+        funFacts: ["Cats on the marquee"],
+        ctaLabel: "RSVP",
+        shareNote: "Join Lara for cats and movies.",
+      },
+      invitation: {
+        title: "Lara's 7th Birthday Bash",
+        subtitle: "Movie & Lunch Celebration",
+        openingLine: "Join us for popcorn, cats, pizza, and fun!",
+        scheduleLine: "Saturday May 23rd at 1:00 PM",
+        locationLine: "AMC Boulevard 10",
+        detailsLine: "Pizza after the movie",
+        callToAction: "RSVP",
+        socialCaption: "Join Lara for cats and movies.",
+        hashtags: ["#LaraCats"],
+      },
+    },
+    { surface: "page" },
+  );
+
+  assert.match(imagePromptWithGeneratedCopy, /Opening Line: Join us for popcorn, pizza, and fun!/);
+  assert.doesNotMatch(imagePromptWithGeneratedCopy, /Opening Line:.*cats/i);
+  assert.doesNotMatch(imagePromptWithGeneratedCopy, /ShareNote:.*cats/i);
+  assert.match(
+    imagePromptWithGeneratedCopy,
+    /The approved invitation copy is the complete visible-text whitelist\./,
   );
 });
 
@@ -701,7 +777,10 @@ test("poster-first live-card text prompts omit visible year and require poster-l
     /Never add the year to schedule\/date wording unless the user's custom wording explicitly includes that year\./,
   );
   assert.match(prompt, /write short cinematic invitation copy with a poster-like hierarchy/);
-  assert.match(prompt, /Treat the user's prompt\/theme as the dominant art direction/);
+  assert.match(
+    prompt,
+    /Treat the Design Idea as dominant art direction for themeStyle, palette, and artwork mood; derive visible wording from event details\./,
+  );
   assert.match(
     prompt,
     /Do not invent venue brands, marquee names, signage wording, or unsupported event facts in the copy/,

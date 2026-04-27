@@ -23,6 +23,7 @@ test("studio details step splits Event Details and Design Idea while keeping ima
   assert.match(formStep, /Event Details/);
   assert.match(formStep, /Design Idea/);
   assert.match(formStep, /What guests should know\./);
+  assert.doesNotMatch(formStep, /Describe the visual\/theme direction for the invite/);
   assert.match(formStep, /placeholder=\{studioEventDetailsPlaceholder\}/);
   assert.match(formStep, /placeholder=\{studioDesignIdeaPlaceholder\}/);
   assert.match(formStep, /value=\{details\.detailsDescription\}/);
@@ -82,7 +83,7 @@ test("studio validation requires both text inputs in manual mode but preserves f
   );
   assert.match(
     workspace,
-    /if \(!clean\(details\.detailsDescription\) \|\| !clean\(details\.theme\)\) \{\s*return false;\s*\}/s,
+    /if \(!clean\(details\.detailsDescription\) \|\| !sanitizeStudioDesignIdea\(details\.theme\)\) \{\s*return false;\s*\}/s,
   );
   assert.match(
     workspace,

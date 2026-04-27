@@ -80,3 +80,86 @@ test("generateStudioInvitation uses edit mode when imageEdit carries an app-owne
   assert.equal(capturedSourceImage, "/api/blob/event-media/upload-123/header/display.webp");
   assert.ok(capturedPrompt.length > 0);
 });
+
+test("generateStudioInvitation strips Design Idea-only terms before approving visible image copy", async () => {
+  let capturedPrompt = "";
+
+  mock.method(studioGenerationDeps, "resolveStudioProvider", () => "gemini");
+  mock.method(studioGenerationDeps, "normalizeStudioTheme", async () => ({
+    riskLevel: "safe",
+    normalizedTheme: "",
+    visualMotifs: [],
+    paletteHints: [],
+    notes: "",
+  }));
+  mock.method(studioGenerationDeps, "applyStudioThemeNormalization", (request: any) => request);
+  mock.method(studioGenerationDeps, "resolveStudioReferenceImages", async () => []);
+  mock.method(studioGenerationDeps, "generateStudioLiveCardWithGemini", async () => ({
+    ok: true,
+    warnings: [],
+    liveCard: {
+      title: "Lara's 7th Birthday Bash",
+      description: "Movie birthday with cats.",
+      palette: {
+        primary: "#111827",
+        secondary: "#F9FAFB",
+        accent: "#F59E0B",
+      },
+      themeStyle: "realistic movie cats",
+      interactiveMetadata: {
+        rsvpMessage: "Tell us if you can join the cats.",
+        funFacts: ["Cats on the marquee"],
+        ctaLabel: "RSVP",
+        shareNote: "Join Lara for cats and movies.",
+      },
+      invitation: {
+        title: "Lara's 7th Birthday Bash",
+        subtitle: "Movie & Lunch Celebration",
+        openingLine: "Join us for popcorn, cats, pizza, and fun!",
+        scheduleLine: "Saturday May 23rd at 1:00 PM",
+        locationLine: "AMC Boulevard 10",
+        detailsLine: "Pizza after the movie",
+        callToAction: "RSVP",
+        socialCaption: "Join Lara for cats and movies.",
+        hashtags: ["#LaraCats"],
+      },
+    },
+  }));
+  mock.method(studioGenerationDeps, "generateInvitationImageWithGemini", async (prompt) => {
+    capturedPrompt = String(prompt);
+    return {
+      ok: true,
+      imageDataUrl: "data:image/png;base64,Q0xFQU4=",
+      warnings: [],
+    };
+  });
+
+  const result = await generateStudioInvitation({
+    mode: "both",
+    surface: "page",
+    event: {
+      title: "Lara's 7th Birthday Bash",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Lara",
+      ageOrMilestone: "7",
+      userIdea: "realistic festive cats at the movie",
+      description:
+        "Join us for popcorn, pizza, and fun. We are going to watch a movie, then lunch.",
+      date: "2026-05-23",
+      startTime: "1:00 PM",
+      venueName: "AMC Boulevard 10",
+      links: [],
+    },
+    guidance: {
+      style: "Editorial cinematic invitation art with clean hierarchy.",
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.liveCard?.invitation.openingLine, "Join us for popcorn, pizza, and fun!");
+  assert.equal(result.liveCard?.invitation.socialCaption, "Join Lara for movies.");
+  assert.deepEqual(result.liveCard?.invitation.hashtags, []);
+  assert.match(capturedPrompt, /Opening Line: Join us for popcorn, pizza, and fun!/);
+  assert.doesNotMatch(capturedPrompt, /Opening Line:.*cats/i);
+});

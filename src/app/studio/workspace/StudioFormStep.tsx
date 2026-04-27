@@ -1,22 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  ArrowLeft,
-  ChevronDown,
-  ChevronRight,
-  Layout,
-  Loader2,
-  Wand2,
-  X,
-} from "lucide-react";
-import {
-  type Dispatch,
-  type SetStateAction,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { ArrowLeft, ChevronDown, ChevronRight, Layout, Loader2, Wand2, X } from "lucide-react";
+import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
 import {
   getStudioImageFinishPresets,
   resolveStudioImageFinishPreset,
@@ -26,7 +12,10 @@ import {
   SHARED_BASICS,
   STUDIO_COMPACT_CATEGORY_FORM_CONFIG,
 } from "../studio-workspace-field-config";
-import { studioWorkspaceFieldLabelClass } from "../studio-workspace-ui-classes";
+import {
+  studioWorkspaceFieldLabelClass,
+  studioWorkspaceInputClass,
+} from "../studio-workspace-ui-classes";
 import type {
   ActiveTab,
   EventDetails,
@@ -133,8 +122,14 @@ export function StudioFormStep({
   handleMediaImageLoadError,
 }: StudioFormStepProps) {
   const formConfig = STUDIO_COMPACT_CATEGORY_FORM_CONFIG[details.category];
-  const primaryCategoryFields = formConfig.primaryFields;
-  const secondaryCategoryFields = formConfig.secondaryFields || [];
+  const allCategoryFields: FieldConfig[] = CATEGORY_FIELDS[details.category] || [];
+  const registryLinkField = allCategoryFields.find((field) => field.key === "registryLink");
+  const primaryCategoryFields = formConfig.primaryFields.filter(
+    (field) => field.key !== "registryLink",
+  );
+  const secondaryCategoryFields = (formConfig.secondaryFields || []).filter(
+    (field) => field.key !== "registryLink",
+  );
   const sharedPrimaryFields = SHARED_BASICS.filter((field) =>
     ["eventDate", "startTime", "location"].includes(field.key),
   );
@@ -164,10 +159,10 @@ export function StudioFormStep({
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [showStylePicker, setShowStylePicker] = useState(false);
   const stylePickerRef = useRef<HTMLDivElement | null>(null);
-  const allCategoryFields: FieldConfig[] = CATEGORY_FIELDS[details.category] || [];
   const renderedKeys = new Set<string>([
     ...primaryCategoryFields.map((f) => f.key),
     ...secondaryCategoryFields.map((f) => f.key),
+    ...(registryLinkField ? [registryLinkField.key] : []),
   ]);
   const moreDetailFields = isBirthday
     ? []
@@ -202,6 +197,13 @@ export function StudioFormStep({
     setDetails((prev) => ({
       ...prev,
       theme: value,
+    }));
+  }
+
+  function updateRegistryLinkText(value: string) {
+    setDetails((prev) => ({
+      ...prev,
+      registryLink: value,
     }));
   }
 
@@ -366,9 +368,7 @@ export function StudioFormStep({
             <label className={studioWorkspaceFieldLabelClass} htmlFor="studio-event-details">
               Event Details
             </label>
-            <p className="text-sm leading-7 text-[#707b8e]">
-              What guests should know.
-            </p>
+            <p className="text-sm leading-7 text-[#707b8e]">What guests should know.</p>
           </div>
           <textarea
             id="studio-event-details"
@@ -385,11 +385,6 @@ export function StudioFormStep({
             <label className={studioWorkspaceFieldLabelClass} htmlFor="studio-design-idea">
               Design Idea
             </label>
-            <p className="text-sm leading-7 text-[#707b8e]">
-              {flyerProvidesVisualDirection
-                ? "Describe the visual/theme direction for the invite. Flyer uploads can leave this blank if the flyer already sets the look."
-                : "Describe the visual/theme direction for the invite."}
-            </p>
           </div>
           <textarea
             id="studio-design-idea"
@@ -400,6 +395,28 @@ export function StudioFormStep({
             onChange={(event) => updateDesignIdeaText(event.target.value)}
           />
         </div>
+
+        {registryLinkField ? (
+          <div className="space-y-3 rounded-[1.35rem] border border-[#eef2f7] bg-[#fcfdff] px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <label className={studioWorkspaceFieldLabelClass} htmlFor="studio-registry-link">
+                {registryLinkField.label}
+              </label>
+              <span className="rounded-full border border-[#e8edf4] bg-white px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#96a6c5]">
+                Optional
+              </span>
+            </div>
+            <input
+              id="studio-registry-link"
+              type="text"
+              inputMode={registryLinkField.inputMode}
+              placeholder={registryLinkField.placeholder}
+              className={`${studioWorkspaceInputClass} ${details.registryLink.trim() ? "studio-editorial-filled" : "studio-editorial-empty"} font-[var(--font-playfair)]`}
+              value={details.registryLink}
+              onChange={(event) => updateRegistryLinkText(event.target.value)}
+            />
+          </div>
+        ) : null}
 
         <p className="text-[11px] uppercase tracking-[0.18em] text-[#96a6c5]">
           <span className="mr-1 text-[#b8c2d4]">*</span>

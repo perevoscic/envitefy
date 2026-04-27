@@ -21,6 +21,12 @@ function isMarketingPath(pathname: string) {
   return MARKETING_PATHS.has(pathname);
 }
 
+function isStudioCardSharePath(pathname: string) {
+  const normalized = pathname.replace(/\/+$/, "");
+  const segments = normalized.split("/").filter(Boolean);
+  return segments.length === 2 && segments[0] === "card";
+}
+
 function AuthTransitionOverlay({
   message = "Taking you to your workspace...",
 }: {
@@ -63,7 +69,8 @@ export default function AppShell({
     (status === "loading" && hasServerSession) ||
     (status === "loading" && wasAuthenticated.current);
   const onMarketing = isMarketingPath(pathname);
-  const showWorkspaceChrome = isAuthenticated && !onMarketing;
+  const isStudioCardShare = isStudioCardSharePath(pathname);
+  const showWorkspaceChrome = isAuthenticated && !onMarketing && !isStudioCardShare;
   const isRedirectingFromMarketing = onMarketing && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 

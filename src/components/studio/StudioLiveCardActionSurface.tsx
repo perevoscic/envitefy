@@ -20,6 +20,10 @@ import { useEffect, useMemo } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
 import { CalendarIconApple, CalendarIconGoogle, CalendarIconOutlook } from "@/components/CalendarIcons";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
+import {
+  buildLiveCardDirectionsHref,
+  buildLiveCardLocationActions,
+} from "@/lib/live-card-locations";
 import { getLiveCardRailLayout } from "@/lib/live-card-rail-layout";
 import {
   buildLiveCardRsvpOutboundHref,
@@ -30,6 +34,7 @@ import {
 import { buildCalendarLinks } from "@/utils/calendar-links";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { formatTimeLabelEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
+import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
 
 export type LiveCardActiveTab =
   | "none"
@@ -292,6 +297,7 @@ function renderExtraDetailFields(details: LiveCardEventDetails | null | undefine
       "rsvpName",
       "rsvpContact",
       "rsvpDeadline",
+      "registryLink",
       "message",
       "specialInstructions",
       "orientation",
@@ -355,6 +361,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const registryHref = normalizeLiveCardExternalHref(details?.registryLink);
   const registryActionLabel = getRegistryActionLabel(details);
   const registryPanelTitle = getRegistryPanelTitle(details);
+  const locationActions = useMemo(() => buildLiveCardLocationActions(details), [details]);
+  const primaryLocationAction = locationActions[0] || null;
   const effectiveShareUrl =
     readString(props.shareUrl) ||
     (props.fallbackShareUrlToWindowLocation && typeof window !== "undefined"
@@ -423,7 +431,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
           key: "location" as const,
           label: "Location",
           icon: MapPin,
-          visible: Boolean(readString(details?.location) || readString(details?.venueName)),
+          visible: locationActions.length > 0,
           onClick: () =>
             props.onActiveTabChange(props.activeTab === "location" ? "none" : "location"),
         },
@@ -434,26 +442,6 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
           visible: Boolean(readString(details?.eventDate)),
           onClick: () =>
             props.onActiveTabChange(props.activeTab === "calendar" ? "none" : "calendar"),
-        },
-        {
-          key: "share" as const,
-          label:
-            shareState === "pending"
-              ? "Sharing..."
-              : shareState === "success"
-                ? "Copied!"
-                : "Share",
-          icon:
-            shareState === "pending"
-              ? Loader2
-              : shareState === "success"
-                ? CheckCircle2
-                : Share2,
-          visible: Boolean(props.onShare),
-          onClick: () => {
-            props.onActiveTabChange("none");
-            props.onShare?.();
-          },
         },
         {
           key: "registry" as const,
@@ -467,11 +455,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     [
       props.activeTab,
       props.onActiveTabChange,
-      props.onShare,
-      shareState,
       categorySupportsRsvp,
       details,
       invitationData,
+      locationActions.length,
       registryActionLabel,
       registryHref,
     ],
@@ -502,9 +489,61 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                   : "gap-3 px-1"
             }`
           : "grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch gap-1 md:gap-3";
+  const ShareActionIcon =
+    shareState === "pending" ? Loader2 : shareState === "success" ? CheckCircle2 : Share2;
+  const shareActionLabel =
+    shareState === "pending" ? "Sharing..." : shareState === "success" ? "Copied!" : "Share";
+  const shareActionPressed = shareState === "success";
+  const shareActionChromeSizeClassName = useCompactActionButtons
+    ? "p-2 md:p-2.5"
+    : useExpandedActionButtons
+      ? "p-3 md:p-4"
+      : props.showcaseMode
+        ? "p-2 md:p-2.5"
+        : "p-2.5 md:p-3";
+  const shareActionChromeClassName = posterFirstHeroCard
+    ? shareActionPressed
+      ? "translate-y-0.5 border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
+      : "border-white/28 bg-white/18 shadow-[0_12px_28px_rgba(0,0,0,0.34),0_0_16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.16)] hover:-translate-y-0.5 hover:border-white/42 hover:bg-white/24"
+    : shareActionPressed
+      ? "translate-y-0.5 border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
+      : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/22";
+  const shareActionIconClassName = `${
+    useCompactActionButtons
+      ? "h-4 w-4 md:h-5 md:w-5"
+      : useExpandedActionButtons
+        ? "h-6 w-6 md:h-7 md:w-7"
+        : props.showcaseMode
+          ? "h-4 w-4 md:h-5 md:w-5"
+          : "h-5 w-5 md:h-6 md:w-6"
+  } ${
+    shareState === "pending"
+      ? "animate-spin text-white"
+      : shareState === "success"
+        ? "text-emerald-600"
+        : shareActionPressed
+          ? "text-neutral-950"
+          : "text-white"
+  }`;
 
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2">
+      {props.onShare ? (
+        <button
+          type="button"
+          onClick={() => {
+            if (props.isDesignMode) return;
+            props.onActiveTabChange("none");
+            props.onShare?.();
+          }}
+          disabled={shareState === "pending" || props.isDesignMode}
+          aria-label={shareActionLabel === "Share" ? "Share live card" : shareActionLabel}
+          title={shareActionLabel === "Share" ? "Share" : shareActionLabel}
+          className={`pointer-events-auto absolute right-3 top-5 z-30 inline-flex items-center justify-center rounded-full border backdrop-blur-md transition-all duration-200 active:scale-[0.97] disabled:cursor-wait disabled:opacity-75 sm:right-5 sm:top-6 md:right-8 md:top-8 ${shareActionChromeSizeClassName} ${shareActionChromeClassName}`}
+        >
+          <ShareActionIcon className={shareActionIconClassName} />
+        </button>
+      ) : null}
       <div className="flex h-full min-h-0 flex-col justify-end">
         <AnimatePresence initial={false}>
           {props.activeTab !== "none" && props.activeTab !== "share" ? (
@@ -580,7 +619,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                           rsvpContact,
                           eventTitle: props.title,
                           responseLabel: choice.label,
+                          responseKey: choice.key,
                           shareUrl: effectiveShareUrl,
+                          category: readString(details?.category),
+                          hostName: readString(details?.rsvpName),
                         });
                         const accent = accentClassForRsvpChoice(choice.key);
                         if (!href) {
@@ -592,6 +634,18 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                               aria-disabled="true"
                               title={rsvpOutboundHint}
                               className={`flex cursor-not-allowed items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] opacity-45 ${accent}`}
+                            >
+                              {choice.label}
+                            </button>
+                          );
+                        }
+                        if (isRsvpMailtoHref(href)) {
+                          return (
+                            <button
+                              key={choice.key}
+                              type="button"
+                              onClick={() => openRsvpMailtoHref(href)}
+                              className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
                             >
                               {choice.label}
                             </button>
@@ -646,29 +700,59 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 ) : null}
 
                 {props.activeTab === "location" ? (
-                  <>
-                    <p className="text-sm font-medium text-neutral-900">
-                      {readString(details?.venueName) || readString(details?.location)}
-                    </p>
-                    <p className="text-xs text-neutral-500">{readString(details?.location)}</p>
-                    {readString(details?.location) ? (
+                  locationActions.length > 1 ? (
+                    <div className="space-y-3">
+                      {locationActions.map((locationAction) => (
+                        <div
+                          key={locationAction.id}
+                          className="rounded-xl border border-neutral-200 bg-white/85 p-3 text-left shadow-sm"
+                        >
+                          <p className="text-sm font-semibold text-neutral-900">
+                            {locationAction.label}
+                          </p>
+                          <div className="mt-3 flex justify-start">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                window.open(
+                                  buildLiveCardDirectionsHref(locationAction.mapQuery),
+                                  "_blank",
+                                  "noopener,noreferrer",
+                                )
+                              }
+                              className="inline-flex w-auto items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-xs font-bold text-white"
+                              aria-label={`Get directions to ${locationAction.label}`}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              Get Directions
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : primaryLocationAction ? (
+                    <>
+                      <p className="text-sm font-medium text-neutral-900">
+                        {primaryLocationAction.label}
+                      </p>
                       <div className="mt-4 flex justify-center">
                         <button
                           type="button"
                           onClick={() =>
                             window.open(
-                              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(readString(details?.location))}`,
+                              buildLiveCardDirectionsHref(primaryLocationAction.mapQuery),
                               "_blank",
+                              "noopener,noreferrer",
                             )
                           }
                           className="inline-flex w-auto items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-xs font-bold text-white"
                         >
                           <ExternalLink className="h-3 w-3" />
-                          Open in Maps
+                          Get Directions
                         </button>
                       </div>
-                    ) : null}
-                  </>
+                    </>
+                  ) : null
                 ) : null}
 
                 {props.activeTab === "calendar" ? (

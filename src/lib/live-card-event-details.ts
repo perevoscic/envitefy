@@ -4,6 +4,7 @@ import {
   formatTimeLabelEn,
   formatWeekdayMonthDayOrdinalEn,
 } from "@/utils/format-month-day-ordinal";
+import { getLiveCardPrimaryLocationLabel } from "@/lib/live-card-locations";
 
 export type LiveCardDetailsLike = {
   category?: string;
@@ -65,7 +66,7 @@ export function buildLiveCardDetailsWelcomeMessage(
   cardTitle?: string,
 ): string | null {
   const category = readTrim(details?.category);
-  const venue = readTrim(details?.venueName) || readTrim(details?.location);
+  const venue = getLiveCardPrimaryLocationLabel(details);
   const eventDate = readTrim(details?.eventDate);
   const dateLabel = eventDate ? formatWeekdayMonthDayOrdinalEn(eventDate) : "";
   const timeLabel = formatTimeLabelEn(readTrim(details?.startTime));

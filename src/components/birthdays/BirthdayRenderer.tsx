@@ -285,6 +285,7 @@ export default function BirthdayRenderer({
             onClose={() => setIsRsvpModalOpen(false)}
             eventId={eventId}
             eventTitle={event.headlineTitle || "Birthday Party"}
+            eventCategory="Birthday"
             rsvpDeadline={event.rsvpDeadline}
             initialResponse={selectedResponse}
             rsvpName={event.rsvpName}
