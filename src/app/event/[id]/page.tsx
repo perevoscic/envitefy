@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { cache } from "react";
 import AccessCodeGate from "@/components/AccessCodeGate";
 import AppleCalendarLink from "@/components/AppleCalendarLink";
@@ -48,7 +48,7 @@ import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { isOcrInviteCategory, normalizeOcrSkinSelection } from "@/lib/ocr/skin";
 import { createServerTimingTracker } from "@/lib/server-timing";
-import { resolveEventThemeColor } from "@/lib/theme-color";
+import { resolveEventPageBackgroundColor, resolveEventThemeColor } from "@/lib/theme-color";
 import {
   buildWeddingScanSchedule,
   buildWeddingScanFlyerColorsFromImageColors,
@@ -107,6 +107,21 @@ const DiscoveryEventEditLayout = nextDynamic(
   () => import("@/components/DiscoveryEventEditLayout"),
   { loading: () => null },
 );
+
+function EventPageBackgroundStyle({
+  color,
+  children,
+}: {
+  color: string;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <style>{`:root{--event-page-background-color:${color};}`}</style>
+      {children}
+    </>
+  );
+}
 
 export const dynamic = "force-dynamic";
 const EVENT_PAGE_TIMING_ENV = process.env.EVENT_PAGE_TIMING === "1";
@@ -739,6 +754,10 @@ export default async function EventPage({
     requestedTab === "settings"
       ? (requestedTab as "dashboard" | "guests" | "communications" | "settings")
       : null;
+  const eventPageBackgroundColor = resolveEventPageBackgroundColor(data);
+  const renderWithEventPageBackground = (children: ReactNode) => (
+    <EventPageBackgroundStyle color={eventPageBackgroundColor}>{children}</EventPageBackgroundStyle>
+  );
 
   // Handle edit redirect - if edit param is present and user is owner, redirect to customize
   // (except for discovery gymnastics events: they stay on the event URL and get an inline edit sidebar)
@@ -820,14 +839,14 @@ export default async function EventPage({
   }
 
   if (canManageCreatedEvent && ownerWorkspaceTab) {
-    return (
+    return renderWithEventPageBackground(
       <EventOwnerWorkspace
         eventId={row.id}
         eventTitle={title}
         eventData={data}
         eventHref={buildEventPath(row.id, title)}
         initialTab={ownerWorkspaceTab}
-      />
+      />,
     );
   }
 
@@ -892,7 +911,7 @@ export default async function EventPage({
   const passcodeLocked = requiresPasscode && !hasPasscodeAccess && !isOwner && !recipientAccepted;
 
   if (passcodeLocked) {
-    return (
+    return renderWithEventPageBackground(
       <main className="mx-auto w-full max-w-3xl px-4 py-10">
         <section className="rounded-2xl border border-border bg-surface p-6 md:p-8 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground/60">
@@ -913,7 +932,7 @@ export default async function EventPage({
             />
           </div>
         </section>
-      </main>
+      </main>,
     );
   }
 
@@ -1408,7 +1427,7 @@ export default async function EventPage({
         : null;
     const birthdayRegistryUrl = registryLinks[0]?.url || null;
 
-    return (
+    return renderWithEventPageBackground(
       <BirthdaySkin
         title={title}
         honoreeName={
@@ -1472,7 +1491,7 @@ export default async function EventPage({
             </div>
           )
         }
-      />
+      />,
     );
   }
 
@@ -1485,7 +1504,7 @@ export default async function EventPage({
     const birthdayTheme = birthdayThemeBase;
 
     if (isBirthdayRendererEvent || data.theme?.layout) {
-      return (
+      return renderWithEventPageBackground(
         <BirthdayRenderer
           template={birthdayTheme}
           eventId={row.id}
@@ -1571,11 +1590,11 @@ export default async function EventPage({
               </div>
             )
           }
-        />
+        />,
       );
     }
 
-    return (
+    return renderWithEventPageBackground(
       <BirthdayTemplateView
         eventId={row.id}
         eventData={clientSafeEventData}
@@ -1589,13 +1608,13 @@ export default async function EventPage({
         viewerKind={viewerKind}
         shareUrl={shareUrl}
         sessionEmail={sessionEmail}
-      />
+      />,
     );
   }
 
   // If it's a wedding template, render the template view
   if (isWeddingTemplate) {
-    return (
+    return renderWithEventPageBackground(
       <WeddingTemplateView
         eventId={row.id}
         eventData={clientSafeEventData}
@@ -1608,7 +1627,7 @@ export default async function EventPage({
         viewerKind={viewerKind}
         shareUrl={shareUrl}
         sessionEmail={sessionEmail}
-      />
+      />,
     );
   }
 
@@ -1618,8 +1637,26 @@ export default async function EventPage({
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
         : headerImageUrl;
+    const scannedWeddingActions =
+      !isReadOnly &&
+      isOwner && (
+        <div className="flex items-center gap-2 text-sm font-medium sm:gap-3">
+          <EventDeleteModal eventId={row.id} eventTitle={title} />
+          <EventActions
+            shareUrl={shareUrl}
+            event={data as any}
+            calendarTitle={title}
+            historyId={!isReadOnly ? row.id : undefined}
+            className=""
+            variant="compact"
+            tone={"default" as any}
+            showCalendar={false}
+            showEmail={false}
+          />
+        </div>
+      );
 
-    return (
+    return renderWithEventPageBackground(
       <ScannedWeddingInviteView
         eventId={row.id}
         title={title}
@@ -1639,7 +1676,8 @@ export default async function EventPage({
         rsvpDeadline={rsvpDeadline || null}
         registryCards={registryCards}
         showPublicShareAction={!isReadOnly && canManageCreatedEvent}
-      />
+        actions={scannedWeddingActions}
+      />,
     );
   }
 
@@ -1706,7 +1744,7 @@ export default async function EventPage({
       );
 
     if (categoryNormalized === "graduations") {
-      return (
+      return renderWithEventPageBackground(
         <GraduationSkin
           title={title}
           dateLabel={scannedInviteDateLabel || whenLabel || null}
@@ -1724,11 +1762,11 @@ export default async function EventPage({
           attire={scannedInviteAttire}
           registryUrl={scannedInviteRegistryUrl}
           actions={scannedInviteActions}
-        />
+        />,
       );
     }
 
-    return (
+    return renderWithEventPageBackground(
       <ScannedInviteSkin
         title={title}
         categoryLabel={categoryRaw || "General Event"}
@@ -1747,7 +1785,7 @@ export default async function EventPage({
         attire={scannedInviteAttire}
         registryUrl={scannedInviteRegistryUrl}
         actions={scannedInviteActions}
-      />
+      />,
     );
   }
 
@@ -1755,7 +1793,7 @@ export default async function EventPage({
     categoryNormalized === "baby showers" && templateId && createdVia === "template";
 
   if (isBabyShowerTemplate) {
-    return (
+    return renderWithEventPageBackground(
       <BabyShowerTemplateView
         eventId={row.id}
         eventTitle={title}
@@ -1765,7 +1803,7 @@ export default async function EventPage({
         canEdit={canManageCreatedEvent}
         isReadOnly={isReadOnly}
         editHref={editHref}
-      />
+      />,
     );
   }
 
@@ -1786,13 +1824,13 @@ export default async function EventPage({
       />
     );
     if (discoveryEditConfig) {
-      return (
+      return renderWithEventPageBackground(
         <DiscoveryEventEditLayout eventId={row.id} customizeUrl={discoveryEditConfig.customizeUrl}>
           {footballEventView}
-        </DiscoveryEventEditLayout>
+        </DiscoveryEventEditLayout>,
       );
     }
-    return footballEventView;
+    return renderWithEventPageBackground(footballEventView);
   }
 
   // If it's a simple template (gymnastics, football practice, etc.), render with SimpleTemplateView
@@ -1812,16 +1850,16 @@ export default async function EventPage({
       />
     );
     if (discoveryEditConfig) {
-      return (
+      return renderWithEventPageBackground(
         <DiscoveryEventEditLayout eventId={row.id} customizeUrl={discoveryEditConfig.customizeUrl}>
           {eventView}
-        </DiscoveryEventEditLayout>
+        </DiscoveryEventEditLayout>,
       );
     }
-    return eventView;
+    return renderWithEventPageBackground(eventView);
   }
 
-  return (
+  return renderWithEventPageBackground(
     <main
       className={`event-modern-page w-full px-5 sm:px-10 py-10 md:py-14 ipad-gutters pl-[calc(1rem+env(safe-area-inset-left))] sm:pl-[calc(2rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] sm:pr-[calc(2rem+env(safe-area-inset-right))] pt-[calc(2.6rem+env(safe-area-inset-top))] ${
         isReadOnly
@@ -2474,7 +2512,7 @@ export default async function EventPage({
           </span>
         </p>
       )}
-    </main>
+    </main>,
   );
 }
 function normalizeIso(input: unknown): string | null {

@@ -2,8 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Calendar, Download, MapPin, Share2 } from "lucide-react";
+import { Calendar, Download, MapPin, Share2 } from "lucide-react";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import {
   DEFAULT_WEDDING_SCAN_FLYER_COLORS,
@@ -69,6 +68,7 @@ type Props = {
   showRsvpPreview?: boolean;
   rsvpPreviewText?: string | null;
   showPublicShareAction?: boolean;
+  actions?: ReactNode;
 };
 
 export default function ScannedWeddingInviteView({
@@ -93,8 +93,8 @@ export default function ScannedWeddingInviteView({
   showRsvpPreview = false,
   rsvpPreviewText,
   showPublicShareAction = false,
+  actions,
 }: Props) {
-  const router = useRouter();
   const [showCalendarMenu, setShowCalendarMenu] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
   const [shareMessage, setShareMessage] = useState<"idle" | "copied" | "shared">("idle");
@@ -144,15 +144,6 @@ export default function ScannedWeddingInviteView({
     const timer = window.setTimeout(() => setShareMessage("idle"), 1800);
     return () => window.clearTimeout(timer);
   }, [shareMessage]);
-
-  const handleBack = () => {
-    if (previewMode) return;
-    if (window.history.length > 1) {
-      router.back();
-      return;
-    }
-    router.push("/event");
-  };
 
   const handleShare = async () => {
     if (previewMode) return;
@@ -240,15 +231,9 @@ export default function ScannedWeddingInviteView({
           }}
         />
 
-        <button
-          type="button"
-          onClick={handleBack}
-          aria-label="Go back"
-          className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full border border-black/5 bg-white/84 shadow-[0_10px_28px_rgba(28,22,15,0.08)] backdrop-blur disabled:pointer-events-none disabled:opacity-80"
-          disabled={previewMode}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+        {actions && !previewMode ? (
+          <div className="relative z-10 mx-auto flex max-w-7xl justify-end">{actions}</div>
+        ) : null}
 
         <div className="relative z-10 mx-auto mt-8 max-w-5xl text-center md:mt-10">
           <div
@@ -278,7 +263,7 @@ export default function ScannedWeddingInviteView({
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-5 lg:grid-cols-12 lg:items-start lg:gap-10 lg:px-8">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-5 pt-8 md:pt-10 lg:grid-cols-12 lg:items-start lg:gap-10 lg:px-8">
         <div className="space-y-8 lg:col-span-8">
           <section
             className="overflow-hidden rounded-[2.2rem] p-6 shadow-[0_24px_80px_rgba(37,26,10,0.08)] backdrop-blur md:p-10"

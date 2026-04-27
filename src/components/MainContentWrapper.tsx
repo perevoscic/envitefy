@@ -27,6 +27,7 @@ export function MainContentWrapper({
   const normalizedPath = (pathname || "").replace(/\/+$/, "");
   const pathSegments = normalizedPath.split("/").filter(Boolean);
   const isStudioCardShare = pathSegments.length === 2 && pathSegments[0] === "card";
+  const isEventSharePage = pathSegments.length === 2 && pathSegments[0] === "event";
 
   useEffect(() => {
     const checkDesktop = () => {
@@ -57,6 +58,7 @@ export function MainContentWrapper({
       className={`min-h-[100dvh] text-foreground flex flex-col ${shellBgClass} ${className}`}
       style={{
         minHeight: "100dvh",
+        backgroundColor: isEventSharePage ? "var(--event-page-background-color, #F8F5FF)" : undefined,
         paddingTop,
         paddingBottom: "max(0px, env(safe-area-inset-bottom))",
         paddingLeft,

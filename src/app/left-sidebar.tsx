@@ -719,6 +719,7 @@ function EventListPanel({
   pastExpanded,
   setPastExpanded,
   showPendingBadge,
+  showQuickActions = true,
   pastRowOpacityClass,
   onBack,
 }: {
@@ -733,6 +734,7 @@ function EventListPanel({
   pastExpanded: boolean;
   setPastExpanded: Dispatch<SetStateAction<boolean>>;
   showPendingBadge: boolean;
+  showQuickActions?: boolean;
   pastRowOpacityClass: string;
   onBack: () => void;
 }) {
@@ -800,7 +802,7 @@ function EventListPanel({
             </span>
           </span>
         </button>
-        {item.showQuickActions ? (
+        {showQuickActions && item.showQuickActions ? (
           <span className="ml-2 flex shrink-0 items-center gap-1">
             <button
               type="button"
@@ -1351,6 +1353,7 @@ export default function LeftSidebar() {
                       pastExpanded={viewModel.showPastInvitedEvents}
                       setPastExpanded={viewModel.setShowPastInvitedEvents}
                       showPendingBadge
+                      showQuickActions={false}
                       pastRowOpacityClass="opacity-70 saturate-75"
                       onBack={viewModel.backToRoot}
                     />

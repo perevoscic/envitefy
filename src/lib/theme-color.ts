@@ -97,6 +97,65 @@ export function resolveEventThemeColor(input?: unknown): string {
   return EVENT_THEME_COLOR_FALLBACK;
 }
 
+export function resolveEventPageBackgroundColor(input?: unknown): string {
+  if (!input || typeof input !== "object") return BRAND_BACKGROUND_COLOR;
+  const data = input as Record<string, unknown>;
+  const theme = typeof data.theme === "object" && data.theme ? (data.theme as Record<string, unknown>) : null;
+  const themeColors =
+    theme && typeof theme.colors === "object" && theme.colors
+      ? (theme.colors as Record<string, unknown>)
+      : null;
+  const event = typeof data.event === "object" && data.event ? (data.event as Record<string, unknown>) : null;
+  const eventTheme =
+    event && typeof event.theme === "object" && event.theme
+      ? (event.theme as Record<string, unknown>)
+      : null;
+  const eventThemeColors =
+    eventTheme && typeof eventTheme.colors === "object" && eventTheme.colors
+      ? (eventTheme.colors as Record<string, unknown>)
+      : null;
+  const flyerColors =
+    typeof data.flyerColors === "object" && data.flyerColors
+      ? (data.flyerColors as Record<string, unknown>)
+      : null;
+  const ocrSkin =
+    typeof data.ocrSkin === "object" && data.ocrSkin
+      ? (data.ocrSkin as Record<string, unknown>)
+      : null;
+  const ocrSkinPalette =
+    ocrSkin && typeof ocrSkin.palette === "object" && ocrSkin.palette
+      ? (ocrSkin.palette as Record<string, unknown>)
+      : null;
+
+  const candidateColors = [
+    data.pageBackgroundColor,
+    themeColors?.background,
+    theme?.background,
+    theme?.backgroundColor,
+    eventThemeColors?.background,
+    eventTheme?.background,
+    eventTheme?.backgroundColor,
+    event?.pageBackgroundColor,
+    event?.backgroundColor,
+    event?.background,
+    ocrSkinPalette?.background,
+    flyerColors?.background,
+    data.backgroundColor,
+    data.background,
+  ];
+
+  for (const candidate of candidateColors) {
+    const normalized = normalizeColor(
+      typeof candidate === "string"
+        ? extractSolidColor(candidate)
+        : null,
+    );
+    if (normalized) return normalized;
+  }
+
+  return BRAND_BACKGROUND_COLOR;
+}
+
 function extractSolidColor(value: string): string | null {
   const direct = normalizeColor(value);
   if (direct) return direct;
