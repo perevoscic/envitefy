@@ -176,6 +176,7 @@ async function persistStudioLibraryImageUrl(
 ): Promise<string | undefined> {
   const u = clean(url);
   if (!u) return undefined;
+  if (!u.startsWith("data:image/")) return u;
   try {
     const persisted = await persistImageMediaValue({
       value: u,
@@ -1348,7 +1349,10 @@ export default function StudioWorkspace() {
       setGenerationNote(response.themeNormalization?.note || null);
       const generatedDetails = response.preparedDetails || currentDetails;
       const rawUrl =
-        response.imageDataUrl || existingItem?.url || getFallbackThumbnail(currentDetails);
+        response.imageUrl ||
+        response.imageDataUrl ||
+        existingItem?.url ||
+        getFallbackThumbnail(currentDetails);
       const persistedUrl = await persistStudioLibraryImageUrl(
         { ...loadingItem, status: "ready", url: rawUrl },
         rawUrl,
@@ -1416,7 +1420,7 @@ export default function StudioWorkspace() {
       );
       setGenerationNote(response.themeNormalization?.note || null);
 
-      const rawEditUrl = response.imageDataUrl || savedItem.url;
+      const rawEditUrl = response.imageUrl || response.imageDataUrl || savedItem.url;
       const persistedEditUrl = await persistStudioLibraryImageUrl(
         { ...savedItem, url: rawEditUrl },
         rawEditUrl,

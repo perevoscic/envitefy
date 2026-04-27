@@ -119,6 +119,7 @@ export type StudioGenerateResponse = {
   liveCard: StudioLiveCardMetadata | null;
   invitation: StudioInvitationText | null;
   imageDataUrl: string | null;
+  imageUrl?: string | null;
   themeNormalization?: StudioThemeNormalization | null;
   warnings: string[];
   errors?: {
@@ -133,6 +134,7 @@ export type StudioGenerateFailureResponse = {
   liveCard: null;
   invitation: null;
   imageDataUrl: null;
+  imageUrl?: string | null;
   themeNormalization?: StudioThemeNormalization | null;
   warnings: string[];
   errors: {
