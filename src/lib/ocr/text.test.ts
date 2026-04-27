@@ -38,6 +38,10 @@ test("detectCategory recognizes medical and sports text", () => {
 test("detectCategory recognizes expanded invite categories", () => {
   assert.equal(detectCategory("Join us for Ava's Baby Shower brunch"), "Baby Showers");
   assert.equal(detectCategory("Olivia's Bridal Shower at Magnolia House"), "Bridal Showers");
+  assert.equal(
+    detectCategory("Join us for the Carter housewarming at our new home"),
+    "Housewarming",
+  );
   assert.equal(detectCategory("Class of 2026 Graduation Party"), "Graduations");
   assert.equal(detectCategory("Graduation Ceremony — Lena De La Cruz"), "Graduations");
   assert.equal(detectCategory("You're invited to our neighborhood fundraiser gala"), "General Events");

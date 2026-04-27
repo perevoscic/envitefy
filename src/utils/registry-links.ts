@@ -171,6 +171,28 @@ const REGISTRY_SECTION_COPY_BY_CATEGORY: Record<string, RegistrySectionCopy> = {
     publicNote:
       "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
   },
+  housewarming: {
+    allowsLinks: true,
+    sectionLabel: "Gift List",
+    sectionHeading: "Gift List",
+    linksLabel: "Gift list links",
+    itemFallbackLabel: "Gift list link",
+    invalidLinksAlert: "Fix the highlighted gift list links before saving.",
+    emptyState: `No gift list links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} links.`,
+    publicNote:
+      "These links open in a new tab. Gift lists must stay public or shareable so guests can view them.",
+  },
+  housewarmings: {
+    allowsLinks: true,
+    sectionLabel: "Gift List",
+    sectionHeading: "Gift List",
+    linksLabel: "Gift list links",
+    itemFallbackLabel: "Gift list link",
+    invalidLinksAlert: "Fix the highlighted gift list links before saving.",
+    emptyState: `No gift list links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} links.`,
+    publicNote:
+      "These links open in a new tab. Gift lists must stay public or shareable so guests can view them.",
+  },
 };
 
 const registryHostMatches = (host: string, suffix: string): boolean => {
@@ -231,12 +253,6 @@ export function validateRegistryUrl(rawUrl: string): RegistryValidationResult {
   const brand = REGISTRY_BRANDS.find((entry) =>
     entry.hostSuffixes.some((suffix) => registryHostMatches(host, suffix)),
   );
-  if (!brand) {
-    return {
-      ok: false,
-      error: "Only Amazon, Target, Walmart, Babylist, or MyRegistry links are allowed",
-    };
-  }
 
   // Remove fragment identifiers to avoid leaking tracking parameters via hashes
   parsed.hash = "";

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MapPin, Calendar, Download, Share2, Sparkles, MessageSquare, CalendarPlus } from 'lucide-react';
+import { MapPin, Calendar, Clock, Download, Share2, Sparkles, MessageSquare, CalendarPlus } from 'lucide-react';
 import { EventData } from '../services/geminiService';
 
 interface SkinProps {
@@ -58,7 +58,10 @@ export function WeddingSkin({
              <div className="flex flex-col md:flex-row gap-12 items-start relative z-10">
                <div className="flex-1 space-y-12">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    <DetailItem icon={<Calendar className="w-5 h-5 text-gold" />} label="When" title={data.date} subtitle={data.time} />
+                    <div className="space-y-12">
+                      <DetailItem icon={<Calendar className="w-5 h-5 text-gold" />} label="When" title={data.date} />
+                      <DetailItem icon={<Clock className="w-5 h-5 text-gold" />} label="At" title={data.time} />
+                    </div>
                     <DetailItem icon={<MapPin className="w-5 h-5 text-gold" />} label="Where" title="The Venue" subtitle={data.location} />
                   </div>
                   
@@ -174,7 +177,7 @@ function DetailItem({ icon, label, title, subtitle }: any) {
         <span className="text-[10px] font-bold uppercase tracking-[0.3em]">{label}</span>
       </div>
       <div className="text-3xl serif leading-tight">{title}</div>
-      <div className="text-sm opacity-50 lowercase-first tracking-tight leading-relaxed font-light">{subtitle}</div>
+      {subtitle && <div className="text-sm opacity-50 lowercase-first tracking-tight leading-relaxed font-light">{subtitle}</div>}
     </div>
   );
 }

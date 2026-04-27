@@ -331,6 +331,9 @@ async function handleLegacyIngest(request: Request) {
         return "Engagements";
       }
       if (/(anniversary|vow\s*renewal)/i.test(fullText)) return "Anniversaries";
+      if (/(house\s*warming|housewarming|new\s+home|new\s+place|new\s+house)/i.test(fullText)) {
+        return "Housewarming";
+      }
       if (/(graduation|grad\s*party|commencement|class of\s+\d{4})/i.test(fullText)) {
         return "Graduations";
       }

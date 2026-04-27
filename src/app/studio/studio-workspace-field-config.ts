@@ -36,6 +36,13 @@ export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
     },
     { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Sparkly casual" },
     { label: "Gift Note", key: "giftNote", type: "text", placeholder: "e.g. No gifts please" },
+    {
+      label: "Gift List Link",
+      key: "registryLink",
+      type: "text",
+      placeholder: "e.g. Amazon gift list or wishlist link",
+      inputMode: "url",
+    },
     { label: "Surprise Party?", key: "isSurprise", type: "checkbox" },
     { label: "Milestone Birthday?", key: "isMilestone", type: "checkbox" },
     {
@@ -70,7 +77,13 @@ export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
       placeholder: "e.g. The Grand Ballroom",
     },
     { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Black Tie" },
-    { label: "Registry Link", key: "registryLink", type: "text", placeholder: "e.g. Zola link" },
+    {
+      label: "Registry Link",
+      key: "registryLink",
+      type: "text",
+      placeholder: "e.g. Amazon, Zola, The Knot, or registry link",
+      inputMode: "url",
+    },
     {
       label: "Wedding Website",
       key: "weddingWebsite",
@@ -177,7 +190,8 @@ export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
       label: "Registry Link",
       key: "registryLink",
       type: "text",
-      placeholder: "e.g. Registry link",
+      placeholder: "e.g. Amazon, Target, or registry link",
+      inputMode: "url",
     },
     { label: "Dress Code", key: "dressCode", type: "text", placeholder: "e.g. Floral dresses" },
   ],
@@ -200,6 +214,13 @@ export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
       key: "giftPreferenceNote",
       type: "text",
       placeholder: "e.g. No gifts needed",
+    },
+    {
+      label: "Gift List Link",
+      key: "registryLink",
+      type: "text",
+      placeholder: "e.g. Housewarming wishlist link",
+      inputMode: "url",
     },
   ],
   "Field Trip/Day": [
@@ -450,14 +471,14 @@ export const STUDIO_COMPACT_CATEGORY_FORM_CONFIG: Record<
 > = {
   Birthday: {
     primaryFields: [
-      ...pickCategoryFields("Birthday", ["name", "age"]),
+      ...pickCategoryFields("Birthday", ["name", "age", "registryLink"]),
       STUDIO_COMPACT_RSVP_CONTACT_FIELD,
     ],
     supportsRsvp: true,
   },
   Wedding: {
     primaryFields: [
-      ...pickCategoryFields("Wedding", ["coupleNames", "eventTitle"]),
+      ...pickCategoryFields("Wedding", ["coupleNames", "eventTitle", "registryLink"]),
       STUDIO_COMPACT_RSVP_CONTACT_FIELD,
     ],
     supportsRsvp: true,
@@ -478,14 +499,14 @@ export const STUDIO_COMPACT_CATEGORY_FORM_CONFIG: Record<
   },
   "Bridal Shower": {
     primaryFields: [
-      ...pickCategoryFields("Bridal Shower", ["honoreeNames", "hostedBy"]),
+      ...pickCategoryFields("Bridal Shower", ["honoreeNames", "hostedBy", "registryLink"]),
       STUDIO_COMPACT_RSVP_CONTACT_FIELD,
     ],
     supportsRsvp: true,
   },
   Housewarming: {
     primaryFields: [
-      ...pickCategoryFields("Housewarming", ["honoreeNames"]),
+      ...pickCategoryFields("Housewarming", ["honoreeNames", "registryLink"]),
       STUDIO_COMPACT_RSVP_CONTACT_FIELD,
     ],
     secondaryFields: pickCategoryFields("Housewarming", ["message"]),

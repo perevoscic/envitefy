@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MapPin, Calendar, Download, Sparkles, ArrowLeft, MessageSquare, CalendarPlus, Phone } from 'lucide-react';
+import { MapPin, Calendar, Clock, Download, Sparkles, ArrowLeft, MessageSquare, CalendarPlus, Phone } from 'lucide-react';
 import { EventData } from '../services/geminiService';
 
 interface SkinProps {
@@ -84,9 +84,21 @@ export function SampleBirthdaySkin({ data, image, onReset, showCalendarMenu, set
                 <Calendar className="w-8 h-8" />
               </div>
               <div>
-                <div className="text-[10px] font-black uppercase tracking-widest opacity-30">Party time</div>
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-30">When</div>
                 <div className="text-3xl font-bold">{data.date}</div>
-                <div className="text-lg opacity-50">{data.time}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <div
+                className="w-16 h-16 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform"
+                style={{ backgroundColor: 'var(--theme-secondary)', opacity: 0.2, color: 'var(--theme-secondary)' }}
+              >
+                <Clock className="w-8 h-8" />
+              </div>
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-30">At</div>
+                <div className="text-3xl font-bold">{data.time}</div>
               </div>
             </div>
             

@@ -136,14 +136,39 @@ function formatCalendarSummary(dateStr: string, timeStr: string) {
 }
 
 function getRegistryText(details: LiveCardEventDetails | null | undefined) {
-  const link = readString(details?.registryLink);
+  const link = normalizeLiveCardExternalHref(details?.registryLink);
   if (!link) return "Registry details will be shared by the host.";
   try {
-    const url = new URL(link.startsWith("http") ? link : `https://${link}`);
+    const url = new URL(link);
     return url.hostname.replace(/^www\./, "");
   } catch {
     return link;
   }
+}
+
+function normalizeLiveCardExternalHref(value: unknown): string | null {
+  const raw = readString(value);
+  if (!raw) return null;
+  const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, "")}`;
+  try {
+    const url = new URL(candidate);
+    if (url.protocol !== "https:") return null;
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function getRegistryActionLabel(details: LiveCardEventDetails | null | undefined) {
+  const normalized = readString(details?.category).toLowerCase();
+  return normalized === "birthday" || normalized === "birthdays" || normalized === "housewarming"
+    ? "Gift List"
+    : "Registry";
+}
+
+function getRegistryPanelTitle(details: LiveCardEventDetails | null | undefined) {
+  return getRegistryActionLabel(details) === "Gift List" ? "Gift List" : "Gift Registry";
 }
 
 function resolveLiveCardCalendarMeta(invitationData?: LiveCardInvitationData | null): {
@@ -327,6 +352,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     normalizeComparableText(secondaryDescription) !== normalizeComparableText(detailsDescription);
   const rsvpContact = readString(details?.rsvpContact);
   const rsvpParsed = parseLiveCardRsvpContact(rsvpContact);
+  const registryHref = normalizeLiveCardExternalHref(details?.registryLink);
+  const registryActionLabel = getRegistryActionLabel(details);
+  const registryPanelTitle = getRegistryPanelTitle(details);
   const effectiveShareUrl =
     readString(props.shareUrl) ||
     (props.fallbackShareUrlToWindowLocation && typeof window !== "undefined"
@@ -429,9 +457,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         },
         {
           key: "registry" as const,
-          label: "Registry",
+          label: registryActionLabel,
           icon: Gift,
-          visible: Boolean(readString(details?.registryLink)),
+          visible: Boolean(registryHref),
           onClick: () =>
             props.onActiveTabChange(props.activeTab === "registry" ? "none" : "registry"),
         },
@@ -444,6 +472,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       categorySupportsRsvp,
       details,
       invitationData,
+      registryActionLabel,
+      registryHref,
     ],
   );
 
@@ -690,19 +720,19 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
                 {props.activeTab === "registry" ? (
                   <>
-                    <p className="text-sm font-medium text-neutral-900">Gift Registry</p>
+                    <p className="text-sm font-medium text-neutral-900">{registryPanelTitle}</p>
                     <p className="text-xs text-neutral-500">{getRegistryText(details)}</p>
                     {readString(props.registryHelperText) ? (
                       <p className="text-xs text-neutral-500">{readString(props.registryHelperText)}</p>
                     ) : null}
-                    {readString(details?.registryLink) ? (
+                    {registryHref ? (
                       <button
                         type="button"
-                        onClick={() => window.open(readString(details?.registryLink), "_blank")}
+                        onClick={() => window.open(registryHref, "_blank", "noopener,noreferrer")}
                         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-pink-600 py-2 text-xs font-bold text-white"
                       >
                         <ExternalLink className="h-3 w-3" />
-                        Visit Registry
+                        Visit {registryActionLabel}
                       </button>
                     ) : null}
                   </>

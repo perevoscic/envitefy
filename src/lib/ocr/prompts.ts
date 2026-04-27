@@ -54,7 +54,7 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • When the flyer shows a time window (e.g. "1PM to 4PM", "1:00 PM – 4:00 PM", "from 1 to 4 pm"), set start to the opening time and end to the closing time on the same calendar date as start (both full ISO datetimes). If only one time is shown, end may be null.
   
   CATEGORIES:
-  • One of: Weddings, Birthdays, Baby Showers, Bridal Showers, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.
+  • One of: Weddings, Birthdays, Baby Showers, Bridal Showers, Housewarming, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.
   
   MEDICAL/DENTAL (strict):
   • Clinical tone only. Title is the appointment type (e.g., "Dental Cleaning"). Never invitation wording. Never include DOB.

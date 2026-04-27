@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Calendar, CalendarPlus, MapPin, MessageSquare, Sparkles } from "lucide-react";
+import { Calendar, CalendarPlus, Clock, MapPin, MessageSquare, Sparkles } from "lucide-react";
 import {
   EVENT_SKIN_ACTIONS_CLASS,
   EVENT_SKIN_CONTENT_TOP_PADDING_CLASS,
@@ -144,6 +144,7 @@ export default function BirthdaySkin({
   const displayLocation = String(location || "").trim() || "Location TBD";
   const directionsHref = buildMapsHref(location);
   const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail });
+  const hasRsvpAction = Boolean(directRsvpHref);
   const displayPlanCopy = String(planCopy || "").trim() || "Games, Food & Fun!";
   const displayAttire = String(attire || "").trim();
   const displayRegistryUrl = String(registryUrl || "").trim();
@@ -288,9 +289,15 @@ export default function BirthdaySkin({
               <InfoBlock
                 icon={<Calendar className="h-8 w-8" />}
                 swatchColor="var(--theme-primary)"
-                label="Party time"
+                label="When"
                 title={displayDate}
-                subtitle={displayTime}
+              />
+
+              <InfoBlock
+                icon={<Clock className="h-8 w-8" />}
+                swatchColor="var(--theme-secondary)"
+                label="At"
+                title={displayTime}
               />
 
               <InfoBlock
@@ -338,16 +345,19 @@ export default function BirthdaySkin({
               textColor={primaryTileTextColor}
               onClick={() => setShowCalendarMenu(true)}
               disabled={!calendarLinks || previewMode}
+              wide={!hasRsvpAction}
             />
 
-            <ActionTile
-              icon={<MessageSquare className="h-10 w-10" />}
-              label="RSVP Now"
-              backgroundColor="var(--theme-secondary)"
-              textColor={secondaryTileTextColor}
-              href={directRsvpHref}
-              disabled={!directRsvpHref || previewMode}
-            />
+            {hasRsvpAction ? (
+              <ActionTile
+                icon={<MessageSquare className="h-10 w-10" />}
+                label="RSVP Now"
+                backgroundColor="var(--theme-secondary)"
+                textColor={secondaryTileTextColor}
+                href={directRsvpHref}
+                disabled={previewMode}
+              />
+            ) : null}
 
             <motion.section
               initial={{ y: 20, opacity: 0 }}
@@ -397,7 +407,7 @@ export default function BirthdaySkin({
               >
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
-                    Registry
+                    Gift List
                   </div>
                   <div className="mt-2 text-lg font-bold text-black/90">View Gift List</div>
                 </div>
@@ -557,7 +567,7 @@ function InfoBlock({
   swatchColor: string;
   label: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   divider?: boolean;
 }) {
   return (
@@ -577,7 +587,7 @@ function InfoBlock({
             {label}
           </div>
           <div className="text-2xl font-bold text-black/90 md:text-3xl">{title}</div>
-          <div className="text-base text-black/50 md:text-lg">{subtitle}</div>
+          {subtitle ? <div className="text-base text-black/50 md:text-lg">{subtitle}</div> : null}
         </div>
       </div>
     </div>
@@ -592,6 +602,7 @@ function ActionTile({
   onClick,
   href,
   disabled = false,
+  wide = false,
 }: {
   icon: ReactNode;
   label: string;
@@ -600,6 +611,7 @@ function ActionTile({
   onClick?: () => void;
   href?: string | null;
   disabled?: boolean;
+  wide?: boolean;
 }) {
   const content = (
     <>
@@ -608,8 +620,12 @@ function ActionTile({
     </>
   );
 
-  const className =
-    "flex min-h-[10.5rem] w-full items-center justify-center rounded-[3rem] px-4 py-6 shadow-[0_22px_54px_rgba(59,74,84,0.12)] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[12rem] sm:px-5 sm:py-7 md:aspect-square md:min-h-0 md:p-8";
+  const className = wide
+    ? "col-span-2 flex min-h-[6.75rem] w-full items-center justify-center rounded-[2.5rem] px-6 py-5 shadow-[0_22px_54px_rgba(59,74,84,0.12)] transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[7.5rem] sm:px-7 sm:py-6 md:min-h-[8rem] md:rounded-[3rem] md:px-10 md:py-7"
+    : "flex min-h-[10.5rem] w-full items-center justify-center rounded-[3rem] px-4 py-6 shadow-[0_22px_54px_rgba(59,74,84,0.12)] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[12rem] sm:px-5 sm:py-7 md:aspect-square md:min-h-0 md:p-8";
+  const contentClassName = wide
+    ? "flex flex-row items-center justify-center gap-4"
+    : "flex flex-col items-center gap-4";
 
   if (href && !disabled) {
     return (
@@ -620,7 +636,7 @@ function ActionTile({
         className={className}
         style={{ backgroundColor, color: textColor }}
       >
-        <div className="flex flex-col items-center gap-4">{content}</div>
+        <div className={contentClassName}>{content}</div>
       </a>
     );
   }
@@ -633,7 +649,7 @@ function ActionTile({
       className={className}
       style={{ backgroundColor, color: textColor }}
     >
-      <div className="flex flex-col items-center gap-4">{content}</div>
+      <div className={contentClassName}>{content}</div>
     </button>
   );
 }

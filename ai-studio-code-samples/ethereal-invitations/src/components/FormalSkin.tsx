@@ -46,7 +46,8 @@ export function FormalSkin({ data, image, onReset, showCalendarMenu, setShowCale
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0 border-2 border-ink">
         {/* Technical Data Column */}
         <div className="lg:col-span-4 border-r-2 border-ink p-10 space-y-12 bg-gray-50">
-          <TechnicalItem label="Schedule" value={data.date} subValue={data.time} />
+          <TechnicalItem label="When" value={data.date} />
+          <TechnicalItem label="At" value={data.time} />
           <TechnicalItem label="Coordinate" value={data.location} subValue="Physical Access Point" />
           
           {data.rsvp && (
@@ -144,12 +145,12 @@ export function FormalSkin({ data, image, onReset, showCalendarMenu, setShowCale
   );
 }
 
-function TechnicalItem({ label, value, subValue }: { label: string, value: string, subValue: string }) {
+function TechnicalItem({ label, value, subValue }: { label: string, value: string, subValue?: string }) {
   return (
     <div className="space-y-2">
       <div className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30 select-none">{label}</div>
       <div className="text-2xl font-black leading-tight uppercase tracking-tighter">{value}</div>
-      <div className="text-[12px] font-bold opacity-50">{subValue}</div>
+      {subValue && <div className="text-[12px] font-bold opacity-50">{subValue}</div>}
     </div>
   );
 }

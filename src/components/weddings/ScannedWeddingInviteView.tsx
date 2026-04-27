@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, Download, MapPin, Share2 } from "lucide-react";
+import { Calendar, Clock, Download, MapPin, Share2 } from "lucide-react";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import {
   EVENT_SKIN_ACTIONS_CLASS,
@@ -299,14 +299,22 @@ export default function ScannedWeddingInviteView({
             }}
           >
             <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-12">
-              <DetailItem
-                icon={<Calendar className="h-5 w-5" />}
-                label="When"
-                title={displayDate}
-                subtitle={displayTime}
-                colors={colors}
-                darkMode={isNoirModern}
-              />
+              <div className="space-y-10">
+                <DetailItem
+                  icon={<Calendar className="h-5 w-5" />}
+                  label="When"
+                  title={displayDate}
+                  colors={colors}
+                  darkMode={isNoirModern}
+                />
+                <DetailItem
+                  icon={<Clock className="h-5 w-5" />}
+                  label="At"
+                  title={displayTime}
+                  colors={colors}
+                  darkMode={isNoirModern}
+                />
+              </div>
               <DetailItem
                 icon={<MapPin className="h-5 w-5" />}
                 label="Where"
@@ -758,7 +766,7 @@ function DetailItem({
   icon: ReactNode;
   label: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   colors: ReturnType<typeof normalizeWeddingFlyerColors>;
   darkMode?: boolean;
 }) {
@@ -784,12 +792,14 @@ function DetailItem({
       >
         {title}
       </div>
-      <div
-        className="max-w-md text-[1rem] font-light leading-relaxed"
-        style={{ color: darkMode ? "rgba(255,255,255,0.72)" : "rgba(0,0,0,0.45)" }}
-      >
-        {subtitle}
-      </div>
+      {subtitle ? (
+        <div
+          className="max-w-md text-[1rem] font-light leading-relaxed"
+          style={{ color: darkMode ? "rgba(255,255,255,0.72)" : "rgba(0,0,0,0.45)" }}
+        >
+          {subtitle}
+        </div>
+      ) : null}
     </div>
   );
 }

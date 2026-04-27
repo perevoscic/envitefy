@@ -9,6 +9,7 @@ function readSource(relPath) {
 
 test("ocr skin inference dispatches through the resolved studio provider", () => {
   const source = readSource("src/lib/ocr/skin.ts");
+  const backgroundSource = readSource("src/lib/ocr/skin-background.ts");
 
   assert.match(source, /import \{ resolveStudioProvider \} from "@\/lib\/studio\/provider";/);
   assert.match(source, /buildOcrSkinBackgroundPromptRules/);
@@ -32,6 +33,13 @@ test("ocr skin inference dispatches through the resolved studio provider", () =>
   assert.match(source, /required: \["skinId", "palette", "background"\]/);
   assert.match(source, /normalizeOcrSkinBackground/);
   assert.match(source, /resolveOcrSkinBackground/);
+  assert.match(source, /"housewarming"/);
+  assert.match(source, /housewarming: "Housewarming"/);
+  assert.match(backgroundSource, /normalized === "housewarming"/);
+  assert.match(
+    backgroundSource,
+    /housewarming: \["confetti", "dot", "star", "banner", "botanical-sprig"\]/,
+  );
 });
 
 test("ocr pipeline adds provider-aware ocrSkin for invite-like OCR categories", () => {

@@ -208,6 +208,13 @@ export function hasRegistryContent(details: EventDetails) {
   );
 }
 
+export function getStudioRegistryLinkLabel(category: InviteCategory | string | null | undefined) {
+  const normalized = readString(category).toLowerCase();
+  return normalized === "birthday" || normalized === "birthdays" || normalized === "housewarming"
+    ? "Gift List"
+    : "Registry";
+}
+
 export function accentClassForStudioRsvpChoice(choice: LiveCardRsvpChoice["key"]) {
   if (choice === "yes") return "border-emerald-200 bg-emerald-50 text-emerald-700";
   if (choice === "no") return "border-rose-200 bg-rose-50 text-rose-700";
@@ -424,7 +431,9 @@ export function buildDescription(details: EventDetails) {
 export function buildLinks(details: EventDetails) {
   return [
     details.ticketsLink ? { label: "Tickets", url: details.ticketsLink } : null,
-    details.registryLink ? { label: "Registry", url: details.registryLink } : null,
+    details.registryLink
+      ? { label: getStudioRegistryLinkLabel(details.category), url: details.registryLink }
+      : null,
     details.weddingWebsite ? { label: "Website", url: details.weddingWebsite } : null,
     details.optionalLink ? { label: "Event Link", url: details.optionalLink } : null,
   ].filter((value): value is { label: string; url: string } => Boolean(value));
@@ -900,7 +909,9 @@ export function normalizeStudioEventCategory(category: InviteCategory): string {
     case "Game Day":
       return "sport events";
     case "Bridal Shower":
+      return "bridal showers";
     case "Housewarming":
+      return "housewarming";
     case "Anniversary":
       return "party";
     default:
@@ -989,7 +1000,10 @@ export function buildStudioPublishPayload(item: MediaItem, imageUrl: string | nu
       ? { label: "Tickets", url: normalizeStudioExternalUrl(details.ticketsLink) }
       : null,
     readString(details.registryLink)
-      ? { label: "Registry", url: normalizeStudioExternalUrl(details.registryLink) }
+      ? {
+          label: getStudioRegistryLinkLabel(details.category),
+          url: normalizeStudioExternalUrl(details.registryLink),
+        }
       : null,
     readString(details.weddingWebsite)
       ? { label: "Wedding Website", url: normalizeStudioExternalUrl(details.weddingWebsite) }

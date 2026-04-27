@@ -22,6 +22,9 @@ test("studio live-card builders preserve local invitation data and default gener
   assert.match(source, /if \(options\?\.existingItemType === "page"\) return "page";/);
   assert.match(source, /return "page";/);
   assert.match(source, /case "Game Day":\s*return "sport events";/);
+  assert.match(source, /case "Bridal Shower":\s*return "bridal showers";/);
+  assert.match(source, /case "Housewarming":\s*return "housewarming";/);
+  assert.match(source, /label: getStudioRegistryLinkLabel\(details\.category\)/);
   assert.match(
     source,
     /eventYear: shouldIncludeStudioEventYear\(details\) \? getStudioEventYear\(details\) \|\| null : null,/,
@@ -74,6 +77,10 @@ test("studio preview uses floating glass controls for poster-first live cards", 
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
   assert.match(surfaceSource, /export function isPosterFirstHeroCard/);
+  assert.match(surfaceSource, /function getRegistryActionLabel/);
+  assert.match(surfaceSource, /label: registryActionLabel/);
+  assert.match(surfaceSource, /visible: Boolean\(registryHref\)/);
+  assert.match(surfaceSource, /Visit \{registryActionLabel\}/);
   assert.match(surfaceSource, /invitationData\?\.heroTextMode !== "image"/);
   assert.match(
     surfaceSource,

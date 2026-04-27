@@ -27,6 +27,23 @@ test("studio birthday form uses the unified prototype layout with shared field g
   assert.match(fieldConfigSource, /label: "Person's Name"/);
   assert.match(fieldConfigSource, /label: "RSVP"/);
   assert.match(fieldConfigSource, /placeholder: "Phone or Email"/);
+  assert.match(fieldConfigSource, /label: "Gift List Link"[\s\S]*key: "registryLink"/);
+  assert.match(
+    fieldConfigSource,
+    /pickCategoryFields\("Birthday", \["name", "age", "registryLink"\]\)/,
+  );
+  assert.match(
+    fieldConfigSource,
+    /pickCategoryFields\("Wedding", \["coupleNames", "eventTitle", "registryLink"\]\)/,
+  );
+  assert.match(
+    fieldConfigSource,
+    /pickCategoryFields\("Bridal Shower", \["honoreeNames", "hostedBy", "registryLink"\]\)/,
+  );
+  assert.match(
+    fieldConfigSource,
+    /pickCategoryFields\("Housewarming", \["honoreeNames", "registryLink"\]\)/,
+  );
 
   assert.match(
     fieldControlsSource,

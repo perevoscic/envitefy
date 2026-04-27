@@ -761,6 +761,9 @@ export function detectCategory(fullText: string): string | null {
       return "Engagements";
     }
     if (/(anniversary|vow\s*renewal)/i.test(fullText)) return "Anniversaries";
+    if (/(house\s*warming|housewarming|new\s+home|new\s+place|new\s+house)/i.test(fullText)) {
+      return "Housewarming";
+    }
     if (
       /(baptism|christening|communion|first holy communion|confirmation|bar mitzvah|bat mitzvah|baby dedication)/i.test(
         fullText,

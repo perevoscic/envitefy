@@ -5,6 +5,7 @@ export type OcrSkinCategory =
   | "bridal-shower"
   | "engagement"
   | "anniversary"
+  | "housewarming"
   | "graduation"
   | "religious"
   | "general";
@@ -95,6 +96,7 @@ const CATEGORY_OBJECT_KINDS: Record<OcrSkinCategory, readonly OcrSkinBackgroundO
   "bridal-shower": ["botanical-sprig", "leaf", "frame-corner", "ring", "pearl"],
   engagement: ["botanical-sprig", "leaf", "frame-corner", "ring", "pearl"],
   anniversary: ["botanical-sprig", "leaf", "frame-corner", "ring", "pearl"],
+  housewarming: ["confetti", "dot", "star", "banner", "botanical-sprig"],
   graduation: ["cap", "tassel", "diploma", "star", "banner", "confetti"],
   religious: ["botanical-sprig", "leaf", "dot", "star", "banner"],
   general: ["confetti", "dot", "star", "banner", "botanical-sprig"],
@@ -114,6 +116,7 @@ const CATEGORY_FALLBACK_STYLE: Record<
   "bridal-shower": { texture: "paper", density: "low", placement: "corners" },
   engagement: { texture: "paper", density: "low", placement: "corners" },
   anniversary: { texture: "paper", density: "low", placement: "corners" },
+  housewarming: { texture: "grain", density: "low", placement: "balanced" },
   graduation: { texture: "grain", density: "medium", placement: "balanced" },
   religious: { texture: "paper", density: "low", placement: "balanced" },
   general: { texture: "grain", density: "low", placement: "balanced" },
@@ -140,6 +143,14 @@ export function normalizeOcrSkinCategory(value: unknown): OcrSkinCategory | null
   }
   if (normalized === "engagement" || normalized === "engagements") return "engagement";
   if (normalized === "anniversary" || normalized === "anniversaries") return "anniversary";
+  if (
+    normalized === "housewarming" ||
+    normalized === "housewarmings" ||
+    normalized === "house warming" ||
+    normalized === "house warmings"
+  ) {
+    return "housewarming";
+  }
   if (normalized === "graduation" || normalized === "graduations") return "graduation";
   if (
     normalized === "religious event" ||
