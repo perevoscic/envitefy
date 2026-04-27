@@ -306,6 +306,52 @@ const buildFallbackRangeLabel = (
   return `${trimmedStart} – ${trimmedEnd}`;
 };
 
+const collapseDuplicateRangeLabel = (label: string | null | undefined): string | null => {
+  const trimmed = String(label || "").trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split(/\s+[–-]\s+/);
+  if (parts.length !== 2) return trimmed;
+  const normalize = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[.,]/g, "")
+      .replace(/\s+/g, " ");
+  return normalize(parts[0]) === normalize(parts[1]) ? parts[0].trim() : trimmed;
+};
+
+const EXPLICIT_TIME_RANGE_REGEX =
+  /\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\s*(?:-|–|to)\s*\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b/i;
+
+const shouldHideInferredOcrEndTime = (
+  payload: Record<string, unknown> | null | undefined,
+  startInput: string | null | undefined,
+  endInput: string | null | undefined,
+): boolean => {
+  if (!payload || !startInput || !endInput || Boolean(payload.allDay)) return false;
+  const createdVia = typeof payload.createdVia === "string" ? payload.createdVia.trim().toLowerCase() : "";
+  if (!createdVia.startsWith("ocr")) return false;
+  const hints = [
+    payload.time,
+    payload.timeLabel,
+    payload.when,
+    payload.whenLabel,
+    payload.scheduleLine,
+    payload.description,
+  ]
+    .map((value) => (typeof value === "string" ? value.trim() : ""))
+    .filter(Boolean);
+  if (hints.some((value) => EXPLICIT_TIME_RANGE_REGEX.test(value))) return false;
+  try {
+    const start = parseDatePreserveFloating(startInput).date;
+    const end = parseDatePreserveFloating(endInput).date;
+    const diffMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
+    return diffMinutes >= 89 && diffMinutes <= 91;
+  } catch {
+    return false;
+  }
+};
+
 function formatTimeAndDate(
   startInput: string | null | undefined,
   endInput: string | null | undefined,
@@ -378,6 +424,31 @@ function formatTimeAndDate(
     return { time, date };
   } catch {
     return { time: null, date: null };
+  }
+}
+
+function formatInviteWeekdayDateLabel(
+  startInput: string | null | undefined,
+  options?: { timeZone?: string | null },
+): string | null {
+  if (!startInput) return null;
+  try {
+    const parsed = parseDatePreserveFloating(startInput);
+    const tz = parsed.floating ? "UTC" : options?.timeZone || undefined;
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      timeZone: tz,
+    });
+    const parts = formatter.formatToParts(parsed.date);
+    const weekday = parts.find((part) => part.type === "weekday")?.value?.trim() || "";
+    const month = parts.find((part) => part.type === "month")?.value?.trim() || "";
+    const day = parts.find((part) => part.type === "day")?.value?.trim() || "";
+    if (!weekday || !month || !day) return null;
+    return `${weekday}, ${month} ${day}`;
+  } catch {
+    return null;
   }
 }
 
@@ -937,14 +1008,31 @@ export default async function EventPage({
     (typeof data?.endISO === "string" && data.endISO) ||
     (typeof data?.end === "string" && data.end) ||
     null;
-  const formattedTimeAndDate = formatTimeAndDate(startForDisplay, endForDisplay, {
+  const hideInferredOcrEndTime = shouldHideInferredOcrEndTime(
+    data as Record<string, unknown>,
+    startForDisplay,
+    endForDisplay,
+  );
+  const endForDisplayLabel = hideInferredOcrEndTime ? null : endForDisplay;
+  const formattedTimeAndDateBase = formatTimeAndDate(startForDisplay, endForDisplayLabel, {
     timeZone: (typeof data?.timezone === "string" && data.timezone) || undefined,
     allDay: Boolean(data?.allDay),
   });
-  let whenLabel = formatEventRangeDisplay(startForDisplay, endForDisplay, {
+  const formattedTimeAndDate = {
+    ...formattedTimeAndDateBase,
+    date: collapseDuplicateRangeLabel(formattedTimeAndDateBase.date),
+  };
+  const scannedInviteDateLabel =
+    formatInviteWeekdayDateLabel(startForDisplay, {
+      timeZone: (typeof data?.timezone === "string" && data.timezone) || undefined,
+    }) ||
+    formattedTimeAndDate.date ||
+    null;
+  let whenLabel = formatEventRangeDisplay(startForDisplay, endForDisplayLabel, {
     timeZone: (typeof data?.timezone === "string" && data.timezone) || undefined,
     allDay: Boolean(data?.allDay),
   });
+  whenLabel = collapseDuplicateRangeLabel(whenLabel);
   const rawStartLabel = typeof data?.start === "string" ? (data.start as string) : null;
   const rawEndLabel = typeof data?.end === "string" ? (data.end as string) : null;
   const fallbackRangeLabel = buildFallbackRangeLabel(rawStartLabel, rawEndLabel);
@@ -959,7 +1047,7 @@ export default async function EventPage({
           ? computedTokens[computedTokens.length - 1]
           : computedTokens[0] || null;
       const rawStartToken = extractTimeTokens(rawStartLabel)[0] || null;
-      const rawEndToken = extractTimeTokens(rawEndLabel)[0] || null;
+      const rawEndToken = hideInferredOcrEndTime ? null : extractTimeTokens(rawEndLabel)[0] || null;
       const mismatch =
         (rawStartToken &&
           (!computedStartToken || !timeTokensEquivalent(rawStartToken, computedStartToken))) ||
@@ -1328,7 +1416,7 @@ export default async function EventPage({
           (typeof data?.childName === "string" && data.childName.trim()) ||
           null
         }
-        dateLabel={formattedTimeAndDate.date || whenLabel || null}
+        dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
         location={locationText || venueText || null}
         imageUrl={scannedBirthdayImageUrl}
@@ -1536,7 +1624,7 @@ export default async function EventPage({
         eventId={row.id}
         title={title}
         location={locationText || venueText || null}
-        dateLabel={formattedTimeAndDate.date || whenLabel || null}
+        dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
         imageUrl={scannedWeddingImageUrl}
         shareUrl={shareUrl}
@@ -1621,7 +1709,7 @@ export default async function EventPage({
       return (
         <GraduationSkin
           title={title}
-          dateLabel={formattedTimeAndDate.date || whenLabel || null}
+          dateLabel={scannedInviteDateLabel || whenLabel || null}
           timeLabel={formattedTimeAndDate.time || null}
           location={locationText || venueText || null}
           imageUrl={scannedInviteImageUrl}
@@ -1644,7 +1732,7 @@ export default async function EventPage({
       <ScannedInviteSkin
         title={title}
         categoryLabel={categoryRaw || "General Event"}
-        dateLabel={formattedTimeAndDate.date || whenLabel || null}
+        dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
         location={locationText || venueText || null}
         imageUrl={scannedInviteImageUrl}
@@ -1916,10 +2004,14 @@ export default async function EventPage({
                 )}
                 {whenLabel ? (
                   (() => {
-                    const timeAndDate = formatTimeAndDate(startForDisplay, endForDisplay, {
+                    const timeAndDateBase = formatTimeAndDate(startForDisplay, endForDisplayLabel, {
                       timeZone: (typeof data?.timezone === "string" && data.timezone) || undefined,
                       allDay: Boolean(data?.allDay),
                     });
+                    const timeAndDate = {
+                      ...timeAndDateBase,
+                      date: collapseDuplicateRangeLabel(timeAndDateBase.date),
+                    };
 
                     return (
                       <div className="col-span-2">
