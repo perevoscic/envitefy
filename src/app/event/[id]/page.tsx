@@ -338,6 +338,8 @@ const collapseDuplicateRangeLabel = (label: string | null | undefined): string |
 
 const EXPLICIT_TIME_RANGE_REGEX =
   /\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\s*(?:-|–|to)\s*\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b/i;
+const EXPLICIT_TIME_TEXT_REGEX =
+  /\b(?:[01]?\d|2[0-3]):[0-5]\d\s*(?:a\.?m\.?|p\.?m\.?)?\b|\b\d{1,2}\s*(?:a\.?m\.?|p\.?m\.?)\b|\b(?:noon|midnight)\b/i;
 
 const shouldHideInferredOcrEndTime = (
   payload: Record<string, unknown> | null | undefined,
@@ -368,12 +370,66 @@ const shouldHideInferredOcrEndTime = (
   }
 };
 
+const isMidnightDateTime = (
+  input: string | null | undefined,
+  timeZone?: string | null,
+): boolean => {
+  if (!input) return false;
+  try {
+    const parsed = parseDatePreserveFloating(input);
+    if (!parsed.floating && timeZone) {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+        timeZone,
+      }).formatToParts(parsed.date);
+      const valueFor = (type: string) => Number(parts.find((part) => part.type === type)?.value);
+      return valueFor("hour") === 0 && valueFor("minute") === 0 && valueFor("second") === 0;
+    }
+    return (
+      parsed.date.getUTCHours() === 0 &&
+      parsed.date.getUTCMinutes() === 0 &&
+      parsed.date.getUTCSeconds() === 0
+    );
+  } catch {
+    return false;
+  }
+};
+
+const hasExplicitOcrTimeHint = (payload: Record<string, unknown> | null | undefined): boolean => {
+  if (!payload) return false;
+  const hints = [
+    payload.time,
+    payload.timeLabel,
+    payload.when,
+    payload.whenLabel,
+    payload.scheduleLine,
+    payload.description,
+  ];
+  return hints.some((value) => typeof value === "string" && EXPLICIT_TIME_TEXT_REGEX.test(value));
+};
+
+const shouldHideMissingOcrStartTime = (
+  payload: Record<string, unknown> | null | undefined,
+  startInput: string | null | undefined,
+): boolean => {
+  if (!payload || !startInput || Boolean(payload.allDay)) return false;
+  const createdVia = typeof payload.createdVia === "string" ? payload.createdVia.trim().toLowerCase() : "";
+  if (!createdVia.startsWith("ocr")) return false;
+  if (payload.timeFound === true) return false;
+  if (payload.timeFound === false) return true;
+  const timeZone = typeof payload.timezone === "string" ? payload.timezone.trim() : "";
+  return isMidnightDateTime(startInput, timeZone || null) && !hasExplicitOcrTimeHint(payload);
+};
+
 function formatTimeAndDate(
   startInput: string | null | undefined,
   endInput: string | null | undefined,
-  options?: { timeZone?: string | null; allDay?: boolean },
+  options?: { timeZone?: string | null; allDay?: boolean; hideTime?: boolean },
 ): { time: string | null; date: string | null } {
-  const { timeZone, allDay } = options || {};
+  const { timeZone, allDay, hideTime } = options || {};
   if (!startInput) return { time: null, date: null };
 
   try {
@@ -424,7 +480,9 @@ function formatTimeAndDate(
     let time: string | null = null;
     let date: string | null = null;
 
-    if (end) {
+    if (hideTime) {
+      date = end && !sameDay ? `${dateFmt.format(start)} – ${dateFmt.format(end)}` : dateFmt.format(start);
+    } else if (end) {
       if (sameDay) {
         time = `${timeFmt.format(start)} – ${timeFmt.format(end)}`;
         date = dateFmt.format(start);
@@ -512,9 +570,9 @@ function splitAddress(address: string | null | undefined): {
 function formatEventRangeDisplay(
   startInput: string | null | undefined,
   endInput: string | null | undefined,
-  options?: { timeZone?: string | null; allDay?: boolean },
+  options?: { timeZone?: string | null; allDay?: boolean; hideTime?: boolean },
 ): string | null {
-  const { timeZone, allDay } = options || {};
+  const { timeZone, allDay, hideTime } = options || {};
   if (!startInput) return null;
   try {
     const startParsed = parseDatePreserveFloating(startInput);
@@ -551,6 +609,9 @@ function formatEventRangeDisplay(
       year: "numeric",
       timeZone: tz,
     });
+    if (hideTime) {
+      return end && !sameDay ? `${dateFmt.format(start)} – ${dateFmt.format(end)}` : dateFmt.format(start);
+    }
     const timeFmt = new Intl.DateTimeFormat(undefined, {
       hour: "numeric",
       minute: "2-digit",
@@ -1033,10 +1094,15 @@ export default async function EventPage({
     startForDisplay,
     endForDisplay,
   );
-  const endForDisplayLabel = hideInferredOcrEndTime ? null : endForDisplay;
+  const hideMissingOcrStartTime = shouldHideMissingOcrStartTime(
+    data as Record<string, unknown>,
+    startForDisplay,
+  );
+  const endForDisplayLabel = hideInferredOcrEndTime || hideMissingOcrStartTime ? null : endForDisplay;
   const formattedTimeAndDateBase = formatTimeAndDate(startForDisplay, endForDisplayLabel, {
     timeZone: (typeof data?.timezone === "string" && data.timezone) || undefined,
     allDay: Boolean(data?.allDay),
+    hideTime: hideMissingOcrStartTime,
   });
   const formattedTimeAndDate = {
     ...formattedTimeAndDateBase,
@@ -1051,6 +1117,7 @@ export default async function EventPage({
   let whenLabel = formatEventRangeDisplay(startForDisplay, endForDisplayLabel, {
     timeZone: (typeof data?.timezone === "string" && data.timezone) || undefined,
     allDay: Boolean(data?.allDay),
+    hideTime: hideMissingOcrStartTime,
   });
   whenLabel = collapseDuplicateRangeLabel(whenLabel);
   const rawStartLabel = typeof data?.start === "string" ? (data.start as string) : null;
@@ -1309,8 +1376,13 @@ export default async function EventPage({
   );
   const rawEndIso =
     (data?.endISO as string | undefined) || (typeof data?.end === "string" ? data.end : null);
+  const calendarAllDay = Boolean(data?.allDay) || hideMissingOcrStartTime;
   const calendarEndIso = calendarStartIso
-    ? ensureEndIso(calendarStartIso, normalizeIso(rawEndIso), Boolean(data?.allDay))
+    ? ensureEndIso(
+        calendarStartIso,
+        hideMissingOcrStartTime ? null : normalizeIso(rawEndIso),
+        calendarAllDay,
+      )
     : null;
   const calendarLinks =
     calendarStartIso && calendarEndIso
@@ -1321,7 +1393,7 @@ export default async function EventPage({
           startIso: calendarStartIso,
           endIso: calendarEndIso,
           timezone: (data?.timezone as string | undefined) || "",
-          allDay: Boolean(data?.allDay),
+          allDay: calendarAllDay,
           reminders: Array.isArray((data as any)?.reminders)
             ? ((data as any).reminders as { minutes?: number }[])
                 .map((r) => (typeof r?.minutes === "number" ? r.minutes : null))

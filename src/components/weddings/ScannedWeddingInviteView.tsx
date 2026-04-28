@@ -122,12 +122,11 @@ export default function ScannedWeddingInviteView({
   const couple = useMemo(() => parseWeddingCoupleNames(title), [title]);
   const displayLocation = location?.trim() || "Location TBD";
   const displayDate = dateLabel?.trim() || "Date TBD";
-  const displayTime = timeLabel?.trim() || "Time TBD";
+  const displayTime = timeLabel?.trim() || "";
   const hasRsvp = Boolean(rsvpName || rsvpPhone || rsvpEmail || rsvpUrl);
   const showRsvpSection = hasRsvp || (previewMode && showRsvpPreview);
   const hasRegistries = registryCards.length > 0;
-  const timelineRows =
-    scheduleRows.length > 0 ? scheduleRows : [{ time: displayTime, title: "Wedding Starts" }];
+  const timelineRows = scheduleRows.length > 0 ? scheduleRows : [];
   const mutedTextColor = isNoirModern ? "rgba(255,255,255,0.72)" : "rgba(0,0,0,0.45)";
   const subtleTextColor = isNoirModern ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)";
   const thinBorderColor = isNoirModern ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.05)";
@@ -307,13 +306,15 @@ export default function ScannedWeddingInviteView({
                   colors={colors}
                   darkMode={isNoirModern}
                 />
-                <DetailItem
-                  icon={<Clock className="h-5 w-5" />}
-                  label="At"
-                  title={displayTime}
-                  colors={colors}
-                  darkMode={isNoirModern}
-                />
+                {displayTime ? (
+                  <DetailItem
+                    icon={<Clock className="h-5 w-5" />}
+                    label="At"
+                    title={displayTime}
+                    colors={colors}
+                    darkMode={isNoirModern}
+                  />
+                ) : null}
               </div>
               <DetailItem
                 icon={<MapPin className="h-5 w-5" />}
@@ -325,25 +326,27 @@ export default function ScannedWeddingInviteView({
               />
             </div>
 
-            <div className="mt-10 pt-10" style={{ borderTop: `1px solid ${thinBorderColor}` }}>
-              <div
-                className="mb-8 text-[11px] font-semibold uppercase tracking-[0.34em]"
-                style={{ color: colors.accent }}
-              >
-                Event Schedule
+            {timelineRows.length > 0 ? (
+              <div className="mt-10 pt-10" style={{ borderTop: `1px solid ${thinBorderColor}` }}>
+                <div
+                  className="mb-8 text-[11px] font-semibold uppercase tracking-[0.34em]"
+                  style={{ color: colors.accent }}
+                >
+                  Event Schedule
+                </div>
+                <div className="space-y-5">
+                  {timelineRows.map((row) => (
+                    <ScheduleRow
+                      key={`${row.time}-${row.title}`}
+                      time={row.time}
+                      title={row.title}
+                      colors={colors}
+                      darkMode={isNoirModern}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="space-y-5">
-                {timelineRows.map((row) => (
-                  <ScheduleRow
-                    key={`${row.time}-${row.title}`}
-                    time={row.time}
-                    title={row.title}
-                    colors={colors}
-                    darkMode={isNoirModern}
-                  />
-                ))}
-              </div>
-            </div>
+            ) : null}
           </section>
 
           {showRsvpSection ? (

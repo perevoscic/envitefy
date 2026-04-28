@@ -146,7 +146,7 @@ export default function BirthdaySkin({
 
   const displayName = extractHonoreeName(title, honoreeName);
   const displayDate = String(dateLabel || "").trim() || "Date TBD";
-  const displayTime = String(timeLabel || "").trim() || "Time TBD";
+  const displayTime = String(timeLabel || "").trim();
   const displayLocation = String(location || "").trim() || "Location TBD";
   const directionsHref = buildMapsHref(location);
   const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail, title, shareUrl });
@@ -299,12 +299,14 @@ export default function BirthdaySkin({
                 title={displayDate}
               />
 
-              <InfoBlock
-                icon={<Clock className="h-8 w-8" />}
-                swatchColor="var(--theme-secondary)"
-                label="At"
-                title={displayTime}
-              />
+              {displayTime ? (
+                <InfoBlock
+                  icon={<Clock className="h-8 w-8" />}
+                  swatchColor="var(--theme-secondary)"
+                  label="At"
+                  title={displayTime}
+                />
+              ) : null}
 
               <InfoBlock
                 icon={<MapPin className="h-8 w-8" />}

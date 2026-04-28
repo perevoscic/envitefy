@@ -69,6 +69,15 @@ function toLocalNoZ(date: Date | null) {
   return `${y}-${m}-${day}T${hh}:${mm}:${ss}`;
 }
 
+function hasExplicitTimeText(text: string): boolean {
+  return (
+    /\b(?:[01]?\d|2[0-3]):[0-5]\d\s*(?:a\.?m\.?|p\.?m\.?)?\b/i.test(text) ||
+    /\b\d{1,2}\s*(?:a\.?m\.?|p\.?m\.?)\b/i.test(text) ||
+    /\b(?:noon|midnight)\b/i.test(text) ||
+    Boolean(detectSpelledTime(text))
+  );
+}
+
 /** Party headline from title when combined with birthday (e.g. "Name's 9th Birthday — Pool Bash"). */
 function extractBirthdayPartyThemeFromTitle(title: string): string | null {
   const t = title.trim();
@@ -369,6 +378,7 @@ export async function handleOcrRequest(request: Request) {
       .map((line) => line.trim())
       .filter(Boolean);
     const title = pickTitle(lines, raw);
+    const rawHasExplicitTime = hasExplicitTimeText(raw);
 
     const parsed = chrono.parse(raw, new Date(), { forwardDate: true });
     const timeLike = /\b(\d{1,2}(:\d{2})?\s?(am|pm))\b/i;
@@ -377,6 +387,7 @@ export async function handleOcrRequest(request: Request) {
     let start: Date | null = null;
     let end: Date | null = null;
     let parsedText: string | null = null;
+    let parsedHadExplicitTime = false;
 
     const isMedical =
       /(doctor|dr\.|dentist|dental|clinic|hospital|ascension|sacred\s*heart)/i.test(raw) &&
@@ -471,6 +482,7 @@ export async function handleOcrRequest(request: Request) {
         chosenAny?.start?.knownValues?.month && chosenAny?.start?.knownValues?.day,
       );
       const chosenHasExplicitTime = typeof chosenAny?.start?.knownValues?.hour === "number";
+      parsedHadExplicitTime = chosenHasExplicitTime;
       if (start && chosenHasExplicitDate && !chosenHasExplicitTime) {
         const timeOnly = byPreference.find((value: any) => {
           const kv = value?.start?.knownValues || {};
@@ -480,6 +492,7 @@ export async function handleOcrRequest(request: Request) {
         }) as any | undefined;
 
         if (timeOnly) {
+          parsedHadExplicitTime = true;
           const timeStart: Date = timeOnly.start?.date() as Date;
           if (timeStart && start) {
             const merged = new Date(start);
@@ -1152,6 +1165,7 @@ export async function handleOcrRequest(request: Request) {
       title: finalTitle,
       start: toLocalNoZ(finalStart),
       end: toLocalNoZ(finalEnd),
+      timeFound: rawHasExplicitTime || parsedHadExplicitTime,
       location: finalAddress,
       venue: finalVenue || null,
       description,

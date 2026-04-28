@@ -32,6 +32,7 @@ type EventFields = {
   title: string;
   start: string | null;
   end: string | null;
+  timeFound?: boolean | null;
   location: string;
   description: string;
   timezone: string;
@@ -800,10 +801,13 @@ export default function Dashboard({
       const timezone = input.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const startIso = parseStartToIso(input.start, timezone);
       if (!startIso) return null;
+      const hasExplicitTime = input.timeFound !== false;
       const endIso = input.end
         ? parseStartToIso(input.end, timezone) ||
           new Date(new Date(startIso).getTime() + 90 * 60 * 1000).toISOString()
-        : new Date(new Date(startIso).getTime() + 90 * 60 * 1000).toISOString();
+        : hasExplicitTime
+          ? new Date(new Date(startIso).getTime() + 90 * 60 * 1000).toISOString()
+          : null;
       const location = normalizeAddress(input.location || "");
       return {
         ...input,
@@ -1000,6 +1004,10 @@ export default function Dashboard({
               title: String(data.fieldsGuess.title || "Event"),
               start: formatIsoForInput(data.fieldsGuess.start, tz),
               end: formatIsoForInput(data.fieldsGuess.end, tz),
+              timeFound:
+                typeof data.fieldsGuess.timeFound === "boolean"
+                  ? data.fieldsGuess.timeFound
+                  : undefined,
               location: String(data.fieldsGuess.location || ""),
               description: String(data.fieldsGuess.description || ""),
               timezone: String(data.fieldsGuess.timezone || tz || "UTC"),
@@ -1275,6 +1283,7 @@ export default function Dashboard({
             category: normalizedOcrCategory || undefined,
             startISO: ready.start,
             endISO: ready.end,
+            timeFound: eventInput.timeFound,
             location: ready.location || undefined,
             description: eventInput.description || undefined,
             rsvp: structuredWeddingRsvp || eventInput.rsvp || undefined,

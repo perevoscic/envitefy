@@ -23,6 +23,15 @@ test("event skins render date and time as separate When and At rows", () => {
   }
 });
 
+test("event skins hide missing OCR time rows instead of showing placeholders", () => {
+  for (const relPath of runtimeSkinSources) {
+    const source = readSource(relPath);
+
+    assert.doesNotMatch(source, /Time TBD/, relPath);
+    assert.match(source, /displayTime\s*\?\s*\(/, relPath);
+  }
+});
+
 const sampleSkinSources = [
   "ai-studio-code-samples/ethereal-invitations/src/components/FormalSkin.tsx",
   "ai-studio-code-samples/ethereal-invitations/src/components/SampleBirthdaySkin.tsx",
