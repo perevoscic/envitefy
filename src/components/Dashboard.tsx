@@ -17,6 +17,7 @@ import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { normalizeOcrFacts, type OcrFact } from "@/lib/ocr/facts";
 import {
   isBasketballOcrSkinCandidate,
+  isFootballOcrSkinCandidate,
   isOcrInviteCategory,
   isPickleballOcrSkinCandidate,
   type OcrSkinSelection,
@@ -112,6 +113,7 @@ type DashboardEventItem = {
   status: string | null;
   category: string | null;
   coverImageUrl?: string | null;
+  thumbnailFocus?: ThumbnailFocus | null;
   numberOfGuests?: number;
   reminderCount?: number;
   mapsUrl?: string | null;
@@ -1359,9 +1361,21 @@ export default function Dashboard({
         if (isBasketballOcrEvent) {
           normalizedOcrCategory = "Sport Events";
         }
+        const isFootballOcrEvent =
+          normalizedOcrSkin?.category === "football" ||
+          isFootballOcrSkinCandidate({
+            category: normalizedOcrCategory,
+            title: eventInput.title,
+            description: eventInput.description,
+            activities: normalizedActivities,
+          });
+        if (isFootballOcrEvent) {
+          normalizedOcrCategory = "Sport Events";
+        }
         const isInviteOcrEvent =
           isOcrInviteCategory(normalizedOcrCategory) ||
           isBasketballOcrEvent ||
+          isFootballOcrEvent ||
           isPickleballOcrEvent;
         let flyerColors =
           ocrMeta?.flyerColors && typeof ocrMeta.flyerColors === "object"
@@ -1452,14 +1466,15 @@ export default function Dashboard({
                 ? "ocr-wedding-renderer"
                 : isPickleballOcrEvent
                   ? "ocr-pickleball-skin"
-                  : isBasketballOcrEvent
-                    ? "ocr-basketball-skin"
-                    : isInviteOcrEvent
-                      ? "ocr-invite-skin"
-                      : "ocr",
+                  : isFootballOcrEvent
+                    ? "ocr-football-skin"
+                    : isBasketballOcrEvent
+                      ? "ocr-basketball-skin"
+                      : isInviteOcrEvent
+                        ? "ocr-invite-skin"
+                        : "ocr",
             thumbnail,
-            thumbnailFocus:
-              isInviteOcrEvent && normalizedThumbnailFocus ? normalizedThumbnailFocus : undefined,
+            thumbnailFocus: normalizedThumbnailFocus || undefined,
             attachment: attachment || undefined,
             ocrSkin: isInviteOcrEvent ? normalizedOcrSkin || undefined : undefined,
             flyerColors: isWeddingOcrEvent ? flyerColors || undefined : undefined,

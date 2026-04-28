@@ -33,6 +33,7 @@ type DashboardEventItem = {
   hasRsvp?: boolean;
   reminderCount?: number;
   mapsUrl?: string | null;
+  createdVia?: string | null;
   ownership?: "owned" | "invited";
   shareStatus?: "accepted" | "pending" | null;
   userRsvpResponse?: "yes" | "no" | "maybe" | null;
@@ -127,6 +128,17 @@ function inviteCardCategoryBadge(
   const raw = String(category || "").trim();
   if (!raw) return fallback;
   return INVITE_CARD_CATEGORY_BADGE[raw] ?? raw;
+}
+
+function getDashboardThumbnailObjectPosition(
+  item: DashboardEventItem,
+): string | undefined {
+  const explicitPosition = thumbnailFocusToObjectPosition(item.thumbnailFocus);
+  if (explicitPosition) return explicitPosition;
+  const createdVia = String(item.createdVia || "")
+    .trim()
+    .toLowerCase();
+  return createdVia.startsWith("ocr") ? "50% 22%" : undefined;
 }
 
 const CARD_TONE_STYLES: Record<
@@ -242,7 +254,7 @@ function InvitationEventCard({
   const statusClassName = getInvitationStatusTextClass(item);
   const countdown = buildCountdownParts(parseSafeDate(item.startAt), now);
   const isInvited = item.ownership === "invited";
-  const thumbnailObjectPosition = thumbnailFocusToObjectPosition(item.thumbnailFocus);
+  const thumbnailObjectPosition = getDashboardThumbnailObjectPosition(item);
   const primaryButtonClassName = `group/btn inline-flex min-h-[56px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[20px] px-5 py-4 text-sm font-bold text-white shadow-xl transition-all sm:min-h-[60px] sm:min-w-[170px] sm:px-8 sm:text-base ${
     isInvited
       ? "bg-indigo-600 hover:opacity-90"

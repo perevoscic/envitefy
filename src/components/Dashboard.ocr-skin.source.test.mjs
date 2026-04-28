@@ -20,6 +20,7 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
     /const normalizedThumbnailFocus = normalizeThumbnailFocus\(ocrMeta\?\.thumbnailFocus\);/,
   );
   assert.match(source, /isBasketballOcrSkinCandidate/);
+  assert.match(source, /isFootballOcrSkinCandidate/);
   assert.match(source, /isPickleballOcrSkinCandidate/);
   assert.match(source, /const isPickleballOcrEvent =/);
   assert.match(source, /normalizedOcrSkin\?\.sportKind === "pickleball"/);
@@ -27,14 +28,18 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   assert.match(source, /const isBasketballOcrEvent =/);
   assert.match(source, /normalizedOcrSkin\?\.category === "basketball"/);
   assert.match(source, /if \(isBasketballOcrEvent\) \{\s*normalizedOcrCategory = "Sport Events";/);
-  assert.match(source, /isBasketballOcrEvent \|\|\s*isPickleballOcrEvent/);
+  assert.match(source, /const isFootballOcrEvent =/);
+  assert.match(source, /normalizedOcrSkin\?\.category === "football"/);
+  assert.match(source, /if \(isFootballOcrEvent\) \{\s*normalizedOcrCategory = "Sport Events";/);
+  assert.match(source, /isBasketballOcrEvent \|\|\s*isFootballOcrEvent \|\|\s*isPickleballOcrEvent/);
   assert.match(source, /flyerColors = normalizedOcrSkin\.palette;/);
   assert.match(
     source,
     /ocrSkin:\s*isInviteOcrEvent \? normalizedOcrSkin \|\| undefined : undefined,/,
   );
-  assert.match(source, /thumbnailFocus:\s*isInviteOcrEvent && normalizedThumbnailFocus/);
+  assert.match(source, /thumbnailFocus:\s*normalizedThumbnailFocus \|\| undefined/);
   assert.match(source, /"ocr-pickleball-skin"/);
+  assert.match(source, /"ocr-football-skin"/);
   assert.match(source, /"ocr-basketball-skin"/);
   assert.match(source, /"ocr-invite-skin"/);
   assert.match(

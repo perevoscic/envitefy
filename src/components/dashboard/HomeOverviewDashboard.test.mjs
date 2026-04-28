@@ -53,6 +53,14 @@ test("dashboard invitation card applies thumbnail focus as image object position
 
   assert.match(source, /thumbnailFocusToObjectPosition/);
   assert.match(source, /thumbnailFocus\?: ThumbnailFocus \| null/);
-  assert.match(source, /const thumbnailObjectPosition = thumbnailFocusToObjectPosition\(item\.thumbnailFocus\);/);
+  assert.match(source, /createdVia\?: string \| null/);
+  assert.match(source, /function getDashboardThumbnailObjectPosition/);
+  assert.match(
+    source,
+    /const explicitPosition = thumbnailFocusToObjectPosition\(item\.thumbnailFocus\);/,
+  );
+  assert.match(source, /if \(explicitPosition\) return explicitPosition;/);
+  assert.match(source, /createdVia\.startsWith\("ocr"\) \? "50% 22%" : undefined/);
+  assert.match(source, /const thumbnailObjectPosition = getDashboardThumbnailObjectPosition\(item\);/);
   assert.match(source, /objectPosition: thumbnailObjectPosition/);
 });
