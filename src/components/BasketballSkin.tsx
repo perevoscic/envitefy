@@ -47,6 +47,15 @@ type Props = {
 };
 
 const BASKETBALL_CHIP_LABELS = ["Game On", "Hoop Time", "Court Ready", "Ball Night"];
+const BASKETBALL_BACKGROUND_OBJECT_KINDS: OcrSkinBackground["objectKinds"] = [
+  "basketball",
+  "hoop",
+  "court-line",
+  "scoreboard",
+  "jersey",
+  "whistle",
+  "banner",
+];
 
 function normalizeBasketballActivity(value: string): string {
   return value
@@ -98,6 +107,50 @@ function getBasketballChipLabel(title: string, skinId?: string | null): string {
   return BASKETBALL_CHIP_LABELS[hash % BASKETBALL_CHIP_LABELS.length] || "Game On";
 }
 
+function getBasketballBackgroundSeed(title: string, skinId?: string | null): string {
+  const seed = `${title || skinId || "basketball"}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `basketball-court-${seed || "event"}`;
+}
+
+function uniqueObjectKinds(objectKinds: OcrSkinBackground["objectKinds"]) {
+  const unique: OcrSkinBackground["objectKinds"] = [];
+  for (const objectKind of objectKinds) {
+    if (!unique.includes(objectKind)) unique.push(objectKind);
+  }
+  return unique.slice(0, 7);
+}
+
+function buildBasketballBackground(
+  background: OcrSkinBackground | null | undefined,
+  palette: NonNullable<Palette>,
+  title: string,
+  skinId?: string | null,
+): OcrSkinBackground {
+  const colors = background?.colors?.length
+    ? background.colors
+    : ([palette.primary, palette.accent, palette.secondary, palette.themeColor].filter(
+        Boolean,
+      ) as string[]);
+
+  return {
+    version: 1,
+    seed: background?.seed || getBasketballBackgroundSeed(title, skinId),
+    texture: background?.texture || "grain",
+    density: background?.density === "low" ? "medium" : background?.density || "high",
+    placement: background?.placement || "edges",
+    objectKinds: uniqueObjectKinds([
+      "basketball",
+      "hoop",
+      ...(background?.objectKinds || []),
+      ...BASKETBALL_BACKGROUND_OBJECT_KINDS,
+    ]),
+    colors,
+  };
+}
+
 export default function BasketballSkin({
   title,
   dateLabel,
@@ -140,6 +193,12 @@ export default function BasketballSkin({
     : [];
   const displayCategoryLabel =
     String(categoryLabel || "").trim() || getBasketballChipLabel(title, skinId);
+  const basketballBackground = buildBasketballBackground(
+    background,
+    basketballPalette,
+    title,
+    skinId,
+  );
 
   return (
     <ScannedInviteSkin
@@ -155,7 +214,7 @@ export default function BasketballSkin({
       calendarLinks={calendarLinks}
       skinId={skinId}
       palette={basketballPalette}
-      background={background}
+      background={basketballBackground}
       rsvpName={rsvpName}
       rsvpPhone={rsvpPhone}
       rsvpEmail={rsvpEmail}

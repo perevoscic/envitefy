@@ -54,22 +54,19 @@ test("ocr skin inference dispatches through the resolved studio provider", () =>
   assert.match(backgroundSource, /isFootballOcrSkinCandidate/);
   assert.match(backgroundSource, /normalizeOcrSportKind/);
   assert.match(backgroundSource, /isPickleballOcrSkinCandidate/);
+  assert.match(backgroundSource, /housewarming: \["house", "key"[\s\S]*"gift"\]/);
   assert.match(
     backgroundSource,
-    /housewarming: \["confetti", "dot", "star", "banner", "botanical-sprig"\]/,
+    /basketball: \[[\s\S]*"basketball"[\s\S]*"hoop"[\s\S]*"jersey"[\s\S]*"scoreboard"/,
   );
   assert.match(
     backgroundSource,
-    /basketball: \["basketball", "hoop", "court-line", "sneaker", "banner"\]/,
-  );
-  assert.match(
-    backgroundSource,
-    /football: \["football", "helmet", "goalpost", "field-line", "stadium-light", "star", "banner"\]/,
+    /football: \[[\s\S]*"football"[\s\S]*"helmet"[\s\S]*"pennant"[\s\S]*"megaphone"[\s\S]*"scoreboard"/,
   );
   assert.match(backgroundSource, /sneakers: "sneaker"/);
   assert.match(
     backgroundSource,
-    /pickleball: \["pickleball", "paddle", "net-line", "court-line", "star", "banner", "dot"\]/,
+    /pickleball: \[[\s\S]*"pickleball"[\s\S]*"paddle"[\s\S]*"scoreboard"[\s\S]*"whistle"/,
   );
 });
 

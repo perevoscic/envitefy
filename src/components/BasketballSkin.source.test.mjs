@@ -21,12 +21,16 @@ test("basketball skin does not invent event details when OCR did not provide the
   assert.match(source, /categoryLabel=\{displayCategoryLabel\}/);
   assert.match(source, /ocrFacts=\{ocrFacts\}/);
   assert.match(source, /detailLayout="wideDetails"/);
+  assert.match(source, /background=\{basketballBackground\}/);
 });
 
 test("basketball skin uses visual chip copy and filters title-like activity summaries", () => {
   const source = readSource("src/components/BasketballSkin.tsx");
 
   assert.match(source, /BASKETBALL_CHIP_LABELS/);
+  assert.match(source, /BASKETBALL_BACKGROUND_OBJECT_KINDS/);
+  assert.match(source, /"basketball",\s*"hoop"/);
+  assert.match(source, /buildBasketballBackground/);
   assert.match(source, /getBasketballChipLabel/);
   assert.match(source, /isBasketballSummaryActivity/);
   assert.match(source, /\^\(\?:pickup \)\?basketball \(\?:open \)\?run\$/);
