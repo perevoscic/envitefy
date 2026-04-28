@@ -1820,6 +1820,7 @@ export default async function EventPage({
       <ScannedWeddingInviteView
         eventId={row.id}
         title={title}
+        venueName={venueText || null}
         location={locationText || venueText || null}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
@@ -1911,6 +1912,7 @@ export default async function EventPage({
         title={title}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
+        venueName={venueText || null}
         location={locationText || venueText || null}
         imageUrl={scannedInviteImageUrl}
         shareUrl={shareUrl}
@@ -2000,6 +2002,7 @@ export default async function EventPage({
         title={title}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
+        venueName={venueText || null}
         location={locationText || venueText || null}
         imageUrl={scannedInviteImageUrl}
         shareUrl={shareUrl}
@@ -2089,6 +2092,7 @@ export default async function EventPage({
         title={title}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
+        venueName={venueText || null}
         location={locationText || venueText || null}
         imageUrl={scannedInviteImageUrl}
         shareUrl={shareUrl}
@@ -2191,6 +2195,7 @@ export default async function EventPage({
           title={title}
           dateLabel={scannedInviteDateLabel || whenLabel || null}
           timeLabel={formattedTimeAndDate.time || null}
+          venueName={venueText || null}
           location={locationText || venueText || null}
           imageUrl={scannedInviteImageUrl}
           shareUrl={shareUrl}
@@ -2218,6 +2223,7 @@ export default async function EventPage({
           title={title}
           dateLabel={scannedInviteDateLabel || whenLabel || null}
           timeLabel={formattedTimeAndDate.time || null}
+          venueName={venueText || null}
           location={locationText || venueText || null}
           imageUrl={scannedInviteImageUrl}
           shareUrl={shareUrl}
@@ -2246,6 +2252,7 @@ export default async function EventPage({
         categoryLabel={categoryRaw || "General Event"}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
+        venueName={venueText || null}
         location={locationText || venueText || null}
         imageUrl={scannedInviteImageUrl}
         shareUrl={shareUrl}
