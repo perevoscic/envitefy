@@ -152,7 +152,7 @@ export function SnapProcessingCard({
       <style jsx global>{`
         @keyframes scan-line {
           0% {
-            top: 0;
+            transform: translate3d(0, 0%, 0);
             opacity: 0;
           }
           10% {
@@ -162,12 +162,14 @@ export function SnapProcessingCard({
             opacity: 1;
           }
           100% {
-            top: 100%;
+            transform: translate3d(0, calc(100% - 4px), 0);
             opacity: 0;
           }
         }
         .animate-scan-line {
           animation: scan-line 2s infinite linear;
+          will-change: transform, opacity;
+          transform: translateZ(0);
         }
         @keyframes float-node {
           0%,
@@ -182,6 +184,8 @@ export function SnapProcessingCard({
         }
         .animate-float-node {
           animation: float-node 3s infinite ease-in-out;
+          will-change: transform, opacity;
+          transform: translateZ(0);
         }
         @keyframes scanning-bar {
           0% {
@@ -193,6 +197,8 @@ export function SnapProcessingCard({
         }
         .animate-scanning-bar {
           animation: scanning-bar 1.5s infinite linear;
+          will-change: transform;
+          transform: translateZ(0);
         }
       `}</style>
     </div>
@@ -258,7 +264,7 @@ function DataNode({
 }) {
   return (
     <div
-      className="animate-float-node absolute z-30 flex items-center gap-2 rounded-full border border-[#dccffc] bg-white/90 px-2.5 py-1 text-[10px] font-bold text-[#5c4a8e] shadow-[0_10px_24px_rgba(102,77,171,0.2)] backdrop-blur-md"
+      className="animate-float-node absolute z-30 flex items-center gap-2 rounded-full border border-[#dccffc] bg-white/95 px-2.5 py-1 text-[10px] font-bold text-[#5c4a8e] shadow-[0_10px_24px_rgba(102,77,171,0.2)]"
       style={{ top, left, animationDelay: delay }}
     >
       {icon}
