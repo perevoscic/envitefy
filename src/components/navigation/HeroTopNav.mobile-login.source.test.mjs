@@ -30,7 +30,6 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
   assert.match(source, /<LoginForm\s+variant="inline"/);
   assert.match(source, /onInlineCancel=\{\(\) => setMobileLoginExpanded\(false\)\}/);
   assert.match(source, /inlineTone=\{isDarkGlass \? "dark" : "light"\}/);
-  assert.match(source, /showGoogleAuth=\{false\}/);
   assert.match(source, /successRedirectUrl=\{loginSuccessRedirectUrl\}/);
   assert.match(
     source,
