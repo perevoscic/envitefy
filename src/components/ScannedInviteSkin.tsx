@@ -152,6 +152,7 @@ export default function ScannedInviteSkin({
   const secondaryTileTextColor = ensureReadableTextColor(colors.secondary, "#ffffff", {
     minContrast: 3,
   });
+  const detailIconSwatchColor = "var(--theme-primary)";
   const displayTitle = String(title || "").trim() || "Celebration";
   const displayCategoryLabel = formatCategoryLabel(categoryLabel);
   const displayDate = String(dateLabel || "").trim() || "Date TBD";
@@ -309,7 +310,7 @@ export default function ScannedInviteSkin({
             <div className="space-y-8">
               <InfoBlock
                 icon={<Calendar className="h-8 w-8" />}
-                swatchColor="var(--theme-primary)"
+                swatchColor={detailIconSwatchColor}
                 label="When"
                 title={displayDate}
               />
@@ -317,7 +318,7 @@ export default function ScannedInviteSkin({
               {displayTime ? (
                 <InfoBlock
                   icon={<Clock className="h-8 w-8" />}
-                  swatchColor="var(--theme-secondary)"
+                  swatchColor={detailIconSwatchColor}
                   label="At"
                   title={displayTime}
                 />
@@ -325,7 +326,7 @@ export default function ScannedInviteSkin({
 
               <InfoBlock
                 icon={<MapPin className="h-8 w-8" />}
-                swatchColor="var(--theme-accent)"
+                swatchColor={detailIconSwatchColor}
                 label="Where"
                 title="Event Location"
                 subtitle={displayLocation}
@@ -334,7 +335,7 @@ export default function ScannedInviteSkin({
               {rsvpName || rsvpPhone || rsvpEmail ? (
                 <InfoBlock
                   icon={<MessageSquare className="h-8 w-8" />}
-                  swatchColor="var(--theme-secondary)"
+                  swatchColor={detailIconSwatchColor}
                   label="RSVP"
                   title={String(rsvpName || rsvpEmail || "Host")}
                   subtitle={

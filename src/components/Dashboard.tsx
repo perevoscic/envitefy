@@ -14,7 +14,11 @@ import {
   type SnapProcessingStatus,
 } from "@/components/snap/SnapProcessingCard";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
-import { isOcrInviteCategory, type OcrSkinSelection } from "@/lib/ocr/skin";
+import {
+  isBasketballOcrSkinCandidate,
+  isOcrInviteCategory,
+  type OcrSkinSelection,
+} from "@/lib/ocr/skin";
 import { type PendingSnapUpload, takePendingSnapUpload } from "@/lib/pending-snap-upload";
 import {
   normalizeThumbnailFocus,
@@ -1212,7 +1216,21 @@ export default function Dashboard({
           normalizedBirthdayTemplateHint?.detected &&
           (normalizedOcrCategory || "").toLowerCase() === "birthdays";
         const isWeddingOcrEvent = (normalizedOcrCategory || "").trim().toLowerCase() === "weddings";
-        const isInviteOcrEvent = isOcrInviteCategory(normalizedOcrCategory);
+        const normalizedActivities = Array.isArray(eventInput.activities)
+          ? eventInput.activities
+              .map((item) => (typeof item === "string" ? item.trim() : ""))
+              .filter(Boolean)
+              .slice(0, 8)
+          : [];
+        const isBasketballOcrEvent =
+          normalizedOcrSkin?.category === "basketball" ||
+          isBasketballOcrSkinCandidate({
+            category: normalizedOcrCategory,
+            title: eventInput.title,
+            description: eventInput.description,
+            activities: normalizedActivities,
+          });
+        const isInviteOcrEvent = isOcrInviteCategory(normalizedOcrCategory) || isBasketballOcrEvent;
         let flyerColors =
           ocrMeta?.flyerColors && typeof ocrMeta.flyerColors === "object"
             ? ocrMeta.flyerColors
@@ -1268,13 +1286,6 @@ export default function Dashboard({
             });
           }
         }
-        const normalizedActivities = Array.isArray(eventInput.activities)
-          ? eventInput.activities
-              .map((item) => (typeof item === "string" ? item.trim() : ""))
-              .filter(Boolean)
-              .slice(0, 8)
-          : [];
-
         const payload: any = {
           title: eventInput.title || "Event",
           data: {
@@ -1295,9 +1306,11 @@ export default function Dashboard({
               ? "ocr-birthday-skin"
               : isWeddingOcrEvent
                 ? "ocr-wedding-renderer"
-                : isInviteOcrEvent
-                  ? "ocr-invite-skin"
-                : "ocr",
+                : isBasketballOcrEvent
+                  ? "ocr-basketball-skin"
+                  : isInviteOcrEvent
+                    ? "ocr-invite-skin"
+                    : "ocr",
             thumbnail,
             thumbnailFocus:
               isInviteOcrEvent && normalizedThumbnailFocus

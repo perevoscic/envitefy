@@ -27,6 +27,7 @@ export type DashboardEvent = {
   category: string | null;
   updatedAt: string | null;
   numberOfGuests: number;
+  hasRsvp: boolean;
   reminderCount: number;
   mapsUrl: string | null;
   createdVia: string | null;
@@ -59,6 +60,48 @@ function firstString(...values: unknown[]): string | null {
     if (typeof value === "string" && value.trim()) return value.trim();
   }
   return null;
+}
+
+function isTruthyBooleanLike(value: unknown): boolean {
+  if (value === true) return true;
+  if (typeof value !== "string") return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "true" || normalized === "1" || normalized === "yes";
+}
+
+function hasNonEmptyString(...values: unknown[]): boolean {
+  return values.some((value) => typeof value === "string" && value.trim().length > 0);
+}
+
+export function hasActionableRsvp(data: any, numberOfGuestsRaw?: unknown): boolean {
+  if (!data || typeof data !== "object") return false;
+  const numberOfGuests = Math.max(0, Number(numberOfGuestsRaw ?? data?.numberOfGuests ?? 0));
+  if (numberOfGuests > 0) return true;
+  if (isTruthyBooleanLike(data?.rsvpEnabled)) return true;
+
+  const rsvpRecord =
+    data?.rsvp && typeof data.rsvp === "object" && !Array.isArray(data.rsvp)
+      ? data.rsvp
+      : null;
+  if (isTruthyBooleanLike(rsvpRecord?.isEnabled)) return true;
+  if (
+    hasNonEmptyString(
+      typeof data?.rsvp === "string" ? data.rsvp : null,
+      data?.rsvpUrl,
+      data?.rsvpDeadline,
+      rsvpRecord?.contact,
+      rsvpRecord?.url,
+      rsvpRecord?.link,
+      rsvpRecord?.deadline,
+      data?.fieldsGuess?.rsvp,
+      data?.fieldsGuess?.rsvpUrl,
+      data?.fieldsGuess?.rsvpDeadline,
+    )
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function buildMapsUrl(locationText: string | null): string | null {
@@ -203,6 +246,7 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
   const locationLng = parseFiniteNumber(data?.locationLng ?? data?.lng ?? data?.event?.locationLng);
   const reminderCount = Array.isArray(data?.reminders) ? data.reminders.length : 0;
   const numberOfGuests = Math.max(0, Number(data?.numberOfGuests || 0));
+  const hasRsvp = hasActionableRsvp(data, numberOfGuests);
 
   return {
     id: row.id,
@@ -219,6 +263,7 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
     category: firstString(data?.category, row?.data?.category),
     updatedAt: parseIso(data?.updatedAt) ?? parseIso(row?.created_at) ?? null,
     numberOfGuests,
+    hasRsvp,
     reminderCount,
     mapsUrl: buildMapsUrl(locationText),
     createdVia,

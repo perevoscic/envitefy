@@ -41,9 +41,9 @@ export function StudioCategoryStep({
             <motion.p
               initial={false}
               animate={{ opacity: 1, y: 0 }}
-              className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8b74c8]/80"
+              className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b74c8]/80 sm:text-sm"
             >
-              Choose Your Invite Type
+              Let&apos;s Create Your Live Card
             </motion.p>
             <motion.h2
               initial={false}

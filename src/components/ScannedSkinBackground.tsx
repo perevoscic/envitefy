@@ -98,7 +98,10 @@ function buildItems(spec: OcrSkinBackground, darkMode: boolean): MotifItem[] {
       kind === "balloon" ||
       kind === "botanical-sprig" ||
       kind === "frame-corner" ||
-      kind === "banner";
+      kind === "banner" ||
+      kind === "basketball" ||
+      kind === "hoop" ||
+      kind === "court-line";
     return {
       kind,
       x: position.x,
@@ -284,6 +287,66 @@ function renderMotif(item: MotifItem, index: number) {
           fill={item.color}
           opacity={item.opacity * 0.82}
         />
+      );
+    case "basketball":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <circle cx={0} cy={0} r={s * 0.52} fill={item.color} />
+          <path
+            d={`M ${-s * 0.52} 0 H ${s * 0.52} M 0 ${-s * 0.52} V ${s * 0.52}`}
+            stroke="rgba(255,255,255,0.55)"
+            strokeWidth={0.16}
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d={`M ${-s * 0.26} ${-s * 0.45} C ${-s * 0.08} ${-s * 0.18}, ${-s * 0.08} ${s * 0.18}, ${-s * 0.26} ${s * 0.45} M ${s * 0.26} ${-s * 0.45} C ${s * 0.08} ${-s * 0.18}, ${s * 0.08} ${s * 0.18}, ${s * 0.26} ${s * 0.45}`}
+            fill="none"
+            stroke="rgba(255,255,255,0.5)"
+            strokeWidth={0.14}
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "hoop":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <rect
+            x={-s * 0.58}
+            y={-s * 0.48}
+            width={s * 1.16}
+            height={s * 0.72}
+            rx={s * 0.08}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.28}
+            vectorEffect="non-scaling-stroke"
+          />
+          <ellipse
+            cx={0}
+            cy={s * 0.38}
+            rx={s * 0.42}
+            ry={s * 0.14}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.28}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "court-line":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s} 0 H ${s} M 0 ${-s * 0.62} A ${s * 0.62} ${s * 0.62} 0 0 1 0 ${s * 0.62}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
       );
     case "cap":
       return (

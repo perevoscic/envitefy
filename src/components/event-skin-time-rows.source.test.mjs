@@ -32,6 +32,34 @@ test("event skins hide missing OCR time rows instead of showing placeholders", (
   }
 });
 
+test("scanned event detail icons use one matching swatch color per skin", () => {
+  const sharedInfoBlockSources = [
+    "src/components/BirthdaySkin.tsx",
+    "src/components/ScannedInviteSkin.tsx",
+  ];
+
+  for (const relPath of sharedInfoBlockSources) {
+    const source = readSource(relPath);
+
+    assert.match(source, /const detailIconSwatchColor = "var\(--theme-primary\)";/, relPath);
+    assert.doesNotMatch(source, /swatchColor="var\(--theme-secondary\)"/, relPath);
+    assert.doesNotMatch(source, /swatchColor="var\(--theme-accent\)"/, relPath);
+    assert.match(
+      source,
+      /<InfoBlock[\s\S]*?swatchColor=\{detailIconSwatchColor\}[\s\S]*?label="When"/,
+      relPath,
+    );
+    assert.match(
+      source,
+      /<InfoBlock[\s\S]*?swatchColor=\{detailIconSwatchColor\}[\s\S]*?label="At"/,
+      relPath,
+    );
+  }
+
+  const weddingSource = readSource("src/components/weddings/ScannedWeddingInviteView.tsx");
+  assert.match(weddingSource, /<div style=\{\{ color: colors\.accent \}\}>\{icon\}<\/div>/);
+});
+
 const sampleSkinSources = [
   "ai-studio-code-samples/ethereal-invitations/src/components/FormalSkin.tsx",
   "ai-studio-code-samples/ethereal-invitations/src/components/SampleBirthdaySkin.tsx",

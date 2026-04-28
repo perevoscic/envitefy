@@ -36,6 +36,7 @@ test("event route branches football discovery/template events into the football 
     /if \(editParam && canManageCreatedEvent && isFootballDiscoveryTemplate\) \{/,
   );
   assert.match(source, /redirect\("\/event"\)/);
+  assert.match(source, /import BasketballSkin from "@\/components\/BasketballSkin";/);
   assert.match(source, /import BirthdaySkin from "@\/components\/BirthdaySkin";/);
   assert.match(source, /import ScannedInviteSkin from "@\/components\/ScannedInviteSkin";/);
   assert.match(source, /const isScannedBirthdayInviteEvent =/);
@@ -95,6 +96,23 @@ test("event route branches football discovery/template events into the football 
     source.indexOf("if (isScannedWeddingInviteEvent)") <
       source.indexOf("if (isGenericScannedInviteEvent)"),
     "scanned wedding branch should run before the generic scanned invite branch",
+  );
+  assert.match(source, /const isScannedBasketballInviteEvent =/);
+  assert.match(source, /isBasketballOcrSkinCandidate/);
+  assert.match(
+    source,
+    /String\(\(data as any\)\?\.ocrSkin\?\.category \|\| ""\)\.toLowerCase\(\) === "basketball"/,
+  );
+  assert.match(source, /if \(isScannedBasketballInviteEvent\) \{/);
+  assert.match(
+    source,
+    /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "basketball", undefined, \{/,
+  );
+  assert.match(source, /<BasketballSkin/);
+  assert.ok(
+    source.indexOf("if (isScannedBasketballInviteEvent)") <
+      source.indexOf("if (isGenericScannedInviteEvent)"),
+    "scanned basketball branch should run before the generic scanned invite branch",
   );
   assert.match(source, /const isGenericScannedInviteEvent =/);
   assert.match(source, /isOcrInviteCategory\(categoryRaw\)/);

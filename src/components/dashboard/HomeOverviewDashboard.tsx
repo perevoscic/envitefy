@@ -30,6 +30,7 @@ type DashboardEventItem = {
   coverImageUrl?: string | null;
   thumbnailFocus?: ThumbnailFocus | null;
   numberOfGuests?: number;
+  hasRsvp?: boolean;
   reminderCount?: number;
   mapsUrl?: string | null;
   ownership?: "owned" | "invited";
@@ -618,13 +619,36 @@ function buildInvitationActions(
 } {
   const statusLabel = getEventStatusLabel(item);
   const isInvitedWithoutResponse = statusLabel === "Invited";
+  const eventHref = `/event/${item.id}`;
 
-  if (isInvitedWithoutResponse) {
+  if (!item.hasRsvp) {
+    if (item.mapsUrl) {
+      return {
+        primaryAction: {
+          href: item.mapsUrl,
+          label: "Get Directions",
+          icon: Navigation,
+          external: true,
+        },
+        secondaryAction: {
+          href: eventHref,
+          label: "View details",
+        },
+      };
+    }
+
     return {
-      primaryAction: { href: `/event/${item.id}`, label: "RSVP Now" },
+      primaryAction: { href: eventHref, label: "View details" },
+      secondaryAction: null,
+    };
+  }
+
+  if (isInvitedWithoutResponse && item.hasRsvp) {
+    return {
+      primaryAction: { href: eventHref, label: "RSVP Now" },
       secondaryAction: item.mapsUrl
         ? {
-            href: `/event/${item.id}`,
+            href: eventHref,
             label: "View details",
           }
         : {
@@ -636,7 +660,7 @@ function buildInvitationActions(
   }
 
   return {
-    primaryAction: { href: `/event/${item.id}`, label: "Open Event" },
+    primaryAction: { href: eventHref, label: "Open Event" },
     secondaryAction: item.mapsUrl
       ? {
           href: item.mapsUrl,

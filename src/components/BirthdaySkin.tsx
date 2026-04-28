@@ -167,6 +167,7 @@ export default function BirthdaySkin({
   const secondaryTileTextColor = ensureReadableTextColor(colors.secondary, "#ffffff", {
     minContrast: 3,
   });
+  const detailIconSwatchColor = "var(--theme-primary)";
 
   useEffect(() => {
     if (previewMode) return;
@@ -294,7 +295,7 @@ export default function BirthdaySkin({
             <div className="space-y-8">
               <InfoBlock
                 icon={<Calendar className="h-8 w-8" />}
-                swatchColor="var(--theme-primary)"
+                swatchColor={detailIconSwatchColor}
                 label="When"
                 title={displayDate}
               />
@@ -302,7 +303,7 @@ export default function BirthdaySkin({
               {displayTime ? (
                 <InfoBlock
                   icon={<Clock className="h-8 w-8" />}
-                  swatchColor="var(--theme-secondary)"
+                  swatchColor={detailIconSwatchColor}
                   label="At"
                   title={displayTime}
                 />
@@ -310,7 +311,7 @@ export default function BirthdaySkin({
 
               <InfoBlock
                 icon={<MapPin className="h-8 w-8" />}
-                swatchColor="var(--theme-accent)"
+                swatchColor={detailIconSwatchColor}
                 label="The Spot"
                 title="Party Location"
                 subtitle={displayLocation}
@@ -319,7 +320,7 @@ export default function BirthdaySkin({
               {rsvpName || rsvpPhone || rsvpEmail ? (
                 <InfoBlock
                   icon={<MessageSquare className="h-8 w-8" />}
-                  swatchColor="var(--theme-secondary)"
+                  swatchColor={detailIconSwatchColor}
                   label="RSVP to"
                   title={String(rsvpName || rsvpEmail || "Host")}
                   subtitle={

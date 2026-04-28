@@ -1702,6 +1702,10 @@ function _buildDashboardDataProjectionSql(
     'category', ${dataSql}->'category',
     'updatedAt', ${dataSql}->'updatedAt',
     'numberOfGuests', ${dataSql}->'numberOfGuests',
+    'rsvpEnabled', ${dataSql}->'rsvpEnabled',
+    'rsvp', ${dataSql}->'rsvp',
+    'rsvpUrl', ${dataSql}->'rsvpUrl',
+    'rsvpDeadline', ${dataSql}->'rsvpDeadline',
     'reminders', case
       when jsonb_typeof(${dataSql}->'reminders') = 'array' then ${dataSql}->'reminders'
       else '[]'::jsonb
@@ -1717,7 +1721,10 @@ function _buildDashboardDataProjectionSql(
           'start', ${dataSql}#>'{fieldsGuess,start}',
           'end', ${dataSql}#>'{fieldsGuess,end}',
           'location', ${dataSql}#>'{fieldsGuess,location}',
-          'timezone', ${dataSql}#>'{fieldsGuess,timezone}'
+          'timezone', ${dataSql}#>'{fieldsGuess,timezone}',
+          'rsvp', ${dataSql}#>'{fieldsGuess,rsvp}',
+          'rsvpUrl', ${dataSql}#>'{fieldsGuess,rsvpUrl}',
+          'rsvpDeadline', ${dataSql}#>'{fieldsGuess,rsvpDeadline}'
         )
       else null
     end,
@@ -1764,6 +1771,10 @@ type DashboardProjectionQueryRow = {
   category: any;
   updated_at: any;
   number_of_guests: any;
+  rsvp_enabled: any;
+  rsvp: any;
+  rsvp_url: any;
+  rsvp_deadline: any;
   reminders: any;
   created_via: any;
   ownership: any;
@@ -1774,6 +1785,9 @@ type DashboardProjectionQueryRow = {
   fields_guess_end: any;
   fields_guess_location: any;
   fields_guess_timezone: any;
+  fields_guess_rsvp: any;
+  fields_guess_rsvp_url: any;
+  fields_guess_rsvp_deadline: any;
   event_title: any;
   event_start: any;
   event_end: any;
@@ -1860,6 +1874,10 @@ function mapDashboardProjectionRowToEventHistoryRow(
       category: row.category ?? null,
       updatedAt: row.updated_at ?? null,
       numberOfGuests: row.number_of_guests ?? null,
+      rsvpEnabled: row.rsvp_enabled ?? null,
+      rsvp: row.rsvp ?? null,
+      rsvpUrl: row.rsvp_url ?? null,
+      rsvpDeadline: row.rsvp_deadline ?? null,
       reminders: Array.isArray(row.reminders) ? row.reminders : [],
       createdVia: row.created_via ?? null,
       ownership: row.ownership ?? null,
@@ -1871,6 +1889,9 @@ function mapDashboardProjectionRowToEventHistoryRow(
         ["end", row.fields_guess_end],
         ["location", row.fields_guess_location],
         ["timezone", row.fields_guess_timezone],
+        ["rsvp", row.fields_guess_rsvp],
+        ["rsvpUrl", row.fields_guess_rsvp_url],
+        ["rsvpDeadline", row.fields_guess_rsvp_deadline],
       ]),
       event: buildObjectOrNull([
         ["title", row.event_title],
@@ -2022,6 +2043,10 @@ async function listProjectedDashboardHistoryRowsByIds(
        coalesce(eh.data, '{}'::jsonb)->'category' as category,
        coalesce(eh.data, '{}'::jsonb)->'updatedAt' as updated_at,
        coalesce(eh.data, '{}'::jsonb)->'numberOfGuests' as number_of_guests,
+       coalesce(eh.data, '{}'::jsonb)->'rsvpEnabled' as rsvp_enabled,
+       coalesce(eh.data, '{}'::jsonb)->'rsvp' as rsvp,
+       coalesce(eh.data, '{}'::jsonb)->'rsvpUrl' as rsvp_url,
+       coalesce(eh.data, '{}'::jsonb)->'rsvpDeadline' as rsvp_deadline,
        case
          when jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'reminders') = 'array'
            then coalesce(eh.data, '{}'::jsonb)->'reminders'
@@ -2036,6 +2061,9 @@ async function listProjectedDashboardHistoryRowsByIds(
        coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,end}' as fields_guess_end,
        coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,location}' as fields_guess_location,
        coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,timezone}' as fields_guess_timezone,
+       coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,rsvp}' as fields_guess_rsvp,
+       coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,rsvpUrl}' as fields_guess_rsvp_url,
+       coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,rsvpDeadline}' as fields_guess_rsvp_deadline,
        coalesce(eh.data, '{}'::jsonb)#>'{event,title}' as event_title,
        coalesce(eh.data, '{}'::jsonb)#>'{event,start}' as event_start,
        coalesce(eh.data, '{}'::jsonb)#>'{event,end}' as event_end,

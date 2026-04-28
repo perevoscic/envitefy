@@ -22,6 +22,7 @@ test("ocr skin inference dispatches through the resolved studio provider", () =>
   assert.match(source, /inferWithGemini/);
   assert.match(source, /scanned-birthday-bento-pop/);
   assert.match(source, /scanned-wedding-noir-modern/);
+  assert.match(source, /scanned-basketball-court-energy/);
   assert.match(source, /scanned-invite-bento-celebration/);
   assert.match(source, /EXACT dominant color palette from the flyer itself/);
   assert.match(
@@ -35,22 +36,30 @@ test("ocr skin inference dispatches through the resolved studio provider", () =>
   assert.match(source, /resolveOcrSkinBackground/);
   assert.match(source, /"housewarming"/);
   assert.match(source, /housewarming: "Housewarming"/);
+  assert.match(source, /basketball: "Basketball"/);
+  assert.match(source, /category === "basketball"/);
   assert.match(backgroundSource, /normalized === "housewarming"/);
+  assert.match(backgroundSource, /normalized === "basketball"/);
   assert.match(
     backgroundSource,
     /housewarming: \["confetti", "dot", "star", "banner", "botanical-sprig"\]/,
+  );
+  assert.match(
+    backgroundSource,
+    /basketball: \["basketball", "hoop", "court-line", "star", "banner", "dot"\]/,
   );
 });
 
 test("ocr pipeline adds provider-aware ocrSkin for invite-like OCR categories", () => {
   const source = readSource("src/lib/ocr/pipeline.ts");
 
-  assert.match(
-    source,
-    /import \{ inferOcrSkinSelection, isOcrInviteCategory \} from "@\/lib\/ocr\/skin";/,
-  );
+  assert.match(source, /isBasketballOcrSkinCandidate/);
+  assert.match(source, /inferOcrSkinSelection/);
+  assert.match(source, /isOcrInviteCategory/);
   assert.match(source, /const ocrSkin =/);
-  assert.match(source, /isOcrInviteCategory\(category\)/);
+  assert.match(source, /const ocrSkinCategory = isBasketballOcrSkinCandidate/);
+  assert.match(source, /isOcrInviteCategory\(ocrSkinCategory\)/);
   assert.match(source, /await inferOcrSkinSelection\(\{/);
+  assert.match(source, /category: ocrSkinCategory \|\| "general"/);
   assert.match(source, /ocrSkin,/);
 });

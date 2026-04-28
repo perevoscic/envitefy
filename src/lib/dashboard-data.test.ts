@@ -59,6 +59,66 @@ test("toDashboardEvent keeps OCR-created rows owned without invite markers", () 
   assert.equal(event?.ownership, "owned");
 });
 
+test("toDashboardEvent marks events without RSVP fields as not RSVP actionable", () => {
+  const event = toDashboardEvent({
+    id: "evt_no_rsvp",
+    title: "Graduation Ceremony",
+    created_at: "2026-03-23T12:00:00.000Z",
+    data: {
+      startAt: "2026-06-02T18:00:00.000Z",
+      location: "129 Greenway Trail, Santa Rosa Beach, FL",
+      ownership: "invited",
+    },
+  });
+
+  assert.ok(event);
+  assert.equal(event?.hasRsvp, false);
+});
+
+test("toDashboardEvent marks direct RSVP signals as actionable", () => {
+  const cases = [
+    { rsvpEnabled: true },
+    { rsvp: "RSVP to host@example.com" },
+    { rsvpUrl: "https://example.com/rsvp" },
+    { rsvpDeadline: "May 1" },
+    { rsvp: { isEnabled: true } },
+    { rsvp: { contact: "host@example.com" } },
+    { rsvp: { url: "https://example.com/rsvp" } },
+    { numberOfGuests: 24 },
+  ];
+
+  for (const [index, data] of cases.entries()) {
+    const event = toDashboardEvent({
+      id: `evt_rsvp_${index}`,
+      title: "Birthday Invite",
+      created_at: "2026-03-23T12:00:00.000Z",
+      data: {
+        startAt: "2026-06-02T18:00:00.000Z",
+        ...data,
+      },
+    });
+
+    assert.equal(event?.hasRsvp, true);
+  }
+});
+
+test("toDashboardEvent marks OCR RSVP fields as actionable", () => {
+  const event = toDashboardEvent({
+    id: "evt_ocr_rsvp",
+    title: "Wedding Invite",
+    created_at: "2026-03-23T12:00:00.000Z",
+    data: {
+      startAt: "2026-06-02T18:00:00.000Z",
+      fieldsGuess: {
+        rsvpDeadline: "May 1",
+      },
+    },
+  });
+
+  assert.ok(event);
+  assert.equal(event?.hasRsvp, true);
+});
+
 test("toDashboardEvent excludes studio-only cards from dashboard collections", () => {
   const event = toDashboardEvent({
     id: "evt_studio",
@@ -161,4 +221,7 @@ test("db projections keep invite marker ownership logic in source", () => {
   assert.match(source, /thumbnailUrl/);
   assert.match(source, /thumbnailFocus/);
   assert.match(source, /thumbnail_focus/);
+  assert.match(source, /rsvpEnabled/);
+  assert.match(source, /rsvpUrl/);
+  assert.match(source, /fields_guess_rsvp/);
 });

@@ -16,6 +16,19 @@ test("dashboard invitation actions keep mobile buttons on one row", () => {
   assert.match(source, /<div className="flex gap-3 sm:gap-4">/);
 });
 
+test("dashboard invitation actions gate RSVP on actionable RSVP data", () => {
+  const source = readFileSync(new URL("./HomeOverviewDashboard.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /hasRsvp\?: boolean/);
+  assert.match(source, /if \(!item\.hasRsvp\)/);
+  assert.match(source, /label: "Get Directions"/);
+  assert.match(source, /if \(isInvitedWithoutResponse && item\.hasRsvp\)/);
+  assert.match(
+    source,
+    /if \(isInvitedWithoutResponse && item\.hasRsvp\)[\s\S]*label: "RSVP Now"/,
+  );
+});
+
 test("dashboard overview includes a directions info tile for the next event", () => {
   const source = readFileSync(new URL("./HomeOverviewDashboard.tsx", import.meta.url), "utf8");
 

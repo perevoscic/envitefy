@@ -16,10 +16,14 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   assert.match(source, /thumbnailFocus: normalizeThumbnailFocus\(data\?\.thumbnailFocus\),/);
   assert.match(source, /const normalizedOcrSkin =/);
   assert.match(source, /const normalizedThumbnailFocus = normalizeThumbnailFocus\(ocrMeta\?\.thumbnailFocus\);/);
-  assert.match(source, /const isInviteOcrEvent = isOcrInviteCategory\(normalizedOcrCategory\);/);
+  assert.match(source, /isBasketballOcrSkinCandidate/);
+  assert.match(source, /const isBasketballOcrEvent =/);
+  assert.match(source, /normalizedOcrSkin\?\.category === "basketball"/);
+  assert.match(source, /const isInviteOcrEvent = isOcrInviteCategory\(normalizedOcrCategory\) \|\| isBasketballOcrEvent;/);
   assert.match(source, /flyerColors = normalizedOcrSkin\.palette;/);
   assert.match(source, /ocrSkin:\s*isInviteOcrEvent \? normalizedOcrSkin \|\| undefined : undefined,/);
   assert.match(source, /thumbnailFocus:\s*isInviteOcrEvent && normalizedThumbnailFocus/);
+  assert.match(source, /"ocr-basketball-skin"/);
   assert.match(source, /"ocr-invite-skin"/);
   assert.match(source, /variationId: isBirthdayOcrEvent\s*\?\s*normalizedOcrSkin\?\.category === "birthday"/);
   assert.match(source, /normalizedOcrSkin\.skinId/);

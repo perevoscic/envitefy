@@ -1,6 +1,7 @@
 export type OcrSkinCategory =
   | "birthday"
   | "wedding"
+  | "basketball"
   | "baby-shower"
   | "bridal-shower"
   | "engagement"
@@ -17,6 +18,9 @@ export type OcrSkinId =
   | "scanned-wedding-editorial-paper"
   | "scanned-wedding-gilded-romance"
   | "scanned-wedding-noir-modern"
+  | "scanned-basketball-court-energy"
+  | "scanned-basketball-tournament-poster"
+  | "scanned-basketball-night-run"
   | "scanned-invite-bento-celebration"
   | "scanned-invite-soft-radiance"
   | "scanned-invite-evening-luxe";
@@ -46,6 +50,9 @@ export type OcrSkinBackgroundObjectKind =
   | "frame-corner"
   | "ring"
   | "pearl"
+  | "basketball"
+  | "hoop"
+  | "court-line"
   | "cap"
   | "tassel"
   | "diploma"
@@ -83,6 +90,9 @@ const BACKGROUND_OBJECT_KIND_SET = new Set<OcrSkinBackgroundObjectKind>([
   "frame-corner",
   "ring",
   "pearl",
+  "basketball",
+  "hoop",
+  "court-line",
   "cap",
   "tassel",
   "diploma",
@@ -92,6 +102,7 @@ const BACKGROUND_OBJECT_KIND_SET = new Set<OcrSkinBackgroundObjectKind>([
 const CATEGORY_OBJECT_KINDS: Record<OcrSkinCategory, readonly OcrSkinBackgroundObjectKind[]> = {
   birthday: ["confetti", "streamer", "dot", "star", "balloon"],
   wedding: ["botanical-sprig", "leaf", "frame-corner", "ring", "pearl"],
+  basketball: ["basketball", "hoop", "court-line", "star", "banner", "dot"],
   "baby-shower": ["botanical-sprig", "leaf", "dot", "star", "banner"],
   "bridal-shower": ["botanical-sprig", "leaf", "frame-corner", "ring", "pearl"],
   engagement: ["botanical-sprig", "leaf", "frame-corner", "ring", "pearl"],
@@ -112,6 +123,7 @@ const CATEGORY_FALLBACK_STYLE: Record<
 > = {
   birthday: { texture: "grain", density: "medium", placement: "edges" },
   wedding: { texture: "paper", density: "low", placement: "corners" },
+  basketball: { texture: "grain", density: "medium", placement: "edges" },
   "baby-shower": { texture: "paper", density: "low", placement: "balanced" },
   "bridal-shower": { texture: "paper", density: "low", placement: "corners" },
   engagement: { texture: "paper", density: "low", placement: "corners" },
@@ -130,6 +142,15 @@ export function normalizeOcrSkinCategory(value: unknown): OcrSkinCategory | null
   const normalized = safeString(value).toLowerCase();
   if (normalized === "birthday" || normalized === "birthdays") return "birthday";
   if (normalized === "wedding" || normalized === "weddings") return "wedding";
+  if (
+    normalized === "basketball" ||
+    normalized === "basketball event" ||
+    normalized === "basketball events" ||
+    normalized === "basketball invite" ||
+    normalized === "basketball invites"
+  ) {
+    return "basketball";
+  }
   if (
     normalized === "baby shower" ||
     normalized === "baby showers" ||
@@ -168,6 +189,63 @@ export function normalizeOcrSkinCategory(value: unknown): OcrSkinCategory | null
     return "general";
   }
   return null;
+}
+
+export function isBasketballOcrSkinCandidate(input: {
+  category?: unknown;
+  title?: unknown;
+  description?: unknown;
+  ocrText?: unknown;
+  activities?: unknown;
+}): boolean {
+  const textParts = [
+    input.category,
+    input.title,
+    input.description,
+    input.ocrText,
+    ...(Array.isArray(input.activities) ? input.activities : []),
+  ]
+    .map((value) => (typeof value === "string" ? value.trim() : ""))
+    .filter(Boolean);
+  const text = textParts.join(" ").toLowerCase();
+  if (!text) return false;
+  const category = safeString(input.category).toLowerCase();
+  if (
+    [
+      "birthday",
+      "birthdays",
+      "wedding",
+      "weddings",
+      "baby shower",
+      "baby showers",
+      "bridal shower",
+      "bridal showers",
+      "engagement",
+      "engagements",
+      "anniversary",
+      "anniversaries",
+      "graduation",
+      "graduations",
+      "religious event",
+      "religious events",
+    ].includes(category)
+  ) {
+    return false;
+  }
+  if (
+    /\bbasketball\b|\bhoops?\b|\bfree\s*throws?\b|\btip[-\s]?off\b|\b3\s*v\s*3\b|\b5\s*v\s*5\b/.test(
+      text,
+    )
+  ) {
+    return true;
+  }
+  const isSportCategory = category === "sport events" || category === "sport event";
+  if (!isSportCategory) return false;
+  return (
+    /\b(open\s+run|pickup\s+(?:game|games|run|runs)|shooting\s+(?:clinic|camp|workout)|skills\s+(?:clinic|camp)|scrimmage)\b/.test(
+      text,
+    ) && /\b(court|gym|league|tournament|team|tryouts?)\b/.test(text)
+  );
 }
 
 function normalizeHex(value: unknown): string | null {
@@ -222,6 +300,10 @@ function normalizeObjectKind(value: unknown): OcrSkinBackgroundObjectKind | null
     stars: "star",
     streamer: "streamer",
     streamers: "streamer",
+    basketballs: "basketball",
+    hoops: "hoop",
+    "court-lines": "court-line",
+    court: "court-line",
     tassels: "tassel",
   };
   const resolved = aliases[normalized] || normalized;
@@ -369,9 +451,11 @@ export function buildOcrSkinBackgroundPromptRules(category: OcrSkinCategory): st
       ? "birthday"
       : category === "wedding"
         ? "wedding"
-        : category === "graduation"
-          ? "graduation"
-          : "this invite category";
+        : category === "basketball"
+          ? "basketball"
+          : category === "graduation"
+            ? "graduation"
+            : "this invite category";
   return [
     "Also generate a subtle structured background spec for the UI.",
     "This is not an image prompt. It is JSON that the app renders as small decorative objects.",

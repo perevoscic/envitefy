@@ -26,7 +26,11 @@ import {
   llmRewriteSmartDescription,
   llmRewriteWedding,
 } from "@/lib/ocr/openai";
-import { inferOcrSkinSelection, isOcrInviteCategory } from "@/lib/ocr/skin";
+import {
+  inferOcrSkinSelection,
+  isBasketballOcrSkinCandidate,
+  isOcrInviteCategory,
+} from "@/lib/ocr/skin";
 import {
   buildNextOccurrence,
   createEmptyPracticeSchedule,
@@ -1452,10 +1456,19 @@ export async function handleOcrRequest(request: Request) {
       birthdayName: llmImage?.birthdayName,
       birthdayAge: llmImage?.birthdayAge,
     });
+    const ocrSkinCategory = isBasketballOcrSkinCandidate({
+      category,
+      title: fieldsGuess.title || finalTitle,
+      description: fieldsGuess.description,
+      ocrText: raw,
+      activities: llmImage?.activities,
+    })
+      ? "basketball"
+      : category;
     const ocrSkin =
-      isOcrInviteCategory(category)
+      isOcrInviteCategory(ocrSkinCategory)
         ? await inferOcrSkinSelection({
-            category: category || "general",
+            category: ocrSkinCategory || "general",
             imageBytes: colorBuffer,
             mimeType: colorMime,
             ocrText: raw,

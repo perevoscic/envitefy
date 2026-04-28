@@ -24,6 +24,8 @@ export type {
   OcrSkinPalette,
 } from "@/lib/ocr/skin-background";
 
+export { isBasketballOcrSkinCandidate } from "@/lib/ocr/skin-background";
+
 export type OcrSkinSelection = {
   version: 1;
   category: OcrSkinCategory;
@@ -69,6 +71,12 @@ const WEDDING_SKIN_IDS = [
   "scanned-wedding-noir-modern",
 ] as const;
 
+const BASKETBALL_SKIN_IDS = [
+  "scanned-basketball-court-energy",
+  "scanned-basketball-tournament-poster",
+  "scanned-basketball-night-run",
+] as const;
+
 const GENERIC_INVITE_SKIN_IDS = [
   "scanned-invite-bento-celebration",
   "scanned-invite-soft-radiance",
@@ -89,12 +97,14 @@ const GENERIC_OCR_SKIN_CATEGORIES = [
 const OCR_SKIN_ID_SET = new Set<OcrSkinId>([
   ...BIRTHDAY_SKIN_IDS,
   ...WEDDING_SKIN_IDS,
+  ...BASKETBALL_SKIN_IDS,
   ...GENERIC_INVITE_SKIN_IDS,
 ]);
 
 const OCR_INVITE_CATEGORY_LABELS: Record<OcrSkinCategory, string> = {
   birthday: "Birthday",
   wedding: "Wedding",
+  basketball: "Basketball",
   "baby-shower": "Baby Shower",
   "bridal-shower": "Bridal Shower",
   engagement: "Engagement",
@@ -160,6 +170,33 @@ const DEFAULT_OCR_SKIN_PALETTES: Record<OcrSkinId, OcrSkinPalette> = {
     dominant: "#2a3345",
     themeColor: "#f1d39a",
   },
+  "scanned-basketball-court-energy": {
+    background: "#fff6eb",
+    primary: "#f97316",
+    secondary: "#111827",
+    accent: "#f59e0b",
+    text: "#111827",
+    dominant: "#f97316",
+    themeColor: "#f97316",
+  },
+  "scanned-basketball-tournament-poster": {
+    background: "#f8fafc",
+    primary: "#ea580c",
+    secondary: "#2563eb",
+    accent: "#facc15",
+    text: "#111827",
+    dominant: "#ea580c",
+    themeColor: "#2563eb",
+  },
+  "scanned-basketball-night-run": {
+    background: "#111827",
+    primary: "#f97316",
+    secondary: "#38bdf8",
+    accent: "#fbbf24",
+    text: "#f9fafb",
+    dominant: "#1f2937",
+    themeColor: "#f97316",
+  },
   "scanned-invite-bento-celebration": {
     background: "#dcecf7",
     primary: "#e91e8f",
@@ -224,6 +261,12 @@ function normalizeSkinId(category: OcrSkinCategory, value: unknown): OcrSkinId |
   if (
     category === "wedding" &&
     WEDDING_SKIN_IDS.includes(id as (typeof WEDDING_SKIN_IDS)[number])
+  ) {
+    return id;
+  }
+  if (
+    category === "basketball" &&
+    BASKETBALL_SKIN_IDS.includes(id as (typeof BASKETBALL_SKIN_IDS)[number])
   ) {
     return id;
   }
@@ -332,6 +375,15 @@ function buildAllowedSkinRules(category: OcrSkinCategory): string {
       'Pick "scanned-wedding-editorial-paper" for airy, floral, cream, stationery-like, classic, delicate, or soft editorial wedding invites.',
       'Pick "scanned-wedding-gilded-romance" for warm gold, ballroom, formal, traditional, ornate, luxurious, or champagne-toned wedding invites.',
       'Pick "scanned-wedding-noir-modern" for black-and-white, moody, fashion-editorial, city-night, stark, minimal, or modern luxury wedding invites.',
+    ].join("\n");
+  }
+
+  if (category === "basketball") {
+    return [
+      'Allowed skinId values: "scanned-basketball-court-energy", "scanned-basketball-tournament-poster", "scanned-basketball-night-run".',
+      'Pick "scanned-basketball-court-energy" for bright orange, gym-floor, practice, skills clinic, or casual pickup flyers.',
+      'Pick "scanned-basketball-tournament-poster" for school/team, bracket, league, camp, tournament, or bold poster-style flyers.',
+      'Pick "scanned-basketball-night-run" for dark, neon, blacktop, late-night run, dramatic arena, or high-contrast basketball flyers.',
     ].join("\n");
   }
 

@@ -15,7 +15,14 @@ test("ocr skin background schema validates motifs and builds title-aware fallbac
   assert.match(source, /colors\?: string\[\];/);
   assert.match(source, /birthday: \["confetti", "streamer", "dot", "star", "balloon"\]/);
   assert.match(source, /wedding: \["botanical-sprig", "leaf", "frame-corner", "ring", "pearl"\]/);
+  assert.match(
+    source,
+    /basketball: \["basketball", "hoop", "court-line", "star", "banner", "dot"\]/,
+  );
   assert.match(source, /graduation: \["cap", "tassel", "diploma", "star", "banner", "confetti"\]/);
+  assert.match(source, /export function isBasketballOcrSkinCandidate/);
+  assert.match(source, /"sport events"/);
+  assert.match(source, /open\\s\+run/);
   assert.match(source, /function normalizeObjectKinds/);
   assert.match(source, /allowed\.has\(objectKind\)/);
   assert.match(source, /function normalizeColors/);

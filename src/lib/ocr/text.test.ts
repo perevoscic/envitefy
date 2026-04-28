@@ -33,6 +33,7 @@ test("splitVenueFromAddress keeps venue separate from street address", () => {
 test("detectCategory recognizes medical and sports text", () => {
   assert.equal(detectCategory("Dental cleaning appointment with Sacred Heart"), "Doctor Appointments");
   assert.equal(detectCategory("Volleyball practice schedule Monday 4:30"), "Sport Events");
+  assert.equal(detectCategory("Basketball league game vs Central at 6 PM"), "Sport Events");
 });
 
 test("detectCategory recognizes expanded invite categories", () => {
