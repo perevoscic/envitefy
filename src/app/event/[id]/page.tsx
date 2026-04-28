@@ -57,6 +57,7 @@ import {
   isPickleballOcrSkinCandidate,
   normalizeOcrSkinSelection,
 } from "@/lib/ocr/skin";
+import { cleanGraduationVenueName } from "@/lib/ocr/text";
 import { createServerTimingTracker } from "@/lib/server-timing";
 import { resolveEventPageBackgroundColor, resolveEventThemeColor } from "@/lib/theme-color";
 import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
@@ -1031,11 +1032,15 @@ export default async function EventPage({
         );
     return { name, type, dataUrl: previewUrl };
   })();
-  const locationText = typeof data?.location === "string" ? (data.location as string) : "";
-  const venueText = typeof data?.venue === "string" ? (data.venue as string) : "";
-  const hasMapLocation = Boolean(venueText?.trim() || locationText?.trim());
   const categoryRaw = typeof data?.category === "string" ? data.category : "";
   const categoryNormalized = categoryRaw.toLowerCase();
+  const locationText = typeof data?.location === "string" ? (data.location as string) : "";
+  const rawVenueText = typeof data?.venue === "string" ? (data.venue as string) : "";
+  const venueText =
+    categoryNormalized === "graduations"
+      ? cleanGraduationVenueName(rawVenueText)
+      : rawVenueText;
+  const hasMapLocation = Boolean(venueText?.trim() || locationText?.trim());
   const registryCopy = getRegistrySectionCopyForCategory(categoryRaw);
   const registriesAllowed = registryCopy.allowsLinks;
   const registryLinksRaw = Array.isArray(data?.registries) ? (data.registries as any[]) : [];
@@ -1204,9 +1209,12 @@ export default async function EventPage({
     "";
 
   const hostName =
-    typeof data?.hostName === "string" && data.hostName.trim() ? data.hostName.trim() : "";
-  const storedRsvpName =
+    typeof data?.hostName === "string" && data.hostName.trim()
+      ? cleanRsvpContactLabel(data.hostName.trim())
+      : "";
+  const storedRsvpNameRaw =
     typeof data?.rsvpName === "string" && data.rsvpName.trim() ? data.rsvpName.trim() : "";
+  const storedRsvpName = storedRsvpNameRaw ? cleanRsvpContactLabel(storedRsvpNameRaw) : "";
   const rsvpContactSource =
     storedRsvpName || hostName || structuredRsvpContact || rsvpField || rsvpEmail || "";
   // Extract just the name from RSVP field (remove "RSVP:" prefix, phone number, and option text)

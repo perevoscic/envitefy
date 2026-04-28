@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  cleanGraduationVenueName,
   combineGuestInfoFacts,
   detectCategory,
   extractCommonOcrFactsFromFlyerText,
@@ -34,6 +35,18 @@ test("splitVenueFromAddress keeps venue separate from street address", () => {
   );
   assert.equal(split.venue, "US Gold Gymnastics");
   assert.equal(split.address, "123 Main St, Springfield, IL 62704");
+});
+
+test("cleanGraduationVenueName removes graduation honoree suffixes from venue-like values", () => {
+  assert.equal(
+    cleanGraduationVenueName("Seacoast Collegiate High School Graduation — Lena De La Cruz"),
+    "Seacoast Collegiate High School",
+  );
+  assert.equal(cleanGraduationVenueName("Bayside Church Commencement Ceremony"), "Bayside Church");
+  assert.equal(cleanGraduationVenueName("Graduation Ceremony — Lena De La Cruz"), "");
+  assert.equal(cleanGraduationVenueName("Class of 2026 Graduation — Lena De La Cruz"), "");
+  assert.equal(cleanGraduationVenueName("The Graduation Center"), "The Graduation Center");
+  assert.equal(cleanGraduationVenueName("Smith-Brown Event Center"), "Smith-Brown Event Center");
 });
 
 test("detectCategory recognizes medical and sports text", () => {
@@ -140,7 +153,7 @@ test("extractCommonOcrFactsFromFlyerText keeps flyer facts but skips question fo
     { label: "Good to Know", value: "All Skill Levels Welcome" },
     { label: "Good to Know", value: "Ages 16+" },
     { label: "Good to Know", value: "Free to Play" },
-    { label: "Host", value: "The Neighborhood Rec Group" },
+    { label: "Host", value: "Neighborhood Rec Group" },
     { label: "Good to Know", value: "Bring water and both light & dark shirts" },
   ]);
 });
@@ -188,6 +201,6 @@ test("combineGuestInfoFacts merges OCR guest facts without duplicates", () => {
 test("extractHostedByFromFlyerText captures printed host group", () => {
   assert.equal(
     extractHostedByFromFlyerText("Hosted by the Neighborhood Rec Group"),
-    "the Neighborhood Rec Group",
+    "Neighborhood Rec Group",
   );
 });

@@ -46,6 +46,11 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   assert.match(source, /venue: venueFromScan \|\| undefined/);
   assert.match(source, /venue:\s*typeof eventInput\.venue === "string"/);
   assert.match(source, /const extractRsvpName =/);
+  assert.match(source, /import \{ cleanRsvpContactLabel \} from "@\/utils\/rsvp";/);
+  assert.match(source, /const cleanedName = cleanRsvpContactLabel\(name\);/);
+  assert.match(source, /const rawHostNameFromScan =/);
+  assert.match(source, /const hostNameFromScan = rawHostNameFromScan/);
+  assert.match(source, /cleanRsvpContactLabel\(rawHostNameFromScan\)/);
   assert.match(source, /rsvpName: rsvpNameFromScan \|\| undefined/);
   assert.match(source, /rsvpName:\s*typeof eventInput\.rsvpName === "string"/);
 });

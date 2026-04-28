@@ -47,6 +47,51 @@ export function cleanAddressLabel(input: string): string {
   return s.trim();
 }
 
+function looksLikePersonName(value: string): boolean {
+  const compact = value
+    .replace(/[.,]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!compact) return false;
+  const words = compact.split(/\s+/).filter(Boolean);
+  if (words.length < 2 || words.length > 5) return false;
+  if (/\b(?:school|academy|college|university|center|centre|hall|church|chapel|campus|theater|theatre|stadium|arena|auditorium|park|room|gym|gymnasium|plaza|library)\b/i.test(compact)) {
+    return false;
+  }
+  return words.every((word) => /^[A-Z][A-Za-z'’.-]+$/.test(word));
+}
+
+export function cleanGraduationVenueName(input: string | null | undefined): string {
+  const cleaned = cleanAddressLabel(String(input || ""));
+  if (!cleaned) return "";
+
+  const graduationTerm =
+    /\b(?:graduation(?:\s+(?:ceremony|party|celebration))?|commencement(?:\s+ceremony)?|grad\s*party|class\s+of\s+\d{4})\b/i;
+  if (!graduationTerm.test(cleaned)) return cleaned;
+
+  const leadingGraduationEvent =
+    /^(?:(?:class\s+of\s+\d{4})|(?:graduation|commencement)(?:\s+(?:ceremony|party|celebration))?|grad\s*party)(?:\s*(?:[—–-]|:)|\s*$|\s+(?:for|honoring|celebrating)\b)/i;
+  if (leadingGraduationEvent.test(cleaned)) return "";
+
+  const venueSuffix =
+    /\s+(?:graduation(?:\s+(?:ceremony|party|celebration))?|commencement(?:\s+ceremony)?|grad\s*party|class\s+of\s+\d{4})(?=\s*(?:[—–-]|:|\bfor\b|\bhonoring\b|\bcelebrating\b|$)).*$/i;
+  const stripped = cleaned
+    .replace(venueSuffix, "")
+    .replace(/\s+/g, " ")
+    .replace(/[,\s:—–-]+$/g, "")
+    .trim();
+
+  if (stripped && stripped !== cleaned) {
+    if (/^class\s+of\s+\d{4}$/i.test(stripped)) return "";
+    return looksLikePersonName(stripped) ? "" : stripped;
+  }
+
+  const honoreeSuffix = /\s[—–-]\s+[A-Z][A-Za-z'’.-]+(?:\s+[A-Z][A-Za-z'’.-]+){1,5}\s*$/;
+  if (honoreeSuffix.test(cleaned)) return "";
+
+  return cleaned;
+}
+
 export function pickVenueLabelForSentence(
   location?: string,
   description?: string,
@@ -554,21 +599,32 @@ export function extractRsvpDetails(rawText: string, fallbackText?: string): Extr
       }
     }
 
-    const relevantLine =
-      lines.find((line) => /\brsvp|respond|reply\b/i.test(line)) ||
-      lines.find((line) => {
-        const maybeUrl = trimRsvpUrl(line.match(RSVP_URL_REGEX)?.[0] || null);
-        return Boolean(maybeUrl);
-      }) ||
-      "";
-    const relevantWindow = relevantLine
-      ? [
-          relevantLine,
-          lines[lines.indexOf(relevantLine) + 1] || "",
-          lines[lines.indexOf(relevantLine) + 2] || "",
-        ]
-          .join(" ")
-          .trim()
+    const rsvpLineIndex = lines.findIndex((line) => /\brsvp|respond|reply\b/i.test(line));
+    const contactInstructionLineIndex = lines.findIndex((line, index) => {
+      const nearby = [line, lines[index + 1] || ""].join(" ").trim();
+      return (
+        /\b(?:questions?|text|txt|call|contact|message|email)\b/i.test(nearby) &&
+        (RSVP_PHONE_REGEX.test(nearby) || RSVP_EMAIL_REGEX.test(nearby))
+      );
+    });
+    const urlLineIndex = lines.findIndex((line) => {
+      const maybeUrl = trimRsvpUrl(line.match(RSVP_URL_REGEX)?.[0] || null);
+      return Boolean(maybeUrl);
+    });
+    const relevantLineIndex =
+      rsvpLineIndex >= 0
+        ? rsvpLineIndex
+        : contactInstructionLineIndex >= 0
+          ? contactInstructionLineIndex
+          : urlLineIndex;
+    const isContactInstructionWindow =
+      relevantLineIndex >= 0 && relevantLineIndex === contactInstructionLineIndex;
+    const relevantWindow =
+      relevantLineIndex >= 0
+        ? lines
+            .slice(relevantLineIndex, relevantLineIndex + (isContactInstructionWindow ? 2 : 3))
+            .join(" ")
+            .trim()
       : text;
 
     const phoneMatch = relevantWindow.match(RSVP_PHONE_REGEX) || text.match(RSVP_PHONE_REGEX);
@@ -578,9 +634,24 @@ export function extractRsvpDetails(rawText: string, fallbackText?: string): Extr
     if (phoneMatch?.[0]) {
       const nameMatch = relevantWindow.match(/rsvp[^a-z0-9]*to\s+([^:|\d]+?)(?:\s*[-:,.]|$)/i);
       const colonPattern = relevantWindow.match(/rsvp\s*:\s*([^:\d]+?)\s*(\d)/i);
-      const withMatch = relevantWindow.match(/\bwith\s+([A-Z][A-Za-z' -]+)\b/i);
-      const toMatch = relevantWindow.match(/\bto\s+([A-Z][A-Za-z' -]+)\b/i);
-      const rawName = (nameMatch?.[1] || colonPattern?.[1] || withMatch?.[1] || toMatch?.[1] || "")
+      const instructionNameMatch = relevantWindow.match(
+        /\b(?:text|txt|call|contact|message|email)\s+([A-Z][A-Za-z' -]+?)\s+(?:at\s+)?(?:\(?\d{3}\)?|[A-Z0-9._%+-]+@)/i,
+      );
+      const canUseLooseRsvpName = /\b(?:rsvp|respond|reply)\b/i.test(relevantWindow);
+      const withMatch = canUseLooseRsvpName
+        ? relevantWindow.match(/\bwith\s+([A-Z][A-Za-z' -]+)\b/i)
+        : null;
+      const toMatch = canUseLooseRsvpName
+        ? relevantWindow.match(/\bto\s+([A-Z][A-Za-z' -]+)\b/i)
+        : null;
+      const rawName = (
+        nameMatch?.[1] ||
+        colonPattern?.[1] ||
+        instructionNameMatch?.[1] ||
+        withMatch?.[1] ||
+        toMatch?.[1] ||
+        ""
+      )
         .replace(/\s{2,}/g, " ")
         .replace(/\s+at\s*$/i, "")
         .replace(/[:,\d]+$/, "")
@@ -620,6 +691,10 @@ function cleanFlyerFact(value: string): string {
     .replace(/\s+([+.,;:!?])/g, "$1")
     .replace(/^[•·\-–—\s]+|[•·\-–—\s]+$/g, "")
     .trim();
+}
+
+function stripLeadingHostArticle(value: string): string {
+  return value.replace(/^the\s+/i, "").trim();
 }
 
 function appendUniqueFact(facts: string[], value: string | null | undefined) {
@@ -710,11 +785,14 @@ export function extractCommonOcrFactsFromFlyerText(
   const seen = new Set<string>();
   const seenValues = new Set<string>();
   const addFact = (label: string, value: string | null | undefined) => {
-    const cleaned = cleanFlyerFact(String(value || ""))
+    let cleaned = cleanFlyerFact(String(value || ""))
       .replace(/\bquestions?\b.*$/i, "")
       .replace(/\b(?:text|call)\s+\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b.*$/i, "")
       .replace(/[.!?]+$/g, "")
       .trim();
+    if (/^host$/i.test(label)) {
+      cleaned = stripLeadingHostArticle(cleaned);
+    }
     if (!cleaned || cleaned.length < 3 || !/[A-Za-z0-9]/.test(cleaned)) return;
     const key = `${label} ${cleaned}`
       .toLowerCase()
@@ -848,7 +926,8 @@ export function extractHostedByFromFlyerText(text: string | null | undefined): s
       .replace(/\b(?:questions?|text|call|rsvp)\b.*$/i, "")
       .replace(/\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b.*$/i, "")
       .trim();
-    if (cleaned && /[A-Za-z]/.test(cleaned)) return cleaned;
+    const withoutArticle = stripLeadingHostArticle(cleaned);
+    if (withoutArticle && /[A-Za-z]/.test(withoutArticle)) return withoutArticle;
   }
 
   const normalized = text.replace(/\s+/g, " ").trim();
@@ -856,7 +935,7 @@ export function extractHostedByFromFlyerText(text: string | null | undefined): s
     /\bhosted\s+by\s+(.{2,90}?)(?=\s+(?:questions?|text|call|rsvp)\b|$)/i,
   );
   if (!inlineMatch?.[1]) return null;
-  const cleaned = cleanFlyerFact(inlineMatch[1]);
+  const cleaned = stripLeadingHostArticle(cleanFlyerFact(inlineMatch[1]));
   return cleaned && /[A-Za-z]/.test(cleaned) ? cleaned : null;
 }
 

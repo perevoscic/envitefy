@@ -55,24 +55,51 @@ export type OcrSkinBackgroundObjectKind =
   | "star"
   | "balloon"
   | "cake"
+  | "cupcake"
   | "gift"
   | "party-hat"
   | "candle"
+  | "sparkle"
+  | "crown"
+  | "music-note"
+  | "arcade-token"
   | "botanical-sprig"
   | "leaf"
   | "frame-corner"
   | "ring"
+  | "ring-box"
   | "pearl"
   | "heart"
   | "diamond"
   | "champagne"
+  | "champagne-bubble"
+  | "wine-glass"
   | "floral-arch"
+  | "lace"
+  | "vow-book"
+  | "ribbon"
+  | "bouquet"
+  | "wax-seal"
+  | "rose"
+  | "photo-frame"
   | "baby-bottle"
   | "rattle"
   | "moon"
   | "onesie"
+  | "pacifier"
+  | "teddy-bear"
+  | "cloud"
+  | "bib"
+  | "stroller"
+  | "teacup"
+  | "bow"
   | "house"
   | "key"
+  | "front-door"
+  | "welcome-mat"
+  | "plant"
+  | "lamp"
+  | "mug"
   | "basketball"
   | "football"
   | "helmet"
@@ -81,18 +108,41 @@ export type OcrSkinBackgroundObjectKind =
   | "stadium-light"
   | "hoop"
   | "court-line"
+  | "court-arc"
+  | "backboard"
+  | "net"
+  | "shot-clock"
   | "sneaker"
+  | "trophy"
+  | "football-trophy"
+  | "yard-marker"
+  | "playbook"
+  | "cleat"
+  | "foam-finger"
   | "pickleball"
   | "paddle"
+  | "paddle-pair"
   | "net-line"
+  | "pickleball-court"
+  | "serve-line"
+  | "water-bottle"
   | "cap"
   | "tassel"
   | "diploma"
   | "book"
+  | "notebook"
+  | "school-building"
+  | "scroll"
+  | "laurel"
   | "medal"
   | "dove"
+  | "stained-glass"
+  | "olive-branch"
+  | "lantern"
   | "calendar"
   | "ticket"
+  | "map-pin"
+  | "announcement-card"
   | "jersey"
   | "whistle"
   | "scoreboard"
@@ -129,24 +179,51 @@ const BACKGROUND_OBJECT_KIND_SET = new Set<OcrSkinBackgroundObjectKind>([
   "star",
   "balloon",
   "cake",
+  "cupcake",
   "gift",
   "party-hat",
   "candle",
+  "sparkle",
+  "crown",
+  "music-note",
+  "arcade-token",
   "botanical-sprig",
   "leaf",
   "frame-corner",
   "ring",
+  "ring-box",
   "pearl",
   "heart",
   "diamond",
   "champagne",
+  "champagne-bubble",
+  "wine-glass",
   "floral-arch",
+  "lace",
+  "vow-book",
+  "ribbon",
+  "bouquet",
+  "wax-seal",
+  "rose",
+  "photo-frame",
   "baby-bottle",
   "rattle",
   "moon",
   "onesie",
+  "pacifier",
+  "teddy-bear",
+  "cloud",
+  "bib",
+  "stroller",
+  "teacup",
+  "bow",
   "house",
   "key",
+  "front-door",
+  "welcome-mat",
+  "plant",
+  "lamp",
+  "mug",
   "basketball",
   "football",
   "helmet",
@@ -155,18 +232,41 @@ const BACKGROUND_OBJECT_KIND_SET = new Set<OcrSkinBackgroundObjectKind>([
   "stadium-light",
   "hoop",
   "court-line",
+  "court-arc",
+  "backboard",
+  "net",
+  "shot-clock",
   "sneaker",
+  "trophy",
+  "football-trophy",
+  "yard-marker",
+  "playbook",
+  "cleat",
+  "foam-finger",
   "pickleball",
   "paddle",
+  "paddle-pair",
   "net-line",
+  "pickleball-court",
+  "serve-line",
+  "water-bottle",
   "cap",
   "tassel",
   "diploma",
   "book",
+  "notebook",
+  "school-building",
+  "scroll",
+  "laurel",
   "medal",
   "dove",
+  "stained-glass",
+  "olive-branch",
+  "lantern",
   "calendar",
   "ticket",
+  "map-pin",
+  "announcement-card",
   "jersey",
   "whistle",
   "scoreboard",
@@ -176,23 +276,49 @@ const BACKGROUND_OBJECT_KIND_SET = new Set<OcrSkinBackgroundObjectKind>([
 ]);
 
 const CATEGORY_OBJECT_KINDS: Record<OcrSkinCategory, readonly OcrSkinBackgroundObjectKind[]> = {
-  birthday: ["confetti", "streamer", "dot", "star", "balloon", "cake", "gift", "party-hat"],
+  birthday: [
+    "confetti",
+    "streamer",
+    "dot",
+    "star",
+    "balloon",
+    "cake",
+    "cupcake",
+    "gift",
+    "party-hat",
+    "sparkle",
+    "crown",
+    "music-note",
+    "arcade-token",
+  ],
   wedding: [
     "botanical-sprig",
     "leaf",
     "frame-corner",
     "ring",
+    "ring-box",
     "pearl",
     "heart",
     "diamond",
     "champagne",
+    "champagne-bubble",
     "floral-arch",
+    "lace",
+    "vow-book",
+    "ribbon",
+    "bouquet",
+    "wax-seal",
   ],
   basketball: [
     "basketball",
     "hoop",
     "court-line",
+    "court-arc",
+    "backboard",
+    "net",
     "sneaker",
+    "trophy",
+    "shot-clock",
     "banner",
     "jersey",
     "whistle",
@@ -203,8 +329,13 @@ const CATEGORY_OBJECT_KINDS: Record<OcrSkinCategory, readonly OcrSkinBackgroundO
     "helmet",
     "goalpost",
     "field-line",
+    "yard-marker",
     "stadium-light",
     "star",
+    "football-trophy",
+    "playbook",
+    "cleat",
+    "foam-finger",
     "banner",
     "pennant",
     "megaphone",
@@ -216,6 +347,11 @@ const CATEGORY_OBJECT_KINDS: Record<OcrSkinCategory, readonly OcrSkinBackgroundO
     "rattle",
     "moon",
     "onesie",
+    "pacifier",
+    "teddy-bear",
+    "cloud",
+    "bib",
+    "stroller",
     "botanical-sprig",
     "leaf",
     "dot",
@@ -230,30 +366,108 @@ const CATEGORY_OBJECT_KINDS: Record<OcrSkinCategory, readonly OcrSkinBackgroundO
     "pearl",
     "heart",
     "champagne",
+    "champagne-bubble",
     "floral-arch",
+    "teacup",
+    "bouquet",
+    "bow",
+    "gift",
   ],
   engagement: [
     "diamond",
     "ring",
+    "ring-box",
     "heart",
+    "sparkle",
     "botanical-sprig",
     "leaf",
     "frame-corner",
     "champagne",
+    "champagne-bubble",
     "pearl",
+    "rose",
+    "ribbon",
   ],
-  anniversary: ["heart", "champagne", "ring", "botanical-sprig", "leaf", "frame-corner", "pearl"],
-  housewarming: ["house", "key", "botanical-sprig", "leaf", "dot", "star", "banner", "gift"],
-  graduation: ["cap", "tassel", "diploma", "book", "medal", "star", "banner", "confetti"],
-  religious: ["candle", "dove", "botanical-sprig", "leaf", "dot", "star", "banner"],
-  general: ["calendar", "ticket", "confetti", "dot", "star", "banner", "botanical-sprig"],
+  anniversary: [
+    "heart",
+    "champagne",
+    "wine-glass",
+    "ring",
+    "botanical-sprig",
+    "leaf",
+    "frame-corner",
+    "pearl",
+    "rose",
+    "photo-frame",
+    "candle",
+    "ribbon",
+  ],
+  housewarming: [
+    "house",
+    "front-door",
+    "welcome-mat",
+    "key",
+    "plant",
+    "lamp",
+    "mug",
+    "botanical-sprig",
+    "leaf",
+    "dot",
+    "star",
+    "banner",
+    "gift",
+  ],
+  graduation: [
+    "cap",
+    "tassel",
+    "diploma",
+    "book",
+    "notebook",
+    "school-building",
+    "scroll",
+    "laurel",
+    "medal",
+    "star",
+    "sparkle",
+    "banner",
+    "confetti",
+  ],
+  religious: [
+    "candle",
+    "dove",
+    "stained-glass",
+    "olive-branch",
+    "lantern",
+    "botanical-sprig",
+    "leaf",
+    "dot",
+    "star",
+    "banner",
+  ],
+  general: [
+    "calendar",
+    "ticket",
+    "confetti",
+    "dot",
+    "star",
+    "sparkle",
+    "banner",
+    "botanical-sprig",
+    "map-pin",
+    "announcement-card",
+  ],
 };
 
 const SPORT_KIND_OBJECT_KINDS: Record<OcrSportKind, readonly OcrSkinBackgroundObjectKind[]> = {
   pickleball: [
     "pickleball",
     "paddle",
+    "paddle-pair",
     "net-line",
+    "pickleball-court",
+    "serve-line",
+    "trophy",
+    "water-bottle",
     "court-line",
     "scoreboard",
     "whistle",
@@ -598,6 +812,9 @@ function hashString(value: string): number {
 }
 
 function getContextCategory(context: OcrSkinBackgroundContext): OcrSkinCategory {
+  const skinId = safeString(context.skinId);
+  if (skinId.startsWith("scanned-football-")) return "football";
+  if (skinId.startsWith("scanned-basketball-")) return "basketball";
   return normalizeOcrSkinCategory(context.category) || "general";
 }
 
@@ -615,6 +832,14 @@ function getAllowedObjectKinds(
   return sportKind ? SPORT_KIND_OBJECT_KINDS[sportKind] : CATEGORY_OBJECT_KINDS[category];
 }
 
+function getRequiredObjectKinds(
+  category: OcrSkinCategory,
+  sportKind: OcrSportKind | null,
+): readonly OcrSkinBackgroundObjectKind[] {
+  if (sportKind) return [];
+  return category === "football" ? ["football-trophy"] : [];
+}
+
 function normalizeObjectKind(value: unknown): OcrSkinBackgroundObjectKind | null {
   const normalized = safeString(value).toLowerCase().replace(/_/g, "-");
   const aliases: Record<string, OcrSkinBackgroundObjectKind> = {
@@ -624,8 +849,8 @@ function normalizeObjectKind(value: unknown): OcrSkinBackgroundObjectKind | null
     birthdaycake: "cake",
     "birthday-cake": "cake",
     cakes: "cake",
-    cupcake: "cake",
-    cupcakes: "cake",
+    cupcake: "cupcake",
+    cupcakes: "cupcake",
     presents: "gift",
     present: "gift",
     gifts: "gift",
@@ -633,6 +858,20 @@ function normalizeObjectKind(value: unknown): OcrSkinBackgroundObjectKind | null
     "party hat": "party-hat",
     "party hats": "party-hat",
     candles: "candle",
+    sparkles: "sparkle",
+    twinkle: "sparkle",
+    twinkles: "sparkle",
+    crowns: "crown",
+    "music-notes": "music-note",
+    "music note": "music-note",
+    "music notes": "music-note",
+    note: "music-note",
+    notes: "music-note",
+    "arcade-token": "arcade-token",
+    "arcade token": "arcade-token",
+    "arcade tokens": "arcade-token",
+    token: "arcade-token",
+    tokens: "arcade-token",
     diplomas: "diploma",
     dots: "dot",
     flowers: "botanical-sprig",
@@ -644,6 +883,9 @@ function normalizeObjectKind(value: unknown): OcrSkinBackgroundObjectKind | null
     "frame-corners": "frame-corner",
     "graduation-cap": "cap",
     hearts: "heart",
+    "ring-boxes": "ring-box",
+    "ring box": "ring-box",
+    "ring boxes": "ring-box",
     diamond: "diamond",
     diamonds: "diamond",
     gems: "diamond",
@@ -653,6 +895,38 @@ function normalizeObjectKind(value: unknown): OcrSkinBackgroundObjectKind | null
     "champagne glasses": "champagne",
     flute: "champagne",
     flutes: "champagne",
+    "champagne-bubbles": "champagne-bubble",
+    "champagne bubble": "champagne-bubble",
+    "champagne bubbles": "champagne-bubble",
+    bubbles: "champagne-bubble",
+    "wine-glass": "wine-glass",
+    "wine-glasses": "wine-glass",
+    "wine glass": "wine-glass",
+    "wine glasses": "wine-glass",
+    wine: "wine-glass",
+    lace: "lace",
+    "lace-border": "lace",
+    "lace border": "lace",
+    "vow-book": "vow-book",
+    "vow-books": "vow-book",
+    "vow book": "vow-book",
+    "vow books": "vow-book",
+    "guest-book": "vow-book",
+    "guest book": "vow-book",
+    ribbons: "ribbon",
+    bouquets: "bouquet",
+    "flower-bouquet": "bouquet",
+    "flower bouquet": "bouquet",
+    "wax-seals": "wax-seal",
+    "wax seal": "wax-seal",
+    "wax seals": "wax-seal",
+    roses: "rose",
+    "photo-frame": "photo-frame",
+    "photo-frames": "photo-frame",
+    "photo frame": "photo-frame",
+    "photo frames": "photo-frame",
+    picture: "photo-frame",
+    "picture-frame": "photo-frame",
     "baby bottle": "baby-bottle",
     "baby-bottles": "baby-bottle",
     "baby bottles": "baby-bottle",
@@ -662,10 +936,38 @@ function normalizeObjectKind(value: unknown): OcrSkinBackgroundObjectKind | null
     moons: "moon",
     onesies: "onesie",
     bodysuit: "onesie",
+    pacifiers: "pacifier",
+    "teddy-bears": "teddy-bear",
+    "teddy bear": "teddy-bear",
+    "teddy bears": "teddy-bear",
+    clouds: "cloud",
+    bibs: "bib",
+    strollers: "stroller",
+    pram: "stroller",
+    prams: "stroller",
+    teacups: "teacup",
+    "tea-cup": "teacup",
+    "tea-cups": "teacup",
+    "tea cup": "teacup",
+    "tea cups": "teacup",
+    bows: "bow",
     houses: "house",
     home: "house",
     homes: "house",
     keys: "key",
+    door: "front-door",
+    doors: "front-door",
+    "front-doors": "front-door",
+    "front door": "front-door",
+    "front doors": "front-door",
+    "welcome-mats": "welcome-mat",
+    "welcome mat": "welcome-mat",
+    "welcome mats": "welcome-mat",
+    plants: "plant",
+    greenery: "plant",
+    lamps: "lamp",
+    mugs: "mug",
+    cups: "mug",
     leaves: "leaf",
     pearls: "pearl",
     rings: "ring",
@@ -685,26 +987,104 @@ function normalizeObjectKind(value: unknown): OcrSkinBackgroundObjectKind | null
     hoops: "hoop",
     "court-lines": "court-line",
     court: "court-line",
+    "court-arc": "court-arc",
+    "court-arcs": "court-arc",
+    "court arc": "court-arc",
+    "court arcs": "court-arc",
+    backboards: "backboard",
+    "basketball-net": "net",
+    "basketball net": "net",
+    "basketball nets": "net",
+    "shot-clocks": "shot-clock",
+    "shot clock": "shot-clock",
+    "shot clocks": "shot-clock",
     shoe: "sneaker",
     shoes: "sneaker",
     sneaker: "sneaker",
     sneakers: "sneaker",
-    net: "net-line",
-    nets: "net-line",
+    trophies: "trophy",
+    "football-trophy": "football-trophy",
+    "football-trophies": "football-trophy",
+    "football trophy": "football-trophy",
+    "football trophies": "football-trophy",
+    "championship-trophy": "football-trophy",
+    "championship trophy": "football-trophy",
+    "super-bowl-trophy": "football-trophy",
+    "super bowl trophy": "football-trophy",
+    "super-bowl-cup": "football-trophy",
+    "super bowl cup": "football-trophy",
+    "lombardi-trophy": "football-trophy",
+    "lombardi trophy": "football-trophy",
+    "vince-lombardi-trophy": "football-trophy",
+    "vince lombardi trophy": "football-trophy",
+    "yard-markers": "yard-marker",
+    "yard marker": "yard-marker",
+    "yard markers": "yard-marker",
+    playbooks: "playbook",
+    cleats: "cleat",
+    "foam-fingers": "foam-finger",
+    "foam finger": "foam-finger",
+    "foam fingers": "foam-finger",
+    net: "net",
+    nets: "net",
+    "court-net": "net-line",
+    "court net": "net-line",
     "net-lines": "net-line",
     paddle: "paddle",
     paddles: "paddle",
+    "paddle-pairs": "paddle-pair",
+    "paddle pair": "paddle-pair",
+    "paddle pairs": "paddle-pair",
     "pickleball-ball": "pickleball",
     "pickleball-balls": "pickleball",
     pickleballs: "pickleball",
+    "pickleball-courts": "pickleball-court",
+    "pickleball court": "pickleball-court",
+    "pickleball courts": "pickleball-court",
+    "serve-lines": "serve-line",
+    "serve line": "serve-line",
+    "serve lines": "serve-line",
+    "water-bottle": "water-bottle",
+    "water-bottles": "water-bottle",
+    "water bottle": "water-bottle",
+    "water bottles": "water-bottle",
     tassels: "tassel",
     books: "book",
+    notebooks: "notebook",
+    "school-building": "school-building",
+    "school-buildings": "school-building",
+    "school building": "school-building",
+    "school buildings": "school-building",
+    scrolls: "scroll",
+    laurels: "laurel",
+    "laurel-wreath": "laurel",
+    "laurel wreath": "laurel",
     medals: "medal",
     medal: "medal",
     doves: "dove",
+    "stained-glass": "stained-glass",
+    "stained glass": "stained-glass",
+    "stained-glass-window": "stained-glass",
+    "stained glass window": "stained-glass",
+    "olive-branches": "olive-branch",
+    "olive branch": "olive-branch",
+    "olive branches": "olive-branch",
+    lanterns: "lantern",
     calendars: "calendar",
     ticket: "ticket",
     tickets: "ticket",
+    "map-pin": "map-pin",
+    "map-pins": "map-pin",
+    "map pin": "map-pin",
+    "map pins": "map-pin",
+    pin: "map-pin",
+    pins: "map-pin",
+    "announcement-card": "announcement-card",
+    "announcement-cards": "announcement-card",
+    "announcement card": "announcement-card",
+    "announcement cards": "announcement-card",
+    card: "announcement-card",
+    cards: "announcement-card",
     jerseys: "jersey",
     uniform: "jersey",
     uniforms: "jersey",
@@ -730,8 +1110,15 @@ function normalizeObjectKinds(
   const normalized: OcrSkinBackgroundObjectKind[] = [];
   for (const item of rawKinds) {
     const objectKind = normalizeObjectKind(item);
-    if (!objectKind || !allowed.has(objectKind) || normalized.includes(objectKind)) continue;
-    normalized.push(objectKind);
+    const contextualObjectKind =
+      category === "football" && objectKind === "trophy" ? "football-trophy" : objectKind;
+    if (
+      !contextualObjectKind ||
+      !allowed.has(contextualObjectKind) ||
+      normalized.includes(contextualObjectKind)
+    )
+      continue;
+    normalized.push(contextualObjectKind);
   }
   return normalized.slice(0, 7);
 }
@@ -751,8 +1138,12 @@ function completeObjectKinds(
 ): OcrSkinBackgroundObjectKind[] {
   const allowedCount = getAllowedObjectKinds(category, sportKind).length;
   const targetCount = Math.min(getObjectKindTargetCount(category, sportKind), allowedCount);
-  const merged = [...objectKinds];
-  for (const objectKind of fallbackObjectKinds) {
+  const merged: OcrSkinBackgroundObjectKind[] = [];
+  for (const objectKind of [
+    ...getRequiredObjectKinds(category, sportKind),
+    ...objectKinds,
+    ...fallbackObjectKinds,
+  ]) {
     if (merged.length >= targetCount) break;
     if (!merged.includes(objectKind)) merged.push(objectKind);
   }
@@ -794,7 +1185,7 @@ function pickFallbackObjectKinds(
 ): OcrSkinBackgroundObjectKind[] {
   const allowed = getAllowedObjectKinds(category, sportKind);
   const targetCount = getObjectKindTargetCount(category, sportKind);
-  const picked: OcrSkinBackgroundObjectKind[] = [];
+  const picked: OcrSkinBackgroundObjectKind[] = [...getRequiredObjectKinds(category, sportKind)];
   let cursor = seedHash % allowed.length;
   const step = Math.max(1, (seedHash >>> 8) % allowed.length || 1);
   while (picked.length < Math.min(targetCount, allowed.length)) {

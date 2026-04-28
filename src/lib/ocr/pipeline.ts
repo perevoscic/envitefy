@@ -48,6 +48,7 @@ import {
 } from "@/lib/ocr/skin";
 import {
   cleanAddressLabel,
+  cleanGraduationVenueName,
   combineGuestInfoFacts,
   detectCategory,
   detectSpelledTime,
@@ -953,6 +954,9 @@ export async function handleOcrRequest(request: Request) {
       const fallbackVenue = pickVenueLabelForSentence(addressWithVenue, finalDescription, raw);
       if (fallbackVenue) finalVenue = fallbackVenue;
     }
+    if (detectCategory(`${raw}\n${finalTitle}`) === "Graduations") {
+      finalVenue = cleanGraduationVenueName(finalVenue);
+    }
 
     const locationForNarrative = finalVenue
       ? `${finalVenue}${finalAddress ? `, ${finalAddress}` : ""}`
@@ -1583,6 +1587,10 @@ export async function handleOcrRequest(request: Request) {
     });
     if (isPickleballOcrEvent || isFootballOcrEvent || isBasketballOcrEvent) {
       category = "Sport Events";
+    }
+    if (category === "Graduations") {
+      const cleanedVenue = cleanGraduationVenueName(fieldsGuess.venue);
+      fieldsGuess.venue = cleanedVenue || null;
     }
 
     const birthdayTemplateHint = normalizeBirthdayTemplateHint({

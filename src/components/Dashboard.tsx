@@ -36,6 +36,7 @@ import {
   validateClientUploadFile,
 } from "@/utils/media-upload-client";
 import { extractFirstPhoneNumber } from "@/utils/phone";
+import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import { readFileAsDataUrl } from "@/utils/thumbnail";
 
 type EventFields = {
@@ -1008,7 +1009,8 @@ export default function Dashboard({
             .replace(/^[,;:. -]+|[,;:. -]+$/g, "")
             .replace(/\s{2,}/g, " ")
             .trim();
-          return name && /[A-Za-z]/.test(name) ? name : null;
+          const cleanedName = cleanRsvpContactLabel(name);
+          return cleanedName && /[A-Za-z]/.test(cleanedName) ? cleanedName : null;
         };
 
         const rawRsvp =
@@ -1027,11 +1029,14 @@ export default function Dashboard({
           (data.fieldsGuess as { rsvpDeadline?: string }).rsvpDeadline?.trim()
             ? (data.fieldsGuess as { rsvpDeadline?: string }).rsvpDeadline!.trim()
             : null;
-        const hostNameFromScan =
+        const rawHostNameFromScan =
           typeof (data?.fieldsGuess as { hostName?: unknown })?.hostName === "string" &&
           (data.fieldsGuess as { hostName?: string }).hostName?.trim()
             ? (data.fieldsGuess as { hostName?: string }).hostName!.trim()
             : null;
+        const hostNameFromScan = rawHostNameFromScan
+          ? cleanRsvpContactLabel(rawHostNameFromScan)
+          : null;
         const venueFromScan =
           typeof (data?.fieldsGuess as { venue?: unknown; venueName?: unknown })?.venue ===
             "string" && (data.fieldsGuess as { venue?: string }).venue?.trim()

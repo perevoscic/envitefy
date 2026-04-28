@@ -87,32 +87,129 @@ function pickPosition(
   return { x, y };
 }
 
+function buildPinnedFootballItems(darkMode: boolean): MotifItem[] {
+  const lineOpacity = darkMode ? 0.34 : 0.28;
+  const fillOpacity = darkMode ? 0.32 : 0.26;
+  return [
+    {
+      kind: "football",
+      x: 9,
+      y: 27,
+      size: 13.5,
+      rotation: -18,
+      color: "#fbbf24",
+      opacity: fillOpacity,
+    },
+    {
+      kind: "goalpost",
+      x: 12,
+      y: 44,
+      size: 13,
+      rotation: 0,
+      color: "#f8fafc",
+      opacity: lineOpacity,
+    },
+    {
+      kind: "football-trophy",
+      x: 11,
+      y: 61,
+      size: 10,
+      rotation: -10,
+      color: "#f8fafc",
+      opacity: lineOpacity,
+    },
+    {
+      kind: "field-line",
+      x: 50,
+      y: 73,
+      size: 24,
+      rotation: 0,
+      color: "#f8fafc",
+      opacity: darkMode ? 0.24 : 0.2,
+    },
+    {
+      kind: "helmet",
+      x: 88,
+      y: 37,
+      size: 11,
+      rotation: 12,
+      color: "#1d4ed8",
+      opacity: fillOpacity,
+    },
+    {
+      kind: "yard-marker",
+      x: 82,
+      y: 65,
+      size: 8,
+      rotation: 9,
+      color: "#fbbf24",
+      opacity: lineOpacity,
+    },
+    {
+      kind: "foam-finger",
+      x: 91,
+      y: 72,
+      size: 8.5,
+      rotation: 14,
+      color: "#1d4ed8",
+      opacity: fillOpacity,
+    },
+  ];
+}
+
 function buildItems(spec: OcrSkinBackground, darkMode: boolean): MotifItem[] {
   const rng = createRng(spec.seed);
   const count = getItemCount(spec.density);
   const colors = spec.colors?.length ? spec.colors : ["#ffffff"];
   const baseOpacity = darkMode ? 0.26 : 0.2;
-  return Array.from({ length: count }, (_, index) => {
+  const items = Array.from({ length: count }, (_, index) => {
     const position = pickPosition(rng, spec.placement);
     const kind = spec.objectKinds[index % spec.objectKinds.length] || "dot";
     const isLargeKind =
       kind === "balloon" ||
       kind === "cake" ||
+      kind === "cupcake" ||
       kind === "gift" ||
       kind === "party-hat" ||
       kind === "candle" ||
+      kind === "sparkle" ||
+      kind === "crown" ||
+      kind === "music-note" ||
+      kind === "arcade-token" ||
       kind === "botanical-sprig" ||
       kind === "frame-corner" ||
       kind === "heart" ||
+      kind === "ring-box" ||
       kind === "diamond" ||
       kind === "champagne" ||
+      kind === "champagne-bubble" ||
+      kind === "wine-glass" ||
       kind === "floral-arch" ||
+      kind === "lace" ||
+      kind === "vow-book" ||
+      kind === "ribbon" ||
+      kind === "bouquet" ||
+      kind === "wax-seal" ||
+      kind === "rose" ||
+      kind === "photo-frame" ||
       kind === "baby-bottle" ||
       kind === "rattle" ||
       kind === "moon" ||
       kind === "onesie" ||
+      kind === "pacifier" ||
+      kind === "teddy-bear" ||
+      kind === "cloud" ||
+      kind === "bib" ||
+      kind === "stroller" ||
+      kind === "teacup" ||
+      kind === "bow" ||
       kind === "house" ||
       kind === "key" ||
+      kind === "front-door" ||
+      kind === "welcome-mat" ||
+      kind === "plant" ||
+      kind === "lamp" ||
+      kind === "mug" ||
       kind === "banner" ||
       kind === "basketball" ||
       kind === "football" ||
@@ -122,15 +219,38 @@ function buildItems(spec: OcrSkinBackground, darkMode: boolean): MotifItem[] {
       kind === "stadium-light" ||
       kind === "pickleball" ||
       kind === "paddle" ||
+      kind === "paddle-pair" ||
       kind === "hoop" ||
       kind === "court-line" ||
+      kind === "court-arc" ||
+      kind === "backboard" ||
+      kind === "net" ||
+      kind === "shot-clock" ||
       kind === "sneaker" ||
+      kind === "trophy" ||
+      kind === "football-trophy" ||
+      kind === "yard-marker" ||
+      kind === "playbook" ||
+      kind === "cleat" ||
+      kind === "foam-finger" ||
       kind === "net-line" ||
+      kind === "pickleball-court" ||
+      kind === "serve-line" ||
+      kind === "water-bottle" ||
       kind === "book" ||
+      kind === "notebook" ||
+      kind === "school-building" ||
+      kind === "scroll" ||
+      kind === "laurel" ||
       kind === "medal" ||
       kind === "dove" ||
+      kind === "stained-glass" ||
+      kind === "olive-branch" ||
+      kind === "lantern" ||
       kind === "calendar" ||
       kind === "ticket" ||
+      kind === "map-pin" ||
+      kind === "announcement-card" ||
       kind === "jersey" ||
       kind === "whistle" ||
       kind === "scoreboard" ||
@@ -146,6 +266,10 @@ function buildItems(spec: OcrSkinBackground, darkMode: boolean): MotifItem[] {
       opacity: Math.max(0.1, baseOpacity - rng() * 0.08),
     };
   });
+
+  if (!spec.objectKinds.includes("football-trophy")) return items;
+
+  return [...items, ...buildPinnedFootballItems(darkMode)];
 }
 
 function getTextureStyle(texture: OcrSkinBackground["texture"], darkMode: boolean) {
@@ -1221,6 +1345,916 @@ function renderMotif(item: MotifItem, index: number) {
               fill={item.color}
             />
           ))}
+        </g>
+      );
+    case "cupcake":
+      return (
+        <g key={index} transform={transform} {...common}>
+          <path
+            d={`M ${-s * 0.5} ${-s * 0.02} C ${-s * 0.58} ${-s * 0.42}, ${-s * 0.18} ${-s * 0.68}, 0 ${-s * 0.42} C ${s * 0.18} ${-s * 0.68}, ${s * 0.58} ${-s * 0.42}, ${s * 0.5} ${-s * 0.02} Z`}
+            fill={item.color}
+          />
+          <path
+            d={`M ${-s * 0.5} ${s * 0.02} H ${s * 0.5} L ${s * 0.32} ${s * 0.72} H ${-s * 0.32} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+          <circle cx={0} cy={-s * 0.7} r={s * 0.1} fill={item.color} />
+        </g>
+      );
+    case "sparkle":
+      return (
+        <path
+          key={index}
+          d={`M ${item.x} ${item.y - s} L ${item.x + s * 0.18} ${item.y - s * 0.18} L ${
+            item.x + s
+          } ${item.y} L ${item.x + s * 0.18} ${item.y + s * 0.18} L ${item.x} ${
+            item.y + s
+          } L ${item.x - s * 0.18} ${item.y + s * 0.18} L ${item.x - s} ${item.y} L ${
+            item.x - s * 0.18
+          } ${item.y - s * 0.18} Z`}
+          fill={item.color}
+          opacity={item.opacity}
+          transform={`rotate(${item.rotation} ${item.x} ${item.y})`}
+        />
+      );
+    case "crown":
+      return (
+        <g key={index} transform={transform} {...common}>
+          <path
+            d={`M ${-s * 0.72} ${s * 0.44} L ${-s * 0.52} ${-s * 0.44} L ${-s * 0.12} ${s * 0.1} L 0 ${-s * 0.58} L ${s * 0.12} ${s * 0.1} L ${s * 0.52} ${-s * 0.44} L ${s * 0.72} ${s * 0.44} Z`}
+            fill={item.color}
+          />
+          <path
+            d={`M ${-s * 0.48} ${s * 0.5} H ${s * 0.48}`}
+            stroke="rgba(255,255,255,0.5)"
+            strokeLinecap="round"
+            strokeWidth={0.16}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "music-note":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${s * 0.22} ${-s * 0.8} V ${s * 0.28} C ${s * 0.05} ${s * 0.1}, ${-s * 0.48} ${s * 0.18}, ${-s * 0.48} ${s * 0.52} C ${-s * 0.48} ${s * 0.82}, ${s * 0.04} ${s * 0.82}, ${s * 0.22} ${s * 0.44} V ${-s * 0.48} L ${s * 0.72} ${-s * 0.62}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={0.24}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "arcade-token":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <circle cx={0} cy={0} r={s * 0.58} fill="none" stroke={item.color} strokeWidth={0.22} />
+          <circle cx={0} cy={0} r={s * 0.34} fill="none" stroke={item.color} strokeWidth={0.14} />
+          <path
+            d={`M ${-s * 0.16} ${-s * 0.02} H ${s * 0.16} M 0 ${-s * 0.18} V ${s * 0.18}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.14}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "ring-box":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.62} ${-s * 0.08} H ${s * 0.62} V ${s * 0.62} H ${-s * 0.62} Z M ${-s * 0.46} ${-s * 0.08} L 0 ${-s * 0.48} L ${s * 0.46} ${-s * 0.08}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+          <circle
+            cx={0}
+            cy={s * 0.24}
+            r={s * 0.18}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.16}
+          />
+        </g>
+      );
+    case "champagne-bubble":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          {[
+            [-0.38, 0.18, 0.18],
+            [0.02, -0.16, 0.24],
+            [0.42, 0.26, 0.13],
+          ].map(([cx, cy, r]) => (
+            <circle
+              key={`${cx}-${cy}`}
+              cx={s * cx}
+              cy={s * cy}
+              r={s * r}
+              fill="none"
+              stroke={item.color}
+              strokeWidth={0.16}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+        </g>
+      );
+    case "wine-glass":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.3} ${-s * 0.7} C ${-s * 0.34} ${-s * 0.1}, ${s * 0.34} ${-s * 0.1}, ${s * 0.3} ${-s * 0.7} Z M 0 ${-s * 0.08} V ${s * 0.62} M ${-s * 0.28} ${s * 0.62} H ${s * 0.28}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "lace":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s} 0 H ${s}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.18}
+            vectorEffect="non-scaling-stroke"
+          />
+          {[-0.72, -0.36, 0, 0.36, 0.72].map((offset) => (
+            <path
+              key={offset}
+              d={`M ${s * (offset - 0.18)} 0 A ${s * 0.18} ${s * 0.18} 0 0 0 ${s * (offset + 0.18)} 0`}
+              fill="none"
+              stroke={item.color}
+              strokeWidth={0.12}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+        </g>
+      );
+    case "vow-book":
+    case "notebook":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <rect
+            x={-s * 0.68}
+            y={-s * 0.68}
+            width={s * 1.36}
+            height={s * 1.22}
+            rx={s * 0.08}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d={`M ${-s * 0.36} ${-s * 0.28} H ${s * 0.36} M ${-s * 0.36} 0 H ${s * 0.28} M ${-s * 0.36} ${s * 0.26} H ${s * 0.18}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.14}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "ribbon":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M 0 ${-s * 0.16} C ${-s * 0.48} ${-s * 0.58}, ${-s * 0.78} ${s * 0.16}, ${-s * 0.18} ${s * 0.12} C ${-s * 0.22} ${s * 0.52}, ${-s * 0.42} ${s * 0.72}, ${-s * 0.02} ${s * 0.44} C ${s * 0.42} ${s * 0.72}, ${s * 0.22} ${s * 0.52}, ${s * 0.18} ${s * 0.12} C ${s * 0.78} ${s * 0.16}, ${s * 0.48} ${-s * 0.58}, 0 ${-s * 0.16} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "bouquet":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          {[-0.28, 0, 0.28].map((offset) => (
+            <circle key={offset} cx={s * offset} cy={-s * 0.36} r={s * 0.2} fill={item.color} />
+          ))}
+          <path
+            d={`M ${-s * 0.28} ${-s * 0.16} L 0 ${s * 0.72} M ${s * 0.28} ${-s * 0.16} L 0 ${s * 0.72} M 0 ${-s * 0.16} V ${s * 0.72}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.14}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "wax-seal":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M 0 ${-s * 0.68} C ${s * 0.24} ${-s * 0.54}, ${s * 0.58} ${-s * 0.64}, ${s * 0.62} ${-s * 0.28} C ${s * 0.9} ${-s * 0.08}, ${s * 0.58} ${s * 0.14}, ${s * 0.62} ${s * 0.42} C ${s * 0.28} ${s * 0.34}, ${s * 0.14} ${s * 0.78}, ${-s * 0.12} ${s * 0.58} C ${-s * 0.44} ${s * 0.74}, ${-s * 0.52} ${s * 0.32}, ${-s * 0.76} ${s * 0.22} C ${-s * 0.54} ${-s * 0.08}, ${-s * 0.82} ${-s * 0.36}, ${-s * 0.44} ${-s * 0.46} C ${-s * 0.34} ${-s * 0.78}, ${-s * 0.1} ${-s * 0.52}, 0 ${-s * 0.68} Z`}
+            fill={item.color}
+          />
+          <circle cx={0} cy={0} r={s * 0.22} fill="rgba(255,255,255,0.28)" />
+        </g>
+      );
+    case "rose":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M 0 ${s * 0.78} C ${s * 0.08} ${s * 0.2}, ${-s * 0.08} ${-s * 0.14}, 0 ${-s * 0.58}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.18}
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d={`M 0 ${-s * 0.58} C ${-s * 0.42} ${-s * 0.62}, ${-s * 0.42} ${-s * 0.04}, 0 ${-s * 0.02} C ${s * 0.42} ${-s * 0.04}, ${s * 0.42} ${-s * 0.62}, 0 ${-s * 0.58} Z`}
+            fill={item.color}
+          />
+          <ellipse cx={-s * 0.24} cy={s * 0.08} rx={s * 0.13} ry={s * 0.28} fill={item.color} />
+        </g>
+      );
+    case "photo-frame":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <rect
+            x={-s * 0.72}
+            y={-s * 0.52}
+            width={s * 1.44}
+            height={s * 1.04}
+            rx={s * 0.06}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d={`M ${-s * 0.52} ${s * 0.28} L ${-s * 0.12} ${-s * 0.08} L ${s * 0.12} ${s * 0.14} L ${s * 0.44} ${-s * 0.16}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={0.16}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "pacifier":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <ellipse cx={0} cy={-s * 0.16} rx={s * 0.34} ry={s * 0.24} fill={item.color} />
+          <path
+            d={`M ${-s * 0.58} ${s * 0.08} H ${s * 0.58} M 0 ${s * 0.08} C ${-s * 0.28} ${s * 0.5}, ${s * 0.28} ${s * 0.5}, 0 ${s * 0.08}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "teddy-bear":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <circle cx={-s * 0.38} cy={-s * 0.38} r={s * 0.22} fill={item.color} />
+          <circle cx={s * 0.38} cy={-s * 0.38} r={s * 0.22} fill={item.color} />
+          <circle cx={0} cy={0} r={s * 0.5} fill={item.color} />
+          <circle cx={0} cy={s * 0.12} r={s * 0.16} fill="rgba(255,255,255,0.32)" />
+        </g>
+      );
+    case "cloud":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.72} ${s * 0.18} C ${-s * 0.82} ${-s * 0.2}, ${-s * 0.38} ${-s * 0.34}, ${-s * 0.18} ${-s * 0.12} C ${-s * 0.1} ${-s * 0.52}, ${s * 0.46} ${-s * 0.48}, ${s * 0.5} ${-s * 0.06} C ${s * 0.86} ${-s * 0.02}, ${s * 0.82} ${s * 0.36}, ${s * 0.48} ${s * 0.36} H ${-s * 0.5} C ${-s * 0.66} ${s * 0.36}, ${-s * 0.72} ${s * 0.28}, ${-s * 0.72} ${s * 0.18} Z`}
+            fill={item.color}
+          />
+        </g>
+      );
+    case "bib":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.46} ${-s * 0.56} C ${-s * 0.12} ${-s * 0.26}, ${s * 0.12} ${-s * 0.26}, ${s * 0.46} ${-s * 0.56} V ${s * 0.28} C ${s * 0.46} ${s * 0.72}, ${-s * 0.46} ${s * 0.72}, ${-s * 0.46} ${s * 0.28} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+          <circle
+            cx={0}
+            cy={-s * 0.34}
+            r={s * 0.18}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.16}
+          />
+        </g>
+      );
+    case "stroller":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.62} ${-s * 0.12} A ${s * 0.62} ${s * 0.62} 0 0 1 ${s * 0.62} ${-s * 0.12} V ${s * 0.28} H ${-s * 0.62} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d={`M ${s * 0.62} ${-s * 0.12} H ${s * 0.9}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.18}
+          />
+          <circle cx={-s * 0.36} cy={s * 0.48} r={s * 0.12} fill={item.color} />
+          <circle cx={s * 0.36} cy={s * 0.48} r={s * 0.12} fill={item.color} />
+        </g>
+      );
+    case "teacup":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.54} ${-s * 0.2} H ${s * 0.46} C ${s * 0.52} ${s * 0.36}, ${-s * 0.42} ${s * 0.36}, ${-s * 0.54} ${-s * 0.2} Z M ${s * 0.46} ${-s * 0.08} C ${s * 0.86} ${-s * 0.08}, ${s * 0.82} ${s * 0.28}, ${s * 0.48} ${s * 0.22} M ${-s * 0.68} ${s * 0.48} H ${s * 0.68}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "bow":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M 0 0 C ${-s * 0.48} ${-s * 0.42}, ${-s * 0.82} ${s * 0.18}, 0 ${s * 0.12} C ${s * 0.82} ${s * 0.18}, ${s * 0.48} ${-s * 0.42}, 0 0 Z`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+          <circle cx={0} cy={0} r={s * 0.12} fill={item.color} />
+        </g>
+      );
+    case "front-door":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <rect
+            x={-s * 0.46}
+            y={-s * 0.78}
+            width={s * 0.92}
+            height={s * 1.46}
+            rx={s * 0.06}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.22}
+          />
+          <circle cx={s * 0.24} cy={0} r={s * 0.055} fill={item.color} />
+          <path
+            d={`M ${-s * 0.62} ${s * 0.72} H ${s * 0.62}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.18}
+          />
+        </g>
+      );
+    case "welcome-mat":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <rect
+            x={-s * 0.82}
+            y={-s * 0.24}
+            width={s * 1.64}
+            height={s * 0.64}
+            rx={s * 0.12}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.22}
+          />
+          <path
+            d={`M ${-s * 0.42} ${s * 0.08} H ${s * 0.42}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.14}
+          />
+        </g>
+      );
+    case "plant":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.36} ${s * 0.24} H ${s * 0.36} L ${s * 0.22} ${s * 0.78} H ${-s * 0.22} Z`}
+            fill={item.color}
+          />
+          {[
+            [-0.32, -0.26, -34],
+            [0, -0.46, 0],
+            [0.32, -0.26, 34],
+          ].map(([cx, cy, rot]) => (
+            <ellipse
+              key={`${cx}-${cy}`}
+              cx={s * cx}
+              cy={s * cy}
+              rx={s * 0.15}
+              ry={s * 0.36}
+              fill={item.color}
+              transform={`rotate(${rot} ${s * cx} ${s * cy})`}
+            />
+          ))}
+        </g>
+      );
+    case "lamp":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.46} ${-s * 0.58} H ${s * 0.46} L ${s * 0.28} ${-s * 0.1} H ${-s * 0.28} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+          />
+          <path
+            d={`M 0 ${-s * 0.1} V ${s * 0.62} M ${-s * 0.34} ${s * 0.62} H ${s * 0.34}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.18}
+          />
+        </g>
+      );
+    case "mug":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.5} ${-s * 0.36} H ${s * 0.36} V ${s * 0.46} C ${s * 0.18} ${s * 0.64}, ${-s * 0.32} ${s * 0.64}, ${-s * 0.5} ${s * 0.46} Z M ${s * 0.36} ${-s * 0.16} C ${s * 0.82} ${-s * 0.14}, ${s * 0.82} ${s * 0.32}, ${s * 0.36} ${s * 0.3}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+          />
+        </g>
+      );
+    case "court-arc":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s} ${s * 0.36} H ${s} M ${-s * 0.62} ${s * 0.36} A ${s * 0.62} ${s * 0.62} 0 0 1 ${s * 0.62} ${s * 0.36}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "backboard":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <rect
+            x={-s * 0.74}
+            y={-s * 0.62}
+            width={s * 1.48}
+            height={s * 0.9}
+            rx={s * 0.06}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.22}
+          />
+          <rect
+            x={-s * 0.24}
+            y={-s * 0.36}
+            width={s * 0.48}
+            height={s * 0.28}
+            rx={s * 0.03}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.14}
+          />
+          <ellipse
+            cx={0}
+            cy={s * 0.32}
+            rx={s * 0.34}
+            ry={s * 0.1}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.18}
+          />
+        </g>
+      );
+    case "net":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.6} ${-s * 0.18} H ${s * 0.6} L ${s * 0.42} ${s * 0.62} H ${-s * 0.42} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+          />
+          {[-0.36, 0, 0.36].map((offset) => (
+            <path
+              key={offset}
+              d={`M ${s * offset} ${-s * 0.12} L ${s * (offset * 0.55)} ${s * 0.56}`}
+              stroke={item.color}
+              strokeWidth={0.12}
+            />
+          ))}
+        </g>
+      );
+    case "shot-clock":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <rect
+            x={-s * 0.54}
+            y={-s * 0.48}
+            width={s * 1.08}
+            height={s * 0.78}
+            rx={s * 0.08}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.22}
+          />
+          <path
+            d={`M ${-s * 0.22} ${-s * 0.18} H ${s * 0.22} M ${-s * 0.22} ${s * 0.04} H ${s * 0.22} M ${-s * 0.22} ${s * 0.26} H ${s * 0.22}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.13}
+          />
+        </g>
+      );
+    case "trophy":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.42} ${-s * 0.54} H ${s * 0.42} V ${-s * 0.1} C ${s * 0.42} ${s * 0.28}, ${-s * 0.42} ${s * 0.28}, ${-s * 0.42} ${-s * 0.1} Z M ${-s * 0.42} ${-s * 0.38} H ${-s * 0.76} C ${-s * 0.8} ${-s * 0.08}, ${-s * 0.58} ${s * 0.08}, ${-s * 0.38} 0 M ${s * 0.42} ${-s * 0.38} H ${s * 0.76} C ${s * 0.8} ${-s * 0.08}, ${s * 0.58} ${s * 0.08}, ${s * 0.38} 0 M 0 ${s * 0.22} V ${s * 0.62} M ${-s * 0.34} ${s * 0.62} H ${s * 0.34}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+          />
+        </g>
+      );
+    case "football-trophy":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <g transform={`rotate(-24 0 ${-s * 0.55})`}>
+            <ellipse
+              cx={0}
+              cy={-s * 0.58}
+              rx={s * 0.48}
+              ry={s * 0.24}
+              fill="none"
+              stroke={item.color}
+              strokeWidth={0.2}
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              d={`M ${-s * 0.28} ${-s * 0.58} H ${s * 0.28} M 0 ${-s * 0.72} V ${-s * 0.44}`}
+              stroke={item.color}
+              strokeLinecap="round"
+              strokeWidth={0.12}
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
+          <path
+            d={`M ${-s * 0.1} ${-s * 0.32} L ${s * 0.22} ${s * 0.46} H ${-s * 0.18} L ${s * 0.06} ${-s * 0.32}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d={`M ${-s * 0.46} ${s * 0.7} H ${s * 0.5} L ${s * 0.34} ${s * 0.46} H ${-s * 0.3} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d={`M ${-s * 0.06} ${-s * 0.28} L ${s * 0.14} ${s * 0.4}`}
+            stroke="rgba(255,255,255,0.45)"
+            strokeLinecap="round"
+            strokeWidth={0.12}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "yard-marker":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M 0 ${-s * 0.72} L ${s * 0.5} ${s * 0.1} H ${s * 0.18} V ${s * 0.72} H ${-s * 0.18} V ${s * 0.1} H ${-s * 0.5} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+          />
+          <path
+            d={`M ${-s * 0.16} ${-s * 0.02} H ${s * 0.16}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.14}
+          />
+        </g>
+      );
+    case "playbook":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <rect
+            x={-s * 0.64}
+            y={-s * 0.68}
+            width={s * 1.28}
+            height={s * 1.28}
+            rx={s * 0.08}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.2}
+          />
+          <circle
+            cx={-s * 0.28}
+            cy={-s * 0.24}
+            r={s * 0.08}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.12}
+          />
+          <path
+            d={`M ${s * 0.16} ${-s * 0.32} L ${s * 0.38} ${-s * 0.1} M ${s * 0.38} ${-s * 0.32} L ${s * 0.16} ${-s * 0.1} M ${-s * 0.2} ${s * 0.18} C ${s * 0.06} ${s * 0.04}, ${s * 0.24} ${s * 0.18}, ${s * 0.34} ${s * 0.4}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.13}
+          />
+        </g>
+      );
+    case "cleat":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.78} ${s * 0.12} C ${-s * 0.36} ${s * 0.06}, ${-s * 0.16} ${-s * 0.34}, ${s * 0.18} ${-s * 0.2} C ${s * 0.42} ${-s * 0.08}, ${s * 0.46} ${s * 0.12}, ${s * 0.84} ${s * 0.2} C ${s * 0.4} ${s * 0.42}, ${-s * 0.42} ${s * 0.4}, ${-s * 0.78} ${s * 0.12} Z`}
+            fill={item.color}
+          />
+          {[-0.46, -0.12, 0.22, 0.52].map((offset) => (
+            <path
+              key={offset}
+              d={`M ${s * offset} ${s * 0.34} V ${s * 0.52}`}
+              stroke={item.color}
+              strokeLinecap="round"
+              strokeWidth={0.13}
+            />
+          ))}
+        </g>
+      );
+    case "foam-finger":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.28} ${s * 0.74} V ${-s * 0.22} C ${-s * 0.28} ${-s * 0.44}, ${s * 0.02} ${-s * 0.44}, ${s * 0.02} ${-s * 0.22} V ${-s * 0.82} C ${s * 0.02} ${-s * 1.02}, ${s * 0.32} ${-s * 1.02}, ${s * 0.32} ${-s * 0.82} V ${s * 0.08} L ${s * 0.58} ${-s * 0.04} C ${s * 0.76} ${-s * 0.12}, ${s * 0.9} ${s * 0.12}, ${s * 0.7} ${s * 0.24} L ${s * 0.22} ${s * 0.52} V ${s * 0.74} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+          />
+        </g>
+      );
+    case "paddle-pair":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          {[-22, 22].map((rot) => (
+            <g key={rot} transform={`rotate(${rot})`}>
+              <rect
+                x={-s * 0.22}
+                y={-s * 0.78}
+                width={s * 0.44}
+                height={s * 0.78}
+                rx={s * 0.16}
+                fill={item.color}
+              />
+              <rect
+                x={-s * 0.08}
+                y={-s * 0.08}
+                width={s * 0.16}
+                height={s * 0.72}
+                rx={s * 0.06}
+                fill={item.color}
+              />
+            </g>
+          ))}
+        </g>
+      );
+    case "pickleball-court":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <rect
+            x={-s * 0.86}
+            y={-s * 0.56}
+            width={s * 1.72}
+            height={s * 1.12}
+            rx={s * 0.04}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.18}
+          />
+          <path
+            d={`M 0 ${-s * 0.56} V ${s * 0.56} M ${-s * 0.86} 0 H ${s * 0.86} M ${-s * 0.32} ${-s * 0.56} V ${s * 0.56} M ${s * 0.32} ${-s * 0.56} V ${s * 0.56}`}
+            stroke={item.color}
+            strokeWidth={0.12}
+          />
+        </g>
+      );
+    case "serve-line":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s} 0 H ${s}`}
+            stroke={item.color}
+            strokeDasharray="0.12 0.16"
+            strokeLinecap="round"
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "water-bottle":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.22} ${-s * 0.72} H ${s * 0.22} V ${-s * 0.44} L ${s * 0.36} ${-s * 0.24} V ${s * 0.62} C ${s * 0.18} ${s * 0.78}, ${-s * 0.18} ${s * 0.78}, ${-s * 0.36} ${s * 0.62} V ${-s * 0.24} L ${-s * 0.22} ${-s * 0.44} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+          />
+          <path
+            d={`M ${-s * 0.22} ${s * 0.02} H ${s * 0.22}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.14}
+          />
+        </g>
+      );
+    case "school-building":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.82} ${s * 0.6} H ${s * 0.82} M ${-s * 0.68} ${s * 0.6} V ${-s * 0.16} H ${s * 0.68} V ${s * 0.6} M ${-s * 0.82} ${-s * 0.16} L 0 ${-s * 0.68} L ${s * 0.82} ${-s * 0.16}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+          />
+          {[-0.38, 0, 0.38].map((offset) => (
+            <path
+              key={offset}
+              d={`M ${s * offset} ${s * 0.6} V ${s * 0.04}`}
+              stroke={item.color}
+              strokeWidth={0.12}
+            />
+          ))}
+        </g>
+      );
+    case "scroll":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.54} ${-s * 0.44} H ${s * 0.54} C ${s * 0.8} ${-s * 0.44}, ${s * 0.8} ${-s * 0.12}, ${s * 0.54} ${-s * 0.12} H ${-s * 0.42} V ${s * 0.44} H ${s * 0.54} C ${s * 0.8} ${s * 0.44}, ${s * 0.8} ${s * 0.76}, ${s * 0.54} ${s * 0.76} H ${-s * 0.54} C ${-s * 0.8} ${s * 0.76}, ${-s * 0.8} ${s * 0.44}, ${-s * 0.54} ${s * 0.44}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+          />
+        </g>
+      );
+    case "laurel":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          {[-1, 1].map((side) => (
+            <g key={side} transform={`scale(${side} 1)`}>
+              <path
+                d={`M ${-s * 0.12} ${s * 0.72} C ${-s * 0.62} ${s * 0.14}, ${-s * 0.52} ${-s * 0.44}, ${-s * 0.08} ${-s * 0.78}`}
+                fill="none"
+                stroke={item.color}
+                strokeLinecap="round"
+                strokeWidth={0.16}
+              />
+              {[-0.38, -0.08, 0.22].map((offset) => (
+                <ellipse
+                  key={offset}
+                  cx={-s * 0.36}
+                  cy={s * offset}
+                  rx={s * 0.11}
+                  ry={s * 0.24}
+                  fill={item.color}
+                  transform={`rotate(-42 ${-s * 0.36} ${s * offset})`}
+                />
+              ))}
+            </g>
+          ))}
+        </g>
+      );
+    case "stained-glass":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.58} ${s * 0.72} V ${-s * 0.08} C ${-s * 0.58} ${-s * 0.76}, ${s * 0.58} ${-s * 0.76}, ${s * 0.58} ${-s * 0.08} V ${s * 0.72} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.22}
+          />
+          <path
+            d={`M 0 ${-s * 0.58} V ${s * 0.72} M ${-s * 0.58} ${-s * 0.02} H ${s * 0.58} M ${-s * 0.58} ${s * 0.34} H ${s * 0.58}`}
+            stroke={item.color}
+            strokeWidth={0.12}
+          />
+        </g>
+      );
+    case "olive-branch":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.62} ${s * 0.62} C ${-s * 0.24} ${s * 0.12}, ${s * 0.24} ${-s * 0.18}, ${s * 0.62} ${-s * 0.62}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.18}
+          />
+          {[-0.38, -0.1, 0.18, 0.44].map((offset, i) => (
+            <ellipse
+              key={offset}
+              cx={s * offset}
+              cy={-s * offset * 0.8}
+              rx={s * 0.12}
+              ry={s * 0.24}
+              fill={item.color}
+              transform={`rotate(${i % 2 ? 42 : -42} ${s * offset} ${-s * offset * 0.8})`}
+            />
+          ))}
+        </g>
+      );
+    case "lantern":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.38} ${-s * 0.4} C ${-s * 0.38} ${-s * 0.76}, ${s * 0.38} ${-s * 0.76}, ${s * 0.38} ${-s * 0.4} M ${-s * 0.42} ${-s * 0.34} H ${s * 0.42} V ${s * 0.52} H ${-s * 0.42} Z M ${-s * 0.24} ${s * 0.52} H ${s * 0.24}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={0.2}
+          />
+          <path
+            d={`M 0 ${-s * 0.1} C ${-s * 0.18} ${s * 0.12}, ${s * 0.18} ${s * 0.12}, 0 ${s * 0.32} C ${s * 0.22} ${s * 0.1}, ${s * 0.08} ${-s * 0.08}, 0 ${-s * 0.1} Z`}
+            fill={item.color}
+          />
+        </g>
+      );
+    case "map-pin":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M 0 ${s * 0.82} C ${-s * 0.58} ${s * 0.1}, ${-s * 0.5} ${-s * 0.68}, 0 ${-s * 0.68} C ${s * 0.5} ${-s * 0.68}, ${s * 0.58} ${s * 0.1}, 0 ${s * 0.82} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.22}
+          />
+          <circle cx={0} cy={-s * 0.16} r={s * 0.16} fill={item.color} />
+        </g>
+      );
+    case "announcement-card":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <rect
+            x={-s * 0.72}
+            y={-s * 0.5}
+            width={s * 1.44}
+            height={s}
+            rx={s * 0.08}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.22}
+          />
+          <path
+            d={`M ${-s * 0.42} ${-s * 0.18} H ${s * 0.42} M ${-s * 0.42} ${s * 0.08} H ${s * 0.28} M ${-s * 0.42} ${s * 0.32} H ${s * 0.12}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.14}
+          />
         </g>
       );
     default:

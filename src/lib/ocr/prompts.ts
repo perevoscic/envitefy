@@ -28,12 +28,15 @@ export function buildEventExtractionPrompt(todayIso: string) {
   ADDRESS:
   • If present, "Venue, Street, City, ST ZIP". Strip labels like "Address:" or "At:".
   • If a venue/business/place name is printed separately from the street address, put that exact name in venueName. For example, "US Gold Gymnastics" goes in venueName and the street/city line goes in address.
+  • Graduation flyers: graduate/honoree names belong in title only. venueName must be a real place name such as a school, auditorium, stadium, church, or campus venue. If the visible text is only an event title like "Graduation Ceremony — Lena De La Cruz" or "Class of 2026 Graduation", return venueName as null instead of copying that title.
   
   RSVP:
   • If RSVP wording appears, put the short RSVP/contact wording in rsvp. This may include a name, phone, email, or short RSVP instruction line.
+  • Classify contact-instruction labels before assigning fields. Phrases like "Questions?", "Text", "Call", "Contact", "Message", "Email", and "For questions" are not names and must never become an RSVP contact name by themselves.
+  • When a contact-instruction line has a phone/email/link but no real person or organization name, keep only the contact method in RSVP fields and use any nearby host/sponsor line for hostName.
   • If an RSVP website/link appears (The Knot, Zola, website URL, www link), put only that link in rsvpUrl. Else null.
   • If an RSVP-by or respond-by date appears, put the printed short date text in rsvpDeadline (e.g., "December 1st"). Else null.
-  • If the flyer has a host/sponsor line like "Hosted by <Name/Group>", put the exact printed host name/group in hostName (without the "Hosted by" prefix). Else null.
+  • If the flyer has a host/sponsor line like "Hosted by <Name/Group>", put the printed host name/group in hostName without the "Hosted by" prefix and without a leading "the". Else null.
 
   FEATURE DETECTION:
   • Activities: detect explicit event flow items from the flyer (e.g., "cake cutting", "cocktail hour", "games", "dancing", "dinner", "ceremony", "reception"). Return short phrases in activities[] preserving wording where possible. If none, activities is null.
@@ -84,7 +87,8 @@ export function buildEventExtractionPrompt(todayIso: string) {
   For birthdayAudience, use text/theme cues only. Do not infer from a face or from the honoree name alone.
   Pay special attention to cursive/handwritten names; never reduce the title to a generic occasion if a name is visible.
   The description must NOT repeat the title; make it a standalone, single sentence that begins with a capital letter, and prefer venue names over street addresses.
-  Keep RSVP details out of the description. Put RSVP wording in rsvp, RSVP links in rsvpUrl, RSVP-by dates in rsvpDeadline, and printed "Hosted by" names/groups in hostName.
+  Keep RSVP details out of the description. Put RSVP wording in rsvp, RSVP links in rsvpUrl, RSVP-by dates in rsvpDeadline, and printed "Hosted by" names/groups in hostName without a leading "the".
+  Classify nearby footer lines by role before filling RSVP fields: "Questions?", "Text", "Call", and "Contact" are instructions, while "Hosted by ..." is the host/organizer. Never use generic instruction text as the RSVP display name.
   For pickleball/sport flyers, keep category as "Sport Events"; route registration websites/phone numbers to rsvpUrl/rsvp, event format and perks to activities[], fees/equipment/eligibility to goodToKnow, and check-in/game-start/fee/perks details to ocrFacts without duplicating the fee.
   For football flyers, keep category as "Sport Events"; preserve kickoff/pregame timing, matchup/team names, tickets/prices, specials, team-color attire, senior-night honorees, and watch-party details in the existing output fields.
   Also extract activities[] when event flow items are printed, attire when dress code exists, registryUrl when a gift registry link appears, and ocrFacts for meaningful extra printed details not already represented elsewhere.

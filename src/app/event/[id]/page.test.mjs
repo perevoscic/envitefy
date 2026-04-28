@@ -41,6 +41,9 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /import FootballSkin from "@\/components\/FootballSkin";/);
   assert.match(source, /import PickleballSkin from "@\/components\/PickleballSkin";/);
   assert.match(source, /import ScannedInviteSkin from "@\/components\/ScannedInviteSkin";/);
+  assert.match(source, /import \{ cleanGraduationVenueName \} from "@\/lib\/ocr\/text";/);
+  assert.match(source, /const rawVenueText =/);
+  assert.match(source, /categoryNormalized === "graduations"\s*\?\s*cleanGraduationVenueName\(rawVenueText\)/);
   assert.match(source, /const isScannedBirthdayInviteEvent =/);
   assert.match(source, /categoryNormalized === "birthdays" && isScannedInviteEvent && isOcrEvent/);
   assert.match(source, /if \(isScannedBirthdayInviteEvent\) \{/);
@@ -166,5 +169,20 @@ test("event route branches football discovery/template events into the football 
     source.indexOf("if (isGenericScannedInviteEvent)") <
       source.indexOf("const isBabyShowerTemplate ="),
     "generic scanned invite branch should run before later template fallbacks",
+  );
+});
+
+test("event route sanitizes stored RSVP names before host fallback", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+
+  assert.match(source, /cleanRsvpContactLabel\(data\.hostName\.trim\(\)\)/);
+  assert.match(source, /const storedRsvpNameRaw =/);
+  assert.match(
+    source,
+    /const storedRsvpName = storedRsvpNameRaw \? cleanRsvpContactLabel\(storedRsvpNameRaw\) : "";/,
+  );
+  assert.match(
+    source,
+    /storedRsvpName \|\| hostName \|\| structuredRsvpContact \|\| rsvpField \|\| rsvpEmail/,
   );
 });
