@@ -3,11 +3,8 @@
 import { useRouter } from "next/navigation";
 import { type DragEvent, type KeyboardEvent, useCallback, useRef, useState } from "react";
 import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
-import { readFileAsDataUrl } from "@/utils/thumbnail";
-
-function isSupportedUpload(file: File) {
-  return file.type.startsWith("image/") || file.type === "application/pdf";
-}
+import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
+import { getUploadAcceptAttribute, validateClientUploadFile } from "@/utils/media-upload-client";
 
 export default function SnapLaunchCards() {
   const router = useRouter();
@@ -19,22 +16,32 @@ export default function SnapLaunchCards() {
   const routeSelectedFile = useCallback(
     async (file: File | null) => {
       if (!file) return;
-      if (!isSupportedUpload(file)) {
-        setError("Please use an image or PDF file.");
+      const validationError = validateClientUploadFile(file, "attachment");
+      if (validationError) {
+        setError(validationError);
         return;
       }
 
       setError(null);
-      let previewUrl: string | null = null;
-      if (file.type.startsWith("image/")) {
-        try {
-          previewUrl = await readFileAsDataUrl(file);
-        } catch {
-          previewUrl = null;
-        }
+      const scanAttemptId = createClientAttemptId("scan");
+      try {
+        await savePendingSnapUpload({ file, scanAttemptId });
+      } catch (err) {
+        reportClientLog({
+          area: "snap-upload",
+          stage: "pending-save",
+          scanAttemptId,
+          error: err,
+          details: {
+            fileName: file.name,
+            fileSize: file.size,
+            fileType: file.type,
+          },
+        });
+        setError("Unable to prepare this upload. Please try again.");
+        return;
       }
 
-      await savePendingSnapUpload({ file, previewUrl });
       router.push("/?action=upload");
     },
     [router],
@@ -96,7 +103,7 @@ export default function SnapLaunchCards() {
 
   return (
     <>
-      <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
+      <div className="mt-10 grid grid-cols-1 gap-3 pb-10 sm:grid-cols-2 sm:gap-6">
         <button
           type="button"
           onClick={openCameraPicker}
@@ -162,11 +169,11 @@ export default function SnapLaunchCards() {
             <span className="mt-2 text-base font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-xl">
               Upload file
             </span>
-              <span className="mt-2 hidden text-sm text-white/80 sm:block">
-                {isDragging
-                  ? "Drop it here to start scanning."
-                  : "A photo, screenshot, or PDF from your phone or computer."}
-              </span>
+            <span className="mt-2 hidden text-sm text-white/80 sm:block">
+              {isDragging
+                ? "Drop it here to start scanning."
+                : "A photo, screenshot, or PDF from your phone or computer."}
+            </span>
             {error ? <span className="mt-3 text-sm font-medium text-rose-200">{error}</span> : null}
           </div>
         </div>
@@ -175,7 +182,7 @@ export default function SnapLaunchCards() {
       <input
         ref={cameraInputRef}
         type="file"
-        accept="image/*"
+        accept={getUploadAcceptAttribute("header")}
         capture="environment"
         className="hidden"
         onChange={(event) => {
@@ -186,7 +193,7 @@ export default function SnapLaunchCards() {
       <input
         ref={uploadInputRef}
         type="file"
-        accept="image/*,application/pdf"
+        accept={getUploadAcceptAttribute("attachment")}
         className="hidden"
         onChange={(event) => {
           void routeSelectedFile(event.target.files?.[0] ?? null);

@@ -24,10 +24,17 @@ import {
 import { type PendingSnapUpload, takePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { normalizeThumbnailFocus, type ThumbnailFocus } from "@/lib/thumbnail-focus";
 import { buildWeddingScanFlyerColorsFromImageColors } from "@/lib/wedding-scan";
+import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
 import { findFirstEmail, normalizeUrlValue } from "@/utils/contact";
 import { buildEventPath } from "@/utils/event-url";
 import { extractColorsFromImage } from "@/utils/image-colors";
-import { uploadMediaFile } from "@/utils/media-upload-client";
+import {
+  createObjectUrlPreview,
+  getUploadAcceptAttribute,
+  revokeObjectUrl,
+  uploadMediaFile,
+  validateClientUploadFile,
+} from "@/utils/media-upload-client";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { readFileAsDataUrl } from "@/utils/thumbnail";
 
@@ -72,6 +79,7 @@ type EventFields = {
 type SubmitScannedEventParams = {
   eventInput: EventFields;
   sourceFile?: File | null;
+  scanAttemptId?: string | null;
   ocrMeta?: {
     category?: string | null;
     birthdayTemplateHint?: BirthdayTemplateHint | null;
@@ -257,6 +265,8 @@ export default function Dashboard({
   const activeOcrAbortRef = useRef<AbortController | null>(null);
   const cancelledByUserRef = useRef(false);
   const isSubmittingRef = useRef(false);
+  const activeScanAttemptIdRef = useRef<string | null>(null);
+  const objectPreviewUrlRef = useRef<string | null>(null);
   const submitScannedEventRef = useRef<(params: SubmitScannedEventParams) => Promise<boolean>>(
     async () => false,
   );
@@ -307,6 +317,19 @@ export default function Dashboard({
     }
   }, []);
 
+  const clearObjectPreviewUrl = useCallback(() => {
+    if (objectPreviewUrlRef.current) {
+      revokeObjectUrl(objectPreviewUrlRef.current);
+      objectPreviewUrlRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearObjectPreviewUrl();
+    };
+  }, [clearObjectPreviewUrl]);
+
   const resetScanUi = useCallback(
     (clearPreview = true) => {
       clearScanTimers();
@@ -314,20 +337,21 @@ export default function Dashboard({
       setUploadProgress(0);
       scanStartedAtRef.current = null;
       if (clearPreview) {
+        clearObjectPreviewUrl();
         previewLoadIdRef.current += 1;
         setPreviewUrl(null);
         setPreviewKind(null);
       }
     },
-    [clearScanTimers],
+    [clearObjectPreviewUrl, clearScanTimers],
   );
 
   const startScanUi = useCallback(
     (selected: File, previewOverride?: string | null) => {
       clearScanTimers();
+      clearObjectPreviewUrl();
       scanStartedAtRef.current = null;
       previewLoadIdRef.current += 1;
-      const previewLoadId = previewLoadIdRef.current;
 
       const nextPreviewKind: SnapPreviewKind = selected.type.startsWith("image/")
         ? "image"
@@ -339,16 +363,9 @@ export default function Dashboard({
         if (previewOverride) {
           setPreviewUrl(previewOverride);
         } else {
-          setPreviewUrl(null);
-          void readFileAsDataUrl(selected)
-            .then((nextPreviewUrl) => {
-              if (previewLoadIdRef.current !== previewLoadId) return;
-              setPreviewUrl(nextPreviewUrl);
-            })
-            .catch(() => {
-              if (previewLoadIdRef.current !== previewLoadId) return;
-              setPreviewUrl(null);
-            });
+          const objectUrl = createObjectUrlPreview(selected);
+          objectPreviewUrlRef.current = objectUrl;
+          setPreviewUrl(objectUrl);
         }
       } else {
         setPreviewUrl(null);
@@ -371,7 +388,7 @@ export default function Dashboard({
         });
       }, 100);
     },
-    [clearScanTimers],
+    [clearObjectPreviewUrl, clearScanTimers],
   );
 
   const finishScanUi = useCallback(async () => {
@@ -399,6 +416,7 @@ export default function Dashboard({
     (err: unknown, stage: string, details?: Record<string, unknown>) => {
       const payload: Record<string, unknown> = {
         stage,
+        scanAttemptId: activeScanAttemptIdRef.current,
         details,
         timestamp: new Date().toISOString(),
       };
@@ -435,6 +453,13 @@ export default function Dashboard({
         }
       }
       console.error("[snap-upload]", payload, err);
+      reportClientLog({
+        area: "snap-upload",
+        stage,
+        scanAttemptId: activeScanAttemptIdRef.current,
+        details,
+        error: err,
+      });
     },
     [],
   );
@@ -759,6 +784,7 @@ export default function Dashboard({
     cancelledByUserRef.current = true;
     activeOcrAbortRef.current?.abort();
     activeOcrAbortRef.current = null;
+    activeScanAttemptIdRef.current = null;
     resetScanUi();
     setLoading(false);
     setError(null);
@@ -832,15 +858,20 @@ export default function Dashboard({
   );
 
   const ingest = useCallback(
-    async (incoming: File) => {
+    async (incoming: File, scanAttemptId: string) => {
       setLoading(true);
       setError(null);
       cancelledByUserRef.current = false;
 
-      // Validate file size before upload (10 MB limit)
-      const maxSize = 10 * 1024 * 1024; // 10 MB
-      if (incoming.size > maxSize) {
-        setError("File is too large. Please upload a file smaller than 10 MB.");
+      const validationError = validateClientUploadFile(incoming, "attachment");
+      if (validationError) {
+        setError(validationError);
+        logUploadIssue(new Error(validationError), "client-validation", {
+          fileName: incoming.name,
+          fileSize: incoming.size,
+          fileType: incoming.type,
+          scanAttemptId,
+        });
         resetScanUi();
         setLoading(false);
         return;
@@ -862,6 +893,7 @@ export default function Dashboard({
 
         const form = new FormData();
         form.append("file", fileToUpload);
+        form.append("scanAttemptId", scanAttemptId);
 
         // Add timeout handling for mobile/network issues
         const controller = new AbortController();
@@ -891,6 +923,7 @@ export default function Dashboard({
             fileName: incoming.name,
             fileSize: incoming.size,
             fileType: incoming.type,
+            scanAttemptId,
           });
           // Network errors, CORS issues, etc.
           const errorMessage = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
@@ -908,6 +941,7 @@ export default function Dashboard({
             fileName: incoming.name,
             fileSize: incoming.size,
             fileType: incoming.type,
+            scanAttemptId,
           });
           throw new Error(errorMsg || "Failed to scan file");
         }
@@ -1080,6 +1114,7 @@ export default function Dashboard({
           const created = await submitScannedEventRef.current({
             eventInput: adjusted,
             sourceFile: fileToUpload,
+            scanAttemptId,
             ocrMeta: {
               category: data?.category || null,
               birthdayTemplateHint: data?.birthdayTemplateHint || null,
@@ -1108,6 +1143,7 @@ export default function Dashboard({
             fileName: incoming.name,
             fileSize: incoming.size,
             fileType: incoming.type,
+            scanAttemptId,
           });
         }
         if (err instanceof Error) {
@@ -1125,15 +1161,28 @@ export default function Dashboard({
   );
 
   const onFile = useCallback(
-    (selected: File | null, previewOverride?: string | null) => {
+    (selected: File | null, previewOverride?: string | null, pendingScanAttemptId?: string | null) => {
       if (!selected) {
         // User cancelled file selection - silently return
         return;
       }
+      const scanAttemptId = pendingScanAttemptId || createClientAttemptId("scan");
+      activeScanAttemptIdRef.current = scanAttemptId;
+      const validationError = validateClientUploadFile(selected, "attachment");
+      if (validationError) {
+        setError(validationError);
+        logUploadIssue(new Error(validationError), "client-validation", {
+          fileName: selected.name,
+          fileSize: selected.size,
+          fileType: selected.type,
+          scanAttemptId,
+        });
+        return;
+      }
       startScanUi(selected, previewOverride);
-      void ingest(selected);
+      void ingest(selected, scanAttemptId);
     },
-    [ingest, startScanUi],
+    [ingest, logUploadIssue, startScanUi],
   );
 
   const openCamera = useCallback(() => {
@@ -1201,8 +1250,13 @@ export default function Dashboard({
           const pendingUpload = await takePendingSnapUpload();
           if (cancelled) return;
           if (pendingUpload) {
-            onFile(pendingUpload.file, pendingUpload.previewUrl);
+            onFile(pendingUpload.file, pendingUpload.previewUrl ?? null, pendingUpload.scanAttemptId);
           } else {
+            reportClientLog({
+              area: "snap-upload",
+              stage: "pending-upload-missing",
+              details: { action },
+            });
             openUpload();
           }
           cleanup();
@@ -1222,11 +1276,13 @@ export default function Dashboard({
       eventInput,
       ready,
       sourceFile,
+      scanAttemptId,
       ocrMeta,
     }: {
       eventInput: EventFields;
       ready: EventFields;
       sourceFile?: File | null;
+      scanAttemptId?: string | null;
       ocrMeta?: SubmitScannedEventParams["ocrMeta"];
     }): Promise<SaveHistoryResult> => {
       try {
@@ -1241,11 +1297,18 @@ export default function Dashboard({
             const upload = await uploadMediaFile({
               file: fileForUpload,
               usage: "attachment",
+              scanAttemptId,
             });
             thumbnail = upload.eventMedia.thumbnail;
             attachment = upload.eventMedia.attachment;
           } catch (err) {
             console.error("Failed to upload scanned media:", err);
+            logUploadIssue(err, "media-upload", {
+              fileName: fileForUpload.name,
+              fileSize: fileForUpload.size,
+              fileType: fileForUpload.type,
+              scanAttemptId,
+            });
             throw err;
           }
         }
@@ -1434,7 +1497,7 @@ export default function Dashboard({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...payload, scanAttemptId }),
         });
 
         const historyData: any = await historyRes.json().catch(() => ({}));
@@ -1473,17 +1536,18 @@ export default function Dashboard({
         return { ok: true, eventId, savedTitle };
       } catch (err) {
         console.error("Failed to save to Envitefy history:", err);
+        logUploadIssue(err, "history-save", { scanAttemptId });
         return {
           ok: false,
           error: "We couldn't save this event to your account. Please try again.",
         };
       }
     },
-    [invalidateEventCache, ocrBirthdayTemplateHint, ocrCategory, previewUrl, uploadedFile],
+    [invalidateEventCache, logUploadIssue, ocrBirthdayTemplateHint, ocrCategory, previewUrl, uploadedFile],
   );
 
   const submitScannedEvent = useCallback(
-    async ({ eventInput, sourceFile, ocrMeta }: SubmitScannedEventParams) => {
+    async ({ eventInput, sourceFile, scanAttemptId, ocrMeta }: SubmitScannedEventParams) => {
       if (isSubmittingRef.current) return false;
       isSubmittingRef.current = true;
       try {
@@ -1497,6 +1561,7 @@ export default function Dashboard({
           eventInput,
           ready,
           sourceFile,
+          scanAttemptId,
           ocrMeta,
         });
         if (!saveResult.ok) {
@@ -1513,6 +1578,12 @@ export default function Dashboard({
         const eventHref = buildEventPath(eventId, eventTitle, { created: true });
         clearEventContext();
         setEventContextSourcePage("invitedEvents");
+        reportClientLog({
+          area: "snap-upload",
+          stage: "event-navigation-start",
+          scanAttemptId,
+          details: { eventId, eventHref },
+        });
         router.push(eventHref);
         return true;
       } finally {
@@ -1545,7 +1616,7 @@ export default function Dashboard({
       <input
         ref={cameraInputRef}
         type="file"
-        accept="image/*"
+        accept={getUploadAcceptAttribute("header")}
         capture="environment"
         onChange={(event) => onFile(event.target.files?.[0] ?? null)}
         className="hidden"
@@ -1553,7 +1624,7 @@ export default function Dashboard({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,application/pdf"
+        accept={getUploadAcceptAttribute("attachment")}
         onChange={(event) => onFile(event.target.files?.[0] ?? null)}
         className="hidden"
       />

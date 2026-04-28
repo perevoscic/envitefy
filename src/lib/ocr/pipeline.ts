@@ -234,6 +234,7 @@ function buildCleanDescription(
 }
 
 export async function handleOcrRequest(request: Request) {
+  let scanAttemptId: string | null = null;
   try {
     const debug = process.env.NODE_ENV !== "production";
     const log = (...args: any[]) => {
@@ -271,6 +272,7 @@ export async function handleOcrRequest(request: Request) {
     const ocrModel = resolveOcrModel(fastMode);
 
     const formData = await request.formData();
+    scanAttemptId = String(formData.get("scanAttemptId") || "").trim() || null;
     const file = formData.get("file");
     if (!(file instanceof File)) {
       return corsJson(request, { error: "No file" }, { status: 400 });
@@ -1650,6 +1652,16 @@ export async function handleOcrRequest(request: Request) {
       ocrSource,
     };
     log(">>> OCR timing (ms)", ocrTiming);
+    if (scanAttemptId) {
+      console.log("[ocr] complete", {
+        scanAttemptId,
+        fileName: file.name || null,
+        fileSize: file.size || null,
+        mimeType: mime,
+        category,
+        timings: ocrTiming,
+      });
+    }
 
     const responseBody: any = {
       intakeId: null,
@@ -1663,6 +1675,7 @@ export async function handleOcrRequest(request: Request) {
       ocrSkin,
       thumbnailFocus,
       ocrSource,
+      scanAttemptId,
     };
     if (includeTimings) {
       responseBody.timing = ocrTiming;
@@ -1671,6 +1684,10 @@ export async function handleOcrRequest(request: Request) {
     return corsJson(request, responseBody, { headers: { "Cache-Control": "no-store" } });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
+    console.error("[ocr] failed", {
+      scanAttemptId,
+      message,
+    });
     return corsJson(request, { error: "OCR route failed", detail: message }, { status: 500 });
   }
 }

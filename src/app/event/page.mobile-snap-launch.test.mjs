@@ -21,9 +21,20 @@ test("/event landing uses direct client launch cards instead of action=camera li
 test("/event upload launch persists the selected file before navigation", () => {
   const launchCards = readSource("src/app/event/SnapLaunchCards.tsx");
 
-  assert.match(launchCards, /await savePendingSnapUpload\(\{ file, previewUrl \}\);/);
+  assert.match(launchCards, /const scanAttemptId = createClientAttemptId\("scan"\);/);
+  assert.match(launchCards, /await savePendingSnapUpload\(\{ file, scanAttemptId \}\);/);
   assert.match(launchCards, /router\.push\("\/\?action=upload"\);/);
+  assert.doesNotMatch(launchCards, /readFileAsDataUrl/);
   assert.doesNotMatch(launchCards, /__pendingSnapUpload/);
+});
+
+test("/event launch validates explicit supported upload types", () => {
+  const launchCards = readSource("src/app/event/SnapLaunchCards.tsx");
+
+  assert.match(launchCards, /validateClientUploadFile\(file, "attachment"\)/);
+  assert.match(launchCards, /accept=\{getUploadAcceptAttribute\("header"\)\}/);
+  assert.match(launchCards, /accept=\{getUploadAcceptAttribute\("attachment"\)\}/);
+  assert.doesNotMatch(launchCards, /accept="image\/\*"/);
 });
 
 test("/event launch cards stack on mobile and hide helper copy on small screens", () => {

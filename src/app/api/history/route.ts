@@ -1,24 +1,24 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
-  listDashboardHistoryFallbackForUser,
   insertEventHistory,
+  listDashboardHistoryFallbackForUser,
   listDashboardHistoryWindowForUser,
   listHistoryForUser,
   listSidebarHistoryForUserFast,
   upsertSignupForm,
 } from "@/lib/db";
+import { normalizeAccessControlPayload } from "@/lib/event-access";
+import { findTransientEventMedia } from "@/lib/event-media";
 import {
   getCachedHistory,
   getCachedHistoryStale,
-  setCachedHistory,
   invalidateUserHistory,
+  setCachedHistory,
 } from "@/lib/history-cache";
-import { invalidateUserDashboard } from "@/lib/dashboard-cache";
-import { createHash } from "node:crypto";
-import { normalizeAccessControlPayload } from "@/lib/event-access";
-import { findTransientEventMedia } from "@/lib/event-media";
 import {
   isCacheableHistoryView,
   normalizeHistoryTimeFilter,
@@ -293,6 +293,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  let scanAttemptId: string | null = null;
   try {
     const session: any = await getServerSession(authOptions as any);
     const sessionUser: any = (session && (session as any).user) || null;
@@ -311,6 +312,10 @@ export async function POST(req: Request) {
       );
     }
     const body = await req.json().catch(() => ({}));
+    scanAttemptId =
+      typeof body?.scanAttemptId === "string" && body.scanAttemptId.trim()
+        ? body.scanAttemptId.trim().slice(0, 120)
+        : null;
     const rawTitle = (body.title as string) || "Event";
     const title = String(rawTitle).slice(0, 300);
     const data = body.data ?? {};
@@ -340,8 +345,19 @@ export async function POST(req: Request) {
           startISO: data?.startISO || null,
           startAt: data?.startAt || null,
           payloadBytes: dataPayloadBytes,
+          scanAttemptId,
         }
       );
+    }
+    if (scanAttemptId) {
+      console.log("[history] scan insert start", {
+        scanAttemptId,
+        resolvedUserId: userId,
+        title,
+        category: data?.category || null,
+        createdVia: data?.createdVia || null,
+        payloadBytes: dataPayloadBytes,
+      });
     }
     const row = await insertEventHistory({ userId, title, data });
     
@@ -370,11 +386,25 @@ export async function POST(req: Request) {
           id: row?.id,
           userId: row?.user_id || null,
           created_at: row?.created_at || null,
+          scanAttemptId,
         }
       );
     }
+    if (scanAttemptId) {
+      console.log("[history] scan insert complete", {
+        scanAttemptId,
+        id: row?.id,
+        userId: row?.user_id || null,
+      });
+    }
     return NextResponse.json(row, { status: 201 });
   } catch (err: any) {
+    if (scanAttemptId) {
+      console.error("[history] scan insert failed", {
+        scanAttemptId,
+        message: String(err?.message || err || "unknown error"),
+      });
+    }
     if (HISTORY_DEBUG) {
       console.error("[history] POST error", err);
     }

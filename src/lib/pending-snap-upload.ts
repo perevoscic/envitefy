@@ -2,7 +2,8 @@
 
 export type PendingSnapUpload = {
   file: File;
-  previewUrl: string | null;
+  previewUrl?: string | null;
+  scanAttemptId?: string | null;
 };
 
 type SnapUploadWindow = Window & {
@@ -77,6 +78,10 @@ async function readPersistedPendingSnapUpload(): Promise<PendingSnapUpload | nul
           resolve({
             file: result.file,
             previewUrl: typeof result.previewUrl === "string" ? result.previewUrl : null,
+            scanAttemptId:
+              typeof result.scanAttemptId === "string" && result.scanAttemptId.trim()
+                ? result.scanAttemptId.trim()
+                : null,
           });
           return;
         }

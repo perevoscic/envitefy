@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { isUploadUsage } from "@/lib/upload-config";
 import { processPublicUpload } from "@/lib/media-upload";
+import { isUploadUsage } from "@/lib/upload-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,12 +11,14 @@ function badRequest(error: string, status = 400) {
 }
 
 export async function POST(request: Request) {
+  let scanAttemptId: string | null = null;
   try {
     const formData = await request.formData();
     const file = formData.get("file");
     const usageRaw = String(formData.get("usage") || "").trim().toLowerCase();
     const eventId = String(formData.get("eventId") || "").trim() || null;
     const uploadToken = String(formData.get("uploadToken") || "").trim() || null;
+    scanAttemptId = String(formData.get("scanAttemptId") || "").trim() || null;
 
     if (!(file instanceof File)) {
       return badRequest("Missing file");
@@ -30,6 +32,7 @@ export async function POST(request: Request) {
       usage: usageRaw,
       eventId,
       uploadToken,
+      scanAttemptId,
     });
 
     return NextResponse.json(response);
@@ -44,6 +47,7 @@ export async function POST(request: Request) {
       console.error("[api/upload] failed", {
         status,
         message,
+        scanAttemptId,
       });
     }
 

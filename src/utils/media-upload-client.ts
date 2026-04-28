@@ -1,13 +1,13 @@
 "use client";
 
+import { sanitizePersistedMediaUrl } from "@/lib/public-asset-url";
 import {
-  type UploadResponse,
-  type UploadUsage,
   getUploadAcceptAttribute,
   resolveAttachmentPreviewUrl,
+  type UploadResponse,
+  type UploadUsage,
   validateUploadFileMeta,
 } from "@/lib/upload-config";
-import { sanitizePersistedMediaUrl } from "@/lib/public-asset-url";
 import type { SignupHeaderImageAsset } from "@/types/signup";
 
 export function validateClientUploadFile(file: File, usage: UploadUsage): string | null {
@@ -37,18 +37,35 @@ export async function uploadMediaFile(params: {
   usage: UploadUsage;
   eventId?: string | null;
   uploadToken?: string | null;
+  scanAttemptId?: string | null;
+  timeoutMs?: number;
 }): Promise<UploadResponse> {
   const formData = new FormData();
   formData.set("file", params.file);
   formData.set("usage", params.usage);
   if (params.eventId) formData.set("eventId", params.eventId);
   if (params.uploadToken) formData.set("uploadToken", params.uploadToken);
+  if (params.scanAttemptId) formData.set("scanAttemptId", params.scanAttemptId);
 
-  const response = await fetch("/api/upload", {
-    method: "POST",
-    credentials: "include",
-    body: formData,
-  });
+  const controller = new AbortController();
+  const timeoutMs = Number.isFinite(params.timeoutMs) ? Math.max(1000, params.timeoutMs!) : 65_000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  let response: Response;
+  try {
+    response = await fetch("/api/upload", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Media upload timed out. Please check your connection and try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
   const json = await response.json().catch(() => null);
   if (!response.ok || !json?.ok) {
     throw new Error(

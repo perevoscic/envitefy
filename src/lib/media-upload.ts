@@ -1,15 +1,15 @@
+import { randomUUID } from "node:crypto";
 import { put } from "@vercel/blob";
 import sharp from "sharp";
-import { randomUUID } from "node:crypto";
+import { optimizePdfWithQpdf } from "./pdf-optimize.ts";
+import { rasterizePdfPageToPng } from "./pdf-raster.ts";
 import {
+  SHARP_UPLOAD_PRESETS,
   type UploadKind,
   type UploadResponse,
   type UploadUsage,
-  SHARP_UPLOAD_PRESETS,
   validateUploadFileMeta,
 } from "./upload-config.ts";
-import { optimizePdfWithQpdf } from "./pdf-optimize.ts";
-import { rasterizePdfPageToPng } from "./pdf-raster.ts";
 
 type BlobAccess = "public" | "private";
 
@@ -58,6 +58,7 @@ type PublicUploadParams = {
   usage: UploadUsage;
   eventId?: string | null;
   uploadToken?: string | null;
+  scanAttemptId?: string | null;
 };
 
 type BufferUploadParams = {
@@ -67,6 +68,7 @@ type BufferUploadParams = {
   usage: UploadUsage;
   eventId?: string | null;
   uploadToken?: string | null;
+  scanAttemptId?: string | null;
 };
 
 type DiscoverySourceResult = {
@@ -503,6 +505,7 @@ async function processValidatedUpload(params: {
   usage: UploadUsage;
   eventId?: string | null;
   uploadToken?: string | null;
+  scanAttemptId?: string | null;
 }): Promise<UploadResponse> {
   const scopeId = getScopeId(params.eventId, params.uploadToken);
   console.log("[media-upload] processing", {
@@ -512,6 +515,7 @@ async function processValidatedUpload(params: {
     mimeType: params.validated.mimeType,
     inputType: params.validated.kind,
     originalSize: params.validated.sizeBytes,
+    scanAttemptId: params.scanAttemptId || null,
   });
 
   const response =
@@ -531,6 +535,7 @@ async function processValidatedUpload(params: {
     displaySize: response.stored.display?.sizeBytes || null,
     sourceSize: response.stored.source?.sizeBytes || null,
     optimizedByQpdf: response.stored.source?.optimizedByQpdf ?? null,
+    scanAttemptId: params.scanAttemptId || null,
   });
 
   return response;
@@ -543,6 +548,7 @@ export async function processPublicUpload(params: PublicUploadParams): Promise<U
     usage: params.usage,
     eventId: params.eventId,
     uploadToken: params.uploadToken,
+    scanAttemptId: params.scanAttemptId,
   });
 }
 
@@ -570,6 +576,7 @@ export async function processBufferUpload(params: BufferUploadParams): Promise<U
     usage: params.usage,
     eventId: params.eventId,
     uploadToken: params.uploadToken,
+    scanAttemptId: params.scanAttemptId,
   });
 }
 

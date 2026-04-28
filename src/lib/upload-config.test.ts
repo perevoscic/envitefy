@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  getUploadAcceptAttribute,
   resolveCoverImageUrlFromEventData,
   validateUploadFileMeta,
 } from "./upload-config.ts";
@@ -23,6 +24,23 @@ test("validateUploadFileMeta accepts webp attachments and enforces header rules"
   });
   assert.equal(headerPdf.ok, false);
   assert.equal(headerPdf.status, 415);
+
+  const heic = validateUploadFileMeta({
+    fileName: "photo.heic",
+    mimeType: "image/heic",
+    sizeBytes: 1024,
+    usage: "attachment",
+  });
+  assert.equal(heic.ok, false);
+  assert.equal(heic.status, 415);
+});
+
+test("upload accept attributes list explicit supported formats", () => {
+  assert.equal(getUploadAcceptAttribute("header"), "image/jpeg,image/png,image/webp");
+  assert.equal(
+    getUploadAcceptAttribute("attachment"),
+    "image/jpeg,image/png,image/webp,application/pdf",
+  );
 });
 
 test("validateUploadFileMeta enforces image and pdf size limits", () => {
