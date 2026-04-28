@@ -22,7 +22,11 @@ export function StudioCreateFlow({
   detailsContent,
 }: StudioCreateFlowProps) {
   if (createStep === "type") {
-    return <>{typeContent}</>;
+    return (
+      <div className="min-h-0 lg:h-full lg:overflow-y-auto lg:pb-10 lg:pr-2">
+        {typeContent}
+      </div>
+    );
   }
 
   return (
