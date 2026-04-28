@@ -60,6 +60,7 @@ type WeddingScanSkinId =
 type Props = {
   eventId?: string | null;
   title: string;
+  venueName?: string | null;
   location: string | null;
   dateLabel: string | null;
   timeLabel: string | null;
@@ -87,6 +88,7 @@ type Props = {
 export default function ScannedWeddingInviteView({
   eventId,
   title,
+  venueName,
   location,
   dateLabel,
   timeLabel,
@@ -124,10 +126,12 @@ export default function ScannedWeddingInviteView({
   const isNoirModern = resolvedSkinId === "scanned-wedding-noir-modern";
   const isGildedRomance = resolvedSkinId === "scanned-wedding-gilded-romance";
   const couple = useMemo(() => parseWeddingCoupleNames(title), [title]);
+  const displayVenueName = venueName?.trim() || "";
   const displayLocation = location?.trim() || "Location TBD";
+  const directionsLocation = [displayVenueName, displayLocation].filter(Boolean).join(", ");
   const displayDate = dateLabel?.trim() || "Date TBD";
   const displayTime = timeLabel?.trim() || "";
-  const hasRsvp = Boolean(rsvpName || rsvpPhone || rsvpEmail || rsvpUrl);
+  const hasRsvp = Boolean(rsvpName || rsvpUrl);
   const showRsvpSection = hasRsvp || (previewMode && showRsvpPreview);
   const hasRegistries = registryCards.length > 0;
   const timelineRows = scheduleRows.length > 0 ? scheduleRows : [];
@@ -206,9 +210,9 @@ export default function ScannedWeddingInviteView({
 
   const handleConcierge = () => {
     if (previewMode) return;
-    if (!displayLocation || displayLocation === "Location TBD") return;
+    if (!directionsLocation || directionsLocation === "Location TBD") return;
     window.open(
-      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayLocation)}`,
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(directionsLocation)}`,
       "_blank",
       "noopener,noreferrer",
     );
@@ -334,8 +338,8 @@ export default function ScannedWeddingInviteView({
               <DetailItem
                 icon={<MapPin className="h-5 w-5" />}
                 label="Where"
-                title="The Venue"
-                subtitle={displayLocation}
+                title={displayVenueName || "The Venue"}
+                subtitle={displayVenueName ? undefined : displayLocation}
                 colors={colors}
                 darkMode={isNoirModern}
               />
@@ -393,8 +397,7 @@ export default function ScannedWeddingInviteView({
                     className="max-w-md text-[0.98rem] font-light leading-relaxed"
                     style={{ color: mutedTextColor }}
                   >
-                    Reply directly from the event page using the saved RSVP contact found on the
-                    invitation.
+                    Reply directly from the event page.
                   </div>
                   {rsvpDeadline?.trim() ? (
                     <div
@@ -420,8 +423,8 @@ export default function ScannedWeddingInviteView({
                     <EventRsvpPrompt
                       eventId={eventId}
                       rsvpName={rsvpName}
-                      rsvpPhone={rsvpPhone}
-                      rsvpEmail={rsvpEmail}
+                      rsvpPhone={null}
+                      rsvpEmail={null}
                       rsvpUrl={rsvpUrl}
                       eventTitle={title}
                       eventCategory="Wedding"

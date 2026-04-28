@@ -51,6 +51,7 @@ type Props = {
   backgroundCategory?: string | null;
   dateLabel?: string | null;
   timeLabel?: string | null;
+  venueName?: string | null;
   location?: string | null;
   imageUrl?: string | null;
   shareUrl?: string | null;
@@ -184,6 +185,7 @@ export default function ScannedInviteSkin({
   backgroundCategory,
   dateLabel,
   timeLabel,
+  venueName,
   location,
   imageUrl,
   shareUrl,
@@ -249,6 +251,7 @@ export default function ScannedInviteSkin({
   const displayCategoryLabel = formatCategoryLabel(categoryLabel);
   const displayDate = String(dateLabel || "").trim() || "Date TBD";
   const displayTime = String(timeLabel || "").trim();
+  const displayVenueName = String(venueName || "").trim();
   const displayLocation = String(location || "").trim() || "Location TBD";
   const rawDetailCopy = String(detailCopy || "").trim();
   const isPickleballSkin = String(sportKind || "").toLowerCase() === "pickleball";
@@ -279,12 +282,9 @@ export default function ScannedInviteSkin({
         ? splitTimeRange[1]
         : "";
   const displayRsvpName = String(rsvpName || "").trim();
-  const displayRsvpTitle = displayRsvpName
-    ? /^hosted\s+by\b/i.test(displayRsvpName)
-      ? displayRsvpName
-      : `Hosted by ${displayRsvpName}`
-    : String(rsvpEmail || "Host");
-  const directionsHref = buildMapsHref(location);
+  const displayRsvpTitle = displayRsvpName.replace(/^hosted\s+by\s+/i, "").trim() || "Host";
+  const directionsLocation = [displayVenueName, displayLocation].filter(Boolean).join(", ");
+  const directionsHref = buildMapsHref(directionsLocation || location);
   const directRsvpHref = buildRsvpHref({
     rsvpUrl,
     rsvpPhone,
@@ -506,8 +506,8 @@ export default function ScannedInviteSkin({
                   icon={<MapPin className="h-7 w-7" />}
                   swatchColor={detailIconSwatchColor}
                   label="Where"
-                  title="Event Location"
-                  subtitle={displayLocation}
+                  title={displayVenueName || "Event Location"}
+                  subtitle={displayVenueName ? undefined : displayLocation}
                 />
 
                 {rsvpName || rsvpPhone || rsvpEmail ? (
@@ -516,10 +516,6 @@ export default function ScannedInviteSkin({
                     swatchColor={detailIconSwatchColor}
                     label="RSVP"
                     title={displayRsvpTitle}
-                    subtitle={
-                      String(rsvpEmail || rsvpPhone || "").trim() ||
-                      "Contact details available on request"
-                    }
                     divider
                   />
                 ) : null}

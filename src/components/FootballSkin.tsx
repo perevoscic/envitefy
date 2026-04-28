@@ -25,6 +25,7 @@ type Props = {
   title: string;
   dateLabel?: string | null;
   timeLabel?: string | null;
+  venueName?: string | null;
   location?: string | null;
   imageUrl?: string | null;
   shareUrl?: string | null;
@@ -49,6 +50,7 @@ export default function FootballSkin({
   title,
   dateLabel,
   timeLabel,
+  venueName,
   location,
   imageUrl,
   shareUrl,
@@ -92,6 +94,7 @@ export default function FootballSkin({
       backgroundCategory="football"
       dateLabel={dateLabel}
       timeLabel={timeLabel}
+      venueName={venueName}
       location={location}
       imageUrl={imageUrl}
       shareUrl={shareUrl}
