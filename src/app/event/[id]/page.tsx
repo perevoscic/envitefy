@@ -337,6 +337,21 @@ const collapseDuplicateRangeLabel = (label: string | null | undefined): string |
 
 const EXPLICIT_TIME_RANGE_REGEX =
   /\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\s*(?:-|–|to)\s*\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b/i;
+const ISO_MIDNIGHT_REGEX =
+  /^\d{4}-\d{2}-\d{2}T00:00(?::00(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:?\d{2})?$/i;
+
+const hasMeaningfulTimeToken = (value: string | null | undefined): boolean => {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return false;
+  const tokens = extractTimeTokens(trimmed);
+  if (tokens.length === 0) return false;
+  const hasAmPmToken = tokens.some((token) => /[ap]\.?m\.?/i.test(token));
+  if (hasAmPmToken) return true;
+  if (ISO_MIDNIGHT_REGEX.test(trimmed) && tokens.every((token) => normalizeTimeToken(token) === 0)) {
+    return false;
+  }
+  return true;
+};
 
 const shouldHideInferredOcrEndTime = (
   payload: Record<string, unknown> | null | undefined,
@@ -423,16 +438,19 @@ function formatTimeAndDate(
     let time: string | null = null;
     let date: string | null = null;
 
+    const shouldDisplayTime =
+      hasMeaningfulTimeToken(startInput) || hasMeaningfulTimeToken(endInput);
+
     if (end) {
       if (sameDay) {
-        time = `${timeFmt.format(start)} – ${timeFmt.format(end)}`;
+        time = shouldDisplayTime ? `${timeFmt.format(start)} – ${timeFmt.format(end)}` : null;
         date = dateFmt.format(start);
       } else {
-        time = `${timeFmt.format(start)} – ${timeFmt.format(end)}`;
+        time = shouldDisplayTime ? `${timeFmt.format(start)} – ${timeFmt.format(end)}` : null;
         date = `${dateFmt.format(start)} – ${dateFmt.format(end)}`;
       }
     } else {
-      time = timeFmt.format(start);
+      time = shouldDisplayTime ? timeFmt.format(start) : null;
       date = dateFmt.format(start);
     }
 

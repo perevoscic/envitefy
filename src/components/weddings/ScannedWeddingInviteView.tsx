@@ -122,7 +122,8 @@ export default function ScannedWeddingInviteView({
   const couple = useMemo(() => parseWeddingCoupleNames(title), [title]);
   const displayLocation = location?.trim() || "Location TBD";
   const displayDate = dateLabel?.trim() || "Date TBD";
-  const displayTime = timeLabel?.trim() || "Time TBD";
+  const displayTime = timeLabel?.trim() || "";
+  const hasDisplayTime = Boolean(displayTime);
   const hasRsvp = Boolean(rsvpName || rsvpPhone || rsvpEmail || rsvpUrl);
   const showRsvpSection = hasRsvp || (previewMode && showRsvpPreview);
   const hasRegistries = registryCards.length > 0;
@@ -307,13 +308,15 @@ export default function ScannedWeddingInviteView({
                   colors={colors}
                   darkMode={isNoirModern}
                 />
-                <DetailItem
-                  icon={<Clock className="h-5 w-5" />}
-                  label="At"
-                  title={displayTime}
-                  colors={colors}
-                  darkMode={isNoirModern}
-                />
+                {hasDisplayTime ? (
+                  <DetailItem
+                    icon={<Clock className="h-5 w-5" />}
+                    label="At"
+                    title={displayTime}
+                    colors={colors}
+                    darkMode={isNoirModern}
+                  />
+                ) : null}
               </div>
               <DetailItem
                 icon={<MapPin className="h-5 w-5" />}

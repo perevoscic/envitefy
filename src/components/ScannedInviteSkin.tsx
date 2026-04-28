@@ -155,7 +155,8 @@ export default function ScannedInviteSkin({
   const displayTitle = String(title || "").trim() || "Celebration";
   const displayCategoryLabel = formatCategoryLabel(categoryLabel);
   const displayDate = String(dateLabel || "").trim() || "Date TBD";
-  const displayTime = String(timeLabel || "").trim() || "Time TBD";
+  const displayTime = String(timeLabel || "").trim();
+  const hasDisplayTime = Boolean(displayTime);
   const displayLocation = String(location || "").trim() || "Location TBD";
   const directionsHref = buildMapsHref(location);
   const directRsvpHref = buildRsvpHref({
@@ -314,12 +315,14 @@ export default function ScannedInviteSkin({
                 title={displayDate}
               />
 
-              <InfoBlock
-                icon={<Clock className="h-8 w-8" />}
-                swatchColor="var(--theme-secondary)"
-                label="At"
-                title={displayTime}
-              />
+              {hasDisplayTime ? (
+                <InfoBlock
+                  icon={<Clock className="h-8 w-8" />}
+                  swatchColor="var(--theme-secondary)"
+                  label="At"
+                  title={displayTime}
+                />
+              ) : null}
 
               <InfoBlock
                 icon={<MapPin className="h-8 w-8" />}

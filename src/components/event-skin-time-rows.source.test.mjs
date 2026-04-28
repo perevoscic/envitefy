@@ -13,12 +13,12 @@ const runtimeSkinSources = [
   "src/components/weddings/ScannedWeddingInviteView.tsx",
 ];
 
-test("event skins render date and time as separate When and At rows", () => {
+test("event skins render date row and gate the At row on available time", () => {
   for (const relPath of runtimeSkinSources) {
     const source = readSource(relPath);
 
     assert.match(source, /label="When"[\s\S]*?title=\{displayDate\}/, relPath);
-    assert.match(source, /label="At"[\s\S]*?title=\{displayTime\}/, relPath);
+    assert.match(source, /hasDisplayTime\s*\?\s*\([\s\S]*label="At"[\s\S]*title=\{displayTime\}/, relPath);
     assert.doesNotMatch(source, /subtitle=\{displayTime\}/, relPath);
   }
 });
