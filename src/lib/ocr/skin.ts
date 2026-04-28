@@ -4,11 +4,13 @@ import {
   buildOcrSkinBackgroundPromptRules,
   normalizeOcrSkinBackground,
   normalizeOcrSkinCategory,
+  normalizeOcrSportKind,
   resolveOcrSkinBackground,
   type OcrSkinBackground,
   type OcrSkinCategory,
   type OcrSkinId,
   type OcrSkinPalette,
+  type OcrSportKind,
 } from "@/lib/ocr/skin-background";
 import { resolveStudioProvider } from "@/lib/studio/provider";
 import type { StudioProvider } from "@/lib/studio/types";
@@ -22,13 +24,20 @@ export type {
   OcrSkinCategory,
   OcrSkinId,
   OcrSkinPalette,
+  OcrSportKind,
 } from "@/lib/ocr/skin-background";
 
-export { isBasketballOcrSkinCandidate } from "@/lib/ocr/skin-background";
+export {
+  isBasketballOcrSkinCandidate,
+  isFootballOcrSkinCandidate,
+  isPickleballOcrSkinCandidate,
+  normalizeOcrSportKind,
+} from "@/lib/ocr/skin-background";
 
 export type OcrSkinSelection = {
   version: 1;
   category: OcrSkinCategory;
+  sportKind?: OcrSportKind;
   skinId: OcrSkinId;
   palette: OcrSkinPalette;
   background?: OcrSkinBackground;
@@ -37,6 +46,7 @@ export type OcrSkinSelection = {
 
 type OcrSkinPromptInput = {
   category: OcrSkinCategory | string;
+  sportKind?: OcrSportKind | string | null;
   imageBytes: Buffer;
   mimeType: string;
   ocrText: string;
@@ -54,6 +64,7 @@ type OcrSkinPromptInput = {
 };
 
 type RawOcrSkinPayload = {
+  sportKind?: unknown;
   skinId?: unknown;
   palette?: Record<string, unknown> | null;
   background?: Record<string, unknown> | null;
@@ -77,6 +88,18 @@ const BASKETBALL_SKIN_IDS = [
   "scanned-basketball-night-run",
 ] as const;
 
+const FOOTBALL_SKIN_IDS = [
+  "scanned-football-friday-lights",
+  "scanned-football-senior-night",
+  "scanned-football-watch-party",
+] as const;
+
+const PICKLEBALL_SKIN_IDS = [
+  "scanned-pickleball-showdown",
+  "scanned-pickleball-pop-court",
+  "scanned-pickleball-clinic",
+] as const;
+
 const GENERIC_INVITE_SKIN_IDS = [
   "scanned-invite-bento-celebration",
   "scanned-invite-soft-radiance",
@@ -98,6 +121,8 @@ const OCR_SKIN_ID_SET = new Set<OcrSkinId>([
   ...BIRTHDAY_SKIN_IDS,
   ...WEDDING_SKIN_IDS,
   ...BASKETBALL_SKIN_IDS,
+  ...FOOTBALL_SKIN_IDS,
+  ...PICKLEBALL_SKIN_IDS,
   ...GENERIC_INVITE_SKIN_IDS,
 ]);
 
@@ -105,6 +130,7 @@ const OCR_INVITE_CATEGORY_LABELS: Record<OcrSkinCategory, string> = {
   birthday: "Birthday",
   wedding: "Wedding",
   basketball: "Basketball",
+  football: "Football",
   "baby-shower": "Baby Shower",
   "bridal-shower": "Bridal Shower",
   engagement: "Engagement",
@@ -197,6 +223,60 @@ const DEFAULT_OCR_SKIN_PALETTES: Record<OcrSkinId, OcrSkinPalette> = {
     dominant: "#1f2937",
     themeColor: "#f97316",
   },
+  "scanned-football-friday-lights": {
+    background: "#07111f",
+    primary: "#fbbf24",
+    secondary: "#1d4ed8",
+    accent: "#f8fafc",
+    text: "#f8fafc",
+    dominant: "#0f172a",
+    themeColor: "#fbbf24",
+  },
+  "scanned-football-senior-night": {
+    background: "#062b22",
+    primary: "#0f766e",
+    secondary: "#f8fafc",
+    accent: "#f4d27a",
+    text: "#f8fafc",
+    dominant: "#065f46",
+    themeColor: "#f4d27a",
+  },
+  "scanned-football-watch-party": {
+    background: "#111827",
+    primary: "#f97316",
+    secondary: "#16a34a",
+    accent: "#facc15",
+    text: "#f9fafb",
+    dominant: "#7c2d12",
+    themeColor: "#f97316",
+  },
+  "scanned-pickleball-showdown": {
+    background: "#073f2d",
+    primary: "#facc15",
+    secondary: "#0f172a",
+    accent: "#a3e635",
+    text: "#f8fafc",
+    dominant: "#166534",
+    themeColor: "#facc15",
+  },
+  "scanned-pickleball-pop-court": {
+    background: "#ccfbf1",
+    primary: "#ec4899",
+    secondary: "#0891b2",
+    accent: "#facc15",
+    text: "#0f172a",
+    dominant: "#22d3ee",
+    themeColor: "#ec4899",
+  },
+  "scanned-pickleball-clinic": {
+    background: "#0f3460",
+    primary: "#fde047",
+    secondary: "#16a34a",
+    accent: "#f8fafc",
+    text: "#f8fafc",
+    dominant: "#1d4ed8",
+    themeColor: "#fde047",
+  },
   "scanned-invite-bento-celebration": {
     background: "#dcecf7",
     primary: "#e91e8f",
@@ -249,9 +329,19 @@ function normalizeHex(value: unknown): string | null {
   return null;
 }
 
-function normalizeSkinId(category: OcrSkinCategory, value: unknown): OcrSkinId | null {
+function normalizeSkinId(
+  category: OcrSkinCategory,
+  value: unknown,
+  sportKind?: OcrSportKind | null,
+): OcrSkinId | null {
   const id = safeString(value) as OcrSkinId;
   if (!OCR_SKIN_ID_SET.has(id)) return null;
+  if (
+    sportKind === "pickleball" &&
+    PICKLEBALL_SKIN_IDS.includes(id as (typeof PICKLEBALL_SKIN_IDS)[number])
+  ) {
+    return id;
+  }
   if (
     category === "birthday" &&
     BIRTHDAY_SKIN_IDS.includes(id as (typeof BIRTHDAY_SKIN_IDS)[number])
@@ -267,6 +357,12 @@ function normalizeSkinId(category: OcrSkinCategory, value: unknown): OcrSkinId |
   if (
     category === "basketball" &&
     BASKETBALL_SKIN_IDS.includes(id as (typeof BASKETBALL_SKIN_IDS)[number])
+  ) {
+    return id;
+  }
+  if (
+    category === "football" &&
+    FOOTBALL_SKIN_IDS.includes(id as (typeof FOOTBALL_SKIN_IDS)[number])
   ) {
     return id;
   }
@@ -359,7 +455,17 @@ function extractJsonObject(text: string): unknown | null {
   return null;
 }
 
-function buildAllowedSkinRules(category: OcrSkinCategory): string {
+function buildAllowedSkinRules(category: OcrSkinCategory, sportKind?: OcrSportKind | null): string {
+  if (sportKind === "pickleball") {
+    return [
+      'Allowed skinId values: "scanned-pickleball-showdown", "scanned-pickleball-pop-court", "scanned-pickleball-clinic".',
+      'Pick "scanned-pickleball-showdown" for dark green, yellow, athletic, tournament, showdown, doubles, prize, or high-contrast court flyers.',
+      'Pick "scanned-pickleball-pop-court" for bright pink, cyan, lime, playful, community rec-center, casual tournament, or pop poster flyers.',
+      'Pick "scanned-pickleball-clinic" for blue/green, instructional, open class, clinic, sessions, learn-to-play, or club training flyers.',
+      'Return "sportKind":"pickleball" with the selected skin.',
+    ].join("\n");
+  }
+
   if (category === "birthday") {
     return [
       'Allowed skinId values: "scanned-birthday-bento-pop", "scanned-birthday-storybook-sparkle", "scanned-birthday-retro-neon".',
@@ -387,6 +493,15 @@ function buildAllowedSkinRules(category: OcrSkinCategory): string {
     ].join("\n");
   }
 
+  if (category === "football") {
+    return [
+      'Allowed skinId values: "scanned-football-friday-lights", "scanned-football-senior-night", "scanned-football-watch-party".',
+      'Pick "scanned-football-friday-lights" for stadium lights, blue/gold school colors, varsity matchup posters, tickets, student section, halftime, or dramatic game-night flyers.',
+      'Pick "scanned-football-senior-night" for green/turf, player photos, senior night, honoree names, pregame/kickoff timing, or school ceremony flyers.',
+      'Pick "scanned-football-watch-party" for bar/grill, watch party, Sunday/Thursday night football, pro-team matchup, food/drink specials, tailgate, or casual venue flyers.',
+    ].join("\n");
+  }
+
   return [
     'Allowed skinId values: "scanned-invite-bento-celebration", "scanned-invite-soft-radiance", "scanned-invite-evening-luxe".',
     `This flyer is for a ${OCR_INVITE_CATEGORY_LABELS[category].toLowerCase()} or related invitation surface.`,
@@ -401,6 +516,7 @@ function buildPrompt(input: OcrSkinPromptInput): string {
   if (!category) {
     return "Return JSON only.";
   }
+  const sportKind = normalizeOcrSportKind(input.sportKind);
   const title = safeString(input.fieldsGuess?.title);
   const location = safeString(input.fieldsGuess?.location);
   const description = safeString(input.fieldsGuess?.description);
@@ -408,10 +524,13 @@ function buildPrompt(input: OcrSkinPromptInput): string {
   const hintName = safeString(input.birthdayHint?.honoreeName);
   const hintAge = String(input.birthdayHint?.age || "").trim();
   const hintThemeId = safeString(input.birthdayHint?.themeId);
+  const responseShape = sportKind
+    ? '{"sportKind":"pickleball","skinId":"allowed-id","palette":{"background":"#xxxxxx","primary":"#xxxxxx","secondary":"#xxxxxx","accent":"#xxxxxx","text":"#xxxxxx","dominant":"#xxxxxx","themeColor":"#xxxxxx"},"background":{"version":1,"seed":"unique-kebab-case","texture":"paper","density":"low","placement":"corners","objectKinds":["allowed-kind"],"colors":["#xxxxxx"]}}'
+    : '{"skinId":"allowed-id","palette":{"background":"#xxxxxx","primary":"#xxxxxx","secondary":"#xxxxxx","accent":"#xxxxxx","text":"#xxxxxx","dominant":"#xxxxxx","themeColor":"#xxxxxx"},"background":{"version":1,"seed":"unique-kebab-case","texture":"paper","density":"low","placement":"corners","objectKinds":["allowed-kind"],"colors":["#xxxxxx"]}}';
   return [
     "You select one allowed mobile invite UI skin for a scanned event invitation.",
     "Return JSON only.",
-    buildAllowedSkinRules(category),
+    buildAllowedSkinRules(category, sportKind),
     "Also extract the EXACT dominant color palette from the flyer itself.",
     "Palette must use six-digit hex colors and include: background, primary, secondary, accent, text, dominant, themeColor.",
     "Palette values are direct UI render tokens, not soft suggestions.",
@@ -420,9 +539,10 @@ function buildPrompt(input: OcrSkinPromptInput): string {
     "If the flyer background is colorful, preserve that color truth instead of washing it out to near-white.",
     "Do not invent a new skinId. Choose only from the allowed list.",
     "Prefer the flyer's visual mood, typography attitude, and composition feel over generic category defaults.",
-    buildOcrSkinBackgroundPromptRules(category),
+    buildOcrSkinBackgroundPromptRules(category, sportKind),
     "",
     `Category: ${category}`,
+    sportKind ? `Sport subtype: ${sportKind}` : "",
     title ? `Title: ${title}` : "Title: Not provided",
     location ? `Location: ${location}` : "Location: Not provided",
     description ? `Description: ${description}` : "Description: Not provided",
@@ -434,7 +554,7 @@ function buildPrompt(input: OcrSkinPromptInput): string {
       : "",
     input.ocrText ? `OCR text:\n${input.ocrText}` : "OCR text: Not provided",
     "",
-    'Response shape: {"skinId":"allowed-id","palette":{"background":"#xxxxxx","primary":"#xxxxxx","secondary":"#xxxxxx","accent":"#xxxxxx","text":"#xxxxxx","dominant":"#xxxxxx","themeColor":"#xxxxxx"},"background":{"version":1,"seed":"unique-kebab-case","texture":"paper","density":"low","placement":"corners","objectKinds":["allowed-kind"],"colors":["#xxxxxx"]}}',
+    `Response shape: ${responseShape}`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -542,6 +662,7 @@ async function inferWithGemini(input: OcrSkinPromptInput): Promise<RawOcrSkinPay
         responseSchema: {
           type: Type.OBJECT,
           properties: {
+            sportKind: { type: Type.STRING },
             skinId: { type: Type.STRING },
             palette: {
               type: Type.OBJECT,
@@ -606,18 +727,24 @@ export function normalizeOcrSkinSelection(
   value: unknown,
   categoryInput?: unknown,
   providerInput?: unknown,
-  backgroundContext?: { title?: unknown } | null,
+  backgroundContext?: { title?: unknown; sportKind?: unknown } | null,
 ): OcrSkinSelection | null {
   if (!value || typeof value !== "object") return null;
   const category = normalizeOcrSkinCategory(categoryInput || (value as any)?.category);
   if (!category) return null;
+  const skinIdInput = (value as any)?.skinId;
+  const sportKind =
+    normalizeOcrSportKind(backgroundContext?.sportKind) ||
+    normalizeOcrSportKind((value as any)?.sportKind) ||
+    (safeString(skinIdInput).startsWith("scanned-pickleball-") ? "pickleball" : null);
   const providerRaw = providerInput || (value as any)?.provider;
   const provider: StudioProvider = providerRaw === "openai" ? "openai" : "gemini";
-  const skinId = normalizeSkinId(category, (value as any)?.skinId);
+  const skinId = normalizeSkinId(category, skinIdInput, sportKind);
   if (!skinId) return null;
   const palette = normalizePalette(skinId, (value as any)?.palette);
   const background = normalizeOcrSkinBackground((value as any)?.background, {
     category,
+    sportKind,
     title: safeString(backgroundContext?.title) || safeString((value as any)?.title),
     skinId,
     palette,
@@ -625,12 +752,14 @@ export function normalizeOcrSkinSelection(
   return {
     version: 1,
     category,
+    ...(sportKind ? { sportKind } : {}),
     skinId,
     palette,
     background:
       background ||
       resolveOcrSkinBackground(null, {
         category,
+        sportKind,
         title: safeString(backgroundContext?.title) || safeString((value as any)?.title),
         skinId,
         palette,
@@ -651,5 +780,6 @@ export async function inferOcrSkinSelection(
       : await ocrSkinDeps.inferWithGemini({ ...input, category });
   return normalizeOcrSkinSelection(raw, category, provider, {
     title: input.fieldsGuess?.title,
+    sportKind: input.sportKind,
   });
 }

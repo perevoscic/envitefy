@@ -27,19 +27,34 @@ export function buildEventExtractionPrompt(todayIso: string) {
   
   ADDRESS:
   • If present, "Venue, Street, City, ST ZIP". Strip labels like "Address:" or "At:".
+  • If a venue/business/place name is printed separately from the street address, put that exact name in venueName. For example, "US Gold Gymnastics" goes in venueName and the street/city line goes in address.
   
   RSVP:
   • If RSVP wording appears, put the short RSVP/contact wording in rsvp. This may include a name, phone, email, or short RSVP instruction line.
   • If an RSVP website/link appears (The Knot, Zola, website URL, www link), put only that link in rsvpUrl. Else null.
   • If an RSVP-by or respond-by date appears, put the printed short date text in rsvpDeadline (e.g., "December 1st"). Else null.
+  • If the flyer has a host/sponsor line like "Hosted by <Name/Group>", put the exact printed host name/group in hostName (without the "Hosted by" prefix). Else null.
 
   FEATURE DETECTION:
   • Activities: detect explicit event flow items from the flyer (e.g., "cake cutting", "cocktail hour", "games", "dancing", "dinner", "ceremony", "reception"). Return short phrases in activities[] preserving wording where possible. If none, activities is null.
+  • Pickleball/sport flyers: put divisions or event format such as "open doubles", "men", "women", "mixed", "clinic", "open class", "prizes", "music", and "refreshments" in activities[] when printed.
+  • Football flyers: put pregame, kickoff, halftime show, marching band, concessions, student section opens, tailgate, and watch-party specials in activities[] when printed.
   • Attire: if dress code / attire guidance appears (e.g., "Black Tie", "Casual", "Superhero Costume", "Formal Attire"), return concise text in attire. Else null.
+  • Football attire: put team-color instructions such as "Wear Blue & Gold" in attire.
   • Registry: if a gift registry or wishlist link appears, return a single clean URL in registryUrl. Else null.
+  • OCR facts: return ocrFacts as an array of every meaningful flyer detail not already represented by title/date/time/location/RSVP/registry/image. Each item is { "label": short section label, "value": exact printed fact }. Include admissions, parking, entry notes, age requirements, skill/eligibility, supplies, fees, host/sponsor lines, and special instructions. Do not include decorative text, duplicated title words, or raw OCR noise.
+  • Pickleball OCR facts: include check-in time, games start time, one entry/registration fee fact, and printed perks such as prizes/music/refreshments unless already represented elsewhere. Do not repeat the same fee under multiple labels.
+  • Football OCR facts: include tickets/prices, QR/ticket URLs, social handles, opponent/team names, senior honorees, parking/admission notes, and game-day instructions unless already represented elsewhere.
+
+  FOOTBALL FLYERS:
+  • Keep category as "Sport Events". Do not create a separate category value.
+  • Title should preserve the football headline plus matchup or honorees when visible, e.g. "Football Senior Night — John Doe, Richard Roe & Joseph Hanger", "Friday Night Lights — Westfield Tigers vs Central Ridge Panthers", or "Sunday Night Football Watch Party — Lions vs Tigers".
+  • If kickoff is printed, use kickoff as start. If only pregame/gates/student-section time is printed, use that time as start.
+  • Put the presenter/sponsor line such as school athletics, booster club, bar/grill, or venue host in hostName.
 
   GOOD TO KNOW (guest reminders):
-  • Read the **bottom** of the flyer and any **small or cursive** lines: practical tips for guests (e.g. "don't forget a towel and sunscreen!", "bring a swimsuit", "gifts optional"). Put that wording in **goodToKnow** — preserve meaning; fix obvious OCR typos only (e.g. "twoel" → "towel"). One sentence or short phrase; do **not** put RSVP, phone, address, or date/time here (those go in other fields). If nothing like that appears, goodToKnow is null.
+  • Read the **bottom** of the flyer and any **small or cursive** lines: practical tips and attendance facts for guests (e.g. "don't forget a towel and sunscreen!", "bring a swimsuit", "all skill levels welcome", "ages 16+", "free to play", "gifts optional"). Put that wording in **goodToKnow** — preserve meaning; fix obvious OCR typos only (e.g. "twoel" → "towel"). One sentence or short phrase; do **not** put RSVP, phone, address, or date/time here (those go in other fields). If nothing like that appears, goodToKnow is null.
+  • For pickleball/sport flyers, put printed entry fees, registration fees, skill-level eligibility, team/partner requirements, and equipment notes such as "bring your paddle" in goodToKnow. Keep registration links/phone numbers in RSVP fields instead.
 
   THUMBNAIL FOCUS (for dashboard card cropping, not identity recognition):
   • Return thumbnailFocus as an object with target, x, y, and optional confidence.
@@ -60,21 +75,23 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Clinical tone only. Title is the appointment type (e.g., "Dental Cleaning"). Never invitation wording. Never include DOB.
   
   OUTPUT (strict JSON only, no extra text):
-  { "title": string, "start": string, "end": string|null, "address": string|null, "description": string|null, "category": string, "rsvp": string|null, "rsvpUrl": string|null, "rsvpDeadline": string|null, "activities": string[]|null, "attire": string|null, "registryUrl": string|null, "yearVisible": boolean, "birthdayAudience": "girl"|"boy"|"neutral"|null, "birthdaySignals": string[], "birthdayName": string|null, "birthdayAge": number|null, "goodToKnow": string|null, "thumbnailFocus": { "target": "face"|"title"|"center", "x": number, "y": number, "confidence": number|null } }
+  { "title": string, "start": string, "end": string|null, "address": string|null, "venueName": string|null, "description": string|null, "category": string, "rsvp": string|null, "rsvpUrl": string|null, "rsvpDeadline": string|null, "hostName": string|null, "activities": string[]|null, "attire": string|null, "registryUrl": string|null, "ocrFacts": Array<{ "label": string, "value": string }>|null, "yearVisible": boolean, "birthdayAudience": "girl"|"boy"|"neutral"|null, "birthdaySignals": string[], "birthdayName": string|null, "birthdayAge": number|null, "goodToKnow": string|null, "thumbnailFocus": { "target": "face"|"title"|"center", "x": number, "y": number, "confidence": number|null } }
   `;
 
   const user = `
-  Return exactly one event as strict JSON {title,start,end,address,description,category,rsvp,rsvpUrl,rsvpDeadline,activities,attire,registryUrl,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge,goodToKnow,thumbnailFocus}.
+  Return exactly one event as strict JSON {title,start,end,address,venueName,description,category,rsvp,rsvpUrl,rsvpDeadline,hostName,activities,attire,registryUrl,ocrFacts,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge,goodToKnow,thumbnailFocus}.
   If the image is a birthday flyer, apply the Birthday Enhancements: visually detect large decorative age numbers, convert to ordinal, and include it in the title. If the flyer has a big headline naming the party (pool party, bash, theme), keep it in the title together with the child’s name and age (see TITLE rules). Do not include dates/times in the title.
   For birthdayAudience, use text/theme cues only. Do not infer from a face or from the honoree name alone.
   Pay special attention to cursive/handwritten names; never reduce the title to a generic occasion if a name is visible.
   The description must NOT repeat the title; make it a standalone, single sentence that begins with a capital letter, and prefer venue names over street addresses.
-  Keep RSVP details out of the description. Put RSVP wording in rsvp, RSVP links in rsvpUrl, and RSVP-by dates in rsvpDeadline.
-  Also extract activities[] when event flow items are printed, attire when dress code exists, and registryUrl when a gift registry link appears.
+  Keep RSVP details out of the description. Put RSVP wording in rsvp, RSVP links in rsvpUrl, RSVP-by dates in rsvpDeadline, and printed "Hosted by" names/groups in hostName.
+  For pickleball/sport flyers, keep category as "Sport Events"; route registration websites/phone numbers to rsvpUrl/rsvp, event format and perks to activities[], fees/equipment/eligibility to goodToKnow, and check-in/game-start/fee/perks details to ocrFacts without duplicating the fee.
+  For football flyers, keep category as "Sport Events"; preserve kickoff/pregame timing, matchup/team names, tickets/prices, specials, team-color attire, senior-night honorees, and watch-party details in the existing output fields.
+  Also extract activities[] when event flow items are printed, attire when dress code exists, registryUrl when a gift registry link appears, and ocrFacts for meaningful extra printed details not already represented elsewhere.
   Also return thumbnailFocus for dashboard card cropping: face first, then main title/headline, then image center.
   If year is missing, use the next occurrence on/after ${todayIso} and set yearVisible=false.
   If a start and end time are printed for the party, return both as start and end (same date).
-  Always fill **goodToKnow** when the image has a bottom/footer guest tip (don't forget / bring / remember), including cursive. Keep those tips out of the main description sentence.
+  Always fill **goodToKnow** when the image has a bottom/footer guest tip or attendance fact (don't forget / bring / remember / all skill levels / ages / free to play), including cursive. Keep those tips out of the main description sentence.
   `;
 
   return { system, user };

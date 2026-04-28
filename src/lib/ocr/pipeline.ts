@@ -5,7 +5,6 @@ import { authOptions } from "@/lib/auth";
 import { normalizeBirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { corsJson } from "@/lib/cors";
 import { incrementUserScanCounters } from "@/lib/db";
-import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
 import {
   clampTimeoutMs,
   OCR_TOTAL_BUDGET_MS,
@@ -13,24 +12,21 @@ import {
   remainingBudgetMs,
   resolveOcrModel,
 } from "@/lib/ocr/constants";
+import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
 import {
   extractGymnasticsScheduleHeuristics,
   extractGymnasticsScheduleWithLlm,
   hasGymnasticsScheduleText,
 } from "@/lib/ocr/gymnastics-schedule";
+import { resolveInferredInviteDatetime } from "@/lib/ocr/inferred-invite-date.mjs";
 import {
+  llmEventToRawText,
   llmExtractEventFromImage,
   llmExtractPracticeScheduleFromImage,
-  llmEventToRawText,
   llmRewriteBirthdayDescription,
   llmRewriteSmartDescription,
   llmRewriteWedding,
 } from "@/lib/ocr/openai";
-import {
-  inferOcrSkinSelection,
-  isBasketballOcrSkinCandidate,
-  isOcrInviteCategory,
-} from "@/lib/ocr/skin";
 import {
   buildNextOccurrence,
   createEmptyPracticeSchedule,
@@ -44,22 +40,33 @@ import {
   parseTimeTo24h,
 } from "@/lib/ocr/practice-schedule";
 import {
+  inferOcrSkinSelection,
+  isBasketballOcrSkinCandidate,
+  isFootballOcrSkinCandidate,
+  isOcrInviteCategory,
+  isPickleballOcrSkinCandidate,
+} from "@/lib/ocr/skin";
+import {
   cleanAddressLabel,
+  combineGuestInfoFacts,
   detectCategory,
   detectSpelledTime,
-  extractRsvpDetails,
+  extractCommonOcrFactsFromFlyerText,
+  extractGuestAttendanceFactsFromFlyerText,
+  extractGuestReminderFromFlyerText,
+  extractHostedByFromFlyerText,
   extractRsvpCompact,
+  extractRsvpDetails,
   improveJoinUsFor,
   inferTimezoneFromAddress,
   pickTitle,
   pickVenueLabelForSentence,
   splitVenueFromAddress,
   stripJoinUsLanguage,
-  extractGuestReminderFromFlyerText,
 } from "@/lib/ocr/text";
-import { validateUploadFileMeta } from "@/lib/upload-config";
+import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
 import { normalizeThumbnailFocus } from "@/lib/thumbnail-focus";
-import { resolveInferredInviteDatetime } from "@/lib/ocr/inferred-invite-date.mjs";
+import { validateUploadFileMeta } from "@/lib/upload-config";
 
 function toLocalNoZ(date: Date | null) {
   if (!date) return null;
@@ -105,11 +112,7 @@ function extractBirthdayPartyThemeFromTitle(title: string): string | null {
       const inner = t.slice(openIdx + 1, closeIdx).trim();
       const outer = t.slice(0, openIdx).trim();
       if (/birthday/i.test(inner) && outer.length >= 3) return outer;
-      if (
-        /birthday/i.test(outer) &&
-        inner.length >= 3 &&
-        !/^(party|birthday)$/i.test(inner)
-      ) {
+      if (/birthday/i.test(outer) && inner.length >= 3 && !/^(party|birthday)$/i.test(inner)) {
         return inner;
       }
     }
@@ -188,7 +191,8 @@ function buildCleanDescription(
     const strippedNorm = normalize(stripped);
     if (
       addressNorm &&
-      (strippedNorm.includes(addressNorm) || (strippedNorm.length >= 8 && addressNorm.includes(strippedNorm)))
+      (strippedNorm.includes(addressNorm) ||
+        (strippedNorm.length >= 8 && addressNorm.includes(strippedNorm)))
     ) {
       continue;
     }
@@ -214,7 +218,9 @@ function buildCleanDescription(
     const providerMatch = full.match(
       /\b(dr\.?|doctor)\s*([A-Z][A-Za-z\s\-']+)|\bprovider[:#-]?\s*([A-Z][A-Za-z\s\-']+)/i,
     );
-    const facilityMatch = full.match(/\b(ascension|sacred\s*heart|medical\s+group|clinic|hospital)[^\n]*\b/iu);
+    const facilityMatch = full.match(
+      /\b(ascension|sacred\s*heart|medical\s+group|clinic|hospital)[^\n]*\b/iu,
+    );
     const extras: string[] = [];
     if (patientMatch) extras.push(`Patient: ${(patientMatch[2] || "").trim()}`);
     if (dobMatch) extras.push(`DOB: ${(dobMatch[2] || "").trim()}`);
@@ -402,7 +408,9 @@ export async function handleOcrRequest(request: Request) {
     if (isMedical) {
       let apptDateStr: string | null = null;
       let apptTimeStr: string | null = null;
-      const dobMatch = raw.match(/\b(dob|date\s*of\s*birth)[:#-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
+      const dobMatch = raw.match(
+        /\b(dob|date\s*of\s*birth)[:#-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+      );
       const dobStr = dobMatch?.[2] || null;
       const dateLM = raw.match(
         /\b(appointment\s*date|appt\s*date|date)\b[:#-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
@@ -523,7 +531,12 @@ export async function handleOcrRequest(request: Request) {
         if (spelled.meridiem === "pm") hour24 += 12;
         if (spelled.meridiem === null) {
           if (hasAfternoon || hasEvening) hour24 += 12;
-          else if (!hasMorning && /(wedding|ceremony|reception)/i.test(raw) && hour24 >= 1 && hour24 <= 6) {
+          else if (
+            !hasMorning &&
+            /(wedding|ceremony|reception)/i.test(raw) &&
+            hour24 >= 1 &&
+            hour24 <= 6
+          ) {
             hour24 += 12;
           }
         }
@@ -585,7 +598,12 @@ export async function handleOcrRequest(request: Request) {
       const prev = lines[locIdx - 1]?.replace(/[–—-]\s*$/g, "").trim();
       const next = lines[locIdx + 1]?.replace(/[–—-]\s*$/g, "").trim();
       const cityStateZip = /\b[A-Za-z.'\s]+,\s*[A-Z]{2}\s+\d{5}\b/;
-      if (prev && !timeToken.test(prev) && venueOrSuffix.test(prev) && !hasStreetNumber.test(prev)) {
+      if (
+        prev &&
+        !timeToken.test(prev) &&
+        venueOrSuffix.test(prev) &&
+        !hasStreetNumber.test(prev)
+      ) {
         parts.push(prev);
       }
       const badSegment =
@@ -610,12 +628,24 @@ export async function handleOcrRequest(request: Request) {
         }
       }
       parts.push(bestSegment || line);
-      if (next && (cityStateZip.test(next) || hasStreetNumber.test(next)) && !timeToken.test(next)) {
+      if (
+        next &&
+        (cityStateZip.test(next) || hasStreetNumber.test(next)) &&
+        !timeToken.test(next)
+      ) {
         parts.push(next);
       }
-      addressOnly = cleanAddressLabel(parts.join(", ").replace(/^\s*\|\s*/g, "").replace(/\s{2,}/g, " ").trim());
+      addressOnly = cleanAddressLabel(
+        parts
+          .join(", ")
+          .replace(/^\s*\|\s*/g, "")
+          .replace(/\s{2,}/g, " ")
+          .trim(),
+      );
       if (!/\d/.test(addressOnly)) {
-        const withNum = lines.find((value) => hasStreetNumber.test(value) && !timeToken.test(value));
+        const withNum = lines.find(
+          (value) => hasStreetNumber.test(value) && !timeToken.test(value),
+        );
         if (withNum) addressOnly = withNum.trim();
       }
     }
@@ -651,6 +681,10 @@ export async function handleOcrRequest(request: Request) {
         typeof llmImage.address === "string" && llmImage.address.trim()
           ? llmImage.address.trim()
           : addressOnly;
+      finalVenue =
+        typeof llmImage.venueName === "string" && llmImage.venueName.trim()
+          ? llmImage.venueName.trim()
+          : "";
       finalDescription =
         typeof llmImage.description === "string" && llmImage.description.trim()
           ? llmImage.description.trim()
@@ -677,7 +711,10 @@ export async function handleOcrRequest(request: Request) {
                   : age % 10 === 3
                     ? "rd"
                     : "th";
-          finalTitle = finalTitle.replace(/(\w+['’]s)\s+(Birthday\s+Party)/i, `$1 ${age}${suffix} $2`);
+          finalTitle = finalTitle.replace(
+            /(\w+['’]s)\s+(Birthday\s+Party)/i,
+            `$1 ${age}${suffix} $2`,
+          );
         }
       }
 
@@ -712,7 +749,8 @@ export async function handleOcrRequest(request: Request) {
           if (!match) continue;
           if (match[1] && match[2]) {
             if (/^(st|nd|rd|th)$/i.test(match[2])) extractedAge = parseInt(match[1], 10);
-            else if (/^(turning|age|aged)$/i.test(match[1]) && match[2]) extractedAge = parseInt(match[2], 10);
+            else if (/^(turning|age|aged)$/i.test(match[1]) && match[2])
+              extractedAge = parseInt(match[2], 10);
             else if (/^years?/i.test(match[2])) extractedAge = parseInt(match[1], 10);
           }
           if (extractedAge) break;
@@ -744,7 +782,10 @@ export async function handleOcrRequest(request: Request) {
                     ? "rd"
                     : "th";
           ageOrdinal = `${extractedAge}${suffix}`;
-          finalTitle = finalTitle.replace(/(\w+['']s)\s+(Birthday\s+Party)/i, `$1 ${ageOrdinal} $2`);
+          finalTitle = finalTitle.replace(
+            /(\w+['']s)\s+(Birthday\s+Party)/i,
+            `$1 ${ageOrdinal} $2`,
+          );
         }
       }
     }
@@ -785,7 +826,10 @@ export async function handleOcrRequest(request: Request) {
         /\b(dental\s+cleaning|teeth\s+cleaning|annual\s+visit|annual\s+physical|follow\s*-?\s*up|new\s*patient(\s*visit)?|consult(ation)?|check\s*-?\s*up|well(ness)?\s*visit|routine\s*(exam|visit|check(\s*-?\s*up)?)|cleaning)\b/i,
       ) || [])[0];
       let apptTypeRaw = reasonLine?.trim() || reasonMatch || "Doctor Appointment";
-      apptTypeRaw = apptTypeRaw.replace(/\b\d+\b/g, "").replace(/\s{2,}/g, " ").trim();
+      apptTypeRaw = apptTypeRaw
+        .replace(/\b\d+\b/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
       const apptType = apptTypeRaw;
 
       let provider: string | null = null;
@@ -832,11 +876,14 @@ export async function handleOcrRequest(request: Request) {
         finalTitle !== "Doctor Appointment" &&
         !/^\s*appointment\s*$/i.test(finalTitle);
       if (!openAIHasGoodTitle) {
-        finalTitle = provider ? `${toTitle(apptType)} with Dr ${toTitle(provider)}` : toTitle(apptType);
+        finalTitle = provider
+          ? `${toTitle(apptType)} with Dr ${toTitle(provider)}`
+          : toTitle(apptType);
       }
 
       const descParts: string[] = [];
-      if (apptType && apptType !== "Doctor Appointment") descParts.push(`Appointment type: ${toTitle(apptType)}`);
+      if (apptType && apptType !== "Doctor Appointment")
+        descParts.push(`Appointment type: ${toTitle(apptType)}`);
       if (provider) descParts.push(`Provider: Dr ${toTitle(provider)}`);
       const facilityMatch = raw.match(/(?:Ascension|Sacred\s*Heart)[^.\n]*/i);
       if (facilityMatch) descParts.push(`Location: ${facilityMatch[0].trim()}`);
@@ -1006,7 +1053,11 @@ export async function handleOcrRequest(request: Request) {
           if (weddingRewrite?.title) finalTitle = weddingRewrite.title;
           if (weddingRewrite?.description) {
             let desc = weddingRewrite.description;
-            if (!/o['’]?clock/i.test(raw) && /o['’]?clock/i.test(desc) && finalStart instanceof Date) {
+            if (
+              !/o['’]?clock/i.test(raw) &&
+              /o['’]?clock/i.test(desc) &&
+              finalStart instanceof Date
+            ) {
               try {
                 const timeStr = new Date(finalStart).toLocaleTimeString("en-US", {
                   hour: "numeric",
@@ -1056,7 +1107,8 @@ export async function handleOcrRequest(request: Request) {
     const rawHasYearDigits = /\b(19|20)\d{2}\b/.test(raw);
     let containsExplicitYear = rawHasYearDigits;
     if (ocrSource === "openai") {
-      if (typeof llmImage?.yearVisible === "boolean") containsExplicitYear = Boolean(llmImage.yearVisible);
+      if (typeof llmImage?.yearVisible === "boolean")
+        containsExplicitYear = Boolean(llmImage.yearVisible);
       else containsExplicitYear = rawHasYearDigits;
     }
     if (!containsExplicitYear && finalStart instanceof Date) {
@@ -1093,21 +1145,21 @@ export async function handleOcrRequest(request: Request) {
       const hasRangeVerb = /(?:\buntil\b|\btill?\b|\bthrough\b)/i.test(rangeProbe);
       const hasMultipleIsoTimes = (rangeProbe.match(/T\d{1,2}:\d{2}/g) || []).length >= 2;
       const timeTokenSet = new Set<string>();
-      for (const token of rangeProbe.match(/\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)\b/gi) || []) {
+      for (const token of rangeProbe.match(
+        /\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)\b/gi,
+      ) || []) {
         timeTokenSet.add(token.toLowerCase().replace(/\s+/g, "").replace(/\./g, ""));
       }
       for (const token of rangeProbe.match(/\b(?:[01]?\d|2[0-3]):[0-5]\d\b/g) || []) {
         timeTokenSet.add(token.trim());
       }
       const spelledMatches =
-        rangeProbe.match(/\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*o['\u2019]?clock\b/gi) ||
-        [];
+        rangeProbe.match(
+          /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*o['\u2019]?clock\b/gi,
+        ) || [];
       const totalTimeMentions = timeTokenSet.size + spelledMatches.length;
       const looksLikeSingleTime =
-        !hasExplicitRange &&
-        !hasRangeVerb &&
-        !hasMultipleIsoTimes &&
-        totalTimeMentions <= 1;
+        !hasExplicitRange && !hasRangeVerb && !hasMultipleIsoTimes && totalTimeMentions <= 1;
       if (durationMs <= 0) finalEnd = null;
       else if (!llmReturnedEndString && looksLikeSingleTime) finalEnd = null;
     }
@@ -1143,18 +1195,22 @@ export async function handleOcrRequest(request: Request) {
     }
 
     const description = finalDescription || "";
+    const guestAttendanceFacts =
+      extractGuestAttendanceFactsFromFlyerText(raw) ||
+      extractGuestAttendanceFactsFromFlyerText(description);
+    const guestReminderFacts =
+      extractGuestReminderFromFlyerText(raw) || extractGuestReminderFromFlyerText(description);
     let goodToKnowFinal: string | null =
       ocrSource === "openai" &&
       typeof llmImage?.goodToKnow === "string" &&
       llmImage.goodToKnow.trim()
         ? llmImage.goodToKnow.trim()
         : null;
-    if (!goodToKnowFinal) {
-      goodToKnowFinal =
-        extractGuestReminderFromFlyerText(raw) ||
-        extractGuestReminderFromFlyerText(description) ||
-        null;
-    }
+    goodToKnowFinal = combineGuestInfoFacts(
+      goodToKnowFinal,
+      guestAttendanceFacts,
+      guestReminderFacts,
+    );
     const extractedRsvp = extractRsvpDetails(raw, finalDescription);
     if (!deferredRsvp) {
       deferredRsvp = extractedRsvp.contact || extractRsvpCompact(raw, finalDescription);
@@ -1165,6 +1221,21 @@ export async function handleOcrRequest(request: Request) {
     if (!deferredRsvpDeadline) {
       deferredRsvpDeadline = extractedRsvp.deadline;
     }
+    const hostNameFinal =
+      (typeof llmImage?.hostName === "string" && llmImage.hostName.trim()) ||
+      extractHostedByFromFlyerText(raw) ||
+      extractHostedByFromFlyerText(description) ||
+      null;
+    const ocrFacts = mergeOcrFacts(
+      normalizeOcrFacts(llmImage?.ocrFacts || llmImage?.facts),
+      extractCommonOcrFactsFromFlyerText(raw),
+      extractCommonOcrFactsFromFlyerText(description),
+      buildOcrFacts([
+        { label: "Host", value: hostNameFinal },
+        { label: "Good to Know", value: guestAttendanceFacts },
+        { label: "Good to Know", value: guestReminderFacts },
+      ]),
+    );
     const fieldsGuess = {
       title: finalTitle,
       start: toLocalNoZ(finalStart),
@@ -1177,7 +1248,18 @@ export async function handleOcrRequest(request: Request) {
       rsvp: deferredRsvp || null,
       rsvpUrl: deferredRsvpUrl || null,
       rsvpDeadline: deferredRsvpDeadline || null,
+      hostName: hostNameFinal,
       goodToKnow: goodToKnowFinal,
+      ocrFacts: ocrFacts.length ? ocrFacts : null,
+      activities: Array.isArray(llmImage?.activities) ? llmImage.activities : null,
+      attire:
+        typeof llmImage?.attire === "string" && llmImage.attire.trim()
+          ? llmImage.attire.trim()
+          : null,
+      registryUrl:
+        typeof llmImage?.registryUrl === "string" && llmImage.registryUrl.trim()
+          ? llmImage.registryUrl.trim()
+          : null,
     };
 
     const tz = fieldsGuess.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -1191,9 +1273,11 @@ export async function handleOcrRequest(request: Request) {
     let events: any[] = [];
 
     const dayMentions =
-      raw.match(/\b(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(rs(day)?)?|fri(day)?|sat(urday)?|sun(day)?)\b/gi) ||
-      [];
-    const hasTimeRange = /\d{1,2}:\d{2}\s*[-–—]\s*\d{1,2}:\d{2}/.test(raw) || /\b\d{1,2}:\d{2}\b/.test(raw);
+      raw.match(
+        /\b(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(rs(day)?)?|fri(day)?|sat(urday)?|sun(day)?)\b/gi,
+      ) || [];
+    const hasTimeRange =
+      /\d{1,2}:\d{2}\s*[-–—]\s*\d{1,2}:\d{2}/.test(raw) || /\b\d{1,2}:\d{2}\b/.test(raw);
     const hasPracticeKeyword = /(practice|training|schedule|team)/i.test(raw);
     const looksLikePracticeSchedule = hasPracticeKeyword && hasTimeRange && dayMentions.length >= 4;
 
@@ -1212,10 +1296,16 @@ export async function handleOcrRequest(request: Request) {
           );
           const llmPractice =
             scheduleTimeoutMs >= 3_000
-              ? await llmExtractPracticeScheduleFromImage(ocrBuffer, visionMime, tz, scheduleTimeoutMs)
+              ? await llmExtractPracticeScheduleFromImage(
+                  ocrBuffer,
+                  visionMime,
+                  tz,
+                  scheduleTimeoutMs,
+                )
               : null;
           if (llmPractice?.groups?.length) {
-            const locationHint = llmPractice.timezoneHint || finalAddress || fieldsGuess.location || "";
+            const locationHint =
+              llmPractice.timezoneHint || finalAddress || fieldsGuess.location || "";
             practiceTz = inferTimezoneFromAddress(locationHint || "") || tz;
             for (const group of llmPractice.groups) {
               const groupName = String(group?.name || "Practice Group").trim() || "Practice Group";
@@ -1225,7 +1315,9 @@ export async function handleOcrRequest(request: Request) {
               const groupEvents: any[] = [];
               for (const session of sessions) {
                 const dayInfo = parseDayCode(session?.day || "");
-                const range = parseTimeRange(`${session?.startTime || ""}-${session?.endTime || ""}`);
+                const range = parseTimeRange(
+                  `${session?.startTime || ""}-${session?.endTime || ""}`,
+                );
                 const startParsed = range.start || parseTimeTo24h(session?.startTime || "");
                 const endParsed = range.end || parseTimeTo24h(session?.endTime || "");
                 if (!dayInfo || !startParsed || !endParsed) continue;
@@ -1249,7 +1341,12 @@ export async function handleOcrRequest(request: Request) {
                   endTime: `${pad(endParsed.hour)}:${pad(endParsed.minute)}`,
                   note,
                 });
-                const descParts = [llmPractice.title?.trim() || null, llmPractice.timeframe?.trim() || null, groupNote, note]
+                const descParts = [
+                  llmPractice.title?.trim() || null,
+                  llmPractice.timeframe?.trim() || null,
+                  groupNote,
+                  note,
+                ]
                   .filter((value): value is string => Boolean((value || "").trim()))
                   .map((value) => value.trim());
                 groupEvents.push({
@@ -1283,9 +1380,17 @@ export async function handleOcrRequest(request: Request) {
 
       const heuristic = parsePracticeScheduleHeuristics(lines, practiceTz);
       if (heuristic?.groups?.length) {
-        const seen = new Set(practiceGroups.map((group) => String(group?.name || "").trim().toLowerCase()));
+        const seen = new Set(
+          practiceGroups.map((group) =>
+            String(group?.name || "")
+              .trim()
+              .toLowerCase(),
+          ),
+        );
         for (const group of heuristic.groups) {
-          const key = String(group?.name || "").trim().toLowerCase();
+          const key = String(group?.name || "")
+            .trim()
+            .toLowerCase();
           if (!key || seen.has(key)) continue;
           practiceGroups.push(group);
           seen.add(key);
@@ -1317,7 +1422,11 @@ export async function handleOcrRequest(request: Request) {
           }
           if (order.length >= 3) {
             const seen = new Set(
-              practiceSchedule.groups.map((group) => String(group?.name || "").trim().toLowerCase()),
+              practiceSchedule.groups.map((group) =>
+                String(group?.name || "")
+                  .trim()
+                  .toLowerCase(),
+              ),
             );
             for (let i = 0; i < normalized.length; i++) {
               const line = normalized[i];
@@ -1375,7 +1484,9 @@ export async function handleOcrRequest(request: Request) {
                   allDay: false,
                   timezone: practiceTz,
                   location: "",
-                  description: [practiceTitle, practiceTimeframe, parsedRange.note].filter(Boolean).join("\n"),
+                  description: [practiceTitle, practiceTimeframe, parsedRange.note]
+                    .filter(Boolean)
+                    .join("\n"),
                   recurrence: `RRULE:FREQ=WEEKLY;BYDAY=${dayInfo.code}`,
                   reminders: [{ minutes: 1440 }],
                   category: "Sport Events",
@@ -1447,6 +1558,31 @@ export async function handleOcrRequest(request: Request) {
     let category: string | null = detectCategory(raw);
     if (practiceSchedule.detected) category = "Sport Events";
 
+    const isPickleballOcrEvent = isPickleballOcrSkinCandidate({
+      category,
+      title: fieldsGuess.title || finalTitle,
+      description: fieldsGuess.description,
+      ocrText: raw,
+      activities: llmImage?.activities,
+    });
+    const isFootballOcrEvent = isFootballOcrSkinCandidate({
+      category,
+      title: fieldsGuess.title || finalTitle,
+      description: fieldsGuess.description,
+      ocrText: raw,
+      activities: llmImage?.activities,
+    });
+    const isBasketballOcrEvent = isBasketballOcrSkinCandidate({
+      category,
+      title: fieldsGuess.title || finalTitle,
+      description: fieldsGuess.description,
+      ocrText: raw,
+      activities: llmImage?.activities,
+    });
+    if (isPickleballOcrEvent || isFootballOcrEvent || isBasketballOcrEvent) {
+      category = "Sport Events";
+    }
+
     const birthdayTemplateHint = normalizeBirthdayTemplateHint({
       category,
       rawText: raw,
@@ -1456,38 +1592,37 @@ export async function handleOcrRequest(request: Request) {
       birthdayName: llmImage?.birthdayName,
       birthdayAge: llmImage?.birthdayAge,
     });
-    const ocrSkinCategory = isBasketballOcrSkinCandidate({
-      category,
-      title: fieldsGuess.title || finalTitle,
-      description: fieldsGuess.description,
-      ocrText: raw,
-      activities: llmImage?.activities,
-    })
-      ? "basketball"
-      : category;
-    const ocrSkin =
-      isOcrInviteCategory(ocrSkinCategory)
-        ? await inferOcrSkinSelection({
-            category: ocrSkinCategory || "general",
-            imageBytes: colorBuffer,
-            mimeType: colorMime,
-            ocrText: raw,
-            fieldsGuess: {
-              title: fieldsGuess.title,
-              location: fieldsGuess.location,
-              description: fieldsGuess.description,
-            },
-            birthdayHint:
-              category === "Birthdays"
-                ? {
-                    audience: birthdayTemplateHint.audience,
-                    honoreeName: birthdayTemplateHint.honoreeName,
-                    age: birthdayTemplateHint.age,
-                    themeId: birthdayTemplateHint.themeId,
-                  }
-                : null,
-          })
-        : null;
+    const ocrSkinCategory = isPickleballOcrEvent
+      ? "general"
+      : isFootballOcrEvent
+        ? "football"
+        : isBasketballOcrEvent
+          ? "basketball"
+          : category;
+    const ocrSkinSportKind = isPickleballOcrEvent ? "pickleball" : null;
+    const ocrSkin = isOcrInviteCategory(ocrSkinCategory)
+      ? await inferOcrSkinSelection({
+          category: ocrSkinCategory || "general",
+          sportKind: ocrSkinSportKind,
+          imageBytes: colorBuffer,
+          mimeType: colorMime,
+          ocrText: raw,
+          fieldsGuess: {
+            title: fieldsGuess.title,
+            location: fieldsGuess.location,
+            description: fieldsGuess.description,
+          },
+          birthdayHint:
+            category === "Birthdays"
+              ? {
+                  audience: birthdayTemplateHint.audience,
+                  honoreeName: birthdayTemplateHint.honoreeName,
+                  age: birthdayTemplateHint.age,
+                  themeId: birthdayTemplateHint.themeId,
+                }
+              : null,
+        })
+      : null;
     const thumbnailFocus = normalizeThumbnailFocus(llmImage?.thumbnailFocus);
 
     void (async () => {

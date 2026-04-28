@@ -174,7 +174,10 @@ export function splitVenueFromAddress(
     }
   }
 
-  let address = addressParts.join(", ").replace(/,\s*,+/g, ", ").trim();
+  let address = addressParts
+    .join(", ")
+    .replace(/,\s*,+/g, ", ")
+    .trim();
   if (!address && cleaned) {
     address = cleaned;
   }
@@ -187,7 +190,9 @@ export function splitVenueFromAddress(
 export function inferTimezoneFromAddress(addressOrText: string): string | null {
   const s = (addressOrText || "").toLowerCase();
   const has = (...parts: string[]) => parts.some((p) => s.includes(p.toLowerCase()));
-  if (has("fresno", "los angeles", "san francisco", "san jose", "sacramento", "oakland", "san diego"))
+  if (
+    has("fresno", "los angeles", "san francisco", "san jose", "sacramento", "oakland", "san diego")
+  )
     return "America/Los_Angeles";
   if (has("phoenix", "mesa", "tucson", "az ", " arizona")) return "America/Phoenix";
   if (has("seattle", "spokane", "wa ", " washington")) return "America/Los_Angeles";
@@ -470,8 +475,7 @@ export type ExtractedRsvpDetails = {
   deadline: string | null;
 };
 
-const RSVP_PHONE_REGEX =
-  /(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/;
+const RSVP_PHONE_REGEX = /(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/;
 const RSVP_EMAIL_REGEX = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
 const RSVP_URL_REGEX =
   /(?:https?:\/\/[^\s)]+|www\.[^\s)]+|(?:[a-z0-9-]+\.)+(?:com|net|org|io|co|us|info|wedding|events)(?:\/[^\s),;!?]*)?)/i;
@@ -506,7 +510,10 @@ function stripRsvpNoise(value: string, deadline: string | null, url: string | nu
   }
   if (deadline) {
     const escapedDeadline = deadline.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    cleaned = cleaned.replace(new RegExp(`\\b(?:rsvp|respond|reply)?\\s*by\\s+${escapedDeadline}`, "i"), " ");
+    cleaned = cleaned.replace(
+      new RegExp(`\\b(?:rsvp|respond|reply)?\\s*by\\s+${escapedDeadline}`, "i"),
+      " ",
+    );
     cleaned = cleaned.replace(new RegExp(escapedDeadline, "i"), " ");
   }
   cleaned = cleaned
@@ -531,10 +538,7 @@ export function extractRsvpDetails(rawText: string, fallbackText?: string): Extr
     for (let i = 0; i < lines.length; i += 1) {
       const line = lines[i];
       const nearby = [line, lines[i + 1] || "", lines[i + 2] || ""].join(" ").trim();
-      if (
-        !/\b(?:rsvp|respond|reply)\b/i.test(nearby) &&
-        !/\b(?:theknot|zola)\b/i.test(nearby)
-      ) {
+      if (!/\b(?:rsvp|respond|reply)\b/i.test(nearby) && !/\b(?:theknot|zola)\b/i.test(nearby)) {
         continue;
       }
       const match = nearby.match(RSVP_URL_REGEX);
@@ -558,7 +562,11 @@ export function extractRsvpDetails(rawText: string, fallbackText?: string): Extr
       }) ||
       "";
     const relevantWindow = relevantLine
-      ? [relevantLine, lines[lines.indexOf(relevantLine) + 1] || "", lines[lines.indexOf(relevantLine) + 2] || ""]
+      ? [
+          relevantLine,
+          lines[lines.indexOf(relevantLine) + 1] || "",
+          lines[lines.indexOf(relevantLine) + 2] || "",
+        ]
           .join(" ")
           .trim()
       : text;
@@ -572,12 +580,11 @@ export function extractRsvpDetails(rawText: string, fallbackText?: string): Extr
       const colonPattern = relevantWindow.match(/rsvp\s*:\s*([^:\d]+?)\s*(\d)/i);
       const withMatch = relevantWindow.match(/\bwith\s+([A-Z][A-Za-z' -]+)\b/i);
       const toMatch = relevantWindow.match(/\bto\s+([A-Z][A-Za-z' -]+)\b/i);
-      const rawName =
-        (nameMatch?.[1] || colonPattern?.[1] || withMatch?.[1] || toMatch?.[1] || "")
-          .replace(/\s{2,}/g, " ")
-          .replace(/\s+at\s*$/i, "")
-          .replace(/[:,\d]+$/, "")
-          .trim();
+      const rawName = (nameMatch?.[1] || colonPattern?.[1] || withMatch?.[1] || toMatch?.[1] || "")
+        .replace(/\s{2,}/g, " ")
+        .replace(/\s+at\s*$/i, "")
+        .replace(/[:,\d]+$/, "")
+        .trim();
       contact = rawName ? `RSVP: ${rawName} ${phoneMatch[0]}` : `RSVP: ${phoneMatch[0]}`;
     } else if (emailMatch?.[0]) {
       contact = `RSVP: ${emailMatch[0]}`;
@@ -607,6 +614,36 @@ export function extractRsvpCompact(rawText: string, fallbackText?: string): stri
   return extractRsvpDetails(rawText, fallbackText).contact;
 }
 
+function cleanFlyerFact(value: string): string {
+  return value
+    .replace(/\s+/g, " ")
+    .replace(/\s+([+.,;:!?])/g, "$1")
+    .replace(/^[•·\-–—\s]+|[•·\-–—\s]+$/g, "")
+    .trim();
+}
+
+function appendUniqueFact(facts: string[], value: string | null | undefined) {
+  const cleaned = cleanFlyerFact(String(value || "")).replace(/[.!?]+$/g, "");
+  if (!cleaned || cleaned.length < 3) return;
+  const key = cleaned
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  if (
+    !key ||
+    facts.some(
+      (item) =>
+        item
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim() === key,
+    )
+  ) {
+    return;
+  }
+  facts.push(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
+}
+
 /**
  * Guest-facing tips often printed at the bottom of invites (cursive or small type), e.g.
  * "don't forget a towel and sunscreen!". Used when the vision model omits goodToKnow.
@@ -621,6 +658,7 @@ export function extractGuestReminderFromFlyerText(text: string | null | undefine
     /\bdont forget\b[^.!?\n]{1,220}(?:[.!?]|$)/i,
     /\bremember to bring\b[^.!?\n]{1,180}(?:[.!?]|$)/i,
     /\bplease bring\b[^.!?\n]{1,180}(?:[.!?]|$)/i,
+    /\bbring\b[^.!?\n]{1,180}(?:[.!?]|$)/i,
   ];
 
   for (const re of patterns) {
@@ -630,12 +668,196 @@ export function extractGuestReminderFromFlyerText(text: string | null | undefine
     if (s.length < 12) continue;
     s = s
       .replace(/\brsvp\b.*$/i, "")
+      .replace(/\bquestions?\b.*$/i, "")
+      .replace(/\bhosted\s+by\b.*$/i, "")
       .replace(/\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b.*$/i, "")
       .trim();
     if (s.length < 12) continue;
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
   return null;
+}
+
+/**
+ * Attendance facts such as "All Skill Levels Welcome", "Ages 16+", and
+ * "Free to Play" are guest-facing details, not activities or attire.
+ */
+export function extractGuestAttendanceFactsFromFlyerText(
+  text: string | null | undefined,
+): string | null {
+  if (!text || typeof text !== "string") return null;
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) return null;
+
+  const facts: string[] = [];
+  appendUniqueFact(facts, normalized.match(/\ball\s+skills?\s+levels?\s+welcome\b/i)?.[0]);
+  appendUniqueFact(facts, normalized.match(/\bages?\s*\d{1,2}\s*(?:\+|plus)?/i)?.[0]);
+  appendUniqueFact(facts, normalized.match(/\bfree\s+(?:to\s+play|entry|admission)\b/i)?.[0]);
+
+  return facts.length ? facts.join(". ") : null;
+}
+
+export type ExtractedOcrFact = {
+  label: string;
+  value: string;
+};
+
+export function extractCommonOcrFactsFromFlyerText(
+  text: string | null | undefined,
+): ExtractedOcrFact[] {
+  if (!text || typeof text !== "string") return [];
+  const facts: ExtractedOcrFact[] = [];
+  const seen = new Set<string>();
+  const seenValues = new Set<string>();
+  const addFact = (label: string, value: string | null | undefined) => {
+    const cleaned = cleanFlyerFact(String(value || ""))
+      .replace(/\bquestions?\b.*$/i, "")
+      .replace(/\b(?:text|call)\s+\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b.*$/i, "")
+      .replace(/[.!?]+$/g, "")
+      .trim();
+    if (!cleaned || cleaned.length < 3 || !/[A-Za-z0-9]/.test(cleaned)) return;
+    const key = `${label} ${cleaned}`
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+    const valueKey = cleaned
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+    if (!key || !valueKey || seen.has(key) || seenValues.has(valueKey)) return;
+    seen.add(key);
+    seenValues.add(valueKey);
+    facts.push({ label, value: cleaned.charAt(0).toUpperCase() + cleaned.slice(1) });
+  };
+
+  const normalized = text.replace(/\r/g, "\n");
+  const compact = normalized.replace(/\s+/g, " ").trim();
+  const normalizePrintedTime = (value: string | null | undefined) =>
+    cleanFlyerFact(String(value || ""))
+      .replace(/\./g, "")
+      .replace(/\b(am|pm)\b/gi, (period) => period.toUpperCase())
+      .replace(/\s+/g, " ");
+  const timePattern = "(\\d{1,2}(?::\\d{2})?\\s*(?:a\\.?m\\.?|p\\.?m\\.?|am|pm))";
+  const checkInMatch = compact.match(new RegExp(`\\bcheck[-\\s]?in\\s*:?\\s*${timePattern}`, "i"));
+  const gameStartMatch = compact.match(
+    new RegExp(`\\bgames?\\s+start\\s*:?\\s*${timePattern}`, "i"),
+  );
+  const entryFeeMatch =
+    compact.match(
+      /\b(?:entry\s+fee|registration\s+fee|admission|entry)\s*[:-]?\s*(\$\s*\d+(?:\.\d{2})?\s*(?:per\s+(?:person|team)|entry|registration|admission)?)/i,
+    ) ||
+    compact.match(/(\$\s*\d+(?:\.\d{2})?\s*(?:per\s+(?:person|team)|entry|registration)?)/i);
+  const printedPerks = [
+    { label: "Prizes", pattern: /\bprizes?\b/i },
+    { label: "Music", pattern: /\bmusic\b/i },
+    { label: "Refreshments", pattern: /\brefreshments?\b/i },
+  ]
+    .filter((perk) => perk.pattern.test(compact))
+    .map((perk) => perk.label);
+  const hasCombinedPerks = printedPerks.length >= 2;
+
+  if (checkInMatch?.[1]) addFact("Check-in", `Check-in ${normalizePrintedTime(checkInMatch[1])}`);
+  if (gameStartMatch?.[1]) {
+    addFact("Games Start", `Games start ${normalizePrintedTime(gameStartMatch[1])}`);
+  }
+  if (entryFeeMatch?.[1]) addFact("Entry Fee", normalizePrintedTime(entryFeeMatch[1]));
+  if (printedPerks.length) addFact("Perks", printedPerks.join(", "));
+  addFact("Good to Know", compact.match(/\ball\s+skills?\s+levels?\s+welcome\b/i)?.[0]);
+  addFact("Good to Know", compact.match(/\bages?\s*\d{1,2}\s*(?:\+|plus)?/i)?.[0]);
+  addFact("Good to Know", compact.match(/\bfree\s+(?:to\s+play|entry|admission)\b/i)?.[0]);
+
+  const host = extractHostedByFromFlyerText(text);
+  if (host) addFact("Host", host);
+
+  const parts = normalized
+    .split(/\n+|[•·]/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  for (const part of parts) {
+    if (/\b(?:rsvp|questions?|text|call)\b/i.test(part)) continue;
+    if (RSVP_EMAIL_REGEX.test(part) || RSVP_PHONE_REGEX.test(part) || RSVP_URL_REGEX.test(part)) {
+      continue;
+    }
+
+    if (/\b(?:bring|remember to bring|please bring|don['’]?t forget|supplies?)\b/i.test(part)) {
+      addFact("Good to Know", part);
+      continue;
+    }
+    if (/\b(?:parking|park in|garage|lot)\b/i.test(part)) {
+      addFact("Parking", part);
+      continue;
+    }
+    if (/\bcheck[-\s]?in\b/i.test(part)) {
+      addFact("Check-in", part);
+      continue;
+    }
+    if (/\bgames?\s+start\b/i.test(part)) {
+      addFact("Games Start", part);
+      continue;
+    }
+    if (
+      /\b(?:fee|cost|admission|donation|free to play|free entry|free admission)\b/i.test(part) ||
+      (/\bentry\b/i.test(part) && /\$|\b\d+\s*(?:dollars?|usd)\b/i.test(part))
+    ) {
+      addFact("Entry Fee", part);
+      continue;
+    }
+    if (/\b(?:prizes?|music|refreshments?)\b/i.test(part)) {
+      if (!hasCombinedPerks) addFact("Perks", part);
+      continue;
+    }
+    if (/\b(?:entry|gate|doors open|arrive|arrival)\b/i.test(part)) {
+      addFact("Entry", part);
+      continue;
+    }
+    if (/\b(?:ages?|grade|grades|adults only|kids welcome|all skill levels)\b/i.test(part)) {
+      addFact("Good to Know", part);
+      continue;
+    }
+    if (/\b(?:hosted by|sponsored by|presented by)\b/i.test(part)) {
+      addFact("Host", part.replace(/\b(?:hosted|sponsored|presented)\s+by\b\s*/i, ""));
+    }
+  }
+
+  return facts.slice(0, 12);
+}
+
+export function combineGuestInfoFacts(...values: Array<string | null | undefined>): string | null {
+  const facts: string[] = [];
+  for (const value of values) {
+    if (!value) continue;
+    for (const part of String(value).split(/\s*(?:[.;]\s+|\n+)\s*/)) {
+      appendUniqueFact(facts, part);
+    }
+  }
+  return facts.length ? facts.join(". ") : null;
+}
+
+export function extractHostedByFromFlyerText(text: string | null | undefined): string | null {
+  if (!text || typeof text !== "string") return null;
+  const lines = text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const candidates = lines.length ? lines : [text];
+
+  for (const line of candidates) {
+    const match = line.match(/\bhosted\s+by\s+(.{2,90})$/i);
+    if (!match?.[1]) continue;
+    const cleaned = cleanFlyerFact(match[1])
+      .replace(/\b(?:questions?|text|call|rsvp)\b.*$/i, "")
+      .replace(/\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b.*$/i, "")
+      .trim();
+    if (cleaned && /[A-Za-z]/.test(cleaned)) return cleaned;
+  }
+
+  const normalized = text.replace(/\s+/g, " ").trim();
+  const inlineMatch = normalized.match(
+    /\bhosted\s+by\s+(.{2,90}?)(?=\s+(?:questions?|text|call|rsvp)\b|$)/i,
+  );
+  if (!inlineMatch?.[1]) return null;
+  const cleaned = cleanFlyerFact(inlineMatch[1]);
+  return cleaned && /[A-Za-z]/.test(cleaned) ? cleaned : null;
 }
 
 export function pickTitle(lines: string[], _raw: string): string {
@@ -694,7 +916,10 @@ export function pickTitle(lines: string[], _raw: string): string {
 
   for (let i = 0; i < cleanedLines.length - 1; i++) {
     const combined = `${cleanedLines[i]} ${cleanedLines[i + 1]}`.replace(/\s+/g, " ").trim();
-    if (/(birthday|party|wedding|concert|festival|shower)/i.test(combined) && combined.length <= 90) {
+    if (
+      /(birthday|party|wedding|concert|festival|shower)/i.test(combined) &&
+      combined.length <= 90
+    ) {
       candidates.push({ text: combined, score: scoreLine(combined) + 1 });
     }
   }
@@ -749,8 +974,12 @@ export function detectCategory(fullText: string): string | null {
     if (/\bbridal\s*shower\b/i.test(fullText)) return "Bridal Showers";
     const hasGraduation = /(graduation|grad\s*party|commencement|class of\s+\d{4})/i.test(fullText);
     const hasWedding =
-      /(wedding|marriage|marieage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(fullText);
-    const hasBirthday = /(birthday\s*party|\b(b-?day)\b|\bturns?\s+\d+|\bbirthday\b)/i.test(fullText);
+      /(wedding|marriage|marieage|ceremony|reception|bride|groom|nupti(al)?|bridal)/i.test(
+        fullText,
+      );
+    const hasBirthday = /(birthday\s*party|\b(b-?day)\b|\bturns?\s+\d+|\bbirthday\b)/i.test(
+      fullText,
+    );
     if (hasGraduation) return "Graduations";
     if (hasWedding && !hasBirthday) return "Weddings";
     if (hasBirthday && !hasWedding) return "Birthdays";
@@ -781,7 +1010,7 @@ export function detectCategory(fullText: string): string | null {
     }
     if (
       /(schedule|game|vs\.|tournament|league)/i.test(fullText) &&
-      /(soccer|basketball|baseball|hockey|volleyball|gymnastics|swim|tennis|track|softball)/i.test(
+      /(football|kickoff|soccer|basketball|baseball|hockey|volleyball|gymnastics|swim|tennis|track|softball)/i.test(
         fullText,
       )
     ) {

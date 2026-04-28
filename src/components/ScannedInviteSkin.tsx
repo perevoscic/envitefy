@@ -11,11 +11,19 @@ import {
   EVENT_SKIN_FOOTER_DIVIDER_CLASS,
   EVENT_SKIN_FOOTER_TEXT_CLASS,
 } from "@/components/event-skin-layout";
+import OcrFactCards from "@/components/OcrFactCards";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
+import {
+  filterRenderedOcrFacts,
+  filterRenderedTextValues,
+  normalizeOcrFacts,
+  type OcrFact,
+} from "@/lib/ocr/facts";
 import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
 import {
   ensureReadableTextColor,
+  getLuminance,
   mixHexColors,
   normalizeScannedInvitePalette,
 } from "@/lib/scanned-invite-palette";
@@ -48,6 +56,7 @@ type Props = {
   shareUrl?: string | null;
   calendarLinks?: CalendarLinks | null;
   skinId?: string | null;
+  sportKind?: string | null;
   palette?: Palette;
   background?: OcrSkinBackground | null;
   rsvpName?: string | null;
@@ -58,6 +67,8 @@ type Props = {
   activities?: string[] | null;
   attire?: string | null;
   registryUrl?: string | null;
+  ocrFacts?: OcrFact[] | null;
+  detailLayout?: "default" | "wideDetails";
   previewMode?: boolean;
   actions?: ReactNode;
 };
@@ -88,7 +99,13 @@ function buildRsvpHref({
   backgroundCategory,
 }: Pick<
   Props,
-  "rsvpUrl" | "rsvpPhone" | "rsvpEmail" | "title" | "shareUrl" | "categoryLabel" | "backgroundCategory"
+  | "rsvpUrl"
+  | "rsvpPhone"
+  | "rsvpEmail"
+  | "title"
+  | "shareUrl"
+  | "categoryLabel"
+  | "backgroundCategory"
 >): string | null {
   const url = String(rsvpUrl || "").trim();
   if (url) return url;
@@ -113,6 +130,54 @@ function usesGiftListCopy(value: string | null | undefined) {
   return /\bhouse\s*warming\b|\bhousewarming\b|\bbirthday\b/.test(normalized);
 }
 
+function normalizeInlineSentences(value: string): string {
+  const withSentenceSpaces = value.replace(/([.!?])(?=[A-Z])/g, "$1 ");
+  const seen = new Set<string>();
+  const sentences = withSentenceSpaces
+    .split(/(?<=[.!?])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => {
+      const key = part.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  return sentences.length ? sentences.join(" ") : withSentenceSpaces.trim();
+}
+
+function isRedundantPickleballSummary(value: string): boolean {
+  const normalized = value.toLowerCase();
+  return (
+    /\bpickleball\b/.test(normalized) &&
+    /\bcheck[-\s]?in\b/.test(normalized) &&
+    /\bgames?\s+start(?:ing)?\b/.test(normalized) &&
+    /\b(?:saturday|sunday|monday|tuesday|wednesday|thursday|friday)\b/.test(normalized) &&
+    /\b(?: at | in )\b/.test(normalized)
+  );
+}
+
+function extractTimeFromFact(value: string | null | undefined): string {
+  const cleaned = String(value || "").trim();
+  const match = cleaned.match(/\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?|am|pm)\b/i);
+  return (match?.[0] || cleaned)
+    .replace(/\./g, "")
+    .replace(/\b(am|pm)\b/gi, (period) => period.toUpperCase())
+    .trim();
+}
+
+function splitDisplayTimeRange(value: string): [string, string] | null {
+  const match = value.match(/^\s*(.+?)\s*(?:-|–|—|to)\s*(.+?)\s*$/i);
+  if (!match?.[1] || !match?.[2]) return null;
+  return [extractTimeFromFact(match[1]), extractTimeFromFact(match[2])];
+}
+
+function isEntryFeeFact(label: string, value: string): boolean {
+  return /\b(?:entry|registration|admission)\s*(?:fee|cost)?\b|\bfee\b|\$\s*\d+/i.test(
+    `${label} ${value}`,
+  );
+}
+
 export default function ScannedInviteSkin({
   title,
   categoryLabel,
@@ -124,6 +189,7 @@ export default function ScannedInviteSkin({
   shareUrl,
   calendarLinks,
   skinId,
+  sportKind,
   palette,
   background,
   rsvpName,
@@ -134,6 +200,8 @@ export default function ScannedInviteSkin({
   activities,
   attire,
   registryUrl,
+  ocrFacts,
+  detailLayout = "default",
   previewMode = false,
   actions,
 }: Props) {
@@ -152,12 +220,70 @@ export default function ScannedInviteSkin({
   const secondaryTileTextColor = ensureReadableTextColor(colors.secondary, "#ffffff", {
     minContrast: 3,
   });
+  const pageIsDark = getLuminance(colors.background) < 0.36;
+  const neutralSurface = "#ffffff";
+  const neutralSurfaceTextColor = ensureReadableTextColor(neutralSurface, colors.text, {
+    minContrast: 4.5,
+  });
+  const neutralSurfaceMutedTextColor =
+    mixHexColors(neutralSurfaceTextColor, neutralSurface, 0.38) || neutralSurfaceTextColor;
+  const directionsButtonBackground = colors.primary;
+  const directionsButtonTextColor = ensureReadableTextColor(directionsButtonBackground, "#ffffff", {
+    minContrast: 4.5,
+  });
+  const detailCardBackground =
+    mixHexColors(colors.background, "#ffffff", pageIsDark ? 0.14 : 0.12) || colors.background;
+  const detailCardTextColor = ensureReadableTextColor(detailCardBackground, colors.text, {
+    minContrast: 4.5,
+  });
+  const detailCardMutedTextColor =
+    mixHexColors(detailCardTextColor, detailCardBackground, 0.42) || detailCardTextColor;
+  const calendarModalButtonBackground = colors.primary;
+  const calendarModalButtonTextColor = ensureReadableTextColor(
+    calendarModalButtonBackground,
+    "#ffffff",
+    { minContrast: 4.5 },
+  );
   const detailIconSwatchColor = "var(--theme-primary)";
   const displayTitle = String(title || "").trim() || "Celebration";
   const displayCategoryLabel = formatCategoryLabel(categoryLabel);
   const displayDate = String(dateLabel || "").trim() || "Date TBD";
   const displayTime = String(timeLabel || "").trim();
   const displayLocation = String(location || "").trim() || "Location TBD";
+  const rawDetailCopy = String(detailCopy || "").trim();
+  const isPickleballSkin = String(sportKind || "").toLowerCase() === "pickleball";
+  const normalizedOcrFacts = normalizeOcrFacts(ocrFacts);
+  const checkInFact = normalizedOcrFacts.find((fact) => /\bcheck[-\s]?in\b/i.test(fact.label));
+  const gamesStartFact = normalizedOcrFacts.find((fact) =>
+    /\bgames?\s+start(?:ing)?\b/i.test(fact.label),
+  );
+  const entryFeeFact = isPickleballSkin
+    ? normalizedOcrFacts.find((fact) => isEntryFeeFact(fact.label, fact.value))
+    : undefined;
+  const splitTimeRange = splitDisplayTimeRange(displayTime);
+  const hasPickleballTimingLanguage =
+    isPickleballSkin &&
+    (Boolean(checkInFact || gamesStartFact) ||
+      (/\bcheck[-\s]?in\b/i.test(rawDetailCopy) &&
+        /\bgames?\s+start(?:ing)?\b/i.test(rawDetailCopy)));
+  const checkInTime =
+    isPickleballSkin && checkInFact
+      ? extractTimeFromFact(checkInFact.value)
+      : hasPickleballTimingLanguage && splitTimeRange
+        ? splitTimeRange[0]
+        : "";
+  const gamesStartTime =
+    isPickleballSkin && gamesStartFact
+      ? extractTimeFromFact(gamesStartFact.value)
+      : hasPickleballTimingLanguage && splitTimeRange
+        ? splitTimeRange[1]
+        : "";
+  const displayRsvpName = String(rsvpName || "").trim();
+  const displayRsvpTitle = displayRsvpName
+    ? /^hosted\s+by\b/i.test(displayRsvpName)
+      ? displayRsvpName
+      : `Hosted by ${displayRsvpName}`
+    : String(rsvpEmail || "Host");
   const directionsHref = buildMapsHref(location);
   const directRsvpHref = buildRsvpHref({
     rsvpUrl,
@@ -169,17 +295,51 @@ export default function ScannedInviteSkin({
     backgroundCategory,
   });
   const hasRsvpAction = Boolean(directRsvpHref);
-  const displayDetailCopy = String(detailCopy || "").trim();
+  const normalizedDetailCopy = normalizeInlineSentences(rawDetailCopy);
+  const baseDetailCopy =
+    isPickleballSkin && isRedundantPickleballSummary(normalizedDetailCopy)
+      ? ""
+      : normalizedDetailCopy;
+  const displayEntryFee = isPickleballSkin ? String(entryFeeFact?.value || "").trim() : "";
+  const displayDetailCopy = baseDetailCopy;
   const displayAttire = String(attire || "").trim();
   const displayRegistryUrl = String(registryUrl || "").trim();
   const registryLabel = usesGiftListCopy(categoryLabel) ? "Gift List" : "Registry";
   const registryActionLabel = registryLabel === "Gift List" ? "Open Gift List" : "Open Registry";
   const displayActivities = Array.isArray(activities)
-    ? activities
-        .map((item) => String(item || "").trim())
-        .filter(Boolean)
-        .slice(0, 4)
+      ? filterRenderedTextValues(
+          activities.map((item) => String(item || "").trim()).filter(Boolean),
+        [displayDetailCopy, displayAttire, displayEntryFee],
+        ).slice(0, 4)
     : [];
+  const factsForCards = normalizedOcrFacts.filter(
+    (fact) =>
+      !(
+        isPickleballSkin &&
+        (/\b(?:check[-\s]?in|games?\s+start(?:ing)?)\b/i.test(`${fact.label} ${fact.value}`) ||
+          isEntryFeeFact(fact.label, fact.value))
+      ),
+  );
+  const displayOcrFacts = filterRenderedOcrFacts(factsForCards, [
+    displayTitle,
+    displayDate,
+    displayTime,
+    displayLocation,
+    displayDetailCopy,
+    displayEntryFee,
+    displayAttire,
+    displayActivities,
+    displayRegistryUrl,
+    displayRsvpName,
+    rsvpPhone,
+    rsvpEmail,
+  ]);
+  const leftColumnOcrFacts = displayOcrFacts.slice(0, 2);
+  const rightColumnOcrFacts = displayOcrFacts.slice(2);
+  const detailsGridClassName =
+    detailLayout === "wideDetails"
+      ? "grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(390px,1.12fr)_minmax(0,1fr)] xl:grid-cols-[minmax(440px,1.15fr)_minmax(0,0.95fr)]"
+      : "grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.45fr)]";
 
   useEffect(() => {
     if (previewMode) return;
@@ -229,6 +389,7 @@ export default function ScannedInviteSkin({
         category={backgroundCategory || categoryLabel || "general"}
         title={title}
         skinId={skinId}
+        sportKind={sportKind}
         palette={colors}
         background={background}
       />
@@ -300,68 +461,95 @@ export default function ScannedInviteSkin({
           </motion.button>
         </div>
 
-        <div className="grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-4">
-          <motion.section
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="flex flex-col justify-between rounded-[3rem] border border-black/5 bg-white p-6 shadow-xl transition-shadow hover:shadow-2xl md:col-span-2 md:p-10"
-          >
-            <div className="space-y-8">
-              <InfoBlock
-                icon={<Calendar className="h-8 w-8" />}
-                swatchColor={detailIconSwatchColor}
-                label="When"
-                title={displayDate}
-              />
-
-              {displayTime ? (
-                <InfoBlock
-                  icon={<Clock className="h-8 w-8" />}
-                  swatchColor={detailIconSwatchColor}
-                  label="At"
-                  title={displayTime}
-                />
-              ) : null}
-
-              <InfoBlock
-                icon={<MapPin className="h-8 w-8" />}
-                swatchColor={detailIconSwatchColor}
-                label="Where"
-                title="Event Location"
-                subtitle={displayLocation}
-              />
-
-              {rsvpName || rsvpPhone || rsvpEmail ? (
-                <InfoBlock
-                  icon={<MessageSquare className="h-8 w-8" />}
-                  swatchColor={detailIconSwatchColor}
-                  label="RSVP"
-                  title={String(rsvpName || rsvpEmail || "Host")}
-                  subtitle={
-                    String(rsvpEmail || rsvpPhone || "").trim() ||
-                    "Contact details available on request"
-                  }
-                  divider
-                />
-              ) : null}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (!directionsHref || previewMode) return;
-                window.open(directionsHref, "_blank", "noopener,noreferrer");
-              }}
-              disabled={!directionsHref || previewMode}
-              className="mt-12 w-full rounded-[2rem] py-6 text-sm font-bold uppercase tracking-widest text-white transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-              style={{ backgroundColor: "var(--theme-text)" }}
+        <div className={detailsGridClassName}>
+          <div className="grid gap-6">
+            <motion.section
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="self-start rounded-[2.6rem] border border-black/5 bg-white p-6 shadow-xl transition-shadow hover:shadow-2xl md:p-8"
             >
-              Get Directions
-            </button>
-          </motion.section>
+              <div className="space-y-6">
+                <InfoBlock
+                  icon={<Calendar className="h-7 w-7" />}
+                  swatchColor={detailIconSwatchColor}
+                  label="When"
+                  title={displayDate}
+                />
 
-          <div className="grid grid-cols-2 gap-6 md:col-span-2">
+                {checkInTime ? (
+                  <InfoBlock
+                    icon={<Clock className="h-7 w-7" />}
+                    swatchColor={detailIconSwatchColor}
+                    label="Check-in"
+                    title={checkInTime}
+                  />
+                ) : displayTime ? (
+                  <InfoBlock
+                    icon={<Clock className="h-7 w-7" />}
+                    swatchColor={detailIconSwatchColor}
+                    label="At"
+                    title={displayTime}
+                  />
+                ) : null}
+
+                {gamesStartTime ? (
+                  <InfoBlock
+                    icon={<Clock className="h-7 w-7" />}
+                    swatchColor={detailIconSwatchColor}
+                    label="Games starting"
+                    title={gamesStartTime}
+                  />
+                ) : null}
+
+                <InfoBlock
+                  icon={<MapPin className="h-7 w-7" />}
+                  swatchColor={detailIconSwatchColor}
+                  label="Where"
+                  title="Event Location"
+                  subtitle={displayLocation}
+                />
+
+                {rsvpName || rsvpPhone || rsvpEmail ? (
+                  <InfoBlock
+                    icon={<MessageSquare className="h-7 w-7" />}
+                    swatchColor={detailIconSwatchColor}
+                    label="RSVP"
+                    title={displayRsvpTitle}
+                    subtitle={
+                      String(rsvpEmail || rsvpPhone || "").trim() ||
+                      "Contact details available on request"
+                    }
+                    divider
+                  />
+                ) : null}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!directionsHref || previewMode) return;
+                  window.open(directionsHref, "_blank", "noopener,noreferrer");
+                }}
+                disabled={!directionsHref || previewMode}
+                className="mt-8 w-full rounded-[1.6rem] py-5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  backgroundColor: directionsButtonBackground,
+                  color: directionsButtonTextColor,
+                }}
+              >
+                Get Directions
+              </button>
+            </motion.section>
+
+            <OcrFactCards
+              facts={leftColumnOcrFacts}
+              className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1"
+              cardClassName="rounded-[2rem] border border-black/5 bg-white p-6 shadow-sm"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
             <ActionTile
               icon={<CalendarPlus className="h-10 w-10" />}
               label="Save to Calendar"
@@ -390,15 +578,18 @@ export default function ScannedInviteSkin({
                 transition={{ delay: 0.4 }}
                 className="col-span-2 flex items-center justify-between gap-6 rounded-[3rem] border border-black/5 p-7 shadow-sm backdrop-blur-sm md:p-10"
                 style={{
-                  backgroundColor:
-                    mixHexColors(colors.background, "#ffffff", 0.12) || colors.background,
+                  backgroundColor: detailCardBackground,
+                  color: detailCardTextColor,
                 }}
               >
                 <div className="space-y-1">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-black/30">
+                  <div
+                    className="text-[10px] font-black uppercase tracking-widest"
+                    style={{ color: detailCardMutedTextColor }}
+                  >
                     Good to Know
                   </div>
-                  <div className="text-2xl font-bold text-black/90">{displayDetailCopy}</div>
+                  <div className="text-2xl font-bold">{displayDetailCopy}</div>
                 </div>
                 <div
                   className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
@@ -406,6 +597,19 @@ export default function ScannedInviteSkin({
                 >
                   <Sparkles className="h-6 w-6" />
                 </div>
+              </motion.section>
+            ) : null}
+            {displayEntryFee ? (
+              <motion.section
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.43 }}
+                className="col-span-2 flex flex-col justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:p-7"
+              >
+                <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
+                  Entry Fee
+                </div>
+                <div className="mt-2 text-xl font-bold text-black/90">{displayEntryFee}</div>
               </motion.section>
             ) : null}
             {displayAttire ? (
@@ -435,9 +639,7 @@ export default function ScannedInviteSkin({
                   <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
                     {registryLabel}
                   </div>
-                  <div className="mt-2 text-lg font-bold text-black/90">
-                    {registryActionLabel}
-                  </div>
+                  <div className="mt-2 text-lg font-bold text-black/90">{registryActionLabel}</div>
                 </div>
               </motion.a>
             ) : null}
@@ -458,6 +660,10 @@ export default function ScannedInviteSkin({
                 </ul>
               </motion.section>
             ) : null}
+            <OcrFactCards
+              facts={rightColumnOcrFacts}
+              cardClassName="col-span-1 rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:col-span-1"
+            />
           </div>
         </div>
 
@@ -489,7 +695,8 @@ export default function ScannedInviteSkin({
               exit={{ scale: 0.5, y: 100, opacity: 0 }}
               className="relative w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-2xl"
               style={{
-                backgroundColor: "#ffffff",
+                backgroundColor: neutralSurface,
+                color: neutralSurfaceTextColor,
               }}
             >
               <div
@@ -501,9 +708,7 @@ export default function ScannedInviteSkin({
               >
                 <Calendar className="h-10 w-10" />
               </div>
-              <h3 className="serif mb-8 text-2xl font-bold" style={{ color: "var(--theme-text)" }}>
-                Add it to your calendar
-              </h3>
+              <h3 className="serif mb-8 text-2xl font-bold">Add it to your calendar</h3>
               <div className="space-y-4">
                 <CalendarModalLink
                   href={calendarLinks.google}
@@ -525,16 +730,20 @@ export default function ScannedInviteSkin({
                     if (previewMode || !url) return;
                     window.open(url, "_blank", "noopener,noreferrer");
                   }}
-                  className="block w-full rounded-[1.8rem] py-5 text-xs font-bold uppercase tracking-widest text-white transition-transform hover:scale-105"
-                  style={{ backgroundColor: "var(--theme-text)" }}
+                  className="block w-full rounded-[1.8rem] py-5 text-xs font-bold uppercase tracking-widest transition-transform hover:scale-105"
+                  style={{
+                    backgroundColor: calendarModalButtonBackground,
+                    color: calendarModalButtonTextColor,
+                  }}
                 >
-                  ICS File
+                  Apple
                 </button>
               </div>
               <button
                 type="button"
                 onClick={() => setShowCalendarMenu(false)}
-                className="mt-8 text-[10px] font-bold uppercase tracking-widest text-black/30 transition-opacity hover:text-black/70"
+                className="mt-8 text-[10px] font-bold uppercase tracking-widest transition-opacity"
+                style={{ color: neutralSurfaceMutedTextColor }}
               >
                 Maybe later
               </button>

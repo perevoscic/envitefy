@@ -1,16 +1,16 @@
+import { normalizeThumbnailFocus, type ThumbnailFocus } from "./thumbnail-focus.ts";
 import { resolveCoverImageUrlFromEventData } from "./upload-config.ts";
-import {
-  normalizeThumbnailFocus,
-  type ThumbnailFocus,
-} from "./thumbnail-focus.ts";
 
 export type DashboardEventOwnership = "owned" | "invited";
 export type DashboardEventShareStatus = "accepted" | "pending" | null;
 
-type InvitedEventLikeRecord = {
-  ownership?: unknown;
-  invitedFromScan?: unknown;
-} | null | undefined;
+type InvitedEventLikeRecord =
+  | {
+      ownership?: unknown;
+      invitedFromScan?: unknown;
+    }
+  | null
+  | undefined;
 
 export type DashboardEvent = {
   id: string;
@@ -80,9 +80,7 @@ export function hasActionableRsvp(data: any, numberOfGuestsRaw?: unknown): boole
   if (isTruthyBooleanLike(data?.rsvpEnabled)) return true;
 
   const rsvpRecord =
-    data?.rsvp && typeof data.rsvp === "object" && !Array.isArray(data.rsvp)
-      ? data.rsvp
-      : null;
+    data?.rsvp && typeof data.rsvp === "object" && !Array.isArray(data.rsvp) ? data.rsvp : null;
   if (isTruthyBooleanLike(rsvpRecord?.isEnabled)) return true;
   if (
     hasNonEmptyString(
@@ -106,9 +104,7 @@ export function hasActionableRsvp(data: any, numberOfGuestsRaw?: unknown): boole
 
 function buildMapsUrl(locationText: string | null): string | null {
   if (!locationText) return null;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    locationText
-  )}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationText)}`;
 }
 
 function normalizeStatus(statusRaw: unknown): string | null {
@@ -125,6 +121,42 @@ function normalizeCreatedVia(createdViaRaw: unknown): string | null {
   return normalized || null;
 }
 
+function normalizeDashboardEventCategory(data: any, row: HistoryRow): string | null {
+  const category = firstString(data?.category, row?.data?.category);
+  const normalizedCategory = String(category || "")
+    .trim()
+    .toLowerCase();
+  const createdVia = normalizeCreatedVia(data?.createdVia);
+  const ocrSkinCategory = String(data?.ocrSkin?.category || "")
+    .trim()
+    .toLowerCase();
+  const ocrSportKind = String(data?.ocrSkin?.sportKind || "")
+    .trim()
+    .toLowerCase();
+  const isSportScan =
+    createdVia === "ocr-basketball-skin" ||
+    createdVia === "ocr-football-skin" ||
+    createdVia === "ocr-pickleball-skin" ||
+    ocrSkinCategory === "basketball" ||
+    ocrSkinCategory === "football" ||
+    ocrSportKind === "pickleball";
+
+  if (
+    isSportScan &&
+    (!normalizedCategory ||
+      normalizedCategory === "general events" ||
+      normalizedCategory === "general event" ||
+      normalizedCategory === "general" ||
+      normalizedCategory === "basketball" ||
+      normalizedCategory === "football" ||
+      normalizedCategory === "pickleball")
+  ) {
+    return "Sport Events";
+  }
+
+  return category;
+}
+
 export function isStudioCreatedVia(createdViaRaw: unknown): boolean {
   return normalizeCreatedVia(createdViaRaw) === "studio";
 }
@@ -134,21 +166,21 @@ export function isScannedInviteCreatedVia(createdViaRaw: unknown): boolean {
   return normalized === "ocr" || Boolean(normalized?.startsWith("ocr-"));
 }
 
-export function isInvitedEventLikeRecord(
-  record: InvitedEventLikeRecord
-): boolean {
+export function isInvitedEventLikeRecord(record: InvitedEventLikeRecord): boolean {
   if (!record || typeof record !== "object") return false;
-  return normalizeDashboardEventOwnership(
-    (record as Record<string, unknown>).ownership,
-    undefined,
-    (record as Record<string, unknown>).invitedFromScan
-  ) === "invited";
+  return (
+    normalizeDashboardEventOwnership(
+      (record as Record<string, unknown>).ownership,
+      undefined,
+      (record as Record<string, unknown>).invitedFromScan,
+    ) === "invited"
+  );
 }
 
 export function normalizeDashboardEventOwnership(
   ownershipRaw: unknown,
   _createdViaRaw?: unknown,
-  invitedFromScanRaw?: unknown
+  invitedFromScanRaw?: unknown,
 ): DashboardEventOwnership {
   if (
     String(ownershipRaw || "")
@@ -170,9 +202,11 @@ export function normalizeDashboardEventOwnership(
 }
 
 export function normalizeDashboardEventShareStatus(
-  shareStatusRaw: unknown
+  shareStatusRaw: unknown,
 ): DashboardEventShareStatus {
-  const normalized = String(shareStatusRaw || "").trim().toLowerCase();
+  const normalized = String(shareStatusRaw || "")
+    .trim()
+    .toLowerCase();
   if (normalized === "accepted" || normalized === "pending") {
     return normalized;
   }
@@ -191,7 +225,11 @@ export function isDraftStatus(statusRaw: unknown): boolean {
 
 export function getEventStartIso(data: any): string | null {
   return parseIso(
-    data?.startAt ?? data?.startISO ?? data?.start ?? data?.fieldsGuess?.start ?? data?.event?.start
+    data?.startAt ??
+      data?.startISO ??
+      data?.start ??
+      data?.fieldsGuess?.start ??
+      data?.event?.start,
   );
 }
 
@@ -225,7 +263,7 @@ export function normalizeCanonicalStartFields(data: any): void {
 
 export function getEventEndIso(data: any): string | null {
   return parseIso(
-    data?.endAt ?? data?.endISO ?? data?.end ?? data?.fieldsGuess?.end ?? data?.event?.end
+    data?.endAt ?? data?.endISO ?? data?.end ?? data?.fieldsGuess?.end ?? data?.event?.end,
   );
 }
 
@@ -240,7 +278,7 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
     data?.locationText,
     data?.location,
     data?.fieldsGuess?.location,
-    data?.event?.location
+    data?.event?.location,
   );
   const locationLat = parseFiniteNumber(data?.locationLat ?? data?.lat ?? data?.event?.locationLat);
   const locationLng = parseFiniteNumber(data?.locationLng ?? data?.lng ?? data?.event?.locationLng);
@@ -250,7 +288,8 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
 
   return {
     id: row.id,
-    title: firstString(row.title, data?.title, data?.fieldsGuess?.title, data?.event?.title) || "Event",
+    title:
+      firstString(row.title, data?.title, data?.fieldsGuess?.title, data?.event?.title) || "Event",
     startAt,
     endAt: getEventEndIso(data),
     tz: firstString(data?.tz, data?.timezone, data?.fieldsGuess?.timezone, data?.event?.timezone),
@@ -260,7 +299,7 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
     coverImageUrl: resolveCoverImageUrlFromEventData(data),
     thumbnailFocus: normalizeThumbnailFocus(data?.thumbnailFocus),
     status: normalizeStatus(data?.status),
-    category: firstString(data?.category, row?.data?.category),
+    category: normalizeDashboardEventCategory(data, row),
     updatedAt: parseIso(data?.updatedAt) ?? parseIso(row?.created_at) ?? null,
     numberOfGuests,
     hasRsvp,
@@ -270,7 +309,7 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
     ownership: normalizeDashboardEventOwnership(
       data?.ownership,
       data?.createdVia,
-      data?.invitedFromScan
+      data?.invitedFromScan,
     ),
     shareStatus: normalizeDashboardEventShareStatus(data?.shareStatus),
     userRsvpResponse: null,

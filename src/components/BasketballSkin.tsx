@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import ScannedInviteSkin from "@/components/ScannedInviteSkin";
+import type { OcrFact } from "@/lib/ocr/facts";
 import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
 
 type CalendarLinks = {
@@ -28,6 +29,7 @@ type Props = {
   imageUrl?: string | null;
   shareUrl?: string | null;
   calendarLinks?: CalendarLinks | null;
+  categoryLabel?: string | null;
   skinId?: string | null;
   palette?: Palette;
   background?: OcrSkinBackground | null;
@@ -39,16 +41,61 @@ type Props = {
   activities?: string[] | null;
   attire?: string | null;
   registryUrl?: string | null;
+  ocrFacts?: OcrFact[] | null;
   actions?: ReactNode;
 };
 
-const BASKETBALL_ACTIVITY_DEFAULTS = [
-  "Games: 5v5 full-court runs",
-  "Pickup: 3v3 half-court games",
-  "Training: dribbling and passing stations",
-  "Training: shooting reps and free throws",
-  "Training: finishing and footwork circuits",
-];
+const BASKETBALL_CHIP_LABELS = ["Game On", "Hoop Time", "Court Ready", "Ball Night"];
+
+function normalizeBasketballActivity(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(?:pickup|pick up|community|event|night|run|game|games|basketball|hoops?)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isBasketballSummaryActivity(item: string, title: string, categoryLabel?: string | null) {
+  const normalizedItem = item
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  const normalizedTitle = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  const normalizedCategory = String(categoryLabel || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  if (!normalizedItem) return true;
+  if (normalizedItem === normalizedTitle || normalizedItem === normalizedCategory) return true;
+  if (normalizedTitle.length > 0 && normalizedTitle.includes(normalizedItem)) return true;
+  if (normalizedTitle.length > 0 && normalizedItem.includes(normalizedTitle)) return true;
+  if (
+    /^(?:pickup )?basketball (?:open )?run$/.test(normalizedItem) ||
+    /^(?:community )?open run$/.test(normalizedItem)
+  ) {
+    return true;
+  }
+
+  const compactItem = normalizeBasketballActivity(item);
+  const compactTitle = normalizeBasketballActivity(title);
+  if (!compactItem) return true;
+  return Boolean(compactTitle && compactItem === compactTitle);
+}
+
+function getBasketballChipLabel(title: string, skinId?: string | null): string {
+  const seed = `${title || ""}|${skinId || ""}`;
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+  }
+  return BASKETBALL_CHIP_LABELS[hash % BASKETBALL_CHIP_LABELS.length] || "Game On";
+}
 
 export default function BasketballSkin({
   title,
@@ -58,6 +105,7 @@ export default function BasketballSkin({
   imageUrl,
   shareUrl,
   calendarLinks,
+  categoryLabel,
   skinId,
   palette,
   background,
@@ -69,6 +117,7 @@ export default function BasketballSkin({
   activities,
   attire,
   registryUrl,
+  ocrFacts,
   actions,
 }: Props) {
   const basketballPalette = {
@@ -84,14 +133,16 @@ export default function BasketballSkin({
   const displayActivities = Array.isArray(activities)
     ? activities
         .map((item) => String(item || "").trim())
-        .filter(Boolean)
+        .filter((item) => item && !isBasketballSummaryActivity(item, title, categoryLabel))
         .slice(0, 6)
     : [];
+  const displayCategoryLabel =
+    String(categoryLabel || "").trim() || getBasketballChipLabel(title, skinId);
 
   return (
     <ScannedInviteSkin
       title={title}
-      categoryLabel="🏀 Basketball Run"
+      categoryLabel={displayCategoryLabel}
       backgroundCategory="basketball"
       dateLabel={dateLabel}
       timeLabel={timeLabel}
@@ -106,10 +157,12 @@ export default function BasketballSkin({
       rsvpPhone={rsvpPhone}
       rsvpEmail={rsvpEmail}
       rsvpUrl={rsvpUrl}
-      detailCopy={detailCopy || "Games, pickup, and training sessions for all levels."}
-      activities={displayActivities.length ? displayActivities : BASKETBALL_ACTIVITY_DEFAULTS}
-      attire={attire || "Basketball attire + indoor/outdoor shoes"}
+      detailCopy={detailCopy}
+      activities={displayActivities}
+      attire={attire}
       registryUrl={registryUrl}
+      ocrFacts={ocrFacts}
+      detailLayout="wideDetails"
       actions={actions}
     />
   );

@@ -14,23 +14,22 @@ import {
   type SnapProcessingStatus,
 } from "@/components/snap/SnapProcessingCard";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
+import { normalizeOcrFacts, type OcrFact } from "@/lib/ocr/facts";
 import {
   isBasketballOcrSkinCandidate,
   isOcrInviteCategory,
+  isPickleballOcrSkinCandidate,
   type OcrSkinSelection,
 } from "@/lib/ocr/skin";
 import { type PendingSnapUpload, takePendingSnapUpload } from "@/lib/pending-snap-upload";
-import {
-  normalizeThumbnailFocus,
-  type ThumbnailFocus,
-} from "@/lib/thumbnail-focus";
+import { normalizeThumbnailFocus, type ThumbnailFocus } from "@/lib/thumbnail-focus";
+import { buildWeddingScanFlyerColorsFromImageColors } from "@/lib/wedding-scan";
 import { findFirstEmail, normalizeUrlValue } from "@/utils/contact";
-import { extractColorsFromImage } from "@/utils/image-colors";
 import { buildEventPath } from "@/utils/event-url";
+import { extractColorsFromImage } from "@/utils/image-colors";
 import { uploadMediaFile } from "@/utils/media-upload-client";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import { readFileAsDataUrl } from "@/utils/thumbnail";
-import { buildWeddingScanFlyerColorsFromImageColors } from "@/lib/wedding-scan";
 
 type EventFields = {
   title: string;
@@ -52,6 +51,12 @@ type EventFields = {
         contact?: string | null;
       }
     | null;
+  /** OCR extracted event host / organizer name. */
+  hostName?: string | null;
+  /** OCR extracted RSVP contact display name. */
+  rsvpName?: string | null;
+  /** OCR extracted venue/business/place name. */
+  venue?: string | null;
   /** OCR guest tips (flyer footer); maps to event thingsToDo / Good To Know. */
   thingsToDo?: string | null;
   /** OCR extracted attire / dress code text. */
@@ -60,6 +65,8 @@ type EventFields = {
   activities?: string[] | null;
   /** OCR extracted gift registry URL. */
   registryUrl?: string | null;
+  /** OCR extracted meaningful facts not represented by dedicated fields. */
+  ocrFacts?: OcrFact[] | null;
 };
 
 type SubmitScannedEventParams = {
@@ -951,12 +958,31 @@ export default function Dashboard({
           // If neither found, return null
           return null;
         };
+        const extractRsvpName = (rsvpText: string | null | undefined): string | null => {
+          if (!rsvpText) return null;
+          const withoutUrls = rsvpText
+            .replace(/\bhttps?:\/\/\S+\b/gi, "")
+            .replace(/\bwww\.\S+\b/gi, "");
+          const withoutContact = withoutUrls
+            .replace(/\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi, "")
+            .replace(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, "")
+            .replace(/\b\d{10,}\b/g, "");
+          const name = withoutContact
+            .replace(/^RSVP:?\s*/i, "")
+            .replace(/^to\s+/i, "")
+            .replace(/\s+at\s*$/i, "")
+            .replace(/^[,;:. -]+|[,;:. -]+$/g, "")
+            .replace(/\s{2,}/g, " ")
+            .trim();
+          return name && /[A-Za-z]/.test(name) ? name : null;
+        };
 
         const rawRsvp =
           typeof data?.fieldsGuess?.rsvp === "string" && data.fieldsGuess.rsvp.trim()
             ? data.fieldsGuess.rsvp.trim()
             : null;
         const cleanedRsvp = rawRsvp ? cleanRsvp(rawRsvp) : null;
+        const rsvpNameFromScan = extractRsvpName(rawRsvp);
         const scannedRsvpUrl =
           typeof (data?.fieldsGuess as { rsvpUrl?: unknown })?.rsvpUrl === "string" &&
           (data.fieldsGuess as { rsvpUrl?: string }).rsvpUrl?.trim()
@@ -967,6 +993,19 @@ export default function Dashboard({
           (data.fieldsGuess as { rsvpDeadline?: string }).rsvpDeadline?.trim()
             ? (data.fieldsGuess as { rsvpDeadline?: string }).rsvpDeadline!.trim()
             : null;
+        const hostNameFromScan =
+          typeof (data?.fieldsGuess as { hostName?: unknown })?.hostName === "string" &&
+          (data.fieldsGuess as { hostName?: string }).hostName?.trim()
+            ? (data.fieldsGuess as { hostName?: string }).hostName!.trim()
+            : null;
+        const venueFromScan =
+          typeof (data?.fieldsGuess as { venue?: unknown; venueName?: unknown })?.venue ===
+            "string" && (data.fieldsGuess as { venue?: string }).venue?.trim()
+            ? (data.fieldsGuess as { venue?: string }).venue!.trim()
+            : typeof (data?.fieldsGuess as { venueName?: unknown })?.venueName === "string" &&
+                (data.fieldsGuess as { venueName?: string }).venueName?.trim()
+              ? (data.fieldsGuess as { venueName?: string }).venueName!.trim()
+              : null;
         const isWeddingOcrResult =
           String(data?.category || "")
             .trim()
@@ -1002,6 +1041,10 @@ export default function Dashboard({
           typeof registryUrlRaw === "string" && registryUrlRaw.trim()
             ? normalizeUrlValue(registryUrlRaw.trim())
             : null;
+        const ocrFactsFromScan = normalizeOcrFacts(
+          (data?.fieldsGuess as { ocrFacts?: unknown; facts?: unknown })?.ocrFacts ||
+            (data?.fieldsGuess as { facts?: unknown })?.facts,
+        );
 
         const adjusted: EventFields | null = data?.fieldsGuess
           ? {
@@ -1018,10 +1061,14 @@ export default function Dashboard({
               reminders: [{ minutes: 1440 }],
               numberOfGuests: 0,
               rsvp: structuredWeddingRsvp || cleanedRsvp,
+              rsvpName: rsvpNameFromScan || undefined,
+              hostName: hostNameFromScan || undefined,
+              venue: venueFromScan || undefined,
               thingsToDo: thingsToDoFromScan || undefined,
               attire: attireFromScan || undefined,
               activities: activitiesFromScan.length ? activitiesFromScan : undefined,
               registryUrl: registryUrlFromScan || undefined,
+              ocrFacts: ocrFactsFromScan.length ? ocrFactsFromScan : undefined,
             }
           : null;
         await finishScanUi();
@@ -1203,7 +1250,7 @@ export default function Dashboard({
           }
         }
 
-        const normalizedOcrCategory =
+        let normalizedOcrCategory =
           typeof ocrMeta?.category === "string" && ocrMeta.category.trim()
             ? ocrMeta.category
             : ocrCategory;
@@ -1222,6 +1269,17 @@ export default function Dashboard({
               .filter(Boolean)
               .slice(0, 8)
           : [];
+        const isPickleballOcrEvent =
+          normalizedOcrSkin?.sportKind === "pickleball" ||
+          isPickleballOcrSkinCandidate({
+            category: normalizedOcrCategory,
+            title: eventInput.title,
+            description: [eventInput.description, eventInput.thingsToDo].filter(Boolean).join(" "),
+            activities: normalizedActivities,
+          });
+        if (isPickleballOcrEvent) {
+          normalizedOcrCategory = "Sport Events";
+        }
         const isBasketballOcrEvent =
           normalizedOcrSkin?.category === "basketball" ||
           isBasketballOcrSkinCandidate({
@@ -1230,7 +1288,13 @@ export default function Dashboard({
             description: eventInput.description,
             activities: normalizedActivities,
           });
-        const isInviteOcrEvent = isOcrInviteCategory(normalizedOcrCategory) || isBasketballOcrEvent;
+        if (isBasketballOcrEvent) {
+          normalizedOcrCategory = "Sport Events";
+        }
+        const isInviteOcrEvent =
+          isOcrInviteCategory(normalizedOcrCategory) ||
+          isBasketballOcrEvent ||
+          isPickleballOcrEvent;
         let flyerColors =
           ocrMeta?.flyerColors && typeof ocrMeta.flyerColors === "object"
             ? ocrMeta.flyerColors
@@ -1296,9 +1360,21 @@ export default function Dashboard({
             endISO: ready.end,
             timeFound: eventInput.timeFound,
             location: ready.location || undefined,
+            venue:
+              typeof eventInput.venue === "string" && eventInput.venue.trim()
+                ? eventInput.venue.trim()
+                : undefined,
             description: eventInput.description || undefined,
             rsvp: structuredWeddingRsvp || eventInput.rsvp || undefined,
             rsvpDeadline: structuredWeddingRsvp?.deadline || undefined,
+            rsvpName:
+              typeof eventInput.rsvpName === "string" && eventInput.rsvpName.trim()
+                ? eventInput.rsvpName.trim()
+                : undefined,
+            hostName:
+              typeof eventInput.hostName === "string" && eventInput.hostName.trim()
+                ? eventInput.hostName.trim()
+                : undefined,
             timezone,
             numberOfGuests: eventInput.numberOfGuests || 0,
             reminders: eventInput.reminders || undefined,
@@ -1306,16 +1382,16 @@ export default function Dashboard({
               ? "ocr-birthday-skin"
               : isWeddingOcrEvent
                 ? "ocr-wedding-renderer"
-                : isBasketballOcrEvent
-                  ? "ocr-basketball-skin"
-                  : isInviteOcrEvent
-                    ? "ocr-invite-skin"
-                    : "ocr",
+                : isPickleballOcrEvent
+                  ? "ocr-pickleball-skin"
+                  : isBasketballOcrEvent
+                    ? "ocr-basketball-skin"
+                    : isInviteOcrEvent
+                      ? "ocr-invite-skin"
+                      : "ocr",
             thumbnail,
             thumbnailFocus:
-              isInviteOcrEvent && normalizedThumbnailFocus
-                ? normalizedThumbnailFocus
-                : undefined,
+              isInviteOcrEvent && normalizedThumbnailFocus ? normalizedThumbnailFocus : undefined,
             attachment: attachment || undefined,
             ocrSkin: isInviteOcrEvent ? normalizedOcrSkin || undefined : undefined,
             flyerColors: isWeddingOcrEvent ? flyerColors || undefined : undefined,
@@ -1338,6 +1414,10 @@ export default function Dashboard({
                 ? eventInput.attire.trim()
                 : undefined,
             activities: normalizedActivities.length ? normalizedActivities : undefined,
+            ocrFacts:
+              Array.isArray(eventInput.ocrFacts) && eventInput.ocrFacts.length
+                ? normalizeOcrFacts(eventInput.ocrFacts)
+                : undefined,
             registries: mergedRegistries.length ? mergedRegistries : undefined,
             thingsToDo:
               typeof eventInput.thingsToDo === "string" && eventInput.thingsToDo.trim()

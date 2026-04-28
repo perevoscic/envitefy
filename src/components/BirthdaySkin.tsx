@@ -11,11 +11,19 @@ import {
   EVENT_SKIN_FOOTER_DIVIDER_CLASS,
   EVENT_SKIN_FOOTER_TEXT_CLASS,
 } from "@/components/event-skin-layout";
+import OcrFactCards from "@/components/OcrFactCards";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
+import {
+  filterRenderedOcrFacts,
+  filterRenderedTextValues,
+  normalizeOcrFacts,
+  type OcrFact,
+} from "@/lib/ocr/facts";
 import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
 import {
   ensureReadableTextColor,
+  getLuminance,
   mixHexColors,
   normalizeScannedInvitePalette,
 } from "@/lib/scanned-invite-palette";
@@ -42,6 +50,7 @@ type Props = {
   honoreeName?: string | null;
   dateLabel?: string | null;
   timeLabel?: string | null;
+  venueName?: string | null;
   location?: string | null;
   imageUrl?: string | null;
   shareUrl?: string | null;
@@ -57,6 +66,7 @@ type Props = {
   activities?: string[] | null;
   attire?: string | null;
   registryUrl?: string | null;
+  ocrFacts?: OcrFact[] | null;
   previewMode?: boolean;
   actions?: ReactNode;
 };
@@ -113,11 +123,45 @@ function extractHonoreeName(title: string, honoreeName?: string | null) {
   return firstLine || "birthday star";
 }
 
+function splitVenueFromDisplayLocation(location: string): { venueName: string; address: string } {
+  const parts = String(location || "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length < 2) return { venueName: "", address: location };
+
+  const [first, ...rest] = parts;
+  const looksLikeVenue =
+    first &&
+    !/\d/.test(first) &&
+    /\b(arena|center|centre|club|gym|gymnastics|hall|park|room|school|studio|theater|theatre)\b/i.test(
+      first,
+    );
+  if (!looksLikeVenue) return { venueName: "", address: location };
+
+  return { venueName: first, address: rest.join(", ") };
+}
+
+function extractVenueFromPlanCopy(planCopy: string): string {
+  const match = String(planCopy || "").match(/\bat\s+([^.\n]+?)(?:[.!?]|$)/i);
+  const candidate = (match?.[1] || "").replace(/\s{2,}/g, " ").trim();
+  if (!candidate || /\d/.test(candidate)) return "";
+  if (
+    !/\b(arena|center|centre|club|gym|gymnastics|hall|park|room|school|studio|theater|theatre)\b/i.test(
+      candidate,
+    )
+  ) {
+    return "";
+  }
+  return candidate;
+}
+
 export default function BirthdaySkin({
   title,
   honoreeName,
   dateLabel,
   timeLabel,
+  venueName,
   location,
   imageUrl,
   shareUrl,
@@ -133,6 +177,7 @@ export default function BirthdaySkin({
   activities,
   attire,
   registryUrl,
+  ocrFacts,
   previewMode = false,
   actions,
 }: Props) {
@@ -147,18 +192,31 @@ export default function BirthdaySkin({
   const displayName = extractHonoreeName(title, honoreeName);
   const displayDate = String(dateLabel || "").trim() || "Date TBD";
   const displayTime = String(timeLabel || "").trim();
-  const displayLocation = String(location || "").trim() || "Location TBD";
-  const directionsHref = buildMapsHref(location);
+  const displayPlanCopy = String(planCopy || "").trim();
+  const rawVenueName = String(venueName || "").trim();
+  const rawLocation = String(location || "").trim();
+  const splitLocation = rawVenueName ? null : splitVenueFromDisplayLocation(rawLocation);
+  const displayVenueName =
+    rawVenueName || splitLocation?.venueName || extractVenueFromPlanCopy(displayPlanCopy);
+  const displayLocation = (splitLocation?.address || rawLocation).trim() || "Location TBD";
+  const displayRsvpName = String(rsvpName || "").trim();
+  const displayRsvpTitle = displayRsvpName.replace(/^hosted\s+by\s+/i, "").trim() || "Host";
+  const directionsLocation = [
+    displayVenueName,
+    displayLocation !== "Location TBD" ? displayLocation : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const directionsHref = buildMapsHref(directionsLocation || location);
   const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail, title, shareUrl });
   const hasRsvpAction = Boolean(directRsvpHref);
-  const displayPlanCopy = String(planCopy || "").trim() || "Games, Food & Fun!";
   const displayAttire = String(attire || "").trim();
   const displayRegistryUrl = String(registryUrl || "").trim();
   const displayActivities = Array.isArray(activities)
-    ? activities
-        .map((item) => String(item || "").trim())
-        .filter(Boolean)
-        .slice(0, 4)
+    ? filterRenderedTextValues(
+        activities.map((item) => String(item || "").trim()).filter(Boolean),
+        [displayPlanCopy, displayAttire],
+      ).slice(0, 4)
     : [];
   const chipTextColor = ensureReadableTextColor(colors.accent, "#ffffff", { minContrast: 3 });
   const primaryTileTextColor = ensureReadableTextColor(colors.primary, "#ffffff", {
@@ -167,7 +225,46 @@ export default function BirthdaySkin({
   const secondaryTileTextColor = ensureReadableTextColor(colors.secondary, "#ffffff", {
     minContrast: 3,
   });
+  const pageIsDark = getLuminance(colors.background) < 0.36;
+  const neutralSurface = "#ffffff";
+  const neutralSurfaceTextColor = ensureReadableTextColor(neutralSurface, colors.text, {
+    minContrast: 4.5,
+  });
+  const neutralSurfaceMutedTextColor =
+    mixHexColors(neutralSurfaceTextColor, neutralSurface, 0.38) || neutralSurfaceTextColor;
+  const directionsButtonBackground = colors.primary;
+  const directionsButtonTextColor = ensureReadableTextColor(directionsButtonBackground, "#ffffff", {
+    minContrast: 4.5,
+  });
+  const planCardBackground =
+    mixHexColors(colors.background, "#ffffff", pageIsDark ? 0.14 : 0.12) || colors.background;
+  const planCardTextColor = ensureReadableTextColor(planCardBackground, colors.text, {
+    minContrast: 4.5,
+  });
+  const planCardMutedTextColor =
+    mixHexColors(planCardTextColor, planCardBackground, 0.42) || planCardTextColor;
+  const calendarModalButtonBackground = colors.primary;
+  const calendarModalButtonTextColor = ensureReadableTextColor(
+    calendarModalButtonBackground,
+    "#ffffff",
+    { minContrast: 4.5 },
+  );
   const detailIconSwatchColor = "var(--theme-primary)";
+  const displayOcrFacts = filterRenderedOcrFacts(normalizeOcrFacts(ocrFacts), [
+    displayName,
+    displayDate,
+    displayTime,
+    displayLocation,
+    displayPlanCopy,
+    displayAttire,
+    displayActivities,
+    displayRegistryUrl,
+    displayRsvpName,
+    rsvpPhone,
+    rsvpEmail,
+  ]);
+  const leftColumnOcrFacts = displayOcrFacts.slice(0, 2);
+  const rightColumnOcrFacts = displayOcrFacts.slice(2);
 
   useEffect(() => {
     if (previewMode) return;
@@ -285,68 +382,73 @@ export default function BirthdaySkin({
           </motion.button>
         </div>
 
-        <div className="max-w-6xl grid grid-cols-1 gap-6 md:grid-cols-4">
-          <motion.section
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="flex flex-col justify-between rounded-[3rem] border border-black/5 bg-white p-6 shadow-xl transition-shadow hover:shadow-2xl md:col-span-2 md:p-10"
-          >
-            <div className="space-y-8">
-              <InfoBlock
-                icon={<Calendar className="h-8 w-8" />}
-                swatchColor={detailIconSwatchColor}
-                label="When"
-                title={displayDate}
-              />
-
-              {displayTime ? (
-                <InfoBlock
-                  icon={<Clock className="h-8 w-8" />}
-                  swatchColor={detailIconSwatchColor}
-                  label="At"
-                  title={displayTime}
-                />
-              ) : null}
-
-              <InfoBlock
-                icon={<MapPin className="h-8 w-8" />}
-                swatchColor={detailIconSwatchColor}
-                label="The Spot"
-                title="Party Location"
-                subtitle={displayLocation}
-              />
-
-              {rsvpName || rsvpPhone || rsvpEmail ? (
-                <InfoBlock
-                  icon={<MessageSquare className="h-8 w-8" />}
-                  swatchColor={detailIconSwatchColor}
-                  label="RSVP to"
-                  title={String(rsvpName || rsvpEmail || "Host")}
-                  subtitle={
-                    String(rsvpEmail || rsvpPhone || "").trim() ||
-                    "Contact details available on request"
-                  }
-                  divider
-                />
-              ) : null}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (!directionsHref || previewMode) return;
-                window.open(directionsHref, "_blank", "noopener,noreferrer");
-              }}
-              disabled={!directionsHref || previewMode}
-              className="mt-12 w-full rounded-[2rem] py-6 text-sm font-bold uppercase tracking-widest text-white transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-              style={{ backgroundColor: "var(--theme-text)" }}
+        <div className="grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(390px,1.12fr)_minmax(0,1fr)] xl:grid-cols-[minmax(440px,1.15fr)_minmax(0,0.95fr)]">
+          <div className="grid gap-6">
+            <motion.section
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="self-start rounded-[2.6rem] border border-black/5 bg-white p-6 shadow-xl transition-shadow hover:shadow-2xl md:p-8"
             >
-              Get Directions
-            </button>
-          </motion.section>
+              <div className="space-y-6">
+                <InfoBlock
+                  icon={<Calendar className="h-7 w-7" />}
+                  swatchColor={detailIconSwatchColor}
+                  label="When"
+                  title={displayDate}
+                />
 
-          <div className="grid grid-cols-2 gap-6 md:col-span-2">
+                {displayTime ? (
+                  <InfoBlock
+                    icon={<Clock className="h-7 w-7" />}
+                    swatchColor={detailIconSwatchColor}
+                    label="At"
+                    title={displayTime}
+                  />
+                ) : null}
+
+                <InfoBlock
+                  icon={<MapPin className="h-7 w-7" />}
+                  swatchColor={detailIconSwatchColor}
+                  label="The Spot"
+                  title={displayVenueName || "Party Location"}
+                />
+
+                {rsvpName || rsvpPhone || rsvpEmail ? (
+                  <InfoBlock
+                    icon={<MessageSquare className="h-7 w-7" />}
+                    swatchColor={detailIconSwatchColor}
+                    label="RSVP to"
+                    title={displayRsvpTitle}
+                  />
+                ) : null}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!directionsHref || previewMode) return;
+                  window.open(directionsHref, "_blank", "noopener,noreferrer");
+                }}
+                disabled={!directionsHref || previewMode}
+                className="mt-8 w-full rounded-[1.6rem] py-5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  backgroundColor: directionsButtonBackground,
+                  color: directionsButtonTextColor,
+                }}
+              >
+                Get Directions
+              </button>
+            </motion.section>
+
+            <OcrFactCards
+              facts={leftColumnOcrFacts}
+              className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1"
+              cardClassName="rounded-[2rem] border border-black/5 bg-white p-6 shadow-sm"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
             <ActionTile
               icon={<CalendarPlus className="h-10 w-10" />}
               label="Save to Calendar"
@@ -368,29 +470,34 @@ export default function BirthdaySkin({
               />
             ) : null}
 
-            <motion.section
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="col-span-2 flex items-center justify-between gap-6 rounded-[3rem] border border-black/5 p-7 shadow-sm backdrop-blur-sm md:p-10"
-              style={{
-                backgroundColor:
-                  mixHexColors(colors.background, "#ffffff", 0.12) || colors.background,
-              }}
-            >
-              <div className="space-y-1">
-                <div className="text-[10px] font-black uppercase tracking-widest text-black/30">
-                  Plan of Action
-                </div>
-                <div className="text-2xl font-bold text-black/90">{displayPlanCopy}</div>
-              </div>
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
-                style={{ color: "var(--theme-secondary)" }}
+            {displayPlanCopy ? (
+              <motion.section
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="col-span-2 flex items-center justify-between gap-6 rounded-[3rem] border border-black/5 p-7 shadow-sm backdrop-blur-sm md:p-10"
+                style={{
+                  backgroundColor: planCardBackground,
+                  color: planCardTextColor,
+                }}
               >
-                <Sparkles className="h-6 w-6" />
-              </div>
-            </motion.section>
+                <div className="space-y-1">
+                  <div
+                    className="text-[10px] font-black uppercase tracking-widest"
+                    style={{ color: planCardMutedTextColor }}
+                  >
+                    Plan of Action
+                  </div>
+                  <div className="text-2xl font-bold">{displayPlanCopy}</div>
+                </div>
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
+                  style={{ color: "var(--theme-secondary)" }}
+                >
+                  <Sparkles className="h-6 w-6" />
+                </div>
+              </motion.section>
+            ) : null}
             {displayAttire ? (
               <motion.section
                 initial={{ y: 20, opacity: 0 }}
@@ -439,6 +546,10 @@ export default function BirthdaySkin({
                 </ul>
               </motion.section>
             ) : null}
+            <OcrFactCards
+              facts={rightColumnOcrFacts}
+              cardClassName="col-span-1 rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:col-span-1"
+            />
           </div>
         </div>
 
@@ -470,7 +581,8 @@ export default function BirthdaySkin({
               exit={{ scale: 0.5, y: 100, opacity: 0 }}
               className="relative w-full max-w-sm rounded-[3.5rem] p-10 text-center shadow-2xl"
               style={{
-                backgroundColor: "#ffffff",
+                backgroundColor: neutralSurface,
+                color: neutralSurfaceTextColor,
               }}
             >
               <div
@@ -482,9 +594,7 @@ export default function BirthdaySkin({
               >
                 <Calendar className="h-10 w-10" />
               </div>
-              <h3 className="serif mb-8 text-2xl font-bold" style={{ color: "var(--theme-text)" }}>
-                Ready to Party?
-              </h3>
+              <h3 className="serif mb-8 text-2xl font-bold">Ready to Party?</h3>
               <div className="space-y-4">
                 <CalendarModalLink
                   href={calendarLinks.google}
@@ -506,16 +616,20 @@ export default function BirthdaySkin({
                     if (previewMode || !url) return;
                     window.open(url, "_blank", "noopener,noreferrer");
                   }}
-                  className="block w-full rounded-[1.8rem] py-5 text-xs font-bold uppercase tracking-widest text-white transition-transform hover:scale-105"
-                  style={{ backgroundColor: "var(--theme-text)" }}
+                  className="block w-full rounded-[1.8rem] py-5 text-xs font-bold uppercase tracking-widest transition-transform hover:scale-105"
+                  style={{
+                    backgroundColor: calendarModalButtonBackground,
+                    color: calendarModalButtonTextColor,
+                  }}
                 >
-                  ICS File
+                  Apple
                 </button>
               </div>
               <button
                 type="button"
                 onClick={() => setShowCalendarMenu(false)}
-                className="mt-8 text-[10px] font-bold uppercase tracking-widest text-black/30 transition-opacity hover:text-black/70"
+                className="mt-8 text-[10px] font-bold uppercase tracking-widest transition-opacity"
+                style={{ color: neutralSurfaceMutedTextColor }}
               >
                 Maybe later
               </button>

@@ -27,6 +27,8 @@ export function llmEventToRawText(payload: any): string {
     parts.push(payload.rsvpUrl.trim());
   if (typeof payload?.rsvpDeadline === "string" && payload.rsvpDeadline.trim())
     parts.push(`RSVP by ${payload.rsvpDeadline.trim()}`);
+  if (typeof payload?.hostName === "string" && payload.hostName.trim())
+    parts.push(`Hosted by ${payload.hostName.trim()}`);
   if (Array.isArray(payload?.activities)) {
     const activities = payload.activities
       .map((item: unknown) => (typeof item === "string" ? item.trim() : ""))
@@ -37,6 +39,18 @@ export function llmEventToRawText(payload: any): string {
     parts.push(`Dress code: ${payload.attire.trim()}`);
   if (typeof payload?.registryUrl === "string" && payload.registryUrl.trim())
     parts.push(payload.registryUrl.trim());
+  if (Array.isArray(payload?.ocrFacts)) {
+    const facts = payload.ocrFacts
+      .map((item: unknown) =>
+        item && typeof item === "object"
+          ? [String((item as any).label || "").trim(), String((item as any).value || "").trim()]
+              .filter(Boolean)
+              .join(": ")
+          : "",
+      )
+      .filter(Boolean);
+    if (facts.length) parts.push(facts.join("\n"));
+  }
   if (typeof payload?.goodToKnow === "string" && payload.goodToKnow.trim())
     parts.push(payload.goodToKnow.trim());
   return parts.join("\n").trim();
@@ -121,7 +135,11 @@ export async function llmExtractEventFromImage(
       log(">>> OpenAI extracted data:", parsed);
       log(">>> OpenAI title:", parsed.title);
       log(">>> OpenAI description:", parsed.description);
-      if (parsed.title && /birthday/i.test(parsed.title) && !/\d{1,2}(st|nd|rd|th)/i.test(parsed.title)) {
+      if (
+        parsed.title &&
+        /birthday/i.test(parsed.title) &&
+        !/\d{1,2}(st|nd|rd|th)/i.test(parsed.title)
+      ) {
         log(">>> ⚠️ WARNING: Birthday title is missing age ordinal:", parsed.title);
       }
       return parsed;

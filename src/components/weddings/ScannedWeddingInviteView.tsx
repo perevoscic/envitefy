@@ -1,8 +1,8 @@
 "use client";
 
+import { Calendar, Clock, Download, MapPin, Share2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, Clock, Download, MapPin, Share2 } from "lucide-react";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import {
   EVENT_SKIN_ACTIONS_CLASS,
@@ -11,7 +11,9 @@ import {
   EVENT_SKIN_FOOTER_TEXT_CLASS,
   EVENT_SKIN_HERO_TOP_PADDING_CLASS,
 } from "@/components/event-skin-layout";
+import OcrFactCards from "@/components/OcrFactCards";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
+import { filterRenderedOcrFacts, normalizeOcrFacts, type OcrFact } from "@/lib/ocr/facts";
 import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
 import {
   DEFAULT_WEDDING_SCAN_FLYER_COLORS,
@@ -74,6 +76,7 @@ type Props = {
   rsvpDeadline?: string | null;
   registryCards?: ScannedWeddingRegistryCard[];
   scheduleRows?: ScheduleRowItem[];
+  ocrFacts?: OcrFact[] | null;
   previewMode?: boolean;
   showRsvpPreview?: boolean;
   rsvpPreviewText?: string | null;
@@ -100,6 +103,7 @@ export default function ScannedWeddingInviteView({
   rsvpDeadline,
   registryCards = [],
   scheduleRows = [],
+  ocrFacts,
   previewMode = false,
   showRsvpPreview = false,
   rsvpPreviewText,
@@ -133,6 +137,17 @@ export default function ScannedWeddingInviteView({
   const sectionBackground = isNoirModern ? "rgba(9, 12, 20, 0.82)" : "rgba(255,255,255,0.9)";
   const actionBackground = isNoirModern ? "rgba(10,14,24,0.9)" : "#ffffff";
   const asideBackground = isNoirModern ? "rgba(9, 12, 20, 0.94)" : "#ffffff";
+  const displayOcrFacts = filterRenderedOcrFacts(normalizeOcrFacts(ocrFacts), [
+    scheduleRows.map((row) => row.title),
+    scheduleRows.map((row) => row.time),
+    registryCards.map((card) => card.url),
+    registryCards.map((card) => card.host),
+    rsvpName,
+    rsvpPhone,
+    rsvpEmail,
+    rsvpUrl,
+    rsvpDeadline,
+  ]);
   const headlineFontFamily = isNoirModern
     ? 'var(--font-geist-sans), "Helvetica Neue", Arial, sans-serif'
     : 'var(--font-playfair), "Times New Roman", serif';
@@ -548,6 +563,16 @@ export default function ScannedWeddingInviteView({
               </div>
             </section>
           ) : null}
+
+          <OcrFactCards
+            facts={displayOcrFacts}
+            className="grid grid-cols-1 gap-5 md:grid-cols-2"
+            cardClassName="rounded-[2rem] p-6 shadow-[0_18px_58px_rgba(37,26,10,0.08)] backdrop-blur"
+            labelColor={colors.accent}
+            valueColor={isNoirModern ? "rgba(255,255,255,0.88)" : "rgba(0,0,0,0.82)"}
+            backgroundColor={sectionBackground}
+            borderColor={thinBorderColor}
+          />
         </div>
 
         <aside className="lg:col-span-4 lg:sticky lg:top-10">
@@ -674,7 +699,7 @@ export default function ScannedWeddingInviteView({
               />
               <CalendarLinkRow
                 href={calendarLinks.appleInline}
-                label="Apple Calendar"
+                label="Apple"
                 tone="#111827"
                 onChoose={() => setShowCalendarMenu(false)}
               />

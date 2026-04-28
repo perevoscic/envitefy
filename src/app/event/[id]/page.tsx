@@ -11,8 +11,6 @@ import AccessCodeGate from "@/components/AccessCodeGate";
 import AppleCalendarLink from "@/components/AppleCalendarLink";
 import BasketballSkin from "@/components/BasketballSkin";
 import BirthdaySkin from "@/components/BirthdaySkin";
-import GraduationSkin from "@/components/GraduationSkin";
-import ScannedInviteSkin from "@/components/ScannedInviteSkin";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
 import {
   CalendarIconApple,
@@ -24,15 +22,18 @@ import EventDeleteModal from "@/components/EventDeleteModal";
 import EventMap from "@/components/EventMap";
 import EventRsvpDashboard from "@/components/EventRsvpDashboard";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
+import FootballSkin from "@/components/FootballSkin";
+import GraduationSkin from "@/components/GraduationSkin";
 import { isGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
 import LocationLink from "@/components/LocationLink";
+import PickleballSkin from "@/components/PickleballSkin";
+import ScannedInviteSkin from "@/components/ScannedInviteSkin";
 import SponsoredSupplies from "@/components/SponsoredSupplies";
 import ThumbnailModal from "@/components/ThumbnailModal";
-import { absoluteUrl } from "@/lib/absolute-url";
+import { absoluteUrl, sanitizePersistedMediaUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { isScannedInviteCreatedVia, normalizeDashboardEventOwnership } from "@/lib/dashboard-data";
-import { isGymDiscoveryV2EventData } from "@/lib/discovery/event-data";
 import {
   acceptEventShare,
   getEventHistoryPublicRenderBySlugOrId,
@@ -42,25 +43,28 @@ import {
   isEventSharePendingForUser,
   revokeEventShare,
 } from "@/lib/db";
+import { isGymDiscoveryV2EventData } from "@/lib/discovery/event-data";
 import { redactDiscoverySourceForPublicView } from "@/lib/discovery-public-redact";
 import { getEventAccessCookieName, verifyEventAccessCookieValue } from "@/lib/event-access";
 import { getEventTheme } from "@/lib/event-theme";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
+import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
 import {
   isBasketballOcrSkinCandidate,
+  isFootballOcrSkinCandidate,
   isOcrInviteCategory,
+  isPickleballOcrSkinCandidate,
   normalizeOcrSkinSelection,
 } from "@/lib/ocr/skin";
 import { createServerTimingTracker } from "@/lib/server-timing";
 import { resolveEventPageBackgroundColor, resolveEventThemeColor } from "@/lib/theme-color";
+import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
 import {
-  buildWeddingScanSchedule,
   buildWeddingScanFlyerColorsFromImageColors,
+  buildWeddingScanSchedule,
   normalizeWeddingFlyerColors,
 } from "@/lib/wedding-scan";
-import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
-import { sanitizePersistedMediaUrl } from "@/lib/absolute-url";
 import type { SignupForm } from "@/types/signup";
 import { decorateAmazonUrl } from "@/utils/affiliates";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
@@ -113,13 +117,7 @@ const DiscoveryEventEditLayout = nextDynamic(
   { loading: () => null },
 );
 
-function EventPageBackgroundStyle({
-  color,
-  children,
-}: {
-  color: string;
-  children: ReactNode;
-}) {
+function EventPageBackgroundStyle({ color, children }: { color: string; children: ReactNode }) {
   return (
     <>
       <style>{`:root{--event-page-background-color:${color};}`}</style>
@@ -174,7 +172,9 @@ export async function generateMetadata(props: {
   const img = await absoluteUrl(`/event/${encodeURIComponent(awaitedParams.id)}/opengraph-image`);
 
   // Generate canonical URL
-  const canonicalPath = row ? buildEventPath(row.id, title) : `/event/${encodeURIComponent(awaitedParams.id)}`;
+  const canonicalPath = row
+    ? buildEventPath(row.id, title)
+    : `/event/${encodeURIComponent(awaitedParams.id)}`;
   const url = await absoluteUrl(canonicalPath);
 
   if (timing.enabled) {
@@ -332,11 +332,7 @@ const collapseDuplicateRangeLabel = (label: string | null | undefined): string |
   const parts = trimmed.split(/\s+[–-]\s+/);
   if (parts.length !== 2) return trimmed;
   const normalize = (value: string) =>
-    value
-      .trim()
-      .toLowerCase()
-      .replace(/[.,]/g, "")
-      .replace(/\s+/g, " ");
+    value.trim().toLowerCase().replace(/[.,]/g, "").replace(/\s+/g, " ");
   return normalize(parts[0]) === normalize(parts[1]) ? parts[0].trim() : trimmed;
 };
 
@@ -351,7 +347,8 @@ const shouldHideInferredOcrEndTime = (
   endInput: string | null | undefined,
 ): boolean => {
   if (!payload || !startInput || !endInput || Boolean(payload.allDay)) return false;
-  const createdVia = typeof payload.createdVia === "string" ? payload.createdVia.trim().toLowerCase() : "";
+  const createdVia =
+    typeof payload.createdVia === "string" ? payload.createdVia.trim().toLowerCase() : "";
   if (!createdVia.startsWith("ocr")) return false;
   const hints = [
     payload.time,
@@ -420,7 +417,8 @@ const shouldHideMissingOcrStartTime = (
   startInput: string | null | undefined,
 ): boolean => {
   if (!payload || !startInput || Boolean(payload.allDay)) return false;
-  const createdVia = typeof payload.createdVia === "string" ? payload.createdVia.trim().toLowerCase() : "";
+  const createdVia =
+    typeof payload.createdVia === "string" ? payload.createdVia.trim().toLowerCase() : "";
   if (!createdVia.startsWith("ocr")) return false;
   if (payload.timeFound === true) return false;
   if (payload.timeFound === false) return true;
@@ -485,7 +483,10 @@ function formatTimeAndDate(
     let date: string | null = null;
 
     if (hideTime) {
-      date = end && !sameDay ? `${dateFmt.format(start)} – ${dateFmt.format(end)}` : dateFmt.format(start);
+      date =
+        end && !sameDay
+          ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
+          : dateFmt.format(start);
     } else if (end) {
       if (sameDay) {
         time = `${timeFmt.format(start)} – ${timeFmt.format(end)}`;
@@ -614,7 +615,9 @@ function formatEventRangeDisplay(
       timeZone: tz,
     });
     if (hideTime) {
-      return end && !sameDay ? `${dateFmt.format(start)} – ${dateFmt.format(end)}` : dateFmt.format(start);
+      return end && !sameDay
+        ? `${dateFmt.format(start)} – ${dateFmt.format(end)}`
+        : dateFmt.format(start);
     }
     const timeFmt = new Intl.DateTimeFormat(undefined, {
       hour: "numeric",
@@ -1102,7 +1105,8 @@ export default async function EventPage({
     data as Record<string, unknown>,
     startForDisplay,
   );
-  const endForDisplayLabel = hideInferredOcrEndTime || hideMissingOcrStartTime ? null : endForDisplay;
+  const endForDisplayLabel =
+    hideInferredOcrEndTime || hideMissingOcrStartTime ? null : endForDisplay;
   const formattedTimeAndDateBase = formatTimeAndDate(startForDisplay, endForDisplayLabel, {
     timeZone: (typeof data?.timezone === "string" && data.timezone) || undefined,
     allDay: Boolean(data?.allDay),
@@ -1182,8 +1186,7 @@ export default async function EventPage({
       : typeof rsvpRecord?.link === "string" && rsvpRecord.link.trim()
         ? normalizeUrlValue(rsvpRecord.link.trim()) || ""
         : "";
-  const rsvpField =
-    typeof data?.rsvp === "string" ? data.rsvp : structuredRsvpContact || "";
+  const rsvpField = typeof data?.rsvp === "string" ? data.rsvp : structuredRsvpContact || "";
   const aggregateContactText = `${rsvpField} ${structuredRsvpUrl} ${
     (data?.description as string | undefined) || ""
   } ${(data?.location as string | undefined) || ""}`.trim();
@@ -1200,12 +1203,20 @@ export default async function EventPage({
     (typeof data?.rsvpDeadline === "string" && data.rsvpDeadline.trim()) ||
     "";
 
-  const rsvpContactSource = structuredRsvpContact || rsvpField || rsvpEmail || "";
+  const hostName =
+    typeof data?.hostName === "string" && data.hostName.trim() ? data.hostName.trim() : "";
+  const storedRsvpName =
+    typeof data?.rsvpName === "string" && data.rsvpName.trim() ? data.rsvpName.trim() : "";
+  const rsvpContactSource =
+    storedRsvpName || hostName || structuredRsvpContact || rsvpField || rsvpEmail || "";
   // Extract just the name from RSVP field (remove "RSVP:" prefix, phone number, and option text)
   const rsvpNameRaw = rsvpContactSource
     ? rsvpContactSource
         .replace(/^RSVP:?\s*/i, "") // Remove "RSVP:" or "RSVP" prefix
-        .replace(/\b(?:rsvp|respond|reply)\s+by\s+[A-Z][a-z]+\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:,\s*\d{4})?(?:\s+at)?/gi, "")
+        .replace(
+          /\b(?:rsvp|respond|reply)\s+by\s+[A-Z][a-z]+\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:,\s*\d{4})?(?:\s+at)?/gi,
+          "",
+        )
         .replace(/\bhttps?:\/\/\S+\b/gi, "")
         .replace(/\bwww\.\S+\b/gi, "")
         .replace(/\b[a-z0-9-]+\.(?:com|net|org|io|co|us|info|wedding|events)(?:\/\S*)?\b/gi, "")
@@ -1213,7 +1224,8 @@ export default async function EventPage({
         .replace(/\(\d{3}\)\s*\d{3}[-.\s]?\d{4}/g, "") // Remove (555) 123-4567 format
         .trim()
     : "";
-  const rsvpName = rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "";
+  const rsvpName =
+    storedRsvpName || hostName || (rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "");
   const userName = ((session as any)?.user?.name as string | undefined) || "";
   const _smsIntroParts = [
     "Hi, there,",
@@ -1466,6 +1478,47 @@ export default async function EventPage({
   const isWeddingTemplate = templateId && variationId && categoryNormalized === "weddings";
   const isScannedWeddingInviteEvent =
     categoryNormalized === "weddings" && isScannedInviteEvent && isOcrEvent;
+  const isScannedPickleballInviteEvent =
+    categoryNormalized !== "birthdays" &&
+    categoryNormalized !== "weddings" &&
+    isScannedInviteEvent &&
+    isOcrEvent &&
+    (String((data as any)?.ocrSkin?.sportKind || "").toLowerCase() === "pickleball" ||
+      createdVia === "ocr-pickleball-skin" ||
+      ((categoryNormalized === "sport events" ||
+        categoryNormalized === "sport event" ||
+        categoryNormalized === "general events" ||
+        categoryNormalized === "general event" ||
+        categoryNormalized === "pickleball") &&
+        isPickleballOcrSkinCandidate({
+          category: categoryRaw,
+          title,
+          description: [
+            (data as any)?.description,
+            (data as any)?.goodToKnow,
+            (data as any)?.thingsToDo,
+          ]
+            .filter(Boolean)
+            .join(" "),
+          activities: (data as any)?.activities,
+        })));
+  const isScannedFootballInviteEvent =
+    categoryNormalized !== "birthdays" &&
+    categoryNormalized !== "weddings" &&
+    isScannedInviteEvent &&
+    isOcrEvent &&
+    (String((data as any)?.ocrSkin?.category || "").toLowerCase() === "football" ||
+      ((categoryNormalized === "sport events" ||
+        categoryNormalized === "sport event" ||
+        categoryNormalized === "general events" ||
+        categoryNormalized === "general event" ||
+        categoryNormalized === "football") &&
+        isFootballOcrSkinCandidate({
+          category: categoryRaw,
+          title,
+          description: (data as any)?.description,
+          activities: (data as any)?.activities,
+        })));
   const isScannedBasketballInviteEvent =
     categoryNormalized !== "birthdays" &&
     categoryNormalized !== "weddings" &&
@@ -1493,6 +1546,15 @@ export default async function EventPage({
     templateId &&
     !isBirthdayTemplate &&
     !isWeddingTemplate;
+  const scannedInviteOcrFacts = mergeOcrFacts(
+    normalizeOcrFacts((data as any)?.ocrFacts),
+    buildOcrFacts([
+      { label: "Good to Know", value: (data as any)?.goodToKnow },
+      { label: "Details", value: (data as any)?.thingsToDo },
+      { label: "Dress Code", value: (data as any)?.attire },
+      { label: "Host", value: (data as any)?.hostName },
+    ]),
+  );
 
   const shouldRenderFootballPage =
     Boolean(isFootballDiscoveryTemplate) || Boolean(isFootballSeasonTemplate);
@@ -1509,7 +1571,7 @@ export default async function EventPage({
       (typeof data?.goodToKnow === "string" && data.goodToKnow.trim()) ||
       (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||
       (typeof data?.description === "string" && data.description.trim()) ||
-      "Games, food & fun!";
+      null;
     const birthdayActivities = Array.isArray((data as any)?.activities)
       ? ((data as any).activities as unknown[])
           .map((item) => (typeof item === "string" ? item.trim() : ""))
@@ -1531,7 +1593,8 @@ export default async function EventPage({
         }
         dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
-        location={locationText || venueText || null}
+        venueName={venueText || null}
+        location={locationText || null}
         imageUrl={scannedBirthdayImageUrl}
         shareUrl={shareUrl}
         calendarLinks={calendarLinks}
@@ -1546,6 +1609,7 @@ export default async function EventPage({
         activities={birthdayActivities}
         attire={birthdayAttire}
         registryUrl={birthdayRegistryUrl}
+        ocrFacts={scannedInviteOcrFacts}
         actions={
           !isReadOnly &&
           isOwner && (
@@ -1735,24 +1799,22 @@ export default async function EventPage({
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
         : headerImageUrl;
-    const scannedWeddingActions =
-      !isReadOnly &&
-      isOwner && (
-        <div className="flex items-center gap-2 text-sm font-medium sm:gap-3">
-          <EventDeleteModal eventId={row.id} eventTitle={title} />
-          <EventActions
-            shareUrl={shareUrl}
-            event={data as any}
-            calendarTitle={title}
-            historyId={!isReadOnly ? row.id : undefined}
-            className=""
-            variant="compact"
-            tone={"default" as any}
-            showCalendar={false}
-            showEmail={false}
-          />
-        </div>
-      );
+    const scannedWeddingActions = !isReadOnly && isOwner && (
+      <div className="flex items-center gap-2 text-sm font-medium sm:gap-3">
+        <EventDeleteModal eventId={row.id} eventTitle={title} />
+        <EventActions
+          shareUrl={shareUrl}
+          event={data as any}
+          calendarTitle={title}
+          historyId={!isReadOnly ? row.id : undefined}
+          className=""
+          variant="compact"
+          tone={"default" as any}
+          showCalendar={false}
+          showEmail={false}
+        />
+      </div>
+    );
 
     return renderWithEventPageBackground(
       <ScannedWeddingInviteView
@@ -1774,8 +1836,188 @@ export default async function EventPage({
         rsvpUrl={rsvpUrl}
         rsvpDeadline={rsvpDeadline || null}
         registryCards={registryCards}
+        ocrFacts={scannedInviteOcrFacts}
         showPublicShareAction={!isReadOnly && canManageCreatedEvent}
         actions={scannedWeddingActions}
+      />,
+    );
+  }
+
+  if (isScannedPickleballInviteEvent) {
+    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "general", undefined, {
+      title,
+      sportKind: "pickleball",
+    });
+    const scannedInviteImageUrl =
+      attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
+        ? attachmentInfo.dataUrl
+        : headerImageUrl;
+    const scannedInviteDetailCopy =
+      (typeof data?.goodToKnow === "string" && data.goodToKnow.trim()) ||
+      (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||
+      (typeof data?.description === "string" && data.description.trim()) ||
+      null;
+    const scannedInviteActivities = Array.isArray((data as any)?.activities)
+      ? ((data as any).activities as unknown[])
+          .map((item) => (typeof item === "string" ? item.trim() : ""))
+          .filter(Boolean)
+      : [];
+    const scannedInviteAttire =
+      typeof (data as any)?.attire === "string" && (data as any).attire.trim()
+        ? ((data as any).attire as string).trim()
+        : null;
+    const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
+    const scannedInviteActions = !isReadOnly && isOwner && (
+      <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
+        {canManageCreatedEvent && (
+          <Link
+            href={buildEditLink(row.id, data, title)}
+            className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+            title="Edit event"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            <span className="hidden sm:inline">Edit</span>
+          </Link>
+        )}
+        <EventDeleteModal eventId={row.id} eventTitle={title} />
+        <EventActions
+          shareUrl={shareUrl}
+          event={data as any}
+          calendarTitle={title}
+          historyId={!isReadOnly ? row.id : undefined}
+          className=""
+          variant="compact"
+          tone={"default" as any}
+          showCalendar={false}
+          showEmail={false}
+        />
+      </div>
+    );
+
+    return renderWithEventPageBackground(
+      <PickleballSkin
+        title={title}
+        dateLabel={scannedInviteDateLabel || whenLabel || null}
+        timeLabel={formattedTimeAndDate.time || null}
+        location={locationText || venueText || null}
+        imageUrl={scannedInviteImageUrl}
+        shareUrl={shareUrl}
+        calendarLinks={calendarLinks}
+        categoryLabel={categoryRaw || null}
+        skinId={ocrSkin?.skinId || null}
+        palette={ocrSkin?.palette || null}
+        background={ocrSkin?.background || null}
+        rsvpName={rsvpName}
+        rsvpPhone={rsvpPhone}
+        rsvpEmail={rsvpEmail}
+        rsvpUrl={rsvpUrl}
+        detailCopy={scannedInviteDetailCopy}
+        activities={scannedInviteActivities}
+        attire={scannedInviteAttire}
+        registryUrl={scannedInviteRegistryUrl}
+        ocrFacts={scannedInviteOcrFacts}
+        actions={scannedInviteActions}
+      />,
+    );
+  }
+
+  if (isScannedFootballInviteEvent) {
+    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "football", undefined, {
+      title,
+    });
+    const scannedInviteImageUrl =
+      attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
+        ? attachmentInfo.dataUrl
+        : headerImageUrl;
+    const scannedInviteDetailCopy =
+      (typeof data?.goodToKnow === "string" && data.goodToKnow.trim()) ||
+      (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||
+      (typeof data?.description === "string" && data.description.trim()) ||
+      null;
+    const scannedInviteActivities = Array.isArray((data as any)?.activities)
+      ? ((data as any).activities as unknown[])
+          .map((item) => (typeof item === "string" ? item.trim() : ""))
+          .filter(Boolean)
+      : [];
+    const scannedInviteAttire =
+      typeof (data as any)?.attire === "string" && (data as any).attire.trim()
+        ? ((data as any).attire as string).trim()
+        : null;
+    const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
+    const scannedInviteActions = !isReadOnly && isOwner && (
+      <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
+        {canManageCreatedEvent && (
+          <Link
+            href={buildEditLink(row.id, data, title)}
+            className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+            title="Edit event"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            <span className="hidden sm:inline">Edit</span>
+          </Link>
+        )}
+        <EventDeleteModal eventId={row.id} eventTitle={title} />
+        <EventActions
+          shareUrl={shareUrl}
+          event={data as any}
+          calendarTitle={title}
+          historyId={!isReadOnly ? row.id : undefined}
+          className=""
+          variant="compact"
+          tone={"default" as any}
+          showCalendar={false}
+          showEmail={false}
+        />
+      </div>
+    );
+
+    return renderWithEventPageBackground(
+      <FootballSkin
+        title={title}
+        dateLabel={scannedInviteDateLabel || whenLabel || null}
+        timeLabel={formattedTimeAndDate.time || null}
+        location={locationText || venueText || null}
+        imageUrl={scannedInviteImageUrl}
+        shareUrl={shareUrl}
+        calendarLinks={calendarLinks}
+        categoryLabel={categoryRaw || null}
+        skinId={ocrSkin?.skinId || null}
+        palette={ocrSkin?.palette || null}
+        background={ocrSkin?.background || null}
+        rsvpName={rsvpName}
+        rsvpPhone={rsvpPhone}
+        rsvpEmail={rsvpEmail}
+        rsvpUrl={rsvpUrl}
+        detailCopy={scannedInviteDetailCopy}
+        activities={scannedInviteActivities}
+        attire={scannedInviteAttire}
+        registryUrl={scannedInviteRegistryUrl}
+        ocrFacts={scannedInviteOcrFacts}
+        actions={scannedInviteActions}
       />,
     );
   }
@@ -1803,46 +2045,44 @@ export default async function EventPage({
         ? ((data as any).attire as string).trim()
         : null;
     const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
-    const scannedInviteActions =
-      !isReadOnly &&
-      isOwner && (
-        <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
-          {canManageCreatedEvent && (
-            <Link
-              href={buildEditLink(row.id, data, title)}
-              className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
-              title="Edit event"
+    const scannedInviteActions = !isReadOnly && isOwner && (
+      <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
+        {canManageCreatedEvent && (
+          <Link
+            href={buildEditLink(row.id, data, title)}
+            className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+            title="Edit event"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              <span className="hidden sm:inline">Edit</span>
-            </Link>
-          )}
-          <EventDeleteModal eventId={row.id} eventTitle={title} />
-          <EventActions
-            shareUrl={shareUrl}
-            event={data as any}
-            calendarTitle={title}
-            historyId={!isReadOnly ? row.id : undefined}
-            className=""
-            variant="compact"
-            tone={"default" as any}
-            showCalendar={false}
-            showEmail={false}
-          />
-        </div>
-      );
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            <span className="hidden sm:inline">Edit</span>
+          </Link>
+        )}
+        <EventDeleteModal eventId={row.id} eventTitle={title} />
+        <EventActions
+          shareUrl={shareUrl}
+          event={data as any}
+          calendarTitle={title}
+          historyId={!isReadOnly ? row.id : undefined}
+          className=""
+          variant="compact"
+          tone={"default" as any}
+          showCalendar={false}
+          showEmail={false}
+        />
+      </div>
+    );
 
     return renderWithEventPageBackground(
       <BasketballSkin
@@ -1853,6 +2093,7 @@ export default async function EventPage({
         imageUrl={scannedInviteImageUrl}
         shareUrl={shareUrl}
         calendarLinks={calendarLinks}
+        categoryLabel={categoryRaw || null}
         skinId={ocrSkin?.skinId || null}
         palette={ocrSkin?.palette || null}
         background={ocrSkin?.background || null}
@@ -1864,6 +2105,7 @@ export default async function EventPage({
         activities={scannedInviteActivities}
         attire={scannedInviteAttire}
         registryUrl={scannedInviteRegistryUrl}
+        ocrFacts={scannedInviteOcrFacts}
         actions={scannedInviteActions}
       />,
     );
@@ -1904,46 +2146,44 @@ export default async function EventPage({
     const isBasketballInvite = /\bbasketball\b|\bopen run\b|\bpickup\b|\b3v3\b|\b5v5\b/.test(
       basketballContextText,
     );
-    const scannedInviteActions =
-      !isReadOnly &&
-      isOwner && (
-        <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
-          {canManageCreatedEvent && (
-            <Link
-              href={buildEditLink(row.id, data, title)}
-              className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
-              title="Edit event"
+    const scannedInviteActions = !isReadOnly && isOwner && (
+      <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
+        {canManageCreatedEvent && (
+          <Link
+            href={buildEditLink(row.id, data, title)}
+            className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+            title="Edit event"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              <span className="hidden sm:inline">Edit</span>
-            </Link>
-          )}
-          <EventDeleteModal eventId={row.id} eventTitle={title} />
-          <EventActions
-            shareUrl={shareUrl}
-            event={data as any}
-            calendarTitle={title}
-            historyId={!isReadOnly ? row.id : undefined}
-            className=""
-            variant="compact"
-            tone={"default" as any}
-            showCalendar={false}
-            showEmail={false}
-          />
-        </div>
-      );
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            <span className="hidden sm:inline">Edit</span>
+          </Link>
+        )}
+        <EventDeleteModal eventId={row.id} eventTitle={title} />
+        <EventActions
+          shareUrl={shareUrl}
+          event={data as any}
+          calendarTitle={title}
+          historyId={!isReadOnly ? row.id : undefined}
+          className=""
+          variant="compact"
+          tone={"default" as any}
+          showCalendar={false}
+          showEmail={false}
+        />
+      </div>
+    );
 
     if (categoryNormalized === "graduations") {
       return renderWithEventPageBackground(
@@ -1966,6 +2206,7 @@ export default async function EventPage({
           activities={scannedInviteActivities}
           attire={scannedInviteAttire}
           registryUrl={scannedInviteRegistryUrl}
+          ocrFacts={scannedInviteOcrFacts}
           actions={scannedInviteActions}
         />,
       );
@@ -1981,6 +2222,7 @@ export default async function EventPage({
           imageUrl={scannedInviteImageUrl}
           shareUrl={shareUrl}
           calendarLinks={calendarLinks}
+          categoryLabel={categoryRaw || null}
           skinId={ocrSkin?.skinId || null}
           palette={ocrSkin?.palette || null}
           background={ocrSkin?.background || null}
@@ -1992,6 +2234,7 @@ export default async function EventPage({
           activities={scannedInviteActivities}
           attire={scannedInviteAttire}
           registryUrl={scannedInviteRegistryUrl}
+          ocrFacts={scannedInviteOcrFacts}
           actions={scannedInviteActions}
         />,
       );
@@ -2018,6 +2261,7 @@ export default async function EventPage({
         activities={scannedInviteActivities}
         attire={scannedInviteAttire}
         registryUrl={scannedInviteRegistryUrl}
+        ocrFacts={scannedInviteOcrFacts}
         actions={scannedInviteActions}
       />,
     );

@@ -59,6 +59,25 @@ test("toDashboardEvent keeps OCR-created rows owned without invite markers", () 
   assert.equal(event?.ownership, "owned");
 });
 
+test("toDashboardEvent groups basketball OCR scans as sport events", () => {
+  const event = toDashboardEvent({
+    id: "evt_basketball_scan",
+    title: "Pickup Basketball Community Open Run",
+    created_at: "2026-03-23T12:00:00.000Z",
+    data: {
+      startAt: "2026-07-12T18:30:00.000Z",
+      category: "General Events",
+      createdVia: "ocr-basketball-skin",
+      ocrSkin: {
+        category: "basketball",
+      },
+    },
+  });
+
+  assert.ok(event);
+  assert.equal(event?.category, "Sport Events");
+});
+
 test("toDashboardEvent marks events without RSVP fields as not RSVP actionable", () => {
   const event = toDashboardEvent({
     id: "evt_no_rsvp",

@@ -2,12 +2,12 @@
 
 import { useMemo } from "react";
 import {
-  resolveOcrSkinBackground,
   type OcrSkinBackground,
   type OcrSkinBackgroundObjectKind,
   type OcrSkinCategory,
   type OcrSkinId,
   type OcrSkinPalette,
+  resolveOcrSkinBackground,
 } from "@/lib/ocr/skin-background";
 
 type Palette = Partial<OcrSkinPalette> | null | undefined;
@@ -16,6 +16,7 @@ type Props = {
   category: OcrSkinCategory | string;
   title: string;
   skinId?: OcrSkinId | string | null;
+  sportKind?: string | null;
   palette?: Palette;
   background?: OcrSkinBackground | null;
   darkMode?: boolean;
@@ -100,8 +101,17 @@ function buildItems(spec: OcrSkinBackground, darkMode: boolean): MotifItem[] {
       kind === "frame-corner" ||
       kind === "banner" ||
       kind === "basketball" ||
+      kind === "football" ||
+      kind === "helmet" ||
+      kind === "goalpost" ||
+      kind === "field-line" ||
+      kind === "stadium-light" ||
+      kind === "pickleball" ||
+      kind === "paddle" ||
       kind === "hoop" ||
-      kind === "court-line";
+      kind === "court-line" ||
+      kind === "sneaker" ||
+      kind === "net-line";
     return {
       kind,
       x: position.x,
@@ -291,20 +301,130 @@ function renderMotif(item: MotifItem, index: number) {
     case "basketball":
       return (
         <g key={index} transform={transform} opacity={item.opacity}>
-          <circle cx={0} cy={0} r={s * 0.52} fill={item.color} />
+          <circle
+            cx={0}
+            cy={0}
+            r={s * 0.55}
+            fill={item.color}
+            stroke="rgba(0,0,0,0.22)"
+            strokeWidth={0.12}
+            vectorEffect="non-scaling-stroke"
+          />
           <path
-            d={`M ${-s * 0.52} 0 H ${s * 0.52} M 0 ${-s * 0.52} V ${s * 0.52}`}
-            stroke="rgba(255,255,255,0.55)"
-            strokeWidth={0.16}
+            d={`M ${-s * 0.55} 0 H ${s * 0.55} M 0 ${-s * 0.55} V ${s * 0.55}`}
+            stroke="rgba(0,0,0,0.55)"
+            strokeWidth={0.12}
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
           />
           <path
-            d={`M ${-s * 0.26} ${-s * 0.45} C ${-s * 0.08} ${-s * 0.18}, ${-s * 0.08} ${s * 0.18}, ${-s * 0.26} ${s * 0.45} M ${s * 0.26} ${-s * 0.45} C ${s * 0.08} ${-s * 0.18}, ${s * 0.08} ${s * 0.18}, ${s * 0.26} ${s * 0.45}`}
+            d={`M ${-s * 0.35} ${-s * 0.42} C ${-s * 0.12} ${-s * 0.2}, ${-s * 0.12} ${s * 0.2}, ${-s * 0.35} ${s * 0.42} M ${s * 0.35} ${-s * 0.42} C ${s * 0.12} ${-s * 0.2}, ${s * 0.12} ${s * 0.2}, ${s * 0.35} ${s * 0.42}`}
             fill="none"
-            stroke="rgba(255,255,255,0.5)"
-            strokeWidth={0.14}
+            stroke="rgba(0,0,0,0.5)"
+            strokeWidth={0.1}
             strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+          {[
+            [-0.22, -0.28],
+            [0.2, 0.24],
+            [0.34, -0.18],
+          ].map(([cx, cy]) => (
+            <circle
+              key={`${cx}-${cy}`}
+              cx={s * cx}
+              cy={s * cy}
+              r={s * 0.035}
+              fill="rgba(255,255,255,0.42)"
+            />
+          ))}
+        </g>
+      );
+    case "football":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <ellipse cx={0} cy={0} rx={s * 0.72} ry={s * 0.42} fill={item.color} />
+          <path
+            d={`M ${-s * 0.42} 0 C ${-s * 0.14} ${-s * 0.18}, ${s * 0.14} ${-s * 0.18}, ${s * 0.42} 0`}
+            fill="none"
+            stroke="rgba(255,255,255,0.6)"
+            strokeLinecap="round"
+            strokeWidth={0.15}
+            vectorEffect="non-scaling-stroke"
+          />
+          {[-0.16, 0, 0.16].map((offset) => (
+            <path
+              key={offset}
+              d={`M ${s * offset} ${-s * 0.14} V ${s * 0.14}`}
+              stroke="rgba(255,255,255,0.7)"
+              strokeLinecap="round"
+              strokeWidth={0.12}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+        </g>
+      );
+    case "helmet":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.62} ${s * 0.16} C ${-s * 0.62} ${-s * 0.46}, ${-s * 0.14} ${-s * 0.78}, ${s * 0.36} ${-s * 0.5} C ${s * 0.72} ${-s * 0.3}, ${s * 0.64} ${s * 0.18}, ${s * 0.3} ${s * 0.32} H ${-s * 0.34} C ${-s * 0.5} ${s * 0.32}, ${-s * 0.62} ${s * 0.24}, ${-s * 0.62} ${s * 0.16} Z`}
+            fill={item.color}
+          />
+          <path
+            d={`M ${s * 0.12} ${-s * 0.02} H ${s * 0.72} M ${s * 0.28} ${s * 0.2} H ${s * 0.62}`}
+            fill="none"
+            stroke="rgba(255,255,255,0.52)"
+            strokeLinecap="round"
+            strokeWidth={0.18}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "goalpost":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M 0 ${s * 0.88} V ${-s * 0.26} M ${-s * 0.72} ${-s * 0.26} H ${s * 0.72} M ${-s * 0.72} ${-s * 0.26} V ${-s * 0.86} M ${s * 0.72} ${-s * 0.26} V ${-s * 0.86}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.28}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "field-line":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s} 0 H ${s} M ${-s * 0.72} ${-s * 0.28} V ${s * 0.28} M ${-s * 0.36} ${-s * 0.2} V ${s * 0.2} M 0 ${-s * 0.28} V ${s * 0.28} M ${s * 0.36} ${-s * 0.2} V ${s * 0.2} M ${s * 0.72} ${-s * 0.28} V ${s * 0.28}`}
+            fill="none"
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.2}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "stadium-light":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.54} ${-s * 0.34} H ${s * 0.54} V ${s * 0.22} H ${-s * 0.54} Z`}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.2}
+            vectorEffect="non-scaling-stroke"
+          />
+          {[-0.3, 0, 0.3].map((offset) => (
+            <circle key={offset} cx={s * offset} cy={-s * 0.06} r={s * 0.1} fill={item.color} />
+          ))}
+          <path
+            d={`M 0 ${s * 0.22} V ${s * 0.9}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.18}
             vectorEffect="non-scaling-stroke"
           />
         </g>
@@ -313,26 +433,48 @@ function renderMotif(item: MotifItem, index: number) {
       return (
         <g key={index} transform={transform} opacity={item.opacity}>
           <rect
-            x={-s * 0.58}
-            y={-s * 0.48}
-            width={s * 1.16}
-            height={s * 0.72}
+            x={-s * 0.62}
+            y={-s * 0.72}
+            width={s * 1.24}
+            height={s * 0.84}
             rx={s * 0.08}
             fill="none"
             stroke={item.color}
-            strokeWidth={0.28}
+            strokeWidth={0.22}
+            vectorEffect="non-scaling-stroke"
+          />
+          <rect
+            x={-s * 0.22}
+            y={-s * 0.42}
+            width={s * 0.44}
+            height={s * 0.28}
+            rx={s * 0.04}
+            fill="none"
+            stroke={item.color}
+            strokeWidth={0.16}
             vectorEffect="non-scaling-stroke"
           />
           <ellipse
             cx={0}
-            cy={s * 0.38}
+            cy={s * 0.18}
             rx={s * 0.42}
-            ry={s * 0.14}
+            ry={s * 0.12}
             fill="none"
             stroke={item.color}
-            strokeWidth={0.28}
+            strokeWidth={0.24}
             vectorEffect="non-scaling-stroke"
           />
+          {[-0.3, -0.1, 0.1, 0.3].map((offset) => (
+            <path
+              key={offset}
+              d={`M ${s * offset} ${s * 0.26} L ${s * (offset * 0.58)} ${s * 0.82}`}
+              fill="none"
+              stroke={item.color}
+              strokeLinecap="round"
+              strokeWidth={0.12}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
         </g>
       );
     case "court-line":
@@ -346,6 +488,102 @@ function renderMotif(item: MotifItem, index: number) {
             strokeWidth={0.22}
             vectorEffect="non-scaling-stroke"
           />
+        </g>
+      );
+    case "sneaker":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s * 0.78} ${s * 0.18} C ${-s * 0.4} ${s * 0.12}, ${-s * 0.1} ${-s * 0.46}, ${
+              s * 0.18
+            } ${-s * 0.3} C ${s * 0.34} ${-s * 0.2}, ${s * 0.28} ${s * 0.06}, ${
+              s * 0.72
+            } ${s * 0.12} L ${s * 0.9} ${s * 0.38} C ${s * 0.34} ${s * 0.52}, ${
+              -s * 0.34
+            } ${s * 0.5}, ${-s * 0.86} ${s * 0.38} Z`}
+            fill={item.color}
+          />
+          <path
+            d={`M ${-s * 0.32} ${s * 0.06} L ${s * 0.1} ${s * 0.12} M ${-s * 0.18} ${
+              -s * 0.08
+            } L ${s * 0.2} ${s * 0.02} M ${-s * 0.58} ${s * 0.34} H ${s * 0.78}`}
+            fill="none"
+            stroke="rgba(255,255,255,0.58)"
+            strokeLinecap="round"
+            strokeWidth={0.18}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "pickleball":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <circle cx={0} cy={0} r={s * 0.52} fill={item.color} />
+          {[
+            [-0.22, -0.16],
+            [0.16, -0.24],
+            [0.24, 0.12],
+            [-0.16, 0.22],
+            [0.02, 0.02],
+          ].map(([cx, cy]) => (
+            <circle
+              key={`${cx}-${cy}`}
+              cx={s * cx}
+              cy={s * cy}
+              r={s * 0.07}
+              fill="rgba(0,0,0,0.42)"
+            />
+          ))}
+        </g>
+      );
+    case "paddle":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <rect
+            x={-s * 0.36}
+            y={-s * 0.78}
+            width={s * 0.72}
+            height={s * 1.05}
+            rx={s * 0.22}
+            fill={item.color}
+          />
+          <rect
+            x={-s * 0.12}
+            y={s * 0.18}
+            width={s * 0.24}
+            height={s * 0.7}
+            rx={s * 0.1}
+            fill={item.color}
+          />
+          <path
+            d={`M ${-s * 0.22} ${-s * 0.42} H ${s * 0.22} M ${-s * 0.24} ${-s * 0.12} H ${s * 0.24}`}
+            stroke="rgba(255,255,255,0.34)"
+            strokeLinecap="round"
+            strokeWidth={0.16}
+            vectorEffect="non-scaling-stroke"
+          />
+        </g>
+      );
+    case "net-line":
+      return (
+        <g key={index} transform={transform} opacity={item.opacity}>
+          <path
+            d={`M ${-s} 0 H ${s}`}
+            stroke={item.color}
+            strokeLinecap="round"
+            strokeWidth={0.24}
+            vectorEffect="non-scaling-stroke"
+          />
+          {[-0.72, -0.36, 0, 0.36, 0.72].map((offset) => (
+            <path
+              key={offset}
+              d={`M ${s * offset} ${-s * 0.28} V ${s * 0.28}`}
+              stroke={item.color}
+              strokeLinecap="round"
+              strokeWidth={0.16}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
         </g>
       );
     case "cap":
@@ -436,6 +674,7 @@ export default function ScannedSkinBackground({
   category,
   title,
   skinId,
+  sportKind,
   palette,
   background,
   darkMode = false,
@@ -446,9 +685,10 @@ export default function ScannedSkinBackground({
         category,
         title,
         skinId,
+        sportKind,
         palette,
       }),
-    [background, category, palette, skinId, title],
+    [background, category, palette, skinId, sportKind, title],
   );
   const items = useMemo(() => buildItems(spec, darkMode), [darkMode, spec]);
   const textureStyle = getTextureStyle(spec.texture, darkMode);
@@ -460,7 +700,7 @@ export default function ScannedSkinBackground({
       <svg
         className="absolute inset-0 h-full w-full"
         viewBox="0 0 100 100"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid slice"
       >
         {items.map(renderMotif)}
       </svg>

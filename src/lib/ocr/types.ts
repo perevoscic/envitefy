@@ -1,3 +1,4 @@
+import type { OcrFact } from "@/lib/ocr/facts";
 import type { ThumbnailFocus } from "@/lib/thumbnail-focus";
 
 export type EventOcrLlmResult = {
@@ -5,14 +6,18 @@ export type EventOcrLlmResult = {
   start?: string | null;
   end?: string | null;
   address?: string;
+  venueName?: string | null;
   description?: string;
   category?: string;
   rsvp?: string | null;
   rsvpUrl?: string | null;
   rsvpDeadline?: string | null;
+  hostName?: string | null;
   activities?: string[] | null;
   attire?: string | null;
   registryUrl?: string | null;
+  ocrFacts?: OcrFact[] | null;
+  facts?: OcrFact[] | null;
   yearVisible?: boolean | null;
   birthdayAudience?: "girl" | "boy" | "neutral" | null;
   birthdaySignals?: string[] | null;

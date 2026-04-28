@@ -29,6 +29,7 @@ type Props = {
   imageUrl?: string | null;
   shareUrl?: string | null;
   calendarLinks?: CalendarLinks | null;
+  categoryLabel?: string | null;
   skinId?: string | null;
   palette?: Palette;
   background?: OcrSkinBackground | null;
@@ -44,7 +45,7 @@ type Props = {
   actions?: ReactNode;
 };
 
-export default function GraduationSkin({
+export default function PickleballSkin({
   title,
   dateLabel,
   timeLabel,
@@ -52,6 +53,7 @@ export default function GraduationSkin({
   imageUrl,
   shareUrl,
   calendarLinks,
+  categoryLabel,
   skinId,
   palette,
   background,
@@ -66,21 +68,29 @@ export default function GraduationSkin({
   ocrFacts,
   actions,
 }: Props) {
-  const graduationPalette = {
-    background: palette?.background || "#f6f2ff",
-    primary: palette?.primary || "#5b3cc4",
-    secondary: palette?.secondary || "#7c5cff",
-    accent: palette?.accent || "#f4b942",
-    text: palette?.text || "#1f1633",
-    dominant: palette?.dominant || "#5b3cc4",
-    themeColor: palette?.themeColor || "#5b3cc4",
+  const pickleballPalette = {
+    background: palette?.background || "#073f2d",
+    primary: palette?.primary || "#facc15",
+    secondary: palette?.secondary || "#0f172a",
+    accent: palette?.accent || "#a3e635",
+    text: palette?.text || "#f8fafc",
+    dominant: palette?.dominant || "#166534",
+    themeColor: palette?.themeColor || "#facc15",
   };
+
+  const displayActivities = Array.isArray(activities)
+    ? activities
+        .map((item) => String(item || "").trim())
+        .filter(Boolean)
+        .slice(0, 6)
+    : [];
 
   return (
     <ScannedInviteSkin
       title={title}
-      categoryLabel="🎓 Graduation Celebration"
-      backgroundCategory="graduation"
+      categoryLabel={categoryLabel}
+      backgroundCategory="general"
+      sportKind="pickleball"
       dateLabel={dateLabel}
       timeLabel={timeLabel}
       location={location}
@@ -88,17 +98,18 @@ export default function GraduationSkin({
       shareUrl={shareUrl}
       calendarLinks={calendarLinks}
       skinId={skinId}
-      palette={graduationPalette}
+      palette={pickleballPalette}
       background={background}
       rsvpName={rsvpName}
       rsvpPhone={rsvpPhone}
       rsvpEmail={rsvpEmail}
       rsvpUrl={rsvpUrl}
       detailCopy={detailCopy}
-      activities={activities}
+      activities={displayActivities}
       attire={attire}
       registryUrl={registryUrl}
       ocrFacts={ocrFacts}
+      detailLayout="wideDetails"
       actions={actions}
     />
   );
