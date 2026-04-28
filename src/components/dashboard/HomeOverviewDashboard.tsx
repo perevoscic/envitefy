@@ -1,24 +1,24 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
 import {
   Calendar,
   Camera,
   CheckCircle2,
   ChevronRight,
-  CloudSun,
   Clock,
+  CloudSun,
+  type LucideIcon,
   MapPin,
   Navigation,
   WandSparkles,
-  type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { FlipClock } from "@/components/ui/flip-clock";
 import {
-  thumbnailFocusToObjectPosition,
   type ThumbnailFocus,
+  thumbnailFocusToObjectPosition,
 } from "@/lib/thumbnail-focus";
 
 type DashboardEventItem = {
