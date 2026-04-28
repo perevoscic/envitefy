@@ -102,6 +102,7 @@ export default function GraduationSkin({
       attire={attire}
       registryUrl={registryUrl}
       ocrFacts={ocrFacts}
+      detailLayout="wideDetails"
       actions={actions}
     />
   );
