@@ -9,6 +9,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { cache } from "react";
 import AccessCodeGate from "@/components/AccessCodeGate";
 import AppleCalendarLink from "@/components/AppleCalendarLink";
+import BasketballSkin from "@/components/BasketballSkin";
 import BirthdaySkin from "@/components/BirthdaySkin";
 import GraduationSkin from "@/components/GraduationSkin";
 import ScannedInviteSkin from "@/components/ScannedInviteSkin";
@@ -1711,6 +1712,18 @@ export default async function EventPage({
         ? ((data as any).attire as string).trim()
         : null;
     const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
+    const basketballContextText = [
+      String(categoryRaw || ""),
+      String((data as any)?.category || ""),
+      String((data as any)?.title || ""),
+      String((data as any)?.description || ""),
+      ...scannedInviteActivities,
+    ]
+      .join(" ")
+      .toLowerCase();
+    const isBasketballInvite = /\bbasketball\b|\bopen run\b|\bpickup\b|\b3v3\b|\b5v5\b/.test(
+      basketballContextText,
+    );
     const scannedInviteActions =
       !isReadOnly &&
       isOwner && (
@@ -1755,6 +1768,32 @@ export default async function EventPage({
     if (categoryNormalized === "graduations") {
       return renderWithEventPageBackground(
         <GraduationSkin
+          title={title}
+          dateLabel={scannedInviteDateLabel || whenLabel || null}
+          timeLabel={formattedTimeAndDate.time || null}
+          location={locationText || venueText || null}
+          imageUrl={scannedInviteImageUrl}
+          shareUrl={shareUrl}
+          calendarLinks={calendarLinks}
+          skinId={ocrSkin?.skinId || null}
+          palette={ocrSkin?.palette || null}
+          background={ocrSkin?.background || null}
+          rsvpName={rsvpName}
+          rsvpPhone={rsvpPhone}
+          rsvpEmail={rsvpEmail}
+          rsvpUrl={rsvpUrl}
+          detailCopy={scannedInviteDetailCopy}
+          activities={scannedInviteActivities}
+          attire={scannedInviteAttire}
+          registryUrl={scannedInviteRegistryUrl}
+          actions={scannedInviteActions}
+        />,
+      );
+    }
+
+    if (isBasketballInvite) {
+      return renderWithEventPageBackground(
+        <BasketballSkin
           title={title}
           dateLabel={scannedInviteDateLabel || whenLabel || null}
           timeLabel={formattedTimeAndDate.time || null}
