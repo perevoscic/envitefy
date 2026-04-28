@@ -37,6 +37,15 @@ test("dashboard overview includes a directions info tile for the next event", ()
   assert.match(source, /value: nextEvent\?\.mapsUrl[\s\S]*"Open Route"/);
 });
 
+test("dashboard empty state offers studio and snap upload routes", () => {
+  const source = readFileSync(new URL("./HomeOverviewDashboard.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /href="\/studio"[\s\S]*Create in Studio/);
+  assert.match(source, /href="\/event"[\s\S]*Snap\/upload/);
+  assert.doesNotMatch(source, /Create First Event/);
+  assert.doesNotMatch(source, /onCreateEvent/);
+});
+
 test("dashboard uses the shared flip clock and keeps countdown parts mapped to Days, Hours, and Mins", () => {
   const source = readFileSync(new URL("./HomeOverviewDashboard.tsx", import.meta.url), "utf8");
 

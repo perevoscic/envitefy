@@ -679,12 +679,6 @@ export default function Dashboard({
     }
   }, [dashboardData?.nextEvent?.id, resolveCurrentPosition]);
 
-  const openCreateEvent = useCallback(() => {
-    try {
-      router.push("/event/gymnastics");
-    } catch {}
-  }, [router]);
-
   const isEventRoute = (pathname?.startsWith("/event/") ?? false) || Boolean(initialEventContext);
   const hasEventContextOnPage = Boolean(selectedEventId) && isEventRoute;
   const showEventHeaderActions = hasEventContextOnPage;
@@ -1765,7 +1759,6 @@ export default function Dashboard({
               metricsLoading={metricsLoading}
               loading={dashboardLoading}
               onForceTravel={forceRecalculateTravel}
-              onCreateEvent={openCreateEvent}
             />
           )}
         </div>

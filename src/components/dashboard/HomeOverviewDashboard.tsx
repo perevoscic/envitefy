@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   Calendar,
+  Camera,
   CheckCircle2,
   ChevronRight,
   CloudSun,
   Clock,
   MapPin,
   Navigation,
+  WandSparkles,
   type LucideIcon,
 } from "lucide-react";
 import { FlipClock } from "@/components/ui/flip-clock";
@@ -111,7 +113,6 @@ type HomeOverviewDashboardProps = {
   metricsLoading: boolean;
   loading: boolean;
   onForceTravel: () => void;
-  onCreateEvent: () => void;
 };
 
 type CardTone = "indigo" | "pink" | "sky" | "amber";
@@ -718,7 +719,6 @@ export default function HomeOverviewDashboard({
   metricsLoading,
   loading,
   onForceTravel,
-  onCreateEvent,
 }: HomeOverviewDashboardProps) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -892,17 +892,20 @@ export default function HomeOverviewDashboard({
                   </div>
                 </div>
                 <div className="mt-8 flex flex-wrap gap-4">
-                  <button
-                    type="button"
-                    onClick={onCreateEvent}
-                    className="group/btn inline-flex min-w-[170px] flex-1 items-center justify-center gap-2 rounded-[20px] bg-slate-900 px-8 py-4 text-sm font-bold text-white shadow-xl transition-all hover:bg-indigo-600"
+                  <Link
+                    href="/studio"
+                    className="inline-flex min-h-[56px] min-w-[150px] flex-1 items-center justify-center gap-2 rounded-[20px] bg-slate-900 px-6 py-4 text-sm font-bold text-white shadow-xl transition-all hover:bg-indigo-600 sm:min-w-[170px] sm:px-8"
                   >
-                    Create First Event
-                    <ChevronRight
-                      size={16}
-                      className="transition-transform group-hover/btn:translate-x-1"
-                    />
-                  </button>
+                    <WandSparkles size={16} />
+                    <span>Create in Studio</span>
+                  </Link>
+                  <Link
+                    href="/event"
+                    className="inline-flex min-h-[56px] min-w-[150px] flex-1 items-center justify-center gap-2 rounded-[20px] border border-slate-200 bg-white px-6 py-4 text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-indigo-100 hover:bg-slate-50 sm:min-w-[170px] sm:px-8"
+                  >
+                    <Camera size={16} />
+                    <span>Snap/upload</span>
+                  </Link>
                 </div>
               </div>
             </div>
