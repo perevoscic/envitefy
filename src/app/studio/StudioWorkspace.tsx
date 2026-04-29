@@ -5,8 +5,8 @@ import {
   ChevronRight,
   Download,
   Loader2,
-  Pencil,
   PanelLeft,
+  Pencil,
   Trash2,
   WandSparkles,
   X,
@@ -14,10 +14,10 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
-import { sanitizePersistedMediaUrl } from "@/lib/public-asset-url";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface from "@/components/studio/StudioLiveCardActionSurface";
+import { sanitizePersistedMediaUrl } from "@/lib/public-asset-url";
+import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
 import { buildEventSlug, buildStudioCardPath } from "@/utils/event-url";
 import {
   persistImageMediaValue,
@@ -62,7 +62,13 @@ import type {
   MediaType,
   SharedFieldConfig,
 } from "./studio-workspace-types";
-import { isRecord, STUDIO_GUEST_IMAGE_URL_MAX } from "./studio-workspace-utils";
+import {
+  isRecord,
+  STUDIO_GUEST_IMAGE_URL_MAX,
+  STUDIO_OPEN_HOUSE_PROPERTY_IMAGE_URL_MAX,
+  STUDIO_OPEN_HOUSE_REALTOR_IMAGE_URL_MAX,
+  STUDIO_OPEN_HOUSE_REALTOR_LOGO_URL_MAX,
+} from "./studio-workspace-utils";
 import { StudioCategoryStep } from "./workspace/StudioCategoryStep";
 import { StudioCreateFlow } from "./workspace/StudioCreateFlow";
 import { StudioFormStep } from "./workspace/StudioFormStep";
@@ -71,20 +77,120 @@ import { StudioWorkspaceShell } from "./workspace/StudioWorkspaceShell";
 import { useStudioMediaLibrary } from "./workspace/useStudioMediaLibrary";
 
 async function persistGuestImageUrlsForPublish(details: EventDetails): Promise<EventDetails> {
-  const urls = details.guestImageUrls;
-  if (!urls.length) return details;
-  const next: string[] = [];
-  for (let i = 0; i < urls.length; i++) {
-    const raw = clean(urls[i]);
-    if (!raw) continue;
-    const persisted = await persistImageMediaValue({
-      value: raw,
-      fileName: `studio-guest-${i + 1}.png`,
-      fallbackValue: raw,
-    });
-    next.push(persisted || raw);
+  const buckets = [
+    { key: "guestImageUrls", urls: details.guestImageUrls, fileNamePrefix: "studio-guest" },
+    {
+      key: "propertyImageUrls",
+      urls: details.propertyImageUrls,
+      fileNamePrefix: "studio-property",
+    },
+    { key: "realtorImageUrls", urls: details.realtorImageUrls, fileNamePrefix: "studio-realtor" },
+    {
+      key: "realtorLogoUrls",
+      urls: details.realtorLogoUrls,
+      fileNamePrefix: "studio-realtor-logo",
+    },
+  ] as const;
+  if (!buckets.some((bucket) => bucket.urls.length > 0)) return details;
+  const next: Pick<
+    EventDetails,
+    "guestImageUrls" | "propertyImageUrls" | "realtorImageUrls" | "realtorLogoUrls"
+  > = {
+    guestImageUrls: [],
+    propertyImageUrls: [],
+    realtorImageUrls: [],
+    realtorLogoUrls: [],
+  };
+
+  for (const bucket of buckets) {
+    for (let i = 0; i < bucket.urls.length; i++) {
+      const raw = clean(bucket.urls[i]);
+      if (!raw) continue;
+      const persisted = await persistImageMediaValue({
+        value: raw,
+        fileName: `${bucket.fileNamePrefix}-${i + 1}.png`,
+        fallbackValue: raw,
+      });
+      next[bucket.key].push(persisted || raw);
+    }
   }
-  return { ...details, guestImageUrls: next.slice(0, STUDIO_GUEST_IMAGE_URL_MAX) };
+
+  return {
+    ...details,
+    guestImageUrls: next.guestImageUrls.slice(0, STUDIO_GUEST_IMAGE_URL_MAX),
+    propertyImageUrls: next.propertyImageUrls.slice(0, STUDIO_OPEN_HOUSE_PROPERTY_IMAGE_URL_MAX),
+    realtorImageUrls: next.realtorImageUrls.slice(0, STUDIO_OPEN_HOUSE_REALTOR_IMAGE_URL_MAX),
+    realtorLogoUrls: next.realtorLogoUrls.slice(0, STUDIO_OPEN_HOUSE_REALTOR_LOGO_URL_MAX),
+  };
+}
+
+function resolveExistingLiveCardImageEditPrompt(
+  currentDetails: EventDetails,
+  previousDetails: EventDetails | undefined,
+  explicitPrompt: string,
+): string {
+  const prompt = clean(explicitPrompt);
+  if (prompt) return prompt;
+
+  const currentIdea = sanitizeStudioDesignIdea(currentDetails.theme);
+  const previousIdea = previousDetails ? sanitizeStudioDesignIdea(previousDetails.theme) : "";
+  if (!currentIdea || currentIdea === previousIdea) return "";
+
+  if (previousIdea && currentIdea.toLowerCase().startsWith(previousIdea.toLowerCase())) {
+    const appendedIdea = clean(currentIdea.slice(previousIdea.length).replace(/^[\s,.;:!?-]+/, ""));
+    if (appendedIdea) return appendedIdea;
+  }
+
+  return currentIdea;
+}
+
+const LIVE_CARD_VISUAL_DIRECTION_FIELDS: Array<keyof EventDetails> = [
+  "colors",
+  "style",
+  "visualPreferences",
+  "imageFinishPreset",
+  "subjectTransformMode",
+  "likenessStrength",
+  "visualStyleMode",
+];
+
+function normalizeLiveCardVisualDirectionValue(value: unknown): string {
+  return clean(typeof value === "string" ? value : "").toLowerCase();
+}
+
+function normalizeLiveCardVisualDirectionUrls(urls: string[]): string {
+  return sanitizeGuestImageUrls(urls).map((url) => url.toLowerCase()).join("\n");
+}
+
+function hasLiveCardVisualDirectionChanged(
+  currentDetails: EventDetails,
+  previousDetails: EventDetails | undefined,
+): boolean {
+  if (!previousDetails) return false;
+
+  const currentIdea = sanitizeStudioDesignIdea(currentDetails.theme).toLowerCase();
+  const previousIdea = sanitizeStudioDesignIdea(previousDetails.theme).toLowerCase();
+  if (currentIdea !== previousIdea) return true;
+
+  for (const field of LIVE_CARD_VISUAL_DIRECTION_FIELDS) {
+    if (
+      normalizeLiveCardVisualDirectionValue(currentDetails[field]) !==
+      normalizeLiveCardVisualDirectionValue(previousDetails[field])
+    ) {
+      return true;
+    }
+  }
+
+  return (
+    normalizeLiveCardVisualDirectionUrls(currentDetails.guestImageUrls) !==
+      normalizeLiveCardVisualDirectionUrls(previousDetails.guestImageUrls) ||
+    normalizeLiveCardVisualDirectionUrls(currentDetails.propertyImageUrls) !==
+      normalizeLiveCardVisualDirectionUrls(previousDetails.propertyImageUrls) ||
+    normalizeLiveCardVisualDirectionUrls(currentDetails.realtorImageUrls) !==
+      normalizeLiveCardVisualDirectionUrls(previousDetails.realtorImageUrls) ||
+    normalizeLiveCardVisualDirectionUrls(currentDetails.realtorLogoUrls) !==
+      normalizeLiveCardVisualDirectionUrls(previousDetails.realtorLogoUrls)
+  );
 }
 
 /** Upload data/blob URLs so library sync stays under remote payload limits and thumbnails work across devices. */
@@ -210,11 +316,22 @@ function normalizeStudioParsedCategory(value: unknown): InviteCategory | null {
   if (!normalized) return null;
   if (normalized === "birthday") return "Birthday";
   if (normalized === "wedding") return "Wedding";
+  if (
+    normalized === "open house" ||
+    normalized === "real estate open house" ||
+    normalized === "real-estate open-house"
+  ) {
+    return "Open House";
+  }
   if (normalized === "baby shower") return "Baby Shower";
   if (normalized === "bridal shower") return "Bridal Shower";
   if (normalized === "anniversary") return "Anniversary";
   if (normalized === "housewarming") return "Housewarming";
-  if (normalized === "field trip/day" || normalized === "field trip" || normalized === "field day") {
+  if (
+    normalized === "field trip/day" ||
+    normalized === "field trip" ||
+    normalized === "field day"
+  ) {
     return "Field Trip/Day";
   }
   if (normalized === "game day" || normalized === "sports") return "Game Day";
@@ -346,7 +463,12 @@ function mergeParsedFlyerDetails(
 }
 
 function deriveStudioUploadTitle(fileName: string): string {
-  return clean(fileName.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/\s+/g, " "));
+  return clean(
+    fileName
+      .replace(/\.[^.]+$/, "")
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " "),
+  );
 }
 
 async function parseStudioFlyerDetails(file: File): Promise<{
@@ -459,7 +581,8 @@ export default function StudioWorkspace() {
     [currentProject, studioVisualDraft],
   );
   const savedCurrentProject = useMemo(
-    () => (currentProject ? (mediaList.find((item) => item.id === currentProject.id) ?? null) : null),
+    () =>
+      currentProject ? (mediaList.find((item) => item.id === currentProject.id) ?? null) : null,
     [currentProject, mediaList],
   );
   const currentProjectHasUnsavedChanges = useMemo(() => {
@@ -506,9 +629,10 @@ export default function StudioWorkspace() {
       }
       return true;
     };
-    const missingShared = SHARED_BASICS.filter(
-      (field) => field.required && !isRequiredFieldComplete(field),
-    );
+    const missingShared = SHARED_BASICS.filter((field) => {
+      if (details.category === "Open House" && field.key === "location") return false;
+      return field.required && !isRequiredFieldComplete(field);
+    });
     if (missingShared.length > 0) return false;
     if (supportsStudioCategoryRsvp(details.category) && !clean(details.rsvpContact)) return false;
 
@@ -670,7 +794,11 @@ export default function StudioWorkspace() {
         navigateWorkspace("library");
       }
       setPreviewOrigin(null);
-      if (!options?.fromPopState && liveCardHistoryEntryActiveRef.current && typeof window !== "undefined") {
+      if (
+        !options?.fromPopState &&
+        liveCardHistoryEntryActiveRef.current &&
+        typeof window !== "undefined"
+      ) {
         liveCardHistoryEntryActiveRef.current = false;
         window.history.back();
       }
@@ -681,7 +809,10 @@ export default function StudioWorkspace() {
   useEffect(() => {
     if (!activePageRecord?.id || !activePageRecord.data || typeof window === "undefined") return;
 
-    window.history.pushState({ ...(window.history.state ?? {}), studioLiveCardFullscreen: true }, "");
+    window.history.pushState(
+      { ...(window.history.state ?? {}), studioLiveCardFullscreen: true },
+      "",
+    );
     liveCardHistoryEntryActiveRef.current = true;
 
     const handlePopState = () => {
@@ -736,7 +867,11 @@ export default function StudioWorkspace() {
   }, [details.category, details.gender, details.name]);
 
   async function handleCategoryStepUpload(file: File) {
-    if (!confirmDiscardCurrentProject("Discard the current Studio project and upload a new invitation?")) {
+    if (
+      !confirmDiscardCurrentProject(
+        "Discard the current Studio project and upload a new invitation?",
+      )
+    ) {
       return;
     }
 
@@ -782,7 +917,8 @@ export default function StudioWorkspace() {
         throw new Error("Unable to prepare the uploaded invitation.");
       }
 
-      const parsedCategory = parseResult.status === "fulfilled" ? parseResult.value.parsedCategory : null;
+      const parsedCategory =
+        parseResult.status === "fulfilled" ? parseResult.value.parsedCategory : null;
       const nextCategory = parsedCategory || "Custom Invite";
       const uploadTitle = deriveStudioUploadTitle(file.name);
       const nextBase: EventDetails = {
@@ -813,7 +949,11 @@ export default function StudioWorkspace() {
         type: "page",
         url: previewUrl,
         data: nextInvitationData,
-        theme: pickFirst(nextInvitationData.title, nextDetails.eventTitle, `${nextDetails.category} Invite`),
+        theme: pickFirst(
+          nextInvitationData.title,
+          nextDetails.eventTitle,
+          `${nextDetails.category} Invite`,
+        ),
         status: "ready",
         details: nextDetails,
         createdAt: new Date().toISOString(),
@@ -857,11 +997,41 @@ export default function StudioWorkspace() {
     setFlyerUploadError(null);
     setDetails((prev) => ({
       ...prev,
-      sourceMediaMode: prev.guestImageUrls.length > 0 ? "subjectPhotos" : "none",
+      sourceMediaMode:
+        prev.guestImageUrls.length > 0 ||
+        prev.propertyImageUrls.length > 0 ||
+        prev.realtorImageUrls.length > 0 ||
+        prev.realtorLogoUrls.length > 0
+          ? "subjectPhotos"
+          : "none",
       sourceFlyerUrl: "",
       sourceFlyerName: "",
       sourceFlyerPreviewUrl: "",
     }));
+  }
+
+  async function uploadStudioReferenceFiles(files: File[], availableSlots: number) {
+    if (availableSlots <= 0) {
+      throw new Error("No more photos can be added.");
+    }
+
+    const nextUploads = files.slice(0, availableSlots);
+    const uploadedUrls: string[] = [];
+
+    for (const file of nextUploads) {
+      const validationError = validateClientUploadFile(file, "header");
+      if (validationError) {
+        throw new Error(validationError);
+      }
+      const upload = await uploadMediaFile({ file, usage: "header" });
+      const url = clean(upload.stored.display?.url) || clean(upload.eventMedia.thumbnail) || "";
+      if (!url) {
+        throw new Error("A photo upload completed without a usable image URL.");
+      }
+      uploadedUrls.push(url);
+    }
+
+    return uploadedUrls;
   }
 
   async function handleUploadSubjectPhotos(files: File[]) {
@@ -881,21 +1051,7 @@ export default function StudioWorkspace() {
         throw new Error(`You can add up to ${STUDIO_GUEST_IMAGE_URL_MAX} photos.`);
       }
 
-      const nextUploads = files.slice(0, availableSlots);
-      const uploadedUrls: string[] = [];
-
-      for (const file of nextUploads) {
-        const validationError = validateClientUploadFile(file, "header");
-        if (validationError) {
-          throw new Error(validationError);
-        }
-        const upload = await uploadMediaFile({ file, usage: "header" });
-        const url = clean(upload.stored.display?.url) || clean(upload.eventMedia.thumbnail) || "";
-        if (!url) {
-          throw new Error("A photo upload completed without a usable image URL.");
-        }
-        uploadedUrls.push(url);
-      }
+      const uploadedUrls = await uploadStudioReferenceFiles(files, availableSlots);
 
       setDetails((prev) => {
         const currentUrls =
@@ -929,7 +1085,171 @@ export default function StudioWorkspace() {
       return {
         ...prev,
         guestImageUrls: nextUrls,
-        sourceMediaMode: nextUrls.length > 0 ? "subjectPhotos" : "none",
+        sourceMediaMode:
+          nextUrls.length > 0 ||
+          prev.propertyImageUrls.length > 0 ||
+          prev.realtorImageUrls.length > 0 ||
+          prev.realtorLogoUrls.length > 0
+            ? "subjectPhotos"
+            : "none",
+      };
+    });
+  }
+
+  async function handleUploadPropertyPhotos(files: File[]) {
+    if (!files.length) return;
+
+    setIsSubjectPhotoUploading(true);
+    setSubjectPhotoUploadError(null);
+    setFlyerUploadError(null);
+
+    try {
+      const existingUrls = details.propertyImageUrls.filter((url) => clean(url));
+      const availableSlots = Math.max(
+        0,
+        STUDIO_OPEN_HOUSE_PROPERTY_IMAGE_URL_MAX - existingUrls.length,
+      );
+      if (availableSlots <= 0) {
+        throw new Error(
+          `You can add up to ${STUDIO_OPEN_HOUSE_PROPERTY_IMAGE_URL_MAX} house photos.`,
+        );
+      }
+
+      const uploadedUrls = await uploadStudioReferenceFiles(files, availableSlots);
+      setDetails((prev) => ({
+        ...prev,
+        sourceMediaMode: "subjectPhotos",
+        sourceFlyerUrl: "",
+        sourceFlyerName: "",
+        sourceFlyerPreviewUrl: "",
+        propertyImageUrls: [
+          ...prev.propertyImageUrls.filter((url) => clean(url)),
+          ...uploadedUrls,
+        ].slice(0, STUDIO_OPEN_HOUSE_PROPERTY_IMAGE_URL_MAX),
+      }));
+    } catch (error) {
+      setSubjectPhotoUploadError(
+        error instanceof Error && clean(error.message)
+          ? clean(error.message)
+          : "Unable to upload those house photos right now.",
+      );
+    } finally {
+      setIsSubjectPhotoUploading(false);
+    }
+  }
+
+  async function handleUploadRealtorPhoto(files: File[]) {
+    if (!files.length) return;
+
+    setIsSubjectPhotoUploading(true);
+    setSubjectPhotoUploadError(null);
+    setFlyerUploadError(null);
+
+    try {
+      const uploadedUrls = await uploadStudioReferenceFiles(
+        files,
+        STUDIO_OPEN_HOUSE_REALTOR_IMAGE_URL_MAX,
+      );
+      setDetails((prev) => ({
+        ...prev,
+        sourceMediaMode: "subjectPhotos",
+        sourceFlyerUrl: "",
+        sourceFlyerName: "",
+        sourceFlyerPreviewUrl: "",
+        realtorImageUrls: uploadedUrls.slice(0, STUDIO_OPEN_HOUSE_REALTOR_IMAGE_URL_MAX),
+      }));
+    } catch (error) {
+      setSubjectPhotoUploadError(
+        error instanceof Error && clean(error.message)
+          ? clean(error.message)
+          : "Unable to upload that realtor photo right now.",
+      );
+    } finally {
+      setIsSubjectPhotoUploading(false);
+    }
+  }
+
+  async function handleUploadRealtorLogo(files: File[]) {
+    if (!files.length) return;
+
+    setIsSubjectPhotoUploading(true);
+    setSubjectPhotoUploadError(null);
+    setFlyerUploadError(null);
+
+    try {
+      const uploadedUrls = await uploadStudioReferenceFiles(
+        files,
+        STUDIO_OPEN_HOUSE_REALTOR_LOGO_URL_MAX,
+      );
+      setDetails((prev) => ({
+        ...prev,
+        sourceMediaMode: "subjectPhotos",
+        sourceFlyerUrl: "",
+        sourceFlyerName: "",
+        sourceFlyerPreviewUrl: "",
+        realtorLogoUrls: uploadedUrls.slice(0, STUDIO_OPEN_HOUSE_REALTOR_LOGO_URL_MAX),
+      }));
+    } catch (error) {
+      setSubjectPhotoUploadError(
+        error instanceof Error && clean(error.message)
+          ? clean(error.message)
+          : "Unable to upload that company logo right now.",
+      );
+    } finally {
+      setIsSubjectPhotoUploading(false);
+    }
+  }
+
+  function handleRemovePropertyPhoto(index: number) {
+    setSubjectPhotoUploadError(null);
+    setDetails((prev) => {
+      const nextUrls = prev.propertyImageUrls.filter((_, currentIndex) => currentIndex !== index);
+      return {
+        ...prev,
+        propertyImageUrls: nextUrls,
+        sourceMediaMode:
+          nextUrls.length > 0 ||
+          prev.guestImageUrls.length > 0 ||
+          prev.realtorImageUrls.length > 0 ||
+          prev.realtorLogoUrls.length > 0
+            ? "subjectPhotos"
+            : "none",
+      };
+    });
+  }
+
+  function handleRemoveRealtorPhoto(index: number) {
+    setSubjectPhotoUploadError(null);
+    setDetails((prev) => {
+      const nextUrls = prev.realtorImageUrls.filter((_, currentIndex) => currentIndex !== index);
+      return {
+        ...prev,
+        realtorImageUrls: nextUrls,
+        sourceMediaMode:
+          nextUrls.length > 0 ||
+          prev.guestImageUrls.length > 0 ||
+          prev.propertyImageUrls.length > 0 ||
+          prev.realtorLogoUrls.length > 0
+            ? "subjectPhotos"
+            : "none",
+      };
+    });
+  }
+
+  function handleRemoveRealtorLogo(index: number) {
+    setSubjectPhotoUploadError(null);
+    setDetails((prev) => {
+      const nextUrls = prev.realtorLogoUrls.filter((_, currentIndex) => currentIndex !== index);
+      return {
+        ...prev,
+        realtorLogoUrls: nextUrls,
+        sourceMediaMode:
+          nextUrls.length > 0 ||
+          prev.guestImageUrls.length > 0 ||
+          prev.propertyImageUrls.length > 0 ||
+          prev.realtorImageUrls.length > 0
+            ? "subjectPhotos"
+            : "none",
       };
     });
   }
@@ -1029,8 +1349,7 @@ export default function StudioWorkspace() {
     if (!currentProjectHasUnsavedChanges) return true;
     if (typeof window === "undefined") return false;
     return window.confirm(
-      message ||
-        "You have an unsaved Studio project. Discard it and continue?",
+      message || "You have an unsaved Studio project. Discard it and continue?",
     );
   }
 
@@ -1253,9 +1572,7 @@ export default function StudioWorkspace() {
         url: shareUrl,
       };
 
-      const nativeShareData = reusableSharePath
-        ? resolveNativeShareData(shareData)
-        : null;
+      const nativeShareData = reusableSharePath ? resolveNativeShareData(shareData) : null;
       if (nativeShareData) {
         await navigator.share(nativeShareData);
       } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
@@ -1314,8 +1631,17 @@ export default function StudioWorkspace() {
     const generationSurface = resolveStudioGenerationSurface(currentDetails, type, {
       existingItemType: existingItem?.type,
     });
-    const sourceImageDataUrl =
+    const existingLiveCardImageUrl =
       type === "page" && existingItem?.type === "page" ? clean(existingItem.url) : "";
+    const shouldEditExistingLiveCardImage = Boolean(
+      existingLiveCardImageUrl &&
+        !hasLiveCardVisualDirectionChanged(currentDetails, existingItem?.details),
+    );
+    const sourceImageDataUrl = shouldEditExistingLiveCardImage ? existingLiveCardImageUrl : "";
+    const generationMode = sourceImageDataUrl ? "image" : type === "page" ? "both" : "image";
+    const imageEditPrompt = sourceImageDataUrl
+      ? resolveExistingLiveCardImageEditPrompt(currentDetails, existingItem?.details, editPrompt)
+      : undefined;
     const loadingItem: MediaItem = {
       id: targetId,
       type,
@@ -1344,10 +1670,11 @@ export default function StudioWorkspace() {
     try {
       const response = await requestStudioGeneration(
         currentDetails,
-        type === "page" ? "both" : "image",
+        generationMode,
         generationSurface,
-        sourceImageDataUrl ? editPrompt : undefined,
+        imageEditPrompt,
         sourceImageDataUrl || undefined,
+        sourceImageDataUrl ? existingItem?.details : undefined,
       );
       setGenerationNote(response.themeNormalization?.note || null);
       const generatedDetails = response.preparedDetails || currentDetails;
@@ -1613,7 +1940,9 @@ export default function StudioWorkspace() {
     : "";
 
   function openTypeStep() {
-    if (!confirmDiscardCurrentProject("Discard the current Studio project and switch categories?")) {
+    if (
+      !confirmDiscardCurrentProject("Discard the current Studio project and switch categories?")
+    ) {
       return;
     }
     clearCurrentProject({ resetDetails: true });
@@ -1648,7 +1977,8 @@ export default function StudioWorkspace() {
   }
 
   function openCurrentLiveCardFullscreen() {
-    if (!currentProjectWithVisualDraft?.data || currentProjectWithVisualDraft.type !== "page") return;
+    if (!currentProjectWithVisualDraft?.data || currentProjectWithVisualDraft.type !== "page")
+      return;
     const fullscreenTarget = currentProject ?? currentProjectWithVisualDraft;
     setPreviewOrigin("create");
     setActivePage(fullscreenTarget);
@@ -1689,6 +2019,12 @@ export default function StudioWorkspace() {
                 onRemoveFlyer={handleRemoveFlyer}
                 onUploadSubjectPhotos={handleUploadSubjectPhotos}
                 onRemoveSubjectPhoto={handleRemoveSubjectPhoto}
+                onUploadPropertyPhotos={handleUploadPropertyPhotos}
+                onRemovePropertyPhoto={handleRemovePropertyPhoto}
+                onUploadRealtorPhoto={handleUploadRealtorPhoto}
+                onRemoveRealtorPhoto={handleRemoveRealtorPhoto}
+                onUploadRealtorLogo={handleUploadRealtorLogo}
+                onRemoveRealtorLogo={handleRemoveRealtorLogo}
                 isSubjectPhotoUploading={isSubjectPhotoUploading}
                 flyerUploadError={flyerUploadError}
                 subjectPhotoUploadError={subjectPhotoUploadError}
@@ -1913,178 +2249,181 @@ export default function StudioWorkspace() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {activePageRecord?.data ? (
-          (() => {
-            const liveCardPreviewTools = renderLiveCardPreviewTools(activePageRecord);
+        {activePageRecord?.data
+          ? (() => {
+              const liveCardPreviewTools = renderLiveCardPreviewTools(activePageRecord);
 
-            return (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[7000] flex items-center justify-center bg-black/90 p-4 backdrop-blur-xl md:p-12"
-            style={studioLiveCardModalStyle}
-          >
-            <button
-              type="button"
-              aria-label="Close live card preview"
-              onClick={() => closeLiveCardFullscreen()}
-              className="absolute inset-0"
-            />
-
-            <button
-              onClick={() => closeLiveCardFullscreen()}
-              className="absolute right-4 top-4 z-[7010] rounded-full bg-white/20 p-3 text-white transition-colors hover:bg-white/30 md:right-8 md:top-8"
-            >
-              <X className="h-6 w-6" />
-            </button>
-
-            {!isLiveCardToolsDrawerOpen && liveCardPreviewTools ? (
-              <button
-                type="button"
-                aria-label="Open studio tools"
-                onClick={() => setIsLiveCardToolsDrawerOpen(true)}
-                className="fixed right-3 z-[7015] flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-white/25 md:hidden"
-                style={studioLiveCardControlTop ? { top: studioLiveCardControlTop } : undefined}
-              >
-                <PanelLeft className="h-6 w-6" />
-              </button>
-            ) : null}
-
-            {liveCardPreviewTools ? (
-              <div className="absolute right-4 top-20 z-[7010] hidden max-h-[calc(100dvh-6rem)] w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 overflow-y-auto overscroll-contain md:right-8 md:top-24 md:flex">
-                {liveCardPreviewTools}
-              </div>
-            ) : null}
-
-            <AnimatePresence>
-              {isLiveCardToolsDrawerOpen && liveCardPreviewTools ? (
+              return (
                 <motion.div
-                  key="live-card-tools-drawer"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="fixed inset-0 z-[7012] md:hidden"
+                  className="fixed inset-0 z-[7000] flex items-center justify-center bg-black/90 p-4 backdrop-blur-xl md:p-12"
+                  style={studioLiveCardModalStyle}
                 >
                   <button
                     type="button"
-                    aria-label="Close tools"
-                    className="absolute inset-0 bg-black/45"
-                    onClick={() => setIsLiveCardToolsDrawerOpen(false)}
+                    aria-label="Close live card preview"
+                    onClick={() => closeLiveCardFullscreen()}
+                    className="absolute inset-0"
                   />
-                  <motion.aside
-                    initial={{ x: "100%" }}
-                    animate={{ x: 0 }}
-                    exit={{ x: "100%" }}
-                    transition={{ type: "tween", duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-                    className="absolute bottom-0 right-0 top-0 z-10 flex w-[min(22rem,88vw)] flex-col gap-3 overflow-y-auto border-l border-white/10 bg-neutral-950/97 p-4 pb-8 pt-14 shadow-2xl backdrop-blur-xl"
+
+                  <button
+                    onClick={() => closeLiveCardFullscreen()}
+                    className="absolute right-4 top-4 z-[7010] rounded-full bg-white/20 p-3 text-white transition-colors hover:bg-white/30 md:right-8 md:top-8"
                   >
-                    <div className="flex shrink-0 items-center justify-between border-b border-white/10 pb-3">
-                      <p className="text-xs font-bold uppercase tracking-widest text-white/70">
-                        Studio tools
-                      </p>
-                      <button
-                        type="button"
-                        aria-label="Close tools"
-                        onClick={() => setIsLiveCardToolsDrawerOpen(false)}
-                        className="rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-                    <div className="flex min-h-0 flex-1 flex-col gap-3">
+                    <X className="h-6 w-6" />
+                  </button>
+
+                  {!isLiveCardToolsDrawerOpen && liveCardPreviewTools ? (
+                    <button
+                      type="button"
+                      aria-label="Open studio tools"
+                      onClick={() => setIsLiveCardToolsDrawerOpen(true)}
+                      className="fixed right-3 z-[7015] flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-white/25 md:hidden"
+                      style={
+                        studioLiveCardControlTop ? { top: studioLiveCardControlTop } : undefined
+                      }
+                    >
+                      <PanelLeft className="h-6 w-6" />
+                    </button>
+                  ) : null}
+
+                  {liveCardPreviewTools ? (
+                    <div className="absolute right-4 top-20 z-[7010] hidden max-h-[calc(100dvh-6rem)] w-[min(22rem,calc(100vw-1rem))] flex-col gap-3 overflow-y-auto overscroll-contain md:right-8 md:top-24 md:flex">
                       {liveCardPreviewTools}
                     </div>
-                  </motion.aside>
+                  ) : null}
+
+                  <AnimatePresence>
+                    {isLiveCardToolsDrawerOpen && liveCardPreviewTools ? (
+                      <motion.div
+                        key="live-card-tools-drawer"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="fixed inset-0 z-[7012] md:hidden"
+                      >
+                        <button
+                          type="button"
+                          aria-label="Close tools"
+                          className="absolute inset-0 bg-black/45"
+                          onClick={() => setIsLiveCardToolsDrawerOpen(false)}
+                        />
+                        <motion.aside
+                          initial={{ x: "100%" }}
+                          animate={{ x: 0 }}
+                          exit={{ x: "100%" }}
+                          transition={{ type: "tween", duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+                          className="absolute bottom-0 right-0 top-0 z-10 flex w-[min(22rem,88vw)] flex-col gap-3 overflow-y-auto border-l border-white/10 bg-neutral-950/97 p-4 pb-8 pt-14 shadow-2xl backdrop-blur-xl"
+                        >
+                          <div className="flex shrink-0 items-center justify-between border-b border-white/10 pb-3">
+                            <p className="text-xs font-bold uppercase tracking-widest text-white/70">
+                              Studio tools
+                            </p>
+                            <button
+                              type="button"
+                              aria-label="Close tools"
+                              onClick={() => setIsLiveCardToolsDrawerOpen(false)}
+                              className="rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
+                          </div>
+                          <div className="flex min-h-0 flex-1 flex-col gap-3">
+                            {liveCardPreviewTools}
+                          </div>
+                        </motion.aside>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+
+                  <motion.div
+                    initial={{ scale: 0.9, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.9, y: 20 }}
+                    className="relative z-[7005] w-full max-w-md overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-[#8C7B65]/20 aspect-[9/16]"
+                    style={studioLiveCardFrameStyle}
+                  >
+                    <img
+                      src={
+                        liveCardInteractionLayout?.imageUrl ?? getMediaPreviewUrl(activePageRecord)
+                      }
+                      alt={activePageRecord.theme}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={() => {
+                        setStudioVisualDraft((prev) => {
+                          if (
+                            !prev ||
+                            !activePageRecord ||
+                            prev.itemId !== activePageRecord.id ||
+                            !clean(prev.previewImageUrl)
+                          ) {
+                            handleMediaImageLoadError(activePageRecord);
+                            return prev;
+                          }
+                          return { ...prev, previewImageUrl: null };
+                        });
+                      }}
+                    />
+                    <LiveCardHeroTextOverlay invitationData={activePageRecord.data} />
+
+                    <StudioLiveCardActionSurface
+                      title={activePageRecord.data?.title || getStudioShareTitle(activePageRecord)}
+                      invitationData={activePageRecord.data}
+                      activeTab={activeTab}
+                      onActiveTabChange={setActiveTab}
+                      positions={liveCardInteractionLayout?.positions}
+                      shareUrl={studioPreviewShareUrl}
+                      onShare={() => void shareMedia(activePageRecord)}
+                      shareState={
+                        sharingId === activePageRecord.id
+                          ? "pending"
+                          : copySuccess
+                            ? "success"
+                            : "idle"
+                      }
+                      isDesignMode={isDesignMode}
+                      onDragEnd={(buttonKey, position) =>
+                        updatePosition(activePageRecord.id, buttonKey, position)
+                      }
+                      showExtendedDetails
+                      registryHelperText={activePageRecord.data.interactiveMetadata.shareNote}
+                    />
+                  </motion.div>
+
+                  {!isDesktopLiveCardViewport ? (
+                    <div
+                      className="fixed left-1/2 z-[7010] flex -translate-x-1/2 items-center gap-3 rounded-full border border-white/12 bg-white/14 px-3 py-2 shadow-[0_18px_50px_rgba(0,0,0,0.38)] backdrop-blur-xl md:hidden"
+                      style={{ bottom: `calc(${STUDIO_MOBILE_BOTTOM_CHROME} + 0.25rem)` }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => openLiveCardImageEdit(activePageRecord)}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-transform hover:scale-105"
+                        aria-label="Edit live card"
+                        title="Edit"
+                      >
+                        <Pencil className="h-5 w-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => downloadMedia(activePageRecord)}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-transform hover:scale-105"
+                        aria-label="Download live card"
+                        title="Download"
+                      >
+                        <Download className="h-5 w-5" />
+                      </button>
+                    </div>
+                  ) : null}
                 </motion.div>
-              ) : null}
-            </AnimatePresence>
-
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="relative z-[7005] w-full max-w-md overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-[#8C7B65]/20 aspect-[9/16]"
-              style={studioLiveCardFrameStyle}
-            >
-              <img
-                src={liveCardInteractionLayout?.imageUrl ?? getMediaPreviewUrl(activePageRecord)}
-                alt={activePageRecord.theme}
-                className="absolute inset-0 h-full w-full object-cover"
-                referrerPolicy="no-referrer"
-                onError={() => {
-                  setStudioVisualDraft((prev) => {
-                    if (
-                      !prev ||
-                      !activePageRecord ||
-                      prev.itemId !== activePageRecord.id ||
-                      !clean(prev.previewImageUrl)
-                    ) {
-                      handleMediaImageLoadError(activePageRecord);
-                      return prev;
-                    }
-                    return { ...prev, previewImageUrl: null };
-                  });
-                }}
-              />
-              <LiveCardHeroTextOverlay invitationData={activePageRecord.data} />
-
-              <StudioLiveCardActionSurface
-                title={activePageRecord.data?.title || getStudioShareTitle(activePageRecord)}
-                invitationData={activePageRecord.data}
-                activeTab={activeTab}
-                onActiveTabChange={setActiveTab}
-                positions={liveCardInteractionLayout?.positions}
-                shareUrl={studioPreviewShareUrl}
-                onShare={() => void shareMedia(activePageRecord)}
-                shareState={
-                  sharingId === activePageRecord.id
-                    ? "pending"
-                    : copySuccess
-                      ? "success"
-                      : "idle"
-                }
-                isDesignMode={isDesignMode}
-                onDragEnd={(buttonKey, position) =>
-                  updatePosition(activePageRecord.id, buttonKey, position)
-                }
-                showExtendedDetails
-                registryHelperText={activePageRecord.data.interactiveMetadata.shareNote}
-              />
-            </motion.div>
-
-            {!isDesktopLiveCardViewport ? (
-              <div
-                className="fixed left-1/2 z-[7010] flex -translate-x-1/2 items-center gap-3 rounded-full border border-white/12 bg-white/14 px-3 py-2 shadow-[0_18px_50px_rgba(0,0,0,0.38)] backdrop-blur-xl md:hidden"
-                style={{ bottom: `calc(${STUDIO_MOBILE_BOTTOM_CHROME} + 0.25rem)` }}
-              >
-                <button
-                  type="button"
-                  onClick={() => openLiveCardImageEdit(activePageRecord)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-transform hover:scale-105"
-                  aria-label="Edit live card"
-                  title="Edit"
-                >
-                  <Pencil className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => downloadMedia(activePageRecord)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-neutral-900 shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-transform hover:scale-105"
-                  aria-label="Download live card"
-                  title="Download"
-                >
-                  <Download className="h-5 w-5" />
-                </button>
-              </div>
-            ) : null}
-          </motion.div>
-            );
-          })()
-        ) : null}
+              );
+            })()
+          : null}
       </AnimatePresence>
-
     </>
   );
 }

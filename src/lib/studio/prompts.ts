@@ -1,11 +1,11 @@
+import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
 import type {
   StudioEventDetails,
-  StudioGenerationGuidance,
   StudioGenerateSurface,
+  StudioGenerationGuidance,
   StudioInvitationText,
   StudioLiveCardMetadata,
 } from "@/lib/studio/types";
-import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
 
 const CARD_SCHEDULE_EXAMPLE = "Saturday May 23rd at 12:00 PM";
 const CARD_SCHEDULE_DATE_ONLY_EXAMPLE = "Saturday May 23rd";
@@ -28,6 +28,49 @@ function sanitizeImagePromptBriefText(value: string | null | undefined): string 
     .trim();
 }
 
+function splitVisualExclusionTerms(value: string): string[] {
+  return value
+    .split(/\s+(?:and|or)\s+|\/|&/i)
+    .map((item) =>
+      trimOrEmpty(item)
+        .replace(/^(?:all|any|the|a|an|every)\s+/i, "")
+        .replace(/\s+(?:from|in|on|at|with|near|around|behind|inside)\b[\s\S]*$/i, ""),
+    )
+    .filter((item) => item.length >= 2 && item.length <= 60);
+}
+
+function extractVisualExclusions(...values: Array<string | null | undefined>): string[] {
+  const text = values
+    .map((value) => sanitizeImagePromptBriefText(value) || "")
+    .join(" ")
+    .trim();
+  if (!text) return [];
+
+  const exclusions: string[] = [];
+  const patterns = [
+    /\b(?:remove|delete|erase|eliminate|exclude|omit)\s+([^,.;\n]+)/gi,
+    /\b(?:no|without)\s+([^,.;\n]+)/gi,
+  ];
+
+  for (const pattern of patterns) {
+    for (const match of text.matchAll(pattern)) {
+      exclusions.push(...splitVisualExclusionTerms(match[1] || ""));
+    }
+  }
+
+  return Array.from(new Set(exclusions.map((item) => item.toLowerCase())));
+}
+
+function buildVisualExclusionPromptRules(exclusions: string[]): string[] {
+  if (exclusions.length === 0) return [];
+  const exclusionText = exclusions.join(", ");
+  return [
+    `- HARD USER EXCLUSION: do not include these requested excluded visual elements anywhere in the artwork: ${exclusionText}.`,
+    "- This exclusion overrides previous image contents, private visual direction words, realism rules, themeStyle metadata, and supporting context.",
+    "- Replace excluded elements with category-appropriate decor, environment, negative space, or background details that do not contain the excluded elements.",
+  ];
+}
+
 function renderLinks(links: StudioEventDetails["links"]): string {
   if (!Array.isArray(links) || links.length === 0) return "Links: None";
   return ["Links:", ...links.slice(0, 8).map((item) => `- ${item.label}: ${item.url}`)].join("\n");
@@ -44,11 +87,20 @@ function renderCoreCreativeInputs(event: StudioEventDetails): string {
     line("Team / Host", event.teamName),
     line("Opponent", event.opponentName),
     line("Age or Milestone", event.ageOrMilestone),
+    line("Property Price", event.propertyPrice),
+    line("Bedrooms", event.bedrooms),
+    line("Bathrooms", event.bathrooms),
+    line("Square Feet", event.squareFootage),
+    line("Neighborhood", event.neighborhood),
+    line("Property Highlights", event.propertyHighlights),
+    line("Realtor", event.realtorName),
+    line("Brokerage", event.brokerageName),
     line("Event Year", event.eventYear),
   ].join("\n");
 }
 
 function renderImageCreativeInputs(event: StudioEventDetails): string {
+  const openHouse = getOccasionType(event) === "open_house";
   return [
     "Core creative inputs (internal, not visible copy):",
     line("Selected Event Type", event.category || event.occasion),
@@ -59,15 +111,28 @@ function renderImageCreativeInputs(event: StudioEventDetails): string {
     line("Team / Host", event.teamName),
     line("Opponent", event.opponentName),
     line("Age or Milestone", event.ageOrMilestone),
+    line("Property Price", event.propertyPrice),
+    line("Bedrooms", event.bedrooms),
+    line("Bathrooms", event.bathrooms),
+    line("Square Feet", event.squareFootage),
+    line("Neighborhood", event.neighborhood),
+    line("Property Highlights", event.propertyHighlights),
+    ...(openHouse
+      ? []
+      : [line("Realtor", event.realtorName), line("Brokerage", event.brokerageName)]),
     line("Event Year", event.eventYear),
   ].join("\n");
 }
 
-function getSubjectTransformMode(guidance?: StudioGenerationGuidance): "default" | "premium_makeover" {
+function getSubjectTransformMode(
+  guidance?: StudioGenerationGuidance,
+): "default" | "premium_makeover" {
   return guidance?.subjectTransformMode === "premium_makeover" ? "premium_makeover" : "default";
 }
 
-function getLikenessStrength(guidance?: StudioGenerationGuidance): "strict" | "balanced" | "creative" {
+function getLikenessStrength(
+  guidance?: StudioGenerationGuidance,
+): "strict" | "balanced" | "creative" {
   if (guidance?.likenessStrength === "strict" || guidance?.likenessStrength === "creative") {
     return guidance.likenessStrength;
   }
@@ -77,7 +142,10 @@ function getLikenessStrength(guidance?: StudioGenerationGuidance): "strict" | "b
 function getVisualStyleMode(
   guidance?: StudioGenerationGuidance,
 ): "photoreal" | "editorial_cinematic" | "playful_stylized" {
-  if (guidance?.visualStyleMode === "photoreal" || guidance?.visualStyleMode === "playful_stylized") {
+  if (
+    guidance?.visualStyleMode === "photoreal" ||
+    guidance?.visualStyleMode === "playful_stylized"
+  ) {
     return guidance.visualStyleMode;
   }
   return "editorial_cinematic";
@@ -150,7 +218,7 @@ function hasRealismIntent(event: StudioEventDetails, guidance?: StudioGeneration
 
   return (
     getVisualStyleMode(guidance) === "photoreal" ||
-    /\b(realistic|photorealistic|photo-realistic|lifelike|true to life|naturalistic|real cats?)\b/.test(
+    /\b(realistic|photorealistic|photo-realistic|lifelike|true to life|naturalistic)\b/.test(
       combined,
     )
   );
@@ -170,15 +238,28 @@ function buildOccasionBlob(event: StudioEventDetails): string {
     event.leagueDivision,
     event.broadcastInfo,
     event.parkingInfo,
+    event.propertyPrice,
+    event.bedrooms,
+    event.bathrooms,
+    event.squareFootage,
+    event.neighborhood,
+    event.propertyHighlights,
+    event.realtorName,
+    event.realtorTitle,
+    event.brokerageName,
+    event.realtorLicense,
   ]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
 }
 
-function getOccasionType(event: StudioEventDetails):
+function getOccasionType(
+  event: StudioEventDetails,
+):
   | "birthday"
   | "wedding"
+  | "open_house"
   | "baby_shower"
   | "bridal_shower"
   | "anniversary"
@@ -191,7 +272,11 @@ function getOccasionType(event: StudioEventDetails):
 
   if (/\bbridal shower\b/.test(blob)) return "bridal_shower";
   if (/\bbaby shower\b/.test(blob)) return "baby_shower";
-  if (/\bfield trip\/day\b|\bfield trip\b|\bfield day\b|\bschool day\b|\bschool event\b|\bclass trip\b/.test(blob)) {
+  if (
+    /\bfield trip\/day\b|\bfield trip\b|\bfield day\b|\bschool day\b|\bschool event\b|\bclass trip\b/.test(
+      blob,
+    )
+  ) {
     return "field_trip";
   }
   if (
@@ -201,10 +286,17 @@ function getOccasionType(event: StudioEventDetails):
   ) {
     return "game_day";
   }
-  if (/\bhousewarming|new home|house party|open house\b/.test(blob)) return "housewarming";
+  if (/\b(real[-\s]?estate\s+)?open house|realtor|brokerage|listing|mls\b/.test(blob)) {
+    return "open_house";
+  }
+  if (/\bhousewarming|new home|house party\b/.test(blob)) return "housewarming";
   if (/\banniversary\b/.test(blob)) return "anniversary";
   if (/\bbirthday\b/.test(blob)) return "birthday";
-  if (/\bwedding|weddings|nuptials|ceremony|reception|save the date|engagement(\s+party)?\b/.test(blob)) {
+  if (
+    /\bwedding|weddings|nuptials|ceremony|reception|save the date|engagement(\s+party)?\b/.test(
+      blob,
+    )
+  ) {
     return "wedding";
   }
   if (/\bcustom invite\b/.test(blob)) return "custom_invite";
@@ -252,6 +344,16 @@ function buildOccasionThemeGuardrails(event: StudioEventDetails): string[] {
       "- themeStyle should describe the wedding-themed concept, not only the raw setting or scenery.",
       "- Let venue type, floral palette, and formality cues steer the setting so the result reads like a credible wedding invitation rather than generic romantic scenery.",
       "- If the supplied details describe a single ceremony or evening, keep the concept focused on that event instead of inflating it into an unsupported wedding-weekend concept.",
+    ];
+  }
+
+  if (occasionType === "open_house") {
+    return [
+      ...common,
+      "- For Open House, make the theme read as premium real-estate listing marketing with property photography, architecture, clean listing facts, and logo-free premium real-estate editorial styling.",
+      "- themeStyle should describe the open-house listing flyer concept, not a housewarming party or generic home interior.",
+      "- Treat supplied address, price, beds, baths, square footage, and neighborhood as factual. Use only what is provided; omit missing facts instead of inventing them.",
+      "- If property photos are supplied, use them as the primary visual system and design a premium realtor poster/flyer around them.",
     ];
   }
 
@@ -339,6 +441,12 @@ function buildPosterFirstInvitationCopyRules(event: StudioEventDetails): string[
         "- Make the wording feel like a real wedding invitation with ceremony, reception, romance, and premium stationery cues instead of a venue mood board alone.",
         "- If the event wording points to a ceremony, reception, dinner, or wedding weekend, make the scope explicit and credible instead of mixing several unsupported wedding formats together.",
       ];
+    case "open_house":
+      return [
+        "- For Open House, make Open House, property address, date/time, price, and strongest supplied features the main invitation hierarchy first. If needed, distill the Design Idea into a premium listing mood rather than repeating raw prompt fragments.",
+        "- Make the wording feel like a real realtor open-house flyer or live listing card with buyer-facing facts, tour intent, and logo-free editorial polish instead of a housewarming invitation.",
+        "- Use exact supplied property facts only. Omit missing prices, amenities, MLS numbers, brokerage names, licenses, phone numbers, and property claims instead of guessing.",
+      ];
     case "baby_shower":
       return [
         "- For baby showers, make the honoree name, baby name, or baby shower title the main invitation hierarchy first. If needed, distill the Design Idea into a guest-facing mood cue rather than repeating raw Design Idea wording.",
@@ -422,7 +530,7 @@ export function buildInvitationTextPrompt(
     "- Design Idea is private art direction, not default visible invitation copy.",
     "- Guest-facing invitation copy fields must not introduce Design Idea-only nouns, motifs, props, animals, places, or prompt fragments.",
     "- Do not quote, restate, or lightly paraphrase raw Design Idea wording as a title, subtitle, theme line, opening line, schedule line, or other visible invitation copy unless the user explicitly asked for that exact wording to appear.",
-    "- If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of printing it as guest-facing copy.",
+    "- If the Design Idea contains prompt-like visual fragments such as 'realistic neon robots at the movie', translate that into imagery and mood instead of printing it as guest-facing copy.",
     "- If an age or milestone is provided, incorporate it naturally into the invitation concept or copy when helpful.",
     "- Preserve the exact spelling of names, titles, venues, and event words from the provided details.",
     "- Double-check every visible word for spelling before returning JSON.",
@@ -462,6 +570,16 @@ export function buildInvitationTextPrompt(
     line("Opponent", event.opponentName),
     line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
+    line("Property Price", event.propertyPrice),
+    line("Bedrooms", event.bedrooms),
+    line("Bathrooms", event.bathrooms),
+    line("Square Feet", event.squareFootage),
+    line("Neighborhood", event.neighborhood),
+    line("Property Highlights", event.propertyHighlights),
+    line("Realtor", event.realtorName),
+    line("Realtor Title", event.realtorTitle),
+    line("Brokerage", event.brokerageName),
+    line("License", event.realtorLicense),
     line("Design Idea", sanitizeImagePromptBriefText(event.userIdea)),
     line("Event Details", sanitizeImagePromptBriefText(event.description)),
     line("Date", event.date),
@@ -491,10 +609,16 @@ export function buildLiveCardPrompt(
 ): string {
   const includeEmoji = guidance?.includeEmoji === true ? "Allowed" : "Avoid";
   const realismRequested = hasRealismIntent(event, guidance);
+  const visualExclusions = extractVisualExclusions(event.userIdea, guidance?.style);
   const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
   const posterFirstLiveCard = isPosterFirstLiveCardOccasion(event);
   const gameDay = isGameDayOccasion(event);
-  const referenceImageCount = Math.max(0, event.referenceImageUrls?.length ?? 0);
+  const referenceImageCount = Math.max(
+    0,
+    (event.referenceImageUrls?.length ?? 0) +
+      (event.propertyImageUrls?.length ?? 0) +
+      (event.realtorImageUrls?.length ?? 0),
+  );
   return [
     "You are a premium invitation designer, greeting-card art director, and live-event card writer for Envitefy.",
     "Return strict JSON only. Do not include markdown fences.",
@@ -550,9 +674,10 @@ export function buildLiveCardPrompt(
     "- Design Idea is private art direction, not default visible invitation copy.",
     "- Guest-facing invitation copy fields must not introduce Design Idea-only nouns, motifs, props, animals, places, or prompt fragments.",
     "- Do not quote, restate, or lightly paraphrase raw Design Idea wording as a title, subtitle, theme line, opening line, schedule line, or other visible invitation copy unless the user explicitly asked for that exact wording to appear.",
-    "- If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of printing it as guest-facing copy.",
+    "- If the Design Idea contains prompt-like visual fragments such as 'realistic neon robots at the movie', translate that into imagery and mood instead of printing it as guest-facing copy.",
     "- If an age or milestone is provided, work it into the copy or concept naturally when it adds clarity.",
     "- Treat explicit user visual instructions as the highest-priority requirement.",
+    ...buildVisualExclusionPromptRules(visualExclusions),
     "- Do not replace a literal user request with a cuter or more whimsical version of the theme.",
     "- Avoid novelty puns, mascot language, and jokey rewrites unless the user explicitly asked for them.",
     ...(posterFirstLiveCard
@@ -584,8 +709,8 @@ export function buildLiveCardPrompt(
     ...(realismRequested
       ? [
           "- The requested visual direction is realistic. Keep the copy literal and grounded.",
-          "- Do not turn realistic cats into cartoon cats, mascots, plush characters, or animals wearing human costumes unless the user explicitly asked for that.",
-          "- Do not invent cat puns or cute rewritten titles when the style request is realistic.",
+          "- Do not turn realistic subjects into cartoons, mascots, plush characters, or costume-like novelty figures unless the user explicitly asked for that.",
+          "- Do not invent puns or cute rewritten titles when the style request is realistic.",
         ]
       : []),
     ...buildReferencePhotoPromptRules(guidance, referenceImageCount),
@@ -605,6 +730,16 @@ export function buildLiveCardPrompt(
     line("Opponent", event.opponentName),
     line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
+    line("Property Price", event.propertyPrice),
+    line("Bedrooms", event.bedrooms),
+    line("Bathrooms", event.bathrooms),
+    line("Square Feet", event.squareFootage),
+    line("Neighborhood", event.neighborhood),
+    line("Property Highlights", event.propertyHighlights),
+    line("Realtor", event.realtorName),
+    line("Realtor Title", event.realtorTitle),
+    line("Brokerage", event.brokerageName),
+    line("License", event.realtorLicense),
     line("Design Idea", sanitizeImagePromptBriefText(event.userIdea)),
     line("Event Details", sanitizeImagePromptBriefText(event.description)),
     line("Date", event.date),
@@ -789,6 +924,16 @@ function buildEventVisibleCopySource(event: StudioEventDetails): string {
     event.leagueDivision,
     event.broadcastInfo,
     event.parkingInfo,
+    event.propertyPrice,
+    event.bedrooms,
+    event.bathrooms,
+    event.squareFootage,
+    event.neighborhood,
+    event.propertyHighlights,
+    event.realtorName,
+    event.realtorTitle,
+    event.brokerageName,
+    event.realtorLicense,
     event.ageOrMilestone,
     event.description,
     event.date,
@@ -824,9 +969,7 @@ function containsPrivateVisualDirectionOnlyToken(
   if ([...valueTokens].some((token) => privateOnlyTokens.has(token))) return true;
   const rawValue = trimOrEmpty(value);
   if (!rawValue.includes("#")) return false;
-  const compactValue = rawValue
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
+  const compactValue = rawValue.toLowerCase().replace(/[^a-z0-9]/g, "");
   return [...privateOnlyTokens].some(
     (token) =>
       compactValue === token ||
@@ -836,15 +979,11 @@ function containsPrivateVisualDirectionOnlyToken(
   );
 }
 
-function removePrivateVisualDirectionOnlyTokens(
-  event: StudioEventDetails,
-  value: string,
-): string {
+function removePrivateVisualDirectionOnlyTokens(event: StudioEventDetails, value: string): string {
   const privateOnlyTokens = getPrivateVisualDirectionOnlyTokens(event);
   if (privateOnlyTokens.size === 0) return value;
-  const withoutPrivateTerms = value.replace(
-    /[a-z0-9]+(?:['-][a-z0-9]+)?/gi,
-    (raw) => (privateOnlyTokens.has(normalizeVisibleCopyToken(raw)) ? "" : raw),
+  const withoutPrivateTerms = value.replace(/[a-z0-9]+(?:['-][a-z0-9]+)?/gi, (raw) =>
+    privateOnlyTokens.has(normalizeVisibleCopyToken(raw)) ? "" : raw,
   );
   return withoutPrivateTerms
     .replace(/\s+([,.;:!?])/g, "$1")
@@ -874,19 +1013,43 @@ function sanitizeVisibleCopyLineForPrivateVisualDirection(
   return collectVisibleCopyTokens(cleaned).size > 0 ? cleaned : "";
 }
 
+function containsOpenHouseRasterForbiddenAgentCopy(
+  event: StudioEventDetails,
+  value: string | null | undefined,
+): boolean {
+  if (getOccasionType(event) !== "open_house") return false;
+  const haystack = trimOrEmpty(value).toLowerCase();
+  if (!haystack) return false;
+  const forbiddenValues = [
+    event.realtorName,
+    event.realtorTitle,
+    event.brokerageName,
+    event.realtorLicense,
+    event.rsvpContact,
+  ]
+    .map((item) => trimOrEmpty(item).toLowerCase())
+    .filter((item) => item.length >= 3);
+  return forbiddenValues.some((item) => haystack.includes(item));
+}
+
 function sanitizeStudioInvitationVisibleCopy(
   event: StudioEventDetails,
   invitation: StudioInvitationText,
 ): StudioInvitationText {
   return {
-    title: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.title) || trimOrEmpty(event.title),
+    title:
+      sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.title) ||
+      trimOrEmpty(event.title),
     subtitle: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.subtitle),
     openingLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.openingLine),
     scheduleLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.scheduleLine),
     locationLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.locationLine),
     detailsLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.detailsLine),
     callToAction: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.callToAction),
-    socialCaption: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.socialCaption),
+    socialCaption: sanitizeVisibleCopyLineForPrivateVisualDirection(
+      event,
+      invitation.socialCaption,
+    ),
     hashtags: invitation.hashtags.filter(
       (tag) => !containsPrivateVisualDirectionOnlyToken(event, tag),
     ),
@@ -909,11 +1072,17 @@ export function sanitizeStudioLiveCardVisibleCopy(
     invitation.openingLine ||
     title;
   const ctaLabel =
-    sanitizeVisibleCopyLineForPrivateVisualDirection(event, liveCard.interactiveMetadata.ctaLabel) ||
+    sanitizeVisibleCopyLineForPrivateVisualDirection(
+      event,
+      liveCard.interactiveMetadata.ctaLabel,
+    ) ||
     invitation.callToAction ||
     "RSVP";
   const shareNote =
-    sanitizeVisibleCopyLineForPrivateVisualDirection(event, liveCard.interactiveMetadata.shareNote) ||
+    sanitizeVisibleCopyLineForPrivateVisualDirection(
+      event,
+      liveCard.interactiveMetadata.shareNote,
+    ) ||
     invitation.socialCaption ||
     description;
 
@@ -961,13 +1130,30 @@ function buildApprovedVisibleCopySection(
     line("Opening Line", shortOpeningLine),
     line("Schedule Line", trimOrEmpty(visibleLiveCard?.invitation?.scheduleLine)),
     line("Location Line", trimOrEmpty(visibleLiveCard?.invitation?.locationLine)),
-  ].filter((item) => !item.endsWith("Not provided"));
+  ].filter(
+    (item) =>
+      !item.endsWith("Not provided") && !containsOpenHouseRasterForbiddenAgentCopy(event, item),
+  );
 
   if (lines.length === 0) return "";
 
   return [
     "Approved invitation copy to use verbatim if visible text appears in the artwork:",
     ...lines,
+  ].join("\n");
+}
+
+export function buildExistingInvitationImageEditPrompt(editInstruction?: string | null): string {
+  const instruction = trimOrEmpty(editInstruction);
+
+  return [
+    "You are editing the attached existing live-card raster image.",
+    instruction || "Preserve the existing image exactly.",
+    "Make only the explicitly requested localized change.",
+    "Return the full image with that edit applied, but do not regenerate or redesign the card.",
+    "Preserve all unrelated visible text, numbers, punctuation, typography, photos, room/property images, bottom image strips, icons, logos, stats, layout, crop, perspective, lighting, colors, and spacing.",
+    "If replacing text, use the requested replacement text exactly and do not convert month names to numeric date format.",
+    "Do not add new words, dates, facts, symbols, panels, footers, watermarks, QR codes, or interface elements.",
   ].join("\n");
 }
 
@@ -984,9 +1170,13 @@ export function buildInvitationImagePrompt(
   const surface = options?.surface === "page" ? "page" : "image";
   const isEditingExistingImage = options?.editingExistingImage === true;
   const refCount = Math.max(0, Math.min(6, options?.referenceImageCount ?? 0));
+  const propertyImageCount = Math.max(0, Math.min(5, event.propertyImageUrls?.length ?? 0));
+  const realtorUiImageCount = Math.max(0, Math.min(1, event.realtorImageUrls?.length ?? 0));
+  const openHouse = getOccasionType(event) === "open_house";
   const wedding = isWeddingOccasion(event);
   const fieldTrip = isFieldTripOccasion(event);
   const realismRequested = hasRealismIntent(event, guidance);
+  const visualExclusions = extractVisualExclusions(event.userIdea, guidance?.style);
   const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
   const pageSurface = surface === "page";
   const gameDay = isGameDayOccasion(event);
@@ -999,14 +1189,33 @@ export function buildInvitationImagePrompt(
     isEditingExistingImage
       ? "Edit the provided invitation artwork image."
       : "Create one invitation artwork image.",
-    ...(refCount > 0
+    ...(propertyImageCount > 0
       ? [
           isEditingExistingImage
-            ? `USER PHOTOS IN THE FLYER (NOT A SIDEBAR): After the first image (the current invitation card), ${refCount} user-uploaded photo(s) follow in order. Rebuild the artwork so those photos are the dominant visual, typically as the upper ~45–60% hero with a soft feathered blend into cream or tonal negative space. Preserve recognizable likeness of people. Do not leave user photos only as a tiny strip or thumbnail; they must read as the invitation background's main photograph.`
-            : `USER PHOTOS IN THE FLYER (NOT A SIDEBAR): Before this text prompt, ${refCount} user-uploaded photo(s) appear in order. The final invitation MUST weave these into the card background and hero art: large focal photo (upper ~45–60% of the canvas), cinematic blend or vignette into the rest of the design, and clean negative space for later overlays. Preserve recognizable likeness. Forbidden: tucking user photos into a small gallery row while generating unrelated stock people or generic art as the main visual.`,
+            ? `OPEN HOUSE REFERENCE PHOTO ORDER: After the first image (the current invitation card), the next ${propertyImageCount} image(s) are house/property photos. Rebuild the artwork as a premium realtor poster/flyer using property photos as the dominant visual system.`
+            : `OPEN HOUSE REFERENCE PHOTO ORDER: Before this text prompt, the first ${propertyImageCount} reference image(s) are house/property photos. Use the property photos as the main visual source for the premium open-house poster/flyer.`,
+          "- Open House photo layout: with 1 house photo, make it a large editorial hero; with 2 house photos, use one dominant hero plus one refined secondary inset; with 3-5 house photos, create a premium real-estate collage with one dominant exterior or best interior photo and smaller supporting images.",
+          "- Preserve the real property appearance from uploaded house photos. Do not replace the listing with unrelated stock architecture or invented rooms.",
+        ]
+      : refCount > 0
+        ? [
+            isEditingExistingImage
+              ? `USER PHOTOS IN THE FLYER (NOT A SIDEBAR): After the first image (the current invitation card), ${refCount} user-uploaded photo(s) follow in order. Rebuild the artwork so those photos are the dominant visual, typically as the upper ~45–60% hero with a soft feathered blend into cream or tonal negative space. Preserve recognizable likeness of people. Do not leave user photos only as a tiny strip or thumbnail; they must read as the invitation background's main photograph.`
+              : `USER PHOTOS IN THE FLYER (NOT A SIDEBAR): Before this text prompt, ${refCount} user-uploaded photo(s) appear in order. The final invitation MUST weave these into the card background and hero art: large focal photo (upper ~45–60% of the canvas), cinematic blend or vignette into the rest of the design, and clean negative space for later overlays. Preserve recognizable likeness. Forbidden: tucking user photos into a small gallery row while generating unrelated stock people or generic art as the main visual.`,
+          ]
+        : []),
+    "Style requirements:",
+    ...buildVisualExclusionPromptRules(visualExclusions),
+    ...(openHouse
+      ? [
+          "- OPEN HOUSE BUTTON-ZONE HARD RULE: the bottom 30% of the 9:16 raster is reserved for Envitefy app buttons and must be image-only background.",
+          "- In that bottom 30%, generate only low-detail property photo texture, landscaping, flooring, wall, water, driveway, or abstract background continuation. No readable content of any kind may appear there.",
+          "- Absolutely no words, letters, numbers, logos, brokerage marks, seals, signs, monograms, price/stats, address, dates, times, beds/baths, square footage, agent/realtor names, contact details, icons, badges, or decorative information may appear in the bottom 30%.",
+          "- All Open House visible copy must live in the upper and middle area only and must end above the lower 32% boundary of the card.",
+          "- Use logo-free premium real-estate editorial styling. Do not create brokerage logos, brand marks, faux signs, seals, or monograms anywhere in the flyer artwork.",
+          "- Realtor/agent identity is app UI metadata only for the Realtor tab; do not include realtor names, brokerage names, license numbers, phone numbers, email addresses, or agent photos in the raster artwork.",
         ]
       : []),
-    "Style requirements:",
     ...(imageFinishPreset
       ? [
           `- Selected image finish preset: ${imageFinishPreset.label} - ${imageFinishPreset.description}.`,
@@ -1032,10 +1241,16 @@ export function buildInvitationImagePrompt(
     "- Treat all visible text as post-production-grade invitation copy, not generic placeholder wording.",
     "- Do not generate any UI elements, interface overlays, app controls, buttons, icons, badges, arrows, floating controls, share symbols, chat symbols, phone symbols, plus buttons, camera buttons, circular controls, watermarks, or screenshot-style overlays.",
     "- Keep the top edge free of faux phone UI: no carrier names, clock text, battery icons, signal icons, status icons, notches, camera cutouts, or device chrome.",
-    "- Keep the bottom action-button zone art-only and text-free. End the final visible text line well above the bottom controls area.",
-    "- Do not place any visible text, captions, labels, taglines, icons, buttons, or decorative badges in the bottom button area.",
-    "- Let the artwork continue naturally behind the bottom buttons as full-bleed art; do not create a footer strip, boxed shelf, or empty tray.",
+    "- Keep the bottom action-button zone art-only and completely free of information. End the final visible text line well above the bottom controls area.",
+    "- Do not place any visible text, captions, names, prices, addresses, dates, times, beds/baths, square footage, taglines, icons, buttons, decorative badges, contact details, or listing facts in the bottom button area.",
+    "- Let the artwork continue naturally behind the bottom buttons as simple full-bleed property/art texture; do not create a footer strip, boxed shelf, dark data bar, listing-info panel, or empty tray.",
     "- The output must read as one clean continuous invitation image, not a screenshot, poster mockup, or app capture.",
+    ...(realtorUiImageCount > 0
+      ? [
+          "- A realtor/agent photo was uploaded for the app's Realtor tab only. Do not insert, redraw, reference, crop, paint, or include that agent headshot/person anywhere in the flyer artwork.",
+          "- The flyer artwork should be property-first. Agent identity belongs in the live-card Realtor tab, not in the generated poster image.",
+        ]
+      : []),
     ...(approvedVisibleCopy
       ? [
           "- Use only the approved invitation copy below for visible wording in the artwork. Preserve spelling exactly and do not duplicate lines.",
@@ -1045,7 +1260,9 @@ export function buildInvitationImagePrompt(
           "- If visible copy is needed, use only directly supported event details from this prompt. Do not invent unsupported slogans, RSVP lines, footer labels, or extra wording.",
           "- Private Visual Direction may influence imagery, props, styling, and mood, but it is not a source for visible invitation words.",
         ]),
-    ...(refCount > 0 ? buildReferencePhotoPromptRules(guidance, refCount) : []),
+    ...(refCount > 0 && propertyImageCount === 0
+      ? buildReferencePhotoPromptRules(guidance, refCount)
+      : []),
     ...(pageSurface
       ? isEditingExistingImage
         ? [
@@ -1071,11 +1288,15 @@ export function buildInvitationImagePrompt(
           "- No QR codes. Do not add new watermarks. Keep logos and brand signage that already appear in the source unless the edit explicitly asks to remove or replace them.",
         ]
       : ["- No QR codes, no watermarks, no logos."]),
-    ...(refCount > 0
+    ...(propertyImageCount > 0
       ? [
-          "- The supplied reference photo(s) may show people: show them prominently in the hero artwork with natural, respectful rendering. This overrides any generic 'avoid faces' guidance.",
+          "- The supplied house photos are property/listing references, not generic people references. Preserve architecture, rooms, exterior, finishes, and visual truthfulness.",
         ]
-      : ["- Do not include explicit faces unless needed by theme."]),
+      : refCount > 0
+        ? [
+            "- The supplied reference photo(s) may show people: show them prominently in the hero artwork with natural, respectful rendering. This overrides any generic 'avoid faces' guidance.",
+          ]
+        : ["- Do not include explicit faces unless needed by theme."]),
     ...(wedding
       ? [
           "- Wedding / formal celebration: aim for serious, print-ready stationery—cream, ivory, champagne, soft blush, sage, or navy with restrained gold accents unless the user's palette overrides.",
@@ -1106,6 +1327,14 @@ export function buildInvitationImagePrompt(
           "- Do not invent final scores, standings, named players, or branded arena features.",
         ]
       : []),
+    ...(getOccasionType(event) === "open_house"
+      ? [
+          "- Open House / real-estate flyer: treat the result as premium property marketing created by a realtor, with buyer-facing hierarchy, architectural photography, listing details, and logo-free premium real-estate editorial styling.",
+          "- Build visible hierarchy around Open House, the property address, date/time, price, and strongest supplied features. Omit any missing listing fact instead of inventing it.",
+          "- Do not invent MLS numbers, prices, amenities, square footage, bed/bath counts, brokerages, license numbers, phone numbers, logos, or property claims.",
+          "- Use flyer/poster-grade typography that remains readable at mobile-card size. Avoid dense paragraph blocks and tiny legal-style microtype.",
+        ]
+      : []),
     isEditingExistingImage
       ? "- Edit the supplied image instead of creating a new unrelated composition."
       : "- Create a fresh invitation artwork composition.",
@@ -1126,7 +1355,7 @@ export function buildInvitationImagePrompt(
     "- The private visual direction is art direction only, not default visible invitation copy in the artwork.",
     "- Never print raw private visual direction wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy.",
     "- If the private visual direction includes a noun or motif that is absent from the approved invitation copy and event details, show it visually only; do not print that noun or motif as text.",
-    "- If the private visual direction contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text.",
+    "- If the private visual direction contains prompt-like visual fragments such as 'realistic neon robots at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text.",
     ...(pageSurface && isEditingExistingImage
       ? []
       : [
@@ -1155,6 +1384,7 @@ export function buildInvitationImagePrompt(
             "- Visible invitation text is required in the final raster for page/live-card images, but keep it sparse, readable, and intentionally designed.",
             "- Do not scatter text across the entire card. Use a clear hierarchy in the upper and middle zones and keep the lower action-button zone free of visible wording.",
             "- Do not embed faux footer microtype, button labels, RSVP instructions, or UI-like labels anywhere in the image.",
+            "- For live-card images, reserve the entire lower button area for app controls: no property facts, agent names, prices, addresses, feature lists, contact details, or decorative labels may appear there.",
           ]
       : [
           "- Visible invitation text is allowed in the final raster, but it must be intentional, sparse, and supported by the supplied event details.",
@@ -1164,7 +1394,7 @@ export function buildInvitationImagePrompt(
           "- Keep the lower portion reserved visually for the app action buttons without turning it into a blank tray or fake footer.",
           "- Treat the lower edge as artwork continuation behind the app action buttons.",
           "- The lower zone must stay decorative rather than UI-like: do not invent buttons, icons, icon clusters, circular controls, pills, chips, chat bars, nav bars, progress dots, home indicators, or device chrome.",
-          "- Do not place captions, labels, taglines, schedule lines, location lines, decorative badges, or faux footer details in the bottom button area.",
+          "- Do not place captions, labels, names, prices, addresses, taglines, schedule lines, location lines, decorative badges, listing facts, contact details, or faux footer details in the bottom button area.",
           "- Avoid crowded faux-layout structures near the bottom edge of the invitation.",
         ]),
     "- Let the background and artwork continue naturally behind the bottom buttons as full-bleed art.",
@@ -1172,16 +1402,16 @@ export function buildInvitationImagePrompt(
     "- Do not create a visible footer band, dark strip, boxed zone, or artificial empty shelf at the bottom.",
     "- Do not create a colored footer slab, tinted rectangle, or unrelated graphic block at the bottom edge.",
     "- Keep the bottom area art-led and decorative, not blank, but never let it read like a mobile app UI or control tray.",
-    "- Do not place important words directly above, behind, or between the bottom buttons.",
+    "- Do not place important words, numbers, property stats, contact details, or names directly above, behind, below, or between the bottom buttons.",
     "- These layout instructions are not visible copy. Never print phrases such as action buttons, button row, safe area, safe band, or any other instruction text in the artwork.",
     ...(pageSurface ? [] : ["- No footer copy, microtype, or faux labels."]),
     "- Treat explicit user visual instructions as mandatory, not optional inspiration.",
     ...(realismRequested
       ? [
           "- The requested visual direction is realistic or photorealistic.",
-          "- Render cats as believable real cats with natural anatomy, fur, proportions, and lighting.",
-          "- Do not make the cats cartoonish, kawaii, mascot-like, plush, chibi, or anthropomorphic unless the user explicitly asked for that.",
-          "- Do not dress the cats in human clothes or stage them like human actors unless the user explicitly asked for that.",
+          "- Render requested subjects as believable real-life subjects with natural anatomy, textures, proportions, and lighting.",
+          "- Do not make requested realistic subjects cartoonish, mascot-like, plush, chibi, or anthropomorphic unless the user explicitly asked for that.",
+          "- Do not dress realistic subjects in human costumes or stage them like human actors unless the user explicitly asked for that.",
           "- Keep the scene grounded and cinematic rather than illustrated or storybook-like.",
         ]
       : []),
@@ -1194,13 +1424,28 @@ export function buildInvitationImagePrompt(
     line("Title", event.title),
     line("Occasion", event.occasion),
     line("Event Year", event.eventYear),
-    line("Host Name", event.hostName),
-    line("Honoree Name", event.honoreeName),
+    ...(openHouse
+      ? []
+      : [line("Host Name", event.hostName), line("Honoree Name", event.honoreeName)]),
     line("Sport", event.sportType),
     line("Team / Host", event.teamName),
     line("Opponent", event.opponentName),
     line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
+    line("Property Price", event.propertyPrice),
+    line("Bedrooms", event.bedrooms),
+    line("Bathrooms", event.bathrooms),
+    line("Square Feet", event.squareFootage),
+    line("Neighborhood", event.neighborhood),
+    line("Property Highlights", event.propertyHighlights),
+    ...(openHouse
+      ? []
+      : [
+          line("Realtor", event.realtorName),
+          line("Realtor Title", event.realtorTitle),
+          line("Brokerage", event.brokerageName),
+          line("License", event.realtorLicense),
+        ]),
     line("Private Visual Direction", sanitizeImagePromptBriefText(event.userIdea)),
     line("Supporting Context", sanitizeImagePromptBriefText(event.description)),
     line("Date", event.date),
@@ -1228,7 +1473,10 @@ export function buildInvitationImagePrompt(
     line("Audience", sanitizeImagePromptBriefText(guidance?.audience)),
     line("Color Palette", sanitizeImagePromptBriefText(guidance?.colorPalette)),
     line("Image Finish Preset", imageFinishPreset?.label),
-    line("Subject Treatment", refCount > 0 ? humanizeSubjectTransformMode(guidance) : "Not requested"),
+    line(
+      "Subject Treatment",
+      refCount > 0 ? humanizeSubjectTransformMode(guidance) : "Not requested",
+    ),
     line("Likeness Strength", refCount > 0 ? humanizeLikenessStrength(guidance) : "Default"),
     line("Render Style Mode", refCount > 0 ? humanizeVisualStyleMode(guidance) : "Default"),
     line("Emoji Usage", guidance?.includeEmoji === true ? "Allowed" : "Avoid"),

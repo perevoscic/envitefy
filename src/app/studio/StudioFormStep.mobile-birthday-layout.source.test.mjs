@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -13,8 +13,11 @@ test("studio birthday form uses the unified prototype layout with shared field g
   const fieldControlsSource = readSource("src/app/studio/workspace/StudioFieldControls.tsx");
 
   assert.match(formSource, /const isBirthday = details\.category === "Birthday";/);
+  assert.match(formSource, /const sharedPrimaryFieldKeys =/);
+  assert.match(formSource, /details\.category === "Open House"/);
+  assert.match(formSource, /\["eventDate", "startTime"\]/);
   assert.match(formSource, /const sharedPrimaryFields = SHARED_BASICS\.filter/);
-  assert.match(formSource, /\["eventDate", "startTime", "location"\]\.includes\(field\.key\)/);
+  assert.match(formSource, /sharedPrimaryFieldKeys\.includes\(field\.key\)/);
   assert.match(formSource, /const mobileBirthdayLeadFields =/);
   assert.match(formSource, /\["name", "age"\]\.includes\(field\.key\)/);
   assert.match(formSource, /const mobileSharedLeadFields = isMobileViewport/);

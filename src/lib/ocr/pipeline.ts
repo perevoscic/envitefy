@@ -28,6 +28,10 @@ import {
   llmRewriteWedding,
 } from "@/lib/ocr/openai";
 import {
+  normalizeOpenHousePayload,
+  uploadOpenHouseVisualAssets,
+} from "@/lib/ocr/open-house";
+import {
   buildNextOccurrence,
   createEmptyPracticeSchedule,
   DAY_NAME_TO_INDEX,
@@ -1563,6 +1567,17 @@ export async function handleOcrRequest(request: Request) {
 
     let category: string | null = detectCategory(raw);
     if (practiceSchedule.detected) category = "Sport Events";
+    const normalizedOpenHouse = await uploadOpenHouseVisualAssets({
+      imageBytes: colorBuffer,
+      scanAttemptId,
+      openHouse:
+        category === "Open House"
+          ? normalizeOpenHousePayload({
+              ...(llmImage?.openHouse || {}),
+              address: llmImage?.openHouse?.address || fieldsGuess.location || finalAddress,
+            })
+          : null,
+    });
 
     const isPickleballOcrEvent = isPickleballOcrSkinCandidate({
       category,
@@ -1681,6 +1696,7 @@ export async function handleOcrRequest(request: Request) {
       category,
       birthdayTemplateHint,
       ocrSkin,
+      openHouse: normalizedOpenHouse,
       thumbnailFocus,
       ocrSource,
       scanAttemptId,

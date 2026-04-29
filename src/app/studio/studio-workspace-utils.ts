@@ -13,6 +13,9 @@ export function readNullableString(value: unknown): string | null {
 
 /** Max optional honoree / event photos on the live card Event Details tab (sanitize + UI). */
 export const STUDIO_GUEST_IMAGE_URL_MAX = 6;
+export const STUDIO_OPEN_HOUSE_PROPERTY_IMAGE_URL_MAX = 5;
+export const STUDIO_OPEN_HOUSE_REALTOR_IMAGE_URL_MAX = 1;
+export const STUDIO_OPEN_HOUSE_REALTOR_LOGO_URL_MAX = 1;
 
 export function sanitizeGuestImageUrls(value: unknown): string[] {
   if (!Array.isArray(value)) return [];

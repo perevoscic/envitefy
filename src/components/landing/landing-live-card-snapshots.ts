@@ -110,7 +110,7 @@ export const landingLiveCardSnapshots: LandingLiveCardSnapshot[] = [
         "bookInsteadOfCard": false,
         "imageFinishPreset": "",
         "visualPreferences": "",
-        "detailsDescription": "Join Lara for a polished movie-party birthday with cat-themed treats, popcorn towers, and a private screening feel.",
+        "detailsDescription": "Join Lara for a polished movie-party birthday with themed treats, popcorn towers, and a private screening feel.",
         "giftPreferenceNote": "",
         "transportationInfo": "",
         "transportationType": "",

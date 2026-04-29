@@ -11,12 +11,21 @@ export type InviteCategory =
   | "Game Day"
   | "Bridal Shower"
   | "Wedding"
+  | "Open House"
   | "Housewarming"
   | "Baby Shower"
   | "Anniversary"
   | "Custom Invite";
 
-export type ActiveTab = "none" | "location" | "calendar" | "registry" | "share" | "details" | "rsvp";
+export type ActiveTab =
+  | "none"
+  | "location"
+  | "calendar"
+  | "registry"
+  | "share"
+  | "details"
+  | "rsvp"
+  | "logo";
 
 export type StudioSubjectTransformMode = "default" | "premium_makeover";
 export type StudioLikenessStrength = "strict" | "balanced" | "creative";
@@ -41,6 +50,12 @@ export type EventDetails = {
   detailsDescription: string;
   /** Optional honoree/event image URLs for invite generation (max 6). */
   guestImageUrls: string[];
+  /** Open House property photos for premium realtor poster/collage generation (max 5). */
+  propertyImageUrls: string[];
+  /** Optional Open House realtor headshot/profile photo (max 1). */
+  realtorImageUrls: string[];
+  /** Optional Open House realtor company logo for the live-card Logo tab (max 1). */
+  realtorLogoUrls: string[];
   message: string;
   specialInstructions: string;
   orientation: "portrait" | "landscape";
@@ -97,6 +112,17 @@ export type EventDetails = {
   ticketsLink: string;
   broadcastInfo: string;
   parkingInfo: string;
+  propertyPrice: string;
+  bedrooms: string;
+  bathrooms: string;
+  squareFootage: string;
+  neighborhood: string;
+  propertyHighlights: string;
+  realtorName: string;
+  realtorTitle: string;
+  brokerageName: string;
+  realtorLicense: string;
+  listingUrl: string;
   mainPerson: string;
   occasion: string;
   audience: string;
@@ -156,6 +182,7 @@ export type MediaItem = {
     calendar: ButtonPosition;
     registry: ButtonPosition;
     details: ButtonPosition;
+    logo: ButtonPosition;
   };
 };
 

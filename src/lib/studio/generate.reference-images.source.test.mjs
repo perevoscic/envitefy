@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -12,17 +12,21 @@ test("studio generation fails image creation when any attached reference photo c
 
   assert.match(
     source,
-    /const requestedRefCount = normalizedRequest\.event\.referenceImageUrls\?\.length \?\? 0;/,
+    /const orderedReferenceImageUrls = editingExistingImage\s*\?\s*undefined\s*:\s*getOrderedStudioReferenceImageUrls\(normalizedRequest\.event\);/s,
   );
+  assert.match(source, /const requestedRefCount = orderedReferenceImageUrls\?\.length \?\? 0;/);
   assert.match(
     source,
-    /const referenceImages = await resolveStudioReferenceImages\(\s*normalizedRequest\.event\.referenceImageUrls,\s*\);/s,
+    /const referenceImages =\s*await studioGenerationDeps\.resolveStudioReferenceImages\(\s*orderedReferenceImageUrls\s*\);/s,
   );
+  assert.match(source, /\.\.\.\(event\.propertyImageUrls \|\| \[\]\)/);
+  assert.doesNotMatch(source, /\.\.\.\(event\.realtorImageUrls \|\| \[\]\)/);
+  assert.doesNotMatch(source, /\.\.\.\(event\.realtorLogoUrls \|\| \[\]\)/);
   assert.match(
     source,
     /if \(requestedRefCount > 0 && referenceImages\.length !== requestedRefCount\) \{/,
   );
-  assert.match(source, /function buildReferenceImageError\(provider:/);
+  assert.match(source, /function buildReferenceImageError\(\s*provider:/);
   assert.match(source, /code: "reference_images_unavailable"/);
   assert.match(
     source,
@@ -37,13 +41,10 @@ test("studio image generation passes background-only image prompt options withou
 
   assert.match(
     source,
-    /const imagePrompt = buildInvitationImagePrompt\(\s*normalizedRequest\.event,\s*normalizedRequest\.guidance,\s*liveCard,\s*\{/s,
+    /const imagePrompt = editingExistingImage\s*\?\s*buildExistingInvitationImageEditPrompt\(normalizedRequest\.imageEdit\?\.editInstruction\)\s*:\s*buildInvitationImagePrompt\(\s*normalizedRequest\.event,\s*normalizedRequest\.guidance,\s*liveCard,\s*\{/s,
   );
   assert.match(source, /surface,/);
-  assert.match(
-    source,
-    /editingExistingImage: Boolean\(normalizedRequest\.imageEdit\?\.sourceImageDataUrl\),/,
-  );
+  assert.match(source, /editingExistingImage: false,/);
   assert.match(source, /referenceImageCount: referenceImages\.length,/);
   assert.match(source, /mode === "both"/);
   assert.match(
@@ -63,13 +64,16 @@ test("studio generation normalizes risky themes before prompt building and retur
   );
   assert.match(
     source,
-    /const themeNormalization = await normalizeStudioTheme\(\{\s*provider,\s*event: request\.event,\s*guidance: request\.guidance,\s*\}\);/s,
+    /const themeNormalization = await studioGenerationDeps\.normalizeStudioTheme\(\{\s*provider,\s*event: request\.event,\s*guidance: request\.guidance,\s*\}\);/s,
   );
   assert.match(
     source,
-    /const normalizedRequest =\s*themeNormalization\.riskLevel === "block"\s*\?\s*request\s*:\s*applyStudioThemeNormalization\(request, themeNormalization\);/s,
+    /const normalizedRequest =\s*themeNormalization\.riskLevel === "block"\s*\?\s*request\s*:\s*studioGenerationDeps\.applyStudioThemeNormalization\(request, themeNormalization\);/s,
   );
-  assert.match(source, /buildLiveCardPrompt\(normalizedRequest\.event, normalizedRequest\.guidance\)/);
+  assert.match(
+    source,
+    /buildLiveCardPrompt\(normalizedRequest\.event, normalizedRequest\.guidance\)/,
+  );
   assert.match(
     source,
     /buildInvitationImagePrompt\(\s*normalizedRequest\.event,\s*normalizedRequest\.guidance,\s*liveCard,/s,

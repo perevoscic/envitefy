@@ -1,3 +1,4 @@
+import type { InviteCategory } from "@/app/studio/studio-workspace-types";
 import { landingLiveCardSnapshots } from "@/components/landing/landing-live-card-snapshots";
 import type {
   LiveCardActiveTab,
@@ -5,7 +6,6 @@ import type {
   LiveCardInvitationData,
 } from "@/components/studio/StudioLiveCardActionSurface";
 import { buildLandingShowcasePath } from "@/lib/landing-showcase";
-import type { InviteCategory } from "@/app/studio/studio-workspace-types";
 
 export type StudioShowcasePreview = {
   id: string;
@@ -89,6 +89,7 @@ const studioCategoryShowcasePreviewByCategory: Record<InviteCategory, StudioShow
   "Baby Shower": requireLandingShowcasePreview("elena-s-beary-sweet-shower"),
   "Field Trip/Day": requireLandingShowcasePreview("lincoln-memorial-discovery-day"),
   "Game Day": requireLandingShowcasePreview("friday-night-lights-a"),
+  "Open House": requireLandingShowcasePreview("the-carter-housewarming"),
   Housewarming: requireLandingShowcasePreview("the-carter-housewarming"),
   "Custom Invite": requireLandingShowcasePreview("founder-appreciation-night"),
   Anniversary: anniversaryFallbackPreview,

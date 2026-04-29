@@ -8,12 +8,13 @@ import {
   generateInvitationImageWithOpenAi,
   generateStudioLiveCardWithOpenAi,
 } from "@/lib/studio/openai";
-import { resolveStudioProvider } from "@/lib/studio/provider";
 import {
+  buildExistingInvitationImageEditPrompt,
   buildInvitationImagePrompt,
   buildLiveCardPrompt,
   sanitizeStudioLiveCardVisibleCopy,
 } from "@/lib/studio/prompts";
+import { resolveStudioProvider } from "@/lib/studio/provider";
 import { resolveStudioReferenceImages } from "@/lib/studio/reference-image-url";
 import {
   applyStudioThemeNormalization,
@@ -30,9 +31,9 @@ function uniqueWarnings(list: string[]): string[] {
   return Array.from(new Set(list.map((item) => item.trim()).filter(Boolean)));
 }
 
-function buildReferenceImageError(provider: StudioProvider): NonNullable<
-  StudioGenerateResponse["errors"]
->["image"] {
+function buildReferenceImageError(
+  provider: StudioProvider,
+): NonNullable<StudioGenerateResponse["errors"]>["image"] {
   return {
     code: "reference_images_unavailable",
     message:
@@ -43,9 +44,9 @@ function buildReferenceImageError(provider: StudioProvider): NonNullable<
   };
 }
 
-function buildThemeBlockedError(provider: StudioProvider): NonNullable<
-  StudioGenerateResponse["errors"]
->["text"] {
+function buildThemeBlockedError(
+  provider: StudioProvider,
+): NonNullable<StudioGenerateResponse["errors"]>["text"] {
   return {
     code: "policy_blocked",
     message: "This theme cannot be used for invitation generation.",
@@ -53,6 +54,21 @@ function buildThemeBlockedError(provider: StudioProvider): NonNullable<
     provider,
     status: 400,
   };
+}
+
+function getOrderedStudioReferenceImageUrls(
+  event: StudioGenerateRequest["event"],
+): string[] | undefined {
+  const seen = new Set<string>();
+  const urls = [...(event.propertyImageUrls || []), ...(event.referenceImageUrls || [])].filter(
+    (url) => {
+      const trimmed = url.trim();
+      if (!trimmed || seen.has(trimmed)) return false;
+      seen.add(trimmed);
+      return true;
+    },
+  );
+  return urls.length > 0 ? urls : undefined;
 }
 
 export const studioGenerationDeps = {
@@ -126,34 +142,37 @@ export async function generateStudioInvitation(
   }
 
   if (wantsImage) {
-    const requestedRefCount = normalizedRequest.event.referenceImageUrls?.length ?? 0;
-    const referenceImages = await studioGenerationDeps.resolveStudioReferenceImages(
-      normalizedRequest.event.referenceImageUrls,
-    );
+    const editingExistingImage = Boolean(normalizedRequest.imageEdit?.sourceImageDataUrl);
+    const orderedReferenceImageUrls = editingExistingImage
+      ? undefined
+      : getOrderedStudioReferenceImageUrls(normalizedRequest.event);
+    const requestedRefCount = orderedReferenceImageUrls?.length ?? 0;
+    const referenceImages =
+      await studioGenerationDeps.resolveStudioReferenceImages(orderedReferenceImageUrls);
     if (requestedRefCount > 0 && referenceImages.length !== requestedRefCount) {
       errors.image = buildReferenceImageError(provider);
     } else {
-      const imagePrompt = buildInvitationImagePrompt(
-        normalizedRequest.event,
-        normalizedRequest.guidance,
-        liveCard,
-        {
-          surface,
-          editingExistingImage: Boolean(normalizedRequest.imageEdit?.sourceImageDataUrl),
-          referenceImageCount: referenceImages.length,
-        },
-      );
-      const imageResult = normalizedRequest.imageEdit?.sourceImageDataUrl
+      const imagePrompt = editingExistingImage
+        ? buildExistingInvitationImageEditPrompt(normalizedRequest.imageEdit?.editInstruction)
+        : buildInvitationImagePrompt(
+            normalizedRequest.event,
+            normalizedRequest.guidance,
+            liveCard,
+            {
+              surface,
+              editingExistingImage: false,
+              referenceImageCount: referenceImages.length,
+            },
+          );
+      const imageResult = editingExistingImage
         ? provider === "openai"
           ? await studioGenerationDeps.editInvitationImageWithOpenAi(
               imagePrompt,
-              normalizedRequest.imageEdit.sourceImageDataUrl,
-              referenceImages.length > 0 ? referenceImages : undefined,
+              normalizedRequest.imageEdit!.sourceImageDataUrl,
             )
           : await studioGenerationDeps.editInvitationImageWithGemini(
               imagePrompt,
-              normalizedRequest.imageEdit.sourceImageDataUrl,
-              referenceImages.length > 0 ? referenceImages : undefined,
+              normalizedRequest.imageEdit!.sourceImageDataUrl,
             )
         : provider === "openai"
           ? await studioGenerationDeps.generateInvitationImageWithOpenAi(

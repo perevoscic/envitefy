@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -25,6 +25,6 @@ test("studio details step uses a visual-style picker and single live-card CTA", 
   assert.doesNotMatch(formStep, />\s*Publish\s*</);
 
   assert.match(phonePane, /saveCurrentProjectToLibrary: \(\) => void;/);
-  assert.match(phonePane, /absolute right-3 top-5 z-20 inline-flex/);
+  assert.match(phonePane, /absolute left-3 top-5 z-20 inline-flex/);
   assert.match(phonePane, /\{currentProjectSaveLabel\}/);
 });

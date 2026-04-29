@@ -17,3 +17,11 @@ test("service worker controller changes do not hard reload the app shell", () =>
   assert.doesNotMatch(source, /window\.location\.reload\(\)/);
   assert.doesNotMatch(source, /__snap_sw_reloaded__/);
 });
+
+test("service worker does not cache Next.js app chunks", () => {
+  const source = readSource("public/sw.js");
+
+  assert.match(source, /const CACHE_NAME = "smd-static-v9";/);
+  assert.match(source, /url\.pathname\.startsWith\("\/_next\/"\)/);
+  assert.match(source, /stale cache-first app chunk/);
+});

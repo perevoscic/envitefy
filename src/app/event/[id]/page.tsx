@@ -26,6 +26,7 @@ import FootballSkin from "@/components/FootballSkin";
 import GraduationSkin from "@/components/GraduationSkin";
 import { isGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
 import LocationLink from "@/components/LocationLink";
+import OpenHouseSkin from "@/components/OpenHouseSkin";
 import PickleballSkin from "@/components/PickleballSkin";
 import ScannedInviteSkin from "@/components/ScannedInviteSkin";
 import SponsoredSupplies from "@/components/SponsoredSupplies";
@@ -1542,6 +1543,11 @@ export default async function EventPage({
           description: (data as any)?.description,
           activities: (data as any)?.activities,
         })));
+  const isScannedOpenHouseInviteEvent =
+    isScannedInviteEvent &&
+    (createdVia === "ocr-open-house-skin" ||
+      categoryNormalized === "open house" ||
+      Boolean((data as any)?.openHouse));
   const isGenericScannedInviteEvent =
     categoryNormalized !== "birthdays" &&
     categoryNormalized !== "weddings" &&
@@ -2118,6 +2124,61 @@ export default async function EventPage({
         attire={scannedInviteAttire}
         registryUrl={scannedInviteRegistryUrl}
         ocrFacts={scannedInviteOcrFacts}
+        actions={scannedInviteActions}
+      />,
+    );
+  }
+
+  if (isScannedOpenHouseInviteEvent) {
+    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "open-house", undefined, {
+      title,
+    });
+    const scannedInviteImageUrl =
+      attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
+        ? attachmentInfo.dataUrl
+        : headerImageUrl;
+    const scannedInviteDetailCopy =
+      (typeof data?.goodToKnow === "string" && data.goodToKnow.trim()) ||
+      (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||
+      (typeof data?.description === "string" && data.description.trim()) ||
+      null;
+    const scannedInviteActions = !isReadOnly && isOwner && (
+      <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
+        <EventDeleteModal eventId={row.id} eventTitle={title} />
+        <EventActions
+          shareUrl={shareUrl}
+          event={data as any}
+          calendarTitle={title}
+          historyId={!isReadOnly ? row.id : undefined}
+          className=""
+          variant="compact"
+          tone={"default" as any}
+          showCalendar={false}
+          showEmail={false}
+        />
+      </div>
+    );
+
+    return renderWithEventPageBackground(
+      <OpenHouseSkin
+        title={title}
+        dateLabel={scannedInviteDateLabel || whenLabel || null}
+        timeLabel={formattedTimeAndDate.time || null}
+        venueName={venueText || null}
+        location={locationText || venueText || null}
+        imageUrl={scannedInviteImageUrl}
+        shareUrl={shareUrl}
+        calendarLinks={calendarLinks}
+        skinId={ocrSkin?.skinId || null}
+        palette={ocrSkin?.palette || null}
+        background={ocrSkin?.background || null}
+        rsvpName={rsvpName}
+        rsvpPhone={rsvpPhone}
+        rsvpEmail={rsvpEmail}
+        rsvpUrl={rsvpUrl}
+        detailCopy={scannedInviteDetailCopy}
+        ocrFacts={scannedInviteOcrFacts}
+        openHouse={((data as any)?.openHouse as any) || null}
         actions={scannedInviteActions}
       />,
     );

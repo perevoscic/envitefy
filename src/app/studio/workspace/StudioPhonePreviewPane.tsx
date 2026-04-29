@@ -96,7 +96,9 @@ export function StudioPhonePreviewPane({
                 <div className="flex h-full w-full flex-col items-center justify-center gap-4">
                   <Loader2 className="h-10 w-10 animate-spin text-[var(--studio-brand,#7c5cd1)]" />
                   <span className="animate-pulse text-xs font-semibold uppercase tracking-[0.2em] text-[var(--studio-ink-soft,#6f5e8c)]">
-                    Processing {currentProjectWithVisualDraft.type}...
+                    {currentProjectWithVisualDraft.type === "page"
+                      ? "Creating your Live Card...."
+                      : `Processing ${currentProjectWithVisualDraft.type}...`}
                   </span>
                 </div>
               ) : currentProjectWithVisualDraft.status === "error" ? (

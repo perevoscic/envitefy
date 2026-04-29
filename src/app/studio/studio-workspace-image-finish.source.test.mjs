@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -34,6 +34,9 @@ test("studio workspace request and form source wire image finish presets through
     editor,
     /const imageFinishPresets = getStudioImageFinishPresets\(details\.category\);/,
   );
-  assert.match(editor, /imageFinishPreset: active \? "" : preset\.label,/);
-  assert.match(workspace, /resolveStudioImageFinishPreset\(details\.category, details\.imageFinishPreset\)/);
+  assert.match(editor, /imageFinishPreset: prev\.imageFinishPreset === label \? "" : label,/);
+  assert.match(
+    workspace,
+    /resolveStudioImageFinishPreset\(details\.category, details\.imageFinishPreset\)/,
+  );
 });

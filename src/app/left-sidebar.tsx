@@ -224,6 +224,7 @@ const sidebarIconLookup = createSidebarIconLookup({
   Footprints,
   GraduationCap,
   Heart,
+  Home,
   Music,
   PartyPopper,
   SidebarFootballMenuIcon,

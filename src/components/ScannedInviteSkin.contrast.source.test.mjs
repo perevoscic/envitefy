@@ -13,7 +13,6 @@ test("scanned invite skin computes readable colors for variable dark and light s
   assert.match(source, /const directionsButtonTextColor = ensureReadableTextColor/);
   assert.match(source, /backgroundColor: directionsButtonBackground/);
   assert.match(source, /color: directionsButtonTextColor/);
-  assert.match(source, /`Hosted by \$\{displayRsvpName\}`/);
   assert.match(source, /title=\{displayRsvpTitle\}/);
 
   assert.match(source, /const detailCardTextColor = ensureReadableTextColor/);
@@ -89,6 +88,7 @@ test("all scanned invite skins share OCR fact cards", () => {
   const graduationSource = readSource("src/components/GraduationSkin.tsx");
   const footballSource = readSource("src/components/FootballSkin.tsx");
   const pickleballSource = readSource("src/components/PickleballSkin.tsx");
+  const openHouseSource = readSource("src/components/OpenHouseSkin.tsx");
 
   assert.match(genericSource, /ocrFacts\?: OcrFact\[\] \| null/);
   assert.match(birthdaySource, /ocrFacts\?: OcrFact\[\] \| null/);
@@ -97,4 +97,5 @@ test("all scanned invite skins share OCR fact cards", () => {
   assert.match(graduationSource, /ocrFacts=\{ocrFacts\}/);
   assert.match(footballSource, /ocrFacts=\{ocrFacts\}/);
   assert.match(pickleballSource, /ocrFacts=\{ocrFacts\}/);
+  assert.match(openHouseSource, /ocrFacts\?: OcrFact\[\] \| null/);
 });

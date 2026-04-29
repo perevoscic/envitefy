@@ -1,6 +1,6 @@
 import {
   Baby,
-  CalendarHeart,
+  Building2,
   Flower2,
   Heart,
   House,
@@ -134,6 +134,27 @@ export const STUDIO_CATEGORIES: StudioCategoryDefinition[] = [
     ],
   },
   {
+    id: "open-house",
+    label: "Open House",
+    icon: Building2,
+    description: "Premium realtor flyers, property tours, and listing open houses.",
+    pill: "Real Estate",
+    suggestedTone: "Polished and buyer-focused",
+    suggestedStyle: "Premium listing",
+    dynamicFields: [
+      {
+        id: "open_house_price",
+        label: "Price or listing highlight",
+        placeholder: "$624,000 / newly renovated / pool and garage",
+      },
+      {
+        id: "open_house_agent",
+        label: "Realtor or brokerage",
+        placeholder: "Carla Mira, High Meadow Realty",
+      },
+    ],
+  },
+  {
     id: "baby-shower",
     label: "Baby Shower",
     icon: Baby,
@@ -151,27 +172,6 @@ export const STUDIO_CATEGORIES: StudioCategoryDefinition[] = [
         id: "shower_registry_focus",
         label: "Gift preferences",
         placeholder: "Books instead of cards, diaper raffle, registry link",
-      },
-    ],
-  },
-  {
-    id: "anniversary",
-    label: "Anniversary",
-    icon: CalendarHeart,
-    description: "Anniversaries, vow renewals, and milestone dinners.",
-    pill: "Milestone",
-    suggestedTone: "Warm and celebratory",
-    suggestedStyle: "Elegant classic",
-    dynamicFields: [
-      {
-        id: "anniversary_years",
-        label: "Years together",
-        placeholder: "5 years, 25 years, golden anniversary",
-      },
-      {
-        id: "anniversary_style",
-        label: "Celebration style",
-        placeholder: "Dinner party, backyard toast, weekend trip",
       },
     ],
   },

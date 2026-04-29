@@ -225,7 +225,7 @@ export default function Retro70s({ theme, event }: Props) {
               <input
                 type="text"
                 className="w-full bg-white border-4 border-[#386641] rounded-full px-6 py-4 font-bold text-[#BC4749] focus:outline-none focus:shadow-[4px_4px_0px_0px_#BC4749] transition-shadow"
-                placeholder="Foxy Lady / Cool Cat"
+                placeholder="Foxy Lady / Moon Child"
               />
             </div>
 

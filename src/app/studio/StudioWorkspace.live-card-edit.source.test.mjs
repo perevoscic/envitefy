@@ -1,18 +1,26 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("live card updates reuse the current image in the studio generation request", () => {
+test("live card non-visual updates reuse the current image in the studio generation request", () => {
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
 
   assert.match(
     source,
-    /const sourceImageDataUrl =\s*type === "page" && existingItem\?\.type === "page" \? clean\(existingItem\.url\) : "";/,
+    /const existingLiveCardImageUrl =\s*type === "page" && existingItem\?\.type === "page" \? clean\(existingItem\.url\) : "";/,
+  );
+  assert.match(
+    source,
+    /const shouldEditExistingLiveCardImage = Boolean\(\s*existingLiveCardImageUrl &&\s*!hasLiveCardVisualDirectionChanged\(currentDetails, existingItem\?\.details\),\s*\);/,
+  );
+  assert.match(
+    source,
+    /const sourceImageDataUrl = shouldEditExistingLiveCardImage \? existingLiveCardImageUrl : "";/,
   );
   assert.match(
     source,
@@ -24,7 +32,15 @@ test("live card updates reuse the current image in the studio generation request
   );
   assert.match(
     source,
-    /requestStudioGeneration\(\s*currentDetails,\s*type === "page" \? "both" : "image",\s*generationSurface,\s*sourceImageDataUrl \? editPrompt : undefined,\s*sourceImageDataUrl \|\| undefined,\s*\)/,
+    /const imageEditPrompt = sourceImageDataUrl\s*\?\s*resolveExistingLiveCardImageEditPrompt\(currentDetails, existingItem\?\.details, editPrompt\)\s*:\s*undefined;/,
+  );
+  assert.match(
+    source,
+    /const generationMode = sourceImageDataUrl \? "image" : type === "page" \? "both" : "image";/,
+  );
+  assert.match(
+    source,
+    /requestStudioGeneration\(\s*currentDetails,\s*generationMode,\s*generationSurface,\s*imageEditPrompt,\s*sourceImageDataUrl \|\| undefined,\s*sourceImageDataUrl \? existingItem\?\.details : undefined,\s*\)/,
   );
   assert.match(
     source,
@@ -34,6 +50,75 @@ test("live card updates reuse the current image in the studio generation request
   assert.match(
     source,
     /requestStudioGeneration\(\s*savedItem\.details,\s*"image",\s*"page",\s*prompt,\s*sourceImageDataUrl,\s*\)/,
+  );
+});
+
+test("live card visual-direction edits force full regeneration instead of surgical image edit", () => {
+  const source = readSource("src/app/studio/StudioWorkspace.tsx");
+
+  assert.match(
+    source,
+    /function hasLiveCardVisualDirectionChanged\(\s*currentDetails: EventDetails,\s*previousDetails: EventDetails \| undefined,\s*\): boolean/,
+  );
+  assert.match(
+    source,
+    /const currentIdea = sanitizeStudioDesignIdea\(currentDetails\.theme\)\.toLowerCase\(\);/,
+  );
+  assert.match(
+    source,
+    /const previousIdea = sanitizeStudioDesignIdea\(previousDetails\.theme\)\.toLowerCase\(\);/,
+  );
+  assert.match(source, /if \(currentIdea !== previousIdea\) return true;/);
+  assert.match(source, /const LIVE_CARD_VISUAL_DIRECTION_FIELDS: Array<keyof EventDetails> = \[/);
+  assert.match(source, /"visualPreferences",/);
+  assert.match(source, /"imageFinishPreset",/);
+  assert.match(source, /"visualStyleMode",/);
+  assert.match(source, /normalizeLiveCardVisualDirectionUrls\(currentDetails\.guestImageUrls\)/);
+  assert.match(source, /normalizeLiveCardVisualDirectionUrls\(currentDetails\.propertyImageUrls\)/);
+  assert.match(source, /normalizeLiveCardVisualDirectionUrls\(currentDetails\.realtorImageUrls\)/);
+  assert.match(source, /normalizeLiveCardVisualDirectionUrls\(currentDetails\.realtorLogoUrls\)/);
+  assert.match(source, /!hasLiveCardVisualDirectionChanged\(currentDetails, existingItem\?\.details\)/);
+});
+
+test("live card existing-image detail edits pass previous details for surgical prompts", () => {
+  const workspaceSource = readSource("src/app/studio/StudioWorkspace.tsx");
+  const builderSource = readSource("src/app/studio/studio-workspace-builders.ts");
+  const generateSource = readSource("src/lib/studio/generate.ts");
+
+  assert.match(
+    workspaceSource,
+    /function resolveExistingLiveCardImageEditPrompt\(\s*currentDetails: EventDetails,\s*previousDetails: EventDetails \| undefined,\s*explicitPrompt: string,/,
+  );
+  assert.match(workspaceSource, /if \(prompt\) return prompt;/);
+  assert.match(
+    workspaceSource,
+    /currentIdea\.slice\(previousIdea\.length\)\.replace\(\/\^\[\\s,.;:!\?-]\+\/, ""\)/,
+  );
+  assert.match(workspaceSource, /sourceImageDataUrl \? existingItem\?\.details : undefined,/);
+  assert.match(
+    builderSource,
+    /function buildExistingImageEditInstruction\(\s*details: EventDetails,\s*refinement: string,\s*previousDetails\?: EventDetails,/,
+  );
+  assert.match(
+    builderSource,
+    /const previousScheduleLine = previousDetails\s*\?\s*buildDeterministicScheduleLine\(previousDetails\)\s*:\s*"";/,
+  );
+  assert.match(
+    builderSource,
+    /const nextScheduleLine = buildDeterministicScheduleLine\(details\);/,
+  );
+  assert.match(builderSource, /Replace only the existing visible date\/time line/);
+  assert.match(builderSource, /do not convert it to numeric date format/);
+  assert.match(builderSource, /must visibly reflect that requested edit/);
+  assert.match(builderSource, /choose the most visually matching subject or prop/);
+  assert.doesNotMatch(builderSource, /soda cups|drink cups|requested animal or animals/);
+  assert.match(
+    generateSource,
+    /buildExistingInvitationImageEditPrompt\(normalizedRequest\.imageEdit\?\.editInstruction\)/,
+  );
+  assert.doesNotMatch(
+    generateSource,
+    /editingExistingImage: Boolean\(normalizedRequest\.imageEdit\?\.sourceImageDataUrl\)/,
   );
 });
 
@@ -48,7 +133,10 @@ test("live card modal hides preview-only image edit and design controls without 
     source,
     /const liveCardPreviewTools = renderLiveCardPreviewTools\(activePageRecord\);/,
   );
-  assert.doesNotMatch(source, /renderEditImagePanel\(page,\s*\{\s*layout:\s*"liveCardTools"\s*\}\)/);
+  assert.doesNotMatch(
+    source,
+    /renderEditImagePanel\(page,\s*\{\s*layout:\s*"liveCardTools"\s*\}\)/,
+  );
   assert.match(source, /openLiveCardImageEdit=\{openLiveCardImageEdit\}/);
   assert.match(source, /const STUDIO_MOBILE_TOP_CHROME = /);
   assert.match(source, /style=\{studioLiveCardModalStyle\}/);
@@ -57,7 +145,7 @@ test("live card modal hides preview-only image edit and design controls without 
   assert.match(source, /isLiveCardToolsDrawerOpen && liveCardPreviewTools \?/);
   assert.match(
     source,
-    /style=\{studioLiveCardControlTop \? \{ top: studioLiveCardControlTop \} : undefined\}/,
+    /style=\{\s*studioLiveCardControlTop \? \{ top: studioLiveCardControlTop \} : undefined\s*\}/,
   );
   assert.match(source, /initial=\{\{ x: "100%" \}\}/);
   assert.match(
@@ -71,7 +159,10 @@ test("live card modal hides preview-only image edit and design controls without 
   assert.doesNotMatch(source, />\s*Design Mode\s*</);
   assert.match(surfaceSource, /data-live-card-panel/);
   assert.match(surfaceSource, /data-live-card-trigger/);
-  assert.match(surfaceSource, /import \{ getLiveCardRailLayout \} from "@\/lib\/live-card-rail-layout";/);
+  assert.match(
+    surfaceSource,
+    /import \{ getLiveCardRailLayout \} from "@\/lib\/live-card-rail-layout";/,
+  );
   assert.match(surfaceSource, /const showcaseRailLayout = getLiveCardRailLayout\(\{/);
   assert.match(surfaceSource, /data-live-card-rail-layout=\{showcaseRailLayout\}/);
   assert.doesNotMatch(surfaceSource, /inline-flex w-fit max-w-\[calc\(100%-0\.25rem\)\]/);
@@ -108,8 +199,14 @@ test("live card library delete asks for confirmation before removal", () => {
   const librarySource = readSource("src/app/studio/workspace/StudioLibraryStep.tsx");
 
   assert.match(workspaceSource, /function deleteMedia\(item: MediaItem\)/);
-  assert.match(workspaceSource, /const \[deleteConfirmationItem, setDeleteConfirmationItem\] = useState<MediaItem \| null>\(null\);/);
-  assert.match(workspaceSource, /if \(item\.type === "page"\) \{\s*setDeleteConfirmationItem\(item\);\s*return;\s*\}/s);
+  assert.match(
+    workspaceSource,
+    /const \[deleteConfirmationItem, setDeleteConfirmationItem\] = useState<MediaItem \| null>\(null\);/,
+  );
+  assert.match(
+    workspaceSource,
+    /if \(item\.type === "page"\) \{\s*setDeleteConfirmationItem\(item\);\s*return;\s*\}/s,
+  );
   assert.match(workspaceSource, /function performDeleteMedia\(item: MediaItem\)/);
   assert.match(workspaceSource, /function confirmDeleteMedia\(\)/);
   assert.match(workspaceSource, /performDeleteMedia\(deleteConfirmationItem\);/);
@@ -121,7 +218,10 @@ test("live card library delete asks for confirmation before removal", () => {
   assert.match(workspaceSource, /Keep live card/);
   assert.match(workspaceSource, /Delete live card/);
   assert.match(librarySource, /deleteMedia: \(item: MediaItem\) => void;/);
-  assert.match(librarySource, /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\);\s*deleteMedia\(item\);\s*\}\}/s);
+  assert.match(
+    librarySource,
+    /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\);\s*deleteMedia\(item\);\s*\}\}/s,
+  );
   assert.doesNotMatch(librarySource, /onClickCapture=\{\(event\) => event\.stopPropagation\(\)\}/);
   assert.doesNotMatch(workspaceSource, /window\.confirm\(confirmMessage\)/);
 });

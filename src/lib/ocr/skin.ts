@@ -100,6 +100,12 @@ const PICKLEBALL_SKIN_IDS = [
   "scanned-pickleball-clinic",
 ] as const;
 
+const OPEN_HOUSE_SKIN_IDS = [
+  "scanned-open-house-modern-listing",
+  "scanned-open-house-luxury-brochure",
+  "scanned-open-house-neighborhood-card",
+] as const;
+
 const GENERIC_INVITE_SKIN_IDS = [
   "scanned-invite-bento-celebration",
   "scanned-invite-soft-radiance",
@@ -112,6 +118,7 @@ const GENERIC_OCR_SKIN_CATEGORIES = [
   "engagement",
   "anniversary",
   "housewarming",
+  "open-house",
   "graduation",
   "religious",
   "general",
@@ -123,6 +130,7 @@ const OCR_SKIN_ID_SET = new Set<OcrSkinId>([
   ...BASKETBALL_SKIN_IDS,
   ...FOOTBALL_SKIN_IDS,
   ...PICKLEBALL_SKIN_IDS,
+  ...OPEN_HOUSE_SKIN_IDS,
   ...GENERIC_INVITE_SKIN_IDS,
 ]);
 
@@ -136,6 +144,7 @@ const OCR_INVITE_CATEGORY_LABELS: Record<OcrSkinCategory, string> = {
   engagement: "Engagement",
   anniversary: "Anniversary",
   housewarming: "Housewarming",
+  "open-house": "Open House",
   graduation: "Graduation",
   religious: "Religious Celebration",
   general: "General Event",
@@ -277,6 +286,33 @@ const DEFAULT_OCR_SKIN_PALETTES: Record<OcrSkinId, OcrSkinPalette> = {
     dominant: "#1d4ed8",
     themeColor: "#fde047",
   },
+  "scanned-open-house-modern-listing": {
+    background: "#eef7f4",
+    primary: "#0f766e",
+    secondary: "#1f2937",
+    accent: "#d9a441",
+    text: "#111827",
+    dominant: "#0f766e",
+    themeColor: "#0f766e",
+  },
+  "scanned-open-house-luxury-brochure": {
+    background: "#111827",
+    primary: "#f3f4f6",
+    secondary: "#b7791f",
+    accent: "#facc15",
+    text: "#f9fafb",
+    dominant: "#1f2937",
+    themeColor: "#b7791f",
+  },
+  "scanned-open-house-neighborhood-card": {
+    background: "#f7f2e8",
+    primary: "#2563eb",
+    secondary: "#7c3f1d",
+    accent: "#14b8a6",
+    text: "#1f2937",
+    dominant: "#2563eb",
+    themeColor: "#14b8a6",
+  },
   "scanned-invite-bento-celebration": {
     background: "#dcecf7",
     primary: "#e91e8f",
@@ -363,6 +399,12 @@ function normalizeSkinId(
   if (
     category === "football" &&
     FOOTBALL_SKIN_IDS.includes(id as (typeof FOOTBALL_SKIN_IDS)[number])
+  ) {
+    return id;
+  }
+  if (
+    category === "open-house" &&
+    OPEN_HOUSE_SKIN_IDS.includes(id as (typeof OPEN_HOUSE_SKIN_IDS)[number])
   ) {
     return id;
   }
@@ -499,6 +541,15 @@ function buildAllowedSkinRules(category: OcrSkinCategory, sportKind?: OcrSportKi
       'Pick "scanned-football-friday-lights" for stadium lights, blue/gold school colors, varsity matchup posters, tickets, student section, halftime, or dramatic game-night flyers.',
       'Pick "scanned-football-senior-night" for green/turf, player photos, senior night, honoree names, pregame/kickoff timing, or school ceremony flyers.',
       'Pick "scanned-football-watch-party" for bar/grill, watch party, Sunday/Thursday night football, pro-team matchup, food/drink specials, tailgate, or casual venue flyers.',
+    ].join("\n");
+  }
+
+  if (category === "open-house") {
+    return [
+      'Allowed skinId values: "scanned-open-house-modern-listing", "scanned-open-house-luxury-brochure", "scanned-open-house-neighborhood-card".',
+      'Pick "scanned-open-house-modern-listing" for clean teal/green, contemporary, minimal, bright listing flyers with exterior photos and clear spec cards.',
+      'Pick "scanned-open-house-luxury-brochure" for dark, gold, premium, high-price, luxury, editorial, or dramatic real-estate flyers.',
+      'Pick "scanned-open-house-neighborhood-card" for warm, approachable, neighborhood, family-home, blue/tan, or multi-photo brochure flyers.',
     ].join("\n");
   }
 

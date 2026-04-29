@@ -1,24 +1,31 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import type { PanInfo } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
   ExternalLink,
   Gift,
+  House,
+  ImageIcon,
   Loader2,
   Mail,
   MapPin,
   MessageSquare,
   Phone,
   Share2,
+  UserRound,
   X,
 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
-import { CalendarIconApple, CalendarIconGoogle, CalendarIconOutlook } from "@/components/CalendarIcons";
+import {
+  CalendarIconApple,
+  CalendarIconGoogle,
+  CalendarIconOutlook,
+} from "@/components/CalendarIcons";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardDirectionsHref,
@@ -33,7 +40,10 @@ import {
 } from "@/lib/live-card-rsvp";
 import { buildCalendarLinks } from "@/utils/calendar-links";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
-import { formatTimeLabelEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
+import {
+  formatTimeLabelEn,
+  formatWeekdayMonthDayOrdinalEn,
+} from "@/utils/format-month-day-ordinal";
 import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
 
 export type LiveCardActiveTab =
@@ -43,7 +53,8 @@ export type LiveCardActiveTab =
   | "registry"
   | "share"
   | "details"
-  | "rsvp";
+  | "rsvp"
+  | "logo";
 
 export type LiveCardButtonKey = Exclude<LiveCardActiveTab, "none">;
 
@@ -62,11 +73,14 @@ export type LiveCardEventDetails = {
   endTime?: string;
   venueName?: string;
   location?: string;
+  eventTitle?: string;
   rsvpName?: string;
   rsvpContact?: string;
   rsvpDeadline?: string;
   detailsDescription?: string;
   guestImageUrls?: string[];
+  realtorImageUrls?: string[];
+  realtorLogoUrls?: string[];
   message?: string;
   registryLink?: string;
   [key: string]: unknown;
@@ -117,6 +131,7 @@ const EMPTY_POSITIONS: Record<LiveCardButtonKey, LiveCardButtonPosition> = {
   calendar: { x: 0, y: 0 },
   registry: { x: 0, y: 0 },
   details: { x: 0, y: 0 },
+  logo: { x: 0, y: 0 },
 };
 
 function readString(value: unknown): string {
@@ -176,6 +191,39 @@ function getRegistryPanelTitle(details: LiveCardEventDetails | null | undefined)
   return getRegistryActionLabel(details) === "Gift List" ? "Gift List" : "Gift Registry";
 }
 
+function isOpenHouseLiveCard(details: LiveCardEventDetails | null | undefined) {
+  const blob = [readString(details?.category), readString(details?.occasion)]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return /\bopen house|real estate|real-estate|listing\b/.test(blob);
+}
+
+function getOpenHouseListingUrl(details: LiveCardEventDetails | null | undefined) {
+  const direct = normalizeLiveCardExternalHref(details?.listingUrl);
+  if (direct) return direct;
+  const links = Array.isArray(details?.links) ? details.links : [];
+  for (const link of links) {
+    if (!link || typeof link !== "object") continue;
+    const candidate = link as { label?: unknown; url?: unknown };
+    const label = readString(candidate.label).toLowerCase();
+    if (label !== "listing" && label !== "property" && label !== "mls") continue;
+    const href = normalizeLiveCardExternalHref(candidate.url);
+    if (href) return href;
+  }
+  return null;
+}
+
+function getOpenHouseRealtorImageUrl(details: LiveCardEventDetails | null | undefined) {
+  const urls = Array.isArray(details?.realtorImageUrls) ? details.realtorImageUrls : [];
+  return readString(urls[0]);
+}
+
+function getOpenHouseRealtorLogoUrl(details: LiveCardEventDetails | null | undefined) {
+  const urls = Array.isArray(details?.realtorLogoUrls) ? details.realtorLogoUrls : [];
+  return readString(urls[0]);
+}
+
 function resolveLiveCardCalendarMeta(invitationData?: LiveCardInvitationData | null): {
   startIso: string;
   endIso: string;
@@ -226,7 +274,9 @@ function buildLiveCardCalendarLinks(title: string, invitationData?: LiveCardInvi
 function openDefaultCalendarApp(href: string) {
   if (typeof window === "undefined" || !href) return;
 
-  const absoluteHref = /^https?:\/\//i.test(href) ? href : new URL(href, window.location.origin).href;
+  const absoluteHref = /^https?:\/\//i.test(href)
+    ? href
+    : new URL(href, window.location.origin).href;
   const webcalHref = absoluteHref.replace(/^https?:\/\//i, "webcal://");
   let settled = false;
 
@@ -273,6 +323,7 @@ export function isPosterFirstHeroCard(invitationData?: LiveCardInvitationData | 
     .toLowerCase();
   return (
     /\bbirthday\b/.test(blob) ||
+    /\bopen house|real estate|listing\b/.test(blob) ||
     /\bwedding|weddings|bridal|ceremony|reception|save the date|engagement\b/.test(blob)
   );
 }
@@ -325,9 +376,7 @@ function renderExtraDetailFields(details: LiveCardEventDetails | null | undefine
       {entries.map(([key, value]) => (
         <div key={key} className="rounded-xl border border-neutral-100 bg-neutral-50 p-3">
           <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-            {key
-              .replace(/([A-Z])/g, " $1")
-              .replace(/^./, (char) => char.toUpperCase())}
+            {key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase())}
           </p>
           <p className="text-sm text-neutral-900">{String(value)}</p>
         </div>
@@ -341,6 +390,17 @@ function renderExtraDetailFields(details: LiveCardEventDetails | null | undefine
   );
 }
 
+function AgentDetailRow(props: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+        {props.label}
+      </p>
+      <p className="text-sm text-neutral-800">{props.value}</p>
+    </div>
+  );
+}
+
 export default function StudioLiveCardActionSurface(props: StudioLiveCardActionSurfaceProps) {
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
@@ -350,18 +410,46 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   );
   const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
   const categorySupportsRsvp = supportsStudioCategoryRsvp(readString(details?.category));
+  const openHouseAgentCard = isOpenHouseLiveCard(details);
   const detailsDescription = readString(details?.detailsDescription);
-  const secondaryDescription = readString(invitationData?.description) || readString(details?.message);
+  const secondaryDescription =
+    readString(invitationData?.description) || readString(details?.message);
   const shouldRenderSecondaryDescription =
     shouldShowLiveCardDescriptionSection(readString(details?.message)) &&
     !!secondaryDescription &&
     normalizeComparableText(secondaryDescription) !== normalizeComparableText(detailsDescription);
   const rsvpContact = readString(details?.rsvpContact);
   const rsvpParsed = parseLiveCardRsvpContact(rsvpContact);
+  const agentName = readString(details?.realtorName) || readString(details?.rsvpName);
+  const agentTitle = readString(details?.realtorTitle) || (agentName ? "Listing Agent" : "");
+  const agentBrokerage = readString(details?.brokerageName);
+  const agentLicense = readString(details?.realtorLicense);
+  const agentImageUrl = getOpenHouseRealtorImageUrl(details);
+  const agentLogoUrl = getOpenHouseRealtorLogoUrl(details);
+  const listingHref = getOpenHouseListingUrl(details);
+  const hasOpenHouseAgentInfo = Boolean(
+    agentName ||
+      agentTitle ||
+      agentBrokerage ||
+      agentLicense ||
+      rsvpContact ||
+      listingHref ||
+      agentImageUrl,
+  );
+  const hasOpenHouseLogoInfo = Boolean(agentLogoUrl || agentBrokerage);
   const registryHref = normalizeLiveCardExternalHref(details?.registryLink);
   const registryActionLabel = getRegistryActionLabel(details);
   const registryPanelTitle = getRegistryPanelTitle(details);
-  const locationActions = useMemo(() => buildLiveCardLocationActions(details), [details]);
+  const locationDetails = useMemo(() => {
+    if (!details || !openHouseAgentCard) return details;
+    const propertyAddress = readString(details?.eventTitle);
+    if (!propertyAddress || readString(details?.location)) return details;
+    return { ...details, location: propertyAddress };
+  }, [details, openHouseAgentCard]);
+  const locationActions = useMemo(
+    () => buildLiveCardLocationActions(locationDetails),
+    [locationDetails],
+  );
   const primaryLocationAction = locationActions[0] || null;
   const effectiveShareUrl =
     readString(props.shareUrl) ||
@@ -380,10 +468,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-      if (
-        target.closest("[data-live-card-panel]") ||
-        target.closest("[data-live-card-trigger]")
-      ) {
+      if (target.closest("[data-live-card-panel]") || target.closest("[data-live-card-trigger]")) {
         return;
       }
       props.onActiveTabChange("none");
@@ -399,6 +484,12 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     }
   }, [categorySupportsRsvp, props.activeTab, props.onActiveTabChange]);
 
+  useEffect(() => {
+    if ((!openHouseAgentCard || !hasOpenHouseLogoInfo) && props.activeTab === "logo") {
+      props.onActiveTabChange("none");
+    }
+  }, [hasOpenHouseLogoInfo, openHouseAgentCard, props.activeTab, props.onActiveTabChange]);
+
   const rsvpOutboundHint =
     rsvpParsed.kind === "email"
       ? "Tap a response to open your email with a draft message."
@@ -406,63 +497,75 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         ? "Tap a response to open your messages app with a draft text."
         : "Add a phone number or email as the RSVP contact to send a reply from here.";
 
-  const buttonConfigs = useMemo(
-    () =>
-      [
-        {
-          key: "rsvp" as const,
-          label: "RSVP",
-          icon: MessageSquare,
-          visible:
-            categorySupportsRsvp &&
-            Boolean(readString(details?.rsvpName) || readString(details?.rsvpContact)),
-          onClick: () =>
-            props.onActiveTabChange(props.activeTab === "rsvp" ? "none" : "rsvp"),
-        },
-        {
-          key: "details" as const,
-          label: "Overview",
-          icon: ClipboardList,
-          visible: Boolean(invitationData),
-          onClick: () =>
-            props.onActiveTabChange(props.activeTab === "details" ? "none" : "details"),
-        },
-        {
-          key: "location" as const,
-          label: "Location",
-          icon: MapPin,
-          visible: locationActions.length > 0,
-          onClick: () =>
-            props.onActiveTabChange(props.activeTab === "location" ? "none" : "location"),
-        },
-        {
-          key: "calendar" as const,
-          label: "Calendar",
-          icon: CalendarDays,
-          visible: Boolean(readString(details?.eventDate)),
-          onClick: () =>
-            props.onActiveTabChange(props.activeTab === "calendar" ? "none" : "calendar"),
-        },
-        {
-          key: "registry" as const,
-          label: registryActionLabel,
-          icon: Gift,
-          visible: Boolean(registryHref),
-          onClick: () =>
-            props.onActiveTabChange(props.activeTab === "registry" ? "none" : "registry"),
-        },
-      ].filter((button) => button.visible),
-    [
-      props.activeTab,
-      props.onActiveTabChange,
-      categorySupportsRsvp,
-      details,
-      invitationData,
-      locationActions.length,
-      registryActionLabel,
-      registryHref,
-    ],
-  );
+  const buttonConfigs = useMemo(() => {
+    const detailsButtonConfig = {
+      key: "details" as const,
+      label: openHouseAgentCard ? "Property" : "Overview",
+      icon: openHouseAgentCard ? House : ClipboardList,
+      visible: Boolean(invitationData),
+      onClick: () => props.onActiveTabChange(props.activeTab === "details" ? "none" : "details"),
+    };
+    const rsvpButtonConfig = {
+      key: "rsvp" as const,
+      label: openHouseAgentCard ? "Realtor" : "RSVP",
+      icon: openHouseAgentCard ? UserRound : MessageSquare,
+      visible:
+        categorySupportsRsvp &&
+        (openHouseAgentCard
+          ? hasOpenHouseAgentInfo
+          : Boolean(readString(details?.rsvpName) || readString(details?.rsvpContact))),
+      onClick: () => props.onActiveTabChange(props.activeTab === "rsvp" ? "none" : "rsvp"),
+    };
+    const logoButtonConfig = {
+      key: "logo" as const,
+      label: "Logo",
+      icon: ImageIcon,
+      visible: openHouseAgentCard && hasOpenHouseLogoInfo,
+      onClick: () => props.onActiveTabChange(props.activeTab === "logo" ? "none" : "logo"),
+    };
+
+    return [
+      ...(openHouseAgentCard
+        ? [detailsButtonConfig, rsvpButtonConfig, logoButtonConfig]
+        : [rsvpButtonConfig, detailsButtonConfig]),
+      {
+        key: "location" as const,
+        label: "Location",
+        icon: MapPin,
+        visible: locationActions.length > 0,
+        onClick: () =>
+          props.onActiveTabChange(props.activeTab === "location" ? "none" : "location"),
+      },
+      {
+        key: "calendar" as const,
+        label: "Calendar",
+        icon: CalendarDays,
+        visible: Boolean(readString(details?.eventDate)),
+        onClick: () =>
+          props.onActiveTabChange(props.activeTab === "calendar" ? "none" : "calendar"),
+      },
+      {
+        key: "registry" as const,
+        label: registryActionLabel,
+        icon: Gift,
+        visible: Boolean(registryHref),
+        onClick: () =>
+          props.onActiveTabChange(props.activeTab === "registry" ? "none" : "registry"),
+      },
+    ].filter((button) => button.visible);
+  }, [
+    props.activeTab,
+    props.onActiveTabChange,
+    categorySupportsRsvp,
+    details,
+    hasOpenHouseAgentInfo,
+    hasOpenHouseLogoInfo,
+    invitationData,
+    locationActions.length,
+    openHouseAgentCard,
+    registryActionLabel,
+    registryHref,
+  ]);
 
   const isActionRailClosed = props.activeTab === "none";
   const shouldHideClosedRailLabels = props.showcaseMode;
@@ -544,6 +647,12 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
           <ShareActionIcon className={shareActionIconClassName} />
         </button>
       ) : null}
+      {openHouseAgentCard && posterFirstHeroCard ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[32%] bg-gradient-to-t from-black/62 via-black/30 to-transparent"
+        />
+      ) : null}
       <div className="flex h-full min-h-0 flex-col justify-end">
         <AnimatePresence initial={false}>
           {props.activeTab !== "none" && props.activeTab !== "share" ? (
@@ -560,15 +669,33 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     {props.activeTab === "location" ? <MapPin className="h-5 w-5" /> : null}
                     {props.activeTab === "calendar" ? <CalendarDays className="h-5 w-5" /> : null}
                     {props.activeTab === "registry" ? <Gift className="h-5 w-5" /> : null}
-                    {props.activeTab === "rsvp" ? <MessageSquare className="h-5 w-5" /> : null}
-                    {props.activeTab === "details" ? <ClipboardList className="h-5 w-5" /> : null}
+                    {props.activeTab === "logo" ? <ImageIcon className="h-5 w-5" /> : null}
+                    {props.activeTab === "rsvp" ? (
+                      openHouseAgentCard ? (
+                        <UserRound className="h-5 w-5" />
+                      ) : (
+                        <MessageSquare className="h-5 w-5" />
+                      )
+                    ) : null}
+                    {props.activeTab === "details" ? (
+                      openHouseAgentCard ? (
+                        <House className="h-5 w-5" />
+                      ) : (
+                        <ClipboardList className="h-5 w-5" />
+                      )
+                    ) : null}
                   </div>
                   <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
                     {props.activeTab === "location" ? "Event Location" : null}
                     {props.activeTab === "calendar" ? "Add to Calendar" : null}
                     {props.activeTab === "registry" ? "Gift Registry" : null}
-                    {props.activeTab === "rsvp" ? "RSVP" : null}
-                    {props.activeTab === "details" ? "Overview" : null}
+                    {props.activeTab === "logo" ? "Logo" : null}
+                    {props.activeTab === "rsvp" ? (openHouseAgentCard ? "Realtor" : "RSVP") : null}
+                    {props.activeTab === "details"
+                      ? openHouseAgentCard
+                        ? "Property"
+                        : "Overview"
+                      : null}
                   </h4>
                 </div>
                 <button
@@ -582,86 +709,159 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
               <div className="space-y-3">
                 {props.activeTab === "rsvp" ? (
-                  <div className="flex flex-col space-y-4">
+                  openHouseAgentCard ? (
                     <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                      <p className="text-sm font-medium text-neutral-900">
-                        {readString(details?.rsvpName) || "Host"}
-                      </p>
-                      {readString(details?.rsvpContact) ? (
+                      <div className="flex items-center gap-3">
+                        {agentImageUrl ? (
+                          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white bg-white shadow-sm">
+                            <img
+                              src={agentImageUrl}
+                              alt={agentName ? `${agentName} realtor photo` : "Realtor photo"}
+                              className="h-full w-full object-contain object-top"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                        ) : null}
+                        <p className="text-base font-semibold text-neutral-900">
+                          {agentName || "Listing Agent"}
+                        </p>
+                      </div>
+                      {agentTitle ? <AgentDetailRow label="Title" value={agentTitle} /> : null}
+                      {agentBrokerage ? (
+                        <AgentDetailRow label="Brokerage" value={agentBrokerage} />
+                      ) : null}
+                      {agentLicense ? (
+                        <AgentDetailRow label="License" value={agentLicense} />
+                      ) : null}
+                      {rsvpContact ? (
                         <div>
                           <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                            RSVP contact
+                            Contact
                           </p>
-                          <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
+                          <p className="inline-flex items-center gap-2 break-all text-sm text-neutral-800">
                             {rsvpParsed.kind === "email" ? (
                               <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
                             ) : rsvpParsed.kind === "sms" ? (
                               <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
-                            ) : null}
-                            {readString(details?.rsvpContact)}
+                            ) : (
+                              <MessageSquare className="h-4 w-4 shrink-0 text-neutral-500" />
+                            )}
+                            {rsvpContact}
                           </p>
                         </div>
                       ) : null}
-                      {readString(details?.rsvpDeadline) ? (
-                        <div>
-                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                            RSVP deadline
-                          </p>
-                          <p className="text-sm text-red-600">
-                            {formatDate(readString(details?.rsvpDeadline))}
-                          </p>
-                        </div>
+                      {listingHref ? (
+                        <a
+                          href={listingHref}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          View Listing
+                        </a>
                       ) : null}
                     </div>
-                    <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
-                      {LIVE_CARD_RSVP_CHOICES.map((choice) => {
-                        const href = buildLiveCardRsvpOutboundHref({
-                          rsvpContact,
-                          eventTitle: props.title,
-                          responseLabel: choice.label,
-                          responseKey: choice.key,
-                          shareUrl: effectiveShareUrl,
-                          category: readString(details?.category),
-                          hostName: readString(details?.rsvpName),
-                        });
-                        const accent = accentClassForRsvpChoice(choice.key);
-                        if (!href) {
+                  ) : (
+                    <div className="flex flex-col space-y-4">
+                      <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                        <p className="text-sm font-medium text-neutral-900">
+                          {readString(details?.rsvpName) || "Host"}
+                        </p>
+                        {readString(details?.rsvpContact) ? (
+                          <div>
+                            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                              RSVP contact
+                            </p>
+                            <p className="inline-flex items-center gap-2 text-sm text-neutral-800">
+                              {rsvpParsed.kind === "email" ? (
+                                <Mail className="h-4 w-4 shrink-0 text-neutral-500" />
+                              ) : rsvpParsed.kind === "sms" ? (
+                                <Phone className="h-4 w-4 shrink-0 text-neutral-500" />
+                              ) : null}
+                              {readString(details?.rsvpContact)}
+                            </p>
+                          </div>
+                        ) : null}
+                        {readString(details?.rsvpDeadline) ? (
+                          <div>
+                            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                              RSVP deadline
+                            </p>
+                            <p className="text-sm text-red-600">
+                              {formatDate(readString(details?.rsvpDeadline))}
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
+                        {LIVE_CARD_RSVP_CHOICES.map((choice) => {
+                          const href = buildLiveCardRsvpOutboundHref({
+                            rsvpContact,
+                            eventTitle: props.title,
+                            responseLabel: choice.label,
+                            responseKey: choice.key,
+                            shareUrl: effectiveShareUrl,
+                            category: readString(details?.category),
+                            hostName: readString(details?.rsvpName),
+                          });
+                          const accent = accentClassForRsvpChoice(choice.key);
+                          if (!href) {
+                            return (
+                              <button
+                                key={choice.key}
+                                type="button"
+                                disabled
+                                aria-disabled="true"
+                                title={rsvpOutboundHint}
+                                className={`flex cursor-not-allowed items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] opacity-45 ${accent}`}
+                              >
+                                {choice.label}
+                              </button>
+                            );
+                          }
+                          if (isRsvpMailtoHref(href)) {
+                            return (
+                              <button
+                                key={choice.key}
+                                type="button"
+                                onClick={() => openRsvpMailtoHref(href)}
+                                className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
+                              >
+                                {choice.label}
+                              </button>
+                            );
+                          }
                           return (
-                            <button
+                            <a
                               key={choice.key}
-                              type="button"
-                              disabled
-                              aria-disabled="true"
-                              title={rsvpOutboundHint}
-                              className={`flex cursor-not-allowed items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] opacity-45 ${accent}`}
-                            >
-                              {choice.label}
-                            </button>
-                          );
-                        }
-                        if (isRsvpMailtoHref(href)) {
-                          return (
-                            <button
-                              key={choice.key}
-                              type="button"
-                              onClick={() => openRsvpMailtoHref(href)}
+                              href={href}
                               className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
                             >
                               {choice.label}
-                            </button>
+                            </a>
                           );
-                        }
-                        return (
-                          <a
-                            key={choice.key}
-                            href={href}
-                            className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
-                          >
-                            {choice.label}
-                          </a>
-                        );
-                      })}
+                        })}
+                      </div>
                     </div>
+                  )
+                ) : null}
+
+                {props.activeTab === "logo" && openHouseAgentCard ? (
+                  <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                    {agentLogoUrl ? (
+                      <div className="flex min-h-28 items-center justify-center rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+                        <img
+                          src={agentLogoUrl}
+                          alt={agentBrokerage ? `${agentBrokerage} logo` : "Realtor company logo"}
+                          className="max-h-24 max-w-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    ) : null}
+                    {agentBrokerage ? (
+                      <AgentDetailRow label="Realtor Company" value={agentBrokerage} />
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -807,7 +1007,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     <p className="text-sm font-medium text-neutral-900">{registryPanelTitle}</p>
                     <p className="text-xs text-neutral-500">{getRegistryText(details)}</p>
                     {readString(props.registryHelperText) ? (
-                      <p className="text-xs text-neutral-500">{readString(props.registryHelperText)}</p>
+                      <p className="text-xs text-neutral-500">
+                        {readString(props.registryHelperText)}
+                      </p>
                     ) : null}
                     {registryHref ? (
                       <button
@@ -888,10 +1090,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                           useCompactActionButtons
                             ? "p-2 md:p-2.5"
                             : useExpandedActionButtons
-                            ? "p-3 md:p-4"
-                            : props.showcaseMode
-                              ? "p-2 md:p-2.5"
-                              : "p-2.5 md:p-3"
+                              ? "p-3 md:p-4"
+                              : props.showcaseMode
+                                ? "p-2 md:p-2.5"
+                                : "p-2.5 md:p-3"
                         } ${
                           posterFirstHeroCard
                             ? isPressed
@@ -907,10 +1109,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                             useCompactActionButtons
                               ? "h-4 w-4 md:h-5 md:w-5"
                               : useExpandedActionButtons
-                              ? "h-6 w-6 md:h-7 md:w-7"
-                              : props.showcaseMode
-                                ? "h-4 w-4 md:h-5 md:w-5"
-                                : "h-5 w-5 md:h-6 md:w-6"
+                                ? "h-6 w-6 md:h-7 md:w-7"
+                                : props.showcaseMode
+                                  ? "h-4 w-4 md:h-5 md:w-5"
+                                  : "h-5 w-5 md:h-6 md:w-6"
                           } ${
                             isPending
                               ? "animate-spin text-white"

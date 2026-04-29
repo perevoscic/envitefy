@@ -88,6 +88,7 @@ type SubmitScannedEventParams = {
     ocrSkin?: OcrSkinSelection | null;
     flyerColors?: Record<string, string> | null;
     thumbnailFocus?: ThumbnailFocus | null;
+    openHouse?: Record<string, unknown> | null;
   };
 };
 
@@ -1014,6 +1015,18 @@ export default function Dashboard({
             ? data.fieldsGuess.rsvp.trim()
             : null;
         const cleanedRsvp = rawRsvp ? cleanRsvp(rawRsvp) : null;
+        const openHouseFromScan =
+          data?.openHouse && typeof data.openHouse === "object"
+            ? (data.openHouse as Record<string, unknown>)
+            : null;
+        const openHousePhone =
+          typeof openHouseFromScan?.realtorPhone === "string" && openHouseFromScan.realtorPhone.trim()
+            ? cleanRsvp(openHouseFromScan.realtorPhone)
+            : null;
+        const openHouseEmail =
+          typeof openHouseFromScan?.realtorEmail === "string" && openHouseFromScan.realtorEmail.trim()
+            ? openHouseFromScan.realtorEmail.trim()
+            : null;
         const rsvpNameFromScan = extractRsvpName(rawRsvp);
         const scannedRsvpUrl =
           typeof (data?.fieldsGuess as { rsvpUrl?: unknown })?.rsvpUrl === "string" &&
@@ -1095,9 +1108,19 @@ export default function Dashboard({
               timezone: String(data.fieldsGuess.timezone || tz || "UTC"),
               reminders: [{ minutes: 1440 }],
               numberOfGuests: 0,
-              rsvp: structuredWeddingRsvp || cleanedRsvp,
-              rsvpName: rsvpNameFromScan || undefined,
-              hostName: hostNameFromScan || undefined,
+              rsvp: structuredWeddingRsvp || cleanedRsvp || openHousePhone || openHouseEmail,
+              rsvpName:
+                rsvpNameFromScan ||
+                (typeof openHouseFromScan?.realtorName === "string"
+                  ? openHouseFromScan.realtorName
+                  : undefined),
+              hostName:
+                hostNameFromScan ||
+                (typeof openHouseFromScan?.agencyName === "string"
+                  ? openHouseFromScan.agencyName
+                  : typeof openHouseFromScan?.brokerageName === "string"
+                    ? openHouseFromScan.brokerageName
+                    : undefined),
               venue: venueFromScan || undefined,
               thingsToDo: thingsToDoFromScan || undefined,
               attire: attireFromScan || undefined,
@@ -1121,6 +1144,7 @@ export default function Dashboard({
               birthdayTemplateHint: data?.birthdayTemplateHint || null,
               ocrSkin: data?.ocrSkin || null,
               thumbnailFocus: normalizeThumbnailFocus(data?.thumbnailFocus),
+              openHouse: openHouseFromScan,
             },
           });
           if (!created) {
@@ -1322,7 +1346,15 @@ export default function Dashboard({
           ocrMeta?.birthdayTemplateHint || ocrBirthdayTemplateHint;
         const normalizedOcrSkin =
           ocrMeta?.ocrSkin && typeof ocrMeta.ocrSkin === "object" ? ocrMeta.ocrSkin : null;
+        const normalizedOpenHouse =
+          ocrMeta?.openHouse && typeof ocrMeta.openHouse === "object" ? ocrMeta.openHouse : null;
         const normalizedThumbnailFocus = normalizeThumbnailFocus(ocrMeta?.thumbnailFocus);
+        const isOpenHouseOcrEvent =
+          Boolean(normalizedOpenHouse) ||
+          (normalizedOcrCategory || "").trim().toLowerCase() === "open house";
+        if (isOpenHouseOcrEvent) {
+          normalizedOcrCategory = "Open House";
+        }
         const isBirthdayOcrEvent =
           normalizedBirthdayTemplateHint?.detected &&
           (normalizedOcrCategory || "").toLowerCase() === "birthdays";
@@ -1370,7 +1402,8 @@ export default function Dashboard({
           isOcrInviteCategory(normalizedOcrCategory) ||
           isBasketballOcrEvent ||
           isFootballOcrEvent ||
-          isPickleballOcrEvent;
+          isPickleballOcrEvent ||
+          isOpenHouseOcrEvent;
         let flyerColors =
           ocrMeta?.flyerColors && typeof ocrMeta.flyerColors === "object"
             ? ocrMeta.flyerColors
@@ -1458,19 +1491,22 @@ export default function Dashboard({
               ? "ocr-birthday-skin"
               : isWeddingOcrEvent
                 ? "ocr-wedding-renderer"
-                : isPickleballOcrEvent
-                  ? "ocr-pickleball-skin"
-                  : isFootballOcrEvent
-                    ? "ocr-football-skin"
-                    : isBasketballOcrEvent
-                      ? "ocr-basketball-skin"
-                      : isInviteOcrEvent
-                        ? "ocr-invite-skin"
-                        : "ocr",
+                : isOpenHouseOcrEvent
+                  ? "ocr-open-house-skin"
+                  : isPickleballOcrEvent
+                    ? "ocr-pickleball-skin"
+                    : isFootballOcrEvent
+                      ? "ocr-football-skin"
+                      : isBasketballOcrEvent
+                        ? "ocr-basketball-skin"
+                        : isInviteOcrEvent
+                          ? "ocr-invite-skin"
+                          : "ocr",
             thumbnail,
             thumbnailFocus: normalizedThumbnailFocus || undefined,
             attachment: attachment || undefined,
             ocrSkin: isInviteOcrEvent ? normalizedOcrSkin || undefined : undefined,
+            openHouse: isOpenHouseOcrEvent ? normalizedOpenHouse || undefined : undefined,
             flyerColors: isWeddingOcrEvent ? flyerColors || undefined : undefined,
             templateId: isBirthdayOcrEvent ? "party-pop" : undefined,
             variationId: isBirthdayOcrEvent

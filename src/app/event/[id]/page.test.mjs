@@ -40,6 +40,7 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /import BirthdaySkin from "@\/components\/BirthdaySkin";/);
   assert.match(source, /import FootballSkin from "@\/components\/FootballSkin";/);
   assert.match(source, /import PickleballSkin from "@\/components\/PickleballSkin";/);
+  assert.match(source, /import OpenHouseSkin from "@\/components\/OpenHouseSkin";/);
   assert.match(source, /import ScannedInviteSkin from "@\/components\/ScannedInviteSkin";/);
   assert.match(source, /import \{ cleanGraduationVenueName \} from "@\/lib\/ocr\/text";/);
   assert.match(source, /const rawVenueText =/);
@@ -156,6 +157,22 @@ test("event route branches football discovery/template events into the football 
     source.indexOf("if (isScannedBasketballInviteEvent)") <
       source.indexOf("if (isGenericScannedInviteEvent)"),
     "scanned basketball branch should run before the generic scanned invite branch",
+  );
+  assert.match(source, /const isScannedOpenHouseInviteEvent =/);
+  assert.match(source, /createdVia === "ocr-open-house-skin"/);
+  assert.match(source, /categoryNormalized === "open house"/);
+  assert.match(source, /Boolean\(\(data as any\)\?\.openHouse\)/);
+  assert.match(source, /if \(isScannedOpenHouseInviteEvent\) \{/);
+  assert.match(
+    source,
+    /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "open-house", undefined, \{/,
+  );
+  assert.match(source, /<OpenHouseSkin/);
+  assert.match(source, /openHouse=\{\(\(data as any\)\?\.openHouse as any\) \|\| null\}/);
+  assert.ok(
+    source.indexOf("if (isScannedOpenHouseInviteEvent)") <
+      source.indexOf("if (isGenericScannedInviteEvent)"),
+    "scanned open house branch should run before the generic scanned invite branch",
   );
   assert.match(source, /const isGenericScannedInviteEvent =/);
   assert.match(source, /isOcrInviteCategory\(categoryRaw\)/);

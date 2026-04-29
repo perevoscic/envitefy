@@ -63,7 +63,7 @@ const mobileTileOrderClassNameByKey: Partial<Record<StudioCategoryGridTileKey, s
   "Game Day": "order-4 sm:order-none",
   "Bridal Shower": "order-5 sm:order-none",
   "Baby Shower": "order-6 sm:order-none",
-  Anniversary: "order-7 sm:order-none",
+  "Open House": "order-7 sm:order-none",
   Housewarming: "order-8 sm:order-none",
   "Field Trip/Day": "order-9 sm:order-none",
   "Custom Invite": "order-10 sm:order-none",
@@ -76,11 +76,11 @@ export function StudioCategoryGrid({
   onUploadAction,
   isUploadActionPending,
 }: StudioCategoryGridProps) {
-  const categoriesByName = new Map(categories.map((category) => [category.name, category] as const));
+  const categoriesByName = new Map(
+    categories.map((category) => [category.name, category] as const),
+  );
   const editorialCategoryKeys = new Set(
-    EDITORIAL_GRID_COMPOSITION.filter(
-      (tileKey): tileKey is InviteCategory => tileKey !== "upload",
-    ),
+    EDITORIAL_GRID_COMPOSITION.filter((tileKey): tileKey is InviteCategory => tileKey !== "upload"),
   );
 
   const gridItems: StudioCategoryGridItem[] = [

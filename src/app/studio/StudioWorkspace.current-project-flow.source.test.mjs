@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -34,7 +34,7 @@ test("studio workspace separates the current project from the saved library", ()
   assert.match(formStep, /openCurrentLiveCardFullscreen=\{openCurrentLiveCardFullscreen\}/);
   assert.match(source, /const currentProjectSaveLabel = /);
   assert.match(phonePane, /\{currentProjectSaveLabel\}/);
-  assert.match(phonePane, /absolute right-3 top-5 z-20 inline-flex/);
+  assert.match(phonePane, /absolute left-3 top-5 z-20 inline-flex/);
   assert.doesNotMatch(phonePane, /Save this project to keep it in Library\./);
   assert.doesNotMatch(phonePane, /Discard/);
   assert.match(source, /function prepareProjectForLibrarySave\(project: MediaItem\): MediaItem/);

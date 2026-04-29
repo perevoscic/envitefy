@@ -104,6 +104,19 @@ test("detectCategory recognizes expanded invite categories", () => {
   );
 });
 
+test("detectCategory recognizes real-estate open houses without catching generic open houses", () => {
+  assert.equal(
+    detectCategory(
+      "OPEN HOUSE 778 Locust View Drive Oakland CA 3 Bed 2 Bath 1,850 sq ft $680,000 Realtor Jessica Jeson MLS #12345",
+    ),
+    "Open House",
+  );
+  assert.equal(
+    detectCategory("Family Day / Open House at Northview Elementary with games and snacks"),
+    "General Events",
+  );
+});
+
 test("extractRsvpDetails captures wedding RSVP url and deadline", () => {
   const details = extractRsvpDetails(
     ["RSVP by December 1st at:", "theknot.com/us/isabellaandjonathon"].join("\n"),

@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -21,7 +21,7 @@ test("studio editor shifts mobile users from prompt composer to preview after ge
   assert.match(workspace, /showPreviewPane=\{\(\) => setMobileEditorPane\("preview"\)\}/);
   assert.match(formStep, /mobilePane === "composer"\s*\?\s*"w-full"\s*:\s*"hidden"/);
   assert.match(formStep, /mobilePane === "preview"/);
-  assert.match(formStep, /flex w-full flex-col bg-\[#121a34\]/);
+  assert.match(formStep, /fixed inset-0 z-\[60\] flex flex-col bg-\[#121a34\]/);
   assert.match(formStep, /onClick=\{showPreviewPane\}/);
   assert.match(formStep, />\s*Preview\s*</);
   assert.match(formStep, />\s*Back\s*</);

@@ -87,7 +87,6 @@ const BRANDED_THEME_PATTERNS: RegExp[] = [
   /\bharry potter\b/i,
   /\bhogwarts\b/i,
   /\bpaw patrol\b/i,
-  /\bhello kitty\b/i,
   /\bgotham\b/i,
 ];
 

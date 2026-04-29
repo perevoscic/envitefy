@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -32,6 +32,16 @@ test("studio request preparation persists and strictly validates attached refere
   );
   assert.match(
     source,
-    /buildStudioRequest\(preparedDetails, mode, surface, editPrompt, sourceImageDataUrl\)/,
+    /buildStudioRequest\(\s*preparedDetails,\s*mode,\s*surface,\s*editPrompt,\s*sourceImageDataUrl,\s*previousDetails,\s*\)/,
   );
+});
+
+test("studio existing-image edits require an updated image result", () => {
+  const source = readSource("src/app/studio/studio-workspace-api.ts");
+
+  assert.match(
+    source,
+    /if \(sourceImageDataUrl && mode !== "text" && !data\.imageUrl && !data\.imageDataUrl\) \{/,
+  );
+  assert.match(source, /live-card image edit did not return an updated image/);
 });

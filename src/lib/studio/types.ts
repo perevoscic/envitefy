@@ -19,6 +19,16 @@ export type StudioEventDetails = {
   leagueDivision?: string | null;
   broadcastInfo?: string | null;
   parkingInfo?: string | null;
+  propertyPrice?: string | null;
+  bedrooms?: string | null;
+  bathrooms?: string | null;
+  squareFootage?: string | null;
+  neighborhood?: string | null;
+  propertyHighlights?: string | null;
+  realtorName?: string | null;
+  realtorTitle?: string | null;
+  brokerageName?: string | null;
+  realtorLicense?: string | null;
   ageOrMilestone?: string | null;
   /** Design Idea from Studio; mapped from `EventDetails.theme`. */
   userIdea?: string | null;
@@ -37,6 +47,10 @@ export type StudioEventDetails = {
   links?: Array<{ label: string; url: string }>;
   /** HTTPS URLs of user-uploaded honoree/event photos; fed into invitation image generation. */
   referenceImageUrls?: string[];
+  /** Open House property photos, ordered before realtor photos in image generation. */
+  propertyImageUrls?: string[];
+  /** Open House realtor profile photos, usually max one. */
+  realtorImageUrls?: string[];
 };
 
 export type StudioGenerationGuidance = {
@@ -81,6 +95,7 @@ export type StudioGenerateRequest = {
   guidance?: StudioGenerationGuidance;
   imageEdit?: {
     sourceImageDataUrl: string;
+    editInstruction?: string | null;
   };
 };
 
@@ -211,6 +226,16 @@ function normalizeEvent(value: unknown): StudioEventDetails | null {
     leagueDivision: safeNullableString((value as any).leagueDivision),
     broadcastInfo: safeNullableString((value as any).broadcastInfo),
     parkingInfo: safeNullableString((value as any).parkingInfo),
+    propertyPrice: safeNullableString((value as any).propertyPrice),
+    bedrooms: safeNullableString((value as any).bedrooms),
+    bathrooms: safeNullableString((value as any).bathrooms),
+    squareFootage: safeNullableString((value as any).squareFootage),
+    neighborhood: safeNullableString((value as any).neighborhood),
+    propertyHighlights: safeNullableString((value as any).propertyHighlights),
+    realtorName: safeNullableString((value as any).realtorName),
+    realtorTitle: safeNullableString((value as any).realtorTitle),
+    brokerageName: safeNullableString((value as any).brokerageName),
+    realtorLicense: safeNullableString((value as any).realtorLicense),
     ageOrMilestone: safeNullableString((value as any).ageOrMilestone),
     userIdea: safeNullableString((value as any).userIdea),
     description: safeNullableString((value as any).description),
@@ -226,6 +251,8 @@ function normalizeEvent(value: unknown): StudioEventDetails | null {
     registryNote: safeNullableString((value as any).registryNote),
     links: normalizeLinks((value as any).links),
     referenceImageUrls: normalizeReferenceImageUrls((value as any).referenceImageUrls),
+    propertyImageUrls: normalizeReferenceImageUrls((value as any).propertyImageUrls),
+    realtorImageUrls: normalizeReferenceImageUrls((value as any).realtorImageUrls),
   };
 }
 
@@ -257,11 +284,16 @@ function normalizeGuidance(value: unknown): StudioGenerationGuidance | undefined
   };
 }
 
-function normalizeImageEdit(value: unknown): { sourceImageDataUrl: string } | undefined {
+function normalizeImageEdit(
+  value: unknown,
+): { sourceImageDataUrl: string; editInstruction?: string | null } | undefined {
   if (!value || typeof value !== "object") return undefined;
   const sourceImageDataUrl = safeString((value as any).sourceImageDataUrl);
   if (!sourceImageDataUrl) return undefined;
-  return { sourceImageDataUrl };
+  return {
+    sourceImageDataUrl,
+    editInstruction: safeNullableString((value as any).editInstruction),
+  };
 }
 
 export function parseStudioGenerateRequest(input: unknown): ParseSuccess | ParseFailure {

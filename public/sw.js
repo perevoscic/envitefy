@@ -1,4 +1,4 @@
-const CACHE_NAME = "smd-static-v8";
+const CACHE_NAME = "smd-static-v9";
 const APP_SHELL = [
   "/",
   "/landing",
@@ -57,6 +57,12 @@ self.addEventListener("fetch", (event) => {
 
   // Never cache API/auth/session requests so login state stays fresh
   if (url.pathname.startsWith("/api/")) {
+    return; // fall through to network
+  }
+
+  // Next.js assets are versioned and must stay network-led in development and after deploys.
+  // A stale cache-first app chunk can keep old UI copy such as loading labels alive.
+  if (url.pathname.startsWith("/_next/")) {
     return; // fall through to network
   }
 

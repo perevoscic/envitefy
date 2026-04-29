@@ -17,6 +17,8 @@
 /.next/
 /.next-dev/
 /.next-dev.lock
+/.next-dev-*/
+/.next-dev-*.lock
 /out/
 
 # production

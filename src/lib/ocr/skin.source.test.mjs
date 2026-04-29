@@ -27,6 +27,8 @@ test("ocr skin inference dispatches through the resolved studio provider", () =>
   assert.match(source, /FOOTBALL_SKIN_IDS/);
   assert.match(source, /scanned-pickleball-showdown/);
   assert.match(source, /PICKLEBALL_SKIN_IDS/);
+  assert.match(source, /scanned-open-house-modern-listing/);
+  assert.match(source, /OPEN_HOUSE_SKIN_IDS/);
   assert.match(source, /sportKind\?: OcrSportKind;/);
   assert.match(source, /scanned-invite-bento-celebration/);
   assert.match(source, /EXACT dominant color palette from the flyer itself/);
@@ -41,6 +43,7 @@ test("ocr skin inference dispatches through the resolved studio provider", () =>
   assert.match(source, /resolveOcrSkinBackground/);
   assert.match(source, /"housewarming"/);
   assert.match(source, /housewarming: "Housewarming"/);
+  assert.match(source, /"open-house": "Open House"/);
   assert.match(source, /basketball: "Basketball"/);
   assert.match(source, /football: "Football"/);
   assert.match(source, /category === "basketball"/);
@@ -49,6 +52,7 @@ test("ocr skin inference dispatches through the resolved studio provider", () =>
   assert.match(source, /sportKind === "pickleball"/);
   assert.match(source, /buildOcrSkinBackgroundPromptRules\(category, sportKind\)/);
   assert.match(backgroundSource, /normalized === "housewarming"/);
+  assert.match(backgroundSource, /normalized === "open house"/);
   assert.match(backgroundSource, /normalized === "basketball"/);
   assert.match(backgroundSource, /normalized === "football"/);
   assert.match(backgroundSource, /isFootballOcrSkinCandidate/);
@@ -57,6 +61,10 @@ test("ocr skin inference dispatches through the resolved studio provider", () =>
   assert.match(
     backgroundSource,
     /housewarming: \[[\s\S]*"front-door"[\s\S]*"welcome-mat"[\s\S]*"mug"[\s\S]*"gift"/,
+  );
+  assert.match(
+    backgroundSource,
+    /"open-house": \[[\s\S]*"front-door"[\s\S]*"key"[\s\S]*"photo-frame"/,
   );
   assert.match(
     backgroundSource,
@@ -81,6 +89,8 @@ test("ocr pipeline adds provider-aware ocrSkin for invite-like OCR categories", 
   assert.match(source, /isPickleballOcrSkinCandidate/);
   assert.match(source, /inferOcrSkinSelection/);
   assert.match(source, /isOcrInviteCategory/);
+  assert.match(source, /normalizeOpenHousePayload/);
+  assert.match(source, /uploadOpenHouseVisualAssets/);
   assert.match(source, /const isPickleballOcrEvent =/);
   assert.match(source, /const isFootballOcrEvent =/);
   assert.match(source, /const ocrSkin =/);
@@ -93,4 +103,5 @@ test("ocr pipeline adds provider-aware ocrSkin for invite-like OCR categories", 
   assert.match(source, /category: ocrSkinCategory \|\| "general"/);
   assert.match(source, /sportKind: ocrSkinSportKind/);
   assert.match(source, /ocrSkin,/);
+  assert.match(source, /openHouse: normalizedOpenHouse/);
 });

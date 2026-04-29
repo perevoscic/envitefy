@@ -49,7 +49,10 @@ test("studio live-card prompt keeps birthday themes tied to the celebration type
     prompt,
     /Treat Event Details, names, date\/time, venue, and RSVP fields as the source of guest-facing copy\./,
   );
-  assert.match(prompt, /Design Idea is private art direction, not default visible invitation copy\./);
+  assert.match(
+    prompt,
+    /Design Idea is private art direction, not default visible invitation copy\./,
+  );
   assert.match(
     prompt,
     /Guest-facing invitation copy fields must not introduce Design Idea-only nouns, motifs, props, animals, places, or prompt fragments\./,
@@ -86,7 +89,10 @@ test("studio invitation image prompt keeps custom themes invitation-ready", () =
     prompt,
     /Build the artwork around the selected event type first, then express the private visual direction through that celebration type\./,
   );
-  assert.match(prompt, /Treat the private visual direction as the main visual concept when one is provided\./);
+  assert.match(
+    prompt,
+    /Treat the private visual direction as the main visual concept when one is provided\./,
+  );
   assert.match(
     prompt,
     /Let supporting event details sharpen specificity and approved wording, but do not let them replace the private visual direction\./,
@@ -112,13 +118,13 @@ test("studio prompts treat raw design-idea fragments as visual direction instead
       occasion: "Birthday",
       honoreeName: "Lara",
       ageOrMilestone: "7",
-      userIdea: "realistic festive cats at the movie",
+      userIdea: "realistic neon robots at the movie",
       description: "We are going to watch a movie, then lunch",
       links: [],
     },
     {
       style:
-        "Highest-priority visual direction from the user: realistic festive cats at the movie. Treat the user's words as the theme of the invitation.",
+        "Highest-priority visual direction from the user: realistic neon robots at the movie. Treat the user's words as the theme of the invitation.",
     },
   );
 
@@ -129,23 +135,23 @@ test("studio prompts treat raw design-idea fragments as visual direction instead
       occasion: "Birthday",
       honoreeName: "Lara",
       ageOrMilestone: "7",
-      userIdea: "realistic festive cats at the movie",
+      userIdea: "realistic neon robots at the movie",
       description: "We are going to watch a movie, then lunch",
       links: [],
     },
     {
       style:
-        "Highest-priority visual direction from the user: realistic festive cats at the movie. Treat the user's words as the theme of the invitation.",
+        "Highest-priority visual direction from the user: realistic neon robots at the movie. Treat the user's words as the theme of the invitation.",
     },
   );
 
   assert.match(
     liveCardPrompt,
-    /If the Design Idea contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of printing it as guest-facing copy\./,
+    /If the Design Idea contains prompt-like visual fragments such as 'realistic neon robots at the movie', translate that into imagery and mood instead of printing it as guest-facing copy\./,
   );
   assert.match(
     imagePrompt,
-    /If the private visual direction contains prompt-like visual fragments such as 'realistic festive cats at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text\./,
+    /If the private visual direction contains prompt-like visual fragments such as 'realistic neon robots at the movie', translate that into imagery and mood instead of treating it as approved subtitle or headline text\./,
   );
 
   const imagePromptWithGeneratedCopy = buildInvitationImagePrompt(
@@ -155,49 +161,50 @@ test("studio prompts treat raw design-idea fragments as visual direction instead
       occasion: "Birthday",
       honoreeName: "Lara",
       ageOrMilestone: "7",
-      userIdea: "realistic festive cats at the movie",
-      description: "Join us for popcorn, pizza, and fun. We are going to watch a movie, then lunch.",
+      userIdea: "realistic neon robots at the movie",
+      description:
+        "Join us for popcorn, pizza, and fun. We are going to watch a movie, then lunch.",
       date: "05/23",
       venueName: "AMC Boulevard 10",
       links: [],
     },
     {
       style:
-        "Highest-priority visual direction from the user: realistic festive cats at the movie. Treat the user's words as the theme of the invitation.",
+        "Highest-priority visual direction from the user: realistic neon robots at the movie. Treat the user's words as the theme of the invitation.",
     },
     {
       title: "Lara's 7th Birthday Bash",
-      description: "Movie birthday with cats.",
+      description: "Movie birthday with robots.",
       palette: {
         primary: "#111827",
         secondary: "#F9FAFB",
         accent: "#F59E0B",
       },
-      themeStyle: "realistic movie cats",
+      themeStyle: "realistic movie robots",
       interactiveMetadata: {
-        rsvpMessage: "Tell us if you can join the cats.",
-        funFacts: ["Cats on the marquee"],
+        rsvpMessage: "Tell us if you can join the robots.",
+        funFacts: ["Robots on the marquee"],
         ctaLabel: "RSVP",
-        shareNote: "Join Lara for cats and movies.",
+        shareNote: "Join Lara for robots and movies.",
       },
       invitation: {
         title: "Lara's 7th Birthday Bash",
         subtitle: "Movie & Lunch Celebration",
-        openingLine: "Join us for popcorn, cats, pizza, and fun!",
+        openingLine: "Join us for popcorn, robots, pizza, and fun!",
         scheduleLine: "Saturday May 23rd at 1:00 PM",
         locationLine: "AMC Boulevard 10",
         detailsLine: "Pizza after the movie",
         callToAction: "RSVP",
-        socialCaption: "Join Lara for cats and movies.",
-        hashtags: ["#LaraCats"],
+        socialCaption: "Join Lara for robots and movies.",
+        hashtags: ["#LaraRobots"],
       },
     },
     { surface: "page" },
   );
 
   assert.match(imagePromptWithGeneratedCopy, /Opening Line: Join us for popcorn, pizza, and fun!/);
-  assert.doesNotMatch(imagePromptWithGeneratedCopy, /Opening Line:.*cats/i);
-  assert.doesNotMatch(imagePromptWithGeneratedCopy, /ShareNote:.*cats/i);
+  assert.doesNotMatch(imagePromptWithGeneratedCopy, /Opening Line:.*robots/i);
+  assert.doesNotMatch(imagePromptWithGeneratedCopy, /ShareNote:.*robots/i);
   assert.match(
     imagePromptWithGeneratedCopy,
     /The approved invitation copy is the complete visible-text whitelist\./,
@@ -250,6 +257,17 @@ test("studio baked-text invitation prompts give every non-birthday-wedding categ
         /For housewarmings, make the host names, housewarming title, or new-home identity the main invitation hierarchy first\./,
       imageRule:
         /For housewarmings, make the theme read as a welcoming hosted gathering with home-party decor and hosting cues\./,
+    },
+    {
+      category: "Open House",
+      title: "Open House: 4593 High Meadow Lane",
+      occasion: "Open House",
+      honoreeName: "Carla Mira",
+      userIdea: "premium real estate flyer with modern architecture",
+      copyRule:
+        /For Open House, make Open House, property address, date\/time, price, and strongest supplied features the main invitation hierarchy first\./,
+      imageRule:
+        /For Open House, make the theme read as premium real-estate listing marketing with property photography, architecture, clean listing facts, and logo-free premium real-estate editorial styling\./,
     },
     {
       category: "Field Trip/Day",
@@ -326,7 +344,10 @@ test("studio baked-text invitation prompts give every non-birthday-wedding categ
       { surface: "image" },
     );
 
-    assert.match(liveCardPrompt, /write short cinematic invitation copy with a poster-like hierarchy/);
+    assert.match(
+      liveCardPrompt,
+      /write short cinematic invitation copy with a poster-like hierarchy/,
+    );
     assert.match(liveCardPrompt, testCase.copyRule);
     assert.match(
       imagePrompt,
@@ -355,7 +376,79 @@ test("studio baked-text invitation prompts give every non-birthday-wedding categ
         /Do not imply that the depicted students designed, printed, or are personally presenting the invitation\./,
       );
     }
+    if (testCase.category === "Open House") {
+      assert.match(
+        liveCardPrompt,
+        /Use exact supplied property facts only\. Omit missing prices, amenities, MLS numbers, brokerage names, licenses, phone numbers, and property claims instead of guessing\./,
+      );
+      assert.match(
+        imagePrompt,
+        /Open House \/ real-estate flyer: treat the result as premium property marketing created by a realtor/,
+      );
+      assert.doesNotMatch(imagePrompt, /For housewarmings, make the theme read/);
+    }
   }
+});
+
+test("studio open house image prompts describe premium property collage and keep realtor photos in the app tab", () => {
+  const prompt = buildInvitationImagePrompt(
+    {
+      title: "Open House: 4593 High Meadow Lane",
+      category: "Open House",
+      occasion: "Open House",
+      propertyPrice: "$624,000",
+      bedrooms: "4",
+      bathrooms: "3.5",
+      squareFootage: "2,850",
+      neighborhood: "High Meadow",
+      propertyHighlights: "Renovated kitchen, pool, garage parking",
+      realtorName: "Carla Mira",
+      brokerageName: "High Meadow Realty",
+      propertyImageUrls: [
+        "https://example.com/house-1.png",
+        "https://example.com/house-2.png",
+        "https://example.com/house-3.png",
+      ],
+      realtorImageUrls: ["https://example.com/realtor.png"],
+      links: [],
+    },
+    {},
+    null,
+    { surface: "page", referenceImageCount: 4 },
+  );
+
+  assert.match(prompt, /OPEN HOUSE REFERENCE PHOTO ORDER/);
+  assert.match(prompt, /the first 3 reference image\(s\) are house\/property photos/);
+  assert.doesNotMatch(prompt, /followed by 1 optional realtor photo\(s\)/);
+  assert.match(prompt, /with 3-5 house photos, create a premium real-estate collage/);
+  assert.match(
+    prompt,
+    /OPEN HOUSE BUTTON-ZONE HARD RULE: the bottom 30% of the 9:16 raster is reserved for Envitefy app buttons and must be image-only background\./,
+  );
+  assert.match(
+    prompt,
+    /All Open House visible copy must live in the upper and middle area only and must end above the lower 32% boundary of the card\./,
+  );
+  assert.match(
+    prompt,
+    /Use logo-free premium real-estate editorial styling\. Do not create brokerage logos, brand marks, faux signs, seals, or monograms anywhere in the flyer artwork\./,
+  );
+  assert.match(
+    prompt,
+    /A realtor\/agent photo was uploaded for the app's Realtor tab only\. Do not insert, redraw, reference, crop, paint, or include that agent headshot\/person anywhere in the flyer artwork\./,
+  );
+  assert.match(
+    prompt,
+    /Agent identity belongs in the live-card Realtor tab, not in the generated poster image\./,
+  );
+  assert.match(prompt, /Do not invent MLS numbers, prices, amenities, square footage/);
+  assert.match(
+    prompt,
+    /Do not place any visible text, captions, names, prices, addresses, dates, times, beds\/baths, square footage, taglines, icons, buttons, decorative badges, contact details, or listing facts in the bottom button area\./,
+  );
+  assert.doesNotMatch(prompt, /Realtor: Carla Mira/);
+  assert.doesNotMatch(prompt, /Brokerage: High Meadow Realty/);
+  assert.doesNotMatch(prompt, /Honoree Name: Carla Mira/);
 });
 
 test("studio prompts keep game day themes tied to the sports invitation type", () => {
@@ -472,7 +565,10 @@ test("studio invitation image prompt applies selected image finish presets to st
     { surface: "image" },
   );
 
-  assert.match(prompt, /Selected image finish preset: Golden Glow - warm light, elegant celebration\./);
+  assert.match(
+    prompt,
+    /Selected image finish preset: Golden Glow - warm light, elegant celebration\./,
+  );
   assert.match(
     prompt,
     /Treat the selected image finish preset as a high-priority finishing direction for mood, polish, lighting, palette handling, and contrast while still obeying the selected event type, approved event details, and the user's private visual direction\./,
@@ -596,10 +692,7 @@ test("page live-card prompts require baked-in raster text and preserve a clear b
     prompt,
     /Visible invitation text is required in the final raster for page\/live-card images, but keep it sparse, readable, and intentionally designed\./,
   );
-  assert.match(
-    prompt,
-    /resolve the final visible text line well above the bottom action buttons/,
-  );
+  assert.match(prompt, /resolve the final visible text line well above the bottom action buttons/);
   assert.match(prompt, /Approved invitation copy to use verbatim/);
 });
 
@@ -673,7 +766,10 @@ test("birthday image prompts bake approved invitation copy into the image while 
     { surface: "image", referenceImageCount: 2 },
   );
 
-  assert.match(prompt, /This is a finished invitation poster image, not a screenshot and not an app UI mockup\./);
+  assert.match(
+    prompt,
+    /This is a finished invitation poster image, not a screenshot and not an app UI mockup\./,
+  );
   assert.match(
     prompt,
     /Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay\./,
@@ -698,11 +794,11 @@ test("birthday image prompts bake approved invitation copy into the image while 
     prompt,
     /The final invitation MUST weave these into the card background and hero art: large focal photo \(upper ~45[–-]60% of the canvas\), cinematic blend or vignette into the rest of the design, and clean negative space for later overlays\./,
   );
+  assert.match(prompt, /Secondary live card styling metadata only:/);
   assert.match(
     prompt,
-    /Secondary live card styling metadata only:/,
+    /Approved invitation copy to use verbatim if visible text appears in the artwork:/,
   );
-  assert.match(prompt, /Approved invitation copy to use verbatim if visible text appears in the artwork:/);
   assert.match(prompt, /Main Title: Ava After Dark/);
   assert.match(prompt, /Subtitle \/ Theme Line: Birthday in Bloom/);
   assert.match(prompt, /Opening Line: Meet us under the lights\./);
@@ -732,7 +828,7 @@ test("birthday image prompts bake approved invitation copy into the image while 
   );
   assert.match(
     prompt,
-    /Do not place captions, labels, taglines, schedule lines, location lines, decorative badges, or faux footer details in the bottom button area\./,
+    /Do not place captions, labels, names, prices, addresses, taglines, schedule lines, location lines, decorative badges, listing facts, contact details, or faux footer details in the bottom button area\./,
   );
   assert.doesNotMatch(prompt, /Golden-hour rooftop birthday invitation\./);
   assert.match(
@@ -785,10 +881,7 @@ test("poster-first live-card text prompts omit visible year and require poster-l
     prompt,
     /Do not invent venue brands, marquee names, signage wording, or unsupported event facts in the copy/,
   );
-  assert.match(
-    prompt,
-    /Resolve the final visible text line well above the bottom action buttons/,
-  );
+  assert.match(prompt, /Resolve the final visible text line well above the bottom action buttons/);
   assert.match(
     prompt,
     /Make the result read first as a real celebration invite for this event type/,
@@ -809,7 +902,7 @@ test("studio live-card prompts keep birthday copy centered on honoree name and a
       occasion: "Birthday",
       honoreeName: "Lara",
       ageOrMilestone: "7",
-      userIdea: "movie cats",
+      userIdea: "movie robots",
       referenceImageUrls: ["https://example.com/lara.png"],
       links: [],
     },
@@ -838,7 +931,7 @@ test("studio invitation image prompts use subject-photo makeover rules instead o
       occasion: "Birthday",
       honoreeName: "Lara",
       ageOrMilestone: "7",
-      userIdea: "movie cats",
+      userIdea: "movie robots",
       links: [],
     },
     {

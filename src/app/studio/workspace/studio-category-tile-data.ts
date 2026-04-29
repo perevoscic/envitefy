@@ -1,16 +1,6 @@
 "use client";
 
-import {
-  Baby,
-  Bus,
-  Cake,
-  CalendarHeart,
-  Heart,
-  Home,
-  Trophy,
-  WandSparkles,
-  Wine,
-} from "lucide-react";
+import { Baby, Building2, Bus, Cake, Heart, Home, Trophy, WandSparkles, Wine } from "lucide-react";
 import type { StudioCategoryTileDefinition } from "../studio-workspace-types";
 
 export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
@@ -93,12 +83,12 @@ export const STUDIO_CATEGORY_TILES: StudioCategoryTileDefinition[] = [
     selectedLabel: "Currently selected",
   },
   {
-    name: "Anniversary",
-    icon: CalendarHeart,
-    description: "Romantic Celebrations",
-    badge: "Milestone",
-    imagePath: "/studio/anniversary.webp",
-    themeColor: "#8E6FD4",
+    name: "Open House",
+    icon: Building2,
+    description: "Premium Realtor Flyers",
+    badge: "Real Estate",
+    imagePath: "/studio/open-house.webp",
+    themeColor: "#1F6F8B",
     sizeVariant: "standard",
     overlayStrength: "medium",
     textTone: "dark",

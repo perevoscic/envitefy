@@ -28,6 +28,7 @@ const STATIC_STRING_PATHS: Array<Array<string | number>> = [
   ["attachment", "previewImageUrl"],
   ["attachment", "thumbnailUrl"],
   ["profileImage", "dataUrl"],
+  ["openHouse", "realtorImageUrl"],
   ["signupForm", "header", "backgroundImage", "dataUrl"],
 ];
 
@@ -105,6 +106,14 @@ function collectSponsorEntries(entries: EventMediaEntry[], source: any): void {
   }
 }
 
+function collectOpenHouseEntries(entries: EventMediaEntry[], source: any): void {
+  const images = source?.openHouse?.propertyImages;
+  if (!Array.isArray(images)) return;
+  for (let index = 0; index < images.length; index += 1) {
+    addEntry(entries, source, ["openHouse", "propertyImages", index, "url"]);
+  }
+}
+
 export function listEventMediaEntries(source: unknown): EventMediaEntry[] {
   if (!source || typeof source !== "object") return [];
   const entries: EventMediaEntry[] = [];
@@ -114,6 +123,7 @@ export function listEventMediaEntries(source: unknown): EventMediaEntry[] {
   collectGalleryEntries(entries, source);
   collectSignupHeaderEntries(entries, source);
   collectSponsorEntries(entries, source);
+  collectOpenHouseEntries(entries, source);
   return entries;
 }
 

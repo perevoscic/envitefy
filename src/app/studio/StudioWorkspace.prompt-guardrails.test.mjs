@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -63,15 +63,15 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   assert.match(source, /userIdea:\s*designIdea\s*\|\|\s*null,/);
   assert.match(
     source,
-    /subjectTransformMode:\s*sanitizedGuestImageUrls\.length > 0 \? "premium_makeover" : undefined,/,
+    /subjectTransformMode:\s*sanitizedGuestImageUrls\.length > 0 \|\|\s*sanitizedPropertyImageUrls\.length > 0\s*\?\s*"premium_makeover"\s*:\s*undefined,/,
   );
   assert.match(
     source,
-    /likenessStrength:\s*sanitizedGuestImageUrls\.length > 0 \? details\.likenessStrength : undefined,/,
+    /likenessStrength:\s*sanitizedGuestImageUrls\.length > 0 \|\|\s*sanitizedPropertyImageUrls\.length > 0\s*\?\s*details\.likenessStrength\s*:\s*undefined,/,
   );
   assert.match(
     source,
-    /visualStyleMode:\s*sanitizedGuestImageUrls\.length > 0 \? details\.visualStyleMode : undefined,/,
+    /visualStyleMode:\s*sanitizedGuestImageUrls\.length > 0 \|\|\s*sanitizedPropertyImageUrls\.length > 0\s*\?\s*details\.visualStyleMode\s*:\s*undefined,/,
   );
   assert.match(
     source,
@@ -81,13 +81,10 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
     source,
     /const imageFinishPresetDirection = imageFinishPreset\s*\?\s*`Selected image finish preset: \$\{imageFinishPreset\.label\}\. Apply a \$\{imageFinishPreset\.label\} finish with \$\{imageFinishPreset\.description\}\.`\s*:\s*"";/s,
   );
+  assert.match(source, /visualPreferences:\s*clean\(details\.visualPreferences\)\s*\|\|\s*null,/);
   assert.match(
     source,
-    /visualPreferences:\s*clean\(details\.visualPreferences\)\s*\|\|\s*null,/,
-  );
-  assert.match(
-    source,
-    /style:\s*\[\s*categoryGuardrails,\s*imageFinishPresetDirection,\s*refinement,\s*studioGuardrails,\s*\]\s*\.filter\(Boolean\)\s*\.join\("\. "\)\s*\|\|\s*null/s,
+    /style:\s*\[\s*visualDirection,\s*categoryGuardrails,\s*imageFinishPresetDirection,\s*refinement,\s*studioGuardrails,\s*\]\s*\.filter\(Boolean\)\s*\.join\("\. "\)\s*\|\|\s*null/s,
   );
   assert.match(source, /imageFinishPreset:\s*imageFinishPreset\?\.label,/);
 });
@@ -106,7 +103,7 @@ test("studio prompt sources require baked-in invitation text while keeping the b
   );
   assert.match(
     builderSource,
-    /never place visible text, faux buttons, icons, chips, circles, bars, or device chrome in the bottom action-button area\./,
+    /never place visible text, names, listing facts, contact details, faux buttons, icons, chips, circles, bars, logos, seals, signs, monograms, or device chrome in the bottom action-button area\./,
   );
   assert.match(
     builderSource,
@@ -129,7 +126,10 @@ test("studio prompt sources require baked-in invitation text while keeping the b
     /Create one single seamless full-bleed invitation image with one unified continuous scene from top to bottom\./,
   );
   assert.match(promptSource, /Do not split the composition into separate top and bottom scenes\./);
-  assert.match(promptSource, /Never compose the image as top scene plus text band plus bottom scene\./);
+  assert.match(
+    promptSource,
+    /Never compose the image as top scene plus text band plus bottom scene\./,
+  );
   assert.match(
     promptSource,
     /Treat all visible text as integrated invitation typography inside the scene, not as interface chrome or floating app labels\./,
@@ -142,7 +142,10 @@ test("studio prompt sources require baked-in invitation text while keeping the b
     promptSource,
     /Use at most one short supporting line beyond the title and event details\. Do not create body-paragraph blocks, prose descriptions, or multi-sentence copy sections\./,
   );
-  assert.match(promptSource, /Do not repeat or duplicate any visible words or phrases in the image\./);
+  assert.match(
+    promptSource,
+    /Do not repeat or duplicate any visible words or phrases in the image\./,
+  );
   assert.match(
     promptSource,
     /Do not duplicate or mirror scene elements\. Avoid repeated tables, repeated floral arrangements, repeated gazebos, repeated desserts, repeated arches, repeated portraits, or second copies of the main scene stacked elsewhere in the card\./,
@@ -155,12 +158,18 @@ test("studio prompt sources require baked-in invitation text while keeping the b
     promptSource,
     /Do not generate any UI elements, interface overlays, app controls, buttons, icons, badges, arrows, floating controls, share symbols, chat symbols, phone symbols, plus buttons, camera buttons, circular controls, watermarks, or screenshot-style overlays\./,
   );
-  assert.match(promptSource, /Approved invitation copy to use verbatim if visible text appears in the artwork:/);
+  assert.match(
+    promptSource,
+    /Approved invitation copy to use verbatim if visible text appears in the artwork:/,
+  );
   assert.match(
     promptSource,
     /Use only the approved invitation copy below for visible wording in the artwork\. Preserve spelling exactly and do not duplicate lines\./,
   );
-  assert.match(promptSource, /The output must read as one clean continuous invitation image, not a screenshot, poster mockup, or app capture\./);
+  assert.match(
+    promptSource,
+    /The output must read as one clean continuous invitation image, not a screenshot, poster mockup, or app capture\./,
+  );
   assert.match(
     promptSource,
     /Let the background and artwork continue naturally behind the bottom buttons as full-bleed art\./,
@@ -195,7 +204,11 @@ test("studio prompt sources require baked-in invitation text while keeping the b
   );
   assert.match(
     promptSource,
-    /Keep the bottom action-button zone art-only and text-free\. End the final visible text line well above the bottom controls area\./,
+    /Keep the bottom action-button zone art-only and completely free of information\. End the final visible text line well above the bottom controls area\./,
+  );
+  assert.match(
+    promptSource,
+    /OPEN HOUSE BUTTON-ZONE HARD RULE: the bottom 30% of the 9:16 raster is reserved for Envitefy app buttons and must be image-only background\./,
   );
   assert.match(
     promptSource,
@@ -207,7 +220,7 @@ test("studio prompt sources require baked-in invitation text while keeping the b
   );
   assert.match(
     promptSource,
-    /Do not place captions, labels, taglines, schedule lines, location lines, decorative badges, or faux footer details in the bottom button area\./,
+    /Do not place captions, labels, names, prices, addresses, taglines, schedule lines, location lines, decorative badges, listing facts, contact details, or faux footer details in the bottom button area\./,
   );
   assert.match(
     promptSource,
@@ -244,14 +257,29 @@ test("studio prompt sources require baked-in invitation text while keeping the b
   );
   assert.match(promptSource, /line\("Age or Milestone", event\.ageOrMilestone\)/);
   assert.match(promptSource, /DESIGN_IDEA_HELPER_TEXT_PATTERN/);
-  assert.match(promptSource, /line\("Private Visual Direction", sanitizeImagePromptBriefText\(event\.userIdea\)\)/);
-  assert.match(promptSource, /line\("Supporting Context", sanitizeImagePromptBriefText\(event\.description\)\)/);
+  assert.match(
+    promptSource,
+    /line\("Private Visual Direction", sanitizeImagePromptBriefText\(event\.userIdea\)\)/,
+  );
+  assert.match(
+    promptSource,
+    /line\("Supporting Context", sanitizeImagePromptBriefText\(event\.description\)\)/,
+  );
   assert.match(promptSource, /line\("Image Finish Preset", imageFinishPreset\?\.label\)/);
   assert.match(
     promptSource,
     /Keep the top edge free of faux phone UI: no carrier names, clock text, battery icons, signal icons, status icons, notches, camera cutouts, or device chrome\./,
   );
-  assert.doesNotMatch(promptSource, /Treat all visible text as post-production overlay, not part of the generated image\./);
-  assert.doesNotMatch(promptSource, /Visible text is forbidden in the final raster for page\/live-card backgrounds\./);
-  assert.doesNotMatch(promptSource, /Leave soft clean negative space where text and app controls can be placed later as overlays\./);
+  assert.doesNotMatch(
+    promptSource,
+    /Treat all visible text as post-production overlay, not part of the generated image\./,
+  );
+  assert.doesNotMatch(
+    promptSource,
+    /Visible text is forbidden in the final raster for page\/live-card backgrounds\./,
+  );
+  assert.doesNotMatch(
+    promptSource,
+    /Leave soft clean negative space where text and app controls can be placed later as overlays\./,
+  );
 });

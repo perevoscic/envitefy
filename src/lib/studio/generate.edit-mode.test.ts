@@ -153,7 +153,7 @@ test("generateStudioInvitation dispatches live-card text and fresh images throug
       occasion: "Birthday",
       honoreeName: "Lara",
       ageOrMilestone: "7",
-      userIdea: "movie cats",
+      userIdea: "movie robots",
       date: "2026-05-23",
       startTime: "1:00 PM",
       venueName: "AMC Boulevard 10",
@@ -169,6 +169,7 @@ test("generateStudioInvitation dispatches live-card text and fresh images throug
 
 test("generateStudioInvitation dispatches existing-image edits through OpenAI", async () => {
   let capturedSourceImage = "";
+  let capturedPrompt = "";
 
   mock.method(studioGenerationDeps, "resolveStudioProvider", () => "openai");
   mock.method(studioGenerationDeps, "normalizeStudioTheme", async () => ({
@@ -186,7 +187,8 @@ test("generateStudioInvitation dispatches existing-image edits through OpenAI", 
   mock.method(studioGenerationDeps, "editInvitationImageWithGemini", async () => {
     throw new Error("expected OpenAI edit path");
   });
-  mock.method(studioGenerationDeps, "editInvitationImageWithOpenAi", async (_prompt, source) => {
+  mock.method(studioGenerationDeps, "editInvitationImageWithOpenAi", async (prompt, source) => {
+    capturedPrompt = String(prompt);
     capturedSourceImage = String(source);
     return {
       ok: true,
@@ -204,7 +206,7 @@ test("generateStudioInvitation dispatches existing-image edits through OpenAI", 
       occasion: "Birthday",
       honoreeName: "Lara",
       ageOrMilestone: "7",
-      userIdea: "movie cats",
+      userIdea: "movie robots",
       date: "2026-05-23",
       startTime: "3:00 PM",
       venueName: "AMC Boulevard 10",
@@ -212,12 +214,20 @@ test("generateStudioInvitation dispatches existing-image edits through OpenAI", 
     },
     imageEdit: {
       sourceImageDataUrl: "/api/blob/event-media/upload-123/header/display.webp",
+      editInstruction:
+        'Replace only the existing visible date/time line "July 28th at 3:00 PM" with "July 30th at 3:00 PM".',
     },
   });
 
   assert.equal(result.ok, true);
   assert.equal(result.imageDataUrl, "data:image/png;base64,T1BFTkFJX0VESVQ=");
   assert.equal(capturedSourceImage, "/api/blob/event-media/upload-123/header/display.webp");
+  assert.match(capturedPrompt, /editing the attached existing live-card raster image/);
+  assert.match(capturedPrompt, /July 28th at 3:00 PM/);
+  assert.match(capturedPrompt, /July 30th at 3:00 PM/);
+  assert.match(capturedPrompt, /do not regenerate or redesign the card/);
+  assert.doesNotMatch(capturedPrompt, /Core creative inputs:/);
+  assert.doesNotMatch(capturedPrompt, /Lara's 7th Birthday Bash/);
 });
 
 test("generateStudioInvitation strips Design Idea-only terms before approving visible image copy", async () => {
@@ -238,29 +248,29 @@ test("generateStudioInvitation strips Design Idea-only terms before approving vi
     warnings: [],
     liveCard: {
       title: "Lara's 7th Birthday Bash",
-      description: "Movie birthday with cats.",
+      description: "Movie birthday with robots.",
       palette: {
         primary: "#111827",
         secondary: "#F9FAFB",
         accent: "#F59E0B",
       },
-      themeStyle: "realistic movie cats",
+      themeStyle: "realistic movie robots",
       interactiveMetadata: {
-        rsvpMessage: "Tell us if you can join the cats.",
-        funFacts: ["Cats on the marquee"],
+        rsvpMessage: "Tell us if you can join the robots.",
+        funFacts: ["Robots on the marquee"],
         ctaLabel: "RSVP",
-        shareNote: "Join Lara for cats and movies.",
+        shareNote: "Join Lara for robots and movies.",
       },
       invitation: {
         title: "Lara's 7th Birthday Bash",
         subtitle: "Movie & Lunch Celebration",
-        openingLine: "Join us for popcorn, cats, pizza, and fun!",
+        openingLine: "Join us for popcorn, robots, pizza, and fun!",
         scheduleLine: "Saturday May 23rd at 1:00 PM",
         locationLine: "AMC Boulevard 10",
         detailsLine: "Pizza after the movie",
         callToAction: "RSVP",
-        socialCaption: "Join Lara for cats and movies.",
-        hashtags: ["#LaraCats"],
+        socialCaption: "Join Lara for robots and movies.",
+        hashtags: ["#LaraRobots"],
       },
     },
   }));
@@ -282,7 +292,7 @@ test("generateStudioInvitation strips Design Idea-only terms before approving vi
       occasion: "Birthday",
       honoreeName: "Lara",
       ageOrMilestone: "7",
-      userIdea: "realistic festive cats at the movie",
+      userIdea: "realistic neon robots at the movie",
       description:
         "Join us for popcorn, pizza, and fun. We are going to watch a movie, then lunch.",
       date: "2026-05-23",
@@ -300,5 +310,5 @@ test("generateStudioInvitation strips Design Idea-only terms before approving vi
   assert.equal(result.liveCard?.invitation.socialCaption, "Join Lara for movies.");
   assert.deepEqual(result.liveCard?.invitation.hashtags, []);
   assert.match(capturedPrompt, /Opening Line: Join us for popcorn, pizza, and fun!/);
-  assert.doesNotMatch(capturedPrompt, /Opening Line:.*cats/i);
+  assert.doesNotMatch(capturedPrompt, /Opening Line:.*robots/i);
 });

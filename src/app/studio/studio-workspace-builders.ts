@@ -6,7 +6,10 @@ import {
   type StudioGenerateRequest,
   type StudioGenerateSurface,
 } from "@/lib/studio/types";
-import { formatMonthDayOrdinalEn, formatWeekdayMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
+import {
+  formatMonthDayOrdinalEn,
+  formatWeekdayMonthDayOrdinalEn,
+} from "@/utils/format-month-day-ordinal";
 import {
   EMPTY_POSITIONS,
   getStudioDefaultCallToAction,
@@ -22,6 +25,9 @@ import type {
 import {
   readString,
   STUDIO_GUEST_IMAGE_URL_MAX,
+  STUDIO_OPEN_HOUSE_PROPERTY_IMAGE_URL_MAX,
+  STUDIO_OPEN_HOUSE_REALTOR_IMAGE_URL_MAX,
+  STUDIO_OPEN_HOUSE_REALTOR_LOGO_URL_MAX,
   sanitizeGuestImageUrls,
 } from "./studio-workspace-utils";
 
@@ -91,17 +97,20 @@ function buildBirthdayHeadline(details: EventDetails): string {
 
 export function getDisplayTitle(details: EventDetails) {
   if (details.category === "Birthday") {
-    return pickFirst(
-      buildBirthdayHeadline(details),
-      details.eventTitle,
-      "Birthday Celebration",
-    );
+    return pickFirst(buildBirthdayHeadline(details), details.eventTitle, "Birthday Celebration");
   }
   if (details.category === "Wedding") {
     return pickFirst(
       details.eventTitle,
       details.coupleNames ? `${details.coupleNames} Wedding` : "",
       "Wedding Celebration",
+    );
+  }
+  if (details.category === "Open House") {
+    return pickFirst(
+      details.eventTitle ? `Open House: ${details.eventTitle}` : "",
+      details.location ? `Open House: ${details.location}` : "",
+      "Open House",
     );
   }
   if (details.category === "Baby Shower") {
@@ -146,6 +155,7 @@ export function getDisplayTitle(details: EventDetails) {
 
 export function getHonoreeName(details: EventDetails) {
   return pickFirst(
+    details.category === "Open House" ? details.realtorName : "",
     details.name,
     details.coupleNames,
     details.honoreeNames,
@@ -188,6 +198,9 @@ export function buildStudioSubtitleFallback(details: EventDetails) {
   if (details.category === "Bridal Shower") {
     return pickFirst(details.activityNote, "Join us for a bridal shower.");
   }
+  if (details.category === "Open House") {
+    return pickFirst(details.propertyHighlights, details.activityNote, "Tour this featured home.");
+  }
   if (details.category === "Anniversary") {
     return pickFirst(details.activityNote, "Celebrate with us.");
   }
@@ -206,11 +219,17 @@ export function buildStudioSubtitleFallback(details: EventDetails) {
 export function hasStudioSubjectReferencePhotos(details: EventDetails) {
   return (
     details.sourceMediaMode === "subjectPhotos" &&
-    sanitizeGuestImageUrls(details.guestImageUrls).length > 0
+    (sanitizeGuestImageUrls(details.guestImageUrls).length > 0 ||
+      sanitizeGuestImageUrls(details.propertyImageUrls).length > 0 ||
+      sanitizeGuestImageUrls(details.realtorImageUrls).length > 0 ||
+      sanitizeGuestImageUrls(details.realtorLogoUrls).length > 0)
   );
 }
 
 export function getRegistryText(details: EventDetails) {
+  if (details.category === "Open House") {
+    return pickFirst(details.listingUrl ? "Listing details available." : "");
+  }
   return pickFirst(
     details.giftPreferenceNote,
     details.giftNote,
@@ -223,6 +242,7 @@ export function getRegistryText(details: EventDetails) {
 export function hasRegistryContent(details: EventDetails) {
   return Boolean(
     clean(details.registryLink) ||
+      clean(details.listingUrl) ||
       clean(details.giftPreferenceNote) ||
       clean(details.giftNote) ||
       clean(details.bringABookNote),
@@ -336,6 +356,7 @@ export const STUDIO_IDEA_CATEGORY_LABELS: Record<InviteCategory, string> = {
   Birthday: "Birthday",
   Wedding: "Wedding",
   "Baby Shower": "Baby Shower",
+  "Open House": "Open House",
   Anniversary: "Anniversary",
   "Bridal Shower": "Bridal Shower",
   Housewarming: "Housewarming",
@@ -347,6 +368,8 @@ export const STUDIO_IDEA_CATEGORY_LABELS: Record<InviteCategory, string> = {
 const STUDIO_DESIGN_IDEA_CATEGORY_PLACEHOLDERS: Partial<Record<InviteCategory, string>> = {
   Birthday:
     "e.g. A bold superhero-and-dino party with comic-book energy, bright primaries, and playful lighting.",
+  "Open House":
+    "e.g. A premium realtor flyer with a luxury property photo collage, refined typography, and logo-free editorial polish.",
 };
 
 export function getStudioDesignIdeaPlaceholder(category: InviteCategory) {
@@ -362,6 +385,9 @@ export function getStudioEventDetailsPlaceholder(category: InviteCategory) {
   }
   if (category === "Wedding") {
     return "e.g. Dinner and dancing follow the ceremony. Cocktail attire encouraged.";
+  }
+  if (category === "Open House") {
+    return "e.g. Renovated kitchen, bright primary suite, pool, garage parking, and easy self-guided tour route.";
   }
   if (category === "Game Day") {
     return "e.g. Gates open at 6:00 PM. Wear blue and gold and arrive early for parking.";
@@ -381,6 +407,9 @@ export function getThemeColors(details: EventDetails) {
   }
   if (details.category === "Game Day") {
     return { primaryColor: "#0f172a", accentColor: "#f59e0b" };
+  }
+  if (details.category === "Open House") {
+    return { primaryColor: "#1f2937", accentColor: "#0f766e" };
   }
   return { primaryColor: "#111827", accentColor: "#7c3aed" };
 }
@@ -437,6 +466,22 @@ function buildGameDayContextNotes(details: EventDetails): string[] {
   ].filter(Boolean);
 }
 
+function buildOpenHouseContextNotes(details: EventDetails): string[] {
+  if (details.category !== "Open House") return [];
+
+  return [
+    clean(details.propertyPrice) ? `Price: ${clean(details.propertyPrice)}.` : "",
+    clean(details.bedrooms) ? `Bedrooms: ${clean(details.bedrooms)}.` : "",
+    clean(details.bathrooms) ? `Bathrooms: ${clean(details.bathrooms)}.` : "",
+    clean(details.squareFootage) ? `Square Feet: ${clean(details.squareFootage)}.` : "",
+    clean(details.neighborhood) ? `Neighborhood: ${clean(details.neighborhood)}.` : "",
+    clean(details.propertyHighlights)
+      ? `Property highlights: ${clean(details.propertyHighlights)}.`
+      : "",
+    clean(details.parkingInfo) ? `Parking / Access: ${clean(details.parkingInfo)}.` : "",
+  ].filter(Boolean);
+}
+
 export function buildDescription(details: EventDetails) {
   const parts = [
     clean(details.detailsDescription),
@@ -445,6 +490,7 @@ export function buildDescription(details: EventDetails) {
     clean(details.activityNote),
     clean(details.calloutText),
     ...buildGameDayContextNotes(details),
+    ...buildOpenHouseContextNotes(details),
   ].filter(Boolean);
   return parts.join(" ").trim();
 }
@@ -452,6 +498,7 @@ export function buildDescription(details: EventDetails) {
 export function buildLinks(details: EventDetails) {
   return [
     details.ticketsLink ? { label: "Tickets", url: details.ticketsLink } : null,
+    details.listingUrl ? { label: "Listing", url: details.listingUrl } : null,
     details.registryLink
       ? { label: getStudioRegistryLinkLabel(details.category), url: details.registryLink }
       : null,
@@ -466,6 +513,8 @@ function buildStudioThemeFramingGuidance(details: EventDetails) {
       "Interpret the user's theme words as a birthday-party version of that idea, not a generic standalone scene. If the user says Jurassic Park, make it feel like a Jurassic Park birthday party with birthday decor such as balloons, cake, candles, wrapped gifts, themed desserts, party tablescapes, and celebration energy instead of only jungle scenery or dinosaurs. Let the honoree name, age or milestone, and venue type shape the scene when those details are available so the result feels personalized rather than generic.",
     Wedding:
       "Interpret the user's theme words as a wedding or save-the-date version of that idea, with ceremony, reception, stationery, floral, and romantic celebration cues instead of generic scenery. Let venue type, floral direction, and formality cues steer the setting, and do not inflate a single-evening event into an unsupported wedding-weekend concept.",
+    "Open House":
+      "Interpret the user's theme words as a premium real-estate open house flyer version of that idea, with listing photography, architectural composition, logo-free editorial typography, and buyer-facing property marketing. Make it feel like a polished luxury listing flyer, not a housewarming party invite.",
     "Baby Shower":
       "Interpret the user's theme words as a baby-shower version of that idea, with baby-shower decor, favors, dessert-table styling, and welcoming celebration cues instead of generic scenery. If the theme implies a mascot such as teddy bears, moons, clouds, or animals, keep the motif restrained and design-led instead of filling the room with repeated plush props.",
     "Bridal Shower":
@@ -485,15 +534,48 @@ function buildStudioThemeFramingGuidance(details: EventDetails) {
   return categoryThemeFraming[details.category];
 }
 
+function splitStudioVisualExclusionTerms(value: string): string[] {
+  return value
+    .split(/\s+(?:and|or)\s+|\/|&/i)
+    .map((item) =>
+      clean(item)
+        .replace(/^(?:all|any|the|a|an|every)\s+/i, "")
+        .replace(/\s+(?:from|in|on|at|with|near|around|behind|inside)\b[\s\S]*$/i, ""),
+    )
+    .filter((item) => item.length >= 2 && item.length <= 60);
+}
+
+function extractStudioVisualExclusions(value: string): string[] {
+  const text = clean(value);
+  if (!text) return [];
+
+  const exclusions: string[] = [];
+  const patterns = [
+    /\b(?:remove|delete|erase|eliminate|exclude|omit)\s+([^,.;\n]+)/gi,
+    /\b(?:no|without)\s+([^,.;\n]+)/gi,
+  ];
+
+  for (const pattern of patterns) {
+    for (const match of text.matchAll(pattern)) {
+      exclusions.push(...splitStudioVisualExclusionTerms(match[1] || ""));
+    }
+  }
+
+  return Array.from(new Set(exclusions.map((item) => item.toLowerCase())));
+}
+
 export function buildStudioVisualDirection(details: EventDetails) {
   const customIdea = sanitizeStudioDesignIdea(details.theme);
   const extraPreferences = clean(details.visualPreferences);
   const eventDetails = clean(details.detailsDescription);
   const combinedDirection = [customIdea, extraPreferences].filter(Boolean).join(". ");
   const instructions: string[] = [];
+  const visualExclusions = extractStudioVisualExclusions(combinedDirection);
 
   if (combinedDirection) {
-    instructions.push(`Highest-priority private visual direction from the user: ${combinedDirection}.`);
+    instructions.push(
+      `Highest-priority private visual direction from the user: ${combinedDirection}.`,
+    );
     instructions.push(
       "Apply the Design Idea to artwork, palette, composition, mood, and themeStyle while still expressing the selected category clearly.",
     );
@@ -503,6 +585,15 @@ export function buildStudioVisualDirection(details: EventDetails) {
         "Use Event Details as the source for guest-facing specificity, invitation copy, and factual grounding. Do not let Design Idea-only nouns become visible copy.",
       );
     }
+  }
+
+  if (visualExclusions.length > 0) {
+    instructions.push(
+      `Hard visual exclusions from the Design Idea: do not include these requested excluded visual elements anywhere in the artwork: ${visualExclusions.join(", ")}.`,
+    );
+    instructions.push(
+      "Treat requested exclusions as higher priority than existing image content, themeStyle metadata, supporting context, or other visual direction. Replace excluded elements with category-appropriate decor and background details that do not contain the excluded elements.",
+    );
   }
 
   if (
@@ -518,12 +609,6 @@ export function buildStudioVisualDirection(details: EventDetails) {
     );
   }
 
-  if (/\bcats?\b/i.test(combinedDirection)) {
-    instructions.push(
-      "If cats appear, they should look like real cats unless the user explicitly requests a stylized or cartoon treatment.",
-    );
-  }
-
   return instructions.join(" ");
 }
 
@@ -533,6 +618,8 @@ export function buildStudioCategoryGuardrails(details: EventDetails) {
       "Generate a birthday invitation image. Keep the composition, props, mood, and styling clearly birthday-focused.",
     Wedding:
       "Generate a wedding invitation image. Keep the composition, props, mood, and styling clearly wedding-focused.",
+    "Open House":
+      "Generate a premium real-estate open house flyer image. Keep the composition, typography, photo hierarchy, and styling clearly realtor/listing-focused.",
     "Baby Shower":
       "Generate a baby shower invitation image. Keep the composition, props, mood, and styling clearly baby-shower-focused.",
     "Bridal Shower":
@@ -557,6 +644,12 @@ export function buildStudioCategoryGuardrails(details: EventDetails) {
     Wedding: [
       "Use venue type, floral direction, and formality cues to make the invitation feel like a credible ceremony, reception, or save-the-date rather than generic romance imagery.",
       "Do not imply a full wedding weekend, destination takeover, or extra wedding events unless the user supplied those details.",
+    ],
+    "Open House": [
+      "Treat uploaded property photos as the main source material for the poster. With 1 house photo, use it as a large editorial hero. With 2 house photos, use one dominant hero plus one refined secondary inset. With 3-5 house photos, create a premium real-estate collage with one dominant exterior or best interior photo and smaller supporting images.",
+      "Treat an uploaded realtor photo as app-only Realtor tab material; do not direct the image generator to place the headshot/person inside the flyer artwork.",
+      "Use listing facts exactly as supplied: address, date/time, price, beds, baths, square footage, neighborhood, brokerage, license, and contact details must not be invented.",
+      "Use clean premium listing typography, architectural spacing, strong hierarchy, and logo-free real-estate editorial polish rather than cozy housewarming decor.",
     ],
     "Baby Shower": [
       "Keep theme mascots or motifs restrained and premium; one strong teddy-bear or nursery motif is better than a cluttered room full of repeated props.",
@@ -604,7 +697,7 @@ export function buildStudioCategoryGuardrails(details: EventDetails) {
 
 export function isPosterFirstLiveCardCategory(category: string | null | undefined) {
   const normalized = clean(category).toLowerCase();
-  return normalized === "birthday" || normalized === "wedding";
+  return normalized === "birthday" || normalized === "wedding" || normalized === "open house";
 }
 
 export function resolveStudioGenerationSurface(
@@ -693,7 +786,58 @@ export function buildDeterministicScheduleLine(details: EventDetails): string {
   return date;
 }
 
+function quoteStudioEditText(value: string): string {
+  return `"${value.replace(/"/g, "'")}"`;
+}
+
+function buildExistingImageEditInstruction(
+  details: EventDetails,
+  refinement: string,
+  previousDetails?: EventDetails,
+): string {
+  const instructions: string[] = [];
+  const previousScheduleLine = previousDetails
+    ? buildDeterministicScheduleLine(previousDetails)
+    : "";
+  const nextScheduleLine = buildDeterministicScheduleLine(details);
+
+  if (previousScheduleLine && nextScheduleLine && previousScheduleLine !== nextScheduleLine) {
+    instructions.push(
+      `Replace only the existing visible date/time line ${quoteStudioEditText(previousScheduleLine)} with ${quoteStudioEditText(nextScheduleLine)}.`,
+    );
+    instructions.push(
+      "Use the replacement text exactly as written; do not convert it to numeric date format.",
+    );
+  }
+
+  if (refinement) {
+    instructions.push(`Apply only this requested edit: ${refinement}.`);
+    instructions.push(
+      "The returned image must visibly reflect that requested edit; do not return the source image unchanged.",
+    );
+    instructions.push(
+      "If the target is ambiguous, choose the most visually matching subject or prop and keep the edit localized there.",
+    );
+  }
+
+  if (instructions.length === 0) {
+    instructions.push("Preserve the existing live-card image exactly.");
+  }
+
+  instructions.push(
+    "Do not redesign, recompose, regenerate, crop, zoom, restyle, or rewrite any other part of the image.",
+  );
+  instructions.push(
+    "Keep all other visible text, photos, listing facts, icons, logos, stats, bottom image strips, layout, lighting, colors, and spacing unchanged.",
+  );
+
+  return instructions.join(" ");
+}
+
 function buildDeterministicLocationLine(details: EventDetails): string {
+  if (details.category === "Open House") {
+    return pickFirst(details.location, details.eventTitle, "Property location TBD");
+  }
   return pickFirst(
     details.venueName,
     details.ceremonyVenue,
@@ -709,19 +853,51 @@ export function buildStudioRequest(
   surface: StudioGenerateSurface,
   editPrompt?: string,
   sourceImageDataUrl?: string,
+  previousDetails?: EventDetails,
 ): StudioGenerateRequest {
   const refinement = clean(editPrompt);
+  const sourceImage = clean(sourceImageDataUrl);
+  const editInstruction = sourceImage
+    ? buildExistingImageEditInstruction(details, refinement, previousDetails)
+    : "";
   const designIdea = sanitizeStudioDesignIdea(details.theme);
   const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);
   const baseDescription = buildDescription(details);
   const sanitizedGuestImageUrls = hasStudioSubjectReferencePhotos(details)
     ? sanitizeGuestImageUrls(details.guestImageUrls)
     : [];
+  const sanitizedPropertyImageUrls =
+    details.category === "Open House" && hasStudioSubjectReferencePhotos(details)
+      ? sanitizeGuestImageUrls(details.propertyImageUrls).slice(
+          0,
+          STUDIO_OPEN_HOUSE_PROPERTY_IMAGE_URL_MAX,
+        )
+      : [];
+  const sanitizedRealtorImageUrls =
+    details.category === "Open House" && hasStudioSubjectReferencePhotos(details)
+      ? sanitizeGuestImageUrls(details.realtorImageUrls).slice(
+          0,
+          STUDIO_OPEN_HOUSE_REALTOR_IMAGE_URL_MAX,
+        )
+      : [];
+  const sanitizedRealtorLogoUrls =
+    details.category === "Open House" && hasStudioSubjectReferencePhotos(details)
+      ? sanitizeGuestImageUrls(details.realtorLogoUrls).slice(
+          0,
+          STUDIO_OPEN_HOUSE_REALTOR_LOGO_URL_MAX,
+        )
+      : [];
   const guestPhotoHint =
-    sanitizedGuestImageUrls.length > 0
-      ? ` Host provided ${sanitizedGuestImageUrls.length} reference photo(s) for invitation artwork; keep wording warm and personal where it fits.`
+    sanitizedGuestImageUrls.length > 0 ||
+    sanitizedPropertyImageUrls.length > 0 ||
+    sanitizedRealtorImageUrls.length > 0 ||
+    sanitizedRealtorLogoUrls.length > 0
+      ? details.category === "Open House"
+        ? ` Host provided ${sanitizedPropertyImageUrls.length} house photo(s) for premium real-estate poster generation, ${sanitizedRealtorImageUrls.length} realtor photo(s) for the app Realtor tab only, and ${sanitizedRealtorLogoUrls.length} logo image(s) for the app Logo tab only.`
+        : ` Host provided ${sanitizedGuestImageUrls.length} reference photo(s) for invitation artwork; keep wording warm and personal where it fits.`
       : "";
   const categoryGuardrails = buildStudioCategoryGuardrails(details);
+  const visualDirection = buildStudioVisualDirection(details);
   const imageFinishPreset = resolveStudioImageFinishPreset(
     details.category,
     details.imageFinishPreset,
@@ -730,7 +906,7 @@ export function buildStudioRequest(
     ? `Selected image finish preset: ${imageFinishPreset.label}. Apply a ${imageFinishPreset.label} finish with ${imageFinishPreset.description}.`
     : "";
   const studioGuardrails =
-    "Preserve exact spelling from the event details when visible wording is baked into the generated invitation image. For live cards, the invitation text should feel like part of the designed image itself, not a detached app overlay. Keep the copy concentrated in the upper and middle portions of the card. Keep the lower zone decorative and art-led rather than empty or separated, but never place visible text, faux buttons, icons, chips, circles, bars, or device chrome in the bottom action-button area. Keep the top edge decorative too: no status bar, carrier text, clock text, battery icons, notches, camera cutouts, or phone chrome.";
+    "Preserve exact spelling from the event details when visible wording is baked into the generated invitation image. For live cards, the invitation text should feel like part of the designed image itself, not a detached app overlay. Keep the copy concentrated in the upper and middle portions of the card. Keep the lower zone decorative and art-led rather than empty or separated, but never place visible text, names, listing facts, contact details, faux buttons, icons, chips, circles, bars, logos, seals, signs, monograms, or device chrome in the bottom action-button area. Keep the top edge decorative too: no status bar, carrier text, clock text, battery icons, notches, camera cutouts, or phone chrome.";
   return {
     mode,
     surface,
@@ -742,11 +918,11 @@ export function buildStudioRequest(
       hostName:
         pickFirst(
           categorySupportsRsvp ? details.rsvpName : "",
+          details.category === "Open House" ? details.realtorName : "",
           details.hostedBy,
           details.teacherName,
           details.mainPerson,
-        ) ||
-        null,
+        ) || null,
       honoreeName: getHonoreeName(details) || null,
       sportType: clean(details.sportType) || null,
       teamName: clean(details.teamName) || null,
@@ -754,6 +930,16 @@ export function buildStudioRequest(
       leagueDivision: clean(details.leagueDivision) || null,
       broadcastInfo: clean(details.broadcastInfo) || null,
       parkingInfo: clean(details.parkingInfo) || null,
+      propertyPrice: clean(details.propertyPrice) || null,
+      bedrooms: clean(details.bedrooms) || null,
+      bathrooms: clean(details.bathrooms) || null,
+      squareFootage: clean(details.squareFootage) || null,
+      neighborhood: clean(details.neighborhood) || null,
+      propertyHighlights: clean(details.propertyHighlights) || null,
+      realtorName: clean(details.realtorName) || null,
+      realtorTitle: clean(details.realtorTitle) || null,
+      brokerageName: clean(details.brokerageName) || null,
+      realtorLicense: clean(details.realtorLicense) || null,
       ageOrMilestone: getAgeOrMilestone(details) || null,
       userIdea: designIdea || null,
       description:
@@ -768,7 +954,12 @@ export function buildStudioRequest(
           ? Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Chicago"
           : "America/Chicago",
       venueName:
-        pickFirst(details.venueName, details.ceremonyVenue, details.receptionVenue) || null,
+        pickFirst(
+          details.venueName,
+          details.category === "Open House" ? details.eventTitle : "",
+          details.ceremonyVenue,
+          details.receptionVenue,
+        ) || null,
       venueAddress: clean(details.location) || null,
       dressCode: clean(details.dressCode) || null,
       rsvpBy: categorySupportsRsvp ? clean(details.rsvpDeadline) || null : null,
@@ -779,19 +970,23 @@ export function buildStudioRequest(
         sanitizedGuestImageUrls.length > 0
           ? sanitizedGuestImageUrls.slice(0, STUDIO_GUEST_IMAGE_URL_MAX)
           : undefined,
+      propertyImageUrls:
+        sanitizedPropertyImageUrls.length > 0 ? sanitizedPropertyImageUrls : undefined,
+      realtorImageUrls:
+        sanitizedRealtorImageUrls.length > 0 ? sanitizedRealtorImageUrls : undefined,
     },
     guidance: {
       tone:
         pickFirst(
           details.style,
-          details.category === "Game Day"
-            ? "Bold and energetic"
-            : null,
+          details.category === "Open House" ? "Premium realtor marketing" : null,
+          details.category === "Game Day" ? "Bold and energetic" : null,
           details.category === "Birthday" ? "Playful and polished" : "Warm and elevated",
         ) || null,
       visualPreferences: clean(details.visualPreferences) || null,
       style:
         [
+          visualDirection,
           categoryGuardrails,
           imageFinishPresetDirection,
           refinement,
@@ -802,18 +997,32 @@ export function buildStudioRequest(
       audience: pickFirst(details.invitedWho, details.audience, "Guests") || null,
       colorPalette:
         clean(details.colors) ||
+        (details.category === "Open House"
+          ? "Architectural neutrals, deep charcoal, warm white, and refined teal or gold accents"
+          : null) ||
         (details.category === "Game Day"
           ? "Deep navy, bright stadium lights, crisp white, and bold gold accents"
           : null),
       imageFinishPreset: imageFinishPreset?.label,
       includeEmoji: true,
       subjectTransformMode:
-        sanitizedGuestImageUrls.length > 0 ? "premium_makeover" : undefined,
-      likenessStrength: sanitizedGuestImageUrls.length > 0 ? details.likenessStrength : undefined,
-      visualStyleMode: sanitizedGuestImageUrls.length > 0 ? details.visualStyleMode : undefined,
+        sanitizedGuestImageUrls.length > 0 || sanitizedPropertyImageUrls.length > 0
+          ? "premium_makeover"
+          : undefined,
+      likenessStrength:
+        sanitizedGuestImageUrls.length > 0 || sanitizedPropertyImageUrls.length > 0
+          ? details.likenessStrength
+          : undefined,
+      visualStyleMode:
+        sanitizedGuestImageUrls.length > 0 || sanitizedPropertyImageUrls.length > 0
+          ? details.visualStyleMode
+          : undefined,
     },
-    imageEdit: clean(sourceImageDataUrl)
-      ? { sourceImageDataUrl: clean(sourceImageDataUrl) }
+    imageEdit: sourceImage
+      ? {
+          sourceImageDataUrl: sourceImage,
+          editInstruction,
+        }
       : undefined,
   };
 }
@@ -826,9 +1035,7 @@ export function buildInvitationData(
   const invitation = liveCard?.invitation || response.invitation;
   return refreshLiveCardInvitationData(details, {
     title: liveCard?.title || invitation?.title,
-    subtitle:
-      invitation?.subtitle ||
-      buildStudioSubtitleFallback(details),
+    subtitle: invitation?.subtitle || buildStudioSubtitleFallback(details),
     description:
       liveCard?.description ||
       invitation?.openingLine ||
@@ -926,6 +1133,8 @@ export function normalizeStudioEventCategory(category: InviteCategory): string {
       return "birthdays";
     case "Wedding":
       return "weddings";
+    case "Open House":
+      return "real estate open house";
     case "Baby Shower":
       return "baby showers";
     case "Game Day":
@@ -1010,8 +1219,12 @@ export function buildStudioPublishPayload(item: MediaItem, imageUrl: string | nu
     readString(details.message),
     readString(details.specialInstructions),
     ...buildGameDayContextNotes(details),
+    ...buildOpenHouseContextNotes(details),
     readString(details.optionalLink)
       ? `More info: ${normalizeStudioExternalUrl(details.optionalLink)}`
+      : "",
+    readString(details.listingUrl)
+      ? `Listing: ${normalizeStudioExternalUrl(details.listingUrl)}`
       : "",
     readString(details.weddingWebsite)
       ? `Wedding website: ${normalizeStudioExternalUrl(details.weddingWebsite)}`
@@ -1020,6 +1233,9 @@ export function buildStudioPublishPayload(item: MediaItem, imageUrl: string | nu
   const registries = [
     readString(details.ticketsLink)
       ? { label: "Tickets", url: normalizeStudioExternalUrl(details.ticketsLink) }
+      : null,
+    readString(details.listingUrl)
+      ? { label: "Listing", url: normalizeStudioExternalUrl(details.listingUrl) }
       : null,
     readString(details.registryLink)
       ? {
@@ -1040,8 +1256,13 @@ export function buildStudioPublishPayload(item: MediaItem, imageUrl: string | nu
   const venue =
     readString(details.venueName) ||
     readString(details.ceremonyVenue) ||
-    readString(details.receptionVenue);
-  const location = readString(details.location) || venue || undefined;
+    readString(details.receptionVenue) ||
+    (details.category === "Open House" ? readString(details.eventTitle) : "");
+  const location =
+    readString(details.location) ||
+    (details.category === "Open House" ? readString(details.eventTitle) : "") ||
+    venue ||
+    undefined;
 
   return {
     title,

@@ -108,6 +108,7 @@ export const CATEGORY_DEFAULT_COLOR_MAP: Record<string, string> = {
   Appointments: "amber",
   "Sport Events": "indigo",
   "General Events": "orange",
+  "Open House": "teal",
   "Car Pool": "cyan",
   "Play Days": "lime",
   "Doctor Appointments": "rose",
@@ -199,6 +200,9 @@ const CATEGORY_LABEL_OVERRIDES: Record<string, string> = {
   dr_appointment: "Doctor Appointments",
   doctor_appointment: "Doctor Appointments",
   special_event: "Special Events",
+  open_house: "Open House",
+  "open-house": "Open House",
+  "open house": "Open House",
 };
 
 function titleCase(phrase: string) {
@@ -232,6 +236,7 @@ export function createSidebarIconLookup(icons: Record<string, any>) {
     "Workshops / Classes": icons.GraduationCap,
     "Workshop / Class": icons.GraduationCap,
     "General Events": icons.CalendarDays,
+    "Open House": icons.Home,
     "Special Events": icons.Music,
   };
 }

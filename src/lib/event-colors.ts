@@ -10,6 +10,7 @@ export type EventCategory =
   | "Family"
   | "Healthcare"
   | "Appointments"
+  | "Open House"
   | "General Events"
   | "Other";
 
@@ -69,6 +70,15 @@ const COLOR_MAP: Record<string, EventColor> = {
     dot: "bg-orange-500 dark:bg-orange-400",
     tint: "bg-orange-50 dark:bg-orange-900/20",
     tile: "#FFEDD5",
+  },
+  "Open House": {
+    key: "teal",
+    bg: "bg-teal-100 dark:bg-teal-900/30",
+    text: "text-teal-800 dark:text-teal-200",
+    border: "border-teal-300/60 dark:border-teal-700/60",
+    dot: "bg-teal-500 dark:bg-teal-400",
+    tint: "bg-teal-50 dark:bg-teal-900/20",
+    tile: "#CCFBF1",
   },
   Sports: {
     key: "cyan",

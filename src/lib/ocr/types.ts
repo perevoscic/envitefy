@@ -27,6 +27,62 @@ export type EventOcrLlmResult = {
   goodToKnow?: string | null;
   /** Dashboard thumbnail crop focus. Coordinates are normalized 0..1 in the upright image. */
   thumbnailFocus?: ThumbnailFocus | null;
+  openHouse?: OpenHouseOcrPayload | null;
+};
+
+export type OpenHouseVisualAssetRole =
+  | "property-exterior"
+  | "property-interior"
+  | "property-pool"
+  | "property-kitchen"
+  | "property-bedroom"
+  | "property-bathroom"
+  | "property-other"
+  | "realtor-headshot";
+
+export type OpenHouseVisualAsset = {
+  role?: OpenHouseVisualAssetRole | string | null;
+  label?: string | null;
+  x?: number | null;
+  y?: number | null;
+  width?: number | null;
+  height?: number | null;
+  confidence?: number | null;
+};
+
+export type OpenHouseExtractedField = {
+  key?: string | null;
+  label?: string | null;
+  value?: string | null;
+  confidence?: number | null;
+};
+
+export type OpenHouseOcrPayload = {
+  listingType?: "sale" | "rent" | "lease" | "unknown" | string | null;
+  propertyType?: string | null;
+  price?: string | null;
+  mlsNumber?: string | null;
+  bedrooms?: string | null;
+  bathrooms?: string | null;
+  sqft?: string | null;
+  lotSize?: string | null;
+  yearBuilt?: string | null;
+  parking?: string | null;
+  hoa?: string | null;
+  address?: string | null;
+  neighborhood?: string | null;
+  agencyName?: string | null;
+  brokerageName?: string | null;
+  realtorName?: string | null;
+  realtorTitle?: string | null;
+  realtorLicense?: string | null;
+  realtorPhone?: string | null;
+  realtorEmail?: string | null;
+  websiteUrl?: string | null;
+  listingUrl?: string | null;
+  features?: string[] | null;
+  extractedFields?: OpenHouseExtractedField[] | null;
+  visualAssets?: OpenHouseVisualAsset[] | null;
 };
 
 export type GymnasticsScheduleEvent = {

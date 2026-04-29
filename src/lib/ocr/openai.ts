@@ -53,6 +53,46 @@ export function llmEventToRawText(payload: any): string {
   }
   if (typeof payload?.goodToKnow === "string" && payload.goodToKnow.trim())
     parts.push(payload.goodToKnow.trim());
+  if (payload?.openHouse && typeof payload.openHouse === "object") {
+    const openHouse = payload.openHouse;
+    for (const key of [
+      "price",
+      "mlsNumber",
+      "bedrooms",
+      "bathrooms",
+      "sqft",
+      "lotSize",
+      "propertyType",
+      "realtorName",
+      "realtorPhone",
+      "realtorEmail",
+      "agencyName",
+      "brokerageName",
+      "listingUrl",
+      "websiteUrl",
+    ] as const) {
+      const value = openHouse[key];
+      if (typeof value === "string" && value.trim()) parts.push(`${key}: ${value.trim()}`);
+    }
+    if (Array.isArray(openHouse.features)) {
+      const features = openHouse.features
+        .map((item: unknown) => (typeof item === "string" ? item.trim() : ""))
+        .filter(Boolean);
+      if (features.length) parts.push(`Features: ${features.join(", ")}`);
+    }
+    if (Array.isArray(openHouse.extractedFields)) {
+      const extra = openHouse.extractedFields
+        .map((item: unknown) =>
+          item && typeof item === "object"
+            ? [String((item as any).label || "").trim(), String((item as any).value || "").trim()]
+                .filter(Boolean)
+                .join(": ")
+            : "",
+        )
+        .filter(Boolean);
+      if (extra.length) parts.push(extra.join("\n"));
+    }
+  }
   return parts.join("\n").trim();
 }
 

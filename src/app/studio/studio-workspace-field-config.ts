@@ -27,7 +27,7 @@ export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
       inputMode: "numeric",
       compact: true,
     },
-    { label: "Birthday Theme", key: "theme", type: "text", placeholder: "e.g. Movie Cats" },
+    { label: "Birthday Theme", key: "theme", type: "text", placeholder: "e.g. Movie Magic" },
     {
       label: "Who Is Invited",
       key: "invitedWho",
@@ -49,7 +49,7 @@ export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
       label: "Preferred Cake / Activity",
       key: "activityNote",
       type: "textarea",
-      placeholder: "e.g. Popcorn bar and cat ears",
+      placeholder: "e.g. Popcorn bar and glow bracelets",
     },
   ],
   Wedding: [
@@ -174,6 +174,93 @@ export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
       key: "giftPreferenceNote",
       type: "text",
       placeholder: "e.g. Your presence is our gift",
+    },
+  ],
+  "Open House": [
+    {
+      label: "Property Address",
+      key: "eventTitle",
+      type: "text",
+      placeholder: "e.g. 4593 High Meadow Lane, Unit #520",
+      required: true,
+    },
+    {
+      label: "Price",
+      key: "propertyPrice",
+      type: "text",
+      placeholder: "e.g. $624,000",
+    },
+    {
+      label: "Bedrooms",
+      key: "bedrooms",
+      type: "text",
+      placeholder: "e.g. 4",
+      maxLength: 12,
+      compact: true,
+    },
+    {
+      label: "Bathrooms",
+      key: "bathrooms",
+      type: "text",
+      placeholder: "e.g. 3.5",
+      maxLength: 12,
+      compact: true,
+    },
+    {
+      label: "Square Feet",
+      key: "squareFootage",
+      type: "text",
+      placeholder: "e.g. 2,850",
+      inputMode: "numeric",
+    },
+    {
+      label: "Neighborhood",
+      key: "neighborhood",
+      type: "text",
+      placeholder: "e.g. High Meadow",
+    },
+    {
+      label: "Property Highlights",
+      key: "propertyHighlights",
+      type: "textarea",
+      placeholder: "e.g. Renovated kitchen, pool, finished basement, walkable schools",
+    },
+    {
+      label: "Realtor Name",
+      key: "realtorName",
+      type: "text",
+      placeholder: "e.g. Carla Mira",
+    },
+    {
+      label: "Realtor Title",
+      key: "realtorTitle",
+      type: "text",
+      placeholder: "e.g. Real Estate Agent",
+    },
+    {
+      label: "Realtor Company Name",
+      key: "brokerageName",
+      type: "text",
+      placeholder: "e.g. High Meadow Realty",
+    },
+    {
+      label: "License #",
+      key: "realtorLicense",
+      type: "text",
+      placeholder: "e.g. DRE #01234567",
+    },
+    {
+      label: "Listing Link",
+      key: "listingUrl",
+      type: "text",
+      placeholder: "e.g. https://listing.example.com",
+      inputMode: "url",
+    },
+    {
+      label: "Parking / Access",
+      key: "parkingInfo",
+      type: "text",
+      placeholder: "e.g. Street parking; enter through front door",
     },
   ],
   "Bridal Shower": [
@@ -371,6 +458,8 @@ export const DETAILS_DESCRIPTION_PLACEHOLDER: Record<InviteCategory, string> = {
     "e.g. Brunch at 11, games and gifts after. Book instead of a card—see registry. Street parking out front.",
   Anniversary:
     "e.g. Cocktail hour at 6, seated dinner at 7, dancing after. Valet at the main entrance; gifts optional.",
+  "Open House":
+    "e.g. Bright corner unit with renovated kitchen, spacious primary suite, garage parking, and an easy self-guided tour route.",
   "Bridal Shower":
     "e.g. Mimosa bar at 10, brunch and gifts to follow. Casual garden attire. Registry link in the invite email.",
   Housewarming:
@@ -429,6 +518,14 @@ export const STUDIO_COMPACT_RSVP_CONTACT_FIELD: FieldConfig = {
   required: true,
 };
 
+export const STUDIO_COMPACT_OPEN_HOUSE_AGENT_CONTACT_FIELD: FieldConfig = {
+  label: "Agent Contact",
+  key: "rsvpContact",
+  type: "text",
+  placeholder: "Phone or Email",
+  required: true,
+};
+
 function pickCategoryFields(
   category: InviteCategory,
   keys: Array<keyof EventDetails>,
@@ -452,6 +549,7 @@ export function supportsStudioCategoryRsvp(
 export function getStudioDefaultCallToAction(
   category: InviteCategory | string | null | undefined,
 ): string {
+  if (category === "Open House") return "Tap for details and tour info.";
   return supportsStudioCategoryRsvp(category)
     ? "Tap for details and RSVP."
     : "Tap for details and game info.";
@@ -460,6 +558,8 @@ export function getStudioDefaultCallToAction(
 export function getStudioDefaultRsvpMessage(
   category: InviteCategory | string | null | undefined,
 ): string {
+  if (category === "Open House")
+    return "Reply to request a tour or let the agent know you're coming.";
   return supportsStudioCategoryRsvp(category)
     ? "Reply to let the host know you're coming."
     : "Check the live card for game details and arrival info.";
@@ -495,6 +595,21 @@ export const STUDIO_COMPACT_CATEGORY_FORM_CONFIG: Record<
       ...pickCategoryFields("Anniversary", ["coupleNames", "age"]),
       STUDIO_COMPACT_RSVP_CONTACT_FIELD,
     ],
+    supportsRsvp: true,
+  },
+  "Open House": {
+    primaryFields: [
+      ...pickCategoryFields("Open House", ["eventTitle", "propertyPrice"]),
+      STUDIO_COMPACT_OPEN_HOUSE_AGENT_CONTACT_FIELD,
+    ],
+    secondaryFields: pickCategoryFields("Open House", [
+      "bedrooms",
+      "bathrooms",
+      "squareFootage",
+      "realtorName",
+      "brokerageName",
+      "parkingInfo",
+    ]),
     supportsRsvp: true,
   },
   "Bridal Shower": {
@@ -540,6 +655,7 @@ export const EMPTY_POSITIONS = {
   calendar: { x: 0, y: 0 },
   registry: { x: 0, y: 0 },
   details: { x: 0, y: 0 },
+  logo: { x: 0, y: 0 },
 };
 
 export const STUDIO_LIBRARY_LIMIT = 10;

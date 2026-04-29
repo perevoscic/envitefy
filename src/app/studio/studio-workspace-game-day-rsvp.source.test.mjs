@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -33,10 +33,16 @@ test("studio builders and surfaces strip Game Day RSVP from validation, preview,
     workspaceSource,
     /supportsStudioCategoryRsvp\(details\.category\) && !clean\(details\.rsvpContact\)/,
   );
-  assert.match(builderSource, /if \(!supportsStudioCategoryRsvp\(details\.category\)\) return undefined;/);
+  assert.match(
+    builderSource,
+    /if \(!supportsStudioCategoryRsvp\(details\.category\)\) return undefined;/,
+  );
   assert.match(builderSource, /resolveStudioCallToAction\(/);
   assert.match(builderSource, /resolveStudioRsvpMessage\(/);
-  assert.match(builderSource, /rsvpBy: categorySupportsRsvp \? clean\(details\.rsvpDeadline\) \|\| null : null,/);
+  assert.match(
+    builderSource,
+    /rsvpBy: categorySupportsRsvp \? clean\(details\.rsvpDeadline\) \|\| null : null,/,
+  );
   assert.match(
     builderSource,
     /rsvpContact: categorySupportsRsvp \? clean\(details\.rsvpContact\) \|\| null : null,/,
@@ -44,7 +50,7 @@ test("studio builders and surfaces strip Game Day RSVP from validation, preview,
   assert.match(surfaceSource, /const categorySupportsRsvp = supportsStudioCategoryRsvp/);
   assert.match(
     surfaceSource,
-    /visible:\s*categorySupportsRsvp &&\s*Boolean\(readString\(details\?\.rsvpName\) \|\| readString\(details\?\.rsvpContact\)\),/s,
+    /visible:\s*categorySupportsRsvp &&\s*\(openHouseAgentCard\s*\?\s*hasOpenHouseAgentInfo\s*:\s*Boolean\(readString\(details\?\.rsvpName\) \|\| readString\(details\?\.rsvpContact\)\)\),/s,
   );
   assert.match(
     sanitizeSource,

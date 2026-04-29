@@ -12,9 +12,14 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
 
   assert.match(source, /ocrSkin\?: OcrSkinSelection \| null;/);
   assert.match(source, /thumbnailFocus\?: ThumbnailFocus \| null;/);
+  assert.match(source, /openHouse\?: Record<string, unknown> \| null;/);
   assert.match(source, /ocrSkin: data\?\.ocrSkin \|\| null,/);
+  assert.match(source, /openHouse: openHouseFromScan,/);
   assert.match(source, /thumbnailFocus: normalizeThumbnailFocus\(data\?\.thumbnailFocus\),/);
   assert.match(source, /const normalizedOcrSkin =/);
+  assert.match(source, /const normalizedOpenHouse =/);
+  assert.match(source, /const isOpenHouseOcrEvent =/);
+  assert.match(source, /normalizedOcrCategory = "Open House";/);
   assert.match(
     source,
     /const normalizedThumbnailFocus = normalizeThumbnailFocus\(ocrMeta\?\.thumbnailFocus\);/,
@@ -41,7 +46,9 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   assert.match(source, /"ocr-pickleball-skin"/);
   assert.match(source, /"ocr-football-skin"/);
   assert.match(source, /"ocr-basketball-skin"/);
+  assert.match(source, /"ocr-open-house-skin"/);
   assert.match(source, /"ocr-invite-skin"/);
+  assert.match(source, /openHouse:\s*isOpenHouseOcrEvent \? normalizedOpenHouse \|\| undefined : undefined/);
   assert.match(
     source,
     /variationId: isBirthdayOcrEvent\s*\?\s*normalizedOcrSkin\?\.category === "birthday"/,
@@ -56,6 +63,6 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   assert.match(source, /const rawHostNameFromScan =/);
   assert.match(source, /const hostNameFromScan = rawHostNameFromScan/);
   assert.match(source, /cleanRsvpContactLabel\(rawHostNameFromScan\)/);
-  assert.match(source, /rsvpName: rsvpNameFromScan \|\| undefined/);
+  assert.match(source, /rsvpName:\s*rsvpNameFromScan \|\|/);
   assert.match(source, /rsvpName:\s*typeof eventInput\.rsvpName === "string"/);
 });

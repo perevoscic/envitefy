@@ -1,8 +1,8 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { registerHooks } from "node:module";
 import path from "node:path";
+import test from "node:test";
 import { pathToFileURL } from "node:url";
 
 registerHooks({
@@ -82,10 +82,13 @@ test("studio generation dispatches text and image calls through the resolved pro
 
   assert.match(source, /const provider = studioGenerationDeps\.resolveStudioProvider\(\);/);
   assert.match(source, /buildInvitationImagePrompt,\s*buildLiveCardPrompt,/);
-  assert.match(source, /const textPrompt = buildLiveCardPrompt\(normalizedRequest\.event, normalizedRequest\.guidance\);/);
   assert.match(
     source,
-    /const imagePrompt = buildInvitationImagePrompt\(\s*normalizedRequest\.event,\s*normalizedRequest\.guidance,\s*liveCard,\s*\{/s,
+    /const textPrompt = buildLiveCardPrompt\(normalizedRequest\.event, normalizedRequest\.guidance\);/,
+  );
+  assert.match(
+    source,
+    /const imagePrompt = editingExistingImage\s*\?\s*buildExistingInvitationImageEditPrompt\(normalizedRequest\.imageEdit\?\.editInstruction\)\s*:\s*buildInvitationImagePrompt\(\s*normalizedRequest\.event,\s*normalizedRequest\.guidance,\s*liveCard,\s*\{/s,
   );
   assert.match(source, /provider === "openai"/);
   assert.match(source, /generateStudioLiveCardWithOpenAi/);

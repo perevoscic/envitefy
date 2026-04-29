@@ -12,19 +12,20 @@ import {
   SHARED_BASICS,
   STUDIO_COMPACT_CATEGORY_FORM_CONFIG,
 } from "../studio-workspace-field-config";
-import {
-  studioWorkspaceFieldLabelClass,
-  studioWorkspaceInputClass,
-} from "../studio-workspace-ui-classes";
 import type {
   ActiveTab,
   EventDetails,
   FieldConfig,
   MediaItem,
   MediaType,
+  SharedFieldConfig,
   StudioLikenessStrength,
   StudioVisualStyleMode,
 } from "../studio-workspace-types";
+import {
+  studioWorkspaceFieldLabelClass,
+  studioWorkspaceInputClass,
+} from "../studio-workspace-ui-classes";
 import { StudioFieldGrid } from "./StudioFieldControls";
 import { StudioOptionalMediaRow } from "./StudioOptionalMediaRow";
 import { StudioPhonePreviewPane } from "./StudioPhonePreviewPane";
@@ -43,6 +44,12 @@ export type StudioFormStepProps = {
   onRemoveFlyer: () => void;
   onUploadSubjectPhotos: (files: File[]) => Promise<void>;
   onRemoveSubjectPhoto: (index: number) => void;
+  onUploadPropertyPhotos: (files: File[]) => Promise<void>;
+  onRemovePropertyPhoto: (index: number) => void;
+  onUploadRealtorPhoto: (files: File[]) => Promise<void>;
+  onRemoveRealtorPhoto: (index: number) => void;
+  onUploadRealtorLogo: (files: File[]) => Promise<void>;
+  onRemoveRealtorLogo: (index: number) => void;
   isSubjectPhotoUploading: boolean;
   flyerUploadError: string | null;
   subjectPhotoUploadError: string | null;
@@ -89,6 +96,12 @@ export function StudioFormStep({
   onRemoveFlyer,
   onUploadSubjectPhotos,
   onRemoveSubjectPhoto,
+  onUploadPropertyPhotos,
+  onRemovePropertyPhoto,
+  onUploadRealtorPhoto,
+  onRemoveRealtorPhoto,
+  onUploadRealtorLogo,
+  onRemoveRealtorLogo,
   isSubjectPhotoUploading,
   flyerUploadError,
   subjectPhotoUploadError,
@@ -130,8 +143,12 @@ export function StudioFormStep({
   const secondaryCategoryFields = (formConfig.secondaryFields || []).filter(
     (field) => field.key !== "registryLink",
   );
+  const isOpenHouse = details.category === "Open House";
+  const sharedPrimaryFieldKeys = isOpenHouse
+    ? ["eventDate", "startTime"]
+    : ["eventDate", "startTime", "location"];
   const sharedPrimaryFields = SHARED_BASICS.filter((field) =>
-    ["eventDate", "startTime", "location"].includes(field.key),
+    sharedPrimaryFieldKeys.includes(field.key),
   );
   const isBirthday = details.category === "Birthday";
   const mobileBirthdayLeadFields =
@@ -172,6 +189,29 @@ export function StudioFormStep({
     : editingId
       ? "Regenerate Live Card"
       : "Preview Live Card";
+  const getCategoryFields = (keys: Array<keyof EventDetails>) =>
+    keys
+      .map((key) => allCategoryFields.find((field) => field.key === key))
+      .filter((field): field is FieldConfig => Boolean(field));
+  const getSharedFields = (keys: Array<keyof EventDetails>) =>
+    keys
+      .map((key) => SHARED_BASICS.find((field) => field.key === key))
+      .filter((field): field is SharedFieldConfig => Boolean(field));
+  const openHouseAgentContactField = primaryCategoryFields.find(
+    (field) => field.key === "rsvpContact",
+  );
+  const openHouseListingFields = getCategoryFields(["eventTitle", "propertyPrice"]);
+  const openHouseScheduleFields = getSharedFields(["eventDate", "startTime", "endTime"]);
+  const openHouseFactsFields = getCategoryFields([
+    "bedrooms",
+    "bathrooms",
+    "squareFootage",
+    "parkingInfo",
+  ]);
+  const openHouseAgentFields = [
+    ...getCategoryFields(["realtorName", "brokerageName"]),
+    ...(openHouseAgentContactField ? [openHouseAgentContactField] : []),
+  ];
 
   useEffect(() => {
     if (!showStylePicker || isMobileViewport || typeof window === "undefined") return;
@@ -280,87 +320,145 @@ export function StudioFormStep({
         </div>
       ) : null}
 
-      {primaryCategoryFields.length ? (
-        <div className="space-y-4">
-          {isMobileViewport && isBirthday ? (
-            <div className="space-y-8">
-              <StudioFieldGrid
-                details={details}
-                setDetails={setDetails}
-                fields={mobileBirthdayLeadFields}
-                columnsClassName="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-x-6 gap-y-8"
-                isMobileViewport={isMobileViewport}
-              />
-              {mobileBirthdayTrailingFields.length ? (
-                <StudioFieldGrid
-                  details={details}
-                  setDetails={setDetails}
-                  fields={mobileBirthdayTrailingFields}
-                  columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
-                  isMobileViewport={isMobileViewport}
-                />
-              ) : null}
-            </div>
-          ) : (
+      {isOpenHouse ? (
+        <div className="space-y-9">
+          <section className="space-y-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8ea0c4]">
+              Listing
+            </p>
             <StudioFieldGrid
               details={details}
               setDetails={setDetails}
-              fields={primaryCategoryFields}
-              columnsClassName={
-                isBirthday
-                  ? "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1.6fr)]"
-                  : "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
-              }
+              fields={openHouseListingFields}
+              columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[minmax(0,1.4fr)_minmax(12rem,0.6fr)]"
               isMobileViewport={isMobileViewport}
             />
-          )}
-        </div>
-      ) : null}
+          </section>
 
-      {sharedPrimaryFields.length ? (
-        <div className="space-y-4">
-          {isMobileViewport ? (
-            <div className="space-y-8">
-              <StudioFieldGrid
-                details={details}
-                setDetails={setDetails}
-                fields={mobileSharedLeadFields}
-                columnsClassName="grid grid-cols-[minmax(7.75rem,1.12fr)_minmax(8.15rem,0.94fr)] gap-x-4 gap-y-8"
-                isMobileViewport={isMobileViewport}
-              />
-              {mobileSharedTrailingFields.length ? (
-                <StudioFieldGrid
-                  details={details}
-                  setDetails={setDetails}
-                  fields={mobileSharedTrailingFields}
-                  columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
-                  isMobileViewport={isMobileViewport}
-                />
-              ) : null}
-            </div>
-          ) : (
+          <section className="space-y-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8ea0c4]">
+              Open House Time
+            </p>
             <StudioFieldGrid
               details={details}
               setDetails={setDetails}
-              fields={sharedPrimaryFields}
-              columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[8.5rem_9.25rem_minmax(0,1fr)] md:gap-x-4"
+              fields={openHouseScheduleFields}
+              columnsClassName="grid grid-cols-[minmax(7.75rem,1.12fr)_minmax(8.15rem,0.94fr)] gap-x-4 gap-y-8 md:grid-cols-[8.5rem_9.25rem_9.25rem]"
               isMobileViewport={isMobileViewport}
             />
-          )}
-        </div>
-      ) : null}
+          </section>
 
-      {secondaryCategoryFields.length ? (
-        <div className="space-y-4">
-          <StudioFieldGrid
-            details={details}
-            setDetails={setDetails}
-            fields={secondaryCategoryFields}
-            columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
-            isMobileViewport={isMobileViewport}
-          />
+          <section className="space-y-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8ea0c4]">
+              Property Facts
+            </p>
+            <StudioFieldGrid
+              details={details}
+              setDetails={setDetails}
+              fields={openHouseFactsFields}
+              columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 sm:grid-cols-3 md:grid-cols-[7.5rem_7.5rem_minmax(10rem,0.75fr)_minmax(0,1.35fr)]"
+              isMobileViewport={isMobileViewport}
+            />
+          </section>
+
+          <section className="space-y-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8ea0c4]">
+              Agent
+            </p>
+            <StudioFieldGrid
+              details={details}
+              setDetails={setDetails}
+              fields={openHouseAgentFields}
+              columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
+              isMobileViewport={isMobileViewport}
+            />
+          </section>
         </div>
-      ) : null}
+      ) : (
+        <>
+          {primaryCategoryFields.length ? (
+            <div className="space-y-4">
+              {isMobileViewport && isBirthday ? (
+                <div className="space-y-8">
+                  <StudioFieldGrid
+                    details={details}
+                    setDetails={setDetails}
+                    fields={mobileBirthdayLeadFields}
+                    columnsClassName="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-x-6 gap-y-8"
+                    isMobileViewport={isMobileViewport}
+                  />
+                  {mobileBirthdayTrailingFields.length ? (
+                    <StudioFieldGrid
+                      details={details}
+                      setDetails={setDetails}
+                      fields={mobileBirthdayTrailingFields}
+                      columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
+                      isMobileViewport={isMobileViewport}
+                    />
+                  ) : null}
+                </div>
+              ) : (
+                <StudioFieldGrid
+                  details={details}
+                  setDetails={setDetails}
+                  fields={primaryCategoryFields}
+                  columnsClassName={
+                    isBirthday
+                      ? "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1.6fr)]"
+                      : "grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
+                  }
+                  isMobileViewport={isMobileViewport}
+                />
+              )}
+            </div>
+          ) : null}
+
+          {sharedPrimaryFields.length ? (
+            <div className="space-y-4">
+              {isMobileViewport ? (
+                <div className="space-y-8">
+                  <StudioFieldGrid
+                    details={details}
+                    setDetails={setDetails}
+                    fields={mobileSharedLeadFields}
+                    columnsClassName="grid grid-cols-[minmax(7.75rem,1.12fr)_minmax(8.15rem,0.94fr)] gap-x-4 gap-y-8"
+                    isMobileViewport={isMobileViewport}
+                  />
+                  {mobileSharedTrailingFields.length ? (
+                    <StudioFieldGrid
+                      details={details}
+                      setDetails={setDetails}
+                      fields={mobileSharedTrailingFields}
+                      columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8"
+                      isMobileViewport={isMobileViewport}
+                    />
+                  ) : null}
+                </div>
+              ) : (
+                <StudioFieldGrid
+                  details={details}
+                  setDetails={setDetails}
+                  fields={sharedPrimaryFields}
+                  columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[8.5rem_9.25rem_minmax(0,1fr)] md:gap-x-4"
+                  isMobileViewport={isMobileViewport}
+                />
+              )}
+            </div>
+          ) : null}
+
+          {secondaryCategoryFields.length ? (
+            <div className="space-y-4">
+              <StudioFieldGrid
+                details={details}
+                setDetails={setDetails}
+                fields={secondaryCategoryFields}
+                columnsClassName="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3"
+                isMobileViewport={isMobileViewport}
+              />
+            </div>
+          ) : null}
+        </>
+      )}
 
       <div className="space-y-4 pt-2">
         <div className="space-y-3 rounded-[1.35rem] border border-[#eef2f7] bg-[#fcfdff] px-5 py-4">
@@ -465,6 +563,12 @@ export function StudioFormStep({
         onRemoveFlyer={onRemoveFlyer}
         onUploadSubjectPhotos={onUploadSubjectPhotos}
         onRemoveSubjectPhoto={onRemoveSubjectPhoto}
+        onUploadPropertyPhotos={onUploadPropertyPhotos}
+        onRemovePropertyPhoto={onRemovePropertyPhoto}
+        onUploadRealtorPhoto={onUploadRealtorPhoto}
+        onRemoveRealtorPhoto={onRemoveRealtorPhoto}
+        onUploadRealtorLogo={onUploadRealtorLogo}
+        onRemoveRealtorLogo={onRemoveRealtorLogo}
         isSubjectPhotoUploading={isSubjectPhotoUploading}
         flyerUploadError={flyerUploadError}
         subjectPhotoUploadError={subjectPhotoUploadError}

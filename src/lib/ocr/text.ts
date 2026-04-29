@@ -1072,6 +1072,7 @@ export function detectCategory(fullText: string): string | null {
     if (/(house\s*warming|housewarming|new\s+home|new\s+place|new\s+house)/i.test(fullText)) {
       return "Housewarming";
     }
+    if (isRealEstateOpenHouseText(fullText)) return "Open House";
     if (
       /(baptism|christening|communion|first holy communion|confirmation|bar mitzvah|bat mitzvah|baby dedication)/i.test(
         fullText,
@@ -1107,4 +1108,24 @@ export function detectCategory(fullText: string): string | null {
     }
   } catch {}
   return null;
+}
+
+export function isRealEstateOpenHouseText(fullText: string): boolean {
+  const text = String(fullText || "");
+  if (!/\bopen\s+house\b/i.test(text)) return false;
+  const listingSignalCount = [
+    /\brealtor\b/i,
+    /\breal\s+estate\b/i,
+    /\bMLS\b|MLS\s*#/i,
+    /\b\d+\s*(?:bed|beds|bedroom|bedrooms)\b/i,
+    /\b\d+\s*(?:bath|baths|bathroom|bathrooms)\b/i,
+    /\b(?:sq\.?\s*ft\.?|square\s+feet|sqft)\b/i,
+    /\$\s*\d[\d,]*(?:\.\d+)?\s*(?:k|m|million)?\b/i,
+    /\b(?:for\s+sale|listing|list\s+price|price\s+(?:starts\s+)?at|at\s+\$)\b/i,
+    /\b(?:brokerage|broker|agency|homes?|properties|realty)\b/i,
+    /\b(?:kitchen|pool|jacuzzi|suite|garage|appliances|bedroom|bathroom|master)\b/i,
+    /\b\d{1,6}\s+[A-Za-z0-9 .'-]+\s+(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|ct|court|blvd|boulevard|way|place|pl)\b/i,
+  ].filter((pattern) => pattern.test(text)).length;
+  if (listingSignalCount >= 2) return true;
+  return /\bopen\s+house\b/i.test(text) && /\brealtor\b|\bMLS\b|\breal\s+estate\b/i.test(text);
 }

@@ -6,11 +6,11 @@ import { buildMarketingHeroNav } from "../../components/navigation/marketing-her
 
 const repoRoot = process.cwd();
 
-const readSource = (relativePath) =>
-  fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
 test("studio marketing page uses the shared guest hero nav ordering", () => {
   const studioMarketingPage = readSource("src/app/studio/StudioMarketingPage.tsx");
+  const showcaseLiveCard = readSource("src/components/studio/StudioShowcaseLiveCard.tsx");
   const navLabels = buildMarketingHeroNav("studio", [
     { label: "Create in Studio", href: "#features" },
     { label: "Built to be Clicked", href: "#actions" },
@@ -31,8 +31,8 @@ test("studio marketing page uses the shared guest hero nav ordering", () => {
     "How It Works",
     "Live Card Showcase",
   ]);
-  assert.match(studioMarketingPage, /interactive = true,/);
-  assert.match(studioMarketingPage, /interactive \? "pointer-events-auto" : "pointer-events-none"/);
+  assert.match(showcaseLiveCard, /interactive = true,/);
+  assert.match(showcaseLiveCard, /interactive \? "pointer-events-auto" : "pointer-events-none"/);
   assert.match(studioMarketingPage, /interactive=\{activeIndex === index\}/);
   assert.match(
     studioMarketingPage,

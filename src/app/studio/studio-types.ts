@@ -14,6 +14,7 @@ export type StudioCategoryId =
   | "field-trip-day"
   | "bridal-shower"
   | "wedding"
+  | "open-house"
   | "housewarming"
   | "baby-shower"
   | "anniversary"

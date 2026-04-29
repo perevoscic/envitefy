@@ -1,4 +1,3 @@
-import { resolveCoverImageUrlFromEventData } from "@/lib/upload-config";
 import {
   normalizeInvitationText,
   normalizeLiveCardMetadata,
@@ -6,16 +5,17 @@ import {
   type StudioGenerationError,
   type StudioThemeNormalization,
 } from "@/lib/studio/types";
+import { resolveCoverImageUrlFromEventData } from "@/lib/upload-config";
 import {
-  buildDeterministicScheduleLine,
   buildDescription,
+  buildDeterministicScheduleLine,
+  buildStudioSubtitleFallback,
   getDisplayTitle,
   getFallbackThumbnail,
-  resolveStudioCallToAction,
-  resolveStudioRsvpMessage,
-  buildStudioSubtitleFallback,
   getThemeColors,
   pickFirst,
+  resolveStudioCallToAction,
+  resolveStudioRsvpMessage,
 } from "./studio-workspace-builders";
 import { EMPTY_POSITIONS } from "./studio-workspace-field-config";
 import type {
@@ -28,6 +28,9 @@ import {
   isRecord,
   readNullableString,
   readString,
+  STUDIO_OPEN_HOUSE_PROPERTY_IMAGE_URL_MAX,
+  STUDIO_OPEN_HOUSE_REALTOR_IMAGE_URL_MAX,
+  STUDIO_OPEN_HOUSE_REALTOR_LOGO_URL_MAX,
   sanitizeGuestImageUrls,
 } from "./studio-workspace-utils";
 
@@ -102,6 +105,9 @@ export function createInitialDetails(): EventDetails {
     rsvpDeadline: "",
     detailsDescription: "",
     guestImageUrls: [],
+    propertyImageUrls: [],
+    realtorImageUrls: [],
+    realtorLogoUrls: [],
     message: "",
     specialInstructions: "",
     orientation: "portrait",
@@ -157,6 +163,17 @@ export function createInitialDetails(): EventDetails {
     ticketsLink: "",
     broadcastInfo: "",
     parkingInfo: "",
+    propertyPrice: "",
+    bedrooms: "",
+    bathrooms: "",
+    squareFootage: "",
+    neighborhood: "",
+    propertyHighlights: "",
+    realtorName: "",
+    realtorTitle: "",
+    brokerageName: "",
+    realtorLicense: "",
+    listingUrl: "",
     mainPerson: "",
     occasion: "",
     audience: "",
@@ -176,6 +193,7 @@ export function isInviteCategory(value: unknown): value is InviteCategory {
     value === "Game Day" ||
     value === "Bridal Shower" ||
     value === "Wedding" ||
+    value === "Open House" ||
     value === "Housewarming" ||
     value === "Baby Shower" ||
     value === "Anniversary" ||
@@ -200,6 +218,7 @@ export function sanitizePositions(value: unknown): MediaItem["positions"] {
     calendar: sanitizePoint(value.calendar),
     registry: sanitizePoint(value.registry),
     details: sanitizePoint(value.details),
+    logo: sanitizePoint(value.logo),
   };
 }
 
@@ -267,6 +286,17 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
     "ticketsLink",
     "broadcastInfo",
     "parkingInfo",
+    "propertyPrice",
+    "bedrooms",
+    "bathrooms",
+    "squareFootage",
+    "neighborhood",
+    "propertyHighlights",
+    "realtorName",
+    "realtorTitle",
+    "brokerageName",
+    "realtorLicense",
+    "listingUrl",
     "mainPerson",
     "occasion",
     "audience",
@@ -329,9 +359,29 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
       : details.permissionSlipRequired;
 
   details.guestImageUrls = sanitizeGuestImageUrls(value.guestImageUrls);
+  details.propertyImageUrls = sanitizeGuestImageUrls(value.propertyImageUrls).slice(
+    0,
+    STUDIO_OPEN_HOUSE_PROPERTY_IMAGE_URL_MAX,
+  );
+  details.realtorImageUrls = sanitizeGuestImageUrls(value.realtorImageUrls).slice(
+    0,
+    STUDIO_OPEN_HOUSE_REALTOR_IMAGE_URL_MAX,
+  );
+  details.realtorLogoUrls = sanitizeGuestImageUrls(value.realtorLogoUrls).slice(
+    0,
+    STUDIO_OPEN_HOUSE_REALTOR_LOGO_URL_MAX,
+  );
   if (details.sourceMediaMode === "flyer") {
     details.guestImageUrls = [];
-  } else if (details.guestImageUrls.length > 0) {
+    details.propertyImageUrls = [];
+    details.realtorImageUrls = [];
+    details.realtorLogoUrls = [];
+  } else if (
+    details.guestImageUrls.length > 0 ||
+    details.propertyImageUrls.length > 0 ||
+    details.realtorImageUrls.length > 0 ||
+    details.realtorLogoUrls.length > 0
+  ) {
     details.sourceMediaMode = "subjectPhotos";
     details.sourceFlyerUrl = "";
     details.sourceFlyerName = "";
@@ -556,7 +606,8 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
     typeof value.imageDataUrl === "string" && value.imageDataUrl.startsWith("data:image/")
       ? value.imageDataUrl
       : null;
-  const imageUrl = typeof value.imageUrl === "string" && value.imageUrl.trim() ? value.imageUrl : null;
+  const imageUrl =
+    typeof value.imageUrl === "string" && value.imageUrl.trim() ? value.imageUrl : null;
   const themeNormalization = normalizeStudioThemeNormalization(value.themeNormalization);
   const warnings = Array.isArray(value.warnings)
     ? value.warnings.map(readString).filter(Boolean).slice(0, 8)

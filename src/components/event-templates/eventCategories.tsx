@@ -182,6 +182,11 @@ export const EVENT_CATEGORIES: EventCategoryConfig[] = [
     icon: generalIcon,
   },
   {
+    key: "open_house",
+    label: "Open House",
+    icon: generalIcon,
+  },
+  {
     key: "special_events",
     label: "Special Events",
     icon: specialIcon,

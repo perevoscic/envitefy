@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require("node:fs/promises");
-const path = require("path");
+const path = require("node:path");
 const { chromium } = require("playwright");
 
 const DEFAULT_BASE_URL = "http://localhost:3000";
@@ -133,11 +133,170 @@ const CATEGORY_FIXTURES = [
   },
 ];
 
+const OPEN_HOUSE_FIXTURES = [
+  {
+    category: "Open House",
+    id: "open-house-high-meadow",
+    fields: {
+      "Property Address": "4593 High Meadow Lane, Franklin, TN",
+      Price: "$624,000",
+      Bedrooms: "4",
+      Bathrooms: "3.5",
+      "Square Feet": "2,850",
+      RSVP: "carla@highmeadowrealty.example",
+      "Event Date": "2026-05-03",
+      "Start Time": "13:00",
+      "Location / Address": "4593 High Meadow Lane, Franklin, TN",
+      "Event description":
+        "Bright High Meadow family home with renovated chef's kitchen, vaulted great room, finished basement, covered patio, walkable schools, and street parking. Listed by Carla Mira, High Meadow Realty.",
+    },
+    prompt:
+      "premium suburban listing flyer with bright exterior hero photo, crisp specs, polished realtor branding for Carla Mira at High Meadow Realty",
+  },
+  {
+    category: "Open House",
+    id: "open-house-riverstone-loft",
+    fields: {
+      "Property Address": "812 Riverstone Loft #4B, Austin, TX",
+      Price: "$875,000",
+      Bedrooms: "2",
+      Bathrooms: "2",
+      "Square Feet": "1,640",
+      RSVP: "nina@riverstonecollective.example",
+      "Event Date": "2026-05-10",
+      "Start Time": "14:00",
+      "Location / Address": "812 Riverstone Loft #4B, Austin, TX",
+      "Event description":
+        "Modern East Riverside city loft with floor-to-ceiling windows, skyline balcony, chef's island, secure garage parking, elevator access, and lobby intercom. Listed by Nina Patel, Riverstone Collective.",
+    },
+    prompt:
+      "modern urban condo open house flyer with luxury editorial layout, skyline energy, clean black-and-white typography for Nina Patel at Riverstone Collective",
+  },
+  {
+    category: "Open House",
+    id: "open-house-oak-harbor",
+    fields: {
+      "Property Address": "27 Oak Harbor Court, Charleston, SC",
+      Price: "$1,245,000",
+      Bedrooms: "5",
+      Bathrooms: "4",
+      "Square Feet": "3,980",
+      RSVP: "evelyn@harborhearth.example",
+      "Event Date": "2026-05-17",
+      "Start Time": "11:00",
+      "Location / Address": "27 Oak Harbor Court, Charleston, SC",
+      "Event description":
+        "Oak Harbor coastal luxury residence with coastal kitchen, screened porch, guest suite, three-car garage, mature live oaks, nearby water access, and driveway parking. Listed by Evelyn Ross, Harbor & Hearth Realty.",
+    },
+    prompt:
+      "coastal luxury real-estate flyer with warm sunlight, refined serif typography, premium brokerage polish for Evelyn Ross at Harbor & Hearth Realty",
+  },
+  {
+    category: "Open House",
+    id: "open-house-maple-terrace",
+    fields: {
+      "Property Address": "118 Maple Terrace, Denver, CO",
+      Price: "$548,000",
+      Bedrooms: "3",
+      Bathrooms: "2",
+      "Square Feet": "1,925",
+      RSVP: "marcus@summitkey.example",
+      "Event Date": "2026-05-24",
+      "Start Time": "12:30",
+      "Location / Address": "118 Maple Terrace, Denver, CO",
+      "Event description":
+        "Updated Sloan's Lake bungalow with mountain-view deck, finished attic studio, fenced backyard, two-car garage, and front porch check-in. Listed by Marcus Lee, Summit Key Properties.",
+    },
+    prompt:
+      "warm neighborhood bungalow open house poster, approachable but premium, mountain-view lifestyle cues, clean listing facts for Marcus Lee at Summit Key Properties",
+  },
+];
+
+const OPEN_HOUSE_MORE_FIXTURES = [
+  {
+    category: "Open House",
+    id: "open-house-cypress-glen",
+    fields: {
+      "Property Address": "640 Cypress Glen Drive, Tampa, FL",
+      Price: "$719,000",
+      Bedrooms: "4",
+      Bathrooms: "3",
+      "Square Feet": "2,710",
+      RSVP: "olivia@suncoastkey.example",
+      "Event Date": "2026-06-07",
+      "Start Time": "13:30",
+      "Location / Address": "640 Cypress Glen Drive, Tampa, FL",
+      "Event description":
+        "Cypress Glen pool home with updated kitchen, split-bedroom layout, screened lanai, three-car garage, and neighborhood trail access. Listed by Olivia Grant, Suncoast Key Realty.",
+    },
+    prompt:
+      "bright Florida pool-home open house flyer with polished resort warmth, clean listing facts, and premium Suncoast Key Realty branding",
+  },
+  {
+    category: "Open House",
+    id: "open-house-cedar-park-modern",
+    fields: {
+      "Property Address": "2290 Cedar Park Modern, Seattle, WA",
+      Price: "$1,085,000",
+      Bedrooms: "3",
+      Bathrooms: "2.5",
+      "Square Feet": "2,240",
+      RSVP: "jamie@northlinehomes.example",
+      "Event Date": "2026-06-14",
+      "Start Time": "12:00",
+      "Location / Address": "2290 Cedar Park Modern, Seattle, WA",
+      "Event description":
+        "Architect-designed Cedar Park home with clerestory windows, rooftop terrace, EV-ready garage, custom millwork, and lake access nearby. Listed by Jamie Chen, Northline Homes.",
+    },
+    prompt:
+      "Pacific Northwest modern architecture open house poster with editorial photography, restrained typography, rooftop terrace cues, and Northline Homes polish",
+  },
+  {
+    category: "Open House",
+    id: "open-house-magnolia-row",
+    fields: {
+      "Property Address": "516 Magnolia Row, Savannah, GA",
+      Price: "$932,000",
+      Bedrooms: "4",
+      Bathrooms: "4",
+      "Square Feet": "3,120",
+      RSVP: "bea@magnoliabrokerage.example",
+      "Event Date": "2026-06-21",
+      "Start Time": "10:30",
+      "Location / Address": "516 Magnolia Row, Savannah, GA",
+      "Event description":
+        "Historic Magnolia Row residence with restored heart pine floors, double verandas, garden courtyard, carriage-house studio, and off-street parking. Listed by Beatrice Cole, Magnolia Brokerage.",
+    },
+    prompt:
+      "historic Savannah open house flyer with elegant veranda architecture, soft garden light, refined serif hierarchy, and premium Magnolia Brokerage styling",
+  },
+  {
+    category: "Open House",
+    id: "open-house-desert-ridge",
+    fields: {
+      "Property Address": "9038 Desert Ridge Vista, Scottsdale, AZ",
+      Price: "$1,395,000",
+      Bedrooms: "5",
+      Bathrooms: "4.5",
+      "Square Feet": "4,050",
+      RSVP: "mateo@sonoranestate.example",
+      "Event Date": "2026-06-28",
+      "Start Time": "15:00",
+      "Location / Address": "9038 Desert Ridge Vista, Scottsdale, AZ",
+      "Event description":
+        "Desert Ridge estate with mountain-view great room, chef's kitchen, casita, pool courtyard, fire feature, and gated cul-de-sac setting. Listed by Mateo Ruiz, Sonoran Estate Group.",
+    },
+    prompt:
+      "Scottsdale luxury estate open house flyer with desert sunset architecture, mountain-view pool courtyard, dramatic premium listing composition, and Sonoran Estate Group branding",
+  },
+];
+
 function parseArgs(argv) {
   const options = {
     baseUrl: DEFAULT_BASE_URL,
     edgeProfileDirectory: null,
     edgeUserDataDir: DEFAULT_EDGE_USER_DATA_DIR,
+    fixtureSet: "default",
     headed: false,
     resetProgress: false,
     storageState: null,
@@ -164,6 +323,11 @@ function parseArgs(argv) {
     }
     if (arg === "--edge-user-data-dir") {
       options.edgeUserDataDir = argv[index + 1] || null;
+      index += 1;
+      continue;
+    }
+    if (arg === "--fixture-set") {
+      options.fixtureSet = argv[index + 1] || options.fixtureSet;
       index += 1;
       continue;
     }
@@ -206,6 +370,8 @@ Options:
                           Launch against a local Edge profile directory (for example: "Profile 1").
   --edge-user-data-dir <dir>
                           Edge user data directory. Default: ${DEFAULT_EDGE_USER_DATA_DIR || "not detected"}
+  --fixture-set <name>     Fixture set to generate: default, open-house, open-house-more.
+                          Default: default.
   --headed                Run with a visible browser window.
   --reset-progress        Ignore saved progress and run a fresh set for this account.
   --slow-mo <ms>          Slow actions for easier observation.
@@ -229,20 +395,39 @@ function sanitizeSegment(value) {
     .replace(/^-+|-+$/g, "") || "default";
 }
 
-function buildFixtureSignature() {
+function getFixtures(fixtureSet) {
+  if (fixtureSet === "default") return CATEGORY_FIXTURES;
+  if (fixtureSet === "open-house") return OPEN_HOUSE_FIXTURES;
+  if (fixtureSet === "open-house-more") return OPEN_HOUSE_MORE_FIXTURES;
+  throw new Error(
+    `Unknown fixture set "${fixtureSet}". Expected "default", "open-house", or "open-house-more".`,
+  );
+}
+
+function fixtureKey(fixture) {
+  return fixture.id || fixture.category;
+}
+
+function buildFixtureSignature(fixtures) {
   return JSON.stringify(
-    CATEGORY_FIXTURES.map((fixture) => ({
+    fixtures.map((fixture) => ({
       category: fixture.category,
+      id: fixture.id || null,
       fields: fixture.fields,
       prompt: fixture.prompt,
     })),
   );
 }
 
-function getProgressFilePath(email, baseUrl) {
+function getProgressFilePath(email, baseUrl, fixtureSet) {
   const account = sanitizeSegment(email);
   const target = sanitizeSegment(baseUrl.replace(/^https?:\/\//i, ""));
-  return path.join(process.cwd(), "qa-artifacts", `studio-live-card-progress-${account}-${target}.json`);
+  const suffix = fixtureSet === "default" ? "" : `-${sanitizeSegment(fixtureSet)}`;
+  return path.join(
+    process.cwd(),
+    "qa-artifacts",
+    `studio-live-card-progress-${account}-${target}${suffix}.json`,
+  );
 }
 
 async function loadProgress(progressPath, fixtureSignature, resetProgress) {
@@ -267,7 +452,7 @@ async function loadProgress(progressPath, fixtureSignature, resetProgress) {
 
 async function saveProgress(progressPath, payload) {
   await fs.mkdir(path.dirname(progressPath), { recursive: true });
-  await fs.writeFile(progressPath, JSON.stringify(payload, null, 2) + "\n", "utf8");
+  await fs.writeFile(progressPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
 }
 
 async function readSession(page, baseUrl) {
@@ -508,23 +693,23 @@ async function openStudioPage(options) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+  const fixtures = getFixtures(options.fixtureSet);
   const { browser, context, page } = await openStudioPage(options);
 
   try {
     const email = await ensureAuthenticated(page, options.baseUrl);
-    const fixtureSignature = buildFixtureSignature();
-    const progressPath = getProgressFilePath(email, options.baseUrl);
+    const fixtureSignature = buildFixtureSignature(fixtures);
+    const progressPath = getProgressFilePath(email, options.baseUrl, options.fixtureSet);
     const progress = await loadProgress(progressPath, fixtureSignature, options.resetProgress);
     const completedCategories = new Set(progress.completedCategories);
-    const pendingFixtures = CATEGORY_FIXTURES.filter(
-      (fixture) => !completedCategories.has(fixture.category),
-    );
+    const pendingFixtures = fixtures.filter((fixture) => !completedCategories.has(fixtureKey(fixture)));
 
     console.log(`Authenticated as ${email}`);
+    console.log(`Fixture set: ${options.fixtureSet}`);
     console.log(`Progress file: ${progressPath}`);
 
     if (pendingFixtures.length === 0) {
-      console.log("This account already completed the current 9-card set. Nothing to do.");
+      console.log("This account already completed the current fixture set. Nothing to do.");
       return;
     }
 
@@ -535,17 +720,19 @@ async function main() {
     }
 
     for (const fixture of pendingFixtures) {
-      console.log(`Creating ${fixture.category}...`);
+      const key = fixtureKey(fixture);
+      console.log(`Creating ${key}...`);
       libraryCount = await createLiveCard(page, options.baseUrl, fixture, options.timeoutMs);
-      completedCategories.add(fixture.category);
+      completedCategories.add(key);
       await saveProgress(progressPath, {
         email,
         baseUrl: options.baseUrl,
+        fixtureSet: options.fixtureSet,
         fixtureSignature,
         completedCategories: [...completedCategories],
         updatedAt: new Date().toISOString(),
       });
-      console.log(`Saved ${fixture.category}. Library now shows ${libraryCount} item(s).`);
+      console.log(`Saved ${key}. Library now shows ${libraryCount} item(s).`);
     }
 
     const count = await verifyLibrary(page, options.baseUrl);

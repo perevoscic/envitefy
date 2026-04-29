@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -16,8 +16,14 @@ test("studio live-card builders preserve local invitation data and default gener
   );
   assert.match(source, /return \{\s*mode,\s*surface,\s*event:/s);
   assert.match(source, /export function resolveStudioGenerationSurface\(/);
-  assert.match(source, /export function isPosterFirstLiveCardCategory\(category: string \| null \| undefined\)/);
-  assert.match(source, /return normalized === "birthday" \|\| normalized === "wedding";/);
+  assert.match(
+    source,
+    /export function isPosterFirstLiveCardCategory\(category: string \| null \| undefined\)/,
+  );
+  assert.match(
+    source,
+    /return normalized === "birthday" \|\| normalized === "wedding" \|\| normalized === "open house";/,
+  );
   assert.match(source, /if \(type === "image"\) return "image";/);
   assert.match(source, /if \(options\?\.existingItemType === "page"\) return "page";/);
   assert.match(source, /return "page";/);

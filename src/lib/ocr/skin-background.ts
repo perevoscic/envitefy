@@ -8,6 +8,7 @@ export type OcrSkinCategory =
   | "engagement"
   | "anniversary"
   | "housewarming"
+  | "open-house"
   | "graduation"
   | "religious"
   | "general";
@@ -30,6 +31,9 @@ export type OcrSkinId =
   | "scanned-pickleball-showdown"
   | "scanned-pickleball-pop-court"
   | "scanned-pickleball-clinic"
+  | "scanned-open-house-modern-listing"
+  | "scanned-open-house-luxury-brochure"
+  | "scanned-open-house-neighborhood-card"
   | "scanned-invite-bento-celebration"
   | "scanned-invite-soft-radiance"
   | "scanned-invite-evening-luxe";
@@ -417,6 +421,19 @@ const CATEGORY_OBJECT_KINDS: Record<OcrSkinCategory, readonly OcrSkinBackgroundO
     "banner",
     "gift",
   ],
+  "open-house": [
+    "house",
+    "front-door",
+    "key",
+    "map-pin",
+    "photo-frame",
+    "plant",
+    "lamp",
+    "banner",
+    "announcement-card",
+    "dot",
+    "frame-corner",
+  ],
   graduation: [
     "cap",
     "tassel",
@@ -494,6 +511,7 @@ const CATEGORY_FALLBACK_STYLE: Record<
   engagement: { texture: "paper", density: "low", placement: "corners" },
   anniversary: { texture: "paper", density: "low", placement: "corners" },
   housewarming: { texture: "grain", density: "low", placement: "balanced" },
+  "open-house": { texture: "grain", density: "low", placement: "edges" },
   graduation: { texture: "grain", density: "medium", placement: "balanced" },
   religious: { texture: "paper", density: "low", placement: "balanced" },
   general: { texture: "grain", density: "low", placement: "balanced" },
@@ -558,6 +576,14 @@ export function normalizeOcrSkinCategory(value: unknown): OcrSkinCategory | null
     normalized === "house warmings"
   ) {
     return "housewarming";
+  }
+  if (
+    normalized === "open house" ||
+    normalized === "open houses" ||
+    normalized === "open-house" ||
+    normalized === "open-houses"
+  ) {
+    return "open-house";
   }
   if (normalized === "graduation" || normalized === "graduations") return "graduation";
   if (
