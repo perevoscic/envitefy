@@ -57,3 +57,10 @@ test("left sidebar exposes Studio below Home in the always-open workspace naviga
   );
   assert.match(modelSource, /\|\s*"studio"/);
 });
+
+test("left sidebar exposes signed-in AI create entry", () => {
+  const source = readSource("src/app/left-sidebar.tsx");
+
+  assert.match(source, /href="\/chat"[\s\S]*?Create with AI/s);
+  assert.match(source, /const isChatActive = pathname === "\/chat" && sidebarPage === "root";/);
+});

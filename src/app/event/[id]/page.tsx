@@ -2539,6 +2539,15 @@ export default async function EventPage({
             <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium rounded-xl border border-[#ddd4f8] bg-white/92 backdrop-blur px-2 sm:px-3 py-1.5 shadow-[0_12px_26px_rgba(76,55,134,0.22)]">
               {!isReadOnly && canManageCreatedEvent && !isOcrEvent && (
                 <Link
+                  href={`/events/${row.id}/workspace`}
+                  className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-[#4f3f7a] transition hover:bg-[#f6f1ff] hover:text-[#2f2550]"
+                  title="Open workspace"
+                >
+                  <span className="hidden sm:inline">Workspace</span>
+                </Link>
+              )}
+              {!isReadOnly && canManageCreatedEvent && !isOcrEvent && (
+                <Link
                   href={buildEditLink(row.id, data, title)}
                   className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-[#4f3f7a] transition hover:bg-[#f6f1ff] hover:text-[#2f2550]"
                   title="Edit event"
@@ -3022,6 +3031,14 @@ export default async function EventPage({
               >
                 RSVP
               </a>
+            )}
+            {canManageCreatedEvent && !isOcrEvent && (
+              <Link
+                href={`/events/${row.id}/workspace`}
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                Workspace
+              </Link>
             )}
             {canManageCreatedEvent && !isOcrEvent && (
               <Link

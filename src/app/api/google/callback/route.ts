@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
 import { absoluteUrl } from "@/lib/absolute-url";
+import { resolveSourceIntent } from "@/lib/concierge/creation-intent";
 import { getGoogleRefreshToken, saveGoogleRefreshToken, updatePreferredProviderByEmail, getUserIdByEmail, insertEventHistory } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -190,12 +191,31 @@ export async function GET(request: Request) {
             }
           } catch {}
           
+          const sourceIntent = resolveSourceIntent({
+            text: [normalized.title, normalized.description].filter(Boolean).join("\n"),
+            category,
+          });
+          const detectedSourceIntent = sourceIntent.detectedSourceIntent;
+          const historyOwnership = detectedSourceIntent === "received_invite" ? "invited" : "owned";
+
           await insertEventHistory({
             userId,
             title: normalized.title || "Event",
             data: {
-              ownership: "invited",
-              invitedFromScan: true,
+              ownership: historyOwnership,
+              invitedFromScan: detectedSourceIntent === "received_invite",
+              sourceContext: {
+                type: "ocr_text",
+                detectedSourceIntent,
+                confidence: sourceIntent.confidence,
+                signals: sourceIntent.signals,
+                requiresUserConfirmation: sourceIntent.requiresUserConfirmation,
+                originalCategory: category || null,
+                hasUsableContext: true,
+                ambiguity: "none",
+              },
+              creationIntent: "create_event",
+              requestedOutputs: ["event_page"],
               category: category || undefined,
               startISO: normalized.start,
               endISO: normalized.end,

@@ -1,0 +1,375 @@
+import OpenAI from "openai";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
+import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
+import {
+  getEventHistoryById,
+  updateEventHistoryData,
+  updateEventHistoryTitle,
+  type EventHistoryRow,
+} from "@/lib/db";
+import { invalidateUserHistory } from "@/lib/history-cache";
+import { buildEventAssetContent } from "./assets.ts";
+import {
+  createEventAsset,
+  isEventAssetType,
+  listEventAssets,
+  updateEventAsset,
+} from "./event-storage.ts";
+import type {
+  ConciergeEventAction,
+  EventAsset,
+  EventAssetType,
+} from "./types.ts";
+
+type EventActionPlan = {
+  actions: ConciergeEventAction[];
+  assistantMessage: string;
+  suggestedReplies: string[];
+};
+
+const ALLOWED_EVENT_PATCH_FIELDS = new Set([
+  "title",
+  "headlineTitle",
+  "description",
+  "startAt",
+  "startISO",
+  "start",
+  "endAt",
+  "endISO",
+  "end",
+  "timezone",
+  "tz",
+  "date",
+  "dateText",
+  "time",
+  "timeText",
+  "location",
+  "venue",
+  "address",
+  "category",
+  "status",
+  "theme",
+  "tone",
+  "rsvpEnabled",
+  "rsvpDeadline",
+  "rsvpName",
+  "rsvpEmail",
+  "rsvpPhone",
+  "rsvpUrl",
+  "rsvp",
+  "registries",
+  "registryLinks",
+  "numberOfGuests",
+  "goodToKnow",
+  "schedule",
+  "hosts",
+  "honoreeName",
+  "birthdayName",
+  "childName",
+  "age",
+  "outputs",
+  "liveCard",
+  "uploads",
+]);
+
+function cleanString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.replace(/\s+/g, " ").trim();
+  return trimmed || null;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function parseAiJson(content: string | null | undefined): unknown {
+  if (!content) return null;
+  try {
+    return JSON.parse(content);
+  } catch {
+    const match = content.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
+  }
+}
+
+function normalizeAssetType(value: unknown): EventAssetType | null {
+  if (isEventAssetType(value)) return value;
+  const text = cleanString(value)?.toLowerCase().replace(/[\s-]+/g, "_");
+  if (isEventAssetType(text)) return text;
+  if (text === "story") return "instagram_story";
+  if (text === "printable") return "printable_flyer";
+  if (text === "reminder") return "reminder_message";
+  return null;
+}
+
+function normalizePatch(value: unknown): Record<string, unknown> {
+  const patch = asRecord(value);
+  const out: Record<string, unknown> = {};
+  for (const [key, inner] of Object.entries(patch)) {
+    if (ALLOWED_EVENT_PATCH_FIELDS.has(key)) out[key] = inner;
+  }
+  return out;
+}
+
+function normalizeAssetPatch(value: unknown): {
+  title?: string;
+  status?: string;
+  content?: Record<string, unknown>;
+  design?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+} {
+  const patch = asRecord(value);
+  return {
+    title: cleanString(patch.title) || undefined,
+    status: cleanString(patch.status) || undefined,
+    content: Object.keys(asRecord(patch.content)).length ? asRecord(patch.content) : undefined,
+    design: Object.keys(asRecord(patch.design)).length ? asRecord(patch.design) : undefined,
+    metadata: Object.keys(asRecord(patch.metadata)).length ? asRecord(patch.metadata) : undefined,
+  };
+}
+
+function normalizeActions(value: unknown): ConciergeEventAction[] {
+  const rawActions = Array.isArray(value)
+    ? value
+    : Array.isArray(asRecord(value).actions)
+      ? (asRecord(value).actions as unknown[])
+      : [];
+  const actions: ConciergeEventAction[] = [];
+  for (const raw of rawActions) {
+    const action = asRecord(raw);
+    const type = cleanString(action.type);
+    if (type === "update_event") {
+      const patch = normalizePatch(action.patch);
+      if (Object.keys(patch).length) actions.push({ type, patch });
+    } else if (type === "create_asset") {
+      const assetType = normalizeAssetType(action.assetType ?? action.asset_type);
+      if (assetType) {
+        actions.push({
+          type,
+          assetType,
+          brief: cleanString(action.brief) || `Create a ${assetType} for this event.`,
+        });
+      }
+    } else if (type === "update_asset") {
+      const assetId = cleanString(action.assetId ?? action.asset_id);
+      const patch = asRecord(action.patch);
+      if (assetId && Object.keys(patch).length) actions.push({ type, assetId, patch });
+    } else if (type === "ask_question") {
+      const question = cleanString(action.question);
+      const suggestedReplies = Array.isArray(action.suggestedReplies)
+        ? action.suggestedReplies.map(cleanString).filter((item): item is string => Boolean(item))
+        : [];
+      if (question) actions.push({ type, question, suggestedReplies });
+    }
+  }
+  return actions.slice(0, 6);
+}
+
+function inferAssetTypeFromMessage(message: string): EventAssetType | null {
+  if (/whats\s*app|sms|text message/i.test(message)) return "whatsapp";
+  if (/instagram|story|stories/i.test(message)) return "instagram_story";
+  if (/print|flyer|5x7/i.test(message)) return "printable_flyer";
+  if (/remind|reminder/i.test(message)) return "reminder_message";
+  if (/thank/i.test(message)) return "thank_you_card";
+  if (/\bmenu\b/i.test(message)) return "menu";
+  if (/welcome sign|signage/i.test(message)) return "welcome_sign";
+  if (/rsvp/i.test(message)) return "rsvp_page";
+  if (/invite|invitation|card/i.test(message)) return "invitation";
+  return null;
+}
+
+function fallbackPlan(message: string): EventActionPlan {
+  const actions: ConciergeEventAction[] = [];
+  const assetType = inferAssetTypeFromMessage(message);
+  const rsvpDeadline = message.match(/\b(?:rsvp|respond)\s+by\s+([^.,;]+)/i)?.[1]?.trim();
+  if (rsvpDeadline) {
+    actions.push({
+      type: "update_event",
+      patch: {
+        rsvpEnabled: true,
+        rsvpDeadline,
+        rsvp: { isEnabled: true, deadline: rsvpDeadline },
+      },
+    });
+  }
+  if (assetType) {
+    actions.push({ type: "create_asset", assetType, brief: message });
+  }
+  if (!actions.length && /\belegant|luxury|fun|playful|kids|formal|casual\b/i.test(message)) {
+    actions.push({
+      type: "update_event",
+      patch: {
+        tone: cleanString(message) || "updated",
+        liveCard: { editInstruction: message },
+      },
+    });
+  }
+  if (!actions.length) {
+    actions.push({
+      type: "ask_question",
+      question: "What should I change or create for this event?",
+      suggestedReplies: ["Create a WhatsApp version", "Add RSVP details", "Make it more elegant"],
+    });
+  }
+  return {
+    actions,
+    assistantMessage:
+      actions[0]?.type === "ask_question"
+        ? actions[0].question
+        : "I updated this event workspace.",
+    suggestedReplies: actions[0]?.type === "ask_question" ? actions[0].suggestedReplies : [],
+  };
+}
+
+async function planWithOpenAi(params: {
+  message: string;
+  event: EventHistoryRow;
+  assets: EventAsset[];
+  history: Array<{ role: string; content: string }>;
+}): Promise<EventActionPlan | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  const client = new OpenAI({ apiKey });
+  const response = await client.chat.completions.create({
+    model: cleanString(process.env.OPENAI_CONCIERGE_MODEL) || "gpt-4o-mini",
+    temperature: 0.1,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: [
+          "You are Envitefy's event-scoped assistant.",
+          "Messages apply only to the provided event.",
+          "Return JSON with actions, assistantMessage, and suggestedReplies.",
+          "Allowed action types: update_event, create_asset, update_asset, ask_question.",
+          "Never choose or accept user_id. Never modify ownership.",
+          "Only patch event fields relevant to event details, RSVP, copy, status, and design tone.",
+        ].join(" "),
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          message: params.message,
+          event: { id: params.event.id, title: params.event.title, data: params.event.data },
+          assets: params.assets.map((asset) => ({
+            id: asset.id,
+            assetType: asset.asset_type,
+            title: asset.title,
+            status: asset.status,
+          })),
+          recentMessages: params.history.slice(-10),
+        }),
+      },
+    ],
+  } as any);
+  const parsed = asRecord(parseAiJson(response.choices?.[0]?.message?.content));
+  const actions = normalizeActions(parsed.actions);
+  if (!actions.length) return null;
+  return {
+    actions,
+    assistantMessage: cleanString(parsed.assistantMessage) || "I updated this event workspace.",
+    suggestedReplies: Array.isArray(parsed.suggestedReplies)
+      ? parsed.suggestedReplies.map(cleanString).filter((item): item is string => Boolean(item))
+      : [],
+  };
+}
+
+export async function buildEventActionPlan(params: {
+  message: string;
+  event: EventHistoryRow;
+  assets: EventAsset[];
+  history: Array<{ role: string; content: string }>;
+}): Promise<EventActionPlan> {
+  try {
+    const aiPlan = await planWithOpenAi(params);
+    if (aiPlan) return aiPlan;
+  } catch {
+    // Deterministic fallback keeps the workspace useful without model access.
+  }
+  return fallbackPlan(params.message);
+}
+
+export async function applyEventActions(params: {
+  userId: string;
+  eventId: string;
+  event: EventHistoryRow;
+  actions: ConciergeEventAction[];
+}): Promise<{ event: EventHistoryRow; assets: EventAsset[]; appliedActions: ConciergeEventAction[] }> {
+  let event = params.event;
+  const appliedActions: ConciergeEventAction[] = [];
+
+  for (const action of params.actions) {
+    if (action.type === "update_event") {
+      const patch = normalizePatch(action.patch);
+      if (!Object.keys(patch).length) continue;
+      const nextData = { ...asRecord(event.data), ...patch };
+      normalizeCanonicalStartFields(nextData);
+      const updated = await updateEventHistoryData(params.eventId, nextData);
+      if (updated) {
+        event = updated;
+        appliedActions.push({ type: "update_event", patch });
+        const title = cleanString(patch.title);
+        if (title && title !== event.title) {
+          const titleUpdated = await updateEventHistoryTitle(params.eventId, title);
+          if (titleUpdated) event = titleUpdated;
+        }
+      }
+    } else if (action.type === "create_asset") {
+      const generated = buildEventAssetContent({
+        eventId: params.eventId,
+        eventTitle: event.title,
+        eventData: asRecord(event.data),
+        assetType: action.assetType,
+        brief: action.brief,
+      });
+      await createEventAsset({
+        userId: params.userId,
+        eventId: params.eventId,
+        assetType: action.assetType,
+        title: generated.title,
+        content: generated.content,
+        design: generated.design,
+        metadata: generated.metadata,
+      });
+      if (action.assetType === "rsvp_page") {
+        const nextData = {
+          ...asRecord(event.data),
+          rsvpEnabled: true,
+          rsvp: {
+            ...asRecord(asRecord(event.data).rsvp),
+            isEnabled: true,
+          },
+        };
+        const updated = await updateEventHistoryData(params.eventId, nextData);
+        if (updated) event = updated;
+      }
+      appliedActions.push(action);
+    } else if (action.type === "update_asset") {
+      const updated = await updateEventAsset({
+        userId: params.userId,
+        eventId: params.eventId,
+        assetId: action.assetId,
+        patch: normalizeAssetPatch(action.patch),
+      });
+      if (updated) appliedActions.push(action);
+    } else if (action.type === "ask_question") {
+      appliedActions.push(action);
+    }
+  }
+
+  if (appliedActions.some((action) => action.type !== "ask_question")) {
+    invalidateUserHistory(params.userId);
+    invalidateUserDashboard(params.userId);
+  }
+
+  const freshEvent = (await getEventHistoryById(params.eventId)) || event;
+  const assets = await listEventAssets(params.eventId, params.userId);
+  return { event: freshEvent, assets, appliedActions };
+}

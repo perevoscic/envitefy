@@ -8,6 +8,7 @@ type InvitedEventLikeRecord =
   | {
       ownership?: unknown;
       invitedFromScan?: unknown;
+      sourceContext?: unknown;
     }
   | null
   | undefined;
@@ -173,6 +174,7 @@ export function isInvitedEventLikeRecord(record: InvitedEventLikeRecord): boolea
       (record as Record<string, unknown>).ownership,
       undefined,
       (record as Record<string, unknown>).invitedFromScan,
+      (record as Record<string, unknown>).sourceContext,
     ) === "invited"
   );
 }
@@ -181,7 +183,22 @@ export function normalizeDashboardEventOwnership(
   ownershipRaw: unknown,
   _createdViaRaw?: unknown,
   invitedFromScanRaw?: unknown,
+  sourceContextRaw?: unknown,
 ): DashboardEventOwnership {
+  const sourceContext =
+    sourceContextRaw && typeof sourceContextRaw === "object"
+      ? (sourceContextRaw as Record<string, unknown>)
+      : null;
+  const detectedSourceIntent = String(sourceContext?.detectedSourceIntent || "")
+    .trim()
+    .toLowerCase();
+  if (detectedSourceIntent === "received_invite") return "invited";
+  if (
+    detectedSourceIntent === "authoring_source" ||
+    detectedSourceIntent === "reference_material"
+  ) {
+    return "owned";
+  }
   if (
     String(ownershipRaw || "")
       .trim()
@@ -310,6 +327,7 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
       data?.ownership,
       data?.createdVia,
       data?.invitedFromScan,
+      data?.sourceContext,
     ),
     shareStatus: normalizeDashboardEventShareStatus(data?.shareStatus),
     userRsvpResponse: null,

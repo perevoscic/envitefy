@@ -30,6 +30,7 @@ import {
   Info,
   LogOut,
   Mail,
+  MessageCircle,
   Music,
   PartyPopper,
   Plus,
@@ -300,6 +301,7 @@ function RootNavigationPanel({
   invitedEventsCount,
   onHome,
   onStudio,
+  onChat,
   onSnap,
   onCreate,
   onMyEvents,
@@ -315,6 +317,7 @@ function RootNavigationPanel({
   invitedEventsCount: number;
   onHome: () => void;
   onStudio: () => void;
+  onChat: () => void;
   onSnap: () => void;
   onCreate: () => void;
   onMyEvents: () => void;
@@ -322,6 +325,7 @@ function RootNavigationPanel({
 }) {
   const isHomeActive = pathname === "/" && sidebarPage === "root";
   const isStudioActive = pathname === "/studio" && sidebarPage === "root";
+  const isChatActive = pathname === "/chat" && sidebarPage === "root";
   const isSnapActive = pathname === "/event" && sidebarPage === "root";
   const isViewingEventFromListInRoot =
     sidebarPage === "root" &&
@@ -417,6 +421,36 @@ function RootNavigationPanel({
             }`}
           >
             Studio
+          </span>
+        </Link>
+
+        <Link
+          href="/chat"
+          onClick={onChat}
+          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
+            isChatActive ? activeRowClass : inactiveRowClass
+          } py-3 pl-4 pr-4`}
+          style={
+            isChatActive
+              ? (mainActiveAccent.buttonStyle as CSSProperties)
+              : undefined
+          }
+        >
+          <span
+            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+              isChatActive ? rootMenuActiveChipClass : rootMenuChipClass
+            } ${rootIconClass(isChatActive)}`}
+          >
+            <MessageCircle size={17} strokeWidth={1.9} />
+          </span>
+          <span
+            className={`truncate ${rootRowTextClass} ${
+              isChatActive
+                ? rootActiveTextClass
+                : `${rootInactiveTextClass} ${rootHoverTextClass}`
+            }`}
+          >
+            Create with AI
           </span>
         </Link>
 
@@ -1262,6 +1296,7 @@ export default function LeftSidebar() {
                       invitedEventsCount={viewModel.invitedEventsCount}
                       onHome={viewModel.goHomeFromSidebar}
                       onStudio={viewModel.goStudioFromSidebar}
+                      onChat={viewModel.resetSidebarToRoot}
                       onSnap={viewModel.handleRootSnapNavigate}
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}

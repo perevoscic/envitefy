@@ -17,6 +17,21 @@ test("normalizeDashboardEventOwnership treats invitedFromScan rows as invited", 
   assert.equal(isInvitedEventLikeRecord({ ownership: "owned", invitedFromScan: true }), true);
 });
 
+test("normalizeDashboardEventOwnership prefers v2 source intent over legacy scan marker", () => {
+  assert.equal(
+    normalizeDashboardEventOwnership("owned", "ocr", true, {
+      detectedSourceIntent: "authoring_source",
+    }),
+    "owned",
+  );
+  assert.equal(
+    normalizeDashboardEventOwnership("owned", "manual", false, {
+      detectedSourceIntent: "received_invite",
+    }),
+    "invited",
+  );
+});
+
 test("normalizeDashboardEventOwnership keeps manual and discovery rows owned", () => {
   assert.equal(normalizeDashboardEventOwnership("owned", "manual", false), "owned");
   assert.equal(normalizeDashboardEventOwnership(null, "url", false), "owned");
@@ -233,6 +248,7 @@ test("db projections keep invite marker ownership logic in source", () => {
   const source = readFileSync(new URL("./db.ts", import.meta.url), "utf8");
 
   assert.match(source, /buildOwnedHistoryOwnershipSql/);
+  assert.match(source, /sourceContext'->>'detectedSourceIntent'/);
   assert.match(source, /->>'ownership'/);
   assert.match(source, /->>'invitedFromScan'/);
   assert.match(source, /'invitedFromScan', \$\{invitedFromScanSql\}/);

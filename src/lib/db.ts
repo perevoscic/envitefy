@@ -1605,6 +1605,10 @@ function buildHistoryDataProjectionSql(params: {
 
 export function buildOwnedHistoryOwnershipSql(dataSql: string): string {
   return `case
+    when lower(coalesce(${dataSql}->'sourceContext'->>'detectedSourceIntent', '')) = 'received_invite'
+    then to_jsonb('invited'::text)
+    when lower(coalesce(${dataSql}->'sourceContext'->>'detectedSourceIntent', '')) in ('authoring_source', 'reference_material')
+    then to_jsonb('owned'::text)
     when lower(coalesce(${dataSql}->>'ownership', '')) = 'invited'
       or lower(coalesce(${dataSql}->>'invitedFromScan', '')) = 'true'
     then to_jsonb('invited'::text)
@@ -1973,6 +1977,10 @@ async function _listOwnedHistoryCandidatesForUser(
 
 function buildOwnedHistoryOwnershipTextSql(dataSql: string): string {
   return `case
+    when lower(coalesce(${dataSql}->'sourceContext'->>'detectedSourceIntent', '')) = 'received_invite'
+    then 'invited'
+    when lower(coalesce(${dataSql}->'sourceContext'->>'detectedSourceIntent', '')) in ('authoring_source', 'reference_material')
+    then 'owned'
     when lower(coalesce(${dataSql}->>'ownership', '')) = 'invited'
       or lower(coalesce(${dataSql}->>'invitedFromScan', '')) = 'true'
     then 'invited'

@@ -66,3 +66,18 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   assert.match(source, /rsvpName:\s*rsvpNameFromScan \|\|/);
   assert.match(source, /rsvpName:\s*typeof eventInput\.rsvpName === "string"/);
 });
+
+test("dashboard OCR save derives ownership from source intent, not OCR category", () => {
+  const source = readSource("src/components/Dashboard.tsx");
+
+  assert.match(source, /resolveSourceIntent/);
+  assert.match(source, /const sourceIntent = resolveSourceIntent/);
+  assert.match(source, /const detectedSourceIntent = sourceIntent\.detectedSourceIntent;/);
+  assert.match(source, /const historyOwnership = detectedSourceIntent === "received_invite" \? "invited" : "owned";/);
+  assert.match(source, /ownership:\s*historyOwnership,/);
+  assert.match(source, /invitedFromScan:\s*detectedSourceIntent === "received_invite",/);
+  assert.match(source, /detectedSourceIntent,/);
+  assert.match(source, /confidence:\s*sourceIntent\.confidence,/);
+  assert.match(source, /requiresUserConfirmation:\s*sourceIntent\.requiresUserConfirmation,/);
+  assert.doesNotMatch(source, /ownership:\s*"invited",\s*invitedFromScan:\s*true,/);
+});

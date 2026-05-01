@@ -25,6 +25,7 @@ import {
 import { type PendingSnapUpload, takePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { normalizeThumbnailFocus, type ThumbnailFocus } from "@/lib/thumbnail-focus";
 import { buildWeddingScanFlyerColorsFromImageColors } from "@/lib/wedding-scan";
+import { resolveSourceIntent } from "@/lib/concierge/creation-intent";
 import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
 import { findFirstEmail, normalizeUrlValue } from "@/utils/contact";
 import { buildEventPath } from "@/utils/event-url";
@@ -1436,6 +1437,19 @@ export default function Dashboard({
           isWeddingOcrEvent && eventInput.rsvp && typeof eventInput.rsvp === "object"
             ? eventInput.rsvp
             : null;
+        const sourceIntent = resolveSourceIntent({
+          text: [
+            eventInput.title,
+            eventInput.description,
+            eventInput.thingsToDo,
+            eventInput.hostName,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          category: normalizedOcrCategory,
+        });
+        const detectedSourceIntent = sourceIntent.detectedSourceIntent;
+        const historyOwnership = detectedSourceIntent === "received_invite" ? "invited" : "owned";
         const existingRegistries = Array.isArray((eventInput as any)?.registries)
           ? ((eventInput as any).registries as any[])
           : [];
@@ -1462,8 +1476,20 @@ export default function Dashboard({
         const payload: any = {
           title: eventInput.title || "Event",
           data: {
-            ownership: "invited",
-            invitedFromScan: true,
+            ownership: historyOwnership,
+            invitedFromScan: detectedSourceIntent === "received_invite",
+            sourceContext: {
+              type: "upload",
+              detectedSourceIntent,
+              confidence: sourceIntent.confidence,
+              signals: sourceIntent.signals,
+              requiresUserConfirmation: sourceIntent.requiresUserConfirmation,
+              originalCategory: normalizedOcrCategory || null,
+              hasUsableContext: true,
+              ambiguity: "none",
+            },
+            creationIntent: "create_event",
+            requestedOutputs: ["event_page", "live_card"],
             category: normalizedOcrCategory || undefined,
             startISO: ready.start,
             endISO: ready.end,
