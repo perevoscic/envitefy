@@ -17,10 +17,7 @@ import {
   getTemplateLinks,
   isCreateEventRoute,
 } from "@/config/navigation-config";
-import {
-  getEventStartIso,
-  isInvitedEventLikeRecord,
-} from "@/lib/dashboard-data";
+import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import type { EventContextTab } from "./sidebar-context";
 import {
   buildGroupedEventLists,
@@ -126,10 +123,12 @@ export type LeftSidebarControllerViewModel = {
   openBarButtonRef: RefObject<HTMLButtonElement | null>;
   openSidebarFromTrigger: () => void;
   closeSidebarFromBackdrop: () => void;
+  resetSidebarToRoot: () => void;
   goHomeFromSidebar: () => void;
   goStudioFromSidebar: () => void;
   handleRootSnapNavigate: () => void;
   openCreateEventPage: () => void;
+  openAiThreadsPage: () => void;
   openMyEventsPage: () => void;
   openInvitedEventsPage: () => void;
   backToRoot: () => void;
@@ -191,39 +190,30 @@ export function useLeftSidebarController({
 
   const isEmbeddedEditMode = searchParams?.get("embed") === "1";
   const isEventPageWithEditSidebar = Boolean(
-    pathname?.startsWith("/event/") && searchParams?.get("edit")
+    pathname?.startsWith("/event/") && searchParams?.get("edit"),
   );
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>("root");
   const [showPastMyEvents, setShowPastMyEvents] = useState(false);
   const [showPastInvitedEvents, setShowPastInvitedEvents] = useState(false);
-  const [eventSidebarMode, setEventSidebarMode] =
-    useState<EventSidebarMode>("owner");
+  const [eventSidebarMode, setEventSidebarMode] = useState<EventSidebarMode>("owner");
   const [isHydrated, setIsHydrated] = useState(false);
   const [defaultCalendarProvider, setDefaultCalendarProvider] =
     useState<CalendarProviderKey | null>(null);
-  const [lastCreateSelection, setLastCreateSelection] = useState<string | null>(
-    null
-  );
-  const [forcedCreateActiveLabel, setForcedCreateActiveLabel] = useState<
-    string | null
-  >(null);
+  const [lastCreateSelection, setLastCreateSelection] = useState<string | null>(null);
+  const [forcedCreateActiveLabel, setForcedCreateActiveLabel] = useState<string | null>(null);
   const [isDesktop, setIsDesktop] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(min-width: 1024px)").matches;
   });
-  const [isAdmin, setIsAdmin] = useState<boolean>(
-    Boolean((session?.user as any)?.isAdmin)
-  );
+  const [isAdmin, setIsAdmin] = useState<boolean>(Boolean((session?.user as any)?.isAdmin));
   const [profilePrimarySignupSource, setProfilePrimarySignupSource] = useState<
     "snap" | "gymnastics" | "legacy" | null
   >(null);
-  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [_profileLoaded, setProfileLoaded] = useState(false);
 
-  const savedCalendarProviderRef = useRef<CalendarProviderKey | null | "__unset">(
-    "__unset"
-  );
+  const savedCalendarProviderRef = useRef<CalendarProviderKey | null | "__unset">("__unset");
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const openBarButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -233,19 +223,16 @@ export function useLeftSidebarController({
   const invitedNavigationPendingRef = useRef(false);
   const prevSidebarPageRef = useRef<SidebarPage>("root");
 
-  const mirrorLocalCalendarDefault = useCallback(
-    (provider: CalendarProviderKey | null) => {
-      if (typeof window === "undefined") return;
-      try {
-        if (!provider) {
-          window.localStorage.removeItem(CALENDAR_DEFAULT_STORAGE_KEY);
-          return;
-        }
-        window.localStorage.setItem(CALENDAR_DEFAULT_STORAGE_KEY, provider);
-      } catch {}
-    },
-    []
-  );
+  const mirrorLocalCalendarDefault = useCallback((provider: CalendarProviderKey | null) => {
+    if (typeof window === "undefined") return;
+    try {
+      if (!provider) {
+        window.localStorage.removeItem(CALENDAR_DEFAULT_STORAGE_KEY);
+        return;
+      }
+      window.localStorage.setItem(CALENDAR_DEFAULT_STORAGE_KEY, provider);
+    } catch {}
+  }, []);
 
   const saveCalendarDefault = useCallback(
     async (provider: CalendarProviderKey | null) => {
@@ -261,21 +248,15 @@ export function useLeftSidebarController({
         savedCalendarProviderRef.current = provider;
       } catch {}
     },
-    [status]
+    [status],
   );
 
-  const effectivePrimarySignupSource =
-    profilePrimarySignupSource ?? primarySignupSource;
-  const useGymnasticsDirectCreate =
-    effectivePrimarySignupSource === "gymnastics";
+  const effectivePrimarySignupSource = profilePrimarySignupSource ?? primarySignupSource;
+  const useGymnasticsDirectCreate = effectivePrimarySignupSource === "gymnastics";
   const isOpen = isDesktop ? true : !isCollapsed;
   const isCompact = false;
   const sidebarWidth = SIDEBAR_WIDTH_REM;
-  const sidebarTransform = isDesktop
-    ? "none"
-    : isOpen
-      ? "none"
-      : "translateX(-100%)";
+  const sidebarTransform = isDesktop ? "none" : isOpen ? "none" : "translateX(-100%)";
   const pointerClass = isDesktop
     ? "pointer-events-auto"
     : isOpen
@@ -327,12 +308,7 @@ export function useLeftSidebarController({
   }, [isOpen]);
 
   useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof document === "undefined" ||
-      isDesktop ||
-      !isOpen
-    ) {
+    if (typeof window === "undefined" || typeof document === "undefined" || isDesktop || !isOpen) {
       return;
     }
 
@@ -397,12 +373,8 @@ export function useLeftSidebarController({
     const onOutside = (event: Event) => {
       if (!menuOpen) return;
       const target = event.target as Node | null;
-      const withinMenu = menuRef.current
-        ? menuRef.current.contains(target as Node)
-        : false;
-      const withinButton = buttonRef.current
-        ? buttonRef.current.contains(target as Node)
-        : false;
+      const withinMenu = menuRef.current ? menuRef.current.contains(target as Node) : false;
+      const withinButton = buttonRef.current ? buttonRef.current.contains(target as Node) : false;
       if (!withinMenu && !withinButton) {
         setMenuOpen(false);
       }
@@ -442,8 +414,7 @@ export function useLeftSidebarController({
         typeof window !== "undefined" &&
         typeof window.matchMedia === "function" &&
         window.matchMedia("(max-width: 1023px)").matches;
-      const currentPath =
-        typeof window !== "undefined" ? window.location.pathname : pathname;
+      const currentPath = typeof window !== "undefined" ? window.location.pathname : pathname;
       const keepEventMenuOpen =
         Boolean(selectedEventId) &&
         Boolean(currentPath) &&
@@ -467,12 +438,7 @@ export function useLeftSidebarController({
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [
-    clearEventContext,
-    eventContextSourcePage,
-    isEventMenuActive,
-    setSidebarPage,
-  ]);
+  }, [clearEventContext, eventContextSourcePage, isEventMenuActive, setSidebarPage]);
 
   useEffect(() => {
     if (!selectedEventId) return;
@@ -481,29 +447,16 @@ export function useLeftSidebarController({
     if (sidebarPage === "eventContext") return;
     clearEventContext();
     setSidebarPage("root");
-  }, [
-    clearEventContext,
-    pathname,
-    selectedEventId,
-    setSidebarPage,
-    sidebarPage,
-  ]);
+  }, [clearEventContext, pathname, selectedEventId, setSidebarPage, sidebarPage]);
 
   useEffect(() => {
     if (invitedNavigationPendingRef.current) return;
     if (pathname !== "/") return;
-    const hasEventContext =
-      Boolean(selectedEventId) || sidebarPage === "eventContext";
+    const hasEventContext = Boolean(selectedEventId) || sidebarPage === "eventContext";
     if (!hasEventContext) return;
     clearEventContext();
     setSidebarPage("root");
-  }, [
-    clearEventContext,
-    pathname,
-    selectedEventId,
-    setSidebarPage,
-    sidebarPage,
-  ]);
+  }, [clearEventContext, pathname, selectedEventId, setSidebarPage, sidebarPage]);
 
   useEffect(() => {
     if (!invitedNavigationPendingRef.current) return;
@@ -513,8 +466,7 @@ export function useLeftSidebarController({
 
   useEffect(() => {
     const isPublicEventRoute = Boolean(
-      pathname &&
-        (pathname.startsWith("/event/") || pathname.startsWith("/smart-signup-form/"))
+      pathname && (pathname.startsWith("/event/") || pathname.startsWith("/smart-signup-form/")),
     );
     if (!isPublicEventRoute) return;
     if (selectedEventId) return;
@@ -531,10 +483,7 @@ export function useLeftSidebarController({
     prevSidebarPageRef.current = sidebarPage;
   }, [sidebarPage]);
 
-  const displayName =
-    (session?.user?.name as string) ||
-    (session?.user?.email as string) ||
-    "User";
+  const displayName = (session?.user?.name as string) || (session?.user?.email as string) || "User";
   const userEmail = session?.user?.email as string | undefined;
   const profileInitials = useMemo(() => {
     const source = String(displayName || userEmail || "U").trim();
@@ -545,7 +494,7 @@ export function useLeftSidebarController({
   }, [displayName, userEmail]);
   const userTitleLabel = useMemo(
     () => (isAdmin ? `${displayName} (Admin)` : displayName),
-    [displayName, isAdmin]
+    [displayName, isAdmin],
   );
 
   const footerMenuItems = useMemo(
@@ -585,7 +534,7 @@ export function useLeftSidebarController({
         colorClass: string;
         bgClass: string;
       }>,
-    [isAdmin]
+    [isAdmin],
   );
 
   useEffect(() => {
@@ -616,14 +565,10 @@ export function useLeftSidebarController({
             setIsAdmin(json.isAdmin);
           }
           setProfilePrimarySignupSource(
-            normalizePrimarySignupSource(json.primarySignupSource) || "legacy"
+            normalizePrimarySignupSource(json.primarySignupSource) || "legacy",
           );
-          setDefaultCalendarProvider(
-            normalizeCalendarProvider(json.preferredProvider)
-          );
-          savedCalendarProviderRef.current = normalizeCalendarProvider(
-            json.preferredProvider
-          );
+          setDefaultCalendarProvider(normalizeCalendarProvider(json.preferredProvider));
+          savedCalendarProviderRef.current = normalizeCalendarProvider(json.preferredProvider);
         }
       } catch {
       } finally {
@@ -692,10 +637,7 @@ export function useLeftSidebarController({
       void saveCalendarDefault(null);
       return;
     }
-    if (
-      defaultCalendarProvider === "microsoft" &&
-      !connectedCalendars.microsoft
-    ) {
+    if (defaultCalendarProvider === "microsoft" && !connectedCalendars.microsoft) {
       setDefaultCalendarProvider(null);
       mirrorLocalCalendarDefault(null);
       void saveCalendarDefault(null);
@@ -738,16 +680,14 @@ export function useLeftSidebarController({
       } catch {}
       triggerCreateEvent();
     },
-    [router, triggerCreateEvent]
+    [router, triggerCreateEvent],
   );
 
   const launchSnapFromMenu = useCallback(
     (mode: "camera" | "upload") => {
       const runtimeWindow = window as any;
       const openFn =
-        mode === "camera"
-          ? runtimeWindow.__openSnapCamera
-          : runtimeWindow.__openSnapUpload;
+        mode === "camera" ? runtimeWindow.__openSnapCamera : runtimeWindow.__openSnapUpload;
       collapseSidebarOnTouch();
       setSidebarPage("root");
       try {
@@ -758,7 +698,7 @@ export function useLeftSidebarController({
       } catch {}
       openSnapFromSidebar(mode);
     },
-    [collapseSidebarOnTouch, openSnapFromSidebar]
+    [collapseSidebarOnTouch, openSnapFromSidebar],
   );
 
   const resetSidebarToRoot = useCallback(() => {
@@ -787,7 +727,7 @@ export function useLeftSidebarController({
   const visibleTemplateKeys = featureVisibility.visibleTemplateKeys;
   const visibleTemplateLinks = useMemo(
     () => getTemplateLinks(visibleTemplateKeys, productScopes),
-    [productScopes, visibleTemplateKeys]
+    [productScopes, visibleTemplateKeys],
   );
 
   const templateHrefMap = useMemo(() => {
@@ -801,15 +741,12 @@ export function useLeftSidebarController({
   const createMenuItems = useMemo(
     () =>
       getCreateEventSections(visibleTemplateKeys, productScopes).flatMap(
-        (section) => section.items
+        (section) => section.items,
       ),
-    [productScopes, visibleTemplateKeys]
+    [productScopes, visibleTemplateKeys],
   );
   const otherCreateMenuItems = useMemo(() => [], []);
-  const isCreateRouteActive = useMemo(
-    () => isCreateEventRoute(pathname),
-    [pathname]
-  );
+  const isCreateRouteActive = useMemo(() => isCreateEventRoute(pathname), [pathname]);
   const isCreateItemActive = useCallback(
     (item: { href: string }) => {
       if (!pathname) return false;
@@ -818,17 +755,17 @@ export function useLeftSidebarController({
       if (baseHref === "/") return pathname === "/";
       return pathname === baseHref || pathname.startsWith(`${baseHref}/`);
     },
-    [pathname]
+    [pathname],
   );
   const activeCreateItem = useMemo(
     () => createMenuItems.find((item) => isCreateItemActive(item)) ?? null,
-    [createMenuItems, isCreateItemActive]
+    [createMenuItems, isCreateItemActive],
   );
   const isOtherEventsActive = sidebarPage === "createEventOther";
   const createMenuOptionCount = createMenuItems.length;
   const hasCreateEventAccess = useMemo(
     () => useGymnasticsDirectCreate || createMenuOptionCount > 0,
-    [createMenuOptionCount, useGymnasticsDirectCreate]
+    [createMenuOptionCount, useGymnasticsDirectCreate],
   );
 
   useEffect(() => {
@@ -860,10 +797,7 @@ export function useLeftSidebarController({
     if (typeof window === "undefined") return;
     try {
       if (lastCreateSelection) {
-        window.sessionStorage.setItem(
-          CREATE_ACTIVE_STORAGE_KEY,
-          lastCreateSelection
-        );
+        window.sessionStorage.setItem(CREATE_ACTIVE_STORAGE_KEY, lastCreateSelection);
       } else {
         window.sessionStorage.removeItem(CREATE_ACTIVE_STORAGE_KEY);
       }
@@ -887,7 +821,7 @@ export function useLeftSidebarController({
       setIsCollapsed(false);
       setSidebarPage(page);
     },
-    [clearEventContext, setIsCollapsed]
+    [clearEventContext, setIsCollapsed],
   );
 
   const openCreateEventPage = useCallback(() => {
@@ -915,13 +849,19 @@ export function useLeftSidebarController({
     useGymnasticsDirectCreate,
   ]);
 
+  const openAiThreadsPage = useCallback(() => {
+    clearEventContext();
+    setIsCollapsed(false);
+    setSidebarPage("aiThreads");
+  }, [clearEventContext, setIsCollapsed]);
+
   const openMyEventsPage = useCallback(
     () => openCompactEventsPage("myEvents"),
-    [openCompactEventsPage]
+    [openCompactEventsPage],
   );
   const openInvitedEventsPage = useCallback(
     () => openCompactEventsPage("invitedEvents"),
-    [openCompactEventsPage]
+    [openCompactEventsPage],
   );
 
   const isCompactNavActive = useCallback(
@@ -942,45 +882,34 @@ export function useLeftSidebarController({
         case "myEvents":
           return (
             sidebarPage === "myEvents" ||
-            (sidebarPage === "eventContext" &&
-              eventContextSourcePage === "myEvents")
+            (sidebarPage === "eventContext" && eventContextSourcePage === "myEvents")
           );
         case "invitedEvents":
           return (
             sidebarPage === "invitedEvents" ||
-            (sidebarPage === "eventContext" &&
-              eventContextSourcePage === "invitedEvents")
+            (sidebarPage === "eventContext" && eventContextSourcePage === "invitedEvents")
           );
         default:
           return false;
       }
     },
-    [eventContextSourcePage, isCreateRouteActive, pathname, sidebarPage]
+    [eventContextSourcePage, isCreateRouteActive, pathname, sidebarPage],
   );
 
   useEffect(() => {
     try {
-      const rawMyEvents = localStorage.getItem(
-        MY_EVENTS_PAST_EXPANDED_STORAGE_KEY
-      );
+      const rawMyEvents = localStorage.getItem(MY_EVENTS_PAST_EXPANDED_STORAGE_KEY);
       setShowPastMyEvents(rawMyEvents === "1" || rawMyEvents === "true");
     } catch {}
     try {
-      const rawInvitedEvents = localStorage.getItem(
-        INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY
-      );
-      setShowPastInvitedEvents(
-        rawInvitedEvents === "1" || rawInvitedEvents === "true"
-      );
+      const rawInvitedEvents = localStorage.getItem(INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY);
+      setShowPastInvitedEvents(rawInvitedEvents === "1" || rawInvitedEvents === "true");
     } catch {}
   }, []);
 
   useEffect(() => {
     try {
-      localStorage.setItem(
-        MY_EVENTS_PAST_EXPANDED_STORAGE_KEY,
-        showPastMyEvents ? "1" : "0"
-      );
+      localStorage.setItem(MY_EVENTS_PAST_EXPANDED_STORAGE_KEY, showPastMyEvents ? "1" : "0");
     } catch {}
   }, [showPastMyEvents]);
 
@@ -988,7 +917,7 @@ export function useLeftSidebarController({
     try {
       localStorage.setItem(
         INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
-        showPastInvitedEvents ? "1" : "0"
+        showPastInvitedEvents ? "1" : "0",
       );
     } catch {}
   }, [showPastInvitedEvents]);
@@ -1026,13 +955,7 @@ export function useLeftSidebarController({
       setSidebarPage("root");
       triggerCreateEvent();
     },
-    [
-      collapseSidebarOnTouch,
-      launchSnapFromMenu,
-      router,
-      templateHrefMap,
-      triggerCreateEvent,
-    ]
+    [collapseSidebarOnTouch, launchSnapFromMenu, router, templateHrefMap, triggerCreateEvent],
   );
 
   const isCreateMenuButtonActive = useCallback(
@@ -1042,7 +965,7 @@ export function useLeftSidebarController({
         forcedCreateActiveLabel.toLowerCase() === item.label.toLowerCase()) ||
       (lastCreateSelection !== null &&
         lastCreateSelection.toLowerCase() === item.label.toLowerCase()),
-    [forcedCreateActiveLabel, isCreateItemActive, lastCreateSelection]
+    [forcedCreateActiveLabel, isCreateItemActive, lastCreateSelection],
   );
 
   const history = (historySidebarItems || []) as HistoryRow[];
@@ -1055,19 +978,19 @@ export function useLeftSidebarController({
         isSportsPreviewFirstEvent,
         isInvitedEventLikeRecord,
       }),
-    [history]
+    [history],
   );
   const myEventsGrouped = groupedEventLists.myEvents;
   const invitedEventsGrouped = groupedEventLists.invitedEvents;
   const createdEventsCount = useMemo(
     () => countGroupedEventItems(myEventsGrouped.upcoming),
-    [myEventsGrouped.upcoming]
+    [myEventsGrouped.upcoming],
   );
   const invitedEventsCount = useMemo(
     () =>
       countGroupedEventItems(invitedEventsGrouped.upcoming) +
       countGroupedEventItems(invitedEventsGrouped.past),
-    [invitedEventsGrouped.past, invitedEventsGrouped.upcoming]
+    [invitedEventsGrouped.past, invitedEventsGrouped.upcoming],
   );
 
   const inferEventListSourceFromPath = useCallback(
@@ -1114,12 +1037,15 @@ export function useLeftSidebarController({
 
       return null;
     },
-    [invitedEventsGrouped.past, invitedEventsGrouped.upcoming, myEventsGrouped.past, myEventsGrouped.upcoming]
+    [
+      invitedEventsGrouped.past,
+      invitedEventsGrouped.upcoming,
+      myEventsGrouped.past,
+      myEventsGrouped.upcoming,
+    ],
   );
   const isCreateEntryActive =
-    isCreateRouteActive ||
-    sidebarPage === "createEvent" ||
-    sidebarPage === "createEventOther";
+    isCreateRouteActive || sidebarPage === "createEvent" || sidebarPage === "createEventOther";
 
   useEffect(() => {
     const inferredSource = inferEventListSourceFromPath(pathname);
@@ -1136,8 +1062,7 @@ export function useLeftSidebarController({
     const onDeleted = (event: Event) => {
       try {
         const detail = (event as CustomEvent<{ id?: string }>).detail || null;
-        const deletedId =
-          detail && detail.id != null ? String(detail.id).trim() : "";
+        const deletedId = detail && detail.id != null ? String(detail.id).trim() : "";
         if (!deletedId) return;
         if (selectedEventId === deletedId) {
           clearEventContext();
@@ -1152,17 +1077,11 @@ export function useLeftSidebarController({
   }, [clearEventContext, selectedEventId]);
 
   const buildEventOwnerHref = useCallback(
-    (
-      baseHref: string | null | undefined,
-      eventId: string,
-      tab: EventContextTab
-    ) => {
+    (baseHref: string | null | undefined, eventId: string, tab: EventContextTab) => {
       const fallbackPath = `/event/${encodeURIComponent(eventId)}`;
       try {
         const normalizedBase =
-          typeof baseHref === "string" && baseHref.trim()
-            ? baseHref
-            : fallbackPath;
+          typeof baseHref === "string" && baseHref.trim() ? baseHref : fallbackPath;
         const parsed = new URL(normalizedBase, "https://envitefy.local");
         parsed.searchParams.set("tab", tab);
         return `${parsed.pathname}${parsed.search}${parsed.hash}`;
@@ -1170,7 +1089,7 @@ export function useLeftSidebarController({
         return `${fallbackPath}?tab=${encodeURIComponent(tab)}`;
       }
     },
-    []
+    [],
   );
 
   const buildEventGuestHref = useCallback(
@@ -1178,9 +1097,7 @@ export function useLeftSidebarController({
       const fallbackPath = `/event/${encodeURIComponent(eventId)}`;
       try {
         const normalizedBase =
-          typeof baseHref === "string" && baseHref.trim()
-            ? baseHref
-            : fallbackPath;
+          typeof baseHref === "string" && baseHref.trim() ? baseHref : fallbackPath;
         const parsed = new URL(normalizedBase, "https://envitefy.local");
         parsed.searchParams.set("tab", "preview");
         return `${parsed.pathname}${parsed.search}${parsed.hash}`;
@@ -1188,7 +1105,7 @@ export function useLeftSidebarController({
         return `${fallbackPath}?tab=preview`;
       }
     },
-    []
+    [],
   );
 
   const blurActiveElement = useCallback(() => {
@@ -1235,7 +1152,7 @@ export function useLeftSidebarController({
       setSelectedEventHref,
       setSelectedEventId,
       setSelectedEventTitle,
-    ]
+    ],
   );
 
   const openGuestEventContext = useCallback(
@@ -1264,7 +1181,7 @@ export function useLeftSidebarController({
       router,
       setEventContextSourcePage,
       setIsCollapsed,
-    ]
+    ],
   );
 
   const shareEventFromList = useCallback(async (item: GroupedEventItem) => {
@@ -1287,9 +1204,7 @@ export function useLeftSidebarController({
       const eventId = String(item?.row?.id || "").trim();
       if (!eventId) return;
       const eventLabel = item?.title || item?.row?.title || "Untitled event";
-      const ok = window.confirm(
-        `Are you sure you want to delete this event?\n\n${eventLabel}`
-      );
+      const ok = window.confirm(`Are you sure you want to delete this event?\n\n${eventLabel}`);
       if (!ok) return;
       const response = await fetch(`/api/history/${eventId}`, { method: "DELETE" });
       if (!response.ok) {
@@ -1300,7 +1215,7 @@ export function useLeftSidebarController({
         clearEventContext();
       }
     },
-    [clearEventContext, selectedEventId]
+    [clearEventContext, selectedEventId],
   );
 
   const isHistoryRowActive = useCallback(
@@ -1315,7 +1230,7 @@ export function useLeftSidebarController({
         currentPath.endsWith(`-${rowId}`)
       );
     },
-    [pathname, selectedEventId]
+    [pathname, selectedEventId],
   );
 
   const handleEventTabChange = useCallback(
@@ -1324,10 +1239,7 @@ export function useLeftSidebarController({
         setActiveEventTab("dashboard");
         try {
           if (!selectedEventId) return;
-          const nextHref = buildEventGuestHref(
-            selectedEventHref,
-            selectedEventId
-          );
+          const nextHref = buildEventGuestHref(selectedEventHref, selectedEventId);
           router.push(nextHref);
         } catch {}
         blurActiveElement();
@@ -1337,11 +1249,7 @@ export function useLeftSidebarController({
       setActiveEventTab(tab);
       try {
         if (!selectedEventId) return;
-        const nextHref = buildEventOwnerHref(
-          selectedEventHref,
-          selectedEventId,
-          tab
-        );
+        const nextHref = buildEventOwnerHref(selectedEventHref, selectedEventId, tab);
         router.push(nextHref);
       } catch {}
       blurActiveElement();
@@ -1356,7 +1264,7 @@ export function useLeftSidebarController({
       selectedEventHref,
       selectedEventId,
       setActiveEventTab,
-    ]
+    ],
   );
 
   const handleSidebarBackToEvents = useCallback(() => {
@@ -1409,10 +1317,12 @@ export function useLeftSidebarController({
     openBarButtonRef,
     openSidebarFromTrigger,
     closeSidebarFromBackdrop,
+    resetSidebarToRoot,
     goHomeFromSidebar,
     goStudioFromSidebar,
     handleRootSnapNavigate,
     openCreateEventPage,
+    openAiThreadsPage,
     openMyEventsPage,
     openInvitedEventsPage,
     backToRoot: () => setSidebarPage("root"),

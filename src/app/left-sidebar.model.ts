@@ -4,6 +4,7 @@ export type SidebarPage =
   | "root"
   | "createEvent"
   | "createEventOther"
+  | "aiThreads"
   | "myEvents"
   | "invitedEvents"
   | "eventContext";
@@ -12,13 +13,7 @@ export type EventSidebarMode = "owner" | "guest";
 
 export type EventListPage = "myEvents" | "invitedEvents";
 
-export type CompactNavItemId =
-  | "home"
-  | "studio"
-  | "snap"
-  | "create"
-  | "myEvents"
-  | "invitedEvents";
+export type CompactNavItemId = "home" | "studio" | "snap" | "create" | "myEvents" | "invitedEvents";
 
 export type CompactNavItem = {
   id: CompactNavItemId;
@@ -67,18 +62,13 @@ export type GroupedEventLists = Record<
   }
 >;
 
-export const CALENDAR_DEFAULT_STORAGE_KEY =
-  "envitefy:event-actions:calendar-default:v1";
-export const MY_EVENTS_PAST_EXPANDED_STORAGE_KEY =
-  "sidebar:my-events:past-expanded";
-export const INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY =
-  "sidebar:invited-events:past-expanded";
+export const CALENDAR_DEFAULT_STORAGE_KEY = "envitefy:event-actions:calendar-default:v1";
+export const MY_EVENTS_PAST_EXPANDED_STORAGE_KEY = "sidebar:my-events:past-expanded";
+export const INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY = "sidebar:invited-events:past-expanded";
 export const CREATE_ACTIVE_STORAGE_KEY = "sidebar:create-event:last-selection";
 
-export const SIDEBAR_CARD_CLASS =
-  "rounded-[24px]";
-export const SIDEBAR_ITEM_CARD_CLASS =
-  "nav-chrome-motion rounded-full";
+export const SIDEBAR_CARD_CLASS = "rounded-[24px]";
+export const SIDEBAR_ITEM_CARD_CLASS = "nav-chrome-motion rounded-full";
 export const SIDEBAR_BADGE_CLASS =
   "inline-flex min-w-[20px] items-center justify-center rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-[#7269dd] shadow-[0_8px_18px_rgba(126,111,233,0.14)]";
 export const SIDEBAR_WIDTH_REM = "20rem";
@@ -91,8 +81,7 @@ export const SIDEBAR_BACK_ROW_CLASS =
   "flex w-full items-center gap-3 rounded-[22px] bg-white px-4 py-3 text-left text-sm shadow-[0_16px_34px_rgba(120,105,214,0.14)]";
 export const SIDEBAR_ICON_CHIP_CLASS =
   "flex h-7 w-7 shrink-0 items-center justify-center rounded-full";
-export const SIDEBAR_ICON_CHIP_ACCENT_CLASS =
-  "";
+export const SIDEBAR_ICON_CHIP_ACCENT_CLASS = "";
 export const SIDEBAR_PANEL_CLASS =
   "nav-chrome-sidebar-scroll-region absolute inset-0 overflow-y-auto no-scrollbar px-5 pb-36 touch-pan-y lg:pb-40";
 export const SIDEBAR_EVENT_PANEL_CLASS =
@@ -241,16 +230,10 @@ export function createSidebarIconLookup(icons: Record<string, any>) {
   };
 }
 
-export function normalizeCalendarProvider(
-  value: unknown
-): CalendarProviderKey | null {
+export function normalizeCalendarProvider(value: unknown): CalendarProviderKey | null {
   if (typeof value !== "string") return null;
   const provider = value.trim().toLowerCase();
-  if (
-    provider === "google" ||
-    provider === "microsoft" ||
-    provider === "apple"
-  ) {
+  if (provider === "google" || provider === "microsoft" || provider === "apple") {
     return provider;
   }
   return null;
@@ -267,9 +250,7 @@ export function getSidebarPrimaryActiveAccent() {
   return SIDEBAR_PRIMARY_ACTIVE_ACCENT;
 }
 
-export function normalizeCategoryLabel(
-  raw: string | null | undefined
-): string | null {
+export function normalizeCategoryLabel(raw: string | null | undefined): string | null {
   const source = String(raw || "").trim();
   if (!source) return null;
   const deslugged = source.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
@@ -281,10 +262,7 @@ export function normalizeCategoryLabel(
   if (/^birthday(s)?$/.test(lowered) || /birthday\s*party/.test(lowered)) {
     return "Birthdays";
   }
-  if (
-    /^baby\s*shower(s)?$/.test(lowered) ||
-    /\bbaby[-\s]?shower(s)?\b/.test(lowered)
-  ) {
+  if (/^baby\s*shower(s)?$/.test(lowered) || /\bbaby[-\s]?shower(s)?\b/.test(lowered)) {
     return "Baby Showers";
   }
   if (/gender\s*reveal/.test(lowered)) return "Gender Reveal";
@@ -334,11 +312,7 @@ export function guessCategoryFromText(text: string): string | null {
     return "Sport Events";
   }
   if (/playdate|play\s*day|kids?\s*play/.test(source)) return "Play Days";
-  if (
-    /(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/.test(
-      source
-    )
-  ) {
+  if (/(car\s*pool|carpool|ride\s*share|school\s*pickup|school\s*drop[- ]?off)/.test(source)) {
     return "Car Pool";
   }
   if (/appointment|meeting|consult/.test(source)) return "Appointments";
@@ -350,9 +324,7 @@ export function defaultCategoryColor(category: string): string {
   if (!trimmed) return "gray";
   const preset = CATEGORY_DEFAULT_COLOR_MAP[trimmed];
   if (preset) return preset;
-  const hash = trimmed
-    .split("")
-    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hash = trimmed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return CATEGORY_FALLBACK_COLORS[hash % CATEGORY_FALLBACK_COLORS.length];
 }
 
@@ -553,7 +525,7 @@ export function activeEventCardClasses(color: string): string {
 
 export function isInvitedHistoryEvent(
   data: unknown,
-  isInvitedEventLikeRecord: (record: Record<string, unknown>) => boolean
+  isInvitedEventLikeRecord: (record: Record<string, unknown>) => boolean,
 ): boolean {
   if (!data || typeof data !== "object") return false;
   const record = data as Record<string, unknown>;
@@ -570,9 +542,7 @@ function isHexColor(value: string) {
 
 function hexToRgba(hex: string, alpha: number) {
   const normalized =
-    hex.length === 4
-      ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
-      : hex;
+    hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex;
   const r = Number.parseInt(normalized.slice(1, 3), 16);
   const g = Number.parseInt(normalized.slice(3, 5), 16);
   const b = Number.parseInt(normalized.slice(5, 7), 16);
@@ -632,11 +602,10 @@ export function buildGroupedEventLists(args: {
   isSportsPreviewFirstEvent: (data: unknown) => boolean;
   isInvitedEventLikeRecord: (record: Record<string, unknown>) => boolean;
 }): GroupedEventLists {
-  const bucketsByList: Record<EventListPage, ReturnType<typeof createGroupedBuckets>> =
-    {
-      myEvents: createGroupedBuckets(),
-      invitedEvents: createGroupedBuckets(),
-    };
+  const bucketsByList: Record<EventListPage, ReturnType<typeof createGroupedBuckets>> = {
+    myEvents: createGroupedBuckets(),
+    invitedEvents: createGroupedBuckets(),
+  };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -645,21 +614,14 @@ export function buildGroupedEventLists(args: {
   for (const row of args.history || []) {
     if (!row || typeof row !== "object") continue;
     const data = ((row as HistoryRow).data || {}) as Record<string, any>;
-    const isInvited = isInvitedHistoryEvent(
-      data,
-      args.isInvitedEventLikeRecord
-    );
+    const isInvited = isInvitedHistoryEvent(data, args.isInvitedEventLikeRecord);
     if (data?.signupForm && !isInvited) continue;
 
-    const targetList: EventListPage = isInvited
-      ? "invitedEvents"
-      : "myEvents";
+    const targetList: EventListPage = isInvited ? "invitedEvents" : "myEvents";
     const isDraft = String(data?.status || "").toLowerCase() === "draft";
     const normalizedCategoryRaw = normalizeCategoryLabel(
       (data?.category as string | null) ||
-        guessCategoryFromText(
-          `${row.title || ""} ${String(data?.description || "")}`
-        )
+        guessCategoryFromText(`${row.title || ""} ${String(data?.description || "")}`),
     );
     const normalizedCategory =
       isInvited &&
@@ -668,33 +630,23 @@ export function buildGroupedEventLists(args: {
         .toLowerCase() === "shared events"
         ? "Invited Events"
         : normalizedCategoryRaw;
-    const category = isDraft
-      ? "Drafts"
-      : normalizedCategory || "General Events";
+    const category = isDraft ? "Drafts" : normalizedCategory || "General Events";
 
-    const dateRaw =
-      String(args.getEventStartIso(row?.data) || row?.created_at || "").trim();
+    const dateRaw = String(args.getEventStartIso(row?.data) || row?.created_at || "").trim();
     const parsedDateMs = dateRaw ? new Date(dateRaw).getTime() : Number.NaN;
-    const dateMs = Number.isNaN(parsedDateMs)
-      ? Number.POSITIVE_INFINITY
-      : parsedDateMs;
+    const dateMs = Number.isNaN(parsedDateMs) ? Number.POSITIVE_INFINITY : parsedDateMs;
     const dateLabel = formatEventDate(dateRaw);
     const href = args.buildEventPath(row.id, row.title);
-    const openMode: GroupedEventItem["openMode"] =
-      args.isSportsPreviewFirstEvent(data) ? "preview" : "dashboard";
-    const rawShareStatus = String(data?.shareStatus || "").trim().toLowerCase();
+    const openMode: GroupedEventItem["openMode"] = args.isSportsPreviewFirstEvent(data)
+      ? "preview"
+      : "dashboard";
+    const rawShareStatus = String(data?.shareStatus || "")
+      .trim()
+      .toLowerCase();
     const shareStatus =
-      rawShareStatus === "accepted"
-        ? "accepted"
-        : rawShareStatus === "pending"
-          ? "pending"
-          : null;
+      rawShareStatus === "accepted" ? "accepted" : rawShareStatus === "pending" ? "pending" : null;
     const createdVia = String(
-      data?.createdVia ||
-        data?.source ||
-        data?.ingestMethod ||
-        data?.origin ||
-        "",
+      data?.createdVia || data?.source || data?.ingestMethod || data?.origin || "",
     )
       .trim()
       .toLowerCase();

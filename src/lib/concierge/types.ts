@@ -233,6 +233,15 @@ export type CreationSession = {
   updated_at: string;
 };
 
+export type CreationThreadSummary = {
+  id: string;
+  title: string;
+  status: string;
+  updatedAt: string;
+  createdAt: string;
+  savedEventId: string | null;
+};
+
 export type ConciergeOcrContext = {
   ocrText?: string | null;
   fieldsGuess?: Record<string, unknown> | null;
@@ -242,7 +251,7 @@ export type ConciergeOcrContext = {
   metadata?: Record<string, unknown> | null;
 };
 
-export type ConciergeAction = "message" | "chip" | "ocr_result" | "save";
+export type ConciergeAction = "message" | "chip" | "starter_category" | "ocr_result" | "save";
 
 export type ConciergeMessageRequest = {
   message?: string;
@@ -273,4 +282,31 @@ export type ConciergeMessageResponse =
       ok: false;
       error: string;
       timings?: Record<string, unknown>;
+    };
+
+export type CreationSessionResumeResponse =
+  | {
+      ok: true;
+      draft: ConciergeEventDraft | null;
+      creationSession: CreationSession | null;
+      assistantMessage: string;
+      suggestedReplies: string[];
+      canSave: boolean;
+      savedEventId?: string | null;
+      timings?: Record<string, unknown>;
+    }
+  | {
+      ok: false;
+      error: string;
+      timings?: Record<string, unknown>;
+    };
+
+export type CreationThreadsResponse =
+  | {
+      ok: true;
+      threads: CreationThreadSummary[];
+    }
+  | {
+      ok: false;
+      error: string;
     };

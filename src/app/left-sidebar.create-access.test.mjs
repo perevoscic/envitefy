@@ -5,15 +5,14 @@ import test from "node:test";
 
 const repoRoot = process.cwd();
 
-const readSource = (relativePath) =>
-  fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
 test("left sidebar controller derives a single create-access flag", () => {
   const source = readSource("src/app/left-sidebar.controller.ts");
 
   assert.match(
     source,
-    /const hasCreateEventAccess = useMemo\(\s*\(\) => useGymnasticsDirectCreate \|\| createMenuOptionCount > 0,\s*\[createMenuOptionCount, useGymnasticsDirectCreate\]\s*\)/s
+    /const hasCreateEventAccess = useMemo\(\s*\(\) => useGymnasticsDirectCreate \|\| createMenuOptionCount > 0,\s*\[createMenuOptionCount, useGymnasticsDirectCreate\],?\s*\)/s,
   );
 });
 
@@ -22,11 +21,11 @@ test("left sidebar controller resets create panel state when create access disap
 
   assert.match(
     source,
-    /const openCreateEventPage = useCallback\(\(\) => \{\s*if \(!hasCreateEventAccess\) \{\s*setForcedCreateActiveLabel\(null\);\s*setSidebarPage\("root"\);\s*return;\s*\}/s
+    /const openCreateEventPage = useCallback\(\(\) => \{\s*if \(!hasCreateEventAccess\) \{\s*setForcedCreateActiveLabel\(null\);\s*setSidebarPage\("root"\);\s*return;\s*\}/s,
   );
   assert.match(
     source,
-    /useEffect\(\(\) => \{\s*if \(\s*hasCreateEventAccess \|\|\s*\(sidebarPage !== "createEvent" && sidebarPage !== "createEventOther"\)\s*\) \{\s*return;\s*\}\s*setForcedCreateActiveLabel\(null\);\s*setSidebarPage\("root"\);\s*\}, \[hasCreateEventAccess, setSidebarPage, sidebarPage\]\);/s
+    /useEffect\(\(\) => \{\s*if \(\s*hasCreateEventAccess \|\|\s*\(sidebarPage !== "createEvent" && sidebarPage !== "createEventOther"\)\s*\) \{\s*return;\s*\}\s*setForcedCreateActiveLabel\(null\);\s*setSidebarPage\("root"\);\s*\}, \[hasCreateEventAccess, setSidebarPage, sidebarPage\]\);/s,
   );
 });
 
@@ -35,7 +34,7 @@ test("left sidebar view still gates both root and compact create entries behind 
 
   assert.match(
     source,
-    /\{hasCreateEventAccess \? \(\s*<button\s+type="button"\s+onClick=\{onCreate\}[\s\S]*?Create Event\s*<\/span>/s
+    /\{hasCreateEventAccess \? \(\s*<button\s+type="button"\s+onClick=\{onCreate\}[\s\S]*?Create Event\s*<\/span>/s,
   );
   assert.doesNotMatch(source, /CompactRail/);
   assert.doesNotMatch(source, /Collapse navigation/);
@@ -49,18 +48,41 @@ test("left sidebar exposes Studio below Home in the always-open workspace naviga
 
   assert.match(
     source,
-    /Home\s*<\/span>\s*<\/Link>\s*<Link\s+href="\/studio"[\s\S]*?Studio\s*<\/span>/s
+    /Home\s*<\/span>\s*<\/Link>\s*<Link\s+href="\/studio"[\s\S]*?Studio\s*<\/span>/s,
   );
   assert.match(
     controllerSource,
-    /case "studio":\s*return pathname === "\/studio" && sidebarPage === "root";/s
+    /case "studio":\s*return pathname === "\/studio" && sidebarPage === "root";/s,
   );
   assert.match(modelSource, /\|\s*"studio"/);
 });
 
 test("left sidebar exposes signed-in AI create entry", () => {
   const source = readSource("src/app/left-sidebar.tsx");
+  const controllerSource = readSource("src/app/left-sidebar.controller.ts");
+  const modelSource = readSource("src/app/left-sidebar.model.ts");
 
-  assert.match(source, /href="\/chat"[\s\S]*?Create with AI/s);
-  assert.match(source, /const isChatActive = pathname === "\/chat" && sidebarPage === "root";/);
+  assert.match(source, /onClick=\{onAiThreads\}[\s\S]*?Create with AI/s);
+  assert.match(
+    source,
+    /const isChatActive = pathname === "\/chat" \|\| sidebarPage === "aiThreads";/,
+  );
+  assert.match(source, /function AiThreadsPanel/);
+  assert.match(
+    source,
+    /style=\{panelStyle\(\s*aiThreadsPanelTransform,\s*viewModel\.sidebarPage === "aiThreads",?\s*\)\}/s,
+  );
+  assert.match(source, /fetch\("\/api\/creation\/threads\?limit=20"/);
+  assert.match(source, /method: "DELETE"/);
+  assert.match(source, /text-red-500/);
+  assert.match(source, /envitefy:creation-threads-changed/);
+  assert.match(source, /href="\/chat"[\s\S]*?New chat/s);
+  assert.doesNotMatch(source, /href="\/chat"[\s\S]{0,160}onClick=\{onOpenThread\}/);
+  assert.match(source, /href=\{`\/chat\?thread=\$\{encodeURIComponent\(thread\.id\)\}`\}/);
+  assert.match(source, /Recents/);
+  assert.match(controllerSource, /resetSidebarToRoot: \(\) => void;/);
+  assert.match(controllerSource, /resetSidebarToRoot,/);
+  assert.match(controllerSource, /openAiThreadsPage: \(\) => void;/);
+  assert.match(controllerSource, /setSidebarPage\("aiThreads"\)/);
+  assert.match(modelSource, /\|\s*"aiThreads"/);
 });

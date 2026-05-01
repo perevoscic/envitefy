@@ -13,15 +13,26 @@ test("event workspace is owner-only and exposes assistant plus assets tabs", () 
   assert.match(page, /resolveSessionUserId\(session\)/);
   assert.match(page, /event\.user_id !== userId/);
   assert.match(page, /notFound\(\)/);
-  assert.match(client, /label: "Assistant"/);
+  assert.match(client, /label: "Live Card"/);
+  assert.match(client, /label: "Details"/);
   assert.match(client, /label: "Assets"/);
+  assert.match(client, /label: "Guests"/);
+  assert.match(client, /label: "Assistant"/);
+  assert.match(client, /useState<WorkspaceTab>\("live-card"\)/);
+  assert.match(client, /role="tablist"/);
+  assert.match(client, /aria-selected=\{activeTab === tab\.key\}/);
   assert.match(client, /fetch\(`\/api\/concierge\/events\/\$\{eventId\}\/message`/);
   assert.match(client, /fetch\(`\/api\/events\/\$\{eventId\}\/assets\/\$\{assetId\}`/);
 });
 
-test("saved concierge drafts route users into the event workspace", () => {
+test("saved concierge drafts stay in chat with a generated workspace preview", () => {
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
 
-  assert.match(client, /router\.push\(`\/events\/\$\{savedEventId\}\/workspace`\)/);
+  assert.match(client, /generateProductForDraft/);
+  assert.match(client, /setLiveCardEventId\(savedEventId\)/);
+  assert.match(client, /Event Workspace/);
+  assert.match(client, /View product/);
   assert.match(client, /Open workspace/);
+  assert.doesNotMatch(client, /router\.push\(`\/events\/\$\{savedEventId\}\/workspace`\)/);
+  assert.doesNotMatch(client, /Opening your event workspace\./);
 });

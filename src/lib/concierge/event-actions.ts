@@ -199,6 +199,68 @@ function firstCompactString(...values: unknown[]): string | null {
   return null;
 }
 
+function hasPatchField(patch: Record<string, unknown>, fields: string[]) {
+  return fields.some((field) => Object.hasOwn(patch, field));
+}
+
+function uniqueDisplayLine(...values: unknown[]) {
+  const parts = values.map(cleanString).filter((value): value is string => Boolean(value));
+  return parts.filter((value, index) => parts.indexOf(value) === index).join(", ") || null;
+}
+
+function scheduleLineFromData(data: Record<string, unknown>) {
+  return (
+    firstCompactString(data.whenLabel, data.scheduleLine) ||
+    uniqueDisplayLine(data.dateText ?? data.date, data.timeText ?? data.time)
+  );
+}
+
+function locationLineFromData(data: Record<string, unknown>) {
+  return (
+    firstCompactString(data.locationLabel) ||
+    uniqueDisplayLine(data.venue ?? data.placeName, data.location ?? data.address) ||
+    firstCompactString(data.location, data.venue, data.placeName)
+  );
+}
+
+function syncLiveCardCopyFromPatch(
+  data: Record<string, unknown>,
+  patch: Record<string, unknown>,
+) {
+  const liveCard = { ...asRecord(data.liveCard) };
+  const publicEvent = { ...asRecord(data.publicEvent) };
+  const previewCopy = { ...asRecord(data.previewCopy) };
+
+  const assignCopyField = (field: string, value: unknown) => {
+    const text = cleanString(value);
+    if (!text) return;
+    liveCard[field] = text;
+    publicEvent[field] = text;
+    previewCopy[field] = text;
+  };
+
+  if (hasPatchField(patch, ["title", "headlineTitle"])) {
+    assignCopyField("headline", firstCompactString(data.headlineTitle, data.title));
+  }
+  if (hasPatchField(patch, ["description"])) {
+    assignCopyField("body", data.description);
+  }
+  if (hasPatchField(patch, ["theme"])) {
+    const theme = cleanString(data.theme);
+    assignCopyField("subheadline", theme ? `${theme} theme` : null);
+  }
+  if (hasPatchField(patch, ["date", "dateText", "time", "timeText", "whenLabel", "scheduleLine"])) {
+    assignCopyField("scheduleLine", scheduleLineFromData(data));
+  }
+  if (hasPatchField(patch, ["location", "venue", "address", "locationLabel", "placeName"])) {
+    assignCopyField("locationLine", locationLineFromData(data));
+  }
+
+  data.liveCard = liveCard;
+  data.publicEvent = publicEvent;
+  data.previewCopy = previewCopy;
+}
+
 function compactArray(value: unknown, limit = 5): unknown[] | null {
   if (!Array.isArray(value)) return null;
   return value.slice(0, limit).map((item) => {
@@ -437,6 +499,7 @@ export async function applyEventActions(params: {
       if (!Object.keys(patch).length) continue;
       const nextData = { ...asRecord(event.data), ...patch };
       normalizeCanonicalStartFields(nextData);
+      syncLiveCardCopyFromPatch(nextData, patch);
       const updated = await updateEventHistoryData(params.eventId, nextData);
       if (updated) {
         event = updated;

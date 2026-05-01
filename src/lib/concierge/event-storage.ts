@@ -173,6 +173,107 @@ export async function getCreationSession(params: {
   return res.rows[0] ? mapCreationSession(res.rows[0]) : null;
 }
 
+export async function getLatestCreationSession(params: {
+  userId: string;
+}): Promise<CreationSession | null> {
+  await ensureEventWorkspaceTables();
+  const res = await query(
+    `select id, user_id, status, draft, active_context, source_context, metadata, created_at, updated_at
+     from creation_sessions
+     where user_id = $1
+       and status not in ('published', 'publishing')
+       and not (metadata ? 'savedEventId')
+     order by updated_at desc, created_at desc
+     limit 1`,
+    [params.userId],
+  );
+  return res.rows[0] ? mapCreationSession(res.rows[0]) : null;
+}
+
+export async function listCreationSessions(params: {
+  userId: string;
+  limit?: number;
+}): Promise<CreationSession[]> {
+  await ensureEventWorkspaceTables();
+  const limit = Math.max(1, Math.min(50, Math.floor(params.limit || 20)));
+  const res = await query(
+    `select id, user_id, status, draft, active_context, source_context, metadata, created_at, updated_at
+     from creation_sessions
+     where user_id = $1
+     order by updated_at desc, created_at desc
+     limit $2`,
+    [params.userId, limit],
+  );
+  return (res.rows || []).map(mapCreationSession);
+}
+
+export async function deleteCreationSession(params: {
+  userId: string;
+  sessionId: string;
+}): Promise<boolean> {
+  await ensureEventWorkspaceTables();
+  const res = await query(
+    `delete from creation_sessions
+     where id = $1 and user_id = $2`,
+    [params.sessionId, params.userId],
+  );
+  return Number(res.rowCount || 0) > 0;
+}
+
+export async function claimCreationSessionSave(params: {
+  userId: string;
+  sessionId: string;
+}): Promise<CreationSession | null> {
+  await ensureEventWorkspaceTables();
+  const res = await query(
+    `update creation_sessions
+     set status = 'publishing',
+         metadata = metadata || $3::jsonb,
+         updated_at = now()
+     where id = $1
+       and user_id = $2
+       and status not in ('published', 'publishing')
+       and not (metadata ? 'savedEventId')
+     returning id, user_id, status, draft, active_context, source_context, metadata, created_at, updated_at`,
+    [
+      params.sessionId,
+      params.userId,
+      JSON.stringify({
+        savingAt: new Date().toISOString(),
+      }),
+    ],
+  );
+  return res.rows[0] ? mapCreationSession(res.rows[0]) : null;
+}
+
+export async function markCreationSessionSaved(params: {
+  userId: string;
+  sessionId: string;
+  eventId: string;
+  draft: CreationSession["draft"];
+}): Promise<CreationSession | null> {
+  await ensureEventWorkspaceTables();
+  const res = await query(
+    `update creation_sessions
+     set status = 'published',
+         draft = $3::jsonb,
+         metadata = metadata || $4::jsonb,
+         updated_at = now()
+     where id = $1 and user_id = $2
+     returning id, user_id, status, draft, active_context, source_context, metadata, created_at, updated_at`,
+    [
+      params.sessionId,
+      params.userId,
+      JSON.stringify(params.draft),
+      JSON.stringify({
+        savedEventId: params.eventId,
+        savedAt: new Date().toISOString(),
+      }),
+    ],
+  );
+  return res.rows[0] ? mapCreationSession(res.rows[0]) : null;
+}
+
 function mapAsset(row: any): EventAsset {
   return {
     id: String(row.id),

@@ -265,6 +265,45 @@ test("fallback updates birthday honoree, age, and theme from a short reply", () 
   assert.equal(draft.previewCopy.headline, "Ava is turning 7");
 });
 
+test("new create request replaces restored draft details", () => {
+  const restored = fallbackExtractConciergeDraft({
+    message: "Create a live card for Ava's 7th birthday Saturday at 3 at Sky Zone",
+  });
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create a live card for Mia's 5th birthday on Saturday June 13 2026 at 2 PM at Play Cafe, 123 Main St, Austin, TX.",
+    draft: restored,
+  });
+
+  assert.equal(draft.creationSessionId, restored.creationSessionId);
+  assert.equal(draft.honoreeName, "Mia");
+  assert.equal(draft.ageOrMilestone, "5");
+  assert.equal(draft.title, "Mia is turning 5");
+  assert.equal(draft.previewCopy.headline, "Mia is turning 5");
+  assert.doesNotMatch(draft.previewCopy.body, /Ava|7/);
+  assert.equal(draft.location, "Play Cafe, 123 Main St, Austin, TX");
+  assert.equal(draft.venue, "Play Cafe, 123 Main St, Austin, TX");
+  assert.doesNotMatch(draft.previewCopy.scheduleLine, /at 2:00 PM at 2:00 PM/);
+  assert.equal(draft.previewCopy.locationLine, "Play Cafe, 123 Main St, Austin, TX");
+});
+
+test("fallback fills birthday honoree from a name reply", () => {
+  const first = fallbackExtractConciergeDraft({
+    message:
+      "Create a live card for a birthday on Saturday June 20 2026 at 3:30 PM at Play Cafe, 123 Main St, Austin, TX.",
+  });
+  const draft = fallbackExtractConciergeDraft({
+    message: "Her name is Nova and she is turning 6.",
+    draft: first,
+  });
+
+  assert.equal(draft.honoreeName, "Nova");
+  assert.equal(draft.ageOrMilestone, "6");
+  assert.equal(draft.previewCopy.body, "Join us for Nova as they turn 6.");
+  assert.equal(draft.location, "Play Cafe, 123 Main St, Austin, TX");
+  assert.doesNotMatch(draft.previewCopy.scheduleLine, /at 3:30 PM at 3:30 PM/);
+});
+
 test("fallback extracts graduation date text from natural language", () => {
   const draft = fallbackExtractConciergeDraft({
     message: "graduation party Saturday at 3",
@@ -412,4 +451,22 @@ test("save payload stores concierge drafts as owned My Events rows", () => {
   assert.equal(payload.data.status, "draft");
   assert.equal(payload.data.invitedFromScan, false);
   assert.equal(payload.data.conciergeDraft.title, "Ava is turning 7");
+  assert.equal(payload.data.rsvp.direct, true);
+  assert.equal(payload.data.publicEvent.renderer, "live_card");
+  assert.equal(payload.data.liveCard.scheduleLine, "Date TBD");
+  assert.equal(payload.data.liveCard.locationLine, "Location TBD");
+});
+
+test("save payload splits combined venue and address for public live cards", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create a live card for Mia's 5th birthday on Saturday June 13 2026 at 2 PM at Play Cafe, 123 Main St, Austin, TX.",
+  });
+  const payload = buildConciergeHistoryPayload(draft);
+
+  assert.equal(payload.data.venue, "Play Cafe");
+  assert.equal(payload.data.location, "123 Main St, Austin, TX");
+  assert.equal(payload.data.placeName, "Play Cafe");
+  assert.equal(payload.data.locationLabel, "Play Cafe, 123 Main St, Austin, TX");
+  assert.equal(payload.data.liveCard.locationLine, "Play Cafe, 123 Main St, Austin, TX");
 });

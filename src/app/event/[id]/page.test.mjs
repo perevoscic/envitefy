@@ -203,3 +203,34 @@ test("event route sanitizes stored RSVP names before host fallback", () => {
     /storedRsvpName \|\| hostName \|\| structuredRsvpContact \|\| rsvpField \|\| rsvpEmail/,
   );
 });
+
+test("event route renders concierge live cards with public details and direct RSVP", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+
+  assert.match(source, /const liveCardRecord = asPlainRecord\(data\?\.liveCard\);/);
+  assert.match(source, /const publicEventRecord = asPlainRecord\(data\?\.publicEvent\);/);
+  assert.match(source, /const isConciergeLiveCardEvent =/);
+  assert.match(source, /discoveryCreatedVia === "concierge"/);
+  assert.match(source, /const publicEventSubheadline = isConciergeLiveCardEvent/);
+  assert.match(source, /liveCardRecord\.subheadline/);
+  assert.match(source, /publicEventRecord\.subheadline/);
+  assert.match(source, /liveCardRecord\.scheduleLine/);
+  assert.match(source, /publicEventRecord\.scheduleLine/);
+  assert.match(source, /data\?\.whenLabel/);
+  assert.match(source, /const directRsvpEnabled =/);
+  assert.match(source, /Boolean\(rsvpRecord\?\.isEnabled\)/);
+  assert.match(source, /Boolean\(rsvpRecord\?\.direct\)/);
+  assert.match(source, /const showPublicRsvp =/);
+  assert.match(source, /allowDirectRsvp=\{directRsvpEnabled\}/);
+  assert.match(source, /eventTitle=\{publicEventTitle\}/);
+  assert.match(source, /\{publicEventSubheadline\}/);
+});
+
+test("direct Envitefy RSVP prompt does not require an outbound composer", () => {
+  const source = readSource("src/components/EventRsvpPrompt.tsx");
+
+  assert.match(source, /const isDirectOnlyRsvp = contactMode === "direct";/);
+  assert.match(source, /if \(!isDirectOnlyRsvp\) \{\s*openOutboundComposerForIntent\(intent\);/s);
+  assert.match(source, /We.ll send your RSVP directly to the host\./);
+  assert.match(source, /isDirectOnlyRsvp \? "Send RSVP" : "Continue"/);
+});

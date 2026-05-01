@@ -35,6 +35,50 @@ test("creation intake API owns session persistence and auth", () => {
   assert.match(sql, /CREATE TABLE IF NOT EXISTS creation_sessions/);
 });
 
+test("creation intake resume reads the signed-in user's latest session only", () => {
+  const source = readSource("src/app/api/creation/intake/route.ts");
+  const intake = readSource("src/lib/concierge/intake.ts");
+  const storage = readSource("src/lib/concierge/event-storage.ts");
+  const types = readSource("src/lib/concierge/types.ts");
+
+  assert.match(source, /export async function GET\(req: Request\)/);
+  assert.match(source, /resolveSessionUserId\(session\)/);
+  assert.match(source, /resumeLatestCreationSession/);
+  assert.match(source, /status: 401/);
+  assert.doesNotMatch(source, /body\.user_id/);
+  assert.doesNotMatch(source, /body\.userId/);
+
+  assert.match(intake, /getLatestCreationSession\(\{ userId: params\.userId \}\)/);
+  assert.match(intake, /getSavedEventId\(creationSession\)/);
+  assert.match(intake, /savedEventId \? false : canSaveConciergeDraft\(draft\)/);
+  assert.match(types, /CreationSessionResumeResponse/);
+
+  assert.match(storage, /export async function getLatestCreationSession/);
+  assert.match(storage, /where user_id = \$1/);
+  assert.match(storage, /and status not in \('published', 'publishing'\)/);
+  assert.match(storage, /and not \(metadata \? 'savedEventId'\)/);
+  assert.match(storage, /order by updated_at desc, created_at desc/);
+  assert.match(storage, /limit 1/);
+});
+
+test("saved creation sessions keep workspace continuation scoped to the owner", () => {
+  const intake = readSource("src/lib/concierge/intake.ts");
+  const storage = readSource("src/lib/concierge/event-storage.ts");
+
+  assert.match(intake, /markCreationSessionSaved/);
+  assert.match(intake, /claimCreationSessionSave/);
+  assert.match(intake, /This workspace is already being created/);
+  assert.match(intake, /draftStatus: "published"/);
+  assert.match(intake, /savedEventId: saved\.eventId/);
+  assert.match(storage, /export async function claimCreationSessionSave/);
+  assert.match(storage, /status = 'publishing'/);
+  assert.match(storage, /status not in \('published', 'publishing'\)/);
+  assert.match(storage, /export async function markCreationSessionSaved/);
+  assert.match(storage, /where id = \$1 and user_id = \$2/);
+  assert.match(storage, /metadata = metadata \|\| \$4::jsonb/);
+  assert.match(storage, /savedEventId: params\.eventId/);
+});
+
 test("concierge creation routes expose optional timing payloads and Server-Timing headers", () => {
   for (const routePath of [
     "src/app/api/concierge/message/route.ts",
@@ -65,4 +109,33 @@ test("creation intake times model extraction and DB writes inside the handler", 
   assert.match(source, /timing\?: TimingRecorder/);
   assert.match(source, /time\("model_extraction"/);
   assert.match(source, /time\("db_write"/);
+});
+
+test("creation threads list and resume authenticated user sessions only", () => {
+  const route = readSource("src/app/api/creation/threads/route.ts");
+  const deleteRoute = readSource("src/app/api/creation/threads/[id]/route.ts");
+  const intakeRoute = readSource("src/app/api/creation/intake/route.ts");
+  const intake = readSource("src/lib/concierge/intake.ts");
+  const storage = readSource("src/lib/concierge/event-storage.ts");
+  const types = readSource("src/lib/concierge/types.ts");
+
+  assert.match(route, /resolveSessionUserId\(session\)/);
+  assert.match(route, /listCreationSessions/);
+  assert.match(route, /threads: threads\.map\(toThreadSummary\)/);
+  assert.match(deleteRoute, /export async function DELETE/);
+  assert.match(deleteRoute, /resolveSessionUserId\(session\)/);
+  assert.match(deleteRoute, /deleteCreationSession/);
+  assert.match(storage, /export async function listCreationSessions/);
+  assert.match(storage, /export async function deleteCreationSession/);
+  assert.match(storage, /where user_id = \$1/);
+  assert.match(storage, /where id = \$1 and user_id = \$2/);
+  assert.match(intakeRoute, /url\.searchParams\.get\("threadId"\)/);
+  assert.match(intakeRoute, /resumeCreationSession/);
+  assert.match(intake, /export async function resumeCreationSession/);
+  assert.match(
+    intake,
+    /getCreationSession\(\{ userId: params\.userId, sessionId: params\.sessionId \}\)/,
+  );
+  assert.match(types, /export type CreationThreadSummary =/);
+  assert.match(types, /export type CreationThreadsResponse =/);
 });

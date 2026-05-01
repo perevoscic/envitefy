@@ -2,7 +2,14 @@ import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { insertEventHistory } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { buildEventAssetContent } from "./assets.ts";
-import { createEventAsset, upsertCreationSession } from "./event-storage.ts";
+import {
+  claimCreationSessionSave,
+  createEventAsset,
+  getCreationSession,
+  getLatestCreationSession,
+  markCreationSessionSaved,
+  upsertCreationSession,
+} from "./event-storage.ts";
 import { extractConciergeDraft } from "./extract.ts";
 import { buildAssistantMessage, buildSuggestedReplies, canSaveConciergeDraft } from "./fallback.ts";
 import { buildConciergeHistoryPayload } from "./history-payload.ts";
@@ -11,11 +18,13 @@ import type {
   ConciergeMessageResponse,
   CreationIntakeRequest,
   CreationSession,
+  CreationSessionResumeResponse,
   EventAssetType,
   RequestedOutput,
 } from "./types.ts";
 
 export type CreationIntakeResult = Extract<ConciergeMessageResponse, { ok: true }>;
+export type CreationSessionResumeResult = Extract<CreationSessionResumeResponse, { ok: true }>;
 
 type TimingRecorder = {
   time<T>(name: string, work: () => Promise<T>): Promise<T>;
@@ -90,6 +99,78 @@ async function persistCreationAsEvent(params: {
   return { eventId: event.id };
 }
 
+function getSavedEventId(session: CreationSession | null): string | null {
+  const value = session?.metadata?.savedEventId;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+export async function resumeLatestCreationSession(params: {
+  userId: string;
+  timing?: TimingRecorder;
+}): Promise<CreationSessionResumeResult> {
+  const creationSession = await (params.timing?.time("db_read", () =>
+    getLatestCreationSession({ userId: params.userId }),
+  ) ?? getLatestCreationSession({ userId: params.userId }));
+
+  if (!creationSession) {
+    return {
+      ok: true,
+      draft: null,
+      creationSession: null,
+      assistantMessage: "",
+      suggestedReplies: [],
+      canSave: false,
+      savedEventId: null,
+    };
+  }
+
+  const savedEventId = getSavedEventId(creationSession);
+  const draft = creationSession.draft;
+  return {
+    ok: true,
+    draft,
+    creationSession,
+    assistantMessage: savedEventId ? "Your workspace is ready." : buildAssistantMessage(draft),
+    suggestedReplies: savedEventId ? ["Open workspace"] : buildSuggestedReplies(draft),
+    canSave: savedEventId ? false : canSaveConciergeDraft(draft),
+    savedEventId,
+  };
+}
+
+export async function resumeCreationSession(params: {
+  userId: string;
+  sessionId: string;
+  timing?: TimingRecorder;
+}): Promise<CreationSessionResumeResult> {
+  const creationSession = await (params.timing?.time("db_read", () =>
+    getCreationSession({ userId: params.userId, sessionId: params.sessionId }),
+  ) ?? getCreationSession({ userId: params.userId, sessionId: params.sessionId }));
+
+  if (!creationSession) {
+    return {
+      ok: true,
+      draft: null,
+      creationSession: null,
+      assistantMessage: "",
+      suggestedReplies: [],
+      canSave: false,
+      savedEventId: null,
+    };
+  }
+
+  const savedEventId = getSavedEventId(creationSession);
+  const draft = creationSession.draft;
+  return {
+    ok: true,
+    draft,
+    creationSession,
+    assistantMessage: savedEventId ? "Your workspace is ready." : buildAssistantMessage(draft),
+    suggestedReplies: savedEventId ? ["Open workspace"] : buildSuggestedReplies(draft),
+    canSave: savedEventId ? false : canSaveConciergeDraft(draft),
+    savedEventId,
+  };
+}
+
 export async function handleCreationIntake(params: {
   userId: string;
   request: CreationIntakeRequest;
@@ -125,8 +206,51 @@ export async function handleCreationIntake(params: {
   };
 
   let creationSession: CreationSession | null = null;
+  if (isSaveAction) {
+    const existingSession = await (params.timing?.time("db_read", () =>
+      getCreationSession({
+        userId: params.userId,
+        sessionId: draft.creationSessionId,
+      }),
+    ) ??
+      getCreationSession({
+        userId: params.userId,
+        sessionId: draft.creationSessionId,
+      }));
+    const existingSavedEventId = getSavedEventId(existingSession);
+    if (existingSavedEventId) {
+      return {
+        ok: true,
+        draft: {
+          ...existingSession!.draft,
+          draftStatus: "published",
+        },
+        creationSession: existingSession,
+        assistantMessage: "Your workspace is ready. Opening it now.",
+        suggestedReplies: ["Open workspace"],
+        canSave: false,
+        savedEventId: existingSavedEventId,
+      };
+    }
+    if (existingSession) {
+      creationSession = await (params.timing?.time("db_write", () =>
+        claimCreationSessionSave({
+          userId: params.userId,
+          sessionId: draft.creationSessionId,
+        }),
+      ) ??
+        claimCreationSessionSave({
+          userId: params.userId,
+          sessionId: draft.creationSessionId,
+        }));
+      if (!creationSession) {
+        throw new Error("This workspace is already being created. Please wait a moment.");
+      }
+    }
+  }
   const shouldPersistSession =
     request.persistSession !== false &&
+    !isSaveAction &&
     (draft.canPersist || draft.requestedOutputs.length > 0 || Boolean(request.ocrContext));
   if (shouldPersistSession) {
     creationSession = await (params.timing?.time("db_write", () =>
@@ -162,9 +286,54 @@ export async function handleCreationIntake(params: {
         userId: params.userId,
         draft,
       }));
+    const savedDraft: ConciergeEventDraft = {
+      ...draft,
+      draftStatus: "published",
+    };
+    if (creationSession) {
+      creationSession = await (params.timing?.time("db_write", () =>
+        markCreationSessionSaved({
+          userId: params.userId,
+          sessionId: draft.creationSessionId,
+          eventId: saved.eventId,
+          draft: savedDraft,
+        }),
+      ) ??
+        markCreationSessionSaved({
+          userId: params.userId,
+          sessionId: draft.creationSessionId,
+          eventId: saved.eventId,
+          draft: savedDraft,
+        }));
+    } else {
+      creationSession = await (params.timing?.time("db_write", () =>
+        upsertCreationSession({
+          userId: params.userId,
+          draft: savedDraft,
+          activeContext: (request.activeContext || {}) as Record<string, unknown>,
+          metadata: {
+            action: request.action || "save",
+            canPersist: savedDraft.canPersist,
+            savedEventId: saved.eventId,
+            savedAt: new Date().toISOString(),
+          },
+        }),
+      ) ??
+        upsertCreationSession({
+          userId: params.userId,
+          draft: savedDraft,
+          activeContext: (request.activeContext || {}) as Record<string, unknown>,
+          metadata: {
+            action: request.action || "save",
+            canPersist: savedDraft.canPersist,
+            savedEventId: saved.eventId,
+            savedAt: new Date().toISOString(),
+          },
+        }));
+    }
     return {
       ok: true,
-      draft,
+      draft: savedDraft,
       creationSession,
       assistantMessage: "Your workspace is ready. Opening it now.",
       suggestedReplies: ["Open workspace"],

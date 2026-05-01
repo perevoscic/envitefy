@@ -574,6 +574,40 @@ function splitAddress(address: string | null | undefined): {
   return { street: address, cityStateZip: "" };
 }
 
+function asPlainRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function cleanDisplayString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.replace(/\s+/g, " ").trim();
+  return trimmed || null;
+}
+
+function firstDisplayString(...values: unknown[]): string | null {
+  for (const value of values) {
+    const cleaned = cleanDisplayString(value);
+    if (cleaned) return cleaned;
+  }
+  return null;
+}
+
+function uniqueDisplayLine(...values: unknown[]): string | null {
+  const seen = new Set<string>();
+  const parts: string[] = [];
+  for (const value of values) {
+    const cleaned = cleanDisplayString(value);
+    if (!cleaned) continue;
+    const key = cleaned.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    parts.push(cleaned);
+  }
+  return parts.length ? parts.join(", ") : null;
+}
+
 function formatEventRangeDisplay(
   startInput: string | null | undefined,
   endInput: string | null | undefined,
@@ -1208,6 +1242,80 @@ export default async function EventPage({
     (typeof rsvpRecord?.deadline === "string" && rsvpRecord.deadline.trim()) ||
     (typeof data?.rsvpDeadline === "string" && data.rsvpDeadline.trim()) ||
     "";
+  const liveCardRecord = asPlainRecord(data?.liveCard);
+  const liveCardCopyRecord = asPlainRecord(liveCardRecord.copy);
+  const publicEventRecord = asPlainRecord(data?.publicEvent);
+  const requestedOutputValues = [
+    ...(Array.isArray(data?.requestedOutputs) ? data.requestedOutputs : []),
+    ...(Array.isArray(data?.outputs) ? data.outputs : []),
+  ].map((value) => String(value || "").toLowerCase());
+  const hasLiveCardOutput = requestedOutputValues.includes("live_card");
+  const hasRsvpOutput = requestedOutputValues.includes("rsvp_page");
+  const isConciergeLiveCardEvent =
+    discoveryCreatedVia === "concierge" &&
+    (hasLiveCardOutput ||
+      cleanDisplayString(publicEventRecord.renderer) === "live_card" ||
+      Boolean(firstDisplayString(liveCardRecord.headline, liveCardCopyRecord.headline)));
+  const publicEventTitle =
+    isConciergeLiveCardEvent
+      ? firstDisplayString(
+          liveCardRecord.headline,
+          liveCardCopyRecord.headline,
+          publicEventRecord.headline,
+          data?.headlineTitle,
+          data?.title,
+          title,
+        ) || title
+      : title;
+  const publicEventSubheadline = isConciergeLiveCardEvent
+    ? firstDisplayString(
+        liveCardRecord.subheadline,
+        liveCardCopyRecord.subheadline,
+        publicEventRecord.subheadline,
+      )
+    : null;
+  const publicDescription =
+    isConciergeLiveCardEvent
+      ? firstDisplayString(
+          liveCardRecord.body,
+          liveCardCopyRecord.body,
+          publicEventRecord.body,
+          data?.description,
+        )
+      : cleanDisplayString(data?.description);
+  const publicDateText = firstDisplayString(data?.dateText, data?.date);
+  const publicTimeText = firstDisplayString(data?.timeText, data?.time);
+  const publicDateTimeLine =
+    publicDateText && publicTimeText
+      ? `${publicDateText} at ${publicTimeText}`
+      : publicDateText || publicTimeText;
+  const publicWhenLine =
+    firstDisplayString(
+      whenLabel,
+      liveCardRecord.scheduleLine,
+      liveCardCopyRecord.scheduleLine,
+      publicEventRecord.scheduleLine,
+      data?.whenLabel,
+      data?.scheduleLine,
+      publicDateTimeLine,
+    ) || null;
+  const publicLocationLine =
+    firstDisplayString(
+      liveCardRecord.locationLine,
+      liveCardCopyRecord.locationLine,
+      publicEventRecord.locationLine,
+      data?.locationLabel,
+      uniqueDisplayLine(venueText, locationText),
+      data?.placeName,
+      data?.location,
+      data?.venue,
+    ) || null;
+  const directRsvpEnabled =
+    Boolean(data?.rsvpEnabled) ||
+    Boolean(rsvpRecord?.isEnabled) ||
+    Boolean(rsvpRecord?.enabled) ||
+    Boolean(rsvpRecord?.direct) ||
+    Boolean(isConciergeLiveCardEvent && (hasLiveCardOutput || hasRsvpOutput));
 
   const hostName =
     typeof data?.hostName === "string" && data.hostName.trim()
@@ -1235,6 +1343,8 @@ export default async function EventPage({
     : "";
   const rsvpName =
     storedRsvpName || hostName || (rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "");
+  const showPublicRsvp =
+    Boolean(rsvpName || rsvpPhone || rsvpEmail || rsvpUrl || directRsvpEnabled);
   const userName = ((session as any)?.user?.name as string | undefined) || "";
   const _smsIntroParts = [
     "Hi, there,",
@@ -2530,8 +2640,19 @@ export default async function EventPage({
                   transform: titleVAlign === "middle" ? "translateY(94px)" : undefined,
                 }}
               >
-                {title}
+                {publicEventTitle}
               </h1>
+              {publicEventSubheadline ? (
+                <p
+                  className={`mx-auto mt-3 max-w-2xl text-center text-base font-semibold sm:text-lg ${
+                    isOcrEvent || headerImageUrl
+                      ? "text-white/90 drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]"
+                      : "text-[#6e629c]"
+                  }`}
+                >
+                  {publicEventSubheadline}
+                </p>
+              ) : null}
             </div>
           </div>
           {/* Actions pinned to bottom-right of header */}
@@ -2583,12 +2704,12 @@ export default async function EventPage({
         </section>
 
         <section className="event-theme-card rounded-[28px] border border-[#ddd5ff] bg-gradient-to-br from-[#ffffff] via-[#f8f4ff] to-[#f3edff] px-3 py-6 shadow-[0_22px_56px_rgba(84,61,140,0.14)] sm:px-6">
-          {data?.description && (
+          {publicDescription && (
             <div className="mb-6 border-b border-[#e7defb] pb-4 text-sm leading-relaxed">
               <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
                 Description
               </p>
-              <p className="mt-2 whitespace-pre-wrap">{data.description}</p>
+              <p className="mt-2 whitespace-pre-wrap">{publicDescription}</p>
             </div>
           )}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -2629,6 +2750,13 @@ export default async function EventPage({
                       </div>
                     );
                   })()
+                ) : publicWhenLine ? (
+                  <div className="col-span-2">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
+                      When
+                    </dt>
+                    <dd className="mt-1 break-all text-base font-semibold">{publicWhenLine}</dd>
+                  </div>
                 ) : (
                   <>
                     {data?.start && (
@@ -2691,7 +2819,10 @@ export default async function EventPage({
                             className="text-base font-semibold"
                           />
                         )}
-                        {!venueText && !locationText && (
+                        {!venueText && !locationText && publicLocationLine && (
+                          <p className="text-base font-semibold">{publicLocationLine}</p>
+                        )}
+                        {!venueText && !locationText && !publicLocationLine && (
                           <p className="text-sm text-[#6e629c]">Location TBD</p>
                         )}
                       </>
@@ -2703,7 +2834,7 @@ export default async function EventPage({
           </div>
           {/* Second row: RSVP (left) and Add to calendar (right) */}
           <div className="mt-4 grid grid-cols-2 gap-4">
-            {(rsvpName || rsvpPhone || rsvpEmail || rsvpUrl || data?.rsvpEnabled) && (
+            {showPublicRsvp && (
               <div id="event-rsvp">
                 <dt className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
                   RSVP
@@ -2715,10 +2846,10 @@ export default async function EventPage({
                     rsvpPhone={rsvpPhone}
                     rsvpEmail={rsvpEmail}
                     rsvpUrl={rsvpUrl}
-                    eventTitle={title}
+                    eventTitle={publicEventTitle}
                     eventCategory={categoryRaw || categoryNormalized}
                     shareUrl={shareUrl}
-                    allowDirectRsvp={Boolean(data?.rsvpEnabled)}
+                    allowDirectRsvp={directRsvpEnabled}
                   />
                 </dd>
               </div>
@@ -3025,7 +3156,7 @@ export default async function EventPage({
       {!isReadOnly && (
         <div className="event-modern-mobile-bar md:hidden">
           <div className="mx-auto flex max-w-3xl items-center gap-2">
-            {(rsvpName || rsvpPhone || rsvpEmail || rsvpUrl || data?.rsvpEnabled) && (
+            {showPublicRsvp && (
               <a
                 href="#event-rsvp"
                 className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"

@@ -10,6 +10,12 @@ const STARTER_CHIPS = new Set([
   "birthday",
   "wedding",
   "baby shower",
+  "bridal shower",
+  "game day",
+  "field trip/day",
+  "open house",
+  "housewarming",
+  "custom invite",
   "graduation",
   "corporate",
   "general event",
@@ -65,7 +71,9 @@ export function shouldSkipOpenAiForCreationRequest(args: {
 
   const action = args.request.action || "message";
   const normalized = normalizedMessage(message);
-  if (action === "chip" && STARTER_CHIPS.has(normalized)) return true;
+  if ((action === "chip" || action === "starter_category") && STARTER_CHIPS.has(normalized)) {
+    return true;
+  }
 
   const requestedOutputs: RequestedOutput[] = args.fallbackDraft?.requestedOutputs?.length
     ? args.fallbackDraft.requestedOutputs
@@ -75,7 +83,7 @@ export function shouldSkipOpenAiForCreationRequest(args: {
         defaultOutput: null,
       });
   return (
-    action === "chip" &&
+    (action === "chip" || action === "starter_category") &&
     requestedOutputs.length > 0 &&
     !isMeaningfulEventText(message, requestedOutputs)
   );

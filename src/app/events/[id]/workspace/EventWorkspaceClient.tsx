@@ -11,7 +11,6 @@ import {
   type LucideIcon,
   MessageCircle,
   Plus,
-  Settings,
   Sparkles,
   Trash2,
   Users,
@@ -24,7 +23,7 @@ import type {
   EventAssetType,
 } from "@/lib/concierge/types";
 
-type WorkspaceTab = "creative" | "guests" | "assets" | "assistant" | "settings";
+type WorkspaceTab = "live-card" | "details" | "assets" | "guests" | "assistant";
 
 type ChatMessage = {
   id: string;
@@ -59,15 +58,15 @@ type RsvpSummary = {
 };
 
 const TABS: Array<{ key: WorkspaceTab; label: string; icon: LucideIcon }> = [
-  { key: "creative", label: "Creative", icon: Sparkles },
-  { key: "guests", label: "Guests & RSVPs", icon: Users },
+  { key: "live-card", label: "Live Card", icon: Sparkles },
+  { key: "details", label: "Details", icon: CalendarDays },
   { key: "assets", label: "Assets", icon: FileText },
+  { key: "guests", label: "Guests", icon: Users },
   { key: "assistant", label: "Assistant", icon: MessageCircle },
-  { key: "settings", label: "Settings", icon: Settings },
 ];
 
 const QUICK_ASSETS: Array<{ type: EventAssetType; label: string; description: string }> = [
-  { type: "invitation", label: "Invitation", description: "Card copy and live invite asset" },
+  { type: "invitation", label: "Invitation", description: "Invite copy and card asset" },
   { type: "rsvp_page", label: "RSVP page", description: "Guest response surface" },
   { type: "whatsapp", label: "WhatsApp", description: "Share-ready message" },
   { type: "instagram_story", label: "Story", description: "Vertical social format" },
@@ -147,7 +146,7 @@ function eventSubheadline(eventData: Record<string, unknown>) {
     cleanString(liveCard.subheadline) ||
     cleanString(eventData.theme) ||
     cleanString(eventData.tone) ||
-    "Details ready to refine"
+    "Details ready for the live card"
   );
 }
 
@@ -203,9 +202,9 @@ export default function EventWorkspaceClient({
   const [title, setTitle] = useState(initialTitle);
   const [eventData, setEventData] = useState(initialData);
   const [assets, setAssets] = useState<EventAsset[]>(initialAssets);
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("creative");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("live-card");
   const [messages, setMessages] = useState<ChatMessage[]>([
-    newMessage("assistant", "I can edit this event and create matching outputs."),
+    newMessage("assistant", "I can refine this live card and create matching event assets."),
   ]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -332,7 +331,7 @@ export default function EventWorkspaceClient({
       <div className="border-b border-[#eadfff] px-5 py-4">
         <div className="flex items-center gap-2 text-sm font-bold text-[#2d1b36]">
           <MessageCircle className="size-4 text-[#7c4dff]" aria-hidden="true" />
-          Event Assistant
+          Assistant
         </div>
       </div>
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-5">
@@ -365,7 +364,7 @@ export default function EventWorkspaceClient({
       </div>
       <div className="border-t border-[#eadfff] px-5 py-5">
         <div className="mb-3 flex flex-wrap gap-2">
-          {["Make it more elegant", "Add RSVP by April 10", "Create a WhatsApp version"].map(
+          {["Refine the live card", "Add RSVP by April 10", "Create a WhatsApp version"].map(
             (chip) => (
               <button
                 key={chip}
@@ -382,7 +381,7 @@ export default function EventWorkspaceClient({
           <input
             value={input}
             onChange={(event) => setInput(event.currentTarget.value)}
-            placeholder="Ask for edits or outputs"
+            placeholder="Ask for changes or assets"
             className="h-11 min-w-0 flex-1 rounded-full border border-[#d8caff] px-4 text-sm text-[#161129] outline-none focus:border-[#7c4dff]"
           />
           <button
@@ -406,7 +405,7 @@ export default function EventWorkspaceClient({
         <header className="mb-5 flex flex-col gap-4 rounded-[1.4rem] border border-[#eadfff] bg-white/86 px-5 py-5 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8b7aaa]">
-              Event workspace
+              Live Card workspace
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-normal text-[#2d1b36]">
               {headline}
@@ -421,7 +420,7 @@ export default function EventWorkspaceClient({
               className="inline-flex h-10 items-center gap-2 rounded-full border border-[#d8caff] bg-white px-4 text-sm font-semibold text-[#4b3c79] transition hover:bg-[#f7f3ff]"
             >
               <ExternalLink className="size-4" aria-hidden="true" />
-              Preview
+              Public event
             </Link>
             <button
               type="button"
@@ -438,7 +437,11 @@ export default function EventWorkspaceClient({
           </div>
         </header>
 
-        <div className="mb-5 overflow-x-auto rounded-[1.2rem] border border-[#eadfff] bg-white/86 p-1 shadow-sm backdrop-blur">
+        <div
+          className="mb-5 overflow-x-auto rounded-[1.2rem] border border-[#eadfff] bg-white/86 p-1 shadow-sm backdrop-blur"
+          role="tablist"
+          aria-label="Workspace sections"
+        >
           <div className="flex min-w-max gap-1">
             {TABS.map((tab) => {
               const Icon = tab.icon;
@@ -446,6 +449,8 @@ export default function EventWorkspaceClient({
                 <button
                   key={tab.key}
                   type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   className={`inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold transition ${
                     activeTab === tab.key
@@ -463,7 +468,7 @@ export default function EventWorkspaceClient({
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem]">
           <section className="min-h-[34rem] rounded-[1.4rem] border border-[#eadfff] bg-white/86 p-5 shadow-sm backdrop-blur">
-            {activeTab === "creative" ? (
+            {activeTab === "live-card" ? (
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
                 <div className="overflow-hidden rounded-[1.35rem] border border-[#eadfff] bg-white shadow-[0_22px_65px_rgba(68,43,112,0.08)]">
                   <div className="flex min-h-[34rem] items-center justify-center bg-[#f5f0ff] p-6 sm:p-10">
@@ -483,13 +488,13 @@ export default function EventWorkspaceClient({
                         href={eventHref}
                         className="mt-8 inline-flex h-10 items-center rounded-sm bg-[#2d1b36] px-6 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#3b2946]"
                       >
-                        RSVP Online
+                        RSVP
                       </Link>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#eadfff] bg-white px-5 py-4">
                     <span className="text-sm font-semibold text-[#6f5b86]">
-                      Digital Flyer Design
+                      Live Card Preview
                     </span>
                     <button
                       type="button"
@@ -501,7 +506,7 @@ export default function EventWorkspaceClient({
                       ) : (
                         <Sparkles className="size-4" aria-hidden="true" />
                       )}
-                      AI Graphic
+                      Create invite asset
                     </button>
                   </div>
                 </div>
@@ -541,7 +546,7 @@ export default function EventWorkspaceClient({
                     <div className="space-y-2">
                       {(missingDetails.length
                         ? missingDetails.slice(0, 3).map((field) => `Add ${field}`)
-                        : ["Create a WhatsApp version", "Add RSVP details", "Make it more elegant"]
+                        : ["Create a WhatsApp version", "Add RSVP details", "Refine the live card"]
                       ).map((recommendation) => (
                         <button
                           key={recommendation}
@@ -559,7 +564,7 @@ export default function EventWorkspaceClient({
                     href={eventHref}
                     className="inline-flex h-13 w-full items-center justify-center rounded-[1.35rem] bg-[#2d1b36] px-5 text-xs font-bold uppercase tracking-[0.16em] text-white shadow-xl shadow-[#2d1b36]/15 transition hover:bg-[#3b2946]"
                   >
-                    Continue to Publishing
+                    Open Public Event
                   </Link>
                 </div>
               </div>
@@ -735,36 +740,59 @@ export default function EventWorkspaceClient({
 
             {activeTab === "assistant" ? assistantPanel : null}
 
-            {activeTab === "settings" ? (
-              <div>
-                <h2 className="flex items-center gap-2 text-lg font-semibold text-[#2d1b36]">
-                  <Settings className="size-5 text-[#7c4dff]" aria-hidden="true" />
-                  Settings
-                </h2>
-                <dl className="mt-4 grid gap-3 text-sm md:grid-cols-2">
-                  <div className="rounded-[1.1rem] border border-[#eadfff] bg-white p-4">
-                    <dt className="font-bold text-[#8b7aaa]">Status</dt>
-                    <dd className="mt-1 text-[#2d1b36]">
-                      {cleanString(eventData.status) || "draft"}
-                    </dd>
+            {activeTab === "details" ? (
+              <div className="space-y-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8b7aaa]">
+                      Details
+                    </p>
+                    <h2 className="mt-1 text-lg font-semibold text-[#2d1b36]">
+                      Event details for the live card
+                    </h2>
                   </div>
-                  <div className="rounded-[1.1rem] border border-[#eadfff] bg-white p-4">
-                    <dt className="font-bold text-[#8b7aaa]">Ownership</dt>
-                    <dd className="mt-1 text-[#2d1b36]">
-                      {cleanString(eventData.ownership) || "owned"}
-                    </dd>
-                  </div>
-                  <div className="rounded-[1.1rem] border border-[#eadfff] bg-white p-4">
-                    <dt className="font-bold text-[#8b7aaa]">Category</dt>
-                    <dd className="mt-1 text-[#2d1b36]">
-                      {cleanString(eventData.category) || "event"}
-                    </dd>
-                  </div>
-                  <div className="rounded-[1.1rem] border border-[#eadfff] bg-white p-4">
-                    <dt className="font-bold text-[#8b7aaa]">Outputs</dt>
-                    <dd className="mt-1 text-[#2d1b36]">{assetCount}</dd>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void sendAssistantMessage("Fill in missing event details.")}
+                    className="inline-flex h-9 items-center gap-2 rounded-full bg-[#f4efff] px-3 text-sm font-bold text-[#7c4dff] transition hover:bg-[#eadfff]"
+                  >
+                    <Plus className="size-4" aria-hidden="true" />
+                    Add details
+                  </button>
+                </div>
+
+                <dl className="grid gap-3 text-sm md:grid-cols-2">
+                  {[
+                    { label: "Title", value: headline },
+                    { label: "Date", value: dateLine },
+                    { label: "Time", value: timeLine || "Time pending" },
+                    { label: "Location", value: locationLine },
+                    {
+                      label: "RSVP",
+                      value:
+                        eventData.rsvpEnabled || eventData.rsvp
+                          ? "Enabled"
+                          : "Not enabled yet",
+                    },
+                    { label: "Category", value: cleanString(eventData.category) || "Event" },
+                    { label: "Status", value: cleanString(eventData.status) || "draft" },
+                    { label: "Assets", value: `${assetCount} outputs` },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-[1.1rem] border border-[#eadfff] bg-white p-4"
+                    >
+                      <dt className="font-bold text-[#8b7aaa]">{item.label}</dt>
+                      <dd className="mt-1 text-[#2d1b36]">{item.value}</dd>
+                    </div>
+                  ))}
                 </dl>
+
+                {missingDetails.length ? (
+                  <div className="rounded-[1.2rem] border border-amber-100 bg-amber-50 p-4 text-sm text-amber-900">
+                    Missing: {missingDetails.join(", ")}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </section>

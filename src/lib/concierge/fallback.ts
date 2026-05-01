@@ -74,15 +74,18 @@ function detectRelationship(text: string, previous?: ConciergeEventDraft | null)
 
 function detectAge(text: string, previous?: ConciergeEventDraft | null) {
   const turning = text.match(/\b(?:turning|turns|is turning|turn)\s+(\d{1,3})\b/i);
-  if (turning?.[1]) return turning[1];
-  const commaAge = text.match(/,\s*(\d{1,3})(?:\b|$)/);
-  if (commaAge?.[1]) return commaAge[1];
+  if (turning?.[1] && Number(turning[1]) <= 120) return turning[1];
+  const commaAge = text.match(/,\s*(\d{1,3})\s*(?:$|[.,;!?])/);
+  if (commaAge?.[1] && Number(commaAge[1]) <= 120) return commaAge[1];
   const ordinal = text.match(/\b(\d{1,3})(?:st|nd|rd|th)\s+birthday\b/i);
-  if (ordinal?.[1]) return ordinal[1];
+  if (ordinal?.[1] && Number(ordinal[1]) <= 120) return ordinal[1];
   return previous?.ageOrMilestone || null;
 }
 
 function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) {
+  const named = text.match(/\b(?:her|his|their|the)?\s*name\s+is\s+([A-Z][a-zA-Z'-]{1,30})\b/);
+  if (named?.[1]) return named[1];
+
   const possessive = text.match(
     /\b([A-Z][a-zA-Z'-]{1,30})'s\s+(?:\d{1,3}(?:st|nd|rd|th)\s+)?(?:birthday|graduation|party|shower)\b/,
   );
@@ -107,6 +110,29 @@ function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
   return cleanString(raw)?.replace(/\s+theme$/i, "") || previous?.theme || null;
 }
 
+function shouldStartFreshEvent(message: string, previous?: ConciergeEventDraft | null) {
+  if (!previous) return false;
+  const text = cleanString(message) || "";
+  if (!/\b(create|make|build|design|generate|draft)\b/i.test(text)) return false;
+  if (/\b(this|that|current|existing|same|matching|add|switch|change|refine|update|edit)\b/i.test(text)) {
+    return false;
+  }
+  return /\b(birthday|wedding|baby\s+shower|graduation|party|event|ceremony|fundraiser|meeting)\b/i.test(
+    text,
+  );
+}
+
+function stripLeadingTimeFromLocation(value: string | null) {
+  const cleaned = cleanString(value);
+  if (!cleaned) return null;
+  const withoutTime = cleaned.replace(
+    /^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+(?:at|@)\s+/i,
+    "",
+  );
+  if (/^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?$/i.test(withoutTime)) return null;
+  return cleanString(withoutTime);
+}
+
 function detectVenueOrLocation(text: string, ocrContext?: ConciergeOcrContext | null) {
   const fields = ocrContext?.fieldsGuess || {};
   const fromFields = firstString(
@@ -118,8 +144,17 @@ function detectVenueOrLocation(text: string, ocrContext?: ConciergeOcrContext | 
   );
   if (fromFields) return fromFields;
 
-  const atMatch = text.match(/\b(?:at|@)\s+([^.\n,]{2,80})(?:[.,\n]|$)/i);
-  if (atMatch?.[1]) return cleanString(atMatch[1]);
+  const afterTimeMatch = text.match(
+    /\b(?:at|@)\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+(?:at|@)\s+([^.\n]{2,120})(?:[.\n]|$)/i,
+  );
+  const afterTimeLocation = stripLeadingTimeFromLocation(afterTimeMatch?.[1] || null);
+  if (afterTimeLocation) return afterTimeLocation;
+
+  const atMatches = Array.from(text.matchAll(/\b(?:at|@)\s+([^.\n]{2,120})(?:[.\n]|$)/gi));
+  for (let index = atMatches.length - 1; index >= 0; index -= 1) {
+    const location = stripLeadingTimeFromLocation(atMatches[index]?.[1] || null);
+    if (location) return location;
+  }
 
   return null;
 }
@@ -194,7 +229,14 @@ function buildPreviewCopy(args: {
 }): ConciergePreviewCopy {
   const headline = args.title || "Event draft";
   const themeLine = args.theme ? `${args.theme} theme` : "Details coming soon";
-  const scheduleLine = [args.dateText || "Date TBD", args.timeText || null]
+  const dateTextHasTime = Boolean(
+    args.dateText &&
+      /\b(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b/i.test(args.dateText),
+  );
+  const scheduleLine = [
+    args.dateText || "Date TBD",
+    dateTextHasTime ? null : args.timeText || null,
+  ]
     .filter(Boolean)
     .join(" at ");
   const locationLine = args.location || "Location TBD";
@@ -366,7 +408,8 @@ export function fallbackExtractConciergeDraft(args: {
   const message = cleanString(args.message) || "";
   const combined = mergeText(message, args.ocrContext);
   const text = combined || message;
-  const previous = args.draft || null;
+  const sessionDraft = args.draft || null;
+  const previous = shouldStartFreshEvent(message, sessionDraft) ? null : sessionDraft;
   const hasExplicitOutputs =
     Array.isArray(args.requestedOutputs) && args.requestedOutputs.length > 0;
   const requestedOutputs = normalizeRequestedOutputs(
@@ -420,7 +463,7 @@ export function fallbackExtractConciergeDraft(args: {
     location,
   });
   const base = {
-    creationSessionId: createCreationSessionId(previous),
+    creationSessionId: createCreationSessionId(sessionDraft),
     intent: normalizeCreationIntent(previous?.intent, message, requestedOutputs),
     requestedOutputs,
     sourceContext,

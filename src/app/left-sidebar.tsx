@@ -9,12 +9,15 @@ import {
   type Dispatch,
   type RefObject,
   type SetStateAction,
+  useEffect,
+  useState,
 } from "react";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import EventSidebar from "@/components/navigation/EventSidebar";
 import { useMenu } from "@/contexts/MenuContext";
 import { secureSignOut } from "@/utils/secureSignOut";
 import { useEventCache } from "@/app/event-cache-context";
+import type { CreationThreadSummary, CreationThreadsResponse } from "@/lib/concierge/types";
 import {
   Baby,
   Cake,
@@ -65,13 +68,7 @@ import {
 } from "./left-sidebar.model";
 import { useLeftSidebarController } from "./left-sidebar.controller";
 
-function CustomizeIcon({
-  size = 16,
-  className,
-}: {
-  size?: number;
-  className?: string;
-}) {
+function CustomizeIcon({ size = 16, className }: { size?: number; className?: string }) {
   return (
     <svg
       viewBox="0 0 400 400"
@@ -123,11 +120,7 @@ function SidebarGymnasticsMenuIcon({
 }) {
   return (
     <span
-      className={[
-        "inline-block shrink-0",
-        active ? "bg-violet-600" : "bg-slate-500",
-        className,
-      ]
+      className={["inline-block shrink-0", active ? "bg-violet-600" : "bg-slate-500", className]
         .filter(Boolean)
         .join(" ")}
       style={SIDEBAR_GYM_MASK_STYLE(size)}
@@ -147,11 +140,7 @@ function SidebarFootballMenuIcon({
 }) {
   return (
     <span
-      className={[
-        "inline-block shrink-0",
-        active ? "bg-[#d44f19]" : "bg-slate-500",
-        className,
-      ]
+      className={["inline-block shrink-0", active ? "bg-[#d44f19]" : "bg-slate-500", className]
         .filter(Boolean)
         .join(" ")}
       style={SIDEBAR_FB_MASK_STYLE(size)}
@@ -174,9 +163,7 @@ function SidebarMyEventsMenuIcon({
       viewBox="0 0 24 24"
       width={size}
       height={size}
-      className={["shrink-0", "text-current", className]
-        .filter(Boolean)
-        .join(" ")}
+      className={["shrink-0", "text-current", className].filter(Boolean).join(" ")}
       fill="none"
       aria-hidden="true"
     >
@@ -208,10 +195,7 @@ function SidebarMyEventsMenuIcon({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path
-        d="M12 11.25L15.5 14.1V18H13.25V15.7H10.75V18H8.5V14.1L12 11.25Z"
-        fill="currentColor"
-      />
+      <path d="M12 11.25L15.5 14.1V18H13.25V15.7H10.75V18H8.5V14.1L12 11.25Z" fill="currentColor" />
     </svg>
   );
 }
@@ -255,8 +239,7 @@ const SIDEBAR_SUBMENU_LABEL_CLASS =
   "font-[var(--font-josefin-sans)] flex-1 truncate text-[0.95rem] font-bold uppercase tracking-[0.13em] leading-none transition-colors";
 const SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS =
   "bg-white/92 border-[rgba(236,231,255,0.98)] shadow-[0_16px_32px_rgba(103,88,160,0.12)]";
-const SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS =
-  "text-[#beb9e8] hover:bg-white/28";
+const SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS = "text-[#beb9e8] hover:bg-white/28";
 const SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS = "text-[#6b5fc2]";
 const SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS =
   "text-[rgba(107,95,194,0.64)] group-hover:text-[#6b5fc2]";
@@ -267,20 +250,14 @@ const SIDEBAR_SUBPAGE_TITLE_CLASS =
 const SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS =
   "border-transparent bg-transparent text-[#beb9e8] group-hover:text-[#aba4e3]";
 
-function PanelBackButton({
-  onClick,
-}: {
-  onClick: () => void;
-}) {
+function PanelBackButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className="nav-chrome-motion flex w-full items-center gap-3 rounded-[22px] px-2 py-2 text-left hover:bg-white/24"
     >
-      <span
-        className={`${SIDEBAR_ICON_CHIP_CLASS} text-[#7c76c7]`}
-      >
+      <span className={`${SIDEBAR_ICON_CHIP_CLASS} text-[#7c76c7]`}>
         <ChevronLeft size={16} />
       </span>
       <span className="font-[var(--font-josefin-sans)] min-w-0 block text-[0.82rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]">
@@ -301,7 +278,7 @@ function RootNavigationPanel({
   invitedEventsCount,
   onHome,
   onStudio,
-  onChat,
+  onAiThreads,
   onSnap,
   onCreate,
   onMyEvents,
@@ -317,7 +294,7 @@ function RootNavigationPanel({
   invitedEventsCount: number;
   onHome: () => void;
   onStudio: () => void;
-  onChat: () => void;
+  onAiThreads: () => void;
   onSnap: () => void;
   onCreate: () => void;
   onMyEvents: () => void;
@@ -325,14 +302,12 @@ function RootNavigationPanel({
 }) {
   const isHomeActive = pathname === "/" && sidebarPage === "root";
   const isStudioActive = pathname === "/studio" && sidebarPage === "root";
-  const isChatActive = pathname === "/chat" && sidebarPage === "root";
+  const isChatActive = pathname === "/chat" || sidebarPage === "aiThreads";
   const isSnapActive = pathname === "/event" && sidebarPage === "root";
   const isViewingEventFromListInRoot =
     sidebarPage === "root" &&
     Boolean(
-      pathname &&
-        (pathname.startsWith("/event/") ||
-          pathname.startsWith("/smart-signup-form/"))
+      pathname && (pathname.startsWith("/event/") || pathname.startsWith("/smart-signup-form/")),
     );
   const isMyEventsActive =
     sidebarPage === "myEvents" ||
@@ -340,8 +315,7 @@ function RootNavigationPanel({
     (isViewingEventFromListInRoot && eventContextSourcePage === "myEvents");
   const isInvitedEventsActive =
     sidebarPage === "invitedEvents" ||
-    (sidebarPage === "eventContext" &&
-      eventContextSourcePage === "invitedEvents") ||
+    (sidebarPage === "eventContext" && eventContextSourcePage === "invitedEvents") ||
     (isViewingEventFromListInRoot && eventContextSourcePage === "invitedEvents");
   const mainActiveAccent = getSidebarPrimaryActiveAccent();
   const rootMenuActiveChipClass = "nav-chrome-sidebar-chip-active";
@@ -356,9 +330,7 @@ function RootNavigationPanel({
   const rootHoverTextClass = "group-hover:text-[#aba4e3]";
   const rootIconClass = (isActive: boolean) =>
     `transition-colors ${
-      isActive
-        ? rootActiveTextClass
-        : `${rootInactiveTextClass} ${rootHoverTextClass}`
+      isActive ? rootActiveTextClass : `${rootInactiveTextClass} ${rootHoverTextClass}`
     }`;
 
   return (
@@ -370,11 +342,7 @@ function RootNavigationPanel({
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isHomeActive ? activeRowClass : inactiveRowClass
           } py-3 pl-4 pr-4`}
-          style={
-            isHomeActive
-              ? (mainActiveAccent.buttonStyle as CSSProperties)
-              : undefined
-          }
+          style={isHomeActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
@@ -385,9 +353,7 @@ function RootNavigationPanel({
           </span>
           <span
             className={`truncate ${rootRowTextClass} ${
-              isHomeActive
-                ? rootActiveTextClass
-                : `${rootInactiveTextClass} ${rootHoverTextClass}`
+              isHomeActive ? rootActiveTextClass : `${rootInactiveTextClass} ${rootHoverTextClass}`
             }`}
           >
             Home
@@ -400,11 +366,7 @@ function RootNavigationPanel({
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isStudioActive ? activeRowClass : inactiveRowClass
           } py-3 pl-4 pr-4`}
-          style={
-            isStudioActive
-              ? (mainActiveAccent.buttonStyle as CSSProperties)
-              : undefined
-          }
+          style={isStudioActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
@@ -424,17 +386,13 @@ function RootNavigationPanel({
           </span>
         </Link>
 
-        <Link
-          href="/chat"
-          onClick={onChat}
+        <button
+          type="button"
+          onClick={onAiThreads}
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isChatActive ? activeRowClass : inactiveRowClass
           } py-3 pl-4 pr-4`}
-          style={
-            isChatActive
-              ? (mainActiveAccent.buttonStyle as CSSProperties)
-              : undefined
-          }
+          style={isChatActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
@@ -445,14 +403,12 @@ function RootNavigationPanel({
           </span>
           <span
             className={`truncate ${rootRowTextClass} ${
-              isChatActive
-                ? rootActiveTextClass
-                : `${rootInactiveTextClass} ${rootHoverTextClass}`
+              isChatActive ? rootActiveTextClass : `${rootInactiveTextClass} ${rootHoverTextClass}`
             }`}
           >
             Create with AI
           </span>
-        </Link>
+        </button>
 
         {!useGymnasticsDirectCreate ? (
           <Link
@@ -461,11 +417,7 @@ function RootNavigationPanel({
             className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
               isSnapActive ? activeRowClass : inactiveRowClass
             } py-3 pl-4 pr-4`}
-            style={
-              isSnapActive
-                ? (mainActiveAccent.buttonStyle as CSSProperties)
-                : undefined
-            }
+            style={isSnapActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
           >
             <span
               className={`${SIDEBAR_ICON_CHIP_CLASS} ${
@@ -494,16 +446,12 @@ function RootNavigationPanel({
               isCreateEntryActive ? activeRowClass : inactiveRowClass
             } py-3 pl-4 pr-4`}
             style={
-              isCreateEntryActive
-                ? (mainActiveAccent.buttonStyle as CSSProperties)
-                : undefined
+              isCreateEntryActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined
             }
           >
             <span
               className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-                isCreateEntryActive
-                  ? rootMenuActiveChipClass
-                  : rootMenuChipClass
+                isCreateEntryActive ? rootMenuActiveChipClass : rootMenuChipClass
               } ${rootIconClass(isCreateEntryActive)}`}
             >
               <Plus size={17} strokeWidth={1.9} />
@@ -526,11 +474,7 @@ function RootNavigationPanel({
           className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
             isMyEventsActive ? activeRowClass : inactiveRowClass
           } py-3 pl-4 pr-4`}
-          style={
-            isMyEventsActive
-              ? (mainActiveAccent.buttonStyle as CSSProperties)
-              : undefined
-          }
+          style={isMyEventsActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
@@ -549,9 +493,7 @@ function RootNavigationPanel({
             My Events
           </span>
           {createdEventsCount > 0 ? (
-            <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>
-              {createdEventsCount}
-            </span>
+            <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>{createdEventsCount}</span>
           ) : null}
         </button>
 
@@ -562,16 +504,12 @@ function RootNavigationPanel({
             isInvitedEventsActive ? activeRowClass : inactiveRowClass
           } py-3 pl-4 pr-4`}
           style={
-            isInvitedEventsActive
-              ? (mainActiveAccent.buttonStyle as CSSProperties)
-              : undefined
+            isInvitedEventsActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined
           }
         >
           <span
             className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-              isInvitedEventsActive
-                ? rootMenuActiveChipClass
-                : rootMenuChipClass
+              isInvitedEventsActive ? rootMenuActiveChipClass : rootMenuChipClass
             } ${rootIconClass(isInvitedEventsActive)}`}
           >
             <Users size={17} strokeWidth={1.9} />
@@ -586,9 +524,7 @@ function RootNavigationPanel({
             Invited Events
           </span>
           {invitedEventsCount > 0 ? (
-            <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>
-              {invitedEventsCount}
-            </span>
+            <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>{invitedEventsCount}</span>
           ) : null}
         </button>
       </div>
@@ -607,19 +543,15 @@ function CreateMenuButton({
   isActive: boolean;
   onSelect: (label: string, href?: string) => void;
 }) {
-  const Icon =
-    (sidebarIconLookup[item.label] as ComponentType<any>) || WandSparkles;
-  const colorClass =
-    CREATE_SECTION_COLORS[index % CREATE_SECTION_COLORS.length];
+  const Icon = (sidebarIconLookup[item.label] as ComponentType<any>) || WandSparkles;
+  const colorClass = CREATE_SECTION_COLORS[index % CREATE_SECTION_COLORS.length];
   const activeAccent = getCreateMenuActiveAccent(item.label);
 
   return (
     <button
       type="button"
       className={`${SIDEBAR_SUBMENU_ROW_CLASS} ${
-        isActive
-          ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS
-          : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
+        isActive ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
       }`}
       onClick={() => onSelect(item.label, item.href)}
     >
@@ -640,9 +572,7 @@ function CreateMenuButton({
       </span>
       <span
         className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${
-          isActive
-            ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
-            : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+          isActive ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
         }`}
       >
         {item.label}
@@ -650,9 +580,7 @@ function CreateMenuButton({
       <ChevronRight
         size={16}
         className={`ml-auto transition-all ${
-          isActive
-            ? activeAccent.chevronClass
-            : "text-[#b5afe8] group-hover:text-[#7b73d2]"
+          isActive ? activeAccent.chevronClass : "text-[#b5afe8] group-hover:text-[#7b73d2]"
         }`}
       />
     </button>
@@ -870,10 +798,7 @@ function EventListPanel({
       </div>
     ));
 
-  const renderGroupSections = (
-    sections: GroupedEventSection[],
-    muted: boolean
-  ) =>
+  const renderGroupSections = (sections: GroupedEventSection[], muted: boolean) =>
     sections.map((group, index) => (
       <section
         key={`${muted ? "past" : "upcoming"}-${group.category}-${index}`}
@@ -929,14 +854,10 @@ function EventListPanel({
                       onClick={() => setPastExpanded((prev) => !prev)}
                       className="nav-chrome-menu-card nav-chrome-motion inline-flex items-center gap-1 rounded-full border border-[rgba(117,103,177,0.18)] bg-white/88 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[var(--nav-chrome-muted)] shadow-[0_10px_22px_rgba(96,81,154,0.08)] hover:bg-white"
                     >
-                      <span>
-                        {pastExpanded ? "Hide past events" : "Show past events"}
-                      </span>
+                      <span>{pastExpanded ? "Hide past events" : "Show past events"}</span>
                       <ChevronRight
                         size={12}
-                        className={`transition-transform ${
-                          pastExpanded ? "rotate-90" : ""
-                        }`}
+                        className={`transition-transform ${pastExpanded ? "rotate-90" : ""}`}
                       />
                     </button>
                   </div>
@@ -958,6 +879,107 @@ function EventListPanel({
             ) : null}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function AiThreadsPanel({
+  threads,
+  activeThreadId,
+  onBack,
+  onOpenThread,
+  onDeleteThread,
+}: {
+  threads: CreationThreadSummary[];
+  activeThreadId: string | null;
+  onBack: () => void;
+  onOpenThread: () => void;
+  onDeleteThread: (thread: CreationThreadSummary) => void;
+}) {
+  return (
+    <div className="space-y-4 pt-2">
+      <div className={SUBPAGE_STICKY_HEADER_CLASS}>
+        <PanelBackButton onClick={onBack} />
+        <div className="px-2 pb-1 pt-1">
+          <p className={SIDEBAR_SUBPAGE_TITLE_CLASS}>Create with AI</p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <Link
+          href="/chat"
+          className={`${SIDEBAR_SUBMENU_ROW_CLASS} ${SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS}`}
+        >
+          <span className={`${SIDEBAR_SUBMENU_ICON_CLASS} ${SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS}`}>
+            <Plus size={18} />
+          </span>
+          <span className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS}`}>
+            New chat
+          </span>
+        </Link>
+
+        <section className="space-y-1">
+          <div className="px-1 pt-1">
+            <p className="font-[var(--font-josefin-sans)] text-[0.82rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]">
+              Recents
+            </p>
+            <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
+          </div>
+
+          {threads.length ? (
+            threads.map((thread) => {
+              const isActiveThread = activeThreadId === thread.id;
+              return (
+                <div key={thread.id} className="flex items-center gap-2">
+                  <Link
+                    href={`/chat?thread=${encodeURIComponent(thread.id)}`}
+                    onClick={onOpenThread}
+                    className={`${SIDEBAR_SUBMENU_ROW_CLASS} min-w-0 flex-1 ${
+                      isActiveThread
+                        ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS
+                        : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
+                    }`}
+                  >
+                    <span
+                      className={`${SIDEBAR_SUBMENU_ICON_CLASS} ${
+                        isActiveThread
+                          ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
+                          : `${CREATE_SECTION_COLORS[0]} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
+                      }`}
+                    >
+                      <MessageCircle size={17} />
+                    </span>
+                    <span
+                      className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${
+                        isActiveThread
+                          ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
+                          : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+                      }`}
+                    >
+                      {thread.title}
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteThread(thread)}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                    aria-label={`Delete ${thread.title}`}
+                    title="Delete chat"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              );
+            })
+          ) : (
+            <div
+              className={`${SIDEBAR_SUBMENU_CARD_CLASS} rounded-[24px] border-dashed px-4 py-6 text-center text-sm text-[#7e76b9]`}
+            >
+              No AI chats yet.
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
@@ -1023,9 +1045,7 @@ function FooterProfileMenu({
                 {userTitleLabel}
               </div>
               {userEmail ? (
-                <div className="truncate text-[11px] text-[#b7b1e8]">
-                  {userEmail}
-                </div>
+                <div className="truncate text-[11px] text-[#b7b1e8]">{userEmail}</div>
               ) : null}
             </div>
           </div>
@@ -1086,9 +1106,7 @@ function FooterProfileMenu({
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-red-50 text-red-400 shadow-[0_10px_20px_rgba(103,88,160,0.08)] transition-transform group-hover:scale-105">
                   <LogOut size={16} />
                 </span>
-                <span className="text-[13px] font-medium text-red-400">
-                  Log out
-                </span>
+                <span className="text-[13px] font-medium text-red-400">Log out</span>
               </button>
             </div>
           </div>
@@ -1106,6 +1124,35 @@ export default function LeftSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const activeAiThreadId = searchParams.get("thread")?.trim() || null;
+  const [aiThreads, setAiThreads] = useState<CreationThreadSummary[]>([]);
+
+  useEffect(() => {
+    if (status !== "authenticated") {
+      setAiThreads([]);
+      return;
+    }
+
+    let cancelled = false;
+    async function loadAiThreads() {
+      try {
+        const response = await fetch("/api/creation/threads?limit=20", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        const json = (await response.json().catch(() => null)) as CreationThreadsResponse | null;
+        if (cancelled || !response.ok || !json?.ok) return;
+        setAiThreads(json.threads);
+      } catch {}
+    }
+
+    void loadAiThreads();
+    window.addEventListener("envitefy:creation-threads-changed", loadAiThreads);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("envitefy:creation-threads-changed", loadAiThreads);
+    };
+  }, [status, pathname]);
 
   const viewModel = useLeftSidebarController({
     session,
@@ -1122,8 +1169,7 @@ export default function LeftSidebar() {
   if (viewModel.isEmbeddedEditMode) return null;
 
   const panelTransitionStyle: CSSProperties = {
-    transition:
-      "transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease-in-out",
+    transition: "transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease-in-out",
   };
   const rootPanelTransform =
     viewModel.sidebarPage === "root" ? "translateX(0%)" : "translateX(-2rem)";
@@ -1131,36 +1177,54 @@ export default function LeftSidebar() {
     viewModel.sidebarPage === "createEvent"
       ? "translateX(0%)"
       : viewModel.sidebarPage === "createEventOther"
-      ? "translateX(-2rem)"
-      : "translateX(100%)";
+        ? "translateX(-2rem)"
+        : "translateX(100%)";
   const createEventOtherPanelTransform =
-    viewModel.sidebarPage === "createEventOther"
-      ? "translateX(0%)"
-      : "translateX(100%)";
+    viewModel.sidebarPage === "createEventOther" ? "translateX(0%)" : "translateX(100%)";
+  const aiThreadsPanelTransform =
+    viewModel.sidebarPage === "aiThreads" ? "translateX(0%)" : "translateX(100%)";
   const myEventsPanelTransform =
     viewModel.sidebarPage === "myEvents"
       ? "translateX(0%)"
-      : viewModel.sidebarPage === "eventContext" &&
-        viewModel.eventContextSourcePage === "myEvents"
-      ? "translateX(-2rem)"
-      : "translateX(100%)";
+      : viewModel.sidebarPage === "eventContext" && viewModel.eventContextSourcePage === "myEvents"
+        ? "translateX(-2rem)"
+        : "translateX(100%)";
   const invitedEventsPanelTransform =
     viewModel.sidebarPage === "invitedEvents"
       ? "translateX(0%)"
       : viewModel.sidebarPage === "eventContext" &&
-        viewModel.eventContextSourcePage === "invitedEvents"
-      ? "translateX(-2rem)"
-      : "translateX(100%)";
+          viewModel.eventContextSourcePage === "invitedEvents"
+        ? "translateX(-2rem)"
+        : "translateX(100%)";
   const eventPanelTransform =
-    viewModel.sidebarPage === "eventContext"
-      ? "translateX(0%)"
-      : "translateX(100%)";
+    viewModel.sidebarPage === "eventContext" ? "translateX(0%)" : "translateX(100%)";
   const panelStyle = (transform: string, isActive: boolean): CSSProperties => ({
     ...panelTransitionStyle,
     transform,
     pointerEvents: isActive ? "auto" : "none",
     opacity: isActive ? 1 : 0,
   });
+
+  async function deleteAiThread(thread: CreationThreadSummary) {
+    const previousThreads = aiThreads;
+    setAiThreads((current) => current.filter((item) => item.id !== thread.id));
+    try {
+      const response = await fetch(`/api/creation/threads/${encodeURIComponent(thread.id)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        setAiThreads(previousThreads);
+        return;
+      }
+      if (activeAiThreadId === thread.id) {
+        router.push("/chat");
+      }
+      window.dispatchEvent(new CustomEvent("envitefy:creation-threads-changed"));
+    } catch {
+      setAiThreads(previousThreads);
+    }
+  }
 
   return (
     <>
@@ -1206,9 +1270,7 @@ export default function LeftSidebar() {
                   type="button"
                   onClick={() => {
                     if (typeof window === "undefined") return;
-                    window.dispatchEvent(
-                      new CustomEvent("envitefy:open-discovery-editor")
-                    );
+                    window.dispatchEvent(new CustomEvent("envitefy:open-discovery-editor"));
                   }}
                   className="nav-chrome-pill-secondary nav-chrome-motion inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full"
                   aria-label="Customize your meet"
@@ -1233,9 +1295,7 @@ export default function LeftSidebar() {
 
       <div
         className={`nav-chrome-mobile-drawer-backdrop fixed inset-0 z-[5999] transition-opacity duration-200 lg:hidden ${
-          viewModel.isOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          viewModel.isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => {
           if (viewModel.isDesktop) return;
@@ -1266,10 +1326,7 @@ export default function LeftSidebar() {
                   className="inline-flex min-h-11 max-w-full items-center"
                   aria-label="Workspace home"
                 >
-                  <EnvitefyWordmark
-                    className="text-[3.15rem] leading-none"
-                    scaled={false}
-                  />
+                  <EnvitefyWordmark className="text-[3.15rem] leading-none" scaled={false} />
                 </Link>
               </div>
 
@@ -1277,10 +1334,7 @@ export default function LeftSidebar() {
                 <div className="relative min-h-0 flex-1 overflow-hidden">
                   <div
                     className={`${SIDEBAR_PANEL_CLASS} z-[5]`}
-                    style={panelStyle(
-                      rootPanelTransform,
-                      viewModel.sidebarPage === "root"
-                    )}
+                    style={panelStyle(rootPanelTransform, viewModel.sidebarPage === "root")}
                     aria-hidden={viewModel.sidebarPage !== "root"}
                   >
                     <RootNavigationPanel
@@ -1289,14 +1343,12 @@ export default function LeftSidebar() {
                       eventContextSourcePage={viewModel.eventContextSourcePage}
                       hasCreateEventAccess={viewModel.hasCreateEventAccess}
                       isCreateEntryActive={viewModel.isCreateEntryActive}
-                      useGymnasticsDirectCreate={
-                        viewModel.useGymnasticsDirectCreate
-                      }
+                      useGymnasticsDirectCreate={viewModel.useGymnasticsDirectCreate}
                       createdEventsCount={viewModel.createdEventsCount}
                       invitedEventsCount={viewModel.invitedEventsCount}
                       onHome={viewModel.goHomeFromSidebar}
                       onStudio={viewModel.goStudioFromSidebar}
-                      onChat={viewModel.resetSidebarToRoot}
+                      onAiThreads={viewModel.openAiThreadsPage}
                       onSnap={viewModel.handleRootSnapNavigate}
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}
@@ -1305,10 +1357,27 @@ export default function LeftSidebar() {
                   </div>
 
                   <div
+                    className={`${SIDEBAR_PANEL_CLASS} z-[9]`}
+                    style={panelStyle(
+                      aiThreadsPanelTransform,
+                      viewModel.sidebarPage === "aiThreads",
+                    )}
+                    aria-hidden={viewModel.sidebarPage !== "aiThreads"}
+                  >
+                    <AiThreadsPanel
+                      threads={aiThreads}
+                      activeThreadId={activeAiThreadId}
+                      onBack={viewModel.backToRoot}
+                      onOpenThread={viewModel.resetSidebarToRoot}
+                      onDeleteThread={deleteAiThread}
+                    />
+                  </div>
+
+                  <div
                     className={`${SIDEBAR_PANEL_CLASS} z-[10]`}
                     style={panelStyle(
                       createEventPanelTransform,
-                      viewModel.sidebarPage === "createEvent"
+                      viewModel.sidebarPage === "createEvent",
                     )}
                     aria-hidden={viewModel.sidebarPage !== "createEvent"}
                   >
@@ -1328,7 +1397,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[12]`}
                     style={panelStyle(
                       createEventOtherPanelTransform,
-                      viewModel.sidebarPage === "createEventOther"
+                      viewModel.sidebarPage === "createEventOther",
                     )}
                     aria-hidden={viewModel.sidebarPage !== "createEventOther"}
                   >
@@ -1346,10 +1415,7 @@ export default function LeftSidebar() {
 
                   <div
                     className={`${SIDEBAR_PANEL_CLASS} z-[15]`}
-                    style={panelStyle(
-                      myEventsPanelTransform,
-                      viewModel.sidebarPage === "myEvents"
-                    )}
+                    style={panelStyle(myEventsPanelTransform, viewModel.sidebarPage === "myEvents")}
                     aria-hidden={viewModel.sidebarPage !== "myEvents"}
                   >
                     <EventListPanel
@@ -1373,7 +1439,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_PANEL_CLASS} z-[20]`}
                     style={panelStyle(
                       invitedEventsPanelTransform,
-                      viewModel.sidebarPage === "invitedEvents"
+                      viewModel.sidebarPage === "invitedEvents",
                     )}
                     aria-hidden={viewModel.sidebarPage !== "invitedEvents"}
                   >
@@ -1399,7 +1465,7 @@ export default function LeftSidebar() {
                     className={`${SIDEBAR_EVENT_PANEL_CLASS} z-[30]`}
                     style={panelStyle(
                       eventPanelTransform,
-                      viewModel.sidebarPage === "eventContext"
+                      viewModel.sidebarPage === "eventContext",
                     )}
                     aria-hidden={viewModel.sidebarPage !== "eventContext"}
                   >

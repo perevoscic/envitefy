@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
-import { handleCreationIntake } from "@/lib/concierge/intake";
-import type { CreationIntakeRequest, ConciergeMessageResponse } from "@/lib/concierge/types";
+import {
+  handleCreationIntake,
+  resumeCreationSession,
+  resumeLatestCreationSession,
+} from "@/lib/concierge/intake";
+import type {
+  ConciergeMessageResponse,
+  CreationIntakeRequest,
+  CreationSessionResumeResponse,
+} from "@/lib/concierge/types";
 import {
   createServerTimingTracker,
   isTimingRequested,
@@ -14,13 +22,55 @@ export const dynamic = "force-dynamic";
 
 function timedJson(
   timing: ServerTimingTracker,
-  payload: ConciergeMessageResponse,
+  payload: ConciergeMessageResponse | CreationSessionResumeResponse,
   init?: ResponseInit,
 ) {
   const body = timing.enabled ? { ...payload, timings: timing.toObject() } : payload;
   const response = NextResponse.json(body, init);
   timing.applyHeader(response);
   return response;
+}
+
+export async function GET(req: Request) {
+  const timing = createServerTimingTracker(isTimingRequested(req));
+  try {
+    const session: any = await timing.time("session", () => getServerSession(authOptions as any));
+    const userId = await timing.time("user_lookup", () => resolveSessionUserId(session));
+    if (!userId) {
+      return timedJson(
+        timing,
+        {
+          ok: false,
+          error: "Sign in to use Envitefy Concierge.",
+        } satisfies CreationSessionResumeResponse,
+        { status: 401 },
+      );
+    }
+
+    const url = new URL(req.url);
+    const threadId = url.searchParams.get("threadId")?.trim();
+    const result = threadId
+      ? await resumeCreationSession({
+          userId,
+          sessionId: threadId,
+          timing,
+        })
+      : await resumeLatestCreationSession({
+          userId,
+          timing,
+        });
+
+    return timedJson(timing, result satisfies CreationSessionResumeResponse);
+  } catch (error) {
+    return timedJson(
+      timing,
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "Unable to resume creation session.",
+      } satisfies CreationSessionResumeResponse,
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(req: Request) {

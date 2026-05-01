@@ -4,24 +4,31 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
   Camera,
+  CheckCircle2,
   CreditCard,
+  ExternalLink,
   Globe2,
   Loader2,
   type LucideIcon,
   Mail,
   Mic,
   Plus,
+  RefreshCw,
   Sparkles,
   Upload,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import type { StudioCategoryTileDefinition } from "@/app/studio/studio-workspace-types";
+import { STUDIO_CATEGORY_TILES } from "@/app/studio/workspace/studio-category-tile-data";
 import type {
   ConciergeActiveContext,
   ConciergeEventDraft,
+  ConciergeEventMessageResponse,
   ConciergeMessageResponse,
   ConciergeOcrContext,
+  CreationSessionResumeResponse,
   RequestedOutput,
 } from "@/lib/concierge/types";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
@@ -34,12 +41,6 @@ type ChatMessage = {
   type?: "text" | "upload_status";
 };
 
-type StarterChip = {
-  label: string;
-  icon?: LucideIcon;
-  iconClassName?: string;
-};
-
 type ProductOption = {
   label: string;
   description: string;
@@ -48,33 +49,40 @@ type ProductOption = {
   iconClassName: string;
 };
 
-const CHIPS: StarterChip[] = [
-  { label: "Birthday" },
-  { label: "Wedding" },
-  { label: "Baby shower" },
-  { label: "Graduation" },
-  { label: "Corporate" },
-  { label: "Other" },
-];
+type ConciergePhase =
+  | "intake_empty"
+  | "collecting_details"
+  | "ready_to_generate"
+  | "generating_card"
+  | "card_ready"
+  | "editing_card";
+
+type LiveCardSummary = {
+  headline: string;
+  subheadline: string;
+  scheduleLine: string;
+  locationLine: string;
+  outputs: string[];
+};
 
 const PRODUCT_OPTIONS: ProductOption[] = [
   {
     label: "Live Card",
-    description: "Mobile RSVP Page",
+    description: "Public card with RSVP",
     output: "live_card",
     icon: CreditCard,
     iconClassName: "text-[#a11cf5] drop-shadow-[0_0_8px_rgba(161,28,245,0.28)]",
   },
   {
     label: "Flyer",
-    description: "Shareable Graphic",
+    description: "Shareable graphic",
     output: "digital_flyer",
     icon: Mail,
     iconClassName: "text-[#db246f] drop-shadow-[0_0_8px_rgba(219,36,111,0.26)]",
   },
   {
     label: "Event Page",
-    description: "Full Event Website",
+    description: "Full public website",
     output: "event_page",
     icon: Globe2,
     iconClassName: "text-[#19a992] drop-shadow-[0_0_8px_rgba(25,169,146,0.24)]",
@@ -86,10 +94,10 @@ const DEFAULT_UPLOAD_OCR_URL = "/api/ocr?fast=0";
 const ENABLE_FAST_UPLOAD_OCR = process.env.NEXT_PUBLIC_CONCIERGE_FAST_UPLOADS === "1";
 
 const BUILDING_STEPS = [
-  "Analyzing event details",
-  "Generating event assets",
-  "Syncing workspace data",
-  "Finalizing workspace",
+  "Checking the event details",
+  "Generating the product",
+  "Creating RSVP and sharing links",
+  "Finalizing the event workspace",
 ];
 
 const OUTPUT_LABELS: Record<RequestedOutput, string> = {
@@ -108,6 +116,68 @@ const OUTPUT_LABELS: Record<RequestedOutput, string> = {
   welcome_sign: "Welcome sign",
 };
 
+type ChatStudioCategoryTileKey = Exclude<StudioCategoryTileDefinition["name"], "Anniversary">;
+
+type ChatStudioGridTileKey = ChatStudioCategoryTileKey | "upload";
+
+type ChatStudioGridItem =
+  | {
+      kind: "category";
+      key: ChatStudioCategoryTileKey;
+      category: StudioCategoryTileDefinition;
+    }
+  | {
+      kind: "upload";
+      key: "upload";
+    };
+
+const CHAT_STUDIO_GRID_COMPOSITION: ChatStudioGridTileKey[] = [
+  "Birthday",
+  "upload",
+  "Wedding",
+  "Bridal Shower",
+  "Baby Shower",
+  "Game Day",
+  "Field Trip/Day",
+  "Open House",
+  "Housewarming",
+  "Custom Invite",
+];
+
+const CHAT_STUDIO_GRID_PLACEMENT_CLASS: Record<ChatStudioGridTileKey, string> = {
+  Birthday: "col-span-2 col-start-1 row-start-1",
+  upload: "col-start-3 row-start-1",
+  Wedding: "col-start-6 row-span-2 row-start-1",
+  "Bridal Shower": "col-start-4 row-start-1",
+  "Baby Shower": "col-start-5 row-start-1",
+  "Game Day": "col-start-1 row-start-2",
+  "Field Trip/Day": "col-start-2 row-start-2",
+  "Open House": "col-start-3 row-start-2",
+  Housewarming: "col-start-4 row-start-2",
+  "Custom Invite": "col-start-5 row-start-2",
+};
+
+const CHAT_STUDIO_GRID_ITEMS: ChatStudioGridItem[] = (() => {
+  const categoriesByName = new Map(
+    STUDIO_CATEGORY_TILES.map((category) => [category.name, category] as const),
+  );
+  return CHAT_STUDIO_GRID_COMPOSITION.flatMap((tileKey) => {
+    if (tileKey === "upload") {
+      return [{ kind: "upload", key: "upload" } satisfies ChatStudioGridItem];
+    }
+    const category = categoriesByName.get(tileKey);
+    return category
+      ? [{ kind: "category", key: tileKey, category } satisfies ChatStudioGridItem]
+      : [];
+  });
+})();
+
+const CHAT_STUDIO_TILE_OVERLAY_CLASS = {
+  light: "bg-gradient-to-t from-black/58 via-black/18 to-transparent",
+  medium: "bg-gradient-to-t from-black/68 via-black/28 to-transparent",
+  dark: "bg-gradient-to-t from-black/78 via-black/42 to-black/12",
+} as const;
+
 function newMessage(
   role: ChatMessage["role"],
   text: string,
@@ -121,8 +191,127 @@ function newMessage(
   };
 }
 
-function isReadyLiveCardDraft(draft: ConciergeEventDraft | null) {
-  return Boolean(draft?.requestedOutputs.includes("live_card") && isReadyCreationDraft(draft));
+function ChatStudioCategoryTile({
+  category,
+  index,
+  onSelect,
+}: {
+  category: StudioCategoryTileDefinition;
+  index: number;
+  onSelect: (label: string) => void;
+}) {
+  return (
+    <motion.button
+      type="button"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.06 + index * 0.025 }}
+      whileHover={{ scale: 1.012 }}
+      whileTap={{ scale: 0.99 }}
+      onClick={() => void onSelect(category.name)}
+      aria-label={`Start with ${category.name}`}
+      className={`group relative isolate h-full w-full overflow-hidden rounded-[1.1rem] border border-white/60 bg-white/80 text-left shadow-[0_14px_34px_-24px_rgba(84,61,140,0.28)] transition focus:outline-none focus-visible:ring-4 focus-visible:ring-[#cbb7ff]/55 sm:rounded-[1.35rem] ${
+        category.surfaceVariant === "dark" ? "bg-[#20192d]" : ""
+      }`}
+    >
+      <img
+        src={category.imagePath}
+        alt=""
+        aria-hidden="true"
+        className={`absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105 ${
+          category.imagePositionClassName || "object-center"
+        }`}
+      />
+      <div
+        className={`absolute inset-0 ${CHAT_STUDIO_TILE_OVERLAY_CLASS[category.overlayStrength]}`}
+      />
+      <div className="absolute inset-x-0 bottom-0 p-2.5 text-left sm:p-3">
+        <p className="font-[var(--font-josefin-sans)] text-[0.56rem] font-bold uppercase leading-tight tracking-[0.09em] text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.34)] sm:text-[0.68rem] md:text-[0.76rem]">
+          {category.name}
+        </p>
+        <p className="mt-0.5 hidden truncate text-[0.62rem] leading-tight text-white/82 sm:block md:text-[0.68rem]">
+          {category.description}
+        </p>
+      </div>
+    </motion.button>
+  );
+}
+
+function ChatStudioUploadTile({
+  index,
+  isUploading,
+  onUpload,
+}: {
+  index: number;
+  isUploading: boolean;
+  onUpload: () => void;
+}) {
+  return (
+    <motion.button
+      type="button"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.06 + index * 0.025 }}
+      whileHover={{ scale: 1.012 }}
+      whileTap={{ scale: 0.99 }}
+      onClick={onUpload}
+      disabled={isUploading}
+      aria-label={isUploading ? "Uploading invite" : "Upload your invite"}
+      className="group relative isolate h-full w-full overflow-hidden rounded-[1.1rem] border border-white/50 bg-[#1d1330] text-left shadow-[0_14px_34px_-24px_rgba(84,61,140,0.28)] transition focus:outline-none focus-visible:ring-4 focus-visible:ring-[#cbb7ff]/55 disabled:cursor-not-allowed disabled:opacity-80 sm:rounded-[1.35rem]"
+    >
+      <img
+        src="/studio/upload-your-own.webp"
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(24,14,42,0.08),rgba(22,14,38,0.3)_34%,rgba(18,12,32,0.62))]" />
+      <div className="absolute inset-x-0 bottom-0 p-2.5 text-left sm:p-3">
+        <p className="font-[var(--font-josefin-sans)] text-[0.56rem] font-bold uppercase leading-tight tracking-[0.09em] text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.34)] sm:text-[0.68rem] md:text-[0.76rem]">
+          {isUploading ? "Uploading" : "Upload Your Invite"}
+        </p>
+        <p className="mt-0.5 hidden truncate text-[0.62rem] leading-tight text-white/82 sm:block md:text-[0.68rem]">
+          Turn an existing invite into a live card
+        </p>
+      </div>
+    </motion.button>
+  );
+}
+
+function ChatStudioStarterGrid({
+  onSelectCategory,
+  onUploadInvite,
+  isUploading,
+}: {
+  onSelectCategory: (label: string) => void;
+  onUploadInvite: () => void;
+  isUploading: boolean;
+}) {
+  return (
+    <div className="grid auto-rows-[86px] grid-cols-6 gap-2 sm:auto-rows-[108px] md:auto-rows-[124px]">
+      {CHAT_STUDIO_GRID_ITEMS.map((item, index) => (
+        <div key={item.key} className={CHAT_STUDIO_GRID_PLACEMENT_CLASS[item.key]}>
+          {item.kind === "upload" ? (
+            <ChatStudioUploadTile
+              index={index}
+              isUploading={isUploading}
+              onUpload={onUploadInvite}
+            />
+          ) : (
+            <ChatStudioCategoryTile
+              category={item.category}
+              index={index}
+              onSelect={onSelectCategory}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function isReadyProductDraft(draft: ConciergeEventDraft | null) {
+  return isReadyCreationDraft(draft);
 }
 
 function isReadyCreationDraft(draft: ConciergeEventDraft | null) {
@@ -165,21 +354,115 @@ function draftLocationLine(draft: ConciergeEventDraft | null) {
   return draft?.previewCopy.locationLine || draft?.venue || draft?.location || "Location TBD";
 }
 
-function outputLabels(draft: ConciergeEventDraft | null) {
-  const outputs = draft?.requestedOutputs || [];
-  if (!outputs.length) return ["Live card"];
-  return outputs.map((output) => OUTPUT_LABELS[output] || output);
+function outputLabel(output: RequestedOutput) {
+  return OUTPUT_LABELS[output] || output;
 }
 
-function missingFieldLabel(value: string) {
-  return value
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (match) => match.toUpperCase());
+function draftOutputLabels(draft: ConciergeEventDraft | null, selectedOutput: RequestedOutput) {
+  const outputs = draft?.requestedOutputs?.length ? draft.requestedOutputs : [selectedOutput];
+  return Array.from(new Set(outputs)).map(outputLabel);
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function firstStringValue(...values: unknown[]) {
+  for (const value of values) {
+    const text = stringValue(value);
+    if (text) return text;
+  }
+  return null;
+}
+
+function uniqueDisplayLine(...values: unknown[]) {
+  const parts = values.map(stringValue).filter((value): value is string => Boolean(value));
+  return parts.filter((value, index) => parts.indexOf(value) === index).join(", ") || null;
+}
+
+function outputLabelsFromUnknown(value: unknown, fallback: string[]) {
+  const raw = Array.isArray(value) ? value : [];
+  const labels = raw
+    .map((item) => stringValue(item))
+    .filter((item): item is string => Boolean(item))
+    .map((item) => outputLabel(item as RequestedOutput));
+  return labels.length ? Array.from(new Set(labels)) : fallback;
+}
+
+function liveCardSummaryFromDraft(
+  draft: ConciergeEventDraft | null,
+  selectedOutput: RequestedOutput,
+): LiveCardSummary {
+  return {
+    headline: draftHeadline(draft),
+    subheadline: draftSubheadline(draft),
+    scheduleLine: draftScheduleLine(draft),
+    locationLine: draftLocationLine(draft),
+    outputs: draftOutputLabels(draft, selectedOutput),
+  };
+}
+
+function liveCardSummaryFromEvent(
+  event: { title: string; data: Record<string, unknown> },
+  fallback: LiveCardSummary,
+): LiveCardSummary {
+  const data = recordValue(event.data);
+  const liveCard = recordValue(data.liveCard);
+  const publicEvent = recordValue(data.publicEvent);
+  const previewCopy = recordValue(data.previewCopy);
+  const theme = stringValue(data.theme);
+  const dateText = firstStringValue(data.dateText, data.date);
+  const timeText = firstStringValue(data.timeText, data.time);
+  const scheduleLine =
+    firstStringValue(
+      liveCard.scheduleLine,
+      publicEvent.scheduleLine,
+      previewCopy.scheduleLine,
+      data.whenLabel,
+      data.scheduleLine,
+    ) ||
+    (dateText && timeText && !dateText.toLowerCase().includes(timeText.toLowerCase())
+      ? `${dateText} at ${timeText}`
+      : dateText || timeText || fallback.scheduleLine);
+  const locationLine =
+    firstStringValue(
+      liveCard.locationLine,
+      publicEvent.locationLine,
+      previewCopy.locationLine,
+      data.locationLabel,
+    ) ||
+    uniqueDisplayLine(data.venue ?? data.placeName, data.location ?? data.address) ||
+    fallback.locationLine;
+
+  return {
+    headline:
+      firstStringValue(liveCard.headline, publicEvent.headline, event.title) || fallback.headline,
+    subheadline:
+      firstStringValue(
+        liveCard.subheadline,
+        publicEvent.subheadline,
+        previewCopy.subheadline,
+        theme ? `${theme} theme` : null,
+      ) || fallback.subheadline,
+    scheduleLine,
+    locationLine,
+    outputs: outputLabelsFromUnknown(data.requestedOutputs ?? data.outputs, fallback.outputs),
+  };
+}
+
+function notifyCreationThreadsChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("envitefy:creation-threads-changed"));
 }
 
 export default function ConciergeChatClient() {
-  const router = useRouter();
+  const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
@@ -188,71 +471,180 @@ export default function ConciergeChatClient() {
   const productMenuRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [input, setInput] = useState("");
-  const [selectedProductOutput, setSelectedProductOutput] =
-    useState<RequestedOutput>("live_card");
+  const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput>("live_card");
   const [messages, setMessages] = useState<ChatMessage[]>([
     newMessage("assistant", "What are we celebrating?"),
   ]);
+  const [phase, setPhase] = useState<ConciergePhase>("intake_empty");
   const [draft, setDraft] = useState<ConciergeEventDraft | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isFinalizing, setIsFinalizing] = useState(false);
   const [buildProgress, setBuildProgress] = useState(0);
-  const [activePreviewTab, setActivePreviewTab] = useState<"creative" | "guests">("creative");
+  const [liveCardEventId, setLiveCardEventId] = useState<string | null>(null);
+  const [liveCardTitle, setLiveCardTitle] = useState<string | null>(null);
+  const [liveCardSummary, setLiveCardSummary] = useState<LiveCardSummary | null>(null);
+  const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [composerCenterLeft, setComposerCenterLeft] = useState("50vw");
 
+  const isGeneratingCard = phase === "generating_card";
+  const isEditingGeneratedCard = phase === "editing_card";
   const isEmptyState =
+    phase === "intake_empty" &&
     messages.length === 1 &&
     messages[0]?.role === "assistant" &&
     !draft &&
     !isSending &&
-    !isUploading &&
-    !isFinalizing;
+    !isUploading;
   const visibleMessages = messages.filter(
     (message, index) =>
       !(index === 0 && message.role === "assistant" && message.text === "What are we celebrating?"),
   );
-  const isBusy = isSending || isUploading || isFinalizing;
+  const isBusy = isSending || isUploading || isGeneratingCard;
   const busyLabel = isUploading
     ? "Reading upload"
-    : isFinalizing
-      ? "Building workspace"
-      : "Thinking";
+    : isEditingGeneratedCard
+      ? "Updating workspace"
+      : isGeneratingCard
+        ? "Generating product"
+        : "Thinking";
   const currentBuildStep = Math.min(
     Math.floor((buildProgress / 100) * BUILDING_STEPS.length),
     BUILDING_STEPS.length - 1,
   );
-  const draftOutputs = outputLabels(draft);
-  const selectedProduct =
-    PRODUCT_OPTIONS.find((option) => option.output === selectedProductOutput) ||
-    PRODUCT_OPTIONS[0];
-  const shouldShowWorkspacePreview = isReadyCreationDraft(draft);
+  const currentLiveCardSummary =
+    liveCardSummary || liveCardSummaryFromDraft(draft, selectedProductOutput);
+  const workspaceTitle = liveCardTitle || currentLiveCardSummary.headline;
+  const detailsComplete = isReadyProductDraft(draft);
+  const canGenerateProduct = detailsComplete && !isBusy && !liveCardEventId;
+  const shouldShowWorkspacePanel =
+    phase === "ready_to_generate" ||
+    phase === "generating_card" ||
+    phase === "card_ready" ||
+    phase === "editing_card" ||
+    Boolean(liveCardEventId);
+  const liveCardPublicHref = liveCardEventId ? `/event/${liveCardEventId}` : null;
+  const liveCardWorkspaceHref = liveCardEventId ? `/events/${liveCardEventId}/workspace` : null;
+  const threadId = searchParams.get("thread")?.trim() || null;
+
+  function selectProductOutputForDraft(nextDraft: ConciergeEventDraft) {
+    const restoredOutput = nextDraft.requestedOutputs.find((output) =>
+      PRODUCT_OPTIONS.some((option) => option.output === output),
+    );
+    if (restoredOutput) setSelectedProductOutput(restoredOutput);
+  }
+
+  function resetConversation() {
+    setDraft(null);
+    setPhase("intake_empty");
+    setLiveCardEventId(null);
+    setLiveCardTitle(null);
+    setLiveCardSummary(null);
+    setLastGeneratedAt(null);
+    setBuildProgress(0);
+    setSelectedProductOutput("live_card");
+    setMessages([newMessage("assistant", "What are we celebrating?")]);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!threadId) {
+      resetConversation();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    async function restoreThread() {
+      setError(null);
+      setIsSending(true);
+      try {
+        const response = await fetch(
+          `/api/creation/intake?threadId=${encodeURIComponent(threadId)}`,
+          {
+            credentials: "include",
+          },
+        );
+        const json = (await response
+          .json()
+          .catch(() => null)) as CreationSessionResumeResponse | null;
+        if (cancelled || !response.ok || !json?.ok || !json.draft) return;
+
+        const restoredDraft = json.draft;
+        const savedEventId = json.savedEventId || null;
+        const restoredOutput =
+          restoredDraft.requestedOutputs.find((output) =>
+            PRODUCT_OPTIONS.some((option) => option.output === output),
+          ) || selectedProductOutput;
+        setDraft(restoredDraft);
+        setSelectedProductOutput(restoredOutput);
+        setLiveCardEventId(savedEventId);
+        setLiveCardTitle(savedEventId ? draftHeadline(restoredDraft) : null);
+        setLiveCardSummary(liveCardSummaryFromDraft(restoredDraft, restoredOutput));
+        setLastGeneratedAt(json.creationSession?.updated_at || null);
+        setBuildProgress(savedEventId ? 100 : 0);
+        setPhase(
+          savedEventId
+            ? "card_ready"
+            : isReadyProductDraft(restoredDraft)
+              ? "ready_to_generate"
+              : "collecting_details",
+        );
+        setMessages([
+          newMessage(
+            "assistant",
+            savedEventId
+              ? "Thread opened. Your generated workspace is ready to refine."
+              : "Thread opened. We can keep collecting the details from here.",
+          ),
+        ]);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Unable to open AI thread.");
+        }
+      } finally {
+        if (!cancelled) setIsSending(false);
+      }
+    }
+
+    void restoreThread();
+    return () => {
+      cancelled = true;
+    };
+  }, [threadId]);
 
   useEffect(() => {
     if (!isProductMenuOpen) return;
 
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsProductMenuOpen(false);
+    }
+
     function handlePointerDown(event: PointerEvent) {
       const target = event.target;
       if (!(target instanceof Node)) return;
-      if (
-        productMenuRef.current?.contains(target) ||
-        productButtonRef.current?.contains(target)
-      ) {
+      if (productMenuRef.current?.contains(target) || productButtonRef.current?.contains(target)) {
         return;
       }
       setIsProductMenuOpen(false);
     }
 
+    document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
   }, [isProductMenuOpen]);
 
   useEffect(() => {
     function updateComposerCenter() {
-      const target = shouldShowWorkspacePreview ? chatPaneRef.current : mainRef.current;
+      const target = shouldShowWorkspacePanel
+        ? chatPaneRef.current || mainRef.current
+        : mainRef.current;
       const rect = target?.getBoundingClientRect();
       if (!rect) {
         setComposerCenterLeft("50vw");
@@ -270,14 +662,14 @@ export default function ConciergeChatClient() {
       window.clearTimeout(timeout);
       window.removeEventListener("resize", updateComposerCenter);
     };
-  }, [shouldShowWorkspacePreview]);
+  }, [shouldShowWorkspacePanel]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, isBusy]);
 
   useEffect(() => {
-    if (!isFinalizing) return;
+    if (!isGeneratingCard) return;
     const interval = window.setInterval(() => {
       setBuildProgress((current) => {
         if (current >= 92) return current;
@@ -285,11 +677,15 @@ export default function ConciergeChatClient() {
       });
     }, 420);
     return () => window.clearInterval(interval);
-  }, [isFinalizing]);
+  }, [isGeneratingCard]);
 
-  async function openWorkspaceForDraft(draftToSave: ConciergeEventDraft) {
+  async function generateProductForDraft(draftToGenerate: ConciergeEventDraft) {
+    if (!isReadyProductDraft(draftToGenerate)) {
+      setError("Complete the required details before generating the product.");
+      return;
+    }
     setError(null);
-    setIsFinalizing(true);
+    setPhase("generating_card");
     setBuildProgress(8);
     try {
       const response = await fetch("/api/creation/intake", {
@@ -299,31 +695,79 @@ export default function ConciergeChatClient() {
         body: JSON.stringify({
           message: "",
           action: "save",
-          draft: draftToSave,
+          draft: draftToGenerate,
           persistSession: true,
         }),
       });
       const json = (await response.json().catch(() => null)) as ConciergeMessageResponse | null;
       if (!response.ok || !json?.ok) {
-        throw new Error(json && !json.ok ? json.error : "Unable to create workspace.");
+        throw new Error(json && !json.ok ? json.error : "Unable to generate product.");
       }
       const savedEventId = json.savedEventId;
-      if (!savedEventId) throw new Error("Workspace was created without an event id.");
+      if (!savedEventId) throw new Error("Product was generated without an event id.");
       setBuildProgress(100);
-      setMessages((prev) => [...prev, newMessage("assistant", json.assistantMessage)]);
-      window.setTimeout(() => {
-        router.push(`/events/${savedEventId}/workspace`);
-      }, 520);
+      setDraft(json.draft);
+      setLiveCardEventId(savedEventId);
+      setLiveCardTitle(draftHeadline(json.draft || draftToGenerate));
+      setLiveCardSummary(
+        liveCardSummaryFromDraft(json.draft || draftToGenerate, selectedProductOutput),
+      );
+      setLastGeneratedAt(new Date().toISOString());
+      setPhase("card_ready");
+      setMessages((prev) => [
+        ...prev,
+        newMessage(
+          "assistant",
+          "Your product is generated. You can review it in the workspace or tell me what to change.",
+        ),
+      ]);
+      notifyCreationThreadsChanged();
     } catch (err) {
-      setIsFinalizing(false);
       setBuildProgress(0);
-      setError(err instanceof Error ? err.message : "Unable to create workspace.");
+      setPhase(isReadyProductDraft(draftToGenerate) ? "ready_to_generate" : "collecting_details");
+      setError(err instanceof Error ? err.message : "Unable to generate product.");
+    }
+  }
+
+  async function sendGeneratedCardEdit(message: string) {
+    const trimmed = message.trim();
+    if (!trimmed || !liveCardEventId) return;
+
+    setError(null);
+    setIsSending(true);
+    setPhase("editing_card");
+    setMessages((prev) => [...prev, newMessage("user", trimmed)]);
+    try {
+      const response = await fetch(`/api/concierge/events/${liveCardEventId}/message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ message: trimmed }),
+      });
+      const json = (await response
+        .json()
+        .catch(() => null)) as ConciergeEventMessageResponse | null;
+      if (!response.ok || !json?.ok) {
+        throw new Error(json && !json.ok ? json.error : "Workspace update failed.");
+      }
+      const fallbackSummary =
+        liveCardSummary || liveCardSummaryFromDraft(draft, selectedProductOutput);
+      setLiveCardTitle(json.event.title || liveCardTitle || draftHeadline(draft));
+      setLiveCardSummary(liveCardSummaryFromEvent(json.event, fallbackSummary));
+      setLastGeneratedAt(new Date().toISOString());
+      setPhase("card_ready");
+      setMessages((prev) => [...prev, newMessage("assistant", json.assistantMessage)]);
+    } catch (err) {
+      setPhase("card_ready");
+      setError(err instanceof Error ? err.message : "Workspace update failed.");
+    } finally {
+      setIsSending(false);
     }
   }
 
   async function sendToConcierge(params: {
     message: string;
-    action?: "message" | "chip" | "ocr_result";
+    action?: "message" | "chip" | "starter_category" | "ocr_result";
     ocrContext?: ConciergeOcrContext | null;
     activeContext?: ConciergeActiveContext | null;
     requestedOutputs?: RequestedOutput[];
@@ -334,13 +778,16 @@ export default function ConciergeChatClient() {
 
     setError(null);
     setIsSending(true);
+    if (!liveCardEventId && phase !== "ready_to_generate") {
+      setPhase("collecting_details");
+    }
     if (params.echo || message) {
       setMessages((prev) => [...prev, newMessage("user", params.echo || message)]);
     }
     try {
       const activeContext: ConciergeActiveContext = params.activeContext || {
         route: "/chat",
-        currentEventId: null,
+        currentEventId: liveCardEventId,
         currentDraftId: draft?.creationSessionId || null,
         selectedUploadId: params.ocrContext ? `upload_${Date.now()}` : null,
         selectedTemplateId: null,
@@ -365,18 +812,21 @@ export default function ConciergeChatClient() {
         throw new Error(json && !json.ok ? json.error : "Concierge request failed.");
       }
       setDraft(json.draft);
-      if (isReadyLiveCardDraft(json.draft)) {
+      selectProductOutputForDraft(json.draft);
+      notifyCreationThreadsChanged();
+      if (isReadyProductDraft(json.draft)) {
+        setPhase("generating_card");
         setMessages((prev) => [
           ...prev,
-          newMessage(
-            "assistant",
-            "Your live card has the key details. Review the preview, then open the workspace when you're ready.",
-          ),
+          newMessage("assistant", "I have the event details. I am generating the product now."),
         ]);
+        await generateProductForDraft(json.draft);
         return;
       }
+      setPhase("collecting_details");
       setMessages((prev) => [...prev, newMessage("assistant", json.assistantMessage)]);
     } catch (err) {
+      setPhase(draft ? "collecting_details" : "intake_empty");
       setError(err instanceof Error ? err.message : "Concierge request failed.");
     } finally {
       setIsSending(false);
@@ -388,30 +838,37 @@ export default function ConciergeChatClient() {
     const value = input.trim();
     if (!value) return;
     setInput("");
+    if (liveCardEventId) {
+      await sendGeneratedCardEdit(value);
+      return;
+    }
     await sendToConcierge({ message: value });
   }
 
-  async function handleChip(label: string) {
-    if (/upload/i.test(label)) {
-      fileInputRef.current?.click();
-      return;
-    }
+  async function handleStarterCategory(label: string) {
     await sendToConcierge({
-      message: label === "Other" ? "General event" : label,
-      action: "chip",
+      message: label === "Custom Invite" ? "Custom invite" : label,
+      action: "starter_category",
     });
   }
 
   async function handleProductOption(option: ProductOption) {
     setSelectedProductOutput(option.output);
     setIsProductMenuOpen(false);
-    if (!draft || option.output === selectedProductOutput) return;
+    if (option.output === selectedProductOutput) return;
+
+    if (liveCardEventId) {
+      await sendGeneratedCardEdit(`Create a ${option.label} version for this event.`);
+      return;
+    }
+
+    if (!draft) return;
 
     await sendToConcierge({
       message: `Switch to ${option.label}.`,
       action: "chip",
       requestedOutputs: [option.output],
-      echo: `Product: ${option.label}`,
+      echo: `Output: ${option.label}`,
     });
   }
 
@@ -495,7 +952,11 @@ export default function ConciergeChatClient() {
   }
 
   const chatThread = (
-    <div className="space-y-5 px-4 pb-56 pt-8 sm:px-6 sm:pb-60">
+    <div
+      className={`mx-auto flex min-h-[calc(100vh-5rem)] w-full flex-col justify-end gap-5 px-4 pb-56 pt-8 sm:px-6 sm:pb-60 ${
+        shouldShowWorkspacePanel ? "max-w-[26rem]" : "max-w-3xl"
+      }`}
+    >
       <AnimatePresence initial={false}>
         {visibleMessages.map((message) => (
           <motion.div
@@ -529,11 +990,11 @@ export default function ConciergeChatClient() {
         ))}
       </AnimatePresence>
 
-      {isBusy && !isFinalizing ? (
+      {isBusy && !isGeneratingCard ? (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 rounded-full border border-[#eadfff] bg-white/86 px-4 py-2 text-sm text-[#5f5289] shadow-sm"
+          className="inline-flex w-fit max-w-[86%] self-start items-center gap-2 rounded-full border border-[#eadfff] bg-white/86 px-4 py-2 text-sm text-[#5f5289] shadow-sm"
           role="status"
           aria-live="polite"
         >
@@ -545,171 +1006,145 @@ export default function ConciergeChatClient() {
     </div>
   );
 
-  const draftWorkspacePreview = draft && shouldShowWorkspacePreview ? (
-    <aside className="min-h-0 overflow-y-auto border-t border-[#eadfff] bg-[#fbf9ff]/72 lg:border-l lg:border-t-0">
-      <div className="mx-auto w-full max-w-5xl px-5 py-7 lg:px-8 lg:py-10">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  const workspacePanel = (
+    <aside className="order-1 min-h-0 overflow-y-auto border-b border-[#eadfff] bg-[#fbf9ff]/88 lg:order-2 lg:border-b-0 lg:border-l">
+      <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold tracking-normal text-[#211633]">
-              Live Card Builder
-            </h2>
-            <p className="mt-1 text-sm text-[#7a6c99]">
-              {draftHeadline(draft)} - {draftLocationLine(draft)}
+            <p className="inline-flex items-center gap-2 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#16875f]">
+              {liveCardEventId ? (
+                <CheckCircle2 className="size-4" aria-hidden="true" />
+              ) : (
+                <Sparkles className="size-4" aria-hidden="true" />
+              )}
+              {isGeneratingCard
+                ? "Generating product"
+                : liveCardEventId
+                  ? "Generated product"
+                  : "Ready to generate"}
             </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-normal text-[#2d1b36]">
+              Event Workspace
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-[#7a6c99]">
+              {workspaceTitle} - {currentLiveCardSummary.subheadline}
+            </p>
+            {lastGeneratedAt ? (
+              <p className="mt-1 text-xs font-semibold text-[#8b7aaa]">
+                Updated{" "}
+                {new Date(lastGeneratedAt).toLocaleTimeString([], {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </p>
+            ) : null}
           </div>
-          <div className="inline-flex rounded-2xl border border-[#eadfff] bg-white p-1 shadow-sm">
+          {liveCardEventId ? (
             <button
               type="button"
-              onClick={() => setActivePreviewTab("creative")}
-              className={`h-9 rounded-xl px-4 text-xs font-bold transition ${
-                activePreviewTab === "creative"
-                  ? "bg-[#2d1b36] text-white"
-                  : "text-[#6d5d8d] hover:bg-[#f4efff]"
-              }`}
+              disabled={isBusy}
+              onClick={() =>
+                void sendGeneratedCardEdit("Regenerate the product with the latest event details.")
+              }
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#d8caff] bg-white px-4 text-xs font-bold text-[#5f5289] transition hover:bg-[#f7f3ff] disabled:cursor-not-allowed disabled:opacity-55"
             >
-              Creative
+              <RefreshCw className="size-4" aria-hidden="true" />
+              Regenerate
             </button>
-            <button
-              type="button"
-              onClick={() => setActivePreviewTab("guests")}
-              className={`h-9 rounded-xl px-4 text-xs font-bold transition ${
-                activePreviewTab === "guests"
-                  ? "bg-[#2d1b36] text-white"
-                  : "text-[#6d5d8d] hover:bg-[#f4efff]"
-              }`}
-            >
-              Guests & RSVPs
-            </button>
-          </div>
+          ) : null}
         </div>
 
-        {activePreviewTab === "creative" ? (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
-            <section className="overflow-hidden rounded-[1.6rem] border border-[#eadfff] bg-white shadow-[0_22px_65px_rgba(68,43,112,0.08)]">
-              <div className="flex min-h-[30rem] items-center justify-center bg-[#f5f0ff] p-6 sm:p-10">
-                <div className="flex aspect-[4/5] w-full max-w-md flex-col items-center justify-center border border-[#eadfff] bg-white px-8 py-10 text-center shadow-2xl shadow-[#3f275f]/10">
-                  <Sparkles className="mb-5 size-7 text-[#7c4dff]" aria-hidden="true" />
-                  <h3 className="text-4xl font-semibold tracking-normal text-[#2d1b36]">
-                    {draftHeadline(draft)}
-                  </h3>
-                  <p className="mt-3 text-lg italic text-[#6f5b86]">{draftSubheadline(draft)}</p>
-                  <div className="my-7 h-px w-14 bg-[#ded2ff]" />
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#7a6c99]">
-                    {draftScheduleLine(draft)}
-                  </p>
-                  <p className="mt-3 text-sm font-medium text-[#5b4a72]">
-                    {draftLocationLine(draft)}
-                  </p>
-                  <button
-                    type="button"
-                    disabled={!draft.canPersist || isFinalizing}
-                    onClick={() => void openWorkspaceForDraft(draft)}
-                    className="mt-9 h-10 rounded-sm bg-[#2d1b36] px-6 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#3b2946] disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    Open Workspace
-                  </button>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#eadfff] bg-white px-5 py-4">
-                <span className="text-sm font-semibold text-[#6f5b86]">
-                  {draftOutputs.join(" + ")}
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    void sendToConcierge({
-                      message: "Create a matching invitation asset.",
-                      action: "chip",
-                    })
-                  }
-                  className="inline-flex items-center gap-2 text-sm font-bold text-[#7c4dff]"
-                >
-                  <Sparkles className="size-4" aria-hidden="true" />
-                  AI Graphic
-                </button>
-              </div>
-            </section>
-
-            <section className="space-y-4">
-              <div className="rounded-[1.4rem] border border-[#eadfff] bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center gap-3">
-                  <span className="grid size-9 place-items-center rounded-full bg-emerald-50 text-emerald-600">
-                    <Sparkles className="size-4" aria-hidden="true" />
-                  </span>
-                  <h4 className="text-sm font-bold text-[#2d1b36]">Details to Fill</h4>
-                </div>
-                <div className="space-y-2">
-                  {(draft.missingFields.length
-                    ? draft.missingFields
-                        .slice(0, 3)
-                        .map((field) => `Add ${missingFieldLabel(field)}`)
-                    : ["Add RSVP page", "Create a WhatsApp version", "Make it more elegant"]
-                  ).map((recommendation) => (
-                    <button
-                      key={recommendation}
-                      type="button"
-                      onClick={() =>
-                        void sendToConcierge({ message: recommendation, action: "chip" })
-                      }
-                      className="w-full rounded-2xl bg-[#f7f3ff] px-4 py-3 text-left text-sm font-semibold text-[#2d1b36] transition hover:bg-[#eee6ff]"
-                    >
-                      {recommendation}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                type="button"
-                disabled={!draft.canPersist || isFinalizing}
-                onClick={() => void openWorkspaceForDraft(draft)}
-                className="h-13 w-full rounded-[1.4rem] bg-[#2d1b36] px-5 text-xs font-bold uppercase tracking-[0.16em] text-white shadow-xl shadow-[#2d1b36]/15 transition hover:bg-[#3b2946] disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                Open Workspace
-              </button>
-            </section>
+        <section className="relative flex min-h-[34rem] flex-1 items-center justify-center overflow-hidden rounded-[1.2rem] border border-[#eadfff] bg-[#f7f3ff] px-5 py-8 shadow-[0_22px_70px_rgba(68,43,112,0.08)] sm:px-8">
+          <div className="relative flex aspect-[4/5] w-full max-w-[25rem] flex-col items-center justify-center border border-[#eee7ff] bg-white px-8 py-10 text-center shadow-2xl shadow-[#3f275f]/10">
+            <Sparkles className="mb-5 size-7 text-[#7c4dff]" aria-hidden="true" />
+            <h3 className="text-4xl font-semibold tracking-normal text-[#2d1b36]">
+              {workspaceTitle}
+            </h3>
+            <p className="mt-3 text-lg italic text-[#6f5b86]">
+              {currentLiveCardSummary.subheadline}
+            </p>
+            <div className="my-7 h-px w-14 bg-[#ded2ff]" />
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#7a6c99]">
+              {currentLiveCardSummary.scheduleLine}
+            </p>
+            <p className="mt-3 text-sm font-medium text-[#5b4a72]">
+              {currentLiveCardSummary.locationLine}
+            </p>
+            <span className="mt-8 inline-flex h-10 items-center rounded-sm bg-[#2d1b36] px-6 text-xs font-bold uppercase tracking-[0.16em] text-white">
+              RSVP Online
+            </span>
           </div>
-        ) : (
-          <section className="space-y-5">
-            <div className="grid gap-4 sm:grid-cols-3">
-              {[
-                { label: "Invites Sent", value: "0", sub: "Ready after publishing" },
-                { label: "Attending", value: "0", sub: "Confirmed" },
-                { label: "Pending", value: "0", sub: "Awaiting replies" },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-[1.3rem] border border-[#eadfff] bg-white p-5 shadow-sm"
-                >
-                  <p className="text-[0.66rem] font-bold uppercase tracking-[0.16em] text-[#8b7aaa]">
-                    {stat.label}
-                  </p>
-                  <p className="mt-2 text-3xl font-semibold text-[#2d1b36]">{stat.value}</p>
-                  <p className="mt-1 text-xs text-[#7a6c99]">{stat.sub}</p>
+
+          {isGeneratingCard ? (
+            <div className="absolute inset-0 flex items-end justify-center bg-white/62 p-5 backdrop-blur-[2px]">
+              <div
+                className="w-full max-w-md rounded-[1.15rem] border border-[#eadfff] bg-white/94 p-4 shadow-xl shadow-[#3f275f]/10"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="flex items-center gap-3">
+                  <Loader2 className="size-5 animate-spin text-[#7c4dff]" aria-hidden="true" />
+                  <div>
+                    <p className="text-sm font-bold text-[#2d1b36]">
+                      {BUILDING_STEPS[currentBuildStep]}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[#7a6c99]">Building the workspace preview</p>
+                  </div>
                 </div>
-              ))}
-            </div>
-            <div className="overflow-hidden rounded-[1.4rem] border border-[#eadfff] bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-[#eadfff] px-5 py-4">
-                <h3 className="text-sm font-bold text-[#2d1b36]">RSVP Management</h3>
-                <button
-                  type="button"
-                  onClick={() =>
-                    void sendToConcierge({ message: "Add RSVP details.", action: "chip" })
-                  }
-                  className="text-sm font-bold text-[#7c4dff]"
-                >
-                  Add RSVP
-                </button>
-              </div>
-              <div className="px-5 py-10 text-center text-sm text-[#7a6c99]">
-                Guest responses will appear in the workspace after publishing.
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eadfff]">
+                  <motion.div
+                    className="h-full bg-[#7c4dff]"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${buildProgress}%` }}
+                  />
+                </div>
               </div>
             </div>
-          </section>
-        )}
+          ) : null}
+        </section>
+
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          {liveCardPublicHref ? (
+            <a
+              href={liveCardPublicHref}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#197052] px-5 text-sm font-bold text-white shadow-lg shadow-[#197052]/15 transition hover:bg-[#145f46]"
+            >
+              View product
+              <ExternalLink className="size-4" aria-hidden="true" />
+            </a>
+          ) : null}
+          {liveCardWorkspaceHref ? (
+            <a
+              href={liveCardWorkspaceHref}
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-[#d8caff] bg-white px-5 text-sm font-bold text-[#5f5289] transition hover:bg-[#f7f3ff]"
+            >
+              Open workspace
+            </a>
+          ) : null}
+          {!liveCardEventId && !isGeneratingCard ? (
+            <button
+              type="button"
+              disabled={!canGenerateProduct}
+              onClick={() => {
+                if (draft) void generateProductForDraft(draft);
+              }}
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#197052] px-5 text-sm font-bold text-white shadow-lg shadow-[#197052]/15 transition hover:bg-[#145f46] disabled:cursor-not-allowed disabled:bg-[#a9cabb] disabled:shadow-none"
+            >
+              <Sparkles className="size-4" aria-hidden="true" />
+              Generate product
+            </button>
+          ) : null}
+        </div>
+        {liveCardEventId ? (
+          <p className="mt-4 text-center text-sm leading-6 text-[#6f608c]">
+            Refine the workspace in chat to update the generated product.
+          </p>
+        ) : null}
       </div>
     </aside>
-  ) : null;
+  );
 
   return (
     <main
@@ -729,68 +1164,50 @@ export default function ConciergeChatClient() {
         </header>
 
         <section className="min-h-0 flex-1">
-          {isEmptyState ? (
-            <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-3xl flex-col items-center justify-center px-5 pb-36 text-center">
-              <motion.h1
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-4xl font-medium tracking-normal text-[#2d1b36] sm:text-5xl"
-              >
-                Where should we begin?
-              </motion.h1>
-              <div className="mt-10 flex max-w-2xl flex-wrap justify-center gap-2">
-                {CHIPS.map((chip, index) => {
-                  const Icon = chip.icon;
-                  return (
-                    <motion.button
-                      key={chip.label}
-                      type="button"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.08 + index * 0.04 }}
-                      onClick={() => void handleChip(chip.label)}
-                      className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-[#ded2ff] bg-white/82 px-5 text-sm font-medium text-[#4b3c79] shadow-sm backdrop-blur transition hover:border-[#bfaeff] hover:bg-white hover:text-[#7c4dff] active:scale-[0.98]"
-                    >
-                      {Icon ? (
-                        <Icon
-                          className={`size-3.5 ${chip.iconClassName || ""}`}
-                          aria-hidden="true"
-                        />
-                      ) : null}
-                      {chip.label}
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
+          <div
+            className={`grid min-h-[calc(100vh-5rem)] ${
+              shouldShowWorkspacePanel
+                ? "lg:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)]"
+                : "lg:grid-cols-1"
+            }`}
+          >
             <div
-              className={`grid min-h-[calc(100vh-5rem)] ${
-                shouldShowWorkspacePreview
-                  ? "lg:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)]"
-                  : "place-items-end pb-20"
+              ref={chatPaneRef}
+              className={`order-2 min-h-0 w-full border-t border-[#eadfff] bg-white/48 backdrop-blur-sm lg:order-1 lg:flex lg:flex-col lg:overflow-hidden lg:border-t-0 ${
+                shouldShowWorkspacePanel ? "lg:border-r" : "lg:border-r-0"
               }`}
             >
-              <div
-                ref={chatPaneRef}
-                className={`min-h-0 w-full ${
-                  shouldShowWorkspacePreview
-                    ? "flex flex-col overflow-hidden border-t border-[#eadfff] bg-white/48 backdrop-blur-sm lg:border-r lg:border-t-0"
-                    : "mx-auto max-w-3xl"
-                }`}
-              >
-                {chatThread}
-              </div>
-              {draftWorkspacePreview}
+              {isEmptyState ? (
+                <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-[72rem] flex-col justify-end px-4 pb-56 pt-8 text-center sm:px-6 sm:pb-60">
+                  <motion.h1
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mx-auto max-w-xl text-3xl font-medium tracking-normal text-[#2d1b36] sm:text-4xl"
+                  >
+                    What are we celebrating?
+                  </motion.h1>
+                  <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base">
+                    Start with a few details, choose a format, or upload an invite.
+                  </p>
+                  <div className="mt-6 w-full">
+                    <ChatStudioStarterGrid
+                      onSelectCategory={handleStarterCategory}
+                      onUploadInvite={() => fileInputRef.current?.click()}
+                      isUploading={isUploading}
+                    />
+                  </div>
+                </div>
+              ) : (
+                chatThread
+              )}
             </div>
-          )}
+            {shouldShowWorkspacePanel ? workspacePanel : null}
+          </div>
         </section>
 
         <div
-          className={`pointer-events-none fixed bottom-0 z-30 flex -translate-x-1/2 flex-col items-stretch pb-5 pt-12 sm:pb-8 ${
-            shouldShowWorkspacePreview
-              ? "w-[calc(100vw-2rem)] max-w-[26rem] sm:w-[calc(100vw-3rem)]"
-              : "w-[calc(100vw-2.5rem)] max-w-3xl sm:w-[calc(100vw-4rem)]"
+          className={`pointer-events-none fixed bottom-0 z-30 flex w-[calc(100vw-1rem)] -translate-x-1/2 flex-col items-stretch pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-10 sm:w-[calc(100vw-3rem)] sm:pb-8 ${
+            shouldShowWorkspacePanel ? "max-w-[26rem]" : "max-w-3xl"
           }`}
           style={{ left: composerCenterLeft }}
         >
@@ -802,9 +1219,11 @@ export default function ConciergeChatClient() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.96 }}
                 className="pointer-events-auto mb-4 w-full"
-                role="menu"
               >
-                <div className="w-full max-w-[17.5rem] rounded-[1.35rem] border border-[#eadfff] bg-white p-3 shadow-2xl shadow-[#412a62]/10">
+                <div className="w-full max-w-[19rem] rounded-[1.35rem] border border-[#eadfff] bg-white p-3 shadow-2xl shadow-[#412a62]/10">
+                  <p className="px-3 pb-2 text-[0.66rem] font-bold uppercase text-[#8b7aaa]">
+                    Choose output
+                  </p>
                   {PRODUCT_OPTIONS.map((option) => {
                     const Icon = option.icon;
                     const isSelected = option.output === selectedProductOutput;
@@ -816,7 +1235,6 @@ export default function ConciergeChatClient() {
                         className={`flex w-full items-center gap-4 rounded-2xl p-3 text-left transition ${
                           isSelected ? "bg-[#fbf8ff]" : "hover:bg-[#f7f3ff]"
                         }`}
-                        role="menuitem"
                       >
                         <span className="grid size-8 shrink-0 place-items-center rounded-xl">
                           <Icon className={`size-5 ${option.iconClassName}`} aria-hidden="true" />
@@ -832,8 +1250,11 @@ export default function ConciergeChatClient() {
                       </button>
                     );
                   })}
-                  {shouldShowWorkspacePreview ? (
+                  {shouldShowWorkspacePanel ? (
                     <div className="mt-2 border-t border-[#eadfff] pt-2">
+                      <p className="px-3 pb-1 text-[0.66rem] font-bold uppercase text-[#8b7aaa]">
+                        Add source
+                      </p>
                       <button
                         type="button"
                         onClick={() => {
@@ -841,15 +1262,12 @@ export default function ConciergeChatClient() {
                           fileInputRef.current?.click();
                         }}
                         className="flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:bg-[#f7f3ff]"
-                        role="menuitem"
                       >
                         <span className="grid size-8 shrink-0 place-items-center rounded-xl text-[#8f879a]">
                           <Upload className="size-5" aria-hidden="true" />
                         </span>
                         <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-[#24183e]">
-                            Upload
-                          </span>
+                          <span className="block text-sm font-semibold text-[#24183e]">Upload</span>
                           <span className="block text-xs leading-5 text-[#8f879a]">
                             Add a file or image
                           </span>
@@ -862,15 +1280,12 @@ export default function ConciergeChatClient() {
                           cameraInputRef.current?.click();
                         }}
                         className="flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:bg-[#f7f3ff]"
-                        role="menuitem"
                       >
                         <span className="grid size-8 shrink-0 place-items-center rounded-xl text-[#8f879a]">
                           <Camera className="size-5" aria-hidden="true" />
                         </span>
                         <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-[#24183e]">
-                            Camera
-                          </span>
+                          <span className="block text-sm font-semibold text-[#24183e]">Camera</span>
                           <span className="block text-xs leading-5 text-[#8f879a]">
                             Take a photo
                           </span>
@@ -886,7 +1301,11 @@ export default function ConciergeChatClient() {
           <div className="pointer-events-auto w-full">
             <form
               onSubmit={handleSubmit}
-              className="relative flex min-h-14 items-center gap-2 rounded-full border border-[#ddd2ef] bg-white/96 p-1.5 shadow-2xl shadow-[#6f4cff]/10 ring-4 ring-white/80 backdrop-blur"
+              className={`relative grid min-h-14 items-center gap-1.5 rounded-[1.25rem] border border-[#ddd2ef] bg-white/96 p-1.5 shadow-2xl shadow-[#6f4cff]/10 ring-4 ring-white/80 backdrop-blur sm:rounded-full sm:gap-2 ${
+                shouldShowWorkspacePanel
+                  ? "grid-cols-[auto_minmax(0,1fr)_auto_auto]"
+                  : "grid-cols-[auto_auto_auto_minmax(0,1fr)_auto_auto]"
+              }`}
             >
               <input
                 ref={fileInputRef}
@@ -907,11 +1326,11 @@ export default function ConciergeChatClient() {
                 ref={productButtonRef}
                 type="button"
                 onClick={() => setIsProductMenuOpen((current) => !current)}
-                className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-[#eadfff] bg-[#fbf9ff] px-4 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-[#7b718c] shadow-sm transition hover:border-[#ded2ff] hover:bg-white hover:text-[#2d1238] active:scale-[0.98]"
+                className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-[#eadfff] bg-[#fbf9ff] px-3 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-[#7b718c] shadow-sm transition hover:border-[#ded2ff] hover:bg-white hover:text-[#2d1238] active:scale-[0.98] sm:px-4"
                 aria-expanded={isProductMenuOpen}
-                aria-haspopup="menu"
-                aria-label={`Output: ${selectedProduct.label}`}
-                title={`Output: ${selectedProduct.label}`}
+                aria-haspopup="true"
+                aria-label="Product menu"
+                title="Product menu"
               >
                 {isProductMenuOpen ? (
                   <X className="size-4" aria-hidden="true" />
@@ -924,7 +1343,7 @@ export default function ConciergeChatClient() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className={`size-10 shrink-0 place-items-center rounded-full text-[#9b92a8] transition hover:bg-[#f4efff] hover:text-[#7c4dff] ${
-                  shouldShowWorkspacePreview ? "hidden" : "grid"
+                  shouldShowWorkspacePanel ? "hidden" : "grid"
                 }`}
                 aria-label="Upload file"
                 title="Upload file"
@@ -935,7 +1354,7 @@ export default function ConciergeChatClient() {
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
                 className={`size-10 shrink-0 place-items-center rounded-full text-[#9b92a8] transition hover:bg-[#f4efff] hover:text-[#7c4dff] ${
-                  shouldShowWorkspacePreview ? "hidden" : "grid"
+                  shouldShowWorkspacePanel ? "hidden" : "grid"
                 }`}
                 aria-label="Use camera"
                 title="Use camera"
@@ -945,9 +1364,9 @@ export default function ConciergeChatClient() {
               <input
                 value={input}
                 onChange={(event) => setInput(event.currentTarget.value)}
-                placeholder="Describe your event..."
-                aria-label="Describe your event"
-                className="h-11 min-w-0 flex-1 border-0 bg-transparent text-base text-[#161129] outline-none placeholder:text-[#b8b1c4]"
+                placeholder={liveCardEventId ? "Refine workspace..." : "Describe your event..."}
+                aria-label={liveCardEventId ? "Refine workspace" : "Describe your event"}
+                className="h-11 min-w-0 border-0 bg-transparent text-base text-[#161129] outline-none placeholder:text-[#b8b1c4]"
               />
               <button
                 type="button"
@@ -981,50 +1400,6 @@ export default function ConciergeChatClient() {
           </div>
         </div>
       </div>
-
-      <AnimatePresence>
-        {isFinalizing ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 p-6 text-center backdrop-blur-xl"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="w-full max-w-md"
-            >
-              <div className="mx-auto mb-9 grid size-24 rotate-6 place-items-center rounded-3xl bg-[#7c4dff] text-white shadow-2xl shadow-[#7c4dff]/30">
-                <Sparkles className="size-10" aria-hidden="true" />
-              </div>
-              <h2 className="text-3xl font-medium tracking-normal text-[#2d1b36]">
-                {buildProgress >= 100 ? "Ready to launch!" : "Building your workspace"}
-              </h2>
-              <p className="mt-3 text-sm text-[#7a6c99]">
-                {buildProgress >= 100
-                  ? "Opening your event workspace."
-                  : "Crafting your event experience."}
-              </p>
-              <div className="mt-10 h-1.5 overflow-hidden rounded-full bg-[#eadfff]">
-                <motion.div
-                  className="h-full bg-[#7c4dff]"
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${buildProgress}%` }}
-                />
-              </div>
-              <div className="mt-6 inline-flex items-center gap-3 text-sm font-semibold text-[#5f5289]">
-                {buildProgress >= 100 ? (
-                  <Sparkles className="size-4 text-emerald-600" aria-hidden="true" />
-                ) : (
-                  <Loader2 className="size-4 animate-spin text-[#7c4dff]" aria-hidden="true" />
-                )}
-                {buildProgress >= 100 ? "Workspace finalized" : BUILDING_STEPS[currentBuildStep]}
-              </div>
-            </motion.div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
     </main>
   );
 }

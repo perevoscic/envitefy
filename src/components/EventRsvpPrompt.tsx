@@ -123,6 +123,22 @@ export default function EventRsvpPrompt({
     return () => window.removeEventListener("rsvp-submitted", handler);
   }, [mounted, eventId]);
 
+  useEffect(() => {
+    if (!modalOpen && !declineModalOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setModalOpen(false);
+      setDeclineModalOpen(false);
+      setDeclineLines([]);
+      setIntent(null);
+      setError(null);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [modalOpen, declineModalOpen]);
+
   const hasPhone = Boolean(rsvpPhone);
   const hasEmail = Boolean(rsvpEmail);
   const hasUrl = Boolean(rsvpUrl);
@@ -140,6 +156,7 @@ export default function EventRsvpPrompt({
     : hasPhone
       ? "sms"
       : "direct";
+  const isDirectOnlyRsvp = contactMode === "direct";
   const rsvpContactForMode =
     contactMode === "email" ? rsvpEmail || "" : contactMode === "sms" ? rsvpPhone || "" : "";
   const resolvedCategory = eventCategory || (isWeddingScanVariant ? "Wedding" : null);
@@ -270,7 +287,9 @@ export default function EventRsvpPrompt({
       }
     }
 
-    openOutboundComposerForIntent(intent);
+    if (!isDirectOnlyRsvp) {
+      openOutboundComposerForIntent(intent);
+    }
     setModalOpen(false);
     setIntent(null);
   };
@@ -483,6 +502,9 @@ export default function EventRsvpPrompt({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           {/* Force modal to follow site theme tokens; avoid OS auto-dark */}
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rsvp-decline-title"
             className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl"
             style={{ colorScheme: theme }}
           >
@@ -507,7 +529,7 @@ export default function EventRsvpPrompt({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 className="text-lg font-semibold rsvp-heading">
+            <h3 id="rsvp-decline-title" className="text-lg font-semibold rsvp-heading">
               Thanks for the RSVP
             </h3>
             <div className="mt-3 space-y-2 text-sm text-foreground/80">
@@ -557,7 +579,9 @@ export default function EventRsvpPrompt({
                     }
                   } catch {}
                 }
-                openOutboundComposerForIntent("decline");
+                if (!isDirectOnlyRsvp) {
+                  openOutboundComposerForIntent("decline");
+                }
                 setDeclineModalOpen(false);
                 setDeclineLines([]);
                 setIntent(null);
@@ -659,6 +683,9 @@ export default function EventRsvpPrompt({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           {/* Force modal to follow site theme tokens; avoid OS auto-dark */}
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rsvp-introduce-title"
             className="relative w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl"
             style={{ colorScheme: theme }}
           >
@@ -683,11 +710,13 @@ export default function EventRsvpPrompt({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 className="text-lg font-semibold rsvp-heading">
+            <h3 id="rsvp-introduce-title" className="text-lg font-semibold rsvp-heading">
               Introduce yourself
             </h3>
             <p className="mt-2 text-sm text-foreground/70">
-              We’ll open your message after you share who is reaching out.
+              {isDirectOnlyRsvp
+                ? "We’ll send your RSVP directly to the host."
+                : "We’ll open your message after you share who is reaching out."}
             </p>
             <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -772,7 +801,7 @@ export default function EventRsvpPrompt({
                   type="submit"
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary hover:opacity-95"
                 >
-                  Continue
+                  {isDirectOnlyRsvp ? "Send RSVP" : "Continue"}
                 </button>
               </div>
             </form>
