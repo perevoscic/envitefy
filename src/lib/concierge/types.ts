@@ -172,10 +172,12 @@ export type ConciergeEventMessageResponse =
       assistantMessage: string;
       actions: ConciergeEventAction[];
       suggestedReplies: string[];
+      timings?: Record<string, unknown>;
     }
   | {
       ok: false;
       error: string;
+      timings?: Record<string, unknown>;
     };
 
 export type ConciergeSource = "text" | "upload" | "mixed";
@@ -247,6 +249,7 @@ export type ConciergeMessageRequest = {
   draft?: ConciergeEventDraft | null;
   ocrContext?: ConciergeOcrContext | null;
   activeContext?: ConciergeActiveContext | null;
+  requestedOutputs?: RequestedOutput[] | null;
   action?: ConciergeAction;
 };
 
@@ -264,8 +267,10 @@ export type ConciergeMessageResponse =
       suggestedReplies: string[];
       canSave: boolean;
       savedEventId?: string | null;
+      timings?: Record<string, unknown>;
     }
   | {
       ok: false;
       error: string;
+      timings?: Record<string, unknown>;
     };

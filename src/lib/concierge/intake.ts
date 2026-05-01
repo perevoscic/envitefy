@@ -1,9 +1,9 @@
-import { extractConciergeDraft } from "./extract.ts";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { insertEventHistory } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { buildEventAssetContent } from "./assets.ts";
 import { createEventAsset, upsertCreationSession } from "./event-storage.ts";
+import { extractConciergeDraft } from "./extract.ts";
 import { buildAssistantMessage, buildSuggestedReplies, canSaveConciergeDraft } from "./fallback.ts";
 import { buildConciergeHistoryPayload } from "./history-payload.ts";
 import type {
@@ -17,8 +17,14 @@ import type {
 
 export type CreationIntakeResult = Extract<ConciergeMessageResponse, { ok: true }>;
 
+type TimingRecorder = {
+  time<T>(name: string, work: () => Promise<T>): Promise<T>;
+};
+
 const OUTPUT_ASSET_TYPES: Partial<Record<RequestedOutput, EventAssetType>> = {
+  event_page: "live_card",
   live_card: "live_card",
+  digital_flyer: "printable_flyer",
   invitation: "invitation",
   rsvp_page: "rsvp_page",
   whatsapp: "whatsapp",
@@ -45,11 +51,7 @@ async function persistCreationAsEvent(params: {
   draft: ConciergeEventDraft;
 }): Promise<{ eventId: string }> {
   const payload = buildConciergeHistoryPayload(params.draft);
-  const data = {
-    ...payload.data,
-    status: "published",
-    draftStatus: "published",
-  };
+  const data = payload.data;
   const event = await insertEventHistory({
     userId: params.userId,
     title: payload.title,
@@ -91,6 +93,7 @@ async function persistCreationAsEvent(params: {
 export async function handleCreationIntake(params: {
   userId: string;
   request: CreationIntakeRequest;
+  timing?: TimingRecorder;
 }): Promise<CreationIntakeResult> {
   const request = params.request;
   const isSaveAction = Boolean(request.action === "save" && request.draft);
@@ -98,13 +101,24 @@ export async function handleCreationIntake(params: {
     ? {
         draft: request.draft as ConciergeEventDraft,
       }
-    : await extractConciergeDraft({
-        message: request.message || "",
-        draft: request.draft || null,
-        ocrContext: request.ocrContext || null,
-        activeContext: request.activeContext || null,
-        action: request.action || "message",
-      });
+    : await (params.timing?.time("model_extraction", () =>
+        extractConciergeDraft({
+          message: request.message || "",
+          draft: request.draft || null,
+          ocrContext: request.ocrContext || null,
+          activeContext: request.activeContext || null,
+          requestedOutputs: request.requestedOutputs || null,
+          action: request.action || "message",
+        }),
+      ) ??
+        extractConciergeDraft({
+          message: request.message || "",
+          draft: request.draft || null,
+          ocrContext: request.ocrContext || null,
+          activeContext: request.activeContext || null,
+          requestedOutputs: request.requestedOutputs || null,
+          action: request.action || "message",
+        }));
   const draft = {
     ...result.draft,
     creationSessionId: request.creationSessionId || result.draft.creationSessionId,
@@ -115,27 +129,44 @@ export async function handleCreationIntake(params: {
     request.persistSession !== false &&
     (draft.canPersist || draft.requestedOutputs.length > 0 || Boolean(request.ocrContext));
   if (shouldPersistSession) {
-    creationSession = await upsertCreationSession({
-      userId: params.userId,
-      draft,
-      activeContext: (request.activeContext || {}) as Record<string, unknown>,
-      metadata: {
-        action: request.action || "message",
-        canPersist: draft.canPersist,
-      },
-    });
+    creationSession = await (params.timing?.time("db_write", () =>
+      upsertCreationSession({
+        userId: params.userId,
+        draft,
+        activeContext: (request.activeContext || {}) as Record<string, unknown>,
+        metadata: {
+          action: request.action || "message",
+          canPersist: draft.canPersist,
+        },
+      }),
+    ) ??
+      upsertCreationSession({
+        userId: params.userId,
+        draft,
+        activeContext: (request.activeContext || {}) as Record<string, unknown>,
+        metadata: {
+          action: request.action || "message",
+          canPersist: draft.canPersist,
+        },
+      }));
   }
 
   if (isSaveAction) {
-    const saved = await persistCreationAsEvent({
-      userId: params.userId,
-      draft,
-    });
+    const saved = await (params.timing?.time("db_write", () =>
+      persistCreationAsEvent({
+        userId: params.userId,
+        draft,
+      }),
+    ) ??
+      persistCreationAsEvent({
+        userId: params.userId,
+        draft,
+      }));
     return {
       ok: true,
       draft,
       creationSession,
-      assistantMessage: "Your live card is ready. Opening the workspace now.",
+      assistantMessage: "Your workspace is ready. Opening it now.",
       suggestedReplies: ["Open workspace"],
       canSave: false,
       savedEventId: saved.eventId,

@@ -14,9 +14,25 @@ import type {
   ConciergeEventMessageRequest,
   ConciergeEventMessageResponse,
 } from "@/lib/concierge/types";
+import {
+  createServerTimingTracker,
+  isTimingRequested,
+  type ServerTimingTracker,
+} from "@/lib/server-timing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+function timedJson(
+  timing: ServerTimingTracker,
+  payload: ConciergeEventMessageResponse,
+  init?: ResponseInit,
+) {
+  const body = timing.enabled ? { ...payload, timings: timing.toObject() } : payload;
+  const response = NextResponse.json(body, init);
+  timing.applyHeader(response);
+  return response;
+}
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -24,87 +40,103 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const timing = createServerTimingTracker(isTimingRequested(req));
   try {
-    const session: any = await getServerSession(authOptions as any);
-    const userId = await resolveSessionUserId(session);
+    const session: any = await timing.time("session", () => getServerSession(authOptions as any));
+    const userId = await timing.time("user_lookup", () => resolveSessionUserId(session));
     if (!userId) {
-      return NextResponse.json(
-        { ok: false, error: "Sign in to use this event assistant." } satisfies ConciergeEventMessageResponse,
+      return timedJson(
+        timing,
+        {
+          ok: false,
+          error: "Sign in to use this event assistant.",
+        } satisfies ConciergeEventMessageResponse,
         { status: 401 },
       );
     }
 
     const { id: eventId } = await params;
-    const event = await getEventHistoryById(eventId);
+    const event = await timing.time("db_read", () => getEventHistoryById(eventId));
     if (!event) {
-      return NextResponse.json(
+      return timedJson(
+        timing,
         { ok: false, error: "Event not found." } satisfies ConciergeEventMessageResponse,
         { status: 404 },
       );
     }
     if (event.user_id !== userId) {
-      return NextResponse.json(
+      return timedJson(
+        timing,
         { ok: false, error: "Event not found." } satisfies ConciergeEventMessageResponse,
         { status: 404 },
       );
     }
 
-    const body = (await req.json().catch(() => ({}))) as ConciergeEventMessageRequest;
+    const body = (await timing.time("body_parse", () =>
+      req.json().catch(() => ({})),
+    )) as ConciergeEventMessageRequest;
     const message = typeof body.message === "string" ? body.message.slice(0, 12000).trim() : "";
     if (!message) {
-      return NextResponse.json(
+      return timedJson(
+        timing,
         { ok: false, error: "Send a message." } satisfies ConciergeEventMessageResponse,
         { status: 400 },
       );
     }
 
-    const thread = await getOrCreateEventThread({
-      userId,
-      eventId,
-      title: `${event.title || "Event"} assistant`,
-    });
-    await appendConversationMessage({
-      threadId: thread.id,
-      userId,
-      role: "user",
-      content: message,
-      metadata: {},
-    });
+    const thread = await timing.time("db_write", () =>
+      getOrCreateEventThread({
+        userId,
+        eventId,
+        title: `${event.title || "Event"} assistant`,
+      }),
+    );
+    await timing.time("db_write", () =>
+      appendConversationMessage({
+        threadId: thread.id,
+        userId,
+        role: "user",
+        content: message,
+        metadata: {},
+      }),
+    );
 
-    const [assets, history] = await Promise.all([
-      listEventAssets(eventId, userId),
-      listConversationMessages(thread.id, 30),
-    ]);
-    const plan = await buildEventActionPlan({
-      message,
-      event,
-      assets,
-      history: history.map((item) => ({ role: item.role, content: item.content })),
-    });
-    const applied = await applyEventActions({
-      userId,
-      eventId,
-      event,
-      actions: plan.actions,
-    });
+    const [assets, history] = await timing.time("db_read", () =>
+      Promise.all([listEventAssets(eventId, userId), listConversationMessages(thread.id, 30)]),
+    );
+    const plan = await timing.time("model_planning", () =>
+      buildEventActionPlan({
+        message,
+        event,
+        assets,
+        history: history.map((item) => ({ role: item.role, content: item.content })),
+      }),
+    );
+    const applied = await timing.time("db_write", () =>
+      applyEventActions({
+        userId,
+        eventId,
+        event,
+        actions: plan.actions,
+      }),
+    );
     const assistantMessage =
       applied.appliedActions[0]?.type === "ask_question"
         ? applied.appliedActions[0].question
         : plan.assistantMessage;
-    await appendConversationMessage({
-      threadId: thread.id,
-      userId,
-      role: "assistant",
-      content: assistantMessage,
-      metadata: { actions: applied.appliedActions },
-    });
-    await touchConversationThread(thread.id);
+    await timing.time("db_write", () =>
+      appendConversationMessage({
+        threadId: thread.id,
+        userId,
+        role: "assistant",
+        content: assistantMessage,
+        metadata: { actions: applied.appliedActions },
+      }),
+    );
+    await timing.time("db_write", () => touchConversationThread(thread.id));
 
-    return NextResponse.json({
+    return timedJson(timing, {
       ok: true,
       event: {
         id: applied.event.id,
@@ -120,7 +152,8 @@ export async function POST(
           : plan.suggestedReplies,
     } satisfies ConciergeEventMessageResponse);
   } catch (error) {
-    return NextResponse.json(
+    return timedJson(
+      timing,
       {
         ok: false,
         error: error instanceof Error ? error.message : "Event assistant request failed.",

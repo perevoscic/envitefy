@@ -34,3 +34,35 @@ test("creation intake API owns session persistence and auth", () => {
   assert.match(storage, /idx_creation_sessions_user_updated/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS creation_sessions/);
 });
+
+test("concierge creation routes expose optional timing payloads and Server-Timing headers", () => {
+  for (const routePath of [
+    "src/app/api/concierge/message/route.ts",
+    "src/app/api/creation/intake/route.ts",
+  ]) {
+    const source = readSource(routePath);
+
+    assert.match(source, /createServerTimingTracker\(isTimingRequested\(req\)\)/);
+    assert.match(source, /timing\.time\("session"/);
+    assert.match(source, /timing\.time\("user_lookup"/);
+    assert.match(source, /timing\.time\("body_parse"/);
+    assert.match(source, /timing,/);
+    assert.match(source, /timings: timing\.toObject\(\)/);
+    assert.match(source, /timing\.applyHeader\(response\)/);
+    assert.match(
+      source,
+      /timing\.enabled \? \{ \.\.\.payload, timings: timing\.toObject\(\) \} : payload/,
+    );
+  }
+
+  const types = readSource("src/lib/concierge/types.ts");
+  assert.match(types, /timings\?: Record<string, unknown>/);
+});
+
+test("creation intake times model extraction and DB writes inside the handler", () => {
+  const source = readSource("src/lib/concierge/intake.ts");
+
+  assert.match(source, /timing\?: TimingRecorder/);
+  assert.match(source, /time\("model_extraction"/);
+  assert.match(source, /time\("db_write"/);
+});

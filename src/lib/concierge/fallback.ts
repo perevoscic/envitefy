@@ -17,6 +17,7 @@ import type {
   ConciergeEventType,
   ConciergeOcrContext,
   ConciergePreviewCopy,
+  RequestedOutput,
   ConciergeSource,
 } from "./types.ts";
 
@@ -221,10 +222,87 @@ function computeMissingFields(draft: Omit<ConciergeEventDraft, "missingFields">)
   return missing;
 }
 
+function hasStartedCategoryDetails(draft: ConciergeEventDraft) {
+  return Boolean(
+    draft.honoreeName ||
+      draft.ageOrMilestone ||
+      draft.dateText ||
+      draft.timeText ||
+      draft.startISO ||
+      draft.location ||
+      draft.venue ||
+      draft.theme,
+  );
+}
+
+function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
+  if (!draft.missingFields.length || hasStartedCategoryDetails(draft)) return null;
+
+  if (draft.eventType === "birthday") {
+    return [
+      "Welcome to Envitefy. I am your Concierge AI, here to help craft an elegant birthday event page or digital flyer.",
+      "",
+      "To get started, please share a few details:",
+      "What kind of birthday celebration is it?",
+      "Who is the guest of honor, and what age or milestone are we celebrating?",
+      "What date, time, and location should guests know?",
+      "Do you have a specific theme, color palette, or vibe in mind?",
+      "",
+      "Once I have those details, I can generate the live card or flyer.",
+    ].join("\n");
+  }
+
+  if (draft.eventType === "wedding") {
+    return [
+      "Welcome to Envitefy. I am your Concierge AI, here to help craft an elegant wedding event page or digital flyer.",
+      "",
+      "To get started, please share a few details:",
+      "Is this for the wedding, rehearsal dinner, shower, or another wedding event?",
+      "What names should be featured?",
+      "What date, time, and venue should guests know?",
+      "Do you have a style, palette, dress code, or registry detail in mind?",
+      "",
+      "Once I have those details, I can generate the live card or flyer.",
+    ].join("\n");
+  }
+
+  if (draft.eventType === "baby_shower") {
+    return [
+      "Welcome to Envitefy. I am your Concierge AI, here to help craft a polished baby shower event page or digital flyer.",
+      "",
+      "To get started, please share a few details:",
+      "What type of shower or sprinkle are you hosting?",
+      "Who are we celebrating, and should a baby name be included?",
+      "What date, time, and location should guests know?",
+      "Do you have a theme, color palette, registry, or gift note in mind?",
+      "",
+      "Once I have those details, I can generate the live card or flyer.",
+    ].join("\n");
+  }
+
+  if (draft.eventType === "graduation") {
+    return [
+      "Welcome to Envitefy. I am your Concierge AI, here to help craft a graduation event page or digital flyer.",
+      "",
+      "To get started, please share a few details:",
+      "Is this for a ceremony, party, open house, or dinner?",
+      "Who is the graduate, and should we include school or class year?",
+      "What date, time, and location should guests know?",
+      "Do you have school colors, a photo style, or a specific vibe in mind?",
+      "",
+      "Once I have those details, I can generate the live card or flyer.",
+    ].join("\n");
+  }
+
+  return null;
+}
+
 export function buildAssistantMessage(draft: ConciergeEventDraft): string {
   if (draft.currentQuestion === "which_source") {
     return "Should I use the uploaded image or the current event details?";
   }
+  const intakeMessage = categoryIntakeMessage(draft);
+  if (intakeMessage) return intakeMessage;
   if (
     draft.currentQuestion === "what_are_we_celebrating" ||
     draft.missingFields[0] === "eventPurpose"
@@ -281,6 +359,7 @@ export function fallbackExtractConciergeDraft(args: {
   message: string;
   draft?: ConciergeEventDraft | null;
   ocrContext?: ConciergeOcrContext | null;
+  requestedOutputs?: RequestedOutput[] | null;
   source?: ConciergeSource;
   activeContext?: ConciergeActiveContext | null;
 }): ConciergeEventDraft {
@@ -288,11 +367,13 @@ export function fallbackExtractConciergeDraft(args: {
   const combined = mergeText(message, args.ocrContext);
   const text = combined || message;
   const previous = args.draft || null;
+  const hasExplicitOutputs =
+    Array.isArray(args.requestedOutputs) && args.requestedOutputs.length > 0;
   const requestedOutputs = normalizeRequestedOutputs(
-    previous?.requestedOutputs || previous?.outputs,
+    hasExplicitOutputs ? args.requestedOutputs : previous?.requestedOutputs || previous?.outputs,
     {
       text,
-      previous,
+      previous: hasExplicitOutputs ? null : previous,
       defaultOutput: !previous && isGreetingMessage(message) ? null : undefined,
     },
   );

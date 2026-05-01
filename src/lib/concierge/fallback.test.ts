@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { extractConciergeDraft, normalizeConciergeDraft } from "./extract.ts";
-import { fallbackExtractConciergeDraft } from "./fallback.ts";
+import { buildAssistantMessage, fallbackExtractConciergeDraft } from "./fallback.ts";
 import { getOutputRequirement, resolveSourceIntent } from "./creation-intent.ts";
-import { buildConciergeHistoryPayload, canPersistConciergeHistoryDraft } from "./history-payload.ts";
+import {
+  buildConciergeHistoryPayload,
+  canPersistConciergeHistoryDraft,
+} from "./history-payload.ts";
 
 test("fallback extracts a partial birthday draft from a relationship sentence", () => {
   const draft = fallbackExtractConciergeDraft({ message: "my daughter's birthday" });
@@ -14,6 +17,15 @@ test("fallback extracts a partial birthday draft from a relationship sentence", 
   assert.match(draft.missingFields.join(","), /honoreeName/);
   assert.match(draft.previewCopy.scheduleLine, /Date TBD/);
   assert.match(draft.previewCopy.locationLine, /Location TBD/);
+});
+
+test("birthday category starts with an oriented intake prompt", () => {
+  const draft = fallbackExtractConciergeDraft({ message: "Birthday" });
+  const message = buildAssistantMessage(draft);
+
+  assert.match(message, /birthday event page or digital flyer/i);
+  assert.match(message, /Who is the guest of honor/i);
+  assert.match(message, /What date, time, and location/i);
 });
 
 test("greeting does not default into live card creation flow", () => {
@@ -53,6 +65,52 @@ test("greeting short-circuits AI extraction and stays conversational", async () 
   assert.deepEqual(result.draft.requestedOutputs, []);
   assert.match(result.assistantMessage, /what would you like to create/i);
   assert.doesNotMatch(result.assistantMessage, /live card be for/i);
+});
+
+test("fast action flag lets OCR creation intake skip AI extraction", async () => {
+  const previous = process.env.CONCIERGE_SKIP_AI_FAST_ACTIONS;
+  process.env.CONCIERGE_SKIP_AI_FAST_ACTIONS = "1";
+  let aiCalls = 0;
+  try {
+    const result = await extractConciergeDraft(
+      {
+        message: "Seed a draft from this upload.",
+        action: "ocr_result",
+        ocrContext: {
+          ocrText: "Ava's Birthday Party\nSky Zone\nSaturday at 3",
+          fieldsGuess: {
+            title: "Ava's Birthday Party",
+            location: "Sky Zone",
+          },
+          category: "Birthdays",
+        },
+      },
+      {
+        openAiApiKey: "test-key",
+        createOpenAiClient: () =>
+          ({
+            chat: {
+              completions: {
+                create: async () => {
+                  aiCalls += 1;
+                  return { choices: [] };
+                },
+              },
+            },
+          }) as any,
+      },
+    );
+
+    assert.equal(aiCalls, 0);
+    assert.equal(result.usedAi, false);
+    assert.equal(result.draft.title, "Ava's Birthday Party");
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CONCIERGE_SKIP_AI_FAST_ACTIONS;
+    } else {
+      process.env.CONCIERGE_SKIP_AI_FAST_ACTIONS = previous;
+    }
+  }
 });
 
 test("output-only live card prompt without context asks for purpose before date", () => {
@@ -131,7 +189,10 @@ test("output-only RSVP page prompt stays unsaved until an event/source exists", 
 });
 
 test("output capability matrix gives output-specific first questions and CTAs", () => {
-  assert.equal(getOutputRequirement("digital_flyer").firstQuestion, "What should this flyer promote?");
+  assert.equal(
+    getOutputRequirement("digital_flyer").firstQuestion,
+    "What should this flyer promote?",
+  );
   assert.equal(getOutputRequirement("whatsapp").previewCta, "Write copy");
 });
 

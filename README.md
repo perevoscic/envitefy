@@ -51,6 +51,8 @@ GOOGLE_APPLICATION_CREDENTIALS_JSON=
 # Optional LLM fallback for OCR title/schedule
 OPENAI_API_KEY=
 LLM_MODEL=gpt-5.1-mini
+# Optional GPT model for Envitefy Concierge chat/workspace planning
+OPENAI_CONCIERGE_MODEL=gpt-5.4-mini
 
 # Postgres (users + token store)
 DATABASE_URL=postgresql://appuser:pass@host:5432/envitefy
@@ -199,7 +201,7 @@ See `AGENTS.md` for full details. Highlights:
 - Google OAuth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`.
 - Microsoft OAuth: `OUTLOOK_CLIENT_ID`, `OUTLOOK_CLIENT_SECRET`, `OUTLOOK_REDIRECT_URI`, `OUTLOOK_TENANT_ID`.
 - Vision: prefer `GOOGLE_APPLICATION_CREDENTIALS_BASE64` (or `GOOGLE_APPLICATION_CREDENTIALS_JSON`).
-- OpenAI (optional): `OPENAI_API_KEY`, `LLM_MODEL`.
+- OpenAI (optional): `OPENAI_API_KEY`, `LLM_MODEL`, `OPENAI_CONCIERGE_MODEL`.
 - Postgres: `DATABASE_URL` with optional `PGSSL_DISABLE_VERIFY` or `PGSSL_CA_BASE64`.
 
 ---

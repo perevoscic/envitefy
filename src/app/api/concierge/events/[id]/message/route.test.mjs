@@ -28,3 +28,30 @@ test("event assistant persists private thread history and applies server actions
   assert.match(source, /buildEventActionPlan/);
   assert.match(source, /applyEventActions/);
 });
+
+test("event assistant route emits optional timings and Server-Timing headers", () => {
+  const source = readSource("src/app/api/concierge/events/[id]/message/route.ts");
+
+  assert.match(source, /createServerTimingTracker\(isTimingRequested\(req\)\)/);
+  assert.match(source, /timing\.time\("session"/);
+  assert.match(source, /timing\.time\("user_lookup"/);
+  assert.match(source, /timing\.time\("body_parse"/);
+  assert.match(source, /timing\.time\("db_read"/);
+  assert.match(source, /timing\.time\("db_write"/);
+  assert.match(source, /timing\.time\("model_planning"/);
+  assert.match(source, /timings: timing\.toObject\(\)/);
+  assert.match(source, /timing\.applyHeader\(response\)/);
+});
+
+test("event assistant planner uses compact model context and deterministic fast actions", () => {
+  const source = readSource("src/lib/concierge/event-actions.ts");
+
+  assert.match(source, /buildCompactEventContext/);
+  assert.match(source, /liveCardCopy/);
+  assert.match(source, /recentMessages: params\.history\.slice\(-6\)/);
+  assert.match(source, /max_completion_tokens: 650/);
+  assert.match(source, /resolveConciergeOpenAiModel\(\)/);
+  assert.match(source, /runWithConciergeOpenAiTimeout/);
+  assert.match(source, /isConciergeFastActionsEnabled\(\)/);
+  assert.match(source, /shouldSkipOpenAiForEventAction\(params\.message\)/);
+});

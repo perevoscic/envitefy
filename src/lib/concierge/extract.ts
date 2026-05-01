@@ -14,11 +14,13 @@ import {
   canSaveConciergeDraft,
   fallbackExtractConciergeDraft,
 } from "./fallback.ts";
+import { isConciergeFastActionsEnabled, shouldSkipOpenAiForCreationRequest } from "./fast-paths.ts";
+import { resolveConciergeOpenAiModel, runWithConciergeOpenAiTimeout } from "./openai-config.ts";
 import type {
   ConciergeEventDraft,
   ConciergeMessageRequest,
-  CreationSourceContext,
   ConciergeSource,
+  CreationSourceContext,
 } from "./types.ts";
 
 type ExtractionResult = {
@@ -197,43 +199,46 @@ async function extractWithOpenAi(
   const apiKey = deps.openAiApiKey;
   if (!apiKey) return null;
   const client = deps.createOpenAiClient?.(apiKey) || new OpenAI({ apiKey });
-  const model =
-    cleanString(deps.openAiModel) ||
-    cleanString(process.env.OPENAI_CONCIERGE_MODEL) ||
-    "gpt-4o-mini";
-  const response = await client.chat.completions.create({
-    model,
-    temperature: 0.1,
-    response_format: { type: "json_object" },
-    messages: [
+  const model = resolveConciergeOpenAiModel(deps.openAiModel);
+  const response = await runWithConciergeOpenAiTimeout((signal) =>
+    client.chat.completions.create(
       {
-        role: "system",
-        content: [
-          "You are Envitefy's event creation concierge.",
-          "Only handle event, invitation, RSVP, and event asset creation or editing.",
-          "Return one JSON object matching the draft shape. Do not include markdown.",
-          "Return intent, requestedOutputs, sourceContext, eventPurpose, eventType, eventData when useful, missingFields, draftStatus, and nextQuestion/currentQuestion.",
-          "Separate requested output from event details: live cards, digital flyers, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",
-          "Resolve 'this' only from supplied activeContext. If no context exists, ask what source or event to use.",
-          "Use eventType unknown until the user or source gives a real category. Do not use general as a fallback.",
-          "Prioritize eventPurpose/title before strict event type. Do not ask for date/time before event purpose/source.",
-          "Do not mark drafts ready when event purpose/source is missing. Do not classify uploads as invited based only on event category.",
-          "Ask for the minimum missing fields. Produce preview copy even when details are missing.",
-          "Never choose a user id, owner id, or fetch private user data.",
-        ].join(" "),
-      },
-      {
-        role: "user",
-        content: JSON.stringify({
-          message: request.message || "",
-          previousDraft: request.draft || null,
-          ocrContext: request.ocrContext || null,
-          activeContext: request.activeContext || null,
-          fallbackDraft: fallback,
-        }),
-      },
-    ],
-  } as any);
+        model,
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+        max_completion_tokens: 650,
+        messages: [
+          {
+            role: "system",
+            content: [
+              "You are Envitefy's event creation concierge.",
+              "Only handle event, invitation, RSVP, and event asset creation or editing.",
+              "Return one JSON object matching the draft shape. Do not include markdown.",
+              "Return intent, requestedOutputs, sourceContext, eventPurpose, eventType, eventData when useful, missingFields, draftStatus, and nextQuestion/currentQuestion.",
+              "Separate requested output from event details: live cards, digital flyers, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",
+              "Resolve 'this' only from supplied activeContext. If no context exists, ask what source or event to use.",
+              "Use eventType unknown until the user or source gives a real category. Do not use general as a fallback.",
+              "Prioritize eventPurpose/title before strict event type. Do not ask for date/time before event purpose/source.",
+              "Do not mark drafts ready when event purpose/source is missing. Do not classify uploads as invited based only on event category.",
+              "Ask for the minimum missing fields. Produce preview copy even when details are missing.",
+              "Never choose a user id, owner id, or fetch private user data.",
+            ].join(" "),
+          },
+          {
+            role: "user",
+            content: JSON.stringify({
+              message: request.message || "",
+              previousDraft: request.draft || null,
+              ocrContext: request.ocrContext || null,
+              activeContext: request.activeContext || null,
+              fallbackDraft: fallback,
+            }),
+          },
+        ],
+      } as any,
+      { signal } as any,
+    ),
+  );
   const content = response.choices?.[0]?.message?.content;
   const parsed = parseAiJson(content);
   if (!parsed) return null;
@@ -254,11 +259,17 @@ export async function extractConciergeDraft(
     message,
     draft: request.draft || null,
     ocrContext: request.ocrContext || null,
+    requestedOutputs: request.requestedOutputs || null,
     source,
     activeContext: request.activeContext || null,
   });
 
-  if (isGreetingMessage(message) && !request.draft && !request.ocrContext) {
+  const shouldUseDeterministicFastPath =
+    (isGreetingMessage(message) && !request.draft && !request.ocrContext) ||
+    (isConciergeFastActionsEnabled() &&
+      shouldSkipOpenAiForCreationRequest({ request, fallbackDraft: fallback }));
+
+  if (shouldUseDeterministicFastPath) {
     return {
       draft: fallback,
       assistantMessage: buildAssistantMessage(fallback),

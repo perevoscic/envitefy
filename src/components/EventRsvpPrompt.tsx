@@ -23,6 +23,7 @@ type EventRsvpPromptProps = {
   eventTitle?: string | null;
   eventCategory?: string | null;
   shareUrl?: string | null;
+  allowDirectRsvp?: boolean;
   variant?: "default" | "wedding-scan";
 };
 
@@ -67,6 +68,7 @@ export default function EventRsvpPrompt({
   eventTitle,
   eventCategory,
   shareUrl,
+  allowDirectRsvp = false,
   variant = "default",
 }: EventRsvpPromptProps) {
   const { theme } = useTheme();
@@ -124,16 +126,22 @@ export default function EventRsvpPrompt({
   const hasPhone = Boolean(rsvpPhone);
   const hasEmail = Boolean(rsvpEmail);
   const hasUrl = Boolean(rsvpUrl);
+  const hasDirectRsvp = Boolean(eventId && allowDirectRsvp);
   const isWeddingScanVariant = variant === "wedding-scan";
-  if (!hasPhone && !hasEmail && !hasUrl) {
+  if (!hasPhone && !hasEmail && !hasUrl && !hasDirectRsvp) {
     return null;
   }
   if (!mounted) {
     return null;
   }
 
-  const contactMode: "sms" | "email" = hasEmail ? "email" : "sms";
-  const rsvpContactForMode = contactMode === "email" ? rsvpEmail || "" : rsvpPhone || "";
+  const contactMode: "direct" | "sms" | "email" = hasEmail
+    ? "email"
+    : hasPhone
+      ? "sms"
+      : "direct";
+  const rsvpContactForMode =
+    contactMode === "email" ? rsvpEmail || "" : contactMode === "sms" ? rsvpPhone || "" : "";
   const resolvedCategory = eventCategory || (isWeddingScanVariant ? "Wedding" : null);
 
   const buildOutboundHrefForIntent = (nextIntent: NonNullable<ResponseIntent>) => {
@@ -451,7 +459,7 @@ export default function EventRsvpPrompt({
         </a>
       ) : null}
 
-      {!hasPhone && !hasEmail ? null : (
+      {!hasPhone && !hasEmail && !hasDirectRsvp ? null : (
       <div className="flex flex-wrap gap-3">
         {RSVP_OPTIONS.map((option) => (
           <button
@@ -603,7 +611,9 @@ export default function EventRsvpPrompt({
                 />
               </label>
               <label className="text-sm block">
-                <span className="text-foreground/70">Your phone number</span>
+                <span className="text-foreground/70">
+                  Your phone number{contactMode === "direct" ? " (optional)" : ""}
+                </span>
                 <input
                   type="tel"
                   value={sender.phone}
@@ -728,7 +738,9 @@ export default function EventRsvpPrompt({
                 />
               </label>
               <label className="text-sm block">
-                <span className="text-foreground/70">Your phone number</span>
+                <span className="text-foreground/70">
+                  Your phone number{contactMode === "direct" ? " (optional)" : ""}
+                </span>
                 <input
                   type="tel"
                   required={contactMode === "sms"}

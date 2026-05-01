@@ -15,6 +15,10 @@ test("/chat is a signed-in concierge page, not an admin-only notFound page", () 
   assert.doesNotMatch(page, /notFound\(/);
   assert.match(client, /What are we celebrating\?/);
   assert.match(client, /fetch\("\/api\/creation\/intake"/);
+  assert.match(client, /NEXT_PUBLIC_CONCIERGE_FAST_UPLOADS/);
+  assert.match(client, /FAST_UPLOAD_OCR_URL = "\/api\/ocr\?fast=1&turbo=1&timing=1"/);
+  assert.match(client, /DEFAULT_UPLOAD_OCR_URL = "\/api\/ocr\?fast=0"/);
+  assert.match(client, /ENABLE_FAST_UPLOAD_OCR \? FAST_UPLOAD_OCR_URL : DEFAULT_UPLOAD_OCR_URL/);
   assert.match(client, /const activeContext: ConciergeActiveContext =/);
   assert.match(client, /activeContext,/);
   assert.match(client, /"Thinking"/);
