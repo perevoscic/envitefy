@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { buildPreferredDirectionsHref } from "@/lib/directions";
 
 type LocationLinkProps = {
   location?: string | null;
@@ -8,11 +9,6 @@ type LocationLinkProps = {
   className?: string;
 };
 
-const buildGoogleHref = (location: string) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
-
-const buildAppleHref = (location: string) =>
-  `https://maps.apple.com/?q=${encodeURIComponent(location)}`;
 
 export default function LocationLink({
   location,
@@ -26,7 +22,7 @@ export default function LocationLink({
     return displayText;
   }, [displayText, query]);
   const [href, setHref] = useState<string | null>(() =>
-    resolvedQuery ? buildGoogleHref(resolvedQuery) : null
+    resolvedQuery ? buildPreferredDirectionsHref(resolvedQuery) : null
   );
 
   useEffect(() => {
@@ -35,15 +31,10 @@ export default function LocationLink({
       return;
     }
     const nextHref =
-      typeof window === "undefined"
-        ? buildGoogleHref(resolvedQuery)
-        : (() => {
-            const ua = window.navigator.userAgent || "";
-            if (/iP(hone|ad|od)|Macintosh/.test(ua) && !/Android/.test(ua)) {
-              return buildAppleHref(resolvedQuery);
-            }
-            return buildGoogleHref(resolvedQuery);
-          })();
+      buildPreferredDirectionsHref(
+        resolvedQuery,
+        typeof window === "undefined" ? undefined : window.navigator.userAgent || "",
+      );
     setHref((prev) => (prev === nextHref ? prev : nextHref));
   }, [resolvedQuery]);
 

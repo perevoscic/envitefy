@@ -59,9 +59,9 @@ test("buildLiveCardLocationActions ignores generic detail destinations", () => {
   assert.equal(actions[0]?.label, "AMC Boulevard 10");
 });
 
-test("buildLiveCardDirectionsHref builds a Google directions destination URL", () => {
+test("buildLiveCardDirectionsHref builds a preferred directions URL", () => {
   assert.equal(
     buildLiveCardDirectionsHref("Pazzo Santa Rosa Beach"),
-    "https://www.google.com/maps/dir/?api=1&destination=Pazzo%20Santa%20Rosa%20Beach",
+    "https://www.google.com/maps/search/?api=1&query=Pazzo%20Santa%20Rosa%20Beach",
   );
 });

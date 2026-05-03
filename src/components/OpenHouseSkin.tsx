@@ -15,6 +15,7 @@ import {
   Ruler,
   Sparkles,
 } from "lucide-react";
+import { buildPreferredDirectionsHref } from "@/lib/directions";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -127,7 +128,7 @@ function clean(value: unknown): string {
 function buildMapsHref(location: string | null | undefined): string | null {
   const value = clean(location);
   if (!value || value === "Location TBD") return null;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}`;
+  return buildPreferredDirectionsHref(value, typeof navigator !== "undefined" ? navigator.userAgent : undefined);
 }
 
 function buildContactHref(params: {

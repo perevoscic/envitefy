@@ -28,6 +28,7 @@ import {
   normalizeScannedInvitePalette,
 } from "@/lib/scanned-invite-palette";
 import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
+import { buildPreferredDirectionsHref } from "@/lib/directions";
 
 type CalendarLinks = {
   google: string;
@@ -87,7 +88,7 @@ const DEFAULT_PALETTE = {
 function buildMapsHref(location: string | null | undefined): string | null {
   const value = String(location || "").trim();
   if (!value || value === "Location TBD") return null;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}`;
+  return buildPreferredDirectionsHref(value, typeof navigator !== "undefined" ? navigator.userAgent : undefined);
 }
 
 function buildRsvpHref({

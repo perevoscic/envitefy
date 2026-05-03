@@ -1,3 +1,5 @@
+import { buildPreferredDirectionsHref } from "./directions.ts";
+
 export type LiveCardLocationSource = "primary" | "details";
 
 export type LiveCardLocationInput = {
@@ -205,5 +207,5 @@ export function buildLiveCardLocationActions(
 }
 
 export function buildLiveCardDirectionsHref(mapQuery: string) {
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQuery)}`;
+  return buildPreferredDirectionsHref(mapQuery);
 }
