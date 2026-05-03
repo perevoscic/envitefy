@@ -24,7 +24,7 @@ let lastAppleHref = "";
  *   response as a file download ("Save" dialog) instead of handing off to Calendar.
  * - Replacing `https?://` with `webcal://` is registered to the Calendar app on
  *   macOS and iOS, which avoids the browser download flow for the same resource.
- * - We use a hidden iframe so the invite page stays open (no full-page navigation).
+ * - On Apple OS, we navigate directly to `webcal://` so the native app handoff runs in the same click gesture.
  * - A short debounce avoids duplicate prompts from double-firing handlers (e.g. Strict Mode).
  */
 export function openAppleCalendarIcs(href: string): void {
@@ -39,25 +39,7 @@ export function openAppleCalendarIcs(href: string): void {
 
   if (isAppleOS()) {
     const webcalUrl = abs.replace(/^https?:\/\//i, "webcal://");
-    try {
-      const iframe = document.createElement("iframe");
-      iframe.setAttribute("aria-hidden", "true");
-      iframe.setAttribute("tabindex", "-1");
-      iframe.style.cssText =
-        "position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none;left:-9999px;top:0;";
-      iframe.src = webcalUrl;
-      document.body.appendChild(iframe);
-      window.setTimeout(() => {
-        try {
-          iframe.remove();
-        } catch {
-          /* ignore */
-        }
-      }, 5000);
-      return;
-    } catch {
-      window.location.assign(webcalUrl);
-    }
+    window.location.assign(webcalUrl);
     return;
   }
 
