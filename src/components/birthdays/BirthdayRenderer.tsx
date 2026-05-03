@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useContext, createContext } from "react";
+import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { Calendar, Clock, MapPin, Navigation, Share2, X } from "lucide-react";
 import GuestRsvpModal, { type RsvpResponse } from "../GuestRsvpModal";
 import EventMap from "../EventMap";
@@ -1946,9 +1947,10 @@ function EditorialFeatureLayout({
   const venueText = chrome?.venueText || "";
   const locationText = chrome?.locationText || event.location || "";
   const directionsHref = locationText
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    ? buildPreferredDirectionsHref(
         [venueText, locationText].filter(Boolean).join(", "),
-      )}`
+        typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+      )
     : null;
   const summary =
     event.story ||
