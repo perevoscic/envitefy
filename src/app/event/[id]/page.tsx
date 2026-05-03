@@ -9,6 +9,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { cache } from "react";
 import AccessCodeGate from "@/components/AccessCodeGate";
 import AppleCalendarLink from "@/components/AppleCalendarLink";
+import BabyShowerSkin from "@/components/BabyShowerSkin";
 import BasketballSkin from "@/components/BasketballSkin";
 import BirthdaySkin from "@/components/BirthdaySkin";
 import { BIRTHDAY_THEMES } from "@/components/birthdays/birthdayThemes";
@@ -23,12 +24,12 @@ import EventMap from "@/components/EventMap";
 import EventRsvpDashboard from "@/components/EventRsvpDashboard";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import FootballSkin from "@/components/FootballSkin";
+import GenericEventSkin from "@/components/GenericEventSkin";
 import GraduationSkin from "@/components/GraduationSkin";
 import { isGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
 import LocationLink from "@/components/LocationLink";
 import OpenHouseSkin from "@/components/OpenHouseSkin";
 import PickleballSkin from "@/components/PickleballSkin";
-import ScannedInviteSkin from "@/components/ScannedInviteSkin";
 import SponsoredSupplies from "@/components/SponsoredSupplies";
 import ThumbnailModal from "@/components/ThumbnailModal";
 import { absoluteUrl, sanitizePersistedMediaUrl } from "@/lib/absolute-url";
@@ -1661,7 +1662,6 @@ export default async function EventPage({
   const isGenericScannedInviteEvent =
     categoryNormalized !== "birthdays" &&
     categoryNormalized !== "weddings" &&
-    isScannedInviteEvent &&
     isOcrEvent &&
     isOcrInviteCategory(categoryRaw);
   const isDiscoverySimpleTemplate = isGymnasticsDiscoveryTemplate || isFootballDiscoveryTemplate;
@@ -2368,6 +2368,34 @@ export default async function EventPage({
       </div>
     );
 
+    if (categoryNormalized === "baby showers" || categoryNormalized === "baby shower") {
+      return renderWithEventPageBackground(
+        <BabyShowerSkin
+          title={title}
+          dateLabel={scannedInviteDateLabel || whenLabel || null}
+          timeLabel={formattedTimeAndDate.time || null}
+          venueName={venueText || null}
+          location={locationText || venueText || null}
+          imageUrl={scannedInviteImageUrl}
+          shareUrl={shareUrl}
+          calendarLinks={calendarLinks}
+          skinId={ocrSkin?.skinId || null}
+          palette={ocrSkin?.palette || null}
+          background={ocrSkin?.background || null}
+          rsvpName={rsvpName}
+          rsvpPhone={rsvpPhone}
+          rsvpEmail={rsvpEmail}
+          rsvpUrl={rsvpUrl}
+          detailCopy={scannedInviteDetailCopy}
+          activities={scannedInviteActivities}
+          attire={scannedInviteAttire}
+          registryUrl={scannedInviteRegistryUrl}
+          ocrFacts={scannedInviteOcrFacts}
+          actions={scannedInviteActions}
+        />,
+      );
+    }
+
     if (categoryNormalized === "graduations") {
       return renderWithEventPageBackground(
         <GraduationSkin
@@ -2426,7 +2454,7 @@ export default async function EventPage({
     }
 
     return renderWithEventPageBackground(
-      <ScannedInviteSkin
+      <GenericEventSkin
         title={title}
         categoryLabel={categoryRaw || "General Event"}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
@@ -2449,6 +2477,50 @@ export default async function EventPage({
         registryUrl={scannedInviteRegistryUrl}
         ocrFacts={scannedInviteOcrFacts}
         actions={scannedInviteActions}
+      />,
+    );
+  }
+
+  if (isOcrEvent) {
+    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, categoryRaw, undefined, {
+      title,
+    });
+    return renderWithEventPageBackground(
+      <GenericEventSkin
+        title={title}
+        categoryLabel={categoryRaw || "General Event"}
+        dateLabel={scannedInviteDateLabel || whenLabel || null}
+        timeLabel={formattedTimeAndDate.time || null}
+        venueName={venueText || null}
+        location={locationText || venueText || null}
+        imageUrl={headerImageUrl}
+        shareUrl={shareUrl}
+        calendarLinks={calendarLinks}
+        skinId={ocrSkin?.skinId || null}
+        palette={ocrSkin?.palette || null}
+        background={ocrSkin?.background || null}
+        rsvpName={rsvpName}
+        rsvpPhone={rsvpPhone}
+        rsvpEmail={rsvpEmail}
+        rsvpUrl={rsvpUrl}
+        detailCopy={
+          (typeof data?.goodToKnow === "string" && data.goodToKnow.trim()) ||
+          (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||
+          (typeof data?.description === "string" && data.description.trim()) ||
+          null
+        }
+        activities={Array.isArray((data as any)?.activities)
+          ? ((data as any).activities as unknown[])
+              .map((item) => (typeof item === "string" ? item.trim() : ""))
+              .filter(Boolean)
+          : []}
+        attire={
+          typeof (data as any)?.attire === "string" && (data as any).attire.trim()
+            ? ((data as any).attire as string).trim()
+            : null
+        }
+        registryUrl={registryLinks[0]?.url || null}
+        ocrFacts={scannedInviteOcrFacts}
       />,
     );
   }
