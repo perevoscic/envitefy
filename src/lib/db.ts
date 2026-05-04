@@ -1,6 +1,8 @@
 import { scrypt as nodeScrypt, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
+import { ADMIN_USER_METRICS_CTE_SQL } from "@/lib/admin-user-metrics-sql";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
 import type {
   CanonicalDiscoveryParse,
@@ -9,16 +11,15 @@ import type {
   DiscoverySourceRecord,
   EventDiscoveryRow,
 } from "@/lib/discovery/types";
-import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
-import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
 import { buildEventStartAtTsSql } from "@/lib/pg-event-start-ts";
 import {
   normalizePrimarySignupSource,
   normalizeProductScopes,
-  productScopesForSignupSource,
   type PrimarySignupSource,
   type ProductScope,
+  productScopesForSignupSource,
 } from "@/lib/product-scopes";
 
 const scrypt = promisify(nodeScrypt);
@@ -305,8 +306,7 @@ export async function getUserByEmail(email: string): Promise<AppUserRow | null> 
   }
   return {
     ...row,
-    primary_signup_source:
-      normalizePrimarySignupSource(row.primary_signup_source) || "legacy",
+    primary_signup_source: normalizePrimarySignupSource(row.primary_signup_source) || "legacy",
     product_scopes: normalizeProductScopes(row.product_scopes),
   };
 }
@@ -325,8 +325,7 @@ export async function getUserById(id: string): Promise<AppUserRow | null> {
   }
   return {
     ...row,
-    primary_signup_source:
-      normalizePrimarySignupSource(row.primary_signup_source) || "legacy",
+    primary_signup_source: normalizePrimarySignupSource(row.primary_signup_source) || "legacy",
     product_scopes: normalizeProductScopes(row.product_scopes),
   };
 }
@@ -359,6 +358,36 @@ async function ensureUsersHasAdminAndMetricsColumns(): Promise<void> {
       alter table users alter column scans_car_pool set default 0;
     `);
   });
+}
+
+function buildUserWhereClause(
+  params: { userId?: string | null; email?: string | null },
+  firstParamIndex: number,
+): { clause: string; values: string[] } {
+  const clauses: string[] = [];
+  const values: string[] = [];
+  let index = firstParamIndex;
+
+  const userId = String(params.userId || "").trim();
+  if (userId) {
+    clauses.push(`id = $${index}::uuid`);
+    values.push(userId);
+    index += 1;
+  }
+
+  const email = String(params.email || "")
+    .trim()
+    .toLowerCase();
+  if (email) {
+    clauses.push(`lower(email) = $${index}`);
+    values.push(email);
+  }
+
+  if (!clauses.length) {
+    throw new Error("userId or email is required");
+  }
+
+  return { clause: `(${clauses.join(" or ")})`, values };
 }
 
 export async function setUserAdminByEmail(email: string, isAdmin: boolean): Promise<void> {
@@ -456,6 +485,7 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
       scans_general_events: string | null;
       scans_car_pool: string | null;
     }>(`
+      ${ADMIN_USER_METRICS_CTE_SQL}
       select
         coalesce(sum(scans_total), 0)::text as scans_total,
         coalesce(sum(scans_birthdays), 0)::text as scans_birthdays,
@@ -466,7 +496,7 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
         coalesce(sum(scans_play_days), 0)::text as scans_play_days,
         coalesce(sum(scans_general_events), 0)::text as scans_general_events,
         coalesce(sum(scans_car_pool), 0)::text as scans_car_pool
-      from users
+      from admin_users_with_metrics
     `),
     query<{
       events_birthdays: string | null;
@@ -531,8 +561,9 @@ export async function getTopUsersByScans(
     scans_total: number | null;
     shares_sent: number | null;
   }>(
-    `select email, coalesce(scans_total, 0) as scans_total, coalesce(shares_sent, 0) as shares_sent
-     from users
+    `${ADMIN_USER_METRICS_CTE_SQL}
+     select email, coalesce(scans_total, 0) as scans_total, coalesce(shares_sent, 0) as shares_sent
+     from admin_users_with_metrics
      order by scans_total desc nulls last, shares_sent desc nulls last
      limit $1`,
     [Math.max(1, Math.min(100, Math.floor(limit)))],
@@ -675,7 +706,9 @@ export async function deleteUserForAdmin(userId: string): Promise<AdminUserDelet
         [userId, target.email],
       );
 
-      await client.query(`delete from password_resets where lower(email) = lower($1)`, [target.email]);
+      await client.query(`delete from password_resets where lower(email) = lower($1)`, [
+        target.email,
+      ]);
       await client.query(`delete from event_history where user_id = $1`, [userId]);
 
       const deleteUserRes = await client.query<{ id: string }>(
@@ -757,7 +790,7 @@ export async function incrementUserSharesSent(params: {
   await ensureUsersHasAdminAndMetricsColumns();
   const where = buildUserWhereClause(
     { userId: params.userId || null, email: params.email || null },
-    1,
+    2,
   );
   const delta = Math.floor(params.delta ?? 1);
   await query(
@@ -803,8 +836,7 @@ async function userHasGymnasticsHistory(userId: string): Promise<boolean> {
 
 async function backfillUserProductAccess(row: AppUserRow): Promise<AppUserRow> {
   await ensureUsersHasProductScopeColumns();
-  const nextSource =
-    normalizePrimarySignupSource(row.primary_signup_source) || "legacy";
+  const nextSource = normalizePrimarySignupSource(row.primary_signup_source) || "legacy";
   let nextScopes = normalizeProductScopes(row.product_scopes);
   const shouldInferGymnastics =
     !Array.isArray(row.product_scopes) || row.product_scopes.length === 0;
@@ -897,7 +929,9 @@ export type StudioLibraryPersistV1 = {
   items: unknown[];
 };
 
-export async function getStudioLibraryByEmail(email: string): Promise<StudioLibraryPersistV1 | null> {
+export async function getStudioLibraryByEmail(
+  email: string,
+): Promise<StudioLibraryPersistV1 | null> {
   await ensureUsersHasStudioLibraryColumn();
   const lower = email.toLowerCase();
   const res = await query<{ studio_library: unknown }>(
@@ -949,14 +983,7 @@ export async function createUserWithEmailPassword(params: {
      )
      values ($1, $2, $3, $4, $5, $6::text[])
      returning ${USER_SELECT_COLUMNS}`,
-    [
-      lower,
-      firstName || null,
-      lastName || null,
-      password_hash,
-      signupSource,
-      productScopes,
-    ],
+    [lower, firstName || null, lastName || null, password_hash, signupSource, productScopes],
   );
   return res.rows[0];
 }
@@ -1025,13 +1052,7 @@ export async function createOrUpdateOAuthUser(params: {
      )
      values ($1, $2, $3, NULL, $4, $5::text[])
      returning ${USER_SELECT_COLUMNS}`,
-    [
-      lower,
-      params.firstName || null,
-      params.lastName || null,
-      signupSource,
-      productScopes,
-    ],
+    [lower, params.firstName || null, params.lastName || null, signupSource, productScopes],
   );
   return res.rows[0];
 }
@@ -2040,9 +2061,9 @@ async function listProjectedDashboardHistoryRowsByIds(
         ${buildDashboardCoverImageUrlSql("coalesce(eh.data, '{}'::jsonb)", "eh.id")} as cover_image_url,
         coalesce(eh.data, '{}'::jsonb)->'thumbnailFocus' as thumbnail_focus,
         ${buildDashboardSafeMediaJsonSql(
-         "coalesce(eh.data, '{}'::jsonb)->'thumbnail'",
-         "coalesce(eh.data, '{}'::jsonb)->>'thumbnail'",
-       )} as thumbnail,
+          "coalesce(eh.data, '{}'::jsonb)->'thumbnail'",
+          "coalesce(eh.data, '{}'::jsonb)->>'thumbnail'",
+        )} as thumbnail,
        ${buildDashboardSafeMediaJsonSql(
          "coalesce(eh.data, '{}'::jsonb)->'heroImage'",
          "coalesce(eh.data, '{}'::jsonb)->>'heroImage'",
@@ -3331,7 +3352,9 @@ async function ensureEventDiscoveriesTable(): Promise<void> {
   });
 }
 
-function mapEventDiscoveryRow(row: EventDiscoveryQueryRow | null | undefined): EventDiscoveryRow | null {
+function mapEventDiscoveryRow(
+  row: EventDiscoveryQueryRow | null | undefined,
+): EventDiscoveryRow | null {
   if (!row) return null;
   return {
     id: row.id,
@@ -3502,7 +3525,9 @@ export async function updateEventDiscovery(params: {
       JSON.stringify(
         sanitizeJsonValueForPostgres(params.canonicalParse ?? existing.canonicalParse ?? null),
       ),
-      JSON.stringify(sanitizeJsonValueForPostgres(params.enrichment ?? existing.enrichment ?? null)),
+      JSON.stringify(
+        sanitizeJsonValueForPostgres(params.enrichment ?? existing.enrichment ?? null),
+      ),
       JSON.stringify(sanitizeJsonValueForPostgres(params.pipeline ?? existing.pipeline)),
       JSON.stringify(sanitizeJsonValueForPostgres(params.debug ?? existing.debug ?? null)),
     ],

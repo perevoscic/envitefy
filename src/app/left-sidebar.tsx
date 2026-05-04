@@ -888,12 +888,14 @@ function AiThreadsPanel({
   threads,
   activeThreadId,
   onBack,
+  onNewChat,
   onOpenThread,
   onDeleteThread,
 }: {
   threads: CreationThreadSummary[];
   activeThreadId: string | null;
   onBack: () => void;
+  onNewChat: () => void;
   onOpenThread: () => void;
   onDeleteThread: (thread: CreationThreadSummary) => void;
 }) {
@@ -909,6 +911,7 @@ function AiThreadsPanel({
       <div className="space-y-3">
         <Link
           href="/chat"
+          onClick={onNewChat}
           className={`${SIDEBAR_SUBMENU_ROW_CLASS} ${SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS}`}
         >
           <span className={`${SIDEBAR_SUBMENU_ICON_CLASS} ${SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS}`}>
@@ -931,7 +934,7 @@ function AiThreadsPanel({
             threads.map((thread) => {
               const isActiveThread = activeThreadId === thread.id;
               return (
-                <div key={thread.id} className="flex items-center gap-2">
+                <div key={thread.id} className="group flex items-center gap-2">
                   <Link
                     href={`/chat?thread=${encodeURIComponent(thread.id)}`}
                     onClick={onOpenThread}
@@ -963,7 +966,7 @@ function AiThreadsPanel({
                   <button
                     type="button"
                     onClick={() => onDeleteThread(thread)}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 opacity-0 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition group-hover:opacity-100 group-focus-within:opacity-100 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                     aria-label={`Delete ${thread.title}`}
                     title="Delete chat"
                   >
@@ -1368,6 +1371,7 @@ export default function LeftSidebar() {
                       threads={aiThreads}
                       activeThreadId={activeAiThreadId}
                       onBack={viewModel.backToRoot}
+                      onNewChat={viewModel.startNewAiChat}
                       onOpenThread={viewModel.resetSidebarToRoot}
                       onDeleteThread={deleteAiThread}
                     />

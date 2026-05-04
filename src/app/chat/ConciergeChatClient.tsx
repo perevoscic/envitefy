@@ -3,25 +3,40 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
+  Calendar,
   Camera,
-  CheckCircle2,
-  CreditCard,
   ExternalLink,
-  Globe2,
+  Info,
   Loader2,
-  type LucideIcon,
-  Mail,
+  MapPin,
   Mic,
-  Plus,
+  MoreVertical,
+  PanelTopDashed,
+  Paperclip,
   RefreshCw,
+  Share2,
   Sparkles,
   Upload,
-  X,
+  Users,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import {
+  type ComponentType,
+  type FormEvent,
+  type SVGProps,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type { StudioCategoryTileDefinition } from "@/app/studio/studio-workspace-types";
 import { STUDIO_CATEGORY_TILES } from "@/app/studio/workspace/studio-category-tile-data";
+import {
+  cn,
+  PromptInput,
+  PromptInputAction,
+  PromptInputActions,
+  PromptInputTextarea,
+} from "@/components/ui/ai-prompt-box";
 import type {
   ConciergeActiveContext,
   ConciergeEventDraft,
@@ -41,13 +56,52 @@ type ChatMessage = {
   type?: "text" | "upload_status";
 };
 
+type ProductIcon = ComponentType<SVGProps<SVGSVGElement>>;
+
 type ProductOption = {
   label: string;
   description: string;
   output: RequestedOutput;
-  icon: LucideIcon;
+  icon: ProductIcon;
   iconClassName: string;
+  activeClassName: string;
+  choiceClassName: string;
+  choiceIconClassName: string;
 };
+
+function PartyFlyerIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 318.601 318.6" fill="currentColor" {...props}>
+      <path d="M45.296 318.6h228.007V0H45.296v318.6Zm172.062-57.559H101.255V248.97h116.103v12.071Zm15.525-25.192H85.73v-12.076h147.152v12.076ZM101.255 212.44v-12.07h116.103v12.07H101.255ZM57.38 12.15h203.853v121.5L57.38 182.25V12.15Zm38.064 93.459c-2.413-1.258-5.297-1.475-8.644-.654l-14.518 3.552 8.279 33.806 7.014-1.717-2.975-12.155 7.043-1.725c3.67-.901 6.296-2.418 7.873-4.551 1.572-2.139 1.872-5.2.896-9.191-.894-3.656-2.548-6.108-4.968-7.365ZM93 118.924c-.699 1.03-1.854 1.745-3.462 2.138l-6.368 1.562-2.434-9.951 6.365-1.566c1.608-.396 2.958-.329 4.034.203 1.081.53 1.83 1.674 2.262 3.436.433 1.76.299 3.152-.397 4.178Zm16.653-19.57-3.792 36.764 7.388-1.809.588-7.512 12.453-3.051 3.929 6.404 7.665-1.875L117.646 97.4l-7.993 1.954Zm4.68 21.146 1.128-14.375 7.528 12.258-8.656 2.117Zm53.57-2.52c-.253-.52-.569-1.55-.949-3.096l-.563-2.268c-.575-2.37-1.34-4.05-2.268-5.049-.929-.994-2.252-1.614-3.964-1.856 1.706-1.097 2.774-2.523 3.207-4.277.432-1.75.448-3.43.055-5.034-.324-1.329-.822-2.462-1.497-3.401-.67-.941-1.469-1.745-2.397-2.431-1.117-.825-2.37-1.355-3.741-1.587s-3.225-.087-5.547.438l-16.166 3.957 8.276 33.803 6.903-1.682-3.246-13.258 6.9-1.69c1.967-.483 3.396-.448 4.287.092.891.543 1.622 1.888 2.178 4.037l.815 3.132c.258.989.593 1.938 1.01 2.84.205.438.506 1.005.901 1.703l7.789-1.911-.2-.849c-.797-.287-1.382-.828-1.784-1.653Zm-12.405-14.586c-.67.551-1.753 1.015-3.262 1.381l-7.602 1.864-2.226-9.083 7.797-1.912c1.453-.355 2.592-.422 3.412-.205 1.463.39 2.447 1.605 2.95 3.657.465 1.901.11 3.33-1.069 4.298Zm38.356-18.317-10.114 2.479 6.818 27.822-7.108 1.738-6.824-27.816-10.156 2.484-1.467-5.983 27.391-6.708 1.46 5.984ZM223.808 71.4l-6.128 23.899 3.096 12.674-7.066 1.727-3.101-12.675-16.875-18.262 8.332-2.041 10.626 13.004 3.105-16.369 8.011-1.957Zm19.29 24.094 1.619 6.631-6.855 1.68-1.624-6.632 6.86-1.679Zm-5.78-1.49-5.765-15.298-2.099-8.572 7.178-1.754 2.104 8.569 2.004 16.216-3.422.839Zm-49.66-53.298H72.278v-8.517h115.38v8.517Z" />
+    </svg>
+  );
+}
+
+function LandingPageIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <line x1="3" y1="11" x2="29" y2="11" />
+      <line x1="7" y1="8" x2="7" y2="8" />
+      <line x1="10" y1="8" x2="10" y2="8" />
+      <line x1="13" y1="8" x2="13" y2="8" />
+      <rect x="3" y="5" width="26" height="22" />
+      <rect x="6" y="14" width="10" height="10" />
+      <rect x="19" y="21" width="7" height="3" />
+      <line x1="20" y1="15" x2="26" y2="15" />
+      <line x1="23" y1="18" x2="26" y2="18" />
+      <polyline points="6,22 12,19 16,22" />
+      <line x1="9" y1="17" x2="9" y2="17" />
+    </svg>
+  );
+}
 
 type ConciergePhase =
   | "intake_empty"
@@ -70,22 +124,34 @@ const PRODUCT_OPTIONS: ProductOption[] = [
     label: "Live Card",
     description: "Public card with RSVP",
     output: "live_card",
-    icon: CreditCard,
-    iconClassName: "text-[#a11cf5] drop-shadow-[0_0_8px_rgba(161,28,245,0.28)]",
+    icon: PanelTopDashed,
+    iconClassName: "rotate-180",
+    activeClassName: "border-[#a11cf5] bg-[#a11cf5]/15 text-[#d8b4fe]",
+    choiceClassName:
+      "border-[#d9cff8] bg-[linear-gradient(135deg,#ffffff,#f7f2ff)] text-[#2f2147] shadow-[0_14px_30px_rgba(93,63,155,0.12)] hover:border-[#a11cf5]/45 hover:shadow-[0_18px_38px_rgba(93,63,155,0.18)]",
+    choiceIconClassName: "border-[#a11cf5]/20 bg-[#a11cf5]/10 text-[#8b5cf6]",
   },
   {
-    label: "Flyer",
-    description: "Shareable graphic",
+    label: "Flyer / Invite",
+    description: "Shareable invite graphic",
     output: "digital_flyer",
-    icon: Mail,
-    iconClassName: "text-[#db246f] drop-shadow-[0_0_8px_rgba(219,36,111,0.26)]",
+    icon: PartyFlyerIcon,
+    iconClassName: "",
+    activeClassName: "border-[#db246f] bg-[#db246f]/15 text-[#f9a8d4]",
+    choiceClassName:
+      "border-[#efd0dd] bg-[linear-gradient(135deg,#ffffff,#fff3f7)] text-[#3d2230] shadow-[0_14px_30px_rgba(178,59,104,0.11)] hover:border-[#db246f]/45 hover:shadow-[0_18px_38px_rgba(178,59,104,0.16)]",
+    choiceIconClassName: "border-[#db246f]/20 bg-[#db246f]/10 text-[#db246f]",
   },
   {
     label: "Event Page",
     description: "Full public website",
     output: "event_page",
-    icon: Globe2,
-    iconClassName: "text-[#19a992] drop-shadow-[0_0_8px_rgba(25,169,146,0.24)]",
+    icon: LandingPageIcon,
+    iconClassName: "",
+    activeClassName: "border-[#19a992] bg-[#19a992]/15 text-[#5eead4]",
+    choiceClassName:
+      "border-[#c7e8e2] bg-[linear-gradient(135deg,#ffffff,#effdfa)] text-[#153d39] shadow-[0_14px_30px_rgba(24,132,116,0.1)] hover:border-[#19a992]/45 hover:shadow-[0_18px_38px_rgba(24,132,116,0.15)]",
+    choiceIconClassName: "border-[#19a992]/20 bg-[#19a992]/10 text-[#19a992]",
   },
 ];
 
@@ -99,6 +165,8 @@ const BUILDING_STEPS = [
   "Creating RSVP and sharing links",
   "Finalizing the event workspace",
 ];
+
+const PRODUCT_CHOICE_PROMPT = "What kind of product would you like to create?";
 
 const OUTPUT_LABELS: Record<RequestedOutput, string> = {
   event_page: "Event page",
@@ -161,15 +229,16 @@ const CHAT_STUDIO_GRID_ITEMS: ChatStudioGridItem[] = (() => {
   const categoriesByName = new Map(
     STUDIO_CATEGORY_TILES.map((category) => [category.name, category] as const),
   );
-  return CHAT_STUDIO_GRID_COMPOSITION.flatMap((tileKey) => {
+  const items: ChatStudioGridItem[] = [];
+  for (const tileKey of CHAT_STUDIO_GRID_COMPOSITION) {
     if (tileKey === "upload") {
-      return [{ kind: "upload", key: "upload" } satisfies ChatStudioGridItem];
+      items.push({ kind: "upload", key: "upload" });
+      continue;
     }
     const category = categoriesByName.get(tileKey);
-    return category
-      ? [{ kind: "category", key: tileKey, category } satisfies ChatStudioGridItem]
-      : [];
-  });
+    if (category) items.push({ kind: "category", key: tileKey, category });
+  }
+  return items;
 })();
 
 const CHAT_STUDIO_TILE_OVERLAY_CLASS = {
@@ -292,7 +361,7 @@ function ChatStudioStarterGrid({
   isUploading: boolean;
 }) {
   return (
-    <div className="grid auto-rows-[94px] grid-cols-2 gap-2 sm:auto-rows-[108px] sm:grid-cols-6 md:auto-rows-[124px]">
+    <div className="grid auto-rows-[118px] grid-cols-2 gap-2.5 sm:auto-rows-[135px] sm:grid-cols-6 md:auto-rows-[155px]">
       {CHAT_STUDIO_GRID_ITEMS.map((item, index) => (
         <div key={item.key} className={CHAT_STUDIO_GRID_PLACEMENT_CLASS[item.key]}>
           {item.kind === "upload" ? (
@@ -361,6 +430,39 @@ function draftLocationLine(draft: ConciergeEventDraft | null) {
 
 function outputLabel(output: RequestedOutput) {
   return OUTPUT_LABELS[output] || output;
+}
+
+function productLabel(output: RequestedOutput | null | undefined) {
+  return (
+    PRODUCT_OPTIONS.find((option) => option.output === output)?.label ||
+    outputLabel(output || "live_card")
+  );
+}
+
+function categoryLabelFromDraft(draft: ConciergeEventDraft | null, fallback: string | null) {
+  if (fallback) return fallback;
+  if (draft?.eventType === "birthday") return "Birthday";
+  if (draft?.eventType === "wedding") return "Wedding";
+  if (draft?.eventType === "baby_shower") return "Baby Shower";
+  if (draft?.eventType === "graduation") return "Graduation";
+  if (draft?.eventType && draft.eventType !== "unknown") return "Custom Invite";
+  return "Celebration";
+}
+
+function previewImageForDraft(draft: ConciergeEventDraft | null, fallbackCategory: string | null) {
+  const categoryLabel = categoryLabelFromDraft(draft, fallbackCategory);
+  return (
+    STUDIO_CATEGORY_TILES.find((category) => category.name === categoryLabel)?.imagePath ||
+    "/studio/upload-your-own.webp"
+  );
+}
+
+function guestLineFromDraft(draft: ConciergeEventDraft | null) {
+  const record = recordValue(draft);
+  return (
+    firstStringValue(record.guestCount, record.numberOfGuests, record.inviteCount) ||
+    "Guest list coming soon"
+  );
 }
 
 function draftOutputLabels(draft: ConciergeEventDraft | null, selectedOutput: RequestedOutput) {
@@ -472,8 +574,6 @@ export default function ConciergeChatClient() {
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const chatPaneRef = useRef<HTMLDivElement | null>(null);
-  const productButtonRef = useRef<HTMLButtonElement | null>(null);
-  const productMenuRef = useRef<HTMLDivElement | null>(null);
   const composerCardRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [input, setInput] = useState("");
@@ -492,8 +592,9 @@ export default function ConciergeChatClient() {
   const [liveCardSummary, setLiveCardSummary] = useState<LiveCardSummary | null>(null);
   const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
+  const [previewTab, setPreviewTab] = useState<"preview" | "rsvp">("preview");
   const [composerCenterLeft, setComposerCenterLeft] = useState("50vw");
   const [composerBottomPadding, setComposerBottomPadding] = useState(224);
 
@@ -506,6 +607,8 @@ export default function ConciergeChatClient() {
     !draft &&
     !isSending &&
     !isUploading;
+  const shouldShowProductChoice =
+    Boolean(starterCategory) && !selectedProductOutput && !draft && !isSending && !isUploading;
   const visibleMessages = messages.filter(
     (message, index) =>
       !(index === 0 && message.role === "assistant" && message.text === "What are we celebrating?"),
@@ -517,7 +620,8 @@ export default function ConciergeChatClient() {
       ? "Updating workspace"
       : isGeneratingCard
         ? "Generating product"
-        : "Thinking";
+        : "Envitefy is thinking...";
+  const isThinking = busyLabel === "Envitefy is thinking...";
   const currentBuildStep = Math.min(
     Math.floor((buildProgress / 100) * BUILDING_STEPS.length),
     BUILDING_STEPS.length - 1,
@@ -527,8 +631,9 @@ export default function ConciergeChatClient() {
     liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
   const workspaceTitle = liveCardTitle || currentLiveCardSummary.headline;
   const detailsComplete = isReadyProductDraft(draft);
-  const canGenerateProduct = detailsComplete && !isBusy && !liveCardEventId;
+  const canGenerateProduct = Boolean(draft?.canPersist) && !isBusy && !liveCardEventId;
   const shouldShowWorkspacePanel =
+    Boolean(draft) ||
     phase === "ready_to_generate" ||
     phase === "generating_card" ||
     phase === "card_ready" ||
@@ -537,6 +642,9 @@ export default function ConciergeChatClient() {
   const liveCardPublicHref = liveCardEventId ? `/event/${liveCardEventId}` : null;
   const liveCardWorkspaceHref = liveCardEventId ? `/events/${liveCardEventId}/workspace` : null;
   const threadId = searchParams.get("thread")?.trim() || null;
+  const selectedProductLabel = productLabel(effectiveSelectedProductOutput);
+  const currentCategoryLabel = categoryLabelFromDraft(draft, starterCategory);
+  const currentPreviewImage = previewImageForDraft(draft, starterCategory);
 
   function selectProductOutputForDraft(nextDraft: ConciergeEventDraft) {
     const restoredOutput = nextDraft.requestedOutputs.find((output) =>
@@ -557,7 +665,8 @@ export default function ConciergeChatClient() {
     setBuildProgress(0);
     setSelectedProductOutput(null);
     setStarterCategory(null);
-    setIsProductMenuOpen(false);
+    setMobileView("chat");
+    setPreviewTab("preview");
     setMessages([newMessage("assistant", "What are we celebrating?")]);
   }
 
@@ -581,13 +690,14 @@ export default function ConciergeChatClient() {
         cancelled = true;
       };
     }
+    const targetThreadId = threadId;
 
     async function restoreThread() {
       setError(null);
       setIsSending(true);
       try {
         const response = await fetch(
-          `/api/creation/intake?threadId=${encodeURIComponent(threadId)}`,
+          `/api/creation/intake?threadId=${encodeURIComponent(targetThreadId)}`,
           {
             credentials: "include",
           },
@@ -611,6 +721,8 @@ export default function ConciergeChatClient() {
         setLiveCardSummary(liveCardSummaryFromDraft(restoredDraft, restoredOutput));
         setLastGeneratedAt(json.creationSession?.updated_at || null);
         setBuildProgress(savedEventId ? 100 : 0);
+        setMobileView(savedEventId ? "preview" : "chat");
+        setPreviewTab("preview");
         setPhase(
           savedEventId
             ? "card_ready"
@@ -640,32 +752,6 @@ export default function ConciergeChatClient() {
       cancelled = true;
     };
   }, [threadId]);
-
-  useEffect(() => {
-    if (!isProductMenuOpen) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setIsProductMenuOpen(false);
-    }
-
-    function handlePointerDown(event: PointerEvent) {
-      const path = event.composedPath();
-      if (
-        (productMenuRef.current && path.includes(productMenuRef.current)) ||
-        (productButtonRef.current && path.includes(productButtonRef.current))
-      ) {
-        return;
-      }
-      setIsProductMenuOpen(false);
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("pointerdown", handlePointerDown, true);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("pointerdown", handlePointerDown, true);
-    };
-  }, [isProductMenuOpen]);
 
   useEffect(() => {
     function updateComposerCenter() {
@@ -719,8 +805,8 @@ export default function ConciergeChatClient() {
   }, [isGeneratingCard]);
 
   async function generateProductForDraft(draftToGenerate: ConciergeEventDraft) {
-    if (!isReadyProductDraft(draftToGenerate)) {
-      setError("Complete the required details before generating the product.");
+    if (!draftToGenerate.canPersist) {
+      setError("Add an event or source before generating the workspace.");
       return;
     }
     setError(null);
@@ -753,6 +839,8 @@ export default function ConciergeChatClient() {
       );
       setLastGeneratedAt(new Date().toISOString());
       setPhase("card_ready");
+      setMobileView("preview");
+      setPreviewTab("preview");
       setMessages((prev) => [
         ...prev,
         newMessage(
@@ -763,7 +851,7 @@ export default function ConciergeChatClient() {
       notifyCreationThreadsChanged();
     } catch (err) {
       setBuildProgress(0);
-      setPhase(isReadyProductDraft(draftToGenerate) ? "ready_to_generate" : "collecting_details");
+      setPhase(draftToGenerate.canPersist ? "ready_to_generate" : "collecting_details");
       setError(err instanceof Error ? err.message : "Unable to generate product.");
     }
   }
@@ -854,12 +942,8 @@ export default function ConciergeChatClient() {
       selectProductOutputForDraft(json.draft);
       notifyCreationThreadsChanged();
       if (isReadyProductDraft(json.draft)) {
-        setPhase("generating_card");
-        setMessages((prev) => [
-          ...prev,
-          newMessage("assistant", "I have the event details. I am generating the product now."),
-        ]);
-        await generateProductForDraft(json.draft);
+        setPhase("ready_to_generate");
+        setMessages((prev) => [...prev, newMessage("assistant", json.assistantMessage)]);
         return;
       }
       setPhase("collecting_details");
@@ -872,12 +956,16 @@ export default function ConciergeChatClient() {
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submitComposerInput() {
+    if (isBusy) return;
     const value = input.trim();
     if (!value) return;
-    if (isEmptyState && (!starterCategory || !selectedProductOutput)) {
-      setError("Choose a category and product first.");
+    if (!draft && !selectedProductOutput) {
+      setError(
+        starterCategory
+          ? "Choose Live card, Flyer / Invite, or Event page first."
+          : "Choose a category first.",
+      );
       return;
     }
     setInput("");
@@ -888,56 +976,44 @@ export default function ConciergeChatClient() {
     await sendToConcierge({ message: value });
   }
 
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await submitComposerInput();
+  }
+
   async function startStarterConversation(categoryLabel: string, productOutput: RequestedOutput) {
     setStarterCategory(categoryLabel);
     setSelectedProductOutput(productOutput);
-    setIsProductMenuOpen(false);
+    const productText =
+      PRODUCT_OPTIONS.find((option) => option.output === productOutput)?.label ||
+      outputLabel(productOutput);
     await sendToConcierge({
       message: categoryLabel === "Custom Invite" ? "Custom invite" : categoryLabel,
       action: "starter_category",
       requestedOutputs: [productOutput],
-      echo: `${categoryLabel} + ${PRODUCT_OPTIONS.find((option) => option.output === productOutput)?.label || outputLabel(productOutput)}`,
+      echo: productText,
     });
   }
 
   async function handleStarterCategory(label: string) {
     if (isBusy) return;
     setStarterCategory(label);
+    setSelectedProductOutput(null);
     setError(null);
-    if (selectedProductOutput) {
-      await startStarterConversation(label, selectedProductOutput);
-      return;
-    }
-    setIsProductMenuOpen(true);
+    setMessages([
+      newMessage("assistant", "What are we celebrating?"),
+      newMessage("user", label),
+      newMessage("assistant", PRODUCT_CHOICE_PROMPT),
+    ]);
   }
 
   async function handleProductOption(option: ProductOption) {
-    setSelectedProductOutput(option.output);
-    setIsProductMenuOpen(false);
-
-    if (isEmptyState) {
-      setError(null);
-      if (starterCategory) {
-        await startStarterConversation(starterCategory, option.output);
-      }
+    if (isBusy) return;
+    if (!starterCategory) {
+      setError("Choose a category first.");
       return;
     }
-
-    if (option.output === selectedProductOutput) return;
-
-    if (liveCardEventId) {
-      await sendGeneratedCardEdit(`Create a ${option.label} version for this event.`);
-      return;
-    }
-
-    if (!draft) return;
-
-    await sendToConcierge({
-      message: `Switch to ${option.label}.`,
-      action: "chip",
-      requestedOutputs: [option.output],
-      echo: `Output: ${option.label}`,
-    });
+    await startStarterConversation(starterCategory, option.output);
   }
 
   function handleVoiceInput() {
@@ -1016,14 +1092,13 @@ export default function ConciergeChatClient() {
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
   }
 
   const chatThread = (
     <div
-      className={`mx-auto flex min-h-[calc(100vh-5rem)] w-full flex-col justify-end gap-5 px-4 pb-56 pt-8 sm:px-6 sm:pb-60 ${
-        shouldShowWorkspacePanel ? "max-w-[26rem]" : "max-w-3xl"
-      }`}
+      className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-end gap-5 px-4 pb-56 pt-8 sm:px-6 sm:pb-60"
       style={{ paddingBottom: composerBottomPadding }}
       role="log"
       aria-live="polite"
@@ -1049,7 +1124,7 @@ export default function ConciergeChatClient() {
               </div>
             ) : (
               <div
-                className={`max-w-[86%] whitespace-pre-line rounded-3xl px-4 py-3 text-sm leading-6 shadow-sm sm:max-w-[76%] ${
+                className={`max-w-[94%] whitespace-pre-line rounded-3xl px-4 py-3 text-sm leading-6 shadow-sm sm:max-w-[88%] ${
                   message.role === "user"
                     ? "rounded-tr-md bg-[#6f4cff] text-white shadow-[#6f4cff]/15"
                     : "rounded-tl-md border border-[#eadfff] bg-white/88 text-[#24183e]"
@@ -1062,11 +1137,56 @@ export default function ConciergeChatClient() {
         ))}
       </AnimatePresence>
 
+      {shouldShowProductChoice ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-[94%] self-start sm:max-w-[88%]"
+        >
+          <div className="grid gap-2 sm:grid-cols-3">
+            {PRODUCT_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.output}
+                  type="button"
+                  onClick={() => void handleProductOption(option)}
+                  disabled={isBusy}
+                  aria-label={`Choose product: ${option.label}`}
+                  className={cn(
+                    "group inline-flex min-h-14 items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left transition duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55",
+                    option.choiceClassName,
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      "size-8 shrink-0 rounded-xl border p-1.5 transition duration-200 group-hover:scale-105",
+                      option.choiceIconClassName,
+                      option.iconClassName,
+                    )}
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold leading-tight">{option.label}</span>
+                    <span className="mt-0.5 block text-[0.68rem] font-semibold leading-tight text-current/62">
+                      {option.description}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      ) : null}
+
       {isBusy && !isGeneratingCard ? (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="inline-flex w-fit max-w-[86%] self-start items-center gap-2 rounded-full border border-[#eadfff] bg-white/86 px-4 py-2 text-sm text-[#5f5289] shadow-sm"
+          className={cn(
+            "inline-flex w-fit max-w-[94%] self-start items-center gap-2 rounded-full border border-[#eadfff] bg-white/86 px-4 py-2 text-sm text-[#5f5289] shadow-sm sm:max-w-[88%]",
+            isThinking && "animate-pulse",
+          )}
           role="status"
           aria-live="polite"
         >
@@ -1079,30 +1199,20 @@ export default function ConciergeChatClient() {
   );
 
   const workspacePanel = (
-    <aside className="order-1 min-h-0 overflow-y-auto border-b border-[#eadfff] bg-[#fbf9ff]/88 lg:order-2 lg:border-b-0 lg:border-l">
-      <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <aside
+      className={`min-h-0 flex-col overflow-y-auto border-l border-[#e5dff0] bg-[#fbfbfe] ${
+        mobileView === "preview" ? "flex" : "hidden md:flex"
+      }`}
+    >
+      <div className="flex min-h-full flex-col px-4 pb-24 pt-4 sm:px-6 sm:pb-8">
+        <div className="flex items-center justify-between border-b border-[#f0ebf7] pb-4">
           <div>
-            <p className="inline-flex items-center gap-2 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#16875f]">
-              {liveCardEventId ? (
-                <CheckCircle2 className="size-4" aria-hidden="true" />
-              ) : (
-                <Sparkles className="size-4" aria-hidden="true" />
-              )}
-              {isGeneratingCard
-                ? "Generating product"
-                : liveCardEventId
-                  ? "Generated product"
-                  : "Ready to generate"}
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-normal text-[#2d1b36]">
-              Event Workspace
+            <h2 className="flex items-center gap-2 text-base font-bold text-[#221a35]">
+              <Sparkles className="size-4 text-[#7c4dff]" aria-hidden="true" />
+              Workspace Preview
             </h2>
-            <p className="mt-1 text-sm leading-6 text-[#7a6c99]">
-              {workspaceTitle} - {currentLiveCardSummary.subheadline}
-            </p>
             {lastGeneratedAt ? (
-              <p className="mt-1 text-xs font-semibold text-[#8b7aaa]">
+              <p className="mt-1 text-[0.68rem] font-semibold text-[#9a90aa]">
                 Updated{" "}
                 {new Date(lastGeneratedAt).toLocaleTimeString([], {
                   hour: "numeric",
@@ -1111,387 +1221,548 @@ export default function ConciergeChatClient() {
               </p>
             ) : null}
           </div>
-          {liveCardEventId ? (
+          <div className="flex items-center gap-1">
             <button
               type="button"
-              disabled={isBusy}
-              onClick={() =>
-                void sendGeneratedCardEdit("Regenerate the product with the latest event details.")
-              }
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#d8caff] bg-white px-4 text-xs font-bold text-[#5f5289] transition hover:bg-[#f7f3ff] disabled:cursor-not-allowed disabled:opacity-55"
+              className="grid size-9 place-items-center rounded-lg text-[#8b8298] transition hover:bg-[#f3eff8] hover:text-[#4b3d64]"
+              aria-label="Share preview"
+              title="Share preview"
             >
-              <RefreshCw className="size-4" aria-hidden="true" />
-              Regenerate
+              <Share2 className="size-4" aria-hidden="true" />
             </button>
-          ) : null}
+            <button
+              type="button"
+              className="grid size-9 place-items-center rounded-lg text-[#8b8298] transition hover:bg-[#f3eff8] hover:text-[#4b3d64]"
+              aria-label="More preview actions"
+              title="More preview actions"
+            >
+              <MoreVertical className="size-4" aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
-        <section className="relative flex min-h-[34rem] flex-1 items-center justify-center overflow-hidden rounded-[1.2rem] border border-[#eadfff] bg-[#f7f3ff] px-5 py-8 shadow-[0_22px_70px_rgba(68,43,112,0.08)] sm:px-8">
-          <div className="relative flex aspect-[4/5] w-full max-w-[25rem] flex-col items-center justify-center border border-[#eee7ff] bg-white px-8 py-10 text-center shadow-2xl shadow-[#3f275f]/10">
-            <Sparkles className="mb-5 size-7 text-[#7c4dff]" aria-hidden="true" />
-            <h3 className="text-4xl font-semibold tracking-normal text-[#2d1b36]">
-              {workspaceTitle}
-            </h3>
-            <p className="mt-3 text-lg italic text-[#6f5b86]">
-              {currentLiveCardSummary.subheadline}
-            </p>
-            <div className="my-7 h-px w-14 bg-[#ded2ff]" />
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#7a6c99]">
-              {currentLiveCardSummary.scheduleLine}
-            </p>
-            <p className="mt-3 text-sm font-medium text-[#5b4a72]">
-              {currentLiveCardSummary.locationLine}
-            </p>
-            <span className="mt-8 inline-flex h-10 items-center rounded-sm bg-[#2d1b36] px-6 text-xs font-bold uppercase tracking-[0.16em] text-white">
-              RSVP Online
-            </span>
-          </div>
-
-          {isGeneratingCard ? (
-            <div className="absolute inset-0 flex items-end justify-center bg-white/62 p-5 backdrop-blur-[2px]">
-              <div
-                className="w-full max-w-md rounded-[1.15rem] border border-[#eadfff] bg-white/94 p-4 shadow-xl shadow-[#3f275f]/10"
-                role="status"
-                aria-live="polite"
+        <div className="flex-1 space-y-5 overflow-y-auto py-5">
+          {liveCardEventId ? (
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#f1edf7] p-1">
+              <button
+                type="button"
+                onClick={() => setPreviewTab("preview")}
+                className={`h-10 rounded-lg text-xs font-bold transition ${
+                  previewTab === "preview"
+                    ? "bg-white text-[#7c4dff] shadow-sm"
+                    : "text-[#867a99] hover:text-[#4b3d64]"
+                }`}
               >
-                <div className="flex items-center gap-3">
-                  <Loader2 className="size-5 animate-spin text-[#7c4dff]" aria-hidden="true" />
-                  <div>
-                    <p className="text-sm font-bold text-[#2d1b36]">
-                      {BUILDING_STEPS[currentBuildStep]}
-                    </p>
-                    <p className="mt-0.5 text-xs text-[#7a6c99]">Building the workspace preview</p>
-                  </div>
-                </div>
-                <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eadfff]">
-                  <motion.div
-                    className="h-full bg-[#7c4dff]"
-                    initial={{ width: "0%" }}
-                    animate={{ width: `${buildProgress}%` }}
-                  />
-                </div>
-              </div>
+                Invitation
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewTab("rsvp")}
+                className={`h-10 rounded-lg text-xs font-bold transition ${
+                  previewTab === "rsvp"
+                    ? "bg-white text-[#7c4dff] shadow-sm"
+                    : "text-[#867a99] hover:text-[#4b3d64]"
+                }`}
+              >
+                RSVP
+              </button>
             </div>
           ) : null}
-        </section>
 
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          {liveCardPublicHref ? (
-            <a
-              href={liveCardPublicHref}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#197052] px-5 text-sm font-bold text-white shadow-lg shadow-[#197052]/15 transition hover:bg-[#145f46]"
-            >
-              View product
-              <ExternalLink className="size-4" aria-hidden="true" />
-            </a>
-          ) : null}
-          {liveCardWorkspaceHref ? (
-            <a
-              href={liveCardWorkspaceHref}
-              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-[#d8caff] bg-white px-5 text-sm font-bold text-[#5f5289] transition hover:bg-[#f7f3ff]"
-            >
-              Open workspace
-            </a>
-          ) : null}
-          {!liveCardEventId && !isGeneratingCard ? (
-            <button
-              type="button"
-              disabled={!canGenerateProduct}
-              onClick={() => {
-                if (draft) void generateProductForDraft(draft);
-              }}
-              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#197052] px-5 text-sm font-bold text-white shadow-lg shadow-[#197052]/15 transition hover:bg-[#145f46] disabled:cursor-not-allowed disabled:bg-[#a9cabb] disabled:shadow-none"
-            >
-              <Sparkles className="size-4" aria-hidden="true" />
-              Generate product
-            </button>
-          ) : null}
+          {previewTab === "rsvp" && liveCardEventId ? (
+            <div className="space-y-5">
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  ["Attending", "0", "bg-[#edf9f1] text-[#197052] border-[#d7efd9]"],
+                  ["Maybe", "0", "bg-[#fff8e8] text-[#966a16] border-[#f4dfab]"],
+                  ["Declined", "0", "bg-[#fff0f3] text-[#b4234b] border-[#f2c9d3]"],
+                ].map(([label, value, className]) => (
+                  <div key={label} className={`rounded-2xl border p-4 ${className}`}>
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em]">{label}</p>
+                    <p className="mt-1 text-2xl font-bold">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <section className="overflow-hidden rounded-2xl border border-[#eee8f6] bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-[#f4eff8] bg-[#faf8fd] px-4 py-3">
+                  <h3 className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#8b8298]">
+                    Guest List
+                  </h3>
+                  <span className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#7c4dff]">
+                    0 Total
+                  </span>
+                </div>
+                <div className="px-4 py-12 text-center text-xs italic text-[#9a90aa]">
+                  Responses will appear here once guests reply.
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-dashed border-[#ddd3ea] bg-[#f5f2f9] p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Info className="size-3.5 text-[#8b8298]" aria-hidden="true" />
+                  <p className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#8b8298]">
+                    RSVP Link
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border border-[#eee8f6] bg-white p-2">
+                  <p className="min-w-0 flex-1 truncate text-xs text-[#675b78]">
+                    {liveCardPublicHref || "Generated link appears here"}
+                  </p>
+                  {liveCardPublicHref ? (
+                    <a
+                      href={liveCardPublicHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="grid size-8 place-items-center rounded-lg text-[#7c4dff] transition hover:bg-[#f6f1ff]"
+                      aria-label="Open RSVP link"
+                    >
+                      <ExternalLink className="size-3.5" aria-hidden="true" />
+                    </a>
+                  ) : null}
+                </div>
+              </section>
+            </div>
+          ) : (
+            <>
+              <section className="rounded-[1.3rem] border border-[#eee8f6] bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-[0.12em] ${
+                      liveCardEventId
+                        ? "bg-[#e8f8ed] text-[#197052]"
+                        : isGeneratingCard
+                          ? "bg-[#f5f0ff] text-[#7c4dff]"
+                          : detailsComplete
+                            ? "bg-[#edf9f1] text-[#197052]"
+                            : "bg-[#f5f0ff] text-[#7c4dff]"
+                    }`}
+                  >
+                    {isGeneratingCard
+                      ? "Generating"
+                      : liveCardEventId
+                        ? "Generated"
+                        : detailsComplete
+                          ? "Ready"
+                          : "Drafting"}
+                  </span>
+                  <span className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#9a90aa]">
+                    {currentCategoryLabel}
+                  </span>
+                </div>
+
+                <h3 className="mb-5 font-serif text-2xl font-bold italic text-[#221a35]">
+                  {workspaceTitle}
+                </h3>
+
+                <div className="space-y-4">
+                  <div
+                    className={`flex items-center gap-3 ${
+                      currentLiveCardSummary.scheduleLine === "Date TBD"
+                        ? "text-[#b7afc3]"
+                        : "text-[#62546f]"
+                    }`}
+                  >
+                    <span className="grid size-9 place-items-center rounded-lg bg-[#fff3e8] text-[#e5751f]">
+                      <Calendar className="size-4" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm">
+                      {currentLiveCardSummary.scheduleLine}
+                    </span>
+                  </div>
+                  <div
+                    className={`flex items-center gap-3 ${
+                      currentLiveCardSummary.locationLine === "Location TBD"
+                        ? "text-[#b7afc3]"
+                        : "text-[#62546f]"
+                    }`}
+                  >
+                    <span className="grid size-9 place-items-center rounded-lg bg-[#eaf3ff] text-[#3477d2]">
+                      <MapPin className="size-4" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm">
+                      {currentLiveCardSummary.locationLine}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[#62546f]">
+                    <span className="grid size-9 place-items-center rounded-lg bg-[#f3ecff] text-[#7c4dff]">
+                      <Users className="size-4" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm">
+                      {guestLineFromDraft(draft)}
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              <section
+                className={`relative overflow-hidden border border-[#eee8f6] bg-white p-6 text-center shadow-xl shadow-[#3f275f]/10 ${
+                  effectiveSelectedProductOutput === "event_page"
+                    ? "aspect-video rounded-[1.2rem]"
+                    : "aspect-[4/5] rounded-[1.4rem]"
+                }`}
+              >
+                {isGeneratingCard ? (
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-white/76 text-[#8b8298] backdrop-blur-[2px]">
+                    <Loader2 className="size-11 animate-spin text-[#7c4dff]" aria-hidden="true" />
+                    <div className="w-full max-w-[18rem] px-4">
+                      <p className="text-sm font-bold text-[#2d1b36]">
+                        {BUILDING_STEPS[currentBuildStep]}
+                      </p>
+                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eadfff]">
+                        <motion.div
+                          className="h-full bg-[#7c4dff]"
+                          initial={{ width: "0%" }}
+                          animate={{ width: `${buildProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <img
+                  src={currentPreviewImage}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 h-full w-full object-cover opacity-20 grayscale"
+                />
+
+                {effectiveSelectedProductOutput === "digital_flyer" ? (
+                  <div className="relative z-10 flex h-full flex-col items-center justify-center">
+                    <div className="mb-6 grid aspect-square w-full max-w-[13rem] place-items-center rounded-2xl border-2 border-dashed border-[#dfd6ea] bg-[#f8f5fb] shadow-inner">
+                      <Upload className="size-8 text-[#b9b0c5]" aria-hidden="true" />
+                    </div>
+                    <h3 className="font-serif text-3xl font-bold italic text-[#221a35]">
+                      {workspaceTitle}
+                    </h3>
+                    <p className="mt-3 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#7c4dff]">
+                      {currentLiveCardSummary.scheduleLine}
+                    </p>
+                  </div>
+                ) : effectiveSelectedProductOutput === "event_page" ? (
+                  <div className="relative z-10 flex h-full flex-col text-left">
+                    <div className="mb-8 flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="mb-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#7c4dff]">
+                          Live Event Web
+                        </p>
+                        <h3 className="truncate font-serif text-3xl font-bold italic text-[#221a35]">
+                          {workspaceTitle}
+                        </h3>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-[#221a35] px-4 py-2 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-white">
+                        RSVP
+                      </span>
+                    </div>
+                    <div className="flex-1 border-t border-[#eee8f6] pt-5">
+                      <p className="max-w-sm text-xs leading-6 text-[#675b78]">
+                        {draft?.previewCopy.body ||
+                          "A full public event experience for your guests."}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative z-10 flex h-full flex-col items-center justify-between py-4">
+                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#7c4dff]">
+                      Celebration Invitation
+                    </p>
+                    <div>
+                      <h3 className="font-serif text-4xl font-bold italic text-[#221a35]">
+                        {workspaceTitle}
+                      </h3>
+                      <div className="mx-auto my-7 h-px w-12 bg-[#ded2ff]" />
+                      <p className="mx-auto max-w-[15rem] text-sm italic leading-6 text-[#675b78]">
+                        {draft?.previewCopy.body ||
+                          "Describe your event vision and see it come to life here."}
+                      </p>
+                    </div>
+                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-[#9a90aa]">
+                      {draft?.theme || selectedProductLabel}
+                    </p>
+                  </div>
+                )}
+              </section>
+
+              <div className="space-y-3">
+                {liveCardPublicHref ? (
+                  <a
+                    href={liveCardPublicHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#197052] px-5 text-sm font-bold text-white shadow-lg shadow-[#197052]/15 transition hover:bg-[#145f46]"
+                  >
+                    <ExternalLink className="size-4" aria-hidden="true" />
+                    View product
+                  </a>
+                ) : null}
+                {liveCardWorkspaceHref ? (
+                  <a
+                    href={liveCardWorkspaceHref}
+                    className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-[#d8caff] bg-white px-5 text-sm font-bold text-[#5f5289] transition hover:bg-[#f7f3ff]"
+                  >
+                    Open workspace
+                  </a>
+                ) : null}
+                {!liveCardEventId ? (
+                  <button
+                    type="button"
+                    disabled={!canGenerateProduct}
+                    onClick={() => {
+                      if (draft) void generateProductForDraft(draft);
+                    }}
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#7c4dff] px-5 text-sm font-bold text-white shadow-lg shadow-[#7c4dff]/20 transition hover:bg-[#6f43f0] disabled:cursor-not-allowed disabled:bg-[#d8caff] disabled:shadow-none"
+                  >
+                    <Sparkles className="size-4" aria-hidden="true" />
+                    Generate workspace
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() =>
+                      void sendGeneratedCardEdit(
+                        "Regenerate the product with the latest event details.",
+                      )
+                    }
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#8b8298] transition hover:text-[#7c4dff] disabled:cursor-not-allowed disabled:opacity-55"
+                  >
+                    <RefreshCw className="size-3.5" aria-hidden="true" />
+                    Regenerate version
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
-        {liveCardEventId ? (
-          <p className="mt-4 text-center text-sm leading-6 text-[#6f608c]">
-            Refine the workspace in chat to update the generated product.
-          </p>
-        ) : null}
       </div>
     </aside>
   );
 
   return (
-    <main
-      ref={mainRef}
-      className="relative min-h-screen overflow-hidden bg-[#f8f5ff] bg-[radial-gradient(circle_at_top,#ffffff_0%,#f8f5ff_48%,#efe8ff_100%)] text-[#161129]"
-    >
-      <div className="relative z-10 flex min-h-screen flex-col">
-        <header className="flex h-20 shrink-0 items-center justify-between px-5 sm:px-8">
-          <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-[#7c4dff] text-white shadow-lg shadow-[#7c4dff]/20">
-              <Sparkles className="size-5" aria-hidden="true" />
+    <div className="flex h-screen w-full overflow-hidden bg-[#f8f9fc] text-[#161129]">
+      <main ref={mainRef} className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+          <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#eee8f6] bg-white px-4 md:hidden">
+            {shouldShowWorkspacePanel ? (
+              <div className="grid grid-cols-2 rounded-lg bg-[#f1edf7] p-1">
+                <button
+                  type="button"
+                  onClick={() => setMobileView("chat")}
+                  className={`h-8 rounded-md px-4 text-xs font-bold transition ${
+                    mobileView === "chat" ? "bg-white text-[#7c4dff] shadow-sm" : "text-[#8b8298]"
+                  }`}
+                >
+                  Chat
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileView("preview")}
+                  className={`h-8 rounded-md px-4 text-xs font-bold transition ${
+                    mobileView === "preview"
+                      ? "bg-white text-[#7c4dff] shadow-sm"
+                      : "text-[#8b8298]"
+                  }`}
+                >
+                  Preview
+                </button>
+              </div>
+            ) : (
+              <span className="text-sm font-bold text-[#221a35]">Envitefy Chat</span>
+            )}
+            <span className="grid size-9 place-items-center rounded-lg bg-[#7c4dff] text-white">
+              <Sparkles className="size-4" aria-hidden="true" />
             </span>
-            <span className="text-lg font-semibold tracking-normal text-[#2d1b36]">
-              Envitefy Chat
-            </span>
-          </div>
-        </header>
+          </header>
 
-        <section className="min-h-0 flex-1">
-          <div
-            className={`grid min-h-[calc(100vh-5rem)] ${
-              shouldShowWorkspacePanel
-                ? "lg:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)]"
-                : "lg:grid-cols-1"
-            }`}
-          >
+          <section className="min-h-0 flex-1">
             <div
-              ref={chatPaneRef}
-              className={`order-2 min-h-0 w-full border-t border-[#eadfff] bg-white/48 backdrop-blur-sm lg:order-1 lg:flex lg:flex-col lg:overflow-hidden lg:border-t-0 ${
-                shouldShowWorkspacePanel ? "lg:border-r" : "lg:border-r-0"
-              }`}
-            >
-              {isEmptyState ? (
-                <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-[72rem] flex-col justify-end px-4 pb-56 pt-8 text-center sm:px-6 sm:pb-60">
-                  <motion.h1
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mx-auto max-w-xl text-3xl font-medium tracking-normal text-[#2d1b36] sm:text-4xl"
-                  >
-                    What are we celebrating?
-                  </motion.h1>
-                  <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base">
-                    Choose a category and product to start, or upload an invite.
-                  </p>
-                  <div className="mt-6 w-full">
-                    <ChatStudioStarterGrid
-                      selectedCategory={starterCategory}
-                      onSelectCategory={handleStarterCategory}
-                      onUploadInvite={() => fileInputRef.current?.click()}
-                      isUploading={isUploading}
-                    />
-                  </div>
-                </div>
-              ) : (
-                chatThread
-              )}
-            </div>
-            {shouldShowWorkspacePanel ? workspacePanel : null}
-          </div>
-        </section>
-
-        <div
-          className={`pointer-events-none fixed bottom-0 z-30 flex w-[calc(100vw-1rem)] -translate-x-1/2 flex-col items-stretch pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-10 sm:w-[calc(100vw-3rem)] sm:pb-8 ${
-            shouldShowWorkspacePanel ? "max-w-[26rem]" : "max-w-3xl"
-          }`}
-          style={{ left: composerCenterLeft }}
-        >
-          <AnimatePresence>
-            {isProductMenuOpen ? (
-              <motion.div
-                ref={productMenuRef}
-                initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.96 }}
-                className="pointer-events-auto mb-4 w-full"
-              >
-                <div className="w-full max-w-[19rem] rounded-[1.35rem] border border-[#eadfff] bg-white p-3 shadow-2xl shadow-[#412a62]/10">
-                  <p className="px-3 pb-2 text-[0.66rem] font-bold uppercase text-[#8b7aaa]">
-                    Choose output
-                  </p>
-                  {PRODUCT_OPTIONS.map((option) => {
-                    const Icon = option.icon;
-                    const isSelected = option.output === selectedProductOutput;
-                    return (
-                      <button
-                        key={option.output}
-                        type="button"
-                        onClick={() => void handleProductOption(option)}
-                        className={`flex w-full items-center gap-4 rounded-2xl p-3 text-left transition ${
-                          isSelected ? "bg-[#fbf8ff]" : "hover:bg-[#f7f3ff]"
-                        }`}
-                      >
-                        <span className="grid size-8 shrink-0 place-items-center rounded-xl">
-                          <Icon className={`size-5 ${option.iconClassName}`} aria-hidden="true" />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-[#24183e]">
-                            {option.label}
-                          </span>
-                          <span className="block text-xs leading-5 text-[#8f879a]">
-                            {option.description}
-                          </span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                  <div
-                    className={`mt-2 border-t border-[#eadfff] pt-2 ${
-                      shouldShowWorkspacePanel ? "" : "sm:hidden"
-                    }`}
-                  >
-                    <p className="px-3 pb-1 text-[0.66rem] font-bold uppercase text-[#8b7aaa]">
-                      Add source
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProductMenuOpen(false);
-                        fileInputRef.current?.click();
-                      }}
-                      className="flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:bg-[#f7f3ff]"
-                    >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-xl text-[#8f879a]">
-                        <Upload className="size-5" aria-hidden="true" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-[#24183e]">Upload</span>
-                        <span className="block text-xs leading-5 text-[#8f879a]">
-                          Add a file or image
-                        </span>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProductMenuOpen(false);
-                        cameraInputRef.current?.click();
-                      }}
-                      className="flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:bg-[#f7f3ff]"
-                    >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-xl text-[#8f879a]">
-                        <Camera className="size-5" aria-hidden="true" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-[#24183e]">Camera</span>
-                        <span className="block text-xs leading-5 text-[#8f879a]">Take a photo</span>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProductMenuOpen(false);
-                        void handleVoiceInput();
-                      }}
-                      disabled={isBusy || isListening}
-                      className="flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:bg-[#f7f3ff] disabled:cursor-not-allowed disabled:opacity-55 sm:hidden"
-                    >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-xl text-[#8f879a]">
-                        <Mic className="size-5" aria-hidden="true" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-[#24183e]">Voice</span>
-                        <span className="block text-xs leading-5 text-[#8f879a]">
-                          Dictate details
-                        </span>
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-
-          <div ref={composerCardRef} className="pointer-events-auto w-full">
-            <form
-              onSubmit={handleSubmit}
-              className={`relative grid min-h-14 items-center gap-1.5 rounded-[1.25rem] border border-[#ddd2ef] bg-white/96 p-1.5 shadow-2xl shadow-[#6f4cff]/10 ring-4 ring-white/80 backdrop-blur sm:rounded-full sm:gap-2 ${
+              className={`grid h-full min-h-0 ${
                 shouldShowWorkspacePanel
-                  ? "grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto_auto]"
-                  : "grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_auto_auto_minmax(0,1fr)_auto_auto]"
+                  ? "md:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)]"
+                  : "md:grid-cols-1"
               }`}
             >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={getUploadAcceptAttribute("attachment")}
-                className="hidden"
-                onChange={(event) => void handleUpload(event.currentTarget.files?.[0])}
-              />
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={(event) => void handleUpload(event.currentTarget.files?.[0])}
-              />
-              <button
-                ref={productButtonRef}
-                type="button"
-                onClick={() => setIsProductMenuOpen((current) => !current)}
-                className="grid size-11 shrink-0 place-items-center rounded-full border border-[#eadfff] bg-[#fbf9ff] text-[#7b718c] shadow-sm transition hover:border-[#ded2ff] hover:bg-white hover:text-[#2d1238] active:scale-[0.98] sm:inline-flex sm:w-auto sm:gap-2 sm:px-4 sm:text-[0.68rem] sm:font-bold sm:uppercase sm:tracking-[0.08em]"
-                aria-expanded={isProductMenuOpen}
-                aria-haspopup="true"
-                aria-label="Product menu"
-                title="Product menu"
+              <div
+                ref={chatPaneRef}
+                className={`min-h-0 w-full bg-white/48 backdrop-blur-sm md:flex md:flex-col md:overflow-hidden ${
+                  shouldShowWorkspacePanel ? "md:border-r md:border-[#e5dff0]" : ""
+                } ${
+                  mobileView === "chat"
+                    ? isEmptyState
+                      ? "flex flex-col overflow-y-auto"
+                      : "flex flex-col overflow-hidden"
+                    : "hidden md:flex"
+                } ${shouldShowWorkspacePanel ? "" : "md:border-r-0"}`}
               >
-                {isProductMenuOpen ? (
-                  <X className="size-4" aria-hidden="true" />
+                {isEmptyState ? (
+                  <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-end px-4 pb-56 pt-8 text-center sm:px-6 sm:pb-60">
+                    <motion.h1
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mx-auto max-w-3xl text-5xl font-medium tracking-normal text-[#2d1b36] sm:text-6xl"
+                    >
+                      What are we celebrating?
+                    </motion.h1>
+                    <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base">
+                      Choose a category and product to start, or upload an invite.
+                    </p>
+                    <div className="mt-6 w-full">
+                      <ChatStudioStarterGrid
+                        selectedCategory={starterCategory}
+                        onSelectCategory={handleStarterCategory}
+                        onUploadInvite={() => fileInputRef.current?.click()}
+                        isUploading={isUploading}
+                      />
+                    </div>
+                    <p className="mx-auto mt-5 text-sm font-medium text-[#8b7ca6]">
+                      or just start chatting
+                    </p>
+                  </div>
                 ) : (
-                  <Plus className="size-4" aria-hidden="true" />
+                  chatThread
                 )}
-                <span className="hidden sm:inline">Product</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className={`size-10 shrink-0 place-items-center rounded-full text-[#9b92a8] transition hover:bg-[#f4efff] hover:text-[#7c4dff] ${
-                  shouldShowWorkspacePanel ? "hidden" : "hidden sm:grid"
-                }`}
-                aria-label="Upload file"
-                title="Upload file"
-              >
-                <Upload className="size-4" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() => cameraInputRef.current?.click()}
-                className={`size-10 shrink-0 place-items-center rounded-full text-[#9b92a8] transition hover:bg-[#f4efff] hover:text-[#7c4dff] ${
-                  shouldShowWorkspacePanel ? "hidden" : "hidden sm:grid"
-                }`}
-                aria-label="Use camera"
-                title="Use camera"
-              >
-                <Camera className="size-4" aria-hidden="true" />
-              </button>
-              <input
-                value={input}
-                onChange={(event) => setInput(event.currentTarget.value)}
-                placeholder={liveCardEventId ? "Refine workspace..." : "Describe your event..."}
-                aria-label={liveCardEventId ? "Refine workspace" : "Describe your event"}
-                className="h-11 min-w-0 border-0 bg-transparent text-base text-[#161129] outline-none placeholder:text-[#b8b1c4]"
-              />
-              <button
-                type="button"
-                onClick={handleVoiceInput}
-                disabled={isBusy || isListening}
-                className={`hidden size-10 shrink-0 place-items-center rounded-full transition sm:grid ${
-                  isListening
-                    ? "bg-[#f4efff] text-[#7c4dff]"
-                    : "text-[#8f879a] hover:bg-[#f4efff] hover:text-[#7c4dff]"
-                } disabled:cursor-not-allowed disabled:opacity-55`}
-                aria-label="Use voice input"
-                title="Use voice input"
-              >
-                <Mic className="size-5" aria-hidden="true" />
-              </button>
-              <motion.button
-                type="submit"
-                whileTap={{ scale: 0.94 }}
-                disabled={isBusy || !input.trim()}
-                className="grid size-11 shrink-0 place-items-center rounded-full bg-[#7c4dff] text-white shadow-lg shadow-[#7c4dff]/25 transition hover:bg-[#6f43f0] disabled:cursor-not-allowed disabled:bg-[#ded2ff] disabled:shadow-none"
-                aria-label="Send"
-                title="Send"
-              >
-                <ArrowUp className="size-5" strokeWidth={2.5} aria-hidden="true" />
-              </motion.button>
-            </form>
-            {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
-            <p className="mt-4 text-center text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#8d7daf]">
-              Envitefy Concierge - Beta
-            </p>
+              </div>
+              {shouldShowWorkspacePanel ? workspacePanel : null}
+            </div>
+          </section>
+
+          <div
+            className={`pointer-events-none fixed bottom-0 z-30 w-[calc(100vw-1rem)] -translate-x-1/2 flex-col items-stretch pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-10 sm:w-[calc(100vw-3rem)] sm:pb-8 ${
+              shouldShowWorkspacePanel && mobileView === "preview" ? "hidden md:flex" : "flex"
+            } max-w-3xl`}
+            style={{ left: composerCenterLeft }}
+          >
+            <div ref={composerCardRef} className="pointer-events-auto w-full">
+              <form onSubmit={handleSubmit}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={getUploadAcceptAttribute("attachment")}
+                  className="hidden"
+                  onChange={(event) => void handleUpload(event.currentTarget.files?.[0])}
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(event) => void handleUpload(event.currentTarget.files?.[0])}
+                />
+                <PromptInput
+                  value={input}
+                  onValueChange={setInput}
+                  isLoading={isBusy}
+                  onSubmit={() => void submitComposerInput()}
+                  disabled={isBusy || shouldShowProductChoice}
+                  className={cn(
+                    "w-full border-[#d8caff] bg-[#fbf9ff] p-2 text-[#25183a] shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur transition-all duration-300",
+                    isListening &&
+                      "border-[#8b5cf6] shadow-[0_18px_46px_rgba(124,77,255,0.24),inset_0_1px_0_rgba(255,255,255,0.95)]",
+                  )}
+                >
+                  <PromptInputTextarea
+                    placeholder={
+                      shouldShowProductChoice
+                        ? "Choose a product above..."
+                        : liveCardEventId
+                          ? "Refine workspace..."
+                          : "Describe your event..."
+                    }
+                    aria-label={
+                      shouldShowProductChoice
+                        ? "Choose a product"
+                        : liveCardEventId
+                          ? "Refine workspace"
+                          : "Describe your event"
+                    }
+                    className="min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#7c4dff] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6]"
+                  />
+                  <PromptInputActions className="justify-between gap-2 pt-2">
+                    <div className="flex min-w-0 items-center gap-1">
+                      <PromptInputAction tooltip="Upload file">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff]"
+                          aria-label="Upload file"
+                        >
+                          <Paperclip className="size-6" aria-hidden="true" />
+                        </button>
+                      </PromptInputAction>
+
+                      <PromptInputAction tooltip="Use camera">
+                        <button
+                          type="button"
+                          onClick={() => cameraInputRef.current?.click()}
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff]"
+                          aria-label="Use camera"
+                        >
+                          <Camera className="size-6" aria-hidden="true" />
+                        </button>
+                      </PromptInputAction>
+                    </div>
+
+                    <PromptInputAction
+                      tooltip={
+                        isBusy
+                          ? busyLabel
+                          : shouldShowProductChoice
+                            ? "Choose a product above"
+                            : input.trim()
+                              ? "Send message"
+                              : isListening
+                                ? "Listening"
+                                : "Voice message"
+                      }
+                    >
+                      <button
+                        type={input.trim() ? "submit" : "button"}
+                        disabled={
+                          isBusy || shouldShowProductChoice || (!input.trim() && isListening)
+                        }
+                        onClick={(event) => {
+                          if (input.trim()) return;
+                          event.preventDefault();
+                          void handleVoiceInput();
+                        }}
+                        className={cn(
+                          "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff] disabled:pointer-events-none disabled:opacity-50",
+                          (input.trim() || isListening) && "text-[#7c4dff]",
+                        )}
+                        aria-label={input.trim() ? "Send" : "Use voice input"}
+                      >
+                        {isBusy ? (
+                          <Loader2
+                            className="size-5 animate-spin text-[#7c4dff]"
+                            aria-hidden="true"
+                          />
+                        ) : input.trim() ? (
+                          <ArrowUp
+                            className="size-6 text-current"
+                            strokeWidth={2.5}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <Mic
+                            className="size-6 text-current"
+                            strokeWidth={2.4}
+                            aria-hidden="true"
+                          />
+                        )}
+                      </button>
+                    </PromptInputAction>
+                  </PromptInputActions>
+                </PromptInput>
+              </form>
+              {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
+              <p className="mt-4 text-center text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#8d7daf]">
+                Envitefy Concierge - Beta
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

@@ -6,14 +6,46 @@ import test from "node:test";
 const repoRoot = process.cwd();
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("/chat is a signed-in concierge page, not an admin-only notFound page", () => {
+test("/chat is the OpenAI-backed concierge workspace", () => {
   const page = readSource("src/app/chat/page.tsx");
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const extract = readSource("src/lib/concierge/extract.ts");
+  const eventActions = readSource("src/lib/concierge/event-actions.ts");
 
   assert.match(page, /ConciergeChatClient/);
   assert.doesNotMatch(page, /isAdmin/);
   assert.doesNotMatch(page, /notFound\(/);
+
   assert.match(client, /What are we celebrating\?/);
+  assert.match(client, /text-5xl/);
+  assert.match(client, /sm:text-6xl/);
+  assert.match(client, /or just start chatting/);
+  assert.match(client, /STUDIO_CATEGORY_TILES/);
+  assert.match(client, /CHAT_STUDIO_GRID_COMPOSITION/);
+  assert.match(client, /auto-rows-\[118px\]/);
+  assert.match(client, /sm:auto-rows-\[135px\]/);
+  assert.match(client, /md:auto-rows-\[155px\]/);
+  assert.match(client, /max-w-\[90rem\]/);
+  assert.match(client, /Upload Your Invite/);
+  assert.match(client, /PRODUCT_OPTIONS/);
+  assert.match(client, /PRODUCT_CHOICE_PROMPT/);
+  assert.match(client, /"What kind of product would you like to create\?"/);
+  assert.doesNotMatch(client, /What kind of product would you like to create: a live card/);
+  assert.match(client, /Live Card/);
+  assert.match(client, /Flyer \/ Invite/);
+  assert.match(client, /Event Page/);
+
+  assert.match(client, /window\.addEventListener\("envitefy:chat:new", handleNewChatSession\)/);
+  assert.doesNotMatch(client, /CreationThreadSummary/);
+  assert.doesNotMatch(client, /CreationThreadsResponse/);
+  assert.doesNotMatch(client, /fetch\("\/api\/creation\/threads"/);
+  assert.doesNotMatch(client, /fetch\(`\/api\/creation\/threads\/\$\{encodeURIComponent\(id\)\}`/);
+  assert.doesNotMatch(client, /Recent Chats/);
+  assert.doesNotMatch(client, /isSidebarOpen/);
+  assert.doesNotMatch(client, /isSidebarCollapsed/);
+  assert.doesNotMatch(client, /useRouter/);
+  assert.doesNotMatch(client, /router\.push\(`\/chat\?thread=/);
+
   assert.match(client, /fetch\("\/api\/creation\/intake"/);
   assert.match(client, /CreationSessionResumeResponse/);
   assert.match(client, /useSearchParams/);
@@ -21,118 +53,85 @@ test("/chat is a signed-in concierge page, not an admin-only notFound page", () 
   assert.match(client, /restoreThread/);
   assert.match(client, /\/api\/creation\/intake\?threadId=/);
   assert.match(client, /setDraft\(restoredDraft\)/);
+  assert.match(client, /activeContext: ConciergeActiveContext/);
+  assert.match(client, /currentEventId: liveCardEventId/);
+
   assert.match(client, /type ConciergePhase =/);
   assert.match(client, /"ready_to_generate"/);
   assert.match(client, /"generating_card"/);
   assert.match(client, /"card_ready"/);
   assert.match(client, /shouldShowWorkspacePanel/);
-  assert.match(client, /shouldShowWorkspacePanel \? workspacePanel : null/);
-  assert.match(client, /const \[liveCardEventId, setLiveCardEventId\]/);
+  assert.match(client, /Boolean\(draft\)/);
+  assert.match(client, /mobileView/);
+  assert.match(client, /isEmptyState\s*\?\s*"flex flex-col overflow-y-auto"/);
+  assert.match(client, /setMobileView\("preview"\)/);
+  assert.match(client, /Workspace Preview/);
+  assert.match(client, /Invitation/);
+  assert.match(client, /RSVP/);
+  assert.match(client, /Guest List/);
+  assert.match(client, /Generate workspace/);
+  assert.match(client, /Regenerate version/);
+  assert.match(client, /View product/);
+  assert.match(client, /Open workspace/);
+  assert.match(client, /Refine workspace/);
+  assert.match(client, /sendGeneratedCardEdit/);
+  assert.match(client, /fetch\(`\/api\/concierge\/events\/\$\{liveCardEventId\}\/message`/);
+
   assert.match(client, /NEXT_PUBLIC_CONCIERGE_FAST_UPLOADS/);
   assert.match(client, /FAST_UPLOAD_OCR_URL = "\/api\/ocr\?fast=1&turbo=1&timing=1"/);
   assert.match(client, /DEFAULT_UPLOAD_OCR_URL = "\/api\/ocr\?fast=0"/);
   assert.match(client, /ENABLE_FAST_UPLOAD_OCR \? FAST_UPLOAD_OCR_URL : DEFAULT_UPLOAD_OCR_URL/);
-  assert.match(client, /const activeContext: ConciergeActiveContext =/);
-  assert.match(client, /activeContext,/);
-  assert.match(client, /"Thinking"/);
-  assert.match(client, /currentEventId: liveCardEventId/);
-  assert.match(client, /const workspacePanel = \(/);
-  assert.match(client, /generateProductForDraft/);
-  assert.match(client, /Generated product/);
-  assert.match(client, /Event Workspace/);
-  assert.match(client, /Ready to generate/);
-  assert.match(client, /Generate product/);
-  assert.match(client, /View product/);
-  assert.match(client, /Refine workspace/);
-  assert.match(client, /sendGeneratedCardEdit/);
-  assert.match(client, /fetch\(`\/api\/concierge\/events\/\$\{liveCardEventId\}\/message`/);
-  assert.match(client, /What are we celebrating\?/);
-  assert.match(client, /RSVP/);
-  assert.match(client, /action: "save"/);
-  assert.match(client, /persistSession: true/);
-  assert.match(client, /Choose output/);
-  assert.match(client, /aria-label="Product menu"/);
-  assert.match(client, /<span className="hidden sm:inline">Product<\/span>/);
-  assert.match(client, /Add source/);
-  assert.match(client, /Choose a category and product to start/);
-  assert.match(client, /const \[starterCategory, setStarterCategory\]/);
-  assert.match(client, /useState<RequestedOutput \| null>\(null\)/);
-  assert.match(client, /startStarterConversation/);
-  assert.match(client, /setIsProductMenuOpen\(true\)/);
-  assert.match(client, /document\.addEventListener\("pointerdown", handlePointerDown, true\)/);
-  assert.match(client, /window\.addEventListener\("envitefy:chat:new", handleNewChatSession\)/);
-  assert.match(client, /setInput\(""\)/);
-  assert.match(client, /STUDIO_CATEGORY_TILES/);
-  assert.match(client, /CHAT_STUDIO_GRID_COMPOSITION/);
-  assert.match(client, /ChatStudioStarterGrid/);
-  assert.match(client, /selectedCategory=\{starterCategory\}/);
-  assert.match(client, /Upload Your Invite/);
-  assert.match(client, /max-w-\[72rem\]/);
-  assert.match(client, /text-center sm:px-6 sm:pb-60/);
-  assert.match(client, /className="mx-auto max-w-xl/);
-  assert.match(client, /className="mx-auto mt-3 max-w-lg/);
-  assert.match(client, /grid-cols-6/);
-  assert.match(client, /row-start-2/);
-  assert.match(
-    client,
-    /Wedding: "col-start-1 row-start-3 sm:col-start-6 sm:row-span-2 sm:row-start-1"/,
-  );
-  assert.match(client, /"Custom Invite": "col-start-2 row-start-5 sm:col-start-5 sm:row-start-2"/);
-  assert.match(client, /upload: "hidden sm:block sm:col-start-3 sm:row-start-1"/);
-  assert.doesNotMatch(client, /"Custom Invite": "col-span-2/);
-  assert.match(client, /onClick=\{\(\) => void onSelect\(category\.name\)\}/);
-  assert.match(client, /setPhase\("collecting_details"\)/);
-  assert.match(client, /action: "starter_category"/);
   assert.match(client, /aria-label="Upload file"/);
   assert.match(client, /aria-label="Use camera"/);
-  assert.match(client, /w-fit max-w-\[86%\] self-start items-center gap-2 rounded-full/);
-  assert.match(
-    client,
-    /grid-cols-\[auto_minmax\(0,1fr\)_auto\] sm:grid-cols-\[auto_minmax\(0,1fr\)_auto_auto\]/,
-  );
-  assert.match(
-    client,
-    /grid-cols-\[auto_minmax\(0,1fr\)_auto\] sm:grid-cols-\[auto_auto_auto_minmax\(0,1fr\)_auto_auto\]/,
-  );
-  assert.match(client, /shouldShowWorkspacePanel \? "max-w-\[26rem\]" : "max-w-3xl"/);
-  assert.match(client, /flex min-h-\[calc\(100vh-5rem\)\] w-full flex-col justify-end gap-5/);
-  assert.match(client, /pb-\[calc\(env\(safe-area-inset-bottom\)\+0\.75rem\)\]/);
-  assert.doesNotMatch(client, /space-y-5/);
-  assert.doesNotMatch(client, /type StarterChip/);
-  assert.doesNotMatch(client, /const CHIPS/);
-  assert.doesNotMatch(client, /setResumeDraft/);
-  assert.doesNotMatch(client, /flex flex-wrap gap-2/);
-  assert.doesNotMatch(client, /Building draft/);
-  assert.doesNotMatch(client, /activeContextForCandidate/);
-  assert.doesNotMatch(client, /draft\.sourceContext\.candidates\?\.length/);
+  assert.match(client, /bg-\[#fbf9ff\]/);
+  assert.match(client, /border-\[#d8caff\]/);
+  assert.match(client, /!text-\[#25183a\]/);
+  assert.match(client, /!placeholder:text-\[#8b7ca6\]/);
+  assert.match(client, /caret-\[#7c4dff\]/);
+  assert.match(client, /inline-flex h-9 w-9/);
+  assert.match(client, /\(input\.trim\(\) \|\| isListening\) && "text-\[#7c4dff\]"/);
+  assert.match(client, /<Mic\s+className="size-6 text-current"/);
+  assert.match(client, /<ArrowUp\s+className="size-6 text-current"/);
+  assert.match(client, /aria-label=\{`Choose product: \$\{option\.label\}`\}/);
+  assert.match(client, /choiceClassName/);
+  assert.match(client, /choiceIconClassName/);
+  assert.match(client, /<Paperclip className="size-6"/);
+  assert.match(client, /<Camera className="size-6"/);
+  assert.match(client, /Envitefy is thinking\.\.\./);
+  assert.match(client, /isThinking && "animate-pulse"/);
+  assert.match(client, /PanelTopDashed/);
+  assert.match(client, /rotate-180/);
+  assert.match(client, /PartyFlyerIcon/);
+  assert.match(client, /LandingPageIcon/);
+  assert.doesNotMatch(client, /bg-\[#1F2023\]/);
+  assert.doesNotMatch(client, /border-\[#444444\]/);
+  assert.doesNotMatch(client, /placeholder:text-\[#9CA3AF\]/);
+  assert.doesNotMatch(client, /bg-\[color:var\(--color-surface\)\]/);
+  assert.doesNotMatch(client, /bg-\[color:var\(--color-primary\)\]/);
+  assert.doesNotMatch(client, /aria-label=\{`Output: \$\{option\.label\}`\}/);
+  assert.doesNotMatch(client, /isOutputLocked/);
+  assert.doesNotMatch(client, /aria-label="Product menu"/);
+  assert.doesNotMatch(client, /Choose output/);
+  assert.doesNotMatch(client, /Add source/);
+  assert.doesNotMatch(client, /setIsProductMenuOpen/);
+  assert.doesNotMatch(client, /Suggest date/);
+  assert.doesNotMatch(client, /My place/);
+  assert.doesNotMatch(client, /Make it elegant/);
+
+  assert.match(client, /action: "save"/);
+  assert.match(client, /persistSession: true/);
+  assert.doesNotMatch(client, /await generateProductForDraft\(json\.draft\)/);
   assert.doesNotMatch(client, /fetch\("\/api\/history"/);
   assert.doesNotMatch(client, /buildConciergeHistoryPayload\(draft\)/);
-  assert.doesNotMatch(client, /suggestedReplies/);
-  assert.doesNotMatch(client, /handleSuggestedReply/);
-  assert.doesNotMatch(client, /shouldShowLiveCardPanel/);
-  assert.doesNotMatch(client, /generateLiveCardForDraft/);
-  assert.doesNotMatch(client, /draft && shouldShowWorkspacePreview \?/);
-  assert.doesNotMatch(client, /const shouldShowWorkspacePreview = isReadyCreationDraft\(draft\)/);
-  assert.doesNotMatch(client, /Recent draft/);
-  assert.doesNotMatch(client, /Resume draft/);
-  assert.doesNotMatch(client, /Start fresh/);
-  assert.doesNotMatch(client, /I restored your latest live card draft/);
-  assert.doesNotMatch(client, /Still needed:/);
-  assert.doesNotMatch(client, /draft\.missingFields\.slice\(0, 3\)\.map\(missingFieldLabel\)/);
-  assert.doesNotMatch(client, /Keep adding details/);
-  assert.doesNotMatch(client, /Details to Fill/);
-  assert.doesNotMatch(client, /Live Card Builder/);
-  assert.doesNotMatch(client, /Details checklist/);
-  assert.doesNotMatch(client, /Save event/);
-  assert.doesNotMatch(client, /Public event output/);
-  assert.doesNotMatch(client, /shouldShowLiveCardBuilder/);
-  assert.doesNotMatch(client, /Boolean\(draft\)/);
-  assert.doesNotMatch(client, /draftWorkspacePreview/);
-  assert.doesNotMatch(client, /Open Workspace/);
-  assert.doesNotMatch(client, /Product: \$\{option\.label\}/);
-  assert.doesNotMatch(client, /draft\.previewCopy\.headline/);
-  assert.doesNotMatch(client, /rounded-2xl border border-\[#eee7ff\]/);
-  assert.doesNotMatch(client, /canSave\s*\?\s*"Ready"\s*:\s*"Draft"/);
+  assert.doesNotMatch(client, /@google\/genai/);
+  assert.doesNotMatch(client, /GEMINI_API_KEY/);
+  assert.doesNotMatch(client, /GoogleGenAI/);
+
+  assert.match(extract, /import OpenAI from "openai";/);
+  assert.match(extract, /process\.env\.OPENAI_API_KEY/);
+  assert.match(extract, /client\.chat\.completions\.create/);
+  assert.match(eventActions, /import OpenAI from "openai";/);
+  assert.match(eventActions, /process\.env\.OPENAI_API_KEY/);
 });
 
 test("/cht typo route is not present", () => {

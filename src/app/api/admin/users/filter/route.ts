@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { Pool } from "pg";
+import {
+  ADMIN_USER_METRICS_CTE_SQL,
+  ADMIN_USER_METRICS_SELECT_SQL,
+} from "@/lib/admin-user-metrics-sql";
 import { authOptions } from "@/lib/auth";
 import { getIsAdminByEmail } from "@/lib/db";
-import { Pool } from "pg";
 
 const g = global as any;
 
@@ -82,7 +86,7 @@ export async function GET(req: Request) {
     if (cursor) {
       try {
         const obj = JSON.parse(Buffer.from(cursor, "base64").toString("utf8"));
-        
+
         if (view === "scans" && obj.scans_total !== undefined && obj.id) {
           createdAfterClause = " and (scans_total, id) < ($1, $2::uuid) ";
           values.push(obj.scans_total, obj.id);
@@ -97,11 +101,9 @@ export async function GET(req: Request) {
     }
 
     const sql = `
-      select id, email, first_name, last_name, created_at, scans_total, shares_sent,
-             scans_birthdays, scans_weddings, scans_sport_events,
-             scans_appointments, scans_doctor_appointments, scans_play_days,
-             scans_general_events, scans_car_pool
-      from users
+      ${ADMIN_USER_METRICS_CTE_SQL}
+      select ${ADMIN_USER_METRICS_SELECT_SQL}
+      from admin_users_with_metrics
       where ${whereClause}
       ${createdAfterClause}
       ${orderClause}
@@ -117,19 +119,30 @@ export async function GET(req: Request) {
     if (rows.length > limit) {
       const last = rows[limit - 1];
       items = rows.slice(0, limit);
-      
+
       if (view === "scans" && last?.scans_total !== undefined && last?.id) {
-        nextCursor = Buffer.from(JSON.stringify({ scans_total: last.scans_total, id: last.id })).toString("base64");
+        nextCursor = Buffer.from(
+          JSON.stringify({ scans_total: last.scans_total, id: last.id }),
+        ).toString("base64");
       } else if (view === "shares" && last?.shares_sent !== undefined && last?.id) {
-        nextCursor = Buffer.from(JSON.stringify({ shares_sent: last.shares_sent, id: last.id })).toString("base64");
+        nextCursor = Buffer.from(
+          JSON.stringify({ shares_sent: last.shares_sent, id: last.id }),
+        ).toString("base64");
       } else if (last?.created_at && last?.id) {
-        nextCursor = Buffer.from(JSON.stringify({ created_at: last.created_at, id: last.id })).toString("base64");
+        nextCursor = Buffer.from(
+          JSON.stringify({ created_at: last.created_at, id: last.id }),
+        ).toString("base64");
       }
     }
 
     return NextResponse.json({ ok: true, items, nextCursor });
   } catch (err: any) {
-    try { console.error("[admin users filter] GET error", err); } catch {}
-    return NextResponse.json({ error: String(err?.message || err || "unknown error") }, { status: 500 });
+    try {
+      console.error("[admin users filter] GET error", err);
+    } catch {}
+    return NextResponse.json(
+      { error: String(err?.message || err || "unknown error") },
+      { status: 500 },
+    );
   }
 }

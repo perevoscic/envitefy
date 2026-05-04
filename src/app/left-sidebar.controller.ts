@@ -129,6 +129,7 @@ export type LeftSidebarControllerViewModel = {
   handleRootSnapNavigate: () => void;
   openCreateEventPage: () => void;
   openAiThreadsPage: () => void;
+  startNewAiChat: () => void;
   openMyEventsPage: () => void;
   openInvitedEventsPage: () => void;
   backToRoot: () => void;
@@ -851,13 +852,18 @@ export function useLeftSidebarController({
 
   const openAiThreadsPage = useCallback(() => {
     clearEventContext();
-    setSidebarPage("root");
+    setIsCollapsed(false);
+    setSidebarPage("aiThreads");
+  }, [clearEventContext, setIsCollapsed, setSidebarPage]);
+
+  const startNewAiChat = useCallback(() => {
+    clearEventContext();
+    setSidebarPage("aiThreads");
     collapseSidebarOnTouch();
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("envitefy:chat:new"));
     }
-    router.push("/chat");
-  }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage]);
+  }, [clearEventContext, collapseSidebarOnTouch, setSidebarPage]);
 
   const openMyEventsPage = useCallback(
     () => openCompactEventsPage("myEvents"),
@@ -1327,6 +1333,7 @@ export function useLeftSidebarController({
     handleRootSnapNavigate,
     openCreateEventPage,
     openAiThreadsPage,
+    startNewAiChat,
     openMyEventsPage,
     openInvitedEventsPage,
     backToRoot: () => setSidebarPage("root"),

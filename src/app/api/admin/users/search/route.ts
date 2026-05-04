@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { Pool } from "pg";
+import {
+  ADMIN_USER_METRICS_CTE_SQL,
+  ADMIN_USER_METRICS_SELECT_SQL,
+} from "@/lib/admin-user-metrics-sql";
 import { authOptions } from "@/lib/auth";
 import { getIsAdminByEmail } from "@/lib/db";
-import { Pool } from "pg";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,11 +82,9 @@ export async function GET(req: Request) {
     }
 
     const sql = `
-      select id, email, first_name, last_name, created_at, scans_total, shares_sent,
-             scans_birthdays, scans_weddings, scans_sport_events,
-             scans_appointments, scans_doctor_appointments, scans_play_days,
-             scans_general_events, scans_car_pool
-      from users
+      ${ADMIN_USER_METRICS_CTE_SQL}
+      select ${ADMIN_USER_METRICS_SELECT_SQL}
+      from admin_users_with_metrics
       where (
         lower(email) like $1
         or lower(first_name) like $2
@@ -102,14 +104,20 @@ export async function GET(req: Request) {
       const last = rows[limit - 1];
       items = rows.slice(0, limit);
       if (last?.created_at && last?.id) {
-        nextCursor = Buffer.from(JSON.stringify({ created_at: last.created_at, id: last.id })).toString("base64");
+        nextCursor = Buffer.from(
+          JSON.stringify({ created_at: last.created_at, id: last.id }),
+        ).toString("base64");
       }
     }
 
     return NextResponse.json({ ok: true, items, nextCursor });
   } catch (err: any) {
-    try { console.error("[admin users search] GET error", err); } catch {}
-    return NextResponse.json({ error: String(err?.message || err || "unknown error") }, { status: 500 });
+    try {
+      console.error("[admin users search] GET error", err);
+    } catch {}
+    return NextResponse.json(
+      { error: String(err?.message || err || "unknown error") },
+      { status: 500 },
+    );
   }
 }
-

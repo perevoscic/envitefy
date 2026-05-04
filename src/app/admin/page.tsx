@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
 
 const EVENT_TYPE_LABELS = {
   scans_birthdays: "Birthdays",
@@ -16,6 +16,17 @@ const EVENT_TYPE_LABELS = {
 
 type EventTypeKey = keyof typeof EVENT_TYPE_LABELS;
 type EventCategoryTotals = Partial<Record<EventTypeKey, number>>;
+
+const USER_EVENT_CATEGORY_KEYS: Record<EventTypeKey, string> = {
+  scans_birthdays: "events_birthdays",
+  scans_weddings: "events_weddings",
+  scans_sport_events: "events_sport_events",
+  scans_appointments: "events_appointments",
+  scans_doctor_appointments: "events_doctor_appointments",
+  scans_play_days: "events_play_days",
+  scans_general_events: "events_general_events",
+  scans_car_pool: "events_car_pool",
+};
 
 type Overview = {
   totalUsers: number;
@@ -80,13 +91,7 @@ export default function AdminPage() {
     );
   }
 
-  const categoryStats = overview
-    ? getEventTypeStats(overview.eventsByCategory)
-    : [];
-  const categorizedTotal = categoryStats.reduce(
-    (sum, item) => sum + item.count,
-    0,
-  );
+  const categoryStats = overview ? getEventTypeStats(overview.eventsByCategory) : [];
   const scanStats = overview ? getEventTypeStats(overview.scansByCategory) : [];
 
   function handleClearSearch() {
@@ -175,7 +180,9 @@ export default function AdminPage() {
 
   async function handleDeleteUser(user: any) {
     const displayName =
-      [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() || user?.email || "this user";
+      [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() ||
+      user?.email ||
+      "this user";
     const confirmed = window.confirm(
       `Delete ${displayName}? This permanently removes the user account, owned events, shares, and saved sign-in tokens.`,
     );
@@ -206,10 +213,7 @@ export default function AdminPage() {
       className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] transition-colors"
       suppressHydrationWarning
     >
-      <div
-        className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6"
-        suppressHydrationWarning
-      >
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6" suppressHydrationWarning>
         {/* Header */}
         <div className="flex flex-col gap-2 pt-8" suppressHydrationWarning>
           <h1
@@ -236,9 +240,7 @@ export default function AdminPage() {
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
                       Email Campaigns
                     </p>
-                    <p className="text-sm text-[#5b4d86]">
-                      Send bulk emails to users
-                    </p>
+                    <p className="text-sm text-[#5b4d86]">Send bulk emails to users</p>
                   </div>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#c9b9f9] to-[#9072e5] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#fff]">
                     EC
@@ -258,9 +260,7 @@ export default function AdminPage() {
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
                       Email Templates
                     </p>
-                    <p className="text-sm text-[#5b4d86]">
-                      Preview email designs
-                    </p>
+                    <p className="text-sm text-[#5b4d86]">Preview email designs</p>
                   </div>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#c9b9f9] to-[#9072e5] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#fff]">
                     ET
@@ -300,11 +300,7 @@ export default function AdminPage() {
             suppressHydrationWarning
           >
             <div className="flex items-start gap-3">
-              <svg
-                className="w-5 h-5 mt-0.5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg className="w-5 h-5 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -318,10 +314,7 @@ export default function AdminPage() {
 
         {/* Overview Stats */}
         <section suppressHydrationWarning>
-          <h2
-            className="text-xl font-semibold mb-3 text-[#43366f]"
-            suppressHydrationWarning
-          >
+          <h2 className="text-xl font-semibold mb-3 text-[#43366f]" suppressHydrationWarning>
             Platform Overview
           </h2>
           {!overview ? (
@@ -330,11 +323,7 @@ export default function AdminPage() {
                 className="flex items-center gap-3 text-muted-foreground"
                 suppressHydrationWarning
               >
-                <svg
-                  className="animate-spin h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
                   <circle
                     className="opacity-25"
                     cx="12"
@@ -370,7 +359,7 @@ export default function AdminPage() {
               <CategoryBreakdownCard
                 label="Total Events Created"
                 categoryStats={categoryStats}
-                total={categorizedTotal}
+                total={overview.totalEvents}
               />
             </div>
           )}
@@ -382,27 +371,18 @@ export default function AdminPage() {
             className="bg-white border border-[#ddd5f6] rounded-2xl overflow-hidden shadow-xl"
             suppressHydrationWarning
           >
-            <div
-              className="px-6 py-4 border-b border-[#e4def9]"
-              suppressHydrationWarning
-            >
-              <h2
-                className="text-lg font-semibold text-[#43366f]"
-                suppressHydrationWarning
-              >
+            <div className="px-6 py-4 border-b border-[#e4def9]" suppressHydrationWarning>
+              <h2 className="text-lg font-semibold text-[#43366f]" suppressHydrationWarning>
                 {getActiveViewTitle()}
               </h2>
-              <p
-                className="text-sm text-[#8c80b6] mt-1"
-                suppressHydrationWarning
-              >
+              <p className="text-sm text-[#8c80b6] mt-1" suppressHydrationWarning>
                 {activeStatView
                   ? `Showing ${
                       activeStatView === "all"
                         ? "all users"
-                          : activeStatView === "scans"
-                            ? "users sorted by total scans"
-                            : "users sorted by shares sent"
+                        : activeStatView === "scans"
+                          ? "users sorted by total scans"
+                          : "users sorted by shares sent"
                     }`
                   : "Search for users by email, first name, or last name"}
               </p>
@@ -417,12 +397,7 @@ export default function AdminPage() {
                     onClick={handleClearSearch}
                     className="text-sm text-[#6f57c8] hover:text-[#5a42b7] font-semibold flex items-center gap-1"
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -491,11 +466,7 @@ export default function AdminPage() {
                 >
                   {usersLoading ? (
                     <>
-                      <svg
-                        className="animate-spin h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
                         <circle
                           className="opacity-25"
                           cx="12"
@@ -564,14 +535,14 @@ export default function AdminPage() {
                   {/* Mobile Card View */}
                   <div className="md:hidden space-y-3">
                     {users.map((u) => {
-                      const breakdown = getEventTypeStats(u);
-                      const eventTotal = breakdown.reduce(
-                        (sum, item) => sum + item.count,
-                        0,
+                      const eventBreakdown = getUserEventTypeStats(u);
+                      const scanBreakdown = getEventTypeStats(u);
+                      const eventTotal = getFiniteNumber(
+                        u.events_total,
+                        eventBreakdown.reduce((sum, item) => sum + item.count, 0),
                       );
                       const scanTotal =
-                        typeof u.scans_total === "number" &&
-                        Number.isFinite(u.scans_total)
+                        typeof u.scans_total === "number" && Number.isFinite(u.scans_total)
                           ? u.scans_total
                           : 0;
                       return (
@@ -585,16 +556,12 @@ export default function AdminPage() {
                                 Name
                               </p>
                               <p className="text-base font-semibold text-[#43366f] truncate">
-                                {[u.first_name, u.last_name]
-                                  .filter(Boolean)
-                                  .join(" ") || "-"}
+                                {[u.first_name, u.last_name].filter(Boolean).join(" ") || "-"}
                               </p>
                               <p className="text-xs uppercase tracking-[0.3em] text-[#8b7fb6]">
                                 Email
                               </p>
-                              <p className="text-sm text-[#5b4d86] break-words">
-                                {u.email}
-                              </p>
+                              <p className="text-sm text-[#5b4d86] break-words">{u.email}</p>
                             </div>
                           </div>
 
@@ -607,7 +574,7 @@ export default function AdminPage() {
                                 <BreakdownPopup
                                   label="Events"
                                   count={eventTotal}
-                                  breakdown={breakdown}
+                                  breakdown={eventBreakdown}
                                   variant="inline"
                                 />
                               </div>
@@ -618,7 +585,7 @@ export default function AdminPage() {
                                 <BreakdownPopup
                                   label="Scans"
                                   count={scanTotal}
-                                  breakdown={breakdown}
+                                  breakdown={scanBreakdown}
                                   variant="inline"
                                 />
                               </div>
@@ -630,9 +597,7 @@ export default function AdminPage() {
                               <p className="text-xs uppercase tracking-wider text-[#8b7fb6] mb-1">
                                 Joined
                               </p>
-                              <p className="text-sm text-[#5b4d86]">
-                                {formatDate(u.created_at)}
-                              </p>
+                              <p className="text-sm text-[#5b4d86]">{formatDate(u.created_at)}</p>
                             </div>
                             <button
                               type="button"
@@ -666,41 +631,34 @@ export default function AdminPage() {
                       </thead>
                       <tbody className="divide-y divide-[#e8e1fb] bg-white">
                         {users.map((u) => {
-                          const breakdown = getEventTypeStats(u);
-                          const eventTotal = breakdown.reduce(
-                            (sum, item) => sum + item.count,
-                            0,
+                          const eventBreakdown = getUserEventTypeStats(u);
+                          const scanBreakdown = getEventTypeStats(u);
+                          const eventTotal = getFiniteNumber(
+                            u.events_total,
+                            eventBreakdown.reduce((sum, item) => sum + item.count, 0),
                           );
                           const scanTotal =
-                            typeof u.scans_total === "number" &&
-                            Number.isFinite(u.scans_total)
+                            typeof u.scans_total === "number" && Number.isFinite(u.scans_total)
                               ? u.scans_total
                               : 0;
                           return (
-                            <tr
-                              key={u.id}
-                              className="hover:bg-[#f8f4ff] transition-colors"
-                            >
+                            <tr key={u.id} className="hover:bg-[#f8f4ff] transition-colors">
                               <td className="px-4 py-3 text-foreground/80">
-                                {[u.first_name, u.last_name]
-                                  .filter(Boolean)
-                                  .join(" ") || "-"}
+                                {[u.first_name, u.last_name].filter(Boolean).join(" ") || "-"}
                               </td>
-                              <td className="px-4 py-3 font-medium text-foreground">
-                                {u.email}
-                              </td>
+                              <td className="px-4 py-3 font-medium text-foreground">{u.email}</td>
                               <td className="px-4 py-3 text-right font-semibold text-foreground">
                                 <BreakdownPopup
                                   label="Scans"
                                   count={scanTotal}
-                                  breakdown={breakdown}
+                                  breakdown={scanBreakdown}
                                 />
                               </td>
                               <td className="px-4 py-3 text-sm text-foreground/80">
                                 <BreakdownPopup
                                   label="Events"
                                   count={eventTotal}
-                                  breakdown={breakdown}
+                                  breakdown={eventBreakdown}
                                 />
                               </td>
                               <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
@@ -764,9 +722,7 @@ function StatCard({
   isActive?: boolean;
   helperText?: string;
 }) {
-  const activeBorderClass = isActive
-    ? "border-2 border-[#7f67d3] shadow-2xl"
-    : "";
+  const activeBorderClass = isActive ? "border-2 border-[#7f67d3] shadow-2xl" : "";
 
   return (
     <div
@@ -784,11 +740,7 @@ function StatCard({
             <p className="text-2xl sm:text-3xl font-bold text-[#43366f] truncate">
               {value.toLocaleString()}
             </p>
-            {helperText && (
-              <p className="text-xs text-[#8c80b6] mt-1 line-clamp-2">
-                {helperText}
-              </p>
-            )}
+            {helperText && <p className="text-xs text-[#8c80b6] mt-1 line-clamp-2">{helperText}</p>}
           </div>
           <div
             className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-lg sm:text-xl shadow-2xl border border-[#e8e1fb] text-white`}
@@ -831,13 +783,8 @@ function CategoryBreakdownCard({
           {categoryStats.length > 0 ? (
             <div className="space-y-2">
               {categoryStats.map((item) => (
-                <div
-                  key={item.key}
-                  className="flex items-center justify-between gap-2 text-sm"
-                >
-                  <span className="text-[#5b4d86] font-medium truncate">
-                    {item.label}
-                  </span>
+                <div key={item.key} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-[#5b4d86] font-medium truncate">{item.label}</span>
                   <span className="text-[#43366f] font-semibold whitespace-nowrap">
                     {item.count.toLocaleString()}
                   </span>
@@ -883,13 +830,8 @@ function ScanBreakdownCard({
           {scanStats.length > 0 ? (
             <div className="space-y-2">
               {scanStats.map((item) => (
-                <div
-                  key={item.key}
-                  className="flex items-center justify-between gap-2 text-sm"
-                >
-                  <span className="text-[#5b4d86] font-medium truncate">
-                    {item.label}
-                  </span>
+                <div key={item.key} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-[#5b4d86] font-medium truncate">{item.label}</span>
                   <span className="text-[#43366f] font-semibold whitespace-nowrap">
                     {item.count.toLocaleString()}
                   </span>
@@ -917,12 +859,7 @@ type BreakdownPopupProps = {
   variant?: BreakdownPopupVariant;
 };
 
-function BreakdownPopup({
-  label,
-  count,
-  breakdown,
-  variant = "popover",
-}: BreakdownPopupProps) {
+function BreakdownPopup({ label, count, breakdown, variant = "popover" }: BreakdownPopupProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
   const normalizedCount = Number.isFinite(count) ? count : 0;
@@ -968,10 +905,7 @@ function BreakdownPopup({
       </p>
       {hasItems ? (
         breakdown.map((item) => (
-          <div
-            key={item.key}
-            className="flex items-center justify-between text-xs text-[#4b3f72]"
-          >
+          <div key={item.key} className="flex items-center justify-between text-xs text-[#4b3f72]">
             <span className="truncate">{item.label}</span>
             <span className="font-semibold">{item.count.toLocaleString()}</span>
           </div>
@@ -1007,9 +941,7 @@ function BreakdownPopup({
   );
 }
 
-function getEventTypeStats(
-  source: Partial<Record<EventTypeKey, number>> | null | undefined,
-) {
+function getEventTypeStats(source: Partial<Record<EventTypeKey, number>> | null | undefined) {
   if (!source) return [];
   return (Object.keys(EVENT_TYPE_LABELS) as EventTypeKey[])
     .map((key) => {
@@ -1021,6 +953,23 @@ function getEventTypeStats(
     .sort((a, b) => b.count - a.count);
 }
 
+function getUserEventTypeStats(source: Record<string, unknown> | null | undefined) {
+  if (!source) return [];
+  return (Object.keys(EVENT_TYPE_LABELS) as EventTypeKey[])
+    .map((key) => {
+      const raw = Number(source[USER_EVENT_CATEGORY_KEYS[key]] ?? 0);
+      const count = Number.isFinite(raw) ? raw : 0;
+      return { key, label: EVENT_TYPE_LABELS[key], count };
+    })
+    .filter((item) => item.count > 0)
+    .sort((a, b) => b.count - a.count);
+}
+
+function getFiniteNumber(value: unknown, fallback = 0): number {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
 function _Th({ children }: { children: any }) {
   return (
     <th className="text-left font-semibold px-4 py-3 text-foreground/80 text-xs uppercase tracking-wider">
@@ -1030,11 +979,7 @@ function _Th({ children }: { children: any }) {
 }
 
 function _Td({ children, className }: { children: any; className?: string }) {
-  return (
-    <td className={`px-4 py-3 text-muted-foreground ${className || ""}`}>
-      {children}
-    </td>
-  );
+  return <td className={`px-4 py-3 text-muted-foreground ${className || ""}`}>{children}</td>;
 }
 
 function formatDate(value?: string) {
