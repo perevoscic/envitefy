@@ -288,7 +288,7 @@ function ChatStudioStarterGrid({
   isUploading: boolean;
 }) {
   return (
-    <div className="grid auto-rows-[86px] grid-cols-6 gap-2 sm:auto-rows-[108px] md:auto-rows-[124px]">
+    <div className="grid auto-rows-[94px] grid-cols-2 gap-2 sm:auto-rows-[108px] sm:grid-cols-6 md:auto-rows-[124px]">
       {CHAT_STUDIO_GRID_ITEMS.map((item, index) => (
         <div key={item.key} className={CHAT_STUDIO_GRID_PLACEMENT_CLASS[item.key]}>
           {item.kind === "upload" ? (
@@ -469,6 +469,8 @@ export default function ConciergeChatClient() {
   const chatPaneRef = useRef<HTMLDivElement | null>(null);
   const productButtonRef = useRef<HTMLButtonElement | null>(null);
   const productMenuRef = useRef<HTMLDivElement | null>(null);
+  const actionMenuRef = useRef<HTMLDivElement | null>(null);
+  const composerCardRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [input, setInput] = useState("");
   const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput>("live_card");
@@ -486,8 +488,10 @@ export default function ConciergeChatClient() {
   const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [composerCenterLeft, setComposerCenterLeft] = useState("50vw");
+  const [composerBottomPadding, setComposerBottomPadding] = useState(224);
 
   const isGeneratingCard = phase === "generating_card";
   const isEditingGeneratedCard = phase === "editing_card";
@@ -641,6 +645,18 @@ export default function ConciergeChatClient() {
   }, [isProductMenuOpen]);
 
   useEffect(() => {
+    if (!isActionMenuOpen) return;
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (actionMenuRef.current?.contains(target)) return;
+      setIsActionMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isActionMenuOpen]);
+
+  useEffect(() => {
     function updateComposerCenter() {
       const target = shouldShowWorkspacePanel
         ? chatPaneRef.current || mainRef.current
@@ -663,6 +679,18 @@ export default function ConciergeChatClient() {
       window.removeEventListener("resize", updateComposerCenter);
     };
   }, [shouldShowWorkspacePanel]);
+
+  useEffect(() => {
+    const composer = composerCardRef.current;
+    if (!composer || typeof ResizeObserver === "undefined") return;
+    const updatePadding = () => {
+      setComposerBottomPadding(Math.ceil(composer.getBoundingClientRect().height + 28));
+    };
+    updatePadding();
+    const observer = new ResizeObserver(updatePadding);
+    observer.observe(composer);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -956,6 +984,10 @@ export default function ConciergeChatClient() {
       className={`mx-auto flex min-h-[calc(100vh-5rem)] w-full flex-col justify-end gap-5 px-4 pb-56 pt-8 sm:px-6 sm:pb-60 ${
         shouldShowWorkspacePanel ? "max-w-[26rem]" : "max-w-3xl"
       }`}
+      style={{ paddingBottom: composerBottomPadding }}
+      role="log"
+      aria-live="polite"
+      aria-relevant="additions text"
     >
       <AnimatePresence initial={false}>
         {visibleMessages.map((message) => (
@@ -1296,9 +1328,24 @@ export default function ConciergeChatClient() {
                 </div>
               </motion.div>
             ) : null}
+            {isActionMenuOpen ? (
+              <motion.div
+                ref={actionMenuRef}
+                initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                className="pointer-events-auto mb-4 w-full sm:hidden"
+              >
+                <div className="w-full max-w-[16rem] rounded-[1.2rem] border border-[#eadfff] bg-white p-2 shadow-2xl shadow-[#412a62]/10">
+                  <button type="button" onClick={() => { setIsActionMenuOpen(false); fileInputRef.current?.click(); }} className="flex w-full items-center gap-2 rounded-lg p-2.5 text-left text-sm font-medium text-[#24183e] hover:bg-[#f7f3ff]"><Upload className="size-4" aria-hidden="true" />Upload file</button>
+                  <button type="button" onClick={() => { setIsActionMenuOpen(false); cameraInputRef.current?.click(); }} className="flex w-full items-center gap-2 rounded-lg p-2.5 text-left text-sm font-medium text-[#24183e] hover:bg-[#f7f3ff]"><Camera className="size-4" aria-hidden="true" />Use camera</button>
+                  <button type="button" onClick={() => { setIsActionMenuOpen(false); void handleVoiceInput(); }} disabled={isBusy || isListening} className="flex w-full items-center gap-2 rounded-lg p-2.5 text-left text-sm font-medium text-[#24183e] hover:bg-[#f7f3ff] disabled:opacity-50"><Mic className="size-4" aria-hidden="true" />Voice input</button>
+                </div>
+              </motion.div>
+            ) : null}
           </AnimatePresence>
 
-          <div className="pointer-events-auto w-full">
+          <div ref={composerCardRef} className="pointer-events-auto w-full">
             <form
               onSubmit={handleSubmit}
               className={`relative grid min-h-14 items-center gap-1.5 rounded-[1.25rem] border border-[#ddd2ef] bg-white/96 p-1.5 shadow-2xl shadow-[#6f4cff]/10 ring-4 ring-white/80 backdrop-blur sm:rounded-full sm:gap-2 ${
@@ -1341,9 +1388,22 @@ export default function ConciergeChatClient() {
               </button>
               <button
                 type="button"
+                onClick={() => setIsActionMenuOpen((current) => !current)}
+                className="grid size-10 shrink-0 place-items-center rounded-full text-[#9b92a8] transition hover:bg-[#f4efff] hover:text-[#7c4dff] sm:hidden"
+                aria-label="More actions"
+                title="More actions"
+              >
+                {isActionMenuOpen ? (
+                  <X className="size-4" aria-hidden="true" />
+                ) : (
+                  <Plus className="size-4" aria-hidden="true" />
+                )}
+              </button>
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className={`size-10 shrink-0 place-items-center rounded-full text-[#9b92a8] transition hover:bg-[#f4efff] hover:text-[#7c4dff] ${
-                  shouldShowWorkspacePanel ? "hidden" : "grid"
+                  shouldShowWorkspacePanel ? "hidden" : "hidden sm:grid"
                 }`}
                 aria-label="Upload file"
                 title="Upload file"
@@ -1354,7 +1414,7 @@ export default function ConciergeChatClient() {
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
                 className={`size-10 shrink-0 place-items-center rounded-full text-[#9b92a8] transition hover:bg-[#f4efff] hover:text-[#7c4dff] ${
-                  shouldShowWorkspacePanel ? "hidden" : "grid"
+                  shouldShowWorkspacePanel ? "hidden" : "hidden sm:grid"
                 }`}
                 aria-label="Use camera"
                 title="Use camera"
@@ -1372,7 +1432,7 @@ export default function ConciergeChatClient() {
                 type="button"
                 onClick={handleVoiceInput}
                 disabled={isBusy || isListening}
-                className={`grid size-10 shrink-0 place-items-center rounded-full transition ${
+                className={`hidden size-10 shrink-0 place-items-center rounded-full transition sm:grid ${
                   isListening
                     ? "bg-[#f4efff] text-[#7c4dff]"
                     : "text-[#8f879a] hover:bg-[#f4efff] hover:text-[#7c4dff]"
