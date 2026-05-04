@@ -83,6 +83,11 @@ test("left sidebar exposes signed-in AI create entry", () => {
   assert.match(controllerSource, /resetSidebarToRoot: \(\) => void;/);
   assert.match(controllerSource, /resetSidebarToRoot,/);
   assert.match(controllerSource, /openAiThreadsPage: \(\) => void;/);
-  assert.match(controllerSource, /setSidebarPage\("aiThreads"\)/);
+  assert.match(controllerSource, /window\.dispatchEvent\(new CustomEvent\("envitefy:chat:new"\)\)/);
+  assert.match(controllerSource, /router\.push\("\/chat"\)/);
+  assert.doesNotMatch(
+    controllerSource,
+    /const openAiThreadsPage = useCallback\(\(\) => \{[\s\S]*?setSidebarPage\("aiThreads"\)/,
+  );
   assert.match(modelSource, /\|\s*"aiThreads"/);
 });

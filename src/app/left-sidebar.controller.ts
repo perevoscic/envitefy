@@ -8,24 +8,23 @@ import {
   useRef,
   useState,
 } from "react";
-import { buildEventPath } from "@/utils/event-url";
-import { resolveEditHref } from "@/utils/event-edit-route";
-import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
-import { normalizePrimarySignupSource } from "@/lib/product-scopes";
 import {
   getCreateEventSections,
   getTemplateLinks,
   isCreateEventRoute,
 } from "@/config/navigation-config";
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
-import type { EventContextTab } from "./sidebar-context";
+import { normalizePrimarySignupSource } from "@/lib/product-scopes";
+import { resolveEditHref } from "@/utils/event-edit-route";
+import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
+import { buildEventPath } from "@/utils/event-url";
 import {
   buildGroupedEventLists,
   CALENDAR_DEFAULT_STORAGE_KEY,
   CalendarProviderKey,
   CompactNavItemId,
-  countGroupedEventItems,
   CREATE_ACTIVE_STORAGE_KEY,
+  countGroupedEventItems,
   EventListPage,
   EventSidebarMode,
   GroupedEventItem,
@@ -36,6 +35,7 @@ import {
   SIDEBAR_WIDTH_REM,
   SidebarPage,
 } from "./left-sidebar.model";
+import type { EventContextTab } from "./sidebar-context";
 
 const MOBILE_SIDEBAR_SCROLL_LOCK_CLASS = "sidebar-mobile-open";
 
@@ -851,9 +851,13 @@ export function useLeftSidebarController({
 
   const openAiThreadsPage = useCallback(() => {
     clearEventContext();
-    setIsCollapsed(false);
-    setSidebarPage("aiThreads");
-  }, [clearEventContext, setIsCollapsed]);
+    setSidebarPage("root");
+    collapseSidebarOnTouch();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("envitefy:chat:new"));
+    }
+    router.push("/chat");
+  }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage]);
 
   const openMyEventsPage = useCallback(
     () => openCompactEventsPage("myEvents"),

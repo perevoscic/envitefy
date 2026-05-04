@@ -52,10 +52,20 @@ test("/chat is a signed-in concierge page, not an admin-only notFound page", () 
   assert.match(client, /persistSession: true/);
   assert.match(client, /Choose output/);
   assert.match(client, /aria-label="Product menu"/);
-  assert.match(client, /<span>Product<\/span>/);
+  assert.match(client, /<span className="hidden sm:inline">Product<\/span>/);
+  assert.match(client, /Add source/);
+  assert.match(client, /Choose a category and product to start/);
+  assert.match(client, /const \[starterCategory, setStarterCategory\]/);
+  assert.match(client, /useState<RequestedOutput \| null>\(null\)/);
+  assert.match(client, /startStarterConversation/);
+  assert.match(client, /setIsProductMenuOpen\(true\)/);
+  assert.match(client, /document\.addEventListener\("pointerdown", handlePointerDown, true\)/);
+  assert.match(client, /window\.addEventListener\("envitefy:chat:new", handleNewChatSession\)/);
+  assert.match(client, /setInput\(""\)/);
   assert.match(client, /STUDIO_CATEGORY_TILES/);
   assert.match(client, /CHAT_STUDIO_GRID_COMPOSITION/);
   assert.match(client, /ChatStudioStarterGrid/);
+  assert.match(client, /selectedCategory=\{starterCategory\}/);
   assert.match(client, /Upload Your Invite/);
   assert.match(client, /max-w-\[72rem\]/);
   assert.match(client, /text-center sm:px-6 sm:pb-60/);
@@ -63,18 +73,27 @@ test("/chat is a signed-in concierge page, not an admin-only notFound page", () 
   assert.match(client, /className="mx-auto mt-3 max-w-lg/);
   assert.match(client, /grid-cols-6/);
   assert.match(client, /row-start-2/);
-  assert.match(client, /Wedding: "col-start-6 row-span-2 row-start-1"/);
-  assert.match(client, /"Custom Invite": "col-start-5 row-start-2"/);
+  assert.match(
+    client,
+    /Wedding: "col-start-1 row-start-3 sm:col-start-6 sm:row-span-2 sm:row-start-1"/,
+  );
+  assert.match(client, /"Custom Invite": "col-start-2 row-start-5 sm:col-start-5 sm:row-start-2"/);
+  assert.match(client, /upload: "hidden sm:block sm:col-start-3 sm:row-start-1"/);
   assert.doesNotMatch(client, /"Custom Invite": "col-span-2/);
-  assert.doesNotMatch(client, /row-start-3/);
   assert.match(client, /onClick=\{\(\) => void onSelect\(category\.name\)\}/);
   assert.match(client, /setPhase\("collecting_details"\)/);
   assert.match(client, /action: "starter_category"/);
   assert.match(client, /aria-label="Upload file"/);
   assert.match(client, /aria-label="Use camera"/);
   assert.match(client, /w-fit max-w-\[86%\] self-start items-center gap-2 rounded-full/);
-  assert.match(client, /grid-cols-\[auto_minmax\(0,1fr\)_auto_auto\]/);
-  assert.match(client, /grid-cols-\[auto_auto_auto_minmax\(0,1fr\)_auto_auto\]/);
+  assert.match(
+    client,
+    /grid-cols-\[auto_minmax\(0,1fr\)_auto\] sm:grid-cols-\[auto_minmax\(0,1fr\)_auto_auto\]/,
+  );
+  assert.match(
+    client,
+    /grid-cols-\[auto_minmax\(0,1fr\)_auto\] sm:grid-cols-\[auto_auto_auto_minmax\(0,1fr\)_auto_auto\]/,
+  );
   assert.match(client, /shouldShowWorkspacePanel \? "max-w-\[26rem\]" : "max-w-3xl"/);
   assert.match(client, /flex min-h-\[calc\(100vh-5rem\)\] w-full flex-col justify-end gap-5/);
   assert.match(client, /pb-\[calc\(env\(safe-area-inset-bottom\)\+0\.75rem\)\]/);
@@ -114,4 +133,8 @@ test("/chat is a signed-in concierge page, not an admin-only notFound page", () 
   assert.doesNotMatch(client, /draft\.previewCopy\.headline/);
   assert.doesNotMatch(client, /rounded-2xl border border-\[#eee7ff\]/);
   assert.doesNotMatch(client, /canSave\s*\?\s*"Ready"\s*:\s*"Draft"/);
+});
+
+test("/cht typo route is not present", () => {
+  assert.equal(fs.existsSync(path.join(repoRoot, "src/app/cht/page.tsx")), false);
 });

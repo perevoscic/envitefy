@@ -145,16 +145,16 @@ const CHAT_STUDIO_GRID_COMPOSITION: ChatStudioGridTileKey[] = [
 ];
 
 const CHAT_STUDIO_GRID_PLACEMENT_CLASS: Record<ChatStudioGridTileKey, string> = {
-  Birthday: "col-span-2 col-start-1 row-start-1",
-  upload: "col-start-3 row-start-1",
-  Wedding: "col-start-6 row-span-2 row-start-1",
-  "Bridal Shower": "col-start-4 row-start-1",
-  "Baby Shower": "col-start-5 row-start-1",
+  Birthday: "col-span-2 col-start-1 row-start-1 sm:col-span-2 sm:col-start-1 sm:row-start-1",
+  upload: "hidden sm:block sm:col-start-3 sm:row-start-1",
+  Wedding: "col-start-1 row-start-3 sm:col-start-6 sm:row-span-2 sm:row-start-1",
+  "Bridal Shower": "col-start-2 row-start-3 sm:col-start-4 sm:row-start-1",
+  "Baby Shower": "col-start-1 row-start-4 sm:col-start-5 sm:row-start-1",
   "Game Day": "col-start-1 row-start-2",
   "Field Trip/Day": "col-start-2 row-start-2",
-  "Open House": "col-start-3 row-start-2",
-  Housewarming: "col-start-4 row-start-2",
-  "Custom Invite": "col-start-5 row-start-2",
+  "Open House": "col-start-2 row-start-4 sm:col-start-3 sm:row-start-2",
+  Housewarming: "col-start-1 row-start-5 sm:col-start-4 sm:row-start-2",
+  "Custom Invite": "col-start-2 row-start-5 sm:col-start-5 sm:row-start-2",
 };
 
 const CHAT_STUDIO_GRID_ITEMS: ChatStudioGridItem[] = (() => {
@@ -194,10 +194,12 @@ function newMessage(
 function ChatStudioCategoryTile({
   category,
   index,
+  isSelected,
   onSelect,
 }: {
   category: StudioCategoryTileDefinition;
   index: number;
+  isSelected: boolean;
   onSelect: (label: string) => void;
 }) {
   return (
@@ -210,9 +212,9 @@ function ChatStudioCategoryTile({
       whileTap={{ scale: 0.99 }}
       onClick={() => void onSelect(category.name)}
       aria-label={`Start with ${category.name}`}
-      className={`group relative isolate h-full w-full overflow-hidden rounded-[1.1rem] border border-white/60 bg-white/80 text-left shadow-[0_14px_34px_-24px_rgba(84,61,140,0.28)] transition focus:outline-none focus-visible:ring-4 focus-visible:ring-[#cbb7ff]/55 sm:rounded-[1.35rem] ${
-        category.surfaceVariant === "dark" ? "bg-[#20192d]" : ""
-      }`}
+      className={`group relative isolate h-full w-full overflow-hidden rounded-[1.1rem] border bg-white/80 text-left shadow-[0_14px_34px_-24px_rgba(84,61,140,0.28)] transition focus:outline-none focus-visible:ring-4 focus-visible:ring-[#cbb7ff]/55 sm:rounded-[1.35rem] ${
+        isSelected ? "border-[#c7b7ff] ring-4 ring-[#d6caff]/70" : "border-white/60"
+      } ${category.surfaceVariant === "dark" ? "bg-[#20192d]" : ""}`}
     >
       <img
         src={category.imagePath}
@@ -279,10 +281,12 @@ function ChatStudioUploadTile({
 }
 
 function ChatStudioStarterGrid({
+  selectedCategory,
   onSelectCategory,
   onUploadInvite,
   isUploading,
 }: {
+  selectedCategory: string | null;
   onSelectCategory: (label: string) => void;
   onUploadInvite: () => void;
   isUploading: boolean;
@@ -301,6 +305,7 @@ function ChatStudioStarterGrid({
             <ChatStudioCategoryTile
               category={item.category}
               index={index}
+              isSelected={item.category.name === selectedCategory}
               onSelect={onSelectCategory}
             />
           )}
@@ -469,11 +474,11 @@ export default function ConciergeChatClient() {
   const chatPaneRef = useRef<HTMLDivElement | null>(null);
   const productButtonRef = useRef<HTMLButtonElement | null>(null);
   const productMenuRef = useRef<HTMLDivElement | null>(null);
-  const actionMenuRef = useRef<HTMLDivElement | null>(null);
   const composerCardRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [input, setInput] = useState("");
-  const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput>("live_card");
+  const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput | null>(null);
+  const [starterCategory, setStarterCategory] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     newMessage("assistant", "What are we celebrating?"),
   ]);
@@ -488,7 +493,6 @@ export default function ConciergeChatClient() {
   const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
-  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [composerCenterLeft, setComposerCenterLeft] = useState("50vw");
   const [composerBottomPadding, setComposerBottomPadding] = useState(224);
@@ -518,8 +522,9 @@ export default function ConciergeChatClient() {
     Math.floor((buildProgress / 100) * BUILDING_STEPS.length),
     BUILDING_STEPS.length - 1,
   );
+  const effectiveSelectedProductOutput = selectedProductOutput || "live_card";
   const currentLiveCardSummary =
-    liveCardSummary || liveCardSummaryFromDraft(draft, selectedProductOutput);
+    liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
   const workspaceTitle = liveCardTitle || currentLiveCardSummary.headline;
   const detailsComplete = isReadyProductDraft(draft);
   const canGenerateProduct = detailsComplete && !isBusy && !liveCardEventId;
@@ -541,6 +546,8 @@ export default function ConciergeChatClient() {
   }
 
   function resetConversation() {
+    setInput("");
+    setError(null);
     setDraft(null);
     setPhase("intake_empty");
     setLiveCardEventId(null);
@@ -548,9 +555,22 @@ export default function ConciergeChatClient() {
     setLiveCardSummary(null);
     setLastGeneratedAt(null);
     setBuildProgress(0);
-    setSelectedProductOutput("live_card");
+    setSelectedProductOutput(null);
+    setStarterCategory(null);
+    setIsProductMenuOpen(false);
     setMessages([newMessage("assistant", "What are we celebrating?")]);
   }
+
+  useEffect(() => {
+    function handleNewChatSession() {
+      resetConversation();
+    }
+
+    window.addEventListener("envitefy:chat:new", handleNewChatSession);
+    return () => {
+      window.removeEventListener("envitefy:chat:new", handleNewChatSession);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -582,9 +602,10 @@ export default function ConciergeChatClient() {
         const restoredOutput =
           restoredDraft.requestedOutputs.find((output) =>
             PRODUCT_OPTIONS.some((option) => option.output === output),
-          ) || selectedProductOutput;
+          ) || effectiveSelectedProductOutput;
         setDraft(restoredDraft);
         setSelectedProductOutput(restoredOutput);
+        setStarterCategory(null);
         setLiveCardEventId(savedEventId);
         setLiveCardTitle(savedEventId ? draftHeadline(restoredDraft) : null);
         setLiveCardSummary(liveCardSummaryFromDraft(restoredDraft, restoredOutput));
@@ -628,33 +649,23 @@ export default function ConciergeChatClient() {
     }
 
     function handlePointerDown(event: PointerEvent) {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (productMenuRef.current?.contains(target) || productButtonRef.current?.contains(target)) {
+      const path = event.composedPath();
+      if (
+        (productMenuRef.current && path.includes(productMenuRef.current)) ||
+        (productButtonRef.current && path.includes(productButtonRef.current))
+      ) {
         return;
       }
       setIsProductMenuOpen(false);
     }
 
     document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("pointerdown", handlePointerDown, true);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("pointerdown", handlePointerDown, true);
     };
   }, [isProductMenuOpen]);
-
-  useEffect(() => {
-    if (!isActionMenuOpen) return;
-    function handlePointerDown(event: PointerEvent) {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (actionMenuRef.current?.contains(target)) return;
-      setIsActionMenuOpen(false);
-    }
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [isActionMenuOpen]);
 
   useEffect(() => {
     function updateComposerCenter() {
@@ -738,7 +749,7 @@ export default function ConciergeChatClient() {
       setLiveCardEventId(savedEventId);
       setLiveCardTitle(draftHeadline(json.draft || draftToGenerate));
       setLiveCardSummary(
-        liveCardSummaryFromDraft(json.draft || draftToGenerate, selectedProductOutput),
+        liveCardSummaryFromDraft(json.draft || draftToGenerate, effectiveSelectedProductOutput),
       );
       setLastGeneratedAt(new Date().toISOString());
       setPhase("card_ready");
@@ -779,7 +790,7 @@ export default function ConciergeChatClient() {
         throw new Error(json && !json.ok ? json.error : "Workspace update failed.");
       }
       const fallbackSummary =
-        liveCardSummary || liveCardSummaryFromDraft(draft, selectedProductOutput);
+        liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
       setLiveCardTitle(json.event.title || liveCardTitle || draftHeadline(draft));
       setLiveCardSummary(liveCardSummaryFromEvent(json.event, fallbackSummary));
       setLastGeneratedAt(new Date().toISOString());
@@ -831,7 +842,7 @@ export default function ConciergeChatClient() {
           draft,
           ocrContext: params.ocrContext || null,
           activeContext,
-          requestedOutputs: params.requestedOutputs || [selectedProductOutput],
+          requestedOutputs: params.requestedOutputs || [effectiveSelectedProductOutput],
           action: params.action || "message",
         }),
       });
@@ -865,6 +876,10 @@ export default function ConciergeChatClient() {
     event.preventDefault();
     const value = input.trim();
     if (!value) return;
+    if (isEmptyState && (!starterCategory || !selectedProductOutput)) {
+      setError("Choose a category and product first.");
+      return;
+    }
     setInput("");
     if (liveCardEventId) {
       await sendGeneratedCardEdit(value);
@@ -873,16 +888,41 @@ export default function ConciergeChatClient() {
     await sendToConcierge({ message: value });
   }
 
-  async function handleStarterCategory(label: string) {
+  async function startStarterConversation(categoryLabel: string, productOutput: RequestedOutput) {
+    setStarterCategory(categoryLabel);
+    setSelectedProductOutput(productOutput);
+    setIsProductMenuOpen(false);
     await sendToConcierge({
-      message: label === "Custom Invite" ? "Custom invite" : label,
+      message: categoryLabel === "Custom Invite" ? "Custom invite" : categoryLabel,
       action: "starter_category",
+      requestedOutputs: [productOutput],
+      echo: `${categoryLabel} + ${PRODUCT_OPTIONS.find((option) => option.output === productOutput)?.label || outputLabel(productOutput)}`,
     });
+  }
+
+  async function handleStarterCategory(label: string) {
+    if (isBusy) return;
+    setStarterCategory(label);
+    setError(null);
+    if (selectedProductOutput) {
+      await startStarterConversation(label, selectedProductOutput);
+      return;
+    }
+    setIsProductMenuOpen(true);
   }
 
   async function handleProductOption(option: ProductOption) {
     setSelectedProductOutput(option.output);
     setIsProductMenuOpen(false);
+
+    if (isEmptyState) {
+      setError(null);
+      if (starterCategory) {
+        await startStarterConversation(starterCategory, option.output);
+      }
+      return;
+    }
+
     if (option.output === selectedProductOutput) return;
 
     if (liveCardEventId) {
@@ -1219,10 +1259,11 @@ export default function ConciergeChatClient() {
                     What are we celebrating?
                   </motion.h1>
                   <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base">
-                    Start with a few details, choose a format, or upload an invite.
+                    Choose a category and product to start, or upload an invite.
                   </p>
                   <div className="mt-6 w-full">
                     <ChatStudioStarterGrid
+                      selectedCategory={starterCategory}
                       onSelectCategory={handleStarterCategory}
                       onUploadInvite={() => fileInputRef.current?.click()}
                       isUploading={isUploading}
@@ -1282,64 +1323,68 @@ export default function ConciergeChatClient() {
                       </button>
                     );
                   })}
-                  {shouldShowWorkspacePanel ? (
-                    <div className="mt-2 border-t border-[#eadfff] pt-2">
-                      <p className="px-3 pb-1 text-[0.66rem] font-bold uppercase text-[#8b7aaa]">
-                        Add source
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsProductMenuOpen(false);
-                          fileInputRef.current?.click();
-                        }}
-                        className="flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:bg-[#f7f3ff]"
-                      >
-                        <span className="grid size-8 shrink-0 place-items-center rounded-xl text-[#8f879a]">
-                          <Upload className="size-5" aria-hidden="true" />
+                  <div
+                    className={`mt-2 border-t border-[#eadfff] pt-2 ${
+                      shouldShowWorkspacePanel ? "" : "sm:hidden"
+                    }`}
+                  >
+                    <p className="px-3 pb-1 text-[0.66rem] font-bold uppercase text-[#8b7aaa]">
+                      Add source
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProductMenuOpen(false);
+                        fileInputRef.current?.click();
+                      }}
+                      className="flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:bg-[#f7f3ff]"
+                    >
+                      <span className="grid size-8 shrink-0 place-items-center rounded-xl text-[#8f879a]">
+                        <Upload className="size-5" aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-[#24183e]">Upload</span>
+                        <span className="block text-xs leading-5 text-[#8f879a]">
+                          Add a file or image
                         </span>
-                        <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-[#24183e]">Upload</span>
-                          <span className="block text-xs leading-5 text-[#8f879a]">
-                            Add a file or image
-                          </span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProductMenuOpen(false);
+                        cameraInputRef.current?.click();
+                      }}
+                      className="flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:bg-[#f7f3ff]"
+                    >
+                      <span className="grid size-8 shrink-0 place-items-center rounded-xl text-[#8f879a]">
+                        <Camera className="size-5" aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-[#24183e]">Camera</span>
+                        <span className="block text-xs leading-5 text-[#8f879a]">Take a photo</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProductMenuOpen(false);
+                        void handleVoiceInput();
+                      }}
+                      disabled={isBusy || isListening}
+                      className="flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:bg-[#f7f3ff] disabled:cursor-not-allowed disabled:opacity-55 sm:hidden"
+                    >
+                      <span className="grid size-8 shrink-0 place-items-center rounded-xl text-[#8f879a]">
+                        <Mic className="size-5" aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-[#24183e]">Voice</span>
+                        <span className="block text-xs leading-5 text-[#8f879a]">
+                          Dictate details
                         </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsProductMenuOpen(false);
-                          cameraInputRef.current?.click();
-                        }}
-                        className="flex w-full items-center gap-4 rounded-2xl p-3 text-left transition hover:bg-[#f7f3ff]"
-                      >
-                        <span className="grid size-8 shrink-0 place-items-center rounded-xl text-[#8f879a]">
-                          <Camera className="size-5" aria-hidden="true" />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-[#24183e]">Camera</span>
-                          <span className="block text-xs leading-5 text-[#8f879a]">
-                            Take a photo
-                          </span>
-                        </span>
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </motion.div>
-            ) : null}
-            {isActionMenuOpen ? (
-              <motion.div
-                ref={actionMenuRef}
-                initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.96 }}
-                className="pointer-events-auto mb-4 w-full sm:hidden"
-              >
-                <div className="w-full max-w-[16rem] rounded-[1.2rem] border border-[#eadfff] bg-white p-2 shadow-2xl shadow-[#412a62]/10">
-                  <button type="button" onClick={() => { setIsActionMenuOpen(false); fileInputRef.current?.click(); }} className="flex w-full items-center gap-2 rounded-lg p-2.5 text-left text-sm font-medium text-[#24183e] hover:bg-[#f7f3ff]"><Upload className="size-4" aria-hidden="true" />Upload file</button>
-                  <button type="button" onClick={() => { setIsActionMenuOpen(false); cameraInputRef.current?.click(); }} className="flex w-full items-center gap-2 rounded-lg p-2.5 text-left text-sm font-medium text-[#24183e] hover:bg-[#f7f3ff]"><Camera className="size-4" aria-hidden="true" />Use camera</button>
-                  <button type="button" onClick={() => { setIsActionMenuOpen(false); void handleVoiceInput(); }} disabled={isBusy || isListening} className="flex w-full items-center gap-2 rounded-lg p-2.5 text-left text-sm font-medium text-[#24183e] hover:bg-[#f7f3ff] disabled:opacity-50"><Mic className="size-4" aria-hidden="true" />Voice input</button>
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ) : null}
@@ -1350,8 +1395,8 @@ export default function ConciergeChatClient() {
               onSubmit={handleSubmit}
               className={`relative grid min-h-14 items-center gap-1.5 rounded-[1.25rem] border border-[#ddd2ef] bg-white/96 p-1.5 shadow-2xl shadow-[#6f4cff]/10 ring-4 ring-white/80 backdrop-blur sm:rounded-full sm:gap-2 ${
                 shouldShowWorkspacePanel
-                  ? "grid-cols-[auto_minmax(0,1fr)_auto_auto]"
-                  : "grid-cols-[auto_auto_auto_minmax(0,1fr)_auto_auto]"
+                  ? "grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto_auto]"
+                  : "grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_auto_auto_minmax(0,1fr)_auto_auto]"
               }`}
             >
               <input
@@ -1373,7 +1418,7 @@ export default function ConciergeChatClient() {
                 ref={productButtonRef}
                 type="button"
                 onClick={() => setIsProductMenuOpen((current) => !current)}
-                className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-[#eadfff] bg-[#fbf9ff] px-3 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-[#7b718c] shadow-sm transition hover:border-[#ded2ff] hover:bg-white hover:text-[#2d1238] active:scale-[0.98] sm:px-4"
+                className="grid size-11 shrink-0 place-items-center rounded-full border border-[#eadfff] bg-[#fbf9ff] text-[#7b718c] shadow-sm transition hover:border-[#ded2ff] hover:bg-white hover:text-[#2d1238] active:scale-[0.98] sm:inline-flex sm:w-auto sm:gap-2 sm:px-4 sm:text-[0.68rem] sm:font-bold sm:uppercase sm:tracking-[0.08em]"
                 aria-expanded={isProductMenuOpen}
                 aria-haspopup="true"
                 aria-label="Product menu"
@@ -1384,20 +1429,7 @@ export default function ConciergeChatClient() {
                 ) : (
                   <Plus className="size-4" aria-hidden="true" />
                 )}
-                <span>Product</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsActionMenuOpen((current) => !current)}
-                className="grid size-10 shrink-0 place-items-center rounded-full text-[#9b92a8] transition hover:bg-[#f4efff] hover:text-[#7c4dff] sm:hidden"
-                aria-label="More actions"
-                title="More actions"
-              >
-                {isActionMenuOpen ? (
-                  <X className="size-4" aria-hidden="true" />
-                ) : (
-                  <Plus className="size-4" aria-hidden="true" />
-                )}
+                <span className="hidden sm:inline">Product</span>
               </button>
               <button
                 type="button"
