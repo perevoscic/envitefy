@@ -852,10 +852,10 @@ export function useLeftSidebarController({
 
   const openAiThreadsPage = useCallback(() => {
     clearEventContext();
+    router.push("/chat");
     if (!isDesktop) {
       setSidebarPage("aiThreads");
       collapseSidebarOnTouch();
-      router.push("/chat");
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("envitefy:chat:new"));
       }

@@ -98,7 +98,7 @@ test("left sidebar exposes signed-in AI create entry", () => {
   assert.match(controllerSource, /window\.dispatchEvent\(new CustomEvent\("envitefy:chat:new"\)\)/);
   assert.match(
     controllerSource,
-    /const openAiThreadsPage = useCallback\(\(\) => \{[\s\S]*?if \(!isDesktop\) \{[\s\S]*?router\.push\("\/chat"\)[\s\S]*?envitefy:chat:new/s,
+    /const openAiThreadsPage = useCallback\(\(\) => \{[\s\S]*?router\.push\("\/chat"\);[\s\S]*?if \(!isDesktop\) \{[\s\S]*?envitefy:chat:new/s,
   );
   assert.match(modelSource, /\|\s*"aiThreads"/);
 });
