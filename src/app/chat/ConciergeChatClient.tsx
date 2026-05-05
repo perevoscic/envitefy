@@ -214,15 +214,15 @@ const CHAT_STUDIO_GRID_COMPOSITION: ChatStudioGridTileKey[] = [
 
 const CHAT_STUDIO_GRID_PLACEMENT_CLASS: Record<ChatStudioGridTileKey, string> = {
   Birthday: "col-span-2 col-start-1 row-start-1 sm:col-span-2 sm:col-start-1 sm:row-start-1",
-  upload: "hidden sm:block sm:col-start-3 sm:row-start-1",
-  Wedding: "col-start-1 row-start-3 sm:col-start-6 sm:row-span-2 sm:row-start-1",
-  "Bridal Shower": "col-start-2 row-start-3 sm:col-start-4 sm:row-start-1",
-  "Baby Shower": "col-start-1 row-start-4 sm:col-start-5 sm:row-start-1",
+  upload: "col-start-3 row-start-1 sm:col-start-3 sm:row-start-1",
   "Game Day": "col-start-1 row-start-2",
   "Field Trip/Day": "col-start-2 row-start-2",
-  "Open House": "col-start-2 row-start-4 sm:col-start-3 sm:row-start-2",
-  Housewarming: "col-start-1 row-start-5 sm:col-start-4 sm:row-start-2",
-  "Custom Invite": "col-start-2 row-start-5 sm:col-start-5 sm:row-start-2",
+  Wedding: "col-start-3 row-start-2 sm:col-start-6 sm:row-span-2 sm:row-start-1",
+  "Bridal Shower": "col-start-1 row-start-3 sm:col-start-4 sm:row-start-1",
+  "Baby Shower": "col-start-2 row-start-3 sm:col-start-5 sm:row-start-1",
+  "Open House": "col-start-3 row-start-3 sm:col-start-3 sm:row-start-2",
+  Housewarming: "col-start-1 row-start-4 sm:col-start-4 sm:row-start-2",
+  "Custom Invite": "col-start-2 row-start-4 sm:col-start-5 sm:row-start-2",
 };
 
 const CHAT_STUDIO_GRID_ITEMS: ChatStudioGridItem[] = (() => {
@@ -1539,8 +1539,11 @@ export default function ConciergeChatClient() {
   );
 
   return (
-    <div className="flex h-screen w-full overflow-x-hidden bg-[#f8f9fc] text-[#161129] md:overflow-hidden">
-      <main ref={mainRef} className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-[#f8f9fc] text-[#161129] md:h-screen md:overflow-hidden">
+      <main
+        ref={mainRef}
+        className="relative flex min-h-screen min-w-0 flex-1 flex-col overflow-y-auto md:h-full md:min-h-0 md:overflow-hidden"
+      >
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
           <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#eee8f6] bg-white px-4 md:hidden">
             {shouldShowWorkspacePanel ? (
