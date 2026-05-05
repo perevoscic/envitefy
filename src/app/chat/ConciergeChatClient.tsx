@@ -217,7 +217,7 @@ const CHAT_STUDIO_GRID_PLACEMENT_CLASS: Record<ChatStudioGridTileKey, string> = 
   upload: "col-start-3 row-start-1 sm:col-start-3 sm:row-start-1",
   "Game Day": "col-start-1 row-start-2",
   "Field Trip/Day": "col-start-2 row-start-2",
-  Wedding: "col-start-3 row-start-2 sm:col-start-6 sm:row-span-2 sm:row-start-1",
+  Wedding: "col-span-2 col-start-1 row-start-5 sm:col-span-2 sm:col-start-1 sm:row-start-1",
   "Bridal Shower": "col-start-1 row-start-3 sm:col-start-4 sm:row-start-1",
   "Baby Shower": "col-start-2 row-start-3 sm:col-start-5 sm:row-start-1",
   "Open House": "col-start-3 row-start-3 sm:col-start-3 sm:row-start-2",
@@ -595,7 +595,6 @@ export default function ConciergeChatClient() {
   const [isListening, setIsListening] = useState(false);
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
   const [previewTab, setPreviewTab] = useState<"preview" | "rsvp">("preview");
-  const [composerCenterLeft, setComposerCenterLeft] = useState("50vw");
   const [composerBottomPadding, setComposerBottomPadding] = useState(224);
 
   const isGeneratingCard = phase === "generating_card";
@@ -753,30 +752,6 @@ export default function ConciergeChatClient() {
       cancelled = true;
     };
   }, [threadId]);
-
-  useEffect(() => {
-    function updateComposerCenter() {
-      const target = shouldShowWorkspacePanel
-        ? chatPaneRef.current || mainRef.current
-        : mainRef.current;
-      const rect = target?.getBoundingClientRect();
-      if (!rect) {
-        setComposerCenterLeft("50vw");
-        return;
-      }
-      setComposerCenterLeft(`${rect.left + rect.width / 2}px`);
-    }
-
-    updateComposerCenter();
-    const frame = window.requestAnimationFrame(updateComposerCenter);
-    const timeout = window.setTimeout(updateComposerCenter, 260);
-    window.addEventListener("resize", updateComposerCenter);
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.clearTimeout(timeout);
-      window.removeEventListener("resize", updateComposerCenter);
-    };
-  }, [shouldShowWorkspacePanel]);
 
   useEffect(() => {
     const composer = composerCardRef.current;
@@ -1634,10 +1609,9 @@ export default function ConciergeChatClient() {
           </section>
 
           <div
-            className={`pointer-events-none fixed bottom-0 z-30 w-[calc(100vw-1rem)] -translate-x-1/2 flex-col items-stretch pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-10 sm:w-[calc(100vw-3rem)] sm:pb-8 ${
+            className={`pointer-events-none sticky bottom-0 z-30 mx-auto flex w-full max-w-3xl flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-4 sm:w-[calc(100vw-3rem)] sm:pb-8 md:fixed md:bottom-0 md:w-[calc(100vw-1rem)] md:px-0 md:pt-10 ${
               shouldShowWorkspacePanel && mobileView === "preview" ? "hidden md:flex" : "flex"
-            } max-w-3xl`}
-            style={{ left: composerCenterLeft }}
+            } md:left-1/2 md:-translate-x-1/2`}
           >
             <div ref={composerCardRef} className="pointer-events-auto w-full">
               <form onSubmit={handleSubmit}>

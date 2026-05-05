@@ -1231,7 +1231,7 @@ export default function LeftSidebar() {
 
   return (
     <>
-      {!viewModel.isOpen ? (
+      {!viewModel.isOpen && pathname !== "/chat" ? (
         <header
           data-app-mobile-topbar="workspace"
           className={`fixed inset-x-0 top-0 z-[6500] px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
