@@ -22,8 +22,8 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /or just start chatting/);
   assert.match(client, /STUDIO_CATEGORY_TILES/);
   assert.match(client, /CHAT_STUDIO_GRID_COMPOSITION/);
-  assert.match(client, /auto-rows-\[118px\]/);
-  assert.match(client, /sm:auto-rows-\[135px\]/);
+  assert.match(client, /auto-rows-\[92px\]/);
+  assert.match(client, /sm:auto-rows-\[130px\]/);
   assert.match(client, /md:auto-rows-\[155px\]/);
   assert.match(client, /max-w-\[90rem\]/);
   assert.match(client, /Upload Your Invite/);
@@ -63,7 +63,7 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /shouldShowWorkspacePanel/);
   assert.match(client, /Boolean\(draft\)/);
   assert.match(client, /mobileView/);
-  assert.match(client, /isEmptyState\s*\?\s*"flex flex-col overflow-y-auto"/);
+  assert.match(client, /isEmptyState\s*\?\s*"flex flex-col overflow-y-auto \[overscroll-behavior-y:contain\] \[touch-action:pan-y\] \[-webkit-overflow-scrolling:touch\]"/);
   assert.match(client, /setMobileView\("preview"\)/);
   assert.match(client, /Workspace Preview/);
   assert.match(client, /Invitation/);

@@ -361,7 +361,7 @@ function ChatStudioStarterGrid({
   isUploading: boolean;
 }) {
   return (
-    <div className="grid auto-rows-[118px] grid-cols-2 gap-2.5 sm:auto-rows-[135px] sm:grid-cols-6 md:auto-rows-[155px]">
+    <div className="grid auto-rows-[92px] grid-cols-3 gap-2 sm:auto-rows-[130px] sm:grid-cols-6 md:auto-rows-[155px]">
       {CHAT_STUDIO_GRID_ITEMS.map((item, index) => (
         <div key={item.key} className={CHAT_STUDIO_GRID_PLACEMENT_CLASS[item.key]}>
           {item.kind === "upload" ? (
@@ -1539,7 +1539,7 @@ export default function ConciergeChatClient() {
   );
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#f8f9fc] text-[#161129]">
+    <div className="flex h-screen w-full overflow-x-hidden bg-[#f8f9fc] text-[#161129] md:overflow-hidden">
       <main ref={mainRef} className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
           <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#eee8f6] bg-white px-4 md:hidden">
@@ -1589,8 +1589,8 @@ export default function ConciergeChatClient() {
                 } ${
                   mobileView === "chat"
                     ? isEmptyState
-                      ? "flex flex-col overflow-y-auto"
-                      : "flex flex-col overflow-y-auto"
+                      ? "flex flex-col overflow-y-auto [overscroll-behavior-y:contain] [touch-action:pan-y] [-webkit-overflow-scrolling:touch]"
+                      : "flex flex-col overflow-y-auto [overscroll-behavior-y:contain] [touch-action:pan-y] [-webkit-overflow-scrolling:touch]"
                     : "hidden md:flex"
                 } ${shouldShowWorkspacePanel ? "" : "md:border-r-0"}`}
               >
