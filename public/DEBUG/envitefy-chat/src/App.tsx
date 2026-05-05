@@ -660,7 +660,7 @@ export default function App() {
             </div>
           </div>
           <p className="mt-4 text-[11px] font-medium text-plum/30 uppercase tracking-widest pointer-events-auto">
-            Envitefy Concierge AI • Beta
+            Envitefy Concierge • Beta
           </p>
         </div>
       )}
@@ -853,4 +853,3 @@ export default function App() {
     </div>
   );
 }
-

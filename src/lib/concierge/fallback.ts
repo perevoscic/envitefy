@@ -47,6 +47,10 @@ function firstString(...values: unknown[]): string | null {
   return null;
 }
 
+function firstMissingField(previous?: ConciergeEventDraft | null) {
+  return cleanString(previous?.currentQuestion) || cleanString(previous?.missingFields?.[0]);
+}
+
 function mergeText(message: string, ocrContext?: ConciergeOcrContext | null) {
   return [message, ocrContext?.ocrText, ocrContext?.category]
     .map((value) => cleanString(value))
@@ -75,6 +79,14 @@ function detectRelationship(text: string, previous?: ConciergeEventDraft | null)
 }
 
 function detectAge(text: string, previous?: ConciergeEventDraft | null) {
+  const expectsAge =
+    previous?.eventType === "birthday" &&
+    (previous.currentQuestion === "ageOrMilestone" ||
+      previous.missingFields?.includes("ageOrMilestone"));
+  if (expectsAge) {
+    const plainAge = text.match(/^\s*(\d{1,3})(?:\s*(?:years?\s*old|yrs?|yo))?\s*$/i);
+    if (plainAge?.[1] && Number(plainAge[1]) <= 120) return plainAge[1];
+  }
   const turning = text.match(/\b(?:turning|turns|is turning|turn)\s+(\d{1,3})\b/i);
   if (turning?.[1] && Number(turning[1]) <= 120) return turning[1];
   const commaAge = text.match(/,\s*(\d{1,3})\s*(?:$|[.,;!?])/);
@@ -100,6 +112,34 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
   if (commaName?.[1]) return commaName[1];
 
   return previous?.honoreeName || null;
+}
+
+function titleCaseName(value: string) {
+  return value.replace(/\b([a-z])([a-zA-Z'-]*)/g, (_match, first: string, rest: string) => {
+    return `${first.toUpperCase()}${rest}`;
+  });
+}
+
+function detectHonoreeFollowUp(text: string, previous?: ConciergeEventDraft | null) {
+  if (!previous || previous.honoreeName || !previous.missingFields?.includes("honoreeName")) {
+    return null;
+  }
+  const expectsName =
+    previous.currentQuestion === "honoreeName" ||
+    previous.currentQuestion === "ageOrMilestone" ||
+    previous.missingFields[0] === "honoreeName";
+  if (!expectsName) return null;
+  const cleaned = cleanString(text?.replace(/[.!?]+$/g, ""));
+  if (!cleaned || cleaned.length > 60) return null;
+  if (
+    /\b(at|@|venue|location|home|house|park|gym|school|restaurant|saturday|sunday|monday|tuesday|wednesday|thursday|friday|january|february|march|april|may|june|july|august|september|october|november|december|birthday|party|theme)\b/i.test(
+      cleaned,
+    )
+  ) {
+    return null;
+  }
+  if (!/^[a-zA-Z][a-zA-Z' -]{0,58}$/.test(cleaned)) return null;
+  return titleCaseName(cleaned);
 }
 
 function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
@@ -174,6 +214,21 @@ function detectVenueOrLocation(text: string, ocrContext?: ConciergeOcrContext | 
   }
 
   return null;
+}
+
+function detectLocationFollowUp(text: string, previous?: ConciergeEventDraft | null) {
+  if (!previous) return null;
+  const missing = firstMissingField(previous);
+  if (missing !== "location") return null;
+  const cleaned = cleanString(text?.replace(/[.!?]+$/g, ""));
+  if (!cleaned || cleaned.length > 140) return null;
+  if (/^(yes|no|ok|okay|thanks?|not sure)$/i.test(cleaned)) return null;
+  if (/^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?$/i.test(cleaned)) return null;
+  const stripped = cleaned
+    .replace(/^(?:it'?s|it is|they should go to|guests should go to)\s+/i, "")
+    .replace(/^(?:the\s+)?(?:location|venue|place|address)\s+(?:is|will be|should be)\s+/i, "")
+    .replace(/^(?:at|@|to)\s+/i, "");
+  return stripLeadingTimeFromLocation(stripped);
 }
 
 function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
@@ -315,7 +370,7 @@ function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
 
   if (draft.eventType === "birthday") {
     return [
-      "Welcome to Envitefy. I am your Concierge AI, here to help craft an elegant birthday event page or digital flyer.",
+      "Welcome to Envitefy. I am your Concierge, here to help craft an elegant birthday event page or digital flyer.",
       "",
       "To get started, please share a few details:",
       "What kind of birthday celebration is it?",
@@ -329,7 +384,7 @@ function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
 
   if (draft.eventType === "wedding") {
     return [
-      "Welcome to Envitefy. I am your Concierge AI, here to help craft an elegant wedding event page or digital flyer.",
+      "Welcome to Envitefy. I am your Concierge, here to help craft an elegant wedding event page or digital flyer.",
       "",
       "To get started, please share a few details:",
       "Is this for the wedding, rehearsal dinner, shower, or another wedding event?",
@@ -343,7 +398,7 @@ function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
 
   if (draft.eventType === "baby_shower") {
     return [
-      "Welcome to Envitefy. I am your Concierge AI, here to help craft a polished baby shower event page or digital flyer.",
+      "Welcome to Envitefy. I am your Concierge, here to help craft a polished baby shower event page or digital flyer.",
       "",
       "To get started, please share a few details:",
       "What type of shower or sprinkle are you hosting?",
@@ -357,7 +412,7 @@ function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
 
   if (draft.eventType === "graduation") {
     return [
-      "Welcome to Envitefy. I am your Concierge AI, here to help craft a graduation event page or digital flyer.",
+      "Welcome to Envitefy. I am your Concierge, here to help craft a graduation event page or digital flyer.",
       "",
       "To get started, please share a few details:",
       "Is this for a ceremony, party, open house, or dinner?",
@@ -371,7 +426,7 @@ function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
 
   if (draft.eventType === "gym_meet") {
     return [
-      "Welcome to Envitefy. I am your Concierge AI, here to help craft a gym meet event page or digital flyer.",
+      "Welcome to Envitefy. I am your Concierge, here to help craft a gym meet event page or digital flyer.",
       "",
       "To get started, please share a few details:",
       "What team, gym, or meet name should be featured?",
@@ -499,6 +554,7 @@ export function fallbackExtractConciergeDraft(args: {
   const relationship = detectRelationship(text, previous);
   const honoreeName =
     detectHonoreeName(text, previous) ||
+    detectHonoreeFollowUp(message, previous) ||
     firstString(args.ocrContext?.fieldsGuess?.name, args.ocrContext?.fieldsGuess?.honoreeName);
   const ageOrMilestone = detectAge(text, previous);
   const chronoResult = parseChrono(text, previous);
@@ -506,7 +562,11 @@ export function fallbackExtractConciergeDraft(args: {
   const fieldStartIso = isoFromField(fieldsGuess.start);
   const fieldEndIso = isoFromField(fieldsGuess.end);
   const location =
-    detectVenueOrLocation(text, args.ocrContext) || previous?.location || previous?.venue || null;
+    detectVenueOrLocation(text, args.ocrContext) ||
+    detectLocationFollowUp(message, previous) ||
+    previous?.location ||
+    previous?.venue ||
+    null;
   const theme = detectTheme(text, previous);
   const receivedInviteWithoutSource =
     sourceContext.detectedSourceIntent === "received_invite" && !sourceContext.hasUsableContext;

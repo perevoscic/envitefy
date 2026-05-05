@@ -391,7 +391,7 @@ export function GuidePageView({ slug }: { slug: GuideSlug }) {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] px-4 py-12 text-[#2b1b16] sm:px-6">
+    <main className="min-h-screen bg-transparent px-4 py-12 text-[#2b1b16] sm:px-6">
       <article className="mx-auto max-w-5xl">
         <nav className="mb-8 text-sm font-semibold text-[#6c5fd6]" aria-label="Breadcrumb">
           <Link href="/guides" className="hover:text-[#2f2850]">

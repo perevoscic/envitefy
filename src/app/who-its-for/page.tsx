@@ -9,8 +9,7 @@ export const metadata: Metadata = {
     "Parents, gymnastics families, coaches, and meet organizers use Envitefy to capture and share event details.",
   openGraph: {
     title: "Who Envitefy is for",
-    description:
-      "See how parents, gymnastics families, coaches, and meet organizers use Envitefy.",
+    description: "See how parents, gymnastics families, coaches, and meet organizers use Envitefy.",
     url: "https://envitefy.com/who-its-for",
     siteName: "Envitefy",
     images: [
@@ -46,11 +45,9 @@ export default function WhoItsForPage() {
     ],
   };
   return (
-    <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] text-[#2b1b16]">
+    <main className="min-h-screen w-full bg-transparent text-[#2b1b16]">
       <section className="max-w-5xl mx-auto px-6 pt-10">
-        <h1 className="text-3xl sm:text-4xl font-bold text-center">
-          Who it’s for
-        </h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-center">Who it’s for</h1>
         <p className="mt-3 text-center text-[#5a5377]">
           Envitefy helps busy families and gymnastics communities stay coordinated.
         </p>
@@ -70,11 +67,7 @@ export default function WhoItsForPage() {
         </div>
       </section>
       <UseCases />
-      <Script
-        id="ld-breadcrumb-who"
-        type="application/ld+json"
-        strategy="afterInteractive"
-      >
+      <Script id="ld-breadcrumb-who" type="application/ld+json" strategy="afterInteractive">
         {JSON.stringify(breadcrumbLd)}
       </Script>
     </main>

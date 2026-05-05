@@ -31,11 +31,11 @@ import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import { buildMarketingHeroNav } from "@/components/navigation/marketing-hero-nav";
-import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
 import {
   type LiveCardActiveTab,
   type LiveCardInvitationData,
 } from "@/components/studio/StudioLiveCardActionSurface";
+import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
 import {
   clampShowcaseIndex,
   getCenteredShowcaseScrollLeft,
@@ -1055,10 +1055,7 @@ export default function StudioMarketingPage() {
     }, 280);
   };
 
-  const handleShowcasePointerDown = (
-    index: number,
-    event: React.PointerEvent<HTMLDivElement>,
-  ) => {
+  const handleShowcasePointerDown = (index: number, event: React.PointerEvent<HTMLDivElement>) => {
     if (!event.isPrimary || event.pointerType === "mouse" || event.pointerType === "touch") return;
     showcaseSwipeStateRef.current = {
       pointerId: event.pointerId,
@@ -1153,7 +1150,7 @@ export default function StudioMarketingPage() {
 
   return (
     <>
-      <div className="min-h-screen overflow-x-clip bg-white text-slate-900 selection:bg-[#ddd6fe] selection:text-[#4c1d95]">
+      <div className="min-h-screen overflow-x-clip bg-transparent text-slate-900 selection:bg-[#ddd6fe] selection:text-[#4c1d95]">
         <HeroTopNav
           navLinks={studioMarketingHeroNavLinks}
           primaryCtaLabel="Start in Studio"
@@ -1585,7 +1582,9 @@ export default function StudioMarketingPage() {
                 <div>
                   <h2
                     className="text-5xl font-extrabold leading-[0.9] tracking-tight text-slate-900 sm:text-6xl lg:text-[5.25rem]"
-                    style={{ fontFamily: '"Outfit", "Inter", ui-sans-serif, system-ui, sans-serif' }}
+                    style={{
+                      fontFamily: '"Outfit", "Inter", ui-sans-serif, system-ui, sans-serif',
+                    }}
                   >
                     Live Card Showcase
                   </h2>
@@ -1632,20 +1631,20 @@ export default function StudioMarketingPage() {
                   className="no-scrollbar flex touch-auto items-start gap-4 overflow-x-auto overscroll-x-contain scroll-smooth px-[max(1.25rem,calc(50vw-136px))] py-8 snap-x snap-mandatory sm:gap-6 sm:px-[max(2rem,calc(50vw-150px))]"
                   style={{ WebkitOverflowScrolling: "touch" }}
                 >
-              {showcaseCards.map((item, index) => (
-                <div
-                  key={item.title}
-                  onClickCapture={handleShowcaseClickCapture}
-                  onClick={(event) => handleShowcaseCardClick(index, event)}
-                  onPointerDownCapture={(event) => handleShowcasePointerDown(index, event)}
-                  onPointerMoveCapture={handleShowcasePointerMove}
-                  onPointerUpCapture={clearShowcaseSwipeState}
-                  onPointerCancelCapture={clearShowcaseSwipeState}
-                  data-showcase-card
-                  data-showcase-card-index={index}
-                  data-showcase-active={activeIndex === index ? "true" : "false"}
-                  className="w-[min(272px,calc(100vw-5.5rem))] shrink-0 snap-center cursor-pointer sm:w-[min(300px,calc(100vw-4rem))]"
-                >
+                  {showcaseCards.map((item, index) => (
+                    <div
+                      key={item.title}
+                      onClickCapture={handleShowcaseClickCapture}
+                      onClick={(event) => handleShowcaseCardClick(index, event)}
+                      onPointerDownCapture={(event) => handleShowcasePointerDown(index, event)}
+                      onPointerMoveCapture={handleShowcasePointerMove}
+                      onPointerUpCapture={clearShowcaseSwipeState}
+                      onPointerCancelCapture={clearShowcaseSwipeState}
+                      data-showcase-card
+                      data-showcase-card-index={index}
+                      data-showcase-active={activeIndex === index ? "true" : "false"}
+                      className="w-[min(272px,calc(100vw-5.5rem))] shrink-0 snap-center cursor-pointer sm:w-[min(300px,calc(100vw-4rem))]"
+                    >
                       <div
                         className={cx(
                           "rounded-[2.2rem] shadow-[0_28px_60px_rgba(15,23,42,0.12),0_12px_28px_rgba(15,23,42,0.08),0_1px_0_rgba(255,255,255,0.7)_inset] transition-all duration-700 ease-out",

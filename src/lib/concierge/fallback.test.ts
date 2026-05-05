@@ -261,6 +261,40 @@ test("lowercase location reply fills location instead of repeating the question"
   assert.notEqual(draft.currentQuestion, "location");
 });
 
+test("bare location reply fills the active location slot instead of repeating the question", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "A school fundraiser Saturday at 4",
+  });
+  const draft = fallbackExtractConciergeDraft({
+    message: "the venue",
+    draft: first,
+  });
+
+  assert.equal(first.currentQuestion, "location");
+  assert.equal(draft.location, "the venue");
+  assert.equal(draft.venue, "the venue");
+  assert.doesNotMatch(draft.missingFields.join(","), /location/);
+  assert.notEqual(buildAssistantMessage(draft), "Where should guests go?");
+});
+
+test("short birthday follow-ups fill name and age slots", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "my daughter's birthday Saturday at 4 at home",
+  });
+  const named = fallbackExtractConciergeDraft({
+    message: "ava",
+    draft: first,
+  });
+  const aged = fallbackExtractConciergeDraft({
+    message: "7",
+    draft: named,
+  });
+
+  assert.equal(named.honoreeName, "Ava");
+  assert.equal(aged.ageOrMilestone, "7");
+  assert.doesNotMatch(aged.missingFields.join(","), /honoreeName|ageOrMilestone/);
+});
+
 test("output-only RSVP page prompt stays unsaved until an event/source exists", () => {
   const draft = fallbackExtractConciergeDraft({ message: "Create an RSVP page" });
 
@@ -471,6 +505,27 @@ test("OpenAI extraction path normalizes to the same draft shape", async () => {
   assert.equal(result.draft.eventType, "baby_shower");
   assert.deepEqual(result.draft.outputs, ["live_card", "rsvp_page"]);
   assert.equal(result.draft.previewCopy.locationLine, "Location TBD");
+});
+
+test("OpenAI normalization treats nested eventData venue as satisfying location", () => {
+  const fallback = fallbackExtractConciergeDraft({
+    message: "A school fundraiser Saturday at 4",
+  });
+  const draft = normalizeConciergeDraft(
+    {
+      eventData: {
+        venue: "the venue",
+      },
+      missingFields: ["location"],
+    },
+    fallback,
+  );
+
+  assert.equal(fallback.currentQuestion, "location");
+  assert.equal(draft.location, "the venue");
+  assert.equal(draft.venue, "the venue");
+  assert.doesNotMatch(draft.missingFields.join(","), /location/);
+  assert.notEqual(buildAssistantMessage(draft), "Where should guests go?");
 });
 
 test("OpenAI readiness is downgraded when source and purpose are missing", async () => {

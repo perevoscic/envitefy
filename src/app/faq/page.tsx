@@ -4,12 +4,10 @@ import FAQ from "../landing/sections/FAQ";
 
 export const metadata: Metadata = {
   title: "Envitefy FAQ",
-  description:
-    "Answers about Snap accounts, Gymnastics accounts, event sharing, and calendars.",
+  description: "Answers about Snap accounts, Gymnastics accounts, event sharing, and calendars.",
   openGraph: {
     title: "Envitefy FAQ",
-    description:
-      "Find answers about Snap, Gymnastics, calendars, and existing accounts.",
+    description: "Find answers about Snap, Gymnastics, calendars, and existing accounts.",
     url: "https://envitefy.com/faq",
     siteName: "Envitefy",
     images: [
@@ -103,25 +101,17 @@ export default function FaqPage() {
   };
 
   return (
-    <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] text-foreground">
+    <main className="min-h-screen w-full bg-transparent text-foreground">
       <section className="max-w-5xl mx-auto px-6 pt-10">
         <h1 className="text-3xl sm:text-4xl font-bold text-center text-[#2f2850]">
           Frequently asked questions
         </h1>
       </section>
       <FAQ showHeader={false} />
-      <Script
-        id="ld-breadcrumb-faq"
-        type="application/ld+json"
-        strategy="afterInteractive"
-      >
+      <Script id="ld-breadcrumb-faq" type="application/ld+json" strategy="afterInteractive">
         {JSON.stringify(breadcrumbLd)}
       </Script>
-      <Script
-        id="ld-faq"
-        type="application/ld+json"
-        strategy="afterInteractive"
-      >
+      <Script id="ld-faq" type="application/ld+json" strategy="afterInteractive">
         {JSON.stringify(faqLd)}
       </Script>
     </main>

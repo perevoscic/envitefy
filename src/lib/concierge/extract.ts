@@ -43,8 +43,26 @@ function cleanString(value: unknown): string | null {
   return cleaned || null;
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 function nullableString(value: unknown): string | null {
-  return cleanString(value);
+  const cleaned = cleanString(value);
+  if (!cleaned) return null;
+  if (/^(?:tbd|to be determined|unknown|n\/a|none)$/i.test(cleaned)) return null;
+  if (/^(?:date|time|location|venue)\s+tbd$/i.test(cleaned)) return null;
+  return cleaned;
+}
+
+function firstDraftString(...values: unknown[]): string | null {
+  for (const value of values) {
+    const cleaned = nullableString(value);
+    if (cleaned) return cleaned;
+  }
+  return null;
 }
 
 function normalizeSource(value: unknown, fallback: ConciergeSource): ConciergeSource {
@@ -75,16 +93,49 @@ function normalizePreviewCopy(value: unknown, fallback: ConciergeEventDraft["pre
   };
 }
 
+function reconciledMissingFields(
+  fields: string[],
+  draft: Pick<
+    ConciergeEventDraft,
+    | "sourceContext"
+    | "eventPurpose"
+    | "title"
+    | "honoreeName"
+    | "ageOrMilestone"
+    | "dateText"
+    | "timeText"
+    | "startISO"
+    | "location"
+    | "venue"
+  >,
+) {
+  const missing = new Set(fields);
+  if (draft.sourceContext.hasUsableContext || draft.eventPurpose || draft.title) {
+    missing.delete("eventPurpose");
+  }
+  if (draft.sourceContext.hasUsableContext) missing.delete("sourceContext");
+  if (draft.honoreeName) missing.delete("honoreeName");
+  if (draft.ageOrMilestone) missing.delete("ageOrMilestone");
+  if (draft.dateText || draft.startISO) missing.delete("date");
+  if (draft.timeText || draft.startISO) missing.delete("time");
+  if (draft.location || draft.venue) missing.delete("location");
+  return Array.from(missing);
+}
+
 export function normalizeConciergeDraft(
   value: unknown,
   fallback: ConciergeEventDraft,
 ): ConciergeEventDraft {
-  const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const record = asRecord(value);
+  const eventData = asRecord(record.eventData);
   const requestedOutputs = normalizeRequestedOutputs(record.requestedOutputs ?? record.outputs, {
     previous: fallback,
     defaultOutput: fallback.requestedOutputs.length ? undefined : null,
   });
-  let eventType = normalizeCreationEventType(record.eventType, fallback.eventType);
+  let eventType = normalizeCreationEventType(
+    record.eventType ?? eventData.eventType ?? eventData.category,
+    fallback.eventType,
+  );
   const sourceRecord =
     record.sourceContext && typeof record.sourceContext === "object"
       ? (record.sourceContext as Record<string, unknown>)
@@ -105,8 +156,11 @@ export function normalizeConciergeDraft(
         ? sourceRecord.hasUsableContext
         : fallback.sourceContext.hasUsableContext,
   };
-  const eventPurpose = nullableString(record.eventPurpose) || fallback.eventPurpose;
-  const title = cleanString(record.title) || fallback.title;
+  const eventPurpose =
+    firstDraftString(record.eventPurpose, eventData.eventPurpose, eventData.purpose) ||
+    fallback.eventPurpose;
+  const title =
+    firstDraftString(record.title, eventData.title, eventData.headlineTitle) || fallback.title;
   if (
     eventType === "general" &&
     fallback.eventType === "unknown" &&
@@ -116,9 +170,30 @@ export function normalizeConciergeDraft(
   ) {
     eventType = "unknown";
   }
-  const dateText = nullableString(record.dateText) || fallback.dateText;
-  const startISO = validIsoOrNull(record.startISO) || fallback.startISO;
-  const location = nullableString(record.location) || fallback.location;
+  const dateText =
+    firstDraftString(record.dateText, eventData.dateText, eventData.date) || fallback.dateText;
+  const timeText =
+    firstDraftString(record.timeText, eventData.timeText, eventData.time) || fallback.timeText;
+  const startISO =
+    validIsoOrNull(record.startISO) ||
+    validIsoOrNull(record.startAt) ||
+    validIsoOrNull(record.start) ||
+    validIsoOrNull(eventData.startISO) ||
+    validIsoOrNull(eventData.startAt) ||
+    validIsoOrNull(eventData.start) ||
+    fallback.startISO;
+  const endISO =
+    validIsoOrNull(record.endISO) ||
+    validIsoOrNull(record.endAt) ||
+    validIsoOrNull(record.end) ||
+    validIsoOrNull(eventData.endISO) ||
+    validIsoOrNull(eventData.endAt) ||
+    validIsoOrNull(eventData.end) ||
+    fallback.endISO;
+  const location = firstDraftString(record.location, eventData.location, eventData.address);
+  const venue = firstDraftString(record.venue, eventData.venue, eventData.placeName);
+  const resolvedLocation = location || fallback.location || venue || fallback.venue;
+  const resolvedVenue = venue || fallback.venue || location || fallback.location;
   const status = deriveCreationStatus({
     sourceContext,
     eventPurpose,
@@ -127,7 +202,7 @@ export function normalizeConciergeDraft(
     requestedOutputs,
     dateText,
     startISO,
-    location,
+    location: resolvedLocation || resolvedVenue,
     draftStatus: record.draftStatus,
   });
   const draft: ConciergeEventDraft = {
@@ -152,27 +227,46 @@ export function normalizeConciergeDraft(
     draftStatus: status.draftStatus,
     currentQuestion: status.currentQuestion,
     canPersist: status.canPersist,
-    honoreeName: nullableString(record.honoreeName) || fallback.honoreeName,
-    relationship: nullableString(record.relationship) || fallback.relationship,
-    ageOrMilestone: nullableString(record.ageOrMilestone) || fallback.ageOrMilestone,
+    honoreeName:
+      firstDraftString(record.honoreeName, eventData.honoreeName, eventData.birthdayName) ||
+      fallback.honoreeName,
+    relationship:
+      firstDraftString(record.relationship, eventData.relationship) || fallback.relationship,
+    ageOrMilestone:
+      firstDraftString(record.ageOrMilestone, eventData.ageOrMilestone, eventData.age) ||
+      fallback.ageOrMilestone,
     dateText,
-    timeText: nullableString(record.timeText) || fallback.timeText,
+    timeText,
     startISO,
-    endISO: validIsoOrNull(record.endISO) || fallback.endISO,
-    timezone: cleanString(record.timezone) || fallback.timezone,
-    location,
-    venue: nullableString(record.venue) || fallback.venue,
-    theme: nullableString(record.theme) || fallback.theme,
-    tone: nullableString(record.tone) || fallback.tone,
+    endISO,
+    timezone:
+      firstDraftString(record.timezone, eventData.timezone, eventData.tz) || fallback.timezone,
+    location: resolvedLocation || null,
+    venue: resolvedVenue || null,
+    theme: firstDraftString(record.theme, eventData.theme) || fallback.theme,
+    tone: firstDraftString(record.tone, eventData.tone) || fallback.tone,
     outputs: toLegacyOutputs(requestedOutputs),
     missingFields: Array.isArray(record.missingFields)
       ? record.missingFields.map(cleanString).filter((item): item is string => Boolean(item))
       : status.missingFields,
-    previewCopy: normalizePreviewCopy(record.previewCopy, fallback.previewCopy),
+    previewCopy: normalizePreviewCopy(
+      record.previewCopy ?? eventData.previewCopy ?? eventData.liveCard,
+      fallback.previewCopy,
+    ),
     source: normalizeSource(record.source, fallback.source),
   };
 
-  draft.missingFields = Array.from(new Set([...status.missingFields, ...draft.missingFields]));
+  draft.missingFields = reconciledMissingFields(
+    Array.from(new Set([...status.missingFields, ...draft.missingFields])),
+    draft,
+  );
+  draft.currentQuestion = draft.missingFields.length
+    ? status.currentQuestion === "which_source" ||
+      status.currentQuestion === "invite_source" ||
+      status.currentQuestion === "what_are_we_celebrating"
+      ? status.currentQuestion
+      : draft.missingFields[0]
+    : null;
   return draft;
 }
 
@@ -214,11 +308,14 @@ async function extractWithOpenAi(
               "You are Envitefy's event creation concierge.",
               "Only handle event, invitation, RSVP, and event asset creation or editing.",
               "Return one JSON object matching the draft shape. Do not include markdown.",
-              "Return intent, requestedOutputs, sourceContext, eventPurpose, eventType, eventData when useful, missingFields, draftStatus, and nextQuestion/currentQuestion.",
+              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, honoreeName, ageOrMilestone, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
+              "If you include nested eventData for convenience, duplicate the same extracted fields at the top level.",
               "Separate requested output from event details: live cards, digital flyers, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",
               "Resolve 'this' only from supplied activeContext. If no context exists, ask what source or event to use.",
               "Use eventType unknown until the user or source gives a real category. Supported eventType values are unknown, birthday, wedding, baby_shower, graduation, gym_meet, and general. Do not use general as a fallback.",
               "Prioritize eventPurpose/title before strict event type. Do not ask for date/time before event purpose/source.",
+              "When the previous draft is asking for a specific missing field, treat a short user reply as the answer to that field unless it clearly changes topics.",
+              "Treat venue as satisfying the location requirement; if only one of venue or location is known, return it in both fields.",
               "Do not mark drafts ready when event purpose/source is missing. Do not classify uploads as invited based only on event category.",
               "When the user says they received, got, or were sent an invite and wants to save it, set sourceContext.detectedSourceIntent to received_invite and ownership to invited.",
               "If that received-invite request has no invite image/text or concrete event details, ask for an upload or pasted invite text before asking host-authoring questions.",

@@ -143,6 +143,20 @@ const OUTPUT_LABELS: Record<RequestedOutput, string> = {
 
 const EMPTY_ASSISTANT_PROMPT = "What are we celebrating?";
 
+type ConciergeChatClientProps = {
+  userFirstName?: string | null;
+};
+
+function buildInitialAssistantPrompt(userFirstName?: string | null) {
+  const cleaned = typeof userFirstName === "string" ? userFirstName.trim() : "";
+  if (!cleaned) return EMPTY_ASSISTANT_PROMPT;
+  return `Hi ${cleaned}, what are we celebrating?`;
+}
+
+function isOpeningAssistantPrompt(text: string, initialAssistantPrompt: string) {
+  return text === initialAssistantPrompt || text === EMPTY_ASSISTANT_PROMPT;
+}
+
 const CHAT_STARTER_PROMPTS = [
   "Create a birthday live card with RSVP.",
   "Create a wedding invitation with RSVP.",
@@ -484,8 +498,9 @@ function notifyCreationThreadsChanged() {
   window.dispatchEvent(new CustomEvent("envitefy:creation-threads-changed"));
 }
 
-export default function ConciergeChatClient() {
+export default function ConciergeChatClient({ userFirstName = null }: ConciergeChatClientProps) {
   const searchParams = useSearchParams();
+  const initialAssistantPrompt = buildInitialAssistantPrompt(userFirstName);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
@@ -495,7 +510,7 @@ export default function ConciergeChatClient() {
   const [input, setInput] = useState("");
   const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    newMessage("assistant", EMPTY_ASSISTANT_PROMPT),
+    newMessage("assistant", initialAssistantPrompt),
   ]);
   const [phase, setPhase] = useState<ConciergePhase>("intake_empty");
   const [draft, setDraft] = useState<ConciergeEventDraft | null>(null);
@@ -523,7 +538,11 @@ export default function ConciergeChatClient() {
     !isUploading;
   const visibleMessages = messages.filter(
     (message, index) =>
-      !(index === 0 && message.role === "assistant" && message.text === EMPTY_ASSISTANT_PROMPT),
+      !(
+        index === 0 &&
+        message.role === "assistant" &&
+        isOpeningAssistantPrompt(message.text, initialAssistantPrompt)
+      ),
   );
   const isBusy = isSending || isUploading || isGeneratingCard;
   const busyLabel = isUploading
@@ -580,7 +599,7 @@ export default function ConciergeChatClient() {
     setSelectedProductOutput(null);
     setMobileView("chat");
     setPreviewTab("preview");
-    setMessages([newMessage("assistant", EMPTY_ASSISTANT_PROMPT)]);
+    setMessages([newMessage("assistant", initialAssistantPrompt)]);
   }
 
   useEffect(() => {
@@ -1175,7 +1194,7 @@ export default function ConciergeChatClient() {
 
   const workspacePanel = (
     <aside
-      className={`min-h-0 flex-col overflow-y-auto border-l border-[#e5dff0] bg-[#fbfbfe] ${
+      className={`min-h-0 flex-col overflow-y-auto border-l border-[#e5dff0] bg-white/48 backdrop-blur-sm ${
         mobileView === "preview" ? "flex" : "hidden md:flex"
       }`}
     >
@@ -1560,7 +1579,7 @@ export default function ConciergeChatClient() {
   );
 
   return (
-    <div className="flex h-full min-h-0 w-full overflow-hidden bg-[#f8f9fc] text-[#161129]">
+    <div className="flex h-full min-h-0 w-full overflow-hidden bg-transparent text-[#161129]">
       <main
         ref={mainRef}
         className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
@@ -1602,7 +1621,7 @@ export default function ConciergeChatClient() {
             >
               <div
                 ref={chatPaneRef}
-                className={`min-h-0 w-full flex-col overflow-hidden bg-white/48 backdrop-blur-sm ${
+                className={`min-h-0 w-full flex-col overflow-hidden bg-white/28 backdrop-blur-sm ${
                   shouldShowWorkspacePanel ? "md:border-r md:border-[#e5dff0]" : ""
                 } ${
                   mobileView === "chat" ? "flex" : "hidden md:flex"
@@ -1616,7 +1635,7 @@ export default function ConciergeChatClient() {
                         animate={{ opacity: 1, y: 0 }}
                         className="mx-auto max-w-3xl text-4xl font-medium tracking-normal text-[#2d1b36] sm:text-6xl"
                       >
-                        What are we celebrating?
+                        {initialAssistantPrompt}
                       </motion.h1>
                       <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base">
                         Tell me what you need to create.

@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const SYSTEM_PROMPT = `
-You are the Envitefy Concierge AI, a premium, elegant, and helpful assistant for event planning.
+You are the Envitefy Concierge, a premium, elegant, and helpful assistant for event planning.
 Your goal is to help users create event pages, live cards, and digital flyers.
 
 Guidelines:

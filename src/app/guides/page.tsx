@@ -67,7 +67,7 @@ export default function GuidesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] px-4 py-12 text-[#2b1b16] sm:px-6">
+    <main className="min-h-screen bg-transparent px-4 py-12 text-[#2b1b16] sm:px-6">
       <section className="mx-auto max-w-6xl">
         <header className="max-w-4xl">
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#6c5fd6]">

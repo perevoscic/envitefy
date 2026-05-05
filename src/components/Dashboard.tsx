@@ -14,6 +14,7 @@ import {
   type SnapProcessingStatus,
 } from "@/components/snap/SnapProcessingCard";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
+import { resolveSourceIntent } from "@/lib/concierge/creation-intent";
 import { normalizeOcrFacts, type OcrFact } from "@/lib/ocr/facts";
 import {
   isBasketballOcrSkinCandidate,
@@ -25,7 +26,6 @@ import {
 import { type PendingSnapUpload, takePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { normalizeThumbnailFocus, type ThumbnailFocus } from "@/lib/thumbnail-focus";
 import { buildWeddingScanFlyerColorsFromImageColors } from "@/lib/wedding-scan";
-import { resolveSourceIntent } from "@/lib/concierge/creation-intent";
 import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
 import { findFirstEmail, normalizeUrlValue } from "@/utils/contact";
 import { buildEventPath } from "@/utils/event-url";
@@ -1021,11 +1021,13 @@ export default function Dashboard({
             ? (data.openHouse as Record<string, unknown>)
             : null;
         const openHousePhone =
-          typeof openHouseFromScan?.realtorPhone === "string" && openHouseFromScan.realtorPhone.trim()
+          typeof openHouseFromScan?.realtorPhone === "string" &&
+          openHouseFromScan.realtorPhone.trim()
             ? cleanRsvp(openHouseFromScan.realtorPhone)
             : null;
         const openHouseEmail =
-          typeof openHouseFromScan?.realtorEmail === "string" && openHouseFromScan.realtorEmail.trim()
+          typeof openHouseFromScan?.realtorEmail === "string" &&
+          openHouseFromScan.realtorEmail.trim()
             ? openHouseFromScan.realtorEmail.trim()
             : null;
         const rsvpNameFromScan = extractRsvpName(rawRsvp);
@@ -1187,7 +1189,11 @@ export default function Dashboard({
   );
 
   const onFile = useCallback(
-    (selected: File | null, previewOverride?: string | null, pendingScanAttemptId?: string | null) => {
+    (
+      selected: File | null,
+      previewOverride?: string | null,
+      pendingScanAttemptId?: string | null,
+    ) => {
       if (!selected) {
         // User cancelled file selection - silently return
         return;
@@ -1276,7 +1282,11 @@ export default function Dashboard({
           const pendingUpload = await takePendingSnapUpload();
           if (cancelled) return;
           if (pendingUpload) {
-            onFile(pendingUpload.file, pendingUpload.previewUrl ?? null, pendingUpload.scanAttemptId);
+            onFile(
+              pendingUpload.file,
+              pendingUpload.previewUrl ?? null,
+              pendingUpload.scanAttemptId,
+            );
           } else {
             reportClientLog({
               area: "snap-upload",
@@ -1619,7 +1629,14 @@ export default function Dashboard({
         };
       }
     },
-    [invalidateEventCache, logUploadIssue, ocrBirthdayTemplateHint, ocrCategory, previewUrl, uploadedFile],
+    [
+      invalidateEventCache,
+      logUploadIssue,
+      ocrBirthdayTemplateHint,
+      ocrCategory,
+      previewUrl,
+      uploadedFile,
+    ],
   );
 
   const submitScannedEvent = useCallback(
@@ -1688,7 +1705,7 @@ export default function Dashboard({
   }, []);
 
   return (
-    <main className="relative flex min-h-[100dvh] w-full flex-col items-center bg-gradient-to-b from-[#F8F5FF] via-white to-white px-3 pb-20 pt-2 text-foreground md:px-8 md:pt-16">
+    <main className="relative flex min-h-[100dvh] w-full flex-col items-center bg-transparent px-3 pb-20 pt-2 text-foreground md:px-8 md:pt-16">
       <input
         ref={cameraInputRef}
         type="file"

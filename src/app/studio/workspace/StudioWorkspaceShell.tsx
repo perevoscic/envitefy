@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode, SetStateAction } from "react";
-import { Tabs, type ITab } from "@/components/ui/tabs-1";
+import { type ITab, Tabs } from "@/components/ui/tabs-1";
 import type { StudioWorkspaceView } from "../studio-types";
 
 type StudioWorkspaceShellProps = {
@@ -29,8 +29,7 @@ export function StudioWorkspaceShell({
   ];
 
   const handleSelectedChange = (nextValue: SetStateAction<string>) => {
-    const resolved =
-      typeof nextValue === "function" ? nextValue(activeView) : nextValue;
+    const resolved = typeof nextValue === "function" ? nextValue(activeView) : nextValue;
     if (resolved === activeView) return;
     if (resolved === "create" || resolved === "library") {
       onViewChange(resolved);
@@ -39,7 +38,7 @@ export function StudioWorkspaceShell({
 
   return (
     <div
-      className={`studio-shell relative min-h-screen overflow-x-hidden bg-[#f4f1fb] text-[#1A1A1A] selection:bg-[#e3d7fb] lg:flex lg:flex-col ${
+      className={`studio-shell relative min-h-screen overflow-x-hidden bg-transparent text-[#1A1A1A] selection:bg-[#e3d7fb] lg:flex lg:flex-col ${
         allowDesktopDocumentFlow ? "" : "lg:h-screen lg:overflow-hidden"
       }`}
     >

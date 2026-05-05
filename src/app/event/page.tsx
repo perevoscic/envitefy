@@ -15,7 +15,7 @@ export const viewport: Viewport = {
 export default function EventSnapLandingPage() {
   return (
     <main
-      className="min-h-screen bg-[#f5f6f7] px-4 py-10 sm:px-6 lg:px-10"
+      className="min-h-screen bg-transparent px-4 py-10 sm:px-6 lg:px-10"
       data-theme-color={themeColorPalette.eventFallback}
     >
       <div className="mx-auto w-full max-w-5xl">
@@ -30,8 +30,8 @@ export default function EventSnapLandingPage() {
         </section>
         <SnapLaunchCards />
         <p className="mx-auto mt-6 max-w-3xl pb-10 text-center text-lg leading-8 text-[#767287] sm:mt-8 sm:text-[1.35rem]">
-          Envitefy reads the details, detects invitation types, and routes them into
-          polished, interactive event pages automatically.
+          Envitefy reads the details, detects invitation types, and routes them into polished,
+          interactive event pages automatically.
         </p>
       </div>
     </main>

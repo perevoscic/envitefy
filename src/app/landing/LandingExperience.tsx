@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion, type Transition, type Variants } from "framer-motion";
+import { motion, type Transition, useReducedMotion, type Variants } from "framer-motion";
 import {
   ArrowRight,
   Calendar,
@@ -11,13 +11,13 @@ import {
   Hotel,
   Image as ImageIcon,
   Layout,
+  type LucideIcon,
   MapPin,
   MessageSquare,
   Share2,
   Users,
   WandSparkles,
   Zap,
-  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useEffect, useState } from "react";
@@ -98,8 +98,7 @@ const comparisonCards = [
     titleClassName: "!text-white",
     bodyClassName: "text-white/72",
     accentClassName: "bg-[#c98f6b] text-white",
-    imageFrameClassName:
-      "aspect-[10/16] max-w-[320px] rounded-[2.1rem] bg-transparent",
+    imageFrameClassName: "aspect-[10/16] max-w-[320px] rounded-[2.1rem] bg-transparent",
     imageClassName: "object-contain object-center scale-[0.9]",
   },
 ] as const;
@@ -286,13 +285,7 @@ function SectionIntro({
   className?: string;
 }) {
   return (
-    <div
-      className={cx(
-        "max-w-3xl",
-        align === "center" && "mx-auto text-center",
-        className,
-      )}
-    >
+    <div className={cx("max-w-3xl", align === "center" && "mx-auto text-center", className)}>
       <div className={styles.eyebrow}>{eyebrow}</div>
       <h2
         className={cx(
@@ -302,9 +295,7 @@ function SectionIntro({
       >
         {title}
       </h2>
-      <p className="mt-6 text-lg leading-8 text-[#6a5549] sm:text-xl">
-        {description}
-      </p>
+      <p className="mt-6 text-lg leading-8 text-[#6a5549] sm:text-xl">{description}</p>
     </div>
   );
 }
@@ -371,12 +362,7 @@ function PrimaryAction({
         className,
       )}
     >
-      <AnimatedButtonLabel
-        label={label}
-        icon={icon}
-        iconClassName="h-5 w-5"
-        className="gap-3"
-      />
+      <AnimatedButtonLabel label={label} icon={icon} iconClassName="h-5 w-5" className="gap-3" />
     </LinkOrButton>
   );
 }
@@ -422,7 +408,7 @@ export default function LandingExperience() {
   return (
     <>
       <div
-        className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-clip bg-[#f8f5ff] text-[#2b1b16] selection:bg-[#c98f6b]/30 selection:text-[#2b1b16]`}
+        className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-clip bg-transparent text-[#2b1b16] selection:bg-[#c98f6b]/30 selection:text-[#2b1b16]`}
       >
         <HeroTopNav
           navLinks={landingHeroNavLinks}
@@ -444,7 +430,12 @@ export default function LandingExperience() {
             animate="visible"
             className="mx-auto w-full max-w-7xl"
           >
-            <div className={cx(styles.heroGradient, "relative overflow-hidden rounded-[2.75rem] px-6 py-10 text-white shadow-[0_44px_120px_-32px_rgba(24,16,51,0.45)] sm:px-10 lg:px-14 lg:py-16")}>
+            <div
+              className={cx(
+                styles.heroGradient,
+                "relative overflow-hidden rounded-[2.75rem] px-6 py-10 text-white shadow-[0_44px_120px_-32px_rgba(24,16,51,0.45)] sm:px-10 lg:px-14 lg:py-16",
+              )}
+            >
               <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,8,29,0.08),rgba(15,8,29,0.2)_55%,rgba(15,8,29,0.42)_100%)]" />
               <div className="absolute left-[-5%] top-[-12%] h-64 w-64 rounded-full bg-white/12 blur-3xl" />
               <div className="absolute bottom-[-18%] right-[-8%] h-80 w-80 rounded-full bg-[#c98f6b]/30 blur-3xl" />
@@ -468,9 +459,8 @@ export default function LandingExperience() {
                   </h1>
 
                   <p className="mt-8 max-w-2xl text-lg leading-8 text-white/74 sm:text-xl">
-                    Turn any design into a high-performance event hub. RSVP,
-                    maps, updates, and polished mobile sharing all live behind
-                    one beautiful link.
+                    Turn any design into a high-performance event hub. RSVP, maps, updates, and
+                    polished mobile sharing all live behind one beautiful link.
                   </p>
 
                   <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -517,9 +507,8 @@ export default function LandingExperience() {
                         Live Demo
                       </p>
                       <p className="mt-1 text-sm leading-6 text-white/84">
-                        See how a <span className="font-bold">gymnastics meet</span>{" "}
-                        hub handles schedules, venue notes, and updates in one
-                        place.
+                        See how a <span className="font-bold">gymnastics meet</span> hub handles
+                        schedules, venue notes, and updates in one place.
                       </p>
                     </div>
                   </motion.div>
@@ -541,8 +530,8 @@ export default function LandingExperience() {
                         ))}
                       </div>
                       <p className="text-sm font-medium text-white/74">
-                        Trusted by <span className="font-bold text-white">2,500+</span>{" "}
-                        hosts, coaches, and gymnastics parents
+                        Trusted by <span className="font-bold text-white">2,500+</span> hosts,
+                        coaches, and gymnastics parents
                       </p>
                     </div>
                   </div>
@@ -564,7 +553,12 @@ export default function LandingExperience() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                         <div className="absolute bottom-4 left-4 text-white sm:bottom-7 sm:left-6">
-                          <h3 className={cx(styles.headline, "text-[1.65rem] font-extrabold sm:text-3xl")}>
+                          <h3
+                            className={cx(
+                              styles.headline,
+                              "text-[1.65rem] font-extrabold sm:text-3xl",
+                            )}
+                          >
                             Leo&apos;s 5th Birthday
                           </h3>
                           <p className="mt-0.5 text-[0.78rem] text-white/72 sm:mt-1 sm:text-sm">
@@ -670,7 +664,12 @@ export default function LandingExperience() {
           className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
         >
           <div className="mx-auto max-w-7xl">
-            <div className={cx(styles.surfacePanel, "rounded-[2.75rem] bg-[#fbf7f2] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
+            <div
+              className={cx(
+                styles.surfacePanel,
+                "rounded-[2.75rem] bg-[#fbf7f2] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14",
+              )}
+            >
               <motion.div
                 variants={scrollReveal}
                 initial="hidden"
@@ -683,7 +682,9 @@ export default function LandingExperience() {
                     <>
                       Design once.
                       <br />
-                      <span className={styles.textGradient}>Deliver every guest-facing surface.</span>
+                      <span className={styles.textGradient}>
+                        Deliver every guest-facing surface.
+                      </span>
                     </>
                   }
                   description="Create polished invitation artwork, live cards, hosted event hubs, and mobile-ready guest experiences from the same studio workflow."
@@ -730,7 +731,12 @@ export default function LandingExperience() {
                         >
                           {card.title}
                         </h3>
-                        <p className={cx("mt-4 max-w-xl text-base leading-7 sm:mt-5 sm:text-lg sm:leading-8", card.bodyClassName)}>
+                        <p
+                          className={cx(
+                            "mt-4 max-w-xl text-base leading-7 sm:mt-5 sm:text-lg sm:leading-8",
+                            card.bodyClassName,
+                          )}
+                        >
                           {card.description}
                         </p>
                       </div>
@@ -844,7 +850,12 @@ export default function LandingExperience() {
                                 <WandSparkles className="h-3.5 w-3.5" />
                                 Invitation Canvas
                               </div>
-                              <p className={cx(styles.headline, "mt-2 text-base font-bold text-[#2b1b16] sm:text-lg")}>
+                              <p
+                                className={cx(
+                                  styles.headline,
+                                  "mt-2 text-base font-bold text-[#2b1b16] sm:text-lg",
+                                )}
+                              >
                                 Wedding Weekend
                               </p>
                               <p className="mt-1 text-xs leading-5 text-[#6a5549]">
@@ -856,14 +867,16 @@ export default function LandingExperience() {
                                 Linked Actions
                               </div>
                               <div className="mt-3 flex flex-wrap gap-2">
-                                {["RSVP", "Directions", "Calendar", "Registry", "Share"].map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className="rounded-full border border-white/12 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/86"
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
+                                {["RSVP", "Directions", "Calendar", "Registry", "Share"].map(
+                                  (tag) => (
+                                    <span
+                                      key={tag}
+                                      className="rounded-full border border-white/12 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/86"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ),
+                                )}
                               </div>
                             </div>
                           </motion.div>
@@ -886,9 +899,7 @@ export default function LandingExperience() {
                       <>
                         From layout approval
                         <br />
-                        <span className={styles.textGradient}>
-                          to live distribution.
-                        </span>
+                        <span className={styles.textGradient}>to live distribution.</span>
                       </>
                     }
                     description="Configure the presentation layer, connect guest actions, and publish a page that is ready for attendance, directions, hotel links, registry links, and live updates."
@@ -953,9 +964,8 @@ export default function LandingExperience() {
                       </span>
                     </h3>
                     <p className="mt-6 max-w-2xl text-lg leading-8 text-white/68">
-                      Upload a flyer, screenshot, or meet PDF and Envitefy turns
-                      it into a structured draft that is ready to publish as a
-                      live event page.
+                      Upload a flyer, screenshot, or meet PDF and Envitefy turns it into a
+                      structured draft that is ready to publish as a live event page.
                     </p>
 
                     <div className="mt-10 grid gap-5 sm:grid-cols-2">
@@ -977,18 +987,12 @@ export default function LandingExperience() {
                               {card.title}
                             </span>
                           </h4>
-                          <p className="mt-3 text-sm leading-7 text-white/66">
-                            {card.desc}
-                          </p>
+                          <p className="mt-3 text-sm leading-7 text-white/66">{card.desc}</p>
                         </div>
                       ))}
                     </div>
 
-                    <PrimaryAction
-                      href="/snap"
-                      label="Try Snap Upload"
-                      className="mt-10"
-                    />
+                    <PrimaryAction href="/snap" label="Try Snap Upload" className="mt-10" />
                   </div>
 
                   <div className="relative">
@@ -1003,7 +1007,9 @@ export default function LandingExperience() {
                         />
                         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,8,18,0.06)_0%,rgba(10,8,18,0.24)_100%)]" />
                         <motion.div
-                          animate={disableHeavyLandingMotion ? undefined : { top: ["0%", "100%", "0%"] }}
+                          animate={
+                            disableHeavyLandingMotion ? undefined : { top: ["0%", "100%", "0%"] }
+                          }
                           transition={
                             disableHeavyLandingMotion
                               ? undefined
@@ -1233,7 +1239,12 @@ export default function LandingExperience() {
             viewport={{ once: true, amount: 0.2 }}
             className="mx-auto max-w-7xl"
           >
-            <div className={cx(styles.surfacePanel, "rounded-[2.75rem] bg-white px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
+            <div
+              className={cx(
+                styles.surfacePanel,
+                "rounded-[2.75rem] bg-white px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14",
+              )}
+            >
               <SectionIntro
                 eyebrow="Two paths to event perfection"
                 title={
@@ -1321,9 +1332,7 @@ export default function LandingExperience() {
                               <p
                                 className={cx(
                                   "mt-2 text-base leading-7",
-                                  path.tone === "dark"
-                                    ? "text-white/68"
-                                    : "text-[#6a5549]",
+                                  path.tone === "dark" ? "text-white/68" : "text-[#6a5549]",
                                 )}
                               >
                                 {step.desc}
@@ -1351,7 +1360,12 @@ export default function LandingExperience() {
             viewport={{ once: true, amount: 0.2 }}
             className="mx-auto max-w-7xl"
           >
-            <div className={cx(styles.surfacePanel, "rounded-[2.75rem] bg-[#f8f5ff] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
+            <div
+              className={cx(
+                styles.surfacePanel,
+                "rounded-[2.75rem] bg-[#f8f5ff] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14",
+              )}
+            >
               <SectionIntro
                 eyebrow="Why it works"
                 title={
@@ -1416,7 +1430,12 @@ export default function LandingExperience() {
             viewport={{ once: true, amount: 0.2 }}
             className="mx-auto max-w-7xl"
           >
-            <div className={cx(styles.surfacePanel, "overflow-visible rounded-[2.75rem] bg-[#fbf7f2] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14")}>
+            <div
+              className={cx(
+                styles.surfacePanel,
+                "overflow-visible rounded-[2.75rem] bg-[#fbf7f2] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14",
+              )}
+            >
               <div className="grid gap-12 lg:grid-cols-[minmax(300px,420px)_minmax(0,1fr)] lg:items-center">
                 <div className="relative order-2 h-[420px] lg:order-1">
                   <div className="absolute inset-0 overflow-hidden rounded-[2.6rem] border border-[#efe4db] bg-white shadow-[0_28px_80px_rgba(43,27,22,0.12)]">
@@ -1472,10 +1491,7 @@ export default function LandingExperience() {
 
         <LandingFaq />
 
-        <section
-          id="cta"
-          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
-        >
+        <section id="cta" className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}>
           <motion.div
             variants={sectionReveal}
             initial="hidden"
@@ -1483,7 +1499,12 @@ export default function LandingExperience() {
             viewport={{ once: true, amount: 0.2 }}
             className="mx-auto max-w-5xl"
           >
-            <div className={cx(styles.ctaPanel, "relative overflow-hidden rounded-[2.75rem] px-6 py-12 text-center text-white shadow-[0_40px_110px_-26px_rgba(24,16,51,0.48)] sm:px-8 lg:px-12 lg:py-16")}>
+            <div
+              className={cx(
+                styles.ctaPanel,
+                "relative overflow-hidden rounded-[2.75rem] px-6 py-12 text-center text-white shadow-[0_40px_110px_-26px_rgba(24,16,51,0.48)] sm:px-8 lg:px-12 lg:py-16",
+              )}
+            >
               <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
               <div className="relative z-10">
                 <h2
@@ -1499,18 +1520,13 @@ export default function LandingExperience() {
                   <span className={styles.textGradient}>like a pro?</span>
                 </h2>
                 <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-white/72 sm:text-xl">
-                  Join the creators, coaches, and hosts who have moved beyond
-                  static flyers into live event hubs.
+                  Join the creators, coaches, and hosts who have moved beyond static flyers into
+                  live event hubs.
                 </p>
 
                 <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                   <PrimaryAction href="/snap" label="Get Started for Free" />
-                  <PrimaryAction
-                    href="#landing-hero"
-                    label="View Demo"
-                    light
-                    icon={ChevronRight}
-                  />
+                  <PrimaryAction href="#landing-hero" label="View Demo" light icon={ChevronRight} />
                 </div>
 
                 <div className="mt-14 flex flex-wrap items-center justify-center gap-8 text-xl font-black tracking-tight text-white/34">

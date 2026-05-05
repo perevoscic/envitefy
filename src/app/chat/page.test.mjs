@@ -14,10 +14,17 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   const eventActions = readSource("src/lib/concierge/event-actions.ts");
 
   assert.match(page, /ConciergeChatClient/);
+  assert.match(page, /getServerSession\(authOptions as any\)/);
+  assert.match(page, /getUserByEmail\(email\)/);
+  assert.match(page, /userFirstName=\{userFirstName\}/);
   assert.doesNotMatch(page, /isAdmin/);
   assert.doesNotMatch(page, /notFound\(/);
 
   assert.match(client, /What are we celebrating\?/);
+  assert.match(client, /userFirstName\?: string \| null/);
+  assert.match(client, /buildInitialAssistantPrompt/);
+  assert.match(client, /Hi \$\{cleaned\}, what are we celebrating\?/);
+  assert.match(client, /isOpeningAssistantPrompt/);
   assert.match(client, /text-4xl/);
   assert.match(client, /sm:text-6xl/);
   assert.match(client, /STUDIO_CATEGORY_TILES/);

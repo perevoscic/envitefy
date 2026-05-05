@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] text-foreground flex items-center justify-center p-6">
+    <main className="min-h-screen w-full bg-transparent text-foreground flex items-center justify-center p-6">
       <section className="w-full max-w-5xl grid grid-cols-1 items-center">
         <div className="text-center">
           <h1 className="sr-only">Envitefy — Create. Share. Enjoy.</h1>

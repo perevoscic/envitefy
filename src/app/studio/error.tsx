@@ -10,7 +10,7 @@ export default function StudioError({
   reset: () => void;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8f5ef] px-6 py-16 text-[#1f1a17]">
+    <div className="flex min-h-screen items-center justify-center bg-transparent px-6 py-16 text-[#1f1a17]">
       <div className="relative w-full max-w-2xl overflow-hidden rounded-[2.5rem] border border-[#e9dfd4] bg-white p-8 shadow-[0_30px_80px_rgba(60,38,20,0.12)] sm:p-10">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#7c3aed] via-[#f59e0b] to-[#ef4444]" />
         <div className="flex items-start gap-4">

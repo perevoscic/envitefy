@@ -1,15 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { SIDEBAR_WIDTH_REM } from "@/app/left-sidebar.model";
 import { EVENT_SKIN_TOP_OFFSET_VAR } from "@/components/event-skin-layout";
-import { useEffect, useState } from "react";
+import { GradientBackgroundLayer } from "@/components/ui/gradient-backgrounds";
 
 /** Must match the mobile <header> in left-sidebar.tsx:
  *  pt-[max(0.75rem,env(safe-area-inset-top))] + h-10 button + pb-2
  *  = max(0.75rem, safe-area) + 3rem */
-const MOBILE_TOPBAR_PT =
-  "calc(3rem + max(0.75rem, env(safe-area-inset-top, 0px)))";
+const MOBILE_TOPBAR_PT = "calc(3rem + max(0.75rem, env(safe-area-inset-top, 0px)))";
 
 export function MainContentWrapper({
   children,
@@ -29,6 +29,7 @@ export function MainContentWrapper({
   const pathSegments = normalizedPath.split("/").filter(Boolean);
   const isStudioCardShare = pathSegments.length === 2 && pathSegments[0] === "card";
   const isEventSharePage = pathSegments.length === 2 && pathSegments[0] === "event";
+  const usesOwnLandingBackground = normalizedPath === "/snap" || normalizedPath === "/gymnastics";
 
   useEffect(() => {
     const checkDesktop = () => {
@@ -39,8 +40,7 @@ export function MainContentWrapper({
     return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
-  const paddingLeft =
-    reserveSidebarSpace && isDesktop ? SIDEBAR_WIDTH_REM : "0";
+  const paddingLeft = reserveSidebarSpace && isDesktop ? SIDEBAR_WIDTH_REM : "0";
 
   const eventSkinTopOffset =
     !isDesktop && isAuthenticated
@@ -51,19 +51,18 @@ export function MainContentWrapper({
     ? "0px"
     : isEventSharePage
       ? "0px"
-    : !isDesktop && isAuthenticated
-      ? `var(--app-mobile-topbar-offset, ${MOBILE_TOPBAR_PT})`
-      : "max(0px, env(safe-area-inset-top))";
+      : !isDesktop && isAuthenticated
+        ? `var(--app-mobile-topbar-offset, ${MOBILE_TOPBAR_PT})`
+        : "max(0px, env(safe-area-inset-top))";
 
-  const shellBgClass = isStudioCardShare
-    ? "bg-neutral-950"
-    : isAuthenticated
-      ? "bg-[#F8F5FF]"
-      : "bg-[#F8F5FF] landing-dark-gradient";
+  const shellBgClass = isStudioCardShare ? "bg-neutral-950" : "bg-transparent";
+
+  const showProjectGradientBackground = !usesOwnLandingBackground;
+  const backgroundLeft = reserveSidebarSpace && isDesktop ? SIDEBAR_WIDTH_REM : "0px";
 
   return (
     <div
-      className={`min-h-[100dvh] text-foreground flex flex-col ${shellBgClass} ${className}`}
+      className={`relative isolate min-h-[100dvh] text-foreground flex flex-col ${shellBgClass} ${className}`}
       style={{
         minHeight: "100dvh",
         backgroundColor: isEventSharePage
@@ -73,13 +72,18 @@ export function MainContentWrapper({
         paddingBottom: "max(0px, env(safe-area-inset-bottom))",
         paddingLeft,
         transition: "padding-left 200ms ease-out",
-        ...(isEventSharePage
-          ? { [EVENT_SKIN_TOP_OFFSET_VAR]: eventSkinTopOffset }
-          : null),
+        ...(isEventSharePage ? { [EVENT_SKIN_TOP_OFFSET_VAR]: eventSkinTopOffset } : null),
       }}
       data-static-illustration="true"
     >
-      {children}
+      {showProjectGradientBackground ? (
+        <GradientBackgroundLayer style={{ left: backgroundLeft }} />
+      ) : null}
+      {showProjectGradientBackground ? (
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col">{children}</div>
+      ) : (
+        children
+      )}
     </div>
   );
 }

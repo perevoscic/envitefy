@@ -50,7 +50,7 @@ const productPillars = [
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen w-full bg-gradient-to-b from-[#f6f2ff] via-white to-[#f7f3ff] px-4 py-12 text-foreground sm:px-6">
+    <main className="min-h-screen w-full bg-transparent px-4 py-12 text-foreground sm:px-6">
       <section className="mx-auto w-full max-w-6xl">
         <div className="mb-16 text-center">
           <div className="mb-8 rounded-3xl bg-gradient-to-tr from-[#efe8ff] via-white to-[#f4edff] p-1">

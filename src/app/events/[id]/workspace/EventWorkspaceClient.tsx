@@ -400,7 +400,7 @@ export default function EventWorkspaceClient({
   );
 
   return (
-    <main className="min-h-screen bg-[#f8f5ff] bg-[radial-gradient(circle_at_top,#ffffff_0%,#f8f5ff_48%,#efe8ff_100%)] text-[#161129]">
+    <main className="min-h-screen bg-transparent text-[#161129]">
       <div className="mx-auto w-full max-w-7xl px-4 py-5 lg:px-6">
         <header className="mb-5 flex flex-col gap-4 rounded-[1.4rem] border border-[#eadfff] bg-white/86 px-5 py-5 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -493,9 +493,7 @@ export default function EventWorkspaceClient({
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#eadfff] bg-white px-5 py-4">
-                    <span className="text-sm font-semibold text-[#6f5b86]">
-                      Live Card Preview
-                    </span>
+                    <span className="text-sm font-semibold text-[#6f5b86]">Live Card Preview</span>
                     <button
                       type="button"
                       onClick={() => void createAsset("invitation")}
@@ -770,9 +768,7 @@ export default function EventWorkspaceClient({
                     {
                       label: "RSVP",
                       value:
-                        eventData.rsvpEnabled || eventData.rsvp
-                          ? "Enabled"
-                          : "Not enabled yet",
+                        eventData.rsvpEnabled || eventData.rsvp ? "Enabled" : "Not enabled yet",
                     },
                     { label: "Category", value: cleanString(eventData.category) || "Event" },
                     { label: "Status", value: cleanString(eventData.status) || "draft" },
