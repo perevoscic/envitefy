@@ -1598,7 +1598,10 @@ export default function ConciergeChatClient() {
                 } ${shouldShowWorkspacePanel ? "" : "md:border-r-0"}`}
               >
                 {isEmptyState ? (
-                  <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-end px-4 pb-56 pt-8 text-center sm:px-6 sm:pb-60">
+                  <div
+                    className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-end px-4 pt-8 text-center sm:px-6"
+                    style={{ paddingBottom: composerBottomPadding }}
+                  >
                     <motion.h1
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
