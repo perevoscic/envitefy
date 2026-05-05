@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
-import { getEventHistoryById } from "@/lib/db";
 import { applyEventActions, buildEventActionPlan } from "@/lib/concierge/event-actions";
 import {
   appendConversationMessage,
@@ -14,6 +13,8 @@ import type {
   ConciergeEventMessageRequest,
   ConciergeEventMessageResponse,
 } from "@/lib/concierge/types";
+import { resolveConciergeWeatherContextFromEvent } from "@/lib/concierge/weather-context";
+import { getEventHistoryById } from "@/lib/db";
 import {
   createServerTimingTracker,
   isTimingRequested,
@@ -105,12 +106,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const [assets, history] = await timing.time("db_read", () =>
       Promise.all([listEventAssets(eventId, userId), listConversationMessages(thread.id, 30)]),
     );
+    const weatherContext = await timing.time("weather_context", () =>
+      resolveConciergeWeatherContextFromEvent({
+        message,
+        eventData: asRecord(event.data),
+      }),
+    );
     const plan = await timing.time("model_planning", () =>
       buildEventActionPlan({
         message,
         event,
         assets,
         history: history.map((item) => ({ role: item.role, content: item.content })),
+        weatherContext,
       }),
     );
     const applied = await timing.time("db_write", () =>
@@ -146,6 +154,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       assets: applied.assets,
       assistantMessage,
       actions: applied.appliedActions,
+      weatherContext,
       suggestedReplies:
         applied.appliedActions[0]?.type === "ask_question"
           ? applied.appliedActions[0].suggestedReplies

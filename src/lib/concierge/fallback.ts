@@ -3,22 +3,25 @@ import {
   cleanCreationString,
   createCreationSessionId,
   deriveCreationStatus,
+  getOutputRequirement,
   isGreetingMessage,
   isMeaningfulEventText,
   normalizeCreationIntent,
   normalizeRequestedOutputs,
   outputQuestion,
+  outputsUseRsvp,
   resolveCreationSourceContext,
   toLegacyOutputs,
 } from "./creation-intent.ts";
 import type {
   ConciergeActiveContext,
+  ConciergeAction,
   ConciergeEventDraft,
   ConciergeEventType,
   ConciergeOcrContext,
   ConciergePreviewCopy,
-  RequestedOutput,
   ConciergeSource,
+  RequestedOutput,
 } from "./types.ts";
 
 const DEFAULT_TIMEZONE = "America/Chicago";
@@ -43,6 +46,19 @@ function firstString(...values: unknown[]): string | null {
   for (const value of values) {
     const cleaned = cleanString(value);
     if (cleaned) return cleaned;
+  }
+  return null;
+}
+
+function firstPositiveNumber(...values: unknown[]) {
+  for (const value of values) {
+    const numeric =
+      typeof value === "number"
+        ? value
+        : typeof value === "string"
+          ? Number.parseInt(value, 10)
+          : Number.NaN;
+    if (Number.isFinite(numeric) && numeric > 0) return numeric;
   }
   return null;
 }
@@ -152,6 +168,37 @@ function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
   return cleanString(raw)?.replace(/\s+theme$/i, "") || previous?.theme || null;
 }
 
+function detectGuestCount(text: string, previous?: ConciergeEventDraft | null) {
+  const expectsGuestCount = firstMissingField(previous) === "numberOfGuests";
+  const explicit =
+    text.match(/\b(?:guest count|guest list|guests?|people|attendees|invitees)\s*(?:is|should be|:)?\s*(\d{1,4})\b/i) ||
+    text.match(/\b(\d{1,4})\s*(?:guests?|people|attendees|invitees)\b/i);
+  const plain = expectsGuestCount ? text.match(/^\s*(\d{1,4})\s*$/) : null;
+  const raw = explicit?.[1] || plain?.[1];
+  if (raw) {
+    const count = Number.parseInt(raw, 10);
+    if (Number.isFinite(count) && count > 0 && count <= 9999) return count;
+  }
+  return previous?.numberOfGuests || null;
+}
+
+function detectTone(text: string, previous?: ConciergeEventDraft | null) {
+  const expectsTone = firstMissingField(previous) === "tone";
+  const explicit =
+    text.match(/\b(?:vibe|tone|feel|mood)\s*(?:is|should be|as|:)?\s+([a-z0-9][a-z0-9 '&-]{1,70})\b/i) ||
+    text.match(/\b(?:make it|keep it|make the invite|make the card)\s+([a-z0-9][a-z0-9 '&-]{1,70})\b/i);
+  const known = text.match(
+    /\b(elegant|luxury|formal|classic|romantic|soft|sweet|fun|playful|colorful|modern|minimal|bold|whimsical|rustic|floral|bright|simple|casual|sporty)\b(?:\s+(?:and|&)\s+\b(elegant|luxury|formal|classic|romantic|soft|sweet|fun|playful|colorful|modern|minimal|bold|whimsical|rustic|floral|bright|simple|casual|sporty)\b)?/i,
+  );
+  const raw = explicit?.[1] || (known ? known[0] : null);
+  if (raw) return cleanString(raw.replace(/[.!?]+$/g, ""));
+  if (expectsTone) {
+    const cleaned = cleanString(text.replace(/[.!?]+$/g, ""));
+    if (cleaned && cleaned.length <= 80) return cleaned;
+  }
+  return previous?.tone || null;
+}
+
 function shouldStartFreshEvent(message: string, previous?: ConciergeEventDraft | null) {
   if (!previous) return false;
   const text = cleanString(message) || "";
@@ -168,6 +215,16 @@ function shouldStartFreshEvent(message: string, previous?: ConciergeEventDraft |
   }
   return /\b(birthday|wedding|baby\s+shower|graduation|gymnastics|gym\s+meet|party|event|ceremony|fundraiser|meeting)\b/i.test(
     text,
+  );
+}
+
+function isPrivateDataMutationRequest(message: string) {
+  const text = cleanString(message) || "";
+  return (
+    /\b(change|update|set|modify|switch|show|reveal|expose|give|send)\b/i.test(text) &&
+    /\b(user[_\s-]?id|owner[_\s-]?id|ownership|account owner|private data|guest emails?)\b/i.test(
+      text,
+    )
   );
 }
 
@@ -298,9 +355,14 @@ function buildPreviewCopy(args: {
   timeText: string | null;
   location: string | null;
   theme: string | null;
+  tone: string | null;
 }): ConciergePreviewCopy {
   const headline = args.title || "Event draft";
-  const themeLine = args.theme ? `${args.theme} theme` : "Details coming soon";
+  const themeLine = args.theme
+    ? `${args.theme} theme`
+    : args.tone
+      ? `${args.tone} vibe`
+      : "Details coming soon";
   const dateTextHasTime = Boolean(
     args.dateText &&
       /\b(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b/i.test(args.dateText),
@@ -330,6 +392,9 @@ function computeMissingFields(draft: Omit<ConciergeEventDraft, "missingFields">)
   if (!draft.startISO && !draft.dateText) missing.push("date");
   if (!draft.timeText && !draft.startISO) missing.push("time");
   if (!draft.location && !draft.venue) missing.push("location");
+  if (outputsUseRsvp(draft.requestedOutputs) && !draft.numberOfGuests) {
+    missing.push("numberOfGuests");
+  }
   return missing;
 }
 
@@ -342,6 +407,7 @@ function hasStartedCategoryDetails(draft: ConciergeEventDraft) {
       draft.startISO ||
       draft.location ||
       draft.venue ||
+      draft.numberOfGuests ||
       draft.theme,
   );
 }
@@ -366,6 +432,47 @@ function receivedInviteSourcePrompt(draft: ConciergeEventDraft) {
 
 function compactIntakePrompt(...questions: string[]) {
   return ["Let's start small.", ...questions].join("\n");
+}
+
+function primaryOutput(draft: ConciergeEventDraft): RequestedOutput {
+  return draft.requestedOutputs[0] || "live_card";
+}
+
+function outputActionLabel(draft: ConciergeEventDraft) {
+  const label = getOutputRequirement(primaryOutput(draft)).label;
+  return label === "Flyer invite" ? "flyer invite" : label.toLowerCase();
+}
+
+function compactVerificationLines(draft: ConciergeEventDraft) {
+  const lines: string[] = [];
+  const product = getOutputRequirement(primaryOutput(draft)).label;
+  const event = draft.title || draft.eventPurpose || draft.previewCopy.headline;
+  const date = draft.dateText || draft.startISO;
+  const time = draft.timeText;
+  const location = draft.venue || draft.location;
+
+  lines.push(`Product: ${product}`);
+  if (event) lines.push(`Event: ${event}`);
+  if (draft.honoreeName || draft.ageOrMilestone) {
+    lines.push(
+      `Honoree: ${[draft.honoreeName, draft.ageOrMilestone].filter(Boolean).join(", ")}`,
+    );
+  }
+  if (date) lines.push(`Date: ${date}`);
+  if (time) lines.push(`Time: ${time}`);
+  if (location) lines.push(`Location: ${location}`);
+  if (draft.numberOfGuests) lines.push(`RSVP guest count: ${draft.numberOfGuests}`);
+  if (draft.tone) lines.push(`Vibe: ${draft.tone}`);
+  return lines;
+}
+
+function readyVerificationMessage(draft: ConciergeEventDraft) {
+  const actionLabel = outputActionLabel(draft);
+  return [
+    "Details are ready.",
+    ...compactVerificationLines(draft),
+    `I can generate the ${actionLabel === "live card" ? "invite" : actionLabel} now.`,
+  ].join("\n");
 }
 
 function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
@@ -410,13 +517,24 @@ function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
   return null;
 }
 
+function categoryFormatQuestion(draft: ConciergeEventDraft): string | null {
+  if (draft.requestedOutputs.length) return null;
+  if (draft.eventType === "unknown" || draft.eventType === "general") return null;
+  return "Great, would you like that to be a Live Card, Flyer Invite, Event Page, or Invitation?";
+}
+
 export function buildAssistantMessage(draft: ConciergeEventDraft): string {
+  if (draft.sourceContext.boundary === "private_data") {
+    return "I can't change owners, user IDs, or private account data here. I can help with event details, RSVP, copy, design, or weather planning.";
+  }
   if (draft.currentQuestion === "which_source") {
     return "Should I use the uploaded image or the current event details?";
   }
   if (draft.currentQuestion === "invite_source") {
     return receivedInviteSourcePrompt(draft);
   }
+  const formatQuestion = categoryFormatQuestion(draft);
+  if (formatQuestion) return formatQuestion;
   const intakeMessage = categoryIntakeMessage(draft);
   if (intakeMessage) return intakeMessage;
   if (
@@ -424,19 +542,13 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
     draft.missingFields[0] === "eventPurpose"
   ) {
     if (!draft.requestedOutputs.length) {
-      return "Hi — what would you like to create? You can describe an event, ask for a flyer, live card, or RSVP page, or upload an invite/photo.";
+      return "Hi, what are we celebrating?\nPick a category or describe the event.";
     }
     return outputQuestion(draft.requestedOutputs[0] || "live_card");
   }
   const firstMissing = draft.missingFields[0];
   if (!firstMissing) {
-    if (isReceivedInviteDraft(draft)) {
-      return "I have the invite details ready. I can save it as an invited event and open the workspace now.";
-    }
-    if (draft.requestedOutputs.includes("live_card")) {
-      return "Your live card details are ready. I can open the workspace now.";
-    }
-    return "This is ready to create.";
+    return readyVerificationMessage(draft);
   }
   if (isReceivedInviteDraft(draft)) {
     if (firstMissing === "sourceContext") return receivedInviteSourcePrompt(draft);
@@ -457,6 +569,12 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
     return "When should this happen?";
   }
   if (firstMissing === "location") return "Where should guests go?";
+  if (firstMissing === "numberOfGuests") {
+    return "How many guests should the RSVP track?";
+  }
+  if (firstMissing === "tone") {
+    return "What kind of vibe should the invite have? For example: fun and colorful, elegant, playful, modern, or sweet.";
+  }
   return "What detail should we add next?";
 }
 
@@ -467,7 +585,7 @@ export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
   }
   if (firstMissing === "eventPurpose") {
     if (!draft.requestedOutputs.length) {
-      return ["Make a flyer", "Create a live card", "Upload an invite"];
+      return ["Create a live card", "Make a digital flyer", "Create an event page"];
     }
     return ["A school fundraiser", "A birthday party", "Use an upload"];
   }
@@ -481,12 +599,13 @@ export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
     return ["Saturday at 3", "Next Friday evening"];
   }
   if (firstMissing === "location") return ["At home", "At Sky Zone"];
-  if (draft.requestedOutputs.includes("live_card")) return ["Open workspace", "Add RSVP page"];
-  return ["Create workspace", "Add RSVP page"];
+  if (firstMissing === "numberOfGuests") return ["20 guests", "35 guests"];
+  if (firstMissing === "tone") return ["Fun and colorful", "Elegant", "Playful"];
+  return [`Create ${outputActionLabel(draft)}`, "Add RSVP page"];
 }
 
 export function canSaveConciergeDraft(draft: ConciergeEventDraft): boolean {
-  return draft.canPersist;
+  return Boolean(draft.canPersist && !draft.currentQuestion && draft.missingFields.length === 0);
 }
 
 export function fallbackExtractConciergeDraft(args: {
@@ -496,6 +615,7 @@ export function fallbackExtractConciergeDraft(args: {
   requestedOutputs?: RequestedOutput[] | null;
   source?: ConciergeSource;
   activeContext?: ConciergeActiveContext | null;
+  action?: ConciergeAction;
 }): ConciergeEventDraft {
   const message = cleanString(args.message) || "";
   const combined = mergeText(message, args.ocrContext);
@@ -509,15 +629,22 @@ export function fallbackExtractConciergeDraft(args: {
     {
       text,
       previous: hasExplicitOutputs ? null : previous,
-      defaultOutput: !previous && isGreetingMessage(message) ? null : undefined,
+      defaultOutput:
+        !previous && (isGreetingMessage(message) || args.action === "starter_category")
+          ? null
+          : undefined,
     },
   );
-  const sourceContext = resolveCreationSourceContext({
+  const resolvedSourceContext = resolveCreationSourceContext({
     message,
     activeContext: args.activeContext || null,
     previous,
     ocrContext: args.ocrContext || null,
   });
+  const privateDataMutationRequest = isPrivateDataMutationRequest(message);
+  const sourceContext = privateDataMutationRequest
+    ? { ...resolvedSourceContext, boundary: "private_data" as const }
+    : resolvedSourceContext;
   const source: ConciergeSource =
     args.source || (args.ocrContext ? (message ? "mixed" : "upload") : previous?.source || "text");
   const eventType = detectEventType(text, previous);
@@ -549,7 +676,7 @@ export function fallbackExtractConciergeDraft(args: {
       location,
   );
   const eventPurpose =
-    receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails
+    privateDataMutationRequest || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
       : firstString(fieldsGuess.eventPurpose, fieldsGuess.title) ||
         previous?.eventPurpose ||
@@ -558,11 +685,17 @@ export function fallbackExtractConciergeDraft(args: {
     firstString(fieldsGuess.title) ||
     buildTitle({ eventType, honoreeName, ageOrMilestone, eventPurpose, previous });
   const title =
-    receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails ? null : titleCandidate;
+    privateDataMutationRequest || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
+      ? null
+      : titleCandidate;
   const dateText = chronoResult.dateText || firstString(fieldsGuess.date);
   const timeText = chronoResult.timeText || firstString(fieldsGuess.time);
   const startISO = fieldStartIso || chronoResult.startISO;
   const endISO = fieldEndIso || chronoResult.endISO;
+  const numberOfGuests =
+    detectGuestCount(message, previous) ||
+    firstPositiveNumber(fieldsGuess.numberOfGuests, fieldsGuess.guestCount);
+  const tone = detectTone(text, previous) || firstString(fieldsGuess.tone);
   const status = deriveCreationStatus({
     sourceContext,
     eventPurpose,
@@ -570,8 +703,13 @@ export function fallbackExtractConciergeDraft(args: {
     eventType,
     requestedOutputs,
     dateText,
+    timeText,
     startISO,
     location,
+    honoreeName,
+    ageOrMilestone,
+    numberOfGuests,
+    tone,
   });
   const base = {
     creationSessionId: createCreationSessionId(sessionDraft),
@@ -600,8 +738,9 @@ export function fallbackExtractConciergeDraft(args: {
     timezone: firstString(fieldsGuess.timezone) || previous?.timezone || DEFAULT_TIMEZONE,
     location,
     venue: location,
+    numberOfGuests,
     theme,
-    tone: previous?.tone || null,
+    tone,
     outputs: toLegacyOutputs(requestedOutputs),
     previewCopy: buildPreviewCopy({
       eventType,
@@ -612,6 +751,7 @@ export function fallbackExtractConciergeDraft(args: {
       timeText,
       location,
       theme,
+      tone,
     }),
     source,
   } satisfies Omit<ConciergeEventDraft, "missingFields">;

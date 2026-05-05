@@ -17,7 +17,13 @@ import {
 } from "./event-storage.ts";
 import { isConciergeFastActionsEnabled, shouldSkipOpenAiForEventAction } from "./fast-paths.ts";
 import { resolveConciergeOpenAiModel, runWithConciergeOpenAiTimeout } from "./openai-config.ts";
-import type { ConciergeEventAction, EventAsset, EventAssetType } from "./types.ts";
+import type {
+  ConciergeEventAction,
+  ConciergeWeatherContext,
+  EventAsset,
+  EventAssetType,
+} from "./types.ts";
+import { shouldResolveConciergeWeatherContext } from "./weather-context.ts";
 
 type EventActionPlan = {
   actions: ConciergeEventAction[];
@@ -223,10 +229,7 @@ function locationLineFromData(data: Record<string, unknown>) {
   );
 }
 
-function syncLiveCardCopyFromPatch(
-  data: Record<string, unknown>,
-  patch: Record<string, unknown>,
-) {
+function syncLiveCardCopyFromPatch(data: Record<string, unknown>, patch: Record<string, unknown>) {
   const liveCard = { ...asRecord(data.liveCard) };
   const publicEvent = { ...asRecord(data.publicEvent) };
   const previewCopy = { ...asRecord(data.previewCopy) };
@@ -357,7 +360,30 @@ function buildCompactEventContext(event: EventHistoryRow): Record<string, unknow
   };
 }
 
-function fallbackPlan(message: string): EventActionPlan {
+function buildWeatherPlan(
+  weatherContext: ConciergeWeatherContext | null | undefined,
+): EventActionPlan {
+  const message =
+    weatherContext?.message ||
+    "I can help with a weather plan once the event has a date, time, and location.";
+  return {
+    actions: [
+      {
+        type: "ask_question",
+        question: `${message}\nWould you like me to add a simple rain or indoor backup note to the event?`,
+        suggestedReplies: ["Add a rain plan", "Add indoor backup note", "Leave it off"],
+      },
+    ],
+    assistantMessage: message,
+    suggestedReplies: ["Add a rain plan", "Add indoor backup note", "Leave it off"],
+  };
+}
+
+function fallbackPlan(
+  message: string,
+  weatherContext?: ConciergeWeatherContext | null,
+): EventActionPlan {
+  if (shouldResolveConciergeWeatherContext(message)) return buildWeatherPlan(weatherContext);
   const actions: ConciergeEventAction[] = [];
   const assetType = inferAssetTypeFromMessage(message);
   const rsvpDeadline = message.match(/\b(?:rsvp|respond)\s+by\s+([^.,;]+)/i)?.[1]?.trim();
@@ -398,7 +424,7 @@ function fallbackPlan(message: string): EventActionPlan {
   return {
     actions,
     assistantMessage:
-      actions[0]?.type === "ask_question" ? actions[0].question : "I updated this event workspace.",
+      actions[0]?.type === "ask_question" ? actions[0].question : "I updated this event invite.",
     suggestedReplies: actions[0]?.type === "ask_question" ? actions[0].suggestedReplies : [],
   };
 }
@@ -408,6 +434,7 @@ async function planWithOpenAi(params: {
   event: EventHistoryRow;
   assets: EventAsset[];
   history: Array<{ role: string; content: string }>;
+  weatherContext?: ConciergeWeatherContext | null;
 }): Promise<EventActionPlan | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -429,6 +456,7 @@ async function planWithOpenAi(params: {
               "Allowed action types: update_event, create_asset, update_asset, ask_question.",
               "Never choose or accept user_id. Never modify ownership.",
               "Only patch event fields relevant to event details, RSVP, copy, status, and design tone.",
+              "If the user asks about weather, use only weatherContext. If it is unavailable, ask for the missing date/location or suggest adding a backup note without inventing a forecast.",
             ].join(" "),
           },
           {
@@ -436,6 +464,7 @@ async function planWithOpenAi(params: {
             content: JSON.stringify({
               message: params.message,
               event: buildCompactEventContext(params.event),
+              weatherContext: params.weatherContext || null,
               assets: params.assets.map((asset) => ({
                 id: asset.id,
                 assetType: asset.asset_type,
@@ -455,7 +484,7 @@ async function planWithOpenAi(params: {
   if (!actions.length) return null;
   return {
     actions,
-    assistantMessage: cleanString(parsed.assistantMessage) || "I updated this event workspace.",
+    assistantMessage: cleanString(parsed.assistantMessage) || "I updated this event invite.",
     suggestedReplies: Array.isArray(parsed.suggestedReplies)
       ? parsed.suggestedReplies.map(cleanString).filter((item): item is string => Boolean(item))
       : [],
@@ -467,17 +496,21 @@ export async function buildEventActionPlan(params: {
   event: EventHistoryRow;
   assets: EventAsset[];
   history: Array<{ role: string; content: string }>;
+  weatherContext?: ConciergeWeatherContext | null;
 }): Promise<EventActionPlan> {
+  if (shouldResolveConciergeWeatherContext(params.message)) {
+    return buildWeatherPlan(params.weatherContext);
+  }
   if (isConciergeFastActionsEnabled() && shouldSkipOpenAiForEventAction(params.message)) {
-    return fallbackPlan(params.message);
+    return fallbackPlan(params.message, params.weatherContext);
   }
   try {
     const aiPlan = await planWithOpenAi(params);
     if (aiPlan) return aiPlan;
   } catch {
-    // Deterministic fallback keeps the workspace useful without model access.
+    // Deterministic fallback keeps the event invite useful without model access.
   }
-  return fallbackPlan(params.message);
+  return fallbackPlan(params.message, params.weatherContext);
 }
 
 export async function applyEventActions(params: {

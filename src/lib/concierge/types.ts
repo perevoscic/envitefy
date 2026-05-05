@@ -82,6 +82,7 @@ export type CreationSourceContext = {
   signals?: SourceIntentSignal[];
   requiresUserConfirmation?: boolean;
   originalCategory?: string | null;
+  boundary?: "private_data" | null;
   resolvedId?: string | null;
   candidates?: Array<{
     type: SourceContextType;
@@ -173,6 +174,7 @@ export type ConciergeEventMessageResponse =
       assistantMessage: string;
       actions: ConciergeEventAction[];
       suggestedReplies: string[];
+      weatherContext?: ConciergeWeatherContext | null;
       timings?: Record<string, unknown>;
     }
   | {
@@ -190,6 +192,24 @@ export type ConciergePreviewCopy = {
   scheduleLine: string;
   locationLine: string;
   cta: string;
+};
+
+export type ConciergeWeatherContextStatus =
+  | "available"
+  | "missing_event_details"
+  | "outside_forecast_window"
+  | "unconfigured"
+  | "unavailable";
+
+export type ConciergeWeatherContext = {
+  status: ConciergeWeatherContextStatus;
+  location: string | null;
+  eventIso: string | null;
+  summary: string | null;
+  tempF: number | null;
+  checkedAt: string | null;
+  source: "weatherapi" | null;
+  message: string;
 };
 
 export type ConciergeEventDraft = {
@@ -214,6 +234,7 @@ export type ConciergeEventDraft = {
   timezone: string;
   location: string | null;
   venue: string | null;
+  numberOfGuests: number | null;
   theme: string | null;
   tone: string | null;
   outputs: ConciergeOutput[];
@@ -239,6 +260,12 @@ export type CreationChatMessageSnapshot = {
   role: "user" | "assistant" | "system";
   text: string;
   createdAt?: string;
+};
+
+export type ConciergeStudioInvite = {
+  imageUrl?: string | null;
+  invitationData?: Record<string, unknown> | null;
+  positions?: Record<string, unknown> | null;
 };
 
 export type CreationThreadSummary = {
@@ -274,6 +301,7 @@ export type CreationIntakeRequest = ConciergeMessageRequest & {
   creationSessionId?: string | null;
   persistSession?: boolean;
   chatMessages?: CreationChatMessageSnapshot[] | null;
+  studioInvite?: ConciergeStudioInvite | null;
 };
 
 export type ConciergeMessageResponse =
@@ -286,6 +314,7 @@ export type ConciergeMessageResponse =
       canSave: boolean;
       savedEventId?: string | null;
       chatMessages?: CreationChatMessageSnapshot[];
+      weatherContext?: ConciergeWeatherContext | null;
       timings?: Record<string, unknown>;
     }
   | {
@@ -304,6 +333,7 @@ export type CreationSessionResumeResponse =
       canSave: boolean;
       savedEventId?: string | null;
       chatMessages?: CreationChatMessageSnapshot[];
+      weatherContext?: ConciergeWeatherContext | null;
       timings?: Record<string, unknown>;
     }
   | {

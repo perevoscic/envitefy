@@ -74,6 +74,23 @@ test("toDashboardEvent keeps OCR-created rows owned without invite markers", () 
   assert.equal(event?.ownership, "owned");
 });
 
+test("toDashboardEvent uses venue and location labels for metrics geocoding", () => {
+  const event = toDashboardEvent({
+    id: "evt_concierge_location",
+    title: "Ava is turning 7",
+    created_at: "2026-03-23T12:00:00.000Z",
+    data: {
+      startAt: "2026-06-02T18:00:00.000Z",
+      createdVia: "concierge",
+      venue: "Play Cafe",
+      locationLabel: "Play Cafe, 123 Main St, Austin, TX",
+    },
+  });
+
+  assert.ok(event);
+  assert.equal(event?.locationText, "Play Cafe, 123 Main St, Austin, TX");
+});
+
 test("toDashboardEvent groups basketball OCR scans as sport events", () => {
   const event = toDashboardEvent({
     id: "evt_basketball_scan",

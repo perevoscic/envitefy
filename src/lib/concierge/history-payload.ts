@@ -1,5 +1,5 @@
-import type { ConciergeEventDraft } from "./types.ts";
 import { canPersistCreationDraft } from "./creation-intent.ts";
+import type { ConciergeEventDraft, ConciergeStudioInvite } from "./types.ts";
 
 const CATEGORY_LABELS: Record<ConciergeEventDraft["eventType"], string> = {
   unknown: "General Event",
@@ -9,6 +9,14 @@ const CATEGORY_LABELS: Record<ConciergeEventDraft["eventType"], string> = {
   graduation: "Graduation",
   gym_meet: "Gym Meet",
   general: "General Event",
+};
+
+const LIVE_CARD_IMAGE_BY_EVENT_TYPE: Partial<Record<ConciergeEventDraft["eventType"], string>> = {
+  birthday: "/studio/birthday.webp",
+  wedding: "/studio/wedding.webp",
+  baby_shower: "/studio/baby-shower.webp",
+  general: "/studio/custom-invite.webp",
+  unknown: "/studio/custom-invite.webp",
 };
 
 function cleanString(value: unknown): string | null {
@@ -51,11 +59,38 @@ function normalizeVenueLocation(venueValue: unknown, locationValue: unknown) {
   return splitCombinedVenueLocation(combined);
 }
 
+function isoDate(value: unknown): string {
+  const raw = cleanString(value);
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+}
+
+function timeTextFromIso(value: unknown): string {
+  const raw = cleanString(value);
+  if (!raw) return "";
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function liveCardImageUrlForDraft(draft: ConciergeEventDraft) {
+  return LIVE_CARD_IMAGE_BY_EVENT_TYPE[draft.eventType] || "/studio/custom-invite.webp";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
 export function canPersistConciergeHistoryDraft(draft: ConciergeEventDraft): boolean {
   return draft.canPersist !== false && canPersistCreationDraft(draft);
 }
 
-export function buildConciergeHistoryPayload(draft: ConciergeEventDraft) {
+export function buildConciergeHistoryPayload(
+  draft: ConciergeEventDraft,
+  options: { studioInvite?: ConciergeStudioInvite | null } = {},
+) {
   if (!canPersistConciergeHistoryDraft(draft)) {
     throw new Error("Creation draft does not have enough source or event context to persist.");
   }
@@ -85,6 +120,42 @@ export function buildConciergeHistoryPayload(draft: ConciergeEventDraft) {
   const liveCardSubheadline =
     cleanString(draft.previewCopy.subheadline) || cleanString(draft.theme) || category;
   const liveCardCta = cleanString(draft.previewCopy.cta) || "RSVP";
+  const studioInviteData = options.studioInvite?.invitationData;
+  const studioInvitePositions = options.studioInvite?.positions;
+  const generatedInviteImageUrl = cleanString(options.studioInvite?.imageUrl);
+  const liveCardImageUrl = generatedInviteImageUrl || liveCardImageUrlForDraft(draft);
+  const fallbackLiveCardInvitationData = {
+    title: liveCardHeadline,
+    subtitle: liveCardSubheadline,
+    description,
+    scheduleLine: scheduleLine || "",
+    locationLine: locationLine || "",
+    heroTextMode: "image",
+    theme: {
+      themeStyle: "concierge-preview",
+    },
+    interactiveMetadata: {
+      ctaLabel: liveCardCta,
+      rsvpMessage: `Reply to let the host know about ${liveCardHeadline}.`,
+      shareNote: description,
+    },
+    eventDetails: {
+      category,
+      occasion: cleanString(draft.eventPurpose) || category,
+      eventTitle: liveCardHeadline,
+      eventDate: isoDate(draft.startISO || draft.dateText),
+      startTime: cleanString(draft.timeText) || timeTextFromIso(draft.startISO),
+      endTime: timeTextFromIso(draft.endISO),
+      venueName: eventPlace.venue || "",
+      location: locationLine || eventPlace.location || eventPlace.venue || "",
+      detailsDescription: description,
+      message: liveCardSubheadline,
+    },
+  };
+  const liveCardInvitationData = isRecord(studioInviteData)
+    ? studioInviteData
+    : fallbackLiveCardInvitationData;
+  const liveCardPositions = isRecord(studioInvitePositions) ? studioInvitePositions : null;
 
   return {
     title,
@@ -101,6 +172,11 @@ export function buildConciergeHistoryPayload(draft: ConciergeEventDraft) {
       category,
       eventType: draft.eventType,
       title,
+      coverImageUrl: liveCardImageUrl,
+      thumbnail: liveCardImageUrl,
+      heroImage: liveCardImageUrl,
+      customHeroImage: liveCardImageUrl,
+      heroTextMode: "image",
       headlineTitle: liveCardHeadline,
       description,
       dateText: draft.dateText,
@@ -119,10 +195,13 @@ export function buildConciergeHistoryPayload(draft: ConciergeEventDraft) {
       location: eventPlace.location,
       venue: eventPlace.venue,
       locationLabel: locationLine,
+      locationText: locationLine || eventPlace.location || eventPlace.venue,
       placeName: eventPlace.venue || eventPlace.location,
       theme: draft.theme,
+      tone: draft.tone,
       age: draft.ageOrMilestone,
       honoreeName: draft.honoreeName,
+      numberOfGuests: draft.numberOfGuests || 0,
       outputs: draft.outputs,
       previewCopy: draft.previewCopy,
       rsvpEnabled,
@@ -154,6 +233,11 @@ export function buildConciergeHistoryPayload(draft: ConciergeEventDraft) {
         scheduleLine,
         locationLine,
         cta: liveCardCta,
+      },
+      studioCard: {
+        imageUrl: liveCardImageUrl,
+        invitationData: liveCardInvitationData,
+        positions: liveCardPositions,
       },
     },
   };

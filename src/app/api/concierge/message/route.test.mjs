@@ -80,19 +80,19 @@ test("saved creation sessions keep workspace continuation scoped to the owner", 
 
   assert.match(intake, /const isSaveAction = request\.action === "save"/);
   assert.match(intake, /getRequestedCreationSessionId\(request\)/);
-  assert.match(intake, /Creation session id is required to create this workspace/);
+  assert.match(intake, /Creation session id is required to create this invite/);
   assert.match(intake, /Creation session was not found for this user/);
   assert.match(
     intake,
     /getCreationSession\(\{\s*userId: params\.userId,\s*sessionId: requestedCreationSessionId,\s*\}\)/,
   );
   assert.match(intake, /canSaveConciergeDraft\(existingSession\.draft\)/);
-  assert.match(intake, /Add the missing event details before creating this workspace/);
+  assert.match(intake, /Add the missing event details before creating this invite/);
   assert.match(intake, /markCreationSessionSaved/);
   assert.match(intake, /claimCreationSessionSave/);
   assert.match(intake, /sessionId: requestedCreationSessionId/);
   assert.match(intake, /\.\.\.creationSession\.draft/);
-  assert.match(intake, /This workspace is already being created/);
+  assert.match(intake, /This invite is already being created/);
   assert.match(intake, /draftStatus: "published"/);
   assert.match(intake, /savedEventId: saved\.eventId/);
   assert.match(intake, /metadata: chatMessagesMetadata\(saveChatMessages\)/);

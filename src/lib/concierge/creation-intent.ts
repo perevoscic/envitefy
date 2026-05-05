@@ -29,6 +29,10 @@ const REQUESTED_OUTPUTS = new Set<RequestedOutput>([
   "welcome_sign",
 ]);
 
+export function outputsUseRsvp(requestedOutputs: RequestedOutput[]) {
+  return requestedOutputs.includes("rsvp_page");
+}
+
 const EVENT_TYPES = new Set<ConciergeEventType>([
   "unknown",
   "birthday",
@@ -406,10 +410,10 @@ const OUTPUT_REQUIREMENTS: Record<RequestedOutput, OutputRequirement> = {
     previewCta: "Create first preview",
   },
   digital_flyer: {
-    label: "Digital flyer",
+    label: "Flyer invite",
     requiredAny: ["eventPurpose", "title", "sourceContext"],
     optional: ["date", "location"],
-    firstQuestion: "What should this flyer promote?",
+    firstQuestion: "What should this flyer invite be for?",
     previewCta: "Create first preview",
   },
   invitation: {
@@ -530,8 +534,13 @@ export function deriveCreationStatus(args: {
   eventType: ConciergeEventType;
   requestedOutputs: RequestedOutput[];
   dateText?: string | null;
+  timeText?: string | null;
   startISO?: string | null;
   location?: string | null;
+  honoreeName?: string | null;
+  ageOrMilestone?: string | null;
+  numberOfGuests?: number | null;
+  tone?: string | null;
   draftStatus?: unknown;
 }): {
   draftStatus: CreationDraftStatus;
@@ -586,8 +595,41 @@ export function deriveCreationStatus(args: {
   if (!hasEventPurpose && !args.sourceContext.hasUsableContext && requirement.requiredAny.length) {
     missingFields.push("eventPurpose");
   }
+  if (args.eventType === "birthday" && !cleanCreationString(args.honoreeName)) {
+    missingFields.push("honoreeName");
+  }
+  if (args.eventType === "birthday" && !cleanCreationString(args.ageOrMilestone)) {
+    missingFields.push("ageOrMilestone");
+  }
   if (!args.dateText && !args.startISO) missingFields.push("date");
+  if (!args.timeText && !args.startISO) missingFields.push("time");
   if (!args.location) missingFields.push("location");
+  if (
+    !missingFields.length &&
+    outputsUseRsvp(args.requestedOutputs) &&
+    !(typeof args.numberOfGuests === "number" && args.numberOfGuests > 0)
+  ) {
+    missingFields.push("numberOfGuests");
+  }
+  if (
+    !missingFields.length &&
+    args.sourceContext.detectedSourceIntent !== "received_invite" &&
+    args.requestedOutputs.some((output) =>
+      [
+        "event_page",
+        "live_card",
+        "digital_flyer",
+        "invitation",
+        "rsvp_page",
+        "printable_flyer",
+        "instagram_story",
+        "welcome_sign",
+      ].includes(output),
+    ) &&
+    !cleanCreationString(args.tone)
+  ) {
+    missingFields.push("tone");
+  }
 
   const canPreview =
     args.sourceContext.hasUsableContext ||

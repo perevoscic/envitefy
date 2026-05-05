@@ -32,17 +32,28 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /STUDIO_CATEGORY_TILES/);
   assert.match(client, /CHAT_STARTER_PROMPTS/);
   assert.match(client, /CELEBRATION_STARTER_TILES/);
-  assert.match(client, /Tell me what you need to create/);
-  assert.match(client, /Or let's start planning together from scratch/);
+  assert.match(client, /What are we celebrating\?/);
+  assert.match(client, /Describe what you're planning/);
+  assert.doesNotMatch(client, /Choose a format or describe what you need/);
   assert.match(client, /\[&::placeholder\]:text-\[0\.82rem\]/);
-  assert.match(client, /Birthday live card/);
-  assert.match(client, /Wedding invitation/);
-  assert.match(client, /Baby shower invite/);
-  assert.match(client, /Game event page/);
-  assert.match(client, /Bridal shower invite/);
+  assert.match(client, /Pick a category or describe it in your own words/);
+  assert.match(client, /label: "Birthday"/);
+  assert.match(client, /label: "Wedding"/);
+  assert.match(client, /label: "Baby Shower"/);
+  assert.match(client, /label: "Game Day"/);
+  assert.match(client, /label: "Bridal Shower"/);
+  assert.doesNotMatch(client, /Birthday live card/);
+  assert.doesNotMatch(client, /Wedding invitation/);
+  assert.doesNotMatch(client, /Baby shower invite/);
+  assert.doesNotMatch(client, /Game event page/);
+  assert.doesNotMatch(client, /Bridal shower invite/);
+  assert.doesNotMatch(client, /Something else/);
+  assert.doesNotMatch(client, /handleCustomCategoryPrompt/);
+  assert.doesNotMatch(client, /COMPOSER_TEXTAREA_ID/);
   assert.doesNotMatch(client, /Watch party invite/);
-  assert.ok(client.indexOf("Game event page") < client.indexOf("Baby shower invite"));
-  assert.match(client, /label: "Baby shower invite"[\s\S]*?size: "desktopWide"/);
+  assert.ok(client.indexOf('label: "Game Day"') < client.indexOf('label: "Baby Shower"'));
+  assert.match(client, /label: "Baby Shower"[\s\S]*?size: "desktopWide"/);
+  assert.match(client, /action: "starter_category"/);
   assert.match(client, /col-span-2 aspect-\[2\.055\/1\]/);
   assert.match(client, /sm:col-span-2 sm:aspect-\[2\.055\/1\]/);
   assert.match(client, /aspect-square min-h-\[8\.25rem\]/);
@@ -67,9 +78,19 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(preview, /title=\{`Category: \$\{categoryLabel\}`\}/);
   assert.doesNotMatch(client, /PRODUCT_CHOICE_PROMPT/);
   assert.doesNotMatch(client, /"What kind of product would you like to create\?"/);
+  assert.doesNotMatch(client, /const shouldShowComposerProductOptions = !liveCardEventId/);
+  assert.doesNotMatch(client, /shouldShowComposerProductOptions/);
+  assert.match(client, /shouldShowProductFormatTiles/);
+  assert.match(client, /hasInitialEventContext/);
+  assert.match(client, /!draft\?\.requestedOutputs\.length/);
+  assert.match(client, /aria-label="Choose product format"/);
+  assert.match(client, /className="grid grid-cols-2 gap-3"/);
+  assert.doesNotMatch(client, /grid grid-cols-3 gap-1/);
   assert.match(client, /Live Card/);
-  assert.match(client, /Flyer \/ Invite/);
+  assert.match(client, /Flyer Invite/);
   assert.match(client, /Event Page/);
+  assert.match(client, /label: "Invitation"/);
+  assert.match(client, /<Mail className="size-4"/);
 
   assert.match(client, /window\.addEventListener\("envitefy:chat:new", handleNewChatSession\)/);
   assert.doesNotMatch(client, /CreationThreadSummary/);
@@ -100,6 +121,13 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /chatMessages: chatMessagesForPersistence/);
   assert.match(client, /activeContext: ConciergeActiveContext/);
   assert.match(client, /currentEventId: liveCardEventId/);
+  assert.doesNotMatch(client, /setSuggestedReplies/);
+  assert.doesNotMatch(client, /handleSuggestedReply/);
+  assert.doesNotMatch(client, /suggestedReplies/);
+  assert.doesNotMatch(client, /shouldShowSuggestedReplies/);
+  assert.match(client, /detectedSourceIntent/);
+  assert.match(preview, /weatherContext: ConciergeWeatherContext \| null/);
+  assert.match(preview, /Umbrella/);
 
   assert.match(client, /type ConciergePhase =/);
   assert.match(client, /"ready_to_generate"/);
@@ -137,11 +165,16 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /\/api\/events\/\$\{encodeURIComponent\(eventId\)\}\/rsvp/);
   assert.match(client, /rsvpPreview\.stats\.yes/);
   assert.match(client, /rsvpPreview\.responses\.map/);
-  assert.match(chatSurface, /Create preview/);
-  assert.match(chatSurface, /Manage/);
+  assert.match(client, /function generatedProductHref/);
+  assert.match(
+    client,
+    /selectedOutput === "live_card" \? `\/card\/\$\{eventId\}` : `\/event\/\$\{eventId\}`/,
+  );
+  assert.match(chatSurface, /Generate invite/);
+  assert.doesNotMatch(chatSurface, /Manage/);
   assert.doesNotMatch(chatSurface, /Generate workspace/);
   assert.doesNotMatch(chatSurface, /Regenerate version/);
-  assert.match(chatSurface, /View product/);
+  assert.match(chatSurface, /View invite/);
   assert.doesNotMatch(chatSurface, /Open workspace/);
   assert.doesNotMatch(chatSurface, /Refine workspace/);
   assert.match(client, /sendGeneratedCardEdit/);
@@ -162,7 +195,7 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /\(input\.trim\(\) \|\| isListening\) && "text-\[#7c4dff\]"/);
   assert.match(client, /<Mic\s+className="size-6 text-current"/);
   assert.match(client, /<ArrowUp\s+className="size-6 text-current"/);
-  assert.doesNotMatch(client, /aria-label=\{`Choose product: \$\{option\.label\}`\}/);
+  assert.match(client, /aria-label=\{`Choose product: \$\{option\.label\}`\}/);
   assert.doesNotMatch(client, /choiceClassName/);
   assert.doesNotMatch(client, /choiceIconClassName/);
   assert.match(client, /<Paperclip className="size-6"/);

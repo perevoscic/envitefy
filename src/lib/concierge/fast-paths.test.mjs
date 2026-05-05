@@ -44,6 +44,12 @@ test("creation intake fast path covers greetings, starter chips, output chips, a
   );
   assert.equal(
     shouldSkipOpenAiForCreationRequest({
+      request: { message: "Create an event page", action: "chip" },
+    }),
+    true,
+  );
+  assert.equal(
+    shouldSkipOpenAiForCreationRequest({
       request: { message: "Seed a draft from this upload.", action: "ocr_result" },
     }),
     true,

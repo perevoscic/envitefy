@@ -16,7 +16,7 @@ test("shared card route prefers the public-safe cover image url", () => {
   assert.match(pageSource, /if \(isLoopbackHostname\(parsed\.hostname\)\) \{\s*return absoluteUrl\(`\$\{parsed\.pathname\}\$\{parsed\.search\}`\);\s*\}/s);
   assert.match(
     pageSource,
-    /const imageUrl = await normalizeSharedCardImageUrl\(\s*readString\(data\.coverImageUrl\)\s*\|\|\s*readString\(studioCard\?\.imageUrl\)/s,
+    /const imageUrl = await normalizeSharedCardImageUrl\(\s*readString\(data\.coverImageUrl\)\s*\|\|\s*readString\(studioCard\?\.imageUrl\)[\s\S]*resolveConciergeLiveCardImagePath\(data\)/,
   );
   assert.match(
     dbSource,
@@ -28,6 +28,22 @@ test("shared card route prefers the public-safe cover image url", () => {
   );
 });
 
+test("shared card route can render concierge live-card events", () => {
+  const pageSource = readSource("src/app/card/[id]/page.tsx");
+  const historyPayloadSource = readSource("src/lib/concierge/history-payload.ts");
+
+  assert.match(pageSource, /function resolveConciergeLiveCardImagePath/);
+  assert.match(pageSource, /readString\(publicEvent\?\.renderer\)\.toLowerCase\(\) === "live_card"/);
+  assert.match(pageSource, /hasLiveCardOutput\(data\)/);
+  assert.match(pageSource, /birthday: "\/studio\/birthday\.webp"/);
+  assert.match(pageSource, /liveCard\?\.headline/);
+  assert.match(pageSource, /publicEvent\?\.headline/);
+  assert.match(pageSource, /heroTextMode: heroTextMode \|\| \(hasLiveCardOutput\(data\) \? "image" : undefined\)/);
+  assert.match(historyPayloadSource, /coverImageUrl: liveCardImageUrl/);
+  assert.match(historyPayloadSource, /studioCard: \{/);
+  assert.match(historyPayloadSource, /invitationData: liveCardInvitationData/);
+});
+
 test("shared card page keeps public shares in a centered live-card frame", () => {
   const conditionalFooter = readSource("src/components/ConditionalFooter.tsx");
   const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
@@ -36,7 +52,10 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
 
   assert.match(conditionalFooter, /const isStudioCardSharePath = \(pathname: string\) => \{/);
   assert.match(conditionalFooter, /segments\.length === 2 && segments\[0\] === "card"/);
-  assert.match(conditionalFooter, /if \(\(isEventShare && hasNoSession\) \|\| isStudioCardShare\) \{/);
+  assert.match(
+    conditionalFooter,
+    /if \(\(isEventShare && hasNoSession\) \|\| isStudioCardShare \|\| isLandingShowcase\) \{/,
+  );
   assert.match(sharedPageSource, /Created by Envitefy Studio/);
   assert.match(sharedPageSource, /href="\/studio"/);
   assert.match(sharedPageSource, /relative flex min-h-\[100dvh\] w-full flex-col bg-neutral-950/);
@@ -74,7 +93,7 @@ test("shared card route and page preserve overlay hero text mode for live cards"
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
   assert.match(pageSource, /const heroTextMode =\s*data\.heroTextMode === "overlay" \|\| data\.heroTextMode === "image"/);
-  assert.match(pageSource, /heroTextMode,/);
+  assert.match(pageSource, /heroTextMode:/);
   assert.match(surfaceSource, /heroTextMode\?: "image" \| "overlay"/);
   assert.match(sharedPageSource, /<LiveCardHeroTextOverlay invitationData=\{invitationData\} \/>/);
 });
@@ -85,10 +104,7 @@ test("poster-first shared cards keep floating controls with overlay studio credi
 
   assert.match(surfaceSource, /export function isPosterFirstHeroCard\(invitationData\?: LiveCardInvitationData \| null\)/);
   assert.match(sharedPageSource, /const posterFirstHeroCard = isPosterFirstHeroCard\(invitationData\);/);
-  assert.match(
-    sharedPageSource,
-    /const studioCreditClass = posterFirstHeroCard\s*\?/,
-  );
+  assert.match(sharedPageSource, /\{posterFirstHeroCard \? \(/);
   assert.match(
     surfaceSource,
     /border-white\/28 bg-white\/18 shadow-\[0_12px_28px_rgba\(0,0,0,0\.34\)/,

@@ -293,9 +293,15 @@ export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
 
   const locationText = firstString(
     data?.locationText,
+    data?.locationLabel,
     data?.location,
+    data?.venue,
+    data?.address,
+    data?.placeName,
     data?.fieldsGuess?.location,
     data?.event?.location,
+    data?.event?.venue,
+    data?.event?.address,
   );
   const locationLat = parseFiniteNumber(data?.locationLat ?? data?.lat ?? data?.event?.locationLat);
   const locationLng = parseFiniteNumber(data?.locationLng ?? data?.lng ?? data?.event?.locationLng);

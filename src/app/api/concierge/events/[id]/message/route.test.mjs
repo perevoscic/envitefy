@@ -37,6 +37,7 @@ test("event assistant route emits optional timings and Server-Timing headers", (
   assert.match(source, /timing\.time\("user_lookup"/);
   assert.match(source, /timing\.time\("body_parse"/);
   assert.match(source, /timing\.time\("db_read"/);
+  assert.match(source, /timing\.time\("weather_context"/);
   assert.match(source, /timing\.time\("db_write"/);
   assert.match(source, /timing\.time\("model_planning"/);
   assert.match(source, /timings: timing\.toObject\(\)/);
@@ -52,6 +53,8 @@ test("event assistant planner uses compact model context and deterministic fast 
   assert.match(source, /max_completion_tokens: 650/);
   assert.match(source, /resolveConciergeOpenAiModel\(\)/);
   assert.match(source, /runWithConciergeOpenAiTimeout/);
+  assert.match(source, /weatherContext: params\.weatherContext \|\| null/);
+  assert.match(source, /shouldResolveConciergeWeatherContext\(params\.message\)/);
   assert.match(source, /isConciergeFastActionsEnabled\(\)/);
   assert.match(source, /shouldSkipOpenAiForEventAction\(params\.message\)/);
 });

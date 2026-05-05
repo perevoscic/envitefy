@@ -30,6 +30,22 @@ test("birthday category starts with an oriented intake prompt", () => {
   assert.ok((message.match(/\?/g) || []).length <= 2);
 });
 
+test("starter category asks for product format before event details", async () => {
+  const result = await extractConciergeDraft({
+    message: "Birthday",
+    action: "starter_category",
+  });
+
+  assert.equal(result.usedAi, false);
+  assert.equal(result.draft.eventType, "birthday");
+  assert.deepEqual(result.draft.requestedOutputs, []);
+  assert.match(
+    result.assistantMessage,
+    /Great, would you like that to be a Live Card, Flyer Invite, Event Page, or Invitation\?/,
+  );
+  assert.doesNotMatch(result.assistantMessage, /Who is the birthday for/i);
+});
+
 test("category intake prompts stay short", () => {
   for (const prompt of ["Birthday", "Wedding", "Baby shower", "Graduation", "Gym meet"]) {
     const message = buildAssistantMessage(fallbackExtractConciergeDraft({ message: prompt }));
@@ -37,7 +53,10 @@ test("category intake prompts stay short", () => {
 
     assert.equal(lines[0], "Let's start small.");
     assert.ok(lines.length <= 3, message);
-    assert.ok(lines.slice(1).every((line) => line.endsWith("?")), message);
+    assert.ok(
+      lines.slice(1).every((line) => line.endsWith("?")),
+      message,
+    );
     assert.ok((message.match(/\?/g) || []).length <= 2, message);
     assert.doesNotMatch(message, /To get started|please share a few details|Once I have/i);
   }
@@ -78,10 +97,12 @@ test("received invite with concrete details stays invited and can become ready",
   assert.equal(result.location, "Sky Zone");
   assert.equal(result.canPersist, true);
   assert.equal(result.draftStatus, "preview_ready");
-  assert.equal(
-    message,
-    "I have the invite details ready. I can save it as an invited event and open the workspace now.",
-  );
+  assert.match(message, /Details are ready/);
+  assert.match(message, /Product: Live card/);
+  assert.match(message, /Event: Ava is turning 7/);
+  assert.match(message, /Location: Sky Zone/);
+  assert.match(message, /I can generate the invite now/);
+  assert.doesNotMatch(message, /workspace/i);
 });
 
 test("received invite follow-up details preserve invited ownership", () => {
@@ -136,7 +157,7 @@ test("greeting short-circuits AI extraction and stays conversational", async () 
   assert.equal(result.usedAi, false);
   assert.equal(result.draft.intent, "unknown");
   assert.deepEqual(result.draft.requestedOutputs, []);
-  assert.match(result.assistantMessage, /what would you like to create/i);
+  assert.match(result.assistantMessage, /what are we celebrating/i);
   assert.doesNotMatch(result.assistantMessage, /live card be for/i);
 });
 
@@ -287,6 +308,37 @@ test("purpose plus concrete preview details can become preview ready", () => {
 
   assert.equal(draft.eventPurpose, "A school fundraiser Saturday at 3 at the gym");
   assert.equal(draft.draftStatus, "preview_ready");
+  assert.equal(draft.currentQuestion, "tone");
+});
+
+test("fallback asks RSVP guest count before vibe and stores both replies", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Create a birthday live card with RSVP.",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "Ava, 7", draft });
+  draft = fallbackExtractConciergeDraft({ message: "Saturday at 3 at Sky Zone", draft });
+
+  assert.equal(draft.currentQuestion, "numberOfGuests");
+  assert.equal(draft.missingFields[0], "numberOfGuests");
+  assert.match(buildAssistantMessage(draft), /how many guests/i);
+
+  draft = fallbackExtractConciergeDraft({ message: "23", draft });
+
+  assert.equal(draft.numberOfGuests, 23);
+  assert.equal(draft.currentQuestion, "tone");
+  assert.equal(draft.missingFields[0], "tone");
+  assert.match(buildAssistantMessage(draft), /vibe/i);
+
+  draft = fallbackExtractConciergeDraft({ message: "fun and colorful", draft });
+
+  assert.equal(draft.tone, "fun and colorful");
+  assert.doesNotMatch(draft.missingFields.join(","), /tone/);
+  assert.match(buildAssistantMessage(draft), /details are ready/i);
+  assert.match(buildAssistantMessage(draft), /Product: Live card/);
+  assert.match(buildAssistantMessage(draft), /Event: Ava is turning 7/);
+  assert.match(buildAssistantMessage(draft), /Location: Sky Zone/);
+  assert.match(buildAssistantMessage(draft), /RSVP guest count: 23/);
+  assert.doesNotMatch(buildAssistantMessage(draft), /\*\*\*/);
 });
 
 test("lowercase location reply fills location instead of repeating the question", () => {
@@ -353,7 +405,7 @@ test("output-only RSVP page prompt stays unsaved until an event/source exists", 
 test("output capability matrix gives output-specific first questions and CTAs", () => {
   assert.equal(
     getOutputRequirement("digital_flyer").firstQuestion,
-    "What should this flyer promote?",
+    "What should this flyer invite be for?",
   );
   assert.equal(getOutputRequirement("whatsapp").previewCta, "Write copy");
 });
@@ -645,10 +697,17 @@ test("save payload stores concierge drafts as owned My Events rows", () => {
   assert.equal(payload.data.status, "draft");
   assert.equal(payload.data.invitedFromScan, false);
   assert.equal(payload.data.conciergeDraft.title, "Ava is turning 7");
+  assert.equal(payload.data.coverImageUrl, "/studio/birthday.webp");
+  assert.equal(payload.data.heroTextMode, "image");
   assert.equal(payload.data.rsvp.direct, true);
   assert.equal(payload.data.publicEvent.renderer, "live_card");
+  assert.equal(payload.data.publicEvent.primaryOutput, "live_card");
   assert.equal(payload.data.liveCard.scheduleLine, "Date TBD");
   assert.equal(payload.data.liveCard.locationLine, "Location TBD");
+  assert.equal(payload.data.studioCard.imageUrl, "/studio/birthday.webp");
+  assert.equal(payload.data.studioCard.invitationData.title, "Ava is turning 7");
+  assert.equal(payload.data.studioCard.invitationData.heroTextMode, "image");
+  assert.equal(payload.data.studioCard.invitationData.eventDetails.category, "Birthday");
 });
 
 test("save payload splits combined venue and address for public live cards", () => {
@@ -661,6 +720,7 @@ test("save payload splits combined venue and address for public live cards", () 
   assert.equal(payload.data.venue, "Play Cafe");
   assert.equal(payload.data.location, "123 Main St, Austin, TX");
   assert.equal(payload.data.placeName, "Play Cafe");
+  assert.equal(payload.data.locationText, "Play Cafe, 123 Main St, Austin, TX");
   assert.equal(payload.data.locationLabel, "Play Cafe, 123 Main St, Austin, TX");
   assert.equal(payload.data.liveCard.locationLine, "Play Cafe, 123 Main St, Austin, TX");
 });

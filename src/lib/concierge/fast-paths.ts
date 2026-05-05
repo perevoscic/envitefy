@@ -37,7 +37,7 @@ function normalizedMessage(value: unknown): string {
 function hasAssetIntent(text: string): boolean {
   return (
     /\b(create|make|build|draft|generate|write|turn|convert)\b/i.test(text) &&
-    /\b(whats\s?app|sms|text message|instagram|story|print|printable|flyer|reminder|thank\s*you|menu|welcome sign|rsvp|invite|invitation|card)\b/i.test(
+    /\b(whats\s?app|sms|text message|instagram|story|print|printable|flyer|event\s+page|reminder|thank\s*you|menu|welcome sign|rsvp|invite|invitation|card)\b/i.test(
       text,
     )
   );
@@ -82,14 +82,18 @@ export function shouldSkipOpenAiForCreationRequest(args: {
   if (!args.request.draft && !args.request.ocrContext && hasObviousStarterCreationIntent(message)) {
     return true;
   }
-  if (!isConciergeFastActionsEnabled()) return false;
-  if (args.request.action === "ocr_result") return true;
 
   const action = args.request.action || "message";
+  if (action === "ocr_result") return true;
   const normalized = normalizedMessage(message);
   if ((action === "chip" || action === "starter_category") && STARTER_CHIPS.has(normalized)) {
     return true;
   }
+  if ((action === "chip" || action === "starter_category") && hasAssetIntent(message)) {
+    return true;
+  }
+
+  if (!isConciergeFastActionsEnabled()) return false;
 
   const requestedOutputs: RequestedOutput[] = args.fallbackDraft?.requestedOutputs?.length
     ? args.fallbackDraft.requestedOutputs

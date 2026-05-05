@@ -94,8 +94,8 @@ test("concierge persona model defaults to the fast model family", () => {
 
 test("concierge persona streaming timeouts have tight defaults and accept overrides", () => {
   withEnv({}, () => {
-    assert.equal(resolveConciergeOpenAiPersonaTimeoutMs(), 1200);
-    assert.equal(resolveConciergeStreamFirstTokenTimeoutMs(), 1500);
+    assert.equal(resolveConciergeOpenAiPersonaTimeoutMs(), 2200);
+    assert.equal(resolveConciergeStreamFirstTokenTimeoutMs(), 2200);
   });
   withEnv(
     {

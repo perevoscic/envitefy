@@ -13,6 +13,42 @@ function readString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function readFirstString(...values: unknown[]): string {
+  for (const value of values) {
+    const text = readString(value);
+    if (text) return text;
+  }
+  return "";
+}
+
+const CONCIERGE_LIVE_CARD_IMAGE_BY_CATEGORY: Record<string, string> = {
+  birthday: "/studio/birthday.webp",
+  birthdays: "/studio/birthday.webp",
+  wedding: "/studio/wedding.webp",
+  weddings: "/studio/wedding.webp",
+  "baby shower": "/studio/baby-shower.webp",
+  baby_shower: "/studio/baby-shower.webp",
+  "baby showers": "/studio/baby-shower.webp",
+};
+
+function hasLiveCardOutput(data: Record<string, unknown>) {
+  const outputs = [
+    ...(Array.isArray(data.requestedOutputs) ? data.requestedOutputs : []),
+    ...(Array.isArray(data.outputs) ? data.outputs : []),
+  ].map((value) => readString(value).toLowerCase());
+  return outputs.includes("live_card");
+}
+
+function resolveConciergeLiveCardImagePath(data: Record<string, unknown>): string {
+  const publicEvent = isRecord(data.publicEvent) ? data.publicEvent : null;
+  const isLiveCard =
+    readString(publicEvent?.renderer).toLowerCase() === "live_card" || hasLiveCardOutput(data);
+  if (!isLiveCard) return "";
+
+  const category = readFirstString(data.eventType, data.category).toLowerCase();
+  return CONCIERGE_LIVE_CARD_IMAGE_BY_CATEGORY[category] || "/studio/custom-invite.webp";
+}
+
 function isLoopbackHostname(hostname: string): boolean {
   const normalized = hostname.trim().toLowerCase();
   return (
@@ -58,15 +94,40 @@ function readGuestImageUrls(value: unknown): string[] {
 
 function buildFallbackInvitationData(data: Record<string, unknown>) {
   const eventDetailsRaw = isRecord(data.eventDetails) ? data.eventDetails : null;
+  const liveCard = isRecord(data.liveCard) ? data.liveCard : null;
+  const publicEvent = isRecord(data.publicEvent) ? data.publicEvent : null;
+  const previewCopy = isRecord(data.previewCopy) ? data.previewCopy : null;
   const heroTextMode =
     data.heroTextMode === "overlay" || data.heroTextMode === "image" ? data.heroTextMode : undefined;
+  const title = readFirstString(
+    liveCard?.headline,
+    publicEvent?.headline,
+    data.headlineTitle,
+    data.title,
+  );
+  const subtitle = readFirstString(liveCard?.subheadline, publicEvent?.subheadline, previewCopy?.subheadline);
+  const description = readFirstString(liveCard?.body, publicEvent?.body, previewCopy?.body, data.description);
+  const scheduleLine = readFirstString(
+    liveCard?.scheduleLine,
+    publicEvent?.scheduleLine,
+    data.scheduleLine,
+    data.whenLabel,
+  );
+  const locationLine = readFirstString(
+    liveCard?.locationLine,
+    publicEvent?.locationLine,
+    data.locationLabel,
+    data.placeName,
+    data.venue,
+    data.location,
+  );
   return {
-    title: readString(data.title) || "Invitation",
-    subtitle: readString(data.subtitle) || "",
-    description: readString(data.description) || "",
-    scheduleLine: readString(data.scheduleLine) || "",
-    locationLine: readString(data.locationLine) || "",
-    heroTextMode,
+    title: title || "Invitation",
+    subtitle,
+    description,
+    scheduleLine,
+    locationLine,
+    heroTextMode: heroTextMode || (hasLiveCardOutput(data) ? "image" : undefined),
     theme: {
       themeStyle: readString(data.themeStyle) || "",
     },
@@ -82,13 +143,13 @@ function buildFallbackInvitationData(data: Record<string, unknown>) {
       startTime: readString(eventDetailsRaw?.startTime),
       endTime: readString(eventDetailsRaw?.endTime),
       venueName: readString(eventDetailsRaw?.venueName ?? data.venue),
-      location: readString(eventDetailsRaw?.location ?? data.location),
+      location: readString(eventDetailsRaw?.location) || locationLine,
       rsvpName: readString(eventDetailsRaw?.rsvpName),
       rsvpContact: readString(eventDetailsRaw?.rsvpContact ?? data.rsvp),
       rsvpDeadline: readString(eventDetailsRaw?.rsvpDeadline ?? data.rsvpDeadline),
-      detailsDescription: readString(eventDetailsRaw?.detailsDescription),
+      detailsDescription: readString(eventDetailsRaw?.detailsDescription) || description,
       guestImageUrls: readGuestImageUrls(eventDetailsRaw?.guestImageUrls),
-      message: readString(eventDetailsRaw?.message),
+      message: readString(eventDetailsRaw?.message) || subtitle,
       registryLink:
         Array.isArray(data.registries) && data.registries[0] && isRecord(data.registries[0])
           ? readString(data.registries[0].url)
@@ -109,7 +170,8 @@ async function resolveSharedCard(value: string) {
       readString(studioCard?.imageUrl) ||
       readString(data.customHeroImage) ||
       readString(data.heroImage) ||
-      readString(data.thumbnail),
+      readString(data.thumbnail) ||
+      resolveConciergeLiveCardImagePath(data),
   );
 
   if (!imageUrl) return null;

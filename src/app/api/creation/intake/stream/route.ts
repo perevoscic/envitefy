@@ -8,6 +8,7 @@ import type {
   CreationChatMessageSnapshot,
   CreationIntakeRequest,
 } from "@/lib/concierge/types";
+import { resolveConciergeWeatherContextFromDraft } from "@/lib/concierge/weather-context";
 import { createServerTimingTracker, isTimingRequested } from "@/lib/server-timing";
 
 export const runtime = "nodejs";
@@ -82,9 +83,16 @@ export async function POST(req: Request) {
               ocrContext: request.ocrContext || null,
               requestedOutputs: request.requestedOutputs || null,
               activeContext: request.activeContext || null,
+              action: request.action || "message",
             }),
           );
           const fallbackMessage = buildAssistantMessage(fallbackDraft);
+          const weatherContext = await timing.time("weather_context", () =>
+            resolveConciergeWeatherContextFromDraft({
+              message,
+              draft: fallbackDraft,
+            }),
+          );
           const chatMessages = normalizeChatMessages(request.chatMessages);
           const extractionPromise = resolveCreationIntakeDraft({
             request,
@@ -96,6 +104,7 @@ export async function POST(req: Request) {
               chatMessages,
               draft: fallbackDraft,
               fallbackMessage,
+              weatherContext,
               onDelta: (text) => send("assistant_delta", { text }),
             }),
           );
@@ -112,9 +121,10 @@ export async function POST(req: Request) {
             assistantMessageOverride: personaResult.assistantMessage,
             timing,
           });
+          const finalPayload = { ...finalState, weatherContext };
           send(
             "state",
-            timing.enabled ? { ...finalState, timings: timing.toObject() } : finalState,
+            timing.enabled ? { ...finalPayload, timings: timing.toObject() } : finalPayload,
           );
           send("done", { ok: true });
         } catch (error) {

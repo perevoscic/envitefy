@@ -21,6 +21,7 @@ import { buildConciergeHistoryPayload } from "./history-payload.ts";
 import type {
   ConciergeEventDraft,
   ConciergeMessageResponse,
+  ConciergeStudioInvite,
   CreationChatMessageSnapshot,
   CreationIntakeRequest,
   CreationSession,
@@ -64,8 +65,11 @@ function uniqueAssetTypes(outputs: RequestedOutput[]): EventAssetType[] {
 async function persistCreationAsEvent(params: {
   userId: string;
   draft: ConciergeEventDraft;
+  studioInvite?: ConciergeStudioInvite | null;
 }): Promise<{ eventId: string }> {
-  const payload = buildConciergeHistoryPayload(params.draft);
+  const payload = buildConciergeHistoryPayload(params.draft, {
+    studioInvite: params.studioInvite,
+  });
   const data = payload.data;
   const event = await insertEventHistory({
     userId: params.userId,
@@ -91,6 +95,12 @@ async function persistCreationAsEvent(params: {
       content: {
         ...generated.content,
         previewCopy: params.draft.previewCopy,
+        ...(assetType === "invitation" && params.studioInvite?.imageUrl
+          ? {
+              imageUrl: params.studioInvite.imageUrl,
+              invitationData: params.studioInvite.invitationData || null,
+            }
+          : {}),
       },
       design: generated.design,
       metadata: {
@@ -113,6 +123,12 @@ function getSavedEventId(session: CreationSession | null): string | null {
 function getRequestedCreationSessionId(request: CreationIntakeRequest): string {
   const value = request.creationSessionId || request.draft?.creationSessionId;
   return typeof value === "string" ? value.trim() : "";
+}
+
+function requestDraftMatchesSession(request: CreationIntakeRequest, session: CreationSession) {
+  const requestSessionId = request.draft?.creationSessionId?.trim();
+  if (!requestSessionId) return false;
+  return requestSessionId === session.id || requestSessionId === session.draft.creationSessionId;
 }
 
 const MAX_CREATION_CHAT_MESSAGES = 50;
@@ -197,8 +213,8 @@ export async function resumeLatestCreationSession(params: {
     ok: true,
     draft,
     creationSession,
-    assistantMessage: savedEventId ? "Your workspace is ready." : buildAssistantMessage(draft),
-    suggestedReplies: savedEventId ? ["Open workspace"] : buildSuggestedReplies(draft),
+    assistantMessage: savedEventId ? "Your invite is ready." : buildAssistantMessage(draft),
+    suggestedReplies: savedEventId ? ["View invite"] : buildSuggestedReplies(draft),
     canSave: savedEventId ? false : canSaveConciergeDraft(draft),
     savedEventId,
     chatMessages,
@@ -234,8 +250,8 @@ export async function resumeCreationSession(params: {
     ok: true,
     draft,
     creationSession,
-    assistantMessage: savedEventId ? "Your workspace is ready." : buildAssistantMessage(draft),
-    suggestedReplies: savedEventId ? ["Open workspace"] : buildSuggestedReplies(draft),
+    assistantMessage: savedEventId ? "Your invite is ready." : buildAssistantMessage(draft),
+    suggestedReplies: savedEventId ? ["View invite"] : buildSuggestedReplies(draft),
     canSave: savedEventId ? false : canSaveConciergeDraft(draft),
     savedEventId,
     chatMessages,
@@ -257,6 +273,7 @@ export async function resolveCreationIntakeDraft(params: {
             ocrContext: request.ocrContext || null,
             activeContext: request.activeContext || null,
             requestedOutputs: request.requestedOutputs || null,
+            action: request.action || "message",
           }),
       }
     : await (params.timing?.time("model_extraction", () =>
@@ -318,7 +335,7 @@ export async function finalizeCreationIntake(params: {
   if (isSaveAction) {
     const requestedCreationSessionId = getRequestedCreationSessionId(request);
     if (!requestedCreationSessionId) {
-      throw new Error("Creation session id is required to create this workspace.");
+      throw new Error("Creation session id is required to create this invite.");
     }
     const existingSession = await (params.timing?.time("db_read", () =>
       getCreationSession({
@@ -343,8 +360,8 @@ export async function finalizeCreationIntake(params: {
           draftStatus: "published",
         },
         creationSession: existingSession,
-        assistantMessage: "Your workspace is ready. Opening it now.",
-        suggestedReplies: ["Open workspace"],
+        assistantMessage: "Your invite is ready.",
+        suggestedReplies: ["View invite"],
         canSave: false,
         savedEventId: existingSavedEventId,
         chatMessages: requestChatMessages.length
@@ -353,7 +370,7 @@ export async function finalizeCreationIntake(params: {
       };
     }
     if (!canSaveConciergeDraft(existingSession.draft)) {
-      throw new Error("Add the missing event details before creating this workspace.");
+      throw new Error("Add the missing event details before creating this invite.");
     }
     creationSession = await (params.timing?.time("db_write", () =>
       claimCreationSessionSave({
@@ -366,10 +383,16 @@ export async function finalizeCreationIntake(params: {
         sessionId: requestedCreationSessionId,
       }));
     if (!creationSession) {
-      throw new Error("This workspace is already being created. Please wait a moment.");
+      throw new Error("This invite is already being created. Please wait a moment.");
     }
     draft = {
       ...creationSession.draft,
+      ...(requestDraftMatchesSession(request, creationSession) && request.draft
+        ? {
+            requestedOutputs: request.draft.requestedOutputs,
+            outputs: request.draft.outputs,
+          }
+        : {}),
       creationSessionId: creationSession.draft.creationSessionId || creationSession.id,
     };
   }
@@ -415,11 +438,13 @@ export async function finalizeCreationIntake(params: {
       persistCreationAsEvent({
         userId: params.userId,
         draft,
+        studioInvite: request.studioInvite,
       }),
     ) ??
       persistCreationAsEvent({
         userId: params.userId,
         draft,
+        studioInvite: request.studioInvite,
       }));
     const savedDraft: ConciergeEventDraft = {
       ...draft,
@@ -451,8 +476,8 @@ export async function finalizeCreationIntake(params: {
       ok: true,
       draft: savedDraft,
       creationSession,
-      assistantMessage: "Your workspace is ready. Opening it now.",
-      suggestedReplies: ["Open workspace"],
+      assistantMessage: "Your invite is ready.",
+      suggestedReplies: ["View invite"],
       canSave: false,
       savedEventId: saved.eventId,
       chatMessages: chatMessagesFromSession(creationSession).length

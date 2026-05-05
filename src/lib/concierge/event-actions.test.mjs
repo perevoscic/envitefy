@@ -41,3 +41,13 @@ test("event updates keep generated live-card copy aligned", () => {
   assert.match(source, /data\.publicEvent = publicEvent/);
   assert.match(source, /data\.previewCopy = previewCopy/);
 });
+
+test("weather questions stay read-only and use bounded context", () => {
+  const source = readSource("src/lib/concierge/event-actions.ts");
+
+  assert.match(source, /import \{ shouldResolveConciergeWeatherContext \}/);
+  assert.match(source, /function buildWeatherPlan/);
+  assert.match(source, /weatherContext\?\.message/);
+  assert.match(source, /return buildWeatherPlan\(params\.weatherContext\)/);
+  assert.doesNotMatch(source, /type: "update_event"[\s\S]{0,240}weatherContext/);
+});

@@ -4,12 +4,24 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
   Camera,
+  FileText,
+  Globe2,
   Loader2,
+  Mail,
   Mic,
   Paperclip,
+  Sparkles,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { requestStudioGeneration } from "@/app/studio/studio-workspace-api";
+import { buildInvitationData } from "@/app/studio/studio-workspace-builders";
+import { createInitialDetails } from "@/app/studio/studio-workspace-sanitize";
+import type {
+  EventDetails,
+  InvitationData,
+  InviteCategory,
+} from "@/app/studio/studio-workspace-types";
 import { STUDIO_CATEGORY_TILES } from "@/app/studio/workspace/studio-category-tile-data";
 import {
   cn,
@@ -25,12 +37,14 @@ import type {
   ConciergeEventType,
   ConciergeMessageResponse,
   ConciergeOcrContext,
+  ConciergeWeatherContext,
   CreationChatMessageSnapshot,
   CreationSessionResumeResponse,
   RequestedOutput,
 } from "@/lib/concierge/types";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
-import { validateClientUploadFile } from "@/utils/media-upload-client";
+import { buildEventSlug } from "@/utils/event-url";
+import { persistImageMediaValue, validateClientUploadFile } from "@/utils/media-upload-client";
 import ChatProductPreview from "./ChatProductPreview";
 
 type ChatMessage = {
@@ -43,6 +57,8 @@ type ChatMessage = {
 type ProductOption = {
   label: string;
   output: RequestedOutput;
+  description: string;
+  prompt: string;
 };
 
 type ConciergePhase =
@@ -59,6 +75,11 @@ type LiveCardSummary = {
   scheduleLine: string;
   locationLine: string;
   outputs: string[];
+};
+
+type GeneratedInvitePayload = {
+  imageUrl: string;
+  invitationData: InvitationData;
 };
 
 type RsvpPreviewResponse = {
@@ -96,14 +117,26 @@ const PRODUCT_OPTIONS: ProductOption[] = [
   {
     label: "Live Card",
     output: "live_card",
+    description: "Animated invite with RSVP and guest actions.",
+    prompt: "Create a live card",
   },
   {
-    label: "Flyer / Invite",
+    label: "Flyer Invite",
     output: "digital_flyer",
+    description: "Shareable flyer-style invite from typed details.",
+    prompt: "Create a digital flyer",
   },
   {
     label: "Event Page",
     output: "event_page",
+    description: "Hosted page for details, links, and updates.",
+    prompt: "Create an event page",
+  },
+  {
+    label: "Invitation",
+    output: "invitation",
+    description: "Designed invite artwork to share.",
+    prompt: "Create an invitation",
   },
 ];
 
@@ -116,15 +149,15 @@ const ENABLE_CONCIERGE_TIMING = process.env.NEXT_PUBLIC_CONCIERGE_TIMING === "1"
 
 const BUILDING_STEPS = [
   "Checking the event details",
-  "Generating the product",
+  "Generating the invite artwork",
   "Creating RSVP and sharing links",
-  "Finalizing the event workspace",
+  "Finalizing the public invite",
 ];
 
 const OUTPUT_LABELS: Record<RequestedOutput, string> = {
   event_page: "Event page",
   live_card: "Live card",
-  digital_flyer: "Digital flyer",
+  digital_flyer: "Flyer invite",
   invitation: "Invitation",
   rsvp_page: "RSVP page",
   whatsapp: "WhatsApp",
@@ -154,6 +187,51 @@ type ConciergeStreamHandlers = {
 function withConciergeTiming(url: string) {
   if (!ENABLE_CONCIERGE_TIMING) return url;
   return `${url}${url.includes("?") ? "&" : "?"}timing=1`;
+}
+
+function sanitizeAssistantBubbleText(text: string) {
+  return text
+    .replace(/^\s*\*{3,}\s*$/gm, "")
+    .replace(/\*{1,3}([^*\n]+?)\*{1,3}/g, "$1")
+    .replace(/\*{2,}/g, "")
+    .replace(/__([^_\n]+?)__/g, "$1")
+    .replace(
+      /([.!])\s+(?=(?:Who|What|When|Where|Which|Why|How|Do|Does|Did|Can|Could|Would|Will|Should|Is|Are|Was|Were|Have|Has)\b)/g,
+      "$1\n",
+    )
+    .replace(/\?\s+(?=\S)/g, "?\n")
+    .replace(/\n{3,}/g, "\n\n");
+}
+
+const DETAIL_CONFIRMATION_LINE =
+  /^(Product|Event|Title|Honoree|Date|Time|Location|Venue|Theme|Vibe|RSVP(?: guest count| by| line)?|Guest count):\s*(.+)$/i;
+
+function formatAssistantBubbleText(text: string) {
+  const lines = sanitizeAssistantBubbleText(text).split(/\n/);
+  return lines.map((line, index) => {
+    if (!line.trim()) return <br key={`break-${index}`} />;
+    const detail = line.match(DETAIL_CONFIRMATION_LINE);
+    if (detail) {
+      return (
+        <span key={`${line}-${index}`} className="block">
+          <span className="font-medium text-[#5f5289]">{detail[1]}:</span>{" "}
+          <strong className="font-semibold text-[#150d2b]">{detail[2]}</strong>
+        </span>
+      );
+    }
+    return (
+      <span key={`${line}-${index}`} className="block">
+        {line}
+      </span>
+    );
+  });
+}
+
+function ProductOptionIcon({ output }: { output: RequestedOutput }) {
+  if (output === "digital_flyer") return <FileText className="size-4" aria-hidden="true" />;
+  if (output === "event_page") return <Globe2 className="size-4" aria-hidden="true" />;
+  if (output === "invitation") return <Mail className="size-4" aria-hidden="true" />;
+  return <Sparkles className="size-4" aria-hidden="true" />;
 }
 
 function parseConciergeStreamEvent(rawEvent: string) {
@@ -229,11 +307,11 @@ function isOpeningAssistantPrompt(text: string, initialAssistantPrompt: string) 
 }
 
 const CHAT_STARTER_PROMPTS = [
-  "Create a birthday live card with RSVP.",
-  "Create a wedding invitation with RSVP.",
-  "Create a baby shower invite with RSVP.",
-  "Create a game event page for my team.",
-  "Create a bridal shower invite with RSVP.",
+  "Birthday",
+  "Wedding",
+  "Baby Shower",
+  "Game Day",
+  "Bridal Shower",
 ];
 
 const CATEGORY_LABELS: Partial<Record<ConciergeEventType, string>> = {
@@ -263,31 +341,31 @@ function studioStarterImagePath(categoryName: string) {
 
 const CELEBRATION_STARTER_TILES = [
   {
-    label: "Birthday live card",
+    label: "Birthday",
     prompt: CHAT_STARTER_PROMPTS[0],
     imagePath: studioStarterImagePath("Birthday"),
     size: "wide",
   },
   {
-    label: "Wedding invitation",
+    label: "Wedding",
     prompt: CHAT_STARTER_PROMPTS[1],
     imagePath: studioStarterImagePath("Wedding"),
     size: "desktopWide",
   },
   {
-    label: "Game event page",
+    label: "Game Day",
     prompt: CHAT_STARTER_PROMPTS[3],
     imagePath: studioStarterImagePath("Game Day"),
     size: "square",
   },
   {
-    label: "Baby shower invite",
+    label: "Baby Shower",
     prompt: CHAT_STARTER_PROMPTS[2],
     imagePath: studioStarterImagePath("Baby Shower"),
     size: "desktopWide",
   },
   {
-    label: "Bridal shower invite",
+    label: "Bridal Shower",
     prompt: CHAT_STARTER_PROMPTS[4],
     imagePath: studioStarterImagePath("Bridal Shower"),
     size: "square",
@@ -373,6 +451,8 @@ function isReadyCreationDraft(draft: ConciergeEventDraft | null) {
 }
 
 function normalizeOcrContext(payload: any): ConciergeOcrContext {
+  const metadata =
+    payload?.metadata && typeof payload.metadata === "object" ? payload.metadata : {};
   return {
     ocrText: typeof payload?.ocrText === "string" ? payload.ocrText : null,
     fieldsGuess:
@@ -381,8 +461,13 @@ function normalizeOcrContext(payload: any): ConciergeOcrContext {
     birthdayTemplateHint: payload?.birthdayTemplateHint || null,
     ocrSkin: payload?.ocrSkin && typeof payload.ocrSkin === "object" ? payload.ocrSkin : null,
     metadata: {
+      ...metadata,
       thumbnailFocus: payload?.thumbnailFocus || null,
       openHouse: payload?.openHouse || null,
+      detectedSourceIntent:
+        typeof payload?.detectedSourceIntent === "string"
+          ? payload.detectedSourceIntent
+          : metadata.detectedSourceIntent,
     },
   };
 }
@@ -422,6 +507,11 @@ function previewImageForDraft(draft: ConciergeEventDraft | null) {
   );
 }
 
+function generatedProductHref(eventId: string | null, selectedOutput: RequestedOutput) {
+  if (!eventId) return null;
+  return selectedOutput === "live_card" ? `/card/${eventId}` : `/event/${eventId}`;
+}
+
 function draftOutputLabels(draft: ConciergeEventDraft | null, selectedOutput: RequestedOutput) {
   const outputs = draft?.requestedOutputs?.length ? draft.requestedOutputs : [selectedOutput];
   return Array.from(new Set(outputs)).map(outputLabel);
@@ -457,6 +547,85 @@ function outputLabelsFromUnknown(value: unknown, fallback: string[]) {
     .filter((item): item is string => Boolean(item))
     .map((item) => outputLabel(item as RequestedOutput));
   return labels.length ? Array.from(new Set(labels)) : fallback;
+}
+
+function studioCategoryForDraft(draft: ConciergeEventDraft): InviteCategory {
+  if (draft.eventType === "birthday") return "Birthday";
+  if (draft.eventType === "wedding") return "Wedding";
+  if (draft.eventType === "baby_shower") return "Baby Shower";
+  if (draft.eventType === "gym_meet") return "Game Day";
+  return "Custom Invite";
+}
+
+function dateInputFromDraft(draft: ConciergeEventDraft): string {
+  const startISO = stringValue(draft.startISO);
+  if (startISO && /^\d{4}-\d{2}-\d{2}/.test(startISO)) return startISO.slice(0, 10);
+  return stringValue(draft.dateText) || "";
+}
+
+function timeInputFromDraft(value: string | null): string {
+  const raw = stringValue(value);
+  if (!raw) return "";
+  const date = new Date(raw);
+  if (!Number.isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}/.test(raw)) {
+    return date.toTimeString().slice(0, 5);
+  }
+  return raw;
+}
+
+function withGeneratedInviteOutputs(draft: ConciergeEventDraft): ConciergeEventDraft {
+  const requestedOutputs = Array.from(
+    new Set<RequestedOutput>([...draft.requestedOutputs, "live_card", "invitation"]),
+  );
+  return { ...draft, requestedOutputs };
+}
+
+function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
+  const category = studioCategoryForDraft(draft);
+  const details = createInitialDetails();
+  const headline = draftHeadline(draft);
+  const body =
+    stringValue(draft.previewCopy.body) ||
+    stringValue(draft.eventPurpose) ||
+    `Join us for ${headline}.`;
+  const venueName = stringValue(draft.venue) || "";
+  const location = stringValue(draft.location) || venueName;
+  const honoreeName = stringValue(draft.honoreeName) || "";
+  const theme = stringValue(draft.theme) || stringValue(draft.tone) || `${category} invite`;
+
+  return {
+    ...details,
+    category,
+    eventTitle: headline,
+    eventDate: dateInputFromDraft(draft),
+    startTime: stringValue(draft.timeText) || timeInputFromDraft(draft.startISO),
+    endTime: timeInputFromDraft(draft.endISO),
+    venueName,
+    location,
+    detailsDescription: body,
+    message: draftSubheadline(draft),
+    theme,
+    style: stringValue(draft.tone) || "",
+    visualPreferences: theme,
+    name: category === "Birthday" ? honoreeName : "",
+    age: category === "Birthday" ? stringValue(draft.ageOrMilestone) || "" : "",
+    honoreeNames: category !== "Birthday" ? honoreeName : "",
+    coupleNames: category === "Wedding" ? honoreeName : "",
+    mainPerson: honoreeName,
+    occasion: stringValue(draft.eventPurpose) || category,
+    audience: "Guests",
+  };
+}
+
+function historyInviteImageFromEventData(data: Record<string, unknown>): string | null {
+  const studioCard = recordValue(data.studioCard);
+  return firstStringValue(
+    studioCard.imageUrl,
+    data.coverImageUrl,
+    data.thumbnail,
+    data.heroImage,
+    data.customHeroImage,
+  );
 }
 
 function liveCardSummaryFromDraft(
@@ -548,10 +717,12 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   const [liveCardEventId, setLiveCardEventId] = useState<string | null>(null);
   const [liveCardTitle, setLiveCardTitle] = useState<string | null>(null);
   const [liveCardSummary, setLiveCardSummary] = useState<LiveCardSummary | null>(null);
+  const [generatedInviteImageUrl, setGeneratedInviteImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
   const [rsvpPreview, setRsvpPreview] = useState<RsvpPreviewState>(EMPTY_RSVP_PREVIEW);
+  const [weatherContext, setWeatherContext] = useState<ConciergeWeatherContext | null>(null);
 
   const isGeneratingCard = phase === "generating_card";
   const isEditingGeneratedCard = phase === "editing_card";
@@ -579,7 +750,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     : isEditingGeneratedCard
       ? "Updating preview"
       : isGeneratingCard
-        ? "Generating product"
+        ? "Generating invite"
         : "Concierge is thinking...";
   const isThinking = busyLabel === "Concierge is thinking..." && !isStreamingAssistant;
   const currentBuildStep = Math.min(
@@ -587,10 +758,11 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     BUILDING_STEPS.length - 1,
   );
   const effectiveSelectedProductOutput = selectedProductOutput || "live_card";
+  const effectiveSelectedProductLabel = outputLabel(effectiveSelectedProductOutput);
   const currentLiveCardSummary =
     liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
   const previewTitle = liveCardTitle || currentLiveCardSummary.headline;
-  const canGenerateProduct = Boolean(draft?.canPersist) && !isBusy && !liveCardEventId;
+  const canGenerateProduct = isReadyProductDraft(draft) && !isBusy && !liveCardEventId;
   const shouldShowWorkspacePanel =
     Boolean(draft) ||
     phase === "ready_to_generate" ||
@@ -598,11 +770,20 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     phase === "card_ready" ||
     phase === "editing_card" ||
     Boolean(liveCardEventId);
-  const liveCardPublicHref = liveCardEventId ? `/event/${liveCardEventId}` : null;
-  const liveCardWorkspaceHref = liveCardEventId ? `/events/${liveCardEventId}/workspace` : null;
+  const liveCardPublicHref = generatedProductHref(liveCardEventId, effectiveSelectedProductOutput);
   const threadId = searchParams.get("thread")?.trim() || null;
   const currentCategoryLabel = categoryLabelFromDraft(draft);
-  const currentPreviewImage = previewImageForDraft(draft);
+  const currentPreviewImage = generatedInviteImageUrl || previewImageForDraft(draft);
+  const hasInitialEventContext =
+    Boolean(draft) || visibleMessages.some((message) => message.role === "user");
+  const shouldShowProductFormatTiles =
+    !liveCardEventId &&
+    !selectedProductOutput &&
+    Boolean(draft) &&
+    !draft?.requestedOutputs.length &&
+    !isBusy &&
+    !isEmptyState &&
+    hasInitialEventContext;
   const rsvpResponseNames = rsvpPreview.responses.map(
     (response) => response.name || response.email || "Guest",
   );
@@ -626,11 +807,24 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     setLiveCardEventId(null);
     setLiveCardTitle(null);
     setLiveCardSummary(null);
+    setGeneratedInviteImageUrl(null);
     setBuildProgress(0);
     setRsvpPreview(EMPTY_RSVP_PREVIEW);
     setSelectedProductOutput(null);
+    setWeatherContext(null);
     setMobileView("chat");
     setMessages([newMessage("assistant", initialAssistantPrompt)]);
+  }
+
+  async function handleProductChoice(option: ProductOption) {
+    if (isBusy) return;
+    setSelectedProductOutput(option.output);
+    await sendToConcierge({
+      message: option.prompt,
+      action: "chip",
+      requestedOutputs: [option.output],
+      echo: option.label,
+    });
   }
 
   useEffect(() => {
@@ -685,6 +879,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         );
         setBuildProgress(savedEventId ? 100 : 0);
         setMobileView(savedEventId ? "preview" : "chat");
+        setWeatherContext(json.weatherContext || null);
         setPhase(
           savedEventId
             ? "card_ready"
@@ -699,7 +894,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                 newMessage(
                   "assistant",
                   savedEventId
-                    ? "Thread opened. Your generated product is ready to refine."
+                    ? "Thread opened. Your generated invite is ready to refine."
                     : "Thread opened. We can keep collecting the details from here.",
                 ),
               ],
@@ -771,19 +966,76 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     };
   }, [liveCardEventId]);
 
+  useEffect(() => {
+    if (!liveCardEventId) {
+      setGeneratedInviteImageUrl(null);
+      return;
+    }
+
+    const eventId = liveCardEventId;
+    let cancelled = false;
+    async function loadGeneratedInviteImage() {
+      try {
+        const response = await fetch(`/api/history/${encodeURIComponent(eventId)}`, {
+          credentials: "include",
+        });
+        const row = await response.json().catch(() => null);
+        if (cancelled || !response.ok) return;
+        const data = recordValue(row?.data);
+        const imageUrl = historyInviteImageFromEventData(data);
+        if (imageUrl) setGeneratedInviteImageUrl(imageUrl);
+      } catch {}
+    }
+
+    void loadGeneratedInviteImage();
+    return () => {
+      cancelled = true;
+    };
+  }, [liveCardEventId]);
+
+  async function generateStudioInviteForDraft(
+    draftToGenerate: ConciergeEventDraft,
+  ): Promise<GeneratedInvitePayload> {
+    const details = buildStudioDetailsFromDraft(draftToGenerate);
+    const response = await requestStudioGeneration(details, "both", "page");
+    const generatedDetails = response.preparedDetails || details;
+    const rawImageUrl = response.imageUrl || response.imageDataUrl;
+    if (!rawImageUrl) {
+      throw new Error("Studio did not return an invite image.");
+    }
+
+    const fileName = `${buildEventSlug(draftHeadline(draftToGenerate)) || "envitefy-invite"}.png`;
+    const imageUrl = await persistImageMediaValue({
+      value: rawImageUrl,
+      fileName,
+    });
+    if (!imageUrl) {
+      throw new Error("The generated invite image could not be saved.");
+    }
+
+    return {
+      imageUrl,
+      invitationData: buildInvitationData(generatedDetails, response),
+    };
+  }
+
   async function generateProductForDraft(draftToGenerate: ConciergeEventDraft) {
-    if (!draftToGenerate.canPersist) {
-      setError("Add an event or source before creating the preview.");
+    if (!isReadyProductDraft(draftToGenerate)) {
+      setError("Add the missing event details before generating the invite.");
       return;
     }
     setError(null);
     setPhase("generating_card");
     setBuildProgress(8);
+    const draftWithInvite = withGeneratedInviteOutputs(draftToGenerate);
     const generatedMessage = newMessage(
       "assistant",
-      "Your product is generated. You can review it in the preview or tell me what to change.",
+      `Your ${effectiveSelectedProductLabel.toLowerCase()} is generated. You can review it in the preview or tell me what to change.`,
     );
     try {
+      const studioInvite = await generateStudioInviteForDraft(draftWithInvite);
+      setGeneratedInviteImageUrl(studioInvite.imageUrl);
+      setBuildProgress(72);
       const response = await fetch("/api/creation/intake", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -791,24 +1043,26 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         body: JSON.stringify({
           message: "",
           action: "save",
-          draft: draftToGenerate,
+          draft: draftWithInvite,
+          studioInvite,
           persistSession: true,
           chatMessages: chatMessagesForPersistence(messages, [generatedMessage]),
         }),
       });
       const json = (await response.json().catch(() => null)) as ConciergeMessageResponse | null;
       if (!response.ok || !json?.ok) {
-        throw new Error(json && !json.ok ? json.error : "Unable to generate product.");
+        throw new Error(json && !json.ok ? json.error : "Unable to generate invite.");
       }
       const savedEventId = json.savedEventId;
-      if (!savedEventId) throw new Error("Product was generated without an event id.");
+      if (!savedEventId) throw new Error("Invite was generated without an event id.");
       setBuildProgress(100);
       setDraft(json.draft);
       setLiveCardEventId(savedEventId);
-      setLiveCardTitle(draftHeadline(json.draft || draftToGenerate));
+      setLiveCardTitle(draftHeadline(json.draft || draftWithInvite));
       setLiveCardSummary(
-        liveCardSummaryFromDraft(json.draft || draftToGenerate, effectiveSelectedProductOutput),
+        liveCardSummaryFromDraft(json.draft || draftWithInvite, effectiveSelectedProductOutput),
       );
+      setWeatherContext(json.weatherContext || null);
       setPhase("card_ready");
       setMobileView("preview");
       if (json.chatMessages?.length) {
@@ -820,7 +1074,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     } catch (err) {
       setBuildProgress(0);
       setPhase(draftToGenerate.canPersist ? "ready_to_generate" : "collecting_details");
-      setError(err instanceof Error ? err.message : "Unable to generate product.");
+      setError(err instanceof Error ? err.message : "Unable to generate invite.");
     }
   }
 
@@ -849,6 +1103,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
       setLiveCardTitle(json.event.title || liveCardTitle || draftHeadline(draft));
       setLiveCardSummary(liveCardSummaryFromEvent(json.event, fallbackSummary));
+      setWeatherContext(json.weatherContext || null);
       setPhase("card_ready");
       setMessages((prev) => [...prev, newMessage("assistant", json.assistantMessage)]);
     } catch (err) {
@@ -947,6 +1202,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
           onState: (json) => {
             setDraft(json.draft);
             selectProductOutputForDraft(json.draft);
+            setWeatherContext(json.weatherContext || null);
             notifyCreationThreadsChanged();
             if (json.chatMessages?.length) {
               setMessages(json.chatMessages.map(chatMessageFromSnapshot));
@@ -970,6 +1226,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       }
       setDraft(json.draft);
       selectProductOutputForDraft(json.draft);
+      setWeatherContext(json.weatherContext || null);
       notifyCreationThreadsChanged();
       const assistantMessage = newMessage("assistant", json.assistantMessage);
       if (json.chatMessages?.length) {
@@ -1013,7 +1270,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
 
   async function handleStarterPrompt(message: string) {
     if (isBusy) return;
-    await sendToConcierge({ message });
+    await sendToConcierge({ message, action: "starter_category", echo: message });
   }
 
   function handleVoiceInput() {
@@ -1110,7 +1367,9 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
             initial={{ opacity: 0, y: 10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6 }}
-            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex flex-col ${
+              message.role === "user" ? "items-end" : "items-start"
+            }`}
           >
             {message.type === "upload_status" ? (
               <div
@@ -1129,12 +1388,47 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                     : "rounded-tl-md border border-[#eadfff] bg-white/88 text-[#24183e]"
                 }`}
               >
-                {message.text}
+                {message.role === "assistant" ? formatAssistantBubbleText(message.text) : message.text}
               </div>
             )}
           </motion.div>
         ))}
       </AnimatePresence>
+
+      {shouldShowProductFormatTiles ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="w-full max-w-[38rem] self-start"
+        >
+          <div
+            className="grid grid-cols-2 gap-3"
+            role="group"
+            aria-label="Choose product format"
+          >
+            {PRODUCT_OPTIONS.map((option) => (
+              <button
+                key={option.output}
+                type="button"
+                onClick={() => void handleProductChoice(option)}
+                disabled={isBusy}
+                aria-label={`Choose product: ${option.label}`}
+                className="group min-h-[6.5rem] rounded-2xl border border-[#e5dcff] bg-white/88 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#bda6ff] hover:bg-[#fbf8ff] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55"
+              >
+                <span className="flex h-full flex-col justify-between gap-3">
+                  <span className="flex items-center gap-2 text-sm font-bold text-[#25183a]">
+                    <span className="flex size-8 items-center justify-center rounded-lg bg-[#f1ebff] text-[#7c4dff] transition group-hover:bg-[#7c4dff] group-hover:text-white">
+                      <ProductOptionIcon output={option.output} />
+                    </span>
+                    {option.label}
+                  </span>
+                  <span className="text-xs leading-5 text-[#6f608c]">{option.description}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      ) : null}
 
       {isBusy && !isGeneratingCard && !isStreamingAssistant ? (
         <motion.div
@@ -1192,9 +1486,11 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
               placeholder={
                 liveCardEventId
                   ? "Tell me what to change..."
-                  : "Or let's start planning together from scratch..."
+                  : selectedProductOutput
+                    ? `Enter ${outputLabel(selectedProductOutput).toLowerCase()} details...`
+                    : "Describe what you're planning..."
               }
-              aria-label={liveCardEventId ? "Refine product" : "Start planning from scratch"}
+              aria-label={liveCardEventId ? "Refine invite" : "Start planning from scratch"}
               className="min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#7c4dff] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base"
             />
             <PromptInputActions className="justify-between gap-2 pt-2">
@@ -1274,25 +1570,21 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       selectedOutput={effectiveSelectedProductOutput}
       previewImageUrl={currentPreviewImage}
       categoryLabel={currentCategoryLabel}
-      isBusy={isBusy}
       isGenerating={isGeneratingCard}
       buildProgress={buildProgress}
       currentBuildStep={BUILDING_STEPS[currentBuildStep]}
       canGenerate={canGenerateProduct}
       liveEventId={liveCardEventId}
       publicHref={liveCardPublicHref}
-      advancedEditorHref={liveCardWorkspaceHref}
       rsvp={{
         count: rsvpResponseCount,
         isLoading: rsvpPreview.isLoading,
         error: rsvpPreview.error,
       }}
+      weatherContext={weatherContext}
       onGenerate={() => {
         if (draft) void generateProductForDraft(draft);
       }}
-      onRegenerate={() =>
-        void sendGeneratedCardEdit("Regenerate the product with the latest event details.")
-      }
       mobileView={mobileView}
     />
   );
@@ -1357,7 +1649,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                         {initialAssistantPrompt}
                       </motion.h1>
                       <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base">
-                        Tell me what you need to create.
+                        Pick a category or describe it in your own words.
                       </p>
                       <div className="mx-auto mt-6 grid w-full max-w-3xl grid-cols-2 gap-3 text-left sm:max-w-4xl sm:grid-cols-4">
                         {CELEBRATION_STARTER_TILES.map((tile) => {

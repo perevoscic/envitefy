@@ -81,6 +81,19 @@ function validIsoOrNull(value: unknown): string | null {
   return date.toISOString();
 }
 
+function positiveNumberOrNull(...values: unknown[]) {
+  for (const value of values) {
+    const numeric =
+      typeof value === "number"
+        ? value
+        : typeof value === "string"
+          ? Number.parseInt(value, 10)
+          : Number.NaN;
+    if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  }
+  return null;
+}
+
 function normalizePreviewCopy(value: unknown, fallback: ConciergeEventDraft["previewCopy"]) {
   const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   return {
@@ -107,6 +120,8 @@ function reconciledMissingFields(
     | "startISO"
     | "location"
     | "venue"
+    | "numberOfGuests"
+    | "tone"
   >,
 ) {
   const missing = new Set(fields);
@@ -119,6 +134,8 @@ function reconciledMissingFields(
   if (draft.dateText || draft.startISO) missing.delete("date");
   if (draft.timeText || draft.startISO) missing.delete("time");
   if (draft.location || draft.venue) missing.delete("location");
+  if (draft.numberOfGuests) missing.delete("numberOfGuests");
+  if (draft.tone) missing.delete("tone");
   return Array.from(missing);
 }
 
@@ -194,6 +211,17 @@ export function normalizeConciergeDraft(
   const venue = firstDraftString(record.venue, eventData.venue, eventData.placeName);
   const resolvedLocation = location || fallback.location || venue || fallback.venue;
   const resolvedVenue = venue || fallback.venue || location || fallback.location;
+  const honoreeName =
+    firstDraftString(record.honoreeName, eventData.honoreeName, eventData.birthdayName) ||
+    fallback.honoreeName;
+  const ageOrMilestone =
+    firstDraftString(record.ageOrMilestone, eventData.ageOrMilestone, eventData.age) ||
+    fallback.ageOrMilestone;
+  const theme = firstDraftString(record.theme, eventData.theme) || fallback.theme;
+  const tone = firstDraftString(record.tone, eventData.tone) || fallback.tone;
+  const numberOfGuests =
+    positiveNumberOrNull(record.numberOfGuests, eventData.numberOfGuests, eventData.guestCount) ||
+    fallback.numberOfGuests;
   const status = deriveCreationStatus({
     sourceContext,
     eventPurpose,
@@ -201,8 +229,13 @@ export function normalizeConciergeDraft(
     eventType,
     requestedOutputs,
     dateText,
+    timeText,
     startISO,
     location: resolvedLocation || resolvedVenue,
+    honoreeName,
+    ageOrMilestone,
+    numberOfGuests,
+    tone,
     draftStatus: record.draftStatus,
   });
   const draft: ConciergeEventDraft = {
@@ -227,14 +260,10 @@ export function normalizeConciergeDraft(
     draftStatus: status.draftStatus,
     currentQuestion: status.currentQuestion,
     canPersist: status.canPersist,
-    honoreeName:
-      firstDraftString(record.honoreeName, eventData.honoreeName, eventData.birthdayName) ||
-      fallback.honoreeName,
+    honoreeName,
     relationship:
       firstDraftString(record.relationship, eventData.relationship) || fallback.relationship,
-    ageOrMilestone:
-      firstDraftString(record.ageOrMilestone, eventData.ageOrMilestone, eventData.age) ||
-      fallback.ageOrMilestone,
+    ageOrMilestone,
     dateText,
     timeText,
     startISO,
@@ -243,8 +272,9 @@ export function normalizeConciergeDraft(
       firstDraftString(record.timezone, eventData.timezone, eventData.tz) || fallback.timezone,
     location: resolvedLocation || null,
     venue: resolvedVenue || null,
-    theme: firstDraftString(record.theme, eventData.theme) || fallback.theme,
-    tone: firstDraftString(record.tone, eventData.tone) || fallback.tone,
+    numberOfGuests,
+    theme,
+    tone,
     outputs: toLegacyOutputs(requestedOutputs),
     missingFields: Array.isArray(record.missingFields)
       ? record.missingFields.map(cleanString).filter((item): item is string => Boolean(item))
@@ -308,7 +338,7 @@ async function extractWithOpenAi(
               "You are Envitefy's event creation concierge.",
               "Only handle event, invitation, RSVP, and event asset creation or editing.",
               "Return one JSON object matching the draft shape. Do not include markdown.",
-              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, honoreeName, ageOrMilestone, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
+              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, honoreeName, ageOrMilestone, numberOfGuests, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
               "If you include nested eventData for convenience, duplicate the same extracted fields at the top level.",
               "Separate requested output from event details: live cards, digital flyers, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",
               "Resolve 'this' only from supplied activeContext. If no context exists, ask what source or event to use.",
@@ -361,6 +391,7 @@ export async function extractConciergeDraft(
     requestedOutputs: request.requestedOutputs || null,
     source,
     activeContext: request.activeContext || null,
+    action: request.action || "message",
   });
 
   const shouldUseDeterministicFastPath =
