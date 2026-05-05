@@ -29,6 +29,7 @@ const EVENT_TYPE_LABELS: Record<ConciergeEventType, string> = {
   wedding: "wedding",
   baby_shower: "baby shower",
   graduation: "graduation",
+  gym_meet: "gym meet",
   general: "event",
 };
 
@@ -61,6 +62,7 @@ function detectEventType(text: string, previous?: ConciergeEventDraft | null): C
     return "baby_shower";
   }
   if (/\b(graduation|graduate|commencement|class of)\b/.test(haystack)) return "graduation";
+  if (/\b(gymnastics|gym\s+meet|meet\s+schedule)\b/.test(haystack)) return "gym_meet";
   if (/\bgeneral\s+event\b|\bjust\s+an\s+event\b/.test(haystack)) return "general";
   return previous?.eventType || "unknown";
 }
@@ -114,10 +116,14 @@ function shouldStartFreshEvent(message: string, previous?: ConciergeEventDraft |
   if (!previous) return false;
   const text = cleanString(message) || "";
   if (!/\b(create|make|build|design|generate|draft)\b/i.test(text)) return false;
-  if (/\b(this|that|current|existing|same|matching|add|switch|change|refine|update|edit)\b/i.test(text)) {
+  if (
+    /\b(this|that|current|existing|same|matching|add|switch|change|refine|update|edit)\b/i.test(
+      text,
+    )
+  ) {
     return false;
   }
-  return /\b(birthday|wedding|baby\s+shower|graduation|party|event|ceremony|fundraiser|meeting)\b/i.test(
+  return /\b(birthday|wedding|baby\s+shower|graduation|gymnastics|gym\s+meet|party|event|ceremony|fundraiser|meeting)\b/i.test(
     text,
   );
 }
@@ -233,10 +239,7 @@ function buildPreviewCopy(args: {
     args.dateText &&
       /\b(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b/i.test(args.dateText),
   );
-  const scheduleLine = [
-    args.dateText || "Date TBD",
-    dateTextHasTime ? null : args.timeText || null,
-  ]
+  const scheduleLine = [args.dateText || "Date TBD", dateTextHasTime ? null : args.timeText || null]
     .filter(Boolean)
     .join(" at ");
   const locationLine = args.location || "Location TBD";
@@ -331,6 +334,19 @@ function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
       "Who is the graduate, and should we include school or class year?",
       "What date, time, and location should guests know?",
       "Do you have school colors, a photo style, or a specific vibe in mind?",
+      "",
+      "Once I have those details, I can generate the live card or flyer.",
+    ].join("\n");
+  }
+
+  if (draft.eventType === "gym_meet") {
+    return [
+      "Welcome to Envitefy. I am your Concierge AI, here to help craft a gym meet event page or digital flyer.",
+      "",
+      "To get started, please share a few details:",
+      "What team, gym, or meet name should be featured?",
+      "What date, time, and location should guests know?",
+      "Do you need RSVP, signup, schedule, or registration details included?",
       "",
       "Once I have those details, I can generate the live card or flyer.",
     ].join("\n");

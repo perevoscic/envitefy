@@ -7,6 +7,7 @@ const CATEGORY_LABELS: Record<ConciergeEventDraft["eventType"], string> = {
   wedding: "Wedding",
   baby_shower: "Baby Shower",
   graduation: "Graduation",
+  gym_meet: "Gym Meet",
   general: "General Event",
 };
 

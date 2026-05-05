@@ -314,6 +314,16 @@ test("fallback extracts graduation date text from natural language", () => {
   assert.match(draft.dateText || "", /Saturday/i);
 });
 
+test("fallback infers gym meet category from chat-first prompt", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Create a gym meet event page for our team",
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.equal(draft.eventType, "gym_meet");
+  assert.match(message, /gym meet event page or digital flyer/i);
+});
+
 test("upload OCR context can seed a draft", () => {
   const draft = fallbackExtractConciergeDraft({
     message: "",

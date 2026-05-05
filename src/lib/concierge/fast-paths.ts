@@ -17,6 +17,8 @@ const STARTER_CHIPS = new Set([
   "housewarming",
   "custom invite",
   "graduation",
+  "gym meet",
+  "gymnastics meet",
   "corporate",
   "general event",
   "surprise me",

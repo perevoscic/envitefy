@@ -251,6 +251,7 @@ export async function markCreationSessionSaved(params: {
   sessionId: string;
   eventId: string;
   draft: CreationSession["draft"];
+  metadata?: Record<string, unknown>;
 }): Promise<CreationSession | null> {
   await ensureEventWorkspaceTables();
   const res = await query(
@@ -266,6 +267,7 @@ export async function markCreationSessionSaved(params: {
       params.userId,
       JSON.stringify(params.draft),
       JSON.stringify({
+        ...(params.metadata || {}),
         savedEventId: params.eventId,
         savedAt: new Date().toISOString(),
       }),

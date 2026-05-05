@@ -35,8 +35,19 @@ const EVENT_TYPES = new Set<ConciergeEventType>([
   "wedding",
   "baby_shower",
   "graduation",
+  "gym_meet",
   "general",
 ]);
+
+const EVENT_TYPE_ALIASES: Record<string, ConciergeEventType> = {
+  "birthday invite": "birthday",
+  "birthday party": "birthday",
+  "baby shower": "baby_shower",
+  "gym meet": "gym_meet",
+  "gymnastics meet": "gym_meet",
+  gymnastics: "gym_meet",
+  "general event": "general",
+};
 
 export function cleanCreationString(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -128,7 +139,11 @@ export function toLegacyOutputs(requestedOutputs: RequestedOutput[]): ConciergeO
   return outputs;
 }
 
-export function normalizeCreationIntent(value: unknown, text: string, outputs: RequestedOutput[]): CreationIntent {
+export function normalizeCreationIntent(
+  value: unknown,
+  text: string,
+  outputs: RequestedOutput[],
+): CreationIntent {
   const normalized = cleanCreationString(value)?.toLowerCase();
   if (isGreetingMessage(text)) return "unknown";
   if (
@@ -141,15 +156,24 @@ export function normalizeCreationIntent(value: unknown, text: string, outputs: R
     return normalized;
   }
   if (/\b(edit|change|update|revise)\b/i.test(text)) return "edit_event";
-  if (outputs.length && /\b(make|create|build|turn|convert|draft|design|generate|write)\b/i.test(text)) {
+  if (
+    outputs.length &&
+    /\b(make|create|build|turn|convert|draft|design|generate|write)\b/i.test(text)
+  ) {
     return "create_output";
   }
   if (text.trim()) return "create_event";
   return "unknown";
 }
 
-export function normalizeCreationEventType(value: unknown, fallback: ConciergeEventType = "unknown") {
+export function normalizeCreationEventType(
+  value: unknown,
+  fallback: ConciergeEventType = "unknown",
+) {
   const normalized = cleanCreationString(value)?.toLowerCase();
+  if (normalized && EVENT_TYPE_ALIASES[normalized]) {
+    return EVENT_TYPE_ALIASES[normalized];
+  }
   if (normalized && EVENT_TYPES.has(normalized as ConciergeEventType)) {
     return normalized as ConciergeEventType;
   }
@@ -220,7 +244,10 @@ export function resolveSourceIntent(args: {
       `${text} ${category}`,
     )
   ) {
-    signals.push({ code: "authoring_phrase_or_material", label: "User is creating/editing or source is authoring material" });
+    signals.push({
+      code: "authoring_phrase_or_material",
+      label: "User is creating/editing or source is authoring material",
+    });
     return {
       detectedSourceIntent: "authoring_source",
       confidence: "high",
@@ -228,8 +255,15 @@ export function resolveSourceIntent(args: {
       requiresUserConfirmation: false,
     };
   }
-  if (/\b(birthday|birthdays|wedding|weddings|baby shower|baby showers|gender reveal|invite|invitation)\b/.test(`${text} ${category}`)) {
-    signals.push({ code: "invite_like_category_only", label: "Invite-like category without ownership intent" });
+  if (
+    /\b(birthday|birthdays|wedding|weddings|baby shower|baby showers|gender reveal|invite|invitation)\b/.test(
+      `${text} ${category}`,
+    )
+  ) {
+    signals.push({
+      code: "invite_like_category_only",
+      label: "Invite-like category without ownership intent",
+    });
     return {
       detectedSourceIntent: "unknown",
       confidence: "low",
@@ -342,7 +376,8 @@ const OUTPUT_REQUIREMENTS: Record<RequestedOutput, OutputRequirement> = {
     label: "Live card",
     requiredAny: ["eventPurpose", "title", "sourceContext"],
     optional: ["date", "location"],
-    firstQuestion: "What should this live card be for? Tell me what you're celebrating, or upload an invite/photo and I'll build the first version.",
+    firstQuestion:
+      "What should this live card be for? Tell me what you're celebrating, or upload an invite/photo and I'll build the first version.",
     previewCta: "Create first preview",
   },
   digital_flyer: {
@@ -428,7 +463,9 @@ export function getOutputRequirement(output: RequestedOutput): OutputRequirement
   return OUTPUT_REQUIREMENTS[output] || OUTPUT_REQUIREMENTS.live_card;
 }
 
-export function canPersistCreationDraft(draft: Pick<ConciergeEventDraft, "sourceContext" | "eventPurpose" | "title" | "eventType">): boolean {
+export function canPersistCreationDraft(
+  draft: Pick<ConciergeEventDraft, "sourceContext" | "eventPurpose" | "title" | "eventType">,
+): boolean {
   return Boolean(
     draft.sourceContext.hasUsableContext ||
       cleanCreationString(draft.eventPurpose) ||
@@ -468,8 +505,15 @@ export function deriveCreationStatus(args: {
   startISO?: string | null;
   location?: string | null;
   draftStatus?: unknown;
-}): { draftStatus: CreationDraftStatus; missingFields: string[]; currentQuestion: string | null; canPersist: boolean } {
-  const hasEventPurpose = Boolean(cleanCreationString(args.eventPurpose) || cleanCreationString(args.title));
+}): {
+  draftStatus: CreationDraftStatus;
+  missingFields: string[];
+  currentQuestion: string | null;
+  canPersist: boolean;
+} {
+  const hasEventPurpose = Boolean(
+    cleanCreationString(args.eventPurpose) || cleanCreationString(args.title),
+  );
   const canPersist = canPersistCreationDraft(args);
   const hasMeaningfulContext = canPersist;
   const missingFields: string[] = [];

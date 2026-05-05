@@ -217,7 +217,7 @@ async function extractWithOpenAi(
               "Return intent, requestedOutputs, sourceContext, eventPurpose, eventType, eventData when useful, missingFields, draftStatus, and nextQuestion/currentQuestion.",
               "Separate requested output from event details: live cards, digital flyers, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",
               "Resolve 'this' only from supplied activeContext. If no context exists, ask what source or event to use.",
-              "Use eventType unknown until the user or source gives a real category. Do not use general as a fallback.",
+              "Use eventType unknown until the user or source gives a real category. Supported eventType values are unknown, birthday, wedding, baby_shower, graduation, gym_meet, and general. Do not use general as a fallback.",
               "Prioritize eventPurpose/title before strict event type. Do not ask for date/time before event purpose/source.",
               "Do not mark drafts ready when event purpose/source is missing. Do not classify uploads as invited based only on event category.",
               "Ask for the minimum missing fields. Produce preview copy even when details are missing.",

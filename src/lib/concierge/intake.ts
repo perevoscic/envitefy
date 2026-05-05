@@ -14,6 +14,7 @@ import { extractConciergeDraft } from "./extract.ts";
 import { buildAssistantMessage, buildSuggestedReplies, canSaveConciergeDraft } from "./fallback.ts";
 import { buildConciergeHistoryPayload } from "./history-payload.ts";
 import type {
+  CreationChatMessageSnapshot,
   ConciergeEventDraft,
   ConciergeMessageResponse,
   CreationIntakeRequest,
@@ -104,6 +105,60 @@ function getSavedEventId(session: CreationSession | null): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+const MAX_CREATION_CHAT_MESSAGES = 50;
+const MAX_CREATION_CHAT_MESSAGE_TEXT_LENGTH = 4000;
+
+function normalizeChatMessages(value: unknown): CreationChatMessageSnapshot[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((message): CreationChatMessageSnapshot | null => {
+      if (!message || typeof message !== "object") return null;
+      const role = (message as { role?: unknown }).role;
+      const text = (message as { text?: unknown }).text;
+      if (role !== "user" && role !== "assistant" && role !== "system") return null;
+      if (typeof text !== "string" || !text.trim()) return null;
+      const id = (message as { id?: unknown }).id;
+      const createdAt = (message as { createdAt?: unknown }).createdAt;
+      return {
+        ...(typeof id === "string" && id.trim() ? { id: id.trim() } : {}),
+        role,
+        text: text.trim().slice(0, MAX_CREATION_CHAT_MESSAGE_TEXT_LENGTH),
+        createdAt:
+          typeof createdAt === "string" && createdAt.trim()
+            ? createdAt.trim()
+            : new Date().toISOString(),
+      };
+    })
+    .filter((message): message is CreationChatMessageSnapshot => Boolean(message))
+    .slice(-MAX_CREATION_CHAT_MESSAGES);
+}
+
+function chatMessagesFromSession(session: CreationSession | null): CreationChatMessageSnapshot[] {
+  return normalizeChatMessages(session?.metadata?.chatMessages);
+}
+
+function appendAssistantChatMessage(
+  messages: CreationChatMessageSnapshot[],
+  text: string,
+): CreationChatMessageSnapshot[] {
+  const trimmedText = text.trim();
+  if (!trimmedText) return messages.slice(-MAX_CREATION_CHAT_MESSAGES);
+  const latest = messages[messages.length - 1];
+  if (latest?.role === "assistant" && latest.text === trimmedText) {
+    return messages.slice(-MAX_CREATION_CHAT_MESSAGES);
+  }
+  const assistantSnapshot: CreationChatMessageSnapshot = {
+    role: "assistant",
+    text: trimmedText.slice(0, MAX_CREATION_CHAT_MESSAGE_TEXT_LENGTH),
+    createdAt: new Date().toISOString(),
+  };
+  return [...messages, assistantSnapshot].slice(-MAX_CREATION_CHAT_MESSAGES);
+}
+
+function chatMessagesMetadata(messages: CreationChatMessageSnapshot[]): Record<string, unknown> {
+  return messages.length ? { chatMessages: messages } : {};
+}
+
 export async function resumeLatestCreationSession(params: {
   userId: string;
   timing?: TimingRecorder;
@@ -121,11 +176,13 @@ export async function resumeLatestCreationSession(params: {
       suggestedReplies: [],
       canSave: false,
       savedEventId: null,
+      chatMessages: [],
     };
   }
 
   const savedEventId = getSavedEventId(creationSession);
   const draft = creationSession.draft;
+  const chatMessages = chatMessagesFromSession(creationSession);
   return {
     ok: true,
     draft,
@@ -134,6 +191,7 @@ export async function resumeLatestCreationSession(params: {
     suggestedReplies: savedEventId ? ["Open workspace"] : buildSuggestedReplies(draft),
     canSave: savedEventId ? false : canSaveConciergeDraft(draft),
     savedEventId,
+    chatMessages,
   };
 }
 
@@ -155,11 +213,13 @@ export async function resumeCreationSession(params: {
       suggestedReplies: [],
       canSave: false,
       savedEventId: null,
+      chatMessages: [],
     };
   }
 
   const savedEventId = getSavedEventId(creationSession);
   const draft = creationSession.draft;
+  const chatMessages = chatMessagesFromSession(creationSession);
   return {
     ok: true,
     draft,
@@ -168,6 +228,7 @@ export async function resumeCreationSession(params: {
     suggestedReplies: savedEventId ? ["Open workspace"] : buildSuggestedReplies(draft),
     canSave: savedEventId ? false : canSaveConciergeDraft(draft),
     savedEventId,
+    chatMessages,
   };
 }
 
@@ -204,8 +265,11 @@ export async function handleCreationIntake(params: {
     ...result.draft,
     creationSessionId: request.creationSessionId || result.draft.creationSessionId,
   };
+  const requestChatMessages = normalizeChatMessages(request.chatMessages);
+  const assistantMessage = isSaveAction ? "" : buildAssistantMessage(draft);
 
   let creationSession: CreationSession | null = null;
+  let existingSessionChatMessages: CreationChatMessageSnapshot[] = [];
   if (isSaveAction) {
     const existingSession = await (params.timing?.time("db_read", () =>
       getCreationSession({
@@ -217,6 +281,7 @@ export async function handleCreationIntake(params: {
         userId: params.userId,
         sessionId: draft.creationSessionId,
       }));
+    existingSessionChatMessages = chatMessagesFromSession(existingSession);
     const existingSavedEventId = getSavedEventId(existingSession);
     if (existingSavedEventId) {
       return {
@@ -230,6 +295,9 @@ export async function handleCreationIntake(params: {
         suggestedReplies: ["Open workspace"],
         canSave: false,
         savedEventId: existingSavedEventId,
+        chatMessages: requestChatMessages.length
+          ? requestChatMessages
+          : existingSessionChatMessages,
       };
     }
     if (existingSession) {
@@ -252,6 +320,9 @@ export async function handleCreationIntake(params: {
     request.persistSession !== false &&
     !isSaveAction &&
     (draft.canPersist || draft.requestedOutputs.length > 0 || Boolean(request.ocrContext));
+  const chatMessagesForUpsert = requestChatMessages.length
+    ? appendAssistantChatMessage(requestChatMessages, assistantMessage)
+    : [];
   if (shouldPersistSession) {
     creationSession = await (params.timing?.time("db_write", () =>
       upsertCreationSession({
@@ -261,6 +332,7 @@ export async function handleCreationIntake(params: {
         metadata: {
           action: request.action || "message",
           canPersist: draft.canPersist,
+          ...chatMessagesMetadata(chatMessagesForUpsert),
         },
       }),
     ) ??
@@ -271,11 +343,17 @@ export async function handleCreationIntake(params: {
         metadata: {
           action: request.action || "message",
           canPersist: draft.canPersist,
+          ...chatMessagesMetadata(chatMessagesForUpsert),
         },
       }));
   }
 
   if (isSaveAction) {
+    const saveChatMessages = requestChatMessages.length
+      ? requestChatMessages
+      : chatMessagesFromSession(creationSession).length
+        ? chatMessagesFromSession(creationSession)
+        : existingSessionChatMessages;
     const saved = await (params.timing?.time("db_write", () =>
       persistCreationAsEvent({
         userId: params.userId,
@@ -297,6 +375,7 @@ export async function handleCreationIntake(params: {
           sessionId: draft.creationSessionId,
           eventId: saved.eventId,
           draft: savedDraft,
+          metadata: chatMessagesMetadata(saveChatMessages),
         }),
       ) ??
         markCreationSessionSaved({
@@ -304,6 +383,7 @@ export async function handleCreationIntake(params: {
           sessionId: draft.creationSessionId,
           eventId: saved.eventId,
           draft: savedDraft,
+          metadata: chatMessagesMetadata(saveChatMessages),
         }));
     } else {
       creationSession = await (params.timing?.time("db_write", () =>
@@ -316,6 +396,7 @@ export async function handleCreationIntake(params: {
             canPersist: savedDraft.canPersist,
             savedEventId: saved.eventId,
             savedAt: new Date().toISOString(),
+            ...chatMessagesMetadata(saveChatMessages),
           },
         }),
       ) ??
@@ -328,6 +409,7 @@ export async function handleCreationIntake(params: {
             canPersist: savedDraft.canPersist,
             savedEventId: saved.eventId,
             savedAt: new Date().toISOString(),
+            ...chatMessagesMetadata(saveChatMessages),
           },
         }));
     }
@@ -339,15 +421,24 @@ export async function handleCreationIntake(params: {
       suggestedReplies: ["Open workspace"],
       canSave: false,
       savedEventId: saved.eventId,
+      chatMessages: chatMessagesFromSession(creationSession).length
+        ? chatMessagesFromSession(creationSession)
+        : saveChatMessages,
     };
   }
 
+  const responseChatMessages = chatMessagesFromSession(creationSession).length
+    ? chatMessagesFromSession(creationSession)
+    : requestChatMessages.length
+      ? appendAssistantChatMessage(requestChatMessages, assistantMessage)
+      : [];
   return {
     ok: true,
     draft,
     creationSession,
-    assistantMessage: buildAssistantMessage(draft),
+    assistantMessage,
     suggestedReplies: buildSuggestedReplies(draft),
     canSave: canSaveConciergeDraft(draft),
+    chatMessages: responseChatMessages,
   };
 }

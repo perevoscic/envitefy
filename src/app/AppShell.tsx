@@ -70,6 +70,7 @@ export default function AppShell({
     (status === "loading" && wasAuthenticated.current);
   const onMarketing = isMarketingPath(pathname);
   const isStudioCardShare = isStudioCardSharePath(pathname);
+  const isChatPath = pathname.replace(/\/+$/, "") === "/chat";
   const showWorkspaceChrome = isAuthenticated && !onMarketing && !isStudioCardShare;
   const isRedirectingFromMarketing = onMarketing && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
@@ -109,8 +110,11 @@ export default function AppShell({
       {showWorkspaceChrome ? (
         <MenuProvider>
           <LeftSidebar />
-          <MainContentWrapper isAuthenticated={true}>
-            <div className="flex-1 min-w-0">{children}</div>
+          <MainContentWrapper
+            isAuthenticated={true}
+            className={isChatPath ? "h-[100dvh] overflow-hidden" : ""}
+          >
+            <div className="min-h-0 flex-1 min-w-0">{children}</div>
           </MainContentWrapper>
         </MenuProvider>
       ) : (
@@ -119,7 +123,7 @@ export default function AppShell({
             <AuthTransitionOverlay message="Taking you to your workspace..." />
           ) : (
             <>
-              <div className="flex-1 min-w-0">{children}</div>
+              <div className="min-h-0 flex-1 min-w-0">{children}</div>
               <ConditionalFooter />
             </>
           )}

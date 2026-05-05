@@ -32,6 +32,12 @@ test("creation intake fast path covers greetings, starter chips, output chips, a
   );
   assert.equal(
     shouldSkipOpenAiForCreationRequest({
+      request: { message: "Gym Meet", action: "chip" },
+    }),
+    true,
+  );
+  assert.equal(
+    shouldSkipOpenAiForCreationRequest({
       request: { message: "Make this a live card", action: "chip" },
     }),
     true,

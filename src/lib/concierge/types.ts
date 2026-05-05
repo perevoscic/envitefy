@@ -13,6 +13,7 @@ export type ConciergeEventType =
   | "wedding"
   | "baby_shower"
   | "graduation"
+  | "gym_meet"
   | "general";
 
 export type RequestedOutput =
@@ -233,6 +234,13 @@ export type CreationSession = {
   updated_at: string;
 };
 
+export type CreationChatMessageSnapshot = {
+  id?: string;
+  role: "user" | "assistant" | "system";
+  text: string;
+  createdAt?: string;
+};
+
 export type CreationThreadSummary = {
   id: string;
   title: string;
@@ -265,6 +273,7 @@ export type ConciergeMessageRequest = {
 export type CreationIntakeRequest = ConciergeMessageRequest & {
   creationSessionId?: string | null;
   persistSession?: boolean;
+  chatMessages?: CreationChatMessageSnapshot[] | null;
 };
 
 export type ConciergeMessageResponse =
@@ -276,6 +285,7 @@ export type ConciergeMessageResponse =
       suggestedReplies: string[];
       canSave: boolean;
       savedEventId?: string | null;
+      chatMessages?: CreationChatMessageSnapshot[];
       timings?: Record<string, unknown>;
     }
   | {
@@ -293,6 +303,7 @@ export type CreationSessionResumeResponse =
       suggestedReplies: string[];
       canSave: boolean;
       savedEventId?: string | null;
+      chatMessages?: CreationChatMessageSnapshot[];
       timings?: Record<string, unknown>;
     }
   | {

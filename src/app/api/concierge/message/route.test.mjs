@@ -30,6 +30,8 @@ test("creation intake API owns session persistence and auth", () => {
   assert.match(intake, /upsertCreationSession/);
   assert.match(intake, /const shouldPersistSession =/);
   assert.match(intake, /draft\.canPersist \|\| draft\.requestedOutputs\.length > 0/);
+  assert.match(intake, /normalizeChatMessages/);
+  assert.match(intake, /chatMessagesMetadata\(chatMessagesForUpsert\)/);
   assert.match(storage, /create table if not exists creation_sessions/);
   assert.match(storage, /idx_creation_sessions_user_updated/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS creation_sessions/);
@@ -50,8 +52,11 @@ test("creation intake resume reads the signed-in user's latest session only", ()
 
   assert.match(intake, /getLatestCreationSession\(\{ userId: params\.userId \}\)/);
   assert.match(intake, /getSavedEventId\(creationSession\)/);
+  assert.match(intake, /chatMessagesFromSession\(creationSession\)/);
   assert.match(intake, /savedEventId \? false : canSaveConciergeDraft\(draft\)/);
   assert.match(types, /CreationSessionResumeResponse/);
+  assert.match(types, /CreationChatMessageSnapshot/);
+  assert.match(types, /chatMessages\?: CreationChatMessageSnapshot\[\]/);
 
   assert.match(storage, /export async function getLatestCreationSession/);
   assert.match(storage, /where user_id = \$1/);
@@ -70,12 +75,14 @@ test("saved creation sessions keep workspace continuation scoped to the owner", 
   assert.match(intake, /This workspace is already being created/);
   assert.match(intake, /draftStatus: "published"/);
   assert.match(intake, /savedEventId: saved\.eventId/);
+  assert.match(intake, /metadata: chatMessagesMetadata\(saveChatMessages\)/);
   assert.match(storage, /export async function claimCreationSessionSave/);
   assert.match(storage, /status = 'publishing'/);
   assert.match(storage, /status not in \('published', 'publishing'\)/);
   assert.match(storage, /export async function markCreationSessionSaved/);
   assert.match(storage, /where id = \$1 and user_id = \$2/);
   assert.match(storage, /metadata = metadata \|\| \$4::jsonb/);
+  assert.match(storage, /metadata\?: Record<string, unknown>/);
   assert.match(storage, /savedEventId: params\.eventId/);
 });
 
