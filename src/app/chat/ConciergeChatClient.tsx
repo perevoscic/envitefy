@@ -1515,10 +1515,10 @@ export default function ConciergeChatClient() {
   );
 
   return (
-    <div className="flex min-h-screen w-full overflow-x-hidden bg-[#f8f9fc] text-[#161129] md:h-screen md:overflow-hidden">
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-[#f8f9fc] text-[#161129]">
       <main
         ref={mainRef}
-        className="relative flex min-h-screen min-w-0 flex-1 flex-col overflow-y-auto md:h-full md:min-h-0 md:overflow-hidden"
+        className="relative flex min-h-screen min-w-0 flex-1 flex-col overflow-y-auto"
       >
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
           <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#eee8f6] bg-white px-4 md:hidden">
