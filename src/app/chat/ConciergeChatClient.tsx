@@ -645,6 +645,7 @@ export default function ConciergeChatClient() {
   const selectedProductLabel = productLabel(effectiveSelectedProductOutput);
   const currentCategoryLabel = categoryLabelFromDraft(draft, starterCategory);
   const currentPreviewImage = previewImageForDraft(draft, starterCategory);
+  const mobileComposerSpacer = `calc(${composerBottomPadding}px + env(safe-area-inset-bottom) + 1.25rem)`;
 
   function selectProductOutputForDraft(nextDraft: ConciergeEventDraft) {
     const restoredOutput = nextDraft.requestedOutputs.find((output) =>
@@ -1099,7 +1100,7 @@ export default function ConciergeChatClient() {
   const chatThread = (
     <div
       className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-end gap-5 px-4 pb-56 pt-8 sm:px-6 sm:pb-60"
-      style={{ paddingBottom: composerBottomPadding }}
+      style={{ paddingBottom: mobileComposerSpacer }}
       role="log"
       aria-live="polite"
       aria-relevant="additions text"
@@ -1600,7 +1601,7 @@ export default function ConciergeChatClient() {
                 {isEmptyState ? (
                   <div
                     className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-end px-4 pt-8 text-center sm:px-6"
-                    style={{ paddingBottom: composerBottomPadding }}
+                    style={{ paddingBottom: mobileComposerSpacer }}
                   >
                     <motion.h1
                       initial={{ opacity: 0, y: 16 }}
