@@ -1402,7 +1402,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
           className="w-full max-w-[38rem] self-start"
         >
           <div
-            className="grid grid-cols-2 gap-3"
+            className="grid grid-cols-2 gap-3 md:grid-cols-4"
             role="group"
             aria-label="Choose product format"
           >
@@ -1413,7 +1413,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                 onClick={() => void handleProductChoice(option)}
                 disabled={isBusy}
                 aria-label={`Choose product: ${option.label}`}
-                className="group min-h-[6.5rem] rounded-2xl border border-[#e5dcff] bg-white/88 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#bda6ff] hover:bg-[#fbf8ff] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55"
+                className="group min-h-[6.5rem] rounded-[1.25rem] border border-[#e5dcff] bg-white/88 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#bda6ff] hover:bg-[#fbf8ff] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55 md:min-h-[7rem]"
               >
                 <span className="flex h-full flex-col justify-between gap-3">
                   <span className="flex items-center gap-2 text-sm font-bold text-[#25183a]">

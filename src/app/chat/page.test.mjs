@@ -73,7 +73,10 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.doesNotMatch(client, /Set the event category to/);
   assert.match(client, /Inferred category/);
   assert.match(client, /Gym Meet/);
-  assert.doesNotMatch(preview, /ChevronDown/);
+  assert.match(preview, /ChevronDown/);
+  assert.match(preview, /isMobileDetailsOpen/);
+  assert.match(preview, /aria-expanded=\{isMobileDetailsOpen\}/);
+  assert.match(preview, /md:mt-0 md:grid/);
   assert.doesNotMatch(preview, /isCategoryMenuOpen/);
   assert.match(preview, /title=\{`Category: \$\{categoryLabel\}`\}/);
   assert.doesNotMatch(client, /PRODUCT_CHOICE_PROMPT/);
@@ -84,7 +87,8 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /hasInitialEventContext/);
   assert.match(client, /!draft\?\.requestedOutputs\.length/);
   assert.match(client, /aria-label="Choose product format"/);
-  assert.match(client, /className="grid grid-cols-2 gap-3"/);
+  assert.match(client, /className="grid grid-cols-2 gap-3 md:grid-cols-4"/);
+  assert.match(client, /rounded-\[1\.25rem\]/);
   assert.doesNotMatch(client, /grid grid-cols-3 gap-1/);
   assert.match(client, /Live Card/);
   assert.match(client, /Flyer Invite/);
@@ -171,6 +175,13 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
     /selectedOutput === "live_card" \? `\/card\/\$\{eventId\}` : `\/event\/\$\{eventId\}`/,
   );
   assert.match(chatSurface, /Generate invite/);
+  assert.match(chatSurface, /w-full min-w-full max-w-none/);
+  assert.match(
+    preview,
+    /pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\]/,
+  );
+  assert.match(preview, /flex-\[1_1_0\]/);
+  assert.doesNotMatch(preview, /pb-24/);
   assert.doesNotMatch(chatSurface, /Manage/);
   assert.doesNotMatch(chatSurface, /Generate workspace/);
   assert.doesNotMatch(chatSurface, /Regenerate version/);
