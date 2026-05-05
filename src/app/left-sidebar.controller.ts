@@ -852,9 +852,25 @@ export function useLeftSidebarController({
 
   const openAiThreadsPage = useCallback(() => {
     clearEventContext();
+    if (!isDesktop) {
+      setSidebarPage("aiThreads");
+      collapseSidebarOnTouch();
+      router.push("/chat");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("envitefy:chat:new"));
+      }
+      return;
+    }
     setIsCollapsed(false);
     setSidebarPage("aiThreads");
-  }, [clearEventContext, setIsCollapsed, setSidebarPage]);
+  }, [
+    clearEventContext,
+    collapseSidebarOnTouch,
+    isDesktop,
+    router,
+    setIsCollapsed,
+    setSidebarPage,
+  ]);
 
   const startNewAiChat = useCallback(() => {
     clearEventContext();
