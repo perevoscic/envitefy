@@ -17,13 +17,27 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.doesNotMatch(page, /isAdmin/);
   assert.doesNotMatch(page, /notFound\(/);
 
-  assert.match(client, /What are you making\?/);
-  assert.match(client, /text-5xl/);
+  assert.match(client, /What are we celebrating\?/);
+  assert.match(client, /text-4xl/);
   assert.match(client, /sm:text-6xl/);
   assert.match(client, /STUDIO_CATEGORY_TILES/);
   assert.match(client, /CHAT_STARTER_PROMPTS/);
+  assert.match(client, /CELEBRATION_STARTER_TILES/);
   assert.match(client, /Tell me what you need to create/);
-  assert.match(client, /Upload invite or photo/);
+  assert.match(client, /Or let's start planning together from scratch/);
+  assert.match(client, /\[&::placeholder\]:text-\[0\.82rem\]/);
+  assert.match(client, /Birthday live card/);
+  assert.match(client, /Wedding invitation/);
+  assert.match(client, /Baby shower invite/);
+  assert.match(client, /Game event page/);
+  assert.match(client, /Bridal shower invite/);
+  assert.doesNotMatch(client, /Watch party invite/);
+  assert.ok(client.indexOf("Game event page") < client.indexOf("Baby shower invite"));
+  assert.match(client, /label: "Baby shower invite"[\s\S]*?size: "desktopWide"/);
+  assert.match(client, /col-span-2 aspect-\[2\.055\/1\]/);
+  assert.match(client, /sm:col-span-2 sm:aspect-\[2\.055\/1\]/);
+  assert.match(client, /aspect-square min-h-\[8\.25rem\]/);
+  assert.doesNotMatch(client, /Upload invite or photo/);
   assert.doesNotMatch(client, /CHAT_STUDIO_GRID_COMPOSITION/);
   assert.doesNotMatch(client, /ChatStudioStarterGrid/);
   assert.doesNotMatch(client, /auto-rows-\[92px\]/);
@@ -78,7 +92,10 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(appShell, /const isChatPath = pathname\.replace\(\/\\\/\+\$\/, ""\) === "\/chat"/);
   assert.match(appShell, /className=\{isChatPath \? "h-\[100dvh\] overflow-hidden" : ""\}/);
   assert.match(client, /className="flex h-full min-h-0 w-full overflow-hidden/);
-  assert.match(client, /className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"/);
+  assert.match(
+    client,
+    /className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"/,
+  );
   assert.doesNotMatch(client, /relative flex min-h-screen min-w-0 flex-1 flex-col overflow-y-auto/);
   assert.match(client, /shouldShowWorkspacePanel/);
   assert.match(client, /Boolean\(draft\)/);

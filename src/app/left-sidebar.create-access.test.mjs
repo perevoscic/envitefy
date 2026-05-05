@@ -79,13 +79,22 @@ test("left sidebar exposes signed-in AI create entry", () => {
   assert.match(source, /href="\/chat"[\s\S]*?onClick=\{onNewChat\}[\s\S]*?New chat/s);
   assert.doesNotMatch(source, /href="\/chat"[\s\S]{0,160}onClick=\{onOpenThread\}/);
   assert.match(source, /href=\{`\/chat\?thread=\$\{encodeURIComponent\(thread\.id\)\}`\}/);
+  assert.match(
+    source,
+    /onClick=\{\(event\) => \{\s*if \(!isPlainPrimaryLinkClick\(event\)\) return;\s*event\.preventDefault\(\);\s*onOpenThread\(thread\.id\);\s*\}\}/s,
+  );
   assert.match(source, /className="group flex items-center gap-2"/);
   assert.match(source, /opacity-0[\s\S]*group-hover:opacity-100[\s\S]*group-focus-within:opacity-100/);
   assert.match(source, /Recents/);
   assert.match(controllerSource, /resetSidebarToRoot: \(\) => void;/);
   assert.match(controllerSource, /resetSidebarToRoot,/);
   assert.match(controllerSource, /openAiThreadsPage: \(\) => void;/);
+  assert.match(controllerSource, /openAiThread: \(threadId: string\) => void;/);
   assert.match(controllerSource, /startNewAiChat: \(\) => void;/);
+  assert.match(
+    controllerSource,
+    /const \[pendingAiThreadHref, setPendingAiThreadHref\] = useState<string \| null>\(null\);/,
+  );
   assert.match(
     controllerSource,
     /const openAiThreadsPage = useCallback\(\(\) => \{[\s\S]*?setSidebarPage\("aiThreads"\)/,
@@ -94,6 +103,14 @@ test("left sidebar exposes signed-in AI create entry", () => {
   assert.match(
     controllerSource,
     /const startNewAiChat = useCallback\(\(\) => \{[\s\S]*?setSidebarPage\("aiThreads"\)/,
+  );
+  assert.match(
+    controllerSource,
+    /const openAiThread = useCallback\([\s\S]*?setPendingAiThreadHref\(nextHref\);[\s\S]*?router\.push\("\/chat"\);/s,
+  );
+  assert.match(
+    controllerSource,
+    /useEffect\(\(\) => \{[\s\S]*?if \(!pendingAiThreadHref\) return;[\s\S]*?if \(pathname !== "\/chat"\) return;[\s\S]*?router\.push\(nextHref\);[\s\S]*?\}, \[pathname, pendingAiThreadHref, router, searchParams\]\);/s,
   );
   assert.match(controllerSource, /window\.dispatchEvent\(new CustomEvent\("envitefy:chat:new"\)\)/);
   assert.match(

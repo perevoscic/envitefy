@@ -7,6 +7,7 @@ import {
   type ComponentType,
   type CSSProperties,
   type Dispatch,
+  type MouseEvent,
   type RefObject,
   type SetStateAction,
   useEffect,
@@ -264,6 +265,17 @@ function PanelBackButton({ onClick }: { onClick: () => void }) {
         Back
       </span>
     </button>
+  );
+}
+
+function isPlainPrimaryLinkClick(event: MouseEvent<HTMLAnchorElement>) {
+  return (
+    !event.defaultPrevented &&
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.shiftKey
   );
 }
 
@@ -896,7 +908,7 @@ function AiThreadsPanel({
   activeThreadId: string | null;
   onBack: () => void;
   onNewChat: () => void;
-  onOpenThread: () => void;
+  onOpenThread: (threadId: string) => void;
   onDeleteThread: (thread: CreationThreadSummary) => void;
 }) {
   return (
@@ -937,7 +949,11 @@ function AiThreadsPanel({
                 <div key={thread.id} className="group flex items-center gap-2">
                   <Link
                     href={`/chat?thread=${encodeURIComponent(thread.id)}`}
-                    onClick={onOpenThread}
+                    onClick={(event) => {
+                      if (!isPlainPrimaryLinkClick(event)) return;
+                      event.preventDefault();
+                      onOpenThread(thread.id);
+                    }}
                     className={`${SIDEBAR_SUBMENU_ROW_CLASS} min-w-0 flex-1 ${
                       isActiveThread
                         ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS
@@ -1372,7 +1388,7 @@ export default function LeftSidebar() {
                       activeThreadId={activeAiThreadId}
                       onBack={viewModel.backToRoot}
                       onNewChat={viewModel.startNewAiChat}
-                      onOpenThread={viewModel.resetSidebarToRoot}
+                      onOpenThread={viewModel.openAiThread}
                       onDeleteThread={deleteAiThread}
                     />
                   </div>

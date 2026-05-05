@@ -65,6 +65,20 @@ function hasCreateVerb(text: string): boolean {
   );
 }
 
+function hasReceivedInviteLanguage(text: string): boolean {
+  return (
+    /\b(i|we)\s+(got|received|have)\b[\s\S]{0,80}\b(invite|invitation)\b/i.test(text) ||
+    /\b(invite|invitation)\b[\s\S]{0,80}\b(i|we)\s+(got|received|have)\b/i.test(text) ||
+    /\b(was|were)\s+invited\b/i.test(text) ||
+    /\b(someone|they|he|she)\s+(sent|forwarded)\s+(me|us)\b[\s\S]{0,80}\b(invite|invitation)\b/i.test(
+      text,
+    ) ||
+    /\b(save|add)\b[\s\S]{0,80}\b(invite|invitation)\b[\s\S]{0,80}\b(received|got|sent|forwarded)\b/i.test(
+      text,
+    )
+  );
+}
+
 export function isGreetingMessage(text: string): boolean {
   return /^(hi|hello|hey|yo|sup|howdy|good morning|good afternoon|good evening)[!.\s]*$/i.test(
     text.trim(),
@@ -229,7 +243,7 @@ export function resolveSourceIntent(args: {
   const text = cleanCreationString(args.text)?.toLowerCase() || "";
   const category = cleanCreationString(args.category)?.toLowerCase() || "";
   const signals: SourceIntentResolution["signals"] = [];
-  if (/\b(i got|i received|was invited|invitation i received|someone sent me)\b/.test(text)) {
+  if (hasReceivedInviteLanguage(text)) {
     signals.push({ code: "received_invite_phrase", label: "User says they received an invite" });
     return {
       detectedSourceIntent: "received_invite",
@@ -294,6 +308,17 @@ export function resolveCreationSourceContext(args: {
   ocrContext?: ConciergeOcrContext | null;
 }): CreationSourceContext {
   const originalCategory = cleanCreationString(args.ocrContext?.category);
+  const textSourceIntent = resolveSourceIntent({ text: args.message });
+  const contextualSourceIntent: SourceIntentResolution =
+    textSourceIntent.detectedSourceIntent === "unknown" &&
+    args.previous?.sourceContext.detectedSourceIntent
+      ? {
+          detectedSourceIntent: args.previous.sourceContext.detectedSourceIntent,
+          confidence: args.previous.sourceContext.confidence || "low",
+          signals: args.previous.sourceContext.signals || [],
+          requiresUserConfirmation: Boolean(args.previous.sourceContext.requiresUserConfirmation),
+        }
+      : textSourceIntent;
   if (args.ocrContext) {
     const sourceIntent = resolveSourceIntent({
       text: [args.message, args.ocrContext.ocrText].filter(Boolean).join("\n"),
@@ -317,7 +342,7 @@ export function resolveCreationSourceContext(args: {
         resolvedId: entries[0].id,
         hasUsableContext: true,
         ambiguity: "none",
-        detectedSourceIntent: "unknown",
+        ...contextualSourceIntent,
       };
     }
     if (entries.length > 1) {
@@ -325,7 +350,7 @@ export function resolveCreationSourceContext(args: {
         type: "none",
         hasUsableContext: false,
         ambiguity: "multiple",
-        detectedSourceIntent: "unknown",
+        ...contextualSourceIntent,
         candidates: entries,
       };
     }
@@ -333,7 +358,7 @@ export function resolveCreationSourceContext(args: {
       type: "none",
       hasUsableContext: false,
       ambiguity: "missing",
-      detectedSourceIntent: "unknown",
+      ...contextualSourceIntent,
     };
   }
 
@@ -344,7 +369,7 @@ export function resolveCreationSourceContext(args: {
       resolvedId: args.previous.creationSessionId,
       hasUsableContext: false,
       ambiguity: "none",
-      detectedSourceIntent: "unknown",
+      ...contextualSourceIntent,
     };
   }
 
@@ -352,7 +377,7 @@ export function resolveCreationSourceContext(args: {
     type: "none",
     hasUsableContext: false,
     ambiguity: "none",
-    detectedSourceIntent: "unknown",
+    ...contextualSourceIntent,
   };
 }
 
@@ -464,8 +489,11 @@ export function getOutputRequirement(output: RequestedOutput): OutputRequirement
 }
 
 export function canPersistCreationDraft(
-  draft: Pick<ConciergeEventDraft, "sourceContext" | "eventPurpose" | "title" | "eventType">,
+  draft: Pick<ConciergeEventDraft, "sourceContext" | "eventPurpose" | "title" | "eventType"> & {
+    canPersist?: boolean;
+  },
 ): boolean {
+  if (draft.canPersist === false) return false;
   return Boolean(
     draft.sourceContext.hasUsableContext ||
       cleanCreationString(draft.eventPurpose) ||
@@ -514,6 +542,22 @@ export function deriveCreationStatus(args: {
   const hasEventPurpose = Boolean(
     cleanCreationString(args.eventPurpose) || cleanCreationString(args.title),
   );
+  const receivedInviteNeedsSource =
+    args.sourceContext.detectedSourceIntent === "received_invite" &&
+    !args.sourceContext.hasUsableContext &&
+    !cleanCreationString(args.eventPurpose) &&
+    !cleanCreationString(args.title) &&
+    !args.dateText &&
+    !args.startISO &&
+    !args.location;
+  if (receivedInviteNeedsSource) {
+    return {
+      draftStatus: "needs_source_or_event",
+      missingFields: ["sourceContext"],
+      currentQuestion: "invite_source",
+      canPersist: false,
+    };
+  }
   const canPersist = canPersistCreationDraft(args);
   const hasMeaningfulContext = canPersist;
   const missingFields: string[] = [];

@@ -141,13 +141,14 @@ const OUTPUT_LABELS: Record<RequestedOutput, string> = {
   welcome_sign: "Welcome sign",
 };
 
-const EMPTY_ASSISTANT_PROMPT = "What are you making?";
+const EMPTY_ASSISTANT_PROMPT = "What are we celebrating?";
 
 const CHAT_STARTER_PROMPTS = [
-  "I am planning a wedding and need a live card with RSVP.",
-  "Create a gym meet event page for our team.",
-  "I received a birthday invite and want to save it.",
-  "Make an RSVP page for a school fundraiser.",
+  "Create a birthday live card with RSVP.",
+  "Create a wedding invitation with RSVP.",
+  "Create a baby shower invite with RSVP.",
+  "Create a game event page for my team.",
+  "Create a bridal shower invite with RSVP.",
 ];
 
 const CATEGORY_LABELS: Partial<Record<ConciergeEventType, string>> = {
@@ -167,6 +168,46 @@ const PREVIEW_CATEGORY_BY_EVENT_TYPE: Partial<Record<ConciergeEventType, string>
   graduation: "Custom Invite",
   general: "Custom Invite",
 };
+
+function studioStarterImagePath(categoryName: string) {
+  return (
+    STUDIO_CATEGORY_TILES.find((category) => category.name === categoryName)?.imagePath ||
+    "/studio/custom-invite.webp"
+  );
+}
+
+const CELEBRATION_STARTER_TILES = [
+  {
+    label: "Birthday live card",
+    prompt: CHAT_STARTER_PROMPTS[0],
+    imagePath: studioStarterImagePath("Birthday"),
+    size: "wide",
+  },
+  {
+    label: "Wedding invitation",
+    prompt: CHAT_STARTER_PROMPTS[1],
+    imagePath: studioStarterImagePath("Wedding"),
+    size: "desktopWide",
+  },
+  {
+    label: "Game event page",
+    prompt: CHAT_STARTER_PROMPTS[3],
+    imagePath: studioStarterImagePath("Game Day"),
+    size: "square",
+  },
+  {
+    label: "Baby shower invite",
+    prompt: CHAT_STARTER_PROMPTS[2],
+    imagePath: studioStarterImagePath("Baby Shower"),
+    size: "desktopWide",
+  },
+  {
+    label: "Bridal shower invite",
+    prompt: CHAT_STARTER_PROMPTS[4],
+    imagePath: studioStarterImagePath("Bridal Shower"),
+    size: "square",
+  },
+] as const;
 
 const CATEGORY_OPTIONS: Array<{
   eventType: Exclude<ConciergeEventType, "unknown">;
@@ -1054,9 +1095,13 @@ export default function ConciergeChatClient() {
             )}
           >
             <PromptInputTextarea
-              placeholder={liveCardEventId ? "Refine workspace..." : "Describe your event..."}
-              aria-label={liveCardEventId ? "Refine workspace" : "Describe your event"}
-              className="min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#7c4dff] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6]"
+              placeholder={
+                liveCardEventId
+                  ? "Refine workspace..."
+                  : "Or let's start planning together from scratch..."
+              }
+              aria-label={liveCardEventId ? "Refine workspace" : "Start planning from scratch"}
+              className="min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#7c4dff] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base"
             />
             <PromptInputActions className="justify-between gap-2 pt-2">
               <div className="flex min-w-0 items-center gap-1">
@@ -1569,38 +1614,52 @@ export default function ConciergeChatClient() {
                       <motion.h1
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mx-auto max-w-3xl text-5xl font-medium tracking-normal text-[#2d1b36] sm:text-6xl"
+                        className="mx-auto max-w-3xl text-4xl font-medium tracking-normal text-[#2d1b36] sm:text-6xl"
                       >
-                        What are you making?
+                        What are we celebrating?
                       </motion.h1>
                       <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base">
-                        Tell me what you need to create, or upload an invite/photo.
+                        Tell me what you need to create.
                       </p>
-                      <div className="mx-auto mt-6 flex max-w-3xl flex-wrap items-center justify-center gap-2">
-                        {CHAT_STARTER_PROMPTS.map((prompt) => (
-                          <button
-                            key={prompt}
-                            type="button"
-                            onClick={() => void handleStarterPrompt(prompt)}
-                            disabled={isBusy}
-                            className="inline-flex min-h-10 items-center rounded-full border border-[#dfd6ea] bg-white/86 px-4 py-2 text-sm font-semibold text-[#4d3d68] shadow-sm transition hover:-translate-y-0.5 hover:border-[#cdbdff] hover:bg-[#fbf9ff] disabled:cursor-not-allowed disabled:opacity-55"
-                          >
-                            {prompt}
-                          </button>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={isUploading}
-                          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#cdbdff] bg-[#f6f1ff] px-4 py-2 text-sm font-bold text-[#7c4dff] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#efe7ff] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {isUploading ? (
-                            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                          ) : (
-                            <Upload className="size-4" aria-hidden="true" />
-                          )}
-                          Upload invite or photo
-                        </button>
+                      <div className="mx-auto mt-6 grid w-full max-w-3xl grid-cols-2 gap-3 text-left sm:max-w-4xl sm:grid-cols-4">
+                        {CELEBRATION_STARTER_TILES.map((tile) => {
+                          const isWide = tile.size === "wide";
+                          const isDesktopWide = tile.size === "desktopWide";
+                          return (
+                            <button
+                              key={tile.label}
+                              type="button"
+                              onClick={() => void handleStarterPrompt(tile.prompt)}
+                              disabled={isBusy}
+                              aria-label={`Start ${tile.label}`}
+                              className={cn(
+                                "group relative isolate overflow-hidden rounded-2xl border border-white/80 bg-[#f6f1ff] text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55",
+                                isWide
+                                  ? "col-span-2 aspect-[2.055/1]"
+                                  : cn(
+                                      "aspect-square min-h-[8.25rem]",
+                                      isDesktopWide && "sm:col-span-2 sm:aspect-[2.055/1]",
+                                    ),
+                              )}
+                            >
+                              <img
+                                src={tile.imagePath}
+                                alt=""
+                                aria-hidden="true"
+                                className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                              />
+                              <span
+                                className="absolute inset-0 bg-gradient-to-t from-[#171023]/80 via-[#241735]/28 to-white/10"
+                                aria-hidden="true"
+                              />
+                              <span className="relative z-10 flex h-full flex-col justify-end p-3 sm:p-4">
+                                <span className="max-w-[11rem] text-balance break-words text-base font-bold leading-tight text-white sm:text-lg">
+                                  {tile.label}
+                                </span>
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   ) : (

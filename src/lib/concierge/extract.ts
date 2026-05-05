@@ -220,6 +220,8 @@ async function extractWithOpenAi(
               "Use eventType unknown until the user or source gives a real category. Supported eventType values are unknown, birthday, wedding, baby_shower, graduation, gym_meet, and general. Do not use general as a fallback.",
               "Prioritize eventPurpose/title before strict event type. Do not ask for date/time before event purpose/source.",
               "Do not mark drafts ready when event purpose/source is missing. Do not classify uploads as invited based only on event category.",
+              "When the user says they received, got, or were sent an invite and wants to save it, set sourceContext.detectedSourceIntent to received_invite and ownership to invited.",
+              "If that received-invite request has no invite image/text or concrete event details, ask for an upload or pasted invite text before asking host-authoring questions.",
               "Ask for the minimum missing fields. Produce preview copy even when details are missing.",
               "Never choose a user id, owner id, or fetch private user data.",
             ].join(" "),
@@ -265,6 +267,7 @@ export async function extractConciergeDraft(
   });
 
   const shouldUseDeterministicFastPath =
+    fallback.currentQuestion === "invite_source" ||
     (isGreetingMessage(message) && !request.draft && !request.ocrContext) ||
     (isConciergeFastActionsEnabled() &&
       shouldSkipOpenAiForCreationRequest({ request, fallbackDraft: fallback }));

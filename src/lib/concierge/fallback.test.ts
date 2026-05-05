@@ -28,6 +28,64 @@ test("birthday category starts with an oriented intake prompt", () => {
   assert.match(message, /What date, time, and location/i);
 });
 
+test("received birthday invite request asks for invite source instead of host authoring", () => {
+  const result = fallbackExtractConciergeDraft({
+    message: "I received a birthday invite and want to save it.",
+  });
+  const message = buildAssistantMessage(result);
+
+  assert.equal(result.eventType, "birthday");
+  assert.equal(result.sourceContext.detectedSourceIntent, "received_invite");
+  assert.equal(result.ownership, "invited");
+  assert.equal(result.currentQuestion, "invite_source");
+  assert.equal(result.canPersist, false);
+  assert.equal(canPersistConciergeHistoryDraft(result), false);
+  assert.match(result.missingFields[0], /sourceContext/);
+  assert.match(message, /saving a birthday invite you received/i);
+  assert.match(message, /upload[\s\S]+paste[\s\S]+exact/i);
+  assert.doesNotMatch(message, /craft an elegant/i);
+  assert.doesNotMatch(message, /guest of honor/i);
+  assert.doesNotMatch(message, /color palette|vibe/i);
+});
+
+test("received invite with concrete details stays invited and can become ready", () => {
+  const result = fallbackExtractConciergeDraft({
+    message:
+      "I received a birthday invite for Ava turning 7 Saturday at 3 at Sky Zone and want to save it.",
+  });
+  const message = buildAssistantMessage(result);
+
+  assert.equal(result.eventType, "birthday");
+  assert.equal(result.sourceContext.detectedSourceIntent, "received_invite");
+  assert.equal(result.ownership, "invited");
+  assert.equal(result.honoreeName, "Ava");
+  assert.equal(result.ageOrMilestone, "7");
+  assert.equal(result.location, "Sky Zone");
+  assert.equal(result.canPersist, true);
+  assert.equal(result.draftStatus, "preview_ready");
+  assert.equal(
+    message,
+    "I have the invite details ready. I can save it as an invited event and open the workspace now.",
+  );
+});
+
+test("received invite follow-up details preserve invited ownership", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "I received a birthday invite and want to save it.",
+  });
+  const result = fallbackExtractConciergeDraft({
+    message: "Ava turning 7 Saturday at 3 at Sky Zone",
+    draft: first,
+  });
+
+  assert.equal(result.sourceContext.detectedSourceIntent, "received_invite");
+  assert.equal(result.ownership, "invited");
+  assert.equal(result.honoreeName, "Ava");
+  assert.equal(result.ageOrMilestone, "7");
+  assert.equal(result.location, "Sky Zone");
+  assert.equal(result.draftStatus, "preview_ready");
+});
+
 test("greeting does not default into live card creation flow", () => {
   const draft = fallbackExtractConciergeDraft({ message: "hi" });
 
@@ -65,6 +123,33 @@ test("greeting short-circuits AI extraction and stays conversational", async () 
   assert.deepEqual(result.draft.requestedOutputs, []);
   assert.match(result.assistantMessage, /what would you like to create/i);
   assert.doesNotMatch(result.assistantMessage, /live card be for/i);
+});
+
+test("source-only received invite request short-circuits AI extraction", async () => {
+  let aiCalls = 0;
+  const result = await extractConciergeDraft(
+    { message: "I received a birthday invite and want to save it." },
+    {
+      openAiApiKey: "test-key",
+      createOpenAiClient: () =>
+        ({
+          chat: {
+            completions: {
+              create: async () => {
+                aiCalls += 1;
+                return { choices: [] };
+              },
+            },
+          },
+        }) as any,
+    },
+  );
+
+  assert.equal(aiCalls, 0);
+  assert.equal(result.usedAi, false);
+  assert.equal(result.draft.sourceContext.detectedSourceIntent, "received_invite");
+  assert.equal(result.draft.currentQuestion, "invite_source");
+  assert.match(result.assistantMessage, /upload[\s\S]+paste[\s\S]+exact/i);
 });
 
 test("fast action flag lets OCR creation intake skip AI extraction", async () => {

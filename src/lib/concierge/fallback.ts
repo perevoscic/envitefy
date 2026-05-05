@@ -115,6 +115,9 @@ function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
 function shouldStartFreshEvent(message: string, previous?: ConciergeEventDraft | null) {
   if (!previous) return false;
   const text = cleanString(message) || "";
+  if (/\b(i|we)\s+(got|received|have)\b[\s\S]{0,80}\b(invite|invitation)\b/i.test(text)) {
+    return true;
+  }
   if (!/\b(create|make|build|design|generate|draft)\b/i.test(text)) return false;
   if (
     /\b(this|that|current|existing|same|matching|add|switch|change|refine|update|edit)\b/i.test(
@@ -135,8 +138,16 @@ function stripLeadingTimeFromLocation(value: string | null) {
     /^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+(?:at|@)\s+/i,
     "",
   );
-  if (/^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?$/i.test(withoutTime)) return null;
-  return cleanString(withoutTime);
+  const withoutTrailingIntent = withoutTime
+    .replace(
+      /\s+(?:and\s+)?(?:(?:i|we)\s+)?(?:want|need|would\s+like)\s+to\s+(?:save|add|keep)\s+(?:it|this|the\s+invite)?$/i,
+      "",
+    )
+    .replace(/\s+and\s+(?:save|add|keep)\s+(?:it|this|the\s+invite)?$/i, "");
+  if (/^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?$/i.test(withoutTrailingIntent)) {
+    return null;
+  }
+  return cleanString(withoutTrailingIntent);
 }
 
 function detectVenueOrLocation(text: string, ocrContext?: ConciergeOcrContext | null) {
@@ -280,7 +291,26 @@ function hasStartedCategoryDetails(draft: ConciergeEventDraft) {
   );
 }
 
+function isReceivedInviteDraft(draft: ConciergeEventDraft) {
+  return draft.sourceContext.detectedSourceIntent === "received_invite";
+}
+
+function receivedInviteLabel(draft: ConciergeEventDraft) {
+  const label = EVENT_TYPE_LABELS[draft.eventType];
+  if (!label || draft.eventType === "unknown" || draft.eventType === "general") return "an invite";
+  return `a ${label} invite`;
+}
+
+function receivedInviteSourcePrompt(draft: ConciergeEventDraft) {
+  return [
+    `Got it - you're saving ${receivedInviteLabel(draft)} you received.`,
+    "Upload the invite image/PDF or paste the invite text, and I will extract the exact title, date, time, location, and RSVP details.",
+    "If you only remember the details, type them in and I will keep it as an invited event.",
+  ].join("\n");
+}
+
 function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
+  if (isReceivedInviteDraft(draft)) return null;
   if (!draft.missingFields.length || hasStartedCategoryDetails(draft)) return null;
 
   if (draft.eventType === "birthday") {
@@ -359,6 +389,9 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
   if (draft.currentQuestion === "which_source") {
     return "Should I use the uploaded image or the current event details?";
   }
+  if (draft.currentQuestion === "invite_source") {
+    return receivedInviteSourcePrompt(draft);
+  }
   const intakeMessage = categoryIntakeMessage(draft);
   if (intakeMessage) return intakeMessage;
   if (
@@ -372,10 +405,25 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
   }
   const firstMissing = draft.missingFields[0];
   if (!firstMissing) {
+    if (isReceivedInviteDraft(draft)) {
+      return "I have the invite details ready. I can save it as an invited event and open the workspace now.";
+    }
     if (draft.requestedOutputs.includes("live_card")) {
       return "Your live card details are ready. I can open the workspace now.";
     }
     return "This is ready to create.";
+  }
+  if (isReceivedInviteDraft(draft)) {
+    if (firstMissing === "sourceContext") return receivedInviteSourcePrompt(draft);
+    if (firstMissing === "honoreeName" || firstMissing === "ageOrMilestone") {
+      return "I have this as an invite you received. What name or milestone is shown on the invite? You can also upload or paste it so I can read it exactly.";
+    }
+    if (firstMissing === "date" || firstMissing === "time") {
+      return "I have this as an invite you received. What date and time are shown on the invite?";
+    }
+    if (firstMissing === "location") {
+      return "I have this as an invite you received. What location is shown on the invite?";
+    }
   }
   if (firstMissing === "honoreeName" || firstMissing === "ageOrMilestone") {
     return "What's the name and milestone?";
@@ -389,6 +437,9 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
 
 export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
   const firstMissing = draft.missingFields[0];
+  if (draft.currentQuestion === "invite_source" || firstMissing === "sourceContext") {
+    if (isReceivedInviteDraft(draft)) return ["Upload invite", "Paste invite text", "Type details"];
+  }
   if (firstMissing === "eventPurpose") {
     if (!draft.requestedOutputs.length) {
       return ["Make a flyer", "Create a live card", "Upload an invite"];
@@ -457,13 +508,27 @@ export function fallbackExtractConciergeDraft(args: {
   const location =
     detectVenueOrLocation(text, args.ocrContext) || previous?.location || previous?.venue || null;
   const theme = detectTheme(text, previous);
-  const eventPurpose =
+  const receivedInviteWithoutSource =
+    sourceContext.detectedSourceIntent === "received_invite" && !sourceContext.hasUsableContext;
+  const hasConcreteReceivedInviteDetails = Boolean(
     firstString(fieldsGuess.eventPurpose, fieldsGuess.title) ||
-    previous?.eventPurpose ||
-    (isMeaningfulEventText(message, requestedOutputs) ? cleanCreationString(message) : null);
-  const title =
+      honoreeName ||
+      ageOrMilestone ||
+      chronoResult.dateText ||
+      chronoResult.startISO ||
+      location,
+  );
+  const eventPurpose =
+    receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails
+      ? null
+      : firstString(fieldsGuess.eventPurpose, fieldsGuess.title) ||
+        previous?.eventPurpose ||
+        (isMeaningfulEventText(message, requestedOutputs) ? cleanCreationString(message) : null);
+  const titleCandidate =
     firstString(fieldsGuess.title) ||
     buildTitle({ eventType, honoreeName, ageOrMilestone, eventPurpose, previous });
+  const title =
+    receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails ? null : titleCandidate;
   const dateText = chronoResult.dateText || firstString(fieldsGuess.date);
   const timeText = chronoResult.timeText || firstString(fieldsGuess.time);
   const startISO = fieldStartIso || chronoResult.startISO;

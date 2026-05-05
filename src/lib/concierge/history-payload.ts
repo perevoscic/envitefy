@@ -52,7 +52,7 @@ function normalizeVenueLocation(venueValue: unknown, locationValue: unknown) {
 }
 
 export function canPersistConciergeHistoryDraft(draft: ConciergeEventDraft): boolean {
-  return canPersistCreationDraft(draft);
+  return draft.canPersist !== false && canPersistCreationDraft(draft);
 }
 
 export function buildConciergeHistoryPayload(draft: ConciergeEventDraft) {

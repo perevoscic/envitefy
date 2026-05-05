@@ -129,6 +129,7 @@ export type LeftSidebarControllerViewModel = {
   handleRootSnapNavigate: () => void;
   openCreateEventPage: () => void;
   openAiThreadsPage: () => void;
+  openAiThread: (threadId: string) => void;
   startNewAiChat: () => void;
   openMyEventsPage: () => void;
   openInvitedEventsPage: () => void;
@@ -204,6 +205,7 @@ export function useLeftSidebarController({
     useState<CalendarProviderKey | null>(null);
   const [lastCreateSelection, setLastCreateSelection] = useState<string | null>(null);
   const [forcedCreateActiveLabel, setForcedCreateActiveLabel] = useState<string | null>(null);
+  const [pendingAiThreadHref, setPendingAiThreadHref] = useState<string | null>(null);
   const [isDesktop, setIsDesktop] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(min-width: 1024px)").matches;
@@ -881,6 +883,38 @@ export function useLeftSidebarController({
     }
   }, [clearEventContext, collapseSidebarOnTouch, setSidebarPage]);
 
+  const openAiThread = useCallback(
+    (threadId: string) => {
+      const cleanThreadId = String(threadId || "").trim();
+      if (!cleanThreadId) return;
+
+      clearEventContext();
+      setSidebarPage("root");
+      collapseSidebarOnTouch();
+
+      const nextHref = `/chat?thread=${encodeURIComponent(cleanThreadId)}`;
+      const currentThreadId = searchParams?.get("thread")?.trim() || null;
+      if (pathname === "/chat" && !currentThreadId) {
+        router.push(nextHref);
+        return;
+      }
+
+      setPendingAiThreadHref(nextHref);
+      router.push("/chat");
+    },
+    [clearEventContext, collapseSidebarOnTouch, pathname, router, searchParams],
+  );
+
+  useEffect(() => {
+    if (!pendingAiThreadHref) return;
+    if (pathname !== "/chat") return;
+    if (searchParams?.get("thread")) return;
+
+    const nextHref = pendingAiThreadHref;
+    setPendingAiThreadHref(null);
+    router.push(nextHref);
+  }, [pathname, pendingAiThreadHref, router, searchParams]);
+
   const openMyEventsPage = useCallback(
     () => openCompactEventsPage("myEvents"),
     [openCompactEventsPage],
@@ -1349,6 +1383,7 @@ export function useLeftSidebarController({
     handleRootSnapNavigate,
     openCreateEventPage,
     openAiThreadsPage,
+    openAiThread,
     startNewAiChat,
     openMyEventsPage,
     openInvitedEventsPage,
