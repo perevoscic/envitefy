@@ -3,18 +3,10 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
-  Calendar,
   Camera,
-  ExternalLink,
-  Info,
   Loader2,
-  MapPin,
   Mic,
   Paperclip,
-  RefreshCw,
-  Sparkles,
-  Upload,
-  Users,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -39,6 +31,7 @@ import type {
 } from "@/lib/concierge/types";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
 import { validateClientUploadFile } from "@/utils/media-upload-client";
+import ChatProductPreview from "./ChatProductPreview";
 
 type ChatMessage = {
   id: string;
@@ -117,6 +110,9 @@ const PRODUCT_OPTIONS: ProductOption[] = [
 const FAST_UPLOAD_OCR_URL = "/api/ocr?fast=1&turbo=1&timing=1";
 const DEFAULT_UPLOAD_OCR_URL = "/api/ocr?fast=0";
 const ENABLE_FAST_UPLOAD_OCR = process.env.NEXT_PUBLIC_CONCIERGE_FAST_UPLOADS === "1";
+const CREATION_INTAKE_URL = "/api/creation/intake";
+const CREATION_INTAKE_STREAM_URL = "/api/creation/intake/stream";
+const ENABLE_CONCIERGE_TIMING = process.env.NEXT_PUBLIC_CONCIERGE_TIMING === "1";
 
 const BUILDING_STEPS = [
   "Checking the event details",
@@ -146,6 +142,81 @@ const EMPTY_ASSISTANT_PROMPT = "What are we celebrating?";
 type ConciergeChatClientProps = {
   userFirstName?: string | null;
 };
+
+type ConciergeStreamStatePayload = Extract<ConciergeMessageResponse, { ok: true }>;
+
+type ConciergeStreamHandlers = {
+  onDelta: (text: string) => void;
+  onAssistantDone: (message: string) => void;
+  onState: (state: ConciergeStreamStatePayload) => void;
+};
+
+function withConciergeTiming(url: string) {
+  if (!ENABLE_CONCIERGE_TIMING) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}timing=1`;
+}
+
+function parseConciergeStreamEvent(rawEvent: string) {
+  let event = "message";
+  const dataLines: string[] = [];
+  for (const line of rawEvent.split(/\r?\n/)) {
+    if (line.startsWith("event:")) {
+      event = line.slice("event:".length).trim();
+    } else if (line.startsWith("data:")) {
+      dataLines.push(line.slice("data:".length).trimStart());
+    }
+  }
+  const dataText = dataLines.join("\n");
+  if (!dataText) return { event, data: null };
+  try {
+    return { event, data: JSON.parse(dataText) as Record<string, any> };
+  } catch {
+    return { event, data: null };
+  }
+}
+
+async function readConciergeIntakeStream(response: Response, handlers: ConciergeStreamHandlers) {
+  if (!response.body) throw new Error("Concierge stream did not include a response body.");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let finalState: ConciergeStreamStatePayload | null = null;
+
+  const processRawEvent = (rawEvent: string) => {
+    const parsed = parseConciergeStreamEvent(rawEvent);
+    const data = parsed.data;
+    if (parsed.event === "assistant_delta" && typeof data?.text === "string") {
+      handlers.onDelta(data.text);
+      return;
+    }
+    if (parsed.event === "assistant_done" && typeof data?.assistantMessage === "string") {
+      handlers.onAssistantDone(data.assistantMessage);
+      return;
+    }
+    if (parsed.event === "state" && data?.ok === true && data.draft) {
+      finalState = data as ConciergeStreamStatePayload;
+      handlers.onState(finalState);
+      return;
+    }
+    if (parsed.event === "error") {
+      throw new Error(typeof data?.error === "string" ? data.error : "Concierge stream failed.");
+    }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const events = buffer.split(/\n\n/);
+    buffer = events.pop() || "";
+    for (const rawEvent of events) {
+      if (rawEvent.trim()) processRawEvent(rawEvent);
+    }
+  }
+  buffer += decoder.decode();
+  if (buffer.trim()) processRawEvent(buffer);
+  return finalState;
+}
 
 function buildInitialAssistantPrompt(userFirstName?: string | null) {
   const cleaned = typeof userFirstName === "string" ? userFirstName.trim() : "";
@@ -222,31 +293,6 @@ const CELEBRATION_STARTER_TILES = [
     size: "square",
   },
 ] as const;
-
-const CATEGORY_OPTIONS: Array<{
-  eventType: Exclude<ConciergeEventType, "unknown">;
-  label: string;
-  prompt: string;
-}> = [
-  {
-    eventType: "birthday",
-    label: "Birthday Invite",
-    prompt: "Set the event category to birthday invite.",
-  },
-  { eventType: "wedding", label: "Wedding", prompt: "Set the event category to wedding." },
-  {
-    eventType: "baby_shower",
-    label: "Baby Shower",
-    prompt: "Set the event category to baby shower.",
-  },
-  { eventType: "graduation", label: "Graduation", prompt: "Set the event category to graduation." },
-  { eventType: "gym_meet", label: "Gym Meet", prompt: "Set the event category to gym meet." },
-  {
-    eventType: "general",
-    label: "General Event",
-    prompt: "Set the event category to general event.",
-  },
-];
 
 function newMessage(
   role: ChatMessage["role"],
@@ -361,21 +407,10 @@ function outputLabel(output: RequestedOutput) {
   return OUTPUT_LABELS[output] || output;
 }
 
-function productLabel(output: RequestedOutput | null | undefined) {
-  return (
-    PRODUCT_OPTIONS.find((option) => option.output === output)?.label ||
-    outputLabel(output || "live_card")
-  );
-}
-
 function categoryLabelFromDraft(draft: ConciergeEventDraft | null) {
   const eventType = draft?.eventType || "unknown";
   if (eventType === "unknown") return "Inferred category";
   return CATEGORY_LABELS[eventType] || "Custom Invite";
-}
-
-function categorySelectValueFromDraft(draft: ConciergeEventDraft | null) {
-  return draft?.eventType && draft.eventType !== "unknown" ? draft.eventType : "";
 }
 
 function previewImageForDraft(draft: ConciergeEventDraft | null) {
@@ -384,14 +419,6 @@ function previewImageForDraft(draft: ConciergeEventDraft | null) {
   return (
     STUDIO_CATEGORY_TILES.find((category) => category.name === categoryLabel)?.imagePath ||
     "/studio/upload-your-own.webp"
-  );
-}
-
-function guestLineFromDraft(draft: ConciergeEventDraft | null) {
-  const record = recordValue(draft);
-  return (
-    firstStringValue(record.guestCount, record.numberOfGuests, record.inviteCount) ||
-    "Guest list coming soon"
   );
 }
 
@@ -515,16 +542,15 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   const [phase, setPhase] = useState<ConciergePhase>("intake_empty");
   const [draft, setDraft] = useState<ConciergeEventDraft | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [isStreamingAssistant, setIsStreamingAssistant] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [buildProgress, setBuildProgress] = useState(0);
   const [liveCardEventId, setLiveCardEventId] = useState<string | null>(null);
   const [liveCardTitle, setLiveCardTitle] = useState<string | null>(null);
   const [liveCardSummary, setLiveCardSummary] = useState<LiveCardSummary | null>(null);
-  const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
-  const [previewTab, setPreviewTab] = useState<"preview" | "rsvp">("preview");
   const [rsvpPreview, setRsvpPreview] = useState<RsvpPreviewState>(EMPTY_RSVP_PREVIEW);
 
   const isGeneratingCard = phase === "generating_card";
@@ -536,23 +562,26 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     !draft &&
     !isSending &&
     !isUploading;
-  const visibleMessages = messages.filter(
-    (message, index) =>
-      !(
-        index === 0 &&
-        message.role === "assistant" &&
-        isOpeningAssistantPrompt(message.text, initialAssistantPrompt)
-      ),
-  );
+  const visibleMessages = messages.filter((message, index) => {
+    if (message.type !== "upload_status" && !message.text.trim()) {
+      return false;
+    }
+
+    return !(
+      index === 0 &&
+      message.role === "assistant" &&
+      isOpeningAssistantPrompt(message.text, initialAssistantPrompt)
+    );
+  });
   const isBusy = isSending || isUploading || isGeneratingCard;
   const busyLabel = isUploading
     ? "Reading upload"
     : isEditingGeneratedCard
-      ? "Updating workspace"
+      ? "Updating preview"
       : isGeneratingCard
         ? "Generating product"
-        : "Envitefy is thinking...";
-  const isThinking = busyLabel === "Envitefy is thinking...";
+        : "Concierge is thinking...";
+  const isThinking = busyLabel === "Concierge is thinking..." && !isStreamingAssistant;
   const currentBuildStep = Math.min(
     Math.floor((buildProgress / 100) * BUILDING_STEPS.length),
     BUILDING_STEPS.length - 1,
@@ -560,8 +589,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   const effectiveSelectedProductOutput = selectedProductOutput || "live_card";
   const currentLiveCardSummary =
     liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
-  const workspaceTitle = liveCardTitle || currentLiveCardSummary.headline;
-  const detailsComplete = isReadyProductDraft(draft);
+  const previewTitle = liveCardTitle || currentLiveCardSummary.headline;
   const canGenerateProduct = Boolean(draft?.canPersist) && !isBusy && !liveCardEventId;
   const shouldShowWorkspacePanel =
     Boolean(draft) ||
@@ -573,11 +601,15 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   const liveCardPublicHref = liveCardEventId ? `/event/${liveCardEventId}` : null;
   const liveCardWorkspaceHref = liveCardEventId ? `/events/${liveCardEventId}/workspace` : null;
   const threadId = searchParams.get("thread")?.trim() || null;
-  const selectedProductLabel = productLabel(effectiveSelectedProductOutput);
   const currentCategoryLabel = categoryLabelFromDraft(draft);
-  const currentCategoryValue = categorySelectValueFromDraft(draft);
   const currentPreviewImage = previewImageForDraft(draft);
-
+  const rsvpResponseNames = rsvpPreview.responses.map(
+    (response) => response.name || response.email || "Guest",
+  );
+  const rsvpResponseCount =
+    rsvpPreview.stats.yes + rsvpPreview.stats.no + rsvpPreview.stats.maybe ||
+    rsvpResponseNames.length ||
+    rsvpPreview.filled;
   function selectProductOutputForDraft(nextDraft: ConciergeEventDraft) {
     const restoredOutput = nextDraft.requestedOutputs.find((output) =>
       PRODUCT_OPTIONS.some((option) => option.output === output),
@@ -590,15 +622,14 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     setError(null);
     setDraft(null);
     setPhase("intake_empty");
+    setIsStreamingAssistant(false);
     setLiveCardEventId(null);
     setLiveCardTitle(null);
     setLiveCardSummary(null);
-    setLastGeneratedAt(null);
     setBuildProgress(0);
     setRsvpPreview(EMPTY_RSVP_PREVIEW);
     setSelectedProductOutput(null);
     setMobileView("chat");
-    setPreviewTab("preview");
     setMessages([newMessage("assistant", initialAssistantPrompt)]);
   }
 
@@ -652,10 +683,8 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         setLiveCardSummary(
           liveCardSummaryFromDraft(restoredDraft, restoredOutput || effectiveSelectedProductOutput),
         );
-        setLastGeneratedAt(json.creationSession?.updated_at || null);
         setBuildProgress(savedEventId ? 100 : 0);
         setMobileView(savedEventId ? "preview" : "chat");
-        setPreviewTab("preview");
         setPhase(
           savedEventId
             ? "card_ready"
@@ -670,7 +699,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                 newMessage(
                   "assistant",
                   savedEventId
-                    ? "Thread opened. Your generated workspace is ready to refine."
+                    ? "Thread opened. Your generated product is ready to refine."
                     : "Thread opened. We can keep collecting the details from here.",
                 ),
               ],
@@ -744,7 +773,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
 
   async function generateProductForDraft(draftToGenerate: ConciergeEventDraft) {
     if (!draftToGenerate.canPersist) {
-      setError("Add an event or source before generating the workspace.");
+      setError("Add an event or source before creating the preview.");
       return;
     }
     setError(null);
@@ -752,7 +781,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     setBuildProgress(8);
     const generatedMessage = newMessage(
       "assistant",
-      "Your product is generated. You can review it in the workspace or tell me what to change.",
+      "Your product is generated. You can review it in the preview or tell me what to change.",
     );
     try {
       const response = await fetch("/api/creation/intake", {
@@ -780,10 +809,8 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       setLiveCardSummary(
         liveCardSummaryFromDraft(json.draft || draftToGenerate, effectiveSelectedProductOutput),
       );
-      setLastGeneratedAt(new Date().toISOString());
       setPhase("card_ready");
       setMobileView("preview");
-      setPreviewTab("preview");
       if (json.chatMessages?.length) {
         setMessages(json.chatMessages.map(chatMessageFromSnapshot));
       } else {
@@ -816,18 +843,17 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         .json()
         .catch(() => null)) as ConciergeEventMessageResponse | null;
       if (!response.ok || !json?.ok) {
-        throw new Error(json && !json.ok ? json.error : "Workspace update failed.");
+        throw new Error(json && !json.ok ? json.error : "Preview update failed.");
       }
       const fallbackSummary =
         liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
       setLiveCardTitle(json.event.title || liveCardTitle || draftHeadline(draft));
       setLiveCardSummary(liveCardSummaryFromEvent(json.event, fallbackSummary));
-      setLastGeneratedAt(new Date().toISOString());
       setPhase("card_ready");
       setMessages((prev) => [...prev, newMessage("assistant", json.assistantMessage)]);
     } catch (err) {
       setPhase("card_ready");
-      setError(err instanceof Error ? err.message : "Workspace update failed.");
+      setError(err instanceof Error ? err.message : "Preview update failed.");
     } finally {
       setIsSending(false);
     }
@@ -853,6 +879,8 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     if (params.echo || message) {
       setMessages((prev) => (userMessage ? [...prev, userMessage] : prev));
     }
+    let streamAssistantId: string | null = null;
+    let streamedAssistantText = "";
     try {
       const activeContext: ConciergeActiveContext = params.activeContext || {
         route: "/chat",
@@ -870,19 +898,71 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
           : draft?.requestedOutputs?.length
             ? draft.requestedOutputs
             : null);
-      const response = await fetch("/api/creation/intake", {
+      const action = params.action || "message";
+      const requestBody = {
+        message,
+        draft,
+        ocrContext: params.ocrContext || null,
+        activeContext,
+        requestedOutputs,
+        action,
+        chatMessages: chatMessagesForPersistence(messages, userMessage ? [userMessage] : []),
+      };
+      const shouldStream =
+        !params.ocrContext &&
+        (action === "message" || action === "chip" || action === "starter_category");
+
+      if (shouldStream) {
+        const assistantPlaceholder = newMessage("assistant", "");
+        streamAssistantId = assistantPlaceholder.id;
+        setMessages((prev) => [...prev, assistantPlaceholder]);
+        const response = await fetch(withConciergeTiming(CREATION_INTAKE_STREAM_URL), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(requestBody),
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.error || "Concierge request failed.");
+        }
+        const finalState = await readConciergeIntakeStream(response, {
+          onDelta: (text) => {
+            streamedAssistantText += text;
+            setIsStreamingAssistant(true);
+            setMessages((prev) =>
+              prev.map((item) =>
+                item.id === streamAssistantId ? { ...item, text: streamedAssistantText } : item,
+              ),
+            );
+          },
+          onAssistantDone: (assistantMessage) => {
+            streamedAssistantText = assistantMessage;
+            setMessages((prev) =>
+              prev.map((item) =>
+                item.id === streamAssistantId ? { ...item, text: assistantMessage } : item,
+              ),
+            );
+          },
+          onState: (json) => {
+            setDraft(json.draft);
+            selectProductOutputForDraft(json.draft);
+            notifyCreationThreadsChanged();
+            if (json.chatMessages?.length) {
+              setMessages(json.chatMessages.map(chatMessageFromSnapshot));
+            }
+            setPhase(isReadyProductDraft(json.draft) ? "ready_to_generate" : "collecting_details");
+          },
+        });
+        if (!finalState) throw new Error("Concierge stream ended before draft state arrived.");
+        return;
+      }
+
+      const response = await fetch(withConciergeTiming(CREATION_INTAKE_URL), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          message,
-          draft,
-          ocrContext: params.ocrContext || null,
-          activeContext,
-          requestedOutputs,
-          action: params.action || "message",
-          chatMessages: chatMessagesForPersistence(messages, userMessage ? [userMessage] : []),
-        }),
+        body: JSON.stringify(requestBody),
       });
       const json = (await response.json().catch(() => null)) as ConciergeMessageResponse | null;
       if (!response.ok || !json?.ok) {
@@ -904,8 +984,12 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       if (!json.chatMessages?.length) setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
       setPhase(draft ? "collecting_details" : "intake_empty");
+      if (streamAssistantId && !streamedAssistantText.trim()) {
+        setMessages((prev) => prev.filter((item) => item.id !== streamAssistantId));
+      }
       setError(err instanceof Error ? err.message : "Concierge request failed.");
     } finally {
+      setIsStreamingAssistant(false);
       setIsSending(false);
     }
   }
@@ -930,17 +1014,6 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   async function handleStarterPrompt(message: string) {
     if (isBusy) return;
     await sendToConcierge({ message });
-  }
-
-  async function handleCategoryChange(eventType: string) {
-    if (isBusy) return;
-    const option = CATEGORY_OPTIONS.find((item) => item.eventType === eventType);
-    if (!option || option.eventType === draft?.eventType) return;
-    await sendToConcierge({
-      message: option.prompt,
-      action: "chip",
-      echo: `Category: ${option.label}`,
-    });
   }
 
   function handleVoiceInput() {
@@ -1063,7 +1136,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         ))}
       </AnimatePresence>
 
-      {isBusy && !isGeneratingCard ? (
+      {isBusy && !isGeneratingCard && !isStreamingAssistant ? (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1074,7 +1147,9 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
           role="status"
           aria-live="polite"
         >
-          <Loader2 className="size-4 animate-spin text-[#7c4dff]" aria-hidden="true" />
+          {isThinking ? null : (
+            <Loader2 className="size-4 animate-spin text-[#7c4dff]" aria-hidden="true" />
+          )}
           {busyLabel}
         </motion.div>
       ) : null}
@@ -1116,10 +1191,10 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
             <PromptInputTextarea
               placeholder={
                 liveCardEventId
-                  ? "Refine workspace..."
+                  ? "Tell me what to change..."
                   : "Or let's start planning together from scratch..."
               }
-              aria-label={liveCardEventId ? "Refine workspace" : "Start planning from scratch"}
+              aria-label={liveCardEventId ? "Refine product" : "Start planning from scratch"}
               className="min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#7c4dff] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base"
             />
             <PromptInputActions className="justify-between gap-2 pt-2">
@@ -1193,389 +1268,33 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   );
 
   const workspacePanel = (
-    <aside
-      className={`min-h-0 flex-col overflow-y-auto border-l border-[#e5dff0] bg-white/48 backdrop-blur-sm ${
-        mobileView === "preview" ? "flex" : "hidden md:flex"
-      }`}
-    >
-      <div className="flex min-h-full flex-col px-4 pb-24 pt-4 sm:px-6 sm:pb-8">
-        <div className="flex items-center justify-between border-b border-[#f0ebf7] pb-4">
-          <div>
-            <h2 className="flex items-center gap-2 text-base font-bold text-[#221a35]">
-              <Sparkles className="size-4 text-[#7c4dff]" aria-hidden="true" />
-              Workspace Preview
-            </h2>
-            {lastGeneratedAt ? (
-              <p className="mt-1 text-[0.68rem] font-semibold text-[#9a90aa]">
-                Updated{" "}
-                {new Date(lastGeneratedAt).toLocaleTimeString([], {
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="flex-1 space-y-5 overflow-y-auto py-5">
-          {liveCardEventId ? (
-            <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#f1edf7] p-1">
-              <button
-                type="button"
-                onClick={() => setPreviewTab("preview")}
-                className={`h-10 rounded-lg text-xs font-bold transition ${
-                  previewTab === "preview"
-                    ? "bg-white text-[#7c4dff] shadow-sm"
-                    : "text-[#867a99] hover:text-[#4b3d64]"
-                }`}
-              >
-                Invitation
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewTab("rsvp")}
-                className={`h-10 rounded-lg text-xs font-bold transition ${
-                  previewTab === "rsvp"
-                    ? "bg-white text-[#7c4dff] shadow-sm"
-                    : "text-[#867a99] hover:text-[#4b3d64]"
-                }`}
-              >
-                RSVP
-              </button>
-            </div>
-          ) : null}
-
-          {previewTab === "rsvp" && liveCardEventId ? (
-            <div className="space-y-5">
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  [
-                    "Attending",
-                    String(rsvpPreview.stats.yes),
-                    "bg-[#edf9f1] text-[#197052] border-[#d7efd9]",
-                  ],
-                  [
-                    "Maybe",
-                    String(rsvpPreview.stats.maybe),
-                    "bg-[#fff8e8] text-[#966a16] border-[#f4dfab]",
-                  ],
-                  [
-                    "Declined",
-                    String(rsvpPreview.stats.no),
-                    "bg-[#fff0f3] text-[#b4234b] border-[#f2c9d3]",
-                  ],
-                ].map(([label, value, className]) => (
-                  <div key={label} className={`rounded-2xl border p-4 ${className}`}>
-                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em]">{label}</p>
-                    <p className="mt-1 text-2xl font-bold">{value}</p>
-                  </div>
-                ))}
-              </div>
-
-              <section className="overflow-hidden rounded-2xl border border-[#eee8f6] bg-white shadow-sm">
-                <div className="flex items-center justify-between border-b border-[#f4eff8] bg-[#faf8fd] px-4 py-3">
-                  <h3 className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#8b8298]">
-                    Guest List
-                  </h3>
-                  <span className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#7c4dff]">
-                    {rsvpPreview.filled || rsvpPreview.responses.length} Total
-                  </span>
-                </div>
-                {rsvpPreview.isLoading ? (
-                  <div className="flex items-center justify-center gap-2 px-4 py-12 text-xs font-semibold text-[#8b8298]">
-                    <Loader2 className="size-4 animate-spin text-[#7c4dff]" aria-hidden="true" />
-                    Loading responses
-                  </div>
-                ) : rsvpPreview.error ? (
-                  <div className="px-4 py-12 text-center text-xs italic text-[#b4234b]">
-                    {rsvpPreview.error}
-                  </div>
-                ) : rsvpPreview.responses.length ? (
-                  <div className="divide-y divide-[#f4eff8]">
-                    {rsvpPreview.responses.map((response, index) => (
-                      <div
-                        key={`${response.email || response.name || "guest"}-${index}`}
-                        className="flex items-center justify-between gap-3 px-4 py-3"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-[#2d1b36]">
-                            {response.name || response.email || "Guest"}
-                          </p>
-                          {response.email ? (
-                            <p className="truncate text-xs text-[#8b8298]">{response.email}</p>
-                          ) : null}
-                        </div>
-                        <span className="shrink-0 rounded-full bg-[#f5f0ff] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#7c4dff]">
-                          {response.response}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="px-4 py-12 text-center text-xs italic text-[#9a90aa]">
-                    Responses will appear here once guests reply.
-                  </div>
-                )}
-              </section>
-
-              <section className="rounded-2xl border border-dashed border-[#ddd3ea] bg-[#f5f2f9] p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <Info className="size-3.5 text-[#8b8298]" aria-hidden="true" />
-                  <p className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#8b8298]">
-                    RSVP Link
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 rounded-xl border border-[#eee8f6] bg-white p-2">
-                  <p className="min-w-0 flex-1 truncate text-xs text-[#675b78]">
-                    {liveCardPublicHref || "Generated link appears here"}
-                  </p>
-                  {liveCardPublicHref ? (
-                    <a
-                      href={liveCardPublicHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="grid size-8 place-items-center rounded-lg text-[#7c4dff] transition hover:bg-[#f6f1ff]"
-                      aria-label="Open RSVP link"
-                    >
-                      <ExternalLink className="size-3.5" aria-hidden="true" />
-                    </a>
-                  ) : null}
-                </div>
-              </section>
-            </div>
-          ) : (
-            <>
-              <section className="rounded-[1.3rem] border border-[#eee8f6] bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-[0.12em] ${
-                      liveCardEventId
-                        ? "bg-[#e8f8ed] text-[#197052]"
-                        : isGeneratingCard
-                          ? "bg-[#f5f0ff] text-[#7c4dff]"
-                          : detailsComplete
-                            ? "bg-[#edf9f1] text-[#197052]"
-                            : "bg-[#f5f0ff] text-[#7c4dff]"
-                    }`}
-                  >
-                    {isGeneratingCard
-                      ? "Generating"
-                      : liveCardEventId
-                        ? "Generated"
-                        : detailsComplete
-                          ? "Ready"
-                          : "Drafting"}
-                  </span>
-                  <label className="relative shrink-0">
-                    <span className="sr-only">Inferred category</span>
-                    <select
-                      value={currentCategoryValue}
-                      onChange={(event) => void handleCategoryChange(event.currentTarget.value)}
-                      disabled={isBusy}
-                      aria-label={`Inferred category: ${currentCategoryLabel}`}
-                      className="h-8 max-w-[9.5rem] appearance-none truncate rounded-full border border-[#dfd6ea] bg-[#fbf9ff] px-3 pr-7 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#7c4dff] outline-none transition hover:border-[#cdbdff] focus:border-[#a98dff] focus:ring-2 focus:ring-[#dbcfff] disabled:cursor-not-allowed disabled:opacity-65"
-                    >
-                      <option value="">Inferred category</option>
-                      {CATEGORY_OPTIONS.map((option) => (
-                        <option key={option.eventType} value={option.eventType}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <span
-                      className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.56rem] text-[#7c4dff]"
-                      aria-hidden="true"
-                    >
-                      v
-                    </span>
-                  </label>
-                </div>
-
-                <h3 className="mb-5 font-serif text-2xl font-bold italic text-[#221a35]">
-                  {workspaceTitle}
-                </h3>
-
-                <div className="space-y-4">
-                  <div
-                    className={`flex items-center gap-3 ${
-                      currentLiveCardSummary.scheduleLine === "Date TBD"
-                        ? "text-[#b7afc3]"
-                        : "text-[#62546f]"
-                    }`}
-                  >
-                    <span className="grid size-9 place-items-center rounded-lg bg-[#fff3e8] text-[#e5751f]">
-                      <Calendar className="size-4" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm">
-                      {currentLiveCardSummary.scheduleLine}
-                    </span>
-                  </div>
-                  <div
-                    className={`flex items-center gap-3 ${
-                      currentLiveCardSummary.locationLine === "Location TBD"
-                        ? "text-[#b7afc3]"
-                        : "text-[#62546f]"
-                    }`}
-                  >
-                    <span className="grid size-9 place-items-center rounded-lg bg-[#eaf3ff] text-[#3477d2]">
-                      <MapPin className="size-4" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm">
-                      {currentLiveCardSummary.locationLine}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-[#62546f]">
-                    <span className="grid size-9 place-items-center rounded-lg bg-[#f3ecff] text-[#7c4dff]">
-                      <Users className="size-4" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm">
-                      {guestLineFromDraft(draft)}
-                    </span>
-                  </div>
-                </div>
-              </section>
-
-              <section
-                className={`relative overflow-hidden border border-[#eee8f6] bg-white p-6 text-center shadow-xl shadow-[#3f275f]/10 ${
-                  effectiveSelectedProductOutput === "event_page"
-                    ? "aspect-video rounded-[1.2rem]"
-                    : "aspect-[4/5] rounded-[1.4rem]"
-                }`}
-              >
-                {isGeneratingCard ? (
-                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-white/76 text-[#8b8298] backdrop-blur-[2px]">
-                    <Loader2 className="size-11 animate-spin text-[#7c4dff]" aria-hidden="true" />
-                    <div className="w-full max-w-[18rem] px-4">
-                      <p className="text-sm font-bold text-[#2d1b36]">
-                        {BUILDING_STEPS[currentBuildStep]}
-                      </p>
-                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eadfff]">
-                        <motion.div
-                          className="h-full bg-[#7c4dff]"
-                          initial={{ width: "0%" }}
-                          animate={{ width: `${buildProgress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-
-                <img
-                  src={currentPreviewImage}
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute inset-0 h-full w-full object-cover opacity-20 grayscale"
-                />
-
-                {effectiveSelectedProductOutput === "digital_flyer" ? (
-                  <div className="relative z-10 flex h-full flex-col items-center justify-center">
-                    <div className="mb-6 grid aspect-square w-full max-w-[13rem] place-items-center rounded-2xl border-2 border-dashed border-[#dfd6ea] bg-[#f8f5fb] shadow-inner">
-                      <Upload className="size-8 text-[#b9b0c5]" aria-hidden="true" />
-                    </div>
-                    <h3 className="font-serif text-3xl font-bold italic text-[#221a35]">
-                      {workspaceTitle}
-                    </h3>
-                    <p className="mt-3 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#7c4dff]">
-                      {currentLiveCardSummary.scheduleLine}
-                    </p>
-                  </div>
-                ) : effectiveSelectedProductOutput === "event_page" ? (
-                  <div className="relative z-10 flex h-full flex-col text-left">
-                    <div className="mb-8 flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="mb-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#7c4dff]">
-                          Live Event Web
-                        </p>
-                        <h3 className="truncate font-serif text-3xl font-bold italic text-[#221a35]">
-                          {workspaceTitle}
-                        </h3>
-                      </div>
-                      <span className="shrink-0 rounded-full bg-[#221a35] px-4 py-2 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-white">
-                        RSVP
-                      </span>
-                    </div>
-                    <div className="flex-1 border-t border-[#eee8f6] pt-5">
-                      <p className="max-w-sm text-xs leading-6 text-[#675b78]">
-                        {draft?.previewCopy.body ||
-                          "A full public event experience for your guests."}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="relative z-10 flex h-full flex-col items-center justify-between py-4">
-                    <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#7c4dff]">
-                      Celebration Invitation
-                    </p>
-                    <div>
-                      <h3 className="font-serif text-4xl font-bold italic text-[#221a35]">
-                        {workspaceTitle}
-                      </h3>
-                      <div className="mx-auto my-7 h-px w-12 bg-[#ded2ff]" />
-                      <p className="mx-auto max-w-[15rem] text-sm italic leading-6 text-[#675b78]">
-                        {draft?.previewCopy.body ||
-                          "Describe your event vision and see it come to life here."}
-                      </p>
-                    </div>
-                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-[#9a90aa]">
-                      {draft?.theme || selectedProductLabel}
-                    </p>
-                  </div>
-                )}
-              </section>
-
-              <div className="space-y-3">
-                {liveCardPublicHref ? (
-                  <a
-                    href={liveCardPublicHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#197052] px-5 text-sm font-bold text-white shadow-lg shadow-[#197052]/15 transition hover:bg-[#145f46]"
-                  >
-                    <ExternalLink className="size-4" aria-hidden="true" />
-                    View product
-                  </a>
-                ) : null}
-                {liveCardWorkspaceHref ? (
-                  <a
-                    href={liveCardWorkspaceHref}
-                    className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-[#d8caff] bg-white px-5 text-sm font-bold text-[#5f5289] transition hover:bg-[#f7f3ff]"
-                  >
-                    Open workspace
-                  </a>
-                ) : null}
-                {!liveCardEventId ? (
-                  <button
-                    type="button"
-                    disabled={!canGenerateProduct}
-                    onClick={() => {
-                      if (draft) void generateProductForDraft(draft);
-                    }}
-                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#7c4dff] px-5 text-sm font-bold text-white shadow-lg shadow-[#7c4dff]/20 transition hover:bg-[#6f43f0] disabled:cursor-not-allowed disabled:bg-[#d8caff] disabled:shadow-none"
-                  >
-                    <Sparkles className="size-4" aria-hidden="true" />
-                    Generate workspace
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() =>
-                      void sendGeneratedCardEdit(
-                        "Regenerate the product with the latest event details.",
-                      )
-                    }
-                    className="inline-flex h-10 w-full items-center justify-center gap-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#8b8298] transition hover:text-[#7c4dff] disabled:cursor-not-allowed disabled:opacity-55"
-                  >
-                    <RefreshCw className="size-3.5" aria-hidden="true" />
-                    Regenerate version
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </aside>
+    <ChatProductPreview
+      draft={draft}
+      summary={{ ...currentLiveCardSummary, headline: previewTitle }}
+      selectedOutput={effectiveSelectedProductOutput}
+      previewImageUrl={currentPreviewImage}
+      categoryLabel={currentCategoryLabel}
+      isBusy={isBusy}
+      isGenerating={isGeneratingCard}
+      buildProgress={buildProgress}
+      currentBuildStep={BUILDING_STEPS[currentBuildStep]}
+      canGenerate={canGenerateProduct}
+      liveEventId={liveCardEventId}
+      publicHref={liveCardPublicHref}
+      advancedEditorHref={liveCardWorkspaceHref}
+      rsvp={{
+        count: rsvpResponseCount,
+        isLoading: rsvpPreview.isLoading,
+        error: rsvpPreview.error,
+      }}
+      onGenerate={() => {
+        if (draft) void generateProductForDraft(draft);
+      }}
+      onRegenerate={() =>
+        void sendGeneratedCardEdit("Regenerate the product with the latest event details.")
+      }
+      mobileView={mobileView}
+    />
   );
 
   return (

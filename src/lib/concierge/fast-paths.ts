@@ -3,8 +3,8 @@ import {
   isMeaningfulEventText,
   normalizeRequestedOutputs,
 } from "./creation-intent.ts";
-import type { ConciergeEventDraft, ConciergeMessageRequest, RequestedOutput } from "./types.ts";
 import { isEnvFlagEnabled } from "./openai-config.ts";
+import type { ConciergeEventDraft, ConciergeMessageRequest, RequestedOutput } from "./types.ts";
 
 const STARTER_CHIPS = new Set([
   "birthday",
@@ -53,6 +53,16 @@ function hasToneOrStyleIntent(text: string): boolean {
   );
 }
 
+function hasObviousStarterCreationIntent(text: string): boolean {
+  return (
+    /\b(create|make|build|draft|design)\b/i.test(text) &&
+    /\b(birthday|wedding|baby\s+shower|bridal\s+shower|game|graduation|gymnastics|gym\s+meet)\b/i.test(
+      text,
+    ) &&
+    /\b(live\s*card|flyer|invite|invitation|event\s+page|rsvp)\b/i.test(text)
+  );
+}
+
 export function isConciergeFastActionsEnabled(): boolean {
   return isEnvFlagEnabled(process.env.CONCIERGE_SKIP_AI_FAST_ACTIONS);
 }
@@ -69,6 +79,10 @@ export function shouldSkipOpenAiForCreationRequest(args: {
 }): boolean {
   const message = cleanString(args.request.message) || "";
   if (isGreetingMessage(message)) return true;
+  if (!args.request.draft && !args.request.ocrContext && hasObviousStarterCreationIntent(message)) {
+    return true;
+  }
+  if (!isConciergeFastActionsEnabled()) return false;
   if (args.request.action === "ocr_result") return true;
 
   const action = args.request.action || "message";

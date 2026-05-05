@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { getOutputRequirement, resolveSourceIntent } from "./creation-intent.ts";
 import { extractConciergeDraft, normalizeConciergeDraft } from "./extract.ts";
 import { buildAssistantMessage, fallbackExtractConciergeDraft } from "./fallback.ts";
-import { getOutputRequirement, resolveSourceIntent } from "./creation-intent.ts";
 import {
   buildConciergeHistoryPayload,
   canPersistConciergeHistoryDraft,
@@ -23,9 +23,24 @@ test("birthday category starts with an oriented intake prompt", () => {
   const draft = fallbackExtractConciergeDraft({ message: "Birthday" });
   const message = buildAssistantMessage(draft);
 
-  assert.match(message, /birthday event page or digital flyer/i);
-  assert.match(message, /Who is the guest of honor/i);
-  assert.match(message, /What date, time, and location/i);
+  assert.match(message, /Let's start small/i);
+  assert.match(message, /Let's start small\.\nWho is the birthday for/i);
+  assert.match(message, /Who is the birthday for/i);
+  assert.match(message, /\nWhen and where/i);
+  assert.ok((message.match(/\?/g) || []).length <= 2);
+});
+
+test("category intake prompts stay short", () => {
+  for (const prompt of ["Birthday", "Wedding", "Baby shower", "Graduation", "Gym meet"]) {
+    const message = buildAssistantMessage(fallbackExtractConciergeDraft({ message: prompt }));
+    const lines = message.split("\n").filter(Boolean);
+
+    assert.equal(lines[0], "Let's start small.");
+    assert.ok(lines.length <= 3, message);
+    assert.ok(lines.slice(1).every((line) => line.endsWith("?")), message);
+    assert.ok((message.match(/\?/g) || []).length <= 2, message);
+    assert.doesNotMatch(message, /To get started|please share a few details|Once I have/i);
+  }
 });
 
 test("received birthday invite request asks for invite source instead of host authoring", () => {
@@ -196,6 +211,34 @@ test("fast action flag lets OCR creation intake skip AI extraction", async () =>
       process.env.CONCIERGE_SKIP_AI_FAST_ACTIONS = previous;
     }
   }
+});
+
+test("obvious starter creation prompt skips AI extraction", async () => {
+  let aiCalls = 0;
+  const result = await extractConciergeDraft(
+    { message: "Create a birthday live card with RSVP." },
+    {
+      openAiApiKey: "test-key",
+      createOpenAiClient: () =>
+        ({
+          chat: {
+            completions: {
+              create: async () => {
+                aiCalls += 1;
+                return { choices: [] };
+              },
+            },
+          },
+        }) as any,
+    },
+  );
+
+  assert.equal(aiCalls, 0);
+  assert.equal(result.usedAi, false);
+  assert.equal(result.draft.eventType, "birthday");
+  assert.deepEqual(result.draft.requestedOutputs, ["live_card", "rsvp_page"]);
+  assert.ok(result.draft.missingFields.includes("date"));
+  assert.ok(result.draft.missingFields.includes("honoreeName"));
 });
 
 test("output-only live card prompt without context asks for purpose before date", () => {
@@ -440,7 +483,8 @@ test("fallback infers gym meet category from chat-first prompt", () => {
   const message = buildAssistantMessage(draft);
 
   assert.equal(draft.eventType, "gym_meet");
-  assert.match(message, /gym meet event page or digital flyer/i);
+  assert.match(message, /team, gym, or meet name/i);
+  assert.ok((message.match(/\?/g) || []).length <= 2);
 });
 
 test("upload OCR context can seed a draft", () => {

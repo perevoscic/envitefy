@@ -1,6 +1,8 @@
 const DEFAULT_OPENAI_CONCIERGE_MODEL = "gpt-5.4-mini";
 const DEFAULT_OPENAI_CONCIERGE_FAST_MODEL = "gpt-5.4-nano";
-const DEFAULT_OPENAI_CONCIERGE_TIMEOUT_MS = 8_000;
+const DEFAULT_OPENAI_CONCIERGE_TIMEOUT_MS = 3_000;
+const DEFAULT_OPENAI_CONCIERGE_PERSONA_TIMEOUT_MS = 1_200;
+const DEFAULT_OPENAI_CONCIERGE_STREAM_FIRST_TOKEN_TIMEOUT_MS = 1_500;
 
 const TRUE_VALUES = new Set(["1", "true", "yes", "on"]);
 
@@ -26,12 +28,42 @@ export function resolveConciergeOpenAiModel(override?: unknown): string {
   return DEFAULT_OPENAI_CONCIERGE_MODEL;
 }
 
-export function resolveConciergeOpenAiTimeoutMs(): number {
-  const configured = Number(process.env.OPENAI_CONCIERGE_TIMEOUT_MS);
+function resolveBoundedTimeoutMs(value: unknown, fallback: number): number {
+  const configured = Number(value);
   if (Number.isFinite(configured) && configured > 0) {
     return Math.min(Math.max(Math.round(configured), 1), 60_000);
   }
-  return DEFAULT_OPENAI_CONCIERGE_TIMEOUT_MS;
+  return fallback;
+}
+
+export function resolveConciergeOpenAiTimeoutMs(): number {
+  return resolveBoundedTimeoutMs(
+    process.env.OPENAI_CONCIERGE_TIMEOUT_MS,
+    DEFAULT_OPENAI_CONCIERGE_TIMEOUT_MS,
+  );
+}
+
+export function resolveConciergeOpenAiPersonaModel(override?: unknown): string {
+  return (
+    cleanString(override) ||
+    cleanString(process.env.OPENAI_CONCIERGE_PERSONA_MODEL) ||
+    cleanString(process.env.OPENAI_CONCIERGE_FAST_MODEL) ||
+    DEFAULT_OPENAI_CONCIERGE_FAST_MODEL
+  );
+}
+
+export function resolveConciergeOpenAiPersonaTimeoutMs(): number {
+  return resolveBoundedTimeoutMs(
+    process.env.OPENAI_CONCIERGE_PERSONA_TIMEOUT_MS,
+    DEFAULT_OPENAI_CONCIERGE_PERSONA_TIMEOUT_MS,
+  );
+}
+
+export function resolveConciergeStreamFirstTokenTimeoutMs(): number {
+  return resolveBoundedTimeoutMs(
+    process.env.OPENAI_CONCIERGE_STREAM_FIRST_TOKEN_TIMEOUT_MS,
+    DEFAULT_OPENAI_CONCIERGE_STREAM_FIRST_TOKEN_TIMEOUT_MS,
+  );
 }
 
 export async function runWithConciergeOpenAiTimeout<T>(

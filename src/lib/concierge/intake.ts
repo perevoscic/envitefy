@@ -11,12 +11,17 @@ import {
   upsertCreationSession,
 } from "./event-storage.ts";
 import { extractConciergeDraft } from "./extract.ts";
-import { buildAssistantMessage, buildSuggestedReplies, canSaveConciergeDraft } from "./fallback.ts";
+import {
+  buildAssistantMessage,
+  buildSuggestedReplies,
+  canSaveConciergeDraft,
+  fallbackExtractConciergeDraft,
+} from "./fallback.ts";
 import { buildConciergeHistoryPayload } from "./history-payload.ts";
 import type {
-  CreationChatMessageSnapshot,
   ConciergeEventDraft,
   ConciergeMessageResponse,
+  CreationChatMessageSnapshot,
   CreationIntakeRequest,
   CreationSession,
   CreationSessionResumeResponse,
@@ -103,6 +108,11 @@ async function persistCreationAsEvent(params: {
 function getSavedEventId(session: CreationSession | null): string | null {
   const value = session?.metadata?.savedEventId;
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function getRequestedCreationSessionId(request: CreationIntakeRequest): string {
+  const value = request.creationSessionId || request.draft?.creationSessionId;
+  return typeof value === "string" ? value.trim() : "";
 }
 
 const MAX_CREATION_CHAT_MESSAGES = 50;
@@ -232,16 +242,22 @@ export async function resumeCreationSession(params: {
   };
 }
 
-export async function handleCreationIntake(params: {
-  userId: string;
+export async function resolveCreationIntakeDraft(params: {
   request: CreationIntakeRequest;
   timing?: TimingRecorder;
-}): Promise<CreationIntakeResult> {
+}) {
   const request = params.request;
-  const isSaveAction = Boolean(request.action === "save" && request.draft);
-  const result = isSaveAction
+  const isSaveAction = request.action === "save";
+  return isSaveAction
     ? {
-        draft: request.draft as ConciergeEventDraft,
+        draft:
+          request.draft ||
+          fallbackExtractConciergeDraft({
+            message: request.message || "",
+            ocrContext: request.ocrContext || null,
+            activeContext: request.activeContext || null,
+            requestedOutputs: request.requestedOutputs || null,
+          }),
       }
     : await (params.timing?.time("model_extraction", () =>
         extractConciergeDraft({
@@ -261,26 +277,62 @@ export async function handleCreationIntake(params: {
           requestedOutputs: request.requestedOutputs || null,
           action: request.action || "message",
         }));
-  const draft = {
+}
+
+export async function handleCreationIntake(params: {
+  userId: string;
+  request: CreationIntakeRequest;
+  timing?: TimingRecorder;
+}): Promise<CreationIntakeResult> {
+  const result = await resolveCreationIntakeDraft({
+    request: params.request,
+    timing: params.timing,
+  });
+  return finalizeCreationIntake({
+    ...params,
+    result,
+  });
+}
+
+export async function finalizeCreationIntake(params: {
+  userId: string;
+  request: CreationIntakeRequest;
+  result: { draft: ConciergeEventDraft };
+  assistantMessageOverride?: string | null;
+  timing?: TimingRecorder;
+}): Promise<CreationIntakeResult> {
+  const request = params.request;
+  const isSaveAction = request.action === "save";
+  const result = params.result;
+  let draft = {
     ...result.draft,
     creationSessionId: request.creationSessionId || result.draft.creationSessionId,
   };
   const requestChatMessages = normalizeChatMessages(request.chatMessages);
-  const assistantMessage = isSaveAction ? "" : buildAssistantMessage(draft);
+  const assistantMessage = isSaveAction
+    ? ""
+    : params.assistantMessageOverride?.trim() || buildAssistantMessage(draft);
 
   let creationSession: CreationSession | null = null;
   let existingSessionChatMessages: CreationChatMessageSnapshot[] = [];
   if (isSaveAction) {
+    const requestedCreationSessionId = getRequestedCreationSessionId(request);
+    if (!requestedCreationSessionId) {
+      throw new Error("Creation session id is required to create this workspace.");
+    }
     const existingSession = await (params.timing?.time("db_read", () =>
       getCreationSession({
         userId: params.userId,
-        sessionId: draft.creationSessionId,
+        sessionId: requestedCreationSessionId,
       }),
     ) ??
       getCreationSession({
         userId: params.userId,
-        sessionId: draft.creationSessionId,
+        sessionId: requestedCreationSessionId,
       }));
+    if (!existingSession) {
+      throw new Error("Creation session was not found for this user.");
+    }
     existingSessionChatMessages = chatMessagesFromSession(existingSession);
     const existingSavedEventId = getSavedEventId(existingSession);
     if (existingSavedEventId) {
@@ -300,21 +352,26 @@ export async function handleCreationIntake(params: {
           : existingSessionChatMessages,
       };
     }
-    if (existingSession) {
-      creationSession = await (params.timing?.time("db_write", () =>
-        claimCreationSessionSave({
-          userId: params.userId,
-          sessionId: draft.creationSessionId,
-        }),
-      ) ??
-        claimCreationSessionSave({
-          userId: params.userId,
-          sessionId: draft.creationSessionId,
-        }));
-      if (!creationSession) {
-        throw new Error("This workspace is already being created. Please wait a moment.");
-      }
+    if (!canSaveConciergeDraft(existingSession.draft)) {
+      throw new Error("Add the missing event details before creating this workspace.");
     }
+    creationSession = await (params.timing?.time("db_write", () =>
+      claimCreationSessionSave({
+        userId: params.userId,
+        sessionId: requestedCreationSessionId,
+      }),
+    ) ??
+      claimCreationSessionSave({
+        userId: params.userId,
+        sessionId: requestedCreationSessionId,
+      }));
+    if (!creationSession) {
+      throw new Error("This workspace is already being created. Please wait a moment.");
+    }
+    draft = {
+      ...creationSession.draft,
+      creationSessionId: creationSession.draft.creationSessionId || creationSession.id,
+    };
   }
   const shouldPersistSession =
     request.persistSession !== false &&
@@ -368,50 +425,27 @@ export async function handleCreationIntake(params: {
       ...draft,
       draftStatus: "published",
     };
-    if (creationSession) {
-      creationSession = await (params.timing?.time("db_write", () =>
-        markCreationSessionSaved({
-          userId: params.userId,
-          sessionId: draft.creationSessionId,
-          eventId: saved.eventId,
-          draft: savedDraft,
-          metadata: chatMessagesMetadata(saveChatMessages),
-        }),
-      ) ??
-        markCreationSessionSaved({
-          userId: params.userId,
-          sessionId: draft.creationSessionId,
-          eventId: saved.eventId,
-          draft: savedDraft,
-          metadata: chatMessagesMetadata(saveChatMessages),
-        }));
-    } else {
-      creationSession = await (params.timing?.time("db_write", () =>
-        upsertCreationSession({
-          userId: params.userId,
-          draft: savedDraft,
-          activeContext: (request.activeContext || {}) as Record<string, unknown>,
-          metadata: {
-            action: request.action || "save",
-            canPersist: savedDraft.canPersist,
-            savedEventId: saved.eventId,
-            savedAt: new Date().toISOString(),
-            ...chatMessagesMetadata(saveChatMessages),
-          },
-        }),
-      ) ??
-        upsertCreationSession({
-          userId: params.userId,
-          draft: savedDraft,
-          activeContext: (request.activeContext || {}) as Record<string, unknown>,
-          metadata: {
-            action: request.action || "save",
-            canPersist: savedDraft.canPersist,
-            savedEventId: saved.eventId,
-            savedAt: new Date().toISOString(),
-            ...chatMessagesMetadata(saveChatMessages),
-          },
-        }));
+    if (!creationSession) {
+      throw new Error("Creation session must be claimed before saving.");
+    }
+    creationSession = await (params.timing?.time("db_write", () =>
+      markCreationSessionSaved({
+        userId: params.userId,
+        sessionId: draft.creationSessionId,
+        eventId: saved.eventId,
+        draft: savedDraft,
+        metadata: chatMessagesMetadata(saveChatMessages),
+      }),
+    ) ??
+      markCreationSessionSaved({
+        userId: params.userId,
+        sessionId: draft.creationSessionId,
+        eventId: saved.eventId,
+        draft: savedDraft,
+        metadata: chatMessagesMetadata(saveChatMessages),
+      }));
+    if (!creationSession) {
+      throw new Error("Creation session could not be marked saved.");
     }
     return {
       ok: true,

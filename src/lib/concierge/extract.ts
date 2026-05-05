@@ -14,7 +14,7 @@ import {
   canSaveConciergeDraft,
   fallbackExtractConciergeDraft,
 } from "./fallback.ts";
-import { isConciergeFastActionsEnabled, shouldSkipOpenAiForCreationRequest } from "./fast-paths.ts";
+import { shouldSkipOpenAiForCreationRequest } from "./fast-paths.ts";
 import { resolveConciergeOpenAiModel, runWithConciergeOpenAiTimeout } from "./openai-config.ts";
 import type {
   ConciergeEventDraft,
@@ -366,8 +366,7 @@ export async function extractConciergeDraft(
   const shouldUseDeterministicFastPath =
     fallback.currentQuestion === "invite_source" ||
     (isGreetingMessage(message) && !request.draft && !request.ocrContext) ||
-    (isConciergeFastActionsEnabled() &&
-      shouldSkipOpenAiForCreationRequest({ request, fallbackDraft: fallback }));
+    shouldSkipOpenAiForCreationRequest({ request, fallbackDraft: fallback });
 
   if (shouldUseDeterministicFastPath) {
     return {

@@ -1,12 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { resolveConciergeOpenAiModel, resolveConciergeOpenAiTimeoutMs } from "./openai-config.ts";
+import {
+  resolveConciergeOpenAiModel,
+  resolveConciergeOpenAiPersonaModel,
+  resolveConciergeOpenAiPersonaTimeoutMs,
+  resolveConciergeOpenAiTimeoutMs,
+  resolveConciergeStreamFirstTokenTimeoutMs,
+} from "./openai-config.ts";
 
 const ENV_KEYS = [
   "OPENAI_CONCIERGE_MODEL",
   "CONCIERGE_FAST_MODEL_ENABLED",
   "OPENAI_CONCIERGE_FAST_MODEL",
   "OPENAI_CONCIERGE_TIMEOUT_MS",
+  "OPENAI_CONCIERGE_PERSONA_MODEL",
+  "OPENAI_CONCIERGE_PERSONA_TIMEOUT_MS",
+  "OPENAI_CONCIERGE_STREAM_FIRST_TOKEN_TIMEOUT_MS",
 ];
 
 function withEnv(values, fn) {
@@ -65,11 +74,37 @@ test("configured fast model wins when fast model flag is enabled", () => {
   );
 });
 
-test("concierge timeout defaults to 8000ms and accepts bounded overrides", () => {
+test("concierge timeout defaults to 3000ms and accepts bounded overrides", () => {
   withEnv({}, () => {
-    assert.equal(resolveConciergeOpenAiTimeoutMs(), 8000);
+    assert.equal(resolveConciergeOpenAiTimeoutMs(), 3000);
   });
   withEnv({ OPENAI_CONCIERGE_TIMEOUT_MS: "2500" }, () => {
     assert.equal(resolveConciergeOpenAiTimeoutMs(), 2500);
   });
+});
+
+test("concierge persona model defaults to the fast model family", () => {
+  withEnv({}, () => {
+    assert.equal(resolveConciergeOpenAiPersonaModel(), "gpt-5.4-nano");
+  });
+  withEnv({ OPENAI_CONCIERGE_PERSONA_MODEL: "gpt-persona-custom" }, () => {
+    assert.equal(resolveConciergeOpenAiPersonaModel(), "gpt-persona-custom");
+  });
+});
+
+test("concierge persona streaming timeouts have tight defaults and accept overrides", () => {
+  withEnv({}, () => {
+    assert.equal(resolveConciergeOpenAiPersonaTimeoutMs(), 1200);
+    assert.equal(resolveConciergeStreamFirstTokenTimeoutMs(), 1500);
+  });
+  withEnv(
+    {
+      OPENAI_CONCIERGE_PERSONA_TIMEOUT_MS: "900",
+      OPENAI_CONCIERGE_STREAM_FIRST_TOKEN_TIMEOUT_MS: "1100",
+    },
+    () => {
+      assert.equal(resolveConciergeOpenAiPersonaTimeoutMs(), 900);
+      assert.equal(resolveConciergeStreamFirstTokenTimeoutMs(), 1100);
+    },
+  );
 });

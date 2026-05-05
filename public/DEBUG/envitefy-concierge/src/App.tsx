@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Sparkles, Plus, Image as ImageIcon, Camera, Mic, Send, 
   ChevronRight, Calendar, MapPin, Users, Info, 
-  Layout, FileText, Smartphone, CreditCard, ChevronDown,
-  X, History, Trash2, CheckCircle2, Loader2, MessageSquare,
+  Layout, FileText, Smartphone, ChevronDown,
+  X, History, Trash2, Loader2, MessageSquare,
   MoreVertical, Share2, ExternalLink, RefreshCw
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  CelebrationType, ProductType, Thread, Message, ConciergeEventDraft 
+  CelebrationType, ProductType, Thread, Message, ConciergeEventDraft, RSVP
 } from "./types";
 import { conciergeService } from "./services/geminiService";
 
@@ -264,8 +264,6 @@ export default function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
 
-  const isDraftComplete = draft.title && draft.date && draft.location;
-  
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -324,26 +322,28 @@ export default function App() {
       timestamp: new Date().toISOString()
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const nextMessages = [...messages, userMsg];
+    setMessages(nextMessages);
     setInput("");
 
-    // Simulate AI thinking
     setIsGenerating(true);
-    
-    // Extract info using Gemini
-    const updatedDraft = await conciergeService.extractEventDetails(content, draft);
-    setDraft(updatedDraft);
 
-    setTimeout(() => {
+    try {
+      const updatedDraft = await conciergeService.extractEventDetails(content, draft);
+      setDraft(updatedDraft);
+      const aiResponseContent = await conciergeService.getConciergeResponse(nextMessages, updatedDraft);
+
       const aiMsg: Message = {
         id: Math.random().toString(36).substring(7),
         role: "assistant",
-        content: `Got it! I've updated your workspace with ${content.length > 50 ? 'those details' : content}. Is there anything else we should add, or are we ready to generate your ${draft.productType || 'Live Card'}?`,
+        content: aiResponseContent,
         timestamp: new Date().toISOString()
       };
+
       setMessages(prev => [...prev, aiMsg]);
+    } finally {
       setIsGenerating(false);
-    }, 1000);
+    }
   };
 
   const generateProduct = async () => {
@@ -351,7 +351,7 @@ export default function App() {
     // Simulate generation steps
     const steps = ["Planning layout...", "Creating assets...", "Optimizing content...", "Finalizing workspace..."];
     
-    for (const step of steps) {
+    for (const _step of steps) {
         await new Promise(r => setTimeout(r, 800));
     }
 

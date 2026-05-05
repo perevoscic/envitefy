@@ -1,14 +1,14 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
-import path from "path";
-import { fileURLToPath } from "url";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT || 3000);
 
   app.use(express.json());
 
@@ -41,7 +41,7 @@ async function startServer() {
   app.post("/api/creation/intake", (req, res) => {
     // This would typically handle backend-specific logic
     // But since Gemini calls must be frontend, this mostly persists state
-    const { threadId, draft } = req.body;
+    const { draft } = req.body;
     // Simulate persistence
     res.json({ status: "success", draft });
   });

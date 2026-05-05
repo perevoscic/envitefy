@@ -27,12 +27,15 @@ test("event workspace is owner-only and exposes assistant plus assets tabs", () 
 
 test("saved concierge drafts stay in chat with a generated workspace preview", () => {
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const preview = readSource("src/app/chat/ChatProductPreview.tsx");
+  const chatSurface = `${client}\n${preview}`;
 
   assert.match(client, /generateProductForDraft/);
   assert.match(client, /setLiveCardEventId\(savedEventId\)/);
-  assert.match(client, /Event Workspace/);
-  assert.match(client, /View product/);
-  assert.match(client, /Open workspace/);
+  assert.doesNotMatch(chatSurface, /Event Workspace/);
+  assert.match(chatSurface, /Create preview/);
+  assert.match(chatSurface, /View product/);
+  assert.doesNotMatch(chatSurface, /Open workspace/);
   assert.doesNotMatch(client, /router\.push\(`\/events\/\$\{savedEventId\}\/workspace`\)/);
   assert.doesNotMatch(client, /Opening your event workspace\./);
 });

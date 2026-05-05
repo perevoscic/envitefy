@@ -10,6 +10,8 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   const appShell = readSource("src/app/AppShell.tsx");
   const page = readSource("src/app/chat/page.tsx");
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const preview = readSource("src/app/chat/ChatProductPreview.tsx");
+  const chatSurface = `${client}\n${preview}`;
   const extract = readSource("src/lib/concierge/extract.ts");
   const eventActions = readSource("src/lib/concierge/event-actions.ts");
 
@@ -54,12 +56,15 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.doesNotMatch(client, /Choose a category and product to start/);
   assert.doesNotMatch(client, /Upload Your Invite/);
   assert.match(client, /PRODUCT_OPTIONS/);
-  assert.match(client, /CATEGORY_OPTIONS/);
-  assert.match(client, /categorySelectValueFromDraft/);
-  assert.match(client, /handleCategoryChange/);
+  assert.doesNotMatch(client, /CATEGORY_OPTIONS/);
+  assert.doesNotMatch(client, /categorySelectValueFromDraft/);
+  assert.doesNotMatch(client, /handleCategoryChange/);
+  assert.doesNotMatch(client, /Set the event category to/);
   assert.match(client, /Inferred category/);
   assert.match(client, /Gym Meet/);
-  assert.match(client, /Set the event category to gym meet/);
+  assert.doesNotMatch(preview, /ChevronDown/);
+  assert.doesNotMatch(preview, /isCategoryMenuOpen/);
+  assert.match(preview, /title=\{`Category: \$\{categoryLabel\}`\}/);
   assert.doesNotMatch(client, /PRODUCT_CHOICE_PROMPT/);
   assert.doesNotMatch(client, /"What kind of product would you like to create\?"/);
   assert.match(client, /Live Card/);
@@ -78,6 +83,10 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.doesNotMatch(client, /router\.push\(`\/chat\?thread=/);
 
   assert.match(client, /fetch\("\/api\/creation\/intake"/);
+  assert.match(client, /CREATION_INTAKE_STREAM_URL = "\/api\/creation\/intake\/stream"/);
+  assert.match(client, /readConciergeIntakeStream/);
+  assert.match(client, /assistant_delta/);
+  assert.match(client, /withConciergeTiming\(CREATION_INTAKE_STREAM_URL\)/);
   assert.match(client, /CreationSessionResumeResponse/);
   assert.match(client, /useSearchParams/);
   assert.match(client, /const threadId = searchParams\.get\("thread"\)/);
@@ -110,22 +119,31 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /const isEmptyState =/);
   assert.match(client, /className="min-h-0 flex-1 overflow-y-auto/);
   assert.match(client, /setMobileView\("preview"\)/);
-  assert.match(client, /Workspace Preview/);
-  assert.doesNotMatch(client, /Share preview/);
-  assert.doesNotMatch(client, /More preview actions/);
-  assert.doesNotMatch(client, /Share2/);
-  assert.doesNotMatch(client, /MoreVertical/);
+  assert.match(chatSurface, /Preview/);
+  assert.doesNotMatch(chatSurface, /Chat builds the product here/);
+  assert.doesNotMatch(preview, /statusLabel/);
+  assert.doesNotMatch(preview, /statusClassName/);
+  assert.doesNotMatch(chatSurface, /Workspace Preview/);
+  assert.doesNotMatch(chatSurface, /Share preview/);
+  assert.doesNotMatch(chatSurface, /More preview actions/);
+  assert.doesNotMatch(chatSurface, /Share2/);
+  assert.doesNotMatch(chatSurface, /MoreVertical/);
   assert.match(client, /Invitation/);
-  assert.match(client, /RSVP/);
-  assert.match(client, /Guest List/);
+  assert.doesNotMatch(
+    chatSurface,
+    /grid grid-cols-2[\s\S]{0,700}setPreviewTab\("rsvp"\)[\s\S]{0,250}>\s*RSVP\s*</,
+  );
+  assert.doesNotMatch(chatSurface, /Guest List/);
   assert.match(client, /\/api\/events\/\$\{encodeURIComponent\(eventId\)\}\/rsvp/);
   assert.match(client, /rsvpPreview\.stats\.yes/);
   assert.match(client, /rsvpPreview\.responses\.map/);
-  assert.match(client, /Generate workspace/);
-  assert.match(client, /Regenerate version/);
-  assert.match(client, /View product/);
-  assert.match(client, /Open workspace/);
-  assert.match(client, /Refine workspace/);
+  assert.match(chatSurface, /Create preview/);
+  assert.match(chatSurface, /Manage/);
+  assert.doesNotMatch(chatSurface, /Generate workspace/);
+  assert.doesNotMatch(chatSurface, /Regenerate version/);
+  assert.match(chatSurface, /View product/);
+  assert.doesNotMatch(chatSurface, /Open workspace/);
+  assert.doesNotMatch(chatSurface, /Refine workspace/);
   assert.match(client, /sendGeneratedCardEdit/);
   assert.match(client, /fetch\(`\/api\/concierge\/events\/\$\{liveCardEventId\}\/message`/);
 
@@ -149,8 +167,10 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.doesNotMatch(client, /choiceIconClassName/);
   assert.match(client, /<Paperclip className="size-6"/);
   assert.match(client, /<Camera className="size-6"/);
-  assert.match(client, /Envitefy is thinking\.\.\./);
+  assert.match(client, /Concierge is thinking\.\.\./);
   assert.match(client, /isThinking && "animate-pulse"/);
+  assert.match(client, /isThinking \? null : \(/);
+  assert.match(client, /message\.type !== "upload_status" && !message\.text\.trim\(\)/);
   assert.match(client, /if \(!value\) return/);
   assert.doesNotMatch(client, /Choose Live card, Flyer \/ Invite, or Event page first/);
   assert.doesNotMatch(client, /mobileComposerSpacer/);

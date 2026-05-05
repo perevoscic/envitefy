@@ -364,77 +364,47 @@ function receivedInviteSourcePrompt(draft: ConciergeEventDraft) {
   ].join("\n");
 }
 
+function compactIntakePrompt(...questions: string[]) {
+  return ["Let's start small.", ...questions].join("\n");
+}
+
 function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
   if (isReceivedInviteDraft(draft)) return null;
   if (!draft.missingFields.length || hasStartedCategoryDetails(draft)) return null;
 
   if (draft.eventType === "birthday") {
-    return [
-      "Welcome to Envitefy. I am your Concierge, here to help craft an elegant birthday event page or digital flyer.",
-      "",
-      "To get started, please share a few details:",
-      "What kind of birthday celebration is it?",
-      "Who is the guest of honor, and what age or milestone are we celebrating?",
-      "What date, time, and location should guests know?",
-      "Do you have a specific theme, color palette, or vibe in mind?",
-      "",
-      "Once I have those details, I can generate the live card or flyer.",
-    ].join("\n");
+    return compactIntakePrompt(
+      "Who is the birthday for, and what age or milestone?",
+      "When and where should it happen?",
+    );
   }
 
   if (draft.eventType === "wedding") {
-    return [
-      "Welcome to Envitefy. I am your Concierge, here to help craft an elegant wedding event page or digital flyer.",
-      "",
-      "To get started, please share a few details:",
-      "Is this for the wedding, rehearsal dinner, shower, or another wedding event?",
-      "What names should be featured?",
-      "What date, time, and venue should guests know?",
-      "Do you have a style, palette, dress code, or registry detail in mind?",
-      "",
-      "Once I have those details, I can generate the live card or flyer.",
-    ].join("\n");
+    return compactIntakePrompt(
+      "What wedding event is this for, and whose names should be featured?",
+      "When and where should it happen?",
+    );
   }
 
   if (draft.eventType === "baby_shower") {
-    return [
-      "Welcome to Envitefy. I am your Concierge, here to help craft a polished baby shower event page or digital flyer.",
-      "",
-      "To get started, please share a few details:",
-      "What type of shower or sprinkle are you hosting?",
-      "Who are we celebrating, and should a baby name be included?",
-      "What date, time, and location should guests know?",
-      "Do you have a theme, color palette, registry, or gift note in mind?",
-      "",
-      "Once I have those details, I can generate the live card or flyer.",
-    ].join("\n");
+    return compactIntakePrompt(
+      "Who are we celebrating, and what kind of shower is it?",
+      "When and where should guests go?",
+    );
   }
 
   if (draft.eventType === "graduation") {
-    return [
-      "Welcome to Envitefy. I am your Concierge, here to help craft a graduation event page or digital flyer.",
-      "",
-      "To get started, please share a few details:",
-      "Is this for a ceremony, party, open house, or dinner?",
-      "Who is the graduate, and should we include school or class year?",
-      "What date, time, and location should guests know?",
-      "Do you have school colors, a photo style, or a specific vibe in mind?",
-      "",
-      "Once I have those details, I can generate the live card or flyer.",
-    ].join("\n");
+    return compactIntakePrompt(
+      "Who is graduating, and is this a ceremony, party, or open house?",
+      "When and where should it happen?",
+    );
   }
 
   if (draft.eventType === "gym_meet") {
-    return [
-      "Welcome to Envitefy. I am your Concierge, here to help craft a gym meet event page or digital flyer.",
-      "",
-      "To get started, please share a few details:",
+    return compactIntakePrompt(
       "What team, gym, or meet name should be featured?",
-      "What date, time, and location should guests know?",
-      "Do you need RSVP, signup, schedule, or registration details included?",
-      "",
-      "Once I have those details, I can generate the live card or flyer.",
-    ].join("\n");
+      "When and where should guests go?",
+    );
   }
 
   return null;

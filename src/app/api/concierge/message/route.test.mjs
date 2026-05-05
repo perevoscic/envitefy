@@ -20,6 +20,7 @@ test("concierge message API requires server-side auth and never accepts body use
 
 test("creation intake API owns session persistence and auth", () => {
   const source = readSource("src/app/api/creation/intake/route.ts");
+  const streamSource = readSource("src/app/api/creation/intake/stream/route.ts");
   const intake = readSource("src/lib/concierge/intake.ts");
   const storage = readSource("src/lib/concierge/event-storage.ts");
   const sql = readSource("prisma/manual_sql/20260430_add_event_assets_conversations.sql");
@@ -27,6 +28,13 @@ test("creation intake API owns session persistence and auth", () => {
   assert.match(source, /export const runtime = "nodejs"/);
   assert.match(source, /resolveSessionUserId\(session\)/);
   assert.match(source, /handleCreationIntake/);
+  assert.match(streamSource, /resolveSessionUserId\(session\)/);
+  assert.match(streamSource, /text\/event-stream/);
+  assert.match(streamSource, /streamConciergePersona/);
+  assert.match(streamSource, /resolveCreationIntakeDraft/);
+  assert.match(streamSource, /finalizeCreationIntake/);
+  assert.match(streamSource, /assistant_delta/);
+  assert.match(streamSource, /event: \$\{event\}/);
   assert.match(intake, /upsertCreationSession/);
   assert.match(intake, /const shouldPersistSession =/);
   assert.match(intake, /draft\.canPersist \|\| draft\.requestedOutputs\.length > 0/);
@@ -70,8 +78,20 @@ test("saved creation sessions keep workspace continuation scoped to the owner", 
   const intake = readSource("src/lib/concierge/intake.ts");
   const storage = readSource("src/lib/concierge/event-storage.ts");
 
+  assert.match(intake, /const isSaveAction = request\.action === "save"/);
+  assert.match(intake, /getRequestedCreationSessionId\(request\)/);
+  assert.match(intake, /Creation session id is required to create this workspace/);
+  assert.match(intake, /Creation session was not found for this user/);
+  assert.match(
+    intake,
+    /getCreationSession\(\{\s*userId: params\.userId,\s*sessionId: requestedCreationSessionId,\s*\}\)/,
+  );
+  assert.match(intake, /canSaveConciergeDraft\(existingSession\.draft\)/);
+  assert.match(intake, /Add the missing event details before creating this workspace/);
   assert.match(intake, /markCreationSessionSaved/);
   assert.match(intake, /claimCreationSessionSave/);
+  assert.match(intake, /sessionId: requestedCreationSessionId/);
+  assert.match(intake, /\.\.\.creationSession\.draft/);
   assert.match(intake, /This workspace is already being created/);
   assert.match(intake, /draftStatus: "published"/);
   assert.match(intake, /savedEventId: saved\.eventId/);
