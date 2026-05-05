@@ -1590,7 +1590,7 @@ export default function ConciergeChatClient() {
                   mobileView === "chat"
                     ? isEmptyState
                       ? "flex flex-col overflow-y-auto"
-                      : "flex flex-col overflow-hidden"
+                      : "flex flex-col overflow-y-auto"
                     : "hidden md:flex"
                 } ${shouldShowWorkspacePanel ? "" : "md:border-r-0"}`}
               >
