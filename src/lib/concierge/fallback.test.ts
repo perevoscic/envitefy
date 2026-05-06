@@ -46,6 +46,19 @@ test("starter category asks for product format before event details", async () =
   assert.doesNotMatch(result.assistantMessage, /Who is the birthday for/i);
 });
 
+test("starter category and product text asks for event details immediately", async () => {
+  const result = await extractConciergeDraft({
+    message: "Birthday Event Page",
+    action: "starter_category",
+  });
+
+  assert.equal(result.usedAi, false);
+  assert.equal(result.draft.eventType, "birthday");
+  assert.deepEqual(result.draft.requestedOutputs, ["event_page"]);
+  assert.doesNotMatch(result.assistantMessage, /would you like that to be/i);
+  assert.match(result.assistantMessage, /Who is the birthday for/i);
+});
+
 test("category intake prompts stay short", () => {
   for (const prompt of ["Birthday", "Wedding", "Baby shower", "Graduation", "Gym meet"]) {
     const message = buildAssistantMessage(fallbackExtractConciergeDraft({ message: prompt }));

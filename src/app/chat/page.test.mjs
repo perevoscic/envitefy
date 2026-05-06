@@ -55,7 +55,7 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.doesNotMatch(client, /Watch party invite/);
   assert.ok(client.indexOf('label: "Game Day"') < client.indexOf('label: "Baby Shower"'));
   assert.match(client, /label: "Baby Shower"[\s\S]*?size: "desktopWide"/);
-  assert.match(client, /action: "starter_category"/);
+  assert.match(client, /selectedStarterCategory \? "starter_category" : undefined/);
   assert.match(client, /col-span-2 aspect-\[2\.055\/1\]/);
   assert.match(client, /sm:col-span-2 sm:aspect-\[2\.055\/1\]/);
   assert.match(client, /aspect-square min-h-\[8\.25rem\]/);
@@ -79,6 +79,21 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(preview, /isMobileDetailsOpen/);
   assert.match(preview, /aria-expanded=\{isMobileDetailsOpen\}/);
   assert.match(preview, /md:mt-0 md:grid/);
+  assert.match(preview, /function ChatOutputPreviewSurface/);
+  assert.match(preview, /function ChatFlyerInvitePreview/);
+  assert.match(preview, /function ChatInvitationPreview/);
+  assert.match(preview, /function ChatEventPagePreview/);
+  assert.match(
+    preview,
+    /selectedOutput === "digital_flyer" \|\| selectedOutput === "printable_flyer"/,
+  );
+  assert.match(preview, /if \(selectedOutput === "invitation"\)/);
+  assert.match(preview, /if \(selectedOutput === "event_page"\)/);
+  assert.match(preview, /<ChatOutputPreviewSurface/);
+  assert.match(preview, /selectedOutput=\{selectedOutput\}/);
+  assert.match(preview, /publicActionLabelForOutput/);
+  assert.match(preview, /selectedOutput === "event_page"\) return "Open Event Page"/);
+  assert.match(preview, /This is a mockup, not your product\./);
   assert.doesNotMatch(preview, /isCategoryMenuOpen/);
   assert.doesNotMatch(preview, /title=\{`Category: \$\{categoryLabel\}`\}/);
   assert.doesNotMatch(client, /PRODUCT_CHOICE_PROMPT/);
@@ -102,12 +117,17 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /onValueChange=\{\(value\) =>/);
   assert.match(client, /function handleProductChoice\(option: ProductOption\)/);
   assert.match(client, /setSelectedProductOutput\(option\.output\)/);
-  assert.match(client, /setInput\(option\.label\)/);
-  assert.match(client, /querySelector\("textarea"\)\?\.focus\(\)/);
-  assert.doesNotMatch(
-    client,
-    /function handleProductChoice\(option: ProductOption\) \{[\s\S]{0,260}sendToConcierge/,
-  );
+  assert.match(client, /function updateComposerSelection/);
+  assert.match(client, /function selectionPrefix/);
+  assert.match(client, /setInput\(\(current\) =>/);
+  assert.match(client, /focusComposerAtEnd/);
+  assert.match(client, /updateComposerSelection\(nextCategoryLabel, option\.output\)/);
+  assert.match(client, /requestedOutputs: \[\]/);
+  assert.doesNotMatch(client, /message: option\.prompt/);
+  assert.doesNotMatch(client, /requestedOutputs: \[option\.output\]/);
+  assert.match(client, /role="group"/);
+  assert.match(client, /selectedProductOutput === option\.output/);
+  assert.match(client, /text-\[#5f4b82\]/);
   assert.match(client, /icon: IdCard/);
   assert.match(client, /icon: Mail/);
   assert.match(client, /icon: FileImage/);
@@ -137,7 +157,8 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(bottomNav, /min-w-\[320px\]/);
   assert.match(bottomNav, /rounded-full/);
   assert.match(bottomNav, /bg-\[#ede8f7\]/);
-  assert.match(bottomNav, /text-\[#2f1a55\]/);
+  assert.match(bottomNav, /text-\[#4b3674\]/);
+  assert.match(bottomNav, /text-\[#6d5a8e\]/);
   assert.match(bottomNav, /activeValue\?: string/);
   assert.match(bottomNav, /autoOpenOnMount\?: boolean/);
   assert.match(bottomNav, /autoOpenIntervalMs\?: number/);
@@ -232,7 +253,8 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(preview, /w-auto max-w-full/);
   assert.match(preview, /top-\[calc\(100%\+0\.5rem\)\]/);
   assert.match(preview, /pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\]/);
-  assert.match(preview, /flex-\[1_1_0\]/);
+  assert.match(preview, /flex w-full flex-none items-center justify-center/);
+  assert.match(preview, /relative aspect-\[9\/16\] w-full max-w-\[20rem\]/);
   assert.doesNotMatch(preview, /pb-24/);
   assert.doesNotMatch(chatSurface, /Manage/);
   assert.doesNotMatch(chatSurface, /Generate workspace/);

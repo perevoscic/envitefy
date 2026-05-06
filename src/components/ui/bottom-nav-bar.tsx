@@ -114,8 +114,8 @@ export function BottomNavBar({
             className={cn(
               "relative flex h-10 max-h-[44px] min-h-[40px] min-w-[44px] items-center gap-0 rounded-full px-3 py-2 transition-colors duration-200",
               isActive
-                ? "gap-2 bg-[#ede8f7] text-[#2f1a55]"
-                : "bg-transparent text-[#665e6f] hover:bg-[#f5f1fb] hover:text-[#2f1a55]",
+                ? "gap-2 bg-[#ede8f7] text-[#4b3674]"
+                : "bg-transparent text-[#6d5a8e] hover:bg-[#f5f1fb] hover:text-[#4b3674]",
               "focus:outline-none focus-visible:ring-0",
             )}
             onClick={() => {
@@ -152,7 +152,7 @@ export function BottomNavBar({
               <span
                 className={cn(
                   "select-none overflow-hidden text-ellipsis whitespace-nowrap text-xs font-medium leading-[1.9] transition-opacity duration-200",
-                  isActive ? "text-[#2f1a55]" : "opacity-0",
+                  isActive ? "text-[#4b3674]" : "opacity-0",
                 )}
                 title={item.label}
               >

@@ -356,6 +356,8 @@ const CELEBRATION_STARTER_TILES = [
   },
 ] as const;
 
+type CelebrationStarterTile = (typeof CELEBRATION_STARTER_TILES)[number];
+
 function newMessage(
   role: ChatMessage["role"],
   text: string,
@@ -474,6 +476,15 @@ function draftLocationLine(draft: ConciergeEventDraft | null) {
 
 function outputLabel(output: RequestedOutput) {
   return OUTPUT_LABELS[output] || output;
+}
+
+function productOptionLabel(output: RequestedOutput) {
+  return PRODUCT_OPTIONS.find((option) => option.output === output)?.label || outputLabel(output);
+}
+
+function categoryLabelForDraft(draft: ConciergeEventDraft | null) {
+  if (!draft || draft.eventType === "unknown" || draft.eventType === "general") return null;
+  return PREVIEW_CATEGORY_BY_EVENT_TYPE[draft.eventType] || null;
 }
 
 function previewImageForDraft(draft: ConciergeEventDraft | null) {
@@ -683,6 +694,8 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [input, setInput] = useState("");
   const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput | null>(null);
+  const [selectedStarterCategory, setSelectedStarterCategory] =
+    useState<CelebrationStarterTile | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     newMessage("assistant", initialAssistantPrompt),
   ]);
@@ -731,6 +744,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         ? "Generating invite"
         : "Concierge is thinking...";
   const isThinking = busyLabel === "Concierge is thinking..." && !isStreamingAssistant;
+  const selectedStarterLabel = selectedStarterCategory?.label || null;
   const currentBuildStep = Math.min(
     Math.floor((buildProgress / 100) * BUILDING_STEPS.length),
     BUILDING_STEPS.length - 1,
@@ -787,18 +801,54 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     setBuildProgress(0);
     setRsvpPreview(EMPTY_RSVP_PREVIEW);
     setSelectedProductOutput(null);
+    setSelectedStarterCategory(null);
     setWeatherContext(null);
     setMobileView("chat");
     setMessages([newMessage("assistant", initialAssistantPrompt)]);
   }
 
+  function focusComposerAtEnd() {
+    window.requestAnimationFrame(() => {
+      const textarea = composerCardRef.current?.querySelector("textarea");
+      if (!textarea) return;
+      textarea.focus();
+      const end = textarea.value.length;
+      textarea.setSelectionRange(end, end);
+    });
+  }
+
+  function selectionPrefix(categoryLabel: string | null, productOutput: RequestedOutput | null) {
+    return [categoryLabel, productOutput ? productOptionLabel(productOutput) : null]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  function updateComposerSelection(
+    nextCategoryLabel: string | null,
+    nextProductOutput: RequestedOutput | null,
+  ) {
+    const previousPrefix = selectionPrefix(
+      selectedStarterCategory?.label || categoryLabelForDraft(draft),
+      selectedProductOutput,
+    );
+    const nextPrefix = selectionPrefix(nextCategoryLabel, nextProductOutput);
+    if (!nextPrefix) return;
+
+    setInput((current) => {
+      const trimmed = current.trimStart();
+      const previousMatches =
+        previousPrefix && trimmed.toLowerCase().startsWith(previousPrefix.toLowerCase());
+      const suffix = previousMatches ? trimmed.slice(previousPrefix.length).trimStart() : trimmed;
+      return [nextPrefix, suffix].filter(Boolean).join(" ");
+    });
+    focusComposerAtEnd();
+  }
+
   function handleProductChoice(option: ProductOption) {
     if (isBusy) return;
+    const nextCategoryLabel = selectedStarterCategory?.label || categoryLabelForDraft(draft);
     setSelectedProductOutput(option.output);
-    setInput(option.label);
-    window.requestAnimationFrame(() => {
-      composerCardRef.current?.querySelector("textarea")?.focus();
-    });
+    updateComposerSelection(nextCategoryLabel, option.output);
   }
 
   useEffect(() => {
@@ -846,6 +896,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
           ) || null;
         setDraft(restoredDraft);
         setSelectedProductOutput(restoredOutput);
+        setSelectedStarterCategory(null);
         setLiveCardEventId(savedEventId);
         setLiveCardTitle(savedEventId ? draftHeadline(restoredDraft) : null);
         setLiveCardSummary(
@@ -1108,6 +1159,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     if (params.echo || message) {
       setMessages((prev) => (userMessage ? [...prev, userMessage] : prev));
     }
+    setSelectedStarterCategory(null);
     let streamAssistantId: string | null = null;
     let streamedAssistantText = "";
     try {
@@ -1137,8 +1189,12 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         action,
         chatMessages: chatMessagesForPersistence(messages, userMessage ? [userMessage] : []),
       };
+      const isExplicitProductChoice =
+        Boolean(params.requestedOutputs?.length) &&
+        (action === "chip" || action === "starter_category");
       const shouldStream =
         !params.ocrContext &&
+        !isExplicitProductChoice &&
         (action === "message" || action === "chip" || action === "starter_category");
 
       if (shouldStream) {
@@ -1234,7 +1290,11 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       await sendGeneratedCardEdit(value);
       return;
     }
-    await sendToConcierge({ message: value });
+    await sendToConcierge({
+      message: value,
+      action: selectedStarterCategory ? "starter_category" : undefined,
+      requestedOutputs: [],
+    });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1242,9 +1302,18 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     await submitComposerInput();
   }
 
-  async function handleStarterPrompt(message: string) {
+  function handleStarterPrompt(tile: CelebrationStarterTile) {
     if (isBusy) return;
-    await sendToConcierge({ message, action: "starter_category", echo: message });
+    setError(null);
+    setSelectedStarterCategory(tile);
+    updateComposerSelection(tile.label, selectedProductOutput);
+  }
+
+  function handleStarterProductChoice(option: ProductOption) {
+    if (isBusy) return;
+    const nextCategoryLabel = selectedStarterCategory?.label || categoryLabelForDraft(draft);
+    setSelectedProductOutput(option.output);
+    updateComposerSelection(nextCategoryLabel, option.output);
   }
 
   function handleVoiceInput() {
@@ -1452,6 +1521,8 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                   ? "Tell me what to change..."
                   : selectedProductOutput
                     ? `Enter ${outputLabel(selectedProductOutput).toLowerCase()} details...`
+                    : selectedStarterLabel
+                      ? `Add ${selectedStarterLabel.toLowerCase()} details...`
                     : "Describe what you're planning..."
               }
               aria-label={liveCardEventId ? "Refine invite" : "Start planning from scratch"}
@@ -1618,15 +1689,19 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                         {CELEBRATION_STARTER_TILES.map((tile) => {
                           const isWide = tile.size === "wide";
                           const isDesktopWide = tile.size === "desktopWide";
+                          const isSelected = selectedStarterCategory?.label === tile.label;
                           return (
                             <button
                               key={tile.label}
                               type="button"
-                              onClick={() => void handleStarterPrompt(tile.prompt)}
+                              onClick={() => handleStarterPrompt(tile)}
                               disabled={isBusy}
-                              aria-label={`Start ${tile.label}`}
+                              aria-label={`Choose ${tile.label}`}
+                              aria-pressed={isSelected}
                               className={cn(
                                 "group relative isolate overflow-hidden rounded-2xl border border-white/80 bg-[#f6f1ff] text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55",
+                                isSelected &&
+                                  "border-[#8f68ff] shadow-[0_18px_46px_rgba(111,76,255,0.22)] ring-2 ring-[#8f68ff]/70",
                                 isWide
                                   ? "col-span-2 aspect-[2.055/1]"
                                   : cn(
@@ -1654,6 +1729,48 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                           );
                         })}
                       </div>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        className="mx-auto mt-4 flex w-full max-w-3xl justify-center sm:max-w-4xl"
+                      >
+                        <div
+                          className="flex max-w-full flex-wrap justify-center gap-2 rounded-[1.6rem] border border-[#e9e3f2] bg-white/96 p-2 shadow-[0_16px_36px_rgba(35,27,55,0.12)]"
+                          aria-label={
+                            selectedStarterCategory
+                              ? `Choose product format for ${selectedStarterCategory.label}`
+                              : "Choose product format"
+                          }
+                          role="group"
+                        >
+                          {PRODUCT_OPTIONS.map((option) => {
+                            const Icon = option.icon;
+                            const isSelected = selectedProductOutput === option.output;
+                            const productLabel = selectedStarterCategory
+                              ? `${selectedStarterCategory.label} ${option.label}`
+                              : option.label;
+                            return (
+                              <button
+                                key={option.output}
+                                type="button"
+                                onClick={() => handleStarterProductChoice(option)}
+                                disabled={isBusy}
+                                aria-label={`Use ${productLabel}`}
+                                aria-pressed={isSelected}
+                                className={cn(
+                                  "inline-flex h-10 min-w-[8.25rem] items-center justify-center gap-2 rounded-full px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55 sm:min-w-[7.4rem]",
+                                  isSelected
+                                    ? "bg-[#ede8f7] text-[#3d2769]"
+                                    : "text-[#5f4b82] hover:bg-[#f3eefb] hover:text-[#3d2769]",
+                                )}
+                              >
+                                <Icon size={18} strokeWidth={2} aria-hidden="true" />
+                                <span className="truncate">{option.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
                     </div>
                   ) : (
                     chatThread
