@@ -121,13 +121,21 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /function selectionPrefix/);
   assert.match(client, /setInput\(\(current\) =>/);
   assert.match(client, /focusComposerAtEnd/);
+  assert.doesNotMatch(client, /function updateComposerSelection[\s\S]{0,700}focusComposerAtEnd\(\)/);
   assert.match(client, /updateComposerSelection\(nextCategoryLabel, option\.output\)/);
-  assert.match(client, /requestedOutputs: \[\]/);
+  assert.match(client, /requestedOutputs: selectedProductOutput \? \[selectedProductOutput\] : undefined/);
   assert.doesNotMatch(client, /message: option\.prompt/);
   assert.doesNotMatch(client, /requestedOutputs: \[option\.output\]/);
   assert.match(client, /role="group"/);
   assert.match(client, /selectedProductOutput === option\.output/);
   assert.match(client, /text-\[#5f4b82\]/);
+  assert.match(client, /className="flex w-full justify-center sm:hidden"/);
+  assert.match(client, /className="w-full !min-w-0 !max-w-\[21rem\]/);
+  assert.match(
+    client,
+    /className="flex w-full justify-center sm:hidden"[\s\S]{0,800}autoOpenOnMount[\s\S]{0,80}autoOpenIntervalMs=\{2000\}/,
+  );
+  assert.match(client, /hidden max-w-full flex-wrap[\s\S]{0,120}sm:flex/);
   assert.match(client, /icon: IdCard/);
   assert.match(client, /icon: Mail/);
   assert.match(client, /icon: FileImage/);
@@ -247,14 +255,24 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /function generatedProductHref/);
   assert.match(
     client,
-    /selectedOutput === "live_card" \? `\/card\/\$\{eventId\}` : `\/event\/\$\{eventId\}`/,
+    /selectedOutput === "live_card" && !rsvpEnabled \? `\/card\/\$\{eventId\}` : `\/event\/\$\{eventId\}`/,
   );
-  assert.match(chatSurface, /Generate invite/);
-  assert.match(preview, /w-auto max-w-full/);
+  assert.doesNotMatch(preview, /Generate invite/);
+  assert.match(
+    client,
+    /const shouldShowReadyActions =[\s\S]{0,140}\(canGenerateProduct \|\| isGeneratingCard\)[\s\S]{0,120}!isReadyChatComposerOpen \|\| isGeneratingCard/,
+  );
+  assert.match(client, /Keep chatting/);
+  assert.match(client, /disabled=\{isGeneratingCard \|\| !canGenerateProduct\}/);
+  assert.match(client, /<Loader2 className="size-4 shrink-0 animate-spin"/);
+  assert.match(client, /isGeneratingCard \? "Generating" : "Generate"/);
+  assert.match(client, /shouldShowReadyActions \? readyActions : composer/);
+  assert.doesNotMatch(preview, /w-auto max-w-full/);
   assert.match(preview, /top-\[calc\(100%\+0\.5rem\)\]/);
   assert.match(preview, /pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\]/);
   assert.match(preview, /flex w-full flex-none items-center justify-center/);
-  assert.match(preview, /relative aspect-\[9\/16\] w-full max-w-\[20rem\]/);
+  assert.match(preview, /relative aspect-\[9\/16\] w-full max-w-\[22rem\] sm:max-w-\[23rem\]/);
+  assert.match(preview, /min-h-\[4\.75rem\] justify-end/);
   assert.doesNotMatch(preview, /pb-24/);
   assert.doesNotMatch(chatSurface, /Manage/);
   assert.doesNotMatch(chatSurface, /Generate workspace/);

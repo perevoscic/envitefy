@@ -9,8 +9,10 @@ import {
   IdCard,
   Loader2,
   Mail,
+  MessageCircle,
   Mic,
   Paperclip,
+  Sparkles,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -496,9 +498,13 @@ function previewImageForDraft(draft: ConciergeEventDraft | null) {
   );
 }
 
-function generatedProductHref(eventId: string | null, selectedOutput: RequestedOutput) {
+function generatedProductHref(
+  eventId: string | null,
+  selectedOutput: RequestedOutput,
+  rsvpEnabled?: boolean | null,
+) {
   if (!eventId) return null;
-  return selectedOutput === "live_card" ? `/card/${eventId}` : `/event/${eventId}`;
+  return selectedOutput === "live_card" && !rsvpEnabled ? `/card/${eventId}` : `/event/${eventId}`;
 }
 
 function draftOutputLabels(draft: ConciergeEventDraft | null, selectedOutput: RequestedOutput) {
@@ -714,6 +720,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
   const [rsvpPreview, setRsvpPreview] = useState<RsvpPreviewState>(EMPTY_RSVP_PREVIEW);
   const [weatherContext, setWeatherContext] = useState<ConciergeWeatherContext | null>(null);
+  const [isReadyChatComposerOpen, setIsReadyChatComposerOpen] = useState(false);
 
   const isGeneratingCard = phase === "generating_card";
   const isEditingGeneratedCard = phase === "editing_card";
@@ -762,7 +769,11 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     phase === "card_ready" ||
     phase === "editing_card" ||
     Boolean(liveCardEventId);
-  const liveCardPublicHref = generatedProductHref(liveCardEventId, effectiveSelectedProductOutput);
+  const liveCardPublicHref = generatedProductHref(
+    liveCardEventId,
+    effectiveSelectedProductOutput,
+    draft?.rsvpEnabled,
+  );
   const threadId = searchParams.get("thread")?.trim() || null;
   const currentPreviewImage = generatedInviteImageUrl || previewImageForDraft(draft);
   const hasInitialEventContext =
@@ -781,6 +792,8 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     rsvpPreview.stats.yes + rsvpPreview.stats.no + rsvpPreview.stats.maybe ||
     rsvpResponseNames.length ||
     rsvpPreview.filled;
+  const shouldShowReadyActions =
+    (canGenerateProduct || isGeneratingCard) && (!isReadyChatComposerOpen || isGeneratingCard);
   function selectProductOutputForDraft(nextDraft: ConciergeEventDraft) {
     const restoredOutput = nextDraft.requestedOutputs.find((output) =>
       PRODUCT_OPTIONS.some((option) => option.output === output),
@@ -804,6 +817,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     setSelectedStarterCategory(null);
     setWeatherContext(null);
     setMobileView("chat");
+    setIsReadyChatComposerOpen(false);
     setMessages([newMessage("assistant", initialAssistantPrompt)]);
   }
 
@@ -841,7 +855,6 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       const suffix = previousMatches ? trimmed.slice(previousPrefix.length).trimStart() : trimmed;
       return [nextPrefix, suffix].filter(Boolean).join(" ");
     });
-    focusComposerAtEnd();
   }
 
   function handleProductChoice(option: ProductOption) {
@@ -850,6 +863,14 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     setSelectedProductOutput(option.output);
     updateComposerSelection(nextCategoryLabel, option.output);
   }
+
+  useEffect(() => {
+    if (!canGenerateProduct) setIsReadyChatComposerOpen(false);
+  }, [canGenerateProduct]);
+
+  useEffect(() => {
+    if (isReadyChatComposerOpen) focusComposerAtEnd();
+  }, [isReadyChatComposerOpen]);
 
   useEffect(() => {
     function handleNewChatSession() {
@@ -1293,7 +1314,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     await sendToConcierge({
       message: value,
       action: selectedStarterCategory ? "starter_category" : undefined,
-      requestedOutputs: [],
+      requestedOutputs: selectedProductOutput ? [selectedProductOutput] : undefined,
     });
   }
 
@@ -1523,7 +1544,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                     ? `Enter ${outputLabel(selectedProductOutput).toLowerCase()} details...`
                     : selectedStarterLabel
                       ? `Add ${selectedStarterLabel.toLowerCase()} details...`
-                    : "Describe what you're planning..."
+                      : "Describe what you're planning..."
               }
               aria-label={liveCardEventId ? "Refine invite" : "Start planning from scratch"}
               className="min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#7c4dff] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base"
@@ -1598,6 +1619,48 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     </div>
   );
 
+  const readyActions = (
+    <div className="pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-4 sm:px-6 sm:pb-8">
+      <div className="pointer-events-auto w-full">
+        <div className="grid grid-cols-2 gap-2 rounded-[1.35rem] border border-[#d8caff] bg-[#fbf9ff]/96 p-2 shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur">
+          <button
+            type="button"
+            onClick={() => setIsReadyChatComposerOpen(true)}
+            disabled={isGeneratingCard}
+            className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#ded2f5] bg-white px-3 text-sm font-bold text-[#4f3a73] transition hover:border-[#c7b4ee] hover:bg-[#f5f0ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55"
+          >
+            <MessageCircle className="size-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">Keep chatting</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (draft) void generateProductForDraft(draft);
+            }}
+            className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#6f4cff] px-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(111,76,255,0.24)] transition hover:bg-[#5f3ff0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isGeneratingCard || !canGenerateProduct}
+            aria-label={
+              isGeneratingCard
+                ? `Generating ${effectiveSelectedProductLabel.toLowerCase()}`
+                : `Generate ${effectiveSelectedProductLabel.toLowerCase()}`
+            }
+          >
+            {isGeneratingCard ? (
+              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+            ) : (
+              <Sparkles className="size-4 shrink-0" aria-hidden="true" />
+            )}
+            <span className="truncate">{isGeneratingCard ? "Generating" : "Generate"}</span>
+          </button>
+        </div>
+        {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
+        <p className="mt-4 text-center text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#8d7daf]">
+          Envitefy Concierge - Beta
+        </p>
+      </div>
+    </div>
+  );
+
   const workspacePanel = (
     <ChatProductPreview
       draft={draft}
@@ -1607,7 +1670,6 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       isGenerating={isGeneratingCard}
       buildProgress={buildProgress}
       currentBuildStep={BUILDING_STEPS[currentBuildStep]}
-      canGenerate={canGenerateProduct}
       liveEventId={liveCardEventId}
       publicHref={liveCardPublicHref}
       rsvp={{
@@ -1616,9 +1678,6 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         error: rsvpPreview.error,
       }}
       weatherContext={weatherContext}
-      onGenerate={() => {
-        if (draft) void generateProductForDraft(draft);
-      }}
       mobileView={mobileView}
     />
   );
@@ -1734,8 +1793,30 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         className="mx-auto mt-4 flex w-full max-w-3xl justify-center sm:max-w-4xl"
                       >
+                        <div className="flex w-full justify-center sm:hidden">
+                          <BottomNavBar
+                            items={PRODUCT_OPTIONS.map((option) => ({
+                              label: option.label,
+                              value: option.output,
+                              icon: option.icon,
+                            }))}
+                            activeValue={effectiveSelectedProductOutput}
+                            ariaLabel={
+                              selectedStarterCategory
+                                ? `Choose product format for ${selectedStarterCategory.label}`
+                                : "Choose product format"
+                            }
+                            autoOpenOnMount
+                            autoOpenIntervalMs={2000}
+                            className="w-full !min-w-0 !max-w-[21rem] border-[#e9e3f2] bg-white/96"
+                            onValueChange={(value) => {
+                              const option = PRODUCT_OPTIONS.find((item) => item.output === value);
+                              if (option) handleStarterProductChoice(option);
+                            }}
+                          />
+                        </div>
                         <div
-                          className="flex max-w-full flex-wrap justify-center gap-2 rounded-[1.6rem] border border-[#e9e3f2] bg-white/96 p-2 shadow-[0_16px_36px_rgba(35,27,55,0.12)]"
+                          className="hidden max-w-full flex-wrap justify-center gap-2 rounded-[1.6rem] border border-[#e9e3f2] bg-white/96 p-2 shadow-[0_16px_36px_rgba(35,27,55,0.12)] sm:flex"
                           aria-label={
                             selectedStarterCategory
                               ? `Choose product format for ${selectedStarterCategory.label}`
@@ -1776,7 +1857,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                     chatThread
                   )}
                 </div>
-                {composer}
+                {shouldShowReadyActions ? readyActions : composer}
               </div>
               {shouldShowWorkspacePanel ? workspacePanel : null}
             </div>

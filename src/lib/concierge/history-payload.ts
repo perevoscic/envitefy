@@ -1,4 +1,4 @@
-import { canPersistCreationDraft } from "./creation-intent.ts";
+import { canPersistCreationDraft, rsvpTrackingEnabled } from "./creation-intent.ts";
 import type { ConciergeEventDraft, ConciergeStudioInvite } from "./types.ts";
 
 const CATEGORY_LABELS: Record<ConciergeEventDraft["eventType"], string> = {
@@ -98,8 +98,7 @@ export function buildConciergeHistoryPayload(
   const ownership = draft.ownership === "invited" ? "invited" : "owned";
   const invitedFromScan = draft.sourceContext.detectedSourceIntent === "received_invite";
   const category = CATEGORY_LABELS[draft.eventType] || "General Event";
-  const rsvpEnabled =
-    draft.requestedOutputs.includes("live_card") || draft.requestedOutputs.includes("rsvp_page");
+  const rsvpEnabled = rsvpTrackingEnabled(draft);
   const eventPlace = normalizeVenueLocation(draft.venue, draft.location);
   const scheduleLine =
     cleanString(draft.previewCopy.scheduleLine) ||
@@ -201,7 +200,7 @@ export function buildConciergeHistoryPayload(
       tone: draft.tone,
       age: draft.ageOrMilestone,
       honoreeName: draft.honoreeName,
-      numberOfGuests: draft.numberOfGuests || 0,
+      numberOfGuests: rsvpEnabled ? draft.numberOfGuests || 0 : 0,
       outputs: draft.outputs,
       previewCopy: draft.previewCopy,
       rsvpEnabled,
@@ -210,7 +209,7 @@ export function buildConciergeHistoryPayload(
         isEnabled: rsvpEnabled,
         enabled: rsvpEnabled,
         mode: "envitefy",
-        direct: true,
+        direct: rsvpEnabled,
         cta: liveCardCta,
       },
       conciergeDraft: draft,

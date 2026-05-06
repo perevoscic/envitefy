@@ -234,6 +234,7 @@ export type ConciergeEventDraft = {
   timezone: string;
   location: string | null;
   venue: string | null;
+  rsvpEnabled: boolean | null;
   numberOfGuests: number | null;
   theme: string | null;
   tone: string | null;

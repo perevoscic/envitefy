@@ -9,7 +9,6 @@ import {
   Loader2,
   Mail,
   MapPin,
-  Sparkles,
   Umbrella,
   Users,
 } from "lucide-react";
@@ -36,12 +35,10 @@ type ChatProductPreviewProps = {
   isGenerating: boolean;
   buildProgress: number;
   currentBuildStep: string;
-  canGenerate: boolean;
   liveEventId: string | null;
   publicHref: string | null;
   rsvp: RsvpPreviewBadge;
   weatherContext: ConciergeWeatherContext | null;
-  onGenerate: () => void;
   mobileView: "chat" | "preview";
 };
 
@@ -302,12 +299,10 @@ export default function ChatProductPreview({
   isGenerating,
   buildProgress,
   currentBuildStep,
-  canGenerate,
   liveEventId,
   publicHref,
   rsvp,
   weatherContext,
-  onGenerate,
   mobileView,
 }: ChatProductPreviewProps) {
   const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
@@ -396,7 +391,7 @@ export default function ChatProductPreview({
           </section>
 
           <section className="relative mx-auto flex w-full flex-none items-center justify-center">
-            <div className="relative aspect-[9/16] w-full max-w-[20rem]">
+            <div className="relative aspect-[9/16] w-full max-w-[22rem] sm:max-w-[23rem]">
               {isGenerating ? (
                 <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 rounded-[2.2rem] bg-white/78 text-[#8b8298] backdrop-blur-[3px]">
                   <Loader2 className="size-11 animate-spin text-[#7c4dff]" aria-hidden="true" />
@@ -422,7 +417,13 @@ export default function ChatProductPreview({
             </div>
           </section>
 
-          <div className="flex min-h-[5.5rem] shrink-0 flex-col items-center justify-start pb-1 sm:min-h-[5.75rem]">
+          <div
+            className={`flex shrink-0 flex-col items-center pb-1 ${
+              publicHref
+                ? "min-h-[5.5rem] justify-start sm:min-h-[5.75rem]"
+                : "min-h-[4.75rem] justify-end"
+            }`}
+          >
             {publicHref ? (
               <a
                 href={publicHref}
@@ -433,19 +434,9 @@ export default function ChatProductPreview({
                 <ExternalLink className="size-4" aria-hidden="true" />
                 {publicActionLabel}
               </a>
-            ) : (
-              <button
-                type="button"
-                disabled={!canGenerate}
-                onClick={onGenerate}
-                className="inline-flex h-12 w-auto max-w-full items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-[#7c4dff] px-6 text-sm font-bold text-white shadow-lg shadow-[#7c4dff]/20 transition hover:bg-[#6f43f0] disabled:cursor-not-allowed disabled:bg-[#d8caff] disabled:shadow-none sm:px-7"
-              >
-                <Sparkles className="size-4" aria-hidden="true" />
-                Generate invite
-              </button>
-            )}
+            ) : null}
             {!hasGeneratedProduct ? (
-              <p className="mt-4 max-w-full px-3 text-center text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#4f416a]">
+              <p className="max-w-full px-3 text-center text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#4f416a]">
                 This is a mockup, not your product.
               </p>
             ) : null}

@@ -30,7 +30,7 @@ test("birthday category starts with an oriented intake prompt", () => {
   assert.ok((message.match(/\?/g) || []).length <= 2);
 });
 
-test("starter category asks for product format before event details", async () => {
+test("starter category uses the selected/default product and asks for event details", async () => {
   const result = await extractConciergeDraft({
     message: "Birthday",
     action: "starter_category",
@@ -38,12 +38,9 @@ test("starter category asks for product format before event details", async () =
 
   assert.equal(result.usedAi, false);
   assert.equal(result.draft.eventType, "birthday");
-  assert.deepEqual(result.draft.requestedOutputs, []);
-  assert.match(
-    result.assistantMessage,
-    /Great, would you like that to be a Live Card, Flyer Invite, Event Page, or Invitation\?/,
-  );
-  assert.doesNotMatch(result.assistantMessage, /Who is the birthday for/i);
+  assert.deepEqual(result.draft.requestedOutputs, ["live_card"]);
+  assert.doesNotMatch(result.assistantMessage, /would you like that to be/i);
+  assert.match(result.assistantMessage, /Who is the birthday for/i);
 });
 
 test("starter category and product text asks for event details immediately", async () => {
@@ -57,6 +54,20 @@ test("starter category and product text asks for event details immediately", asy
   assert.deepEqual(result.draft.requestedOutputs, ["event_page"]);
   assert.doesNotMatch(result.assistantMessage, /would you like that to be/i);
   assert.match(result.assistantMessage, /Who is the birthday for/i);
+});
+
+test("main-page category/product selection suppresses the format question", async () => {
+  const result = await extractConciergeDraft({
+    message: "Wedding Invitation",
+    action: "starter_category",
+    requestedOutputs: ["invitation"],
+  });
+
+  assert.equal(result.usedAi, false);
+  assert.equal(result.draft.eventType, "wedding");
+  assert.deepEqual(result.draft.requestedOutputs, ["invitation"]);
+  assert.doesNotMatch(result.assistantMessage, /would you like that to be/i);
+  assert.match(result.assistantMessage, /What wedding event is this for/i);
 });
 
 test("category intake prompts stay short", () => {
@@ -354,6 +365,36 @@ test("fallback asks RSVP guest count before vibe and stores both replies", () =>
   assert.doesNotMatch(buildAssistantMessage(draft), /\*\*\*/);
 });
 
+test("birthday live cards ask whether to collect RSVPs before vibe", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Create a birthday live card.",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "Ava, 7", draft });
+  draft = fallbackExtractConciergeDraft({ message: "Saturday at 3 at Sky Zone", draft });
+
+  assert.equal(draft.currentQuestion, "rsvpEnabled");
+  assert.match(buildAssistantMessage(draft), /collect RSVPs/i);
+
+  draft = fallbackExtractConciergeDraft({ message: "yes", draft });
+  assert.equal(draft.rsvpEnabled, true);
+  assert.equal(draft.currentQuestion, "numberOfGuests");
+  assert.match(buildAssistantMessage(draft), /how many guests/i);
+});
+
+test("birthday live cards can skip RSVP collection and continue to vibe", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Create a birthday live card.",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "Ava, 7", draft });
+  draft = fallbackExtractConciergeDraft({ message: "Saturday at 3 at Sky Zone", draft });
+  draft = fallbackExtractConciergeDraft({ message: "no", draft });
+
+  assert.equal(draft.rsvpEnabled, false);
+  assert.equal(draft.currentQuestion, "tone");
+  assert.doesNotMatch(draft.missingFields.join(","), /numberOfGuests/);
+  assert.match(buildAssistantMessage(draft), /vibe/i);
+});
+
 test("lowercase location reply fills location instead of repeating the question", () => {
   const first = fallbackExtractConciergeDraft({
     message: "A school fundraiser Saturday at 4",
@@ -401,6 +442,33 @@ test("short birthday follow-ups fill name and age slots", () => {
   assert.equal(named.honoreeName, "Ava");
   assert.equal(aged.ageOrMilestone, "7");
   assert.doesNotMatch(aged.missingFields.join(","), /honoreeName|ageOrMilestone/);
+});
+
+test("typo-like date replies are confirmed before moving to location", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "Wedding Live Card with a lot of flower",
+  });
+  const draft = fallbackExtractConciergeDraft({
+    message: "my 23d",
+    draft: first,
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.equal(first.currentQuestion, "date");
+  assert.equal(draft.currentQuestion, "date_confirmation");
+  assert.equal(draft.missingFields[0], "date");
+  assert.match(draft.dateText || "", /May 23rd/);
+  assert.match(message, /did you mean May 23rd, or another date/i);
+  assert.doesNotMatch(message, /Where should guests go/i);
+
+  const confirmed = fallbackExtractConciergeDraft({
+    message: "yes",
+    draft,
+  });
+
+  assert.notEqual(confirmed.currentQuestion, "date_confirmation");
+  assert.doesNotMatch(confirmed.missingFields.join(","), /date/);
+  assert.equal(confirmed.dateText, draft.dateText);
 });
 
 test("output-only RSVP page prompt stays unsaved until an event/source exists", () => {
@@ -712,7 +780,7 @@ test("save payload stores concierge drafts as owned My Events rows", () => {
   assert.equal(payload.data.conciergeDraft.title, "Ava is turning 7");
   assert.equal(payload.data.coverImageUrl, "/studio/birthday.webp");
   assert.equal(payload.data.heroTextMode, "image");
-  assert.equal(payload.data.rsvp.direct, true);
+  assert.equal(payload.data.rsvp.direct, false);
   assert.equal(payload.data.publicEvent.renderer, "live_card");
   assert.equal(payload.data.publicEvent.primaryOutput, "live_card");
   assert.equal(payload.data.liveCard.scheduleLine, "Date TBD");

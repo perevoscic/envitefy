@@ -576,6 +576,13 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     isClosed: isActionRailClosed,
     buttonCount: buttonConfigs.length,
   });
+  const defaultActionRailClassName = `grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch ${
+    props.showcaseMode
+      ? "gap-2 px-2"
+      : useCompactActionButtons
+        ? "gap-1.5 px-2.5"
+        : "gap-3 px-1"
+  }`;
   const actionRailWrapperClassName =
     showcaseRailLayout === "cluster" ? "flex w-full justify-center px-2" : "w-full";
   const actionRailClassName =
@@ -583,15 +590,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       ? "grid w-fit max-w-full grid-flow-col auto-cols-max items-stretch justify-center gap-1.5 sm:gap-2"
       : showcaseRailLayout === "spread"
         ? "grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch justify-items-center gap-0 px-1.5"
-        : isActionRailClosed
-          ? `grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch ${
-              props.showcaseMode
-                ? "gap-2 px-2"
-                : useCompactActionButtons
-                  ? "gap-1.5 px-2.5"
-                  : "gap-3 px-1"
-            }`
-          : "grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch gap-1 md:gap-3";
+        : defaultActionRailClassName;
   const ShareActionIcon =
     shareState === "pending" ? Loader2 : shareState === "success" ? CheckCircle2 : Share2;
   const shareActionLabel =
@@ -606,11 +605,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         : "p-2.5 md:p-3";
   const shareActionChromeClassName = posterFirstHeroCard
     ? shareActionPressed
-      ? "translate-y-0.5 border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
-      : "border-white/28 bg-white/18 shadow-[0_12px_28px_rgba(0,0,0,0.34),0_0_16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.16)] hover:-translate-y-0.5 hover:border-white/42 hover:bg-white/24"
+      ? "border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
+      : "border-white/28 bg-white/18 shadow-[0_12px_28px_rgba(0,0,0,0.34),0_0_16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.16)] hover:border-white/42 hover:bg-white/24"
     : shareActionPressed
-      ? "translate-y-0.5 border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
-      : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/22";
+      ? "border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
+      : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] hover:border-white/45 hover:bg-white/22";
   const shareActionIconClassName = `${
     useCompactActionButtons
       ? "h-4 w-4 md:h-5 md:w-5"
@@ -642,7 +641,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
           disabled={shareState === "pending" || props.isDesignMode}
           aria-label={shareActionLabel === "Share" ? "Share live card" : shareActionLabel}
           title={shareActionLabel === "Share" ? "Share" : shareActionLabel}
-          className={`pointer-events-auto absolute right-3 top-5 z-30 inline-flex items-center justify-center rounded-full border backdrop-blur-md transition-all duration-200 active:scale-[0.97] disabled:cursor-wait disabled:opacity-75 sm:right-5 sm:top-6 md:right-8 md:top-8 ${shareActionChromeSizeClassName} ${shareActionChromeClassName}`}
+          className={`pointer-events-auto absolute right-3 top-5 z-30 inline-flex items-center justify-center rounded-full border backdrop-blur-md transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent disabled:cursor-wait disabled:opacity-75 sm:right-5 sm:top-6 md:right-8 md:top-8 ${shareActionChromeSizeClassName} ${shareActionChromeClassName}`}
         >
           <ShareActionIcon className={shareActionIconClassName} />
         </button>
@@ -1069,7 +1068,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       })
                     }
                     style={{ x: position.x, y: position.y }}
-                    className={`pointer-events-auto min-w-0 ${isActionRailClosed ? "shrink-0" : "w-full"}`}
+                    className="pointer-events-auto min-w-0 w-full"
                   >
                     <button
                       type="button"
@@ -1081,9 +1080,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       data-live-card-trigger
                       className={`group flex min-w-0 flex-col items-center justify-start ${
                         useCompactActionButtons ? "gap-0.5 py-0 md:gap-0.5" : "gap-1 py-1 md:gap-2"
-                      } transition-transform duration-150 active:scale-[0.97] ${
-                        isActionRailClosed ? "w-auto px-0" : "h-full w-full px-0.5"
-                      } ${props.isDesignMode ? "cursor-move" : ""}`}
+                      } h-full w-full px-0.5 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
+                        props.isDesignMode ? "cursor-move" : ""
+                      }`}
                     >
                       <div
                         className={`rounded-full border backdrop-blur-md transition-all duration-200 ${
@@ -1097,11 +1096,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         } ${
                           posterFirstHeroCard
                             ? isPressed
-                              ? "translate-y-0.5 border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
-                              : "border-white/28 bg-white/18 shadow-[0_12px_28px_rgba(0,0,0,0.34),0_0_16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.16)] group-hover:-translate-y-0.5 group-hover:border-white/42 group-hover:bg-white/24"
+                              ? "border-white/85 bg-white/92 shadow-[0_16px_34px_rgba(0,0,0,0.42),0_0_22px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.82)]"
+                              : "border-white/28 bg-white/18 shadow-[0_12px_28px_rgba(0,0,0,0.34),0_0_16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.16)] group-hover:border-white/42 group-hover:bg-white/24"
                             : isPressed
-                              ? "translate-y-0.5 border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
-                              : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] group-hover:-translate-y-0.5 group-hover:border-white/45 group-hover:bg-white/22"
+                              ? "border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
+                              : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] group-hover:border-white/45 group-hover:bg-white/22"
                         } ${props.isDesignMode ? "ring-2 ring-[#c9b49a]" : ""}`}
                       >
                         <Icon
@@ -1132,9 +1131,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                         } ${
                           shouldHideClosedRailLabels
                             ? "hidden"
-                            : isActionRailClosed
-                              ? "inline"
-                              : "max-[360px]:hidden"
+                            : "inline"
                         }`}
                       >
                         {button.label}

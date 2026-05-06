@@ -6,6 +6,7 @@ import {
   normalizeCreationEventType,
   normalizeCreationIntent,
   normalizeRequestedOutputs,
+  rsvpTrackingEnabled,
   toLegacyOutputs,
 } from "./creation-intent.ts";
 import {
@@ -94,6 +95,17 @@ function positiveNumberOrNull(...values: unknown[]) {
   return null;
 }
 
+function booleanOrNull(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "boolean") return value;
+    if (typeof value !== "string") continue;
+    const normalized = value.trim().toLowerCase();
+    if (/^(true|yes|y|enabled?|on|1)$/.test(normalized)) return true;
+    if (/^(false|no|n|disabled?|off|0)$/.test(normalized)) return false;
+  }
+  return null;
+}
+
 function normalizePreviewCopy(value: unknown, fallback: ConciergeEventDraft["previewCopy"]) {
   const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   return {
@@ -134,6 +146,8 @@ function reconciledMissingFields(
   if (draft.dateText || draft.startISO) missing.delete("date");
   if (draft.timeText || draft.startISO) missing.delete("time");
   if (draft.location || draft.venue) missing.delete("location");
+  if (typeof draft.rsvpEnabled === "boolean") missing.delete("rsvpEnabled");
+  if (!rsvpTrackingEnabled(draft)) missing.delete("numberOfGuests");
   if (draft.numberOfGuests) missing.delete("numberOfGuests");
   if (draft.tone) missing.delete("tone");
   return Array.from(missing);
@@ -219,6 +233,25 @@ export function normalizeConciergeDraft(
     fallback.ageOrMilestone;
   const theme = firstDraftString(record.theme, eventData.theme) || fallback.theme;
   const tone = firstDraftString(record.tone, eventData.tone) || fallback.tone;
+  const rsvpRecord =
+    record.rsvp && typeof record.rsvp === "object" && !Array.isArray(record.rsvp)
+      ? (record.rsvp as Record<string, unknown>)
+      : {};
+  const eventRsvpRecord =
+    eventData.rsvp && typeof eventData.rsvp === "object" && !Array.isArray(eventData.rsvp)
+      ? (eventData.rsvp as Record<string, unknown>)
+      : {};
+  const rsvpEnabled =
+    booleanOrNull(
+      record.rsvpEnabled,
+      record.isRsvpEnabled,
+      rsvpRecord.enabled,
+      rsvpRecord.isEnabled,
+      eventData.rsvpEnabled,
+      eventData.isRsvpEnabled,
+      eventRsvpRecord.enabled,
+      eventRsvpRecord.isEnabled,
+    ) ?? fallback.rsvpEnabled;
   const numberOfGuests =
     positiveNumberOrNull(record.numberOfGuests, eventData.numberOfGuests, eventData.guestCount) ||
     fallback.numberOfGuests;
@@ -234,6 +267,7 @@ export function normalizeConciergeDraft(
     location: resolvedLocation || resolvedVenue,
     honoreeName,
     ageOrMilestone,
+    rsvpEnabled,
     numberOfGuests,
     tone,
     draftStatus: record.draftStatus,
@@ -272,6 +306,7 @@ export function normalizeConciergeDraft(
       firstDraftString(record.timezone, eventData.timezone, eventData.tz) || fallback.timezone,
     location: resolvedLocation || null,
     venue: resolvedVenue || null,
+    rsvpEnabled,
     numberOfGuests,
     theme,
     tone,
@@ -338,7 +373,7 @@ async function extractWithOpenAi(
               "You are Envitefy's event creation concierge.",
               "Only handle event, invitation, RSVP, and event asset creation or editing.",
               "Return one JSON object matching the draft shape. Do not include markdown.",
-              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, honoreeName, ageOrMilestone, numberOfGuests, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
+              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, honoreeName, ageOrMilestone, rsvpEnabled, numberOfGuests, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
               "If you include nested eventData for convenience, duplicate the same extracted fields at the top level.",
               "Separate requested output from event details: live cards, digital flyers, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",
               "Resolve 'this' only from supplied activeContext. If no context exists, ask what source or event to use.",
@@ -346,6 +381,7 @@ async function extractWithOpenAi(
               "Prioritize eventPurpose/title before strict event type. Do not ask for date/time before event purpose/source.",
               "When the previous draft is asking for a specific missing field, treat a short user reply as the answer to that field unless it clearly changes topics.",
               "Treat venue as satisfying the location requirement; if only one of venue or location is known, return it in both fields.",
+              "If the previous draft asks whether Envitefy should collect RSVPs, set rsvpEnabled true for yes/include/collect/track replies and false for no/skip/not needed replies.",
               "Do not mark drafts ready when event purpose/source is missing. Do not classify uploads as invited based only on event category.",
               "When the user says they received, got, or were sent an invite and wants to save it, set sourceContext.detectedSourceIntent to received_invite and ownership to invited.",
               "If that received-invite request has no invite image/text or concrete event details, ask for an upload or pasted invite text before asking host-authoring questions.",

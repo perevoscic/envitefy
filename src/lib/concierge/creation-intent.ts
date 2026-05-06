@@ -33,6 +33,77 @@ export function outputsUseRsvp(requestedOutputs: RequestedOutput[]) {
   return requestedOutputs.includes("rsvp_page");
 }
 
+const RSVP_CAPABLE_OUTPUTS = new Set<RequestedOutput>([
+  "event_page",
+  "live_card",
+  "digital_flyer",
+  "invitation",
+  "rsvp_page",
+  "printable_flyer",
+  "instagram_story",
+]);
+
+const ALWAYS_RSVP_EVENT_TYPES = new Set<ConciergeEventType>([
+  "birthday",
+  "wedding",
+  "baby_shower",
+]);
+
+export function outputsCanCollectRsvp(requestedOutputs: RequestedOutput[]) {
+  return requestedOutputs.some((output) => RSVP_CAPABLE_OUTPUTS.has(output));
+}
+
+function hasRsvpEventLanguage(text: string) {
+  return /\b(rsvp|invite|invitation|party|shower|wedding|reception|open\s+house|housewarming|gender\s+reveal|anniversary|dinner|brunch)\b/i.test(
+    text,
+  );
+}
+
+export function eventImpliesRsvp(eventType: ConciergeEventType, text = "") {
+  if (ALWAYS_RSVP_EVENT_TYPES.has(eventType)) return true;
+  if (eventType === "graduation") {
+    return /\b(rsvp|party|open\s+house|celebration|reception|invite|invitation)\b/i.test(text);
+  }
+  if (eventType === "unknown" || eventType === "general") return hasRsvpEventLanguage(text);
+  return false;
+}
+
+export function rsvpTrackingEnabled(args: {
+  requestedOutputs: RequestedOutput[];
+  rsvpEnabled?: boolean | null;
+}) {
+  if (args.rsvpEnabled === false) return false;
+  if (args.rsvpEnabled === true) return true;
+  return args.requestedOutputs.includes("rsvp_page");
+}
+
+export function shouldAskRsvpDecision(args: {
+  sourceContext: Pick<CreationSourceContext, "detectedSourceIntent">;
+  eventType: ConciergeEventType;
+  requestedOutputs: RequestedOutput[];
+  eventPurpose?: string | null;
+  title?: string | null;
+  rsvpEnabled?: boolean | null;
+}) {
+  if (args.sourceContext.detectedSourceIntent === "received_invite") return false;
+  if (typeof args.rsvpEnabled === "boolean") return false;
+  if (args.requestedOutputs.includes("rsvp_page")) return false;
+  if (!outputsCanCollectRsvp(args.requestedOutputs)) return false;
+  const text = [args.eventPurpose, args.title].filter(Boolean).join(" ");
+  return eventImpliesRsvp(args.eventType, text);
+}
+
+export function shouldAskRsvpGuestCount(args: {
+  requestedOutputs: RequestedOutput[];
+  rsvpEnabled?: boolean | null;
+  numberOfGuests?: number | null;
+}) {
+  return (
+    rsvpTrackingEnabled(args) &&
+    !(typeof args.numberOfGuests === "number" && args.numberOfGuests > 0)
+  );
+}
+
 const EVENT_TYPES = new Set<ConciergeEventType>([
   "unknown",
   "birthday",
@@ -539,6 +610,7 @@ export function deriveCreationStatus(args: {
   location?: string | null;
   honoreeName?: string | null;
   ageOrMilestone?: string | null;
+  rsvpEnabled?: boolean | null;
   numberOfGuests?: number | null;
   tone?: string | null;
   draftStatus?: unknown;
@@ -606,8 +678,24 @@ export function deriveCreationStatus(args: {
   if (!args.location) missingFields.push("location");
   if (
     !missingFields.length &&
-    outputsUseRsvp(args.requestedOutputs) &&
-    !(typeof args.numberOfGuests === "number" && args.numberOfGuests > 0)
+    shouldAskRsvpDecision({
+      sourceContext: args.sourceContext,
+      eventType: args.eventType,
+      requestedOutputs: args.requestedOutputs,
+      eventPurpose: args.eventPurpose,
+      title: args.title,
+      rsvpEnabled: args.rsvpEnabled,
+    })
+  ) {
+    missingFields.push("rsvpEnabled");
+  }
+  if (
+    !missingFields.length &&
+    shouldAskRsvpGuestCount({
+      requestedOutputs: args.requestedOutputs,
+      rsvpEnabled: args.rsvpEnabled,
+      numberOfGuests: args.numberOfGuests,
+    })
   ) {
     missingFields.push("numberOfGuests");
   }

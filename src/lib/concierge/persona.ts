@@ -65,6 +65,7 @@ function draftContext(draft: ConciergeEventDraft) {
     startISO: draft.startISO,
     location: draft.location,
     venue: draft.venue,
+    rsvpEnabled: draft.rsvpEnabled,
     numberOfGuests: draft.numberOfGuests,
     theme: draft.theme,
     tone: draft.tone,
@@ -92,19 +93,15 @@ function streamFallback(fallbackMessage: string, onDelta: (text: string) => void
   };
 }
 
-function shouldUseDeterministicFormatPrompt(draft: ConciergeEventDraft) {
-  return (
-    draft.requestedOutputs.length === 0 &&
-    draft.eventType !== "unknown" &&
-    draft.eventType !== "general"
-  );
+function shouldUseDeterministicFallback(draft: ConciergeEventDraft) {
+  return draft.currentQuestion === "date_confirmation";
 }
 
 export async function streamConciergePersona(
   params: StreamConciergePersonaParams,
   deps: PersonaDeps = {},
 ): Promise<StreamConciergePersonaResult> {
-  if (shouldUseDeterministicFormatPrompt(params.draft)) {
+  if (shouldUseDeterministicFallback(params.draft)) {
     return streamFallback(params.fallbackMessage, params.onDelta);
   }
 

@@ -32,6 +32,7 @@ const BASE_DRAFT = {
   timezone: "America/Chicago",
   location: null,
   venue: null,
+  rsvpEnabled: null,
   numberOfGuests: null,
   theme: null,
   tone: null,
@@ -87,7 +88,11 @@ test("persona streams deterministic fallback when no OpenAI key exists", async (
   assert.equal(result.usedAi, false);
 });
 
-test("persona uses deterministic format prompt for starter categories", async () => {
+test("persona does not force a product-format prompt for starter categories", async () => {
+  async function* streamChunks() {
+    yield { choices: [{ delta: { content: "Who is the birthday for?" } }] };
+  }
+
   const deltas = [];
   let aiCalls = 0;
   const result = await withEnv({ OPENAI_API_KEY: "test-key" }, () =>
@@ -101,8 +106,47 @@ test("persona uses deterministic format prompt for starter categories", async ()
           outputs: [],
           currentQuestion: "honoreeName",
         },
-        fallbackMessage:
-          "Great, would you like that to be a Live Card, Flyer Invite, Event Page, or Invitation?",
+        fallbackMessage: "Who is the birthday for?",
+        onDelta: (text) => deltas.push(text),
+      },
+      {
+        createOpenAiClient: () => {
+          aiCalls += 1;
+          return {
+            chat: {
+              completions: {
+                create: async () => streamChunks(),
+              },
+            },
+          };
+        },
+      },
+    ),
+  );
+
+  assert.equal(aiCalls, 1);
+  assert.deepEqual(deltas, ["Who is the birthday for?"]);
+  assert.equal(result.assistantMessage, "Who is the birthday for?");
+  assert.equal(result.usedAi, true);
+});
+
+test("persona uses deterministic fallback for date confirmation prompts", async () => {
+  const deltas = [];
+  let aiCalls = 0;
+  const result = await withEnv({ OPENAI_API_KEY: "test-key" }, () =>
+    streamConciergePersona(
+      {
+        message: "my 23d",
+        chatMessages: [],
+        draft: {
+          ...BASE_DRAFT,
+          currentQuestion: "date_confirmation",
+          dateText: "May 23rd",
+          startISO: "2026-05-23T17:00:00.000Z",
+          endISO: "2026-05-23T19:00:00.000Z",
+          missingFields: ["date", "location"],
+        },
+        fallbackMessage: "Just to confirm, did you mean May 23rd, or another date?",
         onDelta: (text) => deltas.push(text),
       },
       {
@@ -115,9 +159,8 @@ test("persona uses deterministic format prompt for starter categories", async ()
   );
 
   assert.equal(aiCalls, 0);
-  assert.deepEqual(deltas, [
-    "Great, would you like that to be a Live Card, Flyer Invite, Event Page, or Invitation?",
-  ]);
+  assert.deepEqual(deltas, ["Just to confirm, did you mean May 23rd, or another date?"]);
+  assert.equal(result.assistantMessage, "Just to confirm, did you mean May 23rd, or another date?");
   assert.equal(result.usedAi, false);
 });
 

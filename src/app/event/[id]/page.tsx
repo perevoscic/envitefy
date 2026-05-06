@@ -1311,12 +1311,15 @@ export default async function EventPage({
       data?.location,
       data?.venue,
     ) || null;
+  const explicitRsvpDisabled =
+    data?.rsvpEnabled === false || rsvpRecord?.isEnabled === false || rsvpRecord?.enabled === false;
   const directRsvpEnabled =
-    Boolean(data?.rsvpEnabled) ||
-    Boolean(rsvpRecord?.isEnabled) ||
-    Boolean(rsvpRecord?.enabled) ||
-    Boolean(rsvpRecord?.direct) ||
-    Boolean(isConciergeLiveCardEvent && (hasLiveCardOutput || hasRsvpOutput));
+    !explicitRsvpDisabled &&
+    (Boolean(data?.rsvpEnabled) ||
+      Boolean(rsvpRecord?.isEnabled) ||
+      Boolean(rsvpRecord?.enabled) ||
+      Boolean(rsvpRecord?.direct) ||
+      Boolean(isConciergeLiveCardEvent && hasRsvpOutput));
 
   const hostName =
     typeof data?.hostName === "string" && data.hostName.trim()
@@ -1809,7 +1812,7 @@ export default async function EventPage({
             story: data.story || data.description || data.partyDetails?.notes,
             schedule: data.schedule,
             registries: data.registries,
-            rsvpEnabled: Boolean(data.rsvpEnabled) || Boolean(data.rsvp?.isEnabled || data.rsvp),
+            rsvpEnabled: directRsvpEnabled,
             rsvpLink: "#rsvp",
             rsvpName,
             rsvpPhone: rsvpPhone || undefined,

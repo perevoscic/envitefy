@@ -9,8 +9,9 @@ import {
   normalizeCreationIntent,
   normalizeRequestedOutputs,
   outputQuestion,
-  outputsUseRsvp,
   resolveCreationSourceContext,
+  shouldAskRsvpDecision,
+  shouldAskRsvpGuestCount,
   toLegacyOutputs,
 } from "./creation-intent.ts";
 import type {
@@ -25,6 +26,20 @@ import type {
 } from "./types.ts";
 
 const DEFAULT_TIMEZONE = "America/Chicago";
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
 
 const EVENT_TYPE_LABELS: Record<ConciergeEventType, string> = {
   unknown: "event",
@@ -59,6 +74,17 @@ function firstPositiveNumber(...values: unknown[]) {
           ? Number.parseInt(value, 10)
           : Number.NaN;
     if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  }
+  return null;
+}
+
+function firstBoolean(...values: unknown[]): boolean | null {
+  for (const value of values) {
+    if (typeof value === "boolean") return value;
+    if (typeof value !== "string") continue;
+    const normalized = value.trim().toLowerCase();
+    if (/^(true|yes|y|enabled?|on|1)$/.test(normalized)) return true;
+    if (/^(false|no|n|disabled?|off|0)$/.test(normalized)) return false;
   }
   return null;
 }
@@ -182,6 +208,58 @@ function detectGuestCount(text: string, previous?: ConciergeEventDraft | null) {
   return previous?.numberOfGuests || null;
 }
 
+function detectRsvpEnabled(
+  text: string,
+  previous: ConciergeEventDraft | null,
+  requestedOutputs: RequestedOutput[],
+  fieldsGuess: Record<string, unknown>,
+): boolean | null {
+  if (requestedOutputs.includes("rsvp_page")) return true;
+
+  const nestedRsvp =
+    fieldsGuess.rsvp && typeof fieldsGuess.rsvp === "object" && !Array.isArray(fieldsGuess.rsvp)
+      ? (fieldsGuess.rsvp as Record<string, unknown>)
+      : {};
+  const fieldsValue = firstBoolean(
+    fieldsGuess.rsvpEnabled,
+    fieldsGuess.isRsvpEnabled,
+    nestedRsvp.enabled,
+    nestedRsvp.isEnabled,
+  );
+  if (fieldsValue !== null) return fieldsValue;
+
+  const cleaned = cleanString(text.replace(/[.!?]+$/g, "")) || "";
+  const expectsRsvpDecision = firstMissingField(previous) === "rsvpEnabled";
+  if (expectsRsvpDecision) {
+    if (
+      /^(yes|yep|yeah|sure|please|yes please|include it|add it|turn it on|enable it|collect rsvps?|track rsvps?)$/i.test(
+        cleaned,
+      )
+    ) {
+      return true;
+    }
+    if (
+      /^(no|nope|skip|skip it|not needed|no rsvp|no rsvps|don't|do not|leave it off)$/i.test(
+        cleaned,
+      )
+    ) {
+      return false;
+    }
+  }
+
+  if (/\b(?:without|no|skip|disable|don't|do not)\s+(?:envitefy\s+)?rsvps?\b/i.test(text)) {
+    return false;
+  }
+  if (
+    /\b(?:with|include|enable|collect|track|add)\s+(?:envitefy\s+)?rsvps?\b/i.test(text) ||
+    /\brsvp\s+(?:page|tracking|collection|responses?)\b/i.test(text)
+  ) {
+    return true;
+  }
+
+  return previous?.rsvpEnabled ?? null;
+}
+
 function detectTone(text: string, previous?: ConciergeEventDraft | null) {
   const expectsTone = firstMissingField(previous) === "tone";
   const explicit =
@@ -288,7 +366,113 @@ function detectLocationFollowUp(text: string, previous?: ConciergeEventDraft | n
   return stripLeadingTimeFromLocation(stripped);
 }
 
+function ordinalDay(day: number) {
+  const suffix =
+    day % 100 >= 11 && day % 100 <= 13
+      ? "th"
+      : day % 10 === 1
+        ? "st"
+        : day % 10 === 2
+          ? "nd"
+          : day % 10 === 3
+            ? "rd"
+            : "th";
+  return `${day}${suffix}`;
+}
+
+function dateFromMonthDay(month: number, day: number) {
+  const reference = new Date();
+  let year = reference.getFullYear();
+  let start = new Date(year, month - 1, day, 12, 0, 0, 0);
+  if (start.getMonth() !== month - 1 || start.getDate() !== day) return null;
+
+  const today = new Date(reference.getFullYear(), reference.getMonth(), reference.getDate());
+  if (start < today) {
+    year += 1;
+    start = new Date(year, month - 1, day, 12, 0, 0, 0);
+  }
+
+  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+  return {
+    dateText: `${MONTH_NAMES[month - 1]} ${ordinalDay(day)}`,
+    timeText: null,
+    startISO: start.toISOString(),
+    endISO: end.toISOString(),
+  };
+}
+
+function isDateConfirmationAffirmation(text: string) {
+  return /^(yes|yep|yeah|correct|right|that'?s right|that is right|yes please|sounds right)$/i.test(
+    text,
+  );
+}
+
+function isDateConfirmationRejection(text: string) {
+  return /^(no|nope|not quite|wrong|another date|something else|different date)$/i.test(text);
+}
+
+function detectAmbiguousDateConfirmation(
+  text: string,
+  previous?: ConciergeEventDraft | null,
+): (ReturnType<typeof dateFromMonthDay> & { needsConfirmation: boolean }) | null {
+  const cleaned = cleanString(text?.replace(/[.!?]+$/g, ""));
+  if (!cleaned) return null;
+
+  const activeQuestion = firstMissingField(previous);
+  const expectsDate =
+    activeQuestion === "date" ||
+    activeQuestion === "time" ||
+    previous?.currentQuestion === "date_confirmation";
+  if (!expectsDate) return null;
+
+  const mayTypo = cleaned.match(/^(my|may)\s+(\d{1,2})(d|st|nd|rd|th)?$/i);
+  if (mayTypo) {
+    const monthWord = mayTypo[1]?.toLowerCase();
+    const suffix = mayTypo[3]?.toLowerCase() || "";
+    const looksTypo = monthWord === "my" || suffix === "d";
+    if (!looksTypo) return null;
+    const day = Number.parseInt(mayTypo[2] || "", 10);
+    const parsed = dateFromMonthDay(5, day);
+    return parsed ? { ...parsed, needsConfirmation: true } : null;
+  }
+
+  const bareOrdinalTypo = cleaned.match(/^(\d{1,2})d$/i);
+  if (bareOrdinalTypo) {
+    const day = Number.parseInt(bareOrdinalTypo[1] || "", 10);
+    const referenceMonth = new Date().getMonth() + 1;
+    const parsed = dateFromMonthDay(referenceMonth, day);
+    return parsed ? { ...parsed, needsConfirmation: true } : null;
+  }
+
+  return null;
+}
+
 function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
+  const cleaned = cleanString(text?.replace(/[.!?]+$/g, "")) || "";
+  if (previous?.currentQuestion === "date_confirmation") {
+    if (isDateConfirmationAffirmation(cleaned)) {
+      return {
+        dateText: previous.dateText || null,
+        timeText: previous.timeText || null,
+        startISO: previous.startISO || null,
+        endISO: previous.endISO || null,
+        needsConfirmation: false,
+      };
+    }
+    if (isDateConfirmationRejection(cleaned)) {
+      return {
+        dateText: null,
+        timeText: null,
+        startISO: null,
+        endISO: null,
+        needsConfirmation: false,
+      };
+    }
+  }
+
+  const ambiguousDate = detectAmbiguousDateConfirmation(text, previous);
+  if (ambiguousDate) return ambiguousDate;
+
   const parsed = chrono.parse(text, new Date(), { forwardDate: true });
   const first = parsed[0];
   if (!first) {
@@ -297,6 +481,7 @@ function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
       timeText: previous?.timeText || null,
       startISO: previous?.startISO || null,
       endISO: previous?.endISO || null,
+      needsConfirmation: false,
     };
   }
 
@@ -310,6 +495,7 @@ function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
       : previous?.timeText || null,
     startISO: start.toISOString(),
     endISO: end.toISOString(),
+    needsConfirmation: false,
   };
 }
 
@@ -392,7 +578,10 @@ function computeMissingFields(draft: Omit<ConciergeEventDraft, "missingFields">)
   if (!draft.startISO && !draft.dateText) missing.push("date");
   if (!draft.timeText && !draft.startISO) missing.push("time");
   if (!draft.location && !draft.venue) missing.push("location");
-  if (outputsUseRsvp(draft.requestedOutputs) && !draft.numberOfGuests) {
+  if (shouldAskRsvpDecision(draft)) {
+    missing.push("rsvpEnabled");
+  }
+  if (shouldAskRsvpGuestCount(draft)) {
     missing.push("numberOfGuests");
   }
   return missing;
@@ -461,6 +650,8 @@ function compactVerificationLines(draft: ConciergeEventDraft) {
   if (date) lines.push(`Date: ${date}`);
   if (time) lines.push(`Time: ${time}`);
   if (location) lines.push(`Location: ${location}`);
+  if (draft.rsvpEnabled === true) lines.push("RSVP: Envitefy tracking");
+  if (draft.rsvpEnabled === false) lines.push("RSVP: Not needed");
   if (draft.numberOfGuests) lines.push(`RSVP guest count: ${draft.numberOfGuests}`);
   if (draft.tone) lines.push(`Vibe: ${draft.tone}`);
   return lines;
@@ -517,12 +708,6 @@ function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
   return null;
 }
 
-function categoryFormatQuestion(draft: ConciergeEventDraft): string | null {
-  if (draft.requestedOutputs.length) return null;
-  if (draft.eventType === "unknown" || draft.eventType === "general") return null;
-  return "Great, would you like that to be a Live Card, Flyer Invite, Event Page, or Invitation?";
-}
-
 export function buildAssistantMessage(draft: ConciergeEventDraft): string {
   if (draft.sourceContext.boundary === "private_data") {
     return "I can't change owners, user IDs, or private account data here. I can help with event details, RSVP, copy, design, or weather planning.";
@@ -533,8 +718,10 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
   if (draft.currentQuestion === "invite_source") {
     return receivedInviteSourcePrompt(draft);
   }
-  const formatQuestion = categoryFormatQuestion(draft);
-  if (formatQuestion) return formatQuestion;
+  if (draft.currentQuestion === "date_confirmation") {
+    const candidate = draft.dateText || "that date";
+    return `Just to confirm, did you mean ${candidate}, or another date?`;
+  }
   const intakeMessage = categoryIntakeMessage(draft);
   if (intakeMessage) return intakeMessage;
   if (
@@ -569,6 +756,9 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
     return "When should this happen?";
   }
   if (firstMissing === "location") return "Where should guests go?";
+  if (firstMissing === "rsvpEnabled") {
+    return "Should Envitefy collect RSVPs for this event? Guests can answer yes, no, or maybe from the invite.";
+  }
   if (firstMissing === "numberOfGuests") {
     return "How many guests should the RSVP track?";
   }
@@ -580,6 +770,10 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
 
 export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
   const firstMissing = draft.missingFields[0];
+  if (draft.currentQuestion === "date_confirmation") {
+    const candidate = draft.dateText || "that date";
+    return [`Yes, ${candidate}`, "No, another date"];
+  }
   if (draft.currentQuestion === "invite_source" || firstMissing === "sourceContext") {
     if (isReceivedInviteDraft(draft)) return ["Upload invite", "Paste invite text", "Type details"];
   }
@@ -599,6 +793,7 @@ export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
     return ["Saturday at 3", "Next Friday evening"];
   }
   if (firstMissing === "location") return ["At home", "At Sky Zone"];
+  if (firstMissing === "rsvpEnabled") return ["Yes, collect RSVPs", "No RSVP needed"];
   if (firstMissing === "numberOfGuests") return ["20 guests", "35 guests"];
   if (firstMissing === "tone") return ["Fun and colorful", "Elegant", "Playful"];
   return [`Create ${outputActionLabel(draft)}`, "Add RSVP page"];
@@ -630,9 +825,7 @@ export function fallbackExtractConciergeDraft(args: {
       text,
       previous: hasExplicitOutputs ? null : previous,
       defaultOutput:
-        !previous && (isGreetingMessage(message) || args.action === "starter_category")
-          ? null
-          : undefined,
+        !previous && isGreetingMessage(message) ? null : undefined,
     },
   );
   const resolvedSourceContext = resolveCreationSourceContext({
@@ -695,6 +888,7 @@ export function fallbackExtractConciergeDraft(args: {
   const numberOfGuests =
     detectGuestCount(message, previous) ||
     firstPositiveNumber(fieldsGuess.numberOfGuests, fieldsGuess.guestCount);
+  const rsvpEnabled = detectRsvpEnabled(message, previous, requestedOutputs, fieldsGuess);
   const tone = detectTone(text, previous) || firstString(fieldsGuess.tone);
   const status = deriveCreationStatus({
     sourceContext,
@@ -708,9 +902,11 @@ export function fallbackExtractConciergeDraft(args: {
     location,
     honoreeName,
     ageOrMilestone,
+    rsvpEnabled,
     numberOfGuests,
     tone,
   });
+  const needsDateConfirmation = Boolean(chronoResult.needsConfirmation);
   const base = {
     creationSessionId: createCreationSessionId(sessionDraft),
     intent: normalizeCreationIntent(previous?.intent, message, requestedOutputs),
@@ -725,8 +921,8 @@ export function fallbackExtractConciergeDraft(args: {
         : sourceContext.detectedSourceIntent === "unknown"
           ? previous?.ownership || "unknown"
           : "owned",
-    draftStatus: status.draftStatus,
-    currentQuestion: status.currentQuestion,
+    draftStatus: needsDateConfirmation ? "drafting" : status.draftStatus,
+    currentQuestion: needsDateConfirmation ? "date_confirmation" : status.currentQuestion,
     canPersist: status.canPersist,
     honoreeName,
     relationship,
@@ -738,6 +934,7 @@ export function fallbackExtractConciergeDraft(args: {
     timezone: firstString(fieldsGuess.timezone) || previous?.timezone || DEFAULT_TIMEZONE,
     location,
     venue: location,
+    rsvpEnabled,
     numberOfGuests,
     theme,
     tone,
@@ -758,6 +955,12 @@ export function fallbackExtractConciergeDraft(args: {
 
   return {
     ...base,
-    missingFields: Array.from(new Set([...status.missingFields, ...computeMissingFields(base)])),
+    missingFields: Array.from(
+      new Set([
+        ...(needsDateConfirmation ? ["date"] : []),
+        ...status.missingFields,
+        ...computeMissingFields(base),
+      ]),
+    ),
   };
 }

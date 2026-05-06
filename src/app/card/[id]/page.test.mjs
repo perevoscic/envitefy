@@ -81,7 +81,11 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   );
   assert.match(
     surfaceSource,
-    /grid w-full min-w-0 grid-flow-col auto-cols-fr[\s\S]*md:gap-3/,
+    /const defaultActionRailClassName = `grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch/,
+  );
+  assert.match(
+    surfaceSource,
+    /: defaultActionRailClassName;/,
   );
   assert.match(mainWrapperSource, /isStudioCardShare/);
   assert.match(mainWrapperSource, /paddingTop = isStudioCardShare\s*\?\s*"0px"/);
