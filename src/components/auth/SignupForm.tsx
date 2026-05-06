@@ -189,7 +189,7 @@ export default function SignupForm({
         try {
           localStorage.setItem("welcomeAfterSignup", "1");
         } catch {}
-        showAuthTransition("Creating your workspace...");
+        showAuthTransition("Creating your account...");
         onSuccess?.();
         // Force a full page reload to ensure session is available
         window.location.href = successRedirectUrl;

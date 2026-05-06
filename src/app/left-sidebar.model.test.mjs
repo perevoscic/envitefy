@@ -101,3 +101,71 @@ test("buildGroupedEventLists buckets invited rows, prioritizes drafts, splits pa
     false
   );
 });
+
+test("buildGroupedEventLists opens concierge products on their generated surface", async () => {
+  const { buildGroupedEventLists } = await loadModelModule();
+
+  const grouped = buildGroupedEventLists({
+    history: [
+      {
+        id: "live-card-1",
+        title: "Live Card 1",
+        created_at: "2030-04-01T00:00:00.000Z",
+        data: {
+          createdVia: "concierge",
+          primaryOutput: "live_card",
+          category: "birthday party",
+          startISO: "2030-04-10T12:00:00.000Z",
+        },
+      },
+      {
+        id: "flyer-1",
+        title: "Movie Flyer",
+        created_at: "2030-04-01T00:00:00.000Z",
+        data: {
+          createdVia: "concierge",
+          requestedOutputs: ["rsvp_page", "digital_flyer"],
+          category: "general_event",
+          startISO: "2030-04-11T12:00:00.000Z",
+        },
+      },
+      {
+        id: "event-page-1",
+        title: "Event Page 1",
+        created_at: "2030-04-01T00:00:00.000Z",
+        data: {
+          createdVia: "concierge",
+          primaryOutput: "event_page",
+          category: "general_event",
+          startISO: "2030-04-12T12:00:00.000Z",
+        },
+      },
+      {
+        id: "legacy-live-1",
+        title: "Create a live card for Mia's birthday",
+        created_at: "2030-04-01T00:00:00.000Z",
+        data: {
+          status: "draft",
+          category: "birthday party",
+          startISO: "2030-04-13T12:00:00.000Z",
+        },
+      },
+    ],
+    getEventStartIso: (data) => data?.startISO ?? null,
+    buildEventPath: (eventId, title) => `/event/${eventId}-${title}`,
+    isSportsPreviewFirstEvent: () => false,
+    isInvitedEventLikeRecord: () => false,
+  });
+
+  const items = grouped.myEvents.upcoming.flatMap((section) => section.items);
+  const byId = new Map(items.map((item) => [item.row.id, item]));
+
+  assert.equal(byId.get("live-card-1")?.href, "/card/live-card-1-live-card-1");
+  assert.equal(byId.get("live-card-1")?.openMode, "preview");
+  assert.equal(byId.get("flyer-1")?.href, "/card/movie-flyer-flyer-1");
+  assert.equal(byId.get("flyer-1")?.openMode, "preview");
+  assert.equal(byId.get("event-page-1")?.href, "/event/event-page-1-Event Page 1");
+  assert.equal(byId.get("event-page-1")?.openMode, "preview");
+  assert.equal(byId.get("legacy-live-1")?.href, "/card/create-a-live-card-for-mia-s-birthday-legacy-live-1");
+  assert.equal(byId.get("legacy-live-1")?.openMode, "preview");
+});

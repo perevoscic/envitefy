@@ -28,7 +28,7 @@ function isStudioCardSharePath(pathname: string) {
 }
 
 function AuthTransitionOverlay({
-  message = "Taking you to your workspace...",
+  message = "Opening Envitefy...",
 }: {
   message?: string;
 }) {
@@ -120,7 +120,7 @@ export default function AppShell({
       ) : (
         <MainContentWrapper isAuthenticated={false}>
           {isRedirectingFromMarketing ? (
-            <AuthTransitionOverlay message="Taking you to your workspace..." />
+            <AuthTransitionOverlay message="Opening Envitefy..." />
           ) : (
             <>
               <div className="min-h-0 flex-1 min-w-0">{children}</div>

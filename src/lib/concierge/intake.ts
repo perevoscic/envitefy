@@ -275,6 +275,7 @@ export async function resolveCreationIntakeDraft(params: {
             activeContext: request.activeContext || null,
             requestedOutputs: request.requestedOutputs || null,
             action: request.action || "message",
+            starterCategory: request.starterCategory || null,
           }),
       }
     : await (params.timing?.time("model_extraction", () =>

@@ -393,6 +393,7 @@ async function extractWithOpenAi(
             role: "user",
             content: JSON.stringify({
               message: request.message || "",
+              starterCategory: request.starterCategory || null,
               previousDraft: request.draft || null,
               ocrContext: request.ocrContext || null,
               activeContext: request.activeContext || null,
@@ -428,6 +429,7 @@ export async function extractConciergeDraft(
     source,
     activeContext: request.activeContext || null,
     action: request.action || "message",
+    starterCategory: request.starterCategory || null,
   });
 
   const shouldUseDeterministicFastPath =

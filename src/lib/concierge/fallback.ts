@@ -95,6 +95,14 @@ function mergeText(message: string, ocrContext?: ConciergeOcrContext | null) {
     .join("\n");
 }
 
+function mergeStarterCategory(message: string, starterCategory?: string | null) {
+  const category = cleanString(starterCategory);
+  if (!category) return message;
+  if (!message) return category;
+  if (message.toLowerCase().startsWith(category.toLowerCase())) return message;
+  return `${category} ${message}`;
+}
+
 function detectEventType(text: string, previous?: ConciergeEventDraft | null): ConciergeEventType {
   const haystack = text.toLowerCase();
   if (/\b(birthday|turning|turns|bday)\b/.test(haystack)) return "birthday";
@@ -108,7 +116,9 @@ function detectEventType(text: string, previous?: ConciergeEventDraft | null): C
   if (/\b(gymnastics|gym\s+meet|meet\s+schedule)\b/.test(haystack)) return "gym_meet";
   if (/\b(football|touchdown|tailgate)\b/.test(haystack)) return "football";
   if (/\b(game\s+day|gameday|watch\s+party)\b/.test(haystack)) return "game_day";
-  if (/\b(sports?\s+event|soccer|basketball|baseball|volleyball|pickleball|tennis)\b/.test(haystack)) {
+  if (
+    /\b(sports?\s+event|soccer|basketball|baseball|volleyball|pickleball|tennis)\b/.test(haystack)
+  ) {
     return "sport_event";
   }
   if (/\b(field\s+trip\/day|field\s+trip|field\s+day)\b/.test(haystack)) return "field_trip";
@@ -161,9 +171,7 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
       text.match(
         /\b(?:wedding|ceremony|reception)\s+(?:for|of)\s+([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})\b/,
       ) ||
-      text.match(
-        /^\s*([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})(?:\b|$)/,
-      );
+      text.match(/^\s*([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})(?:\b|$)/);
     if (couple?.[1] && couple?.[2]) return `${couple[1]} and ${couple[2]}`;
   }
 
@@ -175,9 +183,7 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
   );
   if (possessive?.[1]) return possessive[1];
 
-  const turning = text.match(
-    /\b([A-Z][a-zA-Z'-]{1,30})\s+(?:(?:is\s+)?turning|turns)\s+\d{1,3}\b/,
-  );
+  const turning = text.match(/\b([A-Z][a-zA-Z'-]{1,30})\s+(?:(?:is\s+)?turning|turns)\s+\d{1,3}\b/);
   if (turning?.[1]) return turning[1];
 
   const commaName = text.match(/^\s*([A-Z][a-zA-Z'-]{1,30})\s*,\s*\d{1,3}\b/);
@@ -227,8 +233,9 @@ function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
 function detectGuestCount(text: string, previous?: ConciergeEventDraft | null) {
   const expectsGuestCount = firstMissingField(previous) === "numberOfGuests";
   const explicit =
-    text.match(/\b(?:guest count|guest list|guests?|people|attendees|invitees)\s*(?:is|should be|:)?\s*(\d{1,4})\b/i) ||
-    text.match(/\b(\d{1,4})\s*(?:guests?|people|attendees|invitees)\b/i);
+    text.match(
+      /\b(?:guest count|guest list|guests?|people|attendees|invitees)\s*(?:is|should be|:)?\s*(\d{1,4})\b/i,
+    ) || text.match(/\b(\d{1,4})\s*(?:guests?|people|attendees|invitees)\b/i);
   const plain = expectsGuestCount ? text.match(/^\s*(\d{1,4})\s*$/) : null;
   const raw = explicit?.[1] || plain?.[1];
   if (raw) {
@@ -299,8 +306,12 @@ function detectTone(text: string, previous?: ConciergeEventDraft | null) {
     return previous?.tone || null;
   }
   const explicit =
-    text.match(/\b(?:vibe|tone|feel|mood)\s*(?:is|should be|as|:)?\s+([a-z0-9][a-z0-9 '&-]{1,70})\b/i) ||
-    text.match(/\b(?:make it|keep it|make the invite|make the card)\s+([a-z0-9][a-z0-9 '&-]{1,70})\b/i);
+    text.match(
+      /\b(?:vibe|tone|feel|mood)\s*(?:is|should be|as|:)?\s+([a-z0-9][a-z0-9 '&-]{1,70})\b/i,
+    ) ||
+    text.match(
+      /\b(?:make it|keep it|make the invite|make the card)\s+([a-z0-9][a-z0-9 '&-]{1,70})\b/i,
+    );
   const known = text.match(
     /\b(elegant|luxury|formal|classic|romantic|soft|sweet|fun|playful|colorful|modern|minimal|bold|whimsical|rustic|floral|bright|simple|casual|sporty)\b(?:\s+(?:and|&)\s+\b(elegant|luxury|formal|classic|romantic|soft|sweet|fun|playful|colorful|modern|minimal|bold|whimsical|rustic|floral|bright|simple|casual|sporty)\b)?/i,
   );
@@ -604,7 +615,7 @@ function buildPreviewCopy(args: {
       ? `Join us for ${args.honoreeName || "the guest of honor"}${args.ageOrMilestone ? ` as they turn ${args.ageOrMilestone}` : ""}.`
       : args.eventType === "wedding"
         ? `Join us to celebrate ${args.honoreeName || "the couple"}.`
-      : `Join us for this ${getEventTypeLabel(args.eventType)}.`;
+        : `Join us for this ${getEventTypeLabel(args.eventType)}.`;
   return {
     headline,
     subheadline: themeLine,
@@ -671,9 +682,7 @@ function compactVerificationLines(draft: ConciergeEventDraft) {
   lines.push(`Product: ${product}`);
   if (event) lines.push(`Event: ${event}`);
   if (draft.honoreeName || draft.ageOrMilestone) {
-    lines.push(
-      `Honoree: ${[draft.honoreeName, draft.ageOrMilestone].filter(Boolean).join(", ")}`,
-    );
+    lines.push(`Honoree: ${[draft.honoreeName, draft.ageOrMilestone].filter(Boolean).join(", ")}`);
   }
   if (date) lines.push(`Date: ${date}`);
   if (time) lines.push(`Time: ${time}`);
@@ -813,9 +822,11 @@ export function fallbackExtractConciergeDraft(args: {
   source?: ConciergeSource;
   activeContext?: ConciergeActiveContext | null;
   action?: ConciergeAction;
+  starterCategory?: string | null;
 }): ConciergeEventDraft {
   const message = cleanString(args.message) || "";
-  const combined = mergeText(message, args.ocrContext);
+  const inferenceMessage = mergeStarterCategory(message, args.starterCategory);
+  const combined = mergeText(inferenceMessage, args.ocrContext);
   const text = combined || message;
   const sessionDraft = args.draft || null;
   const previous = shouldStartFreshEvent(message, sessionDraft) ? null : sessionDraft;
@@ -826,8 +837,7 @@ export function fallbackExtractConciergeDraft(args: {
     {
       text,
       previous: hasExplicitOutputs ? null : previous,
-      defaultOutput:
-        !previous && isGreetingMessage(message) ? null : undefined,
+      defaultOutput: !previous && isGreetingMessage(message) ? null : undefined,
     },
   );
   const resolvedSourceContext = resolveCreationSourceContext({
@@ -958,10 +968,7 @@ export function fallbackExtractConciergeDraft(args: {
   return {
     ...base,
     missingFields: Array.from(
-      new Set([
-        ...(needsDateConfirmation ? ["date"] : []),
-        ...status.missingFields,
-      ]),
+      new Set([...(needsDateConfirmation ? ["date"] : []), ...status.missingFields]),
     ),
   };
 }

@@ -567,6 +567,181 @@ function createGroupedBuckets() {
   };
 }
 
+type SidebarProductOutput =
+  | "event_page"
+  | "live_card"
+  | "digital_flyer"
+  | "signup_form"
+  | "invitation"
+  | "rsvp_page"
+  | "printable_flyer"
+  | "instagram_story"
+  | "thank_you_card"
+  | "menu"
+  | "welcome_sign"
+  | "whatsapp"
+  | "text_message"
+  | "reminder";
+
+const SIDEBAR_PRODUCT_OUTPUTS = new Set<SidebarProductOutput>([
+  "event_page",
+  "live_card",
+  "digital_flyer",
+  "signup_form",
+  "invitation",
+  "rsvp_page",
+  "printable_flyer",
+  "instagram_story",
+  "thank_you_card",
+  "menu",
+  "welcome_sign",
+  "whatsapp",
+  "text_message",
+  "reminder",
+]);
+
+const SIDEBAR_CARD_FIRST_OUTPUTS = new Set<SidebarProductOutput>([
+  "live_card",
+  "digital_flyer",
+  "printable_flyer",
+  "invitation",
+  "instagram_story",
+  "thank_you_card",
+  "menu",
+  "welcome_sign",
+]);
+
+const SIDEBAR_SECONDARY_OUTPUTS = new Set<SidebarProductOutput>([
+  "rsvp_page",
+  "whatsapp",
+  "text_message",
+  "reminder",
+]);
+
+function asSidebarRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function normalizeSidebarProductOutput(value: unknown): SidebarProductOutput | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (normalized === "flyer") return "digital_flyer";
+  if (normalized === "printable") return "printable_flyer";
+  if (normalized === "story") return "instagram_story";
+  if (normalized === "signup" || normalized === "smart_signup") return "signup_form";
+  return SIDEBAR_PRODUCT_OUTPUTS.has(normalized as SidebarProductOutput)
+    ? (normalized as SidebarProductOutput)
+    : null;
+}
+
+function inferSidebarProductOutputFromText(value: unknown): SidebarProductOutput | null {
+  if (typeof value !== "string") return null;
+  const text = value.trim().toLowerCase();
+  if (!text) return null;
+  if (/\blive[\s_-]*card\b/.test(text)) return "live_card";
+  if (/\bsmart[\s_-]*sign[\s_-]*up\b|\bsign[\s_-]*up\b|\bsignup\b/.test(text)) {
+    return "signup_form";
+  }
+  if (/\bevent[\s_-]*page\b/.test(text)) return "event_page";
+  if (/\brsvp[\s_-]*page\b/.test(text)) return "rsvp_page";
+  if (/\bprintable[\s_-]*flyer\b/.test(text)) return "printable_flyer";
+  if (/\bdigital[\s_-]*flyer\b|\bflyer[\s_-]*invite\b|\bflyer\b/.test(text)) {
+    return "digital_flyer";
+  }
+  if (/\binstagram[\s_-]*story\b/.test(text)) return "instagram_story";
+  if (/\bthank[\s_-]*you[\s_-]*card\b/.test(text)) return "thank_you_card";
+  if (/\bwelcome[\s_-]*sign\b/.test(text)) return "welcome_sign";
+  if (/\bmenu\b/.test(text)) return "menu";
+  if (/\binvitation\b|\binvite\b/.test(text)) return "invitation";
+  return null;
+}
+
+function looksLikeSidebarProductCreationText(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  return /^\s*create\s+(?:a|an|the)?\s*(?:live[\s_-]*card|digital[\s_-]*flyer|flyer|invitation|invite|event[\s_-]*page|rsvp[\s_-]*page|smart[\s_-]*sign[\s_-]*up|sign[\s_-]*up|signup)\b/i.test(
+    value,
+  );
+}
+
+function firstSidebarProductOutputFromArray(value: unknown): SidebarProductOutput | null {
+  if (!Array.isArray(value)) return null;
+  const normalized = value
+    .map(normalizeSidebarProductOutput)
+    .filter(Boolean) as SidebarProductOutput[];
+  return normalized.find((output) => !SIDEBAR_SECONDARY_OUTPUTS.has(output)) || normalized[0] || null;
+}
+
+function getSidebarPrimaryProductOutput(
+  data: unknown,
+  fallbackText?: string | null,
+): SidebarProductOutput | null {
+  const record = asSidebarRecord(data);
+  if (!record) return null;
+  const publicEvent = asSidebarRecord(record.publicEvent);
+  const conciergeDraft = asSidebarRecord(record.conciergeDraft);
+  const inferredText = [
+    record.title,
+    record.eventPurpose,
+    record.prompt,
+    record.userPrompt,
+    conciergeDraft?.title,
+    conciergeDraft?.eventPurpose,
+    fallbackText,
+  ]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ");
+
+  return (
+    normalizeSidebarProductOutput(record.primaryOutput) ||
+    normalizeSidebarProductOutput(record.productType) ||
+    normalizeSidebarProductOutput(record.publicRenderer) ||
+    normalizeSidebarProductOutput(publicEvent?.primaryOutput) ||
+    normalizeSidebarProductOutput(publicEvent?.renderer) ||
+    normalizeSidebarProductOutput(conciergeDraft?.primaryOutput) ||
+    normalizeSidebarProductOutput(conciergeDraft?.productType) ||
+    firstSidebarProductOutputFromArray(record.requestedOutputs) ||
+    firstSidebarProductOutputFromArray(record.outputs) ||
+    firstSidebarProductOutputFromArray(conciergeDraft?.requestedOutputs) ||
+    firstSidebarProductOutputFromArray(conciergeDraft?.outputs) ||
+    inferSidebarProductOutputFromText(inferredText)
+  );
+}
+
+function isSidebarProductPreviewFirstEvent(data: unknown, fallbackText?: string | null): boolean {
+  const record = asSidebarRecord(data);
+  if (!record) return false;
+  const createdVia = String(record.createdVia || "").trim().toLowerCase();
+  const output = getSidebarPrimaryProductOutput(record, fallbackText);
+  return Boolean(output) && (/concierge|chat/.test(createdVia) || looksLikeSidebarProductCreationText(fallbackText));
+}
+
+function buildSidebarEventSlugSegment(id: string, title: string): string {
+  const safeId = String(id || "").trim();
+  const slug =
+    String(title || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "event";
+  return safeId ? `${slug}-${safeId}` : slug;
+}
+
+function buildSidebarProductPath(
+  row: HistoryRow,
+  data: unknown,
+  buildEventPath: (eventId: string, title: string) => string,
+): string {
+  const output = getSidebarPrimaryProductOutput(data, row.title);
+  if (output === "signup_form") {
+    return `/smart-signup-form/${buildSidebarEventSlugSegment(row.id, row.title)}`;
+  }
+  if (output && SIDEBAR_CARD_FIRST_OUTPUTS.has(output)) {
+    return `/card/${buildSidebarEventSlugSegment(row.id, row.title)}`;
+  }
+  return buildEventPath(row.id, row.title);
+}
+
 function sortGroupedSections(source: Map<string, GroupedEventItem[]>) {
   const priority = new Map<string, number>([
     ["drafts", 0],
@@ -636,10 +811,13 @@ export function buildGroupedEventLists(args: {
     const parsedDateMs = dateRaw ? new Date(dateRaw).getTime() : Number.NaN;
     const dateMs = Number.isNaN(parsedDateMs) ? Number.POSITIVE_INFINITY : parsedDateMs;
     const dateLabel = formatEventDate(dateRaw);
-    const href = args.buildEventPath(row.id, row.title);
-    const openMode: GroupedEventItem["openMode"] = args.isSportsPreviewFirstEvent(data)
-      ? "preview"
-      : "dashboard";
+    const defaultHref = args.buildEventPath(row.id, row.title);
+    const shouldOpenProductFirst = isSidebarProductPreviewFirstEvent(data, row.title);
+    const href = shouldOpenProductFirst
+      ? buildSidebarProductPath(row, data, args.buildEventPath)
+      : defaultHref;
+    const openMode: GroupedEventItem["openMode"] =
+      shouldOpenProductFirst || args.isSportsPreviewFirstEvent(data) ? "preview" : "dashboard";
     const rawShareStatus = String(data?.shareStatus || "")
       .trim()
       .toLowerCase();

@@ -84,6 +84,7 @@ export async function POST(req: Request) {
               requestedOutputs: request.requestedOutputs || null,
               activeContext: request.activeContext || null,
               action: request.action || "message",
+              starterCategory: request.starterCategory || null,
             }),
           );
           const fallbackMessage = buildAssistantMessage(fallbackDraft);

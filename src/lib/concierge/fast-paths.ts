@@ -30,6 +30,19 @@ const STARTER_CHIPS = new Set([
   "surprise me",
 ]);
 
+const OUTPUT_SELECTION_PATTERNS: Partial<Record<RequestedOutput, RegExp[]>> = {
+  live_card: [/\blive\s*card\b/gi],
+  event_page: [/\bevent\s+page\b/gi],
+  digital_flyer: [/\bdigital\s+flyer\b/gi, /\bflyer\s+invite\b/gi, /\bflyer\b/gi],
+  invitation: [/\binvitation\b/gi, /\binvite\b/gi],
+  rsvp_page: [/\brsvp\s+page\b/gi, /\brsvp\b/gi],
+  signup_form: [
+    /\bsmart\s+sign[-\s]?up(?:\s+form)?\b/gi,
+    /\bsign[-\s]?up\s+(?:form|sheet)\b/gi,
+    /\bsignup\s+(?:form|sheet)\b/gi,
+  ],
+};
+
 function cleanString(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const cleaned = value.replace(/\s+/g, " ").trim();
@@ -69,6 +82,22 @@ function hasObviousStarterCreationIntent(text: string): boolean {
   );
 }
 
+function stripRequestedOutputLabels(text: string, requestedOutputs: RequestedOutput[]): string {
+  let stripped = text;
+  for (const output of requestedOutputs) {
+    for (const pattern of OUTPUT_SELECTION_PATTERNS[output] || []) {
+      stripped = stripped.replace(pattern, " ");
+    }
+  }
+  return stripped.replace(/\s+/g, " ").trim();
+}
+
+function isStarterCategoryProductSelection(text: string, requestedOutputs: RequestedOutput[]) {
+  if (!requestedOutputs.length) return false;
+  const categoryOnly = normalizedMessage(stripRequestedOutputLabels(text, requestedOutputs));
+  return Boolean(categoryOnly && STARTER_CHIPS.has(categoryOnly));
+}
+
 export function isConciergeFastActionsEnabled(): boolean {
   return isEnvFlagEnabled(process.env.CONCIERGE_SKIP_AI_FAST_ACTIONS);
 }
@@ -84,15 +113,33 @@ export function shouldSkipOpenAiForCreationRequest(args: {
   fallbackDraft?: ConciergeEventDraft | null;
 }): boolean {
   const message = cleanString(args.request.message) || "";
+  const starterCategory = cleanString(args.request.starterCategory);
+  const selectionMessage =
+    starterCategory && !message.toLowerCase().includes(starterCategory.toLowerCase())
+      ? `${starterCategory} ${message}`.trim()
+      : message;
   if (isGreetingMessage(message)) return true;
   if (!args.request.draft && !args.request.ocrContext && hasObviousStarterCreationIntent(message)) {
     return true;
   }
 
   const action = args.request.action || "message";
+  const requestedOutputs: RequestedOutput[] = args.fallbackDraft?.requestedOutputs?.length
+    ? args.fallbackDraft.requestedOutputs
+    : normalizeRequestedOutputs(args.request.requestedOutputs, {
+        text: message,
+        previous: args.request.draft || null,
+        defaultOutput: null,
+      });
   if (action === "ocr_result") return true;
   const normalized = normalizedMessage(message);
   if ((action === "chip" || action === "starter_category") && STARTER_CHIPS.has(normalized)) {
+    return true;
+  }
+  if (
+    (action === "chip" || action === "starter_category") &&
+    isStarterCategoryProductSelection(selectionMessage, requestedOutputs)
+  ) {
     return true;
   }
   if ((action === "chip" || action === "starter_category") && hasAssetIntent(message)) {
@@ -101,13 +148,6 @@ export function shouldSkipOpenAiForCreationRequest(args: {
 
   if (!isConciergeFastActionsEnabled()) return false;
 
-  const requestedOutputs: RequestedOutput[] = args.fallbackDraft?.requestedOutputs?.length
-    ? args.fallbackDraft.requestedOutputs
-    : normalizeRequestedOutputs(args.request.requestedOutputs, {
-        text: message,
-        previous: args.request.draft || null,
-        defaultOutput: null,
-      });
   return (
     (action === "chip" || action === "starter_category") &&
     requestedOutputs.length > 0 &&

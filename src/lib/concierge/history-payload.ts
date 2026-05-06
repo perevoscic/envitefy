@@ -169,14 +169,32 @@ export function buildConciergeHistoryPayload(
       location: locationLine || eventPlace.location || eventPlace.venue || "",
       detailsDescription: description,
       message: liveCardSubheadline,
+      rsvpEnabled,
+      rsvpMode: rsvpEnabled ? "envitefy" : "",
+      rsvpName: rsvpEnabled ? "Host" : "",
     },
   };
   const liveCardInvitationData = isRecord(studioInviteData)
     ? studioInviteData
     : fallbackLiveCardInvitationData;
   const liveCardPositions = isRecord(studioInvitePositions) ? studioInvitePositions : null;
-  const primaryOutput = draft.requestedOutputs[0] || "event_page";
+  const primaryOutput =
+    draft.requestedOutputs.find(
+      (output) =>
+        output !== "rsvp_page" &&
+        output !== "whatsapp" &&
+        output !== "text_message" &&
+        output !== "reminder",
+    ) ||
+    draft.requestedOutputs[0] ||
+    "event_page";
   const publicRenderer = primaryOutput === "live_card" ? "live_card" : primaryOutput;
+  const ownerDefaultSurface =
+    primaryOutput === "signup_form"
+      ? "signup"
+      : primaryOutput === "event_page" || primaryOutput === "rsvp_page"
+        ? "event"
+        : "card";
   const signupForm =
     primaryOutput === "signup_form" || draft.eventType === "smart_signup"
       ? {
@@ -206,11 +224,15 @@ export function buildConciergeHistoryPayload(
       requestedOutputs: draft.requestedOutputs,
       sourceContext: draft.sourceContext,
       eventPurpose: draft.eventPurpose,
-      draftStatus: draft.draftStatus,
+      draftStatus: "published",
       ownership,
       invitedFromScan,
       createdVia: "concierge",
-      status: "draft",
+      status: "published",
+      primaryOutput,
+      productType: primaryOutput,
+      publicRenderer,
+      ownerDefaultSurface,
       category,
       eventType: draft.eventType,
       title,
@@ -259,6 +281,7 @@ export function buildConciergeHistoryPayload(
       publicEvent: {
         renderer: publicRenderer,
         primaryOutput,
+        ownerDefaultSurface,
         headline: liveCardHeadline,
         subheadline: liveCardSubheadline,
         body: description,

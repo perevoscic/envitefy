@@ -310,6 +310,7 @@ export type ConciergeMessageRequest = {
   ocrContext?: ConciergeOcrContext | null;
   activeContext?: ConciergeActiveContext | null;
   requestedOutputs?: RequestedOutput[] | null;
+  starterCategory?: string | null;
   action?: ConciergeAction;
 };
 

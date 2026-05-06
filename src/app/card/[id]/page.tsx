@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import SharedStudioCardPage from "@/components/studio/SharedStudioCardPage";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { getEventHistoryPublicRenderBySlugOrId } from "@/lib/db";
-import { buildStudioCardPath } from "@/utils/event-url";
+import { buildEventPath, buildStudioCardPath } from "@/utils/event-url";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -158,6 +158,37 @@ function buildFallbackInvitationData(data: Record<string, unknown>) {
   };
 }
 
+function withDirectRsvpInvitationData(args: {
+  invitationData: Record<string, unknown>;
+  row: Awaited<ReturnType<typeof getEventHistoryPublicRenderBySlugOrId>>;
+  title: string;
+}) {
+  if (!args.row) return args.invitationData;
+  const data = isRecord(args.row.data) ? args.row.data : {};
+  const rsvp = isRecord(data.rsvp) ? data.rsvp : null;
+  const rsvpEnabled =
+    data.rsvpEnabled === true ||
+    rsvp?.isEnabled === true ||
+    rsvp?.enabled === true ||
+    rsvp?.direct === true ||
+    (typeof data.rsvpEnabled === "string" && data.rsvpEnabled.toLowerCase() === "true");
+  if (!rsvpEnabled) return args.invitationData;
+
+  const eventDetails = isRecord(args.invitationData.eventDetails)
+    ? args.invitationData.eventDetails
+    : {};
+  return {
+    ...args.invitationData,
+    eventDetails: {
+      ...eventDetails,
+      rsvpEnabled: true,
+      rsvpMode: readFirstString(eventDetails.rsvpMode, "envitefy"),
+      rsvpName: readFirstString(eventDetails.rsvpName, data.rsvpName, data.hostName, "Host"),
+      rsvpUrl: `${buildEventPath(args.row.id, args.title)}#event-rsvp`,
+    },
+  };
+}
+
 async function resolveSharedCard(value: string) {
   const row = await getEventHistoryPublicRenderBySlugOrId({ value, userId: undefined });
   if (!row) return null;
@@ -180,9 +211,13 @@ async function resolveSharedCard(value: string) {
     row,
     title,
     imageUrl,
-    invitationData: isRecord(studioCard?.invitationData)
-      ? studioCard.invitationData
-      : buildFallbackInvitationData(data),
+    invitationData: withDirectRsvpInvitationData({
+      invitationData: isRecord(studioCard?.invitationData)
+        ? studioCard.invitationData
+        : buildFallbackInvitationData(data),
+      row,
+      title,
+    }),
     positions: isRecord(studioCard?.positions) ? studioCard.positions : null,
   };
 }

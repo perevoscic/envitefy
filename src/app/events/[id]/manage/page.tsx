@@ -5,10 +5,10 @@ import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { getEventHistoryById } from "@/lib/db";
 import { listEventAssets } from "@/lib/concierge/event-storage";
 import { buildEventPath } from "@/utils/event-url";
-import EventWorkspaceClient from "./EventWorkspaceClient";
+import EventManageClient from "./EventManageClient";
 
 export const metadata: Metadata = {
-  title: "Event Workspace | Envitefy",
+  title: "Manage Event | Envitefy",
   robots: { index: false, follow: false },
 };
 
@@ -21,7 +21,7 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-export default async function EventWorkspacePage({
+export default async function EventManagePage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -42,7 +42,7 @@ export default async function EventWorkspacePage({
   const assets = await listEventAssets(event.id, userId);
 
   return (
-    <EventWorkspaceClient
+    <EventManageClient
       eventId={event.id}
       initialTitle={title}
       initialData={data}

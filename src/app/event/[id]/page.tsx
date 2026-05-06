@@ -112,7 +112,7 @@ const ScannedWeddingInviteView = nextDynamic(
   () => import("@/components/weddings/ScannedWeddingInviteView"),
   { loading: () => null },
 );
-const EventOwnerWorkspace = nextDynamic(() => import("@/components/EventOwnerWorkspace"), {
+const EventOwnerTools = nextDynamic(() => import("@/components/EventOwnerTools"), {
   loading: () => null,
 });
 const DiscoveryEventEditLayout = nextDynamic(
@@ -853,7 +853,7 @@ export default async function EventPage({
   const requestedTab = String(((awaitedSearchParams as any)?.tab ?? "") as string)
     .trim()
     .toLowerCase();
-  const ownerWorkspaceTab =
+  const ownerToolsTab =
     requestedTab === "dashboard" ||
     requestedTab === "guests" ||
     requestedTab === "communications" ||
@@ -944,14 +944,14 @@ export default async function EventPage({
     redirect(editUrl);
   }
 
-  if (canManageCreatedEvent && ownerWorkspaceTab) {
+  if (canManageCreatedEvent && ownerToolsTab) {
     return renderWithEventPageBackground(
-      <EventOwnerWorkspace
+      <EventOwnerTools
         eventId={row.id}
         eventTitle={title}
         eventData={data}
         eventHref={buildEventPath(row.id, title)}
-        initialTab={ownerWorkspaceTab}
+        initialTab={ownerToolsTab}
       />,
     );
   }
@@ -2741,11 +2741,11 @@ export default async function EventPage({
             <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium rounded-xl border border-[#ddd4f8] bg-white/92 backdrop-blur px-2 sm:px-3 py-1.5 shadow-[0_12px_26px_rgba(76,55,134,0.22)]">
               {!isReadOnly && canManageCreatedEvent && !isOcrEvent && (
                 <Link
-                  href={`/events/${row.id}/workspace`}
+                  href={`/events/${row.id}/manage`}
                   className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-[#4f3f7a] transition hover:bg-[#f6f1ff] hover:text-[#2f2550]"
-                  title="Open workspace"
+                  title="Manage event"
                 >
-                  <span className="hidden sm:inline">Workspace</span>
+                  <span className="hidden sm:inline">Manage</span>
                 </Link>
               )}
               {!isReadOnly && canManageCreatedEvent && !isOcrEvent && (
@@ -3247,10 +3247,10 @@ export default async function EventPage({
             )}
             {canManageCreatedEvent && !isOcrEvent && (
               <Link
-                href={`/events/${row.id}/workspace`}
+                href={`/events/${row.id}/manage`}
                 className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
               >
-                Workspace
+                Manage
               </Link>
             )}
             {canManageCreatedEvent && !isOcrEvent && (

@@ -102,7 +102,7 @@ export function buildEventAssetContent(params: {
         message: `You're invited to ${base.title}! ${schedule}. ${base.locationLine}.${rsvp} Details: ${base.eventLink}`,
       },
       design: { format: "message", tone },
-      metadata: { generatedBy: "event_workspace_assistant", brief },
+      metadata: { generatedBy: "event_assistant", brief },
     };
   }
 
@@ -122,7 +122,7 @@ export function buildEventAssetContent(params: {
         ],
       },
       design: { format: "story_9_16", tone },
-      metadata: { generatedBy: "event_workspace_assistant", brief },
+      metadata: { generatedBy: "event_assistant", brief },
     };
   }
 
@@ -139,7 +139,7 @@ export function buildEventAssetContent(params: {
         ],
       },
       design: { format: params.assetType === "welcome_sign" ? "sign" : "print_5x7", tone },
-      metadata: { generatedBy: "event_workspace_assistant", brief },
+      metadata: { generatedBy: "event_assistant", brief },
     };
   }
 
@@ -151,7 +151,7 @@ export function buildEventAssetContent(params: {
         message: `Reminder: ${base.title} is coming up ${schedule}. We'll see you at ${base.locationLine}.`,
       },
       design: { format: "message", tone },
-      metadata: { generatedBy: "event_workspace_assistant", brief },
+      metadata: { generatedBy: "event_assistant", brief },
     };
   }
 
@@ -164,7 +164,7 @@ export function buildEventAssetContent(params: {
         message: `Thank you for being part of ${base.title}. Your presence made the celebration feel complete.`,
       },
       design: { format: "card", tone },
-      metadata: { generatedBy: "event_workspace_assistant", brief },
+      metadata: { generatedBy: "event_assistant", brief },
     };
   }
 
@@ -178,7 +178,7 @@ export function buildEventAssetContent(params: {
         note: "Add menu items here.",
       },
       design: { format: "menu", tone },
-      metadata: { generatedBy: "event_workspace_assistant", brief },
+      metadata: { generatedBy: "event_assistant", brief },
     };
   }
 
@@ -193,7 +193,7 @@ export function buildEventAssetContent(params: {
         fields: ["name", "email", "attendance"],
       },
       design: { format: "page", tone },
-      metadata: { generatedBy: "event_workspace_assistant", brief },
+      metadata: { generatedBy: "event_assistant", brief },
     };
   }
 
@@ -210,7 +210,7 @@ export function buildEventAssetContent(params: {
         ],
       },
       design: { format: "page", tone },
-      metadata: { generatedBy: "event_workspace_assistant", brief },
+      metadata: { generatedBy: "event_assistant", brief },
     };
   }
 
@@ -224,7 +224,7 @@ export function buildEventAssetContent(params: {
         slots: [],
       },
       design: { format: "signup_form", tone },
-      metadata: { generatedBy: "event_workspace_assistant", brief },
+      metadata: { generatedBy: "event_assistant", brief },
     };
   }
 
@@ -237,6 +237,6 @@ export function buildEventAssetContent(params: {
       cta: rsvpDeadline ? `RSVP by ${rsvpDeadline}` : "View details",
     },
     design: { format: "card", tone },
-    metadata: { generatedBy: "event_workspace_assistant", brief },
+    metadata: { generatedBy: "event_assistant", brief },
   };
 }

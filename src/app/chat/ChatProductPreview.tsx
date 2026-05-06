@@ -79,7 +79,11 @@ function publicActionLabelForOutput(selectedOutput: RequestedOutput) {
   if (selectedOutput === "live_card") return "Open Live Card";
   if (selectedOutput === "event_page") return "Open Event Page";
   if (selectedOutput === "signup_form") return "Open Sign-up";
-  return "View invite";
+  if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {
+    return "Open Flyer";
+  }
+  if (selectedOutput === "invitation") return "Open Invitation";
+  return "Open Product";
 }
 
 type OutputPreviewSurfaceProps = {
@@ -443,7 +447,7 @@ export default function ChatProductPreview({
             ) : null}
             {!hasGeneratedProduct ? (
               <p className="max-w-full px-3 text-center text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#4f416a]">
-                This is a mockup, not your product.
+                Preview placeholder. Generate to publish.
               </p>
             ) : null}
           </div>

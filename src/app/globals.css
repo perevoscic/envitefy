@@ -669,7 +669,7 @@ body.sidebar-mobile-open {
   overscroll-behavior: none;
 }
 
-html[data-mobile-topbar-hidden="true"] [data-app-mobile-topbar="workspace"] {
+html[data-mobile-topbar-hidden="true"] [data-app-mobile-topbar="app"] {
   display: none !important;
 }
 

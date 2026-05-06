@@ -34,7 +34,7 @@ export function isEventAssetType(value: unknown): value is EventAssetType {
   );
 }
 
-export async function ensureEventWorkspaceTables(): Promise<void> {
+export async function ensureEventManageTables(): Promise<void> {
   if (!tablesReady) {
     tablesReady = (async () => {
       await query(`
@@ -130,7 +130,7 @@ export async function upsertCreationSession(params: {
   activeContext?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
 }): Promise<CreationSession> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const sessionId = params.draft.creationSessionId;
   const res = await query(
     `insert into creation_sessions (id, user_id, status, draft, active_context, source_context, metadata)
@@ -164,7 +164,7 @@ export async function getCreationSession(params: {
   userId: string;
   sessionId: string;
 }): Promise<CreationSession | null> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const res = await query(
     `select id, user_id, status, draft, active_context, source_context, metadata, created_at, updated_at
      from creation_sessions
@@ -178,7 +178,7 @@ export async function getCreationSession(params: {
 export async function getLatestCreationSession(params: {
   userId: string;
 }): Promise<CreationSession | null> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const res = await query(
     `select id, user_id, status, draft, active_context, source_context, metadata, created_at, updated_at
      from creation_sessions
@@ -196,7 +196,7 @@ export async function listCreationSessions(params: {
   userId: string;
   limit?: number;
 }): Promise<CreationSession[]> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const limit = Math.max(1, Math.min(50, Math.floor(params.limit || 20)));
   const res = await query(
     `select id, user_id, status, draft, active_context, source_context, metadata, created_at, updated_at
@@ -213,7 +213,7 @@ export async function deleteCreationSession(params: {
   userId: string;
   sessionId: string;
 }): Promise<boolean> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const res = await query(
     `delete from creation_sessions
      where id = $1 and user_id = $2`,
@@ -226,7 +226,7 @@ export async function claimCreationSessionSave(params: {
   userId: string;
   sessionId: string;
 }): Promise<CreationSession | null> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const res = await query(
     `update creation_sessions
      set status = 'publishing',
@@ -255,7 +255,7 @@ export async function markCreationSessionSaved(params: {
   draft: CreationSession["draft"];
   metadata?: Record<string, unknown>;
 }): Promise<CreationSession | null> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const res = await query(
     `update creation_sessions
      set status = 'published',
@@ -295,7 +295,7 @@ function mapAsset(row: any): EventAsset {
 }
 
 export async function listEventAssets(eventId: string, userId: string): Promise<EventAsset[]> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const res = await query(
     `select id, user_id, event_id, asset_type, title, status, content, design, metadata, created_at, updated_at
      from event_assets
@@ -316,7 +316,7 @@ export async function createEventAsset(params: {
   design?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
 }): Promise<EventAsset> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const res = await query(
     `insert into event_assets (user_id, event_id, asset_type, title, status, content, design, metadata)
      values ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb)
@@ -347,7 +347,7 @@ export async function updateEventAsset(params: {
     metadata?: Record<string, unknown>;
   };
 }): Promise<EventAsset | null> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const current = await query(
     `select id, user_id, event_id, asset_type, title, status, content, design, metadata, created_at, updated_at
      from event_assets
@@ -401,7 +401,7 @@ export async function deleteEventAsset(params: {
   eventId: string;
   assetId: string;
 }): Promise<boolean> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const res = await query(
     `delete from event_assets where id = $1 and event_id = $2 and user_id = $3`,
     [params.assetId, params.eventId, params.userId],
@@ -414,7 +414,7 @@ export async function getOrCreateEventThread(params: {
   eventId: string;
   title: string;
 }): Promise<ConversationThread> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const existing = await query(
     `select id, user_id, event_id, thread_type, title, created_at, updated_at
      from conversation_threads
@@ -440,7 +440,7 @@ export async function appendConversationMessage(params: {
   content: string;
   metadata?: Record<string, unknown>;
 }): Promise<ConversationMessage> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const res = await query(
     `insert into conversation_messages (thread_id, user_id, role, content, metadata)
      values ($1, $2, $3, $4, $5::jsonb)
@@ -460,7 +460,7 @@ export async function listConversationMessages(
   threadId: string,
   limit = 30,
 ): Promise<ConversationMessage[]> {
-  await ensureEventWorkspaceTables();
+  await ensureEventManageTables();
   const safeLimit = Math.max(1, Math.min(100, Math.floor(limit || 30)));
   const res = await query(
     `select id, thread_id, user_id, role, content, metadata, created_at

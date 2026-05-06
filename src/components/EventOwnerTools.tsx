@@ -5,7 +5,7 @@ import Dashboard from "@/components/Dashboard";
 import { useSidebar, type EventContextTab } from "@/app/sidebar-context";
 import { resolveEditHref } from "@/utils/event-edit-route";
 
-type EventOwnerWorkspaceProps = {
+type EventOwnerToolsProps = {
   eventId: string;
   eventTitle: string;
   eventData: Record<string, unknown> | null;
@@ -13,13 +13,13 @@ type EventOwnerWorkspaceProps = {
   initialTab: EventContextTab;
 };
 
-export default function EventOwnerWorkspace({
+export default function EventOwnerTools({
   eventId,
   eventTitle,
   eventData,
   eventHref,
   initialTab,
-}: EventOwnerWorkspaceProps) {
+}: EventOwnerToolsProps) {
   const {
     setSelectedEventId,
     setSelectedEventTitle,

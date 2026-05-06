@@ -56,6 +56,85 @@ test("starter category and product text asks for event details immediately", asy
   assert.match(result.assistantMessage, /Who is the birthday for/i);
 });
 
+test("starter category and product text skips OpenAI extraction", async () => {
+  for (const { message, requestedOutputs, eventType } of [
+    {
+      message: "Birthday Live Card",
+      requestedOutputs: ["live_card"] as const,
+      eventType: "birthday",
+    },
+    {
+      message: "Birthday Event Page",
+      requestedOutputs: ["event_page"] as const,
+      eventType: "birthday",
+    },
+    {
+      message: "Wedding Invitation",
+      requestedOutputs: ["invitation"] as const,
+      eventType: "wedding",
+    },
+  ] as const) {
+    let aiCalls = 0;
+    const result = await extractConciergeDraft(
+      {
+        message,
+        action: "starter_category",
+        requestedOutputs: [...requestedOutputs],
+      },
+      {
+        openAiApiKey: "test-key",
+        createOpenAiClient: () =>
+          ({
+            chat: {
+              completions: {
+                create: async () => {
+                  aiCalls += 1;
+                  return { choices: [] };
+                },
+              },
+            },
+          }) as any,
+      },
+    );
+
+    assert.equal(aiCalls, 0, message);
+    assert.equal(result.usedAi, false, message);
+    assert.equal(result.draft.eventType, eventType, message);
+    assert.deepEqual(result.draft.requestedOutputs, [...requestedOutputs], message);
+  }
+});
+
+test("structured starter category can skip OpenAI when the message only names the product", async () => {
+  let aiCalls = 0;
+  const result = await extractConciergeDraft(
+    {
+      message: "Live Card",
+      action: "starter_category",
+      requestedOutputs: ["live_card"],
+      starterCategory: "Birthday",
+    },
+    {
+      openAiApiKey: "test-key",
+      createOpenAiClient: () =>
+        ({
+          chat: {
+            completions: {
+              create: async () => {
+                aiCalls += 1;
+                return { choices: [] };
+              },
+            },
+          },
+        }) as any,
+    },
+  );
+
+  assert.equal(aiCalls, 0);
+  assert.equal(result.usedAi, false);
+  assert.equal(result.draft.eventType, "birthday");
+  assert.deepEqual(result.draft.requestedOutputs, ["live_card"]);
+});
+
 test("main-page category/product selection suppresses the format question", async () => {
   const result = await extractConciergeDraft({
     message: "Wedding Invitation",
@@ -74,7 +153,7 @@ test("visible starter categories map to first-class concierge event types", () =
   const cases = [
     ["Game Day Live Card", "game_day", /team, game, or watch party/i],
     ["Bridal Shower Invitation", "bridal_shower", /bridal shower for/i],
-    ["Field Trip\/Day Event Page", "field_trip", /field trip or school day/i],
+    ["Field Trip/Day Event Page", "field_trip", /field trip or school day/i],
     ["Open House Event Page", "open_house", /open house/i],
     ["Housewarming Invitation", "housewarming", /housewarming/i],
     ["Gender Reveal Invitation", "gender_reveal", /gender reveal/i],
@@ -821,7 +900,7 @@ test("OpenAI readiness is downgraded when source and purpose are missing", async
   assert.equal(result.draft.missingFields[0], "eventPurpose");
 });
 
-test("save payload stores concierge drafts as owned My Events rows", () => {
+test("save payload stores generated concierge products as owned My Events rows", () => {
   const draft = normalizeConciergeDraft(
     {
       eventType: "birthday",
@@ -844,7 +923,11 @@ test("save payload stores concierge drafts as owned My Events rows", () => {
 
   assert.equal(payload.data.ownership, "owned");
   assert.equal(payload.data.createdVia, "concierge");
-  assert.equal(payload.data.status, "draft");
+  assert.equal(payload.data.status, "published");
+  assert.equal(payload.data.draftStatus, "published");
+  assert.equal(payload.data.primaryOutput, "live_card");
+  assert.equal(payload.data.productType, "live_card");
+  assert.equal(payload.data.ownerDefaultSurface, "card");
   assert.equal(payload.data.invitedFromScan, false);
   assert.equal(payload.data.conciergeDraft.title, "Ava is turning 7");
   assert.equal(payload.data.coverImageUrl, "/studio/birthday.webp");
@@ -862,7 +945,8 @@ test("save payload stores concierge drafts as owned My Events rows", () => {
 
 test("save payload preserves event page as the primary product", () => {
   const draft = fallbackExtractConciergeDraft({
-    message: "Create an event page for Sara and Daniel wedding reception Saturday at 5 at The Pearl",
+    message:
+      "Create an event page for Sara and Daniel wedding reception Saturday at 5 at The Pearl",
     requestedOutputs: ["event_page"],
   });
   const payload = buildConciergeHistoryPayload(draft);

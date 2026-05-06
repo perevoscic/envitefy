@@ -14,7 +14,7 @@ import type {
   StudioWorkspaceView,
 } from "./studio-types";
 
-/** Browser local cache for Studio library (same key historically used by the workspace). */
+/** Browser local cache for the Studio library. */
 export const STUDIO_LIBRARY_STORAGE_KEY = "envitefy_media";
 
 export const STUDIO_CREATE_STEPS: Array<{ id: StudioCreateStep; label: string }> = [

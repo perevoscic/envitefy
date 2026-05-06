@@ -23,7 +23,7 @@ import type {
   EventAssetType,
 } from "@/lib/concierge/types";
 
-type WorkspaceTab = "live-card" | "details" | "assets" | "guests" | "assistant";
+type ManageTab = "live-card" | "details" | "assets" | "guests" | "assistant";
 
 type ChatMessage = {
   id: string;
@@ -31,7 +31,7 @@ type ChatMessage = {
   text: string;
 };
 
-type EventWorkspaceClientProps = {
+type EventManageClientProps = {
   eventId: string;
   initialTitle: string;
   initialData: Record<string, unknown>;
@@ -57,7 +57,7 @@ type RsvpSummary = {
   responses: RsvpResponse[];
 };
 
-const TABS: Array<{ key: WorkspaceTab; label: string; icon: LucideIcon }> = [
+const TABS: Array<{ key: ManageTab; label: string; icon: LucideIcon }> = [
   { key: "live-card", label: "Live Card", icon: Sparkles },
   { key: "details", label: "Details", icon: CalendarDays },
   { key: "assets", label: "Assets", icon: FileText },
@@ -192,17 +192,17 @@ function copyAssetText(asset: EventAsset) {
   return navigator.clipboard.writeText(value);
 }
 
-export default function EventWorkspaceClient({
+export default function EventManageClient({
   eventId,
   initialTitle,
   initialData,
   initialAssets,
   eventHref,
-}: EventWorkspaceClientProps) {
+}: EventManageClientProps) {
   const [title, setTitle] = useState(initialTitle);
   const [eventData, setEventData] = useState(initialData);
   const [assets, setAssets] = useState<EventAsset[]>(initialAssets);
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("live-card");
+  const [activeTab, setActiveTab] = useState<ManageTab>("live-card");
   const [messages, setMessages] = useState<ChatMessage[]>([
     newMessage("assistant", "I can refine this live card and create matching event assets."),
   ]);
@@ -358,7 +358,7 @@ export default function EventWorkspaceClient({
         {isSending ? (
           <div className="inline-flex items-center gap-2 rounded-full border border-[#eadfff] bg-[#fbf9ff] px-3.5 py-2 text-sm text-[#6f6286]">
             <Loader2 className="size-4 animate-spin text-[#7c4dff]" aria-hidden="true" />
-            Updating workspace
+            Updating event
           </div>
         ) : null}
       </div>
@@ -405,7 +405,7 @@ export default function EventWorkspaceClient({
         <header className="mb-5 flex flex-col gap-4 rounded-[1.4rem] border border-[#eadfff] bg-white/86 px-5 py-5 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8b7aaa]">
-              Live Card workspace
+              Manage live card
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-normal text-[#2d1b36]">
               {headline}
@@ -440,7 +440,7 @@ export default function EventWorkspaceClient({
         <div
           className="mb-5 overflow-x-auto rounded-[1.2rem] border border-[#eadfff] bg-white/86 p-1 shadow-sm backdrop-blur"
           role="tablist"
-          aria-label="Workspace sections"
+          aria-label="Event tools sections"
         >
           <div className="flex min-w-max gap-1">
             {TABS.map((tab) => {

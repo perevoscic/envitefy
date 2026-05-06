@@ -77,6 +77,9 @@ export type LiveCardEventDetails = {
   rsvpName?: string;
   rsvpContact?: string;
   rsvpDeadline?: string;
+  rsvpEnabled?: boolean;
+  rsvpMode?: string;
+  rsvpUrl?: string;
   detailsDescription?: string;
   guestImageUrls?: string[];
   realtorImageUrls?: string[];
@@ -178,6 +181,13 @@ function normalizeLiveCardExternalHref(value: unknown): string | null {
   } catch {
     return null;
   }
+}
+
+function normalizeLiveCardActionHref(value: unknown): string | null {
+  const raw = readString(value);
+  if (!raw) return null;
+  if (raw.startsWith("/")) return raw;
+  return normalizeLiveCardExternalHref(raw);
 }
 
 function getRegistryActionLabel(details: LiveCardEventDetails | null | undefined) {
@@ -420,6 +430,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     normalizeComparableText(secondaryDescription) !== normalizeComparableText(detailsDescription);
   const rsvpContact = readString(details?.rsvpContact);
   const rsvpParsed = parseLiveCardRsvpContact(rsvpContact);
+  const directRsvpHref = normalizeLiveCardActionHref(details?.rsvpUrl);
   const agentName = readString(details?.realtorName) || readString(details?.rsvpName);
   const agentTitle = readString(details?.realtorTitle) || (agentName ? "Listing Agent" : "");
   const agentBrokerage = readString(details?.brokerageName);
@@ -479,10 +490,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   }, [props.activeTab, props.onActiveTabChange]);
 
   useEffect(() => {
-    if (!categorySupportsRsvp && props.activeTab === "rsvp") {
+    if (!categorySupportsRsvp && !directRsvpHref && props.activeTab === "rsvp") {
       props.onActiveTabChange("none");
     }
-  }, [categorySupportsRsvp, props.activeTab, props.onActiveTabChange]);
+  }, [categorySupportsRsvp, directRsvpHref, props.activeTab, props.onActiveTabChange]);
 
   useEffect(() => {
     if ((!openHouseAgentCard || !hasOpenHouseLogoInfo) && props.activeTab === "logo") {
@@ -510,10 +521,14 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       label: openHouseAgentCard ? "Realtor" : "RSVP",
       icon: openHouseAgentCard ? UserRound : MessageSquare,
       visible:
-        categorySupportsRsvp &&
+        (categorySupportsRsvp || Boolean(directRsvpHref)) &&
         (openHouseAgentCard
           ? hasOpenHouseAgentInfo
-          : Boolean(readString(details?.rsvpName) || readString(details?.rsvpContact))),
+          : Boolean(
+              readString(details?.rsvpName) ||
+                readString(details?.rsvpContact) ||
+                directRsvpHref,
+            )),
       onClick: () => props.onActiveTabChange(props.activeTab === "rsvp" ? "none" : "rsvp"),
     };
     const logoButtonConfig = {
@@ -558,6 +573,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     props.onActiveTabChange,
     categorySupportsRsvp,
     details,
+    directRsvpHref,
     hasOpenHouseAgentInfo,
     hasOpenHouseLogoInfo,
     invitationData,
@@ -792,56 +808,67 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                             </p>
                           </div>
                         ) : null}
+                        {directRsvpHref && !rsvpContact ? (
+                          <a
+                            href={directRsvpHref}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-neutral-800"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Open RSVP form
+                          </a>
+                        ) : null}
                       </div>
-                      <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
-                        {LIVE_CARD_RSVP_CHOICES.map((choice) => {
-                          const href = buildLiveCardRsvpOutboundHref({
-                            rsvpContact,
-                            eventTitle: props.title,
-                            responseLabel: choice.label,
-                            responseKey: choice.key,
-                            shareUrl: effectiveShareUrl,
-                            category: readString(details?.category),
-                            hostName: readString(details?.rsvpName),
-                          });
-                          const accent = accentClassForRsvpChoice(choice.key);
-                          if (!href) {
+                      {rsvpContact ? (
+                        <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
+                          {LIVE_CARD_RSVP_CHOICES.map((choice) => {
+                            const href = buildLiveCardRsvpOutboundHref({
+                              rsvpContact,
+                              eventTitle: props.title,
+                              responseLabel: choice.label,
+                              responseKey: choice.key,
+                              shareUrl: effectiveShareUrl,
+                              category: readString(details?.category),
+                              hostName: readString(details?.rsvpName),
+                            });
+                            const accent = accentClassForRsvpChoice(choice.key);
+                            if (!href) {
+                              return (
+                                <button
+                                  key={choice.key}
+                                  type="button"
+                                  disabled
+                                  aria-disabled="true"
+                                  title={rsvpOutboundHint}
+                                  className={`flex cursor-not-allowed items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] opacity-45 ${accent}`}
+                                >
+                                  {choice.label}
+                                </button>
+                              );
+                            }
+                            if (isRsvpMailtoHref(href)) {
+                              return (
+                                <button
+                                  key={choice.key}
+                                  type="button"
+                                  onClick={() => openRsvpMailtoHref(href)}
+                                  className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
+                                >
+                                  {choice.label}
+                                </button>
+                              );
+                            }
                             return (
-                              <button
+                              <a
                                 key={choice.key}
-                                type="button"
-                                disabled
-                                aria-disabled="true"
-                                title={rsvpOutboundHint}
-                                className={`flex cursor-not-allowed items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] opacity-45 ${accent}`}
-                              >
-                                {choice.label}
-                              </button>
-                            );
-                          }
-                          if (isRsvpMailtoHref(href)) {
-                            return (
-                              <button
-                                key={choice.key}
-                                type="button"
-                                onClick={() => openRsvpMailtoHref(href)}
+                                href={href}
                                 className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
                               >
                                 {choice.label}
-                              </button>
+                              </a>
                             );
-                          }
-                          return (
-                            <a
-                              key={choice.key}
-                              href={href}
-                              className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${accent}`}
-                            >
-                              {choice.label}
-                            </a>
-                          );
-                        })}
-                      </div>
+                          })}
+                        </div>
+                      ) : null}
                     </div>
                   )
                 ) : null}

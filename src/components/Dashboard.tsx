@@ -2004,7 +2004,7 @@ function EventOwnerTabPlaceholder({
   return (
     <section className="rounded-[28px] border border-[#ddd5ff] bg-white/90 p-6 shadow-[0_20px_50px_rgba(80,63,145,0.12)]">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8f86ba]">
-        Event Workspace
+        Event tools
       </p>
       <h3 className="mt-2 text-2xl font-semibold text-[#201942]">{label}</h3>
       <p className="mt-2 text-sm text-[#6e629f]">

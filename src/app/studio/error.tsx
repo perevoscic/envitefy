@@ -22,7 +22,7 @@ export default function StudioError({
               Studio crashed
             </p>
             <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-              The workspace hit an unexpected error.
+              Studio hit an unexpected error.
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-6 text-[#6a5b51]">
               Reload the studio to clear the current render state and try again. If this keeps

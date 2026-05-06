@@ -47,6 +47,7 @@ import type {
 } from "@/lib/concierge/types";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
 import { buildEventSlug } from "@/utils/event-url";
+import { buildEventProductPath } from "@/utils/event-product-route";
 import { persistImageMediaValue, validateClientUploadFile } from "@/utils/media-upload-client";
 import ChatProductPreview from "./ChatProductPreview";
 
@@ -514,11 +515,10 @@ function previewImageForDraft(draft: ConciergeEventDraft | null) {
 function generatedProductHref(
   eventId: string | null,
   selectedOutput: RequestedOutput,
-  rsvpEnabled?: boolean | null,
+  _rsvpEnabled?: boolean | null,
 ) {
   if (!eventId) return null;
-  if (selectedOutput === "signup_form") return `/smart-signup-form/${eventId}`;
-  return selectedOutput === "live_card" && !rsvpEnabled ? `/card/${eventId}` : `/event/${eventId}`;
+  return buildEventProductPath({ eventId, output: selectedOutput });
 }
 
 function draftOutputLabels(draft: ConciergeEventDraft | null, selectedOutput: RequestedOutput) {
@@ -782,7 +782,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
   const previewTitle = liveCardTitle || currentLiveCardSummary.headline;
   const canGenerateProduct = isReadyProductDraft(draft) && !isBusy && !liveCardEventId;
-  const shouldShowWorkspacePanel =
+  const shouldShowProductPanel =
     Boolean(draft) ||
     phase === "ready_to_generate" ||
     phase === "generating_card" ||
@@ -1185,6 +1185,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     ocrContext?: ConciergeOcrContext | null;
     activeContext?: ConciergeActiveContext | null;
     requestedOutputs?: RequestedOutput[];
+    starterCategory?: string | null;
     echo?: string;
   }) {
     const message = params.message.trim();
@@ -1226,6 +1227,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         ocrContext: params.ocrContext || null,
         activeContext,
         requestedOutputs,
+        starterCategory: params.starterCategory || null,
         action,
         chatMessages: chatMessagesForPersistence(messages, userMessage ? [userMessage] : []),
       };
@@ -1334,6 +1336,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       message: value,
       action: selectedStarterCategory ? "starter_category" : undefined,
       requestedOutputs: selectedProductOutput ? [selectedProductOutput] : undefined,
+      starterCategory: selectedStarterCategory?.label || null,
     });
   }
 
@@ -1680,7 +1683,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     </div>
   );
 
-  const workspacePanel = (
+  const productPanel = (
     <ChatProductPreview
       draft={draft}
       summary={{ ...currentLiveCardSummary, headline: previewTitle }}
@@ -1709,7 +1712,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       >
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
           <section className="flex min-h-0 flex-1 flex-col">
-            {shouldShowWorkspacePanel ? (
+            {shouldShowProductPanel ? (
               <div className="shrink-0 border-b border-[#eee8f6] bg-white pb-2 pl-14 pr-3 pt-[max(0.35rem,env(safe-area-inset-top))] md:hidden">
                 <div className="grid grid-cols-2 rounded-lg bg-[#f1edf7] p-1">
                   <button
@@ -1737,7 +1740,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
             ) : null}
             <div
               className={`grid h-full min-h-0 ${
-                shouldShowWorkspacePanel
+                shouldShowProductPanel
                   ? "md:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)]"
                   : "md:grid-cols-1"
               }`}
@@ -1745,10 +1748,10 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
               <div
                 ref={chatPaneRef}
                 className={`min-h-0 w-full flex-col overflow-hidden bg-white/28 backdrop-blur-sm ${
-                  shouldShowWorkspacePanel ? "md:border-r md:border-[#e5dff0]" : ""
+                  shouldShowProductPanel ? "md:border-r md:border-[#e5dff0]" : ""
                 } ${
                   mobileView === "chat" ? "flex" : "hidden md:flex"
-                } ${shouldShowWorkspacePanel ? "" : "md:border-r-0"}`}
+                } ${shouldShowProductPanel ? "" : "md:border-r-0"}`}
               >
                 <div className="min-h-0 flex-1 overflow-y-auto [overscroll-behavior-y:contain] [touch-action:pan-y] [-webkit-overflow-scrolling:touch]">
                   {isEmptyState ? (
@@ -1878,7 +1881,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                 </div>
                 {shouldShowReadyActions ? readyActions : composer}
               </div>
-              {shouldShowWorkspacePanel ? workspacePanel : null}
+              {shouldShowProductPanel ? productPanel : null}
             </div>
           </section>
         </div>

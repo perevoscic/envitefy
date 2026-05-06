@@ -6,7 +6,7 @@ import test from "node:test";
 const repoRoot = process.cwd();
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("/chat is the OpenAI-backed concierge workspace", () => {
+test("/chat is the OpenAI-backed concierge creator", () => {
   const appShell = readSource("src/app/AppShell.tsx");
   const page = readSource("src/app/chat/page.tsx");
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
@@ -93,7 +93,7 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(preview, /selectedOutput=\{selectedOutput\}/);
   assert.match(preview, /publicActionLabelForOutput/);
   assert.match(preview, /selectedOutput === "event_page"\) return "Open Event Page"/);
-  assert.match(preview, /This is a mockup, not your product\./);
+  assert.match(preview, /Preview placeholder\. Generate to publish\./);
   assert.doesNotMatch(preview, /isCategoryMenuOpen/);
   assert.doesNotMatch(preview, /title=\{`Category: \$\{categoryLabel\}`\}/);
   assert.doesNotMatch(client, /PRODUCT_CHOICE_PROMPT/);
@@ -228,7 +228,7 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
     /className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"/,
   );
   assert.doesNotMatch(client, /relative flex min-h-screen min-w-0 flex-1 flex-col overflow-y-auto/);
-  assert.match(client, /shouldShowWorkspacePanel/);
+  assert.match(client, /shouldShowProductPanel/);
   assert.match(client, /Boolean\(draft\)/);
   assert.match(client, /mobileView/);
   assert.match(client, /const isEmptyState =/);
@@ -238,7 +238,8 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.doesNotMatch(chatSurface, /Chat builds the product here/);
   assert.doesNotMatch(preview, /statusLabel/);
   assert.doesNotMatch(preview, /statusClassName/);
-  assert.doesNotMatch(chatSurface, /Workspace Preview/);
+  const blockedOldProductLabelPattern = new RegExp("work" + "space", "i");
+  assert.doesNotMatch(chatSurface, blockedOldProductLabelPattern);
   assert.doesNotMatch(chatSurface, /Share preview/);
   assert.doesNotMatch(chatSurface, /More preview actions/);
   assert.doesNotMatch(chatSurface, /Share2/);
@@ -253,10 +254,7 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /rsvpPreview\.stats\.yes/);
   assert.match(client, /rsvpPreview\.responses\.map/);
   assert.match(client, /function generatedProductHref/);
-  assert.match(
-    client,
-    /selectedOutput === "live_card" && !rsvpEnabled \? `\/card\/\$\{eventId\}` : `\/event\/\$\{eventId\}`/,
-  );
+  assert.match(client, /buildEventProductPath\(\{ eventId, output: selectedOutput \}\)/);
   assert.doesNotMatch(client, /withGeneratedInviteOutputs/);
   assert.doesNotMatch(client, /new Set<RequestedOutput>\(\[\.\.\.draft\.requestedOutputs, "live_card", "invitation"\]\)/);
   assert.match(client, /draft: draftToGenerate/);
@@ -278,13 +276,12 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(preview, /min-h-\[4\.75rem\] justify-end/);
   assert.doesNotMatch(preview, /pb-24/);
   assert.doesNotMatch(chatSurface, /Manage/);
-  assert.doesNotMatch(chatSurface, /Generate workspace/);
+  assert.doesNotMatch(chatSurface, blockedOldProductLabelPattern);
   assert.doesNotMatch(chatSurface, /Regenerate version/);
   assert.match(chatSurface, /Open Live Card/);
-  assert.match(chatSurface, /View invite/);
+  assert.match(chatSurface, /Open Flyer/);
   assert.match(preview, /bg-\[#3b2468\]/);
-  assert.doesNotMatch(chatSurface, /Open workspace/);
-  assert.doesNotMatch(chatSurface, /Refine workspace/);
+  assert.doesNotMatch(chatSurface, blockedOldProductLabelPattern);
   assert.match(client, /sendGeneratedCardEdit/);
   assert.match(client, /fetch\(`\/api\/concierge\/events\/\$\{liveCardEventId\}\/message`/);
 

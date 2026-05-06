@@ -75,8 +75,8 @@ const config = {
       preview: "bg-gradient-to-r from-amber-200 via-orange-100 to-yellow-50",
     },
     {
-      id: "cool_workspace",
-      name: "Cool Workspace",
+      id: "cool_studio",
+      name: "Cool Studio",
       bg: "bg-gradient-to-br from-cyan-100 via-blue-50 to-indigo-50",
       text: "text-slate-900",
       accent: "text-cyan-800",
