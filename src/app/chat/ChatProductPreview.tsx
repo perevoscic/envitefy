@@ -30,7 +30,6 @@ type ChatProductPreviewProps = {
   summary: ChatPreviewSummary;
   selectedOutput: RequestedOutput;
   previewImageUrl: string;
-  categoryLabel: string;
   isGenerating: boolean;
   buildProgress: number;
   currentBuildStep: string;
@@ -52,7 +51,6 @@ export default function ChatProductPreview({
   summary,
   selectedOutput,
   previewImageUrl,
-  categoryLabel,
   isGenerating,
   buildProgress,
   currentBuildStep,
@@ -74,6 +72,7 @@ export default function ChatProductPreview({
     eventId: liveEventId,
   });
   const hasGeneratedProduct = Boolean(liveEventId);
+  const publicActionLabel = selectedOutput === "live_card" ? "Open Live Card" : "View invite";
   const rsvpLabel = rsvp.isLoading
     ? "Loading responses"
     : rsvp.error
@@ -88,7 +87,7 @@ export default function ChatProductPreview({
     >
       <div className="flex h-full min-h-0 flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 sm:px-6 sm:pb-8">
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-          <section className="shrink-0 rounded-[1.3rem] border border-[#eee8f6] bg-white p-4 shadow-sm">
+          <section className="relative z-40 shrink-0 overflow-visible rounded-[1.3rem] border border-[#eee8f6] bg-white p-4 shadow-sm">
             <button
               type="button"
               className="mb-0 flex w-full items-start justify-between gap-3 text-left md:pointer-events-none md:mb-3"
@@ -103,23 +102,21 @@ export default function ChatProductPreview({
                   {summary.headline}
                 </span>
               </span>
-              <span className="flex shrink-0 items-center gap-2">
-                <span
-                  className="inline-flex h-8 max-w-[10rem] items-center rounded-full border border-[#dfd6ea] bg-[#fbf9ff] px-3 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#7c4dff]"
-                  title={`Category: ${categoryLabel}`}
-                >
-                  <span className="truncate">{categoryLabel}</span>
-                </span>
-                <ChevronDown
-                  className={`size-5 text-[#8b8298] transition md:hidden ${
-                    isMobileDetailsOpen ? "rotate-180" : ""
-                  }`}
-                  aria-hidden="true"
-                />
-              </span>
+              <ChevronDown
+                className={`size-5 shrink-0 text-[#8b8298] transition md:hidden ${
+                  isMobileDetailsOpen ? "rotate-180" : ""
+                }`}
+                aria-hidden="true"
+              />
             </button>
 
-            <div className={`${isMobileDetailsOpen ? "mt-3 grid" : "hidden"} gap-3 md:mt-0 md:grid`}>
+            <div
+              className={`${
+                isMobileDetailsOpen
+                  ? "absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 grid rounded-[1.3rem] border border-[#eee8f6] bg-white p-4 shadow-[0_18px_46px_rgba(38,28,55,0.16)]"
+                  : "hidden"
+              } gap-3 md:static md:mt-0 md:grid md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
+            >
               <div
                 className={`flex items-center gap-3 ${detailToneClass(summary.scheduleLine, "Date TBD")}`}
               >
@@ -189,23 +186,23 @@ export default function ChatProductPreview({
             </div>
           </section>
 
-          <div className="shrink-0 space-y-3">
+          <div className="flex shrink-0 justify-center">
             {publicHref ? (
               <a
                 href={publicHref}
                 target="_blank"
                 rel="noreferrer"
-                className="flex h-12 w-full min-w-full max-w-none items-center justify-center gap-2 self-stretch rounded-2xl bg-[#197052] px-5 text-sm font-bold text-white shadow-lg shadow-[#197052]/15 transition hover:bg-[#145f46]"
+                className="flex h-12 w-full min-w-full max-w-none items-center justify-center gap-2 self-stretch rounded-2xl bg-[#3b2468] px-5 text-sm font-bold text-[#f6efff] shadow-lg shadow-[#3b2468]/20 transition hover:bg-[#2f1a55]"
               >
                 <ExternalLink className="size-4" aria-hidden="true" />
-                View invite
+                {publicActionLabel}
               </a>
             ) : (
               <button
                 type="button"
                 disabled={!canGenerate}
                 onClick={onGenerate}
-                className="flex h-12 w-full min-w-full max-w-none items-center justify-center gap-2 self-stretch rounded-2xl bg-[#7c4dff] px-5 text-sm font-bold text-white shadow-lg shadow-[#7c4dff]/20 transition hover:bg-[#6f43f0] disabled:cursor-not-allowed disabled:bg-[#d8caff] disabled:shadow-none"
+                className="inline-flex h-12 w-auto max-w-full items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-[#7c4dff] px-6 text-sm font-bold text-white shadow-lg shadow-[#7c4dff]/20 transition hover:bg-[#6f43f0] disabled:cursor-not-allowed disabled:bg-[#d8caff] disabled:shadow-none sm:px-7"
               >
                 <Sparkles className="size-4" aria-hidden="true" />
                 Generate invite

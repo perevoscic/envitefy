@@ -4,13 +4,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
   Camera,
-  FileText,
-  Globe2,
+  FileImage,
+  Globe,
+  IdCard,
   Loader2,
   Mail,
   Mic,
   Paperclip,
-  Sparkles,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -30,6 +30,7 @@ import {
   PromptInputActions,
   PromptInputTextarea,
 } from "@/components/ui/ai-prompt-box";
+import BottomNavBar, { type BottomNavItem } from "@/components/ui/bottom-nav-bar";
 import type {
   ConciergeActiveContext,
   ConciergeEventDraft,
@@ -59,6 +60,7 @@ type ProductOption = {
   output: RequestedOutput;
   description: string;
   prompt: string;
+  icon: BottomNavItem["icon"];
 };
 
 type ConciergePhase =
@@ -119,24 +121,28 @@ const PRODUCT_OPTIONS: ProductOption[] = [
     output: "live_card",
     description: "Animated invite with RSVP and guest actions.",
     prompt: "Create a live card",
-  },
-  {
-    label: "Flyer Invite",
-    output: "digital_flyer",
-    description: "Shareable flyer-style invite from typed details.",
-    prompt: "Create a digital flyer",
-  },
-  {
-    label: "Event Page",
-    output: "event_page",
-    description: "Hosted page for details, links, and updates.",
-    prompt: "Create an event page",
+    icon: IdCard,
   },
   {
     label: "Invitation",
     output: "invitation",
     description: "Designed invite artwork to share.",
     prompt: "Create an invitation",
+    icon: Mail,
+  },
+  {
+    label: "Flyer Invite",
+    output: "digital_flyer",
+    description: "Shareable flyer-style invite from typed details.",
+    prompt: "Create a digital flyer",
+    icon: FileImage,
+  },
+  {
+    label: "Event Page",
+    output: "event_page",
+    description: "Hosted page for details, links, and updates.",
+    prompt: "Create an event page",
+    icon: Globe,
   },
 ];
 
@@ -227,13 +233,6 @@ function formatAssistantBubbleText(text: string) {
   });
 }
 
-function ProductOptionIcon({ output }: { output: RequestedOutput }) {
-  if (output === "digital_flyer") return <FileText className="size-4" aria-hidden="true" />;
-  if (output === "event_page") return <Globe2 className="size-4" aria-hidden="true" />;
-  if (output === "invitation") return <Mail className="size-4" aria-hidden="true" />;
-  return <Sparkles className="size-4" aria-hidden="true" />;
-}
-
 function parseConciergeStreamEvent(rawEvent: string) {
   let event = "message";
   const dataLines: string[] = [];
@@ -306,22 +305,7 @@ function isOpeningAssistantPrompt(text: string, initialAssistantPrompt: string) 
   return text === initialAssistantPrompt || text === EMPTY_ASSISTANT_PROMPT;
 }
 
-const CHAT_STARTER_PROMPTS = [
-  "Birthday",
-  "Wedding",
-  "Baby Shower",
-  "Game Day",
-  "Bridal Shower",
-];
-
-const CATEGORY_LABELS: Partial<Record<ConciergeEventType, string>> = {
-  birthday: "Birthday Invite",
-  wedding: "Wedding",
-  baby_shower: "Baby Shower",
-  graduation: "Graduation",
-  gym_meet: "Gym Meet",
-  general: "General Event",
-};
+const CHAT_STARTER_PROMPTS = ["Birthday", "Wedding", "Baby Shower", "Game Day", "Bridal Shower"];
 
 const PREVIEW_CATEGORY_BY_EVENT_TYPE: Partial<Record<ConciergeEventType, string>> = {
   birthday: "Birthday",
@@ -490,12 +474,6 @@ function draftLocationLine(draft: ConciergeEventDraft | null) {
 
 function outputLabel(output: RequestedOutput) {
   return OUTPUT_LABELS[output] || output;
-}
-
-function categoryLabelFromDraft(draft: ConciergeEventDraft | null) {
-  const eventType = draft?.eventType || "unknown";
-  if (eventType === "unknown") return "Inferred category";
-  return CATEGORY_LABELS[eventType] || "Custom Invite";
 }
 
 function previewImageForDraft(draft: ConciergeEventDraft | null) {
@@ -772,13 +750,11 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     Boolean(liveCardEventId);
   const liveCardPublicHref = generatedProductHref(liveCardEventId, effectiveSelectedProductOutput);
   const threadId = searchParams.get("thread")?.trim() || null;
-  const currentCategoryLabel = categoryLabelFromDraft(draft);
   const currentPreviewImage = generatedInviteImageUrl || previewImageForDraft(draft);
   const hasInitialEventContext =
     Boolean(draft) || visibleMessages.some((message) => message.role === "user");
   const shouldShowProductFormatTiles =
     !liveCardEventId &&
-    !selectedProductOutput &&
     Boolean(draft) &&
     !draft?.requestedOutputs.length &&
     !isBusy &&
@@ -816,14 +792,12 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     setMessages([newMessage("assistant", initialAssistantPrompt)]);
   }
 
-  async function handleProductChoice(option: ProductOption) {
+  function handleProductChoice(option: ProductOption) {
     if (isBusy) return;
     setSelectedProductOutput(option.output);
-    await sendToConcierge({
-      message: option.prompt,
-      action: "chip",
-      requestedOutputs: [option.output],
-      echo: option.label,
+    setInput(option.label);
+    window.requestAnimationFrame(() => {
+      composerCardRef.current?.querySelector("textarea")?.focus();
     });
   }
 
@@ -1367,9 +1341,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
             initial={{ opacity: 0, y: 10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6 }}
-            className={`flex flex-col ${
-              message.role === "user" ? "items-end" : "items-start"
-            }`}
+            className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
           >
             {message.type === "upload_status" ? (
               <div
@@ -1388,7 +1360,9 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                     : "rounded-tl-md border border-[#eadfff] bg-white/88 text-[#24183e]"
                 }`}
               >
-                {message.role === "assistant" ? formatAssistantBubbleText(message.text) : message.text}
+                {message.role === "assistant"
+                  ? formatAssistantBubbleText(message.text)
+                  : message.text}
               </div>
             )}
           </motion.div>
@@ -1399,34 +1373,24 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         <motion.div
           initial={{ opacity: 0, y: 10, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="w-full max-w-[38rem] self-start"
+          className="w-fit max-w-full self-start"
         >
-          <div
-            className="grid grid-cols-2 gap-3 md:grid-cols-4"
-            role="group"
-            aria-label="Choose product format"
-          >
-            {PRODUCT_OPTIONS.map((option) => (
-              <button
-                key={option.output}
-                type="button"
-                onClick={() => void handleProductChoice(option)}
-                disabled={isBusy}
-                aria-label={`Choose product: ${option.label}`}
-                className="group min-h-[6.5rem] rounded-[1.25rem] border border-[#e5dcff] bg-white/88 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#bda6ff] hover:bg-[#fbf8ff] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55 md:min-h-[7rem]"
-              >
-                <span className="flex h-full flex-col justify-between gap-3">
-                  <span className="flex items-center gap-2 text-sm font-bold text-[#25183a]">
-                    <span className="flex size-8 items-center justify-center rounded-lg bg-[#f1ebff] text-[#7c4dff] transition group-hover:bg-[#7c4dff] group-hover:text-white">
-                      <ProductOptionIcon output={option.output} />
-                    </span>
-                    {option.label}
-                  </span>
-                  <span className="text-xs leading-5 text-[#6f608c]">{option.description}</span>
-                </span>
-              </button>
-            ))}
-          </div>
+          <BottomNavBar
+            items={PRODUCT_OPTIONS.map((option) => ({
+              label: option.label,
+              value: option.output,
+              icon: option.icon,
+            }))}
+            activeValue={effectiveSelectedProductOutput}
+            ariaLabel="Choose product format"
+            autoOpenOnMount
+            autoOpenIntervalMs={2000}
+            className="min-w-[304px] border-[#e9e3f2] bg-white/96"
+            onValueChange={(value) => {
+              const option = PRODUCT_OPTIONS.find((item) => item.output === value);
+              if (option) handleProductChoice(option);
+            }}
+          />
         </motion.div>
       ) : null}
 
@@ -1569,7 +1533,6 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       summary={{ ...currentLiveCardSummary, headline: previewTitle }}
       selectedOutput={effectiveSelectedProductOutput}
       previewImageUrl={currentPreviewImage}
-      categoryLabel={currentCategoryLabel}
       isGenerating={isGeneratingCard}
       buildProgress={buildProgress}
       currentBuildStep={BUILDING_STEPS[currentBuildStep]}
@@ -1598,7 +1561,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
           <section className="flex min-h-0 flex-1 flex-col">
             {shouldShowWorkspacePanel ? (
-              <div className="shrink-0 border-b border-[#eee8f6] bg-white px-4 py-3 md:hidden">
+              <div className="shrink-0 border-b border-[#eee8f6] bg-white pb-2 pl-14 pr-3 pt-[max(0.35rem,env(safe-area-inset-top))] md:hidden">
                 <div className="grid grid-cols-2 rounded-lg bg-[#f1edf7] p-1">
                   <button
                     type="button"

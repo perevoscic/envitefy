@@ -12,6 +12,8 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
   const preview = readSource("src/app/chat/ChatProductPreview.tsx");
   const chatSurface = `${client}\n${preview}`;
+  const bottomNav = readSource("src/components/ui/bottom-nav-bar.tsx");
+  const uiDemo = readSource("src/components/ui/demo.tsx");
   const extract = readSource("src/lib/concierge/extract.ts");
   const eventActions = readSource("src/lib/concierge/event-actions.ts");
 
@@ -71,14 +73,14 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.doesNotMatch(client, /categorySelectValueFromDraft/);
   assert.doesNotMatch(client, /handleCategoryChange/);
   assert.doesNotMatch(client, /Set the event category to/);
-  assert.match(client, /Inferred category/);
-  assert.match(client, /Gym Meet/);
+  assert.doesNotMatch(client, /Inferred category/);
+  assert.match(client, /gym_meet: "Game Day"/);
   assert.match(preview, /ChevronDown/);
   assert.match(preview, /isMobileDetailsOpen/);
   assert.match(preview, /aria-expanded=\{isMobileDetailsOpen\}/);
   assert.match(preview, /md:mt-0 md:grid/);
   assert.doesNotMatch(preview, /isCategoryMenuOpen/);
-  assert.match(preview, /title=\{`Category: \$\{categoryLabel\}`\}/);
+  assert.doesNotMatch(preview, /title=\{`Category: \$\{categoryLabel\}`\}/);
   assert.doesNotMatch(client, /PRODUCT_CHOICE_PROMPT/);
   assert.doesNotMatch(client, /"What kind of product would you like to create\?"/);
   assert.doesNotMatch(client, /const shouldShowComposerProductOptions = !liveCardEventId/);
@@ -86,15 +88,67 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /shouldShowProductFormatTiles/);
   assert.match(client, /hasInitialEventContext/);
   assert.match(client, /!draft\?\.requestedOutputs\.length/);
-  assert.match(client, /aria-label="Choose product format"/);
-  assert.match(client, /className="grid grid-cols-2 gap-3 md:grid-cols-4"/);
-  assert.match(client, /rounded-\[1\.25rem\]/);
+  assert.doesNotMatch(
+    client,
+    /const shouldShowProductFormatTiles =[\s\S]{0,180}!selectedProductOutput/,
+  );
+  assert.match(client, /BottomNavBar/);
+  assert.match(client, /ariaLabel="Choose product format"/);
+  assert.match(client, /activeValue=\{effectiveSelectedProductOutput\}/);
+  assert.match(client, /autoOpenOnMount/);
+  assert.match(client, /autoOpenIntervalMs=\{2000\}/);
+  assert.match(client, /className="w-fit max-w-full self-start"/);
+  assert.match(client, /className="min-w-\[304px\] border-\[#e9e3f2\] bg-white\/96"/);
+  assert.match(client, /onValueChange=\{\(value\) =>/);
+  assert.match(client, /function handleProductChoice\(option: ProductOption\)/);
+  assert.match(client, /setSelectedProductOutput\(option\.output\)/);
+  assert.match(client, /setInput\(option\.label\)/);
+  assert.match(client, /querySelector\("textarea"\)\?\.focus\(\)/);
+  assert.doesNotMatch(
+    client,
+    /function handleProductChoice\(option: ProductOption\) \{[\s\S]{0,260}sendToConcierge/,
+  );
+  assert.match(client, /icon: IdCard/);
+  assert.match(client, /icon: Mail/);
+  assert.match(client, /icon: FileImage/);
+  assert.match(client, /icon: Globe/);
+  assert.doesNotMatch(client, /className="grid grid-cols-2 gap-3"/);
+  assert.doesNotMatch(client, /rounded-\[1\.05rem\]/);
+  assert.doesNotMatch(client, /max-w-\[22\.5rem\]/);
+  assert.doesNotMatch(client, /rounded-\[1\.85rem\]/);
+  assert.doesNotMatch(client, /bg-\[linear-gradient\(135deg,#432577,#9151d8_50%,#d45aa7\)\]/);
+  assert.doesNotMatch(client, /min-h-\[5\.25rem\]/);
+  assert.doesNotMatch(client, /md:min-h-\[6\.4rem\]/);
+  assert.doesNotMatch(client, /min-h-\[2\.05rem\]/);
   assert.doesNotMatch(client, /grid grid-cols-3 gap-1/);
   assert.match(client, /Live Card/);
   assert.match(client, /Flyer Invite/);
   assert.match(client, /Event Page/);
   assert.match(client, /label: "Invitation"/);
-  assert.match(client, /<Mail className="size-4"/);
+  assert.ok(
+    client.indexOf('label: "Live Card"') < client.indexOf('label: "Invitation"') &&
+      client.indexOf('label: "Invitation"') < client.indexOf('label: "Flyer Invite"') &&
+      client.indexOf('label: "Flyer Invite"') < client.indexOf('label: "Event Page"'),
+  );
+  assert.doesNotMatch(client, /ProductOptionIcon/);
+  assert.doesNotMatch(client, /<Mail className="size-4"/);
+  assert.match(bottomNav, /export function BottomNavBar/);
+  assert.match(bottomNav, /const MOBILE_LABEL_WIDTH = 72/);
+  assert.match(bottomNav, /min-w-\[320px\]/);
+  assert.match(bottomNav, /rounded-full/);
+  assert.match(bottomNav, /bg-\[#ede8f7\]/);
+  assert.match(bottomNav, /text-\[#2f1a55\]/);
+  assert.match(bottomNav, /activeValue\?: string/);
+  assert.match(bottomNav, /autoOpenOnMount\?: boolean/);
+  assert.match(bottomNav, /autoOpenIntervalMs\?: number/);
+  assert.match(bottomNav, /const \[autoOpenIndex, setAutoOpenIndex\]/);
+  assert.match(bottomNav, /setAutoOpenIndex\(nextIndex\)/);
+  assert.match(bottomNav, /Math\.max\(autoOpenIntervalMs, 500\)/);
+  assert.match(bottomNav, /setHasManualSelection\(true\)/);
+  assert.match(bottomNav, /onValueChange\?:/);
+  assert.match(bottomNav, /aria-pressed=\{isActive\}/);
+  assert.match(uiDemo, /import BottomNavBar from "@\/components\/ui\/bottom-nav-bar"/);
+  assert.match(uiDemo, /return <BottomNavBar \/>/);
 
   assert.match(client, /window\.addEventListener\("envitefy:chat:new", handleNewChatSession\)/);
   assert.doesNotMatch(client, /CreationThreadSummary/);
@@ -175,17 +229,17 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
     /selectedOutput === "live_card" \? `\/card\/\$\{eventId\}` : `\/event\/\$\{eventId\}`/,
   );
   assert.match(chatSurface, /Generate invite/);
-  assert.match(chatSurface, /w-full min-w-full max-w-none/);
-  assert.match(
-    preview,
-    /pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\]/,
-  );
+  assert.match(preview, /w-auto max-w-full/);
+  assert.match(preview, /top-\[calc\(100%\+0\.5rem\)\]/);
+  assert.match(preview, /pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\]/);
   assert.match(preview, /flex-\[1_1_0\]/);
   assert.doesNotMatch(preview, /pb-24/);
   assert.doesNotMatch(chatSurface, /Manage/);
   assert.doesNotMatch(chatSurface, /Generate workspace/);
   assert.doesNotMatch(chatSurface, /Regenerate version/);
+  assert.match(chatSurface, /Open Live Card/);
   assert.match(chatSurface, /View invite/);
+  assert.match(preview, /bg-\[#3b2468\]/);
   assert.doesNotMatch(chatSurface, /Open workspace/);
   assert.doesNotMatch(chatSurface, /Refine workspace/);
   assert.match(client, /sendGeneratedCardEdit/);
@@ -206,7 +260,7 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
   assert.match(client, /\(input\.trim\(\) \|\| isListening\) && "text-\[#7c4dff\]"/);
   assert.match(client, /<Mic\s+className="size-6 text-current"/);
   assert.match(client, /<ArrowUp\s+className="size-6 text-current"/);
-  assert.match(client, /aria-label=\{`Choose product: \$\{option\.label\}`\}/);
+  assert.match(bottomNav, /aria-label=\{item\.label\}/);
   assert.doesNotMatch(client, /choiceClassName/);
   assert.doesNotMatch(client, /choiceIconClassName/);
   assert.match(client, /<Paperclip className="size-6"/);

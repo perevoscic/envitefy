@@ -1,5 +1,5 @@
-import { Component } from "@/components/ui/gradient-backgrounds";
+import BottomNavBar from "@/components/ui/bottom-nav-bar";
 
-export default function DemoOne() {
-  return <Component />;
+export default function Demo() {
+  return <BottomNavBar />;
 }

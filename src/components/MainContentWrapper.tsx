@@ -29,6 +29,7 @@ export function MainContentWrapper({
   const pathSegments = normalizedPath.split("/").filter(Boolean);
   const isStudioCardShare = pathSegments.length === 2 && pathSegments[0] === "card";
   const isEventSharePage = pathSegments.length === 2 && pathSegments[0] === "event";
+  const isChatWorkspace = normalizedPath === "/chat";
   const usesOwnLandingBackground = normalizedPath === "/snap" || normalizedPath === "/gymnastics";
 
   useEffect(() => {
@@ -51,6 +52,8 @@ export function MainContentWrapper({
     ? "0px"
     : isEventSharePage
       ? "0px"
+      : isChatWorkspace
+        ? "0px"
       : !isDesktop && isAuthenticated
         ? `var(--app-mobile-topbar-offset, ${MOBILE_TOPBAR_PT})`
         : "max(0px, env(safe-area-inset-top))";

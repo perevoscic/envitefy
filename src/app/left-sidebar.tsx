@@ -11,6 +11,7 @@ import {
   type RefObject,
   type SetStateAction,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
@@ -276,6 +277,33 @@ function isPlainPrimaryLinkClick(event: MouseEvent<HTMLAnchorElement>) {
     !event.altKey &&
     !event.ctrlKey &&
     !event.shiftKey
+  );
+}
+
+function SidebarNavigationMenuIcon({
+  size = 24,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="4" cy="5" r="2" />
+      <rect x="9" y="3" width="13" height="4" rx="2" />
+      <circle cx="4" cy="12" r="2" />
+      <rect x="9" y="10" width="13" height="4" rx="2" />
+      <circle cx="4" cy="19" r="2" />
+      <rect x="9" y="17" width="13" height="4" rx="2" />
+    </svg>
   );
 }
 
@@ -1143,8 +1171,11 @@ export default function LeftSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isChatPath = (pathname || "").replace(/\/+$/, "") === "/chat";
   const activeAiThreadId = searchParams.get("thread")?.trim() || null;
+  const chatTopBarRef = useRef<HTMLElement | null>(null);
   const [aiThreads, setAiThreads] = useState<CreationThreadSummary[]>([]);
+  const [isChatTopBarRevealed, setIsChatTopBarRevealed] = useState(false);
 
   useEffect(() => {
     if (status !== "authenticated") {
@@ -1183,6 +1214,27 @@ export default function LeftSidebar() {
     pathname,
     searchParams,
   });
+
+  useEffect(() => {
+    if (!isChatPath || viewModel.isOpen) {
+      setIsChatTopBarRevealed(false);
+    }
+  }, [isChatPath, viewModel.isOpen]);
+
+  useEffect(() => {
+    if (!isChatPath || !isChatTopBarRevealed || viewModel.isOpen) return;
+
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && chatTopBarRef.current?.contains(target)) return;
+      setIsChatTopBarRevealed(false);
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsidePointerDown, true);
+    };
+  }, [isChatPath, isChatTopBarRevealed, viewModel.isOpen]);
 
   if (!viewModel.isReady) return null;
   if (viewModel.isEmbeddedEditMode) return null;
@@ -1245,13 +1297,28 @@ export default function LeftSidebar() {
     }
   }
 
+  const showFullMobileTopBar =
+    viewModel.showMobileTopBar && (!isChatPath || isChatTopBarRevealed);
+  const showChatTopBarReveal = viewModel.showMobileTopBar && isChatPath && !isChatTopBarRevealed;
+
   return (
     <>
+      {showChatTopBarReveal ? (
+        <button
+          type="button"
+          className="nav-chrome-pill-secondary nav-chrome-motion fixed left-3 top-[max(0.35rem,env(safe-area-inset-top))] z-[6600] inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full lg:hidden"
+          onClick={() => setIsChatTopBarRevealed(true)}
+          aria-label="Show navigation"
+        >
+          <SidebarNavigationMenuIcon size={24} />
+        </button>
+      ) : null}
       {!viewModel.isOpen ? (
         <header
+          ref={chatTopBarRef}
           data-app-mobile-topbar="workspace"
           className={`fixed inset-x-0 top-0 z-[6500] px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
-            viewModel.showMobileTopBar
+            showFullMobileTopBar
               ? "translate-y-0 opacity-100 pointer-events-auto"
               : "-translate-y-full opacity-0 pointer-events-none"
           }`}
@@ -1268,20 +1335,7 @@ export default function LeftSidebar() {
               }}
               aria-label="Open navigation"
             >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="4" cy="5" r="2" />
-                <rect x="9" y="3" width="13" height="4" rx="2" />
-                <circle cx="4" cy="12" r="2" />
-                <rect x="9" y="10" width="13" height="4" rx="2" />
-                <circle cx="4" cy="19" r="2" />
-                <rect x="9" y="17" width="13" height="4" rx="2" />
-              </svg>
+              <SidebarNavigationMenuIcon />
             </button>
             <div className="ml-auto flex min-w-0 items-center gap-2">
               {viewModel.showEditTopBar ? (

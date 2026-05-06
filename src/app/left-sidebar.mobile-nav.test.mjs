@@ -25,6 +25,39 @@ test("left sidebar mobile header opens navigation from click without early touch
   );
 });
 
+test("chat route collapses the mobile top bar behind a reveal control", () => {
+  const sidebarSource = readSource("src/app/left-sidebar.tsx");
+  const wrapperSource = readSource("src/components/MainContentWrapper.tsx");
+  const chatSource = readSource("src/app/chat/ConciergeChatClient.tsx");
+
+  assert.match(sidebarSource, /const isChatPath = \(pathname \|\| ""\)\.replace\(\/\\\/\+\$\/, ""\) === "\/chat";/);
+  assert.match(
+    sidebarSource,
+    /const showFullMobileTopBar =\s*viewModel\.showMobileTopBar && \(!isChatPath \|\| isChatTopBarRevealed\);/s,
+  );
+  assert.match(
+    sidebarSource,
+    /const showChatTopBarReveal = viewModel\.showMobileTopBar && isChatPath && !isChatTopBarRevealed;/,
+  );
+  assert.match(sidebarSource, /aria-label="Show navigation"[\s\S]*?<SidebarNavigationMenuIcon/);
+  assert.doesNotMatch(sidebarSource, /aria-label="Hide navigation"/);
+  assert.doesNotMatch(sidebarSource, /ChevronUp/);
+  assert.match(sidebarSource, /const chatTopBarRef = useRef<HTMLElement \| null>\(null\);/);
+  assert.match(sidebarSource, /document\.addEventListener\("pointerdown", handleOutsidePointerDown, true\);/);
+  assert.match(
+    sidebarSource,
+    /chatTopBarRef\.current\?\.contains\(target\)[\s\S]*?setIsChatTopBarRevealed\(false\);/s,
+  );
+  assert.match(sidebarSource, /ref=\{chatTopBarRef\}/);
+
+  assert.match(wrapperSource, /const isChatWorkspace = normalizedPath === "\/chat";/);
+  assert.match(wrapperSource, /: isChatWorkspace\s*\?\s*"0px"/s);
+  assert.match(
+    chatSource,
+    /pb-2 pl-14 pr-3 pt-\[max\(0\.35rem,env\(safe-area-inset-top\)\)\]/,
+  );
+});
+
 test("left sidebar locks background scroll on mobile open and restores scroll position", () => {
   const source = readSource("src/app/left-sidebar.controller.ts");
 
