@@ -257,6 +257,9 @@ test("/chat is the OpenAI-backed concierge workspace", () => {
     client,
     /selectedOutput === "live_card" && !rsvpEnabled \? `\/card\/\$\{eventId\}` : `\/event\/\$\{eventId\}`/,
   );
+  assert.doesNotMatch(client, /withGeneratedInviteOutputs/);
+  assert.doesNotMatch(client, /new Set<RequestedOutput>\(\[\.\.\.draft\.requestedOutputs, "live_card", "invitation"\]\)/);
+  assert.match(client, /draft: draftToGenerate/);
   assert.doesNotMatch(preview, /Generate invite/);
   assert.match(
     client,

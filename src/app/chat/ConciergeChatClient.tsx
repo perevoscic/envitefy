@@ -166,6 +166,7 @@ const OUTPUT_LABELS: Record<RequestedOutput, string> = {
   event_page: "Event page",
   live_card: "Live card",
   digital_flyer: "Flyer invite",
+  signup_form: "Smart sign-up",
   invitation: "Invitation",
   rsvp_page: "RSVP page",
   whatsapp: "WhatsApp",
@@ -313,8 +314,20 @@ const PREVIEW_CATEGORY_BY_EVENT_TYPE: Partial<Record<ConciergeEventType, string>
   birthday: "Birthday",
   wedding: "Wedding",
   baby_shower: "Baby Shower",
+  gender_reveal: "Baby Shower",
+  bridal_shower: "Bridal Shower",
   gym_meet: "Game Day",
+  game_day: "Game Day",
+  football: "Game Day",
+  sport_event: "Game Day",
+  field_trip: "Field Trip/Day",
+  open_house: "Open House",
+  housewarming: "Housewarming",
   graduation: "Custom Invite",
+  appointment: "Custom Invite",
+  workshop: "Custom Invite",
+  special_event: "Custom Invite",
+  smart_signup: "Custom Invite",
   general: "Custom Invite",
 };
 
@@ -504,6 +517,7 @@ function generatedProductHref(
   rsvpEnabled?: boolean | null,
 ) {
   if (!eventId) return null;
+  if (selectedOutput === "signup_form") return `/smart-signup-form/${eventId}`;
   return selectedOutput === "live_card" && !rsvpEnabled ? `/card/${eventId}` : `/event/${eventId}`;
 }
 
@@ -547,8 +561,21 @@ function outputLabelsFromUnknown(value: unknown, fallback: string[]) {
 function studioCategoryForDraft(draft: ConciergeEventDraft): InviteCategory {
   if (draft.eventType === "birthday") return "Birthday";
   if (draft.eventType === "wedding") return "Wedding";
-  if (draft.eventType === "baby_shower") return "Baby Shower";
-  if (draft.eventType === "gym_meet") return "Game Day";
+  if (draft.eventType === "baby_shower" || draft.eventType === "gender_reveal") {
+    return "Baby Shower";
+  }
+  if (draft.eventType === "bridal_shower") return "Bridal Shower";
+  if (draft.eventType === "field_trip") return "Field Trip/Day";
+  if (draft.eventType === "open_house") return "Open House";
+  if (draft.eventType === "housewarming") return "Housewarming";
+  if (
+    draft.eventType === "gym_meet" ||
+    draft.eventType === "game_day" ||
+    draft.eventType === "football" ||
+    draft.eventType === "sport_event"
+  ) {
+    return "Game Day";
+  }
   return "Custom Invite";
 }
 
@@ -566,13 +593,6 @@ function timeInputFromDraft(value: string | null): string {
     return date.toTimeString().slice(0, 5);
   }
   return raw;
-}
-
-function withGeneratedInviteOutputs(draft: ConciergeEventDraft): ConciergeEventDraft {
-  const requestedOutputs = Array.from(
-    new Set<RequestedOutput>([...draft.requestedOutputs, "live_card", "invitation"]),
-  );
-  return { ...draft, requestedOutputs };
 }
 
 function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
@@ -1073,13 +1093,12 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     setError(null);
     setPhase("generating_card");
     setBuildProgress(8);
-    const draftWithInvite = withGeneratedInviteOutputs(draftToGenerate);
     const generatedMessage = newMessage(
       "assistant",
       `Your ${effectiveSelectedProductLabel.toLowerCase()} is generated. You can review it in the preview or tell me what to change.`,
     );
     try {
-      const studioInvite = await generateStudioInviteForDraft(draftWithInvite);
+      const studioInvite = await generateStudioInviteForDraft(draftToGenerate);
       setGeneratedInviteImageUrl(studioInvite.imageUrl);
       setBuildProgress(72);
       const response = await fetch("/api/creation/intake", {
@@ -1089,7 +1108,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         body: JSON.stringify({
           message: "",
           action: "save",
-          draft: draftWithInvite,
+          draft: draftToGenerate,
           studioInvite,
           persistSession: true,
           chatMessages: chatMessagesForPersistence(messages, [generatedMessage]),
@@ -1104,9 +1123,9 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       setBuildProgress(100);
       setDraft(json.draft);
       setLiveCardEventId(savedEventId);
-      setLiveCardTitle(draftHeadline(json.draft || draftWithInvite));
+      setLiveCardTitle(draftHeadline(json.draft || draftToGenerate));
       setLiveCardSummary(
-        liveCardSummaryFromDraft(json.draft || draftWithInvite, effectiveSelectedProductOutput),
+        liveCardSummaryFromDraft(json.draft || draftToGenerate, effectiveSelectedProductOutput),
       );
       setWeatherContext(json.weatherContext || null);
       setPhase("card_ready");

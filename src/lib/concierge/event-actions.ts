@@ -179,6 +179,8 @@ function normalizeActions(value: unknown): ConciergeEventAction[] {
 }
 
 function inferAssetTypeFromMessage(message: string): EventAssetType | null {
+  if (/event\s+page/i.test(message)) return "event_page";
+  if (/sign[-\s]?up|signup/i.test(message)) return "signup_form";
   if (/whats\s*app|sms|text message/i.test(message)) return "whatsapp";
   if (/instagram|story|stories/i.test(message)) return "instagram_story";
   if (/print|flyer|5x7/i.test(message)) return "printable_flyer";

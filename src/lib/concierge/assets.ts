@@ -197,6 +197,37 @@ export function buildEventAssetContent(params: {
     };
   }
 
+  if (params.assetType === "event_page") {
+    return {
+      title,
+      content: {
+        ...base,
+        headline: base.title,
+        body: `Details for ${base.title}.`,
+        sections: [
+          { label: "When", value: schedule || base.dateLine },
+          { label: "Where", value: base.locationLine },
+        ],
+      },
+      design: { format: "page", tone },
+      metadata: { generatedBy: "event_workspace_assistant", brief },
+    };
+  }
+
+  if (params.assetType === "signup_form") {
+    return {
+      title,
+      content: {
+        ...base,
+        headline: `Sign up for ${base.title}`,
+        fields: [],
+        slots: [],
+      },
+      design: { format: "signup_form", tone },
+      metadata: { generatedBy: "event_workspace_assistant", brief },
+    };
+  }
+
   return {
     title,
     content: {

@@ -63,7 +63,12 @@ function previewCategoryText(draft: ConciergeEventDraft | null) {
   const raw = cleanPreviewText(draft?.eventType);
   if (!raw || raw === "unknown") return "Celebration";
   if (raw === "baby_shower") return "Baby Shower";
-  if (raw === "gym_meet") return "Game Day";
+  if (raw === "gender_reveal") return "Gender Reveal";
+  if (raw === "bridal_shower") return "Bridal Shower";
+  if (["gym_meet", "game_day", "football", "sport_event"].includes(raw)) return "Game Day";
+  if (raw === "field_trip") return "Field Trip/Day";
+  if (raw === "open_house") return "Open House";
+  if (raw === "smart_signup") return "Smart Sign-up";
   return raw
     .split("_")
     .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
@@ -73,6 +78,7 @@ function previewCategoryText(draft: ConciergeEventDraft | null) {
 function publicActionLabelForOutput(selectedOutput: RequestedOutput) {
   if (selectedOutput === "live_card") return "Open Live Card";
   if (selectedOutput === "event_page") return "Open Event Page";
+  if (selectedOutput === "signup_form") return "Open Sign-up";
   return "View invite";
 }
 

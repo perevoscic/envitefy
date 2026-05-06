@@ -10,11 +10,17 @@ const STARTER_CHIPS = new Set([
   "birthday",
   "wedding",
   "baby shower",
+  "gender reveal",
   "bridal shower",
   "game day",
   "field trip/day",
+  "field trip",
+  "field day",
   "open house",
   "housewarming",
+  "smart signup",
+  "smart sign-up",
+  "signup form",
   "custom invite",
   "graduation",
   "gym meet",
@@ -37,7 +43,7 @@ function normalizedMessage(value: unknown): string {
 function hasAssetIntent(text: string): boolean {
   return (
     /\b(create|make|build|draft|generate|write|turn|convert)\b/i.test(text) &&
-    /\b(whats\s?app|sms|text message|instagram|story|print|printable|flyer|event\s+page|reminder|thank\s*you|menu|welcome sign|rsvp|invite|invitation|card)\b/i.test(
+    /\b(whats\s?app|sms|text message|instagram|story|print|printable|flyer|event\s+page|sign[-\s]?up|signup|reminder|thank\s*you|menu|welcome sign|rsvp|invite|invitation|card)\b/i.test(
       text,
     )
   );
@@ -56,10 +62,10 @@ function hasToneOrStyleIntent(text: string): boolean {
 function hasObviousStarterCreationIntent(text: string): boolean {
   return (
     /\b(create|make|build|draft|design)\b/i.test(text) &&
-    /\b(birthday|wedding|baby\s+shower|bridal\s+shower|game|graduation|gymnastics|gym\s+meet)\b/i.test(
+    /\b(birthday|wedding|baby\s+shower|gender\s+reveal|bridal\s+shower|game|football|field\s+trip|open\s+house|housewarming|graduation|gymnastics|gym\s+meet)\b/i.test(
       text,
     ) &&
-    /\b(live\s*card|flyer|invite|invitation|event\s+page|rsvp)\b/i.test(text)
+    /\b(live\s*card|flyer|invite|invitation|event\s+page|sign[-\s]?up|signup|rsvp)\b/i.test(text)
   );
 }
 

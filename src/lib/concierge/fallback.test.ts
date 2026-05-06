@@ -70,6 +70,49 @@ test("main-page category/product selection suppresses the format question", asyn
   assert.match(result.assistantMessage, /What wedding event is this for/i);
 });
 
+test("visible starter categories map to first-class concierge event types", () => {
+  const cases = [
+    ["Game Day Live Card", "game_day", /team, game, or watch party/i],
+    ["Bridal Shower Invitation", "bridal_shower", /bridal shower for/i],
+    ["Field Trip\/Day Event Page", "field_trip", /field trip or school day/i],
+    ["Open House Event Page", "open_house", /open house/i],
+    ["Housewarming Invitation", "housewarming", /housewarming/i],
+    ["Gender Reveal Invitation", "gender_reveal", /gender reveal/i],
+  ] as const;
+
+  for (const [message, eventType, prompt] of cases) {
+    const draft = fallbackExtractConciergeDraft({
+      message,
+      action: "starter_category",
+    });
+
+    assert.equal(draft.eventType, eventType);
+    assert.notEqual(draft.eventType, "unknown");
+    assert.match(buildAssistantMessage(draft), prompt);
+  }
+});
+
+test("wedding event pages require couple names before ready", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Wedding Event Page",
+    action: "starter_category",
+  });
+
+  assert.equal(draft.eventType, "wedding");
+  assert.equal(draft.currentQuestion, "honoreeName");
+  assert.match(buildAssistantMessage(draft), /whose names should be featured/i);
+
+  draft = fallbackExtractConciergeDraft({
+    message: "Sara and Daniel wedding reception Saturday at 5 at The Pearl",
+    draft,
+  });
+
+  assert.equal(draft.honoreeName, "Sara and Daniel");
+  assert.match(draft.title || "", /Sara and Daniel/i);
+  assert.doesNotMatch(draft.missingFields.join(","), /honoreeName/);
+  assert.equal(draft.location, "The Pearl");
+});
+
 test("category intake prompts stay short", () => {
   for (const prompt of ["Birthday", "Wedding", "Baby shower", "Graduation", "Gym meet"]) {
     const message = buildAssistantMessage(fallbackExtractConciergeDraft({ message: prompt }));
@@ -127,6 +170,17 @@ test("received invite with concrete details stays invited and can become ready",
   assert.match(message, /Location: Sky Zone/);
   assert.match(message, /I can generate the invite now/);
   assert.doesNotMatch(message, /workspace/i);
+});
+
+test("birthday turns phrasing fills honoree and age", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Ava turns 7 Saturday at 3 at Sky Zone",
+  });
+
+  assert.equal(draft.eventType, "birthday");
+  assert.equal(draft.honoreeName, "Ava");
+  assert.equal(draft.ageOrMilestone, "7");
+  assert.equal(draft.location, "Sky Zone");
 });
 
 test("received invite follow-up details preserve invited ownership", () => {
@@ -395,6 +449,21 @@ test("birthday live cards can skip RSVP collection and continue to vibe", () => 
   assert.match(buildAssistantMessage(draft), /vibe/i);
 });
 
+test("RSVP intent replies are not stored as vibe answers", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Create a game day live card for the Tigers watch party Saturday at 6 at Stadium Bar",
+  });
+
+  assert.equal(draft.eventType, "game_day");
+  assert.equal(draft.currentQuestion, "rsvpEnabled");
+
+  draft = fallbackExtractConciergeDraft({ message: "Yes collect RSVPs", draft });
+
+  assert.equal(draft.rsvpEnabled, true);
+  assert.notEqual(draft.tone, "Yes collect RSVPs");
+  assert.equal(draft.currentQuestion, "numberOfGuests");
+});
+
 test("lowercase location reply fills location instead of repeating the question", () => {
   const first = fallbackExtractConciergeDraft({
     message: "A school fundraiser Saturday at 4",
@@ -446,7 +515,7 @@ test("short birthday follow-ups fill name and age slots", () => {
 
 test("typo-like date replies are confirmed before moving to location", () => {
   const first = fallbackExtractConciergeDraft({
-    message: "Wedding Live Card with a lot of flower",
+    message: "Birthday Live Card for Ava turning 7 with a lot of flower",
   });
   const draft = fallbackExtractConciergeDraft({
     message: "my 23d",
@@ -505,12 +574,12 @@ test("source intent resolver returns confidence and confirmation flags", () => {
 
 test("purpose can progress a draft while event type remains unknown", () => {
   const draft = fallbackExtractConciergeDraft({
-    message: "A school fundraiser for the basketball team",
+    message: "A school fundraiser for the drama club",
   });
 
   assert.equal(draft.eventType, "unknown");
-  assert.equal(draft.eventPurpose, "A school fundraiser for the basketball team");
-  assert.equal(draft.title, "A school fundraiser for the basketball team");
+  assert.equal(draft.eventPurpose, "A school fundraiser for the drama club");
+  assert.equal(draft.title, "A school fundraiser for the drama club");
   assert.equal(draft.draftStatus, "drafting");
   assert.equal(draft.canPersist, true);
   assert.notEqual(draft.missingFields[0], "eventPurpose");
@@ -789,6 +858,32 @@ test("save payload stores concierge drafts as owned My Events rows", () => {
   assert.equal(payload.data.studioCard.invitationData.title, "Ava is turning 7");
   assert.equal(payload.data.studioCard.invitationData.heroTextMode, "image");
   assert.equal(payload.data.studioCard.invitationData.eventDetails.category, "Birthday");
+});
+
+test("save payload preserves event page as the primary product", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Create an event page for Sara and Daniel wedding reception Saturday at 5 at The Pearl",
+    requestedOutputs: ["event_page"],
+  });
+  const payload = buildConciergeHistoryPayload(draft);
+
+  assert.deepEqual(draft.requestedOutputs, ["event_page"]);
+  assert.equal(payload.data.publicEvent.primaryOutput, "event_page");
+  assert.equal(payload.data.publicEvent.renderer, "event_page");
+  assert.doesNotMatch(JSON.stringify(payload.data.requestedOutputs), /live_card/);
+});
+
+test("save payload preserves flyer invite as the primary product", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Create a digital flyer for an open house Saturday at 1 at 123 Main St",
+    requestedOutputs: ["digital_flyer"],
+  });
+  const payload = buildConciergeHistoryPayload(draft);
+
+  assert.deepEqual(draft.requestedOutputs, ["digital_flyer"]);
+  assert.equal(payload.data.publicEvent.primaryOutput, "digital_flyer");
+  assert.equal(payload.data.publicEvent.renderer, "digital_flyer");
+  assert.doesNotMatch(JSON.stringify(payload.data.requestedOutputs), /live_card/);
 });
 
 test("save payload splits combined venue and address for public live cards", () => {

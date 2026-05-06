@@ -1252,11 +1252,17 @@ export default async function EventPage({
   ].map((value) => String(value || "").toLowerCase());
   const hasLiveCardOutput = requestedOutputValues.includes("live_card");
   const hasRsvpOutput = requestedOutputValues.includes("rsvp_page");
+  const publicEventPrimaryOutput = cleanDisplayString(publicEventRecord.primaryOutput)
+    ?.toLowerCase()
+    .replace(/\s+/g, "_");
+  const publicEventRenderer = cleanDisplayString(publicEventRecord.renderer)
+    ?.toLowerCase()
+    .replace(/\s+/g, "_");
   const isConciergeLiveCardEvent =
     discoveryCreatedVia === "concierge" &&
-    (hasLiveCardOutput ||
-      cleanDisplayString(publicEventRecord.renderer) === "live_card" ||
-      Boolean(firstDisplayString(liveCardRecord.headline, liveCardCopyRecord.headline)));
+    (publicEventPrimaryOutput === "live_card" ||
+      publicEventRenderer === "live_card" ||
+      (hasLiveCardOutput && !publicEventPrimaryOutput));
   const publicEventTitle =
     isConciergeLiveCardEvent
       ? firstDisplayString(

@@ -19,7 +19,9 @@ function asJsonRecord(value: unknown): Record<string, unknown> {
 
 export function isEventAssetType(value: unknown): value is EventAssetType {
   return (
+    value === "event_page" ||
     value === "live_card" ||
+    value === "signup_form" ||
     value === "invitation" ||
     value === "rsvp_page" ||
     value === "whatsapp" ||

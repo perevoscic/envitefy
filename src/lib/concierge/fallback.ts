@@ -10,10 +10,15 @@ import {
   normalizeRequestedOutputs,
   outputQuestion,
   resolveCreationSourceContext,
-  shouldAskRsvpDecision,
-  shouldAskRsvpGuestCount,
   toLegacyOutputs,
 } from "./creation-intent.ts";
+import {
+  getEventTypeLabel,
+  getRequirementPlan,
+  questionForRequirementField,
+  suggestedRepliesForRequirementField,
+} from "./requirements.ts";
+import type { RequirementField } from "./requirements.ts";
 import type {
   ConciergeActiveContext,
   ConciergeAction,
@@ -40,16 +45,6 @@ const MONTH_NAMES = [
   "November",
   "December",
 ] as const;
-
-const EVENT_TYPE_LABELS: Record<ConciergeEventType, string> = {
-  unknown: "event",
-  birthday: "birthday",
-  wedding: "wedding",
-  baby_shower: "baby shower",
-  graduation: "graduation",
-  gym_meet: "gym meet",
-  general: "event",
-};
 
 function cleanString(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -104,11 +99,27 @@ function detectEventType(text: string, previous?: ConciergeEventDraft | null): C
   const haystack = text.toLowerCase();
   if (/\b(birthday|turning|turns|bday)\b/.test(haystack)) return "birthday";
   if (/\b(wedding|married|marriage|bride|groom)\b/.test(haystack)) return "wedding";
+  if (/\bbridal\s+shower\b/.test(haystack)) return "bridal_shower";
   if (/\b(baby shower|sprinkle|baby\s+boy|baby\s+girl)\b/.test(haystack)) {
     return "baby_shower";
   }
+  if (/\bgender\s+reveal\b/.test(haystack)) return "gender_reveal";
   if (/\b(graduation|graduate|commencement|class of)\b/.test(haystack)) return "graduation";
   if (/\b(gymnastics|gym\s+meet|meet\s+schedule)\b/.test(haystack)) return "gym_meet";
+  if (/\b(football|touchdown|tailgate)\b/.test(haystack)) return "football";
+  if (/\b(game\s+day|gameday|watch\s+party)\b/.test(haystack)) return "game_day";
+  if (/\b(sports?\s+event|soccer|basketball|baseball|volleyball|pickleball|tennis)\b/.test(haystack)) {
+    return "sport_event";
+  }
+  if (/\b(field\s+trip\/day|field\s+trip|field\s+day)\b/.test(haystack)) return "field_trip";
+  if (/\bopen\s+house\b/.test(haystack)) return "open_house";
+  if (/\bhousewarming\b/.test(haystack)) return "housewarming";
+  if (/\b(appointment|appointments|booking|consultation)\b/.test(haystack)) return "appointment";
+  if (/\b(workshop|class|seminar|training)\b/.test(haystack)) return "workshop";
+  if (/\b(smart\s+sign[-\s]?up|sign[-\s]?up\s+form|signup\s+form)\b/.test(haystack)) {
+    return "smart_signup";
+  }
+  if (/\bspecial\s+event\b/.test(haystack)) return "special_event";
   if (/\bgeneral\s+event\b|\bjust\s+an\s+event\b/.test(haystack)) return "general";
   return previous?.eventType || "unknown";
 }
@@ -139,15 +150,34 @@ function detectAge(text: string, previous?: ConciergeEventDraft | null) {
 }
 
 function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) {
+  if (
+    previous?.eventType === "wedding" ||
+    /\b(wedding|reception|ceremony|married|marriage)\b/i.test(text)
+  ) {
+    const couple =
+      text.match(
+        /\b(?:for\s+)?([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})(?:'s)?\s+(?:wedding|ceremony|reception|marriage)\b/,
+      ) ||
+      text.match(
+        /\b(?:wedding|ceremony|reception)\s+(?:for|of)\s+([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})\b/,
+      ) ||
+      text.match(
+        /^\s*([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})(?:\b|$)/,
+      );
+    if (couple?.[1] && couple?.[2]) return `${couple[1]} and ${couple[2]}`;
+  }
+
   const named = text.match(/\b(?:her|his|their|the)?\s*name\s+is\s+([A-Z][a-zA-Z'-]{1,30})\b/);
   if (named?.[1]) return named[1];
 
   const possessive = text.match(
-    /\b([A-Z][a-zA-Z'-]{1,30})'s\s+(?:\d{1,3}(?:st|nd|rd|th)\s+)?(?:birthday|graduation|party|shower)\b/,
+    /\b([A-Z][a-zA-Z'-]{1,30})'s\s+(?:\d{1,3}(?:st|nd|rd|th)\s+)?(?:(?:baby|bridal)\s+)?(?:birthday|graduation|party|shower|gender\s+reveal|housewarming)\b/,
   );
   if (possessive?.[1]) return possessive[1];
 
-  const turning = text.match(/\b([A-Z][a-zA-Z'-]{1,30})\s+(?:is\s+)?turning\s+\d{1,3}\b/);
+  const turning = text.match(
+    /\b([A-Z][a-zA-Z'-]{1,30})\s+(?:(?:is\s+)?turning|turns)\s+\d{1,3}\b/,
+  );
   if (turning?.[1]) return turning[1];
 
   const commaName = text.match(/^\s*([A-Z][a-zA-Z'-]{1,30})\s*,\s*\d{1,3}\b/);
@@ -262,6 +292,12 @@ function detectRsvpEnabled(
 
 function detectTone(text: string, previous?: ConciergeEventDraft | null) {
   const expectsTone = firstMissingField(previous) === "tone";
+  if (
+    expectsTone &&
+    /\b(?:yes|no|yep|nope|collect|track|include|enable|skip|no\s+rsvps?|rsvps?)\b/i.test(text)
+  ) {
+    return previous?.tone || null;
+  }
   const explicit =
     text.match(/\b(?:vibe|tone|feel|mood)\s*(?:is|should be|as|:)?\s+([a-z0-9][a-z0-9 '&-]{1,70})\b/i) ||
     text.match(/\b(?:make it|keep it|make the invite|make the card)\s+([a-z0-9][a-z0-9 '&-]{1,70})\b/i);
@@ -291,7 +327,7 @@ function shouldStartFreshEvent(message: string, previous?: ConciergeEventDraft |
   ) {
     return false;
   }
-  return /\b(birthday|wedding|baby\s+shower|graduation|gymnastics|gym\s+meet|party|event|ceremony|fundraiser|meeting)\b/i.test(
+  return /\b(birthday|wedding|baby\s+shower|gender\s+reveal|bridal\s+shower|graduation|gymnastics|gym\s+meet|game\s+day|football|field\s+trip|open\s+house|housewarming|party|event|ceremony|fundraiser|meeting|workshop|appointment)\b/i.test(
     text,
   );
 }
@@ -515,13 +551,19 @@ function buildTitle(args: {
   previous?: ConciergeEventDraft | null;
 }) {
   const previousTitle = cleanString(args.previous?.title);
-  const label = EVENT_TYPE_LABELS[args.eventType];
+  const label = getEventTypeLabel(args.eventType);
   const genericTitle = `${label[0].toUpperCase()}${label.slice(1)} draft`;
   if (args.eventType === "birthday" && args.honoreeName && args.ageOrMilestone) {
     return `${args.honoreeName} is turning ${args.ageOrMilestone}`;
   }
   if (args.eventType === "birthday" && args.honoreeName) return `${args.honoreeName}'s birthday`;
-  if (args.eventType === "wedding" && args.honoreeName) return `${args.honoreeName}'s wedding`;
+  if (args.eventType === "wedding" && args.honoreeName) return `${args.honoreeName} wedding`;
+  if (args.eventType === "bridal_shower" && args.honoreeName)
+    return `${args.honoreeName}'s bridal shower`;
+  if (args.eventType === "baby_shower" && args.honoreeName)
+    return `${args.honoreeName}'s baby shower`;
+  if (args.eventType === "gender_reveal" && args.honoreeName)
+    return `${args.honoreeName}'s gender reveal`;
   if (args.eventType === "graduation" && args.honoreeName)
     return `${args.honoreeName}'s graduation`;
   if (previousTitle && previousTitle !== "Event draft" && previousTitle !== genericTitle) {
@@ -560,7 +602,9 @@ function buildPreviewCopy(args: {
   const body =
     args.eventType === "birthday"
       ? `Join us for ${args.honoreeName || "the guest of honor"}${args.ageOrMilestone ? ` as they turn ${args.ageOrMilestone}` : ""}.`
-      : `Join us for this ${EVENT_TYPE_LABELS[args.eventType]}.`;
+      : args.eventType === "wedding"
+        ? `Join us to celebrate ${args.honoreeName || "the couple"}.`
+      : `Join us for this ${getEventTypeLabel(args.eventType)}.`;
   return {
     headline,
     subheadline: themeLine,
@@ -569,22 +613,6 @@ function buildPreviewCopy(args: {
     locationLine,
     cta: "RSVP",
   };
-}
-
-function computeMissingFields(draft: Omit<ConciergeEventDraft, "missingFields">) {
-  const missing: string[] = [];
-  if (draft.eventType === "birthday" && !draft.honoreeName) missing.push("honoreeName");
-  if (draft.eventType === "birthday" && !draft.ageOrMilestone) missing.push("ageOrMilestone");
-  if (!draft.startISO && !draft.dateText) missing.push("date");
-  if (!draft.timeText && !draft.startISO) missing.push("time");
-  if (!draft.location && !draft.venue) missing.push("location");
-  if (shouldAskRsvpDecision(draft)) {
-    missing.push("rsvpEnabled");
-  }
-  if (shouldAskRsvpGuestCount(draft)) {
-    missing.push("numberOfGuests");
-  }
-  return missing;
 }
 
 function hasStartedCategoryDetails(draft: ConciergeEventDraft) {
@@ -606,7 +634,7 @@ function isReceivedInviteDraft(draft: ConciergeEventDraft) {
 }
 
 function receivedInviteLabel(draft: ConciergeEventDraft) {
-  const label = EVENT_TYPE_LABELS[draft.eventType];
+  const label = getEventTypeLabel(draft.eventType);
   if (!label || draft.eventType === "unknown" || draft.eventType === "general") return "an invite";
   return `a ${label} invite`;
 }
@@ -670,42 +698,12 @@ function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
   if (isReceivedInviteDraft(draft)) return null;
   if (!draft.missingFields.length || hasStartedCategoryDetails(draft)) return null;
 
-  if (draft.eventType === "birthday") {
-    return compactIntakePrompt(
-      "Who is the birthday for, and what age or milestone?",
-      "When and where should it happen?",
-    );
-  }
-
-  if (draft.eventType === "wedding") {
-    return compactIntakePrompt(
-      "What wedding event is this for, and whose names should be featured?",
-      "When and where should it happen?",
-    );
-  }
-
-  if (draft.eventType === "baby_shower") {
-    return compactIntakePrompt(
-      "Who are we celebrating, and what kind of shower is it?",
-      "When and where should guests go?",
-    );
-  }
-
-  if (draft.eventType === "graduation") {
-    return compactIntakePrompt(
-      "Who is graduating, and is this a ceremony, party, or open house?",
-      "When and where should it happen?",
-    );
-  }
-
-  if (draft.eventType === "gym_meet") {
-    return compactIntakePrompt(
-      "What team, gym, or meet name should be featured?",
-      "When and where should guests go?",
-    );
-  }
-
-  return null;
+  const plan = getRequirementPlan({
+    eventType: draft.eventType,
+    requestedOutputs: draft.requestedOutputs,
+    sourceContext: draft.sourceContext,
+  });
+  return plan.intakeQuestions.length ? compactIntakePrompt(...plan.intakeQuestions) : null;
 }
 
 export function buildAssistantMessage(draft: ConciergeEventDraft): string {
@@ -749,27 +747,37 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
       return "I have this as an invite you received. What location is shown on the invite?";
     }
   }
+  const plan = getRequirementPlan({
+    eventType: draft.eventType,
+    requestedOutputs: draft.requestedOutputs,
+    sourceContext: draft.sourceContext,
+  });
   if (firstMissing === "honoreeName" || firstMissing === "ageOrMilestone") {
-    return "What's the name and milestone?";
+    return questionForRequirementField(firstMissing, plan);
   }
   if (firstMissing === "date" || firstMissing === "time") {
-    return "When should this happen?";
+    return questionForRequirementField(firstMissing, plan);
   }
-  if (firstMissing === "location") return "Where should guests go?";
+  if (firstMissing === "location") return questionForRequirementField(firstMissing, plan);
   if (firstMissing === "rsvpEnabled") {
-    return "Should Envitefy collect RSVPs for this event? Guests can answer yes, no, or maybe from the invite.";
+    return questionForRequirementField(firstMissing, plan);
   }
   if (firstMissing === "numberOfGuests") {
-    return "How many guests should the RSVP track?";
+    return questionForRequirementField(firstMissing, plan);
   }
   if (firstMissing === "tone") {
-    return "What kind of vibe should the invite have? For example: fun and colorful, elegant, playful, modern, or sweet.";
+    return questionForRequirementField(firstMissing, plan);
   }
   return "What detail should we add next?";
 }
 
 export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
   const firstMissing = draft.missingFields[0];
+  const plan = getRequirementPlan({
+    eventType: draft.eventType,
+    requestedOutputs: draft.requestedOutputs,
+    sourceContext: draft.sourceContext,
+  });
   if (draft.currentQuestion === "date_confirmation") {
     const candidate = draft.dateText || "that date";
     return [`Yes, ${candidate}`, "No, another date"];
@@ -786,16 +794,10 @@ export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
   if (firstMissing === "sourceContext") {
     return ["Use current draft", "Use upload"];
   }
-  if (firstMissing === "honoreeName" || firstMissing === "ageOrMilestone") {
-    return ["Ava, 7", "Make it a surprise"];
+  if (firstMissing) {
+    const replies = suggestedRepliesForRequirementField(firstMissing as RequirementField, plan);
+    if (replies.length) return replies;
   }
-  if (firstMissing === "date" || firstMissing === "time") {
-    return ["Saturday at 3", "Next Friday evening"];
-  }
-  if (firstMissing === "location") return ["At home", "At Sky Zone"];
-  if (firstMissing === "rsvpEnabled") return ["Yes, collect RSVPs", "No RSVP needed"];
-  if (firstMissing === "numberOfGuests") return ["20 guests", "35 guests"];
-  if (firstMissing === "tone") return ["Fun and colorful", "Elegant", "Playful"];
   return [`Create ${outputActionLabel(draft)}`, "Add RSVP page"];
 }
 
@@ -959,7 +961,6 @@ export function fallbackExtractConciergeDraft(args: {
       new Set([
         ...(needsDateConfirmation ? ["date"] : []),
         ...status.missingFields,
-        ...computeMissingFields(base),
       ]),
     ),
   };

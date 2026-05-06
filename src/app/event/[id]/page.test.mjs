@@ -41,7 +41,7 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /import FootballSkin from "@\/components\/FootballSkin";/);
   assert.match(source, /import PickleballSkin from "@\/components\/PickleballSkin";/);
   assert.match(source, /import OpenHouseSkin from "@\/components\/OpenHouseSkin";/);
-  assert.match(source, /import ScannedInviteSkin from "@\/components\/ScannedInviteSkin";/);
+  assert.match(source, /import GenericEventSkin from "@\/components\/GenericEventSkin";/);
   assert.match(source, /import \{ cleanGraduationVenueName \} from "@\/lib\/ocr\/text";/);
   assert.match(source, /const rawVenueText =/);
   assert.match(source, /categoryNormalized === "graduations"\s*\?\s*cleanGraduationVenueName\(rawVenueText\)/);
@@ -177,7 +177,7 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /const isGenericScannedInviteEvent =/);
   assert.match(source, /isOcrInviteCategory\(categoryRaw\)/);
   assert.match(source, /if \(isGenericScannedInviteEvent\) \{/);
-  assert.match(source, /<ScannedInviteSkin/);
+  assert.match(source, /<GenericEventSkin/);
   assert.match(source, /categoryLabel=\{categoryRaw \|\| "General Event"\}/);
   assert.match(source, /skinId=\{ocrSkin\?\.skinId \|\| null\}/);
   assert.match(source, /palette=\{ocrSkin\?\.palette \|\| null\}/);
@@ -209,8 +209,16 @@ test("event route renders concierge live cards with public details and direct RS
 
   assert.match(source, /const liveCardRecord = asPlainRecord\(data\?\.liveCard\);/);
   assert.match(source, /const publicEventRecord = asPlainRecord\(data\?\.publicEvent\);/);
+  assert.match(source, /const publicEventPrimaryOutput = cleanDisplayString\(publicEventRecord\.primaryOutput\)/);
+  assert.match(source, /const publicEventRenderer = cleanDisplayString\(publicEventRecord\.renderer\)/);
   assert.match(source, /const isConciergeLiveCardEvent =/);
   assert.match(source, /discoveryCreatedVia === "concierge"/);
+  assert.match(source, /publicEventPrimaryOutput === "live_card"/);
+  assert.match(source, /publicEventRenderer === "live_card"/);
+  assert.doesNotMatch(
+    source,
+    /Boolean\(firstDisplayString\(liveCardRecord\.headline, liveCardCopyRecord\.headline\)\)/,
+  );
   assert.match(source, /const publicEventSubheadline = isConciergeLiveCardEvent/);
   assert.match(source, /liveCardRecord\.subheadline/);
   assert.match(source, /publicEventRecord\.subheadline/);

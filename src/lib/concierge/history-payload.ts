@@ -6,8 +6,20 @@ const CATEGORY_LABELS: Record<ConciergeEventDraft["eventType"], string> = {
   birthday: "Birthday",
   wedding: "Wedding",
   baby_shower: "Baby Shower",
+  gender_reveal: "Gender Reveal",
+  bridal_shower: "Bridal Shower",
   graduation: "Graduation",
   gym_meet: "Gym Meet",
+  game_day: "Game Day",
+  football: "Game Day",
+  sport_event: "Game Day",
+  field_trip: "Field Trip/Day",
+  open_house: "Open House",
+  housewarming: "Housewarming",
+  appointment: "Custom Invite",
+  workshop: "Custom Invite",
+  special_event: "Custom Invite",
+  smart_signup: "Smart Sign-up",
   general: "General Event",
 };
 
@@ -15,6 +27,14 @@ const LIVE_CARD_IMAGE_BY_EVENT_TYPE: Partial<Record<ConciergeEventDraft["eventTy
   birthday: "/studio/birthday.webp",
   wedding: "/studio/wedding.webp",
   baby_shower: "/studio/baby-shower.webp",
+  gender_reveal: "/studio/baby-shower.webp",
+  bridal_shower: "/studio/bridal-shower.webp",
+  game_day: "/studio/game-day.webp",
+  football: "/studio/game-day.webp",
+  sport_event: "/studio/game-day.webp",
+  field_trip: "/studio/field-trip-day.webp",
+  open_house: "/studio/open-house.webp",
+  housewarming: "/studio/housewarming.webp",
   general: "/studio/custom-invite.webp",
   unknown: "/studio/custom-invite.webp",
 };
@@ -155,6 +175,29 @@ export function buildConciergeHistoryPayload(
     ? studioInviteData
     : fallbackLiveCardInvitationData;
   const liveCardPositions = isRecord(studioInvitePositions) ? studioInvitePositions : null;
+  const primaryOutput = draft.requestedOutputs[0] || "event_page";
+  const publicRenderer = primaryOutput === "live_card" ? "live_card" : primaryOutput;
+  const signupForm =
+    primaryOutput === "signup_form" || draft.eventType === "smart_signup"
+      ? {
+          enabled: true,
+          title,
+          description,
+          start: draft.startISO,
+          end: draft.endISO,
+          timezone: draft.timezone,
+          venue: eventPlace.venue || "",
+          location: eventPlace.location || eventPlace.venue || "",
+          fields: [],
+          slots: [],
+          responses: [],
+          header: {
+            title,
+            subtitle: liveCardSubheadline,
+            backgroundImage: liveCardImageUrl ? { dataUrl: liveCardImageUrl } : null,
+          },
+        }
+      : null;
 
   return {
     title,
@@ -214,10 +257,8 @@ export function buildConciergeHistoryPayload(
       },
       conciergeDraft: draft,
       publicEvent: {
-        renderer: "live_card",
-        primaryOutput: draft.requestedOutputs.includes("live_card")
-          ? "live_card"
-          : draft.requestedOutputs[0] || "event_page",
+        renderer: publicRenderer,
+        primaryOutput,
         headline: liveCardHeadline,
         subheadline: liveCardSubheadline,
         body: description,
@@ -238,6 +279,7 @@ export function buildConciergeHistoryPayload(
         invitationData: liveCardInvitationData,
         positions: liveCardPositions,
       },
+      ...(signupForm ? { signupForm } : {}),
     },
   };
 }

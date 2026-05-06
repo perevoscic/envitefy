@@ -12,11 +12,19 @@ import type {
   SourceIntentResolution,
   SourceContextType,
 } from "./types.ts";
+import {
+  getOutputRequirement as getRequirementForOutput,
+  getRequirementPlan,
+  requirementFieldSatisfied,
+} from "./requirements.ts";
+
+export { getOutputRequirement } from "./requirements.ts";
 
 const REQUESTED_OUTPUTS = new Set<RequestedOutput>([
   "event_page",
   "live_card",
   "digital_flyer",
+  "signup_form",
   "invitation",
   "rsvp_page",
   "whatsapp",
@@ -47,6 +55,12 @@ const ALWAYS_RSVP_EVENT_TYPES = new Set<ConciergeEventType>([
   "birthday",
   "wedding",
   "baby_shower",
+  "gender_reveal",
+  "bridal_shower",
+  "game_day",
+  "football",
+  "sport_event",
+  "housewarming",
 ]);
 
 export function outputsCanCollectRsvp(requestedOutputs: RequestedOutput[]) {
@@ -63,6 +77,11 @@ export function eventImpliesRsvp(eventType: ConciergeEventType, text = "") {
   if (ALWAYS_RSVP_EVENT_TYPES.has(eventType)) return true;
   if (eventType === "graduation") {
     return /\b(rsvp|party|open\s+house|celebration|reception|invite|invitation)\b/i.test(text);
+  }
+  if (eventType === "open_house") {
+    return /\b(rsvp|sign\s*up|register|appointment|showing|attend|guest|visitor|invite|invitation)\b/i.test(
+      text,
+    );
   }
   if (eventType === "unknown" || eventType === "general") return hasRsvpEventLanguage(text);
   return false;
@@ -109,18 +128,60 @@ const EVENT_TYPES = new Set<ConciergeEventType>([
   "birthday",
   "wedding",
   "baby_shower",
+  "gender_reveal",
+  "bridal_shower",
   "graduation",
   "gym_meet",
+  "game_day",
+  "football",
+  "sport_event",
+  "field_trip",
+  "open_house",
+  "housewarming",
+  "appointment",
+  "workshop",
+  "special_event",
+  "smart_signup",
   "general",
 ]);
 
 const EVENT_TYPE_ALIASES: Record<string, ConciergeEventType> = {
   "birthday invite": "birthday",
   "birthday party": "birthday",
+  birthdays: "birthday",
   "baby shower": "baby_shower",
+  "baby showers": "baby_shower",
+  "baby sprinkle": "baby_shower",
+  "gender reveal": "gender_reveal",
+  "bridal shower": "bridal_shower",
+  "bridal showers": "bridal_shower",
+  weddings: "wedding",
+  wedding: "wedding",
   "gym meet": "gym_meet",
   "gymnastics meet": "gym_meet",
   gymnastics: "gym_meet",
+  "game day": "game_day",
+  gameday: "game_day",
+  football: "football",
+  "football game": "football",
+  "sport event": "sport_event",
+  "sports event": "sport_event",
+  "field trip": "field_trip",
+  "field trip/day": "field_trip",
+  "field day": "field_trip",
+  "open house": "open_house",
+  "open houses": "open_house",
+  housewarming: "housewarming",
+  housewarmings: "housewarming",
+  appointment: "appointment",
+  appointments: "appointment",
+  workshop: "workshop",
+  class: "workshop",
+  "special event": "special_event",
+  "smart signup": "smart_signup",
+  "smart sign-up": "smart_signup",
+  "signup form": "smart_signup",
+  "sign-up form": "smart_signup",
   "general event": "general",
 };
 
@@ -197,6 +258,13 @@ export function normalizeRequestedOutputs(
   if (/\blive\s*card\b/i.test(text)) found.add("live_card");
   if (/\bdigital\s+flyer\b/i.test(text)) found.add("digital_flyer");
   if (/\bflyer\b/i.test(text) && !/\b(print|printable)\b/i.test(text)) found.add("digital_flyer");
+  if (
+    /\b(smart\s+sign[-\s]?up|sign[-\s]?up\s+form|signup\s+form|sign[-\s]?up\s+sheet)\b/i.test(
+      text,
+    )
+  ) {
+    found.add("signup_form");
+  }
   if (/\b(invitation|invite)\b/i.test(text) && hasCreateVerb(text)) found.add("invitation");
   if (/\brsvp\b/i.test(text)) found.add("rsvp_page");
   if (/\bwhats\s?app\b/i.test(text)) found.add("whatsapp");
@@ -345,7 +413,7 @@ export function resolveSourceIntent(args: {
     };
   }
   if (
-    /\b(birthday|birthdays|wedding|weddings|baby shower|baby showers|gender reveal|invite|invitation)\b/.test(
+    /\b(birthday|birthdays|wedding|weddings|baby shower|baby showers|gender reveal|bridal shower|invite|invitation)\b/.test(
       `${text} ${category}`,
     )
   ) {
@@ -456,113 +524,6 @@ export function resolveCreationSourceContext(args: {
   };
 }
 
-type OutputRequirement = {
-  label: string;
-  requiredAny: string[];
-  optional: string[];
-  firstQuestion: string;
-  previewCta: string;
-};
-
-const OUTPUT_REQUIREMENTS: Record<RequestedOutput, OutputRequirement> = {
-  event_page: {
-    label: "Event page",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["date", "location"],
-    firstQuestion: "What should this event page be for?",
-    previewCta: "Create first preview",
-  },
-  live_card: {
-    label: "Live card",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["date", "location"],
-    firstQuestion:
-      "What should this live card be for? Tell me what you're celebrating, or upload an invite/photo and I'll build the first version.",
-    previewCta: "Create first preview",
-  },
-  digital_flyer: {
-    label: "Flyer invite",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["date", "location"],
-    firstQuestion: "What should this flyer invite be for?",
-    previewCta: "Create first preview",
-  },
-  invitation: {
-    label: "Invitation",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["date", "location"],
-    firstQuestion: "What are we inviting people to?",
-    previewCta: "Create first preview",
-  },
-  rsvp_page: {
-    label: "RSVP page",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["date", "location"],
-    firstQuestion: "Which event should collect RSVPs?",
-    previewCta: "Create first preview",
-  },
-  whatsapp: {
-    label: "WhatsApp",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["date", "location"],
-    firstQuestion: "What event or source should I use?",
-    previewCta: "Write copy",
-  },
-  text_message: {
-    label: "Text message",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["date", "location"],
-    firstQuestion: "What event or source should I use?",
-    previewCta: "Write copy",
-  },
-  printable_flyer: {
-    label: "Printable flyer",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["date", "location"],
-    firstQuestion: "What event or source should I use?",
-    previewCta: "Create first preview",
-  },
-  instagram_story: {
-    label: "Instagram story",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["date", "location"],
-    firstQuestion: "What event or source should I use?",
-    previewCta: "Create first preview",
-  },
-  reminder: {
-    label: "Reminder",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["date"],
-    firstQuestion: "What event should this reminder be for?",
-    previewCta: "Write reminder",
-  },
-  thank_you_card: {
-    label: "Thank you card",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: [],
-    firstQuestion: "What should this thank you card be for?",
-    previewCta: "Create first preview",
-  },
-  menu: {
-    label: "Menu",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["location"],
-    firstQuestion: "What event or source should I use for this menu?",
-    previewCta: "Create first preview",
-  },
-  welcome_sign: {
-    label: "Welcome sign",
-    requiredAny: ["eventPurpose", "title", "sourceContext"],
-    optional: ["date", "location"],
-    firstQuestion: "What event or source should I use for this welcome sign?",
-    previewCta: "Create first preview",
-  },
-};
-
-export function getOutputRequirement(output: RequestedOutput): OutputRequirement {
-  return OUTPUT_REQUIREMENTS[output] || OUTPUT_REQUIREMENTS.live_card;
-}
-
 export function canPersistCreationDraft(
   draft: Pick<ConciergeEventDraft, "sourceContext" | "eventPurpose" | "title" | "eventType"> & {
     canPersist?: boolean;
@@ -589,6 +550,8 @@ export function isMeaningfulEventText(text: string, requestedOutputs: RequestedO
   stripped = stripped
     .replace(/\blive\s*card\b/gi, " ")
     .replace(/\bdigital\s+flyer\b/gi, " ")
+    .replace(/\bsmart\s+sign[-\s]?up\b/gi, " ")
+    .replace(/\bsign[-\s]?up\s+(?:form|sheet)\b/gi, " ")
     .replace(/\brsvp\s+page\b/gi, " ")
     .replace(/\btext\s+message\b/gi, " ")
     .replace(/\binstagram\s+story\b/gi, " ")
@@ -642,7 +605,11 @@ export function deriveCreationStatus(args: {
   const canPersist = canPersistCreationDraft(args);
   const hasMeaningfulContext = canPersist;
   const missingFields: string[] = [];
-  const requirement = getOutputRequirement(args.requestedOutputs[0] || "live_card");
+  const plan = getRequirementPlan({
+    eventType: args.eventType,
+    requestedOutputs: args.requestedOutputs,
+    sourceContext: args.sourceContext,
+  });
 
   if (args.sourceContext.ambiguity === "multiple") {
     missingFields.push("sourceContext");
@@ -664,18 +631,15 @@ export function deriveCreationStatus(args: {
     };
   }
 
-  if (!hasEventPurpose && !args.sourceContext.hasUsableContext && requirement.requiredAny.length) {
-    missingFields.push("eventPurpose");
+  const fieldDraft = {
+    ...args,
+    venue: null,
+  };
+  for (const field of plan.requiredFields) {
+    if (!requirementFieldSatisfied(field, fieldDraft)) {
+      missingFields.push(field);
+    }
   }
-  if (args.eventType === "birthday" && !cleanCreationString(args.honoreeName)) {
-    missingFields.push("honoreeName");
-  }
-  if (args.eventType === "birthday" && !cleanCreationString(args.ageOrMilestone)) {
-    missingFields.push("ageOrMilestone");
-  }
-  if (!args.dateText && !args.startISO) missingFields.push("date");
-  if (!args.timeText && !args.startISO) missingFields.push("time");
-  if (!args.location) missingFields.push("location");
   if (
     !missingFields.length &&
     shouldAskRsvpDecision({
@@ -701,20 +665,8 @@ export function deriveCreationStatus(args: {
   }
   if (
     !missingFields.length &&
-    args.sourceContext.detectedSourceIntent !== "received_invite" &&
-    args.requestedOutputs.some((output) =>
-      [
-        "event_page",
-        "live_card",
-        "digital_flyer",
-        "invitation",
-        "rsvp_page",
-        "printable_flyer",
-        "instagram_story",
-        "welcome_sign",
-      ].includes(output),
-    ) &&
-    !cleanCreationString(args.tone)
+    plan.shouldAskTone &&
+    !requirementFieldSatisfied("tone", fieldDraft)
   ) {
     missingFields.push("tone");
   }
@@ -731,5 +683,5 @@ export function deriveCreationStatus(args: {
 }
 
 export function outputQuestion(output: RequestedOutput): string {
-  return getOutputRequirement(output).firstQuestion;
+  return getRequirementForOutput(output).firstQuestion;
 }

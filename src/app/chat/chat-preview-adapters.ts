@@ -35,7 +35,20 @@ function timeTextFromIso(value: unknown): string {
 function categoryLabel(draft: ConciergeEventDraft | null): string {
   if (!draft?.eventType || draft.eventType === "unknown") return "Custom Invite";
   if (draft.eventType === "baby_shower") return "Baby Shower";
-  if (draft.eventType === "gym_meet") return "Gym Meet";
+  if (draft.eventType === "gender_reveal") return "Baby Shower";
+  if (draft.eventType === "bridal_shower") return "Bridal Shower";
+  if (
+    draft.eventType === "gym_meet" ||
+    draft.eventType === "game_day" ||
+    draft.eventType === "football" ||
+    draft.eventType === "sport_event"
+  ) {
+    return "Game Day";
+  }
+  if (draft.eventType === "field_trip") return "Field Trip/Day";
+  if (draft.eventType === "open_house") return "Open House";
+  if (draft.eventType === "housewarming") return "Housewarming";
+  if (draft.eventType === "smart_signup") return "Smart Sign-up";
   return draft.eventType
     .split("_")
     .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
@@ -46,6 +59,7 @@ function selectedOutputLabel(output: RequestedOutput): string {
   if (output === "digital_flyer") return "Digital flyer";
   if (output === "event_page") return "Event page";
   if (output === "live_card") return "Live card";
+  if (output === "signup_form") return "Smart sign-up";
   return output.replace(/_/g, " ");
 }
 

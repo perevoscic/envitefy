@@ -12,14 +12,27 @@ export type ConciergeEventType =
   | "birthday"
   | "wedding"
   | "baby_shower"
+  | "gender_reveal"
+  | "bridal_shower"
   | "graduation"
   | "gym_meet"
+  | "game_day"
+  | "football"
+  | "sport_event"
+  | "field_trip"
+  | "open_house"
+  | "housewarming"
+  | "appointment"
+  | "workshop"
+  | "special_event"
+  | "smart_signup"
   | "general";
 
 export type RequestedOutput =
   | "event_page"
   | "live_card"
   | "digital_flyer"
+  | "signup_form"
   | "invitation"
   | "rsvp_page"
   | "whatsapp"
@@ -102,7 +115,9 @@ export type ConciergeActiveContext = {
 };
 
 export type EventAssetType =
+  | "event_page"
   | "live_card"
+  | "signup_form"
   | "invitation"
   | "rsvp_page"
   | "whatsapp"

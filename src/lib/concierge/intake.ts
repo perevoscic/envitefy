@@ -38,8 +38,9 @@ type TimingRecorder = {
 };
 
 const OUTPUT_ASSET_TYPES: Partial<Record<RequestedOutput, EventAssetType>> = {
-  event_page: "live_card",
+  event_page: "event_page",
   live_card: "live_card",
+  signup_form: "signup_form",
   digital_flyer: "printable_flyer",
   invitation: "invitation",
   rsvp_page: "rsvp_page",
