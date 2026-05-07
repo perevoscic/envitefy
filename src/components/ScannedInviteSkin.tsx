@@ -13,6 +13,7 @@ import {
 } from "@/components/event-skin-layout";
 import OcrFactCards from "@/components/OcrFactCards";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
+import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import {
   filterRenderedOcrFacts,
@@ -28,7 +29,6 @@ import {
   normalizeScannedInvitePalette,
 } from "@/lib/scanned-invite-palette";
 import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
-import { buildPreferredDirectionsHref } from "@/lib/directions";
 
 type CalendarLinks = {
   google: string;
@@ -71,6 +71,7 @@ type Props = {
   registryUrl?: string | null;
   ocrFacts?: OcrFact[] | null;
   detailLayout?: "default" | "wideDetails";
+  footerPrefix?: string | null;
   previewMode?: boolean;
   actions?: ReactNode;
 };
@@ -88,7 +89,10 @@ const DEFAULT_PALETTE = {
 function buildMapsHref(location: string | null | undefined): string | null {
   const value = String(location || "").trim();
   if (!value || value === "Location TBD") return null;
-  return buildPreferredDirectionsHref(value, typeof navigator !== "undefined" ? navigator.userAgent : undefined);
+  return buildPreferredDirectionsHref(
+    value,
+    typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+  );
 }
 
 function buildRsvpHref({
@@ -140,7 +144,10 @@ function normalizeInlineSentences(value: string): string {
     .map((part) => part.trim())
     .filter(Boolean)
     .filter((part) => {
-      const key = part.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      const key = part
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
       if (!key || seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -205,6 +212,7 @@ export default function ScannedInviteSkin({
   registryUrl,
   ocrFacts,
   detailLayout = "default",
+  footerPrefix = "Snapped by",
   previewMode = false,
   actions,
 }: Props) {
@@ -308,10 +316,10 @@ export default function ScannedInviteSkin({
   const registryLabel = usesGiftListCopy(categoryLabel) ? "Gift List" : "Registry";
   const registryActionLabel = registryLabel === "Gift List" ? "Open Gift List" : "Open Registry";
   const displayActivities = Array.isArray(activities)
-      ? filterRenderedTextValues(
-          activities.map((item) => String(item || "").trim()).filter(Boolean),
+    ? filterRenderedTextValues(
+        activities.map((item) => String(item || "").trim()).filter(Boolean),
         [displayDetailCopy, displayAttire, displayEntryFee],
-        ).slice(0, 4)
+      ).slice(0, 4)
     : [];
   const factsForCards = normalizedOcrFacts.filter(
     (fact) =>
@@ -670,7 +678,8 @@ export default function ScannedInviteSkin({
             style={{ backgroundColor: "rgba(0,0,0,0.1)" }}
           />
           <div className={EVENT_SKIN_FOOTER_TEXT_CLASS} style={{ color: "rgba(0,0,0,0.3)" }}>
-            Snapped by <span style={{ color: "rgba(0,0,0,0.4)" }}>Envitefy</span>
+            {footerPrefix || "Created by"}{" "}
+            <span style={{ color: "rgba(0,0,0,0.4)" }}>Envitefy</span>
           </div>
         </div>
       </div>

@@ -78,6 +78,11 @@ export function buildChatShowcasePreview(args: {
     `A ${selectedOutputLabel(args.selectedOutput)} preview is taking shape.`;
   const category = categoryLabel(draft);
   const title = args.summary.headline || "Event preview";
+  const rsvpEnabled = draft?.rsvpEnabled === true;
+  const registryLink = cleanString(
+    (draft as { registryLink?: unknown; giftRegistryLink?: unknown } | null)?.registryLink ||
+      (draft as { registryLink?: unknown; giftRegistryLink?: unknown } | null)?.giftRegistryLink,
+  );
   const invitationData: LiveCardInvitationData = {
     title,
     subtitle: args.summary.subheadline,
@@ -94,6 +99,7 @@ export function buildChatShowcasePreview(args: {
       shareNote: body,
     },
     eventDetails: {
+      eventId: args.eventId || "",
       category,
       occasion: cleanString(draft?.eventPurpose) || category,
       eventTitle: title,
@@ -104,6 +110,11 @@ export function buildChatShowcasePreview(args: {
       location: cleanString(draft?.location) || cleanString(draft?.venue) || "",
       detailsDescription: body,
       message: args.summary.subheadline,
+      rsvpEnabled,
+      rsvpMode: rsvpEnabled ? "envitefy" : "",
+      rsvpName: rsvpEnabled ? "Host" : "",
+      rsvpUrl: rsvpEnabled && args.sharePath ? `${args.sharePath}#event-rsvp` : "",
+      registryLink: registryLink || "",
     },
   };
 

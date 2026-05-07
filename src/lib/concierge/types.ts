@@ -250,7 +250,14 @@ export type ConciergeEventDraft = {
   location: string | null;
   venue: string | null;
   rsvpEnabled: boolean | null;
+  rsvpDeadline?: string | null;
+  rsvpName?: string | null;
+  rsvpContact?: string | null;
   numberOfGuests: number | null;
+  registryLink?: string | null;
+  giftRegistryLink?: string | null;
+  giftNote?: string | null;
+  giftPreferenceNote?: string | null;
   theme: string | null;
   tone: string | null;
   outputs: ConciergeOutput[];

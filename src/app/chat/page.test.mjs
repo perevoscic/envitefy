@@ -385,6 +385,29 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(eventActions, /process\.env\.OPENAI_API_KEY/);
 });
 
+test("/chat live-card preview preserves RSVP and registry action metadata", () => {
+  const adapter = readSource("src/app/chat/chat-preview-adapters.ts");
+  const preview = readSource("src/app/chat/ChatProductPreview.tsx");
+
+  assert.match(adapter, /const rsvpEnabled = draft\?\.rsvpEnabled === true;/);
+  assert.match(adapter, /eventId: args\.eventId \|\| ""/);
+  assert.match(adapter, /rsvpEnabled,/);
+  assert.match(adapter, /rsvpMode: rsvpEnabled \? "envitefy" : ""/);
+  assert.match(
+    adapter,
+    /rsvpUrl: rsvpEnabled && args\.sharePath \? `\$\{args\.sharePath\}#event-rsvp` : ""/,
+  );
+  assert.match(adapter, /registryLink: registryLink \|\| ""/);
+  assert.match(preview, /const hasRsvp = draft\?\.rsvpEnabled === true;/);
+  assert.match(
+    preview,
+    /const hasRegistry = Boolean\(draft\?\.registryLink \|\| draft\?\.giftRegistryLink\);/,
+  );
+  assert.match(preview, /\["Yes", "No", "Maybe"\]\.map/);
+  assert.match(preview, /<Menu className="size-3\.5"/);
+  assert.match(preview, />Details</);
+});
+
 test("/cht typo route is not present", () => {
   assert.equal(fs.existsSync(path.join(repoRoot, "src/app/cht/page.tsx")), false);
 });

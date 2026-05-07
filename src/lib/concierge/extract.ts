@@ -261,7 +261,7 @@ export function normalizeConciergeDraft(
   const rsvpEnabled =
     fallback.rsvpEnabled === false
       ? false
-      : booleanOrNull(
+      : (booleanOrNull(
           record.rsvpEnabled,
           record.isRsvpEnabled,
           rsvpRecord.enabled,
@@ -270,12 +270,59 @@ export function normalizeConciergeDraft(
           eventData.isRsvpEnabled,
           eventRsvpRecord.enabled,
           eventRsvpRecord.isEnabled,
-        ) ?? fallback.rsvpEnabled;
+        ) ?? fallback.rsvpEnabled);
   const numberOfGuests =
     rsvpEnabled === false
       ? null
-      : positiveNumberOrNull(record.numberOfGuests, eventData.numberOfGuests, eventData.guestCount) ||
-        fallback.numberOfGuests;
+      : positiveNumberOrNull(
+          record.numberOfGuests,
+          eventData.numberOfGuests,
+          eventData.guestCount,
+        ) || fallback.numberOfGuests;
+  const rsvpDeadline =
+    firstDraftString(
+      record.rsvpDeadline,
+      eventData.rsvpDeadline,
+      rsvpRecord.deadline,
+      eventRsvpRecord.deadline,
+    ) ||
+    fallback.rsvpDeadline ||
+    null;
+  const rsvpName =
+    firstDraftString(record.rsvpName, eventData.rsvpName, rsvpRecord.name, eventRsvpRecord.name) ||
+    fallback.rsvpName ||
+    null;
+  const rsvpContact =
+    firstDraftString(
+      record.rsvpContact,
+      eventData.rsvpContact,
+      rsvpRecord.contact,
+      eventRsvpRecord.contact,
+    ) ||
+    fallback.rsvpContact ||
+    null;
+  const registryLink =
+    firstDraftString(
+      record.registryLink,
+      record.giftRegistryLink,
+      eventData.registryLink,
+      eventData.registryUrl,
+      eventData.giftRegistryLink,
+    ) ||
+    fallback.registryLink ||
+    fallback.giftRegistryLink ||
+    null;
+  const giftNote =
+    firstDraftString(record.giftNote, eventData.giftNote) || fallback.giftNote || null;
+  const giftPreferenceNote =
+    firstDraftString(
+      record.giftPreferenceNote,
+      eventData.giftPreferenceNote,
+      eventData.registryNote,
+      eventData.giftPreference,
+    ) ||
+    fallback.giftPreferenceNote ||
+    null;
   const status = deriveCreationStatus({
     sourceContext,
     eventPurpose,
@@ -328,7 +375,13 @@ export function normalizeConciergeDraft(
     location: resolvedLocation || null,
     venue: resolvedVenue || null,
     rsvpEnabled,
+    rsvpDeadline,
+    rsvpName,
+    rsvpContact,
     numberOfGuests,
+    registryLink,
+    giftNote,
+    giftPreferenceNote,
     theme,
     tone,
     outputs: toLegacyOutputs(requestedOutputs),
@@ -397,9 +450,12 @@ async function extractWithOpenAi(
               "You are Envitefy's event creation concierge.",
               "Only handle event, flyer invitation, RSVP, and event asset creation or editing.",
               "Return one JSON object matching the draft shape. Do not include markdown.",
-              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, honoreeName, ageOrMilestone, rsvpEnabled, numberOfGuests, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
+              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, honoreeName, ageOrMilestone, rsvpEnabled, rsvpDeadline, rsvpName, rsvpContact, numberOfGuests, registryLink, giftNote, giftPreferenceNote, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
               "If you include nested eventData for convenience, duplicate the same extracted fields at the top level.",
               "Separate requested output from event details: live cards, flyer invitations, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",
+              "Never copy the user's whole creation request into title, eventPurpose, headline, theme, or tone; distill guest-facing names like matchups, honorees, couples, venues, or concise event labels.",
+              "Event pages are full guest-facing websites with navigation/menu, detail sections, RSVP form when enabled, calendar/location actions, and registry or gift-list sections when supplied.",
+              "For birthdays, weddings, baby showers, gender reveals, bridal showers, housewarmings, anniversaries, and graduations, preserve any registry, gift-list, wishlist, gift preference, or no-gifts note.",
               "Resolve 'this' only from supplied activeContext. If no context exists, ask what source or event to use.",
               "Use eventType unknown until the user or source gives a real category. Supported eventType values are unknown, birthday, wedding, baby_shower, gender_reveal, bridal_shower, graduation, gym_meet, game_day, football, sport_event, field_trip, open_house, housewarming, appointment, workshop, special_event, smart_signup, and general. Do not use general as a fallback.",
               "Prioritize eventPurpose/title before strict event type. Do not ask for date/time before event purpose/source.",

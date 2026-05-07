@@ -171,6 +171,17 @@ const REGISTRY_SECTION_COPY_BY_CATEGORY: Record<string, RegistrySectionCopy> = {
     publicNote:
       "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
   },
+  "gender reveals": {
+    allowsLinks: true,
+    sectionLabel: "Registry",
+    sectionHeading: "Registries",
+    linksLabel: "Registry links",
+    itemFallbackLabel: "Registry link",
+    invalidLinksAlert: "Fix the highlighted registry links before saving.",
+    emptyState: `No registry links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} retailers.`,
+    publicNote:
+      "These links open in a new tab. Registries must stay public or shareable so guests can view them.",
+  },
   housewarming: {
     allowsLinks: true,
     sectionLabel: "Gift List",
@@ -183,6 +194,50 @@ const REGISTRY_SECTION_COPY_BY_CATEGORY: Record<string, RegistrySectionCopy> = {
       "These links open in a new tab. Gift lists must stay public or shareable so guests can view them.",
   },
   housewarmings: {
+    allowsLinks: true,
+    sectionLabel: "Gift List",
+    sectionHeading: "Gift List",
+    linksLabel: "Gift list links",
+    itemFallbackLabel: "Gift list link",
+    invalidLinksAlert: "Fix the highlighted gift list links before saving.",
+    emptyState: `No gift list links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} links.`,
+    publicNote:
+      "These links open in a new tab. Gift lists must stay public or shareable so guests can view them.",
+  },
+  anniversary: {
+    allowsLinks: true,
+    sectionLabel: "Gift List",
+    sectionHeading: "Gift List",
+    linksLabel: "Gift list links",
+    itemFallbackLabel: "Gift list link",
+    invalidLinksAlert: "Fix the highlighted gift list links before saving.",
+    emptyState: `No gift list links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} links.`,
+    publicNote:
+      "These links open in a new tab. Gift lists must stay public or shareable so guests can view them.",
+  },
+  anniversaries: {
+    allowsLinks: true,
+    sectionLabel: "Gift List",
+    sectionHeading: "Gift List",
+    linksLabel: "Gift list links",
+    itemFallbackLabel: "Gift list link",
+    invalidLinksAlert: "Fix the highlighted gift list links before saving.",
+    emptyState: `No gift list links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} links.`,
+    publicNote:
+      "These links open in a new tab. Gift lists must stay public or shareable so guests can view them.",
+  },
+  graduation: {
+    allowsLinks: true,
+    sectionLabel: "Gift List",
+    sectionHeading: "Gift List",
+    linksLabel: "Gift list links",
+    itemFallbackLabel: "Gift list link",
+    invalidLinksAlert: "Fix the highlighted gift list links before saving.",
+    emptyState: `No gift list links yet. Use "Add link" to include up to ${MAX_REGISTRY_LINKS} links.`,
+    publicNote:
+      "These links open in a new tab. Gift lists must stay public or shareable so guests can view them.",
+  },
+  graduations: {
     allowsLinks: true,
     sectionLabel: "Gift List",
     sectionHeading: "Gift List",

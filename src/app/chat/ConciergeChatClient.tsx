@@ -33,7 +33,6 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/ai-prompt-box";
 import BottomNavBar, { type BottomNavItem } from "@/components/ui/bottom-nav-bar";
-import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
 import type {
   ConciergeActiveContext,
   ConciergeEventDraft,
@@ -46,10 +45,11 @@ import type {
   CreationSessionResumeResponse,
   RequestedOutput,
 } from "@/lib/concierge/types";
+import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
 import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
-import { buildEventSlug } from "@/utils/event-url";
 import { buildEventProductPath } from "@/utils/event-product-route";
+import { buildEventSlug } from "@/utils/event-url";
 import { persistImageMediaValue, validateClientUploadFile } from "@/utils/media-upload-client";
 import ChatProductPreview from "./ChatProductPreview";
 
@@ -241,13 +241,9 @@ const DETAIL_CONFIRMATION_LINE =
 function assistantDetailHighlightValues(detailsDraft?: ConciergeEventDraft | null) {
   if (!detailsDraft) return [];
   const themeValue =
-    typeof detailsDraft.theme === "string"
-      ? detailsDraft.theme.replace(/\s+/g, " ").trim()
-      : "";
+    typeof detailsDraft.theme === "string" ? detailsDraft.theme.replace(/\s+/g, " ").trim() : "";
   const toneValue =
-    typeof detailsDraft.tone === "string"
-      ? detailsDraft.tone.replace(/\s+/g, " ").trim()
-      : "";
+    typeof detailsDraft.tone === "string" ? detailsDraft.tone.replace(/\s+/g, " ").trim() : "";
   const values = [
     detailsDraft.honoreeName,
     detailsDraft.title,
@@ -671,8 +667,26 @@ function studioCategoryForDraft(draft: ConciergeEventDraft): InviteCategory {
 
 function dateInputFromDraft(draft: ConciergeEventDraft): string {
   const startISO = stringValue(draft.startISO);
-  if (startISO && /^\d{4}-\d{2}-\d{2}/.test(startISO)) return startISO.slice(0, 10);
+  const localDate = localDateInputFromIso(startISO, draft.timezone);
+  if (localDate) return localDate;
   return stringValue(draft.dateText) || "";
+}
+
+function localDateInputFromIso(value: string | null, timeZone?: string | null): string {
+  const raw = stringValue(value);
+  if (!raw || !/^\d{4}-\d{2}-\d{2}/.test(raw)) return "";
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw.slice(0, 10);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: stringValue(timeZone) || undefined,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  return year && month && day ? `${year}-${month}-${day}` : raw.slice(0, 10);
 }
 
 function timeInputFromDraft(value: string | null): string {
@@ -697,6 +711,13 @@ function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
   const location = stringValue(draft.location) || venueName;
   const honoreeName = stringValue(draft.honoreeName) || "";
   const theme = stringValue(draft.theme) || stringValue(draft.tone) || `${category} invite`;
+  const registryLink = stringValue(draft.registryLink) || stringValue(draft.giftRegistryLink) || "";
+  const giftPreferenceNote =
+    stringValue(draft.giftPreferenceNote) || stringValue(draft.giftNote) || "";
+  const rsvpEnabled = draft.rsvpEnabled === true;
+  const rsvpContact = stringValue(draft.rsvpContact) || "";
+  const rsvpName = stringValue(draft.rsvpName) || (rsvpEnabled ? "Host" : "");
+  const isEventPageProduct = draft.requestedOutputs.includes("event_page");
 
   return {
     ...details,
@@ -709,6 +730,9 @@ function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
     location,
     detailsDescription: body,
     message: draftSubheadline(draft),
+    specialInstructions: isEventPageProduct
+      ? "Generate website hero/background artwork for the event page. Do not bake large title text, date/time, address, faux buttons, phone chrome, or website UI into the image because the event page renders real navigation, headings, schedule, location, RSVP form, calendar actions, and registry links in HTML."
+      : "",
     theme,
     style: stringValue(draft.tone) || "",
     visualPreferences: theme,
@@ -719,6 +743,11 @@ function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
     mainPerson: honoreeName,
     occasion: stringValue(draft.eventPurpose) || category,
     audience: "Guests",
+    rsvpName,
+    rsvpContact,
+    rsvpDeadline: stringValue(draft.rsvpDeadline) || "",
+    registryLink,
+    giftPreferenceNote,
   };
 }
 

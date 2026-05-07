@@ -53,6 +53,19 @@ function eventTone(eventData: Record<string, unknown>, brief: string): string {
   );
 }
 
+function eventRegistryLink(eventData: Record<string, unknown>): string | null {
+  return (
+    cleanString(eventData.registryLink) ||
+    cleanString(eventData.registryUrl) ||
+    cleanString(eventData.giftRegistryLink) ||
+    null
+  );
+}
+
+function eventGiftNote(eventData: Record<string, unknown>): string | null {
+  return cleanString(eventData.giftPreferenceNote) || cleanString(eventData.giftNote) || null;
+}
+
 function eventLinkPlaceholder(eventId: string): string {
   return `/event/${eventId}`;
 }
@@ -90,6 +103,8 @@ export function buildEventAssetContent(params: {
   const base = baseContent(params.eventData, params.eventId, params.eventTitle);
   const tone = eventTone(params.eventData, brief);
   const rsvpDeadline = cleanString(params.eventData.rsvpDeadline);
+  const registryLink = eventRegistryLink(params.eventData);
+  const giftNote = eventGiftNote(params.eventData);
   const title = `${base.title} ${labelForAssetType(params.assetType)}`;
   const schedule = [base.dateLine, base.timeLine].filter(Boolean).join(" at ");
 
@@ -136,10 +151,12 @@ export function buildEventAssetContent(params: {
           { label: "When", value: schedule || base.dateLine },
           { label: "Where", value: base.locationLine },
           ...(rsvpDeadline ? [{ label: "RSVP", value: `By ${rsvpDeadline}` }] : []),
+          ...(registryLink ? [{ label: "Gift Link", value: registryLink }] : []),
+          ...(giftNote ? [{ label: "Gift Note", value: giftNote }] : []),
         ],
       },
       design: { format: params.assetType === "welcome_sign" ? "sign" : "print_5x7", tone },
-      metadata: { generatedBy: "event_assistant", brief },
+      metadata: { generatedBy: "event_assistant", brief, requiresGeneratedArtwork: true },
     };
   }
 
@@ -191,6 +208,7 @@ export function buildEventAssetContent(params: {
         cta: "Send RSVP",
         deadline: rsvpDeadline,
         fields: ["name", "email", "attendance"],
+        attendanceChoices: ["yes", "no", "maybe"],
       },
       design: { format: "page", tone },
       metadata: { generatedBy: "event_assistant", brief },
@@ -204,13 +222,30 @@ export function buildEventAssetContent(params: {
         ...base,
         headline: base.title,
         body: `Details for ${base.title}.`,
+        navigation: [
+          { label: "Details", target: "#details" },
+          { label: "Schedule", target: "#schedule" },
+          { label: "RSVP", target: "#event-rsvp", visibleWhen: "rsvpEnabled" },
+          { label: "Registry", target: "#registry", visibleWhen: "registryLink" },
+        ],
         sections: [
           { label: "When", value: schedule || base.dateLine },
           { label: "Where", value: base.locationLine },
+          ...(registryLink ? [{ label: "Registry", value: registryLink }] : []),
+          ...(giftNote ? [{ label: "Gift Note", value: giftNote }] : []),
         ],
+        forms: [
+          {
+            type: "rsvp",
+            enabled: Boolean(params.eventData.rsvpEnabled),
+            choices: ["yes", "no", "maybe"],
+            fields: ["name", "phone", "message"],
+          },
+        ],
+        actions: ["RSVP", "Add to calendar", "Get directions", "Open registry"],
       },
-      design: { format: "page", tone },
-      metadata: { generatedBy: "event_assistant", brief },
+      design: { format: "website_page", tone },
+      metadata: { generatedBy: "event_assistant", brief, requiresGeneratedArtwork: true },
     };
   }
 
@@ -235,8 +270,10 @@ export function buildEventAssetContent(params: {
       subheadline: schedule || "Details coming soon",
       body: `Please join us for ${base.title} at ${base.locationLine}.`,
       cta: rsvpDeadline ? `RSVP by ${rsvpDeadline}` : "View details",
+      registryLink,
+      giftNote,
     },
     design: { format: "card", tone },
-    metadata: { generatedBy: "event_assistant", brief },
+    metadata: { generatedBy: "event_assistant", brief, requiresGeneratedArtwork: true },
   };
 }

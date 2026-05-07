@@ -13,16 +13,16 @@ import {
   resolveCreationSourceContext,
   toLegacyOutputs,
 } from "./creation-intent.ts";
+import type { RequirementField } from "./requirements.ts";
 import {
   getEventTypeLabel,
   getRequirementPlan,
   questionForRequirementField,
   suggestedRepliesForRequirementField,
 } from "./requirements.ts";
-import type { RequirementField } from "./requirements.ts";
 import type {
-  ConciergeActiveContext,
   ConciergeAction,
+  ConciergeActiveContext,
   ConciergeEventDraft,
   ConciergeEventType,
   ConciergeOcrContext,
@@ -71,6 +71,88 @@ function firstPositiveNumber(...values: unknown[]) {
           : Number.NaN;
     if (Number.isFinite(numeric) && numeric > 0) return numeric;
   }
+  return null;
+}
+
+const SPORT_EVENT_TYPES = new Set<ConciergeEventType>(["game_day", "football", "sport_event"]);
+
+function isSportEventType(eventType: ConciergeEventType) {
+  return SPORT_EVENT_TYPES.has(eventType);
+}
+
+function looksLikeCreationPrompt(value: string | null) {
+  const text = cleanString(value);
+  if (!text) return false;
+  return (
+    text.length > 90 &&
+    /\b(create|make|build|draft|design|generate|product|envitefy|event\s+page|live\s*card|digital\s+flyer|guest-facing|call\s+to\s+action)\b/i.test(
+      text,
+    )
+  );
+}
+
+function isInstructionFragment(value: string | null) {
+  const text = cleanString(value);
+  if (!text) return true;
+  if (
+    /^(theme|tone|style|vibe|event|product|invite|invitation|event page|live card)$/i.test(text)
+  ) {
+    return true;
+  }
+  return /\b(complete\s+envitefy|envitefy\s+product|clear\s+headline|guest-facing|call\s+to\s+action|rsvp\s+(?:contact|deadline)|rsvps?\s+for|make\s+this|create\s+this|schedule|location)\b/i.test(
+    text,
+  );
+}
+
+function cleanSportsName(value: string | null | undefined) {
+  const cleaned = cleanString(
+    value
+      ?.replace(/^(?:the|a|an)\s+/i, "")
+      .replace(
+        /\s+(?:football|basketball|baseball|softball|soccer|volleyball|hockey|lacrosse|tennis|pickleball)\s*$/i,
+        "",
+      )
+      .replace(/\s+(?:game|match|matchup|event|product|invite|invitation|event\s+page)\s*$/i, "")
+      .replace(/\s+\b(?:on|at|with|for)\b[\s\S]*$/i, "")
+      .replace(/[.,;:]+$/g, ""),
+  );
+  if (!cleaned || isInstructionFragment(cleaned)) return null;
+  return cleaned;
+}
+
+function deriveSportEventTitle(text: string, eventType: ConciergeEventType) {
+  if (!isSportEventType(eventType)) return null;
+
+  const matchupPatterns = [
+    /\b(?:for|featuring|about)\s+(?:the\s+)?(.{2,90}?)\s+(?:(?:football|basketball|baseball|softball|soccer|volleyball|hockey|lacrosse|tennis|pickleball)\s+)?(?:game|match|matchup)\s+(?:against|versus|vs\.?)\s+(?:the\s+)?(.{2,90}?)(?=\s+(?:on|at|with|for)\b|[.,;]|$)/i,
+    /\b(?:for|featuring|about)\s+(?:the\s+)?(.{2,90}?)\s+(?:against|versus|vs\.?)\s+(?:the\s+)?(.{2,90}?)(?=\s+(?:on|at|with|for)\b|[.,;]|$)/i,
+  ];
+  for (const pattern of matchupPatterns) {
+    const match = text.match(pattern);
+    const team = cleanSportsName(match?.[1]);
+    const opponent = cleanSportsName(match?.[2]);
+    if (team && opponent) return `${team} vs ${opponent}`;
+  }
+
+  const directVs = text.match(
+    /\b(?:the\s+)?([A-Z][a-zA-Z0-9' -]{1,70}?)\s+(?:vs\.?|versus)\s+(?:the\s+)?([A-Z][a-zA-Z0-9' -]{1,70}?)(?=\s+(?:on|at|with|for)\b|[.,;]|$)/,
+  );
+  const directTeam = cleanSportsName(directVs?.[1]);
+  const directOpponent = cleanSportsName(directVs?.[2]);
+  if (directTeam && directOpponent) return `${directTeam} vs ${directOpponent}`;
+
+  const watchParty = text.match(
+    /\b(?:for|featuring|about)\s+(?:the\s+)?(.{2,70}?)\s+watch\s+party\b/i,
+  );
+  const watchTeam = cleanSportsName(watchParty?.[1]);
+  if (watchTeam) return `${watchTeam} Watch Party`;
+
+  const teamGame = text.match(
+    /\b(?:for|featuring|about)\s+(?:the\s+)?(.{2,70}?)\s+(?:(?:football|basketball|baseball|softball|soccer|volleyball|hockey|lacrosse|tennis|pickleball)\s+)?(?:game|game\s+day|match|matchup)\b/i,
+  );
+  const team = cleanSportsName(teamGame?.[1]);
+  if (team) return `${team} Game Day`;
+
   return null;
 }
 
@@ -225,13 +307,28 @@ function detectHonoreeFollowUp(text: string, previous?: ConciergeEventDraft | nu
 }
 
 function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
+  const themeAndTone = text.match(/\btheme\s+and\s+tone\s*:\s*([^.\n;]{2,160})/i);
+  const themeAndToneValue = cleanString(themeAndTone?.[1]?.replace(/[.!?]+$/g, ""));
+  if (themeAndToneValue && !isInstructionFragment(themeAndToneValue)) {
+    return themeAndToneValue;
+  }
+
+  const teamEnergy = text.match(
+    /\bwith\s+([a-z]+(?:\s+and\s+[a-z]+)?(?:\s+(?:team|school))?\s+(?:energy|colors?|spirit|vibe|theme|style))\b/i,
+  );
+  if (teamEnergy?.[1] && !isInstructionFragment(teamEnergy[1])) {
+    return cleanString(teamEnergy[1]) || previous?.theme || null;
+  }
+
   const themeMatch =
     text.match(/\b(?:make it|theme|style|with a)\s+([a-z0-9][a-z0-9 '&-]{1,50})(?:\s+theme)?\b/i) ||
     text.match(
       /\b(unicorn|princess|dinosaur|space|garden|floral|rustic|modern|sparkle|rainbow|sports|football|basketball|ballet)\b/i,
     );
   const raw = themeMatch?.[1] || themeMatch?.[0];
-  return cleanString(raw)?.replace(/\s+theme$/i, "") || previous?.theme || null;
+  const cleaned = cleanString(raw)?.replace(/\s+theme$/i, "") || null;
+  if (!cleaned || isInstructionFragment(cleaned)) return previous?.theme || null;
+  return cleaned;
 }
 
 function detectGuestCount(text: string, previous?: ConciergeEventDraft | null) {
@@ -303,7 +400,9 @@ function detectRsvpEnabled(
 
   if (
     /\b(?:with|include|enable|collect|track|add)\s+(?:envitefy\s+)?rsvps?\b/i.test(text) ||
+    /\brsvps?\s+for\s+\d{1,4}\b/i.test(text) ||
     /\brsvp\s+(?:page|tracking|collection|responses?)\b/i.test(text) ||
+    /\brsvp\s+(?:contact|deadline)\b/i.test(text) ||
     /\b(?:rsvp|respond)\s+by\b/i.test(text) ||
     /\brsvps?\s+(?:directly|on|through)\b/i.test(text)
   ) {
@@ -311,6 +410,61 @@ function detectRsvpEnabled(
   }
 
   return previous?.rsvpEnabled ?? null;
+}
+
+function detectRsvpDeadline(text: string, previous?: ConciergeEventDraft | null) {
+  const match =
+    text.match(/\brsvp\s+(?:deadline|due|responses?\s+due)\s*:?\s*([^.\n;]{2,80})/i) ||
+    text.match(/\b(?:rsvp|respond)\s+by\s+([^.\n;]{2,80})/i);
+  const deadline = cleanString(match?.[1]?.replace(/[.!?]+$/g, ""));
+  return deadline || previous?.rsvpDeadline || null;
+}
+
+function detectRsvpContact(
+  text: string,
+  fieldsGuess: Record<string, unknown>,
+  previous?: ConciergeEventDraft | null,
+) {
+  const direct = firstString(fieldsGuess.rsvpContact, fieldsGuess.rsvpEmail, fieldsGuess.rsvpPhone);
+  if (direct) return direct;
+  const explicitEmail = text.match(
+    /\brsvp\s+contact\s*:?\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i,
+  );
+  if (explicitEmail?.[1]) return explicitEmail[1];
+  const explicit = text.match(/\brsvp\s+contact\s*:?\s*([^.\n;]{3,120})/i);
+  const email = explicit?.[1]?.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
+  const contact = cleanString(email || explicit?.[1]?.replace(/[.!?]+$/g, ""));
+  return contact || previous?.rsvpContact || null;
+}
+
+function detectRegistryLink(text: string, fieldsGuess: Record<string, unknown>) {
+  const direct = firstString(
+    fieldsGuess.registryLink,
+    fieldsGuess.registryUrl,
+    fieldsGuess.giftRegistryLink,
+    fieldsGuess.giftListLink,
+    fieldsGuess.wishlistLink,
+  );
+  if (direct) return direct;
+  if (!/\b(registry|gift\s*list|wishlist|wish\s*list|babylist|zola|target|amazon)\b/i.test(text)) {
+    return null;
+  }
+  const url = text.match(/\bhttps?:\/\/[^\s<>"')]+|\bwww\.[^\s<>"')]+/i)?.[0];
+  return cleanString(url || "");
+}
+
+function detectGiftPreferenceNote(text: string, fieldsGuess: Record<string, unknown>) {
+  const direct = firstString(
+    fieldsGuess.giftPreferenceNote,
+    fieldsGuess.giftNote,
+    fieldsGuess.registryNote,
+    fieldsGuess.giftPreference,
+  );
+  if (direct) return direct;
+  const noGifts = text.match(
+    /\b(?:no gifts?|your presence is (?:our|the) gift|gift cards? preferred)\b[^.!,;]*/i,
+  );
+  return cleanString(noGifts?.[0] || "");
 }
 
 function detectTone(text: string, previous?: ConciergeEventDraft | null) {
@@ -332,7 +486,8 @@ function detectTone(text: string, previous?: ConciergeEventDraft | null) {
     /\b(elegant|luxury|formal|classic|romantic|soft|sweet|fun|playful|colorful|modern|minimal|bold|whimsical|rustic|floral|bright|simple|casual|sporty)\b(?:\s+(?:and|&)\s+\b(elegant|luxury|formal|classic|romantic|soft|sweet|fun|playful|colorful|modern|minimal|bold|whimsical|rustic|floral|bright|simple|casual|sporty)\b)?/i,
   );
   const raw = explicit?.[1] || (known ? known[0] : null);
-  if (raw) return cleanString(raw.replace(/[.!?]+$/g, ""));
+  const cleanedRaw = raw ? cleanString(raw.replace(/[.!?]+$/g, "")) : null;
+  if (cleanedRaw && !isInstructionFragment(cleanedRaw)) return cleanedRaw;
   if (expectsTone) {
     const cleaned = cleanString(text.replace(/[.!?]+$/g, ""));
     if (cleaned && cleaned.length <= 80) return cleaned;
@@ -362,8 +517,10 @@ function shouldStartFreshEvent(message: string, previous?: ConciergeEventDraft |
 function isPrivateDataMutationRequest(message: string) {
   const text = cleanString(message) || "";
   return (
-    /\b(change|update|set|modify|switch|show|reveal|expose|give|send)\b/i.test(text) &&
-    /\b(user[_\s-]?id|owner[_\s-]?id|ownership|account owner|private data|guest emails?)\b/i.test(
+    /\b(change|update|set|modify|switch|show|reveal|expose|give|send|tell|what\s+is|what's)\b/i.test(
+      text,
+    ) &&
+    /\b(user[_\s-]?id|owner[_\s-]?id|ownership|account owner|private data|guest emails?|password|api\s*key|private\s*key|session\s*token|auth\s*token|secret)\b/i.test(
       text,
     )
   );
@@ -586,11 +743,14 @@ function buildTitle(args: {
   honoreeName: string | null;
   ageOrMilestone: string | null;
   eventPurpose: string | null;
+  sourceText?: string | null;
   previous?: ConciergeEventDraft | null;
 }) {
   const previousTitle = cleanString(args.previous?.title);
   const label = getEventTypeLabel(args.eventType);
   const genericTitle = `${label[0].toUpperCase()}${label.slice(1)} draft`;
+  const sportTitle = deriveSportEventTitle(args.sourceText || "", args.eventType);
+  if (sportTitle) return sportTitle;
   if (args.eventType === "birthday" && args.honoreeName && args.ageOrMilestone) {
     return `${args.honoreeName} is turning ${args.ageOrMilestone}`;
   }
@@ -606,6 +766,11 @@ function buildTitle(args: {
     return `${args.honoreeName}'s graduation`;
   if (previousTitle && previousTitle !== "Event draft" && previousTitle !== genericTitle) {
     return previousTitle;
+  }
+  if (args.eventPurpose && !looksLikeCreationPrompt(args.eventPurpose)) return args.eventPurpose;
+  if (isSportEventType(args.eventType)) {
+    if (args.eventType === "football") return "Football Game Day";
+    return "Game Day";
   }
   if (args.eventPurpose) return args.eventPurpose;
   if (args.eventType === "unknown") return null;
@@ -637,12 +802,17 @@ function buildPreviewCopy(args: {
     .filter(Boolean)
     .join(" at ");
   const locationLine = args.location || "Location TBD";
+  const sportMatchup = isSportEventType(args.eventType) ? headline.split(/\s+vs\.?\s+/i) : [];
   const body =
     args.eventType === "birthday"
       ? `Join us for ${args.honoreeName || "the guest of honor"}${args.ageOrMilestone ? ` as they turn ${args.ageOrMilestone}` : ""}.`
       : args.eventType === "wedding"
         ? `Join us to celebrate ${args.honoreeName || "the couple"}.`
-        : `Join us for this ${getEventTypeLabel(args.eventType)}.`;
+        : sportMatchup.length === 2
+          ? `Cheer on ${sportMatchup[0]} as they take on ${sportMatchup[1]}.`
+          : isSportEventType(args.eventType) && headline && !looksLikeCreationPrompt(headline)
+            ? `Join us for ${headline}.`
+            : `Join us for this ${getEventTypeLabel(args.eventType)}.`;
   return {
     headline,
     subheadline: themeLine,
@@ -922,7 +1092,16 @@ export function fallbackExtractConciergeDraft(args: {
     ? { ...resolvedSourceContext, boundary: "private_data" as const }
     : nonCreationRequest
       ? { ...resolvedSourceContext, boundary: "non_creation" as const }
-    : resolvedSourceContext;
+      : resolvedSourceContext;
+  if (privateDataMutationRequest && previous) {
+    return {
+      ...previous,
+      sourceContext: {
+        ...previous.sourceContext,
+        ...sourceContext,
+      },
+    };
+  }
   const source: ConciergeSource =
     args.source || (args.ocrContext ? (message ? "mixed" : "upload") : previous?.source || "text");
   const eventType = nonCreationRequest ? "unknown" : detectEventType(text, previous);
@@ -953,17 +1132,27 @@ export function fallbackExtractConciergeDraft(args: {
       chronoResult.startISO ||
       location,
   );
+  const extractedEventPurpose = firstString(fieldsGuess.eventPurpose, fieldsGuess.title);
+  const sportEventPurpose = deriveSportEventTitle(text, eventType);
+  const messageEventPurpose = isMeaningfulEventText(message, requestedOutputs)
+    ? cleanCreationString(message)
+    : null;
   const eventPurpose =
     nonCreationRequest ||
     privateDataMutationRequest ||
     (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
-      : firstString(fieldsGuess.eventPurpose, fieldsGuess.title) ||
-        previous?.eventPurpose ||
-        (isMeaningfulEventText(message, requestedOutputs) ? cleanCreationString(message) : null);
+      : extractedEventPurpose || sportEventPurpose || previous?.eventPurpose || messageEventPurpose;
   const titleCandidate =
     firstString(fieldsGuess.title) ||
-    buildTitle({ eventType, honoreeName, ageOrMilestone, eventPurpose, previous });
+    buildTitle({
+      eventType,
+      honoreeName,
+      ageOrMilestone,
+      eventPurpose,
+      sourceText: text,
+      previous,
+    });
   const title =
     nonCreationRequest ||
     privateDataMutationRequest ||
@@ -978,7 +1167,22 @@ export function fallbackExtractConciergeDraft(args: {
     detectGuestCount(message, previous) ||
     firstPositiveNumber(fieldsGuess.numberOfGuests, fieldsGuess.guestCount);
   const rsvpEnabled = detectRsvpEnabled(message, previous, requestedOutputs, fieldsGuess);
-  const tone = detectTone(text, previous) || firstString(fieldsGuess.tone);
+  const rsvpDeadline = detectRsvpDeadline(text, previous);
+  const rsvpContact = detectRsvpContact(text, fieldsGuess, previous);
+  const registryLink =
+    detectRegistryLink(text, fieldsGuess) ||
+    previous?.registryLink ||
+    previous?.giftRegistryLink ||
+    null;
+  const giftPreferenceNote =
+    detectGiftPreferenceNote(text, fieldsGuess) ||
+    previous?.giftPreferenceNote ||
+    previous?.giftNote ||
+    null;
+  const tone =
+    detectTone(text, previous) ||
+    firstString(fieldsGuess.tone) ||
+    (isSportEventType(eventType) ? theme : null);
   const status = nonCreationRequest
     ? {
         draftStatus: "needs_source_or_event" as const,
@@ -1031,7 +1235,12 @@ export function fallbackExtractConciergeDraft(args: {
     location,
     venue: location,
     rsvpEnabled,
+    rsvpDeadline,
+    rsvpName: previous?.rsvpName || null,
+    rsvpContact,
     numberOfGuests,
+    registryLink,
+    giftPreferenceNote,
     theme,
     tone,
     outputs: toLegacyOutputs(requestedOutputs),

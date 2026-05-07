@@ -18,6 +18,7 @@ import {
   CalendarIconGoogle,
   CalendarIconOutlook,
 } from "@/components/CalendarIcons";
+import ConciergeEventWebsite from "@/components/concierge/ConciergeEventWebsite";
 import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventMap from "@/components/EventMap";
@@ -78,12 +79,12 @@ import { decorateAmazonUrl } from "@/utils/affiliates";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { findFirstEmail, findFirstUrl, normalizeUrlValue } from "@/utils/contact";
 import { buildEditLink, resolveEditHref } from "@/utils/event-edit-route";
-import { buildEventPath, buildEventSlugSegment, buildStudioCardPath } from "@/utils/event-url";
 import {
   buildEventProductPath,
   getPrimaryEventProductOutput,
   isCardFirstEventProduct,
 } from "@/utils/event-product-route";
+import { buildEventPath, buildEventSlugSegment, buildStudioCardPath } from "@/utils/event-url";
 import type { ImageColors } from "@/utils/image-colors";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import {
@@ -337,6 +338,9 @@ const buildFallbackRangeLabel = (
 
   return `${trimmedStart} – ${trimmedEnd}`;
 };
+
+const isIsoDateTimeLabel = (value?: string | null): boolean =>
+  Boolean(value && /^\d{4}-\d{2}-\d{2}T/.test(value.trim()));
 
 const collapseDuplicateRangeLabel = (label: string | null | undefined): string | null => {
   const trimmed = String(label || "").trim();
@@ -939,7 +943,8 @@ export default async function EventPage({
     discoveryCreatedVia === "meet-discovery-v2" ||
     discoveryCreatedVia === "football-discovery" ||
     discoveryCreatedVia === "football-discovery-v2";
-  const showHostDashboard = canManageCreatedEvent && !hideHostDashboard && canShowOwnerRsvpDashboard(data);
+  const showHostDashboard =
+    canManageCreatedEvent && !hideHostDashboard && canShowOwnerRsvpDashboard(data);
   const showOwnerWorkspace = canManageCreatedEvent;
   const discoveryEditConfig: { customizeUrl: string; workflow: "gymnastics" } | null =
     editParam && canEditCreatedEvent
@@ -1090,6 +1095,8 @@ export default async function EventPage({
   })();
   const categoryRaw = typeof data?.category === "string" ? data.category : "";
   const categoryNormalized = categoryRaw.toLowerCase();
+  const isBabyShowerCategory =
+    categoryNormalized === "baby showers" || categoryNormalized === "baby shower";
   const locationText = typeof data?.location === "string" ? (data.location as string) : "";
   const rawVenueText = typeof data?.venue === "string" ? (data.venue as string) : "";
   const venueText =
@@ -1189,7 +1196,10 @@ export default async function EventPage({
   whenLabel = collapseDuplicateRangeLabel(whenLabel);
   const rawStartLabel = typeof data?.start === "string" ? (data.start as string) : null;
   const rawEndLabel = typeof data?.end === "string" ? (data.end as string) : null;
-  const fallbackRangeLabel = buildFallbackRangeLabel(rawStartLabel, rawEndLabel);
+  const fallbackRangeLabel =
+    isIsoDateTimeLabel(rawStartLabel) || isIsoDateTimeLabel(rawEndLabel)
+      ? null
+      : buildFallbackRangeLabel(rawStartLabel, rawEndLabel);
   if (fallbackRangeLabel) {
     if (!whenLabel) {
       whenLabel = fallbackRangeLabel;
@@ -1276,6 +1286,7 @@ export default async function EventPage({
     ...(Array.isArray(data?.outputs) ? data.outputs : []),
   ].map((value) => String(value || "").toLowerCase());
   const hasLiveCardOutput = requestedOutputValues.includes("live_card");
+  const hasEventPageOutput = requestedOutputValues.includes("event_page");
   const hasRsvpOutput = requestedOutputValues.includes("rsvp_page");
   const publicEventPrimaryOutput = cleanDisplayString(publicEventRecord.primaryOutput)
     ?.toLowerCase()
@@ -1288,7 +1299,13 @@ export default async function EventPage({
     (publicEventPrimaryOutput === "live_card" ||
       publicEventRenderer === "live_card" ||
       (hasLiveCardOutput && !publicEventPrimaryOutput));
-  const publicEventTitle = isConciergeLiveCardEvent
+  const isConciergeEventPageProduct =
+    discoveryCreatedVia === "concierge" &&
+    (publicEventPrimaryOutput === "event_page" ||
+      publicEventRenderer === "event_page" ||
+      (hasEventPageOutput && !publicEventPrimaryOutput));
+  const isConciergeVisualProduct = isConciergeLiveCardEvent || isConciergeEventPageProduct;
+  const publicEventTitle = isConciergeVisualProduct
     ? firstDisplayString(
         liveCardRecord.headline,
         liveCardCopyRecord.headline,
@@ -1298,14 +1315,14 @@ export default async function EventPage({
         title,
       ) || title
     : title;
-  const publicEventSubheadline = isConciergeLiveCardEvent
+  const publicEventSubheadline = isConciergeVisualProduct
     ? firstDisplayString(
         liveCardRecord.subheadline,
         liveCardCopyRecord.subheadline,
         publicEventRecord.subheadline,
       )
     : null;
-  const publicDescription = isConciergeLiveCardEvent
+  const publicDescription = isConciergeVisualProduct
     ? firstDisplayString(
         liveCardRecord.body,
         liveCardCopyRecord.body,
@@ -1320,15 +1337,25 @@ export default async function EventPage({
       ? `${publicDateText} at ${publicTimeText}`
       : publicDateText || publicTimeText;
   const publicWhenLine =
-    firstDisplayString(
-      whenLabel,
-      liveCardRecord.scheduleLine,
-      liveCardCopyRecord.scheduleLine,
-      publicEventRecord.scheduleLine,
-      data?.whenLabel,
-      data?.scheduleLine,
-      publicDateTimeLine,
-    ) || null;
+    (isConciergeVisualProduct
+      ? firstDisplayString(
+          liveCardRecord.scheduleLine,
+          liveCardCopyRecord.scheduleLine,
+          publicEventRecord.scheduleLine,
+          data?.whenLabel,
+          data?.scheduleLine,
+          publicDateTimeLine,
+          whenLabel,
+        )
+      : firstDisplayString(
+          whenLabel,
+          liveCardRecord.scheduleLine,
+          liveCardCopyRecord.scheduleLine,
+          publicEventRecord.scheduleLine,
+          data?.whenLabel,
+          data?.scheduleLine,
+          publicDateTimeLine,
+        )) || null;
   const publicLocationLine =
     firstDisplayString(
       liveCardRecord.locationLine,
@@ -1348,7 +1375,7 @@ export default async function EventPage({
       Boolean(rsvpRecord?.isEnabled) ||
       Boolean(rsvpRecord?.enabled) ||
       Boolean(rsvpRecord?.direct) ||
-      Boolean(isConciergeLiveCardEvent && hasRsvpOutput));
+      Boolean((isConciergeLiveCardEvent || isConciergeEventPageProduct) && hasRsvpOutput));
 
   const hostName =
     typeof data?.hostName === "string" && data.hostName.trim()
@@ -1715,6 +1742,73 @@ export default async function EventPage({
 
   const shouldRenderFootballPage =
     Boolean(isFootballDiscoveryTemplate) || Boolean(isFootballSeasonTemplate);
+
+  if (isConciergeEventPageProduct) {
+    const conciergeEventActions = !isReadOnly && isOwner && (
+      <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
+        {canEditCreatedEvent && (
+          <Link
+            href={editHref}
+            className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+            title="Edit event"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            <span className="hidden sm:inline">Edit</span>
+          </Link>
+        )}
+        <EventDeleteModal eventId={row.id} eventTitle={title} />
+        <EventActions
+          shareUrl={shareUrl}
+          event={data as any}
+          calendarTitle={title}
+          historyId={!isReadOnly ? row.id : undefined}
+          className=""
+          variant="compact"
+          tone={"default" as any}
+          showCalendar={true}
+          showEmail={false}
+        />
+      </div>
+    );
+
+    return renderWithEventPageBackground(
+      <ConciergeEventWebsite
+        eventId={row.id}
+        title={publicEventTitle}
+        category={categoryRaw || "Event"}
+        subheadline={publicEventSubheadline}
+        description={publicDescription}
+        whenLabel={publicWhenLine || whenLabel || null}
+        dateLabel={formattedTimeAndDate.date || null}
+        timeLabel={formattedTimeAndDate.time || null}
+        venueName={venueText || null}
+        location={locationText || venueText || publicLocationLine || null}
+        imageUrl={headerImageUrl}
+        shareUrl={shareUrl}
+        calendarLinks={calendarLinks}
+        showRsvp={showPublicRsvp}
+        directRsvpEnabled={directRsvpEnabled}
+        rsvpName={rsvpName}
+        rsvpPhone={rsvpPhone}
+        rsvpEmail={rsvpEmail}
+        rsvpUrl={rsvpUrl}
+        registryLinks={registryCards}
+        actions={conciergeEventActions}
+      />,
+    );
+  }
 
   if (isBirthdaySkinEvent) {
     const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "birthday", undefined, {
@@ -2381,7 +2475,7 @@ export default async function EventPage({
       </div>
     );
 
-    if (categoryNormalized === "baby showers" || categoryNormalized === "baby shower") {
+    if (isBabyShowerCategory) {
       return renderWithEventPageBackground(
         <BabyShowerSkin
           title={title}

@@ -34,6 +34,7 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 - `next.config.ts` sets `typescript.ignoreBuildErrors = true`. `next build` is not a reliable correctness check here.
 - Use Biome plus the VS Code diagnostics linter after TS/TSX edits. This repo will otherwise let type errors slip through.
+- Avoid using TypeScript `unknown` as an escape hatch. Use concrete types when the contract is known, use `void` for ignored return values, and reserve `unknown` for true untrusted boundaries like parsed JSON, external API payloads, dynamic imports, or generic utility inputs. Narrow `unknown` immediately with guards.
 - The codebase is intentionally mixed `ts`, `tsx`, `js`, and `mjs` with `allowJs: true`.
 - A lot of regression tests are not behavior tests; they are source-shape guards that assert specific strings or structure. If you refactor intentionally, expect to update the guard tests rather than assuming they are wrong.
 - Several core files are huge enough that opening them wholesale is a waste:

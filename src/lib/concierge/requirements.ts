@@ -15,6 +15,8 @@ export type RequirementField =
   | "location"
   | "rsvpEnabled"
   | "numberOfGuests"
+  | "registryLink"
+  | "giftPreferenceNote"
   | "tone";
 
 export type OutputRequirement = {
@@ -57,7 +59,15 @@ export const OUTPUT_REQUIREMENTS: Record<RequestedOutput, OutputRequirement> = {
     label: "Event page",
     requiredAny: ["eventPurpose", "title", "sourceContext"],
     requiredFields: ["eventPurpose", "date", "time", "location"],
-    optional: ["rsvp", "registry", "schedule", "travel", "links"],
+    optional: [
+      "website navigation",
+      "menu",
+      "RSVP form",
+      "registry/gift links",
+      "schedule",
+      "travel",
+      "links",
+    ],
     firstQuestion: "What should this event page be for?",
     previewCta: "Create first preview",
     visualOutput: true,
@@ -66,7 +76,7 @@ export const OUTPUT_REQUIREMENTS: Record<RequestedOutput, OutputRequirement> = {
     label: "Live card",
     requiredAny: ["eventPurpose", "title", "sourceContext"],
     requiredFields: ["eventPurpose", "date", "time", "location"],
-    optional: ["rsvp", "theme"],
+    optional: ["RSVP yes/no/maybe", "registry/gift links", "theme"],
     firstQuestion:
       "What should this live card be for? Tell me what you're celebrating, or upload an invite/photo and I'll build the first version.",
     previewCta: "Create first preview",
@@ -76,7 +86,7 @@ export const OUTPUT_REQUIREMENTS: Record<RequestedOutput, OutputRequirement> = {
     label: "Flyer/Invitation",
     requiredAny: ["eventPurpose", "title", "sourceContext"],
     requiredFields: ["eventPurpose", "date", "time", "location"],
-    optional: ["rsvp", "theme"],
+    optional: ["RSVP", "registry/gift links", "generated artwork", "theme"],
     firstQuestion: "What should this flyer invitation be for?",
     previewCta: "Create first preview",
     visualOutput: true,
@@ -85,7 +95,7 @@ export const OUTPUT_REQUIREMENTS: Record<RequestedOutput, OutputRequirement> = {
     label: "Flyer/Invitation",
     requiredAny: ["eventPurpose", "title", "sourceContext"],
     requiredFields: ["eventPurpose", "date", "time", "location"],
-    optional: ["rsvp", "theme"],
+    optional: ["RSVP", "registry/gift links", "generated artwork", "theme"],
     firstQuestion: "What should this flyer invitation be for?",
     previewCta: "Create first preview",
     visualOutput: true,
@@ -130,7 +140,7 @@ export const OUTPUT_REQUIREMENTS: Record<RequestedOutput, OutputRequirement> = {
     label: "Printable flyer",
     requiredAny: ["eventPurpose", "title", "sourceContext"],
     requiredFields: ["eventPurpose", "date", "time", "location"],
-    optional: ["rsvp", "theme"],
+    optional: ["RSVP", "registry/gift links", "generated artwork", "theme"],
     firstQuestion: "What event or source should I use?",
     previewCta: "Create first preview",
     visualOutput: true,
@@ -192,6 +202,8 @@ const DEFAULT_FIELD_QUESTIONS: Partial<Record<RequirementField, string>> = {
   rsvpEnabled:
     "Should Envitefy collect RSVPs for this event? Guests can answer yes, no, or maybe from the invite.",
   numberOfGuests: "How many guests should the RSVP track?",
+  registryLink: "Should I include a registry, gift list, wishlist, or gift link?",
+  giftPreferenceNote: "Any gift note to show, such as no gifts or gift cards preferred?",
   tone: "What kind of vibe should the invite have? For example: fun and colorful, elegant, playful, modern, or sweet.",
 };
 
@@ -204,6 +216,8 @@ const DEFAULT_SUGGESTED_REPLIES: Partial<Record<RequirementField, string[]>> = {
   location: ["At home", "At Sky Zone"],
   rsvpEnabled: ["Yes, collect RSVPs", "No RSVP needed"],
   numberOfGuests: ["20 guests", "35 guests"],
+  registryLink: ["Add a registry link", "No gift link"],
+  giftPreferenceNote: ["No gifts please", "Gift cards preferred"],
   tone: ["Fun and colorful", "Elegant", "Playful"],
 };
 

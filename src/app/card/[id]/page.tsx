@@ -244,6 +244,7 @@ function withDirectRsvpInvitationData(args: {
     ...args.invitationData,
     eventDetails: {
       ...eventDetails,
+      eventId: args.row.id,
       rsvpEnabled: true,
       rsvpMode: readFirstString(eventDetails.rsvpMode, "envitefy"),
       rsvpName: readFirstString(eventDetails.rsvpName, data.rsvpName, data.hostName, "Host"),

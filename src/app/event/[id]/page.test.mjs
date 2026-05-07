@@ -46,7 +46,10 @@ test("event route branches football discovery/template events into the football 
     source,
     /const cardFirstCanonical = isCardFirstEventProduct\(primaryProductOutput\)/,
   );
-  assert.match(source, /if \(cardFirstCanonical && !ownerToolsTab\) \{\s*redirect\(cardFirstCanonical\);/);
+  assert.match(
+    source,
+    /if \(cardFirstCanonical && !ownerToolsTab\) \{\s*redirect\(cardFirstCanonical\);/,
+  );
   assert.doesNotMatch(source, /title="Manage event"/);
   assert.doesNotMatch(source, /href=\{`\/events\/\$\{row\.id\}\/manage`\}/);
   assert.doesNotMatch(source, /BirthdayTemplateView/);
@@ -248,7 +251,7 @@ test("event route renders concierge live cards with public details and direct RS
     source,
     /Boolean\(firstDisplayString\(liveCardRecord\.headline, liveCardCopyRecord\.headline\)\)/,
   );
-  assert.match(source, /const publicEventSubheadline = isConciergeLiveCardEvent/);
+  assert.match(source, /const publicEventSubheadline = isConciergeVisualProduct/);
   assert.match(source, /liveCardRecord\.subheadline/);
   assert.match(source, /publicEventRecord\.subheadline/);
   assert.match(source, /liveCardRecord\.scheduleLine/);
@@ -261,6 +264,49 @@ test("event route renders concierge live cards with public details and direct RS
   assert.match(source, /allowDirectRsvp=\{directRsvpEnabled\}/);
   assert.match(source, /eventTitle=\{publicEventTitle\}/);
   assert.match(source, /\{publicEventSubheadline\}/);
+});
+
+test("event route renders concierge event pages as full website products", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+
+  assert.match(
+    source,
+    /import ConciergeEventWebsite from "@\/components\/concierge\/ConciergeEventWebsite";/,
+  );
+  assert.match(
+    source,
+    /const hasEventPageOutput = requestedOutputValues\.includes\("event_page"\);/,
+  );
+  assert.match(source, /const isConciergeEventPageProduct =/);
+  assert.match(source, /publicEventPrimaryOutput === "event_page"/);
+  assert.match(source, /publicEventRenderer === "event_page"/);
+  assert.match(
+    source,
+    /const isConciergeVisualProduct = isConciergeLiveCardEvent \|\| isConciergeEventPageProduct;/,
+  );
+
+  const conciergeEventPageBranch = source.indexOf("if (isConciergeEventPageProduct)");
+  const genericScannedInviteBranch = source.indexOf("if (isGenericScannedInviteEvent)");
+
+  assert.notEqual(conciergeEventPageBranch, -1);
+  assert.notEqual(genericScannedInviteBranch, -1);
+  assert.ok(
+    conciergeEventPageBranch < genericScannedInviteBranch,
+    "chat-created event pages should reach ConciergeEventWebsite before scanned-invite fallbacks",
+  );
+  assert.match(source, /<ConciergeEventWebsite\s+eventId=\{row\.id\}/);
+  assert.match(source, /showRsvp=\{showPublicRsvp\}/);
+  assert.match(source, /directRsvpEnabled=\{directRsvpEnabled\}/);
+  assert.match(source, /registryLinks=\{registryCards\}/);
+  assert.match(source, /calendarLinks=\{calendarLinks\}/);
+  assert.match(source, /imageUrl=\{headerImageUrl\}/);
+
+  const websiteSource = readSource("src/components/concierge/ConciergeEventWebsite.tsx");
+  assert.match(websiteSource, /aria-label="Event sections"/);
+  assert.match(websiteSource, /Toggle menu/);
+  assert.match(websiteSource, /#event-rsvp/);
+  assert.match(websiteSource, /<EventRsvpPrompt/);
+  assert.match(websiteSource, /#registry/);
 });
 
 test("direct Envitefy RSVP prompt does not require an outbound composer", () => {

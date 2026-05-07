@@ -19,7 +19,8 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
 import {
   CalendarIconApple,
@@ -35,6 +36,7 @@ import { getLiveCardRailLayout } from "@/lib/live-card-rail-layout";
 import {
   buildLiveCardRsvpOutboundHref,
   LIVE_CARD_RSVP_CHOICES,
+  type LiveCardRsvpResponseKey,
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
@@ -80,6 +82,7 @@ export type LiveCardEventDetails = {
   rsvpEnabled?: boolean;
   rsvpMode?: string;
   rsvpUrl?: string;
+  eventId?: string;
   detailsDescription?: string;
   guestImageUrls?: string[];
   realtorImageUrls?: string[];
@@ -431,6 +434,21 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const rsvpContact = readString(details?.rsvpContact);
   const rsvpParsed = parseLiveCardRsvpContact(rsvpContact);
   const directRsvpHref = normalizeLiveCardActionHref(details?.rsvpUrl);
+  const directRsvpEventId = readString(details?.eventId);
+  const hasDirectEnvitefyRsvp = Boolean(
+    directRsvpEventId &&
+      (details?.rsvpEnabled === true ||
+        readString(details?.rsvpMode).toLowerCase() === "envitefy" ||
+        directRsvpHref),
+  );
+  const [directRsvpChoice, setDirectRsvpChoice] = useState<LiveCardRsvpResponseKey | null>(null);
+  const [directRsvpName, setDirectRsvpName] = useState("");
+  const [directRsvpPhone, setDirectRsvpPhone] = useState("");
+  const [directRsvpMessage, setDirectRsvpMessage] = useState("");
+  const [directRsvpStatus, setDirectRsvpStatus] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
+  const [directRsvpError, setDirectRsvpError] = useState("");
   const agentName = readString(details?.realtorName) || readString(details?.rsvpName);
   const agentTitle = readString(details?.realtorTitle) || (agentName ? "Listing Agent" : "");
   const agentBrokerage = readString(details?.brokerageName);
@@ -490,10 +508,21 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   }, [props.activeTab, props.onActiveTabChange]);
 
   useEffect(() => {
-    if (!categorySupportsRsvp && !directRsvpHref && props.activeTab === "rsvp") {
+    if (
+      !categorySupportsRsvp &&
+      !directRsvpHref &&
+      !hasDirectEnvitefyRsvp &&
+      props.activeTab === "rsvp"
+    ) {
       props.onActiveTabChange("none");
     }
-  }, [categorySupportsRsvp, directRsvpHref, props.activeTab, props.onActiveTabChange]);
+  }, [
+    categorySupportsRsvp,
+    directRsvpHref,
+    hasDirectEnvitefyRsvp,
+    props.activeTab,
+    props.onActiveTabChange,
+  ]);
 
   useEffect(() => {
     if ((!openHouseAgentCard || !hasOpenHouseLogoInfo) && props.activeTab === "logo") {
@@ -508,6 +537,40 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         ? "Tap a response to open your messages app with a draft text."
         : "Add a phone number or email as the RSVP contact to send a reply from here.";
 
+  const submitDirectRsvp = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!directRsvpEventId || !directRsvpChoice) return;
+
+    const name = directRsvpName.trim();
+    if (!name) {
+      setDirectRsvpStatus("error");
+      setDirectRsvpError("Enter your name to send your RSVP.");
+      return;
+    }
+
+    setDirectRsvpStatus("submitting");
+    setDirectRsvpError("");
+
+    try {
+      const response = await fetch(`/api/events/${encodeURIComponent(directRsvpEventId)}/rsvp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          response: directRsvpChoice,
+          name,
+          phone: directRsvpPhone.trim() || undefined,
+          message: directRsvpMessage.trim() || undefined,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Failed to send RSVP.");
+      setDirectRsvpStatus("success");
+    } catch (error) {
+      setDirectRsvpStatus("error");
+      setDirectRsvpError(error instanceof Error ? error.message : "Failed to send RSVP.");
+    }
+  };
+
   const buttonConfigs = useMemo(() => {
     const detailsButtonConfig = {
       key: "details" as const,
@@ -521,13 +584,14 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       label: openHouseAgentCard ? "Realtor" : "RSVP",
       icon: openHouseAgentCard ? UserRound : MessageSquare,
       visible:
-        (categorySupportsRsvp || Boolean(directRsvpHref)) &&
+        (categorySupportsRsvp || Boolean(directRsvpHref) || hasDirectEnvitefyRsvp) &&
         (openHouseAgentCard
           ? hasOpenHouseAgentInfo
           : Boolean(
               readString(details?.rsvpName) ||
                 readString(details?.rsvpContact) ||
-                directRsvpHref,
+                directRsvpHref ||
+                hasDirectEnvitefyRsvp,
             )),
       onClick: () => props.onActiveTabChange(props.activeTab === "rsvp" ? "none" : "rsvp"),
     };
@@ -574,6 +638,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     categorySupportsRsvp,
     details,
     directRsvpHref,
+    hasDirectEnvitefyRsvp,
     hasOpenHouseAgentInfo,
     hasOpenHouseLogoInfo,
     invitationData,
@@ -593,11 +658,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     buttonCount: buttonConfigs.length,
   });
   const defaultActionRailClassName = `grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch ${
-    props.showcaseMode
-      ? "gap-2 px-2"
-      : useCompactActionButtons
-        ? "gap-1.5 px-2.5"
-        : "gap-3 px-1"
+    props.showcaseMode ? "gap-2 px-2" : useCompactActionButtons ? "gap-1.5 px-2.5" : "gap-3 px-1"
   }`;
   const actionRailWrapperClassName =
     showcaseRailLayout === "cluster" ? "flex w-full justify-center px-2" : "w-full";
@@ -808,7 +869,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                             </p>
                           </div>
                         ) : null}
-                        {directRsvpHref && !rsvpContact ? (
+                        {directRsvpHref && !rsvpContact && !hasDirectEnvitefyRsvp ? (
                           <a
                             href={directRsvpHref}
                             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-neutral-800"
@@ -818,7 +879,84 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                           </a>
                         ) : null}
                       </div>
-                      {rsvpContact ? (
+                      {hasDirectEnvitefyRsvp ? (
+                        <div className="mt-auto space-y-3 border-t border-neutral-100 pt-4">
+                          <div className="grid grid-cols-3 gap-2">
+                            {LIVE_CARD_RSVP_CHOICES.map((choice) => {
+                              const accent = accentClassForRsvpChoice(choice.key);
+                              const isSelected = directRsvpChoice === choice.key;
+                              return (
+                                <button
+                                  key={choice.key}
+                                  type="button"
+                                  onClick={() => {
+                                    setDirectRsvpChoice(choice.key);
+                                    setDirectRsvpStatus("idle");
+                                    setDirectRsvpError("");
+                                  }}
+                                  className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${
+                                    isSelected ? "ring-2 ring-neutral-900 ring-offset-2" : ""
+                                  } ${accent}`}
+                                  aria-pressed={isSelected}
+                                >
+                                  {choice.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {directRsvpChoice ? (
+                            <form className="space-y-2" onSubmit={submitDirectRsvp}>
+                              <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                Your name
+                                <input
+                                  value={directRsvpName}
+                                  onChange={(event) => setDirectRsvpName(event.target.value)}
+                                  className="mt-1 h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-900 outline-none focus:border-neutral-900"
+                                  placeholder="Name"
+                                  required
+                                />
+                              </label>
+                              <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                Phone optional
+                                <input
+                                  value={directRsvpPhone}
+                                  onChange={(event) => setDirectRsvpPhone(event.target.value)}
+                                  className="mt-1 h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-900 outline-none focus:border-neutral-900"
+                                  placeholder="Phone"
+                                />
+                              </label>
+                              <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                Note optional
+                                <textarea
+                                  value={directRsvpMessage}
+                                  onChange={(event) => setDirectRsvpMessage(event.target.value)}
+                                  className="mt-1 min-h-16 w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900 outline-none focus:border-neutral-900"
+                                  placeholder="Message"
+                                />
+                              </label>
+                              {directRsvpStatus === "error" && directRsvpError ? (
+                                <p className="text-xs font-semibold text-rose-600">
+                                  {directRsvpError}
+                                </p>
+                              ) : null}
+                              {directRsvpStatus === "success" ? (
+                                <p className="text-xs font-semibold text-emerald-700">RSVP sent.</p>
+                              ) : null}
+                              <button
+                                type="submit"
+                                disabled={directRsvpStatus === "submitting"}
+                                className="inline-flex w-full items-center justify-center rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-neutral-800 disabled:cursor-wait disabled:opacity-70"
+                              >
+                                {directRsvpStatus === "submitting" ? "Sending..." : "Send RSVP"}
+                              </button>
+                            </form>
+                          ) : (
+                            <p className="text-xs font-semibold text-neutral-500">
+                              Choose yes, no, or maybe to RSVP from the card.
+                            </p>
+                          )}
+                        </div>
+                      ) : rsvpContact ? (
                         <div className="mt-auto grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4">
                           {LIVE_CARD_RSVP_CHOICES.map((choice) => {
                             const href = buildLiveCardRsvpOutboundHref({
@@ -1155,11 +1293,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                           useCompactActionButtons
                             ? "text-[6px] sm:text-[7px] md:text-[8px]"
                             : "text-[8px] sm:text-[9px] md:text-[10px]"
-                        } ${
-                          shouldHideClosedRailLabels
-                            ? "hidden"
-                            : "inline"
-                        }`}
+                        } ${shouldHideClosedRailLabels ? "hidden" : "inline"}`}
                       >
                         {button.label}
                       </span>

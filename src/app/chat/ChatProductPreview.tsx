@@ -5,9 +5,11 @@ import {
   ChevronDown,
   ExternalLink,
   FileImage,
+  Gift,
   Globe2,
   Loader2,
   MapPin,
+  Menu,
   Umbrella,
   Users,
 } from "lucide-react";
@@ -152,6 +154,8 @@ function ChatEventPagePreview({
 >) {
   const body = previewBodyText(draft, summary);
   const category = previewCategoryText(draft);
+  const hasRsvp = draft?.rsvpEnabled === true;
+  const hasRegistry = Boolean(draft?.registryLink || draft?.giftRegistryLink);
 
   return (
     <div
@@ -168,7 +172,18 @@ function ChatEventPagePreview({
         </span>
       </div>
       <div className="h-[calc(100%-2.25rem)] overflow-hidden">
-        <div className="relative h-48 overflow-hidden">
+        <div className="flex h-10 items-center justify-between border-b border-[#e5ebf5] bg-white px-4">
+          <span className="truncate text-[0.58rem] font-black uppercase tracking-[0.18em] text-[#5d4b82]">
+            {category}
+          </span>
+          <div className="flex items-center gap-2 text-[0.56rem] font-black uppercase tracking-[0.12em] text-[#73809a]">
+            <span>Details</span>
+            {hasRsvp ? <span>RSVP</span> : null}
+            {hasRegistry ? <Gift className="size-3" aria-hidden="true" /> : null}
+            <Menu className="size-3.5" aria-hidden="true" />
+          </div>
+        </div>
+        <div className="relative h-40 overflow-hidden">
           <img
             src={previewImageUrl}
             alt=""
@@ -177,10 +192,7 @@ function ChatEventPagePreview({
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(20,24,42,0.18),rgba(20,24,42,0.58))]" />
           <div className="absolute inset-x-5 bottom-5 text-white">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="rounded-full bg-white/18 px-3 py-1 text-[0.56rem] font-black uppercase tracking-[0.2em] backdrop-blur">
-                {category}
-              </span>
+            <div className="mb-3 flex items-center justify-end">
               <Globe2 className="size-4" aria-hidden="true" />
             </div>
             <h3 className="line-clamp-3 font-serif text-3xl font-bold italic leading-[0.96]">
@@ -208,7 +220,26 @@ function ChatEventPagePreview({
             <p className="text-[0.58rem] font-black uppercase tracking-[0.18em] text-white/64">
               {hasGeneratedProduct ? "Guest actions" : "RSVP"}
             </p>
-            <p className="mt-2 text-sm font-bold">{draft?.previewCopy.cta || "RSVP"}</p>
+            {hasRsvp ? (
+              <div className="mt-3 grid grid-cols-3 gap-1.5">
+                {["Yes", "No", "Maybe"].map((choice) => (
+                  <span
+                    key={choice}
+                    className="rounded-lg bg-white/12 px-2 py-2 text-center text-[0.58rem] font-black uppercase tracking-[0.12em]"
+                  >
+                    {choice}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm font-bold">{draft?.previewCopy.cta || "View details"}</p>
+            )}
+            {hasRegistry ? (
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-[0.62rem] font-black uppercase tracking-[0.14em]">
+                <Gift className="size-3" aria-hidden="true" />
+                Registry
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

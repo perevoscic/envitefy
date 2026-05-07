@@ -175,6 +175,12 @@ export const CATEGORY_FIELDS: Partial<Record<InviteCategory, FieldConfig[]>> = {
       type: "text",
       placeholder: "e.g. Your presence is our gift",
     },
+    {
+      label: "Gift List Link",
+      key: "registryLink",
+      type: "url",
+      placeholder: "e.g. Anniversary gift list or registry link",
+    },
   ],
   "Open House": [
     {

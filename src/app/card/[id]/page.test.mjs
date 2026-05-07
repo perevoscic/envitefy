@@ -1,7 +1,7 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import test from "node:test";
 
 function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -11,9 +11,15 @@ test("shared card route prefers the public-safe cover image url", () => {
   const pageSource = readSource("src/app/card/[id]/page.tsx");
   const dbSource = readSource("src/lib/db.ts");
 
-  assert.match(pageSource, /async function normalizeSharedCardImageUrl\(value: unknown\): Promise<string>/);
+  assert.match(
+    pageSource,
+    /async function normalizeSharedCardImageUrl\(value: unknown\): Promise<string>/,
+  );
   assert.match(pageSource, /if \(raw\.startsWith\("\/"\)\) return absoluteUrl\(raw\);/);
-  assert.match(pageSource, /if \(isLoopbackHostname\(parsed\.hostname\)\) \{\s*return absoluteUrl\(`\$\{parsed\.pathname\}\$\{parsed\.search\}`\);\s*\}/s);
+  assert.match(
+    pageSource,
+    /if \(isLoopbackHostname\(parsed\.hostname\)\) \{\s*return absoluteUrl\(`\$\{parsed\.pathname\}\$\{parsed\.search\}`\);\s*\}/s,
+  );
   assert.match(
     pageSource,
     /const imageUrl = await normalizeSharedCardImageUrl\(\s*readString\(data\.coverImageUrl\)\s*\|\|\s*readString\(studioCard\?\.imageUrl\)[\s\S]*resolveConciergeLiveCardImagePath\(data\)/,
@@ -33,15 +39,41 @@ test("shared card route can render concierge live-card events", () => {
   const historyPayloadSource = readSource("src/lib/concierge/history-payload.ts");
 
   assert.match(pageSource, /function resolveConciergeLiveCardImagePath/);
-  assert.match(pageSource, /readString\(publicEvent\?\.renderer\)\.toLowerCase\(\) === "live_card"/);
+  assert.match(
+    pageSource,
+    /readString\(publicEvent\?\.renderer\)\.toLowerCase\(\) === "live_card"/,
+  );
   assert.match(pageSource, /hasLiveCardOutput\(data\)/);
   assert.match(pageSource, /birthday: "\/studio\/birthday\.webp"/);
   assert.match(pageSource, /liveCard\?\.headline/);
   assert.match(pageSource, /publicEvent\?\.headline/);
-  assert.match(pageSource, /heroTextMode: heroTextMode \|\| \(hasLiveCardOutput\(data\) \? "image" : undefined\)/);
+  assert.match(
+    pageSource,
+    /heroTextMode: heroTextMode \|\| \(hasLiveCardOutput\(data\) \? "image" : undefined\)/,
+  );
   assert.match(historyPayloadSource, /coverImageUrl: liveCardImageUrl/);
   assert.match(historyPayloadSource, /studioCard: \{/);
   assert.match(historyPayloadSource, /invitationData: liveCardInvitationData/);
+});
+
+test("shared card route carries direct RSVP metadata into live-card actions", () => {
+  const pageSource = readSource("src/app/card/[id]/page.tsx");
+  const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
+
+  assert.match(pageSource, /function withDirectRsvpInvitationData/);
+  assert.match(pageSource, /eventId: args\.row\.id/);
+  assert.match(pageSource, /rsvpMode: readFirstString\(eventDetails\.rsvpMode, "envitefy"\)/);
+  assert.match(
+    pageSource,
+    /rsvpUrl: `\$\{buildEventPath\(args\.row\.id, args\.title\)\}#event-rsvp`/,
+  );
+  assert.match(surfaceSource, /eventId\?: string;/);
+  assert.match(surfaceSource, /const hasDirectEnvitefyRsvp = Boolean/);
+  assert.match(
+    surfaceSource,
+    /fetch\(`\/api\/events\/\$\{encodeURIComponent\(directRsvpEventId\)\}\/rsvp`/,
+  );
+  assert.match(surfaceSource, /Choose yes, no, or maybe to RSVP from the card\./);
 });
 
 test("shared card page keeps public shares in a centered live-card frame", () => {
@@ -69,25 +101,22 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
     sharedPageSource,
     /relative mx-auto aspect-\[9\/16\] overflow-hidden rounded-\[3rem\]/,
   );
-  assert.match(sharedPageSource, /style=\{\{ width: props\.style\?\.width \? undefined : cardFrameWidth \}\}/);
+  assert.match(
+    sharedPageSource,
+    /style=\{\{ width: props\.style\?\.width \? undefined : cardFrameWidth \}\}/,
+  );
   assert.match(sharedPageSource, /object-cover/);
   assert.match(sharedPageSource, /LiveCardHeroTextOverlay/);
   assert.match(
     surfaceSource,
     /absolute bottom-32 left-1\/2 z-50 w-\[calc\(100%-1rem\)\] max-w-\[22rem\] -translate-x-1\/2/,
   );
-  assert.match(
-    surfaceSource,
-    /pointer-events-none absolute inset-0 flex flex-col[\s\S]*md:p-8/,
-  );
+  assert.match(surfaceSource, /pointer-events-none absolute inset-0 flex flex-col[\s\S]*md:p-8/);
   assert.match(
     surfaceSource,
     /const defaultActionRailClassName = `grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch/,
   );
-  assert.match(
-    surfaceSource,
-    /: defaultActionRailClassName;/,
-  );
+  assert.match(surfaceSource, /: defaultActionRailClassName;/);
   assert.match(mainWrapperSource, /isStudioCardShare/);
   assert.match(mainWrapperSource, /paddingTop = isStudioCardShare\s*\?\s*"0px"/);
 });
@@ -97,7 +126,10 @@ test("shared card route and page preserve overlay hero text mode for live cards"
   const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
-  assert.match(pageSource, /const heroTextMode =\s*data\.heroTextMode === "overlay" \|\| data\.heroTextMode === "image"/);
+  assert.match(
+    pageSource,
+    /const heroTextMode =\s*data\.heroTextMode === "overlay" \|\| data\.heroTextMode === "image"/,
+  );
   assert.match(pageSource, /heroTextMode:/);
   assert.match(surfaceSource, /heroTextMode\?: "image" \| "overlay"/);
   assert.match(sharedPageSource, /<LiveCardHeroTextOverlay invitationData=\{invitationData\} \/>/);
@@ -107,8 +139,14 @@ test("poster-first shared cards keep floating controls with overlay studio credi
   const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
 
-  assert.match(surfaceSource, /export function isPosterFirstHeroCard\(invitationData\?: LiveCardInvitationData \| null\)/);
-  assert.match(sharedPageSource, /const posterFirstHeroCard = isPosterFirstHeroCard\(invitationData\);/);
+  assert.match(
+    surfaceSource,
+    /export function isPosterFirstHeroCard\(invitationData\?: LiveCardInvitationData \| null\)/,
+  );
+  assert.match(
+    sharedPageSource,
+    /const posterFirstHeroCard = isPosterFirstHeroCard\(invitationData\);/,
+  );
   assert.match(sharedPageSource, /\{posterFirstHeroCard \? \(/);
   assert.match(
     surfaceSource,

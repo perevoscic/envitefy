@@ -42,6 +42,7 @@ type Props = {
   attire?: string | null;
   registryUrl?: string | null;
   ocrFacts?: OcrFact[] | null;
+  footerPrefix?: string | null;
   actions?: ReactNode;
 };
 
@@ -66,6 +67,7 @@ export default function BabyShowerSkin({
   attire,
   registryUrl,
   ocrFacts,
+  footerPrefix,
   actions,
 }: Props) {
   const babyShowerPalette = {
@@ -103,6 +105,7 @@ export default function BabyShowerSkin({
       registryUrl={registryUrl}
       ocrFacts={ocrFacts}
       detailLayout="wideDetails"
+      footerPrefix={footerPrefix}
       actions={actions}
     />
   );

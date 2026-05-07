@@ -95,6 +95,9 @@ function draftContext(draft: ConciergeEventDraft) {
       theme: draft.theme,
       vibe: draft.tone,
       rsvpGuestCount: draft.numberOfGuests,
+      rsvpDeadline: draft.rsvpDeadline,
+      registryLink: draft.registryLink || draft.giftRegistryLink,
+      giftNote: draft.giftPreferenceNote || draft.giftNote,
     },
     eventPurpose: draft.eventPurpose,
     eventType: draft.eventType,
@@ -109,7 +112,12 @@ function draftContext(draft: ConciergeEventDraft) {
     location: draft.location,
     venue: draft.venue,
     rsvpEnabled: draft.rsvpEnabled,
+    rsvpDeadline: draft.rsvpDeadline,
+    rsvpName: draft.rsvpName,
+    rsvpContact: draft.rsvpContact,
     numberOfGuests: draft.numberOfGuests,
+    registryLink: draft.registryLink || draft.giftRegistryLink,
+    giftPreferenceNote: draft.giftPreferenceNote || draft.giftNote,
     theme: draft.theme,
     tone: draft.tone,
     missingFields: draft.missingFields,
@@ -137,7 +145,9 @@ function streamFallback(fallbackMessage: string, onDelta: (text: string) => void
 }
 
 function shouldUseDeterministicFallback(draft: ConciergeEventDraft) {
-  return draft.sourceContext.boundary === "non_creation" || draft.currentQuestion === "date_confirmation";
+  return (
+    draft.sourceContext.boundary === "non_creation" || draft.currentQuestion === "date_confirmation"
+  );
 }
 
 export async function streamConciergePersona(
@@ -196,6 +206,10 @@ export async function streamConciergePersona(
               "Never send a checklist, numbered list, or multi-question intake block.",
               "Never mention default or IANA timezone names like America/Chicago; ask for the user's date and time naturally.",
               "When the draft is ready, verify the selected product and captured details on separate lines, then invite the user to generate the selected product.",
+              "Live cards with Envitefy RSVP must keep a visible RSVP action and guests answer yes, no, or maybe.",
+              "Event pages are full guest-facing websites with navigation/menu, detail sections, calendar/location actions, RSVP form when enabled, and registry or gift-list links when supplied.",
+              "Flyer/invitation and live-card products require generated artwork from the user's description; do not describe static category thumbnails or placeholders as final products.",
+              "For birthdays, weddings, baby showers, gender reveals, bridal showers, housewarmings, anniversaries, and graduations, preserve registry, gift-list, wishlist, and no-gifts notes when the user provides them.",
               "Use the deterministicFallback as the wording and detail source when it already contains a verification block.",
               "Keep the reply concise: one or two short sentences.",
             ].join(" "),

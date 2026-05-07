@@ -143,6 +143,13 @@ export function buildConciergeHistoryPayload(
   const liveCardSubheadline =
     cleanString(draft.previewCopy.subheadline) || cleanString(draft.theme) || category;
   const liveCardCta = cleanString(draft.previewCopy.cta) || "RSVP";
+  const registryLink =
+    cleanString(draft.registryLink) || cleanString(draft.giftRegistryLink) || null;
+  const giftNote = cleanString(draft.giftPreferenceNote) || cleanString(draft.giftNote) || null;
+  const rsvpName = cleanString(draft.rsvpName) || (rsvpEnabled ? "Host" : "");
+  const rsvpContact = cleanString(draft.rsvpContact) || "";
+  const rsvpDeadline = cleanString(draft.rsvpDeadline) || "";
+  const registryLinks = registryLink ? [{ label: "Registry", url: registryLink }] : [];
   const studioInviteData = options.studioInvite?.invitationData;
   const studioInvitePositions = options.studioInvite?.positions;
   const generatedInviteImageUrl = cleanString(options.studioInvite?.imageUrl);
@@ -175,7 +182,11 @@ export function buildConciergeHistoryPayload(
       message: liveCardSubheadline,
       rsvpEnabled,
       rsvpMode: rsvpEnabled ? "envitefy" : "",
-      rsvpName: rsvpEnabled ? "Host" : "",
+      rsvpName,
+      rsvpContact,
+      rsvpDeadline,
+      registryLink: registryLink || "",
+      giftNote: giftNote || "",
     },
   };
   const liveCardInvitationData = isRecord(studioInviteData)
@@ -272,6 +283,12 @@ export function buildConciergeHistoryPayload(
       age: draft.ageOrMilestone,
       honoreeName: draft.honoreeName,
       numberOfGuests: rsvpEnabled ? draft.numberOfGuests || 0 : 0,
+      rsvpName,
+      rsvpContact,
+      rsvpDeadline,
+      registryLink,
+      giftPreferenceNote: giftNote,
+      registries: registryLinks,
       outputs: requestedOutputs,
       previewCopy: draft.previewCopy,
       rsvpEnabled,
@@ -282,6 +299,9 @@ export function buildConciergeHistoryPayload(
         mode: "envitefy",
         direct: rsvpEnabled,
         cta: liveCardCta,
+        name: rsvpName,
+        contact: rsvpContact,
+        deadline: rsvpDeadline,
       },
       conciergeDraft: {
         ...draft,
@@ -298,6 +318,28 @@ export function buildConciergeHistoryPayload(
         scheduleLine,
         locationLine,
         rsvpEnabled,
+        navigation: [
+          { label: "Details", target: "#details" },
+          { label: "Schedule", target: "#schedule" },
+          ...(rsvpEnabled ? [{ label: "RSVP", target: "#event-rsvp" }] : []),
+          ...(registryLinks.length ? [{ label: "Registry", target: "#registry" }] : []),
+        ],
+        sections: [
+          { label: "Overview", value: description },
+          { label: "When", value: scheduleLine || "" },
+          { label: "Where", value: locationLine || "" },
+          ...(registryLink ? [{ label: "Registry", value: registryLink }] : []),
+          ...(giftNote ? [{ label: "Gift Note", value: giftNote }] : []),
+        ],
+        forms: rsvpEnabled
+          ? [
+              {
+                type: "rsvp",
+                choices: ["yes", "no", "maybe"],
+                fields: ["name", "phone", "message"],
+              },
+            ]
+          : [],
       },
       liveCard: {
         headline: liveCardHeadline,
@@ -306,6 +348,8 @@ export function buildConciergeHistoryPayload(
         scheduleLine,
         locationLine,
         cta: liveCardCta,
+        registryLink,
+        giftNote,
       },
       studioCard: {
         imageUrl: liveCardImageUrl,
