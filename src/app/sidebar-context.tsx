@@ -20,6 +20,8 @@ interface SidebarContextType {
   setSelectedEventTitle: (title: string | null) => void;
   selectedEventHref: string | null;
   setSelectedEventHref: (href: string | null) => void;
+  selectedEventOwnerHref: string | null;
+  setSelectedEventOwnerHref: (href: string | null) => void;
   selectedEventEditHref: string | null;
   setSelectedEventEditHref: (href: string | null) => void;
   activeEventTab: EventContextTab;
@@ -98,6 +100,7 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
   const [selectedEventHref, setSelectedEventHref] = useState<string | null>(
     null,
   );
+  const [selectedEventOwnerHref, setSelectedEventOwnerHref] = useState<string | null>(null);
   const [selectedEventEditHref, setSelectedEventEditHref] = useState<
     string | null
   >(null);
@@ -163,6 +166,7 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
     setSelectedEventId(null);
     setSelectedEventTitle(null);
     setSelectedEventHref(null);
+    setSelectedEventOwnerHref(null);
     setSelectedEventEditHref(null);
     setActiveEventTab("dashboard");
   };
@@ -179,6 +183,8 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
         setSelectedEventTitle,
         selectedEventHref,
         setSelectedEventHref,
+        selectedEventOwnerHref,
+        setSelectedEventOwnerHref,
         selectedEventEditHref,
         setSelectedEventEditHref,
         activeEventTab,

@@ -28,7 +28,7 @@ const OWNER_TAB_ITEMS: Array<{
   icon: LucideIcon;
 }> = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { key: "guests", label: "Guests", icon: Users },
+  { key: "guests", label: "RSVPs", icon: Users },
   { key: "communications", label: "Communications", icon: MessageSquare },
   { key: "settings", label: "Settings", icon: Settings },
 ];

@@ -66,7 +66,8 @@ const mobileTileOrderClassNameByKey: Partial<Record<StudioCategoryGridTileKey, s
   "Open House": "order-7 sm:order-none",
   Housewarming: "order-8 sm:order-none",
   "Field Trip/Day": "order-9 sm:order-none",
-  "Custom Invite": "order-10 sm:order-none",
+  Anniversary: "order-10 sm:order-none",
+  "Custom Invite": "order-11 sm:order-none",
 };
 
 export function StudioCategoryGrid({

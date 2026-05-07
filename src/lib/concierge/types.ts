@@ -95,7 +95,7 @@ export type CreationSourceContext = {
   signals?: SourceIntentSignal[];
   requiresUserConfirmation?: boolean;
   originalCategory?: string | null;
-  boundary?: "private_data" | null;
+  boundary?: "private_data" | "non_creation" | null;
   resolvedId?: string | null;
   candidates?: Array<{
     type: SourceContextType;

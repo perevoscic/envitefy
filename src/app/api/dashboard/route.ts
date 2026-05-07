@@ -16,6 +16,7 @@ import {
   getDashboardRefreshInflight,
   getDashboardResponseCache,
 } from "@/lib/dashboard-cache";
+import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import {
   createServerTimingTracker,
   isTimingRequested,
@@ -297,6 +298,7 @@ async function computeDashboardPayload(
       updatedAt: string | null;
     }>,
   };
+  const shouldLoadOwnerRsvp = nextEvent ? canShowOwnerRsvpDashboard(nextEvent) : false;
 
   const allEventIds = [
     ...(nextEvent ? [nextEvent.id] : []),
@@ -306,7 +308,7 @@ async function computeDashboardPayload(
   const userRsvpMap = new Map<string, "yes" | "no" | "maybe">();
 
   const loadRsvp = async () => {
-    if (!nextEvent) return;
+    if (!nextEvent || !shouldLoadOwnerRsvp) return;
     try {
       const [grouped, recentRows] = await Promise.all([
         query<{ response: string; count: string }>(
@@ -443,7 +445,7 @@ async function computeDashboardPayload(
       nextEventInDays,
     },
     upcoming: upcoming.slice(0, 12),
-    rsvp: nextEvent ? rsvp : null,
+    rsvp: shouldLoadOwnerRsvp ? rsvp : null,
     setupHealth: {
       flags: setupHealthFlags,
     },

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
   type LiveCardActiveTab,
@@ -19,11 +19,16 @@ type SharedStudioCardProps = {
   shareUrl?: string | null;
 };
 
-export default function SharedStudioCardPage(props: SharedStudioCardProps) {
+type SharedStudioCardFrameProps = SharedStudioCardProps & {
+  className?: string;
+  frameClassName?: string;
+  style?: CSSProperties;
+};
+
+export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
   const [activeTab, setActiveTab] = useState<LiveCardActiveTab>("none");
   const [shareState, setShareState] = useState<"idle" | "pending" | "success">("idle");
   const invitationData = props.invitationData || null;
-  const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
   const cardFrameWidth =
     "min(calc(100vw - 2rem), calc((100dvh - 6.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 9 / 16))";
 
@@ -61,6 +66,41 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   }
 
   return (
+    <div className={props.className || ""} style={props.style}>
+      <div
+        className={`relative mx-auto aspect-[9/16] overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-purple-500/20 ${
+          props.frameClassName || ""
+        }`}
+        style={{ width: props.style?.width ? undefined : cardFrameWidth }}
+      >
+        <img
+          src={props.imageUrl}
+          alt={props.title}
+          className="absolute inset-0 h-full w-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+        <LiveCardHeroTextOverlay invitationData={invitationData} />
+        <StudioLiveCardActionSurface
+          title={props.title}
+          invitationData={invitationData}
+          activeTab={activeTab}
+          onActiveTabChange={setActiveTab}
+          positions={props.positions}
+          shareUrl={props.shareUrl}
+          fallbackShareUrlToWindowLocation
+          onShare={() => void handleShare()}
+          shareState={shareState}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default function SharedStudioCardPage(props: SharedStudioCardProps) {
+  const invitationData = props.invitationData || null;
+  const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
+
+  return (
     <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
         <img
@@ -75,29 +115,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
 
       <main className="relative z-0 flex min-h-0 flex-1 flex-col">
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-4 md:py-6">
-          <div
-            className="relative mx-auto aspect-[9/16] overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-purple-500/20"
-            style={{ width: cardFrameWidth }}
-          >
-            <img
-              src={props.imageUrl}
-              alt={props.title}
-              className="absolute inset-0 h-full w-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-            <LiveCardHeroTextOverlay invitationData={invitationData} />
-            <StudioLiveCardActionSurface
-              title={props.title}
-              invitationData={invitationData}
-              activeTab={activeTab}
-              onActiveTabChange={setActiveTab}
-              positions={props.positions}
-              shareUrl={props.shareUrl}
-              fallbackShareUrlToWindowLocation
-              onShare={() => void handleShare()}
-              shareState={shareState}
-            />
-          </div>
+          <SharedStudioCardFrame {...props} />
         </div>
       </main>
 

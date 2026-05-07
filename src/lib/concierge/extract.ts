@@ -3,6 +3,7 @@ import {
   createCreationSessionId,
   deriveCreationStatus,
   isGreetingMessage,
+  isNonCreationRequest,
   normalizeCreationEventType,
   normalizeCreationIntent,
   normalizeRequestedOutputs,
@@ -165,10 +166,20 @@ export function normalizeConciergeDraft(
 ): ConciergeEventDraft {
   const record = asRecord(value);
   const eventData = asRecord(record.eventData);
-  const requestedOutputs = normalizeRequestedOutputs(record.requestedOutputs ?? record.outputs, {
+  let requestedOutputs = normalizeRequestedOutputs(record.requestedOutputs ?? record.outputs, {
     previous: fallback,
     defaultOutput: fallback.requestedOutputs.length ? undefined : null,
   });
+  if (fallback.rsvpEnabled === false && requestedOutputs.includes("rsvp_page")) {
+    requestedOutputs = requestedOutputs.filter((output) => output !== "rsvp_page");
+  }
+  if (
+    fallback.rsvpEnabled === true &&
+    !fallback.requestedOutputs.includes("rsvp_page") &&
+    requestedOutputs.includes("rsvp_page")
+  ) {
+    requestedOutputs = requestedOutputs.filter((output) => output !== "rsvp_page");
+  }
   let eventType = normalizeCreationEventType(
     record.eventType ?? eventData.eventType ?? eventData.category,
     fallback.eventType,
@@ -248,19 +259,23 @@ export function normalizeConciergeDraft(
       ? (eventData.rsvp as Record<string, unknown>)
       : {};
   const rsvpEnabled =
-    booleanOrNull(
-      record.rsvpEnabled,
-      record.isRsvpEnabled,
-      rsvpRecord.enabled,
-      rsvpRecord.isEnabled,
-      eventData.rsvpEnabled,
-      eventData.isRsvpEnabled,
-      eventRsvpRecord.enabled,
-      eventRsvpRecord.isEnabled,
-    ) ?? fallback.rsvpEnabled;
+    fallback.rsvpEnabled === false
+      ? false
+      : booleanOrNull(
+          record.rsvpEnabled,
+          record.isRsvpEnabled,
+          rsvpRecord.enabled,
+          rsvpRecord.isEnabled,
+          eventData.rsvpEnabled,
+          eventData.isRsvpEnabled,
+          eventRsvpRecord.enabled,
+          eventRsvpRecord.isEnabled,
+        ) ?? fallback.rsvpEnabled;
   const numberOfGuests =
-    positiveNumberOrNull(record.numberOfGuests, eventData.numberOfGuests, eventData.guestCount) ||
-    fallback.numberOfGuests;
+    rsvpEnabled === false
+      ? null
+      : positiveNumberOrNull(record.numberOfGuests, eventData.numberOfGuests, eventData.guestCount) ||
+        fallback.numberOfGuests;
   const status = deriveCreationStatus({
     sourceContext,
     eventPurpose,
@@ -380,11 +395,11 @@ async function extractWithOpenAi(
             role: "system",
             content: [
               "You are Envitefy's event creation concierge.",
-              "Only handle event, invitation, RSVP, and event asset creation or editing.",
+              "Only handle event, flyer invitation, RSVP, and event asset creation or editing.",
               "Return one JSON object matching the draft shape. Do not include markdown.",
               "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, honoreeName, ageOrMilestone, rsvpEnabled, numberOfGuests, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
               "If you include nested eventData for convenience, duplicate the same extracted fields at the top level.",
-              "Separate requested output from event details: live cards, digital flyers, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",
+              "Separate requested output from event details: live cards, flyer invitations, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",
               "Resolve 'this' only from supplied activeContext. If no context exists, ask what source or event to use.",
               "Use eventType unknown until the user or source gives a real category. Supported eventType values are unknown, birthday, wedding, baby_shower, gender_reveal, bridal_shower, graduation, gym_meet, game_day, football, sport_event, field_trip, open_house, housewarming, appointment, workshop, special_event, smart_signup, and general. Do not use general as a fallback.",
               "Prioritize eventPurpose/title before strict event type. Do not ask for date/time before event purpose/source.",
@@ -448,7 +463,9 @@ export async function extractConciergeDraft(
   });
 
   const shouldUseDeterministicFastPath =
+    fallback.sourceContext.boundary === "non_creation" ||
     fallback.currentQuestion === "invite_source" ||
+    isNonCreationRequest(message) ||
     (isGreetingMessage(message) && !request.draft && !request.ocrContext) ||
     shouldSkipOpenAiForCreationRequest({ request, fallbackDraft: fallback });
 

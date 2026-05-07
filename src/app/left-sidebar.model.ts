@@ -36,6 +36,10 @@ export type InlineStyle = Record<string, string | number>;
 export type GroupedEventItem = {
   row: HistoryRow;
   href: string;
+  publicHref: string;
+  ownerHref: string;
+  productKind: "card" | "event" | "signup" | "unknown";
+  hasOwnerRsvp: boolean;
   openMode: "dashboard" | "preview";
   showQuickActions: boolean;
   title: string;
@@ -626,8 +630,20 @@ function asSidebarRecord(value: unknown): Record<string, unknown> | null {
 
 function normalizeSidebarProductOutput(value: unknown): SidebarProductOutput | null {
   if (typeof value !== "string") return null;
-  const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/\//g, "_")
+    .replace(/[\s-]+/g, "_");
   if (normalized === "flyer") return "digital_flyer";
+  if (
+    normalized === "flyer_invite" ||
+    normalized === "flyer_invitation" ||
+    normalized === "invitation" ||
+    normalized === "invite"
+  ) {
+    return "digital_flyer";
+  }
   if (normalized === "printable") return "printable_flyer";
   if (normalized === "story") return "instagram_story";
   if (normalized === "signup" || normalized === "smart_signup") return "signup_form";
@@ -647,14 +663,18 @@ function inferSidebarProductOutputFromText(value: unknown): SidebarProductOutput
   if (/\bevent[\s_-]*page\b/.test(text)) return "event_page";
   if (/\brsvp[\s_-]*page\b/.test(text)) return "rsvp_page";
   if (/\bprintable[\s_-]*flyer\b/.test(text)) return "printable_flyer";
-  if (/\bdigital[\s_-]*flyer\b|\bflyer[\s_-]*invite\b|\bflyer\b/.test(text)) {
+  if (
+    /\bdigital[\s_-]*flyer\b|\bflyer[\s_-]*invite\b|\bflyer[\s_-]*invitation\b|\bflyer\s*\/\s*invitation\b|\bflyer\b/.test(
+      text,
+    )
+  ) {
     return "digital_flyer";
   }
   if (/\binstagram[\s_-]*story\b/.test(text)) return "instagram_story";
   if (/\bthank[\s_-]*you[\s_-]*card\b/.test(text)) return "thank_you_card";
   if (/\bwelcome[\s_-]*sign\b/.test(text)) return "welcome_sign";
   if (/\bmenu\b/.test(text)) return "menu";
-  if (/\binvitation\b|\binvite\b/.test(text)) return "invitation";
+  if (/\binvitation\b|\binvite\b/.test(text)) return "digital_flyer";
   return null;
 }
 
@@ -670,7 +690,9 @@ function firstSidebarProductOutputFromArray(value: unknown): SidebarProductOutpu
   const normalized = value
     .map(normalizeSidebarProductOutput)
     .filter(Boolean) as SidebarProductOutput[];
-  return normalized.find((output) => !SIDEBAR_SECONDARY_OUTPUTS.has(output)) || normalized[0] || null;
+  return (
+    normalized.find((output) => !SIDEBAR_SECONDARY_OUTPUTS.has(output)) || normalized[0] || null
+  );
 }
 
 function getSidebarPrimaryProductOutput(
@@ -712,9 +734,14 @@ function getSidebarPrimaryProductOutput(
 function isSidebarProductPreviewFirstEvent(data: unknown, fallbackText?: string | null): boolean {
   const record = asSidebarRecord(data);
   if (!record) return false;
-  const createdVia = String(record.createdVia || "").trim().toLowerCase();
+  const createdVia = String(record.createdVia || "")
+    .trim()
+    .toLowerCase();
   const output = getSidebarPrimaryProductOutput(record, fallbackText);
-  return Boolean(output) && (/concierge|chat/.test(createdVia) || looksLikeSidebarProductCreationText(fallbackText));
+  return (
+    Boolean(output) &&
+    (/concierge|chat/.test(createdVia) || looksLikeSidebarProductCreationText(fallbackText))
+  );
 }
 
 function buildSidebarEventSlugSegment(id: string, title: string): string {
@@ -740,6 +767,13 @@ function buildSidebarProductPath(
     return `/card/${buildSidebarEventSlugSegment(row.id, row.title)}`;
   }
   return buildEventPath(row.id, row.title);
+}
+
+function resolveSidebarProductKind(output: SidebarProductOutput | null) {
+  if (output === "signup_form") return "signup";
+  if (output && SIDEBAR_CARD_FIRST_OUTPUTS.has(output)) return "card";
+  if (output) return "event";
+  return "unknown";
 }
 
 function sortGroupedSections(source: Map<string, GroupedEventItem[]>) {
@@ -776,6 +810,7 @@ export function buildGroupedEventLists(args: {
   buildEventPath: (eventId: string, title: string) => string;
   isSportsPreviewFirstEvent: (data: unknown) => boolean;
   isInvitedEventLikeRecord: (record: Record<string, unknown>) => boolean;
+  canShowOwnerRsvpDashboard: (data: unknown) => boolean;
 }): GroupedEventLists {
   const bucketsByList: Record<EventListPage, ReturnType<typeof createGroupedBuckets>> = {
     myEvents: createGroupedBuckets(),
@@ -813,11 +848,13 @@ export function buildGroupedEventLists(args: {
     const dateLabel = formatEventDate(dateRaw);
     const defaultHref = args.buildEventPath(row.id, row.title);
     const shouldOpenProductFirst = isSidebarProductPreviewFirstEvent(data, row.title);
-    const href = shouldOpenProductFirst
+    const primaryOutput = getSidebarPrimaryProductOutput(data, row.title);
+    const publicHref = shouldOpenProductFirst
       ? buildSidebarProductPath(row, data, args.buildEventPath)
       : defaultHref;
-    const openMode: GroupedEventItem["openMode"] =
-      shouldOpenProductFirst || args.isSportsPreviewFirstEvent(data) ? "preview" : "dashboard";
+    const ownerHref = defaultHref;
+    const hasOwnerRsvp = !isInvited && args.canShowOwnerRsvpDashboard(data);
+    const openMode: GroupedEventItem["openMode"] = isInvited ? "preview" : "dashboard";
     const rawShareStatus = String(data?.shareStatus || "")
       .trim()
       .toLowerCase();
@@ -845,7 +882,11 @@ export function buildGroupedEventLists(args: {
 
     const entry: GroupedEventItem = {
       row,
-      href,
+      href: publicHref,
+      publicHref,
+      ownerHref,
+      productKind: resolveSidebarProductKind(primaryOutput),
+      hasOwnerRsvp,
       openMode,
       showQuickActions: isInvited || isSnappedOrUploaded,
       title: row.title || "Untitled event",

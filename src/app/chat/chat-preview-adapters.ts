@@ -56,7 +56,7 @@ function categoryLabel(draft: ConciergeEventDraft | null): string {
 }
 
 function selectedOutputLabel(output: RequestedOutput): string {
-  if (output === "digital_flyer") return "Digital flyer";
+  if (output === "digital_flyer" || output === "invitation") return "Flyer/Invitation";
   if (output === "event_page") return "Event page";
   if (output === "live_card") return "Live card";
   if (output === "signup_form") return "Smart sign-up";

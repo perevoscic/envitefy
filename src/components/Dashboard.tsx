@@ -23,6 +23,7 @@ import {
   isPickleballOcrSkinCandidate,
   type OcrSkinSelection,
 } from "@/lib/ocr/skin";
+import { getRsvpDashboardGuestCount } from "@/lib/owner-rsvp-dashboard";
 import { type PendingSnapUpload, takePendingSnapUpload } from "@/lib/pending-snap-upload";
 import { normalizeThumbnailFocus, type ThumbnailFocus } from "@/lib/thumbnail-focus";
 import { buildWeddingScanFlyerColorsFromImageColors } from "@/lib/wedding-scan";
@@ -228,6 +229,7 @@ type DashboardInitialEventContext = {
   eventHref: string;
   eventEditHref: string;
   activeEventTab: EventContextTab;
+  numberOfGuests?: number;
 };
 
 export default function Dashboard({
@@ -252,6 +254,7 @@ export default function Dashboard({
   const selectedEventEditHref =
     initialEventContext?.eventEditHref ?? sidebarSelectedEventEditHref ?? null;
   const activeEventTab = initialEventContext?.activeEventTab ?? sidebarActiveEventTab;
+  const selectedEventNumberOfGuests = getRsvpDashboardGuestCount(initialEventContext);
   const isSignedIn = Boolean(session?.user);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -539,45 +542,74 @@ export default function Dashboard({
   }, [isSignedIn, dashboardData?.nextEvent?.id]);
 
   useEffect(() => {
-    if (!selectedEventId) {
+    if (!selectedEventId || selectedEventNumberOfGuests <= 0) {
       setOwnerDashboardData(null);
       return;
     }
 
-    const fallbackRows: OwnerRsvpRow[] = [
-      {
-        id: "placeholder-1",
-        name: "Sarah Jenkins",
-        status: "Attending",
-        plusOnes: "1",
-        foodPrefs: "Vegan",
-      },
-      {
-        id: "placeholder-2",
-        name: "Mark Thompson",
-        status: "Attending",
-        plusOnes: "0",
-        foodPrefs: "None",
-      },
-      {
-        id: "placeholder-3",
-        name: "Lila Chen",
-        status: "Pending",
-        plusOnes: "?",
-        foodPrefs: "-",
-      },
-    ];
-
-    setOwnerDashboardData({
+    let cancelled = false;
+    const baseData: OwnerDashboardData = {
       title: selectedEventTitle || "Untitled event",
       dateLine: "Date pending",
-      totalGuests: 0,
+      totalGuests: selectedEventNumberOfGuests,
       rsvpRate: 0,
       declined: 0,
       pageViews: "--",
-      recentRsvps: fallbackRows,
-    });
-  }, [selectedEventId, selectedEventTitle]);
+      recentRsvps: [],
+    };
+    setOwnerDashboardData({ ...baseData });
+
+    async function loadOwnerRsvpDashboard() {
+      try {
+        const response = await fetch(`/api/events/${selectedEventId}/rsvp?t=${Date.now()}`, {
+          cache: "no-store",
+          credentials: "include",
+        });
+        const json = await response.json().catch(() => null);
+        if (cancelled || !response.ok || !json?.ok) return;
+        const stats = json.stats || {};
+        const totalGuests = Number(json.numberOfGuests || selectedEventNumberOfGuests);
+        const filled = Number(json.filled || 0);
+        const responses = Array.isArray(json.responses) ? json.responses : [];
+        setOwnerDashboardData({
+          ...baseData,
+          totalGuests:
+            Number.isFinite(totalGuests) && totalGuests > 0 ? totalGuests : baseData.totalGuests,
+          rsvpRate:
+            Number.isFinite(totalGuests) && totalGuests > 0
+              ? Math.round((filled / totalGuests) * 100)
+              : 0,
+          declined: Number(stats.no || 0),
+          recentRsvps: responses.slice(0, 3).map((row: any, index: number) => {
+            const responseKey = String(row?.response || "").toLowerCase();
+            const status: OwnerRsvpRow["status"] =
+              responseKey === "yes"
+                ? "Attending"
+                : responseKey === "no"
+                  ? "Declined"
+                  : responseKey === "maybe"
+                    ? "Maybe"
+                    : "Pending";
+            const fullName = [row?.firstName, row?.lastName].filter(Boolean).join(" ").trim();
+            return {
+              id: String(row?.id || row?.email || row?.name || `rsvp-${index}`),
+              name: fullName || String(row?.name || row?.email || "Guest"),
+              status,
+              plusOnes: "-",
+              foodPrefs: "-",
+            };
+          }),
+        });
+      } catch {
+        // Keep the local event payload values if RSVP stats are unavailable.
+      }
+    }
+
+    void loadOwnerRsvpDashboard();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedEventId, selectedEventNumberOfGuests, selectedEventTitle]);
 
   const router = useRouter();
   const readStoredOrigin = useCallback((): {
@@ -693,8 +725,15 @@ export default function Dashboard({
     "inline-flex items-center gap-1.5 rounded-full border border-[#5b4ed1] bg-[#5b4ed1] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#4f44bc]";
   const headerSecondaryActionButtonClass =
     "inline-flex items-center gap-1.5 rounded-full border border-[#ddd6ff] bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#4f457a] shadow-sm transition hover:border-[#c8beff] hover:bg-white";
-  const showOwnerDashboard = Boolean(hasEventContextOnPage && activeEventTab === "dashboard");
-  const showOwnerTabPlaceholder = Boolean(hasEventContextOnPage && activeEventTab !== "dashboard");
+  const canShowOwnerRsvpDashboardOnPage = Boolean(
+    hasEventContextOnPage && selectedEventNumberOfGuests > 0,
+  );
+  const showOwnerDashboard = Boolean(
+    canShowOwnerRsvpDashboardOnPage && activeEventTab === "dashboard",
+  );
+  const showOwnerTabPlaceholder = Boolean(
+    canShowOwnerRsvpDashboardOnPage && activeEventTab !== "dashboard",
+  );
 
   const handleHeaderPreview = useCallback(() => {
     if (!selectedEventHref) return;
@@ -1813,7 +1852,7 @@ export default function Dashboard({
                 ownerDashboardData || {
                   title: selectedEventLabel,
                   dateLine: "Date pending",
-                  totalGuests: 0,
+                  totalGuests: selectedEventNumberOfGuests,
                   rsvpRate: 0,
                   declined: 0,
                   pageViews: "--",

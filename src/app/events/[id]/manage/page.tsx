@@ -8,7 +8,7 @@ import { buildEventPath } from "@/utils/event-url";
 import EventManageClient from "./EventManageClient";
 
 export const metadata: Metadata = {
-  title: "Manage Event | Envitefy",
+  title: "Event Tools | Envitefy",
   robots: { index: false, follow: false },
 };
 
@@ -21,11 +21,7 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-export default async function EventManagePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function EventManagePage({ params }: { params: Promise<{ id: string }> }) {
   const session: any = await getServerSession(authOptions as any);
   const userId = await resolveSessionUserId(session);
   if (!userId) redirect("/login");
@@ -36,9 +32,7 @@ export default async function EventManagePage({
 
   const data = asRecord(event.data);
   const title =
-    (typeof data.title === "string" && data.title.trim()) ||
-    event.title ||
-    "Untitled event";
+    (typeof data.title === "string" && data.title.trim()) || event.title || "Untitled event";
   const assets = await listEventAssets(event.id, userId);
 
   return (

@@ -33,8 +33,15 @@ const STARTER_CHIPS = new Set([
 const OUTPUT_SELECTION_PATTERNS: Partial<Record<RequestedOutput, RegExp[]>> = {
   live_card: [/\blive\s*card\b/gi],
   event_page: [/\bevent\s+page\b/gi],
-  digital_flyer: [/\bdigital\s+flyer\b/gi, /\bflyer\s+invite\b/gi, /\bflyer\b/gi],
-  invitation: [/\binvitation\b/gi, /\binvite\b/gi],
+  digital_flyer: [
+    /\bdigital\s+flyer\b/gi,
+    /\bflyer\s+invite\b/gi,
+    /\bflyer\s+invitation\b/gi,
+    /\bflyer\s*\/\s*invitation\b/gi,
+    /\bflyer\b/gi,
+    /\binvitation\b/gi,
+    /\binvite\b/gi,
+  ],
   rsvp_page: [/\brsvp\s+page\b/gi, /\brsvp\b/gi],
   signup_form: [
     /\bsmart\s+sign[-\s]?up(?:\s+form)?\b/gi,

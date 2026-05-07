@@ -43,8 +43,20 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function normalizeOutput(value: unknown): EventProductOutput | null {
   if (typeof value !== "string") return null;
-  const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/\//g, "_")
+    .replace(/[\s-]+/g, "_");
   if (normalized === "flyer") return "digital_flyer";
+  if (
+    normalized === "flyer_invite" ||
+    normalized === "flyer_invitation" ||
+    normalized === "invitation" ||
+    normalized === "invite"
+  ) {
+    return "digital_flyer";
+  }
   if (normalized === "printable") return "printable_flyer";
   if (normalized === "story") return "instagram_story";
   if (normalized === "signup" || normalized === "smart_signup") return "signup_form";
@@ -64,14 +76,18 @@ function inferOutputFromText(value: unknown): EventProductOutput | null {
   if (/\bevent[\s_-]*page\b/.test(text)) return "event_page";
   if (/\brsvp[\s_-]*page\b/.test(text)) return "rsvp_page";
   if (/\bprintable[\s_-]*flyer\b/.test(text)) return "printable_flyer";
-  if (/\bdigital[\s_-]*flyer\b|\bflyer[\s_-]*invite\b|\bflyer\b/.test(text)) {
+  if (
+    /\bdigital[\s_-]*flyer\b|\bflyer[\s_-]*invite\b|\bflyer[\s_-]*invitation\b|\bflyer\s*\/\s*invitation\b|\bflyer\b/.test(
+      text,
+    )
+  ) {
     return "digital_flyer";
   }
   if (/\binstagram[\s_-]*story\b/.test(text)) return "instagram_story";
   if (/\bthank[\s_-]*you[\s_-]*card\b/.test(text)) return "thank_you_card";
   if (/\bwelcome[\s_-]*sign\b/.test(text)) return "welcome_sign";
   if (/\bmenu\b/.test(text)) return "menu";
-  if (/\binvitation\b|\binvite\b/.test(text)) return "invitation";
+  if (/\binvitation\b|\binvite\b/.test(text)) return "digital_flyer";
   return null;
 }
 
@@ -132,9 +148,14 @@ export function isCardFirstEventProduct(output: unknown): boolean {
 export function isProductPreviewFirstEvent(data: unknown, fallbackText?: string | null): boolean {
   const record = asRecord(data);
   if (!record) return false;
-  const createdVia = String(record.createdVia || "").trim().toLowerCase();
+  const createdVia = String(record.createdVia || "")
+    .trim()
+    .toLowerCase();
   const output = getPrimaryEventProductOutput(record, fallbackText);
-  return Boolean(output) && (/concierge|chat/.test(createdVia) || looksLikeProductCreationText(fallbackText));
+  return (
+    Boolean(output) &&
+    (/concierge|chat/.test(createdVia) || looksLikeProductCreationText(fallbackText))
+  );
 }
 
 export function buildEventProductPath(args: {

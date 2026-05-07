@@ -9,14 +9,13 @@ import {
   Globe,
   IdCard,
   Loader2,
-  Mail,
   MessageCircle,
   Mic,
   Paperclip,
   Sparkles,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { requestStudioGeneration } from "@/app/studio/studio-workspace-api";
 import { buildInvitationData } from "@/app/studio/studio-workspace-builders";
 import { createInitialDetails } from "@/app/studio/studio-workspace-sanitize";
@@ -130,17 +129,10 @@ const PRODUCT_OPTIONS: ProductOption[] = [
     icon: IdCard,
   },
   {
-    label: "Invitation",
-    output: "invitation",
-    description: "Designed invite artwork to share.",
-    prompt: "Create an invitation",
-    icon: Mail,
-  },
-  {
-    label: "Flyer Invite",
+    label: "Flyer/Invitation",
     output: "digital_flyer",
-    description: "Shareable flyer-style invite from typed details.",
-    prompt: "Create a digital flyer",
+    description: "Shareable flyer invitation from typed details.",
+    prompt: "Create a flyer invitation",
     icon: FileImage,
   },
   {
@@ -166,9 +158,9 @@ const BUILDING_STEPS = [
 const OUTPUT_LABELS: Record<RequestedOutput, string> = {
   event_page: "Event page",
   live_card: "Live card",
-  digital_flyer: "Flyer invite",
+  digital_flyer: "Flyer/Invitation",
   signup_form: "Smart sign-up",
-  invitation: "Invitation",
+  invitation: "Flyer/Invitation",
   rsvp_page: "RSVP page",
   whatsapp: "WhatsApp",
   text_message: "Text message",
@@ -211,8 +203,26 @@ function withConciergeTiming(url: string) {
   return `${url}${url.includes("?") ? "&" : "?"}timing=1`;
 }
 
-function sanitizeAssistantBubbleText(text: string) {
-  return text
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function publicizeAssistantBubbleText(text: string) {
+  return Object.entries(OUTPUT_LABELS).reduce(
+    (current, [output, label]) =>
+      current.replace(new RegExp(`\\b${escapeRegExp(output)}\\b`, "g"), label),
+    text,
+  );
+}
+
+function stripAssistantTestNamePrefixes(text: string, detailsDraft?: ConciergeEventDraft | null) {
+  const name = detailsDraft?.honoreeName?.replace(/\s+/g, " ").trim();
+  if (!name) return text;
+  return text.replace(new RegExp(`\\b(?:QA|test)\\s+(${escapeRegExp(name)})\\b`, "gi"), "$1");
+}
+
+function sanitizeAssistantBubbleText(text: string, detailsDraft?: ConciergeEventDraft | null) {
+  return publicizeAssistantBubbleText(stripAssistantTestNamePrefixes(text, detailsDraft))
     .replace(/^\s*\*{3,}\s*$/gm, "")
     .replace(/\*{1,3}([^*\n]+?)\*{1,3}/g, "$1")
     .replace(/\*{2,}/g, "")
@@ -226,10 +236,60 @@ function sanitizeAssistantBubbleText(text: string) {
 }
 
 const DETAIL_CONFIRMATION_LINE =
-  /^(Product|Event|Title|Honoree|Date|Time|Location|Venue|Theme|Vibe|RSVP(?: guest count| by| line)?|Guest count):\s*(.+)$/i;
+  /^(Selected products?|Products?|Captured details?|Event|Title|Names|Couple|Honoree|Date|Time|Location|Venue|Theme|Vibe|RSVP(?: guest count| by| deadline| line)?|Guest count):\s*(.+)$/i;
 
-function formatAssistantBubbleText(text: string) {
-  const lines = sanitizeAssistantBubbleText(text).split(/\n/);
+function assistantDetailHighlightValues(detailsDraft?: ConciergeEventDraft | null) {
+  if (!detailsDraft) return [];
+  const themeValue =
+    typeof detailsDraft.theme === "string"
+      ? detailsDraft.theme.replace(/\s+/g, " ").trim()
+      : "";
+  const toneValue =
+    typeof detailsDraft.tone === "string"
+      ? detailsDraft.tone.replace(/\s+/g, " ").trim()
+      : "";
+  const values = [
+    detailsDraft.honoreeName,
+    detailsDraft.title,
+    detailsDraft.dateText,
+    detailsDraft.dateText?.replace(/^on\s+/i, ""),
+    detailsDraft.timeText,
+    detailsDraft.location,
+    detailsDraft.venue,
+    themeValue,
+    themeValue && !/\btheme$/i.test(themeValue) ? `${themeValue} theme` : null,
+    toneValue,
+    toneValue && !/\btheme$/i.test(toneValue) ? `${toneValue} theme` : null,
+    typeof detailsDraft.numberOfGuests === "number" ? String(detailsDraft.numberOfGuests) : null,
+  ]
+    .map((value) => (typeof value === "string" ? value.replace(/\s+/g, " ").trim() : null))
+    .filter((value): value is string => Boolean(value && value.length >= 3))
+    .filter((value) => !/^(?:yes|no|rsvp|tbd|date tbd|location tbd)$/i.test(value));
+
+  return Array.from(new Set(values)).sort((left, right) => right.length - left.length);
+}
+
+function renderHighlightedAssistantLine(
+  line: string,
+  detailsDraft?: ConciergeEventDraft | null,
+): ReactNode {
+  const values = assistantDetailHighlightValues(detailsDraft);
+  if (!values.length) return line;
+  const lowerValues = new Set(values.map((value) => value.toLowerCase()));
+  const parts = line.split(new RegExp(`(${values.map(escapeRegExp).join("|")})`, "gi"));
+  return parts.map((part, index) =>
+    lowerValues.has(part.toLowerCase()) ? (
+      <strong key={`${part}-${index}`} className="font-semibold text-[#150d2b]">
+        {part}
+      </strong>
+    ) : (
+      part
+    ),
+  );
+}
+
+function formatAssistantBubbleText(text: string, detailsDraft?: ConciergeEventDraft | null) {
+  const lines = sanitizeAssistantBubbleText(text, detailsDraft).split(/\n/);
   return lines.map((line, index) => {
     if (!line.trim()) return <br key={`break-${index}`} />;
     const detail = line.match(DETAIL_CONFIRMATION_LINE);
@@ -243,7 +303,7 @@ function formatAssistantBubbleText(text: string) {
     }
     return (
       <span key={`${line}-${index}`} className="block">
-        {line}
+        {renderHighlightedAssistantLine(line, detailsDraft)}
       </span>
     );
   });
@@ -484,8 +544,38 @@ function outputLabel(output: RequestedOutput) {
   return OUTPUT_LABELS[output] || output;
 }
 
+function visibleProductOutput(output: RequestedOutput): RequestedOutput {
+  return output === "invitation" ? "digital_flyer" : output;
+}
+
+function visibleDraftOutput(output: ConciergeEventDraft["outputs"][number]) {
+  return output === "invitation" ? "digital_flyer" : output;
+}
+
+function normalizeDraftProductOutputs(draft: ConciergeEventDraft): ConciergeEventDraft {
+  const requestedOutputs = Array.from(new Set(draft.requestedOutputs.map(visibleProductOutput)));
+  const outputs = Array.from(new Set(draft.outputs.map(visibleDraftOutput)));
+  const changed =
+    requestedOutputs.length !== draft.requestedOutputs.length ||
+    requestedOutputs.some((output, index) => output !== draft.requestedOutputs[index]) ||
+    outputs.length !== draft.outputs.length ||
+    outputs.some((output, index) => output !== draft.outputs[index]);
+
+  return changed
+    ? {
+        ...draft,
+        requestedOutputs,
+        outputs,
+      }
+    : draft;
+}
+
 function productOptionLabel(output: RequestedOutput) {
-  return PRODUCT_OPTIONS.find((option) => option.output === output)?.label || outputLabel(output);
+  const visibleOutput = visibleProductOutput(output);
+  return (
+    PRODUCT_OPTIONS.find((option) => option.output === visibleOutput)?.label ||
+    outputLabel(visibleOutput)
+  );
 }
 
 function categoryLabelForDraft(draft: ConciergeEventDraft | null) {
@@ -513,11 +603,13 @@ function generatedProductHref(
 
 function draftOutputLabels(draft: ConciergeEventDraft | null, selectedOutput: RequestedOutput) {
   const outputs = draft?.requestedOutputs?.length ? draft.requestedOutputs : [selectedOutput];
-  return Array.from(new Set(outputs)).map(outputLabel);
+  return Array.from(new Set(outputs.map(outputLabel)));
 }
 
 function hasMultipleRequestedProducts(draft: ConciergeEventDraft | null) {
-  return Boolean(draft?.requestedOutputs && new Set(draft.requestedOutputs).size > 1);
+  return Boolean(
+    draft?.requestedOutputs && new Set(draft.requestedOutputs.map(visibleProductOutput)).size > 1,
+  );
 }
 
 function productActionLabel(draft: ConciergeEventDraft | null, selectedOutput: RequestedOutput) {
@@ -816,9 +908,9 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   const shouldShowReadyActions =
     (canGenerateProduct || isGeneratingCard) && (!isReadyChatComposerOpen || isGeneratingCard);
   function selectProductOutputForDraft(nextDraft: ConciergeEventDraft) {
-    const restoredOutput = nextDraft.requestedOutputs.find((output) =>
-      PRODUCT_OPTIONS.some((option) => option.output === output),
-    );
+    const restoredOutput = nextDraft.requestedOutputs
+      .map(visibleProductOutput)
+      .find((output) => PRODUCT_OPTIONS.some((option) => option.output === output));
     if (restoredOutput) setSelectedProductOutput(restoredOutput);
   }
 
@@ -941,9 +1033,9 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         const restoredDraft = json.draft;
         const savedEventId = json.savedEventId || null;
         const restoredOutput =
-          restoredDraft.requestedOutputs.find((output) =>
-            PRODUCT_OPTIONS.some((option) => option.output === output),
-          ) || null;
+          restoredDraft.requestedOutputs
+            .map(visibleProductOutput)
+            .find((output) => PRODUCT_OPTIONS.some((option) => option.output === output)) || null;
         setDraft(restoredDraft);
         setSelectedProductOutput(restoredOutput);
         setSelectedStarterCategory(null);
@@ -1095,7 +1187,8 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   }
 
   async function generateProductForDraft(draftToGenerate: ConciergeEventDraft) {
-    if (!isReadyProductDraft(draftToGenerate)) {
+    const productDraft = normalizeDraftProductOutputs(draftToGenerate);
+    if (!isReadyProductDraft(productDraft)) {
       setError("Add the missing event details before generating the invite.");
       return;
     }
@@ -1107,7 +1200,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       `Your ${effectiveSelectedProductLabel.toLowerCase()} is generated. You can review it in the preview or tell me what to change.`,
     );
     try {
-      const studioInvite = await generateStudioInviteForDraft(draftToGenerate);
+      const studioInvite = await generateStudioInviteForDraft(productDraft);
       setGeneratedInviteImageUrl(studioInvite.imageUrl);
       setBuildProgress(72);
       const response = await fetch("/api/creation/intake", {
@@ -1117,7 +1210,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         body: JSON.stringify({
           message: "",
           action: "save",
-          draft: draftToGenerate,
+          draft: productDraft,
           studioInvite,
           persistSession: true,
           chatMessages: chatMessagesForPersistence(messages, [generatedMessage]),
@@ -1132,9 +1225,9 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       setBuildProgress(100);
       setDraft(json.draft);
       setLiveCardEventId(savedEventId);
-      setLiveCardTitle(draftHeadline(json.draft || draftToGenerate));
+      setLiveCardTitle(draftHeadline(json.draft || productDraft));
       setLiveCardSummary(
-        liveCardSummaryFromDraft(json.draft || draftToGenerate, effectiveSelectedProductOutput),
+        liveCardSummaryFromDraft(json.draft || productDraft, effectiveSelectedProductOutput),
       );
       setWeatherContext(json.weatherContext || null);
       setPhase("card_ready");
@@ -1430,10 +1523,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     recognition.start();
   }
 
-  async function routeSelectedSnapFile(
-    file: File | null | undefined,
-    source: "camera" | "upload",
-  ) {
+  async function routeSelectedSnapFile(file: File | null | undefined, source: "camera" | "upload") {
     if (!file || isBusy) return;
     const validationError = validateClientUploadFile(file, "attachment");
     if (validationError) {
@@ -1527,7 +1617,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                 }`}
               >
                 {message.role === "assistant"
-                  ? formatAssistantBubbleText(message.text)
+                  ? formatAssistantBubbleText(message.text, draft)
                   : message.text}
               </div>
             )}
@@ -1908,7 +1998,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                       <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        className="mx-auto mt-4 flex w-full max-w-3xl justify-center sm:max-w-4xl"
+                        className="mx-auto mt-4 flex w-full max-w-3xl justify-center pb-5 sm:max-w-4xl sm:pb-6"
                       >
                         <div className="flex w-full justify-center sm:hidden">
                           <BottomNavBar

@@ -60,6 +60,11 @@ import {
   normalizeOcrSkinSelection,
 } from "@/lib/ocr/skin";
 import { cleanGraduationVenueName } from "@/lib/ocr/text";
+import {
+  canShowOwnerRsvpDashboard,
+  getRsvpDashboardGuestCount,
+  isScannedOrUploadedEventData,
+} from "@/lib/owner-rsvp-dashboard";
 import { createServerTimingTracker } from "@/lib/server-timing";
 import { resolveEventPageBackgroundColor, resolveEventThemeColor } from "@/lib/theme-color";
 import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
@@ -73,7 +78,12 @@ import { decorateAmazonUrl } from "@/utils/affiliates";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { findFirstEmail, findFirstUrl, normalizeUrlValue } from "@/utils/contact";
 import { buildEditLink, resolveEditHref } from "@/utils/event-edit-route";
-import { buildEventPath, buildEventSlugSegment } from "@/utils/event-url";
+import { buildEventPath, buildEventSlugSegment, buildStudioCardPath } from "@/utils/event-url";
+import {
+  buildEventProductPath,
+  getPrimaryEventProductOutput,
+  isCardFirstEventProduct,
+} from "@/utils/event-product-route";
 import type { ImageColors } from "@/utils/image-colors";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import {
@@ -173,7 +183,9 @@ export async function generateMetadata(props: {
 
   // Generate canonical URL
   const canonicalPath = row
-    ? buildEventPath(row.id, title)
+    ? isCardFirstEventProduct(getPrimaryEventProductOutput(data, title))
+      ? buildStudioCardPath(row.id, title)
+      : buildEventPath(row.id, title)
     : `/event/${encodeURIComponent(awaitedParams.id)}`;
   const url = await absoluteUrl(canonicalPath);
 
@@ -874,6 +886,16 @@ export default async function EventPage({
       (data as any)?.invitedFromScan,
     ) === "invited";
   const canManageCreatedEvent = isOwner && !isScannedInviteEvent;
+  const canEditCreatedEvent = canManageCreatedEvent && !isScannedOrUploadedEventData(data);
+  const numberOfGuests = getRsvpDashboardGuestCount(data);
+  const ownerEventHref = buildEventPath(row.id, title);
+  const primaryProductOutput = getPrimaryEventProductOutput(data, title);
+  const publicEventHref = buildEventProductPath({
+    eventId: row.id,
+    title,
+    data,
+    output: primaryProductOutput,
+  });
   const discoveryWorkflow = isDiscoveryV2
     ? "gymnastics"
     : String((data as any)?.discoverySource?.workflow || "").toLowerCase();
@@ -917,9 +939,10 @@ export default async function EventPage({
     discoveryCreatedVia === "meet-discovery-v2" ||
     discoveryCreatedVia === "football-discovery" ||
     discoveryCreatedVia === "football-discovery-v2";
-  const showHostDashboard = canManageCreatedEvent && !hideHostDashboard;
+  const showHostDashboard = canManageCreatedEvent && !hideHostDashboard && canShowOwnerRsvpDashboard(data);
+  const showOwnerWorkspace = canManageCreatedEvent;
   const discoveryEditConfig: { customizeUrl: string; workflow: "gymnastics" } | null =
-    editParam && canManageCreatedEvent
+    editParam && canEditCreatedEvent
       ? (() => {
           if (isGymnasticsDiscoveryTemplate) {
             return {
@@ -933,22 +956,24 @@ export default async function EventPage({
           return null;
         })()
       : null;
-  if (editParam && canManageCreatedEvent && isFootballDiscoveryTemplate) {
+  if (editParam && canEditCreatedEvent && isFootballDiscoveryTemplate) {
     redirect("/event");
   }
-  if (editParam && canManageCreatedEvent && !discoveryEditConfig) {
+  if (editParam && canEditCreatedEvent && !discoveryEditConfig) {
     const editUrl = resolveEditHref(row.id, data, title);
     redirect(editUrl);
   }
 
-  if (canManageCreatedEvent && ownerToolsTab) {
+  if (showOwnerWorkspace && ownerToolsTab) {
     return renderWithEventPageBackground(
       <EventOwnerTools
         eventId={row.id}
         eventTitle={title}
         eventData={data}
-        eventHref={buildEventPath(row.id, title)}
+        eventHref={publicEventHref}
+        eventOwnerHref={ownerEventHref}
         initialTab={ownerToolsTab}
+        numberOfGuests={numberOfGuests}
       />,
     );
   }
@@ -1046,8 +1071,6 @@ export default async function EventPage({
       passcodePlain: undefined,
     };
   }
-  const numberOfGuests =
-    typeof data?.numberOfGuests === "number" && data.numberOfGuests > 0 ? data.numberOfGuests : 0;
   const attachmentInfo = (() => {
     const raw = data?.attachment;
     if (!raw || typeof raw !== "object") return null;
@@ -1070,9 +1093,7 @@ export default async function EventPage({
   const locationText = typeof data?.location === "string" ? (data.location as string) : "";
   const rawVenueText = typeof data?.venue === "string" ? (data.venue as string) : "";
   const venueText =
-    categoryNormalized === "graduations"
-      ? cleanGraduationVenueName(rawVenueText)
-      : rawVenueText;
+    categoryNormalized === "graduations" ? cleanGraduationVenueName(rawVenueText) : rawVenueText;
   const hasMapLocation = Boolean(venueText?.trim() || locationText?.trim());
   const registryCopy = getRegistrySectionCopyForCategory(categoryRaw);
   const registriesAllowed = registryCopy.allowsLinks;
@@ -1193,6 +1214,9 @@ export default async function EventPage({
   }
   const canonicalSegment = buildEventSlugSegment(row.id, title);
   const canonical = buildEventPath(row.id, title);
+  const cardFirstCanonical = isCardFirstEventProduct(primaryProductOutput)
+    ? buildStudioCardPath(row.id, title)
+    : null;
   const shareUrl = await absoluteUrl(canonical);
 
   if (timing.enabled) {
@@ -1205,6 +1229,10 @@ export default async function EventPage({
   const editHref = buildEditLink(row.id, data, title);
 
   // Redirect to canonical slug-id URL if needed, preserving key query params
+  if (cardFirstCanonical && !ownerToolsTab) {
+    redirect(cardFirstCanonical);
+  }
+
   if (awaitedParams.id !== canonicalSegment || autoAccept) {
     const next = buildEventPath(row.id, title, createdParam ? { created: true } : undefined);
     redirect(next);
@@ -1260,17 +1288,16 @@ export default async function EventPage({
     (publicEventPrimaryOutput === "live_card" ||
       publicEventRenderer === "live_card" ||
       (hasLiveCardOutput && !publicEventPrimaryOutput));
-  const publicEventTitle =
-    isConciergeLiveCardEvent
-      ? firstDisplayString(
-          liveCardRecord.headline,
-          liveCardCopyRecord.headline,
-          publicEventRecord.headline,
-          data?.headlineTitle,
-          data?.title,
-          title,
-        ) || title
-      : title;
+  const publicEventTitle = isConciergeLiveCardEvent
+    ? firstDisplayString(
+        liveCardRecord.headline,
+        liveCardCopyRecord.headline,
+        publicEventRecord.headline,
+        data?.headlineTitle,
+        data?.title,
+        title,
+      ) || title
+    : title;
   const publicEventSubheadline = isConciergeLiveCardEvent
     ? firstDisplayString(
         liveCardRecord.subheadline,
@@ -1278,15 +1305,14 @@ export default async function EventPage({
         publicEventRecord.subheadline,
       )
     : null;
-  const publicDescription =
-    isConciergeLiveCardEvent
-      ? firstDisplayString(
-          liveCardRecord.body,
-          liveCardCopyRecord.body,
-          publicEventRecord.body,
-          data?.description,
-        )
-      : cleanDisplayString(data?.description);
+  const publicDescription = isConciergeLiveCardEvent
+    ? firstDisplayString(
+        liveCardRecord.body,
+        liveCardCopyRecord.body,
+        publicEventRecord.body,
+        data?.description,
+      )
+    : cleanDisplayString(data?.description);
   const publicDateText = firstDisplayString(data?.dateText, data?.date);
   const publicTimeText = firstDisplayString(data?.timeText, data?.time);
   const publicDateTimeLine =
@@ -1350,8 +1376,9 @@ export default async function EventPage({
     : "";
   const rsvpName =
     storedRsvpName || hostName || (rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "");
-  const showPublicRsvp =
-    Boolean(rsvpName || rsvpPhone || rsvpEmail || rsvpUrl || directRsvpEnabled);
+  const showPublicRsvp = Boolean(
+    rsvpName || rsvpPhone || rsvpEmail || rsvpUrl || directRsvpEnabled,
+  );
   const userName = ((session as any)?.user?.name as string | undefined) || "";
   const _smsIntroParts = [
     "Hi, there,",
@@ -1744,7 +1771,7 @@ export default async function EventPage({
           !isReadOnly &&
           isOwner && (
             <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
-              {canManageCreatedEvent && (
+              {canEditCreatedEvent && (
                 <Link
                   href={buildEditLink(row.id, data, title)}
                   className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors rounded-md"
@@ -1841,7 +1868,7 @@ export default async function EventPage({
           !isReadOnly &&
           isOwner && (
             <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
-              {canManageCreatedEvent && (
+              {canEditCreatedEvent && (
                 <Link
                   href={buildEditLink(row.id, data, title)}
                   className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors rounded-md"
@@ -1892,7 +1919,7 @@ export default async function EventPage({
         templateId={templateId}
         variationId={variationId}
         isOwner={isOwner}
-        canEdit={canManageCreatedEvent}
+        canEdit={canEditCreatedEvent}
         isReadOnly={isReadOnly}
         viewerKind={viewerKind}
         shareUrl={shareUrl}
@@ -1980,7 +2007,7 @@ export default async function EventPage({
     const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
     const scannedInviteActions = !isReadOnly && isOwner && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
-        {canManageCreatedEvent && (
+        {canEditCreatedEvent && (
           <Link
             href={buildEditLink(row.id, data, title)}
             className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
@@ -2070,7 +2097,7 @@ export default async function EventPage({
     const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
     const scannedInviteActions = !isReadOnly && isOwner && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
-        {canManageCreatedEvent && (
+        {canEditCreatedEvent && (
           <Link
             href={buildEditLink(row.id, data, title)}
             className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
@@ -2160,7 +2187,7 @@ export default async function EventPage({
     const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
     const scannedInviteActions = !isReadOnly && isOwner && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
-        {canManageCreatedEvent && (
+        {canEditCreatedEvent && (
           <Link
             href={buildEditLink(row.id, data, title)}
             className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
@@ -2317,7 +2344,7 @@ export default async function EventPage({
     );
     const scannedInviteActions = !isReadOnly && isOwner && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
-        {canManageCreatedEvent && (
+        {canEditCreatedEvent && (
           <Link
             href={buildEditLink(row.id, data, title)}
             className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
@@ -2495,11 +2522,13 @@ export default async function EventPage({
           (typeof data?.description === "string" && data.description.trim()) ||
           null
         }
-        activities={Array.isArray((data as any)?.activities)
-          ? ((data as any).activities as unknown[])
-              .map((item) => (typeof item === "string" ? item.trim() : ""))
-              .filter(Boolean)
-          : []}
+        activities={
+          Array.isArray((data as any)?.activities)
+            ? ((data as any).activities as unknown[])
+                .map((item) => (typeof item === "string" ? item.trim() : ""))
+                .filter(Boolean)
+            : []
+        }
         attire={
           typeof (data as any)?.attire === "string" && (data as any).attire.trim()
             ? ((data as any).attire as string).trim()
@@ -2522,7 +2551,7 @@ export default async function EventPage({
         eventData={clientSafeEventData}
         shareUrl={shareUrl}
         isOwner={isOwner}
-        canEdit={canManageCreatedEvent}
+        canEdit={canEditCreatedEvent}
         isReadOnly={isReadOnly}
         editHref={editHref}
       />,
@@ -2716,16 +2745,7 @@ export default async function EventPage({
           {/* Actions pinned to bottom-right of header */}
           <div className="absolute bottom-3 right-3 z-40 hidden md:block">
             <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium rounded-xl border border-[#ddd4f8] bg-white/92 backdrop-blur px-2 sm:px-3 py-1.5 shadow-[0_12px_26px_rgba(76,55,134,0.22)]">
-              {!isReadOnly && canManageCreatedEvent && !isOcrEvent && (
-                <Link
-                  href={`/events/${row.id}/manage`}
-                  className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-[#4f3f7a] transition hover:bg-[#f6f1ff] hover:text-[#2f2550]"
-                  title="Manage event"
-                >
-                  <span className="hidden sm:inline">Manage</span>
-                </Link>
-              )}
-              {!isReadOnly && canManageCreatedEvent && !isOcrEvent && (
+              {!isReadOnly && canEditCreatedEvent && !isOcrEvent && (
                 <Link
                   href={buildEditLink(row.id, data, title)}
                   className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-[#4f3f7a] transition hover:bg-[#f6f1ff] hover:text-[#2f2550]"
@@ -3222,15 +3242,7 @@ export default async function EventPage({
                 RSVP
               </a>
             )}
-            {canManageCreatedEvent && !isOcrEvent && (
-              <Link
-                href={`/events/${row.id}/manage`}
-                className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-              >
-                Manage
-              </Link>
-            )}
-            {canManageCreatedEvent && !isOcrEvent && (
+            {canEditCreatedEvent && !isOcrEvent && (
               <Link
                 href={buildEditLink(row.id, data, title)}
                 className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"

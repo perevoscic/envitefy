@@ -93,10 +93,6 @@ test("left sidebar exposes signed-in AI create entry", () => {
   assert.match(controllerSource, /startNewAiChat: \(\) => void;/);
   assert.match(
     controllerSource,
-    /const \[pendingAiThreadHref, setPendingAiThreadHref\] = useState<string \| null>\(null\);/,
-  );
-  assert.match(
-    controllerSource,
     /const openAiThreadsPage = useCallback\(\(\) => \{[\s\S]*?setSidebarPage\("aiThreads"\)/,
   );
   assert.match(controllerSource, /const startNewAiChat = useCallback\(\(\) => \{/);
@@ -106,16 +102,45 @@ test("left sidebar exposes signed-in AI create entry", () => {
   );
   assert.match(
     controllerSource,
-    /const openAiThread = useCallback\([\s\S]*?setPendingAiThreadHref\(nextHref\);[\s\S]*?router\.push\("\/chat"\);/s,
+    /const openAiThread = useCallback\([\s\S]*?const nextHref = `\/chat\?thread=\$\{encodeURIComponent\(cleanThreadId\)\}`;[\s\S]*?router\.push\(nextHref\);/s,
   );
   assert.match(
     controllerSource,
-    /useEffect\(\(\) => \{[\s\S]*?if \(!pendingAiThreadHref\) return;[\s\S]*?if \(pathname !== "\/chat"\) return;[\s\S]*?router\.push\(nextHref\);[\s\S]*?\}, \[pathname, pendingAiThreadHref, router, searchParams\]\);/s,
+    /const openAiThread = useCallback\([\s\S]*?clearEventContext\(\);\s*setSidebarPage\("aiThreads"\);\s*collapseSidebarOnTouch\(\);/s,
   );
+  const openAiThreadSource =
+    controllerSource.match(/const openAiThread = useCallback\([\s\S]*?\n {2}\);/)?.[0] ?? "";
+  assert.doesNotMatch(openAiThreadSource, /setSidebarPage\("root"\)/);
+  assert.doesNotMatch(openAiThreadSource, /setPendingAiThreadHref\(nextHref\)/);
+  assert.doesNotMatch(openAiThreadSource, /router\.push\("\/chat"\)/);
   assert.match(controllerSource, /window\.dispatchEvent\(new CustomEvent\("envitefy:chat:new"\)\)/);
   assert.match(
     controllerSource,
     /const openAiThreadsPage = useCallback\(\(\) => \{[\s\S]*?router\.push\("\/chat"\);[\s\S]*?if \(!isDesktop\) \{[\s\S]*?envitefy:chat:new/s,
   );
   assert.match(modelSource, /\|\s*"aiThreads"/);
+});
+
+test("left sidebar gives My Events rows a hover delete affordance", () => {
+  const source = readSource("src/app/left-sidebar.tsx");
+
+  assert.match(
+    source,
+    /\) : showQuickActions \? \(\s*<button[\s\S]*?className="ml-2 inline-flex h-9 w-9[\s\S]*?aria-label=\{`Delete \$\{item\.title\}`\}/s,
+  );
+  assert.match(
+    source,
+    /group-hover:opacity-100 group-focus-within:opacity-100 hover:border-red-200 hover:bg-red-50 hover:text-red-600/,
+  );
+});
+
+test("left sidebar restores the event submenu on owner event tab routes", () => {
+  const controllerSource = readSource("src/app/left-sidebar.controller.ts");
+
+  assert.match(
+    controllerSource,
+    /requestedTab !== "dashboard" &&[\s\S]*?requestedTab !== "settings"/,
+  );
+  assert.match(controllerSource, /setEventSidebarMode\("owner"\);/);
+  assert.match(controllerSource, /setSidebarPage\("eventContext"\);/);
 });

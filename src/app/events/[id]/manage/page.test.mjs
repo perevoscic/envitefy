@@ -10,6 +10,7 @@ test("event manage route is owner-only and exposes assistant plus assets tabs", 
   const page = readSource("src/app/events/[id]/manage/page.tsx");
   const client = readSource("src/app/events/[id]/manage/EventManageClient.tsx");
 
+  assert.match(page, /Event Tools \| Envitefy/);
   assert.match(page, /resolveSessionUserId\(session\)/);
   assert.match(page, /event\.user_id !== userId/);
   assert.match(page, /notFound\(\)/);
@@ -23,6 +24,10 @@ test("event manage route is owner-only and exposes assistant plus assets tabs", 
   assert.match(client, /aria-selected=\{activeTab === tab\.key\}/);
   assert.match(client, /fetch\(`\/api\/concierge\/events\/\$\{eventId\}\/message`/);
   assert.match(client, /fetch\(`\/api\/events\/\$\{eventId\}\/assets\/\$\{assetId\}`/);
+  assert.match(client, /Live card tools/);
+  assert.match(client, /RSVP Dashboard/);
+  assert.doesNotMatch(client, /Manage live card/);
+  assert.doesNotMatch(client, /RSVP Management/);
 });
 
 test("saved concierge drafts stay in chat with a generated product preview", () => {

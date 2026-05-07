@@ -70,7 +70,7 @@ test("starter category and product text skips OpenAI extraction", async () => {
     },
     {
       message: "Wedding Invitation",
-      requestedOutputs: ["invitation"] as const,
+      requestedOutputs: ["digital_flyer"] as const,
       eventType: "wedding",
     },
     {
@@ -149,7 +149,7 @@ test("main-page category/product selection suppresses the format question", asyn
 
   assert.equal(result.usedAi, false);
   assert.equal(result.draft.eventType, "wedding");
-  assert.deepEqual(result.draft.requestedOutputs, ["invitation"]);
+  assert.deepEqual(result.draft.requestedOutputs, ["digital_flyer"]);
   assert.doesNotMatch(result.assistantMessage, /would you like that to be/i);
   assert.match(result.assistantMessage, /What wedding event is this for/i);
 });
@@ -439,17 +439,9 @@ test("core product bundle expands only to visible primary products", () => {
       "Create all product formats for a school fundraiser Saturday at 3 at the gym with a fun vibe.",
   });
 
-  assert.deepEqual(draft.requestedOutputs, [
-    "live_card",
-    "invitation",
-    "digital_flyer",
-    "event_page",
-  ]);
+  assert.deepEqual(draft.requestedOutputs, ["live_card", "digital_flyer", "event_page"]);
   assert.doesNotMatch(draft.requestedOutputs.join(","), /whatsapp|text_message|printable_flyer/);
-  assert.match(
-    buildAssistantMessage(draft),
-    /Products: Live card, Invitation, Flyer invite, Event page/,
-  );
+  assert.match(buildAssistantMessage(draft), /Products: Live card, Flyer\/Invitation, Event page/);
 });
 
 test("source flyer wording does not force a digital flyer product", () => {
@@ -499,12 +491,20 @@ test("RSVP guest-count phrasing fills number of guests", () => {
 
 test("wedding invitation phrasing captures both partner names", () => {
   const draft = fallbackExtractConciergeDraft({
-    message: "Wedding Invitation for QA Sara and Daniel Saturday at 3 at the chapel.",
+    message:
+      "Wedding Invitation for QA Sara and Daniel on Saturday October 10 2026 at 5 PM at The Pearl, 200 River Walk, San Antonio, TX. Elegant garden cocktail vibe. RSVP by September 20.",
   });
+  const assistant = buildAssistantMessage(draft);
 
   assert.equal(draft.eventType, "wedding");
   assert.equal(draft.honoreeName, "Sara and Daniel");
-  assert.deepEqual(draft.requestedOutputs, ["invitation"]);
+  assert.deepEqual(draft.requestedOutputs, ["digital_flyer"]);
+  assert.equal(draft.rsvpEnabled, true);
+  assert.equal(draft.currentQuestion, "numberOfGuests");
+  assert.match(assistant, /Names: Sara and Daniel/);
+  assert.match(assistant, /How many guests should the RSVP track/i);
+  assert.doesNotMatch(assistant, /whose names should be featured/i);
+  assert.doesNotMatch(JSON.stringify(draft.requestedOutputs), /rsvp_page/);
 });
 
 test("output-only live card prompt without context asks for purpose before date", () => {
@@ -527,6 +527,16 @@ test("output-specific prompt asks what a digital flyer promotes", () => {
   assert.deepEqual(draft.requestedOutputs, ["digital_flyer"]);
   assert.equal(draft.canPersist, false);
   assert.match(draft.missingFields.join(","), /eventPurpose/);
+});
+
+test("output-specific flyer slash invitation prompt asks for event context first", () => {
+  const draft = fallbackExtractConciergeDraft({ message: "Create a flyer/invitation" });
+
+  assert.equal(draft.intent, "create_output");
+  assert.deepEqual(draft.requestedOutputs, ["digital_flyer"]);
+  assert.equal(draft.eventPurpose, null);
+  assert.equal(draft.currentQuestion, "what_are_we_celebrating");
+  assert.match(buildAssistantMessage(draft), /What should this flyer invitation be for/);
 });
 
 test("purpose reply after output-only shell stays drafting until preview details exist", () => {
@@ -722,7 +732,7 @@ test("output-only RSVP page prompt stays unsaved until an event/source exists", 
 test("output capability matrix gives output-specific first questions and CTAs", () => {
   assert.equal(
     getOutputRequirement("digital_flyer").firstQuestion,
-    "What should this flyer invite be for?",
+    "What should this flyer invitation be for?",
   );
   assert.equal(getOutputRequirement("whatsapp").previewCta, "Write copy");
 });
@@ -939,6 +949,50 @@ test("OpenAI normalization treats nested eventData venue as satisfying location"
   assert.equal(draft.venue, "the venue");
   assert.doesNotMatch(draft.missingFields.join(","), /location/);
   assert.notEqual(buildAssistantMessage(draft), "Where should guests go?");
+});
+
+test("OpenAI normalization does not turn an RSVP deadline into an RSVP page product", () => {
+  const fallback = fallbackExtractConciergeDraft({
+    message:
+      "Wedding Invitation for QA Sara and Daniel on Saturday October 10 2026 at 5 PM at The Pearl. RSVP by September 20.",
+  });
+  const draft = normalizeConciergeDraft(
+    {
+      requestedOutputs: ["digital_flyer", "rsvp_page"],
+    },
+    fallback,
+  );
+
+  assert.equal(fallback.rsvpEnabled, true);
+  assert.deepEqual(fallback.requestedOutputs, ["digital_flyer"]);
+  assert.deepEqual(draft.requestedOutputs, ["digital_flyer"]);
+  assert.deepEqual(draft.outputs, ["digital_flyer"]);
+});
+
+test("OpenAI normalization cannot override an explicit no-RSVP request", () => {
+  const fallback = fallbackExtractConciergeDraft({
+    message:
+      "Birthday Event Page for Ava turning 7 Saturday June 20 2026 at 3 PM at Sky Zone. No RSVP. Make it fun and colorful.",
+    requestedOutputs: ["event_page"],
+  });
+  const draft = normalizeConciergeDraft(
+    {
+      rsvpEnabled: true,
+      numberOfGuests: 40,
+      requestedOutputs: ["event_page", "rsvp_page"],
+      missingFields: ["numberOfGuests"],
+    },
+    fallback,
+  );
+
+  assert.equal(fallback.rsvpEnabled, false);
+  assert.equal(fallback.currentQuestion, null);
+  assert.equal(draft.rsvpEnabled, false);
+  assert.equal(draft.numberOfGuests, null);
+  assert.deepEqual(draft.requestedOutputs, ["event_page"]);
+  assert.deepEqual(draft.outputs, ["event_page"]);
+  assert.doesNotMatch(draft.missingFields.join(","), /numberOfGuests/);
+  assert.equal(buildAssistantMessage(draft).includes("How many guests"), false);
 });
 
 test("OpenAI readiness is downgraded when source and purpose are missing", async () => {

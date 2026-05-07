@@ -73,20 +73,20 @@ export const OUTPUT_REQUIREMENTS: Record<RequestedOutput, OutputRequirement> = {
     visualOutput: true,
   },
   digital_flyer: {
-    label: "Flyer invite",
+    label: "Flyer/Invitation",
     requiredAny: ["eventPurpose", "title", "sourceContext"],
     requiredFields: ["eventPurpose", "date", "time", "location"],
     optional: ["rsvp", "theme"],
-    firstQuestion: "What should this flyer invite be for?",
+    firstQuestion: "What should this flyer invitation be for?",
     previewCta: "Create first preview",
     visualOutput: true,
   },
   invitation: {
-    label: "Invitation",
+    label: "Flyer/Invitation",
     requiredAny: ["eventPurpose", "title", "sourceContext"],
     requiredFields: ["eventPurpose", "date", "time", "location"],
     optional: ["rsvp", "theme"],
-    firstQuestion: "What are we inviting people to?",
+    firstQuestion: "What should this flyer invitation be for?",
     previewCta: "Create first preview",
     visualOutput: true,
   },
@@ -238,7 +238,8 @@ const CATEGORY_REQUIREMENTS: Record<ConciergeEventType, CategoryRequirement> = {
     ],
     fieldQuestions: {
       honoreeName: "Whose names should be featured? Include both partners as you want them shown.",
-      eventPurpose: "Is this for the ceremony, reception, full wedding weekend, or another wedding event?",
+      eventPurpose:
+        "Is this for the ceremony, reception, full wedding weekend, or another wedding event?",
     },
     suggestedReplies: {
       honoreeName: ["Sara and Daniel", "Maya & Chris"],
@@ -356,10 +357,7 @@ const CATEGORY_REQUIREMENTS: Record<ConciergeEventType, CategoryRequirement> = {
   housewarming: {
     label: "housewarming",
     requiredFields: ["eventPurpose", "date", "time", "location"],
-    intakeQuestions: [
-      "Whose housewarming is this for?",
-      "When and where should guests go?",
-    ],
+    intakeQuestions: ["Whose housewarming is this for?", "When and where should guests go?"],
   },
   appointment: {
     label: "appointment",
@@ -380,26 +378,17 @@ const CATEGORY_REQUIREMENTS: Record<ConciergeEventType, CategoryRequirement> = {
   special_event: {
     label: "special event",
     requiredFields: ["eventPurpose", "date", "time", "location"],
-    intakeQuestions: [
-      "What special event should this be for?",
-      "When and where should it happen?",
-    ],
+    intakeQuestions: ["What special event should this be for?", "When and where should it happen?"],
   },
   smart_signup: {
     label: "smart sign-up",
     requiredFields: ["eventPurpose", "date", "time", "location"],
-    intakeQuestions: [
-      "What should people sign up for?",
-      "When and where is it happening?",
-    ],
+    intakeQuestions: ["What should people sign up for?", "When and where is it happening?"],
   },
   general: {
     label: "event",
     requiredFields: ["eventPurpose", "date", "time", "location"],
-    intakeQuestions: [
-      "What event should this be for?",
-      "When and where should it happen?",
-    ],
+    intakeQuestions: ["What event should this be for?", "When and where should it happen?"],
   },
 };
 
@@ -420,10 +409,7 @@ export function getRequirementPlan(args: {
   const output = getOutputRequirement(primaryOutput);
   const category = CATEGORY_REQUIREMENTS[args.eventType] || CATEGORY_REQUIREMENTS.unknown;
   const requiredFields = Array.from(
-    new Set<RequirementField>([
-      ...category.requiredFields,
-      ...output.requiredFields,
-    ]),
+    new Set<RequirementField>([...category.requiredFields, ...output.requiredFields]),
   );
   const receivedInvite = args.sourceContext?.detectedSourceIntent === "received_invite";
   return {
@@ -485,9 +471,16 @@ export function requirementFieldSatisfied(
 }
 
 export function questionForRequirementField(field: RequirementField, plan: RequirementPlan) {
-  return plan.fieldQuestions[field] || DEFAULT_FIELD_QUESTIONS[field] || "What detail should we add next?";
+  return (
+    plan.fieldQuestions[field] ||
+    DEFAULT_FIELD_QUESTIONS[field] ||
+    "What detail should we add next?"
+  );
 }
 
-export function suggestedRepliesForRequirementField(field: RequirementField, plan: RequirementPlan) {
+export function suggestedRepliesForRequirementField(
+  field: RequirementField,
+  plan: RequirementPlan,
+) {
   return plan.suggestedReplies[field] || DEFAULT_SUGGESTED_REPLIES[field] || [];
 }

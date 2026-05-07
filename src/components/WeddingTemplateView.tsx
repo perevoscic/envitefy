@@ -7,30 +7,63 @@ import Link from "next/link";
 import { buildEditLink } from "@/utils/event-edit-route";
 import { normalizeUrlValue } from "@/utils/contact";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
-import type {
-  EventData,
-} from "@/app/event/weddings/_renderers/content-sections";
+import type { EventData } from "@/app/event/weddings/_renderers/content-sections";
 
 // Import all template configs
-import etherealClassic from "../../templates/weddings/ethereal-classic/config.json" with { type: "json" };
-import modernEditorial from "../../templates/weddings/modern-editorial/config.json" with { type: "json" };
+import etherealClassic from "../../templates/weddings/ethereal-classic/config.json" with {
+  type: "json",
+};
+import modernEditorial from "../../templates/weddings/modern-editorial/config.json" with {
+  type: "json",
+};
 import rusticBoho from "../../templates/weddings/rustic-boho/config.json" with { type: "json" };
-import cinematicWedding from "../../templates/weddings/cinematic-wedding/config.json" with { type: "json" };
-import celestialWedding from "../../templates/weddings/celestial-wedding/config.json" with { type: "json" };
-import gildedWedding from "../../templates/weddings/gilded-wedding/config.json" with { type: "json" };
-import museumWedding from "../../templates/weddings/museum-wedding/config.json" with { type: "json" };
-import etherealWedding from "../../templates/weddings/ethereal-wedding/config.json" with { type: "json" };
+import cinematicWedding from "../../templates/weddings/cinematic-wedding/config.json" with {
+  type: "json",
+};
+import celestialWedding from "../../templates/weddings/celestial-wedding/config.json" with {
+  type: "json",
+};
+import gildedWedding from "../../templates/weddings/gilded-wedding/config.json" with {
+  type: "json",
+};
+import museumWedding from "../../templates/weddings/museum-wedding/config.json" with {
+  type: "json",
+};
+import etherealWedding from "../../templates/weddings/ethereal-wedding/config.json" with {
+  type: "json",
+};
 import noirLuxury from "../../templates/weddings/noir-luxury/config.json" with { type: "json" };
 import retro70s from "../../templates/weddings/retro-70s/config.json" with { type: "json" };
-import newspaperWedding from "../../templates/weddings/newspaper-wedding/config.json" with { type: "json" };
-import bauhausWedding from "../../templates/weddings/bauhaus-wedding/config.json" with { type: "json" };
-import europeCoastalWedding from "../../templates/weddings/europe-coastal-wedding/config.json" with { type: "json" };
-import floridaCoastalWedding from "../../templates/weddings/florida-coastal-wedding/config.json" with { type: "json" };
-import californiaCoastalWedding from "../../templates/weddings/california-coastal-wedding/config.json" with { type: "json" };
-import winterWedding from "../../templates/weddings/winter-wedding/config.json" with { type: "json" };
-import industrialWedding from "../../templates/weddings/industrial-wedding/config.json" with { type: "json" };
-import libraryWedding from "../../templates/weddings/library-wedding/config.json" with { type: "json" };
-import gardenWedding from "../../templates/weddings/garden-wedding/config.json" with { type: "json" };
+import newspaperWedding from "../../templates/weddings/newspaper-wedding/config.json" with {
+  type: "json",
+};
+import bauhausWedding from "../../templates/weddings/bauhaus-wedding/config.json" with {
+  type: "json",
+};
+import europeCoastalWedding from "../../templates/weddings/europe-coastal-wedding/config.json" with {
+  type: "json",
+};
+import floridaCoastalWedding from "../../templates/weddings/florida-coastal-wedding/config.json" with {
+  type: "json",
+};
+import californiaCoastalWedding from "../../templates/weddings/california-coastal-wedding/config.json" with {
+  type: "json",
+};
+import winterWedding from "../../templates/weddings/winter-wedding/config.json" with {
+  type: "json",
+};
+import industrialWedding from "../../templates/weddings/industrial-wedding/config.json" with {
+  type: "json",
+};
+import libraryWedding from "../../templates/weddings/library-wedding/config.json" with {
+  type: "json",
+};
+import gardenWedding from "../../templates/weddings/garden-wedding/config.json" with {
+  type: "json",
+};
+import skylineWedding from "../../templates/weddings/skyline-wedding/config.json" with {
+  type: "json",
+};
 
 const TEMPLATE_CONFIGS: Record<string, any> = {
   "ethereal-classic": etherealClassic,
@@ -52,6 +85,7 @@ const TEMPLATE_CONFIGS: Record<string, any> = {
   "industrial-wedding": industrialWedding,
   "library-wedding": libraryWedding,
   "garden-wedding": gardenWedding,
+  "skyline-wedding": skylineWedding,
 };
 
 const getLuminance = (hex: string): number => {
@@ -60,13 +94,11 @@ const getLuminance = (hex: string): number => {
   const r = parseInt(normalized.slice(0, 2), 16) / 255;
   const g = parseInt(normalized.slice(2, 4), 16) / 255;
   const b = parseInt(normalized.slice(4, 6), 16) / 255;
-  const channel = (c: number) =>
-    c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  const channel = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
   return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 };
 
-const _pickTextColor = (bg: string) =>
-  getLuminance(bg) > 0.6 ? "#1f2937" : "#F9FAFB";
+const _pickTextColor = (bg: string) => (getLuminance(bg) > 0.6 ? "#1f2937" : "#F9FAFB");
 
 // Font definitions (matching customize page)
 const FONTS = {
@@ -209,18 +241,8 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <path
-            d="M20 20 Q200 10, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <path
-            d="M20 20 Q200 30, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <path d="M20 20 Q200 10, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M20 20 Q200 30, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <path
             d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
             stroke="currentColor"
@@ -245,14 +267,7 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
           <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
           <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
@@ -267,24 +282,10 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <circle cx="20" cy="20" r="3" fill="currentColor" />
           <circle cx="380" cy="20" r="3" fill="currentColor" />
-          <circle
-            cx="200"
-            cy="20"
-            r="5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <circle cx="200" cy="20" r="5" stroke="currentColor" strokeWidth="1.5" fill="none" />
         </svg>
       ),
       dusty_blue_horizon: (
@@ -296,14 +297,7 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <path
             d="M15 20 L20 15 M15 20 L20 25"
             stroke="currentColor"
@@ -328,14 +322,7 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
           <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
           <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
@@ -351,18 +338,8 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <path
-            d="M20 20 Q200 10, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <path
-            d="M20 20 Q200 30, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <path d="M20 20 Q200 10, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M20 20 Q200 30, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <circle cx="200" cy="20" r="4" fill="currentColor" />
         </svg>
       ),
@@ -375,14 +352,7 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <path
             d="M15 20 L20 15 L20 25 M385 20 L380 15 L380 25"
             stroke="currentColor"
@@ -422,18 +392,8 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <path
-            d="M20 20 Q200 10, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <path
-            d="M20 20 Q200 30, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <path d="M20 20 Q200 10, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M20 20 Q200 30, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <path
             d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
             stroke="currentColor"
@@ -452,14 +412,7 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
           <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
           <path
@@ -479,14 +432,7 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <path
             d="M15 20 L20 15 M15 20 L20 25"
             stroke="currentColor"
@@ -511,18 +457,8 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <path
-            d="M20 20 Q200 10, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <path
-            d="M20 20 Q200 30, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <path d="M20 20 Q200 10, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M20 20 Q200 30, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <circle cx="20" cy="20" r="2" fill="currentColor" />
           <circle cx="380" cy="20" r="2" fill="currentColor" />
           <circle cx="200" cy="20" r="3" fill="currentColor" />
@@ -537,24 +473,10 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <circle cx="20" cy="20" r="3" fill="currentColor" />
           <circle cx="380" cy="20" r="3" fill="currentColor" />
-          <circle
-            cx="200"
-            cy="20"
-            r="4"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <circle cx="200" cy="20" r="4" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <circle cx="200" cy="20" r="1.5" fill="currentColor" />
         </svg>
       ),
@@ -567,18 +489,8 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <path
-            d="M20 20 Q200 10, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <path
-            d="M20 20 Q200 30, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <path d="M20 20 Q200 10, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M20 20 Q200 30, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <path
             d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
             stroke="currentColor"
@@ -603,14 +515,7 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
           <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
           <circle cx="200" cy="20" r="3" fill="currentColor" />
@@ -625,14 +530,7 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
           <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
           <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
@@ -648,18 +546,8 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <path
-            d="M20 20 Q200 10, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <path
-            d="M20 20 Q200 30, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <path d="M20 20 Q200 10, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M20 20 Q200 30, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <circle cx="20" cy="20" r="2.5" fill="currentColor" />
           <circle cx="380" cy="20" r="2.5" fill="currentColor" />
           <circle cx="200" cy="20" r="3.5" fill="currentColor" />
@@ -734,24 +622,10 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <circle cx="20" cy="20" r="3" fill="currentColor" />
           <circle cx="380" cy="20" r="3" fill="currentColor" />
-          <circle
-            cx="200"
-            cy="20"
-            r="5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <circle cx="200" cy="20" r="5" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <circle cx="200" cy="20" r="2" fill="currentColor" />
         </svg>
       ),
@@ -764,18 +638,8 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <path
-            d="M20 20 Q200 10, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <path
-            d="M20 20 Q200 30, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <path d="M20 20 Q200 10, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M20 20 Q200 30, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <path
             d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
             stroke="currentColor"
@@ -795,14 +659,7 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
           <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
           <circle cx="200" cy="20" r="4" fill="currentColor" />
@@ -817,18 +674,8 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <path
-            d="M20 20 Q200 10, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <path
-            d="M20 20 Q200 30, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <path d="M20 20 Q200 10, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M20 20 Q200 30, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <circle cx="20" cy="20" r="2.5" fill="currentColor" />
           <circle cx="380" cy="20" r="2.5" fill="currentColor" />
           <circle cx="200" cy="20" r="3" fill="currentColor" />
@@ -843,14 +690,7 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <line
-            x1="20"
-            y1="20"
-            x2="380"
-            y2="20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
+          <line x1="20" y1="20" x2="380" y2="20" stroke="currentColor" strokeWidth="1.5" />
           <path d="M15 20 L20 15 L25 20 L20 25 Z" fill="currentColor" />
           <path d="M375 20 L380 15 L385 20 L380 25 Z" fill="currentColor" />
           <path d="M195 20 L200 15 L205 20 L200 25 Z" fill="currentColor" />
@@ -865,18 +705,8 @@ const _DecorativeDivider = ({ themeId }: { themeId: string }) => {
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-40"
         >
-          <path
-            d="M20 20 Q200 10, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <path
-            d="M20 20 Q200 30, 380 20"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <path d="M20 20 Q200 10, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          <path d="M20 20 Q200 30, 380 20" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <path
             d="M195 15 L200 20 L195 25 M205 15 L200 20 L205 25"
             stroke="currentColor"
@@ -938,15 +768,10 @@ export default function WeddingTemplateView({
   // Build the template config with saved fonts
   const selectedTemplate = useMemo(() => {
     const fromMap =
-      TEMPLATE_CONFIGS[themeId] ||
-      TEMPLATE_CONFIGS["garden-wedding"] ||
-      gardenWedding;
+      TEMPLATE_CONFIGS[themeId] || TEMPLATE_CONFIGS["garden-wedding"] || gardenWedding;
     const chosenFont = FONTS[theme.font as keyof typeof FONTS];
     const appliedFonts = {
-      headline:
-        chosenFont?.name ||
-        fromMap?.theme?.fonts?.headline ||
-        "Playfair Display",
+      headline: chosenFont?.name || fromMap?.theme?.fonts?.headline || "Playfair Display",
       body: chosenFont?.name || fromMap?.theme?.fonts?.body || "Inter",
     };
     return {
@@ -981,11 +806,11 @@ export default function WeddingTemplateView({
           role: p.role || "",
         }))
       : Array.isArray(weddingData.weddingParty)
-      ? weddingData.weddingParty.map((p: any) => ({
-          name: p.name || "",
-          role: p.role || "",
-        }))
-      : [];
+        ? weddingData.weddingParty.map((p: any) => ({
+            name: p.name || "",
+            role: p.role || "",
+          }))
+        : [];
 
     // Transform travel (directions string)
     const travel = weddingData.travel?.directions || "";
@@ -1027,16 +852,13 @@ export default function WeddingTemplateView({
       date: weddingData.date || "",
       location,
       story:
-        weddingData.story ||
-        (typeof weddingData.story === "object" ? weddingData.story?.text : ""),
+        weddingData.story || (typeof weddingData.story === "object" ? weddingData.story?.text : ""),
       schedule,
       party,
       travel,
       thingsToDo,
       gallery,
-      rsvpEnabled: Boolean(
-        weddingData.rsvp?.isEnabled !== false && weddingData.rsvp
-      ),
+      rsvpEnabled: Boolean(weddingData.rsvp?.isEnabled !== false && weddingData.rsvp),
       rsvpLink: normalizeUrlValue(weddingData.rsvp?.url || weddingData.rsvp?.link || "") || "",
       rsvp: {
         url: normalizeUrlValue(weddingData.rsvp?.url || weddingData.rsvp?.link || "") || "#rsvp",
@@ -1067,54 +889,48 @@ export default function WeddingTemplateView({
   return (
     <div className="event-modern-page">
       <div className="event-modern-container">
-      <div className="relative w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] mx-auto my-4 md:my-8">
-        {/* Edit/Delete buttons overlay */}
-        {!isReadOnly && (canEdit || isOwner) && (
-          <div className="absolute top-4 right-4 z-50 hidden md:flex items-center gap-2">
-            {canEdit && (
-              <Link
-                href={buildEditLink(eventId, eventData, eventTitle)}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-white/90 backdrop-blur-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-white transition-colors rounded-lg shadow-md"
-                title="Edit event"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
+        <div className="relative w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] mx-auto my-4 md:my-8">
+          {/* Edit/Delete buttons overlay */}
+          {!isReadOnly && (canEdit || isOwner) && (
+            <div className="absolute top-4 right-4 z-50 hidden md:flex items-center gap-2">
+              {canEdit && (
+                <Link
+                  href={buildEditLink(eventId, eventData, eventTitle)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-white/90 backdrop-blur-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-white transition-colors rounded-lg shadow-md"
+                  title="Edit event"
                 >
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-                <span className="hidden sm:inline">Edit</span>
-              </Link>
-            )}
-            {isOwner && (
-              <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
-            )}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  <span className="hidden sm:inline">Edit</span>
+                </Link>
+              )}
+              {isOwner && <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />}
+            </div>
+          )}
+
+          {/* Render the template using WeddingRenderer (same as preview) */}
+          <div className="shadow-2xl md:rounded-xl overflow-hidden">
+            <WeddingRenderer template={selectedTemplate} event={event} />
+          </div>
+        </div>
+
+        {/* Event Actions */}
+        {!isReadOnly && (
+          <div className="max-w-3xl mx-auto px-5 sm:px-10 py-6 hidden md:block">
+            <EventActions shareUrl={shareUrl} historyId={eventId} event={shareEventPayload} />
           </div>
         )}
-
-        {/* Render the template using WeddingRenderer (same as preview) */}
-        <div className="shadow-2xl md:rounded-xl overflow-hidden">
-          <WeddingRenderer template={selectedTemplate} event={event} />
-        </div>
-      </div>
-
-      {/* Event Actions */}
-      {!isReadOnly && (
-        <div className="max-w-3xl mx-auto px-5 sm:px-10 py-6 hidden md:block">
-          <EventActions
-            shareUrl={shareUrl}
-            historyId={eventId}
-            event={shareEventPayload}
-          />
-        </div>
-      )}
       </div>
       {!isReadOnly && (
         <div className="event-modern-mobile-bar md:hidden">
@@ -1127,9 +943,7 @@ export default function WeddingTemplateView({
                 Edit
               </Link>
             )}
-            {isOwner && (
-              <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />
-            )}
+            {isOwner && <EventDeleteModal eventId={eventId} eventTitle={eventTitle} />}
             <div className="min-w-0 flex-1">
               <EventActions
                 shareUrl={shareUrl}

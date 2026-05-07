@@ -42,7 +42,7 @@ const OUTPUT_ASSET_TYPES: Partial<Record<RequestedOutput, EventAssetType>> = {
   live_card: "live_card",
   signup_form: "signup_form",
   digital_flyer: "printable_flyer",
-  invitation: "invitation",
+  invitation: "printable_flyer",
   rsvp_page: "rsvp_page",
   whatsapp: "whatsapp",
   printable_flyer: "printable_flyer",
@@ -96,7 +96,8 @@ async function persistCreationAsEvent(params: {
       content: {
         ...generated.content,
         previewCopy: params.draft.previewCopy,
-        ...(assetType === "invitation" && params.studioInvite?.imageUrl
+        ...((assetType === "printable_flyer" || assetType === "invitation") &&
+        params.studioInvite?.imageUrl
           ? {
               imageUrl: params.studioInvite.imageUrl,
               invitationData: params.studioInvite.invitationData || null,

@@ -31,10 +31,7 @@ test("event route branches football discovery/template events into the football 
     source.indexOf("if (shouldRenderFootballPage)") < source.indexOf("if (isSimpleTemplate)"),
     "football renderer branch should run before the generic SimpleTemplateView branch",
   );
-  assert.match(
-    source,
-    /if \(editParam && canManageCreatedEvent && isFootballDiscoveryTemplate\) \{/,
-  );
+  assert.match(source, /if \(editParam && canEditCreatedEvent && isFootballDiscoveryTemplate\) \{/);
   assert.match(source, /redirect\("\/event"\)/);
   assert.match(source, /import BasketballSkin from "@\/components\/BasketballSkin";/);
   assert.match(source, /import BirthdaySkin from "@\/components\/BirthdaySkin";/);
@@ -42,11 +39,27 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /import PickleballSkin from "@\/components\/PickleballSkin";/);
   assert.match(source, /import OpenHouseSkin from "@\/components\/OpenHouseSkin";/);
   assert.match(source, /import GenericEventSkin from "@\/components\/GenericEventSkin";/);
+  assert.match(source, /getPrimaryEventProductOutput/);
+  assert.match(source, /isCardFirstEventProduct/);
+  assert.match(source, /buildStudioCardPath/);
+  assert.match(
+    source,
+    /const cardFirstCanonical = isCardFirstEventProduct\(primaryProductOutput\)/,
+  );
+  assert.match(source, /if \(cardFirstCanonical && !ownerToolsTab\) \{\s*redirect\(cardFirstCanonical\);/);
+  assert.doesNotMatch(source, /title="Manage event"/);
+  assert.doesNotMatch(source, /href=\{`\/events\/\$\{row\.id\}\/manage`\}/);
   assert.doesNotMatch(source, /BirthdayTemplateView/);
   assert.match(source, /import \{ cleanGraduationVenueName \} from "@\/lib\/ocr\/text";/);
   assert.match(source, /const rawVenueText =/);
-  assert.match(source, /categoryNormalized === "graduations"\s*\?\s*cleanGraduationVenueName\(rawVenueText\)/);
-  assert.match(source, /const isBirthdaySkinEvent = categoryNormalized === "birthdays" && isOcrEvent;/);
+  assert.match(
+    source,
+    /categoryNormalized === "graduations"\s*\?\s*cleanGraduationVenueName\(rawVenueText\)/,
+  );
+  assert.match(
+    source,
+    /const isBirthdaySkinEvent = categoryNormalized === "birthdays" && isOcrEvent;/,
+  );
   assert.match(source, /if \(isBirthdaySkinEvent\) \{/);
   assert.match(
     source,
@@ -73,7 +86,16 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /const birthdayThemeId = variationId \|\| BIRTHDAY_THEMES\[0\]\?\.id;/);
   assert.match(source, /const birthdayThemeBase = data\.theme\?\.layout/);
   assert.match(source, /const hideHostDashboard =/);
-  assert.match(source, /const showHostDashboard = canManageCreatedEvent && !hideHostDashboard/);
+  assert.match(
+    source,
+    /const canEditCreatedEvent = canManageCreatedEvent && !isScannedOrUploadedEventData\(data\);/,
+  );
+  assert.match(
+    source,
+    /const showHostDashboard =\s*canManageCreatedEvent && !hideHostDashboard && canShowOwnerRsvpDashboard\(data\);/,
+  );
+  assert.match(source, /const showOwnerWorkspace = canManageCreatedEvent;/);
+  assert.match(source, /if \(showOwnerWorkspace && ownerToolsTab\) \{/);
   assert.match(source, /showHostDashboard=\{showHostDashboard\}/);
   assert.match(
     source,
@@ -210,8 +232,14 @@ test("event route renders concierge live cards with public details and direct RS
 
   assert.match(source, /const liveCardRecord = asPlainRecord\(data\?\.liveCard\);/);
   assert.match(source, /const publicEventRecord = asPlainRecord\(data\?\.publicEvent\);/);
-  assert.match(source, /const publicEventPrimaryOutput = cleanDisplayString\(publicEventRecord\.primaryOutput\)/);
-  assert.match(source, /const publicEventRenderer = cleanDisplayString\(publicEventRecord\.renderer\)/);
+  assert.match(
+    source,
+    /const publicEventPrimaryOutput = cleanDisplayString\(publicEventRecord\.primaryOutput\)/,
+  );
+  assert.match(
+    source,
+    /const publicEventRenderer = cleanDisplayString\(publicEventRecord\.renderer\)/,
+  );
   assert.match(source, /const isConciergeLiveCardEvent =/);
   assert.match(source, /discoveryCreatedVia === "concierge"/);
   assert.match(source, /publicEventPrimaryOutput === "live_card"/);

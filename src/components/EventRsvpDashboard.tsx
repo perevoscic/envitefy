@@ -1,6 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  Clock3,
+  Search,
+  Trash2,
+  Users,
+  XCircle,
+} from "lucide-react";
 
 type RsvpStats = {
   yes: number;
@@ -23,356 +32,407 @@ type RsvpResponse = {
   updatedAt: string | null;
 };
 
+type RsvpFilter = "all" | "yes" | "maybe" | "no";
+
+const FILTERS: Array<{ key: RsvpFilter; label: string }> = [
+  { key: "all", label: "All" },
+  { key: "yes", label: "Going" },
+  { key: "maybe", label: "Maybe" },
+  { key: "no", label: "Declined" },
+];
+
+function normalizeResponse(value: unknown): "yes" | "maybe" | "no" {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "no") return "no";
+  if (normalized === "maybe") return "maybe";
+  return "yes";
+}
+
+function displayName(row: RsvpResponse): string {
+  const fullName = [row.firstName, row.lastName]
+    .map((part) => (typeof part === "string" ? part.trim() : ""))
+    .filter(Boolean)
+    .join(" ");
+  return fullName || row.name?.trim() || row.email?.trim() || "Guest";
+}
+
+function displayUpdatedAt(value: string | null): string {
+  if (!value) return "No timestamp";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(parsed);
+}
+
+function buildTarget(row: RsvpResponse) {
+  if (row.email?.trim()) return { email: row.email.trim() };
+  if (row.name?.trim()) return { name: row.name.trim() };
+  const name = displayName(row);
+  return name ? { name } : {};
+}
+
+function rowIdentity(row: RsvpResponse, fallback: number | string = ""): string {
+  return `${row.email || row.name || displayName(row)}-${row.createdAt || row.updatedAt || fallback}`;
+}
+
+function statusCopy(value: string) {
+  const normalized = normalizeResponse(value);
+  if (normalized === "yes") {
+    return {
+      label: "Going",
+      icon: CheckCircle2,
+      className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    };
+  }
+  if (normalized === "no") {
+    return {
+      label: "Declined",
+      icon: XCircle,
+      className: "border-rose-200 bg-rose-50 text-rose-700",
+    };
+  }
+  return {
+    label: "Maybe",
+    icon: Clock3,
+    className: "border-amber-200 bg-amber-50 text-amber-700",
+  };
+}
+
 export default function EventRsvpDashboard({
   eventId,
   initialNumberOfGuests = 0,
+  rsvpEnabled,
 }: {
   eventId: string;
   initialNumberOfGuests?: number;
+  rsvpEnabled?: boolean;
 }) {
   const [stats, setStats] = useState<RsvpStats | null>(null);
   const [responses, setResponses] = useState<RsvpResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
+  const [filter, setFilter] = useState<RsvpFilter>("all");
+  const [query, setQuery] = useState("");
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch(`/api/events/${eventId}/rsvp?t=${Date.now()}`, {
-          credentials: "include",
-          cache: "no-store",
-          headers: {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            Pragma: "no-cache",
-          },
-        });
-        const data = await res.json();
-        if (data.ok) {
-          console.log("[RSVP Dashboard] Stats updated:", data);
-          // Use API's calculated remaining value (now fixed to include all responses)
-          setStats({
-            yes: data.stats?.yes || 0,
-            no: data.stats?.no || 0,
-            maybe: data.stats?.maybe || 0,
-            filled: data.filled || 0,
-            remaining:
-              data.remaining ?? (data.numberOfGuests || initialNumberOfGuests),
-            numberOfGuests: data.numberOfGuests || initialNumberOfGuests,
-          });
-          setResponses(Array.isArray(data.responses) ? data.responses : []);
-        } else {
-          console.error("Failed to fetch RSVP stats:", data.error);
-        }
-      } catch (err) {
-        console.error("Failed to fetch RSVP stats:", err);
-      } finally {
-        setLoading(false);
+  const refreshRsvpData = useCallback(async () => {
+    if (!eventId) return;
+    setError(null);
+    try {
+      const res = await fetch(`/api/events/${eventId}/rsvp?t=${Date.now()}`, {
+        credentials: "include",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        setError(data?.error || "RSVP data is unavailable.");
+        return;
       }
-    };
-
-    if (eventId) {
-      // Fetch immediately without delay
-      fetchStats();
-      // Refresh stats every 5 minutes to save resources
-      // Immediate updates still happen via custom event listener when users RSVP
-      const interval = setInterval(fetchStats, 5 * 60 * 1000);
-
-      // Also listen for custom RSVP submission events
-      const handleRsvpSubmit = () => {
-        console.log(
-          "[RSVP Dashboard] RSVP submitted event received, refreshing..."
-        );
-        // Small delay to ensure API has processed the request
-        setTimeout(() => {
-          fetchStats();
-        }, 500);
-      };
-      window.addEventListener("rsvp-submitted", handleRsvpSubmit);
-
-      return () => {
-        clearInterval(interval);
-        window.removeEventListener("rsvp-submitted", handleRsvpSubmit);
-      };
+      setStats({
+        yes: Number(data.stats?.yes || 0),
+        no: Number(data.stats?.no || 0),
+        maybe: Number(data.stats?.maybe || 0),
+        filled: Number(data.filled || 0),
+        remaining: Number(data.remaining ?? data.numberOfGuests ?? initialNumberOfGuests),
+        numberOfGuests: Number(data.numberOfGuests || initialNumberOfGuests || 0),
+      });
+      setResponses(Array.isArray(data.responses) ? data.responses : []);
+    } catch {
+      setError("RSVP data is unavailable.");
+    } finally {
+      setLoading(false);
     }
   }, [eventId, initialNumberOfGuests]);
 
-  // Show dashboard even while loading, using initialNumberOfGuests
-  // Calculate remaining properly even in initial state
+  useEffect(() => {
+    if (!eventId) return;
+    void refreshRsvpData();
+    const interval = window.setInterval(refreshRsvpData, 5 * 60 * 1000);
+    const handleRsvpSubmit = () => {
+      window.setTimeout(() => void refreshRsvpData(), 500);
+    };
+    window.addEventListener("rsvp-submitted", handleRsvpSubmit);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("rsvp-submitted", handleRsvpSubmit);
+    };
+  }, [eventId, refreshRsvpData]);
+
   const displayStats: RsvpStats = stats || {
     yes: 0,
     no: 0,
     maybe: 0,
     filled: 0,
-    remaining: initialNumberOfGuests, // Will update immediately when stats load
+    remaining: initialNumberOfGuests,
     numberOfGuests: initialNumberOfGuests,
   };
+  const hasResponses = responses.length > 0;
+  const hasRsvpSurface = Boolean(rsvpEnabled || displayStats.numberOfGuests > 0 || hasResponses);
+  const responseRate =
+    displayStats.numberOfGuests > 0
+      ? Math.min(100, Math.round((displayStats.filled / displayStats.numberOfGuests) * 100))
+      : hasResponses
+        ? 100
+        : 0;
 
-  // Don't show dashboard if no guests set and no stats after loading completes
-  if (displayStats.numberOfGuests === 0 && !stats && !loading) {
-    return null;
+  const filteredResponses = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return responses.filter((row) => {
+      const response = normalizeResponse(row.response);
+      if (filter !== "all" && response !== filter) return false;
+      if (!normalizedQuery) return true;
+      const haystack = [displayName(row), row.email, row.phone, row.message]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [filter, query, responses]);
+
+  async function mutateRsvp(
+    row: RsvpResponse,
+    action: "update" | "delete",
+    nextResponse?: "yes" | "maybe" | "no",
+  ) {
+    const key = rowIdentity(row);
+    setUpdatingKey(key);
+    try {
+      await fetch(`/api/events/${eventId}/rsvp`, {
+        method: action === "delete" ? "DELETE" : "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...(nextResponse ? { response: nextResponse } : {}),
+          target: buildTarget(row),
+        }),
+        credentials: "include",
+      });
+      await refreshRsvpData();
+    } finally {
+      setUpdatingKey(null);
+    }
   }
 
-  const _percentage =
-    displayStats.numberOfGuests > 0
-      ? Math.round((displayStats.filled / displayStats.numberOfGuests) * 100)
-      : 0;
+  if (!hasRsvpSurface && !loading) {
+    return (
+      <section className="rounded-[28px] border border-dashed border-slate-300 bg-white/82 p-6 text-center shadow-[0_20px_58px_rgba(79,70,128,0.10)]">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+          <Users size={22} />
+        </div>
+        <h3 className="mt-4 text-2xl font-semibold text-slate-950">No RSVP board yet</h3>
+        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
+          RSVP collection has not been configured for this event.
+        </p>
+      </section>
+    );
+  }
 
   return (
-    <section className="rounded-[28px] border border-[#ddd5ff] bg-gradient-to-br from-[#ffffff] via-[#f8f4ff] to-[#f3edff] px-4 py-6 shadow-[0_22px_56px_rgba(84,61,140,0.14)] sm:px-6 space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
-          Host dashboard
-        </h3>
-        {displayStats.numberOfGuests > 0 && (
-          <div className="flex items-end gap-4 sm:gap-6">
-            <div className="text-center leading-none">
-              <div className="font-semibold text-2xl sm:text-3xl text-[#433468]">
-                {displayStats.numberOfGuests}
-              </div>
-              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-[#7a6da8]">
-                Total
-              </div>
-            </div>
-            <div className="text-center leading-none">
-              <div className="font-semibold text-2xl sm:text-3xl text-emerald-600">
-                {displayStats.yes}
-              </div>
-              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-[#7a6da8]">
-                Yes
-              </div>
-            </div>
-            <div className="text-center leading-none">
-              <div className="font-semibold text-2xl sm:text-3xl text-amber-500">
-                {displayStats.maybe}
-              </div>
-              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-[#7a6da8]">
-                Maybe
-              </div>
-            </div>
-            <div className="text-center leading-none">
-              <div className="font-semibold text-2xl sm:text-3xl text-red-500">
-                {displayStats.no}
-              </div>
-              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-[#7a6da8]">
-                No
-              </div>
-            </div>
-            <div className="text-center leading-none">
-              <div className="font-semibold text-2xl sm:text-3xl text-[#6e629c]">
-                {displayStats.remaining}
-              </div>
-              <div className="mt-1 text-[10px] sm:text-xs uppercase tracking-wider text-[#7a6da8]">
-                Remaining
-              </div>
-            </div>
+    <section className="overflow-hidden rounded-[28px] border border-white/72 bg-white/90 shadow-[0_24px_70px_rgba(79,70,128,0.14)] backdrop-blur-xl">
+      <header className="border-b border-slate-200/80 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-[#786bd6]">
+              RSVP board
+            </p>
+            <h3 className="mt-1 text-2xl font-semibold text-slate-950 sm:text-3xl">
+              Guest responses
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              {loading ? "Loading responses..." : `${displayStats.filled} responses recorded`}
+            </p>
           </div>
-        )}
+          <div className="min-w-0 rounded-2xl bg-slate-100 p-1.5">
+            <div className="h-2 overflow-hidden rounded-full bg-white">
+              <div
+                className="h-full rounded-full bg-[#6c60db] transition-[width]"
+                style={{ width: `${responseRate}%` }}
+              />
+            </div>
+            <p className="mt-1 px-1 text-xs font-bold text-slate-500">{responseRate}% complete</p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <SummaryTile label="Going" value={displayStats.yes} tone="emerald" />
+          <SummaryTile label="Maybe" value={displayStats.maybe} tone="amber" />
+          <SummaryTile label="Declined" value={displayStats.no} tone="rose" />
+          <SummaryTile label="Pending" value={displayStats.remaining} tone="slate" />
+          <SummaryTile label="Capacity" value={displayStats.numberOfGuests || "--"} tone="violet" />
+        </div>
       </header>
-      {responses.length > 0 && (
-        <div className="pt-4 border-t border-[#e7defb] space-y-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-[#7a6da8]">
-            Responses
-          </h4>
-          <div className="space-y-2">
-            {responses.map((rsvp, index) => {
-              const responseColor =
-                rsvp.response === "yes"
-                  ? "text-emerald-600"
-                  : rsvp.response === "no"
-                  ? "text-red-500"
-                  : "text-amber-500";
-              const responseIcon =
-                rsvp.response === "yes"
-                  ? "✅"
-                  : rsvp.response === "no"
-                  ? "❌"
-                  : "🤔";
-              const responseLabel =
-                rsvp.response === "yes"
-                  ? "Yes"
-                  : rsvp.response === "no"
-                  ? "No"
-                  : "Maybe";
-              const rsvpKey = `${rsvp.email || "anon"}-${
-                rsvp.createdAt || index
-              }`;
-              const isUpdating = updatingKey === rsvpKey;
+
+      <div className="border-b border-slate-200/80 p-4 sm:p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <label className="relative block min-w-0 flex-1">
+            <span className="sr-only">Search RSVPs</span>
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search guests, email, phone, notes"
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 text-sm font-medium text-slate-800 outline-none transition focus:border-[#6c60db] focus:ring-4 focus:ring-[#6c60db]/12"
+            />
+          </label>
+          <div className="grid grid-cols-4 gap-1 rounded-2xl bg-slate-100 p-1">
+            {FILTERS.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setFilter(item.key)}
+                className={`min-h-10 rounded-xl px-3 text-xs font-black transition ${
+                  filter === item.key
+                    ? "bg-white text-slate-950 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-3 sm:p-4">
+        {error ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
+            {error}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="space-y-3">
+            {[0, 1, 2].map((item) => (
+              <div key={item} className="h-24 animate-pulse rounded-3xl bg-slate-100" />
+            ))}
+          </div>
+        ) : filteredResponses.length > 0 ? (
+          <div className="space-y-3">
+            {filteredResponses.map((row, index) => {
+              const status = statusCopy(row.response);
+              const StatusIcon = status.icon;
+              const rowKey = rowIdentity(row);
+              const isUpdating = updatingKey === rowKey;
 
               return (
-                <div
-                  key={rsvpKey}
-                  className="flex items-center justify-between text-sm py-3 px-4 rounded-2xl border border-[#ddd4f8] bg-white/92"
+                <article
+                  key={rowKey}
+                  className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.06)] lg:grid-cols-[minmax(0,1fr)_auto]"
                 >
-                  <div className="flex-1 min-w-0 pr-4">
-                    <p className="text-[#2b2350] font-semibold truncate">
-                      {rsvp.firstName && rsvp.lastName ? `${rsvp.firstName} ${rsvp.lastName}` : (rsvp.name || "Anonymous")}
-                    </p>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-                      {rsvp.email && (
-                        <span className="text-xs text-[#6e629c] truncate max-w-[180px]">
-                          {rsvp.email}
-                        </span>
-                      )}
-                      {rsvp.phone && (
-                        <span className="text-xs text-[#6e629c]">
-                          {rsvp.phone}
-                        </span>
-                      )}
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="truncate text-base font-semibold text-slate-950">
+                        {displayName(row)}
+                      </h4>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black ${status.className}`}
+                      >
+                        <StatusIcon size={13} />
+                        {status.label}
+                      </span>
                     </div>
-                    {rsvp.message && (
-                      <p className="mt-2 text-xs text-[#6e629c] bg-[#f3edff]/60 p-2.5 rounded-xl italic border-l-2 border-[#d5c9f7]">
-                        &ldquo;{rsvp.message}&rdquo;
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-slate-500">
+                      {row.email ? <span className="break-all">{row.email}</span> : null}
+                      {row.phone ? <span>{row.phone}</span> : null}
+                      <span>Updated {displayUpdatedAt(row.updatedAt || row.createdAt)}</span>
+                    </div>
+                    {row.message ? (
+                      <p className="mt-3 rounded-2xl bg-slate-50 p-3 text-sm leading-6 text-slate-600">
+                        {row.message}
                       </p>
-                    )}
+                    ) : null}
                   </div>
-                  <div className="flex items-center gap-2 ml-2">
-                    <span
-                      className={`${responseColor} font-medium hidden sm:inline-flex items-center gap-1.5 text-sm`}
-                    >
-                      <span>{responseIcon}</span>
-                      <span>{responseLabel}</span>
-                    </span>
-                    <select
-                      aria-label="Change RSVP status"
-                      className="h-8 rounded-lg border border-[#d5c9f7] bg-white px-2 text-xs text-[#433468] focus:border-[#beaee8] focus:outline-none focus:ring-1 focus:ring-[#beaee8]"
-                      value={rsvp.response}
-                      disabled={isUpdating}
-                      onChange={async (e) => {
-                        const next = e.target.value as "yes" | "no" | "maybe";
-                        setUpdatingKey(rsvpKey);
-                        try {
-                          await fetch(`/api/events/${eventId}/rsvp`, {
-                            method: "PATCH",
-                            headers: { "content-type": "application/json" },
-                            body: JSON.stringify({
-                              response: next,
-                              target: rsvp.email
-                                ? { email: rsvp.email }
-                                : { name: rsvp.name },
-                            }),
-                            credentials: "include",
-                          });
-                        } catch (err) {
-                          console.error("Failed to update RSVP", err);
-                        } finally {
-                          setUpdatingKey(null);
-                          try {
-                            const res = await fetch(
-                              `/api/events/${eventId}/rsvp?t=${Date.now()}`,
-                              {
-                                cache: "no-store",
-                                credentials: "include",
-                              }
-                            );
-                            const data = await res.json();
-                            if (data.ok) {
-                              setStats({
-                                yes: data.stats?.yes || 0,
-                                no: data.stats?.no || 0,
-                                maybe: data.stats?.maybe || 0,
-                                filled: data.filled || 0,
-                                remaining:
-                                  data.remaining ??
-                                  (data.numberOfGuests ||
-                                    initialNumberOfGuests),
-                                numberOfGuests:
-                                  data.numberOfGuests || initialNumberOfGuests,
-                              });
-                              setResponses(
-                                Array.isArray(data.responses)
-                                  ? data.responses
-                                  : []
-                              );
-                            }
-                          } catch {}
+
+                  <div className="flex items-center gap-2 lg:justify-end">
+                    <label className="relative flex-1 lg:w-36 lg:flex-none">
+                      <span className="sr-only">Change RSVP status</span>
+                      <select
+                        value={normalizeResponse(row.response)}
+                        disabled={isUpdating}
+                        onChange={(event) =>
+                          void mutateRsvp(
+                            row,
+                            "update",
+                            event.target.value as "yes" | "maybe" | "no",
+                          )
                         }
-                      }}
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="maybe">Maybe</option>
-                      <option value="no">No</option>
-                    </select>
+                        className="h-11 w-full appearance-none rounded-2xl border border-slate-200 bg-white px-3 pr-9 text-sm font-bold text-slate-700 outline-none transition focus:border-[#6c60db] focus:ring-4 focus:ring-[#6c60db]/12 disabled:opacity-60"
+                      >
+                        <option value="yes">Going</option>
+                        <option value="maybe">Maybe</option>
+                        <option value="no">Declined</option>
+                      </select>
+                      <ChevronDown
+                        size={15}
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                    </label>
                     <button
                       type="button"
                       aria-label="Delete RSVP"
                       title="Delete RSVP"
-                      className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-[#d5c9f7] bg-white text-[#7a6da8] hover:bg-red-50 hover:text-red-500 hover:border-red-300 transition-colors"
                       disabled={isUpdating}
-                      onClick={async () => {
-                        if (isUpdating) return;
-                        setUpdatingKey(rsvpKey);
-                        try {
-                          await fetch(`/api/events/${eventId}/rsvp`, {
-                            method: "DELETE",
-                            headers: { "content-type": "application/json" },
-                            body: JSON.stringify({
-                              target: rsvp.email
-                                ? { email: rsvp.email }
-                                : { name: rsvp.name },
-                            }),
-                            credentials: "include",
-                          });
-                        } catch (err) {
-                          console.error("Failed to delete RSVP", err);
-                        } finally {
-                          setUpdatingKey(null);
-                          try {
-                            const res = await fetch(
-                              `/api/events/${eventId}/rsvp?t=${Date.now()}`,
-                              {
-                                cache: "no-store",
-                                credentials: "include",
-                              }
-                            );
-                            const data = await res.json();
-                            if (data.ok) {
-                              setStats({
-                                yes: data.stats?.yes || 0,
-                                no: data.stats?.no || 0,
-                                maybe: data.stats?.maybe || 0,
-                                filled: data.filled || 0,
-                                remaining:
-                                  data.remaining ??
-                                  (data.numberOfGuests ||
-                                    initialNumberOfGuests),
-                                numberOfGuests:
-                                  data.numberOfGuests || initialNumberOfGuests,
-                              });
-                              setResponses(
-                                Array.isArray(data.responses)
-                                  ? data.responses
-                                  : []
-                              );
-                            }
-                          } catch {}
-                        }
-                      }}
+                      onClick={() => void mutateRsvp(row, "delete")}
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-rose-100 bg-white text-rose-500 transition hover:border-rose-200 hover:bg-rose-50 disabled:opacity-60"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M3 6h18" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        <line x1="10" y1="11" x2="10" y2="17" />
-                        <line x1="14" y1="11" x2="14" y2="17" />
-                      </svg>
+                      <Trash2 size={16} />
                     </button>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm">
+              <Users size={22} />
+            </div>
+            <h4 className="mt-4 text-lg font-semibold text-slate-950">
+              {hasResponses ? "No guests match this view" : "No responses yet"}
+            </h4>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+              {hasResponses
+                ? "Try another status filter or search term."
+                : "As guests respond, their answers and notes will appear here."}
+            </p>
+          </div>
+        )}
+      </div>
     </section>
+  );
+}
+
+function SummaryTile({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number | string;
+  tone: "emerald" | "amber" | "rose" | "slate" | "violet";
+}) {
+  const toneClass = {
+    emerald: "bg-emerald-50 text-emerald-700 border-emerald-100",
+    amber: "bg-amber-50 text-amber-700 border-amber-100",
+    rose: "bg-rose-50 text-rose-700 border-rose-100",
+    slate: "bg-slate-50 text-slate-700 border-slate-200",
+    violet: "bg-violet-50 text-violet-700 border-violet-100",
+  }[tone];
+
+  return (
+    <article className={`rounded-3xl border p-4 ${toneClass}`}>
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] opacity-70">{label}</p>
+      <p className="mt-2 text-3xl font-semibold tracking-normal">{value}</p>
+    </article>
   );
 }

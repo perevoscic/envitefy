@@ -582,7 +582,10 @@ function CreateMenuButton({
   isActive: boolean;
   onSelect: (label: string, href?: string) => void;
 }) {
-  const Icon = (sidebarIconLookup[item.label] as ComponentType<any>) || WandSparkles;
+  const Icon =
+    ((sidebarIconLookup as Record<string, ComponentType<any> | undefined>)[item.label] as
+      | ComponentType<any>
+      | undefined) || WandSparkles;
   const colorClass = CREATE_SECTION_COLORS[index % CREATE_SECTION_COLORS.length];
   const activeAccent = getCreateMenuActiveAccent(item.label);
 
@@ -805,7 +808,7 @@ function EventListPanel({
           </span>
         </button>
         {showQuickActions && item.showQuickActions ? (
-          <span className="ml-2 flex shrink-0 items-center gap-1">
+          <span className="ml-2 flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
             <button
               type="button"
               onClick={(event) => {
@@ -826,13 +829,27 @@ function EventListPanel({
                 event.stopPropagation();
                 void onDeleteRow(item);
               }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#ffe1ea] bg-white/85 text-[#d2618e] transition hover:bg-white"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
               aria-label={`Delete ${item.title}`}
               title="Delete event"
             >
               <Trash2 size={13} />
             </button>
           </span>
+        ) : showQuickActions ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              void onDeleteRow(item);
+            }}
+            className="ml-2 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 opacity-0 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition group-hover:opacity-100 group-focus-within:opacity-100 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            aria-label={`Delete ${item.title}`}
+            title="Delete event"
+          >
+            <Trash2 size={14} />
+          </button>
         ) : null}
       </div>
     ));

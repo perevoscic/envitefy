@@ -405,7 +405,7 @@ export default function EventManageClient({
         <header className="mb-5 flex flex-col gap-4 rounded-[1.4rem] border border-[#eadfff] bg-white/86 px-5 py-5 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8b7aaa]">
-              Manage live card
+              Live card tools
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-normal text-[#2d1b36]">
               {headline}
@@ -595,7 +595,7 @@ export default function EventManageClient({
 
                 <div className="overflow-hidden rounded-[1.35rem] border border-[#eadfff] bg-white shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eadfff] px-5 py-4">
-                    <h2 className="text-sm font-bold text-[#2d1b36]">RSVP Management</h2>
+                    <h2 className="text-sm font-bold text-[#2d1b36]">RSVP Dashboard</h2>
                     <button
                       type="button"
                       onClick={() =>

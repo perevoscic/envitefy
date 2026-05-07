@@ -29,21 +29,73 @@ const CONCIERGE_LIVE_CARD_IMAGE_BY_CATEGORY: Record<string, string> = {
   "baby shower": "/studio/baby-shower.webp",
   baby_shower: "/studio/baby-shower.webp",
   "baby showers": "/studio/baby-shower.webp",
+  "gender reveal": "/studio/baby-shower.webp",
+  gender_reveal: "/studio/baby-shower.webp",
+  "bridal shower": "/studio/bridal-shower.webp",
+  bridal_shower: "/studio/bridal-shower.webp",
+  "game day": "/studio/game-day.webp",
+  game_day: "/studio/game-day.webp",
+  football: "/studio/game-day.webp",
+  sport_event: "/studio/game-day.webp",
+  "field trip/day": "/studio/field-trip-day.webp",
+  field_trip: "/studio/field-trip-day.webp",
+  "open house": "/studio/open-house.webp",
+  open_house: "/studio/open-house.webp",
+  housewarming: "/studio/housewarming.webp",
+  anniversary: "/studio/anniversary.webp",
 };
 
-function hasLiveCardOutput(data: Record<string, unknown>) {
+function readOutputValues(data: Record<string, unknown>) {
   const outputs = [
     ...(Array.isArray(data.requestedOutputs) ? data.requestedOutputs : []),
     ...(Array.isArray(data.outputs) ? data.outputs : []),
   ].map((value) => readString(value).toLowerCase());
+  return outputs;
+}
+
+function hasLiveCardOutput(data: Record<string, unknown>) {
+  const outputs = readOutputValues(data);
   return outputs.includes("live_card");
 }
 
 function resolveConciergeLiveCardImagePath(data: Record<string, unknown>): string {
   const publicEvent = isRecord(data.publicEvent) ? data.publicEvent : null;
+  const outputs = readOutputValues(data);
+  const primaryOutput = readFirstString(
+    publicEvent?.primaryOutput,
+    publicEvent?.renderer,
+    data.primaryOutput,
+    data.productType,
+    data.publicRenderer,
+  )
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
   const isLiveCard =
-    readString(publicEvent?.renderer).toLowerCase() === "live_card" || hasLiveCardOutput(data);
-  if (!isLiveCard) return "";
+    readString(publicEvent?.renderer).toLowerCase() === "live_card" ||
+    outputs.includes("live_card");
+  const isCardFirst =
+    isLiveCard ||
+    outputs.some((output) =>
+      [
+        "digital_flyer",
+        "printable_flyer",
+        "invitation",
+        "instagram_story",
+        "thank_you_card",
+        "menu",
+        "welcome_sign",
+      ].includes(output),
+    ) ||
+    [
+      "digital_flyer",
+      "printable_flyer",
+      "invitation",
+      "instagram_story",
+      "thank_you_card",
+      "menu",
+      "welcome_sign",
+    ].includes(primaryOutput);
+  if (!isCardFirst) return "";
 
   const category = readFirstString(data.eventType, data.category).toLowerCase();
   return CONCIERGE_LIVE_CARD_IMAGE_BY_CATEGORY[category] || "/studio/custom-invite.webp";
@@ -98,15 +150,26 @@ function buildFallbackInvitationData(data: Record<string, unknown>) {
   const publicEvent = isRecord(data.publicEvent) ? data.publicEvent : null;
   const previewCopy = isRecord(data.previewCopy) ? data.previewCopy : null;
   const heroTextMode =
-    data.heroTextMode === "overlay" || data.heroTextMode === "image" ? data.heroTextMode : undefined;
+    data.heroTextMode === "overlay" || data.heroTextMode === "image"
+      ? data.heroTextMode
+      : undefined;
   const title = readFirstString(
     liveCard?.headline,
     publicEvent?.headline,
     data.headlineTitle,
     data.title,
   );
-  const subtitle = readFirstString(liveCard?.subheadline, publicEvent?.subheadline, previewCopy?.subheadline);
-  const description = readFirstString(liveCard?.body, publicEvent?.body, previewCopy?.body, data.description);
+  const subtitle = readFirstString(
+    liveCard?.subheadline,
+    publicEvent?.subheadline,
+    previewCopy?.subheadline,
+  );
+  const description = readFirstString(
+    liveCard?.body,
+    publicEvent?.body,
+    previewCopy?.body,
+    data.description,
+  );
   const scheduleLine = readFirstString(
     liveCard?.scheduleLine,
     publicEvent?.scheduleLine,

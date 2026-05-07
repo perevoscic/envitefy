@@ -78,6 +78,45 @@ const anniversaryFallbackPreview: StudioShowcasePreview = {
   },
 };
 
+const openHouseFallbackPreview: StudioShowcasePreview = {
+  id: "studio-open-house-high-meadow",
+  title: "Open House at High Meadow Lane",
+  imageUrl: "/studio/open-house.webp",
+  invitationData: {
+    title: "Open House",
+    subtitle: "4593 High Meadow Lane",
+    description:
+      "Tour a bright four-bedroom home with renovated living spaces, a finished basement, and a walkable High Meadow location.",
+    scheduleLine: "Saturday June 13th, 1:00 PM - 4:00 PM",
+    locationLine: "4593 High Meadow Lane",
+    heroTextMode: "image",
+    theme: {
+      themeStyle: "premium-real-estate",
+    },
+    interactiveMetadata: {
+      rsvpMessage: "Contact the listing agent for showing details.",
+      ctaLabel: "Tour Details",
+      shareNote:
+        "Tour a bright four-bedroom home with renovated living spaces, a finished basement, and a walkable High Meadow location.",
+    },
+    eventDetails: {
+      category: "Open House",
+      occasion: "Real Estate Open House",
+      eventTitle: "4593 High Meadow Lane",
+      eventDate: "2026-06-13",
+      startTime: "13:00",
+      endTime: "16:00",
+      venueName: "4593 High Meadow Lane",
+      location: "4593 High Meadow Lane",
+      detailsDescription:
+        "Four bedrooms, three and a half baths, renovated kitchen, finished basement, and walkable neighborhood amenities.",
+      message: "Premium realtor marketing",
+      realtorName: "Carla Mira",
+      brokerageName: "High Meadow Realty",
+    },
+  },
+};
+
 export const landingShowcasePreviews: StudioShowcasePreview[] = landingLiveCardSnapshots.map(
   (snapshot) => requireLandingShowcasePreview(snapshot.slug),
 );
@@ -89,7 +128,7 @@ const studioCategoryShowcasePreviewByCategory: Record<InviteCategory, StudioShow
   "Baby Shower": requireLandingShowcasePreview("elena-s-beary-sweet-shower"),
   "Field Trip/Day": requireLandingShowcasePreview("lincoln-memorial-discovery-day"),
   "Game Day": requireLandingShowcasePreview("friday-night-lights-a"),
-  "Open House": requireLandingShowcasePreview("the-carter-housewarming"),
+  "Open House": openHouseFallbackPreview,
   Housewarming: requireLandingShowcasePreview("the-carter-housewarming"),
   "Custom Invite": requireLandingShowcasePreview("founder-appreciation-night"),
   Anniversary: anniversaryFallbackPreview,

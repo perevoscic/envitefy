@@ -103,6 +103,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
+function canonicalProductOutput(output: ConciergeEventDraft["requestedOutputs"][number]) {
+  return output === "invitation" ? "digital_flyer" : output;
+}
+
 export function canPersistConciergeHistoryDraft(draft: ConciergeEventDraft): boolean {
   return draft.canPersist !== false && canPersistCreationDraft(draft);
 }
@@ -178,7 +182,8 @@ export function buildConciergeHistoryPayload(
     ? studioInviteData
     : fallbackLiveCardInvitationData;
   const liveCardPositions = isRecord(studioInvitePositions) ? studioInvitePositions : null;
-  const primaryOutput =
+  const requestedOutputs = Array.from(new Set(draft.requestedOutputs.map(canonicalProductOutput)));
+  const rawPrimaryOutput =
     draft.requestedOutputs.find(
       (output) =>
         output !== "rsvp_page" &&
@@ -188,6 +193,7 @@ export function buildConciergeHistoryPayload(
     ) ||
     draft.requestedOutputs[0] ||
     "event_page";
+  const primaryOutput = canonicalProductOutput(rawPrimaryOutput);
   const publicRenderer = primaryOutput === "live_card" ? "live_card" : primaryOutput;
   const ownerDefaultSurface =
     primaryOutput === "signup_form"
@@ -221,7 +227,7 @@ export function buildConciergeHistoryPayload(
     title,
     data: {
       creationIntent: draft.intent,
-      requestedOutputs: draft.requestedOutputs,
+      requestedOutputs,
       sourceContext: draft.sourceContext,
       eventPurpose: draft.eventPurpose,
       draftStatus: "published",
@@ -266,7 +272,7 @@ export function buildConciergeHistoryPayload(
       age: draft.ageOrMilestone,
       honoreeName: draft.honoreeName,
       numberOfGuests: rsvpEnabled ? draft.numberOfGuests || 0 : 0,
-      outputs: draft.outputs,
+      outputs: requestedOutputs,
       previewCopy: draft.previewCopy,
       rsvpEnabled,
       rsvpMode: "envitefy",
@@ -277,7 +283,11 @@ export function buildConciergeHistoryPayload(
         direct: rsvpEnabled,
         cta: liveCardCta,
       },
-      conciergeDraft: draft,
+      conciergeDraft: {
+        ...draft,
+        requestedOutputs,
+        outputs: requestedOutputs,
+      },
       publicEvent: {
         renderer: publicRenderer,
         primaryOutput,

@@ -26,9 +26,7 @@ test("studio phone empty state renders one category-driven showcase live card", 
     /Birthday:\s*requireLandingShowcasePreview\("lara-s-7th-dino-quest"\)/,
   );
   assert.match(showcasePreviews, /Wedding:\s*requireLandingShowcasePreview\("garden-vows"\)/);
-  assert.match(
-    showcasePreviews,
-    /"Open House":\s*requireLandingShowcasePreview\("the-carter-housewarming"\)/,
-  );
+  assert.match(showcasePreviews, /const openHouseFallbackPreview:/);
+  assert.match(showcasePreviews, /"Open House":\s*openHouseFallbackPreview/);
   assert.match(showcasePreviews, /Anniversary:\s*anniversaryFallbackPreview/);
 });

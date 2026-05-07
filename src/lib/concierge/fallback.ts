@@ -6,6 +6,7 @@ import {
   getOutputRequirement,
   isGreetingMessage,
   isMeaningfulEventText,
+  isNonCreationRequest,
   normalizeCreationIntent,
   normalizeRequestedOutputs,
   outputQuestion,
@@ -303,6 +304,7 @@ function detectRsvpEnabled(
   if (
     /\b(?:with|include|enable|collect|track|add)\s+(?:envitefy\s+)?rsvps?\b/i.test(text) ||
     /\brsvp\s+(?:page|tracking|collection|responses?)\b/i.test(text) ||
+    /\b(?:rsvp|respond)\s+by\b/i.test(text) ||
     /\brsvps?\s+(?:directly|on|through)\b/i.test(text)
   ) {
     return true;
@@ -698,8 +700,9 @@ function outputLabels(draft: ConciergeEventDraft) {
 
 function outputActionLabel(draft: ConciergeEventDraft) {
   if (draft.requestedOutputs.length > 1) return "products";
-  const label = getOutputRequirement(primaryOutput(draft)).label;
-  return label === "Flyer invite" ? "flyer invite" : label.toLowerCase();
+  const output = primaryOutput(draft);
+  if (output === "digital_flyer" || output === "invitation") return "flyer invitation";
+  return getOutputRequirement(output).label.toLowerCase();
 }
 
 function compactVerificationLines(
@@ -721,7 +724,10 @@ function compactVerificationLines(
   }
   if (event) lines.push(`Event: ${event}`);
   if (draft.honoreeName || draft.ageOrMilestone) {
-    lines.push(`Honoree: ${[draft.honoreeName, draft.ageOrMilestone].filter(Boolean).join(", ")}`);
+    const honoreeLabel = draft.eventType === "wedding" ? "Names" : "Honoree";
+    lines.push(
+      `${honoreeLabel}: ${[draft.honoreeName, draft.ageOrMilestone].filter(Boolean).join(", ")}`,
+    );
   }
   if (date) lines.push(`Date: ${date}`);
   if (time) lines.push(`Time: ${time}`);
@@ -752,6 +758,14 @@ function readyVerificationMessage(draft: ConciergeEventDraft) {
   ].join("\n");
 }
 
+function detailConfirmationQuestion(draft: ConciergeEventDraft, question: string) {
+  const lines = compactVerificationLines(draft).filter(
+    (line) => !/^RSVP(?: guest count)?:/i.test(line),
+  );
+  if (lines.length < 2) return question;
+  return ["I have these details.", ...lines, question].join("\n");
+}
+
 function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
   if (isReceivedInviteDraft(draft)) return null;
   if (!draft.missingFields.length || hasStartedCategoryDetails(draft)) return null;
@@ -765,6 +779,9 @@ function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
 }
 
 export function buildAssistantMessage(draft: ConciergeEventDraft): string {
+  if (draft.sourceContext.boundary === "non_creation") {
+    return "Got it. I won't create an event from that.";
+  }
   if (draft.sourceContext.boundary === "private_data") {
     return "I can't change owners, user IDs, or private account data here. I can help with event details, RSVP, copy, design, or weather planning.";
   }
@@ -818,13 +835,13 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
   }
   if (firstMissing === "location") return questionForRequirementField(firstMissing, plan);
   if (firstMissing === "rsvpEnabled") {
-    return questionForRequirementField(firstMissing, plan);
+    return detailConfirmationQuestion(draft, questionForRequirementField(firstMissing, plan));
   }
   if (firstMissing === "numberOfGuests") {
-    return questionForRequirementField(firstMissing, plan);
+    return detailConfirmationQuestion(draft, questionForRequirementField(firstMissing, plan));
   }
   if (firstMissing === "tone") {
-    return questionForRequirementField(firstMissing, plan);
+    return detailConfirmationQuestion(draft, questionForRequirementField(firstMissing, plan));
   }
   return "What detail should we add next?";
 }
@@ -845,7 +862,7 @@ export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
   }
   if (firstMissing === "eventPurpose") {
     if (!draft.requestedOutputs.length) {
-      return ["Create a live card", "Make a digital flyer", "Create an event page"];
+      return ["Create a live card", "Create a flyer invitation", "Create an event page"];
     }
     return ["A school fundraiser", "A birthday party", "Use an upload"];
   }
@@ -879,16 +896,21 @@ export function fallbackExtractConciergeDraft(args: {
   const text = combined || message;
   const sessionDraft = args.draft || null;
   const previous = shouldStartFreshEvent(message, sessionDraft) ? null : sessionDraft;
+  const nonCreationRequest = isNonCreationRequest(message);
   const hasExplicitOutputs =
     Array.isArray(args.requestedOutputs) && args.requestedOutputs.length > 0;
-  const requestedOutputs = normalizeRequestedOutputs(
-    hasExplicitOutputs ? args.requestedOutputs : previous?.requestedOutputs || previous?.outputs,
-    {
-      text,
-      previous: hasExplicitOutputs ? null : previous,
-      defaultOutput: !previous && isGreetingMessage(message) ? null : undefined,
-    },
-  );
+  const requestedOutputs = nonCreationRequest
+    ? []
+    : normalizeRequestedOutputs(
+        hasExplicitOutputs
+          ? args.requestedOutputs
+          : previous?.requestedOutputs || previous?.outputs,
+        {
+          text,
+          previous: hasExplicitOutputs ? null : previous,
+          defaultOutput: !previous && isGreetingMessage(message) ? null : undefined,
+        },
+      );
   const resolvedSourceContext = resolveCreationSourceContext({
     message,
     activeContext: args.activeContext || null,
@@ -898,10 +920,12 @@ export function fallbackExtractConciergeDraft(args: {
   const privateDataMutationRequest = isPrivateDataMutationRequest(message);
   const sourceContext = privateDataMutationRequest
     ? { ...resolvedSourceContext, boundary: "private_data" as const }
+    : nonCreationRequest
+      ? { ...resolvedSourceContext, boundary: "non_creation" as const }
     : resolvedSourceContext;
   const source: ConciergeSource =
     args.source || (args.ocrContext ? (message ? "mixed" : "upload") : previous?.source || "text");
-  const eventType = detectEventType(text, previous);
+  const eventType = nonCreationRequest ? "unknown" : detectEventType(text, previous);
   const relationship = detectRelationship(text, previous);
   const honoreeName =
     detectHonoreeName(text, previous) ||
@@ -930,7 +954,9 @@ export function fallbackExtractConciergeDraft(args: {
       location,
   );
   const eventPurpose =
-    privateDataMutationRequest || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
+    nonCreationRequest ||
+    privateDataMutationRequest ||
+    (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
       : firstString(fieldsGuess.eventPurpose, fieldsGuess.title) ||
         previous?.eventPurpose ||
@@ -939,7 +965,9 @@ export function fallbackExtractConciergeDraft(args: {
     firstString(fieldsGuess.title) ||
     buildTitle({ eventType, honoreeName, ageOrMilestone, eventPurpose, previous });
   const title =
-    privateDataMutationRequest || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
+    nonCreationRequest ||
+    privateDataMutationRequest ||
+    (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
       : titleCandidate;
   const dateText = chronoResult.dateText || firstString(fieldsGuess.date);
@@ -951,22 +979,29 @@ export function fallbackExtractConciergeDraft(args: {
     firstPositiveNumber(fieldsGuess.numberOfGuests, fieldsGuess.guestCount);
   const rsvpEnabled = detectRsvpEnabled(message, previous, requestedOutputs, fieldsGuess);
   const tone = detectTone(text, previous) || firstString(fieldsGuess.tone);
-  const status = deriveCreationStatus({
-    sourceContext,
-    eventPurpose,
-    title,
-    eventType,
-    requestedOutputs,
-    dateText,
-    timeText,
-    startISO,
-    location,
-    honoreeName,
-    ageOrMilestone,
-    rsvpEnabled,
-    numberOfGuests,
-    tone,
-  });
+  const status = nonCreationRequest
+    ? {
+        draftStatus: "needs_source_or_event" as const,
+        missingFields: [],
+        currentQuestion: null,
+        canPersist: false,
+      }
+    : deriveCreationStatus({
+        sourceContext,
+        eventPurpose,
+        title,
+        eventType,
+        requestedOutputs,
+        dateText,
+        timeText,
+        startISO,
+        location,
+        honoreeName,
+        ageOrMilestone,
+        rsvpEnabled,
+        numberOfGuests,
+        tone,
+      });
   const needsDateConfirmation = Boolean(chronoResult.needsConfirmation);
   const base = {
     creationSessionId: createCreationSessionId(sessionDraft),

@@ -8,6 +8,7 @@ import type {
   ConciergeEventDraft,
   ConciergeWeatherContext,
   CreationChatMessageSnapshot,
+  RequestedOutput,
 } from "./types.ts";
 
 type PersonaDeps = {
@@ -36,8 +37,40 @@ function cleanString(value: unknown): string | null {
   return cleaned || null;
 }
 
+const OUTPUT_LABELS: Record<RequestedOutput, string> = {
+  event_page: "Event page",
+  live_card: "Live card",
+  digital_flyer: "Flyer/Invitation",
+  signup_form: "Smart sign-up",
+  invitation: "Flyer/Invitation",
+  rsvp_page: "RSVP page",
+  whatsapp: "WhatsApp",
+  text_message: "Text message",
+  printable_flyer: "Printable flyer",
+  instagram_story: "Story",
+  reminder: "Reminder",
+  thank_you_card: "Thank you card",
+  menu: "Menu",
+  welcome_sign: "Welcome sign",
+};
+
+function outputLabel(output: RequestedOutput) {
+  return OUTPUT_LABELS[output] || output.replace(/_/g, " ");
+}
+
+function publicizeInternalOutputKeys(value: string) {
+  return Object.entries(OUTPUT_LABELS).reduce(
+    (text, [output, label]) =>
+      text.replace(
+        new RegExp(`\\b${output.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "g"),
+        label,
+      ),
+    value,
+  );
+}
+
 function sanitizePersonaCopy(value: string, options: { trim?: boolean } = {}) {
-  const cleaned = value
+  const cleaned = publicizeInternalOutputKeys(value)
     .replace(/^\s*\*{3,}\s*$/gm, "")
     .replace(/\*{1,3}([^*\n]+?)\*{1,3}/g, "$1")
     .replace(/\*{2,}/g, "")
@@ -52,7 +85,17 @@ function sanitizePersonaCopy(value: string, options: { trim?: boolean } = {}) {
 
 function draftContext(draft: ConciergeEventDraft) {
   return {
-    requestedOutputs: draft.requestedOutputs,
+    selectedProducts: draft.requestedOutputs.map(outputLabel),
+    capturedDetails: {
+      names: draft.honoreeName,
+      title: draft.title,
+      date: draft.dateText,
+      time: draft.timeText,
+      location: draft.location || draft.venue,
+      theme: draft.theme,
+      vibe: draft.tone,
+      rsvpGuestCount: draft.numberOfGuests,
+    },
     eventPurpose: draft.eventPurpose,
     eventType: draft.eventType,
     title: draft.title,
@@ -94,7 +137,7 @@ function streamFallback(fallbackMessage: string, onDelta: (text: string) => void
 }
 
 function shouldUseDeterministicFallback(draft: ConciergeEventDraft) {
-  return draft.currentQuestion === "date_confirmation";
+  return draft.sourceContext.boundary === "non_creation" || draft.currentQuestion === "date_confirmation";
 }
 
 export async function streamConciergePersona(
@@ -143,8 +186,11 @@ export async function streamConciergePersona(
               "Use the current draft as truth. Do not invent dates, locations, names, RSVP rules, prices, private data, or links.",
               "If the user asks about weather, use only the supplied weatherContext. If weatherContext is missing or unavailable, say what detail or setup is needed instead of guessing.",
               "Acknowledge concrete details from the latest user message.",
+              "Use currentDraft.selectedProducts for product names. Never expose raw snake_case identifiers such as digital_flyer, rsvp_page, live_card, or event_page.",
+              "Use currentDraft.capturedDetails.names for featured names. Do not include QA or test prefixes as part of the featured names.",
               "Never use markdown, asterisks, star separators, or horizontal dividers. The interface handles bold detail highlighting.",
               "When confirming user-provided event details, put each detail on its own plain line, for example: Honoree: Lara turning 7. Time: 12:00 PM. Location: AMC Theater. RSVP guest count: 23.",
+              "When repeating captured user-entered details, use label/value lines so the interface can bold the values.",
               "If details are missing, ask at most two short questions total.",
               "Put each question on its own line.",
               "Never send a checklist, numbered list, or multi-question intake block.",

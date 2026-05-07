@@ -37,6 +37,7 @@ test("buildGroupedEventLists buckets invited rows, prioritizes drafts, splits pa
         created_at: "2030-04-02T00:00:00.000Z",
         data: {
           category: "birthday party",
+          numberOfGuests: 24,
           startISO: "2030-04-12T12:00:00.000Z",
         },
       },
@@ -46,6 +47,7 @@ test("buildGroupedEventLists buckets invited rows, prioritizes drafts, splits pa
         created_at: "2020-04-01T00:00:00.000Z",
         data: {
           category: "sport_soccer",
+          numberOfGuests: 12,
           startISO: "2020-04-10T12:00:00.000Z",
         },
       },
@@ -76,6 +78,7 @@ test("buildGroupedEventLists buckets invited rows, prioritizes drafts, splits pa
     isSportsPreviewFirstEvent: (data) => Boolean(data?.previewFirst),
     isInvitedEventLikeRecord: (record) =>
       record.ownership === "invited" || record.invitedFromScan === true,
+    canShowOwnerRsvpDashboard: (data) => Number(data?.numberOfGuests || 0) > 0,
   });
 
   assert.deepEqual(
@@ -102,7 +105,7 @@ test("buildGroupedEventLists buckets invited rows, prioritizes drafts, splits pa
   );
 });
 
-test("buildGroupedEventLists opens concierge products on their generated surface", async () => {
+test("buildGroupedEventLists keeps concierge product hrefs but opens owner workspace", async () => {
   const { buildGroupedEventLists } = await loadModelModule();
 
   const grouped = buildGroupedEventLists({
@@ -155,17 +158,81 @@ test("buildGroupedEventLists opens concierge products on their generated surface
     buildEventPath: (eventId, title) => `/event/${eventId}-${title}`,
     isSportsPreviewFirstEvent: () => false,
     isInvitedEventLikeRecord: () => false,
+    canShowOwnerRsvpDashboard: (data) => Number(data?.numberOfGuests || 0) > 0,
   });
 
   const items = grouped.myEvents.upcoming.flatMap((section) => section.items);
   const byId = new Map(items.map((item) => [item.row.id, item]));
 
   assert.equal(byId.get("live-card-1")?.href, "/card/live-card-1-live-card-1");
-  assert.equal(byId.get("live-card-1")?.openMode, "preview");
+  assert.equal(byId.get("live-card-1")?.publicHref, "/card/live-card-1-live-card-1");
+  assert.equal(byId.get("live-card-1")?.ownerHref, "/event/live-card-1-Live Card 1");
+  assert.equal(byId.get("live-card-1")?.productKind, "card");
+  assert.equal(byId.get("live-card-1")?.openMode, "dashboard");
   assert.equal(byId.get("flyer-1")?.href, "/card/movie-flyer-flyer-1");
-  assert.equal(byId.get("flyer-1")?.openMode, "preview");
+  assert.equal(byId.get("flyer-1")?.ownerHref, "/event/flyer-1-Movie Flyer");
+  assert.equal(byId.get("flyer-1")?.productKind, "card");
+  assert.equal(byId.get("flyer-1")?.openMode, "dashboard");
   assert.equal(byId.get("event-page-1")?.href, "/event/event-page-1-Event Page 1");
-  assert.equal(byId.get("event-page-1")?.openMode, "preview");
+  assert.equal(byId.get("event-page-1")?.publicHref, "/event/event-page-1-Event Page 1");
+  assert.equal(byId.get("event-page-1")?.ownerHref, "/event/event-page-1-Event Page 1");
+  assert.equal(byId.get("event-page-1")?.productKind, "event");
+  assert.equal(byId.get("event-page-1")?.openMode, "dashboard");
   assert.equal(byId.get("legacy-live-1")?.href, "/card/create-a-live-card-for-mia-s-birthday-legacy-live-1");
-  assert.equal(byId.get("legacy-live-1")?.openMode, "preview");
+  assert.equal(byId.get("legacy-live-1")?.openMode, "dashboard");
+});
+
+test("buildGroupedEventLists opens owner workspaces for created events and tracks RSVP availability", async () => {
+  const { buildGroupedEventLists } = await loadModelModule();
+
+  const grouped = buildGroupedEventLists({
+    history: [
+      {
+        id: "manual-rsvp",
+        title: "Manual party",
+        created_at: "2030-04-01T00:00:00.000Z",
+        data: {
+          category: "birthday party",
+          numberOfGuests: 20,
+          startISO: "2030-04-10T12:00:00.000Z",
+        },
+      },
+      {
+        id: "manual-no-guests",
+        title: "Manual no guests",
+        created_at: "2030-04-01T00:00:00.000Z",
+        data: {
+          category: "general_event",
+          startISO: "2030-04-11T12:00:00.000Z",
+        },
+      },
+      {
+        id: "uploaded-rsvp",
+        title: "Uploaded flyer",
+        created_at: "2030-04-01T00:00:00.000Z",
+        data: {
+          category: "general_event",
+          createdVia: "ocr",
+          numberOfGuests: 50,
+          startISO: "2030-04-12T12:00:00.000Z",
+        },
+      },
+    ],
+    getEventStartIso: (data) => data?.startISO ?? null,
+    buildEventPath: (eventId, title) => `/event/${eventId}-${title}`,
+    isSportsPreviewFirstEvent: () => false,
+    isInvitedEventLikeRecord: () => false,
+    canShowOwnerRsvpDashboard: (data) =>
+      Number(data?.numberOfGuests || 0) > 0 && !String(data?.createdVia || "").startsWith("ocr"),
+  });
+
+  const items = grouped.myEvents.upcoming.flatMap((section) => section.items);
+  const byId = new Map(items.map((item) => [item.row.id, item]));
+
+  assert.equal(byId.get("manual-rsvp")?.openMode, "dashboard");
+  assert.equal(byId.get("manual-rsvp")?.hasOwnerRsvp, true);
+  assert.equal(byId.get("manual-no-guests")?.openMode, "dashboard");
+  assert.equal(byId.get("manual-no-guests")?.hasOwnerRsvp, false);
+  assert.equal(byId.get("uploaded-rsvp")?.openMode, "dashboard");
+  assert.equal(byId.get("uploaded-rsvp")?.hasOwnerRsvp, false);
 });

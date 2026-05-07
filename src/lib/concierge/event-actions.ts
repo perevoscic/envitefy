@@ -16,7 +16,10 @@ import {
   updateEventAsset,
 } from "./event-storage.ts";
 import { isConciergeFastActionsEnabled, shouldSkipOpenAiForEventAction } from "./fast-paths.ts";
-import { resolveConciergeOpenAiPlannerModel, runWithConciergeOpenAiTimeout } from "./openai-config.ts";
+import {
+  resolveConciergeOpenAiPlannerModel,
+  runWithConciergeOpenAiTimeout,
+} from "./openai-config.ts";
 import type {
   ConciergeEventAction,
   ConciergeWeatherContext,
@@ -192,7 +195,8 @@ function inferAssetTypeFromMessage(message: string): EventAssetType | null {
   if (/\bmenu\b/i.test(message)) return "menu";
   if (/welcome sign|signage/i.test(message)) return "welcome_sign";
   if (/rsvp/i.test(message)) return "rsvp_page";
-  if (/invite|invitation|card/i.test(message)) return "invitation";
+  if (/invite|invitation/i.test(message)) return "printable_flyer";
+  if (/card/i.test(message)) return "live_card";
   return null;
 }
 

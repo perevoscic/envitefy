@@ -237,6 +237,64 @@ test("persona strips markdown emphasis and star separators from confirmations", 
   assert.equal(result.assistantMessage, "Perfect - Honoree: Lara turning 7\n\nTime: 12:00 PM");
 });
 
+test("persona publicizes product labels instead of raw output keys", async () => {
+  async function* streamChunks() {
+    yield {
+      choices: [
+        {
+          delta: {
+            content: "Selected product: digital_flyer and rsvp_page.\nNames: Sara and Daniel",
+          },
+        },
+      ],
+    };
+  }
+
+  let requestPayload = null;
+  const result = await withEnv({ OPENAI_API_KEY: "test-key" }, () =>
+    streamConciergePersona(
+      {
+        message: "did you get my names",
+        chatMessages: [],
+        draft: {
+          ...BASE_DRAFT,
+          requestedOutputs: ["digital_flyer", "rsvp_page"],
+          honoreeName: "Sara and Daniel",
+          title: "Sara and Daniel wedding",
+        },
+        fallbackMessage: "Names: Sara and Daniel\nHow many guests should the RSVP track?",
+        onDelta: () => {},
+      },
+      {
+        createOpenAiClient: () => ({
+          chat: {
+            completions: {
+              create: async (request) => {
+                requestPayload = request;
+                return streamChunks();
+              },
+            },
+          },
+        }),
+      },
+    ),
+  );
+
+  const personaUserMessage = requestPayload?.messages?.at(-1);
+  const personaUserPayload = JSON.parse(personaUserMessage?.content || "{}");
+  assert.deepEqual(personaUserPayload.currentDraft.selectedProducts, [
+    "Flyer/Invitation",
+    "RSVP page",
+  ]);
+  assert.doesNotMatch(personaUserMessage?.content || "", /requestedOutputs|digital_flyer|rsvp_page/);
+  assert.match(requestPayload?.messages?.[0]?.content || "", /Never expose raw snake_case/);
+  assert.match(requestPayload?.messages?.[0]?.content || "", /Do not include QA or test prefixes/);
+  assert.equal(
+    result.assistantMessage,
+    "Selected product: Flyer/Invitation and RSVP page.\nNames: Sara and Daniel",
+  );
+});
+
 test("persona does not expose default timezone copy", async () => {
   async function* streamChunks() {
     yield {

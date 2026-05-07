@@ -58,6 +58,7 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   );
   assert.match(sharedPageSource, /Created by Envitefy Studio/);
   assert.match(sharedPageSource, /href="\/studio"/);
+  assert.match(sharedPageSource, /export function SharedStudioCardFrame/);
   assert.match(sharedPageSource, /relative flex min-h-\[100dvh\] w-full flex-col bg-neutral-950/);
   assert.match(sharedPageSource, /<main className="relative z-0 flex min-h-0 flex-1 flex-col">/);
   assert.match(
@@ -68,7 +69,7 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
     sharedPageSource,
     /relative mx-auto aspect-\[9\/16\] overflow-hidden rounded-\[3rem\]/,
   );
-  assert.match(sharedPageSource, /style=\{\{ width: cardFrameWidth \}\}/);
+  assert.match(sharedPageSource, /style=\{\{ width: props\.style\?\.width \? undefined : cardFrameWidth \}\}/);
   assert.match(sharedPageSource, /object-cover/);
   assert.match(sharedPageSource, /LiveCardHeroTextOverlay/);
   assert.match(

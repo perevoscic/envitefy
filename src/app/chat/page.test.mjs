@@ -25,6 +25,12 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(page, /notFound\(/);
 
   assert.match(client, /What are we celebrating\?/);
+  assert.match(client, /DETAIL_CONFIRMATION_LINE/);
+  assert.match(client, /RSVP\(\?: guest count\| by\| deadline\| line\)\?/);
+  assert.match(
+    client,
+    /themeValue && !\/\\btheme\$\/i\.test\(themeValue\) \? `\$\{themeValue\} theme` : null/,
+  );
   assert.match(client, /userFirstName\?: string \| null/);
   assert.match(client, /buildInitialAssistantPrompt/);
   assert.match(client, /Hi \$\{cleaned\}, what are we celebrating\?/);
@@ -82,13 +88,13 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(preview, /md:mt-0 md:grid/);
   assert.match(preview, /function ChatOutputPreviewSurface/);
   assert.match(preview, /function ChatFlyerInvitePreview/);
-  assert.match(preview, /function ChatInvitationPreview/);
+  assert.doesNotMatch(preview, /function ChatInvitationPreview/);
   assert.match(preview, /function ChatEventPagePreview/);
   assert.match(
     preview,
-    /selectedOutput === "digital_flyer" \|\| selectedOutput === "printable_flyer"/,
+    /selectedOutput === "digital_flyer"[\s\S]{0,140}selectedOutput === "printable_flyer"[\s\S]{0,140}selectedOutput === "invitation"/,
   );
-  assert.match(preview, /if \(selectedOutput === "invitation"\)/);
+  assert.doesNotMatch(preview, /Open Invitation/);
   assert.match(preview, /if \(selectedOutput === "event_page"\)/);
   assert.match(preview, /<ChatOutputPreviewSurface/);
   assert.match(preview, /selectedOutput=\{selectedOutput\}/);
@@ -151,7 +157,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   );
   assert.match(client, /hidden max-w-full flex-wrap[\s\S]{0,120}sm:flex/);
   assert.match(client, /icon: IdCard/);
-  assert.match(client, /icon: Mail/);
+  assert.doesNotMatch(client, /icon: Mail/);
   assert.match(client, /icon: FileImage/);
   assert.match(client, /icon: Globe/);
   assert.doesNotMatch(client, /className="grid grid-cols-2 gap-3"/);
@@ -164,13 +170,13 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /min-h-\[2\.05rem\]/);
   assert.doesNotMatch(client, /grid grid-cols-3 gap-1/);
   assert.match(client, /Live Card/);
-  assert.match(client, /Flyer Invite/);
+  assert.match(client, /Flyer\/Invitation/);
+  assert.match(client, /prompt: "Create a flyer invitation"/);
   assert.match(client, /Event Page/);
-  assert.match(client, /label: "Invitation"/);
+  assert.doesNotMatch(client, /label: "Invitation"/);
   assert.ok(
-    client.indexOf('label: "Live Card"') < client.indexOf('label: "Invitation"') &&
-      client.indexOf('label: "Invitation"') < client.indexOf('label: "Flyer Invite"') &&
-      client.indexOf('label: "Flyer Invite"') < client.indexOf('label: "Event Page"'),
+    client.indexOf('label: "Live Card"') < client.indexOf('label: "Flyer/Invitation"') &&
+      client.indexOf('label: "Flyer/Invitation"') < client.indexOf('label: "Event Page"'),
   );
   assert.doesNotMatch(client, /ProductOptionIcon/);
   assert.doesNotMatch(client, /<Mail className="size-4"/);
@@ -263,7 +269,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(chatSurface, /More preview actions/);
   assert.doesNotMatch(chatSurface, /Share2/);
   assert.doesNotMatch(chatSurface, /MoreVertical/);
-  assert.match(client, /Invitation/);
+  assert.doesNotMatch(client, /label: "Invitation"/);
   assert.doesNotMatch(
     chatSurface,
     /grid grid-cols-2[\s\S]{0,700}setPreviewTab\("rsvp"\)[\s\S]{0,250}>\s*RSVP\s*</,
@@ -279,7 +285,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
     client,
     /new Set<RequestedOutput>\(\[\.\.\.draft\.requestedOutputs, "live_card", "invitation"\]\)/,
   );
-  assert.match(client, /draft: draftToGenerate/);
+  assert.match(client, /draft: productDraft/);
   assert.doesNotMatch(preview, /Generate invite/);
   assert.match(
     client,
@@ -301,7 +307,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(chatSurface, blockedOldProductLabelPattern);
   assert.doesNotMatch(chatSurface, /Regenerate version/);
   assert.match(chatSurface, /Open Live Card/);
-  assert.match(chatSurface, /Open Flyer/);
+  assert.match(chatSurface, /Open Flyer\/Invitation/);
   assert.match(preview, /bg-\[#3b2468\]/);
   assert.doesNotMatch(chatSurface, blockedOldProductLabelPattern);
   assert.match(client, /sendGeneratedCardEdit/);

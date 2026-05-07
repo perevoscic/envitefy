@@ -231,9 +231,9 @@ function isSourceFlyerReference(text: string): boolean {
 
 function asksForFlyerProduct(text: string): boolean {
   return (
-    /\b(?:make|create|build|design|generate|draft)\s+(?:an?\s+)?(?:digital\s+)?flyer(?:\s+invite)?\b/i.test(
+    /\b(?:make|create|build|design|generate|draft)\s+(?:an?\s+)?(?:digital\s+)?flyer(?:\s+(?:invite|invitation))?\b/i.test(
       text,
-    ) || /\bflyer\s+invite\b/i.test(text)
+    ) || /\bflyer\s+(?:invite|invitation)\b/i.test(text)
   );
 }
 
@@ -308,7 +308,13 @@ export function normalizeRequestedOutputs(
           ? "instagram_story"
           : normalized === "sms"
             ? "text_message"
-            : normalized;
+            : normalized === "invitation" ||
+                normalized === "invite" ||
+                normalized === "flyer_invite" ||
+                normalized === "flyer_invitation" ||
+                normalized === "flyer/invitation"
+              ? "digital_flyer"
+              : normalized;
     if (REQUESTED_OUTPUTS.has(canonical as RequestedOutput)) {
       found.add(canonical as RequestedOutput);
     }
@@ -321,12 +327,12 @@ export function normalizeRequestedOutputs(
   const text = options.text || "";
   if (asksForCoreProductBundle(text)) {
     found.add("live_card");
-    found.add("invitation");
     found.add("digital_flyer");
     found.add("event_page");
   }
   if (/\blive\s*card\b/i.test(text)) found.add("live_card");
   if (/\bdigital\s+flyer\b/i.test(text)) found.add("digital_flyer");
+  if (/\bflyer\s*(?:\/|&|\+|and)\s*invitation\b/i.test(text)) found.add("digital_flyer");
   if (
     /\bflyer\b/i.test(text) &&
     !/\b(print|printable)\b/i.test(text) &&
@@ -343,7 +349,7 @@ export function normalizeRequestedOutputs(
     asksForInvitationProduct(text) ||
     (/\b(invitation|invite)\b/i.test(text) && hasCreateVerb(text))
   ) {
-    found.add("invitation");
+    found.add("digital_flyer");
   }
   if (asksForRsvpProduct(text)) {
     found.add("rsvp_page");
@@ -372,6 +378,7 @@ export function normalizeRequestedOutputs(
 
 export function toLegacyOutputs(requestedOutputs: RequestedOutput[]): ConciergeOutput[] {
   const mapped = requestedOutputs.map((output): ConciergeOutput => {
+    if (output === "invitation") return "digital_flyer";
     if (output === "printable_flyer") return "printable";
     if (output === "instagram_story") return "story";
     return output;
@@ -637,6 +644,8 @@ export function isMeaningfulEventText(text: string, requestedOutputs: RequestedO
   stripped = stripped
     .replace(/\blive\s*card\b/gi, " ")
     .replace(/\bdigital\s+flyer\b/gi, " ")
+    .replace(/\bflyer\s*(?:\/|&|\+|and)\s*invitation\b/gi, " ")
+    .replace(/\bflyer\s+(?:invite|invitation)\b/gi, " ")
     .replace(/\bsmart\s+sign[-\s]?up\b/gi, " ")
     .replace(/\bsign[-\s]?up\s+(?:form|sheet)\b/gi, " ")
     .replace(/\brsvp\s+page\b/gi, " ")
@@ -646,6 +655,20 @@ export function isMeaningfulEventText(text: string, requestedOutputs: RequestedO
     .replace(/\s+/g, " ")
     .trim();
   return stripped.length >= 3;
+}
+
+export function isNonCreationRequest(text: string) {
+  const cleaned = cleanCreationString(text);
+  if (!cleaned) return false;
+  return (
+    /\bdo\s+not\s+create\s+(?:an?\s+)?(?:event|invite|invitation|card|flyer|page|product)\b/i.test(
+      cleaned,
+    ) ||
+    /\bdon't\s+create\s+(?:an?\s+)?(?:event|invite|invitation|card|flyer|page|product)\b/i.test(
+      cleaned,
+    ) ||
+    /\b(?:qa\s+)?ping\s+only\b/i.test(cleaned)
+  );
 }
 
 export function deriveCreationStatus(args: {

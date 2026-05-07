@@ -7,7 +7,6 @@ import {
   FileImage,
   Globe2,
   Loader2,
-  Mail,
   MapPin,
   Umbrella,
   Users,
@@ -80,9 +79,9 @@ function publicActionLabelForOutput(selectedOutput: RequestedOutput) {
   if (selectedOutput === "event_page") return "Open Event Page";
   if (selectedOutput === "signup_form") return "Open Sign-up";
   if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {
-    return "Open Flyer";
+    return "Open Flyer/Invitation";
   }
-  if (selectedOutput === "invitation") return "Open Invitation";
+  if (selectedOutput === "invitation") return "Open Flyer/Invitation";
   return "Open Product";
 }
 
@@ -111,7 +110,7 @@ function ChatFlyerInvitePreview({
   return (
     <div
       role="img"
-      aria-label="Flyer invite preview"
+      aria-label="Flyer/invitation preview"
       className="relative h-full w-full overflow-hidden rounded-[2.2rem] border border-white/70 bg-[#fff9f0] shadow-[0_24px_70px_rgba(68,45,20,0.16)]"
     >
       <img
@@ -127,7 +126,7 @@ function ChatFlyerInvitePreview({
       </div>
       <div className="absolute inset-x-5 bottom-5 rounded-[1.45rem] border border-white/74 bg-white/88 p-5 text-[#24183e] shadow-[0_18px_46px_rgba(64,40,18,0.16)] backdrop-blur-md">
         <p className="text-[0.62rem] font-black uppercase tracking-[0.24em] text-[#c1655a]">
-          Flyer Invite
+          Flyer/Invitation
         </p>
         <h3 className="mt-2 line-clamp-3 font-serif text-3xl font-bold italic leading-[0.98] text-[#251724]">
           {summary.headline}
@@ -136,51 +135,6 @@ function ChatFlyerInvitePreview({
         <div className="mt-4 grid grid-cols-1 gap-2 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-[#5f4b44]">
           <span className="truncate rounded-xl bg-[#fff1df] px-3 py-2">{summary.scheduleLine}</span>
           <span className="truncate rounded-xl bg-[#f2ecff] px-3 py-2">{summary.locationLine}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ChatInvitationPreview({
-  draft,
-  summary,
-  previewImageUrl,
-}: Pick<OutputPreviewSurfaceProps, "draft" | "summary" | "previewImageUrl">) {
-  const body = previewBodyText(draft, summary);
-  const category = previewCategoryText(draft);
-
-  return (
-    <div
-      role="img"
-      aria-label="Invitation preview"
-      className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[2.2rem] bg-[#f7f1ea] p-5 shadow-[0_24px_70px_rgba(61,44,30,0.14)]"
-    >
-      <img
-        src={previewImageUrl}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover opacity-24"
-      />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.86),rgba(247,241,234,0.58)_36%,rgba(247,241,234,0.96)_100%)]" />
-      <div className="relative flex h-full w-full flex-col items-center justify-between rounded-[1.7rem] border border-[#d7c7b6] bg-[#fffdf8]/92 px-6 py-8 text-center text-[#261b2d] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)]">
-        <div className="flex flex-col items-center gap-3">
-          <Mail className="size-5 text-[#8b5f4e]" aria-hidden="true" />
-          <p className="text-[0.62rem] font-black uppercase tracking-[0.28em] text-[#8b5f4e]">
-            {category}
-          </p>
-        </div>
-        <div className="max-w-full">
-          <p className="mx-auto mb-5 h-px w-16 bg-[#d8c1ad]" />
-          <h3 className="line-clamp-4 font-serif text-4xl font-bold italic leading-[0.96] text-[#221a35]">
-            {summary.headline}
-          </h3>
-          <p className="mx-auto mt-5 max-w-[14rem] text-sm leading-6 text-[#6b5b61]">{body}</p>
-          <p className="mx-auto mt-5 h-px w-16 bg-[#d8c1ad]" />
-        </div>
-        <div className="w-full space-y-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#7a6860]">
-          <p className="truncate">{summary.scheduleLine}</p>
-          <p className="truncate">{summary.locationLine}</p>
         </div>
       </div>
     </div>
@@ -270,15 +224,13 @@ function ChatOutputPreviewSurface({
   preview,
   hasGeneratedProduct,
 }: OutputPreviewSurfaceProps) {
-  if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {
+  if (
+    selectedOutput === "digital_flyer" ||
+    selectedOutput === "printable_flyer" ||
+    selectedOutput === "invitation"
+  ) {
     return (
       <ChatFlyerInvitePreview draft={draft} summary={summary} previewImageUrl={previewImageUrl} />
-    );
-  }
-
-  if (selectedOutput === "invitation") {
-    return (
-      <ChatInvitationPreview draft={draft} summary={summary} previewImageUrl={previewImageUrl} />
     );
   }
 

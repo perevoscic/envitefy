@@ -13,7 +13,9 @@ import {
   getTemplateLinks,
   isCreateEventRoute,
 } from "@/config/navigation-config";
+import type { TemplateKey } from "@/config/feature-visibility";
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
+import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import { normalizePrimarySignupSource } from "@/lib/product-scopes";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
@@ -45,9 +47,9 @@ type LeftSidebarControllerArgs = {
   menu: {
     connectedCalendars: Record<string, boolean>;
     refreshConnectedCalendars: () => Promise<unknown> | unknown;
-    featureVisibility: { visibleTemplateKeys: string[] };
+    featureVisibility: { visibleTemplateKeys: TemplateKey[] };
     primarySignupSource: "snap" | "gymnastics" | "legacy" | null;
-    productScopes: unknown;
+    productScopes: string[] | undefined;
   };
   historySidebarItems: HistoryRow[];
   sidebar: {
@@ -58,6 +60,8 @@ type LeftSidebarControllerArgs = {
     setSelectedEventTitle: (value: string) => void;
     selectedEventHref: string | null;
     setSelectedEventHref: (value: string) => void;
+    selectedEventOwnerHref: string | null;
+    setSelectedEventOwnerHref: (value: string) => void;
     setSelectedEventEditHref: (value: string) => void;
     activeEventTab: EventContextTab;
     setActiveEventTab: (value: EventContextTab) => void;
@@ -67,7 +71,7 @@ type LeftSidebarControllerArgs = {
   };
   router: {
     push: (href: string) => void;
-    prefetch?: (href: string) => Promise<unknown> | undefined;
+    prefetch?: (href: string) => void;
   };
   pathname: string | null;
   searchParams: { get: (name: string) => string | null } | null;
@@ -174,6 +178,8 @@ export function useLeftSidebarController({
     setSelectedEventTitle,
     selectedEventHref,
     setSelectedEventHref,
+    selectedEventOwnerHref,
+    setSelectedEventOwnerHref,
     setSelectedEventEditHref,
     activeEventTab,
     setActiveEventTab,
@@ -205,7 +211,6 @@ export function useLeftSidebarController({
     useState<CalendarProviderKey | null>(null);
   const [lastCreateSelection, setLastCreateSelection] = useState<string | null>(null);
   const [forcedCreateActiveLabel, setForcedCreateActiveLabel] = useState<string | null>(null);
-  const [pendingAiThreadHref, setPendingAiThreadHref] = useState<string | null>(null);
   const [isDesktop, setIsDesktop] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(min-width: 1024px)").matches;
@@ -889,31 +894,14 @@ export function useLeftSidebarController({
       if (!cleanThreadId) return;
 
       clearEventContext();
-      setSidebarPage("root");
+      setSidebarPage("aiThreads");
       collapseSidebarOnTouch();
 
       const nextHref = `/chat?thread=${encodeURIComponent(cleanThreadId)}`;
-      const currentThreadId = searchParams?.get("thread")?.trim() || null;
-      if (pathname === "/chat" && !currentThreadId) {
-        router.push(nextHref);
-        return;
-      }
-
-      setPendingAiThreadHref(nextHref);
-      router.push("/chat");
+      router.push(nextHref);
     },
-    [clearEventContext, collapseSidebarOnTouch, pathname, router, searchParams],
+    [clearEventContext, collapseSidebarOnTouch, router],
   );
-
-  useEffect(() => {
-    if (!pendingAiThreadHref) return;
-    if (pathname !== "/chat") return;
-    if (searchParams?.get("thread")) return;
-
-    const nextHref = pendingAiThreadHref;
-    setPendingAiThreadHref(null);
-    router.push(nextHref);
-  }, [pathname, pendingAiThreadHref, router, searchParams]);
 
   const openMyEventsPage = useCallback(
     () => openCompactEventsPage("myEvents"),
@@ -1037,6 +1025,7 @@ export function useLeftSidebarController({
         buildEventPath,
         isSportsPreviewFirstEvent,
         isInvitedEventLikeRecord,
+        canShowOwnerRsvpDashboard: (data) => canShowOwnerRsvpDashboard(data as any),
       }),
     [history],
   );
@@ -1064,19 +1053,20 @@ export function useLeftSidebarController({
       }
 
       const matchesItem = (item: GroupedEventItem) => {
-        const itemHref = String(item.href || "").trim();
-        const itemPath = itemHref
-          ? (() => {
+        const itemPaths = [item.href, item.publicHref, item.ownerHref]
+          .map((href) => String(href || "").trim())
+          .filter(Boolean)
+          .map((href) => {
               try {
-                return new URL(itemHref, "https://envitefy.local").pathname;
+                return new URL(href, "https://envitefy.local").pathname;
               } catch {
-                return itemHref.split("?")[0] || "";
+                return href.split("?")[0] || "";
               }
-            })()
-          : "";
+            })
+          .filter(Boolean);
 
         return (
-          itemPath === routePath ||
+          itemPaths.includes(routePath) ||
           routePath === `/event/${item.row.id}` ||
           routePath === `/smart-signup-form/${item.row.id}` ||
           routePath.endsWith(`-${item.row.id}`)
@@ -1117,6 +1107,45 @@ export function useLeftSidebarController({
       setEventSidebarMode("guest");
     }
   }, [eventContextSourcePage, inferEventListSourceFromPath, pathname, setEventContextSourcePage]);
+
+  useEffect(() => {
+    if (!selectedEventId) return;
+    const currentPath = String(pathname || "");
+    if (!currentPath.startsWith("/event/")) return;
+    if (
+      currentPath !== `/event/${selectedEventId}` &&
+      !currentPath.endsWith(`-${selectedEventId}`)
+    ) {
+      return;
+    }
+    const requestedTab = String(searchParams?.get("tab") || "")
+      .trim()
+      .toLowerCase();
+    if (
+      requestedTab !== "dashboard" &&
+      requestedTab !== "guests" &&
+      requestedTab !== "communications" &&
+      requestedTab !== "settings"
+    ) {
+      return;
+    }
+
+    const inferredSource = inferEventListSourceFromPath(pathname);
+    if (inferredSource && eventContextSourcePage !== inferredSource) {
+      setEventContextSourcePage(inferredSource);
+    } else if (!inferredSource && eventContextSourcePage !== "myEvents") {
+      setEventContextSourcePage("myEvents");
+    }
+    setEventSidebarMode("owner");
+    setSidebarPage("eventContext");
+  }, [
+    eventContextSourcePage,
+    inferEventListSourceFromPath,
+    pathname,
+    searchParams,
+    selectedEventId,
+    setEventContextSourcePage,
+  ]);
 
   useEffect(() => {
     const onDeleted = (event: Event) => {
@@ -1177,8 +1206,10 @@ export function useLeftSidebarController({
 
   const openOwnerEventContext = useCallback(
     (item: GroupedEventItem) => {
-      const { row, href, openMode } = item;
+      const { row, openMode } = item;
       const title = row.title || "Untitled event";
+      const publicHref = item.publicHref || item.href;
+      const ownerHref = item.ownerHref || buildEventPath(row.id, title);
 
       blurActiveElement();
 
@@ -1186,21 +1217,22 @@ export function useLeftSidebarController({
         clearEventContext();
         setSidebarPage("myEvents");
         try {
-          router.prefetch?.(href);
+          router.prefetch?.(publicHref);
         } catch {}
-        router.push(href);
+        router.push(publicHref);
         return;
       }
 
       setSelectedEventId(row.id);
       setSelectedEventTitle(title);
-      setSelectedEventHref(href);
+      setSelectedEventHref(publicHref);
+      setSelectedEventOwnerHref(ownerHref);
       setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
       setActiveEventTab("dashboard");
       setEventSidebarMode("owner");
       setEventContextSourcePage("myEvents");
       setSidebarPage("eventContext");
-      router.push(buildEventOwnerHref(href, row.id, "dashboard"));
+      router.push(buildEventOwnerHref(ownerHref, row.id, "dashboard"));
     },
     [
       blurActiveElement,
@@ -1211,13 +1243,14 @@ export function useLeftSidebarController({
       setSelectedEventEditHref,
       setSelectedEventHref,
       setSelectedEventId,
+      setSelectedEventOwnerHref,
       setSelectedEventTitle,
     ],
   );
 
   const openGuestEventContext = useCallback(
     (item: GroupedEventItem) => {
-      const nextHref = buildEventGuestHref(item.href, item.row.id);
+      const nextHref = buildEventGuestHref(item.publicHref || item.href, item.row.id);
       blurActiveElement();
       clearEventContext();
       setEventContextSourcePage("invitedEvents");
@@ -1246,7 +1279,7 @@ export function useLeftSidebarController({
 
   const shareEventFromList = useCallback(async (item: GroupedEventItem) => {
     const eventTitle = item?.title || item?.row?.title || "Event";
-    const eventHref = item?.href || `/event/${item?.row?.id || ""}`;
+    const eventHref = item?.publicHref || item?.href || `/event/${item?.row?.id || ""}`;
     const eventUrl = new URL(eventHref, window.location.origin).toString();
     if ((navigator as any).share) {
       await (navigator as any).share({
@@ -1309,7 +1342,11 @@ export function useLeftSidebarController({
       setActiveEventTab(tab);
       try {
         if (!selectedEventId) return;
-        const nextHref = buildEventOwnerHref(selectedEventHref, selectedEventId, tab);
+        const nextHref = buildEventOwnerHref(
+          selectedEventOwnerHref || selectedEventHref,
+          selectedEventId,
+          tab,
+        );
         router.push(nextHref);
       } catch {}
       blurActiveElement();
@@ -1323,6 +1360,7 @@ export function useLeftSidebarController({
       router,
       selectedEventHref,
       selectedEventId,
+      selectedEventOwnerHref,
       setActiveEventTab,
     ],
   );

@@ -81,6 +81,7 @@ test("studio category tiles are image-backed and layout-driven", () => {
   assert.match(gridSource, /"Bridal Shower": "order-5 sm:order-none"/);
   assert.match(gridSource, /"Baby Shower": "order-6 sm:order-none"/);
   assert.match(gridSource, /"Open House": "order-7 sm:order-none"/);
+  assert.match(gridSource, /Anniversary: "order-10 sm:order-none"/);
   assert.match(gridSource, /"Field Trip\/Day": "order-9 sm:order-none"/);
   assert.match(gridSource, /Birthday: "lg:col-start-1 lg:row-start-1"/);
   assert.match(gridSource, /upload: "lg:col-start-3 lg:row-start-1"/);
@@ -97,7 +98,7 @@ test("studio category tiles are image-backed and layout-driven", () => {
   assert.match(dataSource, /\/studio\/baby-shower\.webp/);
   assert.match(dataSource, /\/studio\/field-trip-day\.webp/);
   assert.match(dataSource, /\/studio\/open-house\.webp/);
-  assert.doesNotMatch(dataSource, /\/studio\/anniversary\.webp/);
+  assert.match(dataSource, /\/studio\/anniversary\.webp/);
   assert.match(dataSource, /\/studio\/housewarming\.webp/);
   assert.match(dataSource, /\/studio\/custom-invite\.webp/);
   assert.match(dataSource, /sizeVariant: "feature"/);
@@ -118,7 +119,7 @@ test("studio category tiles are image-backed and layout-driven", () => {
   assert.match(dataSource, /name: "Baby Shower"/);
   assert.match(dataSource, /name: "Field Trip\/Day"/);
   assert.match(dataSource, /name: "Open House"/);
-  assert.doesNotMatch(dataSource, /name: "Anniversary"/);
+  assert.match(dataSource, /name: "Anniversary"/);
   assert.match(dataSource, /name: "Housewarming"/);
   assert.match(dataSource, /name: "Custom Invite"/);
   assert.match(
@@ -134,9 +135,10 @@ test("studio category tiles are image-backed and layout-driven", () => {
     dataSource,
     /name: "Open House"[\s\S]*sizeVariant: "standard"[\s\S]*name: "Housewarming"[\s\S]*sizeVariant: "standard"/,
   );
-  assert.match(dataSource, /name: "Housewarming"[\s\S]*name: "Custom Invite"/);
+  assert.match(dataSource, /name: "Housewarming"[\s\S]*name: "Anniversary"/);
+  assert.match(dataSource, /name: "Anniversary"[\s\S]*name: "Custom Invite"/);
   assert.match(
     dataSource,
-    /name: "Housewarming"[\s\S]*sizeVariant: "standard"[\s\S]*name: "Custom Invite"[\s\S]*sizeVariant: "standard"/,
+    /name: "Anniversary"[\s\S]*sizeVariant: "standard"[\s\S]*name: "Custom Invite"[\s\S]*sizeVariant: "standard"/,
   );
 });
