@@ -57,12 +57,12 @@ test("meet discovery classifier and schema only model the surviving attendee-fir
   );
 });
 
-test("meet discovery defaults staged structured parsing to gpt-5.4-nano", () => {
+test("meet discovery defaults staged structured parsing to GPT-5.5", () => {
   const source = readSource("src/lib/meet-discovery/core.ts");
 
   assert.match(
     source,
-    /return safeString\(process\.env\.OPENAI_DISCOVERY_PARSE_MODEL\) \|\| "gpt-5\.4-nano";/,
+    /return safeString\(process\.env\.OPENAI_DISCOVERY_PARSE_MODEL\) \|\| "gpt-5\.5";/,
   );
   assert.match(source, /callOpenAiClassification/);
   assert.match(source, /callOpenAiTargetedParse/);

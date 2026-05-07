@@ -74,7 +74,7 @@ test("creation intake resume reads the signed-in user's latest session only", ()
   assert.match(storage, /limit 1/);
 });
 
-test("saved creation sessions keep workspace continuation scoped to the owner", () => {
+test("saved creation sessions keep continuation scoped to the owner", () => {
   const intake = readSource("src/lib/concierge/intake.ts");
   const storage = readSource("src/lib/concierge/event-storage.ts");
 

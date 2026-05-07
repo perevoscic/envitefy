@@ -37,7 +37,7 @@ type BottomNavBarProps = {
   defaultIndex?: number;
   stickyBottom?: boolean;
   items?: BottomNavItem[];
-  activeValue?: string;
+  activeValue?: string | null;
   ariaLabel?: string;
   autoOpenOnMount?: boolean;
   autoOpenIntervalMs?: number;
@@ -55,16 +55,19 @@ export function BottomNavBar({
   autoOpenIntervalMs = 2000,
   onValueChange,
 }: BottomNavBarProps) {
-  const safeDefaultIndex = Math.min(Math.max(defaultIndex, 0), Math.max(items.length - 1, 0));
+  const safeDefaultIndex = items.length
+    ? Math.min(Math.max(defaultIndex, -1), items.length - 1)
+    : -1;
   const [activeIndex, setActiveIndex] = useState(safeDefaultIndex);
   const [autoOpenIndex, setAutoOpenIndex] = useState<number | null>(null);
   const [hasManualSelection, setHasManualSelection] = useState(false);
+  const isActiveValueControlled = activeValue !== undefined;
   const controlledIndex =
     typeof activeValue === "string"
       ? items.findIndex((item) => (item.value || item.label) === activeValue)
       : -1;
   const resolvedActiveIndex =
-    autoOpenIndex ?? (controlledIndex >= 0 ? controlledIndex : activeIndex);
+    autoOpenIndex ?? (isActiveValueControlled ? controlledIndex : activeIndex);
 
   useEffect(() => {
     if (!autoOpenOnMount || hasManualSelection || items.length <= 1) {

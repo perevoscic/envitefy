@@ -16,7 +16,7 @@ import {
   updateEventAsset,
 } from "./event-storage.ts";
 import { isConciergeFastActionsEnabled, shouldSkipOpenAiForEventAction } from "./fast-paths.ts";
-import { resolveConciergeOpenAiModel, runWithConciergeOpenAiTimeout } from "./openai-config.ts";
+import { resolveConciergeOpenAiPlannerModel, runWithConciergeOpenAiTimeout } from "./openai-config.ts";
 import type {
   ConciergeEventAction,
   ConciergeWeatherContext,
@@ -75,6 +75,9 @@ const ALLOWED_EVENT_PATCH_FIELDS = new Set([
   "liveCard",
   "uploads",
 ]);
+
+const PREMIUM_PLANNING_HINT =
+  /\b(complex|messy|validate|missing fields?|final copy|polished|premium|multi[-\s]?section|multi[-\s]?day|full live[-\s]?card|gymnastics|meet schedule|packet|flyer|uploaded|ocr)\b/i;
 
 function cleanString(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -441,10 +444,12 @@ async function planWithOpenAi(params: {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
   const client = new OpenAI({ apiKey });
+  const simple = shouldSkipOpenAiForEventAction(params.message);
+  const premium = shouldUsePremiumPlannerModel(params);
   const response = await runWithConciergeOpenAiTimeout((signal) =>
     client.chat.completions.create(
       {
-        model: resolveConciergeOpenAiModel(),
+        model: resolveConciergeOpenAiPlannerModel({ simple, premium }),
         temperature: 0.1,
         response_format: { type: "json_object" },
         max_completion_tokens: 650,
@@ -491,6 +496,25 @@ async function planWithOpenAi(params: {
       ? parsed.suggestedReplies.map(cleanString).filter((item): item is string => Boolean(item))
       : [],
   };
+}
+
+function shouldUsePremiumPlannerModel(params: {
+  message: string;
+  event: EventHistoryRow;
+  assets: EventAsset[];
+}): boolean {
+  const data = asRecord(params.event.data);
+  const context = [
+    params.message,
+    cleanString(params.event.title),
+    cleanString(data.category),
+    cleanString(data.eventType),
+    cleanString(data.source),
+  ]
+    .filter(Boolean)
+    .join(" ");
+  if (PREMIUM_PLANNING_HINT.test(context)) return true;
+  return params.assets.length >= 3;
 }
 
 export async function buildEventActionPlan(params: {

@@ -201,6 +201,70 @@ function hasCreateVerb(text: string): boolean {
   );
 }
 
+function hasNegatedRsvpIntent(text: string): boolean {
+  return (
+    /\b(?:no|without|skip|disable)\s+(?:envitefy\s+)?rsvps?\b/i.test(text) ||
+    /\b(?:do\s+not|don't|dont)\s+(?:need|want|include|collect|track|add|enable)\s+(?:an?\s+)?(?:envitefy\s+)?rsvps?\b/i.test(
+      text,
+    ) ||
+    /\brsvps?\s+(?:not\s+needed|off|disabled)\b/i.test(text)
+  );
+}
+
+function asksForCoreProductBundle(text: string): boolean {
+  return (
+    /\b(?:all|every)\s+(?:core\s+)?(?:product\s+formats?|products?|formats?)\b/i.test(text) ||
+    /\b(?:combo|bundle)\s+of\s+(?:all|everything)\b/i.test(text)
+  );
+}
+
+function isSourceFlyerReference(text: string): boolean {
+  return (
+    /\b(?:from|using|based\s+on|use)\s+(?:this|that|the|my|an?\s+uploaded|uploaded)?\s*(?:event\s+)?flyer\b/i.test(
+      text,
+    ) ||
+    /\b(?:this|that|the|my|uploaded)\s+(?:event\s+)?flyer\s+(?:as|for|to|into|source|reference|upload)\b/i.test(
+      text,
+    )
+  );
+}
+
+function asksForFlyerProduct(text: string): boolean {
+  return (
+    /\b(?:make|create|build|design|generate|draft)\s+(?:an?\s+)?(?:digital\s+)?flyer(?:\s+invite)?\b/i.test(
+      text,
+    ) || /\bflyer\s+invite\b/i.test(text)
+  );
+}
+
+function asksForInvitationProduct(text: string): boolean {
+  if (hasReceivedInviteLanguage(text)) return false;
+  return (
+    /\binvitation\s+for\b/i.test(text) ||
+    /\b(?:birthday|wedding|baby\s+shower|bridal\s+shower|gender\s+reveal|graduation)\s+(?:invitation|invite)\b/i.test(
+      text,
+    ) ||
+    /\b(?:make|create|build|design|generate|draft)\s+(?:an?\s+)?(?:[a-z]+\s+)?(?:invitation|invite)\b/i.test(
+      text,
+    )
+  );
+}
+
+function asksForRsvpProduct(text: string): boolean {
+  return (
+    /\brsvp\s+page\b/i.test(text) ||
+    /\b(?:make|create|build|generate|draft)\s+(?:an?\s+)?rsvp\b/i.test(text)
+  );
+}
+
+function asksForRsvpFeature(text: string): boolean {
+  return (
+    /\b(?:with|include|enable|collect|track|add)\s+(?:envitefy\s+)?rsvps?\b/i.test(text) ||
+    /\brsvp\s+(?:tracking|collection|responses?)\b/i.test(text) ||
+    /\brsvps?\s+(?:directly|on|through)\b/i.test(text)
+  );
+}
+
 function hasReceivedInviteLanguage(text: string): boolean {
   return (
     /\b(i|we)\s+(got|received|have)\b[\s\S]{0,80}\b(invite|invitation)\b/i.test(text) ||
@@ -255,18 +319,41 @@ export function normalizeRequestedOutputs(
   options.previous?.outputs?.forEach(add);
 
   const text = options.text || "";
+  if (asksForCoreProductBundle(text)) {
+    found.add("live_card");
+    found.add("invitation");
+    found.add("digital_flyer");
+    found.add("event_page");
+  }
   if (/\blive\s*card\b/i.test(text)) found.add("live_card");
   if (/\bdigital\s+flyer\b/i.test(text)) found.add("digital_flyer");
-  if (/\bflyer\b/i.test(text) && !/\b(print|printable)\b/i.test(text)) found.add("digital_flyer");
   if (
-    /\b(smart\s+sign[-\s]?up|sign[-\s]?up\s+form|signup\s+form|sign[-\s]?up\s+sheet)\b/i.test(
-      text,
-    )
+    /\bflyer\b/i.test(text) &&
+    !/\b(print|printable)\b/i.test(text) &&
+    (!isSourceFlyerReference(text) || asksForFlyerProduct(text))
+  ) {
+    found.add("digital_flyer");
+  }
+  if (
+    /\b(smart\s+sign[-\s]?up|sign[-\s]?up\s+form|signup\s+form|sign[-\s]?up\s+sheet)\b/i.test(text)
   ) {
     found.add("signup_form");
   }
-  if (/\b(invitation|invite)\b/i.test(text) && hasCreateVerb(text)) found.add("invitation");
-  if (/\brsvp\b/i.test(text)) found.add("rsvp_page");
+  if (
+    asksForInvitationProduct(text) ||
+    (/\b(invitation|invite)\b/i.test(text) && hasCreateVerb(text))
+  ) {
+    found.add("invitation");
+  }
+  if (asksForRsvpProduct(text)) {
+    found.add("rsvp_page");
+  } else if (
+    asksForRsvpFeature(text) &&
+    !hasNegatedRsvpIntent(text) &&
+    !Array.from(found).some((output) => RSVP_CAPABLE_OUTPUTS.has(output))
+  ) {
+    found.add("rsvp_page");
+  }
   if (/\bwhats\s?app\b/i.test(text)) found.add("whatsapp");
   if (/\b(text message|sms)\b/i.test(text)) found.add("text_message");
   if (/\b(print|printable|poster)\b/i.test(text)) found.add("printable_flyer");
@@ -674,8 +761,11 @@ export function deriveCreationStatus(args: {
   const canPreview =
     args.sourceContext.hasUsableContext ||
     (hasEventPurpose && Boolean(args.dateText || args.startISO || args.location));
+  const hasMissingRequiredDetails = missingFields.some((field) =>
+    plan.requiredFields.includes(field as (typeof plan.requiredFields)[number]),
+  );
   return {
-    draftStatus: canPreview ? "preview_ready" : "drafting",
+    draftStatus: !hasMissingRequiredDetails && canPreview ? "preview_ready" : "drafting",
     missingFields,
     currentQuestion: missingFields[0] || null,
     canPersist,

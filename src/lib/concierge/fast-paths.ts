@@ -98,6 +98,27 @@ function isStarterCategoryProductSelection(text: string, requestedOutputs: Reque
   return Boolean(categoryOnly && STARTER_CHIPS.has(categoryOnly));
 }
 
+function hasKnownStarterCategoryContext(args: {
+  text: string;
+  requestedOutputs: RequestedOutput[];
+  starterCategory?: string | null;
+}) {
+  if (!args.requestedOutputs.length) return false;
+  const categoryText = normalizedMessage(
+    stripRequestedOutputLabels(args.text, args.requestedOutputs),
+  );
+  if (!categoryText) return false;
+
+  const structuredCategory = normalizedMessage(args.starterCategory);
+  if (structuredCategory && STARTER_CHIPS.has(structuredCategory)) {
+    return categoryText === structuredCategory || categoryText.startsWith(`${structuredCategory} `);
+  }
+
+  return Array.from(STARTER_CHIPS).some(
+    (category) => categoryText === category || categoryText.startsWith(`${category} `),
+  );
+}
+
 export function isConciergeFastActionsEnabled(): boolean {
   return isEnvFlagEnabled(process.env.CONCIERGE_SKIP_AI_FAST_ACTIONS);
 }
@@ -139,6 +160,18 @@ export function shouldSkipOpenAiForCreationRequest(args: {
   if (
     (action === "chip" || action === "starter_category") &&
     isStarterCategoryProductSelection(selectionMessage, requestedOutputs)
+  ) {
+    return true;
+  }
+  if (
+    action === "starter_category" &&
+    !args.request.draft &&
+    !args.request.ocrContext &&
+    hasKnownStarterCategoryContext({
+      text: selectionMessage,
+      requestedOutputs,
+      starterCategory,
+    })
   ) {
     return true;
   }

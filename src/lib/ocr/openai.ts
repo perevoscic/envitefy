@@ -334,7 +334,7 @@ export async function llmRewriteBirthdayDescription(
 ): Promise<string | null> {
   const apiKey = getOpenAiKey();
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-5.1-mini";
+  const model = process.env.LLM_MODEL || "gpt-5.4-mini";
   const prompt = buildBirthdayRewritePrompt(title, location, description);
 
   try {
@@ -372,7 +372,7 @@ export async function llmRewriteWedding(
 ): Promise<{ title: string; description: string } | null> {
   const apiKey = getOpenAiKey();
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-5.1-mini";
+  const model = process.env.LLM_MODEL || "gpt-5.4-mini";
   const prompt = buildWeddingRewritePrompt(rawText, location);
 
   try {
@@ -424,7 +424,7 @@ export async function llmRewriteSmartDescription(
 ): Promise<string | null> {
   const apiKey = getOpenAiKey();
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-5.1-mini";
+  const model = process.env.LLM_MODEL || "gpt-5.4-mini";
   const prompt = buildSmartRewritePrompt(rawText, title, location, category, baseline);
 
   try {

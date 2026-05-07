@@ -89,9 +89,6 @@ import ReadOnlyBanner from "./ReadOnlyBanner";
 const SignupViewer = nextDynamic(() => import("@/components/smart-signup-form/SignupViewer"), {
   loading: () => null,
 });
-const BirthdayTemplateView = nextDynamic(() => import("@/components/BirthdayTemplateView"), {
-  loading: () => null,
-});
 const WeddingTemplateView = nextDynamic(() => import("@/components/WeddingTemplateView"), {
   loading: () => null,
 });
@@ -1595,13 +1592,13 @@ export default async function EventPage({
     typeof (data as any)?.variationId === "string" ? (data as any).variationId : null;
   const createdVia =
     typeof (data as any)?.createdVia === "string" ? (data as any).createdVia : null;
+  const isBirthdaySkinEvent = categoryNormalized === "birthdays" && isOcrEvent;
   const isBirthdayTemplate =
     templateId &&
     variationId &&
     categoryNormalized === "birthdays" &&
-    createdVia !== "simple-template";
-  const isScannedBirthdayInviteEvent =
-    categoryNormalized === "birthdays" && isScannedInviteEvent && isOcrEvent;
+    createdVia !== "simple-template" &&
+    !isBirthdaySkinEvent;
   const isBirthdayRendererEvent =
     categoryNormalized === "birthdays" && createdVia === "birthday-renderer";
   const isWeddingTemplate = templateId && variationId && categoryNormalized === "weddings";
@@ -1692,7 +1689,7 @@ export default async function EventPage({
   const shouldRenderFootballPage =
     Boolean(isFootballDiscoveryTemplate) || Boolean(isFootballSeasonTemplate);
 
-  if (isScannedBirthdayInviteEvent) {
+  if (isBirthdaySkinEvent) {
     const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "birthday", undefined, {
       title,
     });
@@ -1788,119 +1785,99 @@ export default async function EventPage({
     );
   }
 
-  // If it's a birthday template, render the template view
+  // Birthday template events use the current birthday renderer. OCR birthday scans are handled by BirthdaySkin above.
   if (isBirthdayTemplate || isBirthdayRendererEvent) {
     const birthdayThemeId = variationId || BIRTHDAY_THEMES[0]?.id;
-    const birthdayThemeBase = data.theme?.id
+    const birthdayThemeBase = data.theme?.layout
       ? data.theme
       : BIRTHDAY_THEMES.find((t) => t.id === birthdayThemeId) || BIRTHDAY_THEMES[0];
     const birthdayTheme = birthdayThemeBase;
 
-    if (isBirthdayRendererEvent || data.theme?.layout) {
-      return renderWithEventPageBackground(
-        <BirthdayRenderer
-          template={birthdayTheme}
-          eventId={row.id}
-          heroImageUrl={null}
-          event={{
-            headlineTitle: title || data.headlineTitle,
-            date:
-              data.startISO || (data.date && data.time ? `${data.date}T${data.time}` : data.date),
-            end: (() => {
-              const endIso = typeof data?.endISO === "string" ? data.endISO.trim() : "";
-              if (endIso) return endIso;
-              const end = typeof data?.end === "string" ? data.end.trim() : "";
-              return end || undefined;
-            })(),
-            location:
-              data.location ||
-              [data.venue, data.address, data.city, data.state].filter(Boolean).join(", "),
-            story: data.story || data.description || data.partyDetails?.notes,
-            schedule: data.schedule,
-            registries: data.registries,
-            rsvpEnabled: directRsvpEnabled,
-            rsvpLink: "#rsvp",
-            rsvpName,
-            rsvpPhone: rsvpPhone || undefined,
-            rsvpEmail: rsvpEmail || undefined,
-            shareUrl,
-            birthdayName: data.birthdayName || data.childName || "Birthday Star",
-            age: data.age,
-            party: data.party || data.partyDetails,
-            goodToKnow: typeof data.goodToKnow === "string" ? data.goodToKnow.trim() : undefined,
-            thingsToDo: data.thingsToDo || data.partyDetails?.activities,
-            hosts: data.hosts,
-            gallery: Array.isArray(data.gallery)
-              ? data.gallery.map((item: any) => (typeof item === "string" ? item : item.url))
-              : [],
-            rsvpDeadline: rsvpDeadline || undefined,
-            numberOfGuests: data.numberOfGuests || 0,
-          }}
-          isOwner={isOwner}
-          showHostDashboard={showHostDashboard}
-          calendarLinks={calendarLinks}
-          coordinates={data?.coordinates || null}
-          venueText={typeof data?.venue === "string" ? data.venue : null}
-          locationText={typeof data?.location === "string" ? data.location : null}
-          actions={
-            !isReadOnly &&
-            isOwner && (
-              <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
-                {canManageCreatedEvent && (
-                  <Link
-                    href={buildEditLink(row.id, data, title)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors rounded-md"
-                    title="Edit event"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                    <span className="hidden sm:inline">Edit</span>
-                  </Link>
-                )}
-                <EventDeleteModal eventId={row.id} eventTitle={title} />
-                <EventActions
-                  shareUrl={shareUrl}
-                  event={data as any}
-                  calendarTitle={title}
-                  historyId={!isReadOnly ? row.id : undefined}
-                  className=""
-                  variant="compact"
-                  tone={"default" as any}
-                  showCalendar={false}
-                  showEmail={false}
-                />
-              </div>
-            )
-          }
-        />,
-      );
-    }
-
     return renderWithEventPageBackground(
-      <BirthdayTemplateView
+      <BirthdayRenderer
+        template={birthdayTheme}
         eventId={row.id}
-        eventData={clientSafeEventData}
-        eventTitle={title}
-        templateId={templateId || "party-pop"}
-        variationId={variationId || "classic"}
+        heroImageUrl={null}
+        event={{
+          headlineTitle: title || data.headlineTitle,
+          date: data.startISO || (data.date && data.time ? `${data.date}T${data.time}` : data.date),
+          end: (() => {
+            const endIso = typeof data?.endISO === "string" ? data.endISO.trim() : "";
+            if (endIso) return endIso;
+            const end = typeof data?.end === "string" ? data.end.trim() : "";
+            return end || undefined;
+          })(),
+          location:
+            data.location ||
+            [data.venue, data.address, data.city, data.state].filter(Boolean).join(", "),
+          story: data.story || data.description || data.partyDetails?.notes,
+          schedule: data.schedule,
+          registries: data.registries,
+          rsvpEnabled: directRsvpEnabled,
+          rsvpLink: "#rsvp",
+          rsvpName,
+          rsvpPhone: rsvpPhone || undefined,
+          rsvpEmail: rsvpEmail || undefined,
+          shareUrl,
+          birthdayName: data.birthdayName || data.childName || "Birthday Star",
+          age: data.age,
+          party: data.party || data.partyDetails,
+          goodToKnow: typeof data.goodToKnow === "string" ? data.goodToKnow.trim() : undefined,
+          thingsToDo: data.thingsToDo || data.partyDetails?.activities,
+          hosts: data.hosts,
+          gallery: Array.isArray(data.gallery)
+            ? data.gallery.map((item: any) => (typeof item === "string" ? item : item.url))
+            : [],
+          rsvpDeadline: rsvpDeadline || undefined,
+          numberOfGuests: data.numberOfGuests || 0,
+        }}
         isOwner={isOwner}
         showHostDashboard={showHostDashboard}
-        canEdit={canManageCreatedEvent}
-        isReadOnly={isReadOnly}
-        viewerKind={viewerKind}
-        shareUrl={shareUrl}
-        sessionEmail={sessionEmail}
+        calendarLinks={calendarLinks}
+        coordinates={data?.coordinates || null}
+        venueText={typeof data?.venue === "string" ? data.venue : null}
+        locationText={typeof data?.location === "string" ? data.location : null}
+        actions={
+          !isReadOnly &&
+          isOwner && (
+            <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
+              {canManageCreatedEvent && (
+                <Link
+                  href={buildEditLink(row.id, data, title)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-800/80 hover:text-neutral-900 hover:bg-black/5 transition-colors rounded-md"
+                  title="Edit event"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  <span className="hidden sm:inline">Edit</span>
+                </Link>
+              )}
+              <EventDeleteModal eventId={row.id} eventTitle={title} />
+              <EventActions
+                shareUrl={shareUrl}
+                event={data as any}
+                calendarTitle={title}
+                historyId={!isReadOnly ? row.id : undefined}
+                className=""
+                variant="compact"
+                tone={"default" as any}
+                showCalendar={false}
+                showEmail={false}
+              />
+            </div>
+          )
+        }
       />,
     );
   }

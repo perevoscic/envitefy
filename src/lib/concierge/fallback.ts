@@ -169,6 +169,9 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
         /\b(?:for\s+)?([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})(?:'s)?\s+(?:wedding|ceremony|reception|marriage)\b/,
       ) ||
       text.match(
+        /\bwedding(?:\s+(?:invitation|invite|event\s+page|live\s+card|flyer\s+invite))?\s+for\s+(?:QA\s+|test\s+)?([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})\b/i,
+      ) ||
+      text.match(
         /\b(?:wedding|ceremony|reception)\s+(?:for|of)\s+([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})\b/,
       ) ||
       text.match(/^\s*([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})(?:\b|$)/);
@@ -234,8 +237,12 @@ function detectGuestCount(text: string, previous?: ConciergeEventDraft | null) {
   const expectsGuestCount = firstMissingField(previous) === "numberOfGuests";
   const explicit =
     text.match(
-      /\b(?:guest count|guest list|guests?|people|attendees|invitees)\s*(?:is|should be|:)?\s*(\d{1,4})\b/i,
-    ) || text.match(/\b(\d{1,4})\s*(?:guests?|people|attendees|invitees)\b/i);
+      /\brsvps?\s+for\s+(\d{1,4})\s*(?:guests?|kids?|children|people|attendees|invitees|famil(?:y|ies))\b/i,
+    ) ||
+    text.match(
+      /\b(?:guest count|guest list|guests?|kids?|children|people|attendees|invitees)\s*(?:is|should be|:)?\s*(\d{1,4})\b/i,
+    ) ||
+    text.match(/\b(\d{1,4})\s*(?:guests?|kids?|children|people|attendees|invitees)\b/i);
   const plain = expectsGuestCount ? text.match(/^\s*(\d{1,4})\s*$/) : null;
   const raw = explicit?.[1] || plain?.[1];
   if (raw) {
@@ -251,8 +258,6 @@ function detectRsvpEnabled(
   requestedOutputs: RequestedOutput[],
   fieldsGuess: Record<string, unknown>,
 ): boolean | null {
-  if (requestedOutputs.includes("rsvp_page")) return true;
-
   const nestedRsvp =
     fieldsGuess.rsvp && typeof fieldsGuess.rsvp === "object" && !Array.isArray(fieldsGuess.rsvp)
       ? (fieldsGuess.rsvp as Record<string, unknown>)
@@ -266,6 +271,17 @@ function detectRsvpEnabled(
   if (fieldsValue !== null) return fieldsValue;
 
   const cleaned = cleanString(text.replace(/[.!?]+$/g, "")) || "";
+  if (
+    /^(no|nope|skip|skip it|not needed|no rsvp|no rsvps|don't|do not|leave it off)$/i.test(
+      cleaned,
+    ) ||
+    /\b(?:without|no|skip|disable|don't|do not)\s+(?:envitefy\s+)?rsvps?\b/i.test(text)
+  ) {
+    return false;
+  }
+
+  if (requestedOutputs.includes("rsvp_page")) return true;
+
   const expectsRsvpDecision = firstMissingField(previous) === "rsvpEnabled";
   if (expectsRsvpDecision) {
     if (
@@ -284,12 +300,10 @@ function detectRsvpEnabled(
     }
   }
 
-  if (/\b(?:without|no|skip|disable|don't|do not)\s+(?:envitefy\s+)?rsvps?\b/i.test(text)) {
-    return false;
-  }
   if (
     /\b(?:with|include|enable|collect|track|add)\s+(?:envitefy\s+)?rsvps?\b/i.test(text) ||
-    /\brsvp\s+(?:page|tracking|collection|responses?)\b/i.test(text)
+    /\brsvp\s+(?:page|tracking|collection|responses?)\b/i.test(text) ||
+    /\brsvps?\s+(?:directly|on|through)\b/i.test(text)
   ) {
     return true;
   }
@@ -494,6 +508,14 @@ function detectAmbiguousDateConfirmation(
   return null;
 }
 
+function shouldPreferPmForBareHour(parsedText: string, hour: number) {
+  if (hour < 1 || hour > 7) return false;
+  if (/\b(?:a\.?m\.?|p\.?m\.?|morning|afternoon|evening|night|noon|midnight)\b/i.test(parsedText)) {
+    return false;
+  }
+  return /\b(?:at|@)\s+\d{1,2}(?::\d{2})?\b/i.test(parsedText);
+}
+
 function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
   const cleaned = cleanString(text?.replace(/[.!?]+$/g, "")) || "";
   if (previous?.currentQuestion === "date_confirmation") {
@@ -535,13 +557,16 @@ function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
   const start = first.start.date();
   const end = first.end?.date() || new Date(start.getTime() + 2 * 60 * 60 * 1000);
   const hasHour = first.start.isCertain("hour");
+  const preferPm = hasHour && shouldPreferPmForBareHour(first.text, start.getHours());
+  const displayStart = preferPm ? new Date(start.getTime() + 12 * 60 * 60 * 1000) : start;
+  const displayEnd = preferPm ? new Date(end.getTime() + 12 * 60 * 60 * 1000) : end;
   return {
     dateText: cleanString(first.text) || previous?.dateText || null,
     timeText: hasHour
-      ? start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+      ? displayStart.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
       : previous?.timeText || null,
-    startISO: start.toISOString(),
-    endISO: end.toISOString(),
+    startISO: displayStart.toISOString(),
+    endISO: displayEnd.toISOString(),
     needsConfirmation: false,
   };
 }
@@ -666,20 +691,34 @@ function primaryOutput(draft: ConciergeEventDraft): RequestedOutput {
   return draft.requestedOutputs[0] || "live_card";
 }
 
+function outputLabels(draft: ConciergeEventDraft) {
+  const outputs = draft.requestedOutputs.length ? draft.requestedOutputs : ["live_card" as const];
+  return outputs.map((output) => getOutputRequirement(output).label);
+}
+
 function outputActionLabel(draft: ConciergeEventDraft) {
+  if (draft.requestedOutputs.length > 1) return "products";
   const label = getOutputRequirement(primaryOutput(draft)).label;
   return label === "Flyer invite" ? "flyer invite" : label.toLowerCase();
 }
 
-function compactVerificationLines(draft: ConciergeEventDraft) {
+function compactVerificationLines(
+  draft: ConciergeEventDraft,
+  options: { includeProducts?: boolean } = {},
+) {
   const lines: string[] = [];
-  const product = getOutputRequirement(primaryOutput(draft)).label;
+  const includeProducts = options.includeProducts !== false;
+  const products = outputLabels(draft);
   const event = draft.title || draft.eventPurpose || draft.previewCopy.headline;
   const date = draft.dateText || draft.startISO;
   const time = draft.timeText;
   const location = draft.venue || draft.location;
 
-  lines.push(`Product: ${product}`);
+  if (includeProducts) {
+    lines.push(
+      products.length > 1 ? `Products: ${products.join(", ")}` : `Product: ${products[0]}`,
+    );
+  }
   if (event) lines.push(`Event: ${event}`);
   if (draft.honoreeName || draft.ageOrMilestone) {
     lines.push(`Honoree: ${[draft.honoreeName, draft.ageOrMilestone].filter(Boolean).join(", ")}`);
@@ -695,11 +734,21 @@ function compactVerificationLines(draft: ConciergeEventDraft) {
 }
 
 function readyVerificationMessage(draft: ConciergeEventDraft) {
+  if (isReceivedInviteDraft(draft)) {
+    return [
+      "Invite details are ready.",
+      ...compactVerificationLines(draft, { includeProducts: false }),
+      "I can save this to Invited events now.",
+    ].join("\n");
+  }
+
   const actionLabel = outputActionLabel(draft);
   return [
     "Details are ready.",
     ...compactVerificationLines(draft),
-    `I can generate the ${actionLabel === "live card" ? "invite" : actionLabel} now.`,
+    actionLabel === "products"
+      ? "I can generate the selected products now."
+      : `I can generate the ${actionLabel === "live card" ? "invite" : actionLabel} now.`,
   ].join("\n");
 }
 

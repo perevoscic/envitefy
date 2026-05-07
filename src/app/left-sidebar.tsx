@@ -11,7 +11,6 @@ import {
   type RefObject,
   type SetStateAction,
   useEffect,
-  useRef,
   useState,
 } from "react";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
@@ -1173,9 +1172,7 @@ export default function LeftSidebar() {
   const searchParams = useSearchParams();
   const isChatPath = (pathname || "").replace(/\/+$/, "") === "/chat";
   const activeAiThreadId = searchParams.get("thread")?.trim() || null;
-  const chatTopBarRef = useRef<HTMLElement | null>(null);
   const [aiThreads, setAiThreads] = useState<CreationThreadSummary[]>([]);
-  const [isChatTopBarRevealed, setIsChatTopBarRevealed] = useState(false);
 
   useEffect(() => {
     if (status !== "authenticated") {
@@ -1214,27 +1211,6 @@ export default function LeftSidebar() {
     pathname,
     searchParams,
   });
-
-  useEffect(() => {
-    if (!isChatPath || viewModel.isOpen) {
-      setIsChatTopBarRevealed(false);
-    }
-  }, [isChatPath, viewModel.isOpen]);
-
-  useEffect(() => {
-    if (!isChatPath || !isChatTopBarRevealed || viewModel.isOpen) return;
-
-    const handleOutsidePointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (target instanceof Node && chatTopBarRef.current?.contains(target)) return;
-      setIsChatTopBarRevealed(false);
-    };
-
-    document.addEventListener("pointerdown", handleOutsidePointerDown, true);
-    return () => {
-      document.removeEventListener("pointerdown", handleOutsidePointerDown, true);
-    };
-  }, [isChatPath, isChatTopBarRevealed, viewModel.isOpen]);
 
   if (!viewModel.isReady) return null;
   if (viewModel.isEmbeddedEditMode) return null;
@@ -1297,9 +1273,8 @@ export default function LeftSidebar() {
     }
   }
 
-  const showFullMobileTopBar =
-    viewModel.showMobileTopBar && (!isChatPath || isChatTopBarRevealed);
-  const showChatTopBarReveal = viewModel.showMobileTopBar && isChatPath && !isChatTopBarRevealed;
+  const showFullMobileTopBar = viewModel.showMobileTopBar && !isChatPath;
+  const showChatTopBarReveal = viewModel.showMobileTopBar && isChatPath;
 
   return (
     <>
@@ -1307,15 +1282,18 @@ export default function LeftSidebar() {
         <button
           type="button"
           className="nav-chrome-pill-secondary nav-chrome-motion fixed left-3 top-[max(0.35rem,env(safe-area-inset-top))] z-[6600] inline-flex h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation items-center justify-center rounded-full lg:hidden"
-          onClick={() => setIsChatTopBarRevealed(true)}
-          aria-label="Show navigation"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            viewModel.openSidebarFromTrigger();
+          }}
+          aria-label="Open navigation"
         >
           <SidebarNavigationMenuIcon size={24} />
         </button>
       ) : null}
       {!viewModel.isOpen ? (
         <header
-          ref={chatTopBarRef}
           data-app-mobile-topbar="app"
           className={`fixed inset-x-0 top-0 z-[6500] px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] transition-all duration-300 ease-in-out lg:hidden ${
             showFullMobileTopBar

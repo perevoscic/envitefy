@@ -612,7 +612,7 @@ function buildPrompt(input: OcrSkinPromptInput): string {
 }
 
 function resolveOpenAiTextModel(): string {
-  return process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.4-mini";
+  return process.env.OCR_SKIN_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.5";
 }
 
 function resolveGeminiTextModel(): string {

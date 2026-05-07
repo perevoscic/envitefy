@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  resolveConciergeOpenAiChatModel,
+  resolveConciergeOpenAiExtractionModel,
   resolveConciergeOpenAiModel,
   resolveConciergeOpenAiPersonaModel,
+  resolveConciergeOpenAiPlannerModel,
+  resolveConciergeOpenAiPremiumModel,
   resolveConciergeOpenAiPersonaTimeoutMs,
   resolveConciergeOpenAiTimeoutMs,
   resolveConciergeStreamFirstTokenTimeoutMs,
@@ -10,6 +14,11 @@ import {
 
 const ENV_KEYS = [
   "OPENAI_CONCIERGE_MODEL",
+  "OPENAI_CONCIERGE_CHAT_MODEL",
+  "OPENAI_CONCIERGE_EXTRACTION_MODEL",
+  "OPENAI_CONCIERGE_PLANNER_MODEL",
+  "OPENAI_CONCIERGE_PREMIUM_MODEL",
+  "OPENAI_CONCIERGE_SIMPLE_ACTION_MODEL",
   "CONCIERGE_FAST_MODEL_ENABLED",
   "OPENAI_CONCIERGE_FAST_MODEL",
   "OPENAI_CONCIERGE_TIMEOUT_MS",
@@ -37,15 +46,15 @@ function withEnv(values, fn) {
   }
 }
 
-test("concierge model defaults to mini without fast model flag", () => {
+test("concierge extraction/planning base model defaults to GPT-5.4 without fast model flag", () => {
   withEnv({}, () => {
-    assert.equal(resolveConciergeOpenAiModel(), "gpt-5.4-mini");
+    assert.equal(resolveConciergeOpenAiModel(), "gpt-5.4");
   });
 });
 
-test("concierge fast model flag uses nano fallback", () => {
+test("concierge fast model flag uses mini fallback", () => {
   withEnv({ CONCIERGE_FAST_MODEL_ENABLED: "1" }, () => {
-    assert.equal(resolveConciergeOpenAiModel(), "gpt-5.4-nano");
+    assert.equal(resolveConciergeOpenAiModel(), "gpt-5.4-mini");
   });
 });
 
@@ -74,6 +83,45 @@ test("configured fast model wins when fast model flag is enabled", () => {
   );
 });
 
+test("concierge chat model defaults to mini and supports a separate override", () => {
+  withEnv({}, () => {
+    assert.equal(resolveConciergeOpenAiChatModel(), "gpt-5.4-mini");
+  });
+  withEnv({ OPENAI_CONCIERGE_CHAT_MODEL: "gpt-chat-custom" }, () => {
+    assert.equal(resolveConciergeOpenAiChatModel(), "gpt-chat-custom");
+  });
+});
+
+test("concierge premium model defaults to GPT-5.5 and supports a separate override", () => {
+  withEnv({}, () => {
+    assert.equal(resolveConciergeOpenAiPremiumModel(), "gpt-5.5");
+  });
+  withEnv({ OPENAI_CONCIERGE_PREMIUM_MODEL: "gpt-premium-custom" }, () => {
+    assert.equal(resolveConciergeOpenAiPremiumModel(), "gpt-premium-custom");
+  });
+});
+
+test("concierge extraction routes normal work to 5.4 and premium work to 5.5", () => {
+  withEnv({}, () => {
+    assert.equal(resolveConciergeOpenAiExtractionModel(), "gpt-5.4");
+    assert.equal(resolveConciergeOpenAiExtractionModel({ premium: true }), "gpt-5.5");
+  });
+  withEnv({ OPENAI_CONCIERGE_EXTRACTION_MODEL: "gpt-extract-custom" }, () => {
+    assert.equal(resolveConciergeOpenAiExtractionModel({ premium: true }), "gpt-extract-custom");
+  });
+});
+
+test("concierge planner routes simple work to mini, base work to 5.4, and premium work to 5.5", () => {
+  withEnv({}, () => {
+    assert.equal(resolveConciergeOpenAiPlannerModel({ simple: true }), "gpt-5.4-mini");
+    assert.equal(resolveConciergeOpenAiPlannerModel(), "gpt-5.4");
+    assert.equal(resolveConciergeOpenAiPlannerModel({ premium: true }), "gpt-5.5");
+  });
+  withEnv({ OPENAI_CONCIERGE_SIMPLE_ACTION_MODEL: "gpt-simple-custom" }, () => {
+    assert.equal(resolveConciergeOpenAiPlannerModel({ simple: true }), "gpt-simple-custom");
+  });
+});
+
 test("concierge timeout defaults to 3000ms and accepts bounded overrides", () => {
   withEnv({}, () => {
     assert.equal(resolveConciergeOpenAiTimeoutMs(), 3000);
@@ -83,9 +131,9 @@ test("concierge timeout defaults to 3000ms and accepts bounded overrides", () =>
   });
 });
 
-test("concierge persona model defaults to the fast model family", () => {
+test("concierge persona model defaults to mini", () => {
   withEnv({}, () => {
-    assert.equal(resolveConciergeOpenAiPersonaModel(), "gpt-5.4-nano");
+    assert.equal(resolveConciergeOpenAiPersonaModel(), "gpt-5.4-mini");
   });
   withEnv({ OPENAI_CONCIERGE_PERSONA_MODEL: "gpt-persona-custom" }, () => {
     assert.equal(resolveConciergeOpenAiPersonaModel(), "gpt-persona-custom");

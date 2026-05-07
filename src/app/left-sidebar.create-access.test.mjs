@@ -41,7 +41,7 @@ test("left sidebar view still gates both root and compact create entries behind 
   assert.doesNotMatch(source, /Expand navigation/);
 });
 
-test("left sidebar exposes Studio below Home in the always-open workspace navigation", () => {
+test("left sidebar exposes Studio below Home in the always-open navigation", () => {
   const source = readSource("src/app/left-sidebar.tsx");
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
   const modelSource = readSource("src/app/left-sidebar.model.ts");

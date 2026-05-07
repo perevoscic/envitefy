@@ -61,7 +61,7 @@ function getOpenAiApiKey(): string {
 }
 
 function resolveTextModel(): string {
-  return process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.4-mini";
+  return process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.5";
 }
 
 function resolveImageModel(): string {

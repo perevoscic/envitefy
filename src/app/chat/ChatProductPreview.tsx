@@ -86,6 +86,11 @@ function publicActionLabelForOutput(selectedOutput: RequestedOutput) {
   return "Open Product";
 }
 
+function previewPlaceholderText(draft: ConciergeEventDraft | null) {
+  if (draft?.currentQuestion) return "Answer the next question to unlock Generate.";
+  return "Preview placeholder. Generate to publish.";
+}
+
 type OutputPreviewSurfaceProps = {
   draft: ConciergeEventDraft | null;
   summary: ChatPreviewSummary;
@@ -326,6 +331,7 @@ export default function ChatProductPreview({
   });
   const hasGeneratedProduct = Boolean(liveEventId);
   const publicActionLabel = publicActionLabelForOutput(selectedOutput);
+  const placeholderText = previewPlaceholderText(draft);
   const rsvpLabel = rsvp.isLoading
     ? "Loading responses"
     : rsvp.error
@@ -447,7 +453,7 @@ export default function ChatProductPreview({
             ) : null}
             {!hasGeneratedProduct ? (
               <p className="max-w-full px-3 text-center text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#4f416a]">
-                Preview placeholder. Generate to publish.
+                {placeholderText}
               </p>
             ) : null}
           </div>

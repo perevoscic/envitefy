@@ -2917,12 +2917,12 @@ function resolveOpenAiMiniModel(): string {
     safeString(process.env.OPENAI_OCR_FAST_MODEL) ||
     safeString(process.env.OPENAI_OCR_MODEL) ||
     safeString(process.env.LLM_MODEL) ||
-    "gpt-4o-mini"
+    "gpt-5.4-mini"
   );
 }
 
 function resolveDiscoveryParseModel(): string {
-  return safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) || "gpt-5.4-nano";
+  return safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) || "gpt-5.5";
 }
 
 function resolveDiscoveryVisionModel(): string {

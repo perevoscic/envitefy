@@ -19,7 +19,7 @@ test("studio openai adapter uses structured text generation and image generate/e
   assert.match(source, /response_format: OPENAI_LIVE_CARD_RESPONSE_FORMAT as any/);
   assert.match(source, /await client\.images\.generate\(/);
   assert.match(source, /await client\.images\.edit\(/);
-  assert.match(source, /process\.env\.STUDIO_OPENAI_TEXT_MODEL \|\| "gpt-5\.4-mini"/);
+  assert.match(source, /process\.env\.STUDIO_OPENAI_TEXT_MODEL \|\| "gpt-5\.5"/);
   assert.match(source, /process\.env\.STUDIO_OPENAI_IMAGE_MODEL \|\| "gpt-image-2"/);
   assert.match(source, /process\.env\.STUDIO_OPENAI_IMAGE_EDIT_MODEL \|\| "gpt-image-2"/);
   assert.match(source, /if \(model === "gpt-image-2" && raw === "transparent"\) return "opaque";/);

@@ -1544,12 +1544,6 @@ export default function Dashboard({
             ocrSkin: isInviteOcrEvent ? normalizedOcrSkin || undefined : undefined,
             openHouse: isOpenHouseOcrEvent ? normalizedOpenHouse || undefined : undefined,
             flyerColors: isWeddingOcrEvent ? flyerColors || undefined : undefined,
-            templateId: isBirthdayOcrEvent ? "party-pop" : undefined,
-            variationId: isBirthdayOcrEvent
-              ? normalizedOcrSkin?.category === "birthday"
-                ? normalizedOcrSkin.skinId
-                : normalizedBirthdayTemplateHint.themeId || undefined
-              : undefined,
             birthdayAudience: isBirthdayOcrEvent
               ? normalizedBirthdayTemplateHint.audience || "neutral"
               : undefined,

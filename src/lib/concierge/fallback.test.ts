@@ -73,6 +73,11 @@ test("starter category and product text skips OpenAI extraction", async () => {
       requestedOutputs: ["invitation"] as const,
       eventType: "wedding",
     },
+    {
+      message: "Birthday Live Card for Ava turning 7 Saturday at 3 at Sky Zone",
+      requestedOutputs: ["live_card"] as const,
+      eventType: "birthday",
+    },
   ] as const) {
     let aiCalls = 0;
     const result = await extractConciergeDraft(
@@ -243,12 +248,20 @@ test("received invite with concrete details stays invited and can become ready",
   assert.equal(result.location, "Sky Zone");
   assert.equal(result.canPersist, true);
   assert.equal(result.draftStatus, "preview_ready");
-  assert.match(message, /Details are ready/);
-  assert.match(message, /Product: Live card/);
+  assert.match(message, /Invite details are ready/);
+  assert.doesNotMatch(message, /Product:/);
   assert.match(message, /Event: Ava is turning 7/);
   assert.match(message, /Location: Sky Zone/);
-  assert.match(message, /I can generate the invite now/);
-  assert.doesNotMatch(message, /workspace/i);
+  assert.match(message, /I can save this to Invited events now/);
+  assert.doesNotMatch(message, new RegExp("work" + "space", "i"));
+});
+
+test("bare afternoon-style time is normalized to PM", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Birthday Live Card for Ava turning 7 Saturday at 3 at Sky Zone",
+  });
+
+  assert.equal(draft.timeText, "3:00 PM");
 });
 
 test("birthday turns phrasing fills honoree and age", () => {
@@ -414,9 +427,84 @@ test("obvious starter creation prompt skips AI extraction", async () => {
   assert.equal(aiCalls, 0);
   assert.equal(result.usedAi, false);
   assert.equal(result.draft.eventType, "birthday");
-  assert.deepEqual(result.draft.requestedOutputs, ["live_card", "rsvp_page"]);
+  assert.deepEqual(result.draft.requestedOutputs, ["live_card"]);
+  assert.equal(result.draft.rsvpEnabled, true);
   assert.ok(result.draft.missingFields.includes("date"));
   assert.ok(result.draft.missingFields.includes("honoreeName"));
+});
+
+test("core product bundle expands only to visible primary products", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create all product formats for a school fundraiser Saturday at 3 at the gym with a fun vibe.",
+  });
+
+  assert.deepEqual(draft.requestedOutputs, [
+    "live_card",
+    "invitation",
+    "digital_flyer",
+    "event_page",
+  ]);
+  assert.doesNotMatch(draft.requestedOutputs.join(","), /whatsapp|text_message|printable_flyer/);
+  assert.match(
+    buildAssistantMessage(draft),
+    /Products: Live card, Invitation, Flyer invite, Event page/,
+  );
+});
+
+test("source flyer wording does not force a digital flyer product", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Create an event page from this flyer for Saturday at 3 at the gym.",
+    requestedOutputs: ["event_page"],
+  });
+
+  assert.deepEqual(draft.requestedOutputs, ["event_page"]);
+  assert.equal(draft.sourceContext.detectedSourceIntent, "authoring_source");
+});
+
+test("No RSVP disables RSVP without adding an RSVP page", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Create a birthday live card for Ava turning 7 Saturday at 3 at Sky Zone. No RSVP.",
+  });
+
+  assert.deepEqual(draft.requestedOutputs, ["live_card"]);
+  assert.equal(draft.rsvpEnabled, false);
+  assert.doesNotMatch(draft.missingFields.join(","), /numberOfGuests|rsvpEnabled/);
+});
+
+test("RSVP guest-count phrasing fills number of guests", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "Create a birthday live card with RSVP.",
+  });
+  const draft = fallbackExtractConciergeDraft({
+    message: "RSVP for 20 kids",
+    draft: {
+      ...first,
+      honoreeName: "Ava",
+      ageOrMilestone: "7",
+      dateText: "Saturday at 3",
+      timeText: "3:00 PM",
+      startISO: "2026-05-09T20:00:00.000Z",
+      location: "Sky Zone",
+      venue: "Sky Zone",
+      rsvpEnabled: true,
+      missingFields: ["numberOfGuests"],
+      currentQuestion: "numberOfGuests",
+    },
+  });
+
+  assert.equal(draft.numberOfGuests, 20);
+  assert.equal(draft.currentQuestion, "tone");
+});
+
+test("wedding invitation phrasing captures both partner names", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Wedding Invitation for QA Sara and Daniel Saturday at 3 at the chapel.",
+  });
+
+  assert.equal(draft.eventType, "wedding");
+  assert.equal(draft.honoreeName, "Sara and Daniel");
+  assert.deepEqual(draft.requestedOutputs, ["invitation"]);
 });
 
 test("output-only live card prompt without context asks for purpose before date", () => {

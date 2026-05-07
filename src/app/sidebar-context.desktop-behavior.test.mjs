@@ -27,7 +27,7 @@ test("sidebar context forces desktop expanded while preserving mobile drawer per
   );
 });
 
-test("workspace layout reserves only the expanded desktop sidebar width", () => {
+test("app layout reserves only the expanded desktop sidebar width", () => {
   const wrapperSource = readSource("src/components/MainContentWrapper.tsx");
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
 

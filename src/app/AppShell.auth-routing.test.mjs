@@ -7,7 +7,7 @@ const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("AppShell hides workspace chrome on marketing and full live-card routes", () => {
+test("AppShell hides app chrome on marketing and full live-card routes", () => {
   const appShell = readSource("src/app/AppShell.tsx");
 
   assert.match(appShell, /MARKETING_PATHS/);
@@ -17,10 +17,10 @@ test("AppShell hides workspace chrome on marketing and full live-card routes", (
   assert.match(appShell, /function isStudioCardSharePath\(pathname: string\)/);
   assert.match(appShell, /segments\.length === 2 && segments\[0\] === "card"/);
   assert.match(appShell, /const isStudioCardShare = isStudioCardSharePath\(pathname\);/);
-  assert.match(appShell, /showWorkspaceChrome/);
+  assert.match(appShell, /showAppChrome/);
   assert.match(
     appShell,
-    /const showWorkspaceChrome = isAuthenticated && !onMarketing && !isStudioCardShare;/,
+    /const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare;/,
   );
   assert.match(appShell, /isRedirectingFromMarketing/);
   assert.match(appShell, /router\.replace\("\/"\)/);

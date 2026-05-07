@@ -71,7 +71,7 @@ export default function AppShell({
   const onMarketing = isMarketingPath(pathname);
   const isStudioCardShare = isStudioCardSharePath(pathname);
   const isChatPath = pathname.replace(/\/+$/, "") === "/chat";
-  const showWorkspaceChrome = isAuthenticated && !onMarketing && !isStudioCardShare;
+  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare;
   const isRedirectingFromMarketing = onMarketing && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 
@@ -107,7 +107,7 @@ export default function AppShell({
   return (
     <EventCacheProvider>
       {authTransitionMessage ? <AuthTransitionOverlay message={authTransitionMessage} /> : null}
-      {showWorkspaceChrome ? (
+      {showAppChrome ? (
         <MenuProvider>
           <LeftSidebar />
           <MainContentWrapper

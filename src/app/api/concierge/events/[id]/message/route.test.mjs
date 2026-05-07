@@ -51,7 +51,7 @@ test("event assistant planner uses compact model context and deterministic fast 
   assert.match(source, /liveCardCopy/);
   assert.match(source, /recentMessages: params\.history\.slice\(-6\)/);
   assert.match(source, /max_completion_tokens: 650/);
-  assert.match(source, /resolveConciergeOpenAiModel\(\)/);
+  assert.match(source, /resolveConciergeOpenAiPlannerModel\(\{ simple, premium \}\)/);
   assert.match(source, /runWithConciergeOpenAiTimeout/);
   assert.match(source, /weatherContext: params\.weatherContext \|\| null/);
   assert.match(source, /shouldResolveConciergeWeatherContext\(params\.message\)/);

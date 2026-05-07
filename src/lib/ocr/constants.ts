@@ -1,4 +1,4 @@
-export const DEFAULT_OCR_MODEL = "gpt-5.1";
+export const DEFAULT_OCR_MODEL = "gpt-5.5";
 export const OPENAI_TIMEOUT_MS = 25_000;
 export const OCR_TOTAL_BUDGET_MS = 35_000;
 
@@ -14,7 +14,7 @@ export function remainingBudgetMs(startedAt: number, totalMs: number, reserveMs 
 
 export function resolveOcrModel(fastMode = false): string {
   if (fastMode) {
-    return process.env.OPENAI_OCR_FAST_MODEL || "gpt-5.1-mini";
+    return process.env.OPENAI_OCR_FAST_MODEL || "gpt-5.4-mini";
   }
   return process.env.OPENAI_OCR_MODEL || DEFAULT_OCR_MODEL;
 }

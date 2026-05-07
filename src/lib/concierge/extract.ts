@@ -16,7 +16,10 @@ import {
   fallbackExtractConciergeDraft,
 } from "./fallback.ts";
 import { shouldSkipOpenAiForCreationRequest } from "./fast-paths.ts";
-import { resolveConciergeOpenAiModel, runWithConciergeOpenAiTimeout } from "./openai-config.ts";
+import {
+  resolveConciergeOpenAiExtractionModel,
+  runWithConciergeOpenAiTimeout,
+} from "./openai-config.ts";
 import type {
   ConciergeEventDraft,
   ConciergeMessageRequest,
@@ -37,6 +40,9 @@ type ExtractDeps = {
   openAiModel?: string | null;
   createOpenAiClient?: (apiKey: string) => OpenAI;
 };
+
+const PREMIUM_EXTRACTION_HINT =
+  /\b(upload|uploaded|scan|scanned|screenshot|flyer|pdf|packet|schedule|rundown|messy|unclear|complex|multi[-\s]?section|multi[-\s]?day|gymnastics|meet)\b/i;
 
 function cleanString(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -358,7 +364,10 @@ async function extractWithOpenAi(
   const apiKey = deps.openAiApiKey;
   if (!apiKey) return null;
   const client = deps.createOpenAiClient?.(apiKey) || new OpenAI({ apiKey });
-  const model = resolveConciergeOpenAiModel(deps.openAiModel);
+  const model = resolveConciergeOpenAiExtractionModel({
+    override: deps.openAiModel,
+    premium: shouldUsePremiumExtractionModel(request),
+  });
   const response = await runWithConciergeOpenAiTimeout((signal) =>
     client.chat.completions.create(
       {
@@ -409,6 +418,12 @@ async function extractWithOpenAi(
   const parsed = parseAiJson(content);
   if (!parsed) return null;
   return normalizeConciergeDraft(parsed.draft || parsed, fallback);
+}
+
+function shouldUsePremiumExtractionModel(request: ConciergeMessageRequest): boolean {
+  if (request.ocrContext) return true;
+  const message = cleanString(request.message) || "";
+  return PREMIUM_EXTRACTION_HINT.test(message);
 }
 
 export async function extractConciergeDraft(

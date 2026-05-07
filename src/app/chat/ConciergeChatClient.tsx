@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
   Camera,
+  Check,
   FileImage,
   Globe,
   IdCard,
@@ -14,7 +15,7 @@ import {
   Paperclip,
   Sparkles,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { requestStudioGeneration } from "@/app/studio/studio-workspace-api";
 import { buildInvitationData } from "@/app/studio/studio-workspace-builders";
@@ -33,6 +34,7 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/ai-prompt-box";
 import BottomNavBar, { type BottomNavItem } from "@/components/ui/bottom-nav-bar";
+import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
 import type {
   ConciergeActiveContext,
   ConciergeEventDraft,
@@ -46,6 +48,7 @@ import type {
   RequestedOutput,
 } from "@/lib/concierge/types";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
+import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
 import { buildEventSlug } from "@/utils/event-url";
 import { buildEventProductPath } from "@/utils/event-product-route";
 import { persistImageMediaValue, validateClientUploadFile } from "@/utils/media-upload-client";
@@ -149,9 +152,6 @@ const PRODUCT_OPTIONS: ProductOption[] = [
   },
 ];
 
-const FAST_UPLOAD_OCR_URL = "/api/ocr?fast=1&turbo=1&timing=1";
-const DEFAULT_UPLOAD_OCR_URL = "/api/ocr?fast=0";
-const ENABLE_FAST_UPLOAD_OCR = process.env.NEXT_PUBLIC_CONCIERGE_FAST_UPLOADS === "1";
 const CREATION_INTAKE_URL = "/api/creation/intake";
 const CREATION_INTAKE_STREAM_URL = "/api/creation/intake/stream";
 const ENABLE_CONCIERGE_TIMING = process.env.NEXT_PUBLIC_CONCIERGE_TIMING === "1";
@@ -192,6 +192,18 @@ type ConciergeStreamHandlers = {
   onDelta: (text: string) => void;
   onAssistantDone: (message: string) => void;
   onState: (state: ConciergeStreamStatePayload) => void;
+};
+
+type FailedConciergeRequest = {
+  message: string;
+  action?: "message" | "chip" | "starter_category" | "ocr_result";
+  ocrContext?: ConciergeOcrContext | null;
+  activeContext?: ConciergeActiveContext | null;
+  requestedOutputs?: RequestedOutput[];
+  starterCategory?: string | null;
+  echo?: string;
+  suppressUserEcho?: boolean;
+  error: string;
 };
 
 function withConciergeTiming(url: string) {
@@ -452,28 +464,6 @@ function isReadyCreationDraft(draft: ConciergeEventDraft | null) {
   );
 }
 
-function normalizeOcrContext(payload: any): ConciergeOcrContext {
-  const metadata =
-    payload?.metadata && typeof payload.metadata === "object" ? payload.metadata : {};
-  return {
-    ocrText: typeof payload?.ocrText === "string" ? payload.ocrText : null,
-    fieldsGuess:
-      payload?.fieldsGuess && typeof payload.fieldsGuess === "object" ? payload.fieldsGuess : null,
-    category: typeof payload?.category === "string" ? payload.category : null,
-    birthdayTemplateHint: payload?.birthdayTemplateHint || null,
-    ocrSkin: payload?.ocrSkin && typeof payload.ocrSkin === "object" ? payload.ocrSkin : null,
-    metadata: {
-      ...metadata,
-      thumbnailFocus: payload?.thumbnailFocus || null,
-      openHouse: payload?.openHouse || null,
-      detectedSourceIntent:
-        typeof payload?.detectedSourceIntent === "string"
-          ? payload.detectedSourceIntent
-          : metadata.detectedSourceIntent,
-    },
-  };
-}
-
 function draftHeadline(draft: ConciergeEventDraft | null) {
   return draft?.previewCopy.headline || draft?.title || draft?.eventPurpose || "Event draft";
 }
@@ -524,6 +514,14 @@ function generatedProductHref(
 function draftOutputLabels(draft: ConciergeEventDraft | null, selectedOutput: RequestedOutput) {
   const outputs = draft?.requestedOutputs?.length ? draft.requestedOutputs : [selectedOutput];
   return Array.from(new Set(outputs)).map(outputLabel);
+}
+
+function hasMultipleRequestedProducts(draft: ConciergeEventDraft | null) {
+  return Boolean(draft?.requestedOutputs && new Set(draft.requestedOutputs).size > 1);
+}
+
+function productActionLabel(draft: ConciergeEventDraft | null, selectedOutput: RequestedOutput) {
+  return hasMultipleRequestedProducts(draft) ? "products" : outputLabel(selectedOutput);
 }
 
 function stringValue(value: unknown) {
@@ -710,6 +708,7 @@ function notifyCreationThreadsChanged() {
 }
 
 export default function ConciergeChatClient({ userFirstName = null }: ConciergeChatClientProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialAssistantPrompt = buildInitialAssistantPrompt(userFirstName);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -736,6 +735,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   const [liveCardSummary, setLiveCardSummary] = useState<LiveCardSummary | null>(null);
   const [generatedInviteImageUrl, setGeneratedInviteImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [failedRequest, setFailedRequest] = useState<FailedConciergeRequest | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
   const [rsvpPreview, setRsvpPreview] = useState<RsvpPreviewState>(EMPTY_RSVP_PREVIEW);
@@ -764,7 +764,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   });
   const isBusy = isSending || isUploading || isGeneratingCard;
   const busyLabel = isUploading
-    ? "Reading upload"
+    ? "Preparing upload"
     : isEditingGeneratedCard
       ? "Updating preview"
       : isGeneratingCard
@@ -772,12 +772,13 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         : "Concierge is thinking...";
   const isThinking = busyLabel === "Concierge is thinking..." && !isStreamingAssistant;
   const selectedStarterLabel = selectedStarterCategory?.label || null;
+  const hasStarterCategorySelection = Boolean(selectedStarterLabel);
   const currentBuildStep = Math.min(
     Math.floor((buildProgress / 100) * BUILDING_STEPS.length),
     BUILDING_STEPS.length - 1,
   );
   const effectiveSelectedProductOutput = selectedProductOutput || "live_card";
-  const effectiveSelectedProductLabel = outputLabel(effectiveSelectedProductOutput);
+  const effectiveSelectedProductLabel = productActionLabel(draft, effectiveSelectedProductOutput);
   const currentLiveCardSummary =
     liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
   const previewTitle = liveCardTitle || currentLiveCardSummary.headline;
@@ -835,6 +836,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     setRsvpPreview(EMPTY_RSVP_PREVIEW);
     setSelectedProductOutput(null);
     setSelectedStarterCategory(null);
+    setFailedRequest(null);
     setWeatherContext(null);
     setMobileView("chat");
     setIsReadyChatComposerOpen(false);
@@ -875,6 +877,13 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       const suffix = previousMatches ? trimmed.slice(previousPrefix.length).trimStart() : trimmed;
       return [nextPrefix, suffix].filter(Boolean).join(" ");
     });
+  }
+
+  function handleComposerValueChange(nextValue: string) {
+    setInput(nextValue);
+    if (nextValue.trim()) return;
+    setSelectedStarterCategory(null);
+    setSelectedProductOutput(null);
   }
 
   function handleProductChoice(option: ProductOption) {
@@ -1148,6 +1157,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     if (!trimmed || !liveCardEventId) return;
 
     setError(null);
+    setFailedRequest(null);
     setIsSending(true);
     setPhase("editing_card");
     setMessages((prev) => [...prev, newMessage("user", trimmed)]);
@@ -1187,17 +1197,20 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     requestedOutputs?: RequestedOutput[];
     starterCategory?: string | null;
     echo?: string;
+    suppressUserEcho?: boolean;
   }) {
     const message = params.message.trim();
     if (!message && !params.ocrContext) return;
 
     setError(null);
+    setFailedRequest(null);
     setIsSending(true);
     if (!liveCardEventId && phase !== "ready_to_generate") {
       setPhase("collecting_details");
     }
-    const userMessage = params.echo || message ? newMessage("user", params.echo || message) : null;
-    if (params.echo || message) {
+    const shouldShowUserEcho = !params.suppressUserEcho && Boolean(params.echo || message);
+    const userMessage = shouldShowUserEcho ? newMessage("user", params.echo || message) : null;
+    if (shouldShowUserEcho) {
       setMessages((prev) => (userMessage ? [...prev, userMessage] : prev));
     }
     setSelectedStarterCategory(null);
@@ -1213,12 +1226,19 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         currentAssetId: null,
         lastUserAction: params.action || "message",
       };
+      const draftRequestedOutputs = draft?.requestedOutputs?.length ? draft.requestedOutputs : null;
+      const shouldPreserveDraftOutputs = Boolean(
+        draftRequestedOutputs &&
+          (!selectedProductOutput ||
+            draftRequestedOutputs.includes(selectedProductOutput) ||
+            draftRequestedOutputs.length > 1),
+      );
       const requestedOutputs =
         params.requestedOutputs ||
-        (selectedProductOutput
-          ? [selectedProductOutput]
-          : draft?.requestedOutputs?.length
-            ? draft.requestedOutputs
+        (shouldPreserveDraftOutputs
+          ? draftRequestedOutputs
+          : selectedProductOutput
+            ? [selectedProductOutput]
             : null);
       const action = params.action || "message";
       const requestBody = {
@@ -1312,15 +1332,31 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
       setPhase("collecting_details");
       if (!json.chatMessages?.length) setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Concierge request failed.";
       setPhase(draft ? "collecting_details" : "intake_empty");
       if (streamAssistantId && !streamedAssistantText.trim()) {
         setMessages((prev) => prev.filter((item) => item.id !== streamAssistantId));
       }
-      setError(err instanceof Error ? err.message : "Concierge request failed.");
+      setError(errorMessage);
+      setFailedRequest({ ...params, error: errorMessage });
     } finally {
       setIsStreamingAssistant(false);
       setIsSending(false);
     }
+  }
+
+  async function retryFailedRequest() {
+    if (!failedRequest || isBusy) return;
+    await sendToConcierge({
+      message: failedRequest.message,
+      action: failedRequest.action,
+      ocrContext: failedRequest.ocrContext,
+      activeContext: failedRequest.activeContext,
+      requestedOutputs: failedRequest.requestedOutputs,
+      starterCategory: failedRequest.starterCategory,
+      echo: failedRequest.echo,
+      suppressUserEcho: true,
+    });
   }
 
   async function submitComposerInput() {
@@ -1335,7 +1371,10 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     await sendToConcierge({
       message: value,
       action: selectedStarterCategory ? "starter_category" : undefined,
-      requestedOutputs: selectedProductOutput ? [selectedProductOutput] : undefined,
+      requestedOutputs:
+        selectedProductOutput && !draft?.requestedOutputs?.length
+          ? [selectedProductOutput]
+          : undefined,
       starterCategory: selectedStarterCategory?.label || null,
     });
   }
@@ -1391,8 +1430,11 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     recognition.start();
   }
 
-  async function handleUpload(file: File | null | undefined) {
-    if (!file) return;
+  async function routeSelectedSnapFile(
+    file: File | null | undefined,
+    source: "camera" | "upload",
+  ) {
+    if (!file || isBusy) return;
     const validationError = validateClientUploadFile(file, "attachment");
     if (validationError) {
       setError(validationError);
@@ -1401,41 +1443,53 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
 
     setError(null);
     setIsUploading(true);
-    setMessages((prev) => [
-      ...prev,
-      newMessage("user", `Uploaded ${file.name}`),
-      newMessage("assistant", "Reading upload...", "upload_status"),
-    ]);
+    const scanAttemptId = createClientAttemptId("scan");
+    let didRoute = false;
     try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("scanAttemptId", `concierge-${Date.now()}`);
-      const response = await fetch(
-        ENABLE_FAST_UPLOAD_OCR ? FAST_UPLOAD_OCR_URL : DEFAULT_UPLOAD_OCR_URL,
-        {
-          method: "POST",
-          body: form,
-          credentials: "include",
-        },
-      );
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(payload?.error || `Upload failed (${response.status})`);
-      }
-      setMessages((prev) => prev.filter((message) => message.type !== "upload_status"));
-      await sendToConcierge({
-        message: "Seed a draft from this upload.",
-        action: "ocr_result",
-        ocrContext: normalizeOcrContext(payload),
-        echo: "Use this upload to start the event.",
-      });
+      await savePendingSnapUpload({ file, scanAttemptId });
+      router.push("/?action=upload");
+      didRoute = true;
     } catch (err) {
-      setMessages((prev) => prev.filter((message) => message.type !== "upload_status"));
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      reportClientLog({
+        area: "snap-upload",
+        stage: "pending-save",
+        scanAttemptId,
+        error: err,
+        details: {
+          route: "/chat",
+          source,
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+        },
+      });
+      setError("Unable to prepare this upload. Please try again.");
     } finally {
-      setIsUploading(false);
+      if (!didRoute) setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
       if (cameraInputRef.current) cameraInputRef.current.value = "";
+    }
+  }
+
+  function openSnapUploadPicker() {
+    if (isBusy) return;
+    setError(null);
+    try {
+      fileInputRef.current?.click();
+    } catch (err) {
+      console.error("Failed to open file picker:", err);
+      setError("Unable to open the file picker. Please try again.");
+    }
+  }
+
+  function openSnapCameraPicker() {
+    if (isBusy) return;
+    setError(null);
+    try {
+      cameraInputRef.current?.click();
+    } catch (err) {
+      console.error("Failed to open camera picker:", err);
+      setError("Unable to open the camera. Please try again.");
     }
   }
 
@@ -1481,6 +1535,27 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         ))}
       </AnimatePresence>
 
+      {failedRequest ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-start"
+        >
+          <div className="max-w-[94%] rounded-3xl rounded-tl-md border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800 shadow-sm sm:max-w-[88%]">
+            <p className="font-semibold">Concierge could not finish that request.</p>
+            <p>{failedRequest.error}</p>
+            <button
+              type="button"
+              onClick={() => void retryFailedRequest()}
+              disabled={isBusy}
+              className="mt-3 inline-flex h-9 items-center justify-center rounded-full border border-red-200 bg-white px-4 text-xs font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Try again
+            </button>
+          </div>
+        </motion.div>
+      ) : null}
+
       {shouldShowProductFormatTiles ? (
         <motion.div
           initial={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -1493,10 +1568,9 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
               value: option.output,
               icon: option.icon,
             }))}
-            activeValue={effectiveSelectedProductOutput}
+            activeValue={selectedProductOutput}
+            defaultIndex={-1}
             ariaLabel="Choose product format"
-            autoOpenOnMount
-            autoOpenIntervalMs={2000}
             className="min-w-[304px] border-[#e9e3f2] bg-white/96"
             onValueChange={(value) => {
               const option = PRODUCT_OPTIONS.find((item) => item.output === value);
@@ -1536,19 +1610,25 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
             type="file"
             accept={getUploadAcceptAttribute("attachment")}
             className="hidden"
-            onChange={(event) => void handleUpload(event.currentTarget.files?.[0])}
+            onChange={(event) => {
+              void routeSelectedSnapFile(event.currentTarget.files?.[0], "upload");
+              event.currentTarget.value = "";
+            }}
           />
           <input
             ref={cameraInputRef}
             type="file"
-            accept="image/*"
+            accept={getUploadAcceptAttribute("header")}
             capture="environment"
             className="hidden"
-            onChange={(event) => void handleUpload(event.currentTarget.files?.[0])}
+            onChange={(event) => {
+              void routeSelectedSnapFile(event.currentTarget.files?.[0], "camera");
+              event.currentTarget.value = "";
+            }}
           />
           <PromptInput
             value={input}
-            onValueChange={setInput}
+            onValueChange={handleComposerValueChange}
             isLoading={isBusy}
             onSubmit={() => void submitComposerInput()}
             disabled={isBusy}
@@ -1562,11 +1642,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
               placeholder={
                 liveCardEventId
                   ? "Tell me what to change..."
-                  : selectedProductOutput
-                    ? `Enter ${outputLabel(selectedProductOutput).toLowerCase()} details...`
-                    : selectedStarterLabel
-                      ? `Add ${selectedStarterLabel.toLowerCase()} details...`
-                      : "Describe what you're planning..."
+                  : "Or just start typing and let's get going..."
               }
               aria-label={liveCardEventId ? "Refine invite" : "Start planning from scratch"}
               className="min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#7c4dff] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base"
@@ -1576,8 +1652,9 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                 <PromptInputAction tooltip="Upload file">
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff]"
+                    disabled={isBusy}
+                    onClick={openSnapUploadPicker}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff] disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Upload file"
                   >
                     <Paperclip className="size-6" aria-hidden="true" />
@@ -1587,8 +1664,9 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                 <PromptInputAction tooltip="Use camera">
                   <button
                     type="button"
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff]"
+                    disabled={isBusy}
+                    onClick={openSnapCameraPicker}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff] disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Use camera"
                   >
                     <Camera className="size-6" aria-hidden="true" />
@@ -1755,7 +1833,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
               >
                 <div className="min-h-0 flex-1 overflow-y-auto [overscroll-behavior-y:contain] [touch-action:pan-y] [-webkit-overflow-scrolling:touch]">
                   {isEmptyState ? (
-                    <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-end px-4 py-8 text-center sm:px-6">
+                    <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-start px-4 pb-44 pt-8 text-center sm:px-6 md:justify-end md:py-8">
                       <motion.h1
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -1771,6 +1849,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                           const isWide = tile.size === "wide";
                           const isDesktopWide = tile.size === "desktopWide";
                           const isSelected = selectedStarterCategory?.label === tile.label;
+                          const isDimmed = hasStarterCategorySelection && !isSelected;
                           return (
                             <button
                               key={tile.label}
@@ -1780,9 +1859,10 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                               aria-label={`Choose ${tile.label}`}
                               aria-pressed={isSelected}
                               className={cn(
-                                "group relative isolate overflow-hidden rounded-2xl border border-white/80 bg-[#f6f1ff] text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55",
+                                "group relative isolate overflow-hidden rounded-2xl border border-white/80 bg-[#f6f1ff] text-left shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55",
                                 isSelected &&
-                                  "border-[#8f68ff] shadow-[0_18px_46px_rgba(111,76,255,0.22)] ring-2 ring-[#8f68ff]/70",
+                                  "z-10 border-[#8f68ff] bg-white shadow-[0_18px_46px_rgba(111,76,255,0.24)] ring-2 ring-[#8f68ff]/70",
+                                isDimmed && "border-[#d8d3df] bg-[#ece9f1] shadow-none",
                                 isWide
                                   ? "col-span-2 aspect-[2.055/1]"
                                   : cn(
@@ -1795,12 +1875,27 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                                 src={tile.imagePath}
                                 alt=""
                                 aria-hidden="true"
-                                className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                className={cn(
+                                  "absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105",
+                                  isSelected && "saturate-110",
+                                  isDimmed &&
+                                    "grayscale saturate-0 opacity-45 group-hover:grayscale-0 group-hover:saturate-100 group-hover:opacity-75",
+                                )}
                               />
                               <span
-                                className="absolute inset-0 bg-gradient-to-t from-[#171023]/80 via-[#241735]/28 to-white/10"
+                                className={cn(
+                                  "absolute inset-0 bg-gradient-to-t",
+                                  isDimmed
+                                    ? "from-[#171023]/78 via-[#edeaf3]/34 to-[#f8f6fb]/28"
+                                    : "from-[#171023]/80 via-[#241735]/28 to-white/10",
+                                )}
                                 aria-hidden="true"
                               />
+                              {isSelected ? (
+                                <span className="absolute right-3 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#6f4cff] shadow-[0_8px_20px_rgba(45,27,54,0.24)]">
+                                  <Check size={15} strokeWidth={3} aria-hidden="true" />
+                                </span>
+                              ) : null}
                               <span className="relative z-10 flex h-full flex-col justify-end p-3 sm:p-4">
                                 <span className="max-w-[11rem] text-balance break-words text-base font-bold leading-tight text-white sm:text-lg">
                                   {tile.label}
@@ -1822,14 +1917,13 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                               value: option.output,
                               icon: option.icon,
                             }))}
-                            activeValue={effectiveSelectedProductOutput}
+                            activeValue={selectedProductOutput}
+                            defaultIndex={-1}
                             ariaLabel={
                               selectedStarterCategory
                                 ? `Choose product format for ${selectedStarterCategory.label}`
                                 : "Choose product format"
                             }
-                            autoOpenOnMount
-                            autoOpenIntervalMs={2000}
                             className="w-full !min-w-0 !max-w-[21rem] border-[#e9e3f2] bg-white/96"
                             onValueChange={(value) => {
                               const option = PRODUCT_OPTIONS.find((item) => item.output === value);

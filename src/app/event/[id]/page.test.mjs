@@ -42,12 +42,12 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /import PickleballSkin from "@\/components\/PickleballSkin";/);
   assert.match(source, /import OpenHouseSkin from "@\/components\/OpenHouseSkin";/);
   assert.match(source, /import GenericEventSkin from "@\/components\/GenericEventSkin";/);
+  assert.doesNotMatch(source, /BirthdayTemplateView/);
   assert.match(source, /import \{ cleanGraduationVenueName \} from "@\/lib\/ocr\/text";/);
   assert.match(source, /const rawVenueText =/);
   assert.match(source, /categoryNormalized === "graduations"\s*\?\s*cleanGraduationVenueName\(rawVenueText\)/);
-  assert.match(source, /const isScannedBirthdayInviteEvent =/);
-  assert.match(source, /categoryNormalized === "birthdays" && isScannedInviteEvent && isOcrEvent/);
-  assert.match(source, /if \(isScannedBirthdayInviteEvent\) \{/);
+  assert.match(source, /const isBirthdaySkinEvent = categoryNormalized === "birthdays" && isOcrEvent;/);
+  assert.match(source, /if \(isBirthdaySkinEvent\) \{/);
   assert.match(
     source,
     /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "birthday", undefined, \{/,
@@ -64,13 +64,14 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /planCopy=\{birthdayPlanCopy\}/);
   assert.match(source, /ocrFacts=\{scannedInviteOcrFacts\}/);
   assert.ok(
-    source.indexOf("if (isScannedBirthdayInviteEvent)") <
+    source.indexOf("if (isBirthdaySkinEvent)") <
       source.indexOf("if (isBirthdayTemplate || isBirthdayRendererEvent)"),
-    "scanned birthday branch should run before the old birthday renderer/template branch",
+    "birthday OCR skin branch should run before the birthday renderer branch",
   );
   assert.match(source, /const isBirthdayRendererEvent =/);
   assert.match(source, /categoryNormalized === "birthdays" && createdVia === "birthday-renderer"/);
   assert.match(source, /const birthdayThemeId = variationId \|\| BIRTHDAY_THEMES\[0\]\?\.id;/);
+  assert.match(source, /const birthdayThemeBase = data\.theme\?\.layout/);
   assert.match(source, /const hideHostDashboard =/);
   assert.match(source, /const showHostDashboard = canManageCreatedEvent && !hideHostDashboard/);
   assert.match(source, /showHostDashboard=\{showHostDashboard\}/);

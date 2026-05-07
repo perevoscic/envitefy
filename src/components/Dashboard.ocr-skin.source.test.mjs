@@ -49,11 +49,8 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   assert.match(source, /"ocr-open-house-skin"/);
   assert.match(source, /"ocr-invite-skin"/);
   assert.match(source, /openHouse:\s*isOpenHouseOcrEvent \? normalizedOpenHouse \|\| undefined : undefined/);
-  assert.match(
-    source,
-    /variationId: isBirthdayOcrEvent\s*\?\s*normalizedOcrSkin\?\.category === "birthday"/,
-  );
-  assert.match(source, /normalizedOcrSkin\.skinId/);
+  assert.doesNotMatch(source, /templateId: isBirthdayOcrEvent/);
+  assert.doesNotMatch(source, /variationId: isBirthdayOcrEvent/);
   assert.match(source, /const venueFromScan =/);
   assert.match(source, /venue: venueFromScan \|\| undefined/);
   assert.match(source, /venue:\s*typeof eventInput\.venue === "string"/);
