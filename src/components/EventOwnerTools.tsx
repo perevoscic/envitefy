@@ -7,10 +7,12 @@ import {
   CheckCircle2,
   Copy,
   ExternalLink,
+  LayoutDashboard,
   MessageSquare,
   Pencil,
   Share2,
   SlidersHorizontal,
+  Settings,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -106,6 +108,17 @@ function absoluteBrowserUrl(path: string): string {
   return new URL(path, window.location.origin).toString();
 }
 
+function buildOwnerTabHref(baseHref: string, eventId: string, tab: EventContextTab): string {
+  const fallbackPath = `/event/${encodeURIComponent(eventId)}`;
+  try {
+    const parsed = new URL(baseHref || fallbackPath, "https://envitefy.local");
+    parsed.searchParams.set("tab", tab);
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return `${fallbackPath}?tab=${encodeURIComponent(tab)}`;
+  }
+}
+
 export default function EventOwnerTools({
   eventId,
   eventTitle,
@@ -185,18 +198,7 @@ export default function EventOwnerTools({
 
   return (
     <main className="min-h-[100dvh] w-full px-4 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5">
-      <div className="mx-auto grid w-full max-w-[1380px] gap-5 lg:grid-cols-[minmax(280px,410px)_minmax(0,1fr)] xl:grid-cols-[430px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-5 lg:self-start">
-          <EventProductPreview
-            eventTitle={eventTitle}
-            preview={preview}
-            publicUrl={publicUrl}
-            onCopy={copyPublicLink}
-            onShare={sharePublicLink}
-            shareState={shareState}
-          />
-        </aside>
-
+      <div className="mx-auto grid w-full max-w-[1380px] gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]">
         <section className="min-w-0 space-y-4">
           <OwnerWorkspaceHeader
             title={eventTitle}
@@ -208,6 +210,7 @@ export default function EventOwnerTools({
             onShare={sharePublicLink}
             shareState={shareState}
           />
+          <OwnerWorkspaceTabs activeTab={initialTab} ownerHref={ownerHref} eventId={eventId} />
           <OwnerTabContent
             tab={initialTab}
             eventId={eventId}
@@ -217,6 +220,17 @@ export default function EventOwnerTools({
             editHref={resolvedEditHref}
           />
         </section>
+
+        <aside className="lg:sticky lg:top-5 lg:self-start">
+          <EventProductPreview
+            eventTitle={eventTitle}
+            preview={preview}
+            publicUrl={publicUrl}
+            onCopy={copyPublicLink}
+            onShare={sharePublicLink}
+            shareState={shareState}
+          />
+        </aside>
       </div>
     </main>
   );
@@ -381,6 +395,50 @@ function OwnerWorkspaceHeader({
         </div>
       </div>
     </header>
+  );
+}
+
+function OwnerWorkspaceTabs({
+  activeTab,
+  ownerHref,
+  eventId,
+}: {
+  activeTab: EventContextTab;
+  ownerHref: string;
+  eventId: string;
+}) {
+  const tabs: Array<{ key: EventContextTab; label: string; icon: LucideIcon }> = [
+    { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { key: "guests", label: "RSVPs", icon: Users },
+    { key: "communications", label: "Messages", icon: MessageSquare },
+    { key: "settings", label: "Settings", icon: Settings },
+  ];
+
+  return (
+    <nav
+      className="flex gap-2 overflow-x-auto rounded-[24px] border border-white/72 bg-white/86 p-2 shadow-[0_16px_44px_rgba(79,70,128,0.10)] backdrop-blur-xl"
+      aria-label="Owner workspace sections"
+    >
+      {tabs.map((item) => {
+        const Icon = item.icon;
+        const active = activeTab === item.key;
+        return (
+          <Link
+            key={item.key}
+            href={buildOwnerTabHref(ownerHref, eventId, item.key)}
+            className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-2xl px-3 text-xs font-black uppercase tracking-[0.08em] transition sm:flex-1 ${
+              active
+                ? "bg-slate-950 text-white shadow-[0_12px_28px_rgba(15,23,42,0.16)]"
+                : "bg-white/70 text-slate-500 hover:bg-white hover:text-slate-800"
+            }`}
+            aria-current={active ? "page" : undefined}
+          >
+            <Icon size={14} />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 

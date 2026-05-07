@@ -1131,13 +1131,12 @@ export function useLeftSidebarController({
     }
 
     const inferredSource = inferEventListSourceFromPath(pathname);
-    if (inferredSource && eventContextSourcePage !== inferredSource) {
-      setEventContextSourcePage(inferredSource);
-    } else if (!inferredSource && eventContextSourcePage !== "myEvents") {
-      setEventContextSourcePage("myEvents");
+    const sourcePage = inferredSource || "myEvents";
+    if (eventContextSourcePage !== sourcePage) {
+      setEventContextSourcePage(sourcePage);
     }
     setEventSidebarMode("owner");
-    setSidebarPage("eventContext");
+    setSidebarPage(sourcePage);
   }, [
     eventContextSourcePage,
     inferEventListSourceFromPath,
@@ -1231,7 +1230,7 @@ export function useLeftSidebarController({
       setActiveEventTab("dashboard");
       setEventSidebarMode("owner");
       setEventContextSourcePage("myEvents");
-      setSidebarPage("eventContext");
+      setSidebarPage("myEvents");
       router.push(buildEventOwnerHref(ownerHref, row.id, "dashboard"));
     },
     [
@@ -1350,13 +1349,14 @@ export function useLeftSidebarController({
         router.push(nextHref);
       } catch {}
       blurActiveElement();
-      setSidebarPage("eventContext");
+      setSidebarPage(eventContextSourcePage);
     },
     [
       blurActiveElement,
       buildEventGuestHref,
       buildEventOwnerHref,
       eventSidebarMode,
+      eventContextSourcePage,
       router,
       selectedEventHref,
       selectedEventId,

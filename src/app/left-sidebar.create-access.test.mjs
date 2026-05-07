@@ -134,7 +134,7 @@ test("left sidebar gives My Events rows a hover delete affordance", () => {
   );
 });
 
-test("left sidebar restores the event submenu on owner event tab routes", () => {
+test("left sidebar keeps My Events visible on owner event tab routes", () => {
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
 
   assert.match(
@@ -142,5 +142,12 @@ test("left sidebar restores the event submenu on owner event tab routes", () => 
     /requestedTab !== "dashboard" &&[\s\S]*?requestedTab !== "settings"/,
   );
   assert.match(controllerSource, /setEventSidebarMode\("owner"\);/);
-  assert.match(controllerSource, /setSidebarPage\("eventContext"\);/);
+  assert.match(
+    controllerSource,
+    /const sourcePage = inferredSource \|\| "myEvents";[\s\S]*?setSidebarPage\(sourcePage\);/,
+  );
+  assert.match(
+    controllerSource,
+    /const openOwnerEventContext = useCallback\([\s\S]*?setEventContextSourcePage\("myEvents"\);[\s\S]*?setSidebarPage\("myEvents"\);[\s\S]*?router\.push\(buildEventOwnerHref/,
+  );
 });
