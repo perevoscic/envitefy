@@ -71,6 +71,7 @@ import {
 } from "@/lib/ocr/text";
 import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
 import { normalizeThumbnailFocus } from "@/lib/thumbnail-focus";
+import { normalizeRegistryUrlForDetectedEvent } from "@/lib/ocr/registry-url";
 import { validateUploadFileMeta } from "@/lib/upload-config";
 
 function toLocalNoZ(date: Date | null) {
@@ -1266,10 +1267,16 @@ export async function handleOcrRequest(request: Request) {
         typeof llmImage?.attire === "string" && llmImage.attire.trim()
           ? llmImage.attire.trim()
           : null,
-      registryUrl:
-        typeof llmImage?.registryUrl === "string" && llmImage.registryUrl.trim()
-          ? llmImage.registryUrl.trim()
-          : null,
+      registryUrl: normalizeRegistryUrlForDetectedEvent({
+        category: llmImage?.category || null,
+        title: finalTitle,
+        description,
+        rawText: raw,
+        registryUrl:
+          typeof llmImage?.registryUrl === "string" && llmImage.registryUrl.trim()
+            ? llmImage.registryUrl.trim()
+            : null,
+      }),
     };
 
     const tz = fieldsGuess.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -1603,6 +1610,14 @@ export async function handleOcrRequest(request: Request) {
     if (isPickleballOcrEvent || isFootballOcrEvent || isBasketballOcrEvent) {
       category = "Sport Events";
     }
+    fieldsGuess.registryUrl = normalizeRegistryUrlForDetectedEvent({
+      category,
+      title: fieldsGuess.title || finalTitle,
+      description: fieldsGuess.description || description,
+      rawText: raw,
+      registryUrl: fieldsGuess.registryUrl,
+    });
+
     if (category === "Graduations") {
       const cleanedVenue = cleanGraduationVenueName(fieldsGuess.venue);
       fieldsGuess.venue = cleanedVenue || null;
