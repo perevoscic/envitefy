@@ -599,7 +599,7 @@ export default function AdminPage() {
                                   Last scan/upload/snap
                                 </p>
                                 <p className="text-sm text-[#5b4d86]">
-                                  {formatDate(u.last_scan_created_at)}
+                                  {formatDate(u.last_scan_created_at, { forceUsNumeric: true })}
                                 </p>
                               </div>
                               <div>
@@ -673,7 +673,7 @@ export default function AdminPage() {
                                 />
                               </td>
                               <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
-                                {formatDate(u.last_scan_created_at)}
+                                {formatDate(u.last_scan_created_at, { forceUsNumeric: true })}
                               </td>
                               <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
                                 {formatDate(u.created_at)}
@@ -996,11 +996,18 @@ function _Td({ children, className }: { children: any; className?: string }) {
   return <td className={`px-4 py-3 text-muted-foreground ${className || ""}`}>{children}</td>;
 }
 
-function formatDate(value?: string) {
+function formatDate(value?: string, options?: { forceUsNumeric?: boolean }) {
   if (!value) return "-";
   try {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return "-";
+    if (options?.forceUsNumeric) {
+      return new Intl.DateTimeFormat("en-US", {
+        month: "2-digit",
+        day: "2-digit",
+        year: "numeric",
+      }).format(d);
+    }
     return d.toLocaleDateString();
   } catch {
     return "-";
