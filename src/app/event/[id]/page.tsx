@@ -53,6 +53,7 @@ import { getEventTheme } from "@/lib/event-theme";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
+import { normalizeRegistryUrlForDetectedEvent } from "@/lib/ocr/registry-url";
 import {
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
@@ -1105,9 +1106,25 @@ export default async function EventPage({
   const registryCopy = getRegistrySectionCopyForCategory(categoryRaw);
   const registriesAllowed = registryCopy.allowsLinks;
   const registryLinksRaw = Array.isArray(data?.registries) ? (data.registries as any[]) : [];
+  const legacyRegistryUrlRaw =
+    typeof data?.registryUrl === "string" && data.registryUrl.trim() ? data.registryUrl.trim() : null;
+  const legacyRegistryUrlNormalized = normalizeRegistryUrlForDetectedEvent({
+    category: categoryRaw || null,
+    title: title || null,
+    description: typeof data?.description === "string" ? data.description : null,
+    rawText: typeof data?.ocrText === "string" ? data.ocrText : null,
+    registryUrl: legacyRegistryUrlRaw,
+  });
+  const registryLinksWithLegacy =
+    legacyRegistryUrlNormalized &&
+    !registryLinksRaw.some((item: any) =>
+      typeof item?.url === "string" && item.url.trim() === legacyRegistryUrlNormalized,
+    )
+      ? [{ label: "Amazon", url: legacyRegistryUrlNormalized }, ...registryLinksRaw]
+      : registryLinksRaw;
   const registryLinks = registriesAllowed
     ? normalizeRegistryLinks(
-        registryLinksRaw.map((item: any) => ({
+        registryLinksWithLegacy.map((item: any) => ({
           label: typeof item?.label === "string" ? item.label : "",
           url: typeof item?.url === "string" ? item.url : "",
         })),
