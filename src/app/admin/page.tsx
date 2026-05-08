@@ -593,11 +593,21 @@ export default function AdminPage() {
                           </div>
 
                           <div className="flex items-end justify-between gap-3 pt-2 border-t border-[#e5defa]">
-                            <div>
-                              <p className="text-xs uppercase tracking-wider text-[#8b7fb6] mb-1">
-                                Joined
-                              </p>
-                              <p className="text-sm text-[#5b4d86]">{formatDate(u.created_at)}</p>
+                            <div className="space-y-2">
+                              <div>
+                                <p className="text-xs uppercase tracking-wider text-[#8b7fb6] mb-1">
+                                  Last scan/upload/snap
+                                </p>
+                                <p className="text-sm text-[#5b4d86]">
+                                  {formatDate(u.last_scan_created_at)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs uppercase tracking-wider text-[#8b7fb6] mb-1">
+                                  Joined
+                                </p>
+                                <p className="text-sm text-[#5b4d86]">{formatDate(u.created_at)}</p>
+                              </div>
                             </div>
                             <button
                               type="button"
@@ -625,6 +635,7 @@ export default function AdminPage() {
                           <th className="px-4 py-3">Email</th>
                           <th className="px-4 py-3 text-right">Scans</th>
                           <th className="px-4 py-3">Events</th>
+                          <th className="px-4 py-3">Last scan/upload/snap</th>
                           <th className="px-4 py-3">Joined</th>
                           <th className="px-4 py-3 text-right">Actions</th>
                         </tr>
@@ -660,6 +671,9 @@ export default function AdminPage() {
                                   count={eventTotal}
                                   breakdown={eventBreakdown}
                                 />
+                              </td>
+                              <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
+                                {formatDate(u.last_scan_created_at)}
                               </td>
                               <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
                                 {formatDate(u.created_at)}
