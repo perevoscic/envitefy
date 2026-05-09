@@ -662,6 +662,14 @@ function shouldOpenPreviewInStudioCard(
   eventData: Record<string, unknown> | null,
   preview: ProductPreviewModel,
 ): boolean {
+  const publicEvent = asRecord(eventData?.publicEvent);
+  const ownerDefaultSurface = firstString(
+    publicEvent?.ownerDefaultSurface,
+    eventData?.ownerDefaultSurface,
+  ).toLowerCase();
+  if (ownerDefaultSurface === "card") return Boolean(preview.imageUrl);
+  if (ownerDefaultSurface === "event" || ownerDefaultSurface === "signup") return false;
+
   return Boolean(
     preview.imageUrl && (asRecord(eventData?.studioCard) || isCardFirstProduct(eventData)),
   );
