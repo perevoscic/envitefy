@@ -687,6 +687,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     : shareActionPressed
       ? "border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
       : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] hover:border-white/45 hover:bg-white/22";
+  const shareActionPositionClassName = useCompactActionButtons
+    ? "right-3 top-[-2.35rem] sm:right-5 sm:top-[-2.2rem] md:right-8 md:top-[-2rem]"
+    : "right-3 top-5 sm:right-5 sm:top-6 md:right-8 md:top-8";
   const shareActionIconClassName = `${
     useCompactActionButtons
       ? "h-4 w-4 md:h-5 md:w-5"
@@ -718,7 +721,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
           disabled={shareState === "pending" || props.isDesignMode}
           aria-label={shareActionLabel === "Share" ? "Share live card" : shareActionLabel}
           title={shareActionLabel === "Share" ? "Share" : shareActionLabel}
-          className={`pointer-events-auto absolute right-3 top-5 z-30 inline-flex items-center justify-center rounded-full border backdrop-blur-md transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent disabled:cursor-wait disabled:opacity-75 sm:right-5 sm:top-6 md:right-8 md:top-8 ${shareActionChromeSizeClassName} ${shareActionChromeClassName}`}
+          className={`pointer-events-auto absolute z-30 inline-flex items-center justify-center rounded-full border backdrop-blur-md transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent disabled:cursor-wait disabled:opacity-75 ${shareActionPositionClassName} ${shareActionChromeSizeClassName} ${shareActionChromeClassName}`}
         >
           <ShareActionIcon className={shareActionIconClassName} />
         </button>

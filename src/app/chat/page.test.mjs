@@ -12,6 +12,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
   const preview = readSource("src/app/chat/ChatProductPreview.tsx");
   const chatSurface = `${client}\n${preview}`;
+  const liveCardSurface = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
   const bottomNav = readSource("src/components/ui/bottom-nav-bar.tsx");
   const uiDemo = readSource("src/components/ui/demo.tsx");
   const extract = readSource("src/lib/concierge/extract.ts");
@@ -132,12 +133,15 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   );
   assert.match(client, /BottomNavBar/);
   assert.match(client, /ariaLabel="Choose product format"/);
-  assert.match(client, /activeValue=\{selectedProductOutput \?\? undefined\}/);
-  assert.match(client, /defaultIndex=\{0\}/);
+  assert.match(client, /activeValue=\{selectedProductOutput\}/);
+  assert.match(client, /defaultIndex=\{-1\}/);
   assert.match(client, /spreadItems/);
+  assert.doesNotMatch(client, /activeValue=\{selectedProductOutput \?\? undefined\}/);
   assert.match(client, /autoOpenOnMount/);
   assert.match(client, /autoOpenIntervalMs=\{2000\}/);
   assert.match(client, /autoOpenCycles=\{3\}/);
+  assert.match(client, /const isSelected = selectedProductOutput === option\.output/);
+  assert.doesNotMatch(client, /const isSelected = effectiveSelectedProductOutput === option\.output/);
   assert.match(client, /function chatProductNavItem\(option: ProductOption\): BottomNavItem/);
   assert.match(client, /labelWidth: Math\.max\(72, Math\.ceil\(option\.label\.length \* 7\)\)/);
   assert.match(client, /items=\{PRODUCT_OPTIONS\.map\(chatProductNavItem\)\}/);
@@ -175,7 +179,8 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /message: option\.prompt/);
   assert.doesNotMatch(client, /requestedOutputs: \[option\.output\]/);
   assert.match(client, /role="group"/);
-  assert.match(client, /effectiveSelectedProductOutput === option\.output/);
+  assert.match(client, /selectedProductOutput === option\.output/);
+  assert.doesNotMatch(client, /effectiveSelectedProductOutput === option\.output/);
   assert.match(client, /chatProductActiveUnderline/);
   assert.match(client, /text-indigo-600/);
   assert.match(client, /shadow-\[inset_4px_4px_8px_#b8bec7,inset_-4px_-4px_8px_#ffffff\]/);
@@ -245,8 +250,13 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(bottomNav, /autoOpenIntervalMs\?: number/);
   assert.match(bottomNav, /autoOpenCycles\?: number/);
   assert.match(bottomNav, /const \[autoOpenIndex, setAutoOpenIndex\]/);
+  assert.match(bottomNav, /const expandedIndex = autoOpenIndex \?\? resolvedActiveIndex/);
+  assert.match(bottomNav, /const startIndex = safeDefaultIndex >= 0 \? safeDefaultIndex : 0/);
+  assert.match(bottomNav, /const isExpanded = expandedIndex === idx/);
   assert.match(bottomNav, /const maxDisplays = items\.length \* Math\.max\(autoOpenCycles, 1\)/);
   assert.match(bottomNav, /setAutoOpenIndex\(nextIndex\)/);
+  assert.doesNotMatch(bottomNav, /setActiveIndex\(nextIndex\)/);
+  assert.match(bottomNav, /width: isExpanded \? `\$\{activeLabelWidth\}px` : "0px"/);
   assert.match(bottomNav, /Math\.max\(autoOpenIntervalMs, 500\)/);
   assert.match(bottomNav, /setHasManualSelection\(true\)/);
   assert.match(bottomNav, /onValueChange\?:/);
@@ -278,6 +288,9 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /setDraft\(restoredDraft\)/);
   assert.match(client, /CreationChatMessageSnapshot/);
   assert.match(client, /chatMessageFromSnapshot/);
+  assert.match(client, /function chatMessagesFromSnapshots/);
+  assert.match(client, /preserveLastAssistantId: streamAssistantId/);
+  assert.match(client, /id: preserveLastAssistantId/);
   assert.match(client, /chatMessagesForPersistence/);
   assert.match(client, /json\.chatMessages\?\.length/);
   assert.match(client, /chatMessages: chatMessagesForPersistence/);
@@ -334,6 +347,19 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /rsvpPreview\.responses\.map/);
   assert.match(client, /function generatedProductHref/);
   assert.match(client, /buildEventProductPath\(\{ eventId, output: selectedOutput \}\)/);
+  assert.match(client, /params\.set\("preview", "owner"\)/);
+  assert.match(client, /params\.set\("returnTo", returnHref\)/);
+  assert.match(client, /function generatedRsvpDashboardHref/);
+  assert.match(client, /buildEventPath\(eventId, null, \{ tab: "dashboard" \}\)/);
+  assert.match(client, /const \[draftStudioInvite, setDraftStudioInvite\]/);
+  assert.match(client, /const hasGeneratedDraftProduct = Boolean\(draftStudioInvite\);/);
+  assert.match(client, /async function publishGeneratedDraft\(\)/);
+  assert.match(client, /action: "save"[\s\S]{0,260}studioInvite: draftStudioInvite/);
+  assert.match(client, /async function sendGeneratedDraftEdit\(message: string\)/);
+  assert.match(client, /if \(draftStudioInvite && !liveCardEventId\)/);
+  assert.match(client, /function isGenerateConfirmationMessage/);
+  assert.match(client, /if \(canGenerateProduct && draft && isGenerateConfirmationMessage\(value\)\)/);
+  assert.match(client, /setIsReadyChatComposerOpen\(false\);[\s\S]{0,80}await generateProductForDraft\(draft\)/);
   assert.doesNotMatch(client, /withGeneratedInviteOutputs/);
   assert.doesNotMatch(
     client,
@@ -353,13 +379,28 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(preview, /w-auto max-w-full/);
   assert.doesNotMatch(preview, /top-\[calc\(100%\+0\.5rem\)\]/);
   assert.match(preview, /pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\]/);
+  assert.match(
+    preview,
+    /flex min-h-0 flex-1 flex-col justify-center gap-4 overflow-visible pb-2 pt-20 sm:pb-4 sm:pt-24/,
+  );
   assert.match(preview, /flex w-full flex-none items-center justify-center/);
   assert.match(
     preview,
-    /relative aspect-\[9\/17\] w-full max-w-\[22rem\] sm:aspect-\[9\/16\] sm:max-w-\[23rem\]/,
+    /relative aspect-\[9\/17\] h-\[min\(34rem,calc\(100dvh-12rem\)\)\] max-w-full w-auto sm:aspect-\[9\/16\] sm:h-\[min\(36rem,calc\(100dvh-12rem\)\)\]/,
   );
   assert.match(preview, /min-h-\[4\.75rem\] justify-end/);
   assert.doesNotMatch(preview, /pb-24/);
+  assert.match(preview, /rsvpDashboardHref: string \| null;/);
+  assert.match(preview, /hasDraftProduct: boolean;/);
+  assert.match(preview, /const shouldShowDraftActions = hasDraftProduct && !publicHref;/);
+  assert.match(preview, /Save \/ Publish/);
+  assert.match(preview, /Keep Editing/);
+  assert.match(preview, /href=\{rsvpDashboardHref\}/);
+  assert.match(preview, /Open Dashboard/);
+  assert.match(preview, /inline-flex h-12 max-w-full items-center justify-center gap-2/);
+  assert.doesNotMatch(preview, /w-full min-w-full max-w-none/);
+  assert.match(liveCardSurface, /const shareActionPositionClassName = useCompactActionButtons/);
+  assert.match(liveCardSurface, /top-\[-2\.35rem\]/);
   assert.doesNotMatch(chatSurface, /Manage/);
   assert.doesNotMatch(chatSurface, blockedOldProductLabelPattern);
   assert.doesNotMatch(chatSurface, /Regenerate version/);

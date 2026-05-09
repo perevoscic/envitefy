@@ -666,6 +666,30 @@ test("game day event-page prompt becomes guest-facing matchup copy", () => {
   assert.equal(payload.data.publicEvent.headline, "Varsity Panthers vs Central City Tigers");
 });
 
+test("baby shower event-page product prompt stays no-RSVP and guest-facing", () => {
+  const prompt =
+    "Create a baby shower product for Elena and Baby Mateo on Sunday July 19 2026 at 1:00 PM at Olive Room, 212 Harbor Avenue, Tampa, FL. Make this as a Event Page. This is /chat QA run QA Chat Matrix 2026-05-09T18-49-38-062Z, combo 12. Timezone: America/Chicago. Theme and tone: soft blue balloons, teddy bear details, gentle spacing, and warm family tone. No RSVP. Do not collect RSVPs and do not ask for a guest count. Include this registry: https://example.com/qa-registry-12. Gift note: gifts are optional. Make this a complete Envitefy product with a clear headline, schedule, location, and guest-facing call to action.";
+  const draft = fallbackExtractConciergeDraft({ message: prompt });
+  const payload = buildConciergeHistoryPayload(draft);
+
+  assert.equal(draft.eventType, "baby_shower");
+  assert.deepEqual(draft.requestedOutputs, ["event_page"]);
+  assert.equal(draft.honoreeName, "Elena and Baby Mateo");
+  assert.doesNotMatch(draft.title || "", /^Create a baby shower product/i);
+  assert.equal(draft.rsvpEnabled, false);
+  assert.equal(draft.numberOfGuests, null);
+  assert.equal(draft.registryLink, "https://example.com/qa-registry-12");
+  assert.equal(draft.giftPreferenceNote, "gifts are optional");
+  assert.equal(draft.previewCopy.cta, "View details");
+  assert.equal(draft.currentQuestion, null);
+  assert.equal(draft.canPersist, true);
+  assert.equal(payload.data.rsvpEnabled, false);
+  assert.equal(payload.data.rsvp.direct, false);
+  assert.equal(payload.data.liveCard.cta, "View details");
+  assert.deepEqual(payload.data.publicEvent.forms, []);
+  assert.doesNotMatch(JSON.stringify(payload.data.publicEvent.navigation), /RSVP/);
+});
+
 test("theme and tone label is not captured as event theme copy", () => {
   const draft = fallbackExtractConciergeDraft({
     message:
@@ -887,6 +911,29 @@ test("new create request replaces restored draft details", () => {
   assert.equal(draft.venue, "Play Cafe, 123 Main St, Austin, TX");
   assert.doesNotMatch(draft.previewCopy.scheduleLine, /at 2:00 PM at 2:00 PM/);
   assert.equal(draft.previewCopy.locationLine, "Play Cafe, 123 Main St, Austin, TX");
+});
+
+test("birthday live-card prompt aggregates inline name age venue and interests", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Birthday Live Card for lara, 7 for may 23 at 2PM, we are going to watch Sheep detective at AMC theater in Grand Boulevard, the dinner at Pazzo Santa rosa beach. Lara likes cats and plushes",
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.deepEqual(draft.requestedOutputs, ["live_card"]);
+  assert.equal(draft.eventType, "birthday");
+  assert.equal(draft.honoreeName, "Lara");
+  assert.equal(draft.ageOrMilestone, "7");
+  assert.equal(draft.title, "Lara is turning 7");
+  assert.match(draft.dateText || "", /may 23 at 2PM/i);
+  assert.equal(draft.timeText, "2:00 PM");
+  assert.equal(draft.location, "AMC theater in Grand Boulevard");
+  assert.equal(draft.previewCopy.locationLine, "AMC theater in Grand Boulevard");
+  assert.equal(draft.theme, "Sheep detective, cats and plushes");
+  assert.equal(draft.currentQuestion, "rsvpEnabled");
+  assert.doesNotMatch(draft.missingFields.join(","), /honoreeName|ageOrMilestone|location/);
+  assert.match(message, /Lara is turning 7/);
+  assert.match(message, /Should Envitefy collect RSVPs/i);
 });
 
 test("fallback fills birthday honoree from a name reply", () => {

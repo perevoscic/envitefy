@@ -71,8 +71,8 @@ export function BottomNavBar({
     typeof activeValue === "string"
       ? items.findIndex((item) => (item.value || item.label) === activeValue)
       : -1;
-  const resolvedActiveIndex =
-    autoOpenIndex ?? (isActiveValueControlled ? controlledIndex : activeIndex);
+  const resolvedActiveIndex = isActiveValueControlled ? controlledIndex : activeIndex;
+  const expandedIndex = autoOpenIndex ?? resolvedActiveIndex;
 
   useEffect(() => {
     if (!autoOpenOnMount || hasManualSelection || items.length <= 1) {
@@ -80,8 +80,9 @@ export function BottomNavBar({
       return;
     }
 
-    setAutoOpenIndex(safeDefaultIndex);
-    let nextIndex = safeDefaultIndex;
+    const startIndex = safeDefaultIndex >= 0 ? safeDefaultIndex : 0;
+    setAutoOpenIndex(startIndex);
+    let nextIndex = startIndex;
     let displayedCount = 1;
     const maxDisplays = items.length * Math.max(autoOpenCycles, 1);
     const interval = window.setInterval(
@@ -97,7 +98,6 @@ export function BottomNavBar({
           nextIndex = 0;
         }
         displayedCount += 1;
-        if (!isActiveValueControlled) setActiveIndex(nextIndex);
         setAutoOpenIndex(nextIndex);
       },
       Math.max(autoOpenIntervalMs, 500),
@@ -109,7 +109,6 @@ export function BottomNavBar({
     autoOpenIntervalMs,
     autoOpenOnMount,
     hasManualSelection,
-    isActiveValueControlled,
     items.length,
     safeDefaultIndex,
   ]);
@@ -131,6 +130,7 @@ export function BottomNavBar({
       {items.map((item, idx) => {
         const Icon = item.icon;
         const isActive = resolvedActiveIndex === idx;
+        const isExpanded = expandedIndex === idx;
         const activeLabelWidth = item.labelWidth ?? MOBILE_LABEL_WIDTH;
 
         return (
@@ -167,9 +167,9 @@ export function BottomNavBar({
             <motion.div
               initial={false}
               animate={{
-                width: isActive ? `${activeLabelWidth}px` : "0px",
-                opacity: isActive ? 1 : 0,
-                marginLeft: isActive ? "8px" : "0px",
+                width: isExpanded ? `${activeLabelWidth}px` : "0px",
+                opacity: isExpanded ? 1 : 0,
+                marginLeft: isExpanded ? "8px" : "0px",
               }}
               transition={{
                 width: { type: "spring", stiffness: 350, damping: 32 },
@@ -182,7 +182,7 @@ export function BottomNavBar({
               <span
                 className={cn(
                   "relative select-none overflow-hidden text-ellipsis whitespace-nowrap text-xs font-medium leading-[1.9] transition-opacity duration-200",
-                  isActive ? "text-current" : "opacity-0",
+                  isExpanded ? "text-current" : "opacity-0",
                 )}
                 title={item.label}
               >

@@ -148,11 +148,14 @@ test("creation threads list and resume authenticated user sessions only", () => 
 
   assert.match(route, /resolveSessionUserId\(session\)/);
   assert.match(route, /listCreationSessions/);
+  assert.match(route, /includeSaved/);
   assert.match(route, /threads: threads\.map\(toThreadSummary\)/);
   assert.match(deleteRoute, /export async function DELETE/);
   assert.match(deleteRoute, /resolveSessionUserId\(session\)/);
   assert.match(deleteRoute, /deleteCreationSession/);
   assert.match(storage, /export async function listCreationSessions/);
+  assert.match(storage, /status not in \('published', 'publishing'\)/);
+  assert.match(storage, /not \(metadata \? 'savedEventId'\)/);
   assert.match(storage, /export async function deleteCreationSession/);
   assert.match(storage, /where user_id = \$1/);
   assert.match(storage, /where id = \$1 and user_id = \$2/);

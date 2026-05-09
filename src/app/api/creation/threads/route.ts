@@ -60,9 +60,11 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const rawLimit = Number(url.searchParams.get("limit") || 20);
+    const includeSaved = url.searchParams.get("includeSaved") === "1";
     const threads = await listCreationSessions({
       userId,
       limit: Number.isFinite(rawLimit) ? rawLimit : 20,
+      includeSaved,
     });
 
     return NextResponse.json({

@@ -61,6 +61,10 @@ function firstString(...values: unknown[]): string | null {
   return null;
 }
 
+function cleanUrlString(value: unknown): string | null {
+  return cleanString(value)?.replace(/[),.;!?]+$/g, "") || null;
+}
+
 function firstPositiveNumber(...values: unknown[]) {
   for (const value of values) {
     const numeric =
@@ -235,6 +239,10 @@ function detectAge(text: string, previous?: ConciergeEventDraft | null) {
   }
   const turning = text.match(/\b(?:turning|turns|is turning|turn)\s+(\d{1,3})\b/i);
   if (turning?.[1] && Number(turning[1]) <= 120) return turning[1];
+  const birthdayForAge = text.match(
+    /\b(?:birthday|bday)(?:\s+(?:live\s*card|event\s+page|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite|party|product))*\s+for\s+[a-z][a-zA-Z'-]{1,30}\s*,\s*(\d{1,3})(?=\s*(?:,|\b(?:for|on|at|turning|turns)\b|$))/i,
+  );
+  if (birthdayForAge?.[1] && Number(birthdayForAge[1]) <= 120) return birthdayForAge[1];
   const commaAge = text.match(/,\s*(\d{1,3})\s*(?:$|[.,;!?])/);
   if (commaAge?.[1] && Number(commaAge[1]) <= 120) return commaAge[1];
   const ordinal = text.match(/\b(\d{1,3})(?:st|nd|rd|th)\s+birthday\b/i);
@@ -264,6 +272,25 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
   const named = text.match(/\b(?:her|his|their|the)?\s*name\s+is\s+([A-Z][a-zA-Z'-]{1,30})\b/);
   if (named?.[1]) return named[1];
 
+  if (previous?.eventType === "birthday" || /\b(?:birthday|bday)\b/i.test(text)) {
+    const birthdayForName = text.match(
+      /\b(?:birthday|bday)(?:\s+(?:live\s*card|event\s+page|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite|party|product))*\s+for\s+([a-z][a-zA-Z'-]{1,30})(?=\s*(?:,|\b(?:turning|turns|is turning|on|at|for)\b|$))/i,
+    );
+    if (birthdayForName?.[1]) return titleCaseName(birthdayForName[1]);
+  }
+
+  if (previous?.eventType === "baby_shower" || /\b(?:baby\s+shower|sprinkle)\b/i.test(text)) {
+    const showerFor =
+      text.match(
+        /\b(?:baby\s+shower|sprinkle)(?:\s+(?:product|event\s+page|live\s*card|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite))?\s+for\s+(.{2,80}?)(?=\s+(?:on|at|with|make|this|theme|tone|no\s+rsvps?|without|include|gift|registry)\b|[.;]|$)/i,
+      ) ||
+      text.match(
+        /\bfor\s+(.{2,80}?)\s+(?:baby\s+shower|sprinkle)\b/i,
+      );
+    const honoree = cleanHonoreePhrase(showerFor?.[1]);
+    if (honoree) return honoree;
+  }
+
   const possessive = text.match(
     /\b([A-Z][a-zA-Z'-]{1,30})'s\s+(?:\d{1,3}(?:st|nd|rd|th)\s+)?(?:(?:baby|bridal)\s+)?(?:birthday|graduation|party|shower|gender\s+reveal|housewarming)\b/,
   );
@@ -282,6 +309,21 @@ function titleCaseName(value: string) {
   return value.replace(/\b([a-z])([a-zA-Z'-]*)/g, (_match, first: string, rest: string) => {
     return `${first.toUpperCase()}${rest}`;
   });
+}
+
+function cleanHonoreePhrase(value: string | null | undefined) {
+  const cleaned = cleanString(
+    value
+      ?.replace(/[.!?]+$/g, "")
+      .replace(/^(?:for|of)\s+/i, "")
+      .replace(/^(?:QA\s+|test\s+)/i, ""),
+  );
+  if (!cleaned || cleaned.length > 80) return null;
+  if (looksLikeCreationPrompt(cleaned) || isInstructionFragment(cleaned)) return null;
+  if (/\b(?:date|time|location|venue|rsvp|registry|http|www|theme|tone)\b/i.test(cleaned)) {
+    return null;
+  }
+  return titleCaseName(cleaned).replace(/\bAnd\b/g, "and").replace(/\bOf\b/g, "of");
 }
 
 function detectHonoreeFollowUp(text: string, previous?: ConciergeEventDraft | null) {
@@ -312,6 +354,27 @@ function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
   if (themeAndToneValue && !isInstructionFragment(themeAndToneValue)) {
     return themeAndToneValue;
   }
+
+  const interestParts = [
+    text.match(/\b(?:watch|see)\s+([^,.;\n]{2,70}?)\s+(?:at|@)\b/i)?.[1],
+    text.match(/\b(?:likes?|loves?|is\s+into)\s+([^.;\n]{2,90})/i)?.[1],
+  ]
+    .map((value) =>
+      cleanString(
+        value
+          ?.replace(/[.!?]+$/g, "")
+          .replace(/\s+(?:theme|style|vibe)$/i, ""),
+      ),
+    )
+    .filter(
+      (value): value is string =>
+        Boolean(
+          value &&
+            !/^(?:you|everyone|guests?|friends?|family|us)$/i.test(value) &&
+            !isInstructionFragment(value),
+        ),
+    );
+  if (interestParts.length) return Array.from(new Set(interestParts)).join(", ");
 
   const teamEnergy = text.match(
     /\bwith\s+([a-z]+(?:\s+and\s+[a-z]+)?(?:\s+(?:team|school))?\s+(?:energy|colors?|spirit|vibe|theme|style))\b/i,
@@ -445,12 +508,12 @@ function detectRegistryLink(text: string, fieldsGuess: Record<string, unknown>) 
     fieldsGuess.giftListLink,
     fieldsGuess.wishlistLink,
   );
-  if (direct) return direct;
+  if (direct) return cleanUrlString(direct);
   if (!/\b(registry|gift\s*list|wishlist|wish\s*list|babylist|zola|target|amazon)\b/i.test(text)) {
     return null;
   }
   const url = text.match(/\bhttps?:\/\/[^\s<>"')]+|\bwww\.[^\s<>"')]+/i)?.[0];
-  return cleanString(url || "");
+  return cleanUrlString(url || "");
 }
 
 function detectGiftPreferenceNote(text: string, fieldsGuess: Record<string, unknown>) {
@@ -462,7 +525,7 @@ function detectGiftPreferenceNote(text: string, fieldsGuess: Record<string, unkn
   );
   if (direct) return direct;
   const noGifts = text.match(
-    /\b(?:no gifts?|your presence is (?:our|the) gift|gift cards? preferred)\b[^.!,;]*/i,
+    /\b(?:no gifts?|gifts?\s+(?:are\s+)?optional|your presence is (?:our|the) gift|gift cards? preferred)\b[^.!,;]*/i,
   );
   return cleanString(noGifts?.[0] || "");
 }
@@ -555,6 +618,12 @@ function detectVenueOrLocation(text: string, ocrContext?: ConciergeOcrContext | 
     fields.locationText,
   );
   if (fromFields) return fromFields;
+
+  const activityLocation = text.match(
+    /\b(?:watch|see|meet|celebrate|party|gather|dinner|brunch|lunch)\b[^.\n]{0,90}?\b(?:at|@)\s+([^,.;\n]{2,100}(?:\s+in\s+[^,.;\n]{2,80})?)/i,
+  );
+  const activityLocationValue = stripLeadingTimeFromLocation(activityLocation?.[1] || null);
+  if (activityLocationValue) return activityLocationValue;
 
   const afterTimeMatch = text.match(
     /\b(?:at|@)\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+(?:at|@)\s+([^.\n]{2,120})(?:[.\n]|$)/i,
@@ -772,7 +841,7 @@ function buildTitle(args: {
     if (args.eventType === "football") return "Football Game Day";
     return "Game Day";
   }
-  if (args.eventPurpose) return args.eventPurpose;
+  if (args.eventPurpose && !looksLikeCreationPrompt(args.eventPurpose)) return args.eventPurpose;
   if (args.eventType === "unknown") return null;
   return genericTitle;
 }
@@ -787,6 +856,7 @@ function buildPreviewCopy(args: {
   location: string | null;
   theme: string | null;
   tone: string | null;
+  rsvpEnabled: boolean | null;
 }): ConciergePreviewCopy {
   const headline = args.title || "Event draft";
   const themeLine = args.theme
@@ -819,7 +889,7 @@ function buildPreviewCopy(args: {
     body,
     scheduleLine,
     locationLine,
-    cta: "RSVP",
+    cta: args.rsvpEnabled === true ? "RSVP" : "View details",
   };
 }
 
@@ -1134,9 +1204,17 @@ export function fallbackExtractConciergeDraft(args: {
   );
   const extractedEventPurpose = firstString(fieldsGuess.eventPurpose, fieldsGuess.title);
   const sportEventPurpose = deriveSportEventTitle(text, eventType);
-  const messageEventPurpose = isMeaningfulEventText(message, requestedOutputs)
+  const rawMessageEventPurpose = isMeaningfulEventText(message, requestedOutputs)
     ? cleanCreationString(message)
     : null;
+  const shouldSuppressRawCreationPrompt = Boolean(
+    rawMessageEventPurpose &&
+      looksLikeCreationPrompt(rawMessageEventPurpose) &&
+      eventType !== "unknown" &&
+      eventType !== "general",
+  );
+  const messageEventPurpose =
+    rawMessageEventPurpose && !shouldSuppressRawCreationPrompt ? rawMessageEventPurpose : null;
   const eventPurpose =
     nonCreationRequest ||
     privateDataMutationRequest ||
@@ -1183,6 +1261,7 @@ export function fallbackExtractConciergeDraft(args: {
     detectTone(text, previous) ||
     firstString(fieldsGuess.tone) ||
     (isSportEventType(eventType) ? theme : null);
+  const toneForStatus = tone || theme;
   const status = nonCreationRequest
     ? {
         draftStatus: "needs_source_or_event" as const,
@@ -1204,7 +1283,7 @@ export function fallbackExtractConciergeDraft(args: {
         ageOrMilestone,
         rsvpEnabled,
         numberOfGuests,
-        tone,
+        tone: toneForStatus,
       });
   const needsDateConfirmation = Boolean(chronoResult.needsConfirmation);
   const base = {
@@ -1254,6 +1333,7 @@ export function fallbackExtractConciergeDraft(args: {
       location,
       theme,
       tone,
+      rsvpEnabled,
     }),
     source,
   } satisfies Omit<ConciergeEventDraft, "missingFields">;

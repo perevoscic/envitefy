@@ -195,13 +195,18 @@ export async function getLatestCreationSession(params: {
 export async function listCreationSessions(params: {
   userId: string;
   limit?: number;
+  includeSaved?: boolean;
 }): Promise<CreationSession[]> {
   await ensureEventManageTables();
   const limit = Math.max(1, Math.min(50, Math.floor(params.limit || 20)));
+  const savedFilter = params.includeSaved
+    ? ""
+    : "and status not in ('published', 'publishing') and not (metadata ? 'savedEventId')";
   const res = await query(
     `select id, user_id, status, draft, active_context, source_context, metadata, created_at, updated_at
      from creation_sessions
      where user_id = $1
+       ${savedFilter}
      order by updated_at desc, created_at desc
      limit $2`,
     [params.userId, limit],

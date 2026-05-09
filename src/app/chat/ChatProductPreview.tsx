@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, FileImage, Gift, Globe2, Loader2, Menu } from "lucide-react";
+import { ExternalLink, FileImage, Gift, Globe2, LayoutDashboard, Loader2, Menu } from "lucide-react";
 import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
 import type {
   ConciergeEventDraft,
@@ -25,6 +25,11 @@ type ChatProductPreviewProps = {
   currentBuildStep: string;
   liveEventId: string | null;
   publicHref: string | null;
+  rsvpDashboardHref: string | null;
+  hasDraftProduct: boolean;
+  isPublishing: boolean;
+  onPublish: () => void;
+  onKeepEditing: () => void;
   rsvp: RsvpPreviewBadge;
   weatherContext: ConciergeWeatherContext | null;
   mobileView: "chat" | "preview";
@@ -282,6 +287,11 @@ export default function ChatProductPreview({
   currentBuildStep,
   liveEventId,
   publicHref,
+  rsvpDashboardHref,
+  hasDraftProduct,
+  isPublishing,
+  onPublish,
+  onKeepEditing,
   mobileView,
 }: ChatProductPreviewProps) {
   const preview = buildChatShowcasePreview({
@@ -292,9 +302,10 @@ export default function ChatProductPreview({
     sharePath: publicHref,
     eventId: liveEventId,
   });
-  const hasGeneratedProduct = Boolean(liveEventId);
+  const hasGeneratedProduct = Boolean(liveEventId || hasDraftProduct);
   const publicActionLabel = publicActionLabelForOutput(selectedOutput);
   const placeholderText = previewPlaceholderText(draft);
+  const shouldShowDraftActions = hasDraftProduct && !publicHref;
 
   return (
     <aside
@@ -303,9 +314,9 @@ export default function ChatProductPreview({
       }`}
     >
       <div className="flex h-full min-h-0 flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 sm:px-6 sm:pb-8">
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-visible">
+        <div className="flex min-h-0 flex-1 flex-col justify-center gap-4 overflow-visible pb-2 pt-20 sm:pb-4 sm:pt-24">
           <section className="relative mx-auto flex w-full flex-none items-center justify-center">
-            <div className="relative aspect-[9/17] w-full max-w-[22rem] sm:aspect-[9/16] sm:max-w-[23rem]">
+            <div className="relative aspect-[9/17] h-[min(34rem,calc(100dvh-12rem))] max-w-full w-auto sm:aspect-[9/16] sm:h-[min(36rem,calc(100dvh-12rem))]">
               {isGenerating ? (
                 <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 rounded-[2.2rem] bg-white/78 text-[#8b8298] backdrop-blur-[3px]">
                   <Loader2 className="size-11 animate-spin text-[#7c4dff]" aria-hidden="true" />
@@ -333,21 +344,59 @@ export default function ChatProductPreview({
 
           <div
             className={`flex shrink-0 flex-col items-center pb-1 ${
-              publicHref
+              publicHref || shouldShowDraftActions
                 ? "min-h-[5.5rem] justify-start sm:min-h-[5.75rem]"
                 : "min-h-[4.75rem] justify-end"
             }`}
           >
             {publicHref ? (
-              <a
-                href={publicHref}
-                target="_blank"
-                rel="noreferrer"
-                className="flex h-12 w-full min-w-full max-w-none items-center justify-center gap-2 self-stretch rounded-2xl bg-[#3b2468] px-5 text-sm font-bold text-[#f6efff] shadow-lg shadow-[#3b2468]/20 transition hover:bg-[#2f1a55]"
-              >
-                <ExternalLink className="size-4" aria-hidden="true" />
-                {publicActionLabel}
-              </a>
+              <div className="flex w-full flex-wrap items-center justify-center gap-2">
+                <a
+                  href={publicHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-12 max-w-full items-center justify-center gap-2 rounded-2xl bg-[#3b2468] px-5 text-sm font-bold text-[#f6efff] shadow-lg shadow-[#3b2468]/20 transition hover:bg-[#2f1a55]"
+                >
+                  <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
+                  <span className="truncate">{publicActionLabel}</span>
+                </a>
+                {rsvpDashboardHref ? (
+                  <a
+                    href={rsvpDashboardHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-12 max-w-full items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-white/82 px-5 text-sm font-bold text-[#3b2468] shadow-sm shadow-[#3b2468]/10 transition hover:border-[#c2aef3] hover:bg-white"
+                  >
+                    <LayoutDashboard className="size-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate">Open Dashboard</span>
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
+            {shouldShowDraftActions ? (
+              <div className="flex w-full flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={onPublish}
+                  disabled={isPublishing}
+                  className="inline-flex h-12 max-w-full items-center justify-center gap-2 rounded-2xl bg-[#3b2468] px-5 text-sm font-bold text-[#f6efff] shadow-lg shadow-[#3b2468]/20 transition hover:bg-[#2f1a55] disabled:cursor-wait disabled:opacity-70"
+                >
+                  {isPublishing ? (
+                    <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
+                  )}
+                  <span className="truncate">{isPublishing ? "Publishing..." : "Save / Publish"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onKeepEditing}
+                  disabled={isPublishing}
+                  className="inline-flex h-12 max-w-full items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-white/82 px-5 text-sm font-bold text-[#3b2468] shadow-sm shadow-[#3b2468]/10 transition hover:border-[#c2aef3] hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span className="truncate">Keep Editing</span>
+                </button>
+              </div>
             ) : null}
             {!hasGeneratedProduct ? (
               <p className="max-w-full px-3 text-center text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#4f416a]">

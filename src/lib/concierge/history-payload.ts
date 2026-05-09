@@ -142,7 +142,12 @@ export function buildConciergeHistoryPayload(
   const liveCardHeadline = cleanString(draft.previewCopy.headline) || title;
   const liveCardSubheadline =
     cleanString(draft.previewCopy.subheadline) || cleanString(draft.theme) || category;
-  const liveCardCta = cleanString(draft.previewCopy.cta) || "RSVP";
+  const rawLiveCardCta = cleanString(draft.previewCopy.cta);
+  const liveCardCta = rsvpEnabled
+    ? rawLiveCardCta || "RSVP"
+    : rawLiveCardCta && !/^rsvp$/i.test(rawLiveCardCta)
+      ? rawLiveCardCta
+      : "View details";
   const registryLink =
     cleanString(draft.registryLink) || cleanString(draft.giftRegistryLink) || null;
   const giftNote = cleanString(draft.giftPreferenceNote) || cleanString(draft.giftNote) || null;
