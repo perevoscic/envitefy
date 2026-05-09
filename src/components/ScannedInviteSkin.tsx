@@ -68,6 +68,9 @@ type Props = {
   detailCopy?: string | null;
   activities?: string[] | null;
   attire?: string | null;
+  registryActionLabel?: string | null;
+  registryHelperText?: string | null;
+  registryName?: string | null;
   registryUrl?: string | null;
   ocrFacts?: OcrFact[] | null;
   detailLayout?: "default" | "wideDetails";
@@ -209,6 +212,9 @@ export default function ScannedInviteSkin({
   detailCopy,
   activities,
   attire,
+  registryActionLabel,
+  registryHelperText,
+  registryName,
   registryUrl,
   ocrFacts,
   detailLayout = "default",
@@ -313,8 +319,12 @@ export default function ScannedInviteSkin({
   const displayDetailCopy = baseDetailCopy;
   const displayAttire = String(attire || "").trim();
   const displayRegistryUrl = String(registryUrl || "").trim();
+  const displayRegistryName = String(registryName || "").trim();
+  const displayRegistryHelperText = String(registryHelperText || "").trim();
   const registryLabel = usesGiftListCopy(categoryLabel) ? "Gift List" : "Registry";
-  const registryActionLabel = registryLabel === "Gift List" ? "Open Gift List" : "Open Registry";
+  const resolvedRegistryActionLabel =
+    String(registryActionLabel || "").trim() ||
+    (registryLabel === "Gift List" ? "Open Gift List" : "Open Registry");
   const displayActivities = Array.isArray(activities)
     ? filterRenderedTextValues(
         activities.map((item) => String(item || "").trim()).filter(Boolean),
@@ -638,13 +648,25 @@ export default function ScannedInviteSkin({
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.48 }}
-                className="col-span-1 flex items-center justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 text-center shadow-sm transition hover:scale-[1.01] md:col-span-1"
+                className={`${displayRegistryHelperText ? "col-span-2" : "col-span-1 md:col-span-1"} flex items-center justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 text-center shadow-sm transition hover:scale-[1.01]`}
               >
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
                     {registryLabel}
                   </div>
-                  <div className="mt-2 text-lg font-bold text-black/90">{registryActionLabel}</div>
+                  {displayRegistryName ? (
+                    <div className="mt-2 text-base font-semibold text-black/80">
+                      {displayRegistryName}
+                    </div>
+                  ) : null}
+                  <div className="mt-2 text-lg font-bold text-black/90">
+                    {resolvedRegistryActionLabel}
+                  </div>
+                  {displayRegistryHelperText ? (
+                    <div className="mt-3 whitespace-pre-line text-sm font-medium leading-relaxed text-black/55">
+                      {displayRegistryHelperText}
+                    </div>
+                  ) : null}
                 </div>
               </motion.a>
             ) : null}

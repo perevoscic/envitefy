@@ -1,19 +1,27 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
-import {
-  getEventHistoryById,
-  updateEventHistoryTitle,
-  updateEventHistoryDataMerge,
-  updateEventHistoryData,
-  claimEventHistoryById,
-  listShareRecipientUserIdsForEvent,
-} from "@/lib/db";
-import { invalidateUserHistory } from "@/lib/history-cache";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
-import { normalizeAccessControlPayload } from "@/lib/event-access";
+import {
+  claimEventHistoryById,
+  getEventHistoryById,
+  getEventHistoryPublicRenderById,
+  isEventSharedWithUser,
+  listShareRecipientUserIdsForEvent,
+  updateEventHistoryData,
+  updateEventHistoryDataMerge,
+  updateEventHistoryTitle,
+} from "@/lib/db";
+import { redactDiscoverySourceForPublicView } from "@/lib/discovery-public-redact";
+import {
+  getEventAccessCookieName,
+  normalizeAccessControlPayload,
+  verifyEventAccessCookieValue,
+} from "@/lib/event-access";
 import { deleteEventHistoryWithCleanup } from "@/lib/event-cleanup";
 import { findTransientEventMedia } from "@/lib/event-media";
+import { invalidateUserHistory } from "@/lib/history-cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,26 +46,113 @@ function buildMediaValidationResponse(issues: ReturnType<typeof findTransientEve
   );
 }
 
-export async function GET(
-  _req: Request,
-  context: { params: Promise<{ id: string }> }
+function isRecord(value: unknown): value is Record<string, any> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function sanitizeHistoryPublicData(data: unknown): Record<string, any> {
+  const source = isRecord(data) ? { ...data } : {};
+  const redacted = { ...redactDiscoverySourceForPublicView(source) };
+  delete redacted.conciergeDraft;
+  delete redacted.sourceContext;
+  delete redacted.missingFields;
+  delete redacted.ocrText;
+
+  if (isRecord(redacted.accessControl)) {
+    redacted.accessControl = {
+      ...redacted.accessControl,
+      passcodeHash: undefined,
+      passcodePlain: undefined,
+    };
+  }
+
+  return redacted;
+}
+
+function buildPublicHistoryResponse(
+  row: Awaited<ReturnType<typeof getEventHistoryPublicRenderById>>,
 ) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    title: row.title,
+    data: sanitizeHistoryPublicData(row.data),
+    created_at: row.created_at,
+    media: row.media,
+  };
+}
+
+function invalidateHistoryAndDashboardForUser(userId: string | null | undefined) {
+  if (!userId) return;
+  invalidateUserHistory(userId);
+  invalidateUserDashboard(userId);
+}
+
+async function invalidateSharedHistoryViewers(eventId: string) {
+  const recipientUserIds = await listShareRecipientUserIdsForEvent(eventId).catch(() => []);
+  for (const recipientUserId of recipientUserIds) {
+    invalidateHistoryAndDashboardForUser(recipientUserId);
+  }
+}
+
+export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const row = await getEventHistoryById(id);
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const session: any = await getServerSession(authOptions as any);
+  const userId = await resolveSessionUserId(session);
+  if (userId && row.user_id === userId) {
+    if (HISTORY_ITEM_DEBUG) {
+      console.error("[history] GET by id: response_bytes", {
+        id,
+        bytes: estimateJsonBytes(row),
+      });
+    }
+    return NextResponse.json(row);
+  }
+
+  const url = new URL(req.url);
+  const publicRequested =
+    url.searchParams.get("public") === "1" || url.searchParams.get("view") === "public";
+  if (!publicRequested) {
+    return NextResponse.json(
+      { error: userId ? "Forbidden" : "Unauthorized" },
+      { status: userId ? 403 : 401 },
+    );
+  }
+
+  const accessControl = isRecord(row.data?.accessControl) ? row.data.accessControl : null;
+  const requiresPasscode = Boolean(accessControl?.requirePasscode && accessControl?.passcodeHash);
+  const recipientAccepted = userId
+    ? Boolean(await isEventSharedWithUser(id, userId).catch(() => false))
+    : false;
+  let hasPasscodeAccess = !requiresPasscode || recipientAccepted;
+  if (!hasPasscodeAccess && typeof accessControl?.passcodeHash === "string") {
+    const cookieStore = await cookies();
+    hasPasscodeAccess = verifyEventAccessCookieValue(
+      cookieStore.get(getEventAccessCookieName(id))?.value,
+      id,
+      accessControl.passcodeHash,
+    );
+  }
+
+  if (!hasPasscodeAccess) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const publicRow = buildPublicHistoryResponse(await getEventHistoryPublicRenderById(id));
+  if (!publicRow) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (HISTORY_ITEM_DEBUG) {
     console.error("[history] GET by id: response_bytes", {
       id,
-      bytes: estimateJsonBytes(row),
+      bytes: estimateJsonBytes(publicRow),
     });
   }
-  return NextResponse.json(row);
+  return NextResponse.json(publicRow);
 }
 
-export async function PATCH(
-  req: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
   const session: any = await getServerSession(authOptions as any);
   const userId = await resolveSessionUserId(session);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -79,7 +174,7 @@ export async function PATCH(
       if (!refreshed || refreshed.user_id !== userId) {
         return NextResponse.json(
           { error: "Unable to claim this draft right now." },
-          { status: 409 }
+          { status: 409 },
         );
       }
       claimedRow = refreshed;
@@ -88,8 +183,7 @@ export async function PATCH(
       claimed = true;
     }
   }
-  const titleInput =
-    typeof body.title === "string" ? body.title.trim() : undefined;
+  const titleInput = typeof body.title === "string" ? body.title.trim() : undefined;
   const hasTitleUpdate = Boolean(titleInput);
   const hasDataUpdate = body && (body.category != null || body.data != null);
 
@@ -99,16 +193,13 @@ export async function PATCH(
   if (hasDataUpdate) {
     const incomingData = body.data;
     const incomingCategory = body.category;
-    const existingAccessControl =
-      (existing.data && (existing.data as any).accessControl) || null;
+    const existingAccessControl = (existing.data && (existing.data as any).accessControl) || null;
     const processedData =
-      incomingData && typeof incomingData === "object"
-        ? { ...incomingData }
-        : incomingData;
+      incomingData && typeof incomingData === "object" ? { ...incomingData } : incomingData;
     if (processedData && typeof processedData === "object" && "accessControl" in processedData) {
       processedData.accessControl = await normalizeAccessControlPayload(
         processedData.accessControl,
-        existingAccessControl
+        existingAccessControl,
       );
       if (!processedData.accessControl) {
         delete processedData.accessControl;
@@ -142,8 +233,7 @@ export async function PATCH(
         ...processedData,
         // Explicitly ensure theme and font are replaced (not merged)
         themeId: processedData.themeId ?? existingData.themeId,
-        pageTemplateId:
-          processedData.pageTemplateId ?? existingData.pageTemplateId,
+        pageTemplateId: processedData.pageTemplateId ?? existingData.pageTemplateId,
         theme: processedData.theme ?? existingData.theme,
         fontId: processedData.fontId ?? existingData.fontId,
         fontSize: processedData.fontSize ?? existingData.fontSize,
@@ -164,8 +254,7 @@ export async function PATCH(
       if (processedData && typeof processedData === "object") {
         Object.assign(patch, processedData);
       }
-      updatedRow =
-        (await updateEventHistoryDataMerge(id, patch)) || updatedRow;
+      updatedRow = (await updateEventHistoryDataMerge(id, patch)) || updatedRow;
     }
 
     changed = true;
@@ -173,36 +262,31 @@ export async function PATCH(
 
   // Support updating title (alone or together with data)
   if (hasTitleUpdate) {
-    updatedRow =
-      (await updateEventHistoryTitle(id, String(titleInput))) || updatedRow;
+    updatedRow = (await updateEventHistoryTitle(id, String(titleInput))) || updatedRow;
     changed = true;
   }
 
   if (changed) {
     // Invalidate cache for the previous owner, or the new owner when a claim was performed.
     if (existing.user_id) {
-      invalidateUserHistory(existing.user_id);
-      invalidateUserDashboard(existing.user_id);
+      invalidateHistoryAndDashboardForUser(existing.user_id);
     } else if (claimed) {
-      invalidateUserHistory(userId);
-      invalidateUserDashboard(userId);
+      invalidateHistoryAndDashboardForUser(userId);
     }
+    await invalidateSharedHistoryViewers(id);
     return NextResponse.json(updatedRow);
   }
 
   if (claimed) {
-    invalidateUserHistory(userId);
-    invalidateUserDashboard(userId);
+    invalidateHistoryAndDashboardForUser(userId);
+    await invalidateSharedHistoryViewers(id);
     return NextResponse.json(updatedRow);
   }
 
   return NextResponse.json({ error: "No updatable fields" }, { status: 400 });
 }
 
-export async function DELETE(
-  _req: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
   const session: any = await getServerSession(authOptions as any);
   const userId = await resolveSessionUserId(session);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -217,12 +301,10 @@ export async function DELETE(
   await deleteEventHistoryWithCleanup({ id, row: existing });
   // Invalidate cache for the owner
   if (existing.user_id) {
-    invalidateUserHistory(existing.user_id);
-    invalidateUserDashboard(existing.user_id);
+    invalidateHistoryAndDashboardForUser(existing.user_id);
   }
   for (const recipientUserId of affectedRecipients) {
-    invalidateUserHistory(recipientUserId);
-    invalidateUserDashboard(recipientUserId);
+    invalidateHistoryAndDashboardForUser(recipientUserId);
   }
   return NextResponse.json({ ok: true });
 }

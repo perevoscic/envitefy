@@ -40,6 +40,7 @@ export type GroupedEventItem = {
   ownerHref: string;
   productKind: "card" | "event" | "signup" | "unknown";
   hasOwnerRsvp: boolean;
+  isInvited: boolean;
   openMode: "dashboard" | "preview";
   showQuickActions: boolean;
   title: string;
@@ -628,6 +629,50 @@ function asSidebarRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function normalizeSidebarString(value: unknown): string {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function hasSidebarUploadedEventMediaPath(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const normalized = value.replace(/\\/g, "/").toLowerCase();
+  return normalized.includes("images/events/");
+}
+
+function isSidebarScannedOrUploadedEvent(data: unknown): boolean {
+  const record = asSidebarRecord(data);
+  if (!record) return false;
+
+  const sourceContext = asSidebarRecord(record.sourceContext);
+  const sourceContextType = normalizeSidebarString(sourceContext?.type);
+  if (sourceContextType === "upload" || sourceContextType === "snap") return true;
+  if (record.attachment || record.ocrSkin) return true;
+
+  const sourceMarkers = [
+    record.createdVia,
+    record.source,
+    record.ingestMethod,
+    record.origin,
+    sourceContext?.source,
+    sourceContext?.method,
+  ]
+    .map(normalizeSidebarString)
+    .filter(Boolean)
+    .join(" ");
+
+  if (/\b(?:ocr|scan|scanned|snap|upload|uploaded)\b/.test(sourceMarkers)) return true;
+
+  return [
+    record.thumbnail,
+    record.coverImageUrl,
+    record.heroImage,
+    record.customHeroImage,
+    sourceContext?.url,
+    sourceContext?.imageUrl,
+    sourceContext?.sourceUrl,
+  ].some(hasSidebarUploadedEventMediaPath);
+}
+
 function normalizeSidebarProductOutput(value: unknown): SidebarProductOutput | null {
   if (typeof value !== "string") return null;
   const normalized = value
@@ -827,7 +872,7 @@ export function buildGroupedEventLists(args: {
     const isInvited = isInvitedHistoryEvent(data, args.isInvitedEventLikeRecord);
     if (data?.signupForm && !isInvited) continue;
 
-    const targetList: EventListPage = isInvited ? "invitedEvents" : "myEvents";
+    const targetList: EventListPage = "myEvents";
     const isDraft = String(data?.status || "").toLowerCase() === "draft";
     const normalizedCategoryRaw = normalizeCategoryLabel(
       (data?.category as string | null) ||
@@ -854,19 +899,15 @@ export function buildGroupedEventLists(args: {
       : defaultHref;
     const ownerHref = defaultHref;
     const hasOwnerRsvp = !isInvited && args.canShowOwnerRsvpDashboard(data);
-    const openMode: GroupedEventItem["openMode"] = isInvited ? "preview" : "dashboard";
     const rawShareStatus = String(data?.shareStatus || "")
       .trim()
       .toLowerCase();
     const shareStatus =
       rawShareStatus === "accepted" ? "accepted" : rawShareStatus === "pending" ? "pending" : null;
-    const createdVia = String(
-      data?.createdVia || data?.source || data?.ingestMethod || data?.origin || "",
-    )
-      .trim()
-      .toLowerCase();
     const isSnappedOrUploaded =
-      Boolean(data?.invitedFromScan) || /(snap|scan|ocr|upload)/.test(createdVia);
+      Boolean(data?.invitedFromScan) || isSidebarScannedOrUploadedEvent(data);
+    const openMode: GroupedEventItem["openMode"] =
+      isInvited || isSnappedOrUploaded ? "preview" : "dashboard";
 
     const categoryColor = defaultCategoryColor(category);
     const palette = colorClasses(isInvited ? "slate" : categoryColor);
@@ -887,6 +928,7 @@ export function buildGroupedEventLists(args: {
       ownerHref,
       productKind: resolveSidebarProductKind(primaryOutput),
       hasOwnerRsvp,
+      isInvited,
       openMode,
       showQuickActions: isInvited || isSnappedOrUploaded,
       title: row.title || "Untitled event",

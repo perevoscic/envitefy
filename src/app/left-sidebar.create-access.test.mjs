@@ -129,7 +129,7 @@ test("left sidebar gives My Events rows a hover delete affordance", () => {
 
   assert.match(
     source,
-    /\) : showQuickActions \? \(\s*<button[\s\S]*?className="ml-2 inline-flex h-9 w-9[\s\S]*?aria-label=\{`Delete \$\{item\.title\}`\}/s,
+    /const renderRowActions = \(item: GroupedEventItem\) => \{[\s\S]*?className="inline-flex h-8 w-8[\s\S]*?aria-label=\{`\$\{resolvedDeleteActionVerb\} \$\{item\.title\}`\}/s,
   );
   assert.match(
     source,
@@ -141,9 +141,12 @@ test("left sidebar keeps My Events visible on owner event tab routes", () => {
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
   const viewSource = readSource("src/app/left-sidebar.tsx");
 
+  assert.match(controllerSource, /const requestedOwnerTab: EventContextTab \| null/);
+  assert.match(controllerSource, /requestedTab === "guests"[\s\S]*?"rsvps"/);
+  assert.match(controllerSource, /requestedTab === "communications"[\s\S]*?"messages"/);
   assert.match(
     controllerSource,
-    /requestedTab !== "dashboard" &&[\s\S]*?requestedTab !== "settings"/,
+    /requestedTab === "dashboard"[\s\S]*?\|\|[\s\S]*?requestedTab === "rsvps"[\s\S]*?\|\|[\s\S]*?requestedTab === "messages"/,
   );
   assert.match(controllerSource, /setEventSidebarMode\("owner"\);/);
   assert.match(
@@ -152,7 +155,24 @@ test("left sidebar keeps My Events visible on owner event tab routes", () => {
   );
   assert.match(
     controllerSource,
-    /const openOwnerEventContext = useCallback\([\s\S]*?setEventContextSourcePage\("myEvents"\);[\s\S]*?setSidebarPage\("myEvents"\);[\s\S]*?router\.push\(buildEventOwnerHref/,
+    /const openOwnerEventContext = useCallback\([\s\S]*?setEventContextSourcePage\("myEvents"\);[\s\S]*?setSidebarPage\("myEvents"\);[\s\S]*?const nextHref = buildEventOwnerHref/,
+  );
+  assert.match(controllerSource, /const ownerNavigationPendingRef = useRef\(false\);/);
+  assert.match(
+    controllerSource,
+    /if \(!selectedEventId\) return;\s*if \(ownerNavigationPendingRef\.current\) return;\s*if \(invitedNavigationPendingRef\.current\) return;/,
+  );
+  assert.match(
+    controllerSource,
+    /if \(ownerNavigationPendingRef\.current\) return;\s*if \(invitedNavigationPendingRef\.current\) return;\s*if \(pathname !== "\/"\) return;/,
+  );
+  assert.match(
+    controllerSource,
+    /if \(!ownerNavigationPendingRef\.current && !invitedNavigationPendingRef\.current\) return;\s*if \(!pathname \|\| pathname === "\/"\) return;\s*ownerNavigationPendingRef\.current = false;\s*invitedNavigationPendingRef\.current = false;/,
+  );
+  assert.match(
+    controllerSource,
+    /setSidebarPage\("myEvents"\);\s*const nextHref = buildEventOwnerHref\(ownerHref, row\.id, initialOwnerTab\);\s*const currentPath = typeof window !== "undefined" \? window\.location\.pathname : pathname;\s*if \(!String\(currentPath \|\| ""\)\.startsWith\("\/event\/"\)\) \{\s*ownerNavigationPendingRef\.current = true;\s*\}\s*router\.push\(nextHref\);/,
   );
   assert.match(viewSource, /const showOwnerEventsPanel =/);
   assert.match(

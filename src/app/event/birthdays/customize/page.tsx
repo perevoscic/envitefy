@@ -1048,6 +1048,8 @@ export default function BirthdayTemplateCustomizePage() {
         data: {
           category: "Birthdays",
           createdVia: "birthday-renderer",
+          status: "published",
+          draftStatus: "published",
           createdManually: true,
           startISO,
           endISO,

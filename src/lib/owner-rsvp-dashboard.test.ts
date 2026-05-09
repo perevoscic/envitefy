@@ -36,6 +36,25 @@ test("canShowOwnerRsvpDashboard rejects scanned and uploaded event data", () => 
     false,
   );
   assert.equal(isScannedOrUploadedEventData({ createdVia: "ocr-birthday-skin" }), true);
+  assert.equal(
+    canShowOwnerRsvpDashboard({
+      numberOfGuests: 24,
+      attachment: { type: "image/webp", dataUrl: "/images/events/flyer.webp" },
+    }),
+    false,
+  );
+  assert.equal(canShowOwnerRsvpDashboard({ rsvpEnabled: false, numberOfGuests: 24 }), false);
+  assert.equal(
+    canShowOwnerRsvpDashboard({
+      primaryOutput: "live_card",
+      requestedOutputs: ["live_card"],
+      numberOfGuests: 24,
+      studioCard: { imageUrl: "/api/blob/event-media/football/card.webp" },
+    }),
+    false,
+  );
+  assert.equal(isScannedOrUploadedEventData({ thumbnail: "/images/events/evt/attachment.webp" }), true);
+  assert.equal(isScannedOrUploadedEventData({ thumbnail: "/event-media/evt/card.webp" }), false);
 });
 
 test("canShowOwnerRsvpDashboard rejects invited events", () => {

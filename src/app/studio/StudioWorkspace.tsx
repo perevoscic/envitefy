@@ -51,7 +51,11 @@ import {
   SHARED_BASICS,
   supportsStudioCategoryRsvp,
 } from "./studio-workspace-field-config";
-import { createInitialDetails, sanitizeMediaItems } from "./studio-workspace-sanitize";
+import {
+  createInitialDetails,
+  createStudioMediaItemFromHistoryRow,
+  sanitizeMediaItems,
+} from "./studio-workspace-sanitize";
 import type {
   ActiveTab,
   ButtonPosition,
@@ -68,6 +72,7 @@ import {
   STUDIO_OPEN_HOUSE_PROPERTY_IMAGE_URL_MAX,
   STUDIO_OPEN_HOUSE_REALTOR_IMAGE_URL_MAX,
   STUDIO_OPEN_HOUSE_REALTOR_LOGO_URL_MAX,
+  sanitizeGuestImageUrls,
 } from "./studio-workspace-utils";
 import { StudioCategoryStep } from "./workspace/StudioCategoryStep";
 import { StudioCreateFlow } from "./workspace/StudioCreateFlow";
@@ -159,7 +164,9 @@ function normalizeLiveCardVisualDirectionValue(value: unknown): string {
 }
 
 function normalizeLiveCardVisualDirectionUrls(urls: string[]): string {
-  return sanitizeGuestImageUrls(urls).map((url) => url.toLowerCase()).join("\n");
+  return sanitizeGuestImageUrls(urls)
+    .map((url) => url.toLowerCase())
+    .join("\n");
 }
 
 function hasLiveCardVisualDirectionChanged(
@@ -523,7 +530,18 @@ const STUDIO_MOBILE_ACTION_BAR_CLEARANCE = "5.5rem";
 const STUDIO_MOBILE_CARD_TOP_OFFSET = "1.25rem";
 const STUDIO_EDITOR_MOBILE_BREAKPOINT = "(max-width: 767px)";
 
-export default function StudioWorkspace() {
+type StudioWorkspaceProps = {
+  initialEditEventId?: string | null;
+  initialEditEventRow?: unknown;
+  initialEditEventError?: string | null;
+};
+
+export default function StudioWorkspace({
+  initialEditEventId = null,
+  initialEditEventRow = null,
+  initialEditEventError = null,
+}: StudioWorkspaceProps = {}) {
+  const initialEditItem = createStudioMediaItemFromHistoryRow(initialEditEventRow);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -532,19 +550,22 @@ export default function StudioWorkspace() {
     parseStudioWorkspaceView(searchParams.get("view")),
   );
   const [createStep, setCreateStep] = useState<StudioCreateStep>(() =>
-    parseStudioCreateStep(searchParams.get("step")),
+    initialEditItem ? "details" : parseStudioCreateStep(searchParams.get("step")),
   );
   const [details, setDetails] = useState<EventDetails>(() => {
+    if (initialEditItem) return initialEditItem.details;
     const initial = createInitialDetails();
     const parsedCategory = parseStudioCategoryParam(searchParams.get("category"));
     return parsedCategory ? { ...initial, category: parsedCategory } : initial;
   });
   const { mediaList, setMediaList, librarySyncError, retryLibrarySync } = useStudioMediaLibrary();
-  const [currentProject, setCurrentProject] = useState<MediaItem | null>(null);
+  const [currentProject, setCurrentProject] = useState<MediaItem | null>(() => initialEditItem);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationNote, setGenerationNote] = useState<string | null>(null);
-  const [activePage, setActivePage] = useState<MediaItem | null>(null);
-  const [previewOrigin, setPreviewOrigin] = useState<StudioWorkspaceView | null>(null);
+  const [generationNote, setGenerationNote] = useState<string | null>(() => initialEditEventError);
+  const [activePage, setActivePage] = useState<MediaItem | null>(() => initialEditItem);
+  const [previewOrigin, setPreviewOrigin] = useState<StudioWorkspaceView | null>(() =>
+    initialEditItem ? "create" : null,
+  );
   const [selectedImage, setSelectedImage] = useState<MediaItem | null>(null);
   const [deleteConfirmationItem, setDeleteConfirmationItem] = useState<MediaItem | null>(null);
   const [currentProjectPreviewTab, setCurrentProjectPreviewTab] = useState<ActiveTab>("none");
@@ -554,18 +575,29 @@ export default function StudioWorkspace() {
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
   const [applyingEditId, setApplyingEditId] = useState<string | null>(null);
-  const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
+  const [isEditPanelOpen, setIsEditPanelOpen] = useState(Boolean(initialEditItem));
   const [studioVisualDraft, setStudioVisualDraft] = useState<StudioVisualDraft | null>(null);
-  const [isLiveCardToolsDrawerOpen, setIsLiveCardToolsDrawerOpen] = useState(false);
+  const [isLiveCardToolsDrawerOpen, setIsLiveCardToolsDrawerOpen] = useState(
+    Boolean(initialEditItem),
+  );
   const [isDesktopLiveCardViewport, setIsDesktopLiveCardViewport] = useState(false);
   const [isMobileEditorViewport, setIsMobileEditorViewport] = useState(false);
-  const [mobileEditorPane, setMobileEditorPane] = useState<"composer" | "preview">("composer");
+  const [mobileEditorPane, setMobileEditorPane] = useState<"composer" | "preview">(
+    initialEditItem ? "preview" : "composer",
+  );
   const [isInvitationUploading, setIsInvitationUploading] = useState(false);
   const [isSubjectPhotoUploading, setIsSubjectPhotoUploading] = useState(false);
   const [invitationUploadError, setInvitationUploadError] = useState<string | null>(null);
   const [flyerUploadError, setFlyerUploadError] = useState<string | null>(null);
   const [subjectPhotoUploadError, setSubjectPhotoUploadError] = useState<string | null>(null);
   const liveCardHistoryEntryActiveRef = useRef(false);
+  const initialEditEventRowRef = useRef<unknown>(initialEditEventRow);
+  const initialEditEventErrorRef = useRef<string | null>(initialEditEventError);
+  const initialEditEventIdRef = useRef(clean(initialEditEventId));
+  const loadedEditEventIdRef = useRef<string | null>(
+    initialEditItem ? initialEditItem.publishedEventId || clean(initialEditEventId) : null,
+  );
+  const editEventIdParam = clean(searchParams.get("editEvent"));
   const editingMediaItem = currentProject;
   const isEditingLiveCard = editingMediaItem?.type === "page";
 
@@ -576,10 +608,16 @@ export default function StudioWorkspace() {
       activePage,
     [activePage, currentProject, mediaList],
   );
-  const currentProjectWithVisualDraft = useMemo(
-    () => (currentProject ? applyStudioVisualDraft(currentProject, studioVisualDraft) : null),
-    [currentProject, studioVisualDraft],
-  );
+  const currentProjectWithVisualDraft = useMemo(() => {
+    if (!currentProject) return null;
+    const draftedProject = applyStudioVisualDraft(currentProject, studioVisualDraft);
+    if (draftedProject.type !== "page") return draftedProject;
+    return {
+      ...draftedProject,
+      details,
+      data: refreshLiveCardInvitationData(details, draftedProject.data || undefined),
+    };
+  }, [currentProject, details, studioVisualDraft]);
   const savedCurrentProject = useMemo(
     () =>
       currentProject ? (mediaList.find((item) => item.id === currentProject.id) ?? null) : null,
@@ -699,10 +737,91 @@ export default function StudioWorkspace() {
   }, [searchParams]);
 
   useEffect(() => {
+    if (!editEventIdParam) return;
+    if (loadedEditEventIdRef.current === editEventIdParam) return;
+
+    let cancelled = false;
+    loadedEditEventIdRef.current = editEventIdParam;
+
+    async function loadPublishedEventForArtworkEdit() {
+      try {
+        let row: unknown = null;
+        const hasInitialRowForEvent =
+          initialEditEventIdRef.current === editEventIdParam && initialEditEventRowRef.current;
+        if (hasInitialRowForEvent) {
+          row = initialEditEventRowRef.current;
+          initialEditEventRowRef.current = null;
+        } else if (
+          initialEditEventIdRef.current === editEventIdParam &&
+          initialEditEventErrorRef.current
+        ) {
+          throw new Error(initialEditEventErrorRef.current);
+        } else {
+          const response = await fetch(`/api/history/${encodeURIComponent(editEventIdParam)}`, {
+            cache: "no-store",
+            credentials: "include",
+          });
+          row = await response.json().catch(() => null);
+          if (!response.ok) {
+            throw new Error(
+              isRecord(row) && typeof row.error === "string"
+                ? row.error
+                : "Unable to load this event for Studio editing.",
+            );
+          }
+        }
+        const item = createStudioMediaItemFromHistoryRow(row);
+        if (!item) {
+          throw new Error("This event does not have editable Studio artwork.");
+        }
+        if (cancelled) return;
+
+        setDetails(item.details);
+        setCurrentProject(item);
+        setActivePage(item);
+        setPreviewOrigin("create");
+        setCurrentProjectPreviewTab("none");
+        setActiveTab("none");
+        setMobileEditorPane("preview");
+        setSelectedImage(null);
+        setEditPrompt("");
+        setIsEditPanelOpen(true);
+        setStudioVisualDraft(null);
+        setIsDesignMode(false);
+        setIsLiveCardToolsDrawerOpen(true);
+        setGenerationNote(null);
+        navigateWorkspace("create", "details", item.details.category);
+      } catch (error) {
+        if (cancelled) return;
+        loadedEditEventIdRef.current = null;
+        const message =
+          error instanceof Error && error.message.trim()
+            ? error.message.trim()
+            : "Unable to load this event for Studio editing.";
+        setGenerationNote(message);
+      }
+    }
+
+    void loadPublishedEventForArtworkEdit();
+    return () => {
+      cancelled = true;
+    };
+  }, [editEventIdParam, navigateWorkspace]);
+
+  useEffect(() => {
+    if (editEventIdParam && editingMediaItem?.publishedEventId === editEventIdParam) {
+      return;
+    }
     setEditPrompt("");
     setIsEditPanelOpen(false);
     setStudioVisualDraft(null);
-  }, [selectedImage?.id, activePageRecord?.id, editingMediaItem?.id]);
+  }, [
+    activePageRecord?.id,
+    editEventIdParam,
+    editingMediaItem?.id,
+    editingMediaItem?.publishedEventId,
+    selectedImage?.id,
+  ]);
 
   useEffect(() => {
     setCurrentProjectPreviewTab("none");
@@ -1366,8 +1485,8 @@ export default function StudioWorkspace() {
   }
 
   function saveCurrentProjectToLibrary() {
-    if (!currentProject || currentProject.status !== "ready") return;
-    saveWorkingProject(currentProject);
+    if (!currentProjectWithVisualDraft || currentProjectWithVisualDraft.status !== "ready") return;
+    saveWorkingProject(currentProjectWithVisualDraft);
   }
 
   function prepareProjectForLibrarySave(project: MediaItem): MediaItem {
@@ -1376,6 +1495,12 @@ export default function StudioWorkspace() {
     if (!existingSavedProject) return nextProject;
     if (serializeStudioMediaItem(nextProject) === serializeStudioMediaItem(existingSavedProject)) {
       return nextProject;
+    }
+    if (nextProject.publishedEventId) {
+      return {
+        ...nextProject,
+        sharePath: undefined,
+      };
     }
     return {
       ...nextProject,
@@ -2006,7 +2131,9 @@ export default function StudioWorkspace() {
                 onSelectCategory={handleCategorySelect}
                 onUploadInvitation={handleCategoryStepUpload}
                 isInvitationUploading={isInvitationUploading}
-                invitationUploadError={invitationUploadError}
+                invitationUploadError={
+                  invitationUploadError || (editEventIdParam ? generationNote : null)
+                }
               />
             }
             detailsContent={

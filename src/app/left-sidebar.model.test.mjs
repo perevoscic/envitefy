@@ -16,7 +16,7 @@ const loadModelModule = async () => {
   return import(moduleUrl);
 };
 
-test("buildGroupedEventLists buckets invited rows, prioritizes drafts, splits past events, and excludes owned signup forms", async () => {
+test("buildGroupedEventLists ports invited rows into My Events, prioritizes drafts, splits past events, and excludes owned signup forms", async () => {
   const { buildGroupedEventLists } = await loadModelModule();
 
   const grouped = buildGroupedEventLists({
@@ -83,9 +83,16 @@ test("buildGroupedEventLists buckets invited rows, prioritizes drafts, splits pa
 
   assert.deepEqual(
     grouped.myEvents.upcoming.map((section) => section.category),
-    ["Drafts", "Birthdays"]
+    ["Drafts", "Birthdays", "Baby Showers"]
   );
   assert.equal(grouped.myEvents.upcoming[0].items[0].row.id, "draft-1");
+  const invitedItem = grouped.myEvents.upcoming
+    .flatMap((section) => section.items)
+    .find((item) => item.row.id === "invited-1");
+  assert.ok(invitedItem);
+  assert.equal(invitedItem.isInvited, true);
+  assert.equal(invitedItem.openMode, "preview");
+  assert.equal(invitedItem.shareStatus, "pending");
   assert.deepEqual(
     grouped.myEvents.past.flatMap((section) => section.items.map((item) => item.row.id)),
     ["past-1"]
@@ -94,9 +101,8 @@ test("buildGroupedEventLists buckets invited rows, prioritizes drafts, splits pa
     grouped.invitedEvents.upcoming.flatMap((section) =>
       section.items.map((item) => item.row.id)
     ),
-    ["invited-1"]
+    []
   );
-  assert.equal(grouped.invitedEvents.upcoming[0].items[0].shareStatus, "pending");
   assert.equal(
     grouped.myEvents.upcoming.some((section) =>
       section.items.some((item) => item.row.id === "signup-1")
@@ -117,6 +123,7 @@ test("buildGroupedEventLists keeps concierge product hrefs but opens owner works
         data: {
           createdVia: "concierge",
           primaryOutput: "live_card",
+          coverImageUrl: "/event-media/live-card-1/card.webp",
           category: "birthday party",
           startISO: "2030-04-10T12:00:00.000Z",
         },
@@ -182,7 +189,7 @@ test("buildGroupedEventLists keeps concierge product hrefs but opens owner works
   assert.equal(byId.get("legacy-live-1")?.openMode, "dashboard");
 });
 
-test("buildGroupedEventLists opens owner workspaces for created events and tracks RSVP availability", async () => {
+test("buildGroupedEventLists opens owner workspaces for created events but previews uploaded scans", async () => {
   const { buildGroupedEventLists } = await loadModelModule();
 
   const grouped = buildGroupedEventLists({
@@ -217,6 +224,28 @@ test("buildGroupedEventLists opens owner workspaces for created events and track
           startISO: "2030-04-12T12:00:00.000Z",
         },
       },
+      {
+        id: "snapped-rsvp",
+        title: "Snapped flyer",
+        created_at: "2030-04-01T00:00:00.000Z",
+        data: {
+          category: "general_event",
+          numberOfGuests: 40,
+          sourceContext: { type: "snap" },
+          startISO: "2030-04-13T12:00:00.000Z",
+        },
+      },
+      {
+        id: "stored-media-rsvp",
+        title: "Stored media flyer",
+        created_at: "2030-04-01T00:00:00.000Z",
+        data: {
+          category: "general_event",
+          numberOfGuests: 30,
+          thumbnail: "/images/events/stored-media.webp",
+          startISO: "2030-04-14T12:00:00.000Z",
+        },
+      },
     ],
     getEventStartIso: (data) => data?.startISO ?? null,
     buildEventPath: (eventId, title) => `/event/${eventId}-${title}`,
@@ -233,6 +262,22 @@ test("buildGroupedEventLists opens owner workspaces for created events and track
   assert.equal(byId.get("manual-rsvp")?.hasOwnerRsvp, true);
   assert.equal(byId.get("manual-no-guests")?.openMode, "dashboard");
   assert.equal(byId.get("manual-no-guests")?.hasOwnerRsvp, false);
-  assert.equal(byId.get("uploaded-rsvp")?.openMode, "dashboard");
+  assert.equal(byId.get("uploaded-rsvp")?.openMode, "preview");
   assert.equal(byId.get("uploaded-rsvp")?.hasOwnerRsvp, false);
+  assert.equal(byId.get("snapped-rsvp")?.openMode, "preview");
+  assert.equal(byId.get("stored-media-rsvp")?.openMode, "preview");
+});
+
+test("left sidebar opens non-RSVP owner events on the design workspace tab", () => {
+  const controllerSource = fs.readFileSync(
+    path.join(repoRoot, "src/app/left-sidebar.controller.ts"),
+    "utf8"
+  );
+
+  assert.match(
+    controllerSource,
+    /const initialOwnerTab: EventContextTab = item\.hasOwnerRsvp \? "dashboard" : "design";/
+  );
+  assert.match(controllerSource, /setActiveEventTab\(initialOwnerTab\);/);
+  assert.match(controllerSource, /buildEventOwnerHref\(ownerHref, row\.id, initialOwnerTab\)/);
 });

@@ -15,6 +15,7 @@ type RegistryLink = {
   label: string;
   url: string;
   host?: string | null;
+  helperText?: string | null;
 };
 
 type ConciergeEventWebsiteProps = {
@@ -295,9 +296,9 @@ export default function ConciergeEventWebsite({
                 href={link.url}
                 target="_blank"
                 rel="noreferrer"
-                className="group flex items-center justify-between rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200"
+                className="group flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200"
               >
-                <span>
+                <span className="min-w-0">
                   <span className="flex items-center gap-2 text-base font-black text-slate-950">
                     <Gift className="h-5 w-5 text-violet-700" aria-hidden="true" />
                     {link.label || "Registry"}
@@ -305,8 +306,13 @@ export default function ConciergeEventWebsite({
                   {link.host ? (
                     <span className="mt-1 block text-sm text-slate-500">{link.host}</span>
                   ) : null}
+                  {link.helperText ? (
+                    <span className="mt-3 block whitespace-pre-line text-sm leading-relaxed text-slate-600">
+                      {link.helperText}
+                    </span>
+                  ) : null}
                 </span>
-                <ExternalLink className="h-4 w-4 text-slate-400 transition group-hover:text-violet-700" />
+                <ExternalLink className="mt-1 h-4 w-4 flex-shrink-0 text-slate-400 transition group-hover:text-violet-700" />
               </a>
             ))}
           </div>

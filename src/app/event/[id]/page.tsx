@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import nextDynamic from "next/dynamic";
@@ -31,6 +31,7 @@ import GraduationSkin from "@/components/GraduationSkin";
 import { isGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
 import LocationLink from "@/components/LocationLink";
 import OpenHouseSkin from "@/components/OpenHouseSkin";
+import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 import PickleballSkin from "@/components/PickleballSkin";
 import SponsoredSupplies from "@/components/SponsoredSupplies";
 import ThumbnailModal from "@/components/ThumbnailModal";
@@ -54,7 +55,6 @@ import { getEventTheme } from "@/lib/event-theme";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
-import { normalizeRegistryUrlForDetectedEvent } from "@/lib/ocr/registry-url";
 import {
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
@@ -77,7 +77,6 @@ import {
   normalizeWeddingFlyerColors,
 } from "@/lib/wedding-scan";
 import type { SignupForm } from "@/types/signup";
-import { decorateAmazonUrl } from "@/utils/affiliates";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { findFirstEmail, findFirstUrl, normalizeUrlValue } from "@/utils/contact";
 import { buildEditLink, resolveEditHref } from "@/utils/event-edit-route";
@@ -90,6 +89,7 @@ import { buildEventPath, buildEventSlugSegment, buildStudioCardPath } from "@/ut
 import type { ImageColors } from "@/utils/image-colors";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import {
+  getRegistryAction,
   getRegistryBrandByUrl,
   getRegistrySectionCopyForCategory,
   normalizeRegistryLinks,
@@ -157,13 +157,17 @@ function sanitizeInternalReturnHref(value: string): string {
 
 function OwnerPreviewReturnLink({ href }: { href: string }) {
   return (
-    <Link
-      href={href}
-      aria-label="Close preview"
-      className="fixed right-4 top-[calc(var(--app-mobile-topbar-offset,4rem)+0.75rem)] z-[7001] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/92 text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:right-auto lg:left-[calc(20rem+(100vw-20rem)/2+min(calc(100vw-2rem),calc((100dvh-6.5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))*2/3))/2+0.75rem)] lg:top-[max(1rem,env(safe-area-inset-top))]"
-    >
-      <X size={18} aria-hidden="true" />
-    </Link>
+    <>
+      <OwnerPreviewMobileTopbarSuppressor />
+      <Link
+        href={href}
+        aria-label="Back to dashboard"
+        className="fixed left-4 top-[max(0.75rem,env(safe-area-inset-top))] z-[7001] inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/70 bg-white/92 px-3 text-sm font-bold text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:left-[calc(20rem+(100vw-20rem)/2-min(calc(100vw-2rem),calc((100dvh-6.5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))*2/3))/2+0.75rem)] lg:top-[max(1rem,env(safe-area-inset-top))]"
+      >
+        <ArrowLeft size={18} strokeWidth={2.4} aria-hidden="true" />
+        <span>Dashboard</span>
+      </Link>
+    </>
   );
 }
 
@@ -897,12 +901,16 @@ export default async function EventPage({
     .trim()
     .toLowerCase();
   const ownerToolsTab =
-    requestedTab === "dashboard" ||
-    requestedTab === "guests" ||
-    requestedTab === "communications" ||
-    requestedTab === "settings"
-      ? (requestedTab as "dashboard" | "guests" | "communications" | "settings")
-      : null;
+    requestedTab === "guests"
+      ? "rsvps"
+      : requestedTab === "communications"
+        ? "messages"
+        : requestedTab === "dashboard" ||
+            requestedTab === "rsvps" ||
+            requestedTab === "messages" ||
+            requestedTab === "design"
+          ? (requestedTab as "dashboard" | "rsvps" | "messages" | "design")
+          : null;
   const ownerPreviewReturnHref =
     readRouteSearchParam((awaitedSearchParams as any)?.preview) === "owner"
       ? sanitizeInternalReturnHref(readRouteSearchParam((awaitedSearchParams as any)?.returnTo)) ||
@@ -930,6 +938,7 @@ export default async function EventPage({
   const canManageCreatedEvent = isOwner && !isScannedInviteEvent;
   const canEditCreatedEvent = canManageCreatedEvent && !isScannedOrUploadedEventData(data);
   const numberOfGuests = getRsvpDashboardGuestCount(data);
+  const ownerRsvpDashboardEnabled = canShowOwnerRsvpDashboard(data);
   const ownerEventHref = buildEventPath(row.id, title);
   const primaryProductOutput = getPrimaryEventProductOutput(data, title);
   const publicEventHref = buildEventProductPath({
@@ -982,8 +991,8 @@ export default async function EventPage({
     discoveryCreatedVia === "football-discovery" ||
     discoveryCreatedVia === "football-discovery-v2";
   const showHostDashboard =
-    canManageCreatedEvent && !hideHostDashboard && canShowOwnerRsvpDashboard(data);
-  const showOwnerWorkspace = canManageCreatedEvent;
+    canManageCreatedEvent && !hideHostDashboard && ownerRsvpDashboardEnabled;
+  const showOwnerWorkspace = canManageCreatedEvent && !isScannedOrUploadedEventData(data);
   const discoveryEditConfig: { customizeUrl: string; workflow: "gymnastics" } | null =
     editParam && canEditCreatedEvent
       ? (() => {
@@ -1007,7 +1016,16 @@ export default async function EventPage({
     redirect(editUrl);
   }
 
-  if (showOwnerWorkspace && ownerToolsTab) {
+  const resolvedOwnerToolsTab: typeof ownerToolsTab =
+    ownerToolsTab && !ownerRsvpDashboardEnabled && ownerToolsTab !== "design"
+      ? "design"
+      : ownerToolsTab;
+
+  if (showOwnerWorkspace && ownerToolsTab && resolvedOwnerToolsTab !== ownerToolsTab) {
+    redirect(`${ownerEventHref}?tab=${resolvedOwnerToolsTab}`);
+  }
+
+  if (showOwnerWorkspace && resolvedOwnerToolsTab) {
     return renderWithEventPageBackground(
       <EventOwnerTools
         eventId={row.id}
@@ -1015,7 +1033,7 @@ export default async function EventPage({
         eventData={data}
         eventHref={publicEventHref}
         eventOwnerHref={ownerEventHref}
-        initialTab={ownerToolsTab}
+        initialTab={resolvedOwnerToolsTab}
         numberOfGuests={numberOfGuests}
       />,
     );
@@ -1143,8 +1161,25 @@ export default async function EventPage({
   const registryCopy = getRegistrySectionCopyForCategory(categoryRaw);
   const registriesAllowed = registryCopy.allowsLinks;
   const registryLinksRaw = Array.isArray(data?.registries) ? (data.registries as any[]) : [];
+  const locationCityState = locationText.match(/\b([^,\n]+),\s*([A-Z]{2})\b/i);
+  const registryCity =
+    (typeof (data as any)?.city === "string" && (data as any).city.trim()) ||
+    locationCityState?.[1]?.trim() ||
+    null;
+  const registryState =
+    (typeof (data as any)?.state === "string" && (data as any).state.trim()) ||
+    locationCityState?.[2]?.trim() ||
+    null;
+  const normalizedRegistryState = registryState ? registryState.toUpperCase() : null;
   const registryContext = {
     category: categoryRaw || null,
+    city: registryCity,
+    eventType: categoryRaw || null,
+    registryName:
+      typeof (data as any)?.registryName === "string" ? (data as any).registryName : null,
+    registryProvider:
+      typeof (data as any)?.registryProvider === "string" ? (data as any).registryProvider : null,
+    state: normalizedRegistryState,
     title: title || null,
     description: [
       typeof data?.description === "string" ? data.description : "",
@@ -1160,19 +1195,12 @@ export default async function EventPage({
     typeof data?.registryUrl === "string" && data.registryUrl.trim()
       ? data.registryUrl.trim()
       : null;
-  const legacyRegistryUrlNormalized = normalizeRegistryUrlForDetectedEvent({
-    category: registryContext.category,
-    title: registryContext.title,
-    description: registryContext.description,
-    rawText: registryContext.ocrText,
-    registryUrl: legacyRegistryUrlRaw,
-  });
   const registryLinksWithLegacy =
-    legacyRegistryUrlNormalized &&
-    !registryLinksRaw.some((item: any) =>
-      typeof item?.url === "string" && item.url.trim() === legacyRegistryUrlNormalized,
+    legacyRegistryUrlRaw &&
+    !registryLinksRaw.some(
+      (item: any) => typeof item?.url === "string" && item.url.trim() === legacyRegistryUrlRaw,
     )
-      ? [{ label: "", url: legacyRegistryUrlNormalized }, ...registryLinksRaw]
+      ? [{ label: "", url: legacyRegistryUrlRaw }, ...registryLinksRaw]
       : registryLinksRaw;
   const registryLinks = registriesAllowed
     ? normalizeRegistryLinks(
@@ -1183,7 +1211,80 @@ export default async function EventPage({
         registryContext,
       )
     : [];
-  const registryCards = registryLinks.map((link) => {
+  const rawFallbackRegistryUrl =
+    registryLinksWithLegacy
+      .map((item: any) =>
+        typeof item?.url === "string" && item.url.trim() ? item.url.trim() : null,
+      )
+      .find(Boolean) || null;
+  const rawRegistryProvider =
+    registryContext.registryProvider ||
+    registryLinksWithLegacy
+      .map((item: any) =>
+        typeof item?.registryProvider === "string"
+          ? item.registryProvider
+          : typeof item?.provider === "string"
+            ? item.provider
+            : typeof item?.label === "string" && item.label.trim()
+              ? item.label
+              : typeof item?.url === "string" && item.url.trim()
+                ? item.url
+                : null,
+      )
+      .find(Boolean) ||
+    null;
+  const rawRegistryName =
+    registryContext.registryName ||
+    registryLinksWithLegacy
+      .map((item: any) =>
+        typeof item?.registryName === "string"
+          ? item.registryName
+          : typeof item?.name === "string"
+            ? item.name
+            : null,
+      )
+      .find(Boolean) ||
+    null;
+  const directRegistryAction = registryLinks[0]
+    ? getRegistryAction({
+        registryProvider: rawRegistryProvider || registryLinks[0].label,
+        registryUrl: registryLinks[0].url,
+        registryName: rawRegistryName,
+        eventType: registryContext.eventType,
+        city: registryContext.city,
+        state: registryContext.state,
+      })
+    : null;
+  const fallbackRegistryAction =
+    directRegistryAction?.url && directRegistryAction.label
+      ? null
+      : getRegistryAction({
+          registryProvider: rawRegistryProvider,
+          registryUrl: rawFallbackRegistryUrl,
+          registryName: rawRegistryName,
+          eventType: registryContext.eventType,
+          city: registryContext.city,
+          state: registryContext.state,
+        });
+  const primaryRegistryAction =
+    directRegistryAction?.url && directRegistryAction.label
+      ? directRegistryAction
+      : fallbackRegistryAction?.url && fallbackRegistryAction.label
+        ? fallbackRegistryAction
+        : null;
+  const registryActionLinks = primaryRegistryAction
+    ? [
+        {
+          label: primaryRegistryAction.label || "Open Registry",
+          url: primaryRegistryAction.url || "",
+          helperText: primaryRegistryAction.helperText,
+        },
+      ]
+    : [];
+  const primaryRegistryUrl = primaryRegistryAction?.url || null;
+  const primaryRegistryActionLabel = primaryRegistryAction?.label || null;
+  const primaryRegistryHelperText = primaryRegistryAction?.helperText || null;
+  const registryCards = registryActionLinks.map((link) => {
     const brand = getRegistryBrandByUrl(link.url);
     let host = "";
     try {
@@ -1902,7 +2003,7 @@ export default async function EventPage({
       typeof (data as any)?.attire === "string" && (data as any).attire.trim()
         ? ((data as any).attire as string).trim()
         : null;
-    const birthdayRegistryUrl = registryLinks[0]?.url || null;
+    const birthdayRegistryUrl = primaryRegistryUrl;
 
     return renderWithEventPageBackground(
       <BirthdaySkin
@@ -1929,6 +2030,9 @@ export default async function EventPage({
         planCopy={birthdayPlanCopy}
         activities={birthdayActivities}
         attire={birthdayAttire}
+        registryActionLabel={primaryRegistryActionLabel}
+        registryHelperText={primaryRegistryHelperText}
+        registryName={rawRegistryName}
         registryUrl={birthdayRegistryUrl}
         ocrFacts={scannedInviteOcrFacts}
         actions={
@@ -2168,7 +2272,7 @@ export default async function EventPage({
       typeof (data as any)?.attire === "string" && (data as any).attire.trim()
         ? ((data as any).attire as string).trim()
         : null;
-    const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
+    const scannedInviteRegistryUrl = primaryRegistryUrl;
     const scannedInviteActions = !isReadOnly && isOwner && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         {canEditCreatedEvent && (
@@ -2229,6 +2333,9 @@ export default async function EventPage({
         detailCopy={scannedInviteDetailCopy}
         activities={scannedInviteActivities}
         attire={scannedInviteAttire}
+        registryActionLabel={primaryRegistryActionLabel}
+        registryHelperText={primaryRegistryHelperText}
+        registryName={rawRegistryName}
         registryUrl={scannedInviteRegistryUrl}
         ocrFacts={scannedInviteOcrFacts}
         actions={scannedInviteActions}
@@ -2258,7 +2365,7 @@ export default async function EventPage({
       typeof (data as any)?.attire === "string" && (data as any).attire.trim()
         ? ((data as any).attire as string).trim()
         : null;
-    const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
+    const scannedInviteRegistryUrl = primaryRegistryUrl;
     const scannedInviteActions = !isReadOnly && isOwner && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         {canEditCreatedEvent && (
@@ -2319,6 +2426,9 @@ export default async function EventPage({
         detailCopy={scannedInviteDetailCopy}
         activities={scannedInviteActivities}
         attire={scannedInviteAttire}
+        registryActionLabel={primaryRegistryActionLabel}
+        registryHelperText={primaryRegistryHelperText}
+        registryName={rawRegistryName}
         registryUrl={scannedInviteRegistryUrl}
         ocrFacts={scannedInviteOcrFacts}
         actions={scannedInviteActions}
@@ -2348,7 +2458,7 @@ export default async function EventPage({
       typeof (data as any)?.attire === "string" && (data as any).attire.trim()
         ? ((data as any).attire as string).trim()
         : null;
-    const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
+    const scannedInviteRegistryUrl = primaryRegistryUrl;
     const scannedInviteActions = !isReadOnly && isOwner && (
       <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium">
         {canEditCreatedEvent && (
@@ -2409,6 +2519,9 @@ export default async function EventPage({
         detailCopy={scannedInviteDetailCopy}
         activities={scannedInviteActivities}
         attire={scannedInviteAttire}
+        registryActionLabel={primaryRegistryActionLabel}
+        registryHelperText={primaryRegistryHelperText}
+        registryName={rawRegistryName}
         registryUrl={scannedInviteRegistryUrl}
         ocrFacts={scannedInviteOcrFacts}
         actions={scannedInviteActions}
@@ -2493,7 +2606,7 @@ export default async function EventPage({
       typeof (data as any)?.attire === "string" && (data as any).attire.trim()
         ? ((data as any).attire as string).trim()
         : null;
-    const scannedInviteRegistryUrl = registryLinks[0]?.url || null;
+    const scannedInviteRegistryUrl = primaryRegistryUrl;
     const basketballContextText = [
       String(categoryRaw || ""),
       String((data as any)?.category || ""),
@@ -2566,6 +2679,9 @@ export default async function EventPage({
           detailCopy={scannedInviteDetailCopy}
           activities={scannedInviteActivities}
           attire={scannedInviteAttire}
+          registryActionLabel={primaryRegistryActionLabel}
+          registryHelperText={primaryRegistryHelperText}
+          registryName={rawRegistryName}
           registryUrl={scannedInviteRegistryUrl}
           ocrFacts={scannedInviteOcrFacts}
           actions={scannedInviteActions}
@@ -2594,6 +2710,9 @@ export default async function EventPage({
           detailCopy={scannedInviteDetailCopy}
           activities={scannedInviteActivities}
           attire={scannedInviteAttire}
+          registryActionLabel={primaryRegistryActionLabel}
+          registryHelperText={primaryRegistryHelperText}
+          registryName={rawRegistryName}
           registryUrl={scannedInviteRegistryUrl}
           ocrFacts={scannedInviteOcrFacts}
           actions={scannedInviteActions}
@@ -2623,6 +2742,9 @@ export default async function EventPage({
           detailCopy={scannedInviteDetailCopy}
           activities={scannedInviteActivities}
           attire={scannedInviteAttire}
+          registryActionLabel={primaryRegistryActionLabel}
+          registryHelperText={primaryRegistryHelperText}
+          registryName={rawRegistryName}
           registryUrl={scannedInviteRegistryUrl}
           ocrFacts={scannedInviteOcrFacts}
           actions={scannedInviteActions}
@@ -2651,6 +2773,9 @@ export default async function EventPage({
         detailCopy={scannedInviteDetailCopy}
         activities={scannedInviteActivities}
         attire={scannedInviteAttire}
+        registryActionLabel={primaryRegistryActionLabel}
+        registryHelperText={primaryRegistryHelperText}
+        registryName={rawRegistryName}
         registryUrl={scannedInviteRegistryUrl}
         ocrFacts={scannedInviteOcrFacts}
         actions={scannedInviteActions}
@@ -2698,7 +2823,10 @@ export default async function EventPage({
             ? ((data as any).attire as string).trim()
             : null
         }
-        registryUrl={registryLinks[0]?.url || null}
+        registryActionLabel={primaryRegistryActionLabel}
+        registryHelperText={primaryRegistryHelperText}
+        registryName={rawRegistryName}
+        registryUrl={primaryRegistryUrl}
         ocrFacts={scannedInviteOcrFacts}
       />,
     );
@@ -2773,6 +2901,8 @@ export default async function EventPage({
     }
     return renderWithEventPageBackground(eventView);
   }
+
+  notFound();
 
   return renderWithEventPageBackground(
     <main
@@ -3225,17 +3355,10 @@ export default async function EventPage({
               </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {registryCards.map((link) => {
-                  const decorated = decorateAmazonUrl(link.url, {
-                    category: categoryRaw,
-                    viewer: viewerKind as any,
-                    placement: "registry_card",
-                    // Allow fallback to default tag when category-specific envs are not set
-                    strictCategoryOnly: false,
-                  });
                   return (
                     <a
                       key={link.url}
-                      href={decorated}
+                      href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="group flex items-start gap-3 rounded-xl border border-[#ddd4f8] bg-white/90 p-3 transition hover:border-[#cabcf0] hover:bg-[#f7f2ff]"
@@ -3270,6 +3393,11 @@ export default async function EventPage({
                         <span className="mt-0.5 block truncate text-xs text-foreground">
                           {link.host}
                         </span>
+                        {link.helperText ? (
+                          <span className="mt-2 block whitespace-pre-line text-xs leading-relaxed text-foreground/70">
+                            {link.helperText}
+                          </span>
+                        ) : null}
                       </span>
                     </a>
                   );

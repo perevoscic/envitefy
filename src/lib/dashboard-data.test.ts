@@ -126,6 +126,24 @@ test("toDashboardEvent marks events without RSVP fields as not RSVP actionable",
   assert.equal(event?.hasRsvp, false);
 });
 
+test("toDashboardEvent treats non-RSVP generated cards as not actionable even with guest counts", () => {
+  const event = toDashboardEvent({
+    id: "evt_live_card_no_rsvp",
+    title: "Varsity Panthers vs Central City Tigers",
+    created_at: "2026-03-23T12:00:00.000Z",
+    data: {
+      startAt: "2026-09-19T19:00:00.000Z",
+      primaryOutput: "live_card",
+      requestedOutputs: ["live_card"],
+      numberOfGuests: 25,
+      studioCard: { imageUrl: "/api/blob/event-media/football/card.webp" },
+    },
+  });
+
+  assert.ok(event);
+  assert.equal(event?.hasRsvp, false);
+});
+
 test("toDashboardEvent marks direct RSVP signals as actionable", () => {
   const cases = [
     { rsvpEnabled: true },

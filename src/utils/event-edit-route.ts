@@ -24,6 +24,57 @@ function resolveConciergeEditHref(eventData: unknown): string | null {
   return `/chat?thread=${encodeURIComponent(threadId)}`;
 }
 
+function normalizedOutputValues(...values: unknown[]): string[] {
+  const outputs: string[] = [];
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      for (const item of value) outputs.push(...normalizedOutputValues(item));
+      continue;
+    }
+    const cleaned = cleanString(value)
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+    if (cleaned) outputs.push(cleaned);
+  }
+  return outputs;
+}
+
+function hasEditableStudioArtwork(eventData: unknown): boolean {
+  const record = asRecord(eventData);
+  if (!record) return false;
+
+  const studioCard = asRecord(record.studioCard);
+  const publicEvent = asRecord(record.publicEvent);
+  const conciergeDraft = asRecord(record.conciergeDraft);
+  const createdVia = cleanString(record.createdVia).toLowerCase();
+  const outputValues = normalizedOutputValues(
+    record.primaryOutput,
+    record.productType,
+    record.publicRenderer,
+    record.requestedOutputs,
+    record.outputs,
+    publicEvent?.primaryOutput,
+    publicEvent?.renderer,
+    conciergeDraft?.primaryOutput,
+    conciergeDraft?.requestedOutputs,
+    conciergeDraft?.outputs,
+  );
+  const hasStudioImage =
+    Boolean(cleanString(studioCard?.imageUrl)) ||
+    Boolean(cleanString(record.coverImageUrl)) ||
+    Boolean(cleanString(record.thumbnail)) ||
+    Boolean(cleanString(record.customHeroImage)) ||
+    Boolean(cleanString(record.heroImage));
+  const isGeneratedArtworkEvent =
+    /studio|concierge|chat/.test(createdVia) ||
+    Boolean(studioCard) ||
+    outputValues.some((output) =>
+      /live_card|digital_flyer|printable_flyer|invitation|instagram_story/.test(output),
+    );
+
+  return hasStudioImage && isGeneratedArtworkEvent;
+}
+
 function isScannedOrUploadedEvent(eventData: unknown): boolean {
   const record = asRecord(eventData);
   if (!record) return false;
@@ -34,6 +85,11 @@ function isScannedOrUploadedEvent(eventData: unknown): boolean {
     Boolean(record.ocrSkin) ||
     Boolean(record.sourceContext && asRecord(record.sourceContext)?.type === "upload")
   );
+}
+
+export function resolveArtworkEditHref(eventId: string, eventData: unknown): string | null {
+  if (!hasEditableStudioArtwork(eventData)) return null;
+  return `/studio?editEvent=${encodeURIComponent(eventId)}`;
 }
 
 /**
@@ -106,6 +162,33 @@ export const resolveEditHref = (eventId: string, eventData: any, eventTitle: str
     if (conciergeEditHref) return conciergeEditHref;
 
     if (isScannedOrUploadedEvent(eventData)) {
+      return `/events/${encodeURIComponent(eventId)}/manage`;
+    }
+
+    const genericManageCategories = new Set([
+      "general",
+      "general_event",
+      "doctor_appointment",
+      "appointments",
+      "appointment",
+      "workshop",
+      "workshops",
+      "workshop_class",
+      "special_event",
+      "special_events",
+      "special-events",
+    ]);
+    const genericManageTemplateIds = new Set([
+      "general",
+      "appointments",
+      "workshops",
+      "special-events",
+    ]);
+
+    if (
+      genericManageCategories.has(normalizedCategory) ||
+      (templateId && genericManageTemplateIds.has(templateId))
+    ) {
       return `/events/${encodeURIComponent(eventId)}/manage`;
     }
 
@@ -191,16 +274,16 @@ export const resolveEditHref = (eventId: string, eventData: any, eventTitle: str
       normalizedCategory.includes("football");
 
     if (isFootballEvent) {
-      return "/event";
+      return `/event/football/customize?edit=${encodeURIComponent(eventId)}`;
     }
 
     if (sportSlug) {
       return `/event/${sportSlug}/customize?edit=${encodeURIComponent(eventId)}`;
     }
 
-    // Fallback to event page with edit flag
-    return `/event/${encodeURIComponent(eventId)}?edit=${encodeURIComponent(eventId)}`;
+    // Fallback to the owner manage workspace instead of self-redirecting through /event/:id?edit=:id.
+    return `/events/${encodeURIComponent(eventId)}/manage`;
   } catch {
-    return `/event/${encodeURIComponent(eventId)}?edit=${encodeURIComponent(eventId)}`;
+    return `/events/${encodeURIComponent(eventId)}/manage`;
   }
 };

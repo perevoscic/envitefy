@@ -3,6 +3,21 @@ export type EventRegistryLink = {
   url: string;
 };
 
+export type RegistryInput = {
+  registryProvider?: string | null;
+  registryUrl?: string | null;
+  registryName?: string | null;
+  eventType?: string | null;
+  city?: string | null;
+  state?: string | null;
+};
+
+export type RegistryAction = {
+  url: string | null;
+  label: string | null;
+  helperText: string | null;
+};
+
 export type RegistrySectionCopy = {
   allowsLinks: boolean;
   sectionLabel: string;
@@ -26,15 +41,18 @@ type RegistryBrandMetadata = {
 
 export type RegistryLinkContext = {
   category?: string | null;
+  city?: string | null;
   title?: string | null;
   description?: string | null;
+  eventType?: string | null;
+  location?: string | null;
   ocrText?: string | null;
+  registryName?: string | null;
+  registryProvider?: string | null;
+  state?: string | null;
 };
 
-export const AMAZON_BABY_REGISTRY_URL = "https://www.amazon.com/baby-reg/";
-export const AMAZON_WEDDING_REGISTRY_URL = "https://www.amazon.com/wedding";
-export const AMAZON_REGISTRY_SEARCH_URL =
-  "https://www.amazon.com/registries/search?ref=gr_home_unified_search";
+export const AMAZON_REGISTRY_SEARCH_URL = "https://www.amazon.com/registries/search";
 
 export const REGISTRY_BRANDS: readonly RegistryBrandMetadata[] = [
   {
@@ -84,31 +102,19 @@ const normalizeCategoryKey = (category: string): string =>
   category.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 
 const registryContextText = (context: RegistryLinkContext): string =>
-  [context.category, context.title, context.description, context.ocrText]
+  [
+    context.category,
+    context.eventType,
+    context.registryProvider,
+    context.registryName,
+    context.title,
+    context.description,
+    context.ocrText,
+  ]
     .map((value) => String(value || "").trim())
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
-
-const isBabyRegistryContext = (context: RegistryLinkContext): boolean => {
-  const text = registryContextText(context);
-  return /\bbaby\s*(?:shower|showers|sprinkle|registry|registries)\b|\bsprinkle\b|\bgender\s*reveals?\b/.test(
-    text,
-  );
-};
-
-const isWeddingRegistryContext = (context: RegistryLinkContext): boolean => {
-  const text = registryContextText(context);
-  return /\bweddings?\b|\bbridal\s*showers?\b|\bbride\b|\bgroom\b|\bmarriage\b|\bnuptials?\b|\bceremony\b|\breception\b/.test(
-    text,
-  );
-};
-
-export function getDefaultAmazonRegistryUrlForContext(context: RegistryLinkContext = {}): string {
-  if (isBabyRegistryContext(context)) return AMAZON_BABY_REGISTRY_URL;
-  if (isWeddingRegistryContext(context)) return AMAZON_WEDDING_REGISTRY_URL;
-  return AMAZON_REGISTRY_SEARCH_URL;
-}
 
 const REGISTRY_SECTION_COPY_BY_CATEGORY: Record<string, RegistrySectionCopy> = {
   birthday: {
@@ -300,6 +306,11 @@ const isAmazonHost = (host: string): boolean =>
     registryHostMatches(host, suffix),
   ) || false;
 
+const isAmazonRegistryProvider = (value: string | null | undefined): boolean =>
+  String(value || "")
+    .trim()
+    .toLowerCase() === "amazon";
+
 const normalizeUrl = (rawUrl: string): URL | null => {
   if (!rawUrl) return null;
   let candidate = rawUrl.trim();
@@ -343,13 +354,67 @@ const isBareAmazonBrand = (value: string): boolean => {
   return normalized === "amazon";
 };
 
+const cleanRegistryValue = (value: string | null | undefined): string | null => {
+  const cleaned = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned || null;
+};
+
+const formatEventType = (value: string | null | undefined): string | null => {
+  const cleaned = cleanRegistryValue(value);
+  if (!cleaned) return null;
+  return cleaned
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace(/\bShowers\b/g, "Shower")
+    .replace(/\bWeddings\b/g, "Wedding");
+};
+
+function buildRegistryHelperText(input: RegistryInput): string {
+  const cityState = [cleanRegistryValue(input.city), cleanRegistryValue(input.state)]
+    .filter(Boolean)
+    .join(", ");
+  const searchUsing = [
+    cleanRegistryValue(input.registryName),
+    formatEventType(input.eventType),
+    cleanRegistryValue(cityState),
+  ].filter(Boolean);
+  const base =
+    "This invite mentions an Amazon registry, but the direct registry link was not included.";
+  return searchUsing.length ? [base, "Search using:", ...searchUsing].join("\n") : base;
+}
+
+function isAmazonMissingLinkUrl(rawUrl: string): boolean {
+  if (isBareAmazonBrand(rawUrl)) return true;
+  const parsed = normalizeUrl(rawUrl);
+  return Boolean(parsed && isAmazonHomepageUrl(parsed));
+}
+
+function registryProviderFromInput(input: RegistryInput): string | null {
+  if (isAmazonRegistryProvider(input.registryProvider)) return "Amazon";
+  const rawUrl = cleanRegistryValue(input.registryUrl);
+  if (rawUrl && isAmazonMissingLinkUrl(rawUrl)) return "Amazon";
+  return null;
+}
+
 export function inferRegistryUrlFromTextForContext(
   text: string | null | undefined,
   context: RegistryLinkContext = {},
 ): string | null {
+  void text;
+  void context;
+  return null;
+}
+
+export function inferRegistryProviderFromTextForContext(
+  text: string | null | undefined,
+  context: RegistryLinkContext = {},
+): "Amazon" | null {
   const rawText = String(text || "").trim();
-  if (!rawText || !hasAmazonRegistryMention(rawText)) return null;
-  return getDefaultAmazonRegistryUrlForContext({ ...context, ocrText: rawText });
+  if (hasAmazonRegistryMention(rawText)) return "Amazon";
+  if (isAmazonRegistryProvider(context.registryProvider)) return "Amazon";
+  return hasAmazonRegistryMention(registryContextText(context)) ? "Amazon" : null;
 }
 
 export function normalizeRegistryUrlForContext(
@@ -358,17 +423,41 @@ export function normalizeRegistryUrlForContext(
 ): string | null {
   const raw = String(rawUrl || "").trim();
   if (!raw) return null;
-  if (isBareAmazonBrand(raw)) return getDefaultAmazonRegistryUrlForContext(context);
+  if (isAmazonMissingLinkUrl(raw)) return null;
 
-  const parsed = normalizeUrl(raw);
-  if (parsed && isAmazonHomepageUrl(parsed)) {
-    return getDefaultAmazonRegistryUrlForContext(context);
-  }
-  if (!parsed && hasAmazonRegistryMention(raw))
-    return getDefaultAmazonRegistryUrlForContext(context);
+  if (!normalizeUrl(raw) && hasAmazonRegistryMention(raw)) return null;
 
+  void context;
   const validation = validateRegistryUrl(raw);
   return validation.ok && validation.normalizedUrl ? validation.normalizedUrl : null;
+}
+
+export function getRegistryAction(input: RegistryInput): RegistryAction {
+  const registryUrl = cleanRegistryValue(input.registryUrl);
+  if (registryUrl && !isAmazonMissingLinkUrl(registryUrl)) {
+    const validation = validateRegistryUrl(registryUrl);
+    if (validation.ok && validation.normalizedUrl) {
+      return {
+        url: /^https:\/\//i.test(registryUrl) ? registryUrl : validation.normalizedUrl,
+        label: "Open Registry",
+        helperText: null,
+      };
+    }
+  }
+
+  if (registryProviderFromInput(input) === "Amazon") {
+    return {
+      url: AMAZON_REGISTRY_SEARCH_URL,
+      label: "Find Registry on Amazon",
+      helperText: buildRegistryHelperText(input),
+    };
+  }
+
+  return {
+    url: null,
+    label: null,
+    helperText: null,
+  };
 }
 
 export type RegistryValidationResult = {

@@ -1143,6 +1143,99 @@ function buildApprovedVisibleCopySection(
   ].join("\n");
 }
 
+function formatDetailPillDate(event: StudioEventDetails): string {
+  const rawDate = trimOrEmpty(event.date);
+  if (!rawDate) return "";
+
+  const eventYear = trimOrEmpty(event.eventYear);
+  const isoMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const numericMonthDayMatch = rawDate.match(/^(\d{1,2})\/(\d{1,2})$/);
+  const numericMonthDayYearMatch = rawDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+
+  let year = "";
+  let month = "";
+  let day = "";
+  if (isoMatch) {
+    year = isoMatch[1] || "";
+    month = isoMatch[2] || "";
+    day = isoMatch[3] || "";
+  } else if (numericMonthDayYearMatch) {
+    const rawYear = numericMonthDayYearMatch[3] || "";
+    year = rawYear.length === 2 ? `20${rawYear}` : rawYear;
+    month = numericMonthDayYearMatch[1] || "";
+    day = numericMonthDayYearMatch[2] || "";
+  } else if (numericMonthDayMatch && eventYear) {
+    year = eventYear;
+    month = numericMonthDayMatch[1] || "";
+    day = numericMonthDayMatch[2] || "";
+  }
+
+  if (year && month && day) {
+    const date = new Date(
+      Date.UTC(Number.parseInt(year, 10), Number.parseInt(month, 10) - 1, Number.parseInt(day, 10)),
+    );
+    if (!Number.isNaN(date.getTime())) {
+      return new Intl.DateTimeFormat("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(date);
+    }
+  }
+
+  return rawDate;
+}
+
+function formatDetailPillTime(value: string | null | undefined): string {
+  const raw = trimOrEmpty(value).replace(/\s+/g, " ");
+  if (!raw) return "";
+
+  const twelveHour = raw.match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])$/);
+  if (twelveHour) {
+    const hour = Number.parseInt(twelveHour[1] || "", 10);
+    const minute = twelveHour[2] || "00";
+    if (Number.isFinite(hour)) return `${hour}:${minute} ${(twelveHour[3] || "").toUpperCase()}`;
+  }
+
+  const twentyFourHour = raw.match(/^(\d{1,2}):(\d{2})$/);
+  if (twentyFourHour) {
+    const hour = Number.parseInt(twentyFourHour[1] || "", 10);
+    const minute = Number.parseInt(twentyFourHour[2] || "", 10);
+    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "UTC",
+      }).format(new Date(Date.UTC(2000, 0, 1, hour, minute)));
+    }
+  }
+
+  return raw;
+}
+
+function buildEventTitleInfoChipPromptSection(event: StudioEventDetails): string {
+  const date = formatDetailPillDate(event);
+  const time = formatDetailPillTime(event.startTime);
+  const place = trimOrEmpty(event.venueName) || trimOrEmpty(event.venueAddress);
+  if (!date && !time && !place) return "";
+
+  return [
+    "Event-title info chip treatment:",
+    "- When date, time, or place appears near the main title, render it as compact rounded white invitation detail chips with subtle shadows, matching polished mobile invite styling.",
+    "- Use separate chips, not one combined bubble: date chip, time chip, and place chip when those values are supplied.",
+    "- Each chip should include one tiny colorful decorative icon: purple calendar for date, teal clock for time, warm amber map pin for place.",
+    "- These chips are invitation typography, not app controls. Do not place them in the bottom action-button area.",
+    date ? line("Date chip value", date) : "",
+    time ? line("Time chip value", time) : "",
+    place ? line("Place chip value", place) : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export function buildExistingInvitationImageEditPrompt(editInstruction?: string | null): string {
   const instruction = trimOrEmpty(editInstruction);
 
@@ -1153,7 +1246,7 @@ export function buildExistingInvitationImageEditPrompt(editInstruction?: string 
     "Return the full image with that edit applied, but do not regenerate or redesign the card.",
     "Preserve all unrelated visible text, numbers, punctuation, typography, photos, room/property images, bottom image strips, icons, logos, stats, layout, crop, perspective, lighting, colors, and spacing.",
     "If replacing text, use the requested replacement text exactly and do not convert month names to numeric date format.",
-    "Do not add new words, dates, facts, symbols, panels, footers, watermarks, QR codes, or interface elements.",
+    "Do not add new words, dates, facts, symbols, panels, footers, watermarks, QR codes, or interface elements unless the requested localized edit explicitly asks for that specific text, icon, or info-chip treatment.",
   ].join("\n");
 }
 
@@ -1181,6 +1274,7 @@ export function buildInvitationImagePrompt(
   const pageSurface = surface === "page";
   const gameDay = isGameDayOccasion(event);
   const approvedVisibleCopy = buildApprovedVisibleCopySection(event, liveCard);
+  const eventTitleInfoChipPrompt = buildEventTitleInfoChipPromptSection(event);
   const imageFinishPreset = resolveStudioImageFinishPreset(
     event.category || event.occasion,
     guidance?.imageFinishPreset,
@@ -1242,7 +1336,7 @@ export function buildInvitationImagePrompt(
     "- Do not duplicate or mirror scene elements. Avoid repeated tables, repeated floral arrangements, repeated gazebos, repeated desserts, repeated arches, repeated portraits, or second copies of the main scene stacked elsewhere in the card.",
     "- Do not create an unrelated solid bar, footer slab, color block, green strip, dark strip, or banner panel near the bottom of the card.",
     "- Treat all visible text as post-production-grade invitation copy, not generic placeholder wording.",
-    "- Do not generate any UI elements, interface overlays, app controls, buttons, icons, badges, arrows, floating controls, share symbols, chat symbols, phone symbols, plus buttons, camera buttons, circular controls, watermarks, or screenshot-style overlays.",
+    "- Do not generate UI controls, interface overlays, app controls, buttons, badges, arrows, floating controls, share symbols, chat symbols, phone symbols, plus buttons, camera buttons, circular controls, watermarks, or screenshot-style overlays. The only allowed icons are the tiny decorative date/time/place icons inside approved event-title info chips.",
     "- Keep the top edge free of faux phone UI: no carrier names, clock text, battery icons, signal icons, status icons, notches, camera cutouts, or device chrome.",
     "- Keep the bottom action-button zone art-only and completely free of information. End the final visible text line well above the bottom controls area.",
     "- Compose with the bottom action controls in mind: the lower 24-30% should be decorative continuation only, with no essential subject matter that would be hidden behind app buttons.",
@@ -1279,7 +1373,7 @@ export function buildInvitationImagePrompt(
             "- This image is a finished live-card invitation raster, not a blank background.",
             "- Visible event wording belongs in the raster for this live card, but it must feel like part of one designed invitation composition rather than detached overlay text.",
             "- Keep the text concentrated in the upper and middle portions of the card and resolve the final visible text line well above the bottom action buttons.",
-            "- Do not draw interface elements in the raster: no buttons, icons, circular controls, pill-shaped bars, chat inputs, nav bars, status bars, carrier labels, clock readouts, battery indicators, notches, home indicators, camera cutouts, or device chrome.",
+            "- Do not draw interface elements in the raster: no buttons, circular controls, app pill bars, chat inputs, nav bars, status bars, carrier labels, clock readouts, battery indicators, notches, home indicators, camera cutouts, or device chrome. Small decorative date/time/place chips near the event title are allowed when supplied above.",
             "- Keep the typography elegant, readable, and invitation-first, not like a flyer app screenshot or a dense poster wall of text.",
           ]
       : [
@@ -1423,6 +1517,7 @@ export function buildInvitationImagePrompt(
     "",
     renderImageCreativeInputs(event),
     ...(approvedVisibleCopy ? ["", approvedVisibleCopy] : []),
+    ...(eventTitleInfoChipPrompt ? ["", eventTitleInfoChipPrompt] : []),
     "",
     "Event details to influence visual style:",
     line("Category", event.category),

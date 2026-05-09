@@ -284,7 +284,7 @@ function ChatOutputPreviewSurface({
       interactive={hasGeneratedProduct}
       imageLoading="eager"
       imageFetchPriority="high"
-      className="h-full w-full rounded-[2.2rem]"
+      className="h-full w-full rounded-[2.2rem] !border-transparent"
     />
   );
 }
@@ -323,7 +323,7 @@ export default function ChatProductPreview({
 
   return (
     <aside
-      className={`min-h-0 flex-col overflow-y-auto border-l border-[#e5dff0] bg-white/48 backdrop-blur-sm ${
+      className={`min-h-0 flex-col overflow-y-auto bg-white/48 backdrop-blur-sm md:border-l md:border-[#e5dff0] ${
         mobileView === "preview" ? "flex" : "hidden md:flex"
       }`}
     >
@@ -390,7 +390,7 @@ export default function ChatProductPreview({
           </section>
 
           <section className="relative mx-auto flex w-full flex-none items-center justify-center">
-            <div className="relative aspect-[9/16] w-full max-w-[22rem] sm:max-w-[23rem]">
+            <div className="relative aspect-[9/17] w-full max-w-[22rem] sm:aspect-[9/16] sm:max-w-[23rem]">
               {isGenerating ? (
                 <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 rounded-[2.2rem] bg-white/78 text-[#8b8298] backdrop-blur-[3px]">
                   <Loader2 className="size-11 animate-spin text-[#7c4dff]" aria-hidden="true" />

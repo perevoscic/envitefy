@@ -19,6 +19,7 @@ export type BottomNavItem = {
   label: string;
   icon: LucideIcon;
   value?: string;
+  labelWidth?: number;
 };
 
 const navItems: BottomNavItem[] = [
@@ -39,8 +40,10 @@ type BottomNavBarProps = {
   items?: BottomNavItem[];
   activeValue?: string | null;
   ariaLabel?: string;
+  spreadItems?: boolean;
   autoOpenOnMount?: boolean;
   autoOpenIntervalMs?: number;
+  autoOpenCycles?: number;
   onValueChange?: (value: string, item: BottomNavItem, index: number) => void;
 };
 
@@ -51,8 +54,10 @@ export function BottomNavBar({
   items = navItems,
   activeValue,
   ariaLabel = "Bottom Navigation",
+  spreadItems = false,
   autoOpenOnMount = false,
   autoOpenIntervalMs = 2000,
+  autoOpenCycles = 1,
   onValueChange,
 }: BottomNavBarProps) {
   const safeDefaultIndex = items.length
@@ -77,21 +82,37 @@ export function BottomNavBar({
 
     setAutoOpenIndex(safeDefaultIndex);
     let nextIndex = safeDefaultIndex;
+    let displayedCount = 1;
+    const maxDisplays = items.length * Math.max(autoOpenCycles, 1);
     const interval = window.setInterval(
       () => {
-        nextIndex += 1;
-        if (nextIndex >= items.length) {
+        if (displayedCount >= maxDisplays) {
           window.clearInterval(interval);
           setAutoOpenIndex(null);
           return;
         }
+
+        nextIndex += 1;
+        if (nextIndex >= items.length) {
+          nextIndex = 0;
+        }
+        displayedCount += 1;
+        if (!isActiveValueControlled) setActiveIndex(nextIndex);
         setAutoOpenIndex(nextIndex);
       },
       Math.max(autoOpenIntervalMs, 500),
     );
 
     return () => window.clearInterval(interval);
-  }, [autoOpenIntervalMs, autoOpenOnMount, hasManualSelection, items.length, safeDefaultIndex]);
+  }, [
+    autoOpenCycles,
+    autoOpenIntervalMs,
+    autoOpenOnMount,
+    hasManualSelection,
+    isActiveValueControlled,
+    items.length,
+    safeDefaultIndex,
+  ]);
 
   return (
     <motion.nav
@@ -102,6 +123,7 @@ export function BottomNavBar({
       aria-label={ariaLabel}
       className={cn(
         "flex h-[52px] min-w-[320px] max-w-[95vw] items-center gap-1 rounded-full border border-[#ebe7f2] bg-white/96 p-2 shadow-[0_16px_36px_rgba(35,27,55,0.14)]",
+        spreadItems && "justify-between",
         stickyBottom && "fixed inset-x-0 bottom-4 z-20 mx-auto w-fit",
         className,
       )}
@@ -109,6 +131,7 @@ export function BottomNavBar({
       {items.map((item, idx) => {
         const Icon = item.icon;
         const isActive = resolvedActiveIndex === idx;
+        const activeLabelWidth = item.labelWidth ?? MOBILE_LABEL_WIDTH;
 
         return (
           <motion.button
@@ -141,7 +164,7 @@ export function BottomNavBar({
             <motion.div
               initial={false}
               animate={{
-                width: isActive ? `${MOBILE_LABEL_WIDTH}px` : "0px",
+                width: isActive ? `${activeLabelWidth}px` : "0px",
                 opacity: isActive ? 1 : 0,
                 marginLeft: isActive ? "8px" : "0px",
               }}
@@ -150,7 +173,8 @@ export function BottomNavBar({
                 opacity: { duration: 0.19 },
                 marginLeft: { duration: 0.19 },
               }}
-              className={cn("flex max-w-[72px] items-center overflow-hidden")}
+              className="flex items-center overflow-hidden"
+              style={{ maxWidth: `${activeLabelWidth}px` }}
             >
               <span
                 className={cn(

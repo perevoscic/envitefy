@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { getServerSession } from "next-auth";
 import { notFound, redirect } from "next/navigation";
 import SharedStudioCardPage from "@/components/studio/SharedStudioCardPage";
 import { absoluteUrl } from "@/lib/absolute-url";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { getEventHistoryPublicRenderBySlugOrId } from "@/lib/db";
+import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import { buildEventPath, buildStudioCardPath } from "@/utils/event-url";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -353,15 +356,25 @@ export default async function SharedCardPage(props: {
   if (!sharedCard) notFound();
 
   const canonical = buildStudioCardPath(sharedCard.row.id, sharedCard.title);
-  const isOwnerPreview = readSearchParam(awaitedSearchParams.preview) === "owner";
-  const fallbackReturnHref = `${buildEventPath(sharedCard.row.id, sharedCard.title)}?tab=dashboard`;
-  const returnHref = isOwnerPreview
+  const session: any = await getServerSession(authOptions as any);
+  const userId = await resolveSessionUserId(session);
+  const isOwner = Boolean(userId && sharedCard.row.user_id && userId === sharedCard.row.user_id);
+  const explicitOwnerPreview = readSearchParam(awaitedSearchParams.preview) === "owner";
+  const ownerWorkspaceTab = canShowOwnerRsvpDashboard(sharedCard.row.data as any)
+    ? "dashboard"
+    : "design";
+  const ownerWorkspaceHref = `${buildEventPath(sharedCard.row.id, sharedCard.title)}?tab=${ownerWorkspaceTab}`;
+  const returnHref = explicitOwnerPreview
     ? sanitizeInternalReturnHref(readSearchParam(awaitedSearchParams.returnTo)) ||
-      fallbackReturnHref
+      ownerWorkspaceHref
     : "";
 
   if (awaitedParams.id !== canonical.slice("/card/".length)) {
     redirect(`${canonical}${buildOwnerPreviewSearch(returnHref)}`);
+  }
+
+  if (isOwner && !explicitOwnerPreview) {
+    redirect(ownerWorkspaceHref);
   }
 
   const shareUrl = await absoluteUrl(canonical);

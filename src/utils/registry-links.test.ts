@@ -1,12 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  AMAZON_BABY_REGISTRY_URL,
   AMAZON_REGISTRY_SEARCH_URL,
-  AMAZON_WEDDING_REGISTRY_URL,
+  getRegistryAction,
   getRegistryBrandByUrl,
   getRegistrySectionCopyForCategory,
-  inferRegistryUrlFromTextForContext,
   normalizeRegistryLinks,
   validateRegistryUrl,
 } from "./registry-links.ts";
@@ -43,29 +41,6 @@ test("normalizeRegistryLinks dedupes and keeps known-brand labels as fallbacks",
   assert.equal(getRegistryBrandByUrl(links[1].url), null);
 });
 
-test("normalizeRegistryLinks upgrades Amazon homepage placeholders by event context", () => {
-  assert.deepEqual(
-    normalizeRegistryLinks([{ label: "", url: "amazon.com" }], {
-      category: "Baby Showers",
-    }),
-    [{ label: "Amazon", url: AMAZON_BABY_REGISTRY_URL }],
-  );
-
-  assert.deepEqual(
-    normalizeRegistryLinks([{ label: "", url: "https://www.amazon.com/" }], {
-      category: "Weddings",
-    }),
-    [{ label: "Amazon", url: AMAZON_WEDDING_REGISTRY_URL }],
-  );
-
-  assert.deepEqual(
-    normalizeRegistryLinks([{ label: "", url: "https://www.amazon.com/" }], {
-      category: "Graduations",
-    }),
-    [{ label: "Amazon", url: AMAZON_REGISTRY_SEARCH_URL }],
-  );
-});
-
 test("normalizeRegistryLinks preserves concrete Amazon registry deep links", () => {
   const url = "https://www.amazon.com/wedding/registry/example-couple";
 
@@ -74,20 +49,18 @@ test("normalizeRegistryLinks preserves concrete Amazon registry deep links", () 
   ]);
 });
 
-test("inferRegistryUrlFromTextForContext detects registered-at-Amazon invite copy", () => {
-  assert.equal(
-    inferRegistryUrlFromTextForContext("Registered at Amazon", { category: "Baby Shower" }),
-    AMAZON_BABY_REGISTRY_URL,
-  );
-  assert.equal(
-    inferRegistryUrlFromTextForContext("Registry with Amazon", { title: "Garden Wedding" }),
-    AMAZON_WEDDING_REGISTRY_URL,
-  );
-  assert.equal(
-    inferRegistryUrlFromTextForContext("Shop Amazon for supplies", {
+test("normalizeRegistryLinks drops Amazon homepage placeholders", () => {
+  assert.deepEqual(
+    normalizeRegistryLinks([{ label: "Amazon", url: "https://www.amazon.com/" }], {
       category: "Baby Shower",
     }),
-    null,
+    [],
+  );
+  assert.deepEqual(
+    normalizeRegistryLinks([{ label: "Amazon", url: "amazon.com" }], {
+      category: "Wedding",
+    }),
+    [],
   );
 });
 
@@ -97,4 +70,116 @@ test("housewarming events allow gift list links", () => {
   assert.equal(copy.allowsLinks, true);
   assert.equal(copy.sectionLabel, "Gift List");
   assert.equal(copy.linksLabel, "Gift list links");
+});
+
+test("getRegistryAction opens direct Amazon baby registry urls exactly", () => {
+  const url = "https://www.amazon.com/baby-reg/I1QM8SK28TKM";
+
+  assert.deepEqual(getRegistryAction({ registryProvider: "Amazon", registryUrl: url }), {
+    url,
+    label: "Open Registry",
+    helperText: null,
+  });
+});
+
+test("getRegistryAction opens direct Target registry urls exactly", () => {
+  const url = "https://www.target.com/gift-registry/gift/example";
+
+  assert.deepEqual(getRegistryAction({ registryProvider: "Target", registryUrl: url }), {
+    url,
+    label: "Open Registry",
+    helperText: null,
+  });
+});
+
+test("getRegistryAction falls back to Amazon search for baby shower missing direct link", () => {
+  assert.deepEqual(
+    getRegistryAction({
+      registryProvider: "Amazon",
+      registryUrl: null,
+      registryName: "Judith & David",
+      eventType: "Baby Shower",
+      city: "League City",
+      state: "TX",
+    }),
+    {
+      url: AMAZON_REGISTRY_SEARCH_URL,
+      label: "Find Registry on Amazon",
+      helperText:
+        "This invite mentions an Amazon registry, but the direct registry link was not included.\nSearch using:\nJudith & David\nBaby Shower\nLeague City, TX",
+    },
+  );
+});
+
+test("getRegistryAction falls back to Amazon search for wedding missing direct link", () => {
+  assert.deepEqual(
+    getRegistryAction({
+      registryProvider: "amazon",
+      registryUrl: "",
+      registryName: "Judith & David",
+      eventType: "Wedding",
+      city: "League City",
+      state: "TX",
+    }),
+    {
+      url: AMAZON_REGISTRY_SEARCH_URL,
+      label: "Find Registry on Amazon",
+      helperText:
+        "This invite mentions an Amazon registry, but the direct registry link was not included.\nSearch using:\nJudith & David\nWedding\nLeague City, TX",
+    },
+  );
+});
+
+test("getRegistryAction falls back to Amazon search with minimal helper when details are missing", () => {
+  assert.deepEqual(
+    getRegistryAction({
+      registryProvider: "Amazon",
+      registryUrl: null,
+      registryName: null,
+      eventType: null,
+      city: null,
+      state: null,
+    }),
+    {
+      url: AMAZON_REGISTRY_SEARCH_URL,
+      label: "Find Registry on Amazon",
+      helperText:
+        "This invite mentions an Amazon registry, but the direct registry link was not included.",
+    },
+  );
+});
+
+test("getRegistryAction treats Amazon homepage URLs as missing direct links", () => {
+  assert.deepEqual(
+    getRegistryAction({
+      registryProvider: null,
+      registryUrl: "https://www.amazon.com/",
+      registryName: null,
+      eventType: null,
+      city: null,
+      state: null,
+    }),
+    {
+      url: AMAZON_REGISTRY_SEARCH_URL,
+      label: "Find Registry on Amazon",
+      helperText:
+        "This invite mentions an Amazon registry, but the direct registry link was not included.",
+    },
+  );
+});
+
+test("getRegistryAction returns no button for non-Amazon missing direct link", () => {
+  assert.deepEqual(getRegistryAction({ registryProvider: "Target", registryUrl: null }), {
+    url: null,
+    label: null,
+    helperText: null,
+  });
+});
+
+test("getRegistryAction returns no button without provider or direct link", () => {
+  assert.deepEqual(getRegistryAction({ registryProvider: null, registryUrl: null }), {
+    url: null,
+    label: null,
+    helperText: null,
+  });
 });

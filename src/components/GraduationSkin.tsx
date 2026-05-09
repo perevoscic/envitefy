@@ -40,6 +40,9 @@ type Props = {
   detailCopy?: string | null;
   activities?: string[] | null;
   attire?: string | null;
+  registryActionLabel?: string | null;
+  registryHelperText?: string | null;
+  registryName?: string | null;
   registryUrl?: string | null;
   ocrFacts?: OcrFact[] | null;
   actions?: ReactNode;
@@ -64,6 +67,9 @@ export default function GraduationSkin({
   detailCopy,
   activities,
   attire,
+  registryActionLabel,
+  registryHelperText,
+  registryName,
   registryUrl,
   ocrFacts,
   actions,
@@ -100,6 +106,9 @@ export default function GraduationSkin({
       detailCopy={detailCopy}
       activities={activities}
       attire={attire}
+      registryActionLabel={registryActionLabel}
+      registryHelperText={registryHelperText}
+      registryName={registryName}
       registryUrl={registryUrl}
       ocrFacts={ocrFacts}
       detailLayout="wideDetails"

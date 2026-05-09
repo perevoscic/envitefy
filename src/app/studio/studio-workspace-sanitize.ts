@@ -534,12 +534,11 @@ export function extractHistoryStudioImageUrl(row: unknown): string | null {
   const data = isRecord(row.data) ? row.data : null;
   if (!data) return null;
 
-  const fromCover = resolveCoverImageUrlFromEventData(data as Record<string, unknown>);
-  if (fromCover) return fromCover;
-
   const studioCard = isRecord(data.studioCard) ? data.studioCard : null;
   const studioImage = studioCard ? readString(studioCard.imageUrl) : "";
-  return studioImage || null;
+  if (studioImage) return studioImage;
+
+  return resolveCoverImageUrlFromEventData(data as Record<string, unknown>);
 }
 
 export function extractHistoryStudioInvitationData(
@@ -552,6 +551,170 @@ export function extractHistoryStudioInvitationData(
   const raw = studioCard?.invitationData;
   if (!raw || !isRecord(raw)) return undefined;
   return sanitizeInvitationData(raw, fallbackDetails);
+}
+
+function normalizeHistoryStudioCategory(value: unknown): InviteCategory {
+  const normalized = readString(value).toLowerCase().replace(/[_-]+/g, " ");
+  if (normalized.includes("birthday")) return "Birthday";
+  if (normalized.includes("field trip")) return "Field Trip/Day";
+  if (normalized.includes("bridal")) return "Bridal Shower";
+  if (normalized.includes("wedding")) return "Wedding";
+  if (normalized.includes("open house")) return "Open House";
+  if (normalized.includes("housewarming")) return "Housewarming";
+  if (normalized.includes("baby") || normalized.includes("gender reveal")) return "Baby Shower";
+  if (normalized.includes("anniversary")) return "Anniversary";
+  if (
+    normalized.includes("game day") ||
+    normalized.includes("football") ||
+    normalized.includes("sport")
+  ) {
+    return "Game Day";
+  }
+  return "Custom Invite";
+}
+
+function formatHistoryDateInput(value: unknown): string {
+  const raw = readString(value);
+  if (!raw) return "";
+  const dateOnly = raw.match(/^(\d{4}-\d{2}-\d{2})/)?.[1];
+  if (dateOnly) return dateOnly;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().slice(0, 10);
+}
+
+function formatHistoryTimeInput(value: unknown): string {
+  const raw = readString(value);
+  if (!raw) return "";
+  const timeOnly = raw.match(/T(\d{2}:\d{2})/)?.[1] || raw.match(/^(\d{2}:\d{2})/)?.[1];
+  if (timeOnly) return timeOnly;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return `${String(parsed.getHours()).padStart(2, "0")}:${String(parsed.getMinutes()).padStart(
+    2,
+    "0",
+  )}`;
+}
+
+function firstHistoryString(...values: unknown[]): string {
+  for (const value of values) {
+    const next = readString(value);
+    if (next) return next;
+  }
+  return "";
+}
+
+export function createStudioMediaItemFromHistoryRow(row: unknown): MediaItem | null {
+  if (!isRecord(row)) return null;
+  const eventId = readString(row.id);
+  if (!eventId) return null;
+
+  const data = isRecord(row.data) ? row.data : {};
+  const studioCard = isRecord(data.studioCard) ? data.studioCard : null;
+  const rawInvitationData =
+    studioCard && isRecord(studioCard.invitationData) ? studioCard.invitationData : null;
+  const rawEventDetails =
+    rawInvitationData && isRecord(rawInvitationData.eventDetails)
+      ? rawInvitationData.eventDetails
+      : null;
+  const imageUrl = normalizeStudioLibraryImageUrl(extractHistoryStudioImageUrl(row)) || "";
+  if (!imageUrl) return null;
+
+  const title = firstHistoryString(row.title, data.title, rawInvitationData?.title, "Invitation");
+  const category = normalizeHistoryStudioCategory(
+    firstHistoryString(
+      rawEventDetails?.category,
+      data.category,
+      data.eventType,
+      rawInvitationData?.category,
+    ),
+  );
+  const startValue = firstHistoryString(
+    rawEventDetails?.eventDate,
+    data.startISO,
+    data.startAt,
+    data.start,
+    data.date,
+  );
+  const endValue = firstHistoryString(data.endISO, data.endAt, data.end);
+  const venueName = firstHistoryString(rawEventDetails?.venueName, data.venue, data.placeName);
+  const location = firstHistoryString(
+    rawEventDetails?.location,
+    data.location,
+    data.address,
+    rawInvitationData?.locationLine,
+  );
+  const description = firstHistoryString(
+    rawEventDetails?.detailsDescription,
+    rawInvitationData?.description,
+    data.description,
+  );
+  const rsvp = isRecord(data.rsvp) ? data.rsvp : null;
+  const details = sanitizeEventDetails({
+    ...rawEventDetails,
+    category,
+    eventTitle: title,
+    eventDate: formatHistoryDateInput(startValue),
+    startTime: firstHistoryString(rawEventDetails?.startTime) || formatHistoryTimeInput(startValue),
+    endTime: firstHistoryString(rawEventDetails?.endTime) || formatHistoryTimeInput(endValue),
+    venueName,
+    location,
+    rsvpName: firstHistoryString(rawEventDetails?.rsvpName, data.rsvpName, rsvp?.name),
+    rsvpContact: firstHistoryString(
+      rawEventDetails?.rsvpContact,
+      data.rsvpContact,
+      data.rsvp,
+      rsvp?.contact,
+      rsvp?.email,
+      rsvp?.phone,
+      rsvp?.url,
+    ),
+    rsvpDeadline: firstHistoryString(
+      rawEventDetails?.rsvpDeadline,
+      data.rsvpDeadline,
+      rsvp?.deadline,
+    ),
+    detailsDescription: description,
+    message: firstHistoryString(rawEventDetails?.message, rawInvitationData?.subtitle),
+    theme: firstHistoryString(
+      data.themeStyle,
+      data.theme,
+      data.tone,
+      isRecord(rawInvitationData?.theme) ? rawInvitationData.theme.themeStyle : "",
+    ),
+    registryLink:
+      firstHistoryString(rawEventDetails?.registryLink, data.registryLink) ||
+      (Array.isArray(data.registries) && isRecord(data.registries[0])
+        ? readString(data.registries[0].url)
+        : ""),
+  });
+  const invitationData =
+    extractHistoryStudioInvitationData(row, details) ||
+    sanitizeInvitationData(
+      {
+        title,
+        description,
+        locationLine: location,
+        heroTextMode: "image",
+        eventDetails: details,
+      },
+      details,
+    );
+
+  return {
+    id: `event-${eventId}`,
+    type: "page",
+    url: imageUrl,
+    data: invitationData,
+    errorMessage: undefined,
+    publishedEventId: eventId,
+    sharePath: undefined,
+    theme: title,
+    status: "ready",
+    details,
+    createdAt: readString(row.created_at) || readString(row.createdAt) || new Date().toISOString(),
+    positions: sanitizePositions(studioCard?.positions || EMPTY_POSITIONS),
+  };
 }
 
 export function restoreHydratedMediaItems(items: MediaItem[]): MediaItem[] {

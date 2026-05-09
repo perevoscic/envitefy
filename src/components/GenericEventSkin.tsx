@@ -41,6 +41,9 @@ type Props = {
   detailCopy?: string | null;
   activities?: string[] | null;
   attire?: string | null;
+  registryActionLabel?: string | null;
+  registryHelperText?: string | null;
+  registryName?: string | null;
   registryUrl?: string | null;
   ocrFacts?: OcrFact[] | null;
   actions?: ReactNode;

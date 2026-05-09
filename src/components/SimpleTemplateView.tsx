@@ -2537,7 +2537,7 @@ export default function SimpleTemplateView({
       }
 
       // Refresh event data
-      const updatedResponse = await fetch(`/api/history/${eventId}`, {
+      const updatedResponse = await fetch(`/api/history/${eventId}?public=1`, {
         cache: "no-store",
       });
       if (updatedResponse.ok) {
@@ -2585,7 +2585,7 @@ export default function SimpleTemplateView({
       }
 
       // Refresh event data
-      const updatedResponse = await fetch(`/api/history/${eventId}`, {
+      const updatedResponse = await fetch(`/api/history/${eventId}?public=1`, {
         cache: "no-store",
       });
       if (updatedResponse.ok) {
@@ -2643,7 +2643,7 @@ export default function SimpleTemplateView({
       }
 
       // Refresh event data
-      const updatedResponse = await fetch(`/api/history/${eventId}`, {
+      const updatedResponse = await fetch(`/api/history/${eventId}?public=1`, {
         cache: "no-store",
       });
       if (updatedResponse.ok) {

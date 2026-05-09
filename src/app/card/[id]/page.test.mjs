@@ -93,6 +93,22 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   assert.match(sharedPageSource, /href="\/studio"/);
   assert.match(pageSource, /function sanitizeInternalReturnHref\(value: string\): string/);
   assert.match(pageSource, /readSearchParam\(awaitedSearchParams\.preview\) === "owner"/);
+  assert.match(pageSource, /getServerSession\(authOptions as any\)/);
+  assert.match(pageSource, /const userId = await resolveSessionUserId\(session\);/);
+  assert.match(
+    pageSource,
+    /const isOwner = Boolean\(userId && sharedCard\.row\.user_id && userId === sharedCard\.row\.user_id\);/,
+  );
+  assert.match(
+    pageSource,
+    /const explicitOwnerPreview = readSearchParam\(awaitedSearchParams\.preview\) === "owner";/,
+  );
+  assert.match(pageSource, /canShowOwnerRsvpDashboard\(sharedCard\.row\.data as any\)/);
+  assert.match(
+    pageSource,
+    /const ownerWorkspaceHref = `\$\{buildEventPath\(sharedCard\.row\.id, sharedCard\.title\)\}\?tab=\$\{ownerWorkspaceTab\}`;/,
+  );
+  assert.match(pageSource, /if \(isOwner && !explicitOwnerPreview\) \{\s*redirect\(ownerWorkspaceHref\);\s*\}/s);
   assert.match(pageSource, /buildOwnerPreviewSearch\(returnHref\)/);
   assert.match(sharedPageSource, /returnHref\?: string \| null;/);
   assert.match(sharedPageSource, /aria-label="Close preview"/);

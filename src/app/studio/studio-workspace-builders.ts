@@ -21,6 +21,7 @@ import type {
   InvitationData,
   InviteCategory,
   MediaItem,
+  MediaType,
 } from "./studio-workspace-types";
 import {
   readString,
@@ -762,6 +763,13 @@ function formatStudioPromptDate(details: EventDetails): string {
 function formatVisibleCardTime(timeValue: string): string {
   const trimmed = clean(timeValue);
   if (!trimmed) return "";
+  const twentyFourHourMatch = trimmed.match(/^([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/);
+  if (twentyFourHourMatch) {
+    const hour = Number(twentyFourHourMatch[1]);
+    const minute = twentyFourHourMatch[2];
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minute} ${hour >= 12 ? "PM" : "AM"}`;
+  }
   return trimmed.replace(/\s*([AaPp][Mm])$/, (_, meridiem: string) => ` ${meridiem.toUpperCase()}`);
 }
 
@@ -1287,10 +1295,12 @@ export function buildStudioPublishPayload(item: MediaItem, imageUrl: string | nu
       ownerDefaultSurface: "card",
       venue: venue || undefined,
       location,
+      address: location,
       rsvp: rsvpLine,
       rsvpEnabled: Boolean(rsvpLine),
       rsvpDeadline: readString(details.rsvpDeadline) || undefined,
       thumbnail: imageUrl || undefined,
+      coverImageUrl: imageUrl || undefined,
       heroImage: imageUrl || undefined,
       customHeroImage: imageUrl || undefined,
       registries: registries.length > 0 ? registries : undefined,

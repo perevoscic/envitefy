@@ -53,6 +53,40 @@ test("live card non-visual updates reuse the current image in the studio generat
   );
 });
 
+test("studio editEvent links hydrate the existing event before showing the create picker", () => {
+  const pageSource = readSource("src/app/studio/page.tsx");
+  const workspaceSource = readSource("src/app/studio/StudioWorkspace.tsx");
+
+  assert.match(
+    pageSource,
+    /const editEventId = readSearchParam\(awaitedSearchParams\?\.editEvent\);/,
+  );
+  assert.match(pageSource, /const userId = await resolveSessionUserId\(session\);/);
+  assert.match(pageSource, /const row = await getEventHistoryById\(editEventId\);/);
+  assert.match(pageSource, /initialEditEventRow = JSON\.parse\(JSON\.stringify\(row\)\);/);
+  assert.match(pageSource, /initialEditEventId=\{editEventId \|\| null\}/);
+  assert.match(pageSource, /initialEditEventRow=\{initialEditEventRow\}/);
+  assert.match(pageSource, /initialEditEventError=\{initialEditEventError\}/);
+  assert.match(
+    workspaceSource,
+    /const initialEditItem = createStudioMediaItemFromHistoryRow\(initialEditEventRow\);/,
+  );
+  assert.match(
+    workspaceSource,
+    /initialEditItem \? "details" : parseStudioCreateStep\(searchParams\.get\("step"\)\)/,
+  );
+  assert.match(
+    workspaceSource,
+    /const \[currentProject, setCurrentProject\] = useState<MediaItem \| null>\(\(\) => initialEditItem\);/,
+  );
+  assert.match(
+    workspaceSource,
+    /const \[activePage, setActivePage\] = useState<MediaItem \| null>\(\(\) => initialEditItem\);/,
+  );
+  assert.match(workspaceSource, /initialEditEventRowRef = useRef<unknown>\(initialEditEventRow\)/);
+  assert.match(workspaceSource, /initialEditEventIdRef = useRef\(clean\(initialEditEventId\)\)/);
+});
+
 test("live card visual-direction edits force full regeneration instead of surgical image edit", () => {
   const source = readSource("src/app/studio/StudioWorkspace.tsx");
 
@@ -77,7 +111,10 @@ test("live card visual-direction edits force full regeneration instead of surgic
   assert.match(source, /normalizeLiveCardVisualDirectionUrls\(currentDetails\.propertyImageUrls\)/);
   assert.match(source, /normalizeLiveCardVisualDirectionUrls\(currentDetails\.realtorImageUrls\)/);
   assert.match(source, /normalizeLiveCardVisualDirectionUrls\(currentDetails\.realtorLogoUrls\)/);
-  assert.match(source, /!hasLiveCardVisualDirectionChanged\(currentDetails, existingItem\?\.details\)/);
+  assert.match(
+    source,
+    /!hasLiveCardVisualDirectionChanged\(currentDetails, existingItem\?\.details\)/,
+  );
 });
 
 test("live card existing-image detail edits pass previous details for surgical prompts", () => {
@@ -95,6 +132,14 @@ test("live card existing-image detail edits pass previous details for surgical p
     /currentIdea\.slice\(previousIdea\.length\)\.replace\(\/\^\[\\s,.;:!\?-]\+\/, ""\)/,
   );
   assert.match(workspaceSource, /sourceImageDataUrl \? existingItem\?\.details : undefined,/);
+  assert.match(
+    workspaceSource,
+    /data: refreshLiveCardInvitationData\(details, draftedProject\.data \|\| undefined\),/,
+  );
+  assert.match(
+    workspaceSource,
+    /if \(!currentProjectWithVisualDraft \|\| currentProjectWithVisualDraft\.status !== "ready"\) return;/,
+  );
   assert.match(
     builderSource,
     /function buildExistingImageEditInstruction\(\s*details: EventDetails,\s*refinement: string,\s*previousDetails\?: EventDetails,/,

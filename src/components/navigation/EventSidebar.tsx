@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { ArrowLeft, Eye, LayoutDashboard } from "lucide-react";
+import { ArrowLeft, Eye, LayoutDashboard, MessageSquare, Palette, Users } from "lucide-react";
 import { forwardRef } from "react";
 import type { EventContextTab } from "@/app/sidebar-context";
 
@@ -19,7 +19,12 @@ const OWNER_TAB_ITEMS: Array<{
   key: EventContextTab;
   label: string;
   icon: LucideIcon;
-}> = [{ key: "dashboard", label: "Dashboard", icon: LayoutDashboard }];
+}> = [
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "rsvps", label: "RSVPs", icon: Users },
+  { key: "messages", label: "Messages", icon: MessageSquare },
+  { key: "design", label: "Design", icon: Palette },
+];
 
 const GUEST_TAB_ITEMS: Array<{
   key: EventContextTab;

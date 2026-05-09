@@ -71,7 +71,7 @@ import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
 import { normalizeThumbnailFocus } from "@/lib/thumbnail-focus";
 import { validateUploadFileMeta } from "@/lib/upload-config";
 import {
-  inferRegistryUrlFromTextForContext,
+  inferRegistryProviderFromTextForContext,
   normalizeRegistryUrlForContext,
 } from "@/utils/registry-links";
 
@@ -1256,8 +1256,10 @@ export async function handleOcrRequest(request: Request) {
         rawText: raw,
         registryUrl: rawRegistryUrl,
       }) ||
-      normalizeRegistryUrlForContext(rawRegistryUrl, registryContext) ||
-      inferRegistryUrlFromTextForContext(raw, registryContext);
+      normalizeRegistryUrlForContext(rawRegistryUrl, registryContext);
+    const registryProvider = registryUrl
+      ? null
+      : inferRegistryProviderFromTextForContext(raw, registryContext);
     const ocrFacts = mergeOcrFacts(
       normalizeOcrFacts(llmImage?.ocrFacts || llmImage?.facts),
       extractCommonOcrFactsFromFlyerText(raw),
@@ -1289,6 +1291,7 @@ export async function handleOcrRequest(request: Request) {
           ? llmImage.attire.trim()
           : null,
       registryUrl,
+      registryProvider,
     };
 
     const tz = fieldsGuess.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";

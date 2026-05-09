@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Script from "next/script";
-import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 import { absoluteUrl } from "@/lib/absolute-url";
-import {
-  buildLandingShowcasePath,
-  resolveLandingShowcaseSnapshot,
-} from "@/lib/landing-showcase";
+import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { getEventHistoryById } from "@/lib/db";
+import { buildLandingShowcasePath, resolveLandingShowcaseSnapshot } from "@/lib/landing-showcase";
 import StudioMarketingPage from "./StudioMarketingPage";
 import StudioWorkspace from "./StudioWorkspace";
 
@@ -70,13 +68,39 @@ export default async function StudioPage(props: {
   const awaitedSearchParams = props.searchParams ? await props.searchParams : undefined;
   const showcaseValue = readSearchParam(awaitedSearchParams?.showcase);
   const showcaseSnapshot = resolveLandingShowcaseSnapshot(showcaseValue);
+  const editEventId = readSearchParam(awaitedSearchParams?.editEvent);
   if (showcaseSnapshot) {
     redirect(buildLandingShowcasePath(showcaseSnapshot.slug));
   }
 
   const session: any = await getServerSession(authOptions as any);
   if (session?.user) {
-    return <StudioWorkspace />;
+    let initialEditEventRow: unknown = null;
+    let initialEditEventError: string | null = null;
+
+    if (editEventId) {
+      const userId = await resolveSessionUserId(session);
+      if (!userId) {
+        initialEditEventError = "Sign in as the event owner to edit this card.";
+      } else {
+        const row = await getEventHistoryById(editEventId);
+        if (!row) {
+          initialEditEventError = "This event could not be found.";
+        } else if (row.user_id !== userId) {
+          initialEditEventError = "You do not have permission to edit this event.";
+        } else {
+          initialEditEventRow = JSON.parse(JSON.stringify(row));
+        }
+      }
+    }
+
+    return (
+      <StudioWorkspace
+        initialEditEventId={editEventId || null}
+        initialEditEventRow={initialEditEventRow}
+        initialEditEventError={initialEditEventError}
+      />
+    );
   }
   const studioWebPageLd = {
     "@context": "https://schema.org",

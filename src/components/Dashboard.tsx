@@ -40,7 +40,7 @@ import {
 } from "@/utils/media-upload-client";
 import { extractFirstPhoneNumber } from "@/utils/phone";
 import {
-  inferRegistryUrlFromTextForContext,
+  inferRegistryProviderFromTextForContext,
   normalizeRegistryUrlForContext,
 } from "@/utils/registry-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
@@ -78,6 +78,10 @@ type EventFields = {
   attire?: string | null;
   /** OCR extracted event flow/activity list. */
   activities?: string[] | null;
+  /** OCR extracted gift registry URL. */
+  registryName?: string | null;
+  /** OCR extracted gift registry provider. */
+  registryProvider?: string | null;
   /** OCR extracted gift registry URL. */
   registryUrl?: string | null;
   /** OCR extracted meaningful facts not represented by dedicated fields. */
@@ -1134,6 +1138,8 @@ export default function Dashboard({
         const fieldsGuessForRegistry = data?.fieldsGuess as
           | {
               description?: unknown;
+              registryName?: unknown;
+              registryProvider?: unknown;
               registryUrl?: unknown;
               title?: unknown;
             }
@@ -1152,7 +1158,19 @@ export default function Dashboard({
         const registryUrlFromScan =
           typeof registryUrlRaw === "string" && registryUrlRaw.trim()
             ? normalizeRegistryUrlForContext(registryUrlRaw.trim(), registryContextForScan)
-            : inferRegistryUrlFromTextForContext(data?.ocrText, registryContextForScan);
+            : null;
+        const registryProviderRaw = fieldsGuessForRegistry?.registryProvider;
+        const registryProviderFromScan =
+          typeof registryProviderRaw === "string" && registryProviderRaw.trim()
+            ? registryProviderRaw.trim()
+            : registryUrlFromScan
+              ? null
+              : inferRegistryProviderFromTextForContext(data?.ocrText, registryContextForScan);
+        const registryNameRaw = fieldsGuessForRegistry?.registryName;
+        const registryNameFromScan =
+          typeof registryNameRaw === "string" && registryNameRaw.trim()
+            ? registryNameRaw.trim()
+            : null;
         const ocrFactsFromScan = normalizeOcrFacts(
           (data?.fieldsGuess as { ocrFacts?: unknown; facts?: unknown })?.ocrFacts ||
             (data?.fieldsGuess as { facts?: unknown })?.facts,
@@ -1189,6 +1207,8 @@ export default function Dashboard({
               thingsToDo: thingsToDoFromScan || undefined,
               attire: attireFromScan || undefined,
               activities: activitiesFromScan.length ? activitiesFromScan : undefined,
+              registryName: registryNameFromScan || undefined,
+              registryProvider: registryProviderFromScan || undefined,
               registryUrl: registryUrlFromScan || undefined,
               ocrFacts: ocrFactsFromScan.length ? ocrFactsFromScan : undefined,
             }
@@ -1526,6 +1546,8 @@ export default function Dashboard({
           : [];
         const registryContextForHistory = {
           category: normalizedOcrCategory || null,
+          registryName: eventInput.registryName || null,
+          registryProvider: eventInput.registryProvider || null,
           title: eventInput.title || null,
           description: [eventInput.description, eventInput.thingsToDo, eventInput.hostName]
             .map((value) => String(value || "").trim())
@@ -1538,10 +1560,16 @@ export default function Dashboard({
                 eventInput.registryUrl.trim(),
                 registryContextForHistory,
               )
-            : inferRegistryUrlFromTextForContext(
-                registryContextForHistory.description,
-                registryContextForHistory,
-              );
+            : null;
+        const normalizedRegistryProvider =
+          typeof eventInput.registryProvider === "string" && eventInput.registryProvider.trim()
+            ? eventInput.registryProvider.trim()
+            : normalizedRegistryUrl
+              ? null
+              : inferRegistryProviderFromTextForContext(
+                  registryContextForHistory.description,
+                  registryContextForHistory,
+                );
         const mergedRegistries = [...existingRegistries];
         if (normalizedRegistryUrl) {
           const hasAlready = mergedRegistries.some(
@@ -1557,6 +1585,12 @@ export default function Dashboard({
               url: normalizedRegistryUrl,
             });
           }
+        } else if (normalizedRegistryProvider?.toLowerCase() === "amazon") {
+          mergedRegistries.push({
+            label: "Amazon",
+            registryName: eventInput.registryName || undefined,
+            registryProvider: "Amazon",
+          });
         }
         const payload: any = {
           title: eventInput.title || "Event",
@@ -1636,6 +1670,11 @@ export default function Dashboard({
               Array.isArray(eventInput.ocrFacts) && eventInput.ocrFacts.length
                 ? normalizeOcrFacts(eventInput.ocrFacts)
                 : undefined,
+            registryName:
+              typeof eventInput.registryName === "string" && eventInput.registryName.trim()
+                ? eventInput.registryName.trim()
+                : undefined,
+            registryProvider: normalizedRegistryProvider || undefined,
             registries: mergedRegistries.length ? mergedRegistries : undefined,
             thingsToDo:
               typeof eventInput.thingsToDo === "string" && eventInput.thingsToDo.trim()
@@ -2067,13 +2106,15 @@ function EventOwnerDashboardPanel({ data }: { data: OwnerDashboardData }) {
   );
 }
 
-function EventOwnerTabPlaceholder({
-  tab,
-}: {
-  tab: "dashboard" | "guests" | "communications" | "settings";
-}) {
+function EventOwnerTabPlaceholder({ tab }: { tab: EventContextTab }) {
   const label =
-    tab === "guests" ? "Guests" : tab === "communications" ? "Communications" : "Settings";
+    tab === "rsvps"
+      ? "RSVPs"
+      : tab === "messages"
+        ? "Messages"
+        : tab === "design"
+          ? "Design"
+          : "Dashboard";
   return (
     <section className="rounded-[28px] border border-[#ddd5ff] bg-white/90 p-6 shadow-[0_20px_50px_rgba(80,63,145,0.12)]">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8f86ba]">
@@ -2081,8 +2122,7 @@ function EventOwnerTabPlaceholder({
       </p>
       <h3 className="mt-2 text-2xl font-semibold text-[#201942]">{label}</h3>
       <p className="mt-2 text-sm text-[#6e629f]">
-        {label} content is available in the next step. Dashboard remains the default view on event
-        open.
+        {label} content is available from the event workspace.
       </p>
     </section>
   );

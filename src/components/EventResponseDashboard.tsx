@@ -1,6 +1,15 @@
 "use client";
 
-import { CheckCircle2, Clock3, Pencil, Users, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  Mail,
+  MessageSquare,
+  Pencil,
+  Phone,
+  Users,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -26,8 +35,10 @@ type RsvpResponse = {
 };
 
 type DashboardVariant = "generic" | "weddings";
+type EventResponseDashboardTab = "dashboard" | "rsvps" | "messages";
 
 type EventResponseDashboardProps = {
+  activeTab?: EventResponseDashboardTab;
   eventId: string;
   eventTitle: string;
   eventData: Record<string, unknown> | null;
@@ -78,6 +89,18 @@ function displayName(row: RsvpResponse): string {
   return fullName || row.name?.trim() || row.email?.trim() || "Guest";
 }
 
+function responseKey(row: RsvpResponse, index: number): string {
+  return `${row.email || row.phone || displayName(row)}-${row.updatedAt || row.createdAt || index}`;
+}
+
+function responseContact(row: RsvpResponse): string {
+  return firstString(row.email, row.phone);
+}
+
+function responseMessage(row: RsvpResponse): string {
+  return readString(row.message);
+}
+
 function displayUpdatedAt(value: string | null): string {
   if (!value) return "Recently";
   const parsed = new Date(value);
@@ -114,6 +137,7 @@ function statusMeta(value: unknown) {
 }
 
 export default function EventResponseDashboard({
+  activeTab = "dashboard",
   eventId,
   eventTitle,
   eventData,
@@ -192,6 +216,7 @@ export default function EventResponseDashboard({
         ? 100
         : 0;
   const recentResponses = responses.slice(0, 3);
+  const messageResponses = responses.filter((row) => responseMessage(row));
   const hasRsvpSurface = Boolean(rsvpEnabled || responseTarget > 0 || hasResponses);
   const isWedding = variant === "weddings";
   const responseSummary = loading
@@ -210,13 +235,13 @@ export default function EventResponseDashboard({
       : "Ready for first guests";
 
   const shellClass = isWedding
-    ? "overflow-hidden rounded-[28px] border border-[#e7e1d4] bg-[#fbfaf7] shadow-[0_24px_70px_rgba(70,66,45,0.13)]"
-    : "overflow-hidden rounded-[28px] border border-white/72 bg-white/90 shadow-[0_24px_70px_rgba(79,70,128,0.14)] backdrop-blur-xl";
+    ? "owner-workspace-glass relative overflow-hidden rounded-[28px] border border-[#e7e1d4] bg-[#fbfaf7] shadow-[0_24px_70px_rgba(70,66,45,0.13)]"
+    : "owner-workspace-glass relative overflow-hidden rounded-[28px] border border-white/72 bg-white/90 shadow-[0_24px_70px_rgba(79,70,128,0.14)] backdrop-blur-xl";
   const eyebrowClass = isWedding ? "text-[#9d7d51]" : "text-[#786bd6]";
 
   if (!hasRsvpSurface && !loading) {
     return (
-      <section className="rounded-[28px] border border-dashed border-slate-300 bg-white/82 p-6 text-center shadow-[0_20px_58px_rgba(79,70,128,0.10)]">
+      <section className="owner-workspace-glass relative overflow-hidden rounded-[28px] border border-dashed border-slate-300 bg-white/82 p-6 text-center shadow-[0_20px_58px_rgba(79,70,128,0.10)]">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
           <Users size={22} />
         </div>
@@ -244,59 +269,83 @@ export default function EventResponseDashboard({
           </div>
         ) : null}
 
-        <section className="rounded-[24px] border border-black/5 bg-white/82 p-4 shadow-sm sm:p-5">
-          <div className="flex flex-col gap-4">
-            <div className="min-w-0">
-              <p
-                className={`text-[0.66rem] font-black uppercase tracking-[0.18em] ${eyebrowClass}`}
-              >
-                Response overview
-              </p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl">
-                {loading
-                  ? "Loading RSVP status"
-                  : hasResponses
-                    ? `${responseRate}% complete`
-                    : "No responses yet"}
-              </h3>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">{responseSummary}</p>
-            </div>
-          </div>
-          <div className="mt-5">
-            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-              <div
-                className={`h-full rounded-full transition-[width] ${
-                  isWedding ? "bg-[#596046]" : "bg-[#6c60db]"
-                }`}
-                style={{ width: `${loading ? 0 : responseRate}%` }}
+        {activeTab === "dashboard" ? (
+          <>
+            <section className="owner-workspace-glass-panel relative overflow-hidden rounded-[24px] border border-black/5 bg-white/82 p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-4">
+                <div className="min-w-0">
+                  <p
+                    className={`text-[0.66rem] font-black uppercase tracking-[0.18em] ${eyebrowClass}`}
+                  >
+                    Response overview
+                  </p>
+                  <h3 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl">
+                    {loading
+                      ? "Loading RSVP status"
+                      : hasResponses
+                        ? `${responseRate}% complete`
+                        : "No responses yet"}
+                  </h3>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                    {responseSummary}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-5">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full rounded-full transition-[width] ${
+                      isWedding ? "bg-[#596046]" : "bg-[#6c60db]"
+                    }`}
+                    style={{ width: `${loading ? 0 : responseRate}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                  {statusLabel}
+                </p>
+              </div>
+            </section>
+
+            <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              <MetricCard label="Responses" value={loading ? "--" : displayStats.filled} />
+              <MetricCard label="Going" value={loading ? "--" : displayStats.yes} tone="emerald" />
+              <MetricCard label="Maybe" value={loading ? "--" : displayStats.maybe} tone="amber" />
+              <MetricCard label="Pending" value={loading ? "--" : displayStats.remaining} />
+            </section>
+
+            <div className="grid gap-4 2xl:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.35fr)]">
+              <RecentResponsesCard
+                responses={recentResponses}
+                loading={loading}
+                isWedding={isWedding}
+              />
+              <GuestBreakdownCard
+                stats={displayStats}
+                responseRate={responseRate}
+                loading={loading}
+                isWedding={isWedding}
               />
             </div>
-            <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-              {statusLabel}
-            </p>
-          </div>
-        </section>
+          </>
+        ) : null}
 
-        <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          <MetricCard label="Responses" value={loading ? "--" : displayStats.filled} />
-          <MetricCard label="Going" value={loading ? "--" : displayStats.yes} tone="emerald" />
-          <MetricCard label="Maybe" value={loading ? "--" : displayStats.maybe} tone="amber" />
-          <MetricCard label="Pending" value={loading ? "--" : displayStats.remaining} />
-        </section>
-
-        <div className="grid gap-4 2xl:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.35fr)]">
-          <RecentResponsesCard
-            responses={recentResponses}
-            loading={loading}
-            isWedding={isWedding}
-          />
-          <GuestBreakdownCard
+        {activeTab === "rsvps" ? (
+          <RsvpResponsesPanel
+            responses={responses}
             stats={displayStats}
             responseRate={responseRate}
             loading={loading}
-            isWedding={isWedding}
+            editHref={editHref}
           />
-        </div>
+        ) : null}
+
+        {activeTab === "messages" ? (
+          <RsvpMessagesPanel
+            responses={messageResponses}
+            allResponseCount={responses.length}
+            loading={loading}
+          />
+        ) : null}
       </div>
     </section>
   );
@@ -320,11 +369,256 @@ function MetricCard({
 
   return (
     <article
-      className={`rounded-[20px] border p-3.5 shadow-sm sm:rounded-[22px] sm:p-4 ${toneClass}`}
+      className={`owner-workspace-glass-panel relative overflow-hidden rounded-[20px] border p-3.5 shadow-sm sm:rounded-[22px] sm:p-4 ${toneClass}`}
     >
       <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] opacity-60">{label}</p>
       <p className="mt-2 text-2xl font-semibold tracking-normal sm:text-3xl">{value}</p>
     </article>
+  );
+}
+
+function ContactCell({ row }: { row: RsvpResponse }) {
+  const email = readString(row.email);
+  const phone = readString(row.phone);
+  if (!email && !phone) return <span className="text-slate-400">-</span>;
+
+  return (
+    <div className="space-y-1.5">
+      {email ? (
+        <span className="flex min-w-0 items-center gap-1.5 text-sm text-slate-600">
+          <Mail size={13} aria-hidden="true" />
+          <span className="truncate">{email}</span>
+        </span>
+      ) : null}
+      {phone ? (
+        <span className="flex min-w-0 items-center gap-1.5 text-sm text-slate-600">
+          <Phone size={13} aria-hidden="true" />
+          <span className="truncate">{phone}</span>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function RsvpResponsesPanel({
+  responses,
+  stats,
+  responseRate,
+  loading,
+  editHref,
+}: {
+  responses: RsvpResponse[];
+  stats: RsvpStats;
+  responseRate: number;
+  loading: boolean;
+  editHref: string;
+}) {
+  return (
+    <section className="space-y-4" aria-label="RSVP responses">
+      <div className="owner-workspace-glass-panel relative overflow-hidden rounded-[24px] border border-black/5 bg-white/82 p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[0.66rem] font-black uppercase tracking-[0.18em] text-[#786bd6]">
+              RSVPs
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl">
+              {loading ? "Loading guest list" : `${stats.filled} responses`}
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Review every guest response, contact detail, and RSVP note in one place.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm sm:text-right">
+            <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-slate-400">
+              Complete
+            </p>
+            <p className="mt-1 text-2xl font-semibold text-slate-950">
+              {loading ? "--" : `${responseRate}%`}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <MetricCard label="Total" value={loading ? "--" : stats.numberOfGuests || stats.filled} />
+        <MetricCard label="Going" value={loading ? "--" : stats.yes} tone="emerald" />
+        <MetricCard label="Maybe" value={loading ? "--" : stats.maybe} tone="amber" />
+        <MetricCard label="Pending" value={loading ? "--" : stats.remaining} />
+      </section>
+
+      <section className="owner-workspace-glass-panel relative overflow-hidden rounded-[28px] border border-black/5 bg-white/86 shadow-sm">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
+          <h4 className="text-lg font-semibold text-slate-950">Guest responses</h4>
+          <Link
+            href={editHref}
+            className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+          >
+            <Pencil size={13} />
+            Edit RSVP
+          </Link>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left">
+            <thead className="bg-slate-50/80">
+              <tr className="text-[0.66rem] font-black uppercase tracking-[0.14em] text-slate-400">
+                <th className="px-4 py-3 sm:px-5">Guest</th>
+                <th className="px-4 py-3">Contact</th>
+                <th className="px-4 py-3">RSVP</th>
+                <th className="px-4 py-3">Message</th>
+                <th className="px-4 py-3">Updated</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                [0, 1, 2].map((item) => (
+                  <tr key={item}>
+                    <td className="px-4 py-4 sm:px-5" colSpan={5}>
+                      <div className="h-12 animate-pulse rounded-2xl bg-slate-100" />
+                    </td>
+                  </tr>
+                ))
+              ) : responses.length ? (
+                responses.map((row, index) => {
+                  const status = statusMeta(row.response);
+                  const StatusIcon = status.icon;
+                  const message = responseMessage(row);
+                  return (
+                    <tr key={responseKey(row, index)} className="text-sm">
+                      <td className="px-4 py-4 font-semibold text-slate-900 sm:px-5">
+                        {displayName(row)}
+                      </td>
+                      <td className="max-w-[220px] px-4 py-4">
+                        <ContactCell row={row} />
+                      </td>
+                      <td className="px-4 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-black ${status.className}`}
+                        >
+                          <StatusIcon size={13} aria-hidden="true" />
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="max-w-[260px] px-4 py-4 text-slate-500">
+                        {message ? <span className="line-clamp-2">{message}</span> : "-"}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-semibold text-slate-400">
+                        {displayUpdatedAt(row.updatedAt || row.createdAt)}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td className="px-4 py-10 text-center sm:px-5" colSpan={5}>
+                    <div className="mx-auto flex max-w-md flex-col items-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                        <Users size={22} />
+                      </div>
+                      <p className="mt-3 text-base font-semibold text-slate-950">
+                        No RSVP responses yet
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-slate-500">
+                        Guest details will populate here after the event page is shared.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function RsvpMessagesPanel({
+  responses,
+  allResponseCount,
+  loading,
+}: {
+  responses: RsvpResponse[];
+  allResponseCount: number;
+  loading: boolean;
+}) {
+  return (
+    <section className="space-y-4" aria-label="RSVP messages">
+      <div className="owner-workspace-glass-panel relative overflow-hidden rounded-[24px] border border-black/5 bg-white/82 p-4 shadow-sm sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
+            <MessageSquare size={21} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[0.66rem] font-black uppercase tracking-[0.18em] text-[#786bd6]">
+              Messages
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl">
+              {loading ? "Loading guest notes" : `${responses.length} messages`}
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              RSVP notes from guests appear here so follow-ups stay separate from the response
+              count.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <section className="owner-workspace-glass-panel relative overflow-hidden rounded-[28px] border border-black/5 bg-white/86 p-4 shadow-sm sm:p-5">
+        {loading ? (
+          <div className="space-y-3">
+            {[0, 1, 2].map((item) => (
+              <div key={item} className="h-24 animate-pulse rounded-2xl bg-slate-100" />
+            ))}
+          </div>
+        ) : responses.length ? (
+          <div className="space-y-3">
+            {responses.map((row, index) => {
+              const status = statusMeta(row.response);
+              const StatusIcon = status.icon;
+              const contact = responseContact(row);
+              return (
+                <article
+                  key={responseKey(row, index)}
+                  className="owner-workspace-glass-panel relative overflow-hidden rounded-[22px] border border-slate-100 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-base font-semibold text-slate-950">{displayName(row)}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400">
+                        {contact ? <span>{contact}</span> : null}
+                        <span>{displayUpdatedAt(row.updatedAt || row.createdAt)}</span>
+                      </div>
+                    </div>
+                    <span
+                      className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-black ${status.className}`}
+                    >
+                      <StatusIcon size={13} aria-hidden="true" />
+                      {status.label}
+                    </span>
+                  </div>
+                  <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
+                    {responseMessage(row)}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mx-auto flex max-w-md flex-col items-center py-10 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+              <MessageSquare size={22} />
+            </div>
+            <p className="mt-3 text-base font-semibold text-slate-950">No messages yet</p>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              {allResponseCount
+                ? "Guests have responded, but none have left a message yet."
+                : "Guest messages will appear here when someone adds a note to their RSVP."}
+            </p>
+          </div>
+        )}
+      </section>
+    </section>
   );
 }
 
@@ -361,7 +655,7 @@ function GuestBreakdownCard({
   };
 
   return (
-    <article className="rounded-[28px] border border-black/5 bg-white/78 p-5 shadow-sm">
+    <article className="owner-workspace-glass-panel relative overflow-hidden rounded-[28px] border border-black/5 bg-white/78 p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-400">
@@ -439,7 +733,9 @@ function RecentResponsesCard({
     : "border-[#e1dcff] bg-white/78 text-slate-600";
 
   return (
-    <article className={`rounded-[28px] p-5 shadow-sm ${activityShellClass}`}>
+    <article
+      className={`owner-workspace-glass-panel relative overflow-hidden rounded-[28px] p-5 shadow-sm ${activityShellClass}`}
+    >
       <div className="flex items-center justify-between gap-3">
         <h4 className="text-xl font-semibold text-slate-950">Recent activity</h4>
         <span

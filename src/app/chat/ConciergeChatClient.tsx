@@ -144,6 +144,15 @@ const PRODUCT_OPTIONS: ProductOption[] = [
   },
 ];
 
+function chatProductNavItem(option: ProductOption): BottomNavItem {
+  return {
+    label: option.label,
+    value: option.output,
+    icon: option.icon,
+    labelWidth: Math.max(72, Math.ceil(option.label.length * 7)),
+  };
+}
+
 const CREATION_INTAKE_URL = "/api/creation/intake";
 const CREATION_INTAKE_STREAM_URL = "/api/creation/intake/stream";
 const ENABLE_CONCIERGE_TIMING = process.env.NEXT_PUBLIC_CONCIERGE_TIMING === "1";
@@ -1679,18 +1688,18 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         <motion.div
           initial={{ opacity: 0, y: 10, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="w-fit max-w-full self-start"
+          className="w-full max-w-full self-start"
         >
           <BottomNavBar
-            items={PRODUCT_OPTIONS.map((option) => ({
-              label: option.label,
-              value: option.output,
-              icon: option.icon,
-            }))}
-            activeValue={selectedProductOutput}
-            defaultIndex={-1}
+            items={PRODUCT_OPTIONS.map(chatProductNavItem)}
+            activeValue={selectedProductOutput ?? undefined}
+            defaultIndex={0}
+            spreadItems
+            autoOpenOnMount
+            autoOpenIntervalMs={2000}
+            autoOpenCycles={3}
             ariaLabel="Choose product format"
-            className="min-w-[304px] border-[#e9e3f2] bg-white/96"
+            className="w-full !min-w-0 border-[#e9e3f2] bg-white/96"
             onValueChange={(value) => {
               const option = PRODUCT_OPTIONS.find((item) => item.output === value);
               if (option) handleProductChoice(option);
@@ -1952,7 +1961,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
               >
                 <div className="min-h-0 flex-1 overflow-y-auto [overscroll-behavior-y:contain] [touch-action:pan-y] [-webkit-overflow-scrolling:touch]">
                   {isEmptyState ? (
-                    <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-start px-4 pb-44 pt-8 text-center sm:px-6 md:justify-end md:py-8">
+                    <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-start px-4 pb-4 pt-8 text-center sm:px-6 md:justify-end md:py-8">
                       <motion.h1
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -2027,23 +2036,23 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                       <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        className="mx-auto mt-4 flex w-full max-w-3xl justify-center pb-5 sm:max-w-4xl sm:pb-6"
+                        className="mx-auto mt-4 flex w-full max-w-3xl justify-center sm:max-w-4xl"
                       >
                         <div className="flex w-full justify-center sm:hidden">
                           <BottomNavBar
-                            items={PRODUCT_OPTIONS.map((option) => ({
-                              label: option.label,
-                              value: option.output,
-                              icon: option.icon,
-                            }))}
-                            activeValue={selectedProductOutput}
-                            defaultIndex={-1}
+                            items={PRODUCT_OPTIONS.map(chatProductNavItem)}
+                            activeValue={selectedProductOutput ?? undefined}
+                            defaultIndex={0}
+                            spreadItems
+                            autoOpenOnMount
+                            autoOpenIntervalMs={2000}
+                            autoOpenCycles={3}
                             ariaLabel={
                               selectedStarterCategory
                                 ? `Choose product format for ${selectedStarterCategory.label}`
                                 : "Choose product format"
                             }
-                            className="w-full !min-w-0 !max-w-[21rem] border-[#e9e3f2] bg-white/96"
+                            className="w-full !min-w-0 !max-w-full border-[#e9e3f2] bg-white/96"
                             onValueChange={(value) => {
                               const option = PRODUCT_OPTIONS.find((item) => item.output === value);
                               if (option) handleStarterProductChoice(option);

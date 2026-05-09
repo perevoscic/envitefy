@@ -76,6 +76,8 @@ test("studio live-card sanitizer and publish payload preserve heroTextMode", () 
     /heroTextMode:\s*value\.heroTextMode === "overlay" \|\| value\.heroTextMode === "image"/,
   );
   assert.match(builderSource, /invitationData: item\.data \|\| undefined,/);
+  assert.match(builderSource, /coverImageUrl: imageUrl \|\| undefined,/);
+  assert.match(builderSource, /address: location,/);
 });
 
 test("studio preview uses floating glass controls for poster-first live cards", () => {
@@ -115,7 +117,10 @@ test("studio preview uses floating glass controls for poster-first live cards", 
     /const usesPosterArtFrame = preview\.invitationData\.heroTextMode === "image";/,
   );
   assert.match(showcaseSource, /usesPosterArtFrame \? "aspect-\[2\/3\]" : "aspect-\[9\/16\]"/);
-  assert.match(showcaseSource, /className="absolute inset-0 h-full w-full object-cover object-center"/);
+  assert.match(
+    showcaseSource,
+    /className="absolute inset-0 h-full w-full object-cover object-center"/,
+  );
   assert.match(phonePaneSource, /aspect-\[2\/3\]/);
   assert.match(phonePaneSource, /isLiveCardPreview \? "object-cover" : "object-contain"/);
   assert.match(surfaceSource, /grid w-full min-w-0 grid-flow-col auto-cols-fr/);

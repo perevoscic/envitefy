@@ -1,13 +1,12 @@
 "use client";
-import React from "react";
-import {
+import React, {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
 
 interface SidebarContextType {
@@ -31,11 +30,7 @@ interface SidebarContextType {
   clearEventContext: () => void;
 }
 
-export type EventContextTab =
-  | "dashboard"
-  | "guests"
-  | "communications"
-  | "settings";
+export type EventContextTab = "dashboard" | "rsvps" | "messages" | "design";
 
 export type EventListPage = "myEvents" | "invitedEvents";
 
@@ -68,9 +63,7 @@ function readInitialMobileSidebarCollapsed() {
   const isTouch = supportsMatchMedia
     ? window.matchMedia("(hover: none), (pointer: coarse)").matches
     : false;
-  const isNarrow = supportsMatchMedia
-    ? window.matchMedia("(max-width: 1023px)").matches
-    : false;
+  const isNarrow = supportsMatchMedia ? window.matchMedia("(max-width: 1023px)").matches : false;
   return isTouch || isNarrow;
 }
 
@@ -86,28 +79,18 @@ interface SidebarProviderProps {
   children: ReactNode;
 }
 
-export const SidebarProvider: React.FC<SidebarProviderProps> = ({
-  children,
-}) => {
+export const SidebarProvider: React.FC<SidebarProviderProps> = ({ children }) => {
   const [mobileCollapsed, setMobileCollapsed] = useState<boolean>(
     readInitialMobileSidebarCollapsed,
   );
   const [isDesktop, setIsDesktop] = useState<boolean>(isDesktopViewport);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [selectedEventTitle, setSelectedEventTitle] = useState<string | null>(
-    null,
-  );
-  const [selectedEventHref, setSelectedEventHref] = useState<string | null>(
-    null,
-  );
+  const [selectedEventTitle, setSelectedEventTitle] = useState<string | null>(null);
+  const [selectedEventHref, setSelectedEventHref] = useState<string | null>(null);
   const [selectedEventOwnerHref, setSelectedEventOwnerHref] = useState<string | null>(null);
-  const [selectedEventEditHref, setSelectedEventEditHref] = useState<
-    string | null
-  >(null);
-  const [activeEventTab, setActiveEventTab] =
-    useState<EventContextTab>("dashboard");
-  const [eventContextSourcePage, setEventContextSourcePage] =
-    useState<EventListPage>("myEvents");
+  const [selectedEventEditHref, setSelectedEventEditHref] = useState<string | null>(null);
+  const [activeEventTab, setActiveEventTab] = useState<EventContextTab>("dashboard");
+  const [eventContextSourcePage, setEventContextSourcePage] = useState<EventListPage>("myEvents");
 
   useEffect(() => {
     if (typeof window === "undefined") return;

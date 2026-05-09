@@ -148,10 +148,43 @@ export type LeftSidebarControllerViewModel = {
   openGuestEventContext: (item: GroupedEventItem) => void;
   shareEventFromList: (item: GroupedEventItem) => Promise<void>;
   deleteEventFromList: (item: GroupedEventItem) => Promise<void>;
+  removeInvitedEventFromList: (item: GroupedEventItem) => Promise<void>;
   isHistoryRowActive: (rowId: string) => boolean;
   handleEventTabChange: (tab: EventContextTab) => void;
   handleSidebarBackToEvents: () => void;
 };
+
+function isInvitedSidebarItem(item: GroupedEventItem): boolean {
+  if (item.isInvited) return true;
+  const data = item.row?.data;
+  return Boolean(
+    data && typeof data === "object" && isInvitedEventLikeRecord(data as Record<string, unknown>),
+  );
+}
+
+async function removeInvitedEventRequest(eventId: string, data: unknown): Promise<void> {
+  const isSharedEvent = Boolean(data && typeof data === "object" && (data as any).shared);
+  if (isSharedEvent) {
+    const response = await fetch("/api/events/share/remove", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId }),
+    });
+    if (!response.ok) {
+      throw new Error("Failed to remove invited event");
+    }
+    const payload = await response.json().catch(() => ({}));
+    if (Number(payload?.revoked || 0) <= 0) {
+      throw new Error("Failed to remove invited event");
+    }
+    return;
+  }
+
+  const response = await fetch(`/api/history/${eventId}`, { method: "DELETE" });
+  if (!response.ok) {
+    throw new Error("Failed to remove invited event");
+  }
+}
 
 export function useLeftSidebarController({
   session,
@@ -228,6 +261,7 @@ export function useLeftSidebarController({
   const lastSidebarOpenAtRef = useRef(0);
   const asideRef = useRef<HTMLDivElement | null>(null);
   const eventSidebarRef = useRef<HTMLDivElement | null>(null);
+  const ownerNavigationPendingRef = useRef(false);
   const invitedNavigationPendingRef = useRef(false);
   const prevSidebarPageRef = useRef<SidebarPage>("root");
 
@@ -450,6 +484,7 @@ export function useLeftSidebarController({
 
   useEffect(() => {
     if (!selectedEventId) return;
+    if (ownerNavigationPendingRef.current) return;
     if (invitedNavigationPendingRef.current) return;
     if (pathname?.startsWith("/event/")) return;
     if (sidebarPage === "eventContext") return;
@@ -458,6 +493,7 @@ export function useLeftSidebarController({
   }, [clearEventContext, pathname, selectedEventId, setSidebarPage, sidebarPage]);
 
   useEffect(() => {
+    if (ownerNavigationPendingRef.current) return;
     if (invitedNavigationPendingRef.current) return;
     if (pathname !== "/") return;
     const hasEventContext = Boolean(selectedEventId) || sidebarPage === "eventContext";
@@ -467,8 +503,9 @@ export function useLeftSidebarController({
   }, [clearEventContext, pathname, selectedEventId, setSidebarPage, sidebarPage]);
 
   useEffect(() => {
-    if (!invitedNavigationPendingRef.current) return;
+    if (!ownerNavigationPendingRef.current && !invitedNavigationPendingRef.current) return;
     if (!pathname || pathname === "/") return;
+    ownerNavigationPendingRef.current = false;
     invitedNavigationPendingRef.current = false;
   }, [pathname]);
 
@@ -1121,12 +1158,18 @@ export function useLeftSidebarController({
     const requestedTab = String(searchParams?.get("tab") || "")
       .trim()
       .toLowerCase();
-    if (
-      requestedTab !== "dashboard" &&
-      requestedTab !== "guests" &&
-      requestedTab !== "communications" &&
-      requestedTab !== "settings"
-    ) {
+    const requestedOwnerTab: EventContextTab | null =
+      requestedTab === "guests"
+        ? "rsvps"
+        : requestedTab === "communications"
+          ? "messages"
+          : requestedTab === "dashboard" ||
+              requestedTab === "rsvps" ||
+              requestedTab === "messages" ||
+              requestedTab === "design"
+            ? (requestedTab as EventContextTab)
+            : null;
+    if (!requestedOwnerTab) {
       return;
     }
 
@@ -1135,14 +1178,19 @@ export function useLeftSidebarController({
     if (eventContextSourcePage !== sourcePage) {
       setEventContextSourcePage(sourcePage);
     }
+    if (activeEventTab !== requestedOwnerTab) {
+      setActiveEventTab(requestedOwnerTab);
+    }
     setEventSidebarMode("owner");
     setSidebarPage(sourcePage);
   }, [
+    activeEventTab,
     eventContextSourcePage,
     inferEventListSourceFromPath,
     pathname,
     searchParams,
     selectedEventId,
+    setActiveEventTab,
     setEventContextSourcePage,
   ]);
 
@@ -1227,16 +1275,23 @@ export function useLeftSidebarController({
       setSelectedEventHref(publicHref);
       setSelectedEventOwnerHref(ownerHref);
       setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
-      setActiveEventTab("dashboard");
+      const initialOwnerTab: EventContextTab = item.hasOwnerRsvp ? "dashboard" : "design";
+      setActiveEventTab(initialOwnerTab);
       setEventSidebarMode("owner");
       setEventContextSourcePage("myEvents");
       setSidebarPage("myEvents");
-      router.push(buildEventOwnerHref(ownerHref, row.id, "dashboard"));
+      const nextHref = buildEventOwnerHref(ownerHref, row.id, initialOwnerTab);
+      const currentPath = typeof window !== "undefined" ? window.location.pathname : pathname;
+      if (!String(currentPath || "").startsWith("/event/")) {
+        ownerNavigationPendingRef.current = true;
+      }
+      router.push(nextHref);
     },
     [
       blurActiveElement,
       buildEventOwnerHref,
       clearEventContext,
+      pathname,
       router,
       setActiveEventTab,
       setSelectedEventEditHref,
@@ -1296,12 +1351,40 @@ export function useLeftSidebarController({
       const eventId = String(item?.row?.id || "").trim();
       if (!eventId) return;
       const eventLabel = item?.title || item?.row?.title || "Untitled event";
+      if (isInvitedSidebarItem(item)) {
+        const ok = window.confirm(`Remove this invited event from your list?\n\n${eventLabel}`);
+        if (!ok) return;
+        await removeInvitedEventRequest(eventId, item?.row?.data);
+        window.dispatchEvent(new CustomEvent("history:deleted", { detail: { id: eventId } }));
+        if (selectedEventId === eventId) {
+          clearEventContext();
+        }
+        return;
+      }
+
       const ok = window.confirm(`Are you sure you want to delete this event?\n\n${eventLabel}`);
       if (!ok) return;
       const response = await fetch(`/api/history/${eventId}`, { method: "DELETE" });
       if (!response.ok) {
         throw new Error("Failed to delete event");
       }
+      window.dispatchEvent(new CustomEvent("history:deleted", { detail: { id: eventId } }));
+      if (selectedEventId === eventId) {
+        clearEventContext();
+      }
+    },
+    [clearEventContext, selectedEventId],
+  );
+
+  const removeInvitedEventFromList = useCallback(
+    async (item: GroupedEventItem) => {
+      const eventId = String(item?.row?.id || "").trim();
+      if (!eventId) return;
+      const eventLabel = item?.title || item?.row?.title || "Untitled event";
+      const ok = window.confirm(`Remove this invited event from your list?\n\n${eventLabel}`);
+      if (!ok) return;
+      await removeInvitedEventRequest(eventId, item?.row?.data);
+
       window.dispatchEvent(new CustomEvent("history:deleted", { detail: { id: eventId } }));
       if (selectedEventId === eventId) {
         clearEventContext();
@@ -1442,6 +1525,7 @@ export function useLeftSidebarController({
     openGuestEventContext,
     shareEventFromList,
     deleteEventFromList,
+    removeInvitedEventFromList,
     isHistoryRowActive,
     handleEventTabChange,
     handleSidebarBackToEvents,

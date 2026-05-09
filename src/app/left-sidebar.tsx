@@ -26,7 +26,6 @@ import {
   Trophy,
   Upload,
   User,
-  Users,
   WandSparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -314,14 +313,12 @@ function RootNavigationPanel({
   isCreateEntryActive,
   useGymnasticsDirectCreate,
   createdEventsCount,
-  invitedEventsCount,
   onHome,
   onStudio,
   onAiThreads,
   onSnap,
   onCreate,
   onMyEvents,
-  onInvitedEvents,
 }: {
   pathname: string | null;
   sidebarPage: string;
@@ -330,14 +327,12 @@ function RootNavigationPanel({
   isCreateEntryActive: boolean;
   useGymnasticsDirectCreate: boolean;
   createdEventsCount: number;
-  invitedEventsCount: number;
   onHome: () => void;
   onStudio: () => void;
   onAiThreads: () => void;
   onSnap: () => void;
   onCreate: () => void;
   onMyEvents: () => void;
-  onInvitedEvents: () => void;
 }) {
   const isHomeActive = pathname === "/" && sidebarPage === "root";
   const isStudioActive = pathname === "/studio" && sidebarPage === "root";
@@ -352,10 +347,6 @@ function RootNavigationPanel({
     sidebarPage === "myEvents" ||
     (sidebarPage === "eventContext" && eventContextSourcePage === "myEvents") ||
     (isViewingEventFromListInRoot && eventContextSourcePage === "myEvents");
-  const isInvitedEventsActive =
-    sidebarPage === "invitedEvents" ||
-    (sidebarPage === "eventContext" && eventContextSourcePage === "invitedEvents") ||
-    (isViewingEventFromListInRoot && eventContextSourcePage === "invitedEvents");
   const mainActiveAccent = getSidebarPrimaryActiveAccent();
   const rootMenuActiveChipClass = "nav-chrome-sidebar-chip-active";
   const rootMenuChipClass = SIDEBAR_ICON_CHIP_ACCENT_CLASS;
@@ -535,37 +526,6 @@ function RootNavigationPanel({
             <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>{createdEventsCount}</span>
           ) : null}
         </button>
-
-        <button
-          type="button"
-          onClick={onInvitedEvents}
-          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-            isInvitedEventsActive ? activeRowClass : inactiveRowClass
-          } py-3 pl-4 pr-4`}
-          style={
-            isInvitedEventsActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined
-          }
-        >
-          <span
-            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-              isInvitedEventsActive ? rootMenuActiveChipClass : rootMenuChipClass
-            } ${rootIconClass(isInvitedEventsActive)}`}
-          >
-            <Users size={17} strokeWidth={1.9} />
-          </span>
-          <span
-            className={`truncate ${rootRowTextClass} text-[0.9rem] tracking-[0.08em] ${
-              isInvitedEventsActive
-                ? rootActiveTextClass
-                : `${rootInactiveTextClass} ${rootHoverTextClass}`
-            }`}
-          >
-            Invited Events
-          </span>
-          {invitedEventsCount > 0 ? (
-            <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>{invitedEventsCount}</span>
-          ) : null}
-        </button>
       </div>
     </div>
   );
@@ -725,6 +685,10 @@ function EventListPanel({
   setPastExpanded,
   showPendingBadge,
   showQuickActions = true,
+  showShareAction = true,
+  actionsAlwaysVisible = false,
+  deleteActionTitle = "Delete event",
+  deleteActionVerb = "Delete",
   pastRowOpacityClass,
   onBack,
 }: {
@@ -740,9 +704,56 @@ function EventListPanel({
   setPastExpanded: Dispatch<SetStateAction<boolean>>;
   showPendingBadge: boolean;
   showQuickActions?: boolean;
+  showShareAction?: boolean;
+  actionsAlwaysVisible?: boolean;
+  deleteActionTitle?: string;
+  deleteActionVerb?: string;
   pastRowOpacityClass: string;
   onBack: () => void;
 }) {
+  const rowActionVisibilityClass = actionsAlwaysVisible
+    ? "opacity-100"
+    : "opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100";
+
+  const renderRowActions = (item: GroupedEventItem) => {
+    if (!showQuickActions) return null;
+    const canShare = showShareAction && item.showQuickActions && !item.isInvited;
+    const resolvedDeleteActionTitle = item.isInvited ? "Remove invited event" : deleteActionTitle;
+    const resolvedDeleteActionVerb = item.isInvited ? "Remove" : deleteActionVerb;
+    return (
+      <span className={`ml-2 flex shrink-0 items-center gap-1 ${rowActionVisibilityClass}`}>
+        {canShare ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              void onShareRow(item);
+            }}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e0ff] bg-white/85 text-[#7a6fd1] transition hover:bg-white"
+            aria-label={`Share ${item.title}`}
+            title="Share event"
+          >
+            <Share2 size={13} />
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            void onDeleteRow(item);
+          }}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+          aria-label={`${resolvedDeleteActionVerb} ${item.title}`}
+          title={resolvedDeleteActionTitle}
+        >
+          <Trash2 size={13} />
+        </button>
+      </span>
+    );
+  };
+
   const renderRows = (items: GroupedEventItem[], muted: boolean) =>
     items.map((item) => (
       <div
@@ -768,7 +779,7 @@ function EventListPanel({
             <CalendarDays size={16} />
           </span>
           <span className="min-w-0 flex-1">
-            {showPendingBadge ? (
+            {showPendingBadge || item.isInvited ? (
               <span className="flex items-center gap-2">
                 <span
                   className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-none md:text-[1.02rem] ${
@@ -807,50 +818,7 @@ function EventListPanel({
             </span>
           </span>
         </button>
-        {showQuickActions && item.showQuickActions ? (
-          <span className="ml-2 flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-            <button
-              type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                void onShareRow(item);
-              }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e0ff] bg-white/85 text-[#7a6fd1] transition hover:bg-white"
-              aria-label={`Share ${item.title}`}
-              title="Share event"
-            >
-              <Share2 size={13} />
-            </button>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                void onDeleteRow(item);
-              }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-              aria-label={`Delete ${item.title}`}
-              title="Delete event"
-            >
-              <Trash2 size={13} />
-            </button>
-          </span>
-        ) : showQuickActions ? (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              void onDeleteRow(item);
-            }}
-            className="ml-2 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 opacity-0 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition group-hover:opacity-100 group-focus-within:opacity-100 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-            aria-label={`Delete ${item.title}`}
-            title="Delete event"
-          >
-            <Trash2 size={14} />
-          </button>
-        ) : null}
+        {renderRowActions(item)}
       </div>
     ));
 
@@ -901,10 +869,7 @@ function EventListPanel({
             {grouped.past.length > 0 ? (
               <section className="space-y-1">
                 <div className="px-1 pt-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#9f98d7]">
-                      Past Events
-                    </p>
+                  <div className="flex items-center justify-center">
                     <button
                       type="button"
                       onClick={() => setPastExpanded((prev) => !prev)}
@@ -1419,14 +1384,12 @@ export default function LeftSidebar() {
                       isCreateEntryActive={viewModel.isCreateEntryActive}
                       useGymnasticsDirectCreate={viewModel.useGymnasticsDirectCreate}
                       createdEventsCount={viewModel.createdEventsCount}
-                      invitedEventsCount={viewModel.invitedEventsCount}
                       onHome={viewModel.goHomeFromSidebar}
                       onStudio={viewModel.goStudioFromSidebar}
                       onAiThreads={viewModel.openAiThreadsPage}
                       onSnap={viewModel.handleRootSnapNavigate}
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}
-                      onInvitedEvents={viewModel.openInvitedEventsPage}
                     />
                   </div>
 
@@ -1526,11 +1489,13 @@ export default function LeftSidebar() {
                       isHistoryRowActive={viewModel.isHistoryRowActive}
                       onRowClick={viewModel.openGuestEventContext}
                       onShareRow={viewModel.shareEventFromList}
-                      onDeleteRow={viewModel.deleteEventFromList}
+                      onDeleteRow={viewModel.removeInvitedEventFromList}
                       pastExpanded={viewModel.showPastInvitedEvents}
                       setPastExpanded={viewModel.setShowPastInvitedEvents}
                       showPendingBadge
-                      showQuickActions={false}
+                      showShareAction={false}
+                      deleteActionTitle="Remove invited event"
+                      deleteActionVerb="Remove"
                       pastRowOpacityClass="opacity-70 saturate-75"
                       onBack={viewModel.backToRoot}
                     />

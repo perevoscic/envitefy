@@ -13,6 +13,7 @@ import {
 } from "@/components/event-skin-layout";
 import OcrFactCards from "@/components/OcrFactCards";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
+import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import {
   filterRenderedOcrFacts,
@@ -28,7 +29,6 @@ import {
   normalizeScannedInvitePalette,
 } from "@/lib/scanned-invite-palette";
 import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
-import { buildPreferredDirectionsHref } from "@/lib/directions";
 
 type CalendarLinks = {
   google: string;
@@ -66,6 +66,9 @@ type Props = {
   planCopy?: string | null;
   activities?: string[] | null;
   attire?: string | null;
+  registryActionLabel?: string | null;
+  registryHelperText?: string | null;
+  registryName?: string | null;
   registryUrl?: string | null;
   ocrFacts?: OcrFact[] | null;
   previewMode?: boolean;
@@ -177,6 +180,9 @@ export default function BirthdaySkin({
   planCopy,
   activities,
   attire,
+  registryActionLabel,
+  registryHelperText,
+  registryName,
   registryUrl,
   ocrFacts,
   previewMode = false,
@@ -212,7 +218,11 @@ export default function BirthdaySkin({
   const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail, title, shareUrl });
   const hasRsvpAction = Boolean(directRsvpHref);
   const displayAttire = String(attire || "").trim();
+  const displayRegistryName = String(registryName || "").trim();
+  const displayRegistryHelperText = String(registryHelperText || "").trim();
   const displayRegistryUrl = String(registryUrl || "").trim();
+  const resolvedRegistryActionLabel =
+    String(registryActionLabel || "").trim() || "View Gift List";
   const displayActivities = Array.isArray(activities)
     ? filterRenderedTextValues(
         activities.map((item) => String(item || "").trim()).filter(Boolean),
@@ -258,6 +268,8 @@ export default function BirthdaySkin({
     displayLocation,
     displayPlanCopy,
     displayAttire,
+    displayRegistryName,
+    displayRegistryHelperText,
     displayActivities,
     displayRegistryUrl,
     displayRsvpName,
@@ -520,13 +532,25 @@ export default function BirthdaySkin({
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.48 }}
-                className="col-span-1 flex items-center justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 text-center shadow-sm transition hover:scale-[1.01] md:col-span-1"
+                className={`${displayRegistryHelperText ? "col-span-2" : "col-span-1 md:col-span-1"} flex items-center justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 text-center shadow-sm transition hover:scale-[1.01]`}
               >
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
                     Gift List
                   </div>
-                  <div className="mt-2 text-lg font-bold text-black/90">View Gift List</div>
+                  {displayRegistryName ? (
+                    <div className="mt-2 text-base font-semibold text-black/80">
+                      {displayRegistryName}
+                    </div>
+                  ) : null}
+                  <div className="mt-2 text-lg font-bold text-black/90">
+                    {resolvedRegistryActionLabel}
+                  </div>
+                  {displayRegistryHelperText ? (
+                    <div className="mt-3 whitespace-pre-line text-sm font-medium leading-relaxed text-black/55">
+                      {displayRegistryHelperText}
+                    </div>
+                  ) : null}
                 </div>
               </motion.a>
             ) : null}

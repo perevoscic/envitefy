@@ -15,6 +15,7 @@ export type EventOcrLlmResult = {
   hostName?: string | null;
   activities?: string[] | null;
   attire?: string | null;
+  registryProvider?: string | null;
   registryUrl?: string | null;
   ocrFacts?: OcrFact[] | null;
   facts?: OcrFact[] | null;

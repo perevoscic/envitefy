@@ -70,18 +70,67 @@ function isTruthyBooleanLike(value: unknown): boolean {
   return normalized === "true" || normalized === "1" || normalized === "yes";
 }
 
+function isFalseyBooleanLike(value: unknown): boolean {
+  if (value === false) return true;
+  if (typeof value !== "string") return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "false" || normalized === "0" || normalized === "no" || normalized === "off";
+}
+
 function hasNonEmptyString(...values: unknown[]): boolean {
   return values.some((value) => typeof value === "string" && value.trim().length > 0);
 }
 
+function normalizeRsvpOutputValue(value: unknown): string {
+  return typeof value === "string"
+    ? value
+        .trim()
+        .toLowerCase()
+        .replace(/[/-]+/g, "_")
+        .replace(/\s+/g, "_")
+    : "";
+}
+
+function asDashboardRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function readRsvpOutputValues(data: Record<string, unknown>): string[] {
+  const publicEvent = asDashboardRecord(data.publicEvent);
+  return [
+    data.primaryOutput,
+    data.productType,
+    data.publicRenderer,
+    publicEvent?.primaryOutput,
+    publicEvent?.renderer,
+    ...(Array.isArray(data.requestedOutputs) ? data.requestedOutputs : []),
+    ...(Array.isArray(data.outputs) ? data.outputs : []),
+  ]
+    .map(normalizeRsvpOutputValue)
+    .filter(Boolean);
+}
+
+function hasCardOnlyProductEvidence(data: Record<string, unknown>): boolean {
+  const outputs = readRsvpOutputValues(data);
+  if (outputs.length > 0) return !outputs.includes("rsvp_page");
+  return Boolean(asDashboardRecord(data.studioCard) || asDashboardRecord(data.liveCard));
+}
+
 export function hasActionableRsvp(data: any, numberOfGuestsRaw?: unknown): boolean {
   if (!data || typeof data !== "object") return false;
-  const numberOfGuests = Math.max(0, Number(numberOfGuestsRaw ?? data?.numberOfGuests ?? 0));
-  if (numberOfGuests > 0) return true;
-  if (isTruthyBooleanLike(data?.rsvpEnabled)) return true;
-
   const rsvpRecord =
     data?.rsvp && typeof data.rsvp === "object" && !Array.isArray(data.rsvp) ? data.rsvp : null;
+  if (
+    isFalseyBooleanLike(data?.rsvpEnabled) ||
+    isFalseyBooleanLike(rsvpRecord?.isEnabled) ||
+    isFalseyBooleanLike(rsvpRecord?.enabled)
+  ) {
+    return false;
+  }
+  if (isTruthyBooleanLike(data?.rsvpEnabled)) return true;
+
   if (
     isTruthyBooleanLike(rsvpRecord?.isEnabled) ||
     isTruthyBooleanLike(rsvpRecord?.enabled) ||
@@ -105,6 +154,11 @@ export function hasActionableRsvp(data: any, numberOfGuestsRaw?: unknown): boole
   ) {
     return true;
   }
+
+  if (hasCardOnlyProductEvidence(data)) return false;
+
+  const numberOfGuests = Math.max(0, Number(numberOfGuestsRaw ?? data?.numberOfGuests ?? 0));
+  if (numberOfGuests > 0) return true;
 
   return false;
 }

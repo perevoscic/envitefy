@@ -45,6 +45,7 @@ export type ScannedWeddingRegistryCard = {
   accentColor: string;
   textColor: string;
   brandLabel?: string | null;
+  helperText?: string | null;
 };
 
 type ScheduleRowItem = {
@@ -560,6 +561,14 @@ export default function ScannedWeddingInviteView({
                       >
                         {link.brandLabel || link.host}
                       </span>
+                      {link.helperText ? (
+                        <span
+                          className="mt-3 block whitespace-pre-line text-sm leading-relaxed"
+                          style={{ color: mutedTextColor }}
+                        >
+                          {link.helperText}
+                        </span>
+                      ) : null}
                     </span>
                   </a>
                 ))}

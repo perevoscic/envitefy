@@ -1,8 +1,14 @@
 "use client";
 
+import { CalendarDays, Clock3, MapPin, type LucideIcon } from "lucide-react";
+
 type LiveCardOverlayDetails = {
   category?: string;
   occasion?: string;
+  eventDate?: string;
+  startTime?: string;
+  venueName?: string;
+  location?: string;
 };
 
 type LiveCardOverlayData = {
@@ -28,7 +34,10 @@ function buildEyebrow(details?: LiveCardOverlayDetails | null) {
 }
 
 function getOverlayCategoryBlob(details?: LiveCardOverlayDetails | null) {
-  return [readString(details?.category), readString(details?.occasion)].filter(Boolean).join(" ").toLowerCase();
+  return [readString(details?.category), readString(details?.occasion)]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
 }
 
 function shouldUseFormalPanelLayout(details?: LiveCardOverlayDetails | null) {
@@ -38,12 +47,140 @@ function shouldUseFormalPanelLayout(details?: LiveCardOverlayDetails | null) {
 
 function shouldUsePosterHeadlineUppercase(details?: LiveCardOverlayDetails | null) {
   const blob = getOverlayCategoryBlob(details);
-  return /\bcustom invite|game day|field trip|field day|school|housewarming|community|team\b/.test(blob);
+  return /\bcustom invite|game day|field trip|field day|school|housewarming|community|team\b/.test(
+    blob,
+  );
 }
 
-export default function LiveCardHeroTextOverlay({
-  invitationData,
-}: LiveCardHeroTextOverlayProps) {
+function formatDateChipValue(value: string): string {
+  const dateOnly = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = dateOnly
+    ? new Date(Date.UTC(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3])))
+    : new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+function formatTimeChipValue(value: string): string {
+  const raw = readString(value).replace(/\s+/g, " ");
+  if (!raw) return "";
+  const twelveHour = raw.match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])$/);
+  if (twelveHour) {
+    const hour = Number.parseInt(twelveHour[1] || "", 10);
+    const minutes = twelveHour[2] || "00";
+    if (Number.isFinite(hour)) return `${hour}:${minutes} ${(twelveHour[3] || "").toUpperCase()}`;
+  }
+  const twentyFourHour = raw.match(/^(\d{1,2}):(\d{2})$/);
+  if (twentyFourHour) {
+    const hour = Number.parseInt(twentyFourHour[1] || "", 10);
+    const minutes = Number.parseInt(twentyFourHour[2] || "", 10);
+    if (hour >= 0 && hour <= 23 && minutes >= 0 && minutes <= 59) {
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "UTC",
+      }).format(new Date(Date.UTC(2000, 0, 1, hour, minutes)));
+    }
+  }
+  return raw;
+}
+
+function splitScheduleLine(line: string): { date: string; time: string } {
+  const cleaned = readString(line);
+  if (!cleaned) return { date: "", time: "" };
+  const timeMatch = cleaned.match(
+    /\b(?:1[0-2]|0?[1-9])(?::[0-5]\d)?\s*[AaPp][Mm]\b|\b(?:[01]?\d|2[0-3]):[0-5]\d\b/,
+  );
+  const time = formatTimeChipValue(timeMatch?.[0] || "");
+  const date = timeMatch
+    ? cleaned
+        .replace(timeMatch[0], "")
+        .replace(/\s+\bat\b\s*$/i, "")
+        .replace(/\s*[,•|-]\s*$/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim()
+    : cleaned;
+  return { date, time };
+}
+
+type DetailChip = {
+  key: "date" | "time" | "place";
+  label: string;
+};
+
+function buildDetailChips(
+  details: LiveCardOverlayDetails | null | undefined,
+  scheduleLine: string,
+  locationLine: string,
+): DetailChip[] {
+  const schedule = splitScheduleLine(scheduleLine);
+  const date = details?.eventDate
+    ? formatDateChipValue(readString(details.eventDate))
+    : schedule.date;
+  const time = details?.startTime
+    ? formatTimeChipValue(readString(details.startTime))
+    : schedule.time;
+  const place =
+    readString(details?.venueName) || readString(locationLine) || readString(details?.location);
+
+  return [
+    date ? { key: "date" as const, label: date } : null,
+    time ? { key: "time" as const, label: time } : null,
+    place ? { key: "place" as const, label: place } : null,
+  ].filter((chip): chip is DetailChip => Boolean(chip));
+}
+
+function EventDetailChips({ chips }: { chips: DetailChip[] }) {
+  if (chips.length === 0) return null;
+
+  const chipConfig = {
+    date: {
+      icon: CalendarDays,
+      className: "text-[#7c3aed]",
+      ariaLabel: "Date",
+    },
+    time: {
+      icon: Clock3,
+      className: "text-[#0f9f8a]",
+      ariaLabel: "Time",
+    },
+    place: {
+      icon: MapPin,
+      className: "text-[#d99a00]",
+      ariaLabel: "Location",
+    },
+  } satisfies Record<DetailChip["key"], { icon: LucideIcon; className: string; ariaLabel: string }>;
+
+  return (
+    <div className="mt-4 flex flex-wrap justify-center gap-2">
+      {chips.map((chip) => {
+        const config = chipConfig[chip.key];
+        const Icon = config.icon;
+        return (
+          <span
+            key={`${chip.key}-${chip.label}`}
+            className="inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-full border border-white/75 bg-white/94 px-3.5 py-1.5 text-[0.72rem] font-semibold leading-none text-[#5f6876] shadow-[0_7px_18px_rgba(31,41,55,0.12)] backdrop-blur-md"
+          >
+            <Icon
+              className={`h-3.5 w-3.5 shrink-0 ${config.className}`}
+              aria-label={config.ariaLabel}
+            />
+            <span className="truncate">{chip.label}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function LiveCardHeroTextOverlay({ invitationData }: LiveCardHeroTextOverlayProps) {
   if (invitationData?.heroTextMode !== "overlay") {
     return null;
   }
@@ -52,11 +189,18 @@ export default function LiveCardHeroTextOverlay({
   const headline = readString(invitationData.title);
   const subheadline = readString(invitationData.subtitle);
   const description = readString(invitationData.description);
-  const detailLines = [readString(invitationData.scheduleLine), readString(invitationData.locationLine)].filter(Boolean);
+  const detailLines = [
+    readString(invitationData.scheduleLine),
+    readString(invitationData.locationLine),
+  ].filter(Boolean);
+  const detailChips = buildDetailChips(
+    invitationData.eventDetails,
+    readString(invitationData.scheduleLine),
+    readString(invitationData.locationLine),
+  );
   const formalPanelLayout = shouldUseFormalPanelLayout(invitationData.eventDetails);
   const uppercasePosterHeadline = shouldUsePosterHeadlineUppercase(invitationData.eventDetails);
-  const displayHeadline =
-    uppercasePosterHeadline && headline ? headline.toUpperCase() : headline;
+  const displayHeadline = uppercasePosterHeadline && headline ? headline.toUpperCase() : headline;
   const topSupportLine = subheadline || description;
   const supportingLine = subheadline && description ? description : "";
 
@@ -137,27 +281,14 @@ export default function LiveCardHeroTextOverlay({
             {supportingLine}
           </p>
         ) : null}
+        <EventDetailChips chips={detailChips} />
       </div>
 
-      {detailLines.length > 0 || description ? (
+      {description && !topSupportLine ? (
         <div className="absolute inset-x-5 bottom-[5.25rem] max-md:inset-x-4 max-md:bottom-[4.9rem]">
-          {detailLines.length > 0 ? (
-            <div className="space-y-1.5">
-              {detailLines.map((line) => (
-                <p
-                  key={line}
-                  className="font-[var(--font-josefin-sans)] text-[1rem] font-bold uppercase leading-[1.08] tracking-[0.08em] text-[#f3dcc2] [text-shadow:0_3px_18px_rgba(0,0,0,0.42)] max-md:text-[0.9rem]"
-                >
-                  {line}
-                </p>
-              ))}
-            </div>
-          ) : null}
-          {description && !topSupportLine ? (
-            <p className="mx-auto mt-3 max-w-[15rem] text-[0.8rem] font-semibold uppercase leading-[1.28] tracking-[0.08em] text-white/84 [text-shadow:0_2px_16px_rgba(0,0,0,0.34)]">
-              {description}
-            </p>
-          ) : null}
+          <p className="mx-auto mt-3 max-w-[15rem] text-[0.8rem] font-semibold uppercase leading-[1.28] tracking-[0.08em] text-white/84 [text-shadow:0_2px_16px_rgba(0,0,0,0.34)]">
+            {description}
+          </p>
         </div>
       ) : null}
     </div>

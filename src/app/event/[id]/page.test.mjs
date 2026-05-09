@@ -93,12 +93,18 @@ test("event route branches football discovery/template events into the football 
     source,
     /const canEditCreatedEvent = canManageCreatedEvent && !isScannedOrUploadedEventData\(data\);/,
   );
+  assert.match(source, /const ownerRsvpDashboardEnabled = canShowOwnerRsvpDashboard\(data\);/);
   assert.match(
     source,
-    /const showHostDashboard =\s*canManageCreatedEvent && !hideHostDashboard && canShowOwnerRsvpDashboard\(data\);/,
+    /const showHostDashboard =\s*canManageCreatedEvent && !hideHostDashboard && ownerRsvpDashboardEnabled;/,
   );
-  assert.match(source, /const showOwnerWorkspace = canManageCreatedEvent;/);
-  assert.match(source, /if \(showOwnerWorkspace && ownerToolsTab\) \{/);
+  assert.match(
+    source,
+    /const showOwnerWorkspace = canManageCreatedEvent && !isScannedOrUploadedEventData\(data\);/,
+  );
+  assert.match(source, /ownerToolsTab && !ownerRsvpDashboardEnabled && ownerToolsTab !== "design"/);
+  assert.match(source, /redirect\(`\$\{ownerEventHref\}\?tab=\$\{resolvedOwnerToolsTab\}`\);/);
+  assert.match(source, /if \(showOwnerWorkspace && resolvedOwnerToolsTab\) \{/);
   assert.match(source, /showHostDashboard=\{showHostDashboard\}/);
   assert.match(
     source,
@@ -215,15 +221,44 @@ test("event route branches football discovery/template events into the football 
   );
 });
 
+test("event route disconnects the retired legacy event page fallback", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+  const simpleTemplateBranch = source.indexOf("if (isSimpleTemplate)");
+  const notFoundAfterTemplates = source.indexOf("notFound();", simpleTemplateBranch);
+  const retiredFallback = source.indexOf("event-modern-page");
+
+  assert.notEqual(simpleTemplateBranch, -1);
+  assert.notEqual(notFoundAfterTemplates, -1);
+  assert.notEqual(retiredFallback, -1);
+  assert.ok(
+    notFoundAfterTemplates < retiredFallback,
+    "unknown events should 404 before the retired legacy event page can render",
+  );
+});
+
 test("event route owner preview mode includes a dashboard return control", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
+  const suppressorSource = readSource("src/components/OwnerPreviewMobileTopbarSuppressor.tsx");
 
   assert.match(source, /function OwnerPreviewReturnLink\(\{ href \}: \{ href: string \}\)/);
-  assert.match(source, /aria-label="Close preview"/);
-  assert.match(source, /inline-flex h-11 w-11 items-center justify-center rounded-full/);
+  assert.match(source, /import \{ ArrowLeft \} from "lucide-react";/);
+  assert.match(
+    source,
+    /import OwnerPreviewMobileTopbarSuppressor from "@\/components\/OwnerPreviewMobileTopbarSuppressor";/,
+  );
+  assert.match(source, /<OwnerPreviewMobileTopbarSuppressor \/>/);
+  assert.match(source, /aria-label="Back to dashboard"/);
+  assert.match(source, /inline-flex h-11 items-center justify-center gap-2 rounded-full/);
+  assert.match(source, /<ArrowLeft size=\{18\}/);
+  assert.match(source, /<span>Dashboard<\/span>/);
   assert.match(source, /lg:left-\[calc\(20rem\+/);
-  assert.doesNotMatch(source, /Back to dashboard/);
-  assert.doesNotMatch(source, />Back</);
+  assert.doesNotMatch(source, /aria-label="Close preview"/);
+  assert.doesNotMatch(source, /<X size=\{18\}/);
+  assert.match(suppressorSource, /root\.dataset\.mobileTopbarHidden = "true";/);
+  assert.match(
+    suppressorSource,
+    /root\.style\.setProperty\("--app-mobile-topbar-offset", "0px"\);/,
+  );
   assert.match(source, /function sanitizeInternalReturnHref\(value: string\): string/);
   assert.match(
     source,
