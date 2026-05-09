@@ -958,6 +958,62 @@ function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
   };
 }
 
+function quoteDraftEditValue(value: string) {
+  return `"${value.replace(/"/g, "'")}"`;
+}
+
+function buildGeneratedDraftImageEditPrompt(args: {
+  userMessage: string;
+  previousDraft: ConciergeEventDraft;
+  nextDraft: ConciergeEventDraft;
+}) {
+  const instructions: string[] = [];
+  const previousTime = stringValue(args.previousDraft.timeText);
+  const nextTime = stringValue(args.nextDraft.timeText);
+  const previousDate = stringValue(args.previousDraft.dateText);
+  const nextDate = stringValue(args.nextDraft.dateText);
+  const previousLocation =
+    stringValue(args.previousDraft.venue) || stringValue(args.previousDraft.location);
+  const nextLocation = stringValue(args.nextDraft.venue) || stringValue(args.nextDraft.location);
+  const previousTitle = stringValue(args.previousDraft.title);
+  const nextTitle = stringValue(args.nextDraft.title);
+
+  if (previousTime && nextTime && previousTime !== nextTime) {
+    instructions.push(
+      `Replace only the visible time text ${quoteDraftEditValue(previousTime)} with ${quoteDraftEditValue(nextTime)}.`,
+    );
+  }
+  if (previousDate && nextDate && previousDate !== nextDate) {
+    instructions.push(
+      `Replace only the visible date text ${quoteDraftEditValue(previousDate)} with ${quoteDraftEditValue(nextDate)}.`,
+    );
+  }
+  if (previousLocation && nextLocation && previousLocation !== nextLocation) {
+    instructions.push(
+      `Replace only the visible venue/location text ${quoteDraftEditValue(previousLocation)} with ${quoteDraftEditValue(nextLocation)}.`,
+    );
+  }
+  if (previousTitle && nextTitle && previousTitle !== nextTitle) {
+    instructions.push(
+      `Replace only the visible title text ${quoteDraftEditValue(previousTitle)} with ${quoteDraftEditValue(nextTitle)}.`,
+    );
+  }
+
+  const requestedEdit = stringValue(args.userMessage);
+  if (requestedEdit) instructions.push(`User requested: ${requestedEdit}.`);
+  instructions.push(
+    "Treat this as a localized correction to the current generated card, not a new design request.",
+  );
+  instructions.push(
+    "If the old and new visible text differ by only one or two characters, modify only those characters inside the existing label.",
+  );
+  instructions.push(
+    "Keep all unrelated artwork, characters, props, colors, typography style, layout, chips, icons, and text exactly the same.",
+  );
+
+  return instructions.join(" ");
+}
+
 function historyInviteImageFromEventData(data: Record<string, unknown>): string | null {
   const studioCard = recordValue(data.studioCard);
   return firstStringValue(
@@ -1412,9 +1468,26 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   async function generateStudioInviteForDraft(
     draftToGenerate: ConciergeEventDraft,
+    options: {
+      editPrompt?: string | null;
+      sourceImageUrl?: string | null;
+      previousDraft?: ConciergeEventDraft | null;
+    } = {},
   ): Promise<GeneratedInvitePayload> {
     const details = buildStudioDetailsFromDraft(draftToGenerate);
-    const response = await requestStudioGeneration(details, "both", "page");
+    const sourceImageUrl = stringValue(options.sourceImageUrl);
+    const editPrompt = stringValue(options.editPrompt);
+    const previousDetails = options.previousDraft
+      ? buildStudioDetailsFromDraft(options.previousDraft)
+      : undefined;
+    const response = await requestStudioGeneration(
+      details,
+      sourceImageUrl ? "image" : "both",
+      "page",
+      editPrompt || undefined,
+      sourceImageUrl || undefined,
+      previousDetails,
+    );
     const generatedDetails = response.preparedDetails || details;
     const rawImageUrl = response.imageUrl || response.imageDataUrl;
     if (!rawImageUrl) {
@@ -1528,17 +1601,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     }
   }
 
-  function handleKeepEditingDraft() {
-    setMobileView("chat");
-    window.setTimeout(() => {
-      const textarea = composerCardRef.current?.querySelector("textarea");
-      if (textarea instanceof HTMLTextAreaElement) {
-        textarea.focus();
-        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-      }
-    }, 0);
-  }
-
   async function sendGeneratedDraftEdit(message: string) {
     const trimmed = message.trim();
     if (!trimmed || !draft) return;
@@ -1579,7 +1641,15 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       }
 
       const updatedDraft = normalizeDraftProductOutputs(json.draft);
-      const studioInvite = await generateStudioInviteForDraft(updatedDraft);
+      const studioInvite = await generateStudioInviteForDraft(updatedDraft, {
+        editPrompt: buildGeneratedDraftImageEditPrompt({
+          userMessage: trimmed,
+          previousDraft: draft,
+          nextDraft: updatedDraft,
+        }),
+        sourceImageUrl: draftStudioInvite?.imageUrl || generatedInviteImageUrl,
+        previousDraft: draft,
+      });
       setDraft(updatedDraft);
       setDraftStudioInvite(studioInvite);
       setGeneratedInviteImageUrl(studioInvite.imageUrl);
@@ -1593,7 +1663,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         ...prev,
         newMessage(
           "assistant",
-          "I updated the draft preview. Keep editing or save/publish when it looks right.",
+          "I updated that part of the draft preview. Keep chatting or save/publish when it looks right.",
         ),
       ]);
       notifyCreationThreadsChanged();
@@ -2392,7 +2462,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       hasDraftProduct={hasGeneratedDraftProduct}
       isPublishing={isPublishingCard}
       onPublish={() => void publishGeneratedDraft()}
-      onKeepEditing={handleKeepEditingDraft}
       rsvp={{
         count: rsvpResponseCount,
         isLoading: rsvpPreview.isLoading,

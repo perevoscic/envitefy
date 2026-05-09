@@ -936,6 +936,32 @@ test("birthday live-card prompt aggregates inline name age venue and interests",
   assert.match(message, /Should Envitefy collect RSVPs/i);
 });
 
+test("time-only edit keeps the existing event date", () => {
+  const first = fallbackExtractConciergeDraft({
+    message:
+      "Birthday Live Card for lara, 7 for may 23 at 2PM, we are going to watch Sheep detective at AMC theater in Grand Boulevard. Lara likes cats and plushes",
+  });
+  const ready = {
+    ...first,
+    rsvpEnabled: true,
+    numberOfGuests: 10,
+    currentQuestion: null,
+    missingFields: [],
+    draftStatus: "preview_ready",
+  };
+  const draft = fallbackExtractConciergeDraft({
+    message: "change the time to 1 PM",
+    draft: ready,
+  });
+
+  assert.equal(draft.dateText, first.dateText);
+  assert.equal(draft.timeText, "1:00 PM");
+  assert.match(draft.startISO || "", /^2026-05-23T/);
+  assert.equal(draft.location, "AMC theater in Grand Boulevard");
+  assert.equal(draft.currentQuestion, null);
+  assert.deepEqual(draft.missingFields, []);
+});
+
 test("fallback fills birthday honoree from a name reply", () => {
   const first = fallbackExtractConciergeDraft({
     message:

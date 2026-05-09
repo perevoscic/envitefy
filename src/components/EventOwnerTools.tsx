@@ -28,6 +28,7 @@ import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileT
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
 import { hasActionableRsvp } from "@/lib/dashboard-data";
 import { resolveArtworkEditHref, resolveEditHref } from "@/utils/event-edit-route";
+import { buildStudioCardPath } from "@/utils/event-url";
 
 type EventOwnerToolsProps = {
   eventId: string;
@@ -657,6 +658,15 @@ function buildOwnerPreviewHref(publicUrl: string, returnHref: string): string {
   }
 }
 
+function shouldOpenPreviewInStudioCard(
+  eventData: Record<string, unknown> | null,
+  preview: ProductPreviewModel,
+): boolean {
+  return Boolean(
+    preview.imageUrl && (asRecord(eventData?.studioCard) || isCardFirstProduct(eventData)),
+  );
+}
+
 export default function EventOwnerTools({
   eventId,
   eventTitle,
@@ -696,7 +706,12 @@ export default function EventOwnerTools({
     [designPreviewOverride, preview],
   );
   const rsvpEnabled = hasActionableRsvp(eventData, numberOfGuests);
-  const publicUrl = eventHref || ownerHref;
+  const publicUrl = useMemo(() => {
+    if (shouldOpenPreviewInStudioCard(eventData, effectivePreview)) {
+      return buildStudioCardPath(eventId, currentEventTitle || eventTitle);
+    }
+    return eventHref || ownerHref;
+  }, [currentEventTitle, effectivePreview, eventData, eventHref, eventId, eventTitle, ownerHref]);
   const activeOwnerTab: EventContextTab =
     rsvpEnabled || initialTab === "design" ? initialTab : "design";
   const ownerWorkspaceTabs = useMemo(

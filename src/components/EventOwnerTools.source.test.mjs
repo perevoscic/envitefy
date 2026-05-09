@@ -134,6 +134,9 @@ test("owner workspace exposes Dashboard RSVPs Messages and Design tabs", () => {
   assert.doesNotMatch(source, /RsvpDisabledPanel/);
   assert.match(source, /function buildOwnerPreviewHref/);
   assert.match(source, /parsed\.searchParams\.set\("preview", "owner"\)/);
+  assert.match(source, /import \{ buildStudioCardPath \} from "@\/utils\/event-url";/);
+  assert.match(source, /function shouldOpenPreviewInStudioCard/);
+  assert.match(source, /return buildStudioCardPath\(eventId, currentEventTitle \|\| eventTitle\);/);
   assert.match(responseSource, /Response overview/);
   assert.match(
     responseSource,

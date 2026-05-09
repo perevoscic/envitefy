@@ -146,7 +146,13 @@ test("live card existing-image detail edits pass previous details for surgical p
   );
   assert.match(
     builderSource,
-    /const previousScheduleLine = previousDetails\s*\?\s*buildDeterministicScheduleLine\(previousDetails\)\s*:\s*"";/,
+    /const previousTime = previousDetails\s*\?\s*formatVisibleCardTime\(getStudioEventStartTime\(previousDetails\)\)\s*:\s*"";/,
+  );
+  assert.match(builderSource, /Replace only the existing visible time text/);
+  assert.match(builderSource, /modify only those characters inside the existing time label/);
+  assert.match(
+    builderSource,
+    /Do not change the visible date, title, venue, icons, artwork, or layout/,
   );
   assert.match(
     builderSource,

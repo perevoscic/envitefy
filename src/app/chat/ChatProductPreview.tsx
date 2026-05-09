@@ -1,6 +1,14 @@
 "use client";
 
-import { ExternalLink, FileImage, Gift, Globe2, LayoutDashboard, Loader2, Menu } from "lucide-react";
+import {
+  ExternalLink,
+  FileImage,
+  Gift,
+  Globe2,
+  LayoutDashboard,
+  Loader2,
+  Menu,
+} from "lucide-react";
 import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
 import type {
   ConciergeEventDraft,
@@ -29,7 +37,6 @@ type ChatProductPreviewProps = {
   hasDraftProduct: boolean;
   isPublishing: boolean;
   onPublish: () => void;
-  onKeepEditing: () => void;
   rsvp: RsvpPreviewBadge;
   weatherContext: ConciergeWeatherContext | null;
   mobileView: "chat" | "preview";
@@ -291,7 +298,6 @@ export default function ChatProductPreview({
   hasDraftProduct,
   isPublishing,
   onPublish,
-  onKeepEditing,
   mobileView,
 }: ChatProductPreviewProps) {
   const preview = buildChatShowcasePreview({
@@ -353,8 +359,6 @@ export default function ChatProductPreview({
               <div className="flex w-full flex-wrap items-center justify-center gap-2">
                 <a
                   href={publicHref}
-                  target="_blank"
-                  rel="noreferrer"
                   className="inline-flex h-12 max-w-full items-center justify-center gap-2 rounded-2xl bg-[#3b2468] px-5 text-sm font-bold text-[#f6efff] shadow-lg shadow-[#3b2468]/20 transition hover:bg-[#2f1a55]"
                 >
                   <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
@@ -363,8 +367,6 @@ export default function ChatProductPreview({
                 {rsvpDashboardHref ? (
                   <a
                     href={rsvpDashboardHref}
-                    target="_blank"
-                    rel="noreferrer"
                     className="inline-flex h-12 max-w-full items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-white/82 px-5 text-sm font-bold text-[#3b2468] shadow-sm shadow-[#3b2468]/10 transition hover:border-[#c2aef3] hover:bg-white"
                   >
                     <LayoutDashboard className="size-4 shrink-0" aria-hidden="true" />
@@ -386,15 +388,9 @@ export default function ChatProductPreview({
                   ) : (
                     <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
                   )}
-                  <span className="truncate">{isPublishing ? "Publishing..." : "Save / Publish"}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={onKeepEditing}
-                  disabled={isPublishing}
-                  className="inline-flex h-12 max-w-full items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-white/82 px-5 text-sm font-bold text-[#3b2468] shadow-sm shadow-[#3b2468]/10 transition hover:border-[#c2aef3] hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <span className="truncate">Keep Editing</span>
+                  <span className="truncate">
+                    {isPublishing ? "Publishing..." : "Save / Publish"}
+                  </span>
                 </button>
               </div>
             ) : null}

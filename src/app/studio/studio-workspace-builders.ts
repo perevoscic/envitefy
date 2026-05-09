@@ -804,12 +804,35 @@ function buildExistingImageEditInstruction(
   previousDetails?: EventDetails,
 ): string {
   const instructions: string[] = [];
+  const previousDate = previousDetails ? formatStudioVisibleDate(previousDetails) : "";
+  const nextDate = formatStudioVisibleDate(details);
+  const previousTime = previousDetails
+    ? formatVisibleCardTime(getStudioEventStartTime(previousDetails))
+    : "";
+  const nextTime = formatVisibleCardTime(getStudioEventStartTime(details));
   const previousScheduleLine = previousDetails
     ? buildDeterministicScheduleLine(previousDetails)
     : "";
   const nextScheduleLine = buildDeterministicScheduleLine(details);
 
-  if (previousScheduleLine && nextScheduleLine && previousScheduleLine !== nextScheduleLine) {
+  if (previousTime && nextTime && previousTime !== nextTime && previousDate === nextDate) {
+    instructions.push(
+      `Replace only the existing visible time text ${quoteStudioEditText(previousTime)} with ${quoteStudioEditText(nextTime)}.`,
+    );
+    instructions.push(
+      "If the old and new time differ by only one or two characters, modify only those characters inside the existing time label.",
+    );
+    instructions.push("Do not change the visible date, title, venue, icons, artwork, or layout.");
+  } else if (previousDate && nextDate && previousDate !== nextDate && previousTime === nextTime) {
+    instructions.push(
+      `Replace only the existing visible date text ${quoteStudioEditText(previousDate)} with ${quoteStudioEditText(nextDate)}.`,
+    );
+    instructions.push("Do not change the visible time, title, venue, icons, artwork, or layout.");
+  } else if (
+    previousScheduleLine &&
+    nextScheduleLine &&
+    previousScheduleLine !== nextScheduleLine
+  ) {
     instructions.push(
       `Replace only the existing visible date/time line ${quoteStudioEditText(previousScheduleLine)} with ${quoteStudioEditText(nextScheduleLine)}.`,
     );

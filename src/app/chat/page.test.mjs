@@ -141,7 +141,10 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /autoOpenIntervalMs=\{2000\}/);
   assert.match(client, /autoOpenCycles=\{3\}/);
   assert.match(client, /const isSelected = selectedProductOutput === option\.output/);
-  assert.doesNotMatch(client, /const isSelected = effectiveSelectedProductOutput === option\.output/);
+  assert.doesNotMatch(
+    client,
+    /const isSelected = effectiveSelectedProductOutput === option\.output/,
+  );
   assert.match(client, /function chatProductNavItem\(option: ProductOption\): BottomNavItem/);
   assert.match(client, /labelWidth: Math\.max\(72, Math\.ceil\(option\.label\.length \* 7\)\)/);
   assert.match(client, /items=\{PRODUCT_OPTIONS\.map\(chatProductNavItem\)\}/);
@@ -356,10 +359,25 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /async function publishGeneratedDraft\(\)/);
   assert.match(client, /action: "save"[\s\S]{0,260}studioInvite: draftStudioInvite/);
   assert.match(client, /async function sendGeneratedDraftEdit\(message: string\)/);
+  assert.match(
+    client,
+    /sourceImageUrl: draftStudioInvite\?\.imageUrl \|\| generatedInviteImageUrl/,
+  );
+  assert.match(client, /sourceImageUrl \? "image" : "both"/);
+  assert.match(client, /previousDraft: draft/);
+  assert.match(client, /function buildGeneratedDraftImageEditPrompt/);
+  assert.match(client, /localized correction to the current generated card/);
+  assert.match(client, /modify only those characters inside the existing label/);
   assert.match(client, /if \(draftStudioInvite && !liveCardEventId\)/);
   assert.match(client, /function isGenerateConfirmationMessage/);
-  assert.match(client, /if \(canGenerateProduct && draft && isGenerateConfirmationMessage\(value\)\)/);
-  assert.match(client, /setIsReadyChatComposerOpen\(false\);[\s\S]{0,80}await generateProductForDraft\(draft\)/);
+  assert.match(
+    client,
+    /if \(canGenerateProduct && draft && isGenerateConfirmationMessage\(value\)\)/,
+  );
+  assert.match(
+    client,
+    /setIsReadyChatComposerOpen\(false\);[\s\S]{0,80}await generateProductForDraft\(draft\)/,
+  );
   assert.doesNotMatch(client, /withGeneratedInviteOutputs/);
   assert.doesNotMatch(
     client,
@@ -394,8 +412,11 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(preview, /hasDraftProduct: boolean;/);
   assert.match(preview, /const shouldShowDraftActions = hasDraftProduct && !publicHref;/);
   assert.match(preview, /Save \/ Publish/);
-  assert.match(preview, /Keep Editing/);
+  assert.doesNotMatch(preview, /Keep Editing/);
+  assert.doesNotMatch(preview, /onKeepEditing/);
+  assert.doesNotMatch(preview, /href=\{publicHref\}[\s\S]{0,140}target="_blank"/);
   assert.match(preview, /href=\{rsvpDashboardHref\}/);
+  assert.doesNotMatch(preview, /href=\{rsvpDashboardHref\}[\s\S]{0,140}target="_blank"/);
   assert.match(preview, /Open Dashboard/);
   assert.match(preview, /inline-flex h-12 max-w-full items-center justify-center gap-2/);
   assert.doesNotMatch(preview, /w-full min-w-full max-w-none/);

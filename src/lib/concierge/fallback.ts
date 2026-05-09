@@ -283,10 +283,7 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
     const showerFor =
       text.match(
         /\b(?:baby\s+shower|sprinkle)(?:\s+(?:product|event\s+page|live\s*card|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite))?\s+for\s+(.{2,80}?)(?=\s+(?:on|at|with|make|this|theme|tone|no\s+rsvps?|without|include|gift|registry)\b|[.;]|$)/i,
-      ) ||
-      text.match(
-        /\bfor\s+(.{2,80}?)\s+(?:baby\s+shower|sprinkle)\b/i,
-      );
+      ) || text.match(/\bfor\s+(.{2,80}?)\s+(?:baby\s+shower|sprinkle)\b/i);
     const honoree = cleanHonoreePhrase(showerFor?.[1]);
     if (honoree) return honoree;
   }
@@ -323,7 +320,9 @@ function cleanHonoreePhrase(value: string | null | undefined) {
   if (/\b(?:date|time|location|venue|rsvp|registry|http|www|theme|tone)\b/i.test(cleaned)) {
     return null;
   }
-  return titleCaseName(cleaned).replace(/\bAnd\b/g, "and").replace(/\bOf\b/g, "of");
+  return titleCaseName(cleaned)
+    .replace(/\bAnd\b/g, "and")
+    .replace(/\bOf\b/g, "of");
 }
 
 function detectHonoreeFollowUp(text: string, previous?: ConciergeEventDraft | null) {
@@ -360,19 +359,14 @@ function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
     text.match(/\b(?:likes?|loves?|is\s+into)\s+([^.;\n]{2,90})/i)?.[1],
   ]
     .map((value) =>
-      cleanString(
-        value
-          ?.replace(/[.!?]+$/g, "")
-          .replace(/\s+(?:theme|style|vibe)$/i, ""),
-      ),
+      cleanString(value?.replace(/[.!?]+$/g, "").replace(/\s+(?:theme|style|vibe)$/i, "")),
     )
-    .filter(
-      (value): value is string =>
-        Boolean(
-          value &&
-            !/^(?:you|everyone|guests?|friends?|family|us)$/i.test(value) &&
-            !isInstructionFragment(value),
-        ),
+    .filter((value): value is string =>
+      Boolean(
+        value &&
+          !/^(?:you|everyone|guests?|friends?|family|us)$/i.test(value) &&
+          !isInstructionFragment(value),
+      ),
     );
   if (interestParts.length) return Array.from(new Set(interestParts)).join(", ");
 
@@ -744,6 +738,45 @@ function shouldPreferPmForBareHour(parsedText: string, hour: number) {
   return /\b(?:at|@)\s+\d{1,2}(?::\d{2})?\b/i.test(parsedText);
 }
 
+function parsedHasCalendarDate(parsed: chrono.ParsedResult) {
+  return (
+    parsed.start.isCertain("day") ||
+    parsed.start.isCertain("month") ||
+    parsed.start.isCertain("year") ||
+    /\b(?:today|tomorrow|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday|jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b/i.test(
+      parsed.text,
+    )
+  );
+}
+
+function combinePreviousDateWithParsedTime(args: {
+  previous: ConciergeEventDraft;
+  parsedStart: Date;
+  parsedEnd: Date;
+}) {
+  const previousStart = new Date(args.previous.startISO || "");
+  if (Number.isNaN(previousStart.getTime())) return null;
+
+  const nextStart = new Date(previousStart);
+  nextStart.setHours(args.parsedStart.getHours(), args.parsedStart.getMinutes(), 0, 0);
+  const previousEnd = new Date(args.previous.endISO || "");
+  const durationMs =
+    !Number.isNaN(previousEnd.getTime()) && previousEnd.getTime() > previousStart.getTime()
+      ? previousEnd.getTime() - previousStart.getTime()
+      : args.parsedEnd.getTime() > args.parsedStart.getTime()
+        ? args.parsedEnd.getTime() - args.parsedStart.getTime()
+        : 2 * 60 * 60 * 1000;
+  const nextEnd = new Date(nextStart.getTime() + durationMs);
+
+  return {
+    dateText: args.previous.dateText || null,
+    timeText: nextStart.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+    startISO: nextStart.toISOString(),
+    endISO: nextEnd.toISOString(),
+    needsConfirmation: false,
+  };
+}
+
 function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
   const cleaned = cleanString(text?.replace(/[.!?]+$/g, "")) || "";
   if (previous?.currentQuestion === "date_confirmation") {
@@ -788,6 +821,14 @@ function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
   const preferPm = hasHour && shouldPreferPmForBareHour(first.text, start.getHours());
   const displayStart = preferPm ? new Date(start.getTime() + 12 * 60 * 60 * 1000) : start;
   const displayEnd = preferPm ? new Date(end.getTime() + 12 * 60 * 60 * 1000) : end;
+  if (previous?.startISO && hasHour && !parsedHasCalendarDate(first)) {
+    const combined = combinePreviousDateWithParsedTime({
+      previous,
+      parsedStart: displayStart,
+      parsedEnd: displayEnd,
+    });
+    if (combined) return combined;
+  }
   return {
     dateText: cleanString(first.text) || previous?.dateText || null,
     timeText: hasHour
