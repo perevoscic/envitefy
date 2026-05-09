@@ -41,28 +41,21 @@ test("left sidebar view still gates both root and compact create entries behind 
   assert.doesNotMatch(source, /Expand navigation/);
 });
 
-test("left sidebar exposes Studio below Home in the always-open navigation", () => {
+test("left sidebar omits Studio and Snap Event from the always-open navigation", () => {
   const source = readSource("src/app/left-sidebar.tsx");
-  const controllerSource = readSource("src/app/left-sidebar.controller.ts");
-  const modelSource = readSource("src/app/left-sidebar.model.ts");
 
-  assert.match(
-    source,
-    /Home\s*<\/span>\s*<\/Link>\s*<Link\s+href="\/studio"[\s\S]*?Studio\s*<\/span>/s,
-  );
-  assert.match(
-    controllerSource,
-    /case "studio":\s*return pathname === "\/studio" && sidebarPage === "root";/s,
-  );
-  assert.match(modelSource, /\|\s*"studio"/);
+  assert.doesNotMatch(source, /href="\/studio"/);
+  assert.doesNotMatch(source, /Snap Event/);
 });
 
-test("left sidebar exposes signed-in AI create entry", () => {
+test("left sidebar exposes signed-in AI Concierge entry", () => {
   const source = readSource("src/app/left-sidebar.tsx");
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
   const modelSource = readSource("src/app/left-sidebar.model.ts");
 
-  assert.match(source, /onClick=\{onAiThreads\}[\s\S]*?Create with AI/s);
+  assert.match(source, /onClick=\{onAiThreads\}[\s\S]*?AI Concierge/s);
+  assert.match(source, /@\/assets\/concierge-menu-icon\.png/);
+  assert.doesNotMatch(source, /Create with AI/);
   assert.match(
     source,
     /const isChatActive = pathname === "\/chat" \|\| sidebarPage === "aiThreads";/,

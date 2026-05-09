@@ -42,7 +42,7 @@ import {
   useState,
 } from "react";
 import { useEventCache } from "@/app/event-cache-context";
-import conciergeLogo from "@/assets/envitefy-concierge-logo.png";
+import conciergeMenuIcon from "@/assets/concierge-menu-icon.png";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import EventSidebar from "@/components/navigation/EventSidebar";
 import { useMenu } from "@/contexts/MenuContext";
@@ -159,7 +159,7 @@ function ConciergeLogoIcon({
 }) {
   return (
     <Image
-      src={conciergeLogo}
+      src={conciergeMenuIcon}
       alt=""
       width={size}
       height={size}
@@ -334,12 +334,9 @@ function RootNavigationPanel({
   eventContextSourcePage,
   hasCreateEventAccess,
   isCreateEntryActive,
-  useGymnasticsDirectCreate,
   createdEventsCount,
   onHome,
-  onStudio,
   onAiThreads,
-  onSnap,
   onCreate,
   onMyEvents,
 }: {
@@ -348,19 +345,14 @@ function RootNavigationPanel({
   eventContextSourcePage: string;
   hasCreateEventAccess: boolean;
   isCreateEntryActive: boolean;
-  useGymnasticsDirectCreate: boolean;
   createdEventsCount: number;
   onHome: () => void;
-  onStudio: () => void;
   onAiThreads: () => void;
-  onSnap: () => void;
   onCreate: () => void;
   onMyEvents: () => void;
 }) {
   const isHomeActive = pathname === "/" && sidebarPage === "root";
-  const isStudioActive = pathname === "/studio" && sidebarPage === "root";
   const isChatActive = pathname === "/chat" || sidebarPage === "aiThreads";
-  const isSnapActive = pathname === "/event" && sidebarPage === "root";
   const isViewingEventFromListInRoot =
     sidebarPage === "root" &&
     Boolean(
@@ -413,32 +405,6 @@ function RootNavigationPanel({
           </span>
         </Link>
 
-        <Link
-          href="/studio"
-          onClick={onStudio}
-          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-            isStudioActive ? activeRowClass : inactiveRowClass
-          } py-3 pl-4 pr-4`}
-          style={isStudioActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
-        >
-          <span
-            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-              isStudioActive ? rootMenuActiveChipClass : rootMenuChipClass
-            } ${rootIconClass(isStudioActive)}`}
-          >
-            <WandSparkles size={17} strokeWidth={1.9} />
-          </span>
-          <span
-            className={`truncate ${rootRowTextClass} ${
-              isStudioActive
-                ? rootActiveTextClass
-                : `${rootInactiveTextClass} ${rootHoverTextClass}`
-            }`}
-          >
-            Studio
-          </span>
-        </Link>
-
         <button
           type="button"
           onClick={onAiThreads}
@@ -459,37 +425,9 @@ function RootNavigationPanel({
               isChatActive ? rootActiveTextClass : `${rootInactiveTextClass} ${rootHoverTextClass}`
             }`}
           >
-            Create with AI
+            AI Concierge
           </span>
         </button>
-
-        {!useGymnasticsDirectCreate ? (
-          <Link
-            href="/event"
-            onClick={onSnap}
-            className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
-              isSnapActive ? activeRowClass : inactiveRowClass
-            } py-3 pl-4 pr-4`}
-            style={isSnapActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
-          >
-            <span
-              className={`${SIDEBAR_ICON_CHIP_CLASS} ${
-                isSnapActive ? rootMenuActiveChipClass : rootMenuChipClass
-              } ${rootIconClass(isSnapActive)}`}
-            >
-              <Camera size={17} strokeWidth={1.9} />
-            </span>
-            <span
-              className={`truncate ${rootRowTextClass} ${
-                isSnapActive
-                  ? rootActiveTextClass
-                  : `${rootInactiveTextClass} ${rootHoverTextClass}`
-              }`}
-            >
-              Snap Event
-            </span>
-          </Link>
-        ) : null}
 
         {hasCreateEventAccess ? (
           <button
@@ -948,7 +886,7 @@ function AiThreadsPanel({
       <div className={SUBPAGE_STICKY_HEADER_CLASS}>
         <PanelBackButton onClick={onBack} />
         <div className="px-2 pb-1 pt-1">
-          <p className={SIDEBAR_SUBPAGE_TITLE_CLASS}>Create with AI</p>
+          <p className={SIDEBAR_SUBPAGE_TITLE_CLASS}>AI Concierge</p>
         </div>
       </div>
 
@@ -1405,12 +1343,9 @@ export default function LeftSidebar() {
                       eventContextSourcePage={viewModel.eventContextSourcePage}
                       hasCreateEventAccess={viewModel.hasCreateEventAccess}
                       isCreateEntryActive={viewModel.isCreateEntryActive}
-                      useGymnasticsDirectCreate={viewModel.useGymnasticsDirectCreate}
                       createdEventsCount={viewModel.createdEventsCount}
                       onHome={viewModel.goHomeFromSidebar}
-                      onStudio={viewModel.goStudioFromSidebar}
                       onAiThreads={viewModel.openAiThreadsPage}
-                      onSnap={viewModel.handleRootSnapNavigate}
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}
                     />
