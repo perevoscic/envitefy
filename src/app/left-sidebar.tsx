@@ -931,15 +931,6 @@ function AiThreadsPanel({
                     }`}
                   >
                     <span
-                      className={`${SIDEBAR_SUBMENU_ICON_CLASS} ${
-                        isActiveThread
-                          ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
-                          : `${CREATE_SECTION_COLORS[0]} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
-                      }`}
-                    >
-                      <ConciergeLogoIcon isActive={isActiveThread} />
-                    </span>
-                    <span
                       className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${
                         isActiveThread
                           ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS

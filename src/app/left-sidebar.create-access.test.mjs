@@ -72,6 +72,9 @@ test("left sidebar exposes signed-in AI Concierge entry", () => {
   assert.match(source, /href="\/chat"[\s\S]*?onClick=\{onNewChat\}[\s\S]*?New chat/s);
   assert.doesNotMatch(source, /href="\/chat"[\s\S]{0,160}onClick=\{onOpenThread\}/);
   assert.match(source, /href=\{`\/chat\?thread=\$\{encodeURIComponent\(thread\.id\)\}`\}/);
+  const aiThreadsPanelSource =
+    source.match(/function AiThreadsPanel[\s\S]*?function FooterProfileMenu/)?.[0] ?? "";
+  assert.doesNotMatch(aiThreadsPanelSource, /<ConciergeLogoIcon/);
   assert.match(
     source,
     /onClick=\{\(event\) => \{\s*if \(!isPlainPrimaryLinkClick\(event\)\) return;\s*event\.preventDefault\(\);\s*onOpenThread\(thread\.id\);\s*\}\}/s,
