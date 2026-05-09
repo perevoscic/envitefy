@@ -54,6 +54,7 @@ import { getEventTheme } from "@/lib/event-theme";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
+import { normalizeRegistryUrlForDetectedEvent } from "@/lib/ocr/registry-url";
 import {
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
@@ -1144,7 +1145,7 @@ export default async function EventPage({
   const registryLinksRaw = Array.isArray(data?.registries) ? (data.registries as any[]) : [];
   const registryContext = {
     category: categoryRaw || null,
-    title,
+    title: title || null,
     description: [
       typeof data?.description === "string" ? data.description : "",
       typeof data?.goodToKnow === "string" ? data.goodToKnow : "",
@@ -1153,10 +1154,29 @@ export default async function EventPage({
       .map((value) => value.trim())
       .filter(Boolean)
       .join("\n"),
+    ocrText: typeof data?.ocrText === "string" ? data.ocrText : null,
   };
+  const legacyRegistryUrlRaw =
+    typeof data?.registryUrl === "string" && data.registryUrl.trim()
+      ? data.registryUrl.trim()
+      : null;
+  const legacyRegistryUrlNormalized = normalizeRegistryUrlForDetectedEvent({
+    category: registryContext.category,
+    title: registryContext.title,
+    description: registryContext.description,
+    rawText: registryContext.ocrText,
+    registryUrl: legacyRegistryUrlRaw,
+  });
+  const registryLinksWithLegacy =
+    legacyRegistryUrlNormalized &&
+    !registryLinksRaw.some((item: any) =>
+      typeof item?.url === "string" && item.url.trim() === legacyRegistryUrlNormalized,
+    )
+      ? [{ label: "", url: legacyRegistryUrlNormalized }, ...registryLinksRaw]
+      : registryLinksRaw;
   const registryLinks = registriesAllowed
     ? normalizeRegistryLinks(
-        registryLinksRaw.map((item: any) => ({
+        registryLinksWithLegacy.map((item: any) => ({
           label: typeof item?.label === "string" ? item.label : "",
           url: typeof item?.url === "string" ? item.url : "",
         })),

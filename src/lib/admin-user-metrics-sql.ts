@@ -19,10 +19,12 @@ export const ADMIN_USER_METRICS_CTE_SQL = `
       coalesce(sum(case when is_scan and category like '%doctor%' then 1 else 0 end), 0)::integer as scans_from_history_doctor_appointments,
       coalesce(sum(case when is_scan and category like '%play%' then 1 else 0 end), 0)::integer as scans_from_history_play_days,
       coalesce(sum(case when is_scan and category like '%general%' then 1 else 0 end), 0)::integer as scans_from_history_general_events,
-      coalesce(sum(case when is_scan and (category like '%car%' or category like '%pool%') then 1 else 0 end), 0)::integer as scans_from_history_car_pool
+      coalesce(sum(case when is_scan and (category like '%car%' or category like '%pool%') then 1 else 0 end), 0)::integer as scans_from_history_car_pool,
+      max(case when is_scan then created_at else null end) as last_scan_created_at
     from (
       select
         user_id,
+        created_at,
         lower(coalesce(data->>'category', '')) as category,
         (
           lower(coalesce(data->>'createdVia', '')) = 'ocr'
@@ -67,7 +69,8 @@ export const ADMIN_USER_METRICS_CTE_SQL = `
       coalesce(em.events_doctor_appointments, 0)::integer as events_doctor_appointments,
       coalesce(em.events_play_days, 0)::integer as events_play_days,
       coalesce(em.events_general_events, 0)::integer as events_general_events,
-      coalesce(em.events_car_pool, 0)::integer as events_car_pool
+      coalesce(em.events_car_pool, 0)::integer as events_car_pool,
+      em.last_scan_created_at
     from users u
     left join event_metrics em on em.user_id = u.id
     left join share_metrics sm on sm.user_id = u.id
@@ -81,5 +84,6 @@ export const ADMIN_USER_METRICS_SELECT_SQL = `
   scans_general_events, scans_car_pool,
   events_total, events_birthdays, events_weddings, events_sport_events,
   events_appointments, events_doctor_appointments, events_play_days,
-  events_general_events, events_car_pool
+  events_general_events, events_car_pool,
+  last_scan_created_at
 `;

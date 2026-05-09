@@ -40,6 +40,7 @@ import {
   parseTimeRange,
   parseTimeTo24h,
 } from "@/lib/ocr/practice-schedule";
+import { normalizeRegistryUrlForDetectedEvent } from "@/lib/ocr/registry-url";
 import {
   inferOcrSkinSelection,
   isBasketballOcrSkinCandidate,
@@ -1248,6 +1249,13 @@ export async function handleOcrRequest(request: Request) {
         ? llmImage.registryUrl.trim()
         : null;
     const registryUrl =
+      normalizeRegistryUrlForDetectedEvent({
+        category: registryContext.category,
+        title: finalTitle,
+        description,
+        rawText: raw,
+        registryUrl: rawRegistryUrl,
+      }) ||
       normalizeRegistryUrlForContext(rawRegistryUrl, registryContext) ||
       inferRegistryUrlFromTextForContext(raw, registryContext);
     const ocrFacts = mergeOcrFacts(
@@ -1614,6 +1622,14 @@ export async function handleOcrRequest(request: Request) {
     if (isPickleballOcrEvent || isFootballOcrEvent || isBasketballOcrEvent) {
       category = "Sport Events";
     }
+    fieldsGuess.registryUrl = normalizeRegistryUrlForDetectedEvent({
+      category,
+      title: fieldsGuess.title || finalTitle,
+      description: fieldsGuess.description || description,
+      rawText: raw,
+      registryUrl: fieldsGuess.registryUrl,
+    });
+
     if (category === "Graduations") {
       const cleanedVenue = cleanGraduationVenueName(fieldsGuess.venue);
       fieldsGuess.venue = cleanedVenue || null;
