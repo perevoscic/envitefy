@@ -20,7 +20,8 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(page, /ConciergeChatClient/);
   assert.match(page, /getServerSession\(authOptions as any\)/);
   assert.match(page, /getUserByEmail\(email\)/);
-  assert.match(page, /userFirstName=\{userFirstName\}/);
+  assert.match(page, /userInitials=\{userInitials\}/);
+  assert.match(page, /profileInitialsFrom/);
   assert.doesNotMatch(page, /isAdmin/);
   assert.doesNotMatch(page, /notFound\(/);
 
@@ -31,12 +32,20 @@ test("/chat is the OpenAI-backed concierge creator", () => {
     client,
     /themeValue && !\/\\btheme\$\/i\.test\(themeValue\) \? `\$\{themeValue\} theme` : null/,
   );
-  assert.match(client, /userFirstName\?: string \| null/);
+  assert.doesNotMatch(client, /userFirstName\?: string \| null/);
+  assert.match(client, /userInitials\?: string \| null/);
   assert.match(client, /buildInitialAssistantPrompt/);
-  assert.match(client, /Hi \$\{cleaned\}, what are we celebrating\?/);
+  assert.match(client, /function UserChatAvatar/);
+  assert.match(client, /userConciergeLogo/);
+  assert.match(client, /<UserChatAvatar initials=\{userAvatarInitials\}/);
+  assert.doesNotMatch(client, /Hi \$\{cleaned\}, what are we celebrating\?/);
+  assert.match(client, /<span>What are we<\/span>/);
+  assert.match(client, /<br \/>/);
+  assert.match(client, /<span>celebrating\?<\/span>/);
   assert.match(client, /isOpeningAssistantPrompt/);
-  assert.match(client, /text-4xl/);
-  assert.match(client, /sm:text-6xl/);
+  assert.match(client, /text-3xl/);
+  assert.match(client, /sm:text-4xl/);
+  assert.match(client, /lg:text-5xl/);
   assert.match(client, /STUDIO_CATEGORY_TILES/);
   assert.match(client, /CHAT_STARTER_PROMPTS/);
   assert.match(client, /CELEBRATION_STARTER_TILES/);
@@ -60,12 +69,18 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /handleCustomCategoryPrompt/);
   assert.doesNotMatch(client, /COMPOSER_TEXTAREA_ID/);
   assert.doesNotMatch(client, /Watch party invite/);
-  assert.ok(client.indexOf('label: "Game Day"') < client.indexOf('label: "Baby Shower"'));
-  assert.match(client, /label: "Baby Shower"[\s\S]*?size: "desktopWide"/);
+  assert.ok(client.indexOf('label: "Bridal Shower"') < client.indexOf('label: "Wedding"'));
+  assert.ok(client.indexOf('label: "Wedding"') < client.indexOf('label: "Baby Shower"'));
+  assert.ok(client.indexOf('label: "Baby Shower"') < client.indexOf('label: "Game Day"'));
+  assert.match(client, /icon: BabyCarriageIcon/);
+  assert.match(client, /label: "None of the above"/);
   assert.match(client, /selectedStarterCategory \? "starter_category" : undefined/);
-  assert.match(client, /col-span-2 aspect-\[2\.055\/1\]/);
-  assert.match(client, /sm:col-span-2 sm:aspect-\[2\.055\/1\]/);
-  assert.match(client, /aspect-square min-h-\[8\.25rem\]/);
+  assert.match(client, /aria-label="Choose celebration category"/);
+  assert.match(client, /h-28 w-28/);
+  assert.match(client, /max-md:h-\[clamp\(5\.5rem,16dvh,7\.25rem\)\]/);
+  assert.match(client, /max-md:w-\[clamp\(5\.5rem,16dvh,7\.25rem\)\]/);
+  assert.match(client, /sm:h-40 sm:w-40/);
+  assert.match(client, /flex-1 grid-cols-2 content-center/);
   assert.doesNotMatch(client, /Upload invite or photo/);
   assert.doesNotMatch(client, /CHAT_STUDIO_GRID_COMPOSITION/);
   assert.doesNotMatch(client, /ChatStudioStarterGrid/);
@@ -73,6 +88,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /sm:auto-rows-\[130px\]/);
   assert.doesNotMatch(client, /md:auto-rows-\[155px\]/);
   assert.match(client, /max-w-\[90rem\]/);
+  assert.match(client, /max-md:h-full max-md:overflow-hidden/);
   assert.doesNotMatch(client, /Choose a category and product to start/);
   assert.doesNotMatch(client, /Upload Your Invite/);
   assert.match(client, /PRODUCT_OPTIONS/);
@@ -82,10 +98,9 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /Set the event category to/);
   assert.doesNotMatch(client, /Inferred category/);
   assert.match(client, /gym_meet: "Game Day"/);
-  assert.match(preview, /ChevronDown/);
-  assert.match(preview, /isMobileDetailsOpen/);
-  assert.match(preview, /aria-expanded=\{isMobileDetailsOpen\}/);
-  assert.match(preview, /md:mt-0 md:grid/);
+  assert.doesNotMatch(preview, /Details captured/);
+  assert.doesNotMatch(preview, /isMobileDetailsOpen/);
+  assert.doesNotMatch(preview, /aria-expanded=\{isMobileDetailsOpen\}/);
   assert.match(preview, /function ChatOutputPreviewSurface/);
   assert.match(preview, /function ChatFlyerInvitePreview/);
   assert.doesNotMatch(preview, /function ChatInvitationPreview/);
@@ -127,12 +142,20 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /labelWidth: Math\.max\(72, Math\.ceil\(option\.label\.length \* 7\)\)/);
   assert.match(client, /items=\{PRODUCT_OPTIONS\.map\(chatProductNavItem\)\}/);
   assert.match(client, /className="w-full max-w-full self-start"/);
-  assert.match(client, /className="w-full !min-w-0 border-\[#e9e3f2\] bg-white\/96"/);
+  assert.match(client, /className="w-full !min-w-0 bg-\[#e0e5ec\]"/);
   assert.match(client, /onValueChange=\{\(value\) =>/);
   assert.match(client, /function handleProductChoice\(option: ProductOption\)/);
   assert.match(client, /setSelectedProductOutput\(option\.output\)/);
   assert.match(client, /function updateComposerSelection/);
   assert.match(client, /function selectionPrefix/);
+  assert.match(client, /const \[isComposerFocused, setIsComposerFocused\]/);
+  assert.match(client, /const isCompactEmptyComposer =/);
+  assert.match(client, /isEmptyState && !input\.trim\(\) && !isComposerFocused && !isListening/);
+  assert.match(client, /"Type instead\.\.\."/);
+  assert.match(client, /onFocus=\{\(\) => setIsComposerFocused\(true\)\}/);
+  assert.match(client, /onBlur=\{\(\) => setIsComposerFocused\(false\)\}/);
+  assert.match(client, /max-md:min-h-\[34px\]/);
+  assert.match(client, /max-md:hidden/);
   assert.match(client, /setInput\(\(current\) =>/);
   assert.match(client, /function handleComposerValueChange\(nextValue: string\)/);
   assert.match(client, /if \(nextValue\.trim\(\)\) return/);
@@ -152,13 +175,20 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /message: option\.prompt/);
   assert.doesNotMatch(client, /requestedOutputs: \[option\.output\]/);
   assert.match(client, /role="group"/);
-  assert.match(client, /selectedProductOutput === option\.output/);
-  assert.match(client, /text-\[#5f4b82\]/);
-  assert.match(client, /pb-4 pt-8 text-center/);
+  assert.match(client, /effectiveSelectedProductOutput === option\.output/);
+  assert.match(client, /chatProductActiveUnderline/);
+  assert.match(client, /text-indigo-600/);
+  assert.match(client, /shadow-\[inset_4px_4px_8px_#b8bec7,inset_-4px_-4px_8px_#ffffff\]/);
+  assert.match(client, /const emptyProductFormatSelector =/);
+  assert.match(client, /\{isEmptyState \? emptyProductFormatSelector : null\}/);
+  assert.match(
+    client,
+    /pb-4 pt-\[calc\(max\(0\.35rem,env\(safe-area-inset-top\)\)\+2rem\)\] text-center/,
+  );
   assert.doesNotMatch(client, /pb-44/);
   assert.match(
     client,
-    /className="mx-auto mt-4 flex w-full max-w-3xl justify-center sm:max-w-4xl"/,
+    /className="mx-auto mb-6 flex w-full max-w-3xl justify-center sm:mb-7 sm:max-w-4xl/,
   );
   assert.match(client, /className="flex w-full justify-center sm:hidden"/);
   assert.match(client, /className="w-full !min-w-0 !max-w-full/);
@@ -166,7 +196,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
     client,
     /className="flex w-full justify-center sm:hidden"[\s\S]{0,900}autoOpenCycles=\{3\}/,
   );
-  assert.match(client, /hidden max-w-full flex-wrap[\s\S]{0,120}sm:flex/);
+  assert.match(client, /hidden max-w-full items-center[\s\S]{0,180}bg-\[#e0e5ec\]/);
   assert.match(client, /icon: IdCard/);
   assert.doesNotMatch(client, /icon: Mail/);
   assert.match(client, /icon: FileImage/);
@@ -196,15 +226,19 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(bottomNav, /labelWidth\?: number/);
   assert.match(bottomNav, /min-w-\[320px\]/);
   assert.match(bottomNav, /rounded-full/);
-  assert.match(bottomNav, /bg-\[#ede8f7\]/);
-  assert.match(bottomNav, /text-\[#4b3674\]/);
-  assert.match(bottomNav, /text-\[#6d5a8e\]/);
+  assert.match(bottomNav, /bottomNavActiveUnderline/);
+  assert.match(bottomNav, /bg-\[#e0e5ec\]/);
+  assert.match(bottomNav, /shadow-\[10px_10px_20px_#b8bec7,-10px_-10px_20px_#ffffff\]/);
+  assert.match(bottomNav, /text-indigo-600/);
+  assert.match(bottomNav, /bg-indigo-600 opacity-40/);
+  assert.match(bottomNav, /text-zinc-500/);
   assert.match(bottomNav, /activeValue\?: string/);
   assert.match(bottomNav, /spreadItems\?: boolean/);
   assert.match(bottomNav, /spreadItems = false/);
   assert.match(bottomNav, /spreadItems && "justify-between"/);
   assert.match(bottomNav, /const activeLabelWidth = item\.labelWidth \?\? MOBILE_LABEL_WIDTH/);
-  assert.match(bottomNav, /min-w-\[44px\] items-center gap-0 rounded-full px-3 py-2/);
+  assert.match(bottomNav, /min-w-\[40px\] items-center gap-0 rounded-full px-2\.5 py-1\.5/);
+  assert.match(bottomNav, /sm:min-w-\[44px\] sm:px-3 sm:py-2/);
   assert.match(bottomNav, /const isActiveValueControlled = activeValue !== undefined/);
   assert.match(bottomNav, /isActiveValueControlled \? controlledIndex : activeIndex/);
   assert.match(bottomNav, /autoOpenOnMount\?: boolean/);
@@ -258,7 +292,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /shouldShowSuggestedReplies/);
   assert.doesNotMatch(client, /detectedSourceIntent/);
   assert.match(preview, /weatherContext: ConciergeWeatherContext \| null/);
-  assert.match(preview, /Umbrella/);
+  assert.doesNotMatch(preview, /Umbrella/);
 
   assert.match(client, /type ConciergePhase =/);
   assert.match(client, /"ready_to_generate"/);
@@ -266,6 +300,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /"card_ready"/);
   assert.match(appShell, /const isChatPath = pathname\.replace\(\/\\\/\+\$\/, ""\) === "\/chat"/);
   assert.match(appShell, /className=\{isChatPath \? "h-\[100dvh\] overflow-hidden" : ""\}/);
+  assert.match(appShell, /\{isChatPath \? null : <ConditionalFooter \/>\}/);
   assert.match(client, /className="flex h-full min-h-0 w-full overflow-hidden/);
   assert.match(
     client,
@@ -276,7 +311,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /Boolean\(draft\)/);
   assert.match(client, /mobileView/);
   assert.match(client, /const isEmptyState =/);
-  assert.match(client, /className="min-h-0 flex-1 overflow-y-auto/);
+  assert.match(client, /"min-h-0 flex-1 overflow-y-auto/);
   assert.match(client, /setMobileView\("preview"\)/);
   assert.match(chatSurface, /Preview/);
   assert.doesNotMatch(chatSurface, /Chat builds the product here/);
@@ -316,7 +351,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /isGeneratingCard \? "Generating" : "Generate"/);
   assert.match(client, /shouldShowReadyActions \? readyActions : composer/);
   assert.doesNotMatch(preview, /w-auto max-w-full/);
-  assert.match(preview, /top-\[calc\(100%\+0\.5rem\)\]/);
+  assert.doesNotMatch(preview, /top-\[calc\(100%\+0\.5rem\)\]/);
   assert.match(preview, /pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\]/);
   assert.match(preview, /flex w-full flex-none items-center justify-center/);
   assert.match(
@@ -357,13 +392,14 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /caret-\[#7c4dff\]/);
   assert.match(client, /inline-flex h-9 w-9/);
   assert.match(client, /\(input\.trim\(\) \|\| isListening\) && "text-\[#7c4dff\]"/);
-  assert.match(client, /<Mic\s+className="size-6 text-current"/);
-  assert.match(client, /<ArrowUp\s+className="size-6 text-current"/);
+  assert.match(client, /<Mic[\s\S]{0,120}"size-6 text-current"/);
+  assert.match(client, /<ArrowUp[\s\S]{0,120}"size-6 text-current"/);
+  assert.match(client, /isCompactEmptyComposer && "max-md:size-5"/);
   assert.match(bottomNav, /aria-label=\{item\.label\}/);
   assert.doesNotMatch(client, /choiceClassName/);
   assert.doesNotMatch(client, /choiceIconClassName/);
-  assert.match(client, /<Paperclip className="size-6"/);
-  assert.match(client, /<Camera className="size-6"/);
+  assert.match(client, /<Paperclip[\s\S]{0,80}"size-6"/);
+  assert.match(client, /<Camera[\s\S]{0,80}"size-6"/);
   assert.match(client, /Concierge is thinking\.\.\./);
   assert.match(client, /isThinking && "animate-pulse"/);
   assert.match(client, /isThinking \? null : \(/);

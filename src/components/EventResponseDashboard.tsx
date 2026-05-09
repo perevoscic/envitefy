@@ -234,9 +234,7 @@ export default function EventResponseDashboard({
         : "Collecting responses"
       : "Ready for first guests";
 
-  const shellClass = isWedding
-    ? "owner-workspace-glass relative overflow-hidden rounded-[28px] border border-[#e7e1d4] bg-[#fbfaf7] shadow-[0_24px_70px_rgba(70,66,45,0.13)]"
-    : "owner-workspace-glass relative overflow-hidden rounded-[28px] border border-white/72 bg-white/90 shadow-[0_24px_70px_rgba(79,70,128,0.14)] backdrop-blur-xl";
+  const shellClass = "relative bg-transparent";
   const eyebrowClass = isWedding ? "text-[#9d7d51]" : "text-[#786bd6]";
 
   if (!hasRsvpSurface && !loading) {
@@ -262,7 +260,7 @@ export default function EventResponseDashboard({
 
   return (
     <section className={shellClass} aria-label={`Event dashboard for ${eventTitle || "event"}`}>
-      <div className="space-y-4 p-4 sm:p-5">
+      <div className="space-y-4 p-0">
         {error ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
             {error}

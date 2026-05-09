@@ -122,7 +122,7 @@ export function BottomNavBar({
       role="navigation"
       aria-label={ariaLabel}
       className={cn(
-        "flex h-[52px] min-w-[320px] max-w-[95vw] items-center gap-1 rounded-full border border-[#ebe7f2] bg-white/96 p-2 shadow-[0_16px_36px_rgba(35,27,55,0.14)]",
+        "flex min-h-[48px] min-w-[320px] max-w-[95vw] items-center gap-1 rounded-full bg-[#e0e5ec] p-1.5 shadow-[10px_10px_20px_#b8bec7,-10px_-10px_20px_#ffffff] sm:min-h-[52px] sm:gap-2 sm:p-2",
         spreadItems && "justify-between",
         stickyBottom && "fixed inset-x-0 bottom-4 z-20 mx-auto w-fit",
         className,
@@ -138,10 +138,10 @@ export function BottomNavBar({
             key={`${item.value || item.label}-${idx}`}
             whileTap={{ scale: 0.97 }}
             className={cn(
-              "relative flex h-10 max-h-[44px] min-h-[40px] min-w-[44px] items-center gap-0 rounded-full px-3 py-2 transition-colors duration-200",
+              "group relative flex h-9 max-h-[44px] min-h-9 min-w-[40px] items-center gap-0 rounded-full px-2.5 py-1.5 transition-all duration-300 sm:h-10 sm:min-h-[40px] sm:min-w-[44px] sm:px-3 sm:py-2",
               isActive
-                ? "gap-2 bg-[#ede8f7] text-[#4b3674]"
-                : "bg-transparent text-[#6d5a8e] hover:bg-[#f5f1fb] hover:text-[#4b3674]",
+                ? "gap-2 text-indigo-600 shadow-[inset_4px_4px_8px_#b8bec7,inset_-4px_-4px_8px_#ffffff]"
+                : "bg-transparent text-zinc-500 hover:text-zinc-700",
               "focus:outline-none focus-visible:ring-0",
             )}
             onClick={() => {
@@ -158,7 +158,10 @@ export function BottomNavBar({
               size={22}
               strokeWidth={2}
               aria-hidden
-              className="transition-colors duration-200"
+              className={cn(
+                "transition-transform duration-300",
+                isActive ? "scale-110" : "group-hover:scale-105",
+              )}
             />
 
             <motion.div
@@ -178,14 +181,22 @@ export function BottomNavBar({
             >
               <span
                 className={cn(
-                  "select-none overflow-hidden text-ellipsis whitespace-nowrap text-xs font-medium leading-[1.9] transition-opacity duration-200",
-                  isActive ? "text-[#4b3674]" : "opacity-0",
+                  "relative select-none overflow-hidden text-ellipsis whitespace-nowrap text-xs font-medium leading-[1.9] transition-opacity duration-200",
+                  isActive ? "text-current" : "opacity-0",
                 )}
                 title={item.label}
               >
                 {item.label}
               </span>
             </motion.div>
+            {isActive ? (
+              <motion.span
+                layoutId="bottomNavActiveUnderline"
+                className="absolute bottom-2 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-indigo-600 opacity-40"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.4 }}
+              />
+            ) : null}
           </motion.button>
         );
       })}

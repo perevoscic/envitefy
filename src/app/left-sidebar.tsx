@@ -15,7 +15,6 @@ import {
   Info,
   LogOut,
   Mail,
-  MessageCircle,
   Music,
   PartyPopper,
   Plus,
@@ -28,6 +27,7 @@ import {
   User,
   WandSparkles,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -42,6 +42,7 @@ import {
   useState,
 } from "react";
 import { useEventCache } from "@/app/event-cache-context";
+import conciergeLogo from "@/assets/envitefy-concierge-logo.png";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import EventSidebar from "@/components/navigation/EventSidebar";
 import { useMenu } from "@/contexts/MenuContext";
@@ -145,6 +146,28 @@ function SidebarFootballMenuIcon({
         .join(" ")}
       style={SIDEBAR_FB_MASK_STYLE(size)}
       aria-hidden
+    />
+  );
+}
+
+function ConciergeLogoIcon({
+  size = 17,
+  isActive = true,
+}: {
+  size?: number;
+  isActive?: boolean;
+}) {
+  return (
+    <Image
+      src={conciergeLogo}
+      alt=""
+      width={size}
+      height={size}
+      aria-hidden="true"
+      className={`block shrink-0 object-contain transition-opacity ${
+        isActive ? "opacity-100" : "opacity-55 group-hover:opacity-80"
+      }`}
+      draggable={false}
     />
   );
 }
@@ -429,7 +452,7 @@ function RootNavigationPanel({
               isChatActive ? rootMenuActiveChipClass : rootMenuChipClass
             } ${rootIconClass(isChatActive)}`}
           >
-            <MessageCircle size={17} strokeWidth={1.9} />
+            <ConciergeLogoIcon isActive={isChatActive} />
           </span>
           <span
             className={`truncate ${rootRowTextClass} ${
@@ -976,7 +999,7 @@ function AiThreadsPanel({
                           : `${CREATE_SECTION_COLORS[0]} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
                       }`}
                     >
-                      <MessageCircle size={17} />
+                      <ConciergeLogoIcon isActive={isActiveThread} />
                     </span>
                     <span
                       className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${

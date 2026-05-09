@@ -4,6 +4,10 @@ import { authOptions } from "@/lib/auth";
 import { getUserByEmail } from "@/lib/db";
 import ConciergeChatClient from "./ConciergeChatClient";
 
+type ChatUserProfile = {
+  initials: string;
+};
+
 export const metadata: Metadata = {
   title: "Envitefy Concierge | Create Events From a Message or Upload",
   description:
@@ -11,31 +15,61 @@ export const metadata: Metadata = {
   alternates: { canonical: "/chat" },
 };
 
-function cleanFirstName(value: unknown) {
+function cleanDisplayName(value: string | null | undefined) {
+  if (typeof value !== "string") return null;
+  const cleaned = value.replace(/\s+/g, " ").trim();
+  return cleaned && !cleaned.includes("@") ? cleaned : null;
+}
+
+function cleanFirstName(value: string | null | undefined) {
   if (typeof value !== "string") return null;
   const cleaned = value.replace(/\s+/g, " ").trim();
   if (!cleaned || cleaned.includes("@")) return null;
-  const firstName = cleaned.split(" ")[0]?.replace(/[^\p{L}'-]/gu, "").slice(0, 32) || "";
+  const firstName =
+    cleaned
+      .split(" ")[0]
+      ?.replace(/[^\p{L}'-]/gu, "")
+      .slice(0, 32) || "";
   return /\p{L}/u.test(firstName) ? firstName : null;
 }
 
-async function resolveChatUserFirstName() {
+function profileInitialsFrom(displayName: string | null, email: string) {
+  const source = (displayName || email || "U").trim();
+  if (!source) return "U";
+  const parts = source.split(/\s+/).filter(Boolean);
+  const raw =
+    parts.length === 1 ? parts[0].slice(0, 2) : `${parts[0]?.[0] || ""}${parts[1]?.[0] || ""}`;
+  const initials = raw
+    .replace(/[^\p{L}\p{N}]/gu, "")
+    .slice(0, 2)
+    .toUpperCase();
+  return initials || "U";
+}
+
+async function resolveChatUserProfile(): Promise<ChatUserProfile> {
   const session = await getServerSession(authOptions as any);
   const email =
     typeof session?.user?.email === "string" ? session.user.email.trim().toLowerCase() : "";
+  const sessionName = cleanDisplayName(session?.user?.name);
+  let dbFirstName: string | null = null;
+  let dbLastName: string | null = null;
   if (email) {
     try {
       const user = await getUserByEmail(email);
-      const fromDb = cleanFirstName(user?.first_name);
-      if (fromDb) return fromDb;
+      dbFirstName = cleanFirstName(user?.first_name);
+      dbLastName = cleanDisplayName(user?.last_name);
     } catch {
-      // The session name is enough for greeting if profile lookup is unavailable.
+      // The session name is enough for chat identity if profile lookup is unavailable.
     }
   }
-  return cleanFirstName(session?.user?.name);
+  const dbDisplayName = [dbFirstName, dbLastName].filter(Boolean).join(" ") || null;
+  const displayName = dbDisplayName || sessionName || email || "User";
+  return {
+    initials: profileInitialsFrom(displayName, email),
+  };
 }
 
 export default async function ChatPage() {
-  const userFirstName = await resolveChatUserFirstName();
-  return <ConciergeChatClient userFirstName={userFirstName} />;
+  const { initials: userInitials } = await resolveChatUserProfile();
+  return <ConciergeChatClient userInitials={userInitials} />;
 }

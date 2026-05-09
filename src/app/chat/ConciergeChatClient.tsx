@@ -3,19 +3,31 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
+  Cake,
   Camera,
-  Check,
   FileImage,
+  Gift,
   Globe,
+  HelpCircle,
   IdCard,
   Loader2,
   MessageCircle,
   Mic,
   Paperclip,
   Sparkles,
+  Trophy,
+  X,
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type ComponentType,
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { requestStudioGeneration } from "@/app/studio/studio-workspace-api";
 import { buildInvitationData } from "@/app/studio/studio-workspace-builders";
 import { createInitialDetails } from "@/app/studio/studio-workspace-sanitize";
@@ -25,6 +37,8 @@ import type {
   InviteCategory,
 } from "@/app/studio/studio-workspace-types";
 import { STUDIO_CATEGORY_TILES } from "@/app/studio/workspace/studio-category-tile-data";
+import conciergeLogo from "@/assets/envitefy-concierge-logo.png";
+import userConciergeLogo from "@/assets/user-concierge-logo.png";
 import {
   cn,
   PromptInput,
@@ -68,6 +82,8 @@ type ProductOption = {
   icon: BottomNavItem["icon"];
 };
 
+type StarterIconComponent = ComponentType<{ className?: string }>;
+
 type ConciergePhase =
   | "intake_empty"
   | "collecting_details"
@@ -88,6 +104,125 @@ type GeneratedInvitePayload = {
   imageUrl: string;
   invitationData: InvitationData;
 };
+
+function BridalShowerIcon({ className }: { className?: string }) {
+  return (
+    <span className={cn("relative flex items-center justify-center", className)}>
+      <Gift className="h-full w-full" aria-hidden="true" />
+      <Sparkles
+        className="absolute -right-1 -top-1 h-[45%] w-[45%] animate-pulse text-inherit"
+        aria-hidden="true"
+      />
+    </span>
+  );
+}
+
+function BabyCarriageIcon({ className }: { className?: string }) {
+  return (
+    <span className={cn("relative flex items-center justify-center", className)}>
+      <svg
+        viewBox="0 0 32 32"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-full w-full"
+        aria-hidden="true"
+      >
+        <path d="M23.6,27H8.4c-3,0-5.4-2.4-5.4-5.4V17h26v4.6C29,24.6,26.6,27,23.6,27z" />
+        <path d="M23.3,17c1.1-0.7,1.9-1.8,2.4-3c0.1,0,0.2,0,0.3,0c1.1,0,2-0.9,2-2s-0.9-2-2-2c-0.1,0-0.2,0-0.3,0 c-0.8-2.3-3-4-5.7-4s-4.8,1.7-5.7,4c-0.1,0-0.2,0-0.3,0c-1.1,0-2,0.9-2,2s0.9,2,2,2c0.1,0,0.2,0,0.3,0c0.4,1.2,1.2,2.2,2.2,2.9" />
+        <path d="M18,3L18,3c0,1.2,0.7,2.3,1.9,2.7L20.6,6" />
+        <line x1="18" y1="11" x2="18" y2="13" />
+        <line x1="22" y1="11" x2="22" y2="13" />
+        <line x1="5" y1="29" x2="6" y2="26.8" />
+        <line x1="27" y1="29" x2="26" y2="26.8" />
+        <path d="M5,17V5.8C5,4.3,6.3,3,7.8,3h0c0.8,0,1.5,0.3,2,0.8L11,5" />
+        <line x1="13" y1="4" x2="9" y2="7" />
+      </svg>
+      <Sparkles
+        className="absolute -right-1 -top-1 h-[40%] w-[40%] animate-pulse text-inherit"
+        aria-hidden="true"
+      />
+    </span>
+  );
+}
+
+function RingsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 512 512" fill="currentColor" aria-hidden="true">
+      <path d="M371.769,176.364l30.47-30.47l-21.71-25.265h-52.305l-21.71,25.265l30.47,30.47 c-29.557,3.279-57.658,14.863-80.982,33.507c-23.324-18.644-51.425-30.228-80.982-33.507l30.47-30.47l-21.71-25.265h-52.305 l-21.71,25.265l30.47,30.47C61.471,185.049,0,251.988,0,333.024c0,86.914,70.71,157.625,157.625,157.625 c35.834,0,70.513-12.2,98.375-34.472c27.862,22.272,62.542,34.472,98.375,34.472C441.29,490.649,512,419.938,512,333.024 C512,251.988,450.529,185.049,371.769,176.364z M327.237,145.11l7.97-9.275h38.337l7.969,9.275l-27.138,27.138L327.237,145.11z M130.486,145.11l7.97-9.275h38.337l7.969,9.275l-27.138,27.138L130.486,145.11z M157.625,475.441 c-78.529,0-142.417-63.888-142.417-142.417s63.888-142.417,142.417-142.417c34.337,0,67.503,12.392,93.387,34.894 c8.035,6.984,15.308,14.898,21.618,23.522c17.933,24.508,27.412,53.555,27.412,84.002c0,27.573-7.775,54-22.563,76.946 c-0.192-0.192-0.376-0.39-0.566-0.583c-0.834-0.847-1.659-1.702-2.465-2.574c-0.357-0.386-0.705-0.781-1.055-1.172 c-0.661-0.736-1.315-1.479-1.955-2.233c-0.368-0.433-0.731-0.869-1.092-1.308c-0.618-0.751-1.225-1.513-1.823-2.28 c-0.337-0.432-0.675-0.863-1.005-1.3c-0.655-0.867-1.293-1.748-1.921-2.636c-0.195-0.275-0.396-0.545-0.589-0.823 c10.887-18.81,16.619-40.153,16.619-62.037c0-21.925-5.759-43.301-16.685-62.137l0.061-0.096l-2.58-4.072 c-4.983-7.859-10.817-15.117-17.407-21.662c-2.197-2.182-4.478-4.285-6.839-6.304l-6.234-5.332l-0.161,0.22 c-21.339-15.929-47.37-24.62-74.156-24.62c-68.375,0-124.002,55.628-124.002,124.002s55.627,124.001,124.002,124.001 c26.853,0,52.947-8.733,74.315-24.737c0.095,0.118,0.196,0.231,0.291,0.348c0.539,0.661,1.092,1.311,1.641,1.964 c0.423,0.501,0.841,1.007,1.269,1.503c0.586,0.677,1.185,1.342,1.782,2.01c0.409,0.457,0.812,0.92,1.226,1.372 c0.656,0.716,1.326,1.418,1.995,2.122c0.37,0.389,0.734,0.787,1.108,1.172c0.815,0.841,1.646,1.666,2.48,2.488 c0.228,0.225,0.449,0.456,0.677,0.68C219.606,465.022,189.107,475.441,157.625,475.441z M289.077,246.04 c18.767-14.095,41.689-21.81,65.298-21.81c59.989,0,108.794,48.805,108.794,108.794c0,59.989-48.805,108.792-108.794,108.792 c-23.608,0-46.531-7.715-65.298-21.81c17.142-25.819,26.172-55.735,26.172-86.984C315.249,301.775,306.22,271.858,289.077,246.04z M256,379.489c-6.834-14.454-10.418-30.285-10.418-46.465c0-16.18,3.584-32.012,10.418-46.465 c6.834,14.454,10.418,30.285,10.418,46.465C266.418,349.204,262.834,365.035,256,379.489z M222.923,246.04 c-17.142,25.819-26.172,55.735-26.172,86.984c0,31.248,9.029,61.165,26.172,86.984c-18.767,14.095-41.69,21.81-65.298,21.81 c-59.989,0-108.794-48.804-108.794-108.793S97.636,224.23,157.625,224.23C181.234,224.23,204.156,231.945,222.923,246.04z M354.375,475.441c-34.337,0-67.503-12.392-93.387-34.894c-8.034-6.983-15.308-14.898-21.618-23.522 c-17.933-24.508-27.412-53.555-27.412-84.001c0-27.573,7.775-54.001,22.562-76.946c0.194,0.194,0.38,0.394,0.572,0.589 c0.833,0.845,1.656,1.698,2.46,2.569c0.355,0.384,0.701,0.778,1.05,1.167c0.664,0.739,1.32,1.485,1.964,2.243 c0.364,0.429,0.724,0.862,1.082,1.296c0.622,0.756,1.233,1.522,1.835,2.294c0.334,0.428,0.669,0.855,0.997,1.289 c0.655,0.867,1.292,1.748,1.921,2.635c0.196,0.277,0.398,0.548,0.591,0.827c-10.887,18.81-16.619,40.153-16.619,62.038 c0,21.925,5.759,43.3,16.685,62.136l-0.062,0.096l2.581,4.072c6.643,10.478,14.8,19.888,24.245,27.966l6.234,5.332l0.161-0.221 c21.34,15.929,47.369,24.62,74.156,24.62c68.375,0,124.002-55.626,124.002-124.001s-55.626-124.001-124.002-124.001 c-26.853,0-52.947,8.733-74.315,24.738c-0.095-0.118-0.196-0.231-0.291-0.348c-0.538-0.66-1.089-1.309-1.638-1.96 c-0.424-0.503-0.844-1.011-1.274-1.508c-0.58-0.67-1.173-1.329-1.764-1.989c-0.416-0.464-0.825-0.935-1.246-1.394 c-0.642-0.701-1.298-1.387-1.951-2.075c-0.385-0.406-0.763-0.818-1.153-1.221c-0.781-0.805-1.577-1.594-2.373-2.382 c-0.262-0.259-0.516-0.525-0.78-0.783c24.804-19.075,55.302-29.493,86.786-29.493c78.529,0,142.417,63.888,142.417,142.417 C496.792,411.554,432.904,475.441,354.375,475.441z" />
+      <rect x="248.396" y="21.351" width="15.208" height="47.344" />
+      <rect
+        x="294.983"
+        y="52.217"
+        transform="matrix(0.4198 -0.9076 0.9076 0.4198 130.5873 323.9224)"
+        width="47.343"
+        height="15.207"
+      />
+      <rect
+        x="185.738"
+        y="36.156"
+        transform="matrix(0.9076 -0.4198 0.4198 0.9076 -7.2537 86.6932)"
+        width="15.207"
+        height="47.343"
+      />
+    </svg>
+  );
+}
+
+function ConciergeChatAvatar({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn("mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center", className)}
+      aria-hidden="true"
+    >
+      <Image
+        src={conciergeLogo}
+        alt=""
+        width={40}
+        height={40}
+        className="h-full w-full object-contain drop-shadow-[0_8px_16px_rgba(93,63,155,0.2)]"
+        draggable={false}
+      />
+    </span>
+  );
+}
+
+function normalizeUserInitials(value?: string | null) {
+  const cleaned =
+    typeof value === "string"
+      ? value
+          .replace(/[^\p{L}\p{N}]/gu, "")
+          .slice(0, 2)
+          .toUpperCase()
+      : "";
+  return cleaned || "U";
+}
+
+function UserChatAvatar({ initials, className }: { initials: string; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "relative mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center",
+        className,
+      )}
+      aria-hidden="true"
+    >
+      <Image
+        src={userConciergeLogo}
+        alt=""
+        width={40}
+        height={40}
+        className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_8px_16px_rgba(93,63,155,0.22)]"
+        draggable={false}
+      />
+      <span className="relative z-10 text-[12px] font-black leading-none text-white drop-shadow-[0_1px_3px_rgba(35,24,72,0.9)]">
+        {initials}
+      </span>
+    </span>
+  );
+}
 
 type RsvpPreviewResponse = {
   name: string | null;
@@ -184,7 +319,7 @@ const OUTPUT_LABELS: Record<RequestedOutput, string> = {
 const EMPTY_ASSISTANT_PROMPT = "What are we celebrating?";
 
 type ConciergeChatClientProps = {
-  userFirstName?: string | null;
+  userInitials?: string | null;
 };
 
 type ConciergeStreamStatePayload = Extract<ConciergeMessageResponse, { ok: true }>;
@@ -376,17 +511,22 @@ async function readConciergeIntakeStream(response: Response, handlers: Concierge
   return finalState;
 }
 
-function buildInitialAssistantPrompt(userFirstName?: string | null) {
-  const cleaned = typeof userFirstName === "string" ? userFirstName.trim() : "";
-  if (!cleaned) return EMPTY_ASSISTANT_PROMPT;
-  return `Hi ${cleaned}, what are we celebrating?`;
+function buildInitialAssistantPrompt() {
+  return EMPTY_ASSISTANT_PROMPT;
 }
 
 function isOpeningAssistantPrompt(text: string, initialAssistantPrompt: string) {
   return text === initialAssistantPrompt || text === EMPTY_ASSISTANT_PROMPT;
 }
 
-const CHAT_STARTER_PROMPTS = ["Birthday", "Wedding", "Baby Shower", "Game Day", "Bridal Shower"];
+const CHAT_STARTER_PROMPTS = [
+  "Birthday",
+  "Bridal Shower",
+  "Wedding",
+  "Baby Shower",
+  "Game Day",
+  "Custom Invite",
+];
 
 const PREVIEW_CATEGORY_BY_EVENT_TYPE: Partial<Record<ConciergeEventType, string>> = {
   birthday: "Birthday",
@@ -409,47 +549,55 @@ const PREVIEW_CATEGORY_BY_EVENT_TYPE: Partial<Record<ConciergeEventType, string>
   general: "Custom Invite",
 };
 
-function studioStarterImagePath(categoryName: string) {
-  return (
-    STUDIO_CATEGORY_TILES.find((category) => category.name === categoryName)?.imagePath ||
-    "/studio/custom-invite.webp"
-  );
-}
-
 const CELEBRATION_STARTER_TILES = [
   {
     label: "Birthday",
     prompt: CHAT_STARTER_PROMPTS[0],
-    imagePath: studioStarterImagePath("Birthday"),
-    size: "wide",
-  },
-  {
-    label: "Wedding",
-    prompt: CHAT_STARTER_PROMPTS[1],
-    imagePath: studioStarterImagePath("Wedding"),
-    size: "desktopWide",
-  },
-  {
-    label: "Game Day",
-    prompt: CHAT_STARTER_PROMPTS[3],
-    imagePath: studioStarterImagePath("Game Day"),
-    size: "square",
-  },
-  {
-    label: "Baby Shower",
-    prompt: CHAT_STARTER_PROMPTS[2],
-    imagePath: studioStarterImagePath("Baby Shower"),
-    size: "desktopWide",
+    icon: Cake,
+    color: "text-pink-600",
   },
   {
     label: "Bridal Shower",
-    prompt: CHAT_STARTER_PROMPTS[4],
-    imagePath: studioStarterImagePath("Bridal Shower"),
-    size: "square",
+    prompt: CHAT_STARTER_PROMPTS[1],
+    icon: BridalShowerIcon,
+    color: "text-amber-600",
   },
-] as const;
+  {
+    label: "Wedding",
+    prompt: CHAT_STARTER_PROMPTS[2],
+    icon: RingsIcon,
+    color: "text-rose-600",
+  },
+  {
+    label: "Baby Shower",
+    prompt: CHAT_STARTER_PROMPTS[3],
+    icon: BabyCarriageIcon,
+    color: "text-sky-600",
+  },
+  {
+    label: "Game Day",
+    prompt: CHAT_STARTER_PROMPTS[4],
+    icon: Trophy,
+    color: "text-emerald-600",
+  },
+  {
+    label: "None of the above",
+    prompt: CHAT_STARTER_PROMPTS[5],
+    icon: HelpCircle,
+    color: "text-zinc-600",
+  },
+] as const satisfies readonly {
+  label: string;
+  prompt: string;
+  icon: StarterIconComponent;
+  color: string;
+}[];
 
 type CelebrationStarterTile = (typeof CELEBRATION_STARTER_TILES)[number];
+
+function starterSelectionLabel(tile: CelebrationStarterTile | null | undefined) {
+  return tile?.prompt || null;
+}
 
 function newMessage(
   role: ChatMessage["role"],
@@ -837,10 +985,11 @@ function notifyCreationThreadsChanged() {
   window.dispatchEvent(new CustomEvent("envitefy:creation-threads-changed"));
 }
 
-export default function ConciergeChatClient({ userFirstName = null }: ConciergeChatClientProps) {
+export default function ConciergeChatClient({ userInitials = null }: ConciergeChatClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialAssistantPrompt = buildInitialAssistantPrompt(userFirstName);
+  const initialAssistantPrompt = buildInitialAssistantPrompt();
+  const userAvatarInitials = normalizeUserInitials(userInitials);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
@@ -867,6 +1016,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   const [error, setError] = useState<string | null>(null);
   const [failedRequest, setFailedRequest] = useState<FailedConciergeRequest | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
   const [rsvpPreview, setRsvpPreview] = useState<RsvpPreviewState>(EMPTY_RSVP_PREVIEW);
   const [weatherContext, setWeatherContext] = useState<ConciergeWeatherContext | null>(null);
@@ -901,8 +1051,8 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         ? "Generating invite"
         : "Concierge is thinking...";
   const isThinking = busyLabel === "Concierge is thinking..." && !isStreamingAssistant;
-  const selectedStarterLabel = selectedStarterCategory?.label || null;
-  const hasStarterCategorySelection = Boolean(selectedStarterLabel);
+  const isCompactEmptyComposer =
+    isEmptyState && !input.trim() && !isComposerFocused && !isListening;
   const currentBuildStep = Math.min(
     Math.floor((buildProgress / 100) * BUILDING_STEPS.length),
     BUILDING_STEPS.length - 1,
@@ -994,17 +1144,17 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
     nextProductOutput: RequestedOutput | null,
   ) {
     const previousPrefix = selectionPrefix(
-      selectedStarterCategory?.label || categoryLabelForDraft(draft),
+      starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft),
       selectedProductOutput,
     );
     const nextPrefix = selectionPrefix(nextCategoryLabel, nextProductOutput);
-    if (!nextPrefix) return;
 
     setInput((current) => {
       const trimmed = current.trimStart();
       const previousMatches =
         previousPrefix && trimmed.toLowerCase().startsWith(previousPrefix.toLowerCase());
       const suffix = previousMatches ? trimmed.slice(previousPrefix.length).trimStart() : trimmed;
+      if (!nextPrefix) return suffix;
       return [nextPrefix, suffix].filter(Boolean).join(" ");
     });
   }
@@ -1018,7 +1168,8 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
 
   function handleProductChoice(option: ProductOption) {
     if (isBusy) return;
-    const nextCategoryLabel = selectedStarterCategory?.label || categoryLabelForDraft(draft);
+    const nextCategoryLabel =
+      starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
     setSelectedProductOutput(option.output);
     updateComposerSelection(nextCategoryLabel, option.output);
   }
@@ -1506,7 +1657,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         selectedProductOutput && !draft?.requestedOutputs?.length
           ? [selectedProductOutput]
           : undefined,
-      starterCategory: selectedStarterCategory?.label || null,
+      starterCategory: starterSelectionLabel(selectedStarterCategory),
     });
   }
 
@@ -1518,13 +1669,15 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
   function handleStarterPrompt(tile: CelebrationStarterTile) {
     if (isBusy) return;
     setError(null);
-    setSelectedStarterCategory(tile);
-    updateComposerSelection(tile.label, selectedProductOutput);
+    const isSelected = selectedStarterCategory?.label === tile.label;
+    setSelectedStarterCategory(isSelected ? null : tile);
+    updateComposerSelection(isSelected ? null : tile.prompt, selectedProductOutput);
   }
 
   function handleStarterProductChoice(option: ProductOption) {
     if (isBusy) return;
-    const nextCategoryLabel = selectedStarterCategory?.label || categoryLabelForDraft(draft);
+    const nextCategoryLabel =
+      starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
     setSelectedProductOutput(option.output);
     updateComposerSelection(nextCategoryLabel, option.output);
   }
@@ -1646,17 +1799,21 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                 <Loader2 className="size-4 animate-spin text-[#7c4dff]" aria-hidden="true" />
                 {message.text}
               </div>
+            ) : message.role === "user" ? (
+              <div className="flex max-w-[94%] items-start justify-end gap-2 sm:max-w-[88%]">
+                <div className="min-w-0 whitespace-pre-line rounded-3xl rounded-tr-md bg-[#6f4cff] px-4 py-3 text-sm leading-6 text-white shadow-sm shadow-[#6f4cff]/15">
+                  {message.text}
+                </div>
+                <UserChatAvatar initials={userAvatarInitials} />
+              </div>
             ) : (
-              <div
-                className={`max-w-[94%] whitespace-pre-line rounded-3xl px-4 py-3 text-sm leading-6 shadow-sm sm:max-w-[88%] ${
-                  message.role === "user"
-                    ? "rounded-tr-md bg-[#6f4cff] text-white shadow-[#6f4cff]/15"
-                    : "rounded-tl-md border border-[#eadfff] bg-white/88 text-[#24183e]"
-                }`}
-              >
-                {message.role === "assistant"
-                  ? formatAssistantBubbleText(message.text, draft)
-                  : message.text}
+              <div className="flex max-w-[94%] items-start gap-2 sm:max-w-[88%]">
+                <ConciergeChatAvatar />
+                <div className="min-w-0 whitespace-pre-line rounded-3xl rounded-tl-md border border-[#eadfff] bg-white/88 px-4 py-3 text-sm leading-6 text-[#24183e] shadow-sm">
+                  {message.role === "assistant"
+                    ? formatAssistantBubbleText(message.text, draft)
+                    : message.text}
+                </div>
               </div>
             )}
           </motion.div>
@@ -1667,9 +1824,10 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-start"
+          className="flex items-start gap-2"
         >
-          <div className="max-w-[94%] rounded-3xl rounded-tl-md border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800 shadow-sm sm:max-w-[88%]">
+          <ConciergeChatAvatar />
+          <div className="min-w-0 max-w-[94%] rounded-3xl rounded-tl-md border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800 shadow-sm sm:max-w-[88%]">
             <p className="font-semibold">Concierge could not finish that request.</p>
             <p>{failedRequest.error}</p>
             <button
@@ -1699,7 +1857,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
             autoOpenIntervalMs={2000}
             autoOpenCycles={3}
             ariaLabel="Choose product format"
-            className="w-full !min-w-0 border-[#e9e3f2] bg-white/96"
+            className="w-full !min-w-0 bg-[#e0e5ec]"
             onValueChange={(value) => {
               const option = PRODUCT_OPTIONS.find((item) => item.output === value);
               if (option) handleProductChoice(option);
@@ -1712,26 +1870,120 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className={cn(
-            "inline-flex w-fit max-w-[94%] self-start items-center gap-2 rounded-full border border-[#eadfff] bg-white/86 px-4 py-2 text-sm text-[#5f5289] shadow-sm sm:max-w-[88%]",
-            isThinking && "animate-pulse",
-          )}
+          className="flex max-w-[94%] self-start items-start gap-2 sm:max-w-[88%]"
           role="status"
           aria-live="polite"
         >
-          {isThinking ? null : (
-            <Loader2 className="size-4 animate-spin text-[#7c4dff]" aria-hidden="true" />
-          )}
-          {busyLabel}
+          <ConciergeChatAvatar className={isThinking ? "animate-pulse" : undefined} />
+          <div
+            className={cn(
+              "inline-flex w-fit items-center gap-2 rounded-full border border-[#eadfff] bg-white/86 px-4 py-2 text-sm text-[#5f5289] shadow-sm",
+              isThinking && "animate-pulse",
+            )}
+          >
+            {isThinking ? null : (
+              <Loader2 className="size-4 animate-spin text-[#7c4dff]" aria-hidden="true" />
+            )}
+            {busyLabel}
+          </div>
         </motion.div>
       ) : null}
       <div ref={messagesEndRef} />
     </div>
   );
 
+  const emptyProductFormatSelector = (
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className="mx-auto mb-6 flex w-full max-w-3xl justify-center sm:mb-7 sm:max-w-4xl"
+    >
+      <div className="flex w-full justify-center sm:hidden">
+        <BottomNavBar
+          items={PRODUCT_OPTIONS.map(chatProductNavItem)}
+          activeValue={selectedProductOutput ?? undefined}
+          defaultIndex={0}
+          spreadItems
+          autoOpenOnMount
+          autoOpenIntervalMs={2000}
+          autoOpenCycles={3}
+          ariaLabel={
+            selectedStarterCategory
+              ? `Choose product format for ${selectedStarterCategory.label}`
+              : "Choose product format"
+          }
+          className="w-full !min-w-0 !max-w-full bg-[#e0e5ec]"
+          onValueChange={(value) => {
+            const option = PRODUCT_OPTIONS.find((item) => item.output === value);
+            if (option) handleStarterProductChoice(option);
+          }}
+        />
+      </div>
+      <div
+        className="hidden max-w-full items-center justify-center gap-2 rounded-full bg-[#e0e5ec] p-2 shadow-[10px_10px_20px_#b8bec7,-10px_-10px_20px_#ffffff] sm:flex"
+        aria-label={
+          selectedStarterCategory
+            ? `Choose product format for ${selectedStarterCategory.label}`
+            : "Choose product format"
+        }
+        role="group"
+      >
+        {PRODUCT_OPTIONS.map((option) => {
+          const Icon = option.icon;
+          const isSelected = effectiveSelectedProductOutput === option.output;
+          const productLabel = selectedStarterCategory
+            ? `${selectedStarterCategory.label} ${option.label}`
+            : option.label;
+          return (
+            <button
+              key={option.output}
+              type="button"
+              onClick={() => handleStarterProductChoice(option)}
+              disabled={isBusy}
+              aria-label={`Use ${productLabel}`}
+              aria-pressed={isSelected}
+              className={cn(
+                "group relative inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55 sm:px-8 sm:py-4 sm:text-sm",
+                isSelected
+                  ? "text-indigo-600 shadow-[inset_4px_4px_8px_#b8bec7,inset_-4px_-4px_8px_#ffffff]"
+                  : "text-zinc-500 hover:text-zinc-700",
+              )}
+            >
+              <Icon
+                size={18}
+                strokeWidth={2}
+                aria-hidden="true"
+                className={cn(
+                  "transition-transform duration-300",
+                  isSelected ? "scale-110" : "group-hover:scale-105",
+                )}
+              />
+              <span className="whitespace-nowrap transition-colors">{option.label}</span>
+              {isSelected ? (
+                <motion.span
+                  layoutId="chatProductActiveUnderline"
+                  className="absolute bottom-2 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-indigo-600 opacity-40"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.4 }}
+                />
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+
   const composer = (
-    <div className="pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-4 sm:px-6 sm:pb-8">
+    <div
+      className={cn(
+        "pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-4 sm:px-6 sm:pb-8",
+        isEmptyState &&
+          "max-md:px-3 max-md:pb-[calc(env(safe-area-inset-bottom)+0.45rem)] max-md:pt-2 max-h-[700px]:max-md:pb-[calc(env(safe-area-inset-bottom)+0.3rem)] max-h-[700px]:max-md:pt-1",
+      )}
+    >
       <div ref={composerCardRef} className="pointer-events-auto w-full">
+        {isEmptyState ? emptyProductFormatSelector : null}
         <form onSubmit={handleSubmit}>
           <input
             ref={fileInputRef}
@@ -1762,6 +2014,7 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
             disabled={isBusy}
             className={cn(
               "w-full border-[#d8caff] bg-[#fbf9ff] p-2 text-[#25183a] shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur transition-all duration-300",
+              isCompactEmptyComposer && "max-md:rounded-[1.4rem] max-md:p-1.5",
               isListening &&
                 "border-[#8b5cf6] shadow-[0_18px_46px_rgba(124,77,255,0.24),inset_0_1px_0_rgba(255,255,255,0.95)]",
             )}
@@ -1770,22 +2023,38 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
               placeholder={
                 liveCardEventId
                   ? "Tell me what to change..."
-                  : "Or just start typing and let's get going..."
+                  : isCompactEmptyComposer
+                    ? "Type instead..."
+                    : "Or just start typing and let's get going..."
               }
               aria-label={liveCardEventId ? "Refine invite" : "Start planning from scratch"}
-              className="min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#7c4dff] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base"
+              onFocus={() => setIsComposerFocused(true)}
+              onBlur={() => setIsComposerFocused(false)}
+              className={cn(
+                "min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#7c4dff] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base",
+                isCompactEmptyComposer &&
+                  "max-md:min-h-[34px] max-md:px-2 max-md:py-1.5 max-md:text-sm max-md:[&::placeholder]:text-[0.78rem]",
+              )}
             />
-            <PromptInputActions className="justify-between gap-2 pt-2">
+            <PromptInputActions
+              className={cn("justify-between gap-2 pt-2", isCompactEmptyComposer && "max-md:pt-1")}
+            >
               <div className="flex min-w-0 items-center gap-1">
                 <PromptInputAction tooltip="Upload file">
                   <button
                     type="button"
                     disabled={isBusy}
                     onClick={openSnapUploadPicker}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff] disabled:cursor-not-allowed disabled:opacity-50"
+                    className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff] disabled:cursor-not-allowed disabled:opacity-50",
+                      isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
+                    )}
                     aria-label="Upload file"
                   >
-                    <Paperclip className="size-6" aria-hidden="true" />
+                    <Paperclip
+                      className={cn("size-6", isCompactEmptyComposer && "max-md:size-5")}
+                      aria-hidden="true"
+                    />
                   </button>
                 </PromptInputAction>
 
@@ -1794,10 +2063,16 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                     type="button"
                     disabled={isBusy}
                     onClick={openSnapCameraPicker}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff] disabled:cursor-not-allowed disabled:opacity-50"
+                    className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff] disabled:cursor-not-allowed disabled:opacity-50",
+                      isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
+                    )}
                     aria-label="Use camera"
                   >
-                    <Camera className="size-6" aria-hidden="true" />
+                    <Camera
+                      className={cn("size-6", isCompactEmptyComposer && "max-md:size-5")}
+                      aria-hidden="true"
+                    />
                   </button>
                 </PromptInputAction>
               </div>
@@ -1824,15 +2099,36 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                   className={cn(
                     "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff] disabled:pointer-events-none disabled:opacity-50",
                     (input.trim() || isListening) && "text-[#7c4dff]",
+                    isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
                   )}
                   aria-label={input.trim() ? "Send" : "Use voice input"}
                 >
                   {isBusy ? (
-                    <Loader2 className="size-5 animate-spin text-[#7c4dff]" aria-hidden="true" />
+                    <Loader2
+                      className={cn(
+                        "size-5 animate-spin text-[#7c4dff]",
+                        isCompactEmptyComposer && "max-md:size-4",
+                      )}
+                      aria-hidden="true"
+                    />
                   ) : input.trim() ? (
-                    <ArrowUp className="size-6 text-current" strokeWidth={2.5} aria-hidden="true" />
+                    <ArrowUp
+                      className={cn(
+                        "size-6 text-current",
+                        isCompactEmptyComposer && "max-md:size-5",
+                      )}
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    />
                   ) : (
-                    <Mic className="size-6 text-current" strokeWidth={2.4} aria-hidden="true" />
+                    <Mic
+                      className={cn(
+                        "size-6 text-current",
+                        isCompactEmptyComposer && "max-md:size-5",
+                      )}
+                      strokeWidth={2.4}
+                      aria-hidden="true"
+                    />
                   )}
                 </button>
               </PromptInputAction>
@@ -1840,7 +2136,12 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
           </PromptInput>
         </form>
         {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
-        <p className="mt-4 text-center text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#8d7daf]">
+        <p
+          className={cn(
+            "mt-4 text-center text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#8d7daf]",
+            isEmptyState && "max-md:hidden",
+          )}
+        >
           Envitefy Concierge - Beta
         </p>
       </div>
@@ -1953,31 +2254,41 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
             >
               <div
                 ref={chatPaneRef}
-                className={`min-h-0 w-full flex-col overflow-hidden bg-white/28 backdrop-blur-sm ${
-                  shouldShowProductPanel ? "md:border-r md:border-[#e5dff0]" : ""
-                } ${
-                  mobileView === "chat" ? "flex" : "hidden md:flex"
-                } ${shouldShowProductPanel ? "" : "md:border-r-0"}`}
+                className={cn(
+                  "min-h-0 w-full flex-col overflow-hidden",
+                  isEmptyState ? "bg-[#e0e5ec]" : "bg-white/28 backdrop-blur-sm",
+                  shouldShowProductPanel && "md:border-r md:border-[#e5dff0]",
+                  mobileView === "chat" ? "flex" : "hidden md:flex",
+                  !shouldShowProductPanel && "md:border-r-0",
+                )}
               >
-                <div className="min-h-0 flex-1 overflow-y-auto [overscroll-behavior-y:contain] [touch-action:pan-y] [-webkit-overflow-scrolling:touch]">
+                <div
+                  className={cn(
+                    "min-h-0 flex-1 overflow-y-auto [overscroll-behavior-y:contain] [touch-action:pan-y] [-webkit-overflow-scrolling:touch]",
+                    isEmptyState && "max-md:overflow-hidden",
+                  )}
+                >
                   {isEmptyState ? (
-                    <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-start px-4 pb-4 pt-8 text-center sm:px-6 md:justify-end md:py-8">
+                    <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-start px-4 pb-4 pt-[calc(max(0.35rem,env(safe-area-inset-top))+2rem)] text-center sm:px-6 sm:pt-[calc(max(0.35rem,env(safe-area-inset-top))+2.75rem)] lg:pt-12 max-md:h-full max-md:overflow-hidden max-md:px-3 max-md:pb-1 max-md:pt-[calc(max(0.35rem,env(safe-area-inset-top))+1rem)] max-h-[700px]:max-md:pt-[calc(max(0.35rem,env(safe-area-inset-top))+0.6rem)]">
                       <motion.h1
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mx-auto max-w-3xl text-4xl font-medium tracking-normal text-[#2d1b36] sm:text-6xl"
+                        className="mx-auto max-w-3xl text-3xl font-medium leading-tight tracking-normal text-[#2d1b36] sm:text-4xl lg:text-5xl max-h-[700px]:max-md:text-[1.8rem]"
                       >
-                        {initialAssistantPrompt}
+                        <span>What are we</span>
+                        <br />
+                        <span>celebrating?</span>
                       </motion.h1>
-                      <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base">
+                      <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base max-md:mt-2 max-md:text-xs max-md:leading-5 max-h-[620px]:max-md:hidden">
                         Pick a category or describe it in your own words.
                       </p>
-                      <div className="mx-auto mt-6 grid w-full max-w-3xl grid-cols-2 gap-3 text-left sm:max-w-4xl sm:grid-cols-4">
+                      <nav
+                        className="mx-auto mt-8 grid w-full max-w-[39rem] flex-1 grid-cols-2 content-center justify-items-center gap-8 text-center sm:gap-12 md:grid-cols-3 max-md:mt-3 max-md:gap-x-[clamp(1.25rem,8vw,3rem)] max-md:gap-y-[clamp(0.75rem,2.4dvh,1.25rem)] max-h-[700px]:max-md:mt-2"
+                        aria-label="Choose celebration category"
+                      >
                         {CELEBRATION_STARTER_TILES.map((tile) => {
-                          const isWide = tile.size === "wide";
-                          const isDesktopWide = tile.size === "desktopWide";
+                          const Icon = tile.icon;
                           const isSelected = selectedStarterCategory?.label === tile.label;
-                          const isDimmed = hasStarterCategorySelection && !isSelected;
                           return (
                             <button
                               key={tile.label}
@@ -1987,115 +2298,50 @@ export default function ConciergeChatClient({ userFirstName = null }: ConciergeC
                               aria-label={`Choose ${tile.label}`}
                               aria-pressed={isSelected}
                               className={cn(
-                                "group relative isolate overflow-hidden rounded-2xl border border-white/80 bg-[#f6f1ff] text-left shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55",
+                                "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl bg-[#e0e5ec] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8b0bc] focus-visible:ring-offset-4 focus-visible:ring-offset-[#e0e5ec] disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(5.5rem,16dvh,7.25rem)] max-md:w-[clamp(5.5rem,16dvh,7.25rem)]",
                                 isSelected &&
-                                  "z-10 border-[#8f68ff] bg-white shadow-[0_18px_46px_rgba(111,76,255,0.24)] ring-2 ring-[#8f68ff]/70",
-                                isDimmed && "border-[#d8d3df] bg-[#ece9f1] shadow-none",
-                                isWide
-                                  ? "col-span-2 aspect-[2.055/1]"
-                                  : cn(
-                                      "aspect-square min-h-[8.25rem]",
-                                      isDesktopWide && "sm:col-span-2 sm:aspect-[2.055/1]",
-                                    ),
+                                  cn(
+                                    "scale-95 shadow-[inset_6px_6px_12px_#b8bec7,inset_-6px_-6px_12px_#ffffff]",
+                                    tile.color,
+                                  ),
+                                !isSelected &&
+                                  "text-zinc-400 shadow-[10px_10px_20px_#b8bec7,-10px_-10px_20px_#ffffff] hover:text-zinc-500 active:scale-95",
                               )}
                             >
-                              <img
-                                src={tile.imagePath}
-                                alt=""
-                                aria-hidden="true"
-                                className={cn(
-                                  "absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105",
-                                  isSelected && "saturate-110",
-                                  isDimmed &&
-                                    "grayscale saturate-0 opacity-45 group-hover:grayscale-0 group-hover:saturate-100 group-hover:opacity-75",
-                                )}
-                              />
-                              <span
-                                className={cn(
-                                  "absolute inset-0 bg-gradient-to-t",
-                                  isDimmed
-                                    ? "from-[#171023]/78 via-[#edeaf3]/34 to-[#f8f6fb]/28"
-                                    : "from-[#171023]/80 via-[#241735]/28 to-white/10",
-                                )}
-                                aria-hidden="true"
-                              />
                               {isSelected ? (
-                                <span className="absolute right-3 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#6f4cff] shadow-[0_8px_20px_rgba(45,27,54,0.24)]">
-                                  <Check size={15} strokeWidth={3} aria-hidden="true" />
+                                <span className="absolute right-3 top-3 opacity-40 sm:right-4 sm:top-4">
+                                  <X size={14} aria-hidden="true" />
                                 </span>
                               ) : null}
-                              <span className="relative z-10 flex h-full flex-col justify-end p-3 sm:p-4">
-                                <span className="max-w-[11rem] text-balance break-words text-base font-bold leading-tight text-white sm:text-lg">
+                              <Icon
+                                className={cn(
+                                  "h-8 w-8 transition-transform duration-300 sm:h-10 sm:w-10 max-h-[620px]:max-md:h-7 max-h-[620px]:max-md:w-7",
+                                  isSelected ? "scale-110" : "group-hover:scale-105",
+                                )}
+                              />
+                              <span className="relative mt-2 flex max-w-[6.75rem] justify-center sm:mt-4 sm:max-w-[8.5rem] max-h-[620px]:max-md:mt-1.5">
+                                <span
+                                  className={cn(
+                                    "text-center text-[10px] font-bold uppercase leading-[1.35] tracking-widest transition-colors sm:text-xs",
+                                    isSelected ? "text-current" : "text-zinc-400",
+                                  )}
+                                >
                                   {tile.label}
                                 </span>
+                                {isSelected ? (
+                                  <motion.span
+                                    layoutId="chatStarterActiveUnderline"
+                                    className="absolute -bottom-1 left-0 right-0 h-[2px] rounded-full bg-current"
+                                    initial={{ opacity: 0, scaleX: 0 }}
+                                    animate={{ opacity: 1, scaleX: 1 }}
+                                    transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                                  />
+                                ) : null}
                               </span>
                             </button>
                           );
                         })}
-                      </div>
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        className="mx-auto mt-4 flex w-full max-w-3xl justify-center sm:max-w-4xl"
-                      >
-                        <div className="flex w-full justify-center sm:hidden">
-                          <BottomNavBar
-                            items={PRODUCT_OPTIONS.map(chatProductNavItem)}
-                            activeValue={selectedProductOutput ?? undefined}
-                            defaultIndex={0}
-                            spreadItems
-                            autoOpenOnMount
-                            autoOpenIntervalMs={2000}
-                            autoOpenCycles={3}
-                            ariaLabel={
-                              selectedStarterCategory
-                                ? `Choose product format for ${selectedStarterCategory.label}`
-                                : "Choose product format"
-                            }
-                            className="w-full !min-w-0 !max-w-full border-[#e9e3f2] bg-white/96"
-                            onValueChange={(value) => {
-                              const option = PRODUCT_OPTIONS.find((item) => item.output === value);
-                              if (option) handleStarterProductChoice(option);
-                            }}
-                          />
-                        </div>
-                        <div
-                          className="hidden max-w-full flex-wrap justify-center gap-2 rounded-[1.6rem] border border-[#e9e3f2] bg-white/96 p-2 shadow-[0_16px_36px_rgba(35,27,55,0.12)] sm:flex"
-                          aria-label={
-                            selectedStarterCategory
-                              ? `Choose product format for ${selectedStarterCategory.label}`
-                              : "Choose product format"
-                          }
-                          role="group"
-                        >
-                          {PRODUCT_OPTIONS.map((option) => {
-                            const Icon = option.icon;
-                            const isSelected = selectedProductOutput === option.output;
-                            const productLabel = selectedStarterCategory
-                              ? `${selectedStarterCategory.label} ${option.label}`
-                              : option.label;
-                            return (
-                              <button
-                                key={option.output}
-                                type="button"
-                                onClick={() => handleStarterProductChoice(option)}
-                                disabled={isBusy}
-                                aria-label={`Use ${productLabel}`}
-                                aria-pressed={isSelected}
-                                className={cn(
-                                  "inline-flex h-10 min-w-[8.25rem] items-center justify-center gap-2 rounded-full px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55 sm:min-w-[7.4rem]",
-                                  isSelected
-                                    ? "bg-[#ede8f7] text-[#3d2769]"
-                                    : "text-[#5f4b82] hover:bg-[#f3eefb] hover:text-[#3d2769]",
-                                )}
-                              >
-                                <Icon size={18} strokeWidth={2} aria-hidden="true" />
-                                <span className="truncate">{option.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
+                      </nav>
                     </div>
                   ) : (
                     chatThread

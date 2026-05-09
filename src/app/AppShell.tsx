@@ -27,11 +27,7 @@ function isStudioCardSharePath(pathname: string) {
   return segments.length === 2 && segments[0] === "card";
 }
 
-function AuthTransitionOverlay({
-  message = "Opening Envitefy...",
-}: {
-  message?: string;
-}) {
+function AuthTransitionOverlay({ message = "Opening Envitefy..." }: { message?: string }) {
   return (
     <div
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-[#F8F5FF]/92 backdrop-blur-[8px]"
@@ -118,13 +114,16 @@ export default function AppShell({
           </MainContentWrapper>
         </MenuProvider>
       ) : (
-        <MainContentWrapper isAuthenticated={false}>
+        <MainContentWrapper
+          isAuthenticated={false}
+          className={isChatPath ? "h-[100dvh] overflow-hidden" : ""}
+        >
           {isRedirectingFromMarketing ? (
             <AuthTransitionOverlay message="Opening Envitefy..." />
           ) : (
             <>
               <div className="min-h-0 flex-1 min-w-0">{children}</div>
-              <ConditionalFooter />
+              {isChatPath ? null : <ConditionalFooter />}
             </>
           )}
         </MainContentWrapper>
