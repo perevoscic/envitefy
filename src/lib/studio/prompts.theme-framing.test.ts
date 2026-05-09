@@ -423,7 +423,7 @@ test("studio open house image prompts describe premium property collage and keep
   assert.match(prompt, /with 3-5 house photos, create a premium real-estate collage/);
   assert.match(
     prompt,
-    /OPEN HOUSE BUTTON-ZONE HARD RULE: the bottom 30% of the 9:16 raster is reserved for Envitefy app buttons and must be image-only background\./,
+    /OPEN HOUSE BUTTON-ZONE HARD RULE: the bottom 30% of the 2:3 raster is reserved for Envitefy app buttons and must be image-only background\./,
   );
   assert.match(
     prompt,
@@ -511,7 +511,23 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
   assert.match(prompt, /Age or Milestone: 9/);
   assert.match(
     prompt,
+    /High-quality vertical invitation card composition \(2:3 mobile card, matching Envitefy's live-card preview frame\)\./,
+  );
+  assert.match(
+    prompt,
+    /Do not compose for a 9:16 phone screenshot or a tall device mockup; the finished raster should naturally fill a shorter 2:3 card without top or bottom letterboxing\./,
+  );
+  assert.match(
+    prompt,
     /Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay\./,
+  );
+  assert.match(
+    prompt,
+    /Edge-safe composition: keep all essential text, faces, candles, balloons, gifts, cakes, addresses, dates, times, and other focal objects comfortably inset from every canvas edge and rounded corner\./,
+  );
+  assert.match(
+    prompt,
+    /Treat the outer 7% of the canvas as full-bleed background\/decor only, so mild preview fill or rounded-corner clipping never cuts off important content\./,
   );
   assert.match(
     prompt,
@@ -532,6 +548,10 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
   assert.match(
     prompt,
     /Treat the lower edge as artwork continuation behind the app action buttons\./,
+  );
+  assert.match(
+    prompt,
+    /Compose with the bottom action controls in mind: the lower 24-30% should be decorative continuation only, with no essential subject matter that would be hidden behind app buttons\./,
   );
   assert.match(
     prompt,

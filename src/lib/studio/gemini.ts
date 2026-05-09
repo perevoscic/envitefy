@@ -77,10 +77,10 @@ function resolveImageEditModel(): string {
 }
 
 /** Higher default for print-like invites; set STUDIO_GEMINI_INVITE_IMAGE_SIZE=1K if your quota rejects 2K. */
-function resolveInviteImageConfig(): { aspectRatio: "9:16"; imageSize: "1K" | "2K" } {
+function resolveInviteImageConfig(): { aspectRatio: "2:3"; imageSize: "1K" | "2K" } {
   const raw = (process.env.STUDIO_GEMINI_INVITE_IMAGE_SIZE || "2K").trim().toUpperCase();
   const imageSize = raw === "1K" ? "1K" : "2K";
-  return { aspectRatio: "9:16", imageSize };
+  return { aspectRatio: "2:3", imageSize };
 }
 
 function resolveVertexProject(): string {

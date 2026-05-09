@@ -1,15 +1,8 @@
 "use client";
 
-import { forwardRef } from "react";
 import type { LucideIcon } from "lucide-react";
-import {
-  ArrowLeft,
-  Eye,
-  LayoutDashboard,
-  MessageSquare,
-  Settings,
-  Users,
-} from "lucide-react";
+import { ArrowLeft, Eye, LayoutDashboard } from "lucide-react";
+import { forwardRef } from "react";
 import type { EventContextTab } from "@/app/sidebar-context";
 
 type EventSidebarMode = "owner" | "guest";
@@ -26,12 +19,7 @@ const OWNER_TAB_ITEMS: Array<{
   key: EventContextTab;
   label: string;
   icon: LucideIcon;
-}> = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { key: "guests", label: "RSVPs", icon: Users },
-  { key: "communications", label: "Communications", icon: MessageSquare },
-  { key: "settings", label: "Settings", icon: Settings },
-];
+}> = [{ key: "dashboard", label: "Dashboard", icon: LayoutDashboard }];
 
 const GUEST_TAB_ITEMS: Array<{
   key: EventContextTab;
@@ -40,16 +28,7 @@ const GUEST_TAB_ITEMS: Array<{
 }> = [{ key: "dashboard", label: "Preview", icon: Eye }];
 
 const EventSidebar = forwardRef<HTMLDivElement, EventSidebarProps>(
-  (
-    {
-      activeEventTab,
-      onBack,
-      onTabChange,
-      mode = "owner",
-      backLabel = "My Events",
-    },
-    ref,
-  ) => {
+  ({ activeEventTab, onBack, onTabChange, mode = "owner", backLabel = "My Events" }, ref) => {
     const tabItems = mode === "guest" ? GUEST_TAB_ITEMS : OWNER_TAB_ITEMS;
 
     return (

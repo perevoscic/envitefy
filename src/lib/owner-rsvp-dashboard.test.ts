@@ -7,8 +7,20 @@ import {
   isScannedOrUploadedEventData,
 } from "./owner-rsvp-dashboard.ts";
 
-test("canShowOwnerRsvpDashboard requires a positive RSVP guest count", () => {
+test("canShowOwnerRsvpDashboard accepts actionable RSVP data", () => {
   assert.equal(canShowOwnerRsvpDashboard({ createdVia: "template", numberOfGuests: 24 }), true);
+  assert.equal(canShowOwnerRsvpDashboard({ createdVia: "template", rsvpEnabled: true }), true);
+  assert.equal(
+    canShowOwnerRsvpDashboard({
+      createdVia: "template",
+      rsvp: { isEnabled: true, deadline: "2026-06-01" },
+    }),
+    true,
+  );
+  assert.equal(
+    canShowOwnerRsvpDashboard({ createdVia: "template", rsvp: { enabled: "true" } }),
+    true,
+  );
   assert.equal(canShowOwnerRsvpDashboard({ createdVia: "template", numberOfGuests: 0 }), false);
   assert.equal(canShowOwnerRsvpDashboard({ createdVia: "template" }), false);
 });

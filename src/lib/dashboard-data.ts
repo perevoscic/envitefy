@@ -82,7 +82,13 @@ export function hasActionableRsvp(data: any, numberOfGuestsRaw?: unknown): boole
 
   const rsvpRecord =
     data?.rsvp && typeof data.rsvp === "object" && !Array.isArray(data.rsvp) ? data.rsvp : null;
-  if (isTruthyBooleanLike(rsvpRecord?.isEnabled)) return true;
+  if (
+    isTruthyBooleanLike(rsvpRecord?.isEnabled) ||
+    isTruthyBooleanLike(rsvpRecord?.enabled) ||
+    isTruthyBooleanLike(rsvpRecord?.direct)
+  ) {
+    return true;
+  }
   if (
     hasNonEmptyString(
       typeof data?.rsvp === "string" ? data.rsvp : null,

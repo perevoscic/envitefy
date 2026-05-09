@@ -1,8 +1,12 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
 import {
+  AMAZON_BABY_REGISTRY_URL,
+  AMAZON_REGISTRY_SEARCH_URL,
+  AMAZON_WEDDING_REGISTRY_URL,
   getRegistryBrandByUrl,
   getRegistrySectionCopyForCategory,
+  inferRegistryUrlFromTextForContext,
   normalizeRegistryLinks,
   validateRegistryUrl,
 } from "./registry-links.ts";
@@ -37,6 +41,54 @@ test("normalizeRegistryLinks dedupes and keeps known-brand labels as fallbacks",
   ]);
   assert.equal(getRegistryBrandByUrl(links[0].url)?.defaultLabel, "Amazon");
   assert.equal(getRegistryBrandByUrl(links[1].url), null);
+});
+
+test("normalizeRegistryLinks upgrades Amazon homepage placeholders by event context", () => {
+  assert.deepEqual(
+    normalizeRegistryLinks([{ label: "", url: "amazon.com" }], {
+      category: "Baby Showers",
+    }),
+    [{ label: "Amazon", url: AMAZON_BABY_REGISTRY_URL }],
+  );
+
+  assert.deepEqual(
+    normalizeRegistryLinks([{ label: "", url: "https://www.amazon.com/" }], {
+      category: "Weddings",
+    }),
+    [{ label: "Amazon", url: AMAZON_WEDDING_REGISTRY_URL }],
+  );
+
+  assert.deepEqual(
+    normalizeRegistryLinks([{ label: "", url: "https://www.amazon.com/" }], {
+      category: "Graduations",
+    }),
+    [{ label: "Amazon", url: AMAZON_REGISTRY_SEARCH_URL }],
+  );
+});
+
+test("normalizeRegistryLinks preserves concrete Amazon registry deep links", () => {
+  const url = "https://www.amazon.com/wedding/registry/example-couple";
+
+  assert.deepEqual(normalizeRegistryLinks([{ label: "", url }], { category: "Weddings" }), [
+    { label: "Amazon", url },
+  ]);
+});
+
+test("inferRegistryUrlFromTextForContext detects registered-at-Amazon invite copy", () => {
+  assert.equal(
+    inferRegistryUrlFromTextForContext("Registered at Amazon", { category: "Baby Shower" }),
+    AMAZON_BABY_REGISTRY_URL,
+  );
+  assert.equal(
+    inferRegistryUrlFromTextForContext("Registry with Amazon", { title: "Garden Wedding" }),
+    AMAZON_WEDDING_REGISTRY_URL,
+  );
+  assert.equal(
+    inferRegistryUrlFromTextForContext("Shop Amazon for supplies", {
+      category: "Baby Shower",
+    }),
+    null,
+  );
 });
 
 test("housewarming events allow gift list links", () => {

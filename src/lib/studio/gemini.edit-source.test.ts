@@ -15,7 +15,8 @@ registerHooks({
   },
 });
 
-const { editInvitationImageWithGemini, geminiStudioDeps } = await import("./gemini.ts");
+const { editInvitationImageWithGemini, generateInvitationImageWithGemini, geminiStudioDeps } =
+  await import("./gemini.ts");
 const { studioSourceImageDeps } = await import("./source-image.ts");
 
 test.afterEach(() => {
@@ -78,4 +79,38 @@ test("gemini edit mode accepts app-owned blob proxy urls without self-fetching t
     sourceBytes.toString("base64"),
   );
   assert.equal(capturedRequest?.contents?.[0]?.parts?.[0]?.inlineData?.mimeType, "image/webp");
+});
+
+test("gemini fresh invitation images request the 2:3 live-card frame", async () => {
+  let capturedRequest: any = null;
+
+  mock.method(geminiStudioDeps, "getGeminiClient", () => ({
+    models: {
+      generateContent: async (request: any) => {
+        capturedRequest = request;
+        return {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType: "image/png",
+                      data: "R0VORVJBVEVE",
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        };
+      },
+    },
+  }));
+
+  const result = await generateInvitationImageWithGemini("Create a live-card invitation");
+
+  assert.equal(result.ok, true);
+  assert.equal(capturedRequest?.config?.imageConfig?.aspectRatio, "2:3");
+  assert.equal(capturedRequest?.config?.imageConfig?.imageSize, "2K");
 });

@@ -21,6 +21,29 @@ function readFirstString(...values: unknown[]): string {
   return "";
 }
 
+function readSearchParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? readString(value[0]) : readString(value);
+}
+
+function sanitizeInternalReturnHref(value: string): string {
+  if (!value.startsWith("/") || value.startsWith("//")) return "";
+  try {
+    const parsed = new URL(value, "https://envitefy.local");
+    if (parsed.origin !== "https://envitefy.local") return "";
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return "";
+  }
+}
+
+function buildOwnerPreviewSearch(returnHref: string): string {
+  if (!returnHref) return "";
+  const params = new URLSearchParams();
+  params.set("preview", "owner");
+  params.set("returnTo", returnHref);
+  return `?${params.toString()}`;
+}
+
 const CONCIERGE_LIVE_CARD_IMAGE_BY_CATEGORY: Record<string, string> = {
   birthday: "/studio/birthday.webp",
   birthdays: "/studio/birthday.webp",
@@ -320,14 +343,25 @@ export async function generateMetadata(props: {
   };
 }
 
-export default async function SharedCardPage(props: { params: Promise<{ id: string }> }) {
+export default async function SharedCardPage(props: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const awaitedParams = await props.params;
+  const awaitedSearchParams = props.searchParams ? await props.searchParams : {};
   const sharedCard = await resolveSharedCard(awaitedParams.id);
   if (!sharedCard) notFound();
 
   const canonical = buildStudioCardPath(sharedCard.row.id, sharedCard.title);
+  const isOwnerPreview = readSearchParam(awaitedSearchParams.preview) === "owner";
+  const fallbackReturnHref = `${buildEventPath(sharedCard.row.id, sharedCard.title)}?tab=dashboard`;
+  const returnHref = isOwnerPreview
+    ? sanitizeInternalReturnHref(readSearchParam(awaitedSearchParams.returnTo)) ||
+      fallbackReturnHref
+    : "";
+
   if (awaitedParams.id !== canonical.slice("/card/".length)) {
-    redirect(canonical);
+    redirect(`${canonical}${buildOwnerPreviewSearch(returnHref)}`);
   }
 
   const shareUrl = await absoluteUrl(canonical);
@@ -339,6 +373,7 @@ export default async function SharedCardPage(props: { params: Promise<{ id: stri
       invitationData={sharedCard.invitationData as any}
       positions={sharedCard.positions as any}
       shareUrl={shareUrl}
+      returnHref={returnHref}
     />
   );
 }

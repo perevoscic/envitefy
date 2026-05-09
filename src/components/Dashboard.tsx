@@ -39,6 +39,10 @@ import {
   validateClientUploadFile,
 } from "@/utils/media-upload-client";
 import { extractFirstPhoneNumber } from "@/utils/phone";
+import {
+  inferRegistryUrlFromTextForContext,
+  normalizeRegistryUrlForContext,
+} from "@/utils/registry-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import { readFileAsDataUrl } from "@/utils/thumbnail";
 
@@ -98,6 +102,7 @@ type SaveHistoryResult =
   | {
       ok: true;
       eventId: string;
+      ownership: "owned" | "invited";
       savedTitle?: string;
     }
   | {
@@ -1126,11 +1131,28 @@ export default function Dashboard({
               .filter(Boolean)
               .slice(0, 8)
           : [];
-        const registryUrlRaw = (data?.fieldsGuess as { registryUrl?: unknown })?.registryUrl;
+        const fieldsGuessForRegistry = data?.fieldsGuess as
+          | {
+              description?: unknown;
+              registryUrl?: unknown;
+              title?: unknown;
+            }
+          | undefined;
+        const registryContextForScan = {
+          category: typeof data?.category === "string" ? data.category : null,
+          title:
+            typeof fieldsGuessForRegistry?.title === "string" ? fieldsGuessForRegistry.title : null,
+          description:
+            typeof fieldsGuessForRegistry?.description === "string"
+              ? fieldsGuessForRegistry.description
+              : null,
+          ocrText: typeof data?.ocrText === "string" ? data.ocrText : null,
+        };
+        const registryUrlRaw = fieldsGuessForRegistry?.registryUrl;
         const registryUrlFromScan =
           typeof registryUrlRaw === "string" && registryUrlRaw.trim()
-            ? normalizeUrlValue(registryUrlRaw.trim())
-            : null;
+            ? normalizeRegistryUrlForContext(registryUrlRaw.trim(), registryContextForScan)
+            : inferRegistryUrlFromTextForContext(data?.ocrText, registryContextForScan);
         const ocrFactsFromScan = normalizeOcrFacts(
           (data?.fieldsGuess as { ocrFacts?: unknown; facts?: unknown })?.ocrFacts ||
             (data?.fieldsGuess as { facts?: unknown })?.facts,
@@ -1502,10 +1524,24 @@ export default function Dashboard({
         const existingRegistries = Array.isArray((eventInput as any)?.registries)
           ? ((eventInput as any).registries as any[])
           : [];
+        const registryContextForHistory = {
+          category: normalizedOcrCategory || null,
+          title: eventInput.title || null,
+          description: [eventInput.description, eventInput.thingsToDo, eventInput.hostName]
+            .map((value) => String(value || "").trim())
+            .filter(Boolean)
+            .join("\n"),
+        };
         const normalizedRegistryUrl =
           typeof eventInput.registryUrl === "string" && eventInput.registryUrl.trim()
-            ? normalizeUrlValue(eventInput.registryUrl.trim())
-            : null;
+            ? normalizeRegistryUrlForContext(
+                eventInput.registryUrl.trim(),
+                registryContextForHistory,
+              )
+            : inferRegistryUrlFromTextForContext(
+                registryContextForHistory.description,
+                registryContextForHistory,
+              );
         const mergedRegistries = [...existingRegistries];
         if (normalizedRegistryUrl) {
           const hasAlready = mergedRegistries.some(
@@ -1652,7 +1688,7 @@ export default function Dashboard({
           );
         }
         invalidateEventCache({ force: true, source: "dashboard-create" });
-        return { ok: true, eventId, savedTitle };
+        return { ok: true, eventId, ownership: historyOwnership, savedTitle };
       } catch (err) {
         console.error("Failed to save to Envitefy history:", err);
         logUploadIssue(err, "history-save", { scanAttemptId });
@@ -1698,12 +1734,16 @@ export default function Dashboard({
           );
           return false;
         }
-        const { eventId, savedTitle } = saveResult;
+        const { eventId, ownership, savedTitle } = saveResult;
 
         const eventTitle = savedTitle || eventInput.title || "Event";
-        const eventHref = buildEventPath(eventId, eventTitle, { created: true });
+        const eventHref = buildEventPath(
+          eventId,
+          eventTitle,
+          ownership === "owned" ? { created: true, tab: "dashboard" } : { created: true },
+        );
         clearEventContext();
-        setEventContextSourcePage("invitedEvents");
+        setEventContextSourcePage(ownership === "owned" ? "myEvents" : "invitedEvents");
         reportClientLog({
           area: "snap-upload",
           stage: "event-navigation-start",

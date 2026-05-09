@@ -1,14 +1,46 @@
 import { buildEventPath } from "./event-url";
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function cleanString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function resolveConciergeEditHref(eventData: unknown): string | null {
+  const record = asRecord(eventData);
+  if (!record) return null;
+
+  const createdVia = cleanString(record.createdVia).toLowerCase();
+  const conciergeDraft = asRecord(record.conciergeDraft);
+  const threadId =
+    cleanString(conciergeDraft?.creationSessionId) || cleanString(record.creationSessionId);
+  const isConciergeCreatedEvent = /concierge|chat/.test(createdVia) || Boolean(conciergeDraft);
+
+  if (!isConciergeCreatedEvent || !threadId) return null;
+  return `/chat?thread=${encodeURIComponent(threadId)}`;
+}
+
+function isScannedOrUploadedEvent(eventData: unknown): boolean {
+  const record = asRecord(eventData);
+  if (!record) return false;
+  const createdVia = cleanString(record.createdVia).toLowerCase();
+  return (
+    /(ocr|scan|upload)/.test(createdVia) ||
+    Boolean(record.attachment) ||
+    Boolean(record.ocrSkin) ||
+    Boolean(record.sourceContext && asRecord(record.sourceContext)?.type === "upload")
+  );
+}
+
 /**
  * Builds the edit link URL. For weddings, uses the event page URL format;
  * for other event types, goes directly to customize.
  */
-export const buildEditLink = (
-  eventId: string,
-  eventData: any,
-  eventTitle: string
-): string => {
+export const buildEditLink = (eventId: string, eventData: any, eventTitle: string): string => {
   try {
     const normalizedCategory = String(eventData?.category || "")
       .toLowerCase()
@@ -22,6 +54,13 @@ export const buildEditLink = (
       typeof (eventData as any)?.variationId === "string"
         ? ((eventData as any).variationId as string)
         : null;
+    const directWorkspaceHref =
+      resolveConciergeEditHref(eventData) ||
+      (isScannedOrUploadedEvent(eventData)
+        ? `/events/${encodeURIComponent(eventId)}/manage`
+        : null);
+
+    if (directWorkspaceHref) return directWorkspaceHref;
 
     // Weddings - use event page URL format
     // Check category (case-insensitive) or if templateId is "wedding" or title contains "wedding"
@@ -45,11 +84,7 @@ export const buildEditLink = (
   }
 };
 
-export const resolveEditHref = (
-  eventId: string,
-  eventData: any,
-  eventTitle: string
-): string => {
+export const resolveEditHref = (eventId: string, eventData: any, eventTitle: string): string => {
   try {
     const createdVia = String((eventData as any)?.createdVia || "")
       .toLowerCase()
@@ -66,26 +101,25 @@ export const resolveEditHref = (
       typeof (eventData as any)?.variationId === "string"
         ? ((eventData as any).variationId as string)
         : null;
+    const conciergeEditHref = resolveConciergeEditHref(eventData);
+
+    if (conciergeEditHref) return conciergeEditHref;
+
+    if (isScannedOrUploadedEvent(eventData)) {
+      return `/events/${encodeURIComponent(eventId)}/manage`;
+    }
 
     // Discovery-generated gymnastics events: edit on the event page with a right sidebar (same URL + ?edit=).
-    if (
-      createdVia === "meet-discovery" ||
-      Boolean((eventData as any)?.discoverySource?.input)
-    ) {
+    if (createdVia === "meet-discovery" || Boolean((eventData as any)?.discoverySource?.input)) {
       return buildEventPath(eventId, eventTitle, { edit: eventId });
     }
 
     // Birthdays
-    if (
-      normalizedCategory.includes("birthday") ||
-      /birthday|b[-\s]?day/.test(title)
-    ) {
+    if (normalizedCategory.includes("birthday") || /birthday|b[-\s]?day/.test(title)) {
       if (templateId && variationId) {
         return `/event/birthdays/customize?templateId=${encodeURIComponent(
-          templateId
-        )}&variationId=${encodeURIComponent(
-          variationId
-        )}&edit=${encodeURIComponent(eventId)}`;
+          templateId,
+        )}&variationId=${encodeURIComponent(variationId)}&edit=${encodeURIComponent(eventId)}`;
       }
       return `/event/birthdays?edit=${encodeURIComponent(eventId)}`;
     }
@@ -123,10 +157,8 @@ export const resolveEditHref = (
     if (normalizedCategory.includes("wedding") || title.includes("wedding")) {
       if (templateId && variationId) {
         return `/event/weddings/customize?templateId=${encodeURIComponent(
-          templateId
-        )}&variationId=${encodeURIComponent(
-          variationId
-        )}&edit=${encodeURIComponent(eventId)}`;
+          templateId,
+        )}&variationId=${encodeURIComponent(variationId)}&edit=${encodeURIComponent(eventId)}`;
       }
       return `/event/weddings?edit=${encodeURIComponent(eventId)}`;
     }
@@ -149,9 +181,7 @@ export const resolveEditHref = (
 
     const sportSlug =
       (templateId && templateSlugById[templateId]) ||
-      templateSlugByCategory[
-        normalizedCategory as keyof typeof templateSlugByCategory
-      ];
+      templateSlugByCategory[normalizedCategory as keyof typeof templateSlugByCategory];
 
     const isFootballEvent =
       templateId === "football-season" ||
@@ -169,12 +199,8 @@ export const resolveEditHref = (
     }
 
     // Fallback to event page with edit flag
-    return `/event/${encodeURIComponent(eventId)}?edit=${encodeURIComponent(
-      eventId
-    )}`;
+    return `/event/${encodeURIComponent(eventId)}?edit=${encodeURIComponent(eventId)}`;
   } catch {
-    return `/event/${encodeURIComponent(eventId)}?edit=${encodeURIComponent(
-      eventId
-    )}`;
+    return `/event/${encodeURIComponent(eventId)}?edit=${encodeURIComponent(eventId)}`;
   }
 };

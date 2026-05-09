@@ -35,7 +35,8 @@ test("studio preview shows the final live card inline instead of an open-live-ca
   assert.match(phonePane, /<LiveCardHeroTextOverlay\s+invitationData=\{currentProjectWithVisualDraft\.data\}/);
   assert.match(workspace, /const \[currentProjectPreviewTab, setCurrentProjectPreviewTab\] = useState<ActiveTab>\("none"\);/);
   assert.match(phonePane, /<StudioLiveCardActionSurface[\s\S]*activeTab=\{currentProjectPreviewTab\}/);
-  assert.match(phonePane, /aspect-\[9\/16\]/);
+  assert.match(phonePane, /aspect-\[2\/3\]/);
+  assert.match(phonePane, /isLiveCardPreview \? "object-cover" : "object-contain"/);
   assert.doesNotMatch(phonePane, /Open Live Card/);
   assert.doesNotMatch(phonePane, /Open current live card/);
   assert.doesNotMatch(phonePane, /currentProjectHasUnsavedChanges \? "Unsaved" : "Saved"/);

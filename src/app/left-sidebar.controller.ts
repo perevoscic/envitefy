@@ -8,12 +8,12 @@ import {
   useRef,
   useState,
 } from "react";
+import type { TemplateKey } from "@/config/feature-visibility";
 import {
   getCreateEventSections,
   getTemplateLinks,
   isCreateEventRoute,
 } from "@/config/navigation-config";
-import type { TemplateKey } from "@/config/feature-visibility";
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import { normalizePrimarySignupSource } from "@/lib/product-scopes";
@@ -1057,12 +1057,12 @@ export function useLeftSidebarController({
           .map((href) => String(href || "").trim())
           .filter(Boolean)
           .map((href) => {
-              try {
-                return new URL(href, "https://envitefy.local").pathname;
-              } catch {
-                return href.split("?")[0] || "";
-              }
-            })
+            try {
+              return new URL(href, "https://envitefy.local").pathname;
+            } catch {
+              return href.split("?")[0] || "";
+            }
+          })
           .filter(Boolean);
 
         return (

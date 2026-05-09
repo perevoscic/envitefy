@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import nextDynamic from "next/dynamic";
@@ -134,6 +135,34 @@ function EventPageBackgroundStyle({ color, children }: { color: string; children
       <style>{`:root{--event-page-background-color:${color};}`}</style>
       {children}
     </>
+  );
+}
+
+function readRouteSearchParam(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return String(value[0] || "").trim();
+  return String(value || "").trim();
+}
+
+function sanitizeInternalReturnHref(value: string): string {
+  if (!value.startsWith("/") || value.startsWith("//")) return "";
+  try {
+    const parsed = new URL(value, "https://envitefy.local");
+    if (parsed.origin !== "https://envitefy.local") return "";
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return "";
+  }
+}
+
+function OwnerPreviewReturnLink({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      aria-label="Close preview"
+      className="fixed right-4 top-[calc(var(--app-mobile-topbar-offset,4rem)+0.75rem)] z-[7001] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/92 text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:right-auto lg:left-[calc(20rem+(100vw-20rem)/2+min(calc(100vw-2rem),calc((100dvh-6.5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))*2/3))/2+0.75rem)] lg:top-[max(1rem,env(safe-area-inset-top))]"
+    >
+      <X size={18} aria-hidden="true" />
+    </Link>
   );
 }
 
@@ -873,9 +902,17 @@ export default async function EventPage({
     requestedTab === "settings"
       ? (requestedTab as "dashboard" | "guests" | "communications" | "settings")
       : null;
+  const ownerPreviewReturnHref =
+    readRouteSearchParam((awaitedSearchParams as any)?.preview) === "owner"
+      ? sanitizeInternalReturnHref(readRouteSearchParam((awaitedSearchParams as any)?.returnTo)) ||
+        `${buildEventPath(row.id, title)}?tab=dashboard`
+      : "";
   const eventPageBackgroundColor = resolveEventPageBackgroundColor(data);
   const renderWithEventPageBackground = (children: ReactNode) => (
-    <EventPageBackgroundStyle color={eventPageBackgroundColor}>{children}</EventPageBackgroundStyle>
+    <EventPageBackgroundStyle color={eventPageBackgroundColor}>
+      {ownerPreviewReturnHref ? <OwnerPreviewReturnLink href={ownerPreviewReturnHref} /> : null}
+      {children}
+    </EventPageBackgroundStyle>
   );
 
   // Handle edit redirect - if edit param is present and user is owner, redirect to customize
@@ -1105,12 +1142,25 @@ export default async function EventPage({
   const registryCopy = getRegistrySectionCopyForCategory(categoryRaw);
   const registriesAllowed = registryCopy.allowsLinks;
   const registryLinksRaw = Array.isArray(data?.registries) ? (data.registries as any[]) : [];
+  const registryContext = {
+    category: categoryRaw || null,
+    title,
+    description: [
+      typeof data?.description === "string" ? data.description : "",
+      typeof data?.goodToKnow === "string" ? data.goodToKnow : "",
+      typeof data?.thingsToDo === "string" ? data.thingsToDo : "",
+    ]
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .join("\n"),
+  };
   const registryLinks = registriesAllowed
     ? normalizeRegistryLinks(
         registryLinksRaw.map((item: any) => ({
           label: typeof item?.label === "string" ? item.label : "",
           url: typeof item?.url === "string" ? item.url : "",
         })),
+        registryContext,
       )
     : [];
   const registryCards = registryLinks.map((link) => {

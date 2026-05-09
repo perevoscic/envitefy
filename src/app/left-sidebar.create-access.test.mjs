@@ -84,7 +84,10 @@ test("left sidebar exposes signed-in AI create entry", () => {
     /onClick=\{\(event\) => \{\s*if \(!isPlainPrimaryLinkClick\(event\)\) return;\s*event\.preventDefault\(\);\s*onOpenThread\(thread\.id\);\s*\}\}/s,
   );
   assert.match(source, /className="group flex items-center gap-2"/);
-  assert.match(source, /opacity-0[\s\S]*group-hover:opacity-100[\s\S]*group-focus-within:opacity-100/);
+  assert.match(
+    source,
+    /opacity-0[\s\S]*group-hover:opacity-100[\s\S]*group-focus-within:opacity-100/,
+  );
   assert.match(source, /Recents/);
   assert.match(controllerSource, /resetSidebarToRoot: \(\) => void;/);
   assert.match(controllerSource, /resetSidebarToRoot,/);
@@ -136,6 +139,7 @@ test("left sidebar gives My Events rows a hover delete affordance", () => {
 
 test("left sidebar keeps My Events visible on owner event tab routes", () => {
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
+  const viewSource = readSource("src/app/left-sidebar.tsx");
 
   assert.match(
     controllerSource,
@@ -150,4 +154,13 @@ test("left sidebar keeps My Events visible on owner event tab routes", () => {
     controllerSource,
     /const openOwnerEventContext = useCallback\([\s\S]*?setEventContextSourcePage\("myEvents"\);[\s\S]*?setSidebarPage\("myEvents"\);[\s\S]*?router\.push\(buildEventOwnerHref/,
   );
+  assert.match(viewSource, /const showOwnerEventsPanel =/);
+  assert.match(
+    viewSource,
+    /viewModel\.eventContextSourcePage === "myEvents" &&[\s\S]*?viewModel\.eventSidebarMode === "owner"/,
+  );
+  assert.match(viewSource, /const showEventContextPanel =/);
+  assert.match(viewSource, /aria-hidden=\{!showOwnerEventsPanel\}/);
+  assert.match(viewSource, /aria-hidden=\{!showEventContextPanel\}/);
+  assert.match(viewSource, /className="relative min-h-0 flex-1 overflow-clip"/);
 });

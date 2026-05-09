@@ -77,6 +77,7 @@ test("shared card route carries direct RSVP metadata into live-card actions", ()
 });
 
 test("shared card page keeps public shares in a centered live-card frame", () => {
+  const pageSource = readSource("src/app/card/[id]/page.tsx");
   const conditionalFooter = readSource("src/components/ConditionalFooter.tsx");
   const sharedPageSource = readSource("src/components/studio/SharedStudioCardPage.tsx");
   const surfaceSource = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
@@ -90,22 +91,31 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   );
   assert.match(sharedPageSource, /Created by Envitefy Studio/);
   assert.match(sharedPageSource, /href="\/studio"/);
+  assert.match(pageSource, /function sanitizeInternalReturnHref\(value: string\): string/);
+  assert.match(pageSource, /readSearchParam\(awaitedSearchParams\.preview\) === "owner"/);
+  assert.match(pageSource, /buildOwnerPreviewSearch\(returnHref\)/);
+  assert.match(sharedPageSource, /returnHref\?: string \| null;/);
+  assert.match(sharedPageSource, /aria-label="Close preview"/);
+  assert.match(sharedPageSource, /inline-flex h-11 w-11 items-center justify-center rounded-full/);
+  assert.match(sharedPageSource, /lg:left-\[calc\(20rem\+/);
+  assert.doesNotMatch(sharedPageSource, /Back to dashboard/);
   assert.match(sharedPageSource, /export function SharedStudioCardFrame/);
   assert.match(sharedPageSource, /relative flex min-h-\[100dvh\] w-full flex-col bg-neutral-950/);
   assert.match(sharedPageSource, /<main className="relative z-0 flex min-h-0 flex-1 flex-col">/);
   assert.match(
     sharedPageSource,
-    /const cardFrameWidth =\s*"min\(calc\(100vw - 2rem\), calc\(\(100dvh - 6\.5rem - env\(safe-area-inset-top, 0px\) - env\(safe-area-inset-bottom, 0px\)\) \* 9 \/ 16\)\)";/,
+    /const usesPosterArtFrame = invitationData\?\.heroTextMode === "image";/,
   );
-  assert.match(
-    sharedPageSource,
-    /relative mx-auto aspect-\[9\/16\] overflow-hidden rounded-\[3rem\]/,
-  );
+  assert.match(sharedPageSource, /\* 2 \/ 3\)\)"/);
+  assert.match(sharedPageSource, /usesPosterArtFrame \? "aspect-\[2\/3\]" : "aspect-\[9\/16\]"/);
   assert.match(
     sharedPageSource,
     /style=\{\{ width: props\.style\?\.width \? undefined : cardFrameWidth \}\}/,
   );
-  assert.match(sharedPageSource, /object-cover/);
+  assert.match(
+    sharedPageSource,
+    /className="absolute inset-0 h-full w-full object-cover object-center"/,
+  );
   assert.match(sharedPageSource, /LiveCardHeroTextOverlay/);
   assert.match(
     surfaceSource,

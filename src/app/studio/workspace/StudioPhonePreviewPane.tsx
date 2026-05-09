@@ -58,6 +58,7 @@ export function StudioPhonePreviewPane({
     !currentProjectWithVisualDraft ||
     currentProjectWithVisualDraft.status !== "ready" ||
     (!currentProjectHasUnsavedChanges && Boolean(savedCurrentProject));
+  const isLiveCardPreview = currentProjectWithVisualDraft?.type === "page";
 
   return (
     <div className="studio-phone-stage relative flex w-full flex-col items-center justify-start gap-4 pb-4 lg:h-full lg:justify-center lg:gap-5 lg:pb-0 lg:translate-x-6">
@@ -67,7 +68,7 @@ export function StudioPhonePreviewPane({
         aria-label="Live card phone preview"
       >
         <div className="pointer-events-none absolute inset-x-0 top-1/2 mx-auto h-[78%] w-[72%] -translate-y-1/2 rounded-[3.5rem] bg-[radial-gradient(circle,_rgba(255,255,255,0.52)_0%,_rgba(251,226,238,0.42)_38%,_rgba(245,198,222,0.2)_62%,_transparent_82%)] blur-[28px]" />
-        <div className="studio-phone-frame group relative aspect-[9/16] w-full max-w-[min(100%,340px)] overflow-hidden rounded-[3rem] border-[10px] border-[var(--studio-ink,#1A1A1A)] bg-[var(--studio-paper,#f7f2ec)] shadow-[0_28px_70px_rgba(255,255,255,0.18),0_42px_90px_rgba(240,192,220,0.18),0_36px_80px_rgba(31,18,52,0.16)] lg:h-full lg:w-auto lg:max-h-[min(82vh,620px)] lg:max-w-full">
+        <div className="studio-phone-frame group relative aspect-[2/3] w-full max-w-[min(100%,360px)] overflow-hidden rounded-[2.6rem] border-[10px] border-[var(--studio-ink,#1A1A1A)] bg-[var(--studio-paper,#f7f2ec)] shadow-[0_28px_70px_rgba(255,255,255,0.18),0_42px_90px_rgba(240,192,220,0.18),0_36px_80px_rgba(31,18,52,0.16)] lg:h-full lg:w-auto lg:max-h-[min(72vh,560px)] lg:max-w-full">
           <div className="absolute left-1/2 top-3 z-20 h-1.5 w-20 -translate-x-1/2 rounded-full bg-[var(--studio-ink,#1A1A1A)]/80" />
 
           {isGenerating && !hasPreview ? (
@@ -87,8 +88,8 @@ export function StudioPhonePreviewPane({
           {hasPreview && currentProjectWithVisualDraft ? (
             <div
               className={`relative h-full w-full overflow-hidden bg-[#efe7dc] ${
-                currentProjectWithVisualDraft.details.orientation === "portrait"
-                  ? "aspect-[9/16]"
+                isLiveCardPreview || currentProjectWithVisualDraft.details.orientation === "portrait"
+                  ? "aspect-[2/3]"
                   : "aspect-[16/9]"
               }`}
             >
@@ -117,7 +118,9 @@ export function StudioPhonePreviewPane({
                   <img
                     src={currentProjectDisplayUrl}
                     alt={currentProjectWithVisualDraft.theme}
-                    className="h-full w-full object-cover"
+                    className={`h-full w-full object-center ${
+                      isLiveCardPreview ? "object-cover" : "object-contain"
+                    }`}
                     referrerPolicy="no-referrer"
                     onError={() => handleMediaImageLoadError(currentProjectWithVisualDraft)}
                   />

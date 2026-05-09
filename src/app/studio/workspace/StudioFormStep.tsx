@@ -744,6 +744,15 @@ export function StudioFormStep({
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </button>
+              <button
+                type="button"
+                onClick={showPromptComposer}
+                aria-label="Close preview"
+                title="Close preview"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/18"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
           ) : null}
 

@@ -24,6 +24,18 @@ type RegistryBrandMetadata = {
   foregroundColor: string; // Hex string for text/icons on top of accentColor
 };
 
+export type RegistryLinkContext = {
+  category?: string | null;
+  title?: string | null;
+  description?: string | null;
+  ocrText?: string | null;
+};
+
+export const AMAZON_BABY_REGISTRY_URL = "https://www.amazon.com/baby-reg/";
+export const AMAZON_WEDDING_REGISTRY_URL = "https://www.amazon.com/wedding";
+export const AMAZON_REGISTRY_SEARCH_URL =
+  "https://www.amazon.com/registries/search?ref=gr_home_unified_search";
+
 export const REGISTRY_BRANDS: readonly RegistryBrandMetadata[] = [
   {
     id: "amazon",
@@ -70,6 +82,33 @@ export const MAX_REGISTRY_LINKS = 3;
 
 const normalizeCategoryKey = (category: string): string =>
   category.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+
+const registryContextText = (context: RegistryLinkContext): string =>
+  [context.category, context.title, context.description, context.ocrText]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+const isBabyRegistryContext = (context: RegistryLinkContext): boolean => {
+  const text = registryContextText(context);
+  return /\bbaby\s*(?:shower|showers|sprinkle|registry|registries)\b|\bsprinkle\b|\bgender\s*reveals?\b/.test(
+    text,
+  );
+};
+
+const isWeddingRegistryContext = (context: RegistryLinkContext): boolean => {
+  const text = registryContextText(context);
+  return /\bweddings?\b|\bbridal\s*showers?\b|\bbride\b|\bgroom\b|\bmarriage\b|\bnuptials?\b|\bceremony\b|\breception\b/.test(
+    text,
+  );
+};
+
+export function getDefaultAmazonRegistryUrlForContext(context: RegistryLinkContext = {}): string {
+  if (isBabyRegistryContext(context)) return AMAZON_BABY_REGISTRY_URL;
+  if (isWeddingRegistryContext(context)) return AMAZON_WEDDING_REGISTRY_URL;
+  return AMAZON_REGISTRY_SEARCH_URL;
+}
 
 const REGISTRY_SECTION_COPY_BY_CATEGORY: Record<string, RegistrySectionCopy> = {
   birthday: {
@@ -256,6 +295,11 @@ const registryHostMatches = (host: string, suffix: string): boolean => {
   return normalizedHost === normalizedSuffix || normalizedHost.endsWith(`.${normalizedSuffix}`);
 };
 
+const isAmazonHost = (host: string): boolean =>
+  REGISTRY_BRANDS.find((entry) => entry.id === "amazon")?.hostSuffixes.some((suffix) =>
+    registryHostMatches(host, suffix),
+  ) || false;
+
 const normalizeUrl = (rawUrl: string): URL | null => {
   if (!rawUrl) return null;
   let candidate = rawUrl.trim();
@@ -272,6 +316,60 @@ const normalizeUrl = (rawUrl: string): URL | null => {
   if (parsed.protocol !== HTTPS_PROTOCOL) return null;
   return parsed;
 };
+
+const hasAmazonRegistryMention = (value: string): boolean => {
+  const normalized = value.toLowerCase();
+  return (
+    /\bamazon(?:\.com)?\b/.test(normalized) &&
+    /\b(?:registered|registry|registries|wishlist|wish\s+list|gift\s+(?:list|registry))\b/.test(
+      normalized,
+    )
+  );
+};
+
+const isAmazonHomepageUrl = (parsed: URL): boolean => {
+  if (!isAmazonHost(parsed.hostname)) return false;
+  const path = parsed.pathname.replace(/\/+$/g, "");
+  return path === "";
+};
+
+const isBareAmazonBrand = (value: string): boolean => {
+  const normalized = value
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/+$/, "")
+    .trim();
+  return normalized === "amazon";
+};
+
+export function inferRegistryUrlFromTextForContext(
+  text: string | null | undefined,
+  context: RegistryLinkContext = {},
+): string | null {
+  const rawText = String(text || "").trim();
+  if (!rawText || !hasAmazonRegistryMention(rawText)) return null;
+  return getDefaultAmazonRegistryUrlForContext({ ...context, ocrText: rawText });
+}
+
+export function normalizeRegistryUrlForContext(
+  rawUrl: string | null | undefined,
+  context: RegistryLinkContext = {},
+): string | null {
+  const raw = String(rawUrl || "").trim();
+  if (!raw) return null;
+  if (isBareAmazonBrand(raw)) return getDefaultAmazonRegistryUrlForContext(context);
+
+  const parsed = normalizeUrl(raw);
+  if (parsed && isAmazonHomepageUrl(parsed)) {
+    return getDefaultAmazonRegistryUrlForContext(context);
+  }
+  if (!parsed && hasAmazonRegistryMention(raw))
+    return getDefaultAmazonRegistryUrlForContext(context);
+
+  const validation = validateRegistryUrl(raw);
+  return validation.ok && validation.normalizedUrl ? validation.normalizedUrl : null;
+}
 
 export type RegistryValidationResult = {
   ok: boolean;
@@ -321,16 +419,20 @@ export function validateRegistryUrl(rawUrl: string): RegistryValidationResult {
 
 export function normalizeRegistryLinks(
   rawEntries: ReadonlyArray<Partial<EventRegistryLink>>,
-  max: number = MAX_REGISTRY_LINKS,
+  maxOrContext: number | RegistryLinkContext = MAX_REGISTRY_LINKS,
+  context: RegistryLinkContext = {},
 ): EventRegistryLink[] {
   if (!Array.isArray(rawEntries) || rawEntries.length === 0) return [];
+  const max = typeof maxOrContext === "number" ? maxOrContext : MAX_REGISTRY_LINKS;
+  const registryContext = typeof maxOrContext === "number" ? context : maxOrContext;
   const dedupe = new Set<string>();
   const results: EventRegistryLink[] = [];
   for (const entry of rawEntries) {
     if (!entry?.url) continue;
-    const validation = validateRegistryUrl(entry.url);
+    const normalizedUrl = normalizeRegistryUrlForContext(entry.url, registryContext);
+    if (!normalizedUrl) continue;
+    const validation = validateRegistryUrl(normalizedUrl);
     if (!validation.ok || !validation.normalizedUrl) continue;
-    const normalizedUrl = validation.normalizedUrl;
     if (dedupe.has(normalizedUrl)) continue;
     const rawLabel = (entry.label || "").trim();
     const fallbackLabel = validation.brand?.defaultLabel || new URL(normalizedUrl).hostname;

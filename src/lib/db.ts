@@ -1538,6 +1538,45 @@ function buildHistoryDataProjectionSql(params: {
       'startISO', ${dataSql}->'startISO',
       'start', ${dataSql}->'start',
       'createdVia', ${dataSql}->'createdVia',
+      'primaryOutput', ${dataSql}->'primaryOutput',
+      'productType', ${dataSql}->'productType',
+      'publicRenderer', ${dataSql}->'publicRenderer',
+      'requestedOutputs', case
+        when jsonb_typeof(${dataSql}->'requestedOutputs') = 'array' then ${dataSql}->'requestedOutputs'
+        else null
+      end,
+      'outputs', case
+        when jsonb_typeof(${dataSql}->'outputs') = 'array' then ${dataSql}->'outputs'
+        else null
+      end,
+      'coverImageUrl', ${dataSql}->'coverImageUrl',
+      'publicEvent', case
+        when jsonb_typeof(${dataSql}->'publicEvent') = 'object' then
+          jsonb_build_object(
+            'primaryOutput', ${dataSql}#>'{publicEvent,primaryOutput}',
+            'renderer', ${dataSql}#>'{publicEvent,renderer}'
+          )
+        else null
+      end,
+      'conciergeDraft', case
+        when jsonb_typeof(${dataSql}->'conciergeDraft') = 'object' then
+          jsonb_build_object(
+            'creationSessionId', ${dataSql}#>'{conciergeDraft,creationSessionId}',
+            'primaryOutput', ${dataSql}#>'{conciergeDraft,primaryOutput}',
+            'productType', ${dataSql}#>'{conciergeDraft,productType}',
+            'requestedOutputs', case
+              when jsonb_typeof(${dataSql}#>'{conciergeDraft,requestedOutputs}') = 'array'
+              then ${dataSql}#>'{conciergeDraft,requestedOutputs}'
+              else null
+            end,
+            'outputs', case
+              when jsonb_typeof(${dataSql}#>'{conciergeDraft,outputs}') = 'array'
+              then ${dataSql}#>'{conciergeDraft,outputs}'
+              else null
+            end
+          )
+        else null
+      end,
       'color', ${dataSql}->'color',
       'fieldsGuess', case
         when jsonb_typeof(${dataSql}->'fieldsGuess') = 'object' then
@@ -1835,6 +1874,19 @@ type SidebarProjectionQueryRow = {
   start: any;
   fields_guess_start: any;
   created_via: any;
+  primary_output: any;
+  product_type: any;
+  public_renderer: any;
+  requested_outputs: any;
+  outputs: any;
+  cover_image_url: any;
+  public_event_primary_output: any;
+  public_event_renderer: any;
+  concierge_creation_session_id: any;
+  concierge_primary_output: any;
+  concierge_product_type: any;
+  concierge_requested_outputs: any;
+  concierge_outputs: any;
   shared: boolean;
   shared_out: boolean;
   ownership: string | null;
@@ -1951,6 +2003,26 @@ function mapSidebarProjectionRowToEventHistoryRow(row: SidebarProjectionQueryRow
       start: row.start ?? null,
       fieldsGuess: buildObjectOrNull([["start", row.fields_guess_start]]),
       createdVia: row.created_via ?? null,
+      primaryOutput: row.primary_output ?? null,
+      productType: row.product_type ?? null,
+      publicRenderer: row.public_renderer ?? null,
+      requestedOutputs: Array.isArray(row.requested_outputs) ? row.requested_outputs : [],
+      outputs: Array.isArray(row.outputs) ? row.outputs : [],
+      coverImageUrl: row.cover_image_url ?? null,
+      publicEvent: buildObjectOrNull([
+        ["primaryOutput", row.public_event_primary_output],
+        ["renderer", row.public_event_renderer],
+      ]),
+      conciergeDraft: buildObjectOrNull([
+        ["creationSessionId", row.concierge_creation_session_id],
+        ["primaryOutput", row.concierge_primary_output],
+        ["productType", row.concierge_product_type],
+        [
+          "requestedOutputs",
+          Array.isArray(row.concierge_requested_outputs) ? row.concierge_requested_outputs : null,
+        ],
+        ["outputs", Array.isArray(row.concierge_outputs) ? row.concierge_outputs : null],
+      ]),
       color: row.color ?? null,
       event: buildObjectOrNull([
         ["start", row.event_start],
@@ -2169,6 +2241,35 @@ async function listProjectedSidebarHistoryRowsByIds(
        coalesce(eh.data, '{}'::jsonb)->'start' as start,
        coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,start}' as fields_guess_start,
        coalesce(eh.data, '{}'::jsonb)->'createdVia' as created_via,
+       coalesce(eh.data, '{}'::jsonb)->'primaryOutput' as primary_output,
+       coalesce(eh.data, '{}'::jsonb)->'productType' as product_type,
+       coalesce(eh.data, '{}'::jsonb)->'publicRenderer' as public_renderer,
+       case
+         when jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'requestedOutputs') = 'array'
+           then coalesce(eh.data, '{}'::jsonb)->'requestedOutputs'
+         else '[]'::jsonb
+       end as requested_outputs,
+       case
+         when jsonb_typeof(coalesce(eh.data, '{}'::jsonb)->'outputs') = 'array'
+           then coalesce(eh.data, '{}'::jsonb)->'outputs'
+         else '[]'::jsonb
+       end as outputs,
+       coalesce(eh.data, '{}'::jsonb)->'coverImageUrl' as cover_image_url,
+       coalesce(eh.data, '{}'::jsonb)#>'{publicEvent,primaryOutput}' as public_event_primary_output,
+       coalesce(eh.data, '{}'::jsonb)#>'{publicEvent,renderer}' as public_event_renderer,
+       coalesce(eh.data, '{}'::jsonb)#>'{conciergeDraft,creationSessionId}' as concierge_creation_session_id,
+       coalesce(eh.data, '{}'::jsonb)#>'{conciergeDraft,primaryOutput}' as concierge_primary_output,
+       coalesce(eh.data, '{}'::jsonb)#>'{conciergeDraft,productType}' as concierge_product_type,
+       case
+         when jsonb_typeof(coalesce(eh.data, '{}'::jsonb)#>'{conciergeDraft,requestedOutputs}') = 'array'
+           then coalesce(eh.data, '{}'::jsonb)#>'{conciergeDraft,requestedOutputs}'
+         else '[]'::jsonb
+       end as concierge_requested_outputs,
+       case
+         when jsonb_typeof(coalesce(eh.data, '{}'::jsonb)#>'{conciergeDraft,outputs}') = 'array'
+           then coalesce(eh.data, '{}'::jsonb)#>'{conciergeDraft,outputs}'
+         else '[]'::jsonb
+       end as concierge_outputs,
        r.requested_shared as shared,
        r.requested_shared_out as shared_out,
        r.requested_ownership as ownership,

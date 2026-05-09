@@ -47,6 +47,7 @@ export default function StudioShowcaseLiveCard({
   const [shareUrl, setShareUrl] = useState("");
   const resolvedActiveTab = activeTab ?? internalActiveTab;
   const handleActiveTabChange = onActiveTabChange ?? setInternalActiveTab;
+  const usesPosterArtFrame = preview.invitationData.heroTextMode === "image";
 
   useEffect(() => {
     if (activeTab === undefined) {
@@ -134,7 +135,7 @@ export default function StudioShowcaseLiveCard({
   return (
     <div
       className={cx(
-        "relative aspect-[9/16] overflow-hidden rounded-[2.2rem] border border-white/10 bg-neutral-950 shadow-[0_28px_80px_rgba(15,23,42,0.32)]",
+        `relative ${usesPosterArtFrame ? "aspect-[2/3]" : "aspect-[9/16]"} overflow-hidden rounded-[2.2rem] border border-white/10 bg-neutral-950 shadow-[0_28px_80px_rgba(15,23,42,0.32)]`,
         showcaseMode && "border-slate-300/70 bg-transparent shadow-none",
         className,
       )}
@@ -145,7 +146,7 @@ export default function StudioShowcaseLiveCard({
         loading={imageLoading}
         fetchPriority={imageFetchPriority}
         decoding="async"
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover object-center"
       />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.06)_26%,rgba(0,0,0,0.28)_100%)]" />
       <LiveCardHeroTextOverlay invitationData={preview.invitationData} />

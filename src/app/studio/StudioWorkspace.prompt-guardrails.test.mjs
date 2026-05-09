@@ -208,7 +208,19 @@ test("studio prompt sources require baked-in invitation text while keeping the b
   );
   assert.match(
     promptSource,
-    /OPEN HOUSE BUTTON-ZONE HARD RULE: the bottom 30% of the 9:16 raster is reserved for Envitefy app buttons and must be image-only background\./,
+    /OPEN HOUSE BUTTON-ZONE HARD RULE: the bottom 30% of the 2:3 raster is reserved for Envitefy app buttons and must be image-only background\./,
+  );
+  assert.match(
+    promptSource,
+    /High-quality vertical invitation card composition \(2:3 mobile card, matching Envitefy's live-card preview frame\)\./,
+  );
+  assert.match(
+    promptSource,
+    /Edge-safe composition: keep all essential text, faces, candles, balloons, gifts, cakes, addresses, dates, times, and other focal objects comfortably inset from every canvas edge and rounded corner\./,
+  );
+  assert.match(
+    promptSource,
+    /Treat the outer 7% of the canvas as full-bleed background\/decor only, so mild preview fill or rounded-corner clipping never cuts off important content\./,
   );
   assert.match(
     promptSource,

@@ -215,6 +215,23 @@ test("event route branches football discovery/template events into the football 
   );
 });
 
+test("event route owner preview mode includes a dashboard return control", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+
+  assert.match(source, /function OwnerPreviewReturnLink\(\{ href \}: \{ href: string \}\)/);
+  assert.match(source, /aria-label="Close preview"/);
+  assert.match(source, /inline-flex h-11 w-11 items-center justify-center rounded-full/);
+  assert.match(source, /lg:left-\[calc\(20rem\+/);
+  assert.doesNotMatch(source, /Back to dashboard/);
+  assert.doesNotMatch(source, />Back</);
+  assert.match(source, /function sanitizeInternalReturnHref\(value: string\): string/);
+  assert.match(
+    source,
+    /readRouteSearchParam\(\(awaitedSearchParams as any\)\?\.preview\) === "owner"/,
+  );
+  assert.match(source, /<OwnerPreviewReturnLink href=\{ownerPreviewReturnHref\} \/>/);
+});
+
 test("event route sanitizes stored RSVP names before host fallback", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
 

@@ -19,6 +19,7 @@ import {
   hasGymnasticsScheduleText,
 } from "@/lib/ocr/gymnastics-schedule";
 import { resolveInferredInviteDatetime } from "@/lib/ocr/inferred-invite-date.mjs";
+import { normalizeOpenHousePayload, uploadOpenHouseVisualAssets } from "@/lib/ocr/open-house";
 import {
   llmEventToRawText,
   llmExtractEventFromImage,
@@ -27,10 +28,6 @@ import {
   llmRewriteSmartDescription,
   llmRewriteWedding,
 } from "@/lib/ocr/openai";
-import {
-  normalizeOpenHousePayload,
-  uploadOpenHouseVisualAssets,
-} from "@/lib/ocr/open-house";
 import {
   buildNextOccurrence,
   createEmptyPracticeSchedule,
@@ -72,6 +69,10 @@ import {
 import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
 import { normalizeThumbnailFocus } from "@/lib/thumbnail-focus";
 import { validateUploadFileMeta } from "@/lib/upload-config";
+import {
+  inferRegistryUrlFromTextForContext,
+  normalizeRegistryUrlForContext,
+} from "@/utils/registry-links";
 
 function toLocalNoZ(date: Date | null) {
   if (!date) return null;
@@ -1236,6 +1237,19 @@ export async function handleOcrRequest(request: Request) {
       extractHostedByFromFlyerText(raw) ||
       extractHostedByFromFlyerText(description) ||
       null;
+    const registryContext = {
+      category: detectCategory(raw),
+      title: finalTitle,
+      description,
+      ocrText: raw,
+    };
+    const rawRegistryUrl =
+      typeof llmImage?.registryUrl === "string" && llmImage.registryUrl.trim()
+        ? llmImage.registryUrl.trim()
+        : null;
+    const registryUrl =
+      normalizeRegistryUrlForContext(rawRegistryUrl, registryContext) ||
+      inferRegistryUrlFromTextForContext(raw, registryContext);
     const ocrFacts = mergeOcrFacts(
       normalizeOcrFacts(llmImage?.ocrFacts || llmImage?.facts),
       extractCommonOcrFactsFromFlyerText(raw),
@@ -1266,10 +1280,7 @@ export async function handleOcrRequest(request: Request) {
         typeof llmImage?.attire === "string" && llmImage.attire.trim()
           ? llmImage.attire.trim()
           : null,
-      registryUrl:
-        typeof llmImage?.registryUrl === "string" && llmImage.registryUrl.trim()
-          ? llmImage.registryUrl.trim()
-          : null,
+      registryUrl,
     };
 
     const tz = fieldsGuess.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";

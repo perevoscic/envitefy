@@ -520,7 +520,7 @@ async function parseStudioFlyerDetails(file: File): Promise<{
 const STUDIO_MOBILE_TOP_CHROME = "3rem + max(0.5rem, env(safe-area-inset-top, 0px)) + 0.75rem";
 const STUDIO_MOBILE_BOTTOM_CHROME = "max(0.75rem, env(safe-area-inset-bottom, 0px)) + 0.5rem";
 const STUDIO_MOBILE_ACTION_BAR_CLEARANCE = "5.5rem";
-const STUDIO_MOBILE_CARD_TOP_OFFSET = "2rem";
+const STUDIO_MOBILE_CARD_TOP_OFFSET = "1.25rem";
 const STUDIO_EDITOR_MOBILE_BREAKPOINT = "(max-width: 767px)";
 
 export default function StudioWorkspace() {
@@ -612,7 +612,7 @@ export default function StudioWorkspace() {
     ? undefined
     : {
         maxHeight: `calc(100dvh - (${STUDIO_MOBILE_TOP_CHROME}) - (${STUDIO_MOBILE_BOTTOM_CHROME}) - (${STUDIO_MOBILE_ACTION_BAR_CLEARANCE}))`,
-        width: `min(100%, calc((100dvh - (${STUDIO_MOBILE_TOP_CHROME}) - (${STUDIO_MOBILE_BOTTOM_CHROME}) - (${STUDIO_MOBILE_ACTION_BAR_CLEARANCE})) * 9 / 16))`,
+        width: `min(100%, calc((100dvh - (${STUDIO_MOBILE_TOP_CHROME}) - (${STUDIO_MOBILE_BOTTOM_CHROME}) - (${STUDIO_MOBILE_ACTION_BAR_CLEARANCE})) * 2 / 3))`,
       };
   const studioLiveCardControlTop = isDesktopLiveCardViewport
     ? undefined
@@ -2343,7 +2343,7 @@ export default function StudioWorkspace() {
                     initial={{ scale: 0.9, y: 20 }}
                     animate={{ scale: 1, y: 0 }}
                     exit={{ scale: 0.9, y: 20 }}
-                    className="relative z-[7005] w-full max-w-md overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-[#8C7B65]/20 aspect-[9/16]"
+                    className="relative z-[7005] w-full max-w-md overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-[#8C7B65]/20 aspect-[2/3]"
                     style={studioLiveCardFrameStyle}
                   >
                     <img
@@ -2351,7 +2351,7 @@ export default function StudioWorkspace() {
                         liveCardInteractionLayout?.imageUrl ?? getMediaPreviewUrl(activePageRecord)
                       }
                       alt={activePageRecord.theme}
-                      className="absolute inset-0 h-full w-full object-cover"
+                      className="absolute inset-0 h-full w-full object-cover object-center"
                       referrerPolicy="no-referrer"
                       onError={() => {
                         setStudioVisualDraft((prev) => {

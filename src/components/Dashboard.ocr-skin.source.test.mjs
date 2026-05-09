@@ -36,7 +36,10 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   assert.match(source, /const isFootballOcrEvent =/);
   assert.match(source, /normalizedOcrSkin\?\.category === "football"/);
   assert.match(source, /if \(isFootballOcrEvent\) \{\s*normalizedOcrCategory = "Sport Events";/);
-  assert.match(source, /isBasketballOcrEvent \|\|\s*isFootballOcrEvent \|\|\s*isPickleballOcrEvent/);
+  assert.match(
+    source,
+    /isBasketballOcrEvent \|\|\s*isFootballOcrEvent \|\|\s*isPickleballOcrEvent/,
+  );
   assert.match(source, /flyerColors = normalizedOcrSkin\.palette;/);
   assert.match(
     source,
@@ -48,7 +51,10 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   assert.match(source, /"ocr-basketball-skin"/);
   assert.match(source, /"ocr-open-house-skin"/);
   assert.match(source, /"ocr-invite-skin"/);
-  assert.match(source, /openHouse:\s*isOpenHouseOcrEvent \? normalizedOpenHouse \|\| undefined : undefined/);
+  assert.match(
+    source,
+    /openHouse:\s*isOpenHouseOcrEvent \? normalizedOpenHouse \|\| undefined : undefined/,
+  );
   assert.doesNotMatch(source, /templateId: isBirthdayOcrEvent/);
   assert.doesNotMatch(source, /variationId: isBirthdayOcrEvent/);
   assert.match(source, /const venueFromScan =/);
@@ -70,11 +76,29 @@ test("dashboard OCR save derives ownership from source intent, not OCR category"
   assert.match(source, /resolveSourceIntent/);
   assert.match(source, /const sourceIntent = resolveSourceIntent/);
   assert.match(source, /const detectedSourceIntent = sourceIntent\.detectedSourceIntent;/);
-  assert.match(source, /const historyOwnership = detectedSourceIntent === "received_invite" \? "invited" : "owned";/);
+  assert.match(
+    source,
+    /const historyOwnership = detectedSourceIntent === "received_invite" \? "invited" : "owned";/,
+  );
   assert.match(source, /ownership:\s*historyOwnership,/);
   assert.match(source, /invitedFromScan:\s*detectedSourceIntent === "received_invite",/);
   assert.match(source, /detectedSourceIntent,/);
   assert.match(source, /confidence:\s*sourceIntent\.confidence,/);
   assert.match(source, /requiresUserConfirmation:\s*sourceIntent\.requiresUserConfirmation,/);
   assert.doesNotMatch(source, /ownership:\s*"invited",\s*invitedFromScan:\s*true,/);
+});
+
+test("dashboard OCR save returns owned uploads to My Events owner workspace", () => {
+  const source = readSource("src/components/Dashboard.tsx");
+
+  assert.match(source, /ownership: "owned" \| "invited";/);
+  assert.match(source, /return \{ ok: true, eventId, ownership: historyOwnership, savedTitle \};/);
+  assert.match(
+    source,
+    /ownership === "owned" \? \{ created: true, tab: "dashboard" \} : \{ created: true \}/,
+  );
+  assert.match(
+    source,
+    /setEventContextSourcePage\(ownership === "owned" \? "myEvents" : "invitedEvents"\);/,
+  );
 });

@@ -16,6 +16,10 @@ function isTrueLike(value: unknown): boolean {
   return normalized === "true" || normalized === "1" || normalized === "yes";
 }
 
+function hasNonEmptyString(...values: unknown[]): boolean {
+  return values.some((value) => typeof value === "string" && value.trim().length > 0);
+}
+
 export function getRsvpDashboardGuestCount(data: EventDataRecord): number {
   const record = asRecord(data);
   if (!record) return 0;
@@ -57,5 +61,29 @@ export function canShowOwnerRsvpDashboard(data: EventDataRecord): boolean {
   if (isTrueLike(record.invitedFromScan)) return false;
   if (isScannedOrUploadedEventData(record)) return false;
 
-  return getRsvpDashboardGuestCount(record) > 0;
+  if (getRsvpDashboardGuestCount(record) > 0) return true;
+  if (isTrueLike(record.rsvpEnabled)) return true;
+
+  const rsvpRecord = asRecord(record.rsvp);
+  if (
+    isTrueLike(rsvpRecord?.isEnabled) ||
+    isTrueLike(rsvpRecord?.enabled) ||
+    isTrueLike(rsvpRecord?.direct)
+  ) {
+    return true;
+  }
+
+  const fieldsGuess = asRecord(record.fieldsGuess);
+  return hasNonEmptyString(
+    typeof record.rsvp === "string" ? record.rsvp : null,
+    record.rsvpUrl,
+    record.rsvpDeadline,
+    rsvpRecord?.contact,
+    rsvpRecord?.url,
+    rsvpRecord?.link,
+    rsvpRecord?.deadline,
+    fieldsGuess?.rsvp,
+    fieldsGuess?.rsvpUrl,
+    fieldsGuess?.rsvpDeadline,
+  );
 }

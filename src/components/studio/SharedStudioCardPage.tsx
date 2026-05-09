@@ -1,13 +1,14 @@
 "use client";
 
+import { X } from "lucide-react";
 import Link from "next/link";
-import { useState, type CSSProperties } from "react";
+import { type CSSProperties, useState } from "react";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
+  isPosterFirstHeroCard,
   type LiveCardActiveTab,
   type LiveCardButtonPositions,
   type LiveCardInvitationData,
-  isPosterFirstHeroCard,
 } from "@/components/studio/StudioLiveCardActionSurface";
 import { resolveNativeShareData } from "@/utils/native-share";
 
@@ -17,6 +18,7 @@ type SharedStudioCardProps = {
   invitationData?: LiveCardInvitationData | null;
   positions?: LiveCardButtonPositions | null;
   shareUrl?: string | null;
+  returnHref?: string | null;
 };
 
 type SharedStudioCardFrameProps = SharedStudioCardProps & {
@@ -29,12 +31,13 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
   const [activeTab, setActiveTab] = useState<LiveCardActiveTab>("none");
   const [shareState, setShareState] = useState<"idle" | "pending" | "success">("idle");
   const invitationData = props.invitationData || null;
-  const cardFrameWidth =
-    "min(calc(100vw - 2rem), calc((100dvh - 6.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 9 / 16))";
+  const usesPosterArtFrame = invitationData?.heroTextMode === "image";
+  const cardFrameWidth = usesPosterArtFrame
+    ? "min(calc(100vw - 2rem), calc((100dvh - 6.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 2 / 3))"
+    : "min(calc(100vw - 2rem), calc((100dvh - 6.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 9 / 16))";
 
   async function handleShare() {
-    const shareUrl =
-      props.shareUrl || (typeof window !== "undefined" ? window.location.href : "");
+    const shareUrl = props.shareUrl || (typeof window !== "undefined" ? window.location.href : "");
     const shareData = {
       title: props.title,
       text:
@@ -68,7 +71,9 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
   return (
     <div className={props.className || ""} style={props.style}>
       <div
-        className={`relative mx-auto aspect-[9/16] overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-purple-500/20 ${
+        className={`relative mx-auto ${
+          usesPosterArtFrame ? "aspect-[2/3]" : "aspect-[9/16]"
+        } overflow-hidden rounded-[3rem] border border-white/10 bg-neutral-900 shadow-2xl shadow-purple-500/20 ${
           props.frameClassName || ""
         }`}
         style={{ width: props.style?.width ? undefined : cardFrameWidth }}
@@ -76,7 +81,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
         <img
           src={props.imageUrl}
           alt={props.title}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover object-center"
           referrerPolicy="no-referrer"
         />
         <LiveCardHeroTextOverlay invitationData={invitationData} />
@@ -102,6 +107,16 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
 
   return (
     <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950">
+      {props.returnHref ? (
+        <Link
+          href={props.returnHref}
+          aria-label="Close preview"
+          className="fixed right-4 top-[calc(var(--app-mobile-topbar-offset,4rem)+0.75rem)] z-[7001] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/92 text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:right-auto lg:left-[calc(20rem+(100vw-20rem)/2+min(calc(100vw-2rem),calc((100dvh-6.5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))*2/3))/2+0.75rem)] lg:top-[max(1rem,env(safe-area-inset-top))]"
+        >
+          <X size={18} aria-hidden="true" />
+        </Link>
+      ) : null}
+
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
         <img
           src={props.imageUrl}

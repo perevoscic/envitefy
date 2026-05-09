@@ -1,24 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
-import {
-  type ComponentType,
-  type CSSProperties,
-  type Dispatch,
-  type MouseEvent,
-  type RefObject,
-  type SetStateAction,
-  useEffect,
-  useState,
-} from "react";
-import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
-import EventSidebar from "@/components/navigation/EventSidebar";
-import { useMenu } from "@/contexts/MenuContext";
-import { secureSignOut } from "@/utils/secureSignOut";
-import { useEventCache } from "@/app/event-cache-context";
-import type { CreationThreadSummary, CreationThreadsResponse } from "@/lib/concierge/types";
 import {
   Baby,
   Cake,
@@ -38,24 +19,43 @@ import {
   Music,
   PartyPopper,
   Plus,
+  Share2,
   ShieldCheck,
   Stethoscope,
-  WandSparkles,
-  Trophy,
   Trash2,
+  Trophy,
   Upload,
   User,
-  Share2,
   Users,
+  WandSparkles,
 } from "lucide-react";
-import { useSidebar } from "./sidebar-context";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
-  createSidebarIconLookup,
+  type ComponentType,
+  type CSSProperties,
+  type Dispatch,
+  type MouseEvent,
+  type RefObject,
+  type SetStateAction,
+  useEffect,
+  useState,
+} from "react";
+import { useEventCache } from "@/app/event-cache-context";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import EventSidebar from "@/components/navigation/EventSidebar";
+import { useMenu } from "@/contexts/MenuContext";
+import type { CreationThreadSummary, CreationThreadsResponse } from "@/lib/concierge/types";
+import { secureSignOut } from "@/utils/secureSignOut";
+import { useLeftSidebarController } from "./left-sidebar.controller";
+import {
   CREATE_SECTION_COLORS,
-  getCreateMenuActiveAccent,
-  getSidebarPrimaryActiveAccent,
+  createSidebarIconLookup,
   GroupedEventItem,
   GroupedEventSection,
+  getCreateMenuActiveAccent,
+  getSidebarPrimaryActiveAccent,
   SIDEBAR_BADGE_CLASS,
   SIDEBAR_DIVIDER_CLASS,
   SIDEBAR_EVENT_PANEL_CLASS,
@@ -67,7 +67,7 @@ import {
   SIDEBAR_PANEL_CLASS,
   SUBPAGE_STICKY_HEADER_CLASS,
 } from "./left-sidebar.model";
-import { useLeftSidebarController } from "./left-sidebar.controller";
+import { useSidebar } from "./sidebar-context";
 
 function CustomizeIcon({ size = 16, className }: { size?: number; className?: string }) {
   return (
@@ -1247,12 +1247,19 @@ export default function LeftSidebar() {
     viewModel.sidebarPage === "createEventOther" ? "translateX(0%)" : "translateX(100%)";
   const aiThreadsPanelTransform =
     viewModel.sidebarPage === "aiThreads" ? "translateX(0%)" : "translateX(100%)";
-  const myEventsPanelTransform =
-    viewModel.sidebarPage === "myEvents"
-      ? "translateX(0%)"
-      : viewModel.sidebarPage === "eventContext" && viewModel.eventContextSourcePage === "myEvents"
-        ? "translateX(-2rem)"
-        : "translateX(100%)";
+  const showOwnerEventsPanel =
+    viewModel.sidebarPage === "myEvents" ||
+    (viewModel.sidebarPage === "eventContext" &&
+      viewModel.eventContextSourcePage === "myEvents" &&
+      viewModel.eventSidebarMode === "owner");
+  const showEventContextPanel =
+    viewModel.sidebarPage === "eventContext" &&
+    !(viewModel.eventContextSourcePage === "myEvents" && viewModel.eventSidebarMode === "owner");
+  const myEventsPanelTransform = showOwnerEventsPanel
+    ? "translateX(0%)"
+    : viewModel.sidebarPage === "eventContext" && viewModel.eventContextSourcePage === "myEvents"
+      ? "translateX(-2rem)"
+      : "translateX(100%)";
   const invitedEventsPanelTransform =
     viewModel.sidebarPage === "invitedEvents"
       ? "translateX(0%)"
@@ -1260,8 +1267,7 @@ export default function LeftSidebar() {
           viewModel.eventContextSourcePage === "invitedEvents"
         ? "translateX(-2rem)"
         : "translateX(100%)";
-  const eventPanelTransform =
-    viewModel.sidebarPage === "eventContext" ? "translateX(0%)" : "translateX(100%)";
+  const eventPanelTransform = showEventContextPanel ? "translateX(0%)" : "translateX(100%)";
   const panelStyle = (transform: string, isActive: boolean): CSSProperties => ({
     ...panelTransitionStyle,
     transform,
@@ -1399,7 +1405,7 @@ export default function LeftSidebar() {
               </div>
 
               <div className="flex min-h-0 flex-1 flex-col">
-                <div className="relative min-h-0 flex-1 overflow-hidden">
+                <div className="relative min-h-0 flex-1 overflow-clip">
                   <div
                     className={`${SIDEBAR_PANEL_CLASS} z-[5]`}
                     style={panelStyle(rootPanelTransform, viewModel.sidebarPage === "root")}
@@ -1484,8 +1490,8 @@ export default function LeftSidebar() {
 
                   <div
                     className={`${SIDEBAR_PANEL_CLASS} z-[15]`}
-                    style={panelStyle(myEventsPanelTransform, viewModel.sidebarPage === "myEvents")}
-                    aria-hidden={viewModel.sidebarPage !== "myEvents"}
+                    style={panelStyle(myEventsPanelTransform, showOwnerEventsPanel)}
+                    aria-hidden={!showOwnerEventsPanel}
                   >
                     <EventListPanel
                       title="My Events"
@@ -1532,11 +1538,8 @@ export default function LeftSidebar() {
 
                   <div
                     className={`${SIDEBAR_EVENT_PANEL_CLASS} z-[30]`}
-                    style={panelStyle(
-                      eventPanelTransform,
-                      viewModel.sidebarPage === "eventContext",
-                    )}
-                    aria-hidden={viewModel.sidebarPage !== "eventContext"}
+                    style={panelStyle(eventPanelTransform, showEventContextPanel)}
+                    aria-hidden={!showEventContextPanel}
                   >
                     <EventSidebar
                       ref={viewModel.eventSidebarRef}
