@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { getOutputRequirement, resolveSourceIntent } from "./creation-intent.ts";
 import { extractConciergeDraft, normalizeConciergeDraft } from "./extract.ts";
-import { buildAssistantMessage, fallbackExtractConciergeDraft } from "./fallback.ts";
+import {
+  buildAssistantMessage,
+  buildSuggestedReplies,
+  canSaveConciergeDraft,
+  fallbackExtractConciergeDraft,
+} from "./fallback.ts";
 import {
   buildConciergeHistoryPayload,
   canPersistConciergeHistoryDraft,
@@ -688,6 +693,92 @@ test("baby shower event-page product prompt stays no-RSVP and guest-facing", () 
   assert.equal(payload.data.liveCard.cta, "View details");
   assert.deepEqual(payload.data.publicEvent.forms, []);
   assert.doesNotMatch(JSON.stringify(payload.data.publicEvent.navigation), /RSVP/);
+});
+
+test("gift-friendly ready drafts ask for registry details only as an optional step", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create a baby shower event page for Elena on Sunday July 19 2026 at 1:00 PM at Olive Room, 212 Harbor Avenue, Tampa, FL. Theme and tone: soft blue balloons and warm family tone. No RSVP.",
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.equal(draft.eventType, "baby_shower");
+  assert.equal(canSaveConciergeDraft(draft), true);
+  assert.match(message, /Details are ready/i);
+  assert.match(message, /Optional: do you have a registry, gift list, wishlist, or no-gifts note/i);
+  assert.deepEqual(buildSuggestedReplies(draft), [
+    "Paste a link",
+    "Create on Amazon",
+    "Skip gift link",
+  ]);
+});
+
+test("birthday ready drafts use gift-list language instead of pushing a registry", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create a live card for Ava's 7th birthday party on Saturday May 23 2026 at 3:00 PM at Sky Zone, 100 Main Street, Destin, FL. RSVPs for 20 guests. Theme and tone: fun and colorful.",
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.equal(draft.eventType, "birthday");
+  assert.equal(canSaveConciergeDraft(draft), true);
+  assert.match(message, /Optional: do you have a gift list, wishlist, or no-gifts note/i);
+  assert.doesNotMatch(message, /Optional: do you have a registry/i);
+});
+
+test("bridal shower ready drafts use registry optional language", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create Maya's bridal shower event page on Sunday June 7 2026 at 2:00 PM at The Garden Room, 9 Rose Street, Austin, TX. Theme and tone: polished brunch florals. No RSVP.",
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.equal(draft.eventType, "bridal_shower");
+  assert.equal(canSaveConciergeDraft(draft), true);
+  assert.match(message, /Optional: do you have a registry, gift list, wishlist, or no-gifts note/i);
+});
+
+test("registry optional prompt accepts a pasted URL-only reply", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create a baby shower event page for Elena on Sunday July 19 2026 at 1:00 PM at Olive Room, 212 Harbor Avenue, Tampa, FL. Theme and tone: soft blue balloons and warm family tone. No RSVP.",
+  });
+  const withRegistry = fallbackExtractConciergeDraft({
+    message: "https://www.amazon.com/baby-reg/example",
+    draft,
+  });
+  const message = buildAssistantMessage(withRegistry);
+
+  assert.equal(withRegistry.registryLink, "https://www.amazon.com/baby-reg/example");
+  assert.equal(canSaveConciergeDraft(withRegistry), true);
+  assert.match(message, /Registry: https:\/\/www\.amazon\.com\/baby-reg\/example/);
+  assert.doesNotMatch(message, /Optional: do you have/i);
+});
+
+test("registry optional prompt can be skipped without blocking generation", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create a housewarming event page for Maya on Friday August 14 2026 at 6:00 PM at 42 Cedar Lane, Austin, TX. Theme and tone: modern casual dinner. No RSVP.",
+  });
+  const skipped = fallbackExtractConciergeDraft({ message: "Skip gift link", draft });
+
+  assert.equal(skipped.giftPromptDismissed, true);
+  assert.equal(canSaveConciergeDraft(skipped), true);
+  assert.doesNotMatch(buildAssistantMessage(skipped), /Optional: do you have/i);
+});
+
+test("no-gifts replies become guest-facing gift notes", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create a wedding event page for Ava and James on Saturday October 10 2026 at 4:30 PM at The Conservatory, 125 Garden Terrace, Charleston, SC. Theme and tone: elegant garden wedding. No RSVP.",
+  });
+  const noGifts = fallbackExtractConciergeDraft({ message: "No gifts please", draft });
+  const message = buildAssistantMessage(noGifts);
+
+  assert.equal(noGifts.giftPreferenceNote, "No gifts please");
+  assert.equal(canSaveConciergeDraft(noGifts), true);
+  assert.match(message, /Gift note: No gifts please/);
+  assert.doesNotMatch(message, /Optional: do you have/i);
 });
 
 test("theme and tone label is not captured as event theme copy", () => {

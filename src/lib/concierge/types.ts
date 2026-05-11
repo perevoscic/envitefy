@@ -266,6 +266,7 @@ export type ConciergeEventDraft = {
   giftRegistryLink?: string | null;
   giftNote?: string | null;
   giftPreferenceNote?: string | null;
+  giftPromptDismissed?: boolean | null;
   theme: string | null;
   tone: string | null;
   knowledgeAnswer?: string | null;

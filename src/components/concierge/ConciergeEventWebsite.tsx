@@ -4,6 +4,7 @@ import { CalendarDays, ExternalLink, Gift, MapPin, Menu, X } from "lucide-react"
 import type { ReactNode } from "react";
 import { useState } from "react";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
+import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 
 type CalendarLinks = {
   google: string;
@@ -284,7 +285,7 @@ export default function ConciergeEventWebsite({
             {registryLinks.map((link) => (
               <a
                 key={`${link.label}-${link.url}`}
-                href={link.url}
+                href={attachAmazonAffiliateTag(link.url)}
                 target="_blank"
                 rel="noreferrer"
                 className="group flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200"

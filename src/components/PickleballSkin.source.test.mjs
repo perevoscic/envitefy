@@ -37,7 +37,8 @@ test("generic scanned invite skin renders pickleball timing as named rows", () =
   assert.match(source, /Entry Fee/);
   assert.match(source, /className="col-span-2 flex flex-col justify-center/);
   assert.match(source, /\{displayEntryFee\}/);
-  assert.match(source, /const factsForCards = normalizedOcrFacts\.filter/);
+  assert.match(source, /const factsForCards = filterRegistryOcrFacts/);
+  assert.match(source, /normalizedOcrFacts\.filter/);
   assert.match(source, /check\[-\\s\]\?in\|games\?\\s\+start/);
   assert.match(source, /isEntryFeeFact\(fact\.label, fact\.value\)/);
 });

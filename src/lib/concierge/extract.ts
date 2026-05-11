@@ -362,6 +362,10 @@ export function normalizeConciergeDraft(
     ) ||
     fallback.giftPreferenceNote ||
     null;
+  const giftPromptDismissed =
+    typeof record.giftPromptDismissed === "boolean"
+      ? record.giftPromptDismissed
+      : fallback.giftPromptDismissed || null;
   const status = deriveCreationStatus({
     sourceContext,
     eventPurpose,
@@ -421,6 +425,7 @@ export function normalizeConciergeDraft(
     registryLink,
     giftNote,
     giftPreferenceNote,
+    giftPromptDismissed,
     theme,
     tone,
     knowledgeAnswer: fallback.knowledgeAnswer || null,

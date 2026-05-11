@@ -1815,6 +1815,13 @@ export default async function EventPage({
   const clientSafeEventData = canManageCreatedEvent
     ? data
     : redactDiscoverySourceForPublicView(data);
+  const clientSafeEventDataWithRegistryLinks =
+    registriesAllowed && registryLinks.length > 0
+      ? {
+          ...clientSafeEventData,
+          registries: registryLinks,
+        }
+      : clientSafeEventData;
 
   const _heroDateLine = formattedTimeAndDate.date || whenLabel || null;
   const _heroTimeLine =
@@ -2140,7 +2147,7 @@ export default async function EventPage({
             [data.venue, data.address, data.city, data.state].filter(Boolean).join(", "),
           story: data.story || data.description || data.partyDetails?.notes,
           schedule: data.schedule,
-          registries: data.registries,
+          registries: registryLinks,
           rsvpEnabled: directRsvpEnabled,
           rsvpLink: "#rsvp",
           rsvpName,
@@ -2215,7 +2222,7 @@ export default async function EventPage({
     return renderWithEventPageBackground(
       <WeddingTemplateView
         eventId={row.id}
-        eventData={clientSafeEventData}
+        eventData={clientSafeEventDataWithRegistryLinks}
         eventTitle={title}
         templateId={templateId}
         variationId={variationId}
@@ -2873,7 +2880,7 @@ export default async function EventPage({
       <BabyShowerTemplateView
         eventId={row.id}
         eventTitle={title}
-        eventData={clientSafeEventData}
+        eventData={clientSafeEventDataWithRegistryLinks}
         shareUrl={shareUrl}
         isOwner={isOwner}
         canEdit={canEditCreatedEvent}
@@ -2886,7 +2893,7 @@ export default async function EventPage({
   if (shouldRenderFootballPage) {
     const footballEventView = (
       <FootballDiscoveryContent
-        eventData={clientSafeEventData}
+        eventData={clientSafeEventDataWithRegistryLinks}
         eventTitle={title}
         eventId={row.id}
         pageTemplateId={footballPageTemplateId}
@@ -2914,7 +2921,7 @@ export default async function EventPage({
     const eventView = (
       <SimpleTemplateView
         eventId={row.id}
-        eventData={clientSafeEventData}
+        eventData={clientSafeEventDataWithRegistryLinks}
         eventTitle={title}
         isOwner={isOwner}
         isReadOnly={isReadOnly}

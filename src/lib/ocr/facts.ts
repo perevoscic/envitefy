@@ -53,6 +53,10 @@ const DUPLICATE_STOP_WORDS = new Set([
 ]);
 
 const SEMANTIC_TIMING_FACT_LABELS = /^(?:check[-\s]?in|games?\s+start)$/i;
+const REGISTRY_FACT_LABEL =
+  /\b(?:gift\s*(?:list|registry)|registry|registries|wishlist|wish\s*list)\b/i;
+const REGISTRY_FACT_VALUE =
+  /^(?:registered\s+at|registry\s+at|gift\s*(?:list|registry)|wishlist|wish\s*list)\b/i;
 
 function stripFactLabelPrefix(label: string, value: string): string {
   const cleaned = cleanText(value);
@@ -78,10 +82,7 @@ function stripFactLabelPrefix(label: string, value: string): string {
 
   return cleaned
     .replace(new RegExp(`^(?:${prefixAlternates})\\s*[:\\-]\\s*`, "i"), "")
-    .replace(
-      /^(?:entry\s+fee|registration\s+fee|admission|entry|fee|cost)\s+(?=\$|\d)/i,
-      "",
-    )
+    .replace(/^(?:entry\s+fee|registration\s+fee|admission|entry|fee|cost)\s+(?=\$|\d)/i, "")
     .replace(/\.{2,}/g, ".")
     .trim();
 }
@@ -227,6 +228,20 @@ export function filterRenderedOcrFacts(
     seenValues.push(value);
     if (SEMANTIC_TIMING_FACT_LABELS.test(cleanText(fact.label))) return true;
     return !rendered.some((renderedValue) => isNearDuplicateValue(value, renderedValue));
+  });
+}
+
+export function filterRegistryOcrFacts(
+  facts: OcrFact[] | null | undefined,
+  shouldHideRegistryFacts: boolean,
+): OcrFact[] {
+  const items = facts || [];
+  if (!shouldHideRegistryFacts) return items;
+
+  return items.filter((fact) => {
+    const label = cleanText(fact.label);
+    const value = cleanText(fact.value);
+    return !REGISTRY_FACT_LABEL.test(label) && !REGISTRY_FACT_VALUE.test(value);
   });
 }
 

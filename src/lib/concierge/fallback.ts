@@ -14,6 +14,11 @@ import {
   resolveCreationSourceContext,
   toLegacyOutputs,
 } from "./creation-intent.ts";
+import {
+  guestSubheadlineForEvent,
+  looksLikeInternalCreativeDirection,
+  sanitizeConciergePreviewCopy,
+} from "./public-copy.ts";
 import type { RequirementField } from "./requirements.ts";
 import {
   getEventTypeLabel,
@@ -21,11 +26,6 @@ import {
   questionForRequirementField,
   suggestedRepliesForRequirementField,
 } from "./requirements.ts";
-import {
-  guestSubheadlineForEvent,
-  looksLikeInternalCreativeDirection,
-  sanitizeConciergePreviewCopy,
-} from "./public-copy.ts";
 import type {
   ConciergeAction,
   ConciergeActiveContext,
@@ -38,6 +38,27 @@ import type {
 } from "./types.ts";
 
 const DEFAULT_TIMEZONE = "America/Chicago";
+const GIFT_FRIENDLY_EVENT_TYPES = new Set<ConciergeEventType>([
+  "birthday",
+  "wedding",
+  "baby_shower",
+  "gender_reveal",
+  "bridal_shower",
+  "graduation",
+  "housewarming",
+]);
+const GIFT_REGISTRY_OUTPUTS = new Set<RequestedOutput>([
+  "event_page",
+  "live_card",
+  "digital_flyer",
+  "invitation",
+  "printable_flyer",
+]);
+const GIFT_LIST_EVENT_TYPES = new Set<ConciergeEventType>([
+  "birthday",
+  "graduation",
+  "housewarming",
+]);
 const MONTH_NAMES = [
   "January",
   "February",
@@ -559,7 +580,11 @@ function detectRsvpContact(
   return contact || previous?.rsvpContact || null;
 }
 
-function detectRegistryLink(text: string, fieldsGuess: Record<string, unknown>) {
+function detectRegistryLink(
+  text: string,
+  fieldsGuess: Record<string, unknown>,
+  previous?: ConciergeEventDraft | null,
+) {
   const direct = firstString(
     fieldsGuess.registryLink,
     fieldsGuess.registryUrl,
@@ -568,10 +593,11 @@ function detectRegistryLink(text: string, fieldsGuess: Record<string, unknown>) 
     fieldsGuess.wishlistLink,
   );
   if (direct) return cleanUrlString(direct);
+  const url = text.match(/\bhttps?:\/\/[^\s<>"')]+|\bwww\.[^\s<>"')]+/i)?.[0];
+  if (url && previous && shouldOfferGiftRegistryPrompt(previous)) return cleanUrlString(url);
   if (!/\b(registry|gift\s*list|wishlist|wish\s*list|babylist|zola|target|amazon)\b/i.test(text)) {
     return null;
   }
-  const url = text.match(/\bhttps?:\/\/[^\s<>"')]+|\bwww\.[^\s<>"')]+/i)?.[0];
   return cleanUrlString(url || "");
 }
 
@@ -587,6 +613,56 @@ function detectGiftPreferenceNote(text: string, fieldsGuess: Record<string, unkn
     /\b(?:no gifts?|gifts?\s+(?:are\s+)?optional|your presence is (?:our|the) gift|gift cards? preferred)\b[^.!,;]*/i,
   );
   return cleanString(noGifts?.[0] || "");
+}
+
+function hasGiftDetails(draft: ConciergeEventDraft | null | undefined) {
+  return Boolean(
+    draft?.registryLink || draft?.giftRegistryLink || draft?.giftPreferenceNote || draft?.giftNote,
+  );
+}
+
+function shouldOfferGiftRegistryPrompt(draft: ConciergeEventDraft | null | undefined) {
+  if (!draft) return false;
+  return Boolean(
+    draft.ownership !== "invited" &&
+      draft.sourceContext.detectedSourceIntent !== "received_invite" &&
+      draft.draftStatus === "preview_ready" &&
+      !draft.currentQuestion &&
+      draft.missingFields.length === 0 &&
+      GIFT_FRIENDLY_EVENT_TYPES.has(draft.eventType) &&
+      draft.requestedOutputs.some((output) => GIFT_REGISTRY_OUTPUTS.has(output)) &&
+      !hasGiftDetails(draft) &&
+      !draft.giftPromptDismissed,
+  );
+}
+
+function giftRegistryLabel(draft: ConciergeEventDraft) {
+  return GIFT_LIST_EVENT_TYPES.has(draft.eventType) ? "Gift list" : "Registry";
+}
+
+function optionalGiftRegistryPrompt(draft: ConciergeEventDraft) {
+  if (!shouldOfferGiftRegistryPrompt(draft)) return null;
+  const noun = GIFT_LIST_EVENT_TYPES.has(draft.eventType)
+    ? "gift list, wishlist, or no-gifts note"
+    : "registry, gift list, wishlist, or no-gifts note";
+  return `Optional: do you have a ${noun} to include? Paste a link, create one on Amazon, or skip it for now.`;
+}
+
+function isGiftPromptSkipReply(message: string) {
+  return /^(?:skip|skip it|skip gift link|skip registry|not now|no thanks|leave it off|no link|no registry|no gift link|no wishlist|none)$/i.test(
+    message.trim(),
+  );
+}
+
+function isAmazonRegistryCreateReply(message: string) {
+  const trimmed = message.trim();
+  return (
+    /^create on amazon$/i.test(trimmed) ||
+    /\b(?:create|open|start|make|set up)\b.+\bamazon\b.+\b(?:registry|gift\s*list|wishlist|wish\s*list|list)\b/i.test(
+      trimmed,
+    ) ||
+    /\bamazon\b.+\b(?:registry|gift\s*list|wishlist|wish\s*list)\b/i.test(trimmed)
+  );
 }
 
 function detectTone(text: string, previous?: ConciergeEventDraft | null) {
@@ -1347,6 +1423,12 @@ function compactVerificationLines(
   if (draft.rsvpEnabled === true) lines.push("RSVP: Envitefy tracking");
   if (draft.rsvpEnabled === false) lines.push("RSVP: Not needed");
   if (draft.numberOfGuests) lines.push(`RSVP guest count: ${draft.numberOfGuests}`);
+  if (draft.registryLink || draft.giftRegistryLink) {
+    lines.push(`${giftRegistryLabel(draft)}: ${draft.registryLink || draft.giftRegistryLink}`);
+  }
+  if (draft.giftPreferenceNote || draft.giftNote) {
+    lines.push(`Gift note: ${draft.giftPreferenceNote || draft.giftNote}`);
+  }
   if (draft.tone) lines.push(`Vibe: ${draft.tone}`);
   return lines;
 }
@@ -1361,12 +1443,14 @@ function readyVerificationMessage(draft: ConciergeEventDraft) {
   }
 
   const actionLabel = outputActionLabel(draft);
+  const optionalPrompt = optionalGiftRegistryPrompt(draft);
   return [
     "Details are ready.",
     ...compactVerificationLines(draft),
     actionLabel === "products"
       ? "I can generate the selected products now."
       : `I can generate the ${actionLabel === "live card" ? "invite" : actionLabel} now.`,
+    ...(optionalPrompt ? [optionalPrompt] : []),
   ].join("\n");
 }
 
@@ -1512,6 +1596,9 @@ export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
     const replies = suggestedRepliesForRequirementField(firstMissing as RequirementField, plan);
     if (replies.length) return replies;
   }
+  if (shouldOfferGiftRegistryPrompt(draft)) {
+    return ["Paste a link", "Create on Amazon", "Skip gift link"];
+  }
   return [`Create ${outputActionLabel(draft)}`, "Add RSVP page"];
 }
 
@@ -1540,8 +1627,9 @@ export function fallbackExtractConciergeDraft(args: {
     activeContext: args.activeContext || null,
     previous,
   });
-  const blockingBoundary =
-    privateDataMutationRequest ? ("private_data" as const) : classifiedBoundary;
+  const blockingBoundary = privateDataMutationRequest
+    ? ("private_data" as const)
+    : classifiedBoundary;
   const blocksCreation = Boolean(blockingBoundary);
   const hasCreationSignal =
     Boolean(args.ocrContext) ||
@@ -1551,22 +1639,21 @@ export function fallbackExtractConciergeDraft(args: {
     hasClearCreationSignal(text);
   const hasExplicitOutputs =
     Array.isArray(args.requestedOutputs) && args.requestedOutputs.length > 0;
-  const requestedOutputs =
-    blocksCreation
-      ? []
-      : normalizeRequestedOutputs(
-          hasExplicitOutputs
-            ? args.requestedOutputs
-            : previous?.requestedOutputs || previous?.outputs,
-          {
-            text,
-            previous: hasExplicitOutputs ? null : previous,
-            defaultOutput:
-              !previous && (isGreetingMessage(message) || (!hasCreationSignal && !hasExplicitOutputs))
-                ? null
-                : undefined,
-          },
-        );
+  const requestedOutputs = blocksCreation
+    ? []
+    : normalizeRequestedOutputs(
+        hasExplicitOutputs
+          ? args.requestedOutputs
+          : previous?.requestedOutputs || previous?.outputs,
+        {
+          text,
+          previous: hasExplicitOutputs ? null : previous,
+          defaultOutput:
+            !previous && (isGreetingMessage(message) || (!hasCreationSignal && !hasExplicitOutputs))
+              ? null
+              : undefined,
+        },
+      );
   const resolvedSourceContext = resolveCreationSourceContext({
     message,
     activeContext: args.activeContext || null,
@@ -1632,6 +1719,7 @@ export function fallbackExtractConciergeDraft(args: {
       numberOfGuests: null,
       registryLink: null,
       giftPreferenceNote: null,
+      giftPromptDismissed: null,
       theme: null,
       tone: null,
       knowledgeAnswer,
@@ -1695,8 +1783,8 @@ export function fallbackExtractConciergeDraft(args: {
   const canUseRawMessageAsEventPurpose = hasCreationSignal || requestedOutputs.length > 0;
   const rawMessageEventPurpose =
     canUseRawMessageAsEventPurpose && isMeaningfulEventText(message, requestedOutputs)
-    ? cleanCreationString(message)
-    : null;
+      ? cleanCreationString(message)
+      : null;
   const shouldSuppressRawCreationPrompt = Boolean(
     rawMessageEventPurpose &&
       looksLikeCreationPrompt(rawMessageEventPurpose) &&
@@ -1738,8 +1826,14 @@ export function fallbackExtractConciergeDraft(args: {
   const rsvpEnabled = detectRsvpEnabled(message, previous, requestedOutputs, fieldsGuess);
   const rsvpDeadline = detectRsvpDeadline(text, previous);
   const rsvpContact = detectRsvpContact(text, fieldsGuess, previous);
+  const giftPromptSkip = Boolean(
+    previous && shouldOfferGiftRegistryPrompt(previous) && isGiftPromptSkipReply(message),
+  );
+  const amazonRegistryCreate = Boolean(
+    previous && shouldOfferGiftRegistryPrompt(previous) && isAmazonRegistryCreateReply(message),
+  );
   const registryLink =
-    detectRegistryLink(text, fieldsGuess) ||
+    detectRegistryLink(text, fieldsGuess, previous) ||
     previous?.registryLink ||
     previous?.giftRegistryLink ||
     null;
@@ -1748,39 +1842,43 @@ export function fallbackExtractConciergeDraft(args: {
     previous?.giftPreferenceNote ||
     previous?.giftNote ||
     null;
+  const giftPromptDismissed = Boolean(
+    previous?.giftPromptDismissed || giftPromptSkip || amazonRegistryCreate,
+  );
   const tone =
     detectTone(text, previous) ||
     firstString(fieldsGuess.tone) ||
     (isSportEventType(eventType) ? theme : null);
   const toneForStatus = tone || theme;
-  const status =
-    blocksCreation
-      ? {
-          draftStatus: "needs_source_or_event" as const,
-          missingFields: [],
-          currentQuestion: null,
-          canPersist: false,
-        }
-      : deriveCreationStatus({
-          sourceContext,
-          eventPurpose,
-          title,
-          eventType,
-          requestedOutputs,
-          dateText,
-          timeText,
-          startISO,
-          location,
-          honoreeName,
-          ageOrMilestone,
-          rsvpEnabled,
-          numberOfGuests,
-          tone: toneForStatus,
-        });
+  const status = blocksCreation
+    ? {
+        draftStatus: "needs_source_or_event" as const,
+        missingFields: [],
+        currentQuestion: null,
+        canPersist: false,
+      }
+    : deriveCreationStatus({
+        sourceContext,
+        eventPurpose,
+        title,
+        eventType,
+        requestedOutputs,
+        dateText,
+        timeText,
+        startISO,
+        location,
+        honoreeName,
+        ageOrMilestone,
+        rsvpEnabled,
+        numberOfGuests,
+        tone: toneForStatus,
+      });
   const needsDateConfirmation = Boolean(chronoResult.needsConfirmation);
   const base = {
     creationSessionId: createCreationSessionId(sessionDraft),
-    intent: blocksCreation ? ("unknown" as const) : normalizeCreationIntent(previous?.intent, message, requestedOutputs),
+    intent: blocksCreation
+      ? ("unknown" as const)
+      : normalizeCreationIntent(previous?.intent, message, requestedOutputs),
     requestedOutputs,
     sourceContext,
     eventPurpose,
@@ -1812,6 +1910,7 @@ export function fallbackExtractConciergeDraft(args: {
     numberOfGuests,
     registryLink,
     giftPreferenceNote,
+    giftPromptDismissed,
     theme,
     tone,
     knowledgeAnswer: null,
@@ -1849,10 +1948,12 @@ export function fallbackExtractConciergeDraft(args: {
   };
   return {
     ...draft,
-    assistantGuidance: buildUnresolvedFieldGuidance({
-      message,
-      draft,
-      previous,
-    }),
+    assistantGuidance: amazonRegistryCreate
+      ? "Create the list on Amazon, then paste the public or shareable link here and I’ll add it. You can also generate now and add the link later."
+      : buildUnresolvedFieldGuidance({
+          message,
+          draft,
+          previous,
+        }),
   };
 }

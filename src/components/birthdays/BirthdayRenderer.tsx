@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useContext, createContext } from "react";
 import { buildPreferredDirectionsHref } from "@/lib/directions";
+import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import { Calendar, Clock, MapPin, Navigation, Share2, X } from "lucide-react";
 import GuestRsvpModal, { type RsvpResponse } from "../GuestRsvpModal";
 import EventMap from "../EventMap";
@@ -1864,7 +1865,7 @@ function BirthdayContentSections({
             {registryList.map((r, idx) => (
               <a
                 key={idx}
-                href={r.url}
+                href={attachAmazonAffiliateTag(r.url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`px-6 py-3 rounded-xl text-sm font-bold transition-all hover:shadow-lg ${
@@ -1997,9 +1998,7 @@ function EditorialFeatureLayout({
               {event.headlineTitle || theme.defaultHeadline || "Birthday Celebration"}
             </h1>
             <p className="max-w-xl text-base leading-7 text-slate-600 md:text-lg">{summary}</p>
-            {actions ? (
-              <div className="mt-2 flex w-full justify-end md:mt-4">{actions}</div>
-            ) : null}
+            {actions ? <div className="mt-2 flex w-full justify-end md:mt-4">{actions}</div> : null}
           </div>
 
           <div
@@ -2122,7 +2121,9 @@ function EditorialFeatureLayout({
                 <p className="mt-2 text-sm font-medium text-slate-500">
                   {rsvpEnabled
                     ? `Tap a response below to RSVP${
-                        event.rsvpDeadline ? ` by ${formatRsvpDeadlineDate(event.rsvpDeadline)}` : ""
+                        event.rsvpDeadline
+                          ? ` by ${formatRsvpDeadlineDate(event.rsvpDeadline)}`
+                          : ""
                       }.`
                     : "RSVP details will be shared by the host."}
                 </p>

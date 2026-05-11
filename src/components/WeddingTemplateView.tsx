@@ -8,6 +8,7 @@ import { buildEditLink } from "@/utils/event-edit-route";
 import { normalizeUrlValue } from "@/utils/contact";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
 import type { EventData } from "@/app/event/weddings/_renderers/content-sections";
+import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 
 // Import all template configs
 import etherealClassic from "../../templates/weddings/ethereal-classic/config.json" with {
@@ -836,7 +837,7 @@ export default function WeddingTemplateView({
           .filter((r: any) => r?.url?.trim())
           .map((r: any) => ({
             label: r.label?.trim() || "Registry",
-            url: r.url?.trim(),
+            url: attachAmazonAffiliateTag(r.url?.trim()),
           }))
       : [];
 

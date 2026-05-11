@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { filterRenderedOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "./facts.ts";
+import {
+  filterRegistryOcrFacts,
+  filterRenderedOcrFacts,
+  mergeOcrFacts,
+  normalizeOcrFacts,
+} from "./facts.ts";
 
 test("mergeOcrFacts dedupes repeated entry fees with label prefixes", () => {
   const facts = mergeOcrFacts(
@@ -35,4 +40,16 @@ test("filterRenderedOcrFacts keeps semantic check-in and game-start facts", () =
     { label: "Check-in", value: "Check-in 8:30 AM" },
     { label: "Games Start", value: "Games start 9:00 AM" },
   ]);
+});
+
+test("filterRegistryOcrFacts removes registry facts when a registry action is rendered", () => {
+  const facts = [
+    { label: "Registry", value: "Registered at Amazon" },
+    { label: "Details", value: "Adults-only celebration" },
+  ];
+
+  assert.deepEqual(filterRegistryOcrFacts(facts, true), [
+    { label: "Details", value: "Adults-only celebration" },
+  ]);
+  assert.deepEqual(filterRegistryOcrFacts(facts, false), facts);
 });

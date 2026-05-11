@@ -242,7 +242,12 @@ export function buildEventAssetContent(params: {
             fields: ["name", "phone", "message"],
           },
         ],
-        actions: ["RSVP", "Add to calendar", "Get directions", "Open registry"],
+        actions: [
+          "RSVP",
+          "Add to calendar",
+          "Get directions",
+          ...(registryLink ? ["Open registry"] : []),
+        ],
       },
       design: { format: "website_page", tone },
       metadata: { generatedBy: "event_assistant", brief, requiresGeneratedArtwork: true },

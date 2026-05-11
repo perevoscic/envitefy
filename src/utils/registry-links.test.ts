@@ -1,13 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
+
+process.env.NEXT_PUBLIC_AMAZON_ASSOCIATE_TAG = "envitefy-20";
+
+const {
+  AMAZON_BABY_REGISTRY_URL,
+  AMAZON_CUSTOM_GIFT_LIST_URL,
   AMAZON_REGISTRY_SEARCH_URL,
+  AMAZON_WEDDING_REGISTRY_URL,
+  getAmazonRegistryCreateUrlForCategory,
   getRegistryAction,
   getRegistryBrandByUrl,
   getRegistrySectionCopyForCategory,
   normalizeRegistryLinks,
   validateRegistryUrl,
-} from "./registry-links.ts";
+} = await import("./registry-links.ts");
+
+const amazonTagged = (url: string) => {
+  const parsed = new URL(url);
+  parsed.searchParams.set("tag", "envitefy-20");
+  return parsed.toString();
+};
 
 test("validateRegistryUrl accepts arbitrary https registry and gift-list links", () => {
   const result = validateRegistryUrl("https://www.zola.com/registry/example#private");
@@ -34,7 +47,7 @@ test("normalizeRegistryLinks dedupes and keeps known-brand labels as fallbacks",
   ]);
 
   assert.deepEqual(links, [
-    { label: "Amazon", url: "https://amazon.com/wedding/share/example" },
+    { label: "Amazon", url: "https://amazon.com/wedding/share/example?tag=envitefy-20" },
     { label: "wishlist.example.com", url: "https://wishlist.example.com/list" },
   ]);
   assert.equal(getRegistryBrandByUrl(links[0].url)?.defaultLabel, "Amazon");
@@ -45,8 +58,23 @@ test("normalizeRegistryLinks preserves concrete Amazon registry deep links", () 
   const url = "https://www.amazon.com/wedding/registry/example-couple";
 
   assert.deepEqual(normalizeRegistryLinks([{ label: "", url }], { category: "Weddings" }), [
-    { label: "Amazon", url },
+    { label: "Amazon", url: amazonTagged(url) },
   ]);
+});
+
+test("normalizeRegistryLinks replaces existing Amazon associate tags", () => {
+  assert.deepEqual(
+    normalizeRegistryLinks(
+      [{ label: "Amazon", url: "https://www.amazon.com/wedding/registry/example?tag=old-20" }],
+      { category: "Weddings" },
+    ),
+    [
+      {
+        label: "Amazon",
+        url: "https://www.amazon.com/wedding/registry/example?tag=envitefy-20",
+      },
+    ],
+  );
 });
 
 test("normalizeRegistryLinks drops Amazon homepage placeholders", () => {
@@ -72,11 +100,34 @@ test("housewarming events allow gift list links", () => {
   assert.equal(copy.linksLabel, "Gift list links");
 });
 
+test("getAmazonRegistryCreateUrlForCategory selects affiliate-tagged create destinations", () => {
+  assert.equal(
+    getAmazonRegistryCreateUrlForCategory("baby_shower"),
+    amazonTagged(AMAZON_BABY_REGISTRY_URL),
+  );
+  assert.equal(
+    getAmazonRegistryCreateUrlForCategory("wedding"),
+    amazonTagged(AMAZON_WEDDING_REGISTRY_URL),
+  );
+  assert.equal(
+    getAmazonRegistryCreateUrlForCategory("bridal_shower"),
+    amazonTagged(AMAZON_WEDDING_REGISTRY_URL),
+  );
+  assert.equal(
+    getAmazonRegistryCreateUrlForCategory("birthday"),
+    amazonTagged(AMAZON_CUSTOM_GIFT_LIST_URL),
+  );
+  assert.equal(
+    getAmazonRegistryCreateUrlForCategory("housewarming"),
+    amazonTagged(AMAZON_CUSTOM_GIFT_LIST_URL),
+  );
+});
+
 test("getRegistryAction opens direct Amazon baby registry urls exactly", () => {
   const url = "https://www.amazon.com/baby-reg/I1QM8SK28TKM";
 
   assert.deepEqual(getRegistryAction({ registryProvider: "Amazon", registryUrl: url }), {
-    url,
+    url: amazonTagged(url),
     label: "Open Registry",
     helperText: null,
   });
@@ -103,10 +154,9 @@ test("getRegistryAction falls back to Amazon search for baby shower missing dire
       state: "TX",
     }),
     {
-      url: AMAZON_REGISTRY_SEARCH_URL,
+      url: amazonTagged(AMAZON_REGISTRY_SEARCH_URL),
       label: "Find Registry on Amazon",
-      helperText:
-        "This invite mentions an Amazon registry, but the direct registry link was not included.\nSearch using:\nJudith & David\nBaby Shower\nLeague City, TX",
+      helperText: null,
     },
   );
 });
@@ -122,15 +172,14 @@ test("getRegistryAction falls back to Amazon search for wedding missing direct l
       state: "TX",
     }),
     {
-      url: AMAZON_REGISTRY_SEARCH_URL,
+      url: amazonTagged(AMAZON_REGISTRY_SEARCH_URL),
       label: "Find Registry on Amazon",
-      helperText:
-        "This invite mentions an Amazon registry, but the direct registry link was not included.\nSearch using:\nJudith & David\nWedding\nLeague City, TX",
+      helperText: null,
     },
   );
 });
 
-test("getRegistryAction falls back to Amazon search with minimal helper when details are missing", () => {
+test("getRegistryAction falls back to Amazon search without helper text when details are missing", () => {
   assert.deepEqual(
     getRegistryAction({
       registryProvider: "Amazon",
@@ -141,10 +190,9 @@ test("getRegistryAction falls back to Amazon search with minimal helper when det
       state: null,
     }),
     {
-      url: AMAZON_REGISTRY_SEARCH_URL,
+      url: amazonTagged(AMAZON_REGISTRY_SEARCH_URL),
       label: "Find Registry on Amazon",
-      helperText:
-        "This invite mentions an Amazon registry, but the direct registry link was not included.",
+      helperText: null,
     },
   );
 });
@@ -160,10 +208,9 @@ test("getRegistryAction treats Amazon homepage URLs as missing direct links", ()
       state: null,
     }),
     {
-      url: AMAZON_REGISTRY_SEARCH_URL,
+      url: amazonTagged(AMAZON_REGISTRY_SEARCH_URL),
       label: "Find Registry on Amazon",
-      helperText:
-        "This invite mentions an Amazon registry, but the direct registry link was not included.",
+      helperText: null,
     },
   );
 });

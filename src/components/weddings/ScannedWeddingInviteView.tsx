@@ -13,7 +13,12 @@ import {
 } from "@/components/event-skin-layout";
 import OcrFactCards from "@/components/OcrFactCards";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
-import { filterRenderedOcrFacts, normalizeOcrFacts, type OcrFact } from "@/lib/ocr/facts";
+import {
+  filterRegistryOcrFacts,
+  filterRenderedOcrFacts,
+  normalizeOcrFacts,
+  type OcrFact,
+} from "@/lib/ocr/facts";
 import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
 import {
   DEFAULT_WEDDING_SCAN_FLYER_COLORS,
@@ -142,17 +147,20 @@ export default function ScannedWeddingInviteView({
   const sectionBackground = isNoirModern ? "rgba(9, 12, 20, 0.82)" : "rgba(255,255,255,0.9)";
   const actionBackground = isNoirModern ? "rgba(10,14,24,0.9)" : "#ffffff";
   const asideBackground = isNoirModern ? "rgba(9, 12, 20, 0.94)" : "#ffffff";
-  const displayOcrFacts = filterRenderedOcrFacts(normalizeOcrFacts(ocrFacts), [
-    scheduleRows.map((row) => row.title),
-    scheduleRows.map((row) => row.time),
-    registryCards.map((card) => card.url),
-    registryCards.map((card) => card.host),
-    rsvpName,
-    rsvpPhone,
-    rsvpEmail,
-    rsvpUrl,
-    rsvpDeadline,
-  ]);
+  const displayOcrFacts = filterRenderedOcrFacts(
+    filterRegistryOcrFacts(normalizeOcrFacts(ocrFacts), hasRegistries),
+    [
+      scheduleRows.map((row) => row.title),
+      scheduleRows.map((row) => row.time),
+      registryCards.map((card) => card.url),
+      registryCards.map((card) => card.host),
+      rsvpName,
+      rsvpPhone,
+      rsvpEmail,
+      rsvpUrl,
+      rsvpDeadline,
+    ],
+  );
   const headlineFontFamily = isNoirModern
     ? 'var(--font-geist-sans), "Helvetica Neue", Arial, sans-serif'
     : 'var(--font-playfair), "Times New Roman", serif';

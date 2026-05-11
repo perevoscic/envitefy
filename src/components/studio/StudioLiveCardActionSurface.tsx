@@ -33,6 +33,7 @@ import {
   buildLiveCardLocationActions,
 } from "@/lib/live-card-locations";
 import { getLiveCardRailLayout } from "@/lib/live-card-rail-layout";
+import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import {
   buildLiveCardRsvpOutboundHref,
   LIVE_CARD_RSVP_CHOICES,
@@ -180,7 +181,7 @@ function normalizeLiveCardExternalHref(value: unknown): string | null {
     const url = new URL(candidate);
     if (url.protocol !== "https:") return null;
     url.hash = "";
-    return url.toString();
+    return attachAmazonAffiliateTag(url.toString());
   } catch {
     return null;
   }

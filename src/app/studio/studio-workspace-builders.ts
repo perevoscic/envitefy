@@ -1,4 +1,5 @@
 import type { LiveCardRsvpChoice } from "@/lib/live-card-rsvp";
+import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
 import {
   type StudioGenerateApiResponse,
@@ -1210,8 +1211,10 @@ export function getStudioEventEndTime(details: EventDetails): string {
 export function normalizeStudioExternalUrl(value: string): string {
   const trimmed = readString(value);
   if (!trimmed) return "";
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed.replace(/^\/+/, "")}`;
+  const normalized = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed.replace(/^\/+/, "")}`;
+  return attachAmazonAffiliateTag(normalized);
 }
 
 export function buildStudioRsvpLine(details: EventDetails): string | undefined {

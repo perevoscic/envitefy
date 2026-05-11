@@ -17,7 +17,7 @@ export default function EnvitefyWordmark({
       role="img"
       aria-label="envitefy"
       className={`inline-block shrink-0 origin-center ${
-        scaled ? "scale-[1.80]" : ""
+        scaled ? "scale-[2.95]" : ""
       }`.trim()}
     >
       <span
@@ -27,7 +27,7 @@ export default function EnvitefyWordmark({
           fontFamily: 'var(--font-josefin-slab), "Josefin Slab", serif',
           fontWeight: 700,
           fontOpticalSizing: "auto",
-          letterSpacing: "-0.055em",
+          letterSpacing: "-0.075em",
           fontStyle: "normal",
           ...(tone === "gradient"
             ? {

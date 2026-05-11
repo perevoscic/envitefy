@@ -16,6 +16,7 @@ import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import {
+  filterRegistryOcrFacts,
   filterRenderedOcrFacts,
   filterRenderedTextValues,
   normalizeOcrFacts,
@@ -244,7 +245,15 @@ export default function ScannedInviteSkin({
   });
   const neutralSurfaceMutedTextColor =
     mixHexColors(neutralSurfaceTextColor, neutralSurface, 0.38) || neutralSurfaceTextColor;
-  const heroTitleColor = "#f8fafc";
+  const heroTitleColor = ensureReadableTextColor(colors.background, colors.text, {
+    minContrast: 4.5,
+    darkCandidate: "#2f1f45",
+    lightCandidate: "#f8fafc",
+  });
+  const heroTitleIsLight = getLuminance(heroTitleColor) > 0.72;
+  const heroTitleTextShadow = heroTitleIsLight
+    ? "0 2px 18px rgba(0,0,0,0.45)"
+    : "0 2px 16px rgba(255,255,255,0.72), 0 1px 3px rgba(47,31,69,0.1)";
   const directionsButtonBackground = colors.primary;
   const directionsButtonTextColor = ensureReadableTextColor(directionsButtonBackground, "#ffffff", {
     minContrast: 4.5,
@@ -332,13 +341,16 @@ export default function ScannedInviteSkin({
         [displayDetailCopy, displayAttire, displayEntryFee],
       ).slice(0, 4)
     : [];
-  const factsForCards = normalizedOcrFacts.filter(
-    (fact) =>
-      !(
-        isPickleballSkin &&
-        (/\b(?:check[-\s]?in|games?\s+start(?:ing)?)\b/i.test(`${fact.label} ${fact.value}`) ||
-          isEntryFeeFact(fact.label, fact.value))
-      ),
+  const factsForCards = filterRegistryOcrFacts(
+    normalizedOcrFacts.filter(
+      (fact) =>
+        !(
+          isPickleballSkin &&
+          (/\b(?:check[-\s]?in|games?\s+start(?:ing)?)\b/i.test(`${fact.label} ${fact.value}`) ||
+            isEntryFeeFact(fact.label, fact.value))
+        ),
+    ),
+    Boolean(displayRegistryUrl),
   );
   const displayOcrFacts = filterRenderedOcrFacts(factsForCards, [
     displayTitle,
@@ -438,7 +450,7 @@ export default function ScannedInviteSkin({
               className="serif text-5xl leading-[0.95] tracking-tight md:text-7xl"
               style={{
                 color: heroTitleColor,
-                textShadow: "0 2px 18px rgba(0,0,0,0.45)",
+                textShadow: heroTitleTextShadow,
               }}
             >
               {displayTitle}

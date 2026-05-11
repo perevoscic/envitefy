@@ -1359,7 +1359,7 @@ export default function LeftSidebar() {
                   className="inline-flex min-h-11 max-w-full items-center"
                   aria-label="Envitefy home"
                 >
-                  <EnvitefyWordmark className="text-[3.15rem] leading-none" scaled={false} />
+                  <EnvitefyWordmark className="text-[3.6rem] leading-none" scaled={false} />
                 </Link>
               </div>
 

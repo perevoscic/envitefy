@@ -65,6 +65,7 @@ import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
 import { buildEventProductPath } from "@/utils/event-product-route";
 import { buildEventPath, buildEventSlug } from "@/utils/event-url";
 import { persistImageMediaValue, validateClientUploadFile } from "@/utils/media-upload-client";
+import { getAmazonRegistryCreateUrlForCategory } from "@/utils/registry-links";
 import ChatProductPreview from "./ChatProductPreview";
 
 type ChatMessage = {
@@ -706,6 +707,56 @@ function isReadyCreationDraft(draft: ConciergeEventDraft | null) {
   );
 }
 
+const GIFT_FRIENDLY_DRAFT_EVENT_TYPES = new Set<ConciergeEventType>([
+  "birthday",
+  "wedding",
+  "baby_shower",
+  "gender_reveal",
+  "bridal_shower",
+  "graduation",
+  "housewarming",
+]);
+const GIFT_REGISTRY_DRAFT_OUTPUTS = new Set<RequestedOutput>([
+  "event_page",
+  "live_card",
+  "digital_flyer",
+  "invitation",
+  "printable_flyer",
+]);
+const GIFT_LIST_DRAFT_EVENT_TYPES = new Set<ConciergeEventType>([
+  "birthday",
+  "graduation",
+  "housewarming",
+]);
+
+function draftHasGiftDetails(draft: ConciergeEventDraft | null) {
+  return Boolean(
+    draft?.registryLink || draft?.giftRegistryLink || draft?.giftPreferenceNote || draft?.giftNote,
+  );
+}
+
+function shouldOfferGiftRegistryForDraft(draft: ConciergeEventDraft | null) {
+  return Boolean(
+    draft &&
+      isReadyCreationDraft(draft) &&
+      draft.ownership !== "invited" &&
+      GIFT_FRIENDLY_DRAFT_EVENT_TYPES.has(draft.eventType) &&
+      draft.requestedOutputs.some((output) => GIFT_REGISTRY_DRAFT_OUTPUTS.has(output)) &&
+      !draftHasGiftDetails(draft) &&
+      !draft.giftPromptDismissed,
+  );
+}
+
+function giftRegistryNounForDraft(draft: ConciergeEventDraft | null) {
+  return draft && GIFT_LIST_DRAFT_EVENT_TYPES.has(draft.eventType) ? "gift list" : "registry";
+}
+
+function giftRegistryComposerPrefix(draft: ConciergeEventDraft | null) {
+  return draft && GIFT_LIST_DRAFT_EVENT_TYPES.has(draft.eventType)
+    ? "Gift list link"
+    : "Registry link";
+}
+
 function draftHeadline(draft: ConciergeEventDraft | null) {
   return draft?.previewCopy.headline || draft?.title || draft?.eventPurpose || "Event draft";
 }
@@ -1176,6 +1227,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const previewTitle = liveCardTitle || currentLiveCardSummary.headline;
   const canGenerateProduct =
     isReadyProductDraft(draft) && !isBusy && !liveCardEventId && !hasGeneratedDraftProduct;
+  const shouldShowGiftRegistryPrompt = shouldOfferGiftRegistryForDraft(draft);
+  const giftRegistryNoun = giftRegistryNounForDraft(draft);
+  const giftRegistryPrefix = giftRegistryComposerPrefix(draft);
+  const giftRegistryCreateUrl = shouldShowGiftRegistryPrompt
+    ? getAmazonRegistryCreateUrlForCategory(draft?.eventType)
+    : null;
   const shouldShowProductPanel =
     Boolean(draft) ||
     phase === "ready_to_generate" ||
@@ -1246,6 +1303,20 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       const end = textarea.value.length;
       textarea.setSelectionRange(end, end);
     });
+  }
+
+  function openGiftRegistryComposer() {
+    setIsReadyChatComposerOpen(true);
+    setInput((current) => (current.trim() ? current : `${giftRegistryPrefix}: `));
+    shouldRefocusComposerRef.current = true;
+    focusComposerAtEnd();
+  }
+
+  function handleCreateAmazonGiftRegistry() {
+    if (giftRegistryCreateUrl) {
+      window.open(giftRegistryCreateUrl, "_blank", "noopener,noreferrer");
+    }
+    openGiftRegistryComposer();
   }
 
   function refocusComposerAfterResponse() {
@@ -2426,6 +2497,37 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const readyActions = (
     <div className="pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-4 sm:px-6 sm:pb-8">
       <div className="pointer-events-auto w-full">
+        {shouldShowGiftRegistryPrompt ? (
+          <div className="mb-2 rounded-[1.35rem] border border-[#ded2f5] bg-white/96 p-3 text-[#4f3a73] shadow-[0_14px_34px_rgba(93,63,155,0.12)] ring-1 ring-white/80 backdrop-blur">
+            <div className="flex items-center gap-2 text-sm font-bold">
+              <Gift className="size-4 shrink-0 text-[#5c5be5]" aria-hidden="true" />
+              <span>Optional {giftRegistryNoun}</span>
+            </div>
+            <p className="mt-1 text-sm leading-5 text-[#625178]">
+              Add a {giftRegistryNoun}, wishlist, or no-gifts note. Generate now still works without
+              it.
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={openGiftRegistryComposer}
+                className="inline-flex h-10 min-w-0 items-center justify-center rounded-2xl border border-[#ded2f5] bg-white px-3 text-sm font-bold text-[#4f3a73] transition hover:border-[#c7b4ee] hover:bg-[#f5f0ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+              >
+                <span className="truncate">Paste link</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateAmazonGiftRegistry}
+                className="inline-flex h-10 min-w-0 items-center justify-center rounded-2xl bg-[#231f20] px-3 text-sm font-bold text-white transition hover:bg-[#3a3336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+              >
+                <span className="truncate">Create on Amazon</span>
+              </button>
+            </div>
+            <p className="mt-2 text-[0.68rem] font-medium leading-4 text-[#7d6e93]">
+              As an Amazon Associate, Envitefy may earn from qualifying purchases.
+            </p>
+          </div>
+        ) : null}
         <div className="grid grid-cols-2 gap-2 rounded-[1.35rem] border border-[#d8caff] bg-[#fbf9ff]/96 p-2 shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur">
           <button
             type="button"

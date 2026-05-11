@@ -16,6 +16,7 @@ import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import {
+  filterRegistryOcrFacts,
   filterRenderedOcrFacts,
   filterRenderedTextValues,
   normalizeOcrFacts,
@@ -88,7 +89,10 @@ const DEFAULT_PALETTE = {
 function buildMapsHref(location: string | null | undefined): string | null {
   const value = String(location || "").trim();
   if (!value || value === "Location TBD") return null;
-  return buildPreferredDirectionsHref(value, typeof navigator !== "undefined" ? navigator.userAgent : undefined);
+  return buildPreferredDirectionsHref(
+    value,
+    typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+  );
 }
 
 function buildRsvpHref({
@@ -221,8 +225,7 @@ export default function BirthdaySkin({
   const displayRegistryName = String(registryName || "").trim();
   const displayRegistryHelperText = String(registryHelperText || "").trim();
   const displayRegistryUrl = String(registryUrl || "").trim();
-  const resolvedRegistryActionLabel =
-    String(registryActionLabel || "").trim() || "View Gift List";
+  const resolvedRegistryActionLabel = String(registryActionLabel || "").trim() || "View Gift List";
   const displayActivities = Array.isArray(activities)
     ? filterRenderedTextValues(
         activities.map((item) => String(item || "").trim()).filter(Boolean),
@@ -261,21 +264,24 @@ export default function BirthdaySkin({
     { minContrast: 4.5 },
   );
   const detailIconSwatchColor = "var(--theme-primary)";
-  const displayOcrFacts = filterRenderedOcrFacts(normalizeOcrFacts(ocrFacts), [
-    displayName,
-    displayDate,
-    displayTime,
-    displayLocation,
-    displayPlanCopy,
-    displayAttire,
-    displayRegistryName,
-    displayRegistryHelperText,
-    displayActivities,
-    displayRegistryUrl,
-    displayRsvpName,
-    rsvpPhone,
-    rsvpEmail,
-  ]);
+  const displayOcrFacts = filterRenderedOcrFacts(
+    filterRegistryOcrFacts(normalizeOcrFacts(ocrFacts), Boolean(displayRegistryUrl)),
+    [
+      displayName,
+      displayDate,
+      displayTime,
+      displayLocation,
+      displayPlanCopy,
+      displayAttire,
+      displayRegistryName,
+      displayRegistryHelperText,
+      displayActivities,
+      displayRegistryUrl,
+      displayRsvpName,
+      rsvpPhone,
+      rsvpEmail,
+    ],
+  );
   const leftColumnOcrFacts = displayOcrFacts.slice(0, 2);
   const rightColumnOcrFacts = displayOcrFacts.slice(2);
 
