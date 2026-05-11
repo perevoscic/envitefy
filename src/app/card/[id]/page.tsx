@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
 import { notFound, redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
 import SharedStudioCardPage from "@/components/studio/SharedStudioCardPage";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
@@ -301,7 +301,12 @@ function withDirectRsvpInvitationData(args: {
       rsvpEnabled: true,
       rsvpMode: readFirstString(eventDetails.rsvpMode, "envitefy"),
       rsvpName: readFirstString(eventDetails.rsvpName, data.rsvpName, data.hostName, "Host"),
-      rsvpUrl: `${buildEventPath(args.row.id, args.title)}#event-rsvp`,
+      rsvpUrl: `${buildEventPath(
+        args.row.id,
+        args.title,
+        undefined,
+        args.row.public_slug,
+      )}#event-rsvp`,
     },
   };
 }
@@ -351,7 +356,12 @@ export async function generateMetadata(props: {
     };
   }
 
-  const canonical = buildStudioCardPath(sharedCard.row.id, sharedCard.title);
+  const canonical = buildStudioCardPath(
+    sharedCard.row.id,
+    sharedCard.title,
+    undefined,
+    sharedCard.row.public_slug,
+  );
   const url = await absoluteUrl(canonical);
   const description =
     sanitizeGuestCopy((sharedCard.invitationData as Record<string, unknown>)?.description) ||
@@ -381,7 +391,12 @@ export default async function SharedCardPage(props: {
   const sharedCard = await resolveSharedCard(awaitedParams.id);
   if (!sharedCard) notFound();
 
-  const canonical = buildStudioCardPath(sharedCard.row.id, sharedCard.title);
+  const canonical = buildStudioCardPath(
+    sharedCard.row.id,
+    sharedCard.title,
+    undefined,
+    sharedCard.row.public_slug,
+  );
   const session: any = await getServerSession(authOptions as any);
   const userId = await resolveSessionUserId(session);
   const isOwner = Boolean(userId && sharedCard.row.user_id && userId === sharedCard.row.user_id);
@@ -389,7 +404,12 @@ export default async function SharedCardPage(props: {
   const ownerWorkspaceTab = canShowOwnerRsvpDashboard(sharedCard.row.data as any)
     ? "dashboard"
     : "design";
-  const ownerWorkspaceHref = `${buildEventPath(sharedCard.row.id, sharedCard.title)}?tab=${ownerWorkspaceTab}`;
+  const ownerWorkspaceHref = `${buildEventPath(
+    sharedCard.row.id,
+    sharedCard.title,
+    undefined,
+    sharedCard.row.public_slug,
+  )}?tab=${ownerWorkspaceTab}`;
   const returnHref = explicitOwnerPreview
     ? sanitizeInternalReturnHref(readSearchParam(awaitedSearchParams.returnTo)) ||
       ownerWorkspaceHref

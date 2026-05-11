@@ -163,17 +163,18 @@ export function buildEventProductPath(args: {
   title?: string | null;
   data?: unknown;
   output?: RequestedOutput | null;
+  publicSlug?: string | null;
 }): string {
   const output =
     normalizeOutput(args.output) || getPrimaryEventProductOutput(args.data, args.title);
 
   if (output === "signup_form") {
-    return `/smart-signup-form/${buildEventSlugSegment(args.eventId, args.title)}`;
+    return `/smart-signup-form/${buildEventSlugSegment(args.eventId, args.title, args.publicSlug)}`;
   }
 
   if (output && CARD_FIRST_OUTPUTS.has(output)) {
-    return buildStudioCardPath(args.eventId, args.title);
+    return buildStudioCardPath(args.eventId, args.title, undefined, args.publicSlug);
   }
 
-  return buildEventPath(args.eventId, args.title);
+  return buildEventPath(args.eventId, args.title, undefined, args.publicSlug);
 }

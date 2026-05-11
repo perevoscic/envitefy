@@ -138,7 +138,12 @@ test("owner workspace exposes Dashboard RSVPs Messages and Design tabs", () => {
   assert.match(source, /function shouldOpenPreviewInStudioCard/);
   assert.match(source, /ownerDefaultSurface === "card"/);
   assert.match(source, /ownerDefaultSurface === "event" \|\| ownerDefaultSurface === "signup"/);
-  assert.match(source, /return buildStudioCardPath\(eventId, currentEventTitle \|\| eventTitle\);/);
+  assert.match(
+    source,
+    /return buildStudioCardPath\(\s*eventId,\s*currentEventTitle \|\| eventTitle,/,
+  );
+  assert.match(source, /<OwnerPublicLinkPanel/);
+  assert.match(source, /\/api\/events\/\$\{encodeURIComponent\(eventId\)\}\/public-slug/);
   assert.match(responseSource, /Response overview/);
   assert.match(
     responseSource,
@@ -243,7 +248,7 @@ test("owner Design tab previews card edits before saving them", () => {
   assert.match(source, /text-slate-500 md:col-span-3/);
   assert.match(source, /text-slate-500 md:col-span-2/);
   assert.match(source, /block min-w-0 text-xs font-black uppercase/);
-  assert.match(source, /\{status === "previewing" \? "Updating" : "Update"\}/);
+  assert.match(source, /\{status === "previewing" \? "Previewing" : "Preview"\}/);
   assert.match(source, /\{status === "saving" \? "Saving" : "Save"\}/);
   assert.match(source, /grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-end/);
   assert.match(source, /min-h-12 min-w-0 items-center justify-center/);

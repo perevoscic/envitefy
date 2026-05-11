@@ -1,5 +1,5 @@
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
-import { insertEventHistory } from "@/lib/db";
+import { insertEventHistory, query } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { buildEventAssetContent } from "./assets.ts";
 import {
@@ -7,7 +7,9 @@ import {
   createEventAsset,
   getCreationSession,
   getLatestCreationSession,
+  listEventAssets,
   markCreationSessionSaved,
+  releaseCreationSessionSaveFailure,
   upsertCreationSession,
 } from "./event-storage.ts";
 import { extractConciergeDraft } from "./extract.ts";
@@ -63,6 +65,25 @@ function uniqueAssetTypes(outputs: RequestedOutput[]): EventAssetType[] {
   );
 }
 
+async function findPersistedCreationEvent(params: {
+  userId: string;
+  creationSessionId: string;
+}): Promise<{ id: string; title: string } | null> {
+  const sessionId = params.creationSessionId.trim();
+  if (!sessionId) return null;
+  const res = await query(
+    `select id, title
+     from event_history
+     where user_id = $1
+       and coalesce(data, '{}'::jsonb)#>>'{conciergeDraft,creationSessionId}' = $2
+     order by created_at desc
+     limit 1`,
+    [params.userId, sessionId],
+  );
+  const row = res.rows[0];
+  return row ? { id: String(row.id), title: String(row.title || "Event draft") } : null;
+}
+
 async function persistCreationAsEvent(params: {
   userId: string;
   draft: ConciergeEventDraft;
@@ -72,14 +93,27 @@ async function persistCreationAsEvent(params: {
     studioInvite: params.studioInvite,
   });
   const data = payload.data;
-  const event = await insertEventHistory({
+  const existingEvent = await findPersistedCreationEvent({
     userId: params.userId,
-    title: payload.title,
-    data,
+    creationSessionId: params.draft.creationSessionId,
   });
+  const event =
+    existingEvent ||
+    (await insertEventHistory({
+      userId: params.userId,
+      title: payload.title,
+      data,
+    }));
   const assetTypes = uniqueAssetTypes(params.draft.requestedOutputs);
   const targetAssetTypes: EventAssetType[] = assetTypes.length ? assetTypes : ["live_card"];
+  const existingAssets = await listEventAssets(event.id, params.userId);
+  const existingCreationAssetTypes = new Set(
+    existingAssets
+      .filter((asset) => asset.metadata?.creationSessionId === params.draft.creationSessionId)
+      .map((asset) => asset.asset_type),
+  );
   for (const assetType of targetAssetTypes) {
+    if (existingCreationAssetTypes.has(assetType)) continue;
     const generated = buildEventAssetContent({
       eventId: event.id,
       eventTitle: event.title,
@@ -437,43 +471,66 @@ export async function finalizeCreationIntake(params: {
       : chatMessagesFromSession(creationSession).length
         ? chatMessagesFromSession(creationSession)
         : existingSessionChatMessages;
-    const saved = await (params.timing?.time("db_write", () =>
-      persistCreationAsEvent({
-        userId: params.userId,
-        draft,
-        studioInvite: request.studioInvite,
-      }),
-    ) ??
-      persistCreationAsEvent({
-        userId: params.userId,
-        draft,
-        studioInvite: request.studioInvite,
-      }));
+    if (!creationSession) {
+      throw new Error("Creation session must be claimed before saving.");
+    }
     const savedDraft: ConciergeEventDraft = {
       ...draft,
       draftStatus: "published",
     };
-    if (!creationSession) {
-      throw new Error("Creation session must be claimed before saving.");
-    }
-    creationSession = await (params.timing?.time("db_write", () =>
-      markCreationSessionSaved({
-        userId: params.userId,
-        sessionId: draft.creationSessionId,
-        eventId: saved.eventId,
-        draft: savedDraft,
-        metadata: chatMessagesMetadata(saveChatMessages),
-      }),
-    ) ??
-      markCreationSessionSaved({
-        userId: params.userId,
-        sessionId: draft.creationSessionId,
-        eventId: saved.eventId,
-        draft: savedDraft,
-        metadata: chatMessagesMetadata(saveChatMessages),
-      }));
-    if (!creationSession) {
-      throw new Error("Creation session could not be marked saved.");
+    let saved: { eventId: string };
+    try {
+      saved = await (params.timing?.time("db_write", () =>
+        persistCreationAsEvent({
+          userId: params.userId,
+          draft,
+          studioInvite: request.studioInvite,
+        }),
+      ) ??
+        persistCreationAsEvent({
+          userId: params.userId,
+          draft,
+          studioInvite: request.studioInvite,
+        }));
+      creationSession = await (params.timing?.time("db_write", () =>
+        markCreationSessionSaved({
+          userId: params.userId,
+          sessionId: draft.creationSessionId,
+          eventId: saved.eventId,
+          draft: savedDraft,
+          metadata: chatMessagesMetadata(saveChatMessages),
+        }),
+      ) ??
+        markCreationSessionSaved({
+          userId: params.userId,
+          sessionId: draft.creationSessionId,
+          eventId: saved.eventId,
+          draft: savedDraft,
+          metadata: chatMessagesMetadata(saveChatMessages),
+        }));
+      if (!creationSession) {
+        throw new Error("Creation session could not be marked saved.");
+      }
+    } catch (error) {
+      try {
+        await (params.timing?.time("db_write", () =>
+          releaseCreationSessionSaveFailure({
+            userId: params.userId,
+            sessionId: draft.creationSessionId,
+            draft,
+            metadata: { saveFailure: "publish_failed" },
+          }),
+        ) ??
+          releaseCreationSessionSaveFailure({
+            userId: params.userId,
+            sessionId: draft.creationSessionId,
+            draft,
+            metadata: { saveFailure: "publish_failed" },
+          }));
+      } catch {
+        // Keep the original save failure visible to the caller.
+      }
+      throw error;
     }
     return {
       ok: true,

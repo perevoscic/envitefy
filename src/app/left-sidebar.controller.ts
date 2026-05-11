@@ -1256,7 +1256,17 @@ export function useLeftSidebarController({
       const { row, openMode } = item;
       const title = row.title || "Untitled event";
       const publicHref = item.publicHref || item.href;
-      const ownerHref = item.ownerHref || buildEventPath(row.id, title);
+      const rowData =
+        row.data && typeof row.data === "object" && !Array.isArray(row.data)
+          ? (row.data as Record<string, unknown>)
+          : null;
+      const publicSlug =
+        typeof row.public_slug === "string" && row.public_slug.trim()
+          ? row.public_slug.trim()
+          : typeof rowData?.publicSlug === "string" && rowData.publicSlug.trim()
+            ? rowData.publicSlug.trim()
+            : null;
+      const ownerHref = item.ownerHref || buildEventPath(row.id, title, undefined, publicSlug);
 
       blurActiveElement();
 

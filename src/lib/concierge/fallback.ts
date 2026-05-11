@@ -1,13 +1,13 @@
 import * as chrono from "chrono-node";
 import {
+  classifyCreationBoundary,
   cleanCreationString,
   createCreationSessionId,
   deriveCreationStatus,
   getOutputRequirement,
+  hasClearCreationSignal,
   isGreetingMessage,
   isMeaningfulEventText,
-  isNonCreationRequest,
-  isOffDomainRequest,
   normalizeCreationIntent,
   normalizeRequestedOutputs,
   outputQuestion,
@@ -344,8 +344,10 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
   );
   if (possessive?.[1]) return possessive[1];
 
-  const turning = text.match(/\b([A-Z][a-zA-Z'-]{1,30})\s+(?:(?:is\s+)?turning|turns)\s+\d{1,3}\b/);
-  if (turning?.[1]) return turning[1];
+  const turning = text.match(
+    /\b([A-Z][a-zA-Z'-]{1,30})\s*,?\s+(?:(?:is\s+)?turning|turns)\s+\d{1,3}\b/i,
+  );
+  if (turning?.[1]) return titleCaseName(turning[1]);
 
   const commaName = text.match(/^\s*([A-Z][a-zA-Z'-]{1,30})\s*,\s*\d{1,3}\b/);
   if (commaName?.[1]) return commaName[1];
@@ -389,6 +391,13 @@ function detectHonoreeFollowUp(text: string, previous?: ConciergeEventDraft | nu
   if (!cleaned || cleaned.length > 60) return null;
   if (
     /\b(at|@|venue|location|home|house|park|gym|school|restaurant|saturday|sunday|monday|tuesday|wednesday|thursday|friday|january|february|march|april|may|june|july|august|september|october|november|december|birthday|party|theme)\b/i.test(
+      cleaned,
+    )
+  ) {
+    return null;
+  }
+  if (
+    /\b(vibe|tone|style|theme|balloons?|rainbow|pastels?|elegant|luxury|formal|classic|romantic|soft|sweet|fun|playful|colorful|modern|minimal|bold|whimsical|rustic|floral|bright|simple|casual|sporty|neon|dinosaur|princess|space)\b/i.test(
       cleaned,
     )
   ) {
@@ -909,6 +918,10 @@ function stripLeadingTimeFromLocation(value: string | null) {
   );
   const withoutTrailingIntent = withoutTime
     .replace(
+      /\s+(?:for|with)\s+(?:about\s+)?\d{1,4}\s*(?:guests?|kids?|children|people|attendees|invitees)\b[\s\S]*$/i,
+      "",
+    )
+    .replace(
       /\s+(?:and\s+)?(?:(?:i|we)\s+)?(?:want|need|would\s+like)\s+to\s+(?:save|add|keep)\s+(?:it|this|the\s+invite)?$/i,
       "",
     )
@@ -1396,6 +1409,15 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
   if (draft.sourceContext.boundary === "private_data") {
     return "I can't change owners, user IDs, or private account data here. I can help with event details, RSVP, copy, design, or weather planning.";
   }
+  if (draft.sourceContext.boundary === "secret_detected") {
+    return "Do not put API keys, passwords, or private credentials in an invite. Remove the secret, then tell me the event details you want guests to see.";
+  }
+  if (draft.sourceContext.boundary === "unsafe_guest_data") {
+    return "I can't help scrape private RSVP data or bulk-change guest responses from chat. I can help with RSVP settings, guest-facing copy, or event management.";
+  }
+  if (draft.sourceContext.boundary === "ambiguous_edit") {
+    return "Which invite should I update, or do you want to start a new one?";
+  }
   if (draft.currentQuestion === "which_source") {
     return "Should I use the uploaded image or the current event details?";
   }
@@ -1513,12 +1535,24 @@ export function fallbackExtractConciergeDraft(args: {
   const text = combined || message;
   const sessionDraft = args.draft || null;
   const previous = shouldStartFreshEvent(message, sessionDraft) ? null : sessionDraft;
-  const nonCreationRequest = isNonCreationRequest(message);
-  const offDomainRequest = isOffDomainRequest(message);
+  const privateDataMutationRequest = isPrivateDataMutationRequest(message);
+  const classifiedBoundary = classifyCreationBoundary(message, {
+    activeContext: args.activeContext || null,
+    previous,
+  });
+  const blockingBoundary =
+    privateDataMutationRequest ? ("private_data" as const) : classifiedBoundary;
+  const blocksCreation = Boolean(blockingBoundary);
+  const hasCreationSignal =
+    Boolean(args.ocrContext) ||
+    Boolean(previous) ||
+    Boolean(args.starterCategory) ||
+    args.action === "starter_category" ||
+    hasClearCreationSignal(text);
   const hasExplicitOutputs =
     Array.isArray(args.requestedOutputs) && args.requestedOutputs.length > 0;
   const requestedOutputs =
-    nonCreationRequest || offDomainRequest
+    blocksCreation
       ? []
       : normalizeRequestedOutputs(
           hasExplicitOutputs
@@ -1527,7 +1561,10 @@ export function fallbackExtractConciergeDraft(args: {
           {
             text,
             previous: hasExplicitOutputs ? null : previous,
-            defaultOutput: !previous && isGreetingMessage(message) ? null : undefined,
+            defaultOutput:
+              !previous && (isGreetingMessage(message) || (!hasCreationSignal && !hasExplicitOutputs))
+                ? null
+                : undefined,
           },
         );
   const resolvedSourceContext = resolveCreationSourceContext({
@@ -1536,14 +1573,9 @@ export function fallbackExtractConciergeDraft(args: {
     previous,
     ocrContext: args.ocrContext || null,
   });
-  const privateDataMutationRequest = isPrivateDataMutationRequest(message);
-  const sourceContext = privateDataMutationRequest
-    ? { ...resolvedSourceContext, boundary: "private_data" as const }
-    : offDomainRequest
-      ? { ...resolvedSourceContext, boundary: "off_domain" as const }
-      : nonCreationRequest
-        ? { ...resolvedSourceContext, boundary: "non_creation" as const }
-        : resolvedSourceContext;
+  const sourceContext = blockingBoundary
+    ? { ...resolvedSourceContext, boundary: blockingBoundary }
+    : resolvedSourceContext;
   if (!privateDataMutationRequest && isStatePreservingConversationMessage(message, previous)) {
     return {
       ...previous!,
@@ -1617,7 +1649,7 @@ export function fallbackExtractConciergeDraft(args: {
       source: "text",
     };
   }
-  if (privateDataMutationRequest && previous) {
+  if (blockingBoundary && previous) {
     return {
       ...previous,
       sourceContext: {
@@ -1630,8 +1662,7 @@ export function fallbackExtractConciergeDraft(args: {
   }
   const source: ConciergeSource =
     args.source || (args.ocrContext ? (message ? "mixed" : "upload") : previous?.source || "text");
-  const eventType =
-    nonCreationRequest || offDomainRequest ? "unknown" : detectEventType(text, previous);
+  const eventType = blocksCreation ? "unknown" : detectEventType(text, previous);
   const relationship = detectRelationship(text, previous);
   const honoreeName =
     detectHonoreeName(text, previous) ||
@@ -1661,7 +1692,9 @@ export function fallbackExtractConciergeDraft(args: {
   );
   const extractedEventPurpose = firstString(fieldsGuess.eventPurpose, fieldsGuess.title);
   const sportEventPurpose = deriveSportEventTitle(text, eventType);
-  const rawMessageEventPurpose = isMeaningfulEventText(message, requestedOutputs)
+  const canUseRawMessageAsEventPurpose = hasCreationSignal || requestedOutputs.length > 0;
+  const rawMessageEventPurpose =
+    canUseRawMessageAsEventPurpose && isMeaningfulEventText(message, requestedOutputs)
     ? cleanCreationString(message)
     : null;
   const shouldSuppressRawCreationPrompt = Boolean(
@@ -1678,10 +1711,7 @@ export function fallbackExtractConciergeDraft(args: {
         : rawMessageEventPurpose
       : null;
   const eventPurpose =
-    nonCreationRequest ||
-    offDomainRequest ||
-    privateDataMutationRequest ||
-    (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
+    blocksCreation || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
       : extractedEventPurpose || sportEventPurpose || previous?.eventPurpose || messageEventPurpose;
   const titleCandidate =
@@ -1695,10 +1725,7 @@ export function fallbackExtractConciergeDraft(args: {
       previous,
     });
   const title =
-    nonCreationRequest ||
-    offDomainRequest ||
-    privateDataMutationRequest ||
-    (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
+    blocksCreation || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
       : titleCandidate;
   const dateText = chronoResult.dateText || firstString(fieldsGuess.date);
@@ -1727,7 +1754,7 @@ export function fallbackExtractConciergeDraft(args: {
     (isSportEventType(eventType) ? theme : null);
   const toneForStatus = tone || theme;
   const status =
-    nonCreationRequest || offDomainRequest
+    blocksCreation
       ? {
           draftStatus: "needs_source_or_event" as const,
           missingFields: [],
@@ -1753,7 +1780,7 @@ export function fallbackExtractConciergeDraft(args: {
   const needsDateConfirmation = Boolean(chronoResult.needsConfirmation);
   const base = {
     creationSessionId: createCreationSessionId(sessionDraft),
-    intent: normalizeCreationIntent(previous?.intent, message, requestedOutputs),
+    intent: blocksCreation ? ("unknown" as const) : normalizeCreationIntent(previous?.intent, message, requestedOutputs),
     requestedOutputs,
     sourceContext,
     eventPurpose,

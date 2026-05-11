@@ -1,22 +1,27 @@
-const DEFAULT_SLUG = "event";
+import {
+  buildLegacyEventSlugSegment,
+  buildPublicEventSlugSegment,
+  normalizePublicSlug,
+} from "./event-public-slug";
 
 const slugifyTitle = (value: string | null | undefined): string => {
-  if (!value) return DEFAULT_SLUG;
-  const slug = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return slug || DEFAULT_SLUG;
+  return normalizePublicSlug(value);
 };
 
 export function buildEventSlug(title?: string | null): string {
   return slugifyTitle(typeof title === "string" ? title : null);
 }
 
-export function buildEventSlugSegment(id: string, title?: string | null): string {
-  const safeId = String(id || "").trim();
-  const slug = buildEventSlug(title);
-  return safeId ? `${slug}-${safeId}` : slug;
+export function buildEventSlugSegment(
+  id: string,
+  title?: string | null,
+  publicSlug?: string | null,
+): string {
+  return buildPublicEventSlugSegment(id, title, publicSlug);
+}
+
+export function buildLegacyEventSlugIdSegment(id: string, title?: string | null): string {
+  return buildLegacyEventSlugSegment(id, title);
 }
 
 type EventPathParams = Record<string, string | number | boolean | null | undefined>;
@@ -25,8 +30,9 @@ export function buildEventPath(
   id: string,
   title?: string | null,
   params?: EventPathParams,
+  publicSlug?: string | null,
 ): string {
-  const segment = buildEventSlugSegment(id, title);
+  const segment = buildEventSlugSegment(id, title, publicSlug);
   const base = `/event/${segment}`;
   if (!params) return base;
   const search = new URLSearchParams();
@@ -46,8 +52,9 @@ export function buildStudioCardPath(
   id: string,
   title?: string | null,
   params?: EventPathParams,
+  publicSlug?: string | null,
 ): string {
-  const segment = buildEventSlugSegment(id, title);
+  const segment = buildEventSlugSegment(id, title, publicSlug);
   const base = `/card/${segment}`;
   if (!params) return base;
   const search = new URLSearchParams();

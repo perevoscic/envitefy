@@ -220,6 +220,62 @@ function hasPatchField(patch: Record<string, unknown>, fields: string[]) {
   return fields.some((field) => Object.hasOwn(patch, field));
 }
 
+function isSecretLikeEventRequest(message: string): boolean {
+  return (
+    /\b(api[_\s-]?key|secret|token|password|private key|credential)\b/i.test(message) ||
+    /\b(?:sk|pk)_(?:live|test)[A-Za-z0-9_-]*/.test(message) ||
+    /\bsk-[A-Za-z0-9_-]{6,}/.test(message)
+  );
+}
+
+function isUnsafeGuestDataEventRequest(message: string): boolean {
+  return (
+    /\b(scrap(?:e|ing)|harvest|export|dump|download|steal|collect)\b[\s\S]{0,80}\b(private|rsvp|guest|email|phone|contact)/i.test(
+      message,
+    ) ||
+    /\b(delete|remove|wipe|clear)\b[\s\S]{0,80}\b(guest list|guests?|rsvps?|responses?)\b/i.test(
+      message,
+    ) ||
+    /\bmark\b[\s\S]{0,80}\b(everyone|all guests?|all rsvps?)\b[\s\S]{0,80}\b(yes|no|maybe|attending|declined)\b/i.test(
+      message,
+    )
+  );
+}
+
+function guardedEventAssistantPlan(message: string): EventActionPlan | null {
+  if (isSecretLikeEventRequest(message)) {
+    return {
+      actions: [
+        {
+          type: "ask_question",
+          question:
+            "Do not put API keys, passwords, or secrets in an invite. I can help add a public RSVP link, host contact, or guest-facing note instead.",
+          suggestedReplies: ["Add RSVP link", "Add host contact", "Add guest note"],
+        },
+      ],
+      assistantMessage:
+        "Do not put API keys, passwords, or secrets in an invite. I can help add a public RSVP link, host contact, or guest-facing note instead.",
+      suggestedReplies: ["Add RSVP link", "Add host contact", "Add guest note"],
+    };
+  }
+  if (isUnsafeGuestDataEventRequest(message)) {
+    return {
+      actions: [
+        {
+          type: "ask_question",
+          question:
+            "I can't help scrape private RSVP data or bulk-change guest responses. I can help edit invitation copy, RSVP settings, or guest-facing details.",
+          suggestedReplies: ["Edit RSVP settings", "Update invite copy", "Create a reminder"],
+        },
+      ],
+      assistantMessage:
+        "I can't help scrape private RSVP data or bulk-change guest responses. I can help edit invitation copy, RSVP settings, or guest-facing details.",
+      suggestedReplies: ["Edit RSVP settings", "Update invite copy", "Create a reminder"],
+    };
+  }
+  return null;
+}
+
 function uniqueDisplayLine(...values: unknown[]) {
   const parts = values.map(cleanString).filter((value): value is string => Boolean(value));
   return parts.filter((value, index) => parts.indexOf(value) === index).join(", ") || null;
@@ -466,6 +522,9 @@ async function planWithOpenAi(params: {
               "Allowed action types: update_event, create_asset, update_asset, ask_question.",
               "Never choose or accept user_id. Never modify ownership.",
               "Only patch event fields relevant to event details, RSVP, copy, status, and design tone.",
+              "Use concise, warm, professional language. Never use markdown, bullets, numbered lists, star separators, or raw snake_case identifiers. Ask at most two short questions. Do not use slang, emojis, excessive exclamation, or over-familiar compliments.",
+              "Do not claim an action was completed unless it is represented in the returned actions.",
+              "Do not execute destructive guest response changes; ask the host to use RSVP tools or clarify a supported event setting.",
               "Theme, tone, style, and editInstruction are internal creative direction. Do not copy raw user vibe, prompt, or instruction text into visible title, headlineTitle, description, liveCard, publicEvent, or previewCopy fields; only patch those fields with polished guest-facing copy.",
               "If the user asks about weather, use only weatherContext. If it is unavailable, ask for the missing date/location or suggest adding a backup note without inventing a forecast.",
             ].join(" "),
@@ -528,6 +587,8 @@ export async function buildEventActionPlan(params: {
   history: Array<{ role: string; content: string }>;
   weatherContext?: ConciergeWeatherContext | null;
 }): Promise<EventActionPlan> {
+  const guardedPlan = guardedEventAssistantPlan(params.message);
+  if (guardedPlan) return guardedPlan;
   if (shouldResolveConciergeWeatherContext(params.message)) {
     return buildWeatherPlan(params.weatherContext);
   }
@@ -553,6 +614,9 @@ export async function applyEventActions(params: {
   assets: EventAsset[];
   appliedActions: ConciergeEventAction[];
 }> {
+  if (params.event.user_id !== params.userId) {
+    throw new Error("Event not found.");
+  }
   let event = params.event;
   const appliedActions: ConciergeEventAction[] = [];
 
@@ -575,6 +639,21 @@ export async function applyEventActions(params: {
         }
       }
     } else if (action.type === "create_asset") {
+      const eventAssistantActionKey = [
+        "event_assistant_create_asset",
+        action.assetType,
+        cleanString(action.brief)?.toLowerCase().slice(0, 500) || "",
+      ].join(":");
+      const existingAssets = await listEventAssets(params.eventId, params.userId);
+      const existingAsset = existingAssets.find(
+        (asset) =>
+          asset.asset_type === action.assetType &&
+          asset.metadata?.eventAssistantActionKey === eventAssistantActionKey,
+      );
+      if (existingAsset) {
+        appliedActions.push(action);
+        continue;
+      }
       const generated = buildEventAssetContent({
         eventId: params.eventId,
         eventTitle: event.title,
@@ -589,7 +668,10 @@ export async function applyEventActions(params: {
         title: generated.title,
         content: generated.content,
         design: generated.design,
-        metadata: generated.metadata,
+        metadata: {
+          ...generated.metadata,
+          eventAssistantActionKey,
+        },
       });
       if (action.assetType === "rsvp_page") {
         const nextData = {

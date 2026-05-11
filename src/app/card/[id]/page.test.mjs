@@ -68,7 +68,7 @@ test("shared card route carries direct RSVP metadata into live-card actions", ()
   assert.match(pageSource, /rsvpMode: readFirstString\(eventDetails\.rsvpMode, "envitefy"\)/);
   assert.match(
     pageSource,
-    /rsvpUrl: `\$\{buildEventPath\(args\.row\.id, args\.title\)\}#event-rsvp`/,
+    /rsvpUrl: `\$\{buildEventPath\(\s*args\.row\.id,\s*args\.title,\s*undefined,\s*args\.row\.public_slug,\s*\)\}#event-rsvp`/,
   );
   assert.match(surfaceSource, /eventId\?: string;/);
   assert.match(surfaceSource, /const hasDirectEnvitefyRsvp = Boolean/);
@@ -109,7 +109,7 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   assert.match(pageSource, /canShowOwnerRsvpDashboard\(sharedCard\.row\.data as any\)/);
   assert.match(
     pageSource,
-    /const ownerWorkspaceHref = `\$\{buildEventPath\(sharedCard\.row\.id, sharedCard\.title\)\}\?tab=\$\{ownerWorkspaceTab\}`;/,
+    /const ownerWorkspaceHref = `\$\{buildEventPath\(\s*sharedCard\.row\.id,\s*sharedCard\.title,\s*undefined,\s*sharedCard\.row\.public_slug,\s*\)\}\?tab=\$\{ownerWorkspaceTab\}`;/,
   );
   assert.match(
     pageSource,

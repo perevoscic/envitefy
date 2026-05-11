@@ -27,6 +27,7 @@ export type CompactNavItem = {
 export type HistoryRow = {
   id: string;
   title: string;
+  public_slug?: string | null;
   created_at?: string;
   data?: unknown;
 };
@@ -789,7 +790,22 @@ function isSidebarProductPreviewFirstEvent(data: unknown, fallbackText?: string 
   );
 }
 
-function buildSidebarEventSlugSegment(id: string, title: string): string {
+function readSidebarPublicSlug(row: HistoryRow, data: Record<string, any> | null): string {
+  const slug =
+    typeof row.public_slug === "string" && row.public_slug.trim()
+      ? row.public_slug.trim()
+      : typeof data?.publicSlug === "string" && data.publicSlug.trim()
+        ? data.publicSlug.trim()
+        : "";
+  return slug
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildSidebarEventSlugSegment(id: string, title: string, publicSlug?: string): string {
+  if (publicSlug) return publicSlug;
   const safeId = String(id || "").trim();
   const slug =
     String(title || "")
@@ -801,17 +817,23 @@ function buildSidebarEventSlugSegment(id: string, title: string): string {
 
 function buildSidebarProductPath(
   row: HistoryRow,
-  data: unknown,
-  buildEventPath: (eventId: string, title: string) => string,
+  data: Record<string, any> | null,
+  buildEventPath: (
+    eventId: string,
+    title: string,
+    params?: any,
+    publicSlug?: string | null,
+  ) => string,
 ): string {
+  const publicSlug = readSidebarPublicSlug(row, data);
   const output = getSidebarPrimaryProductOutput(data, row.title);
   if (output === "signup_form") {
-    return `/smart-signup-form/${buildSidebarEventSlugSegment(row.id, row.title)}`;
+    return `/smart-signup-form/${buildSidebarEventSlugSegment(row.id, row.title, publicSlug)}`;
   }
   if (output && SIDEBAR_CARD_FIRST_OUTPUTS.has(output)) {
-    return `/card/${buildSidebarEventSlugSegment(row.id, row.title)}`;
+    return `/card/${buildSidebarEventSlugSegment(row.id, row.title, publicSlug)}`;
   }
-  return buildEventPath(row.id, row.title);
+  return buildEventPath(row.id, row.title, undefined, publicSlug || null);
 }
 
 function resolveSidebarProductKind(output: SidebarProductOutput | null) {
@@ -852,7 +874,12 @@ function sortGroupedSections(source: Map<string, GroupedEventItem[]>) {
 export function buildGroupedEventLists(args: {
   history: HistoryRow[];
   getEventStartIso: (data: unknown) => unknown;
-  buildEventPath: (eventId: string, title: string) => string;
+  buildEventPath: (
+    eventId: string,
+    title: string,
+    params?: any,
+    publicSlug?: string | null,
+  ) => string;
   isSportsPreviewFirstEvent: (data: unknown) => boolean;
   isInvitedEventLikeRecord: (record: Record<string, unknown>) => boolean;
   canShowOwnerRsvpDashboard: (data: unknown) => boolean;
@@ -891,7 +918,8 @@ export function buildGroupedEventLists(args: {
     const parsedDateMs = dateRaw ? new Date(dateRaw).getTime() : Number.NaN;
     const dateMs = Number.isNaN(parsedDateMs) ? Number.POSITIVE_INFINITY : parsedDateMs;
     const dateLabel = formatEventDate(dateRaw);
-    const defaultHref = args.buildEventPath(row.id, row.title);
+    const publicSlug = readSidebarPublicSlug(row, data);
+    const defaultHref = args.buildEventPath(row.id, row.title, undefined, publicSlug || null);
     const shouldOpenProductFirst = isSidebarProductPreviewFirstEvent(data, row.title);
     const primaryOutput = getSidebarPrimaryProductOutput(data, row.title);
     const publicHref = shouldOpenProductFirst

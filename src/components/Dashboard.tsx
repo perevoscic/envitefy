@@ -108,6 +108,7 @@ type SaveHistoryResult =
       eventId: string;
       ownership: "owned" | "invited";
       savedTitle?: string;
+      publicSlug?: string;
     }
   | {
       ok: false;
@@ -1700,6 +1701,13 @@ export default function Dashboard({
             ? historyData.id.trim()
             : undefined;
         const savedTitle = typeof historyData?.title === "string" ? historyData.title : undefined;
+        const publicSlug =
+          typeof historyData?.public_slug === "string" && historyData.public_slug.trim()
+            ? historyData.public_slug.trim()
+            : typeof historyData?.data?.publicSlug === "string" &&
+                historyData.data.publicSlug.trim()
+              ? historyData.data.publicSlug.trim()
+              : undefined;
 
         if (!historyRes.ok || !eventId) {
           const serverError =
@@ -1721,13 +1729,16 @@ export default function Dashboard({
                 created_at: historyData?.created_at || new Date().toISOString(),
                 start: ready.start,
                 category: normalizedOcrCategory || null,
-                data: payload.data,
+                data:
+                  historyData?.data && typeof historyData.data === "object"
+                    ? { ...payload.data, ...historyData.data }
+                    : payload.data,
               },
             }),
           );
         }
         invalidateEventCache({ force: true, source: "dashboard-create" });
-        return { ok: true, eventId, ownership: historyOwnership, savedTitle };
+        return { ok: true, eventId, ownership: historyOwnership, savedTitle, publicSlug };
       } catch (err) {
         console.error("Failed to save to Envitefy history:", err);
         logUploadIssue(err, "history-save", { scanAttemptId });
@@ -1773,13 +1784,14 @@ export default function Dashboard({
           );
           return false;
         }
-        const { eventId, ownership, savedTitle } = saveResult;
+        const { eventId, ownership, savedTitle, publicSlug } = saveResult;
 
         const eventTitle = savedTitle || eventInput.title || "Event";
         const eventHref = buildEventPath(
           eventId,
           eventTitle,
           ownership === "owned" ? { created: true, tab: "dashboard" } : { created: true },
+          publicSlug,
         );
         clearEventContext();
         setEventContextSourcePage(ownership === "owned" ? "myEvents" : "invitedEvents");

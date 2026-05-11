@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
-import { getEventHistoryById } from "@/lib/db";
 import { listEventAssets } from "@/lib/concierge/event-storage";
+import { getEventHistoryById } from "@/lib/db";
 import { buildEventPath } from "@/utils/event-url";
 import EventManageClient from "./EventManageClient";
 
@@ -41,7 +41,7 @@ export default async function EventManagePage({ params }: { params: Promise<{ id
       initialTitle={title}
       initialData={data}
       initialAssets={assets}
-      eventHref={buildEventPath(event.id, title)}
+      eventHref={buildEventPath(event.id, title, undefined, event.public_slug)}
     />
   );
 }

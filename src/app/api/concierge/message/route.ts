@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";
 import { handleCreationIntake } from "@/lib/concierge/intake";
 import type { ConciergeMessageRequest, ConciergeMessageResponse } from "@/lib/concierge/types";
 import {
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
       timing,
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Concierge request failed.",
+        error: conciergeApiErrorMessage(error, "Concierge request failed."),
       } satisfies ConciergeMessageResponse,
       { status: 500 },
     );

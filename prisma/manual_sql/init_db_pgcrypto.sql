@@ -76,11 +76,13 @@ CREATE TABLE IF NOT EXISTS event_history (
   user_id uuid REFERENCES users(id),
   title text NOT NULL,
   data jsonb NOT NULL,
+  public_slug text,
   created_at timestamptz(6) DEFAULT now()
 );
 
 -- Ensure id default and primary key exist if table pre-existed without them
 ALTER TABLE event_history ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE event_history ADD COLUMN IF NOT EXISTS public_slug text;
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint
@@ -92,6 +94,19 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS idx_event_history_user_id_created_at
   ON event_history(user_id, created_at DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_event_history_public_slug_unique
+  ON event_history (lower(public_slug))
+  WHERE public_slug IS NOT NULL AND public_slug <> '';
+
+CREATE TABLE IF NOT EXISTS event_public_slug_aliases (
+  alias text PRIMARY KEY,
+  event_id uuid NOT NULL REFERENCES event_history(id) ON DELETE CASCADE,
+  created_at timestamptz(6) DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_public_slug_aliases_event_id
+  ON event_public_slug_aliases(event_id);
 
 CREATE TABLE IF NOT EXISTS event_discoveries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

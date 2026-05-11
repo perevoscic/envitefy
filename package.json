@@ -41,7 +41,8 @@
     "marketing:campaign": "node scripts/generate-marketing-campaign.mjs",
     "campaign": "node scripts/generate-marketing-campaign.mjs",
     "campaign:video": "node scripts/assemble-storyboard-video.mjs",
-    "creation:backfill-source-intent": "node scripts/backfill-creation-source-intent.mjs"
+    "creation:backfill-source-intent": "node scripts/backfill-creation-source-intent.mjs",
+    "events:backfill-public-slugs": "node scripts/backfill-event-public-slugs.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-sesv2": "^3.887.0",

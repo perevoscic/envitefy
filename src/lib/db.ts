@@ -21,6 +21,13 @@ import {
   type ProductScope,
   productScopesForSignupSource,
 } from "@/lib/product-scopes";
+import {
+  buildEventPublicSlugCandidate,
+  MAX_PUBLIC_SLUG_LENGTH,
+  makeEventPublicSlugRoutable,
+  normalizePublicSlug,
+  readEventPublicSlug,
+} from "@/utils/event-public-slug";
 
 const scrypt = promisify(nodeScrypt);
 
@@ -1247,6 +1254,7 @@ export type EventHistoryRow = {
   user_id?: string | null;
   title: string;
   data: any;
+  public_slug?: string | null;
   created_at?: string;
 };
 
@@ -1259,6 +1267,7 @@ function summarizeEventHistoryRowForLog(row: EventHistoryRow) {
     id: row?.id || null,
     userId: row?.user_id || null,
     title: row?.title || null,
+    publicSlug: row?.public_slug || (data as any)?.publicSlug || null,
     createdAt: row?.created_at || null,
     ownership: (data as any)?.ownership ?? null,
     invitedFromScan: (data as any)?.invitedFromScan ?? null,
@@ -1290,6 +1299,7 @@ export type EventHistoryIdentityRow = {
   id: string;
   user_id?: string | null;
   title: string;
+  public_slug?: string | null;
   created_at?: string;
 };
 
@@ -2489,6 +2499,175 @@ function sanitizeJsonValueForPostgres(value: any): any {
   return value;
 }
 
+async function ensureEventPublicSlugSchema(): Promise<void> {
+  await ensureOnce("event_public_slugs_schema", async () => {
+    await query(`alter table event_history add column if not exists public_slug text`);
+    await query(`
+      create unique index if not exists idx_event_history_public_slug_unique
+      on event_history (lower(public_slug))
+      where public_slug is not null and public_slug <> ''
+    `);
+    await query(`
+      create table if not exists event_public_slug_aliases (
+        alias text primary key,
+        event_id uuid not null references event_history(id) on delete cascade,
+        created_at timestamptz(6) default now()
+      )
+    `);
+    await query(`
+      create index if not exists idx_event_public_slug_aliases_event_id
+      on event_public_slug_aliases(event_id)
+    `);
+  });
+}
+
+function addPublicSlugToData(data: any, publicSlug: string): any {
+  const source = data && typeof data === "object" && !Array.isArray(data) ? data : {};
+  return { ...source, publicSlug };
+}
+
+function appendPublicSlugSuffix(base: string, suffixNumber: number): string {
+  const suffix = `-${suffixNumber}`;
+  const trimmedBase = base
+    .slice(0, Math.max(1, MAX_PUBLIC_SLUG_LENGTH - suffix.length))
+    .replace(/-+$/g, "");
+  return makeEventPublicSlugRoutable(`${trimmedBase || "event"}${suffix}`);
+}
+
+async function isEventPublicSlugAvailable(publicSlug: string, eventId: string): Promise<boolean> {
+  await ensureEventPublicSlugSchema();
+  const slug = makeEventPublicSlugRoutable(publicSlug);
+  const res = await query<{ taken: boolean }>(
+    `select exists (
+       select 1
+       from event_history
+       where lower(public_slug) = lower($1)
+         and id <> $2::uuid
+       union all
+       select 1
+       from event_public_slug_aliases
+       where lower(alias) = lower($1)
+         and event_id <> $2::uuid
+     ) as taken`,
+    [slug, eventId],
+  );
+  return !res.rows[0]?.taken;
+}
+
+async function createUniqueEventPublicSlug(params: {
+  eventId: string;
+  title: string;
+  data: any;
+  preferredSlug?: string | null;
+}): Promise<string> {
+  await ensureEventPublicSlugSchema();
+  const base = makeEventPublicSlugRoutable(
+    params.preferredSlug ||
+      buildEventPublicSlugCandidate({ title: params.title, data: params.data }),
+  );
+  if (await isEventPublicSlugAvailable(base, params.eventId)) return base;
+
+  for (let suffix = 2; suffix <= 100; suffix += 1) {
+    const candidate = appendPublicSlugSuffix(base, suffix);
+    if (await isEventPublicSlugAvailable(candidate, params.eventId)) return candidate;
+  }
+
+  return `${appendPublicSlugSuffix(base, Date.now())}`;
+}
+
+async function persistEventPublicSlug(params: {
+  eventId: string;
+  publicSlug: string;
+  addPreviousAsAlias?: boolean;
+}): Promise<EventHistoryRow | null> {
+  await ensureEventPublicSlugSchema();
+  const currentRes = await query<EventHistoryRow>(
+    `select id, user_id, title, data, public_slug, created_at
+     from event_history
+     where id = $1
+     limit 1`,
+    [params.eventId],
+  );
+  const current = currentRes.rows[0] || null;
+  if (!current) return null;
+
+  const nextSlug = makeEventPublicSlugRoutable(params.publicSlug);
+  if (!(await isEventPublicSlugAvailable(nextSlug, params.eventId))) {
+    throw new Error("That event link is already in use.");
+  }
+
+  const previousSlug = current.public_slug ? makeEventPublicSlugRoutable(current.public_slug) : "";
+  if (params.addPreviousAsAlias && previousSlug && previousSlug !== nextSlug) {
+    await query(
+      `insert into event_public_slug_aliases (alias, event_id)
+       values ($1, $2)
+       on conflict (alias) do update
+         set event_id = excluded.event_id,
+             created_at = now()`,
+      [previousSlug, params.eventId],
+    );
+  }
+
+  const res = await query<EventHistoryRow>(
+    `update event_history
+     set public_slug = $2,
+         data = jsonb_set(coalesce(data, '{}'::jsonb), '{publicSlug}', to_jsonb($2::text), true)
+     where id = $1
+     returning id, user_id, title, data, public_slug, created_at`,
+    [params.eventId, nextSlug],
+  );
+  await query(
+    `delete from event_public_slug_aliases where event_id = $1 and lower(alias) = lower($2)`,
+    [params.eventId, nextSlug],
+  );
+  return res.rows[0] || null;
+}
+
+async function ensureEventHistoryRowPublicSlug(
+  row: EventHistoryRow | null,
+): Promise<EventHistoryRow | null> {
+  if (!row) return null;
+  const dataSlug = readEventPublicSlug(row.data);
+  const existingSlug = row.public_slug ? makeEventPublicSlugRoutable(row.public_slug) : dataSlug;
+  if (existingSlug) {
+    const data = addPublicSlugToData(row.data, existingSlug);
+    if (row.public_slug === existingSlug && row.data?.publicSlug === existingSlug) {
+      return row;
+    }
+    try {
+      const updated = await persistEventPublicSlug({ eventId: row.id, publicSlug: existingSlug });
+      return updated || { ...row, data, public_slug: existingSlug };
+    } catch {
+      // Legacy JSON may contain a duplicated publicSlug. Fall through and mint a unique one.
+    }
+  }
+
+  const publicSlug = await createUniqueEventPublicSlug({
+    eventId: row.id,
+    title: row.title,
+    data: row.data,
+  });
+  const updated = await persistEventPublicSlug({ eventId: row.id, publicSlug });
+  return (
+    updated || { ...row, data: addPublicSlugToData(row.data, publicSlug), public_slug: publicSlug }
+  );
+}
+
+export async function updateEventHistoryPublicSlug(params: {
+  id: string;
+  publicSlug: string;
+}): Promise<EventHistoryRow | null> {
+  const nextSlug = makeEventPublicSlugRoutable(params.publicSlug);
+  if (!nextSlug || nextSlug === "event") {
+    throw new Error("Enter a more specific event link.");
+  }
+  return await persistEventPublicSlug({
+    eventId: params.id,
+    publicSlug: nextSlug,
+    addPreviousAsAlias: true,
+  });
+}
+
 export async function insertEventHistory(params: {
   userId?: string | null;
   title: string;
@@ -2499,24 +2678,31 @@ export async function insertEventHistory(params: {
   if (safeData && typeof safeData === "object") {
     normalizeCanonicalStartFields(safeData);
   }
+  const publicSlug = await createUniqueEventPublicSlug({
+    eventId: id,
+    title: params.title,
+    data: safeData,
+  });
+  const dataWithPublicSlug = addPublicSlugToData(safeData, publicSlug);
   const res = await query<EventHistoryRow>(
-    `insert into event_history (id, user_id, title, data, created_at)
-     values ($1, $2, $3, $4, coalesce(now(), now()))
-     returning id, user_id, title, data, created_at`,
-    [id, params.userId || null, params.title, JSON.stringify(safeData)],
+    `insert into event_history (id, user_id, title, data, public_slug, created_at)
+     values ($1, $2, $3, $4, $5, coalesce(now(), now()))
+     returning id, user_id, title, data, public_slug, created_at`,
+    [id, params.userId || null, params.title, JSON.stringify(dataWithPublicSlug), publicSlug],
   );
   return res.rows[0];
 }
 
 export async function getEventHistoryById(id: string): Promise<EventHistoryRow | null> {
+  await ensureEventPublicSlugSchema();
   const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, created_at
+    `select id, user_id, title, data, public_slug, created_at
      from event_history
      where id = $1
      limit 1`,
     [id],
   );
-  return res.rows[0] || null;
+  return await ensureEventHistoryRowPublicSlug(res.rows[0] || null);
 }
 
 function buildEventHistoryPublicDataProjectionSql(dataSql: string, idSql: string): string {
@@ -2565,6 +2751,7 @@ function mapEventHistoryPublicRow(
     user_id: row.user_id,
     title: row.title,
     data: row.data,
+    public_slug: row.public_slug,
     created_at: row.created_at,
     media: {
       thumbnailInline: Boolean(row.thumbnail_inline),
@@ -2586,19 +2773,31 @@ function mapEventHistoryPublicRow(
 export async function getEventHistoryIdentityById(
   id: string,
 ): Promise<EventHistoryIdentityRow | null> {
-  const res = await query<EventHistoryIdentityRow>(
-    `select id, user_id, title, created_at
+  await ensureEventPublicSlugSchema();
+  const res = await query<EventHistoryRow>(
+    `select id, user_id, title, data, public_slug, created_at
      from event_history
      where id = $1
      limit 1`,
     [id],
   );
-  return res.rows[0] || null;
+  const row = await ensureEventHistoryRowPublicSlug(res.rows[0] || null);
+  return row
+    ? {
+        id: row.id,
+        user_id: row.user_id,
+        title: row.title,
+        public_slug: row.public_slug,
+        created_at: row.created_at,
+      }
+    : null;
 }
 
 export async function getEventHistoryPublicRenderById(
   id: string,
 ): Promise<EventHistoryPublicRow | null> {
+  const slugReadyRow = await getEventHistoryById(id);
+  if (!slugReadyRow) return null;
   const dataSql = "data";
   const projection = buildEventHistoryPublicDataProjectionSql(dataSql, "id");
   const res = await query<EventHistoryPublicQueryRow>(
@@ -2606,6 +2805,7 @@ export async function getEventHistoryPublicRenderById(
        id,
        user_id,
        title,
+       public_slug,
        ${projection} as data,
        created_at,
        (coalesce(${dataSql}->>'thumbnail', '') like 'data:%') as thumbnail_inline,
@@ -2656,20 +2856,22 @@ export async function updateEventHistoryTitle(
   id: string,
   title: string,
 ): Promise<EventHistoryRow | null> {
+  await ensureEventPublicSlugSchema();
   const res = await query<EventHistoryRow>(
     `update event_history
      set title = $2
      where id = $1
-     returning id, user_id, title, data, created_at`,
+     returning id, user_id, title, data, public_slug, created_at`,
     [id, title],
   );
-  return res.rows[0] || null;
+  return await ensureEventHistoryRowPublicSlug(res.rows[0] || null);
 }
 
 export async function updateEventHistoryDataMerge(
   id: string,
   patch: any,
 ): Promise<EventHistoryRow | null> {
+  await ensureEventPublicSlugSchema();
   // Merge provided patch object into existing JSONB data. Later keys override.
   // jsonb concatenation '||' merges objects shallowly; sufficient for category updates.
   const safePatch = sanitizeJsonValueForPostgres(patch ?? {});
@@ -2677,10 +2879,10 @@ export async function updateEventHistoryDataMerge(
     `update event_history
      set data = coalesce(data, '{}'::jsonb) || $2::jsonb
      where id = $1
-     returning id, user_id, title, data, created_at`,
+     returning id, user_id, title, data, public_slug, created_at`,
     [id, JSON.stringify(safePatch)],
   );
-  const row = res.rows[0] || null;
+  const row = await ensureEventHistoryRowPublicSlug(res.rows[0] || null);
   if (!row) return null;
   const merged = row.data && typeof row.data === "object" ? { ...row.data } : {};
   normalizeCanonicalStartFields(merged);
@@ -2698,30 +2900,32 @@ export async function updateEventHistoryData(
   id: string,
   data: any,
 ): Promise<EventHistoryRow | null> {
+  await ensureEventPublicSlugSchema();
   const safeData = sanitizeJsonValueForPostgres(data ?? {});
   normalizeCanonicalStartFields(safeData);
   const res = await query<EventHistoryRow>(
     `update event_history
      set data = $2::jsonb
      where id = $1
-     returning id, user_id, title, data, created_at`,
+     returning id, user_id, title, data, public_slug, created_at`,
     [id, JSON.stringify(safeData)],
   );
-  return res.rows[0] || null;
+  return await ensureEventHistoryRowPublicSlug(res.rows[0] || null);
 }
 
 export async function claimEventHistoryById(
   id: string,
   userId: string,
 ): Promise<EventHistoryRow | null> {
+  await ensureEventPublicSlugSchema();
   const res = await query<EventHistoryRow>(
     `update event_history
      set user_id = $2
      where id = $1 and user_id is null
-     returning id, user_id, title, data, created_at`,
+     returning id, user_id, title, data, public_slug, created_at`,
     [id, userId],
   );
-  return res.rows[0] || null;
+  return await ensureEventHistoryRowPublicSlug(res.rows[0] || null);
 }
 
 export async function deleteEventHistoryById(id: string): Promise<void> {
@@ -2729,19 +2933,17 @@ export async function deleteEventHistoryById(id: string): Promise<void> {
 }
 
 function slugifyTitleForQuery(title: string): string {
-  return (title || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  return normalizePublicSlug(title);
 }
 
 export async function getEventHistoryByUserAndSlug(
   userId: string,
   slug: string,
 ): Promise<EventHistoryRow | null> {
+  await ensureEventPublicSlugSchema();
   // Fetch a handful of recent events and match by slug server-side to avoid DB funcs
   const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, created_at
+    `select id, user_id, title, data, public_slug, created_at
      from event_history
      where user_id = $1
      order by created_at desc nulls last, id desc
@@ -2752,7 +2954,7 @@ export async function getEventHistoryByUserAndSlug(
   const target = slug.toLowerCase();
   for (const r of rows) {
     const s = slugifyTitleForQuery(r.title || "");
-    if (s && s === target) return r;
+    if (s && s === target) return await ensureEventHistoryRowPublicSlug(r);
   }
   return null;
 }
@@ -2761,8 +2963,9 @@ export async function getEventHistoryIdentityByUserAndSlug(
   userId: string,
   slug: string,
 ): Promise<EventHistoryIdentityRow | null> {
+  await ensureEventPublicSlugSchema();
   const res = await query<EventHistoryIdentityRow>(
-    `select id, user_id, title, created_at
+    `select id, user_id, title, public_slug, created_at
      from event_history
      where user_id = $1
      order by created_at desc nulls last, id desc
@@ -2773,7 +2976,7 @@ export async function getEventHistoryIdentityByUserAndSlug(
   const target = slug.toLowerCase();
   for (const row of rows) {
     const current = slugifyTitleForQuery(row.title || "");
-    if (current && current === target) return row;
+    if (current && current === target) return await getEventHistoryIdentityById(row.id);
   }
   return null;
 }
@@ -2804,12 +3007,15 @@ export async function resolveEventHistoryIdentityBySlugOrId(params: {
 
   const slug = slugifyTitleForQuery(raw);
   if (!slug) return null;
+  const publicSlugRow = await getEventHistoryIdentityByPublicSlug(slug);
+  if (publicSlugRow) return publicSlugRow;
   if (params.userId) {
     const row = await getEventHistoryIdentityByUserAndSlug(params.userId, slug);
     if (row) return row;
   }
+  await ensureEventPublicSlugSchema();
   const res = await query<EventHistoryIdentityRow>(
-    `select id, user_id, title, created_at
+    `select id, user_id, title, data, public_slug, created_at
      from event_history
      order by created_at desc
      limit 500`,
@@ -2817,9 +3023,66 @@ export async function resolveEventHistoryIdentityBySlugOrId(params: {
   const rows = res.rows || [];
   for (const row of rows) {
     const current = slugifyTitleForQuery(row.title || "");
-    if (current && current === slug) return row;
+    if (current && current === slug) {
+      const ensured = await ensureEventHistoryRowPublicSlug({
+        id: row.id,
+        user_id: row.user_id,
+        title: row.title,
+        data: (row as EventHistoryRow).data,
+        public_slug: row.public_slug,
+        created_at: row.created_at,
+      });
+      return ensured
+        ? {
+            id: ensured.id,
+            user_id: ensured.user_id,
+            title: ensured.title,
+            public_slug: ensured.public_slug,
+            created_at: ensured.created_at,
+          }
+        : null;
+    }
   }
   return null;
+}
+
+async function getEventHistoryByPublicSlug(slug: string): Promise<EventHistoryRow | null> {
+  await ensureEventPublicSlugSchema();
+  const normalized = makeEventPublicSlugRoutable(slug);
+  const currentRes = await query<EventHistoryRow>(
+    `select id, user_id, title, data, public_slug, created_at
+     from event_history
+     where lower(public_slug) = lower($1)
+     limit 1`,
+    [normalized],
+  );
+  const current = currentRes.rows[0] || null;
+  if (current) return await ensureEventHistoryRowPublicSlug(current);
+
+  const aliasRes = await query<EventHistoryRow>(
+    `select eh.id, eh.user_id, eh.title, eh.data, eh.public_slug, eh.created_at
+     from event_public_slug_aliases a
+     join event_history eh on eh.id = a.event_id
+     where lower(a.alias) = lower($1)
+     limit 1`,
+    [normalized],
+  );
+  return await ensureEventHistoryRowPublicSlug(aliasRes.rows[0] || null);
+}
+
+async function getEventHistoryIdentityByPublicSlug(
+  slug: string,
+): Promise<EventHistoryIdentityRow | null> {
+  const row = await getEventHistoryByPublicSlug(slug);
+  return row
+    ? {
+        id: row.id,
+        user_id: row.user_id,
+        title: row.title,
+        public_slug: row.public_slug,
+        created_at: row.created_at,
+      }
+    : null;
 }
 
 export async function getEventHistoryPublicRenderBySlugOrId(params: {
@@ -2900,13 +3163,16 @@ export async function getEventHistoryBySlugOrId(params: {
 
   const slug = slugifyTitleForQuery(raw);
   if (!slug) return null;
+  const publicSlugRow = await getEventHistoryByPublicSlug(slug);
+  if (publicSlugRow) return publicSlugRow;
   if (params.userId) {
     const row = await getEventHistoryByUserAndSlug(params.userId, slug);
     if (row) return row;
   }
   // Fallback: try a broader search across recent events for any user (limited)
+  await ensureEventPublicSlugSchema();
   const res = await query<EventHistoryRow>(
-    `select id, user_id, title, data, created_at
+    `select id, user_id, title, data, public_slug, created_at
      from event_history
      order by created_at desc
      limit 500`,
@@ -2914,7 +3180,7 @@ export async function getEventHistoryBySlugOrId(params: {
   const rows = res.rows || [];
   for (const r of rows) {
     const s = slugifyTitleForQuery(r.title || "");
-    if (s && s === slug) return r;
+    if (s && s === slug) return await ensureEventHistoryRowPublicSlug(r);
   }
   return null;
 }

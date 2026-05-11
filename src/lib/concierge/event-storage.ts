@@ -283,6 +283,44 @@ export async function markCreationSessionSaved(params: {
   return res.rows[0] ? mapCreationSession(res.rows[0]) : null;
 }
 
+export async function releaseCreationSessionSaveFailure(params: {
+  userId: string;
+  sessionId: string;
+  draft: CreationSession["draft"];
+  metadata?: Record<string, unknown>;
+}): Promise<CreationSession | null> {
+  await ensureEventManageTables();
+  const draftStatus =
+    typeof params.draft.draftStatus === "string" ? params.draft.draftStatus.trim() : "";
+  const status =
+    draftStatus && !["published", "publishing"].includes(draftStatus)
+      ? draftStatus
+      : "preview_ready";
+  const res = await query(
+    `update creation_sessions
+     set status = $3,
+         draft = $4::jsonb,
+         metadata = metadata || $5::jsonb,
+         updated_at = now()
+     where id = $1
+       and user_id = $2
+       and status = 'publishing'
+       and not (metadata ? 'savedEventId')
+     returning id, user_id, status, draft, active_context, source_context, metadata, created_at, updated_at`,
+    [
+      params.sessionId,
+      params.userId,
+      status,
+      JSON.stringify(params.draft),
+      JSON.stringify({
+        ...(params.metadata || {}),
+        saveFailedAt: new Date().toISOString(),
+      }),
+    ],
+  );
+  return res.rows[0] ? mapCreationSession(res.rows[0]) : null;
+}
+
 function mapAsset(row: any): EventAsset {
   return {
     id: String(row.id),

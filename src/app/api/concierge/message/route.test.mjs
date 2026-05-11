@@ -104,6 +104,13 @@ test("saved creation sessions keep continuation scoped to the owner", () => {
   assert.match(storage, /metadata = metadata \|\| \$4::jsonb/);
   assert.match(storage, /metadata\?: Record<string, unknown>/);
   assert.match(storage, /savedEventId: params\.eventId/);
+  assert.match(storage, /export async function releaseCreationSessionSaveFailure/);
+  assert.match(storage, /saveFailedAt/);
+  assert.match(intake, /findPersistedCreationEvent/);
+  assert.match(intake, /coalesce\(data, '\{\}'::jsonb\)#>>'\{conciergeDraft,creationSessionId\}'/);
+  assert.match(intake, /listEventAssets\(event\.id, params\.userId\)/);
+  assert.match(intake, /releaseCreationSessionSaveFailure/);
+  assert.match(intake, /saveFailure: "publish_failed"/);
 });
 
 test("concierge creation routes expose optional timing payloads and Server-Timing headers", () => {
@@ -136,6 +143,28 @@ test("creation intake times model extraction and DB writes inside the handler", 
   assert.match(source, /timing\?: TimingRecorder/);
   assert.match(source, /time\("model_extraction"/);
   assert.match(source, /time\("db_write"/);
+});
+
+test("concierge routes return safe public errors on internal failures", () => {
+  const helper = readSource("src/lib/concierge/api-errors.ts");
+  const routePaths = [
+    "src/app/api/concierge/message/route.ts",
+    "src/app/api/concierge/events/[id]/message/route.ts",
+    "src/app/api/creation/intake/route.ts",
+    "src/app/api/creation/intake/stream/route.ts",
+    "src/app/api/creation/threads/route.ts",
+    "src/app/api/creation/threads/[id]/route.ts",
+  ];
+
+  assert.match(helper, /SAFE_CONCIERGE_ERROR_MESSAGES/);
+  assert.match(helper, /conciergeApiErrorMessage/);
+  assert.match(helper, /Add the missing event details before creating this invite/);
+
+  for (const routePath of routePaths) {
+    const source = readSource(routePath);
+    assert.match(source, /conciergeApiErrorMessage/);
+    assert.doesNotMatch(source, /error instanceof Error \? error\.message/);
+  }
 });
 
 test("creation threads list and resume authenticated user sessions only", () => {

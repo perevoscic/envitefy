@@ -22,11 +22,16 @@ test("event assistant route is event-scoped and owner-enforced", () => {
 
 test("event assistant persists private thread history and applies server actions", () => {
   const source = readSource("src/app/api/concierge/events/[id]/message/route.ts");
+  const applyIndex = source.indexOf("applyEventActions({");
+  const userAppendIndex = source.indexOf('role: "user"', applyIndex);
 
   assert.match(source, /getOrCreateEventThread/);
   assert.match(source, /appendConversationMessage/);
   assert.match(source, /buildEventActionPlan/);
   assert.match(source, /applyEventActions/);
+  assert.ok(applyIndex > 0);
+  assert.ok(userAppendIndex > applyIndex);
+  assert.match(source, /acceptedAt: new Date\(\)\.toISOString\(\)/);
 });
 
 test("event assistant route emits optional timings and Server-Timing headers", () => {

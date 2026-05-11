@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";
 import { deleteCreationSession } from "@/lib/concierge/event-storage";
 
 export const runtime = "nodejs";
@@ -36,7 +37,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Unable to delete AI thread.",
+        error: conciergeApiErrorMessage(error, "Unable to delete AI thread."),
       },
       { status: 500 },
     );

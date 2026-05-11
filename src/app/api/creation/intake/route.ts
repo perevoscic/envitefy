@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";
 import {
   handleCreationIntake,
   resumeCreationSession,
@@ -66,7 +67,7 @@ export async function GET(req: Request) {
       timing,
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Unable to resume creation session.",
+        error: conciergeApiErrorMessage(error, "Unable to resume creation session."),
       } satisfies CreationSessionResumeResponse,
       { status: 500 },
     );
@@ -121,7 +122,7 @@ export async function POST(req: Request) {
       timing,
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Creation intake failed.",
+        error: conciergeApiErrorMessage(error, "Creation intake failed."),
       } satisfies ConciergeMessageResponse,
       { status: 500 },
     );

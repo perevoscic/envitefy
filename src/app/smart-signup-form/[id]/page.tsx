@@ -1,16 +1,17 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import EventActions from "@/components/EventActions";
+import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import { authOptions } from "@/lib/auth";
 import {
   getEventHistoryPublicRenderBySlugOrId,
   getUserIdByEmail,
   isEventSharedWithUser,
 } from "@/lib/db";
-import SignupViewer from "@/components/smart-signup-form/SignupViewer";
-import type { SignupForm } from "@/types/signup";
-import { sanitizeSignupForm } from "@/utils/signup";
 import { combineVenueAndLocation } from "@/lib/mappers";
-import EventActions from "@/components/EventActions";
+import type { SignupForm } from "@/types/signup";
+import { buildEventSlugSegment } from "@/utils/event-url";
+import { sanitizeSignupForm } from "@/utils/signup";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,10 @@ export default async function SignupPage({
     userId,
   });
   if (!row) return notFound();
+  const canonicalSegment = buildEventSlugSegment(row.id, row.title, row.public_slug);
+  if (awaitedParams.id !== canonicalSegment) {
+    redirect(`/smart-signup-form/${canonicalSegment}`);
+  }
   const data = (row.data as any) || {};
   const rawForm = data?.signupForm;
   if (!rawForm || typeof rawForm !== "object") return notFound();
@@ -53,15 +58,13 @@ export default async function SignupPage({
   }
 
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
-  const recipientAccepted = userId
-    ? (await isEventSharedWithUser(row.id, userId)) === true
-    : false;
+  const recipientAccepted = userId ? (await isEventSharedWithUser(row.id, userId)) === true : false;
   const viewerKind: "owner" | "guest" = isOwner ? "owner" : "guest";
 
   const header = signupForm.header || null;
   const combinedLocation = combineVenueAndLocation(
     (data?.venue as string | undefined) || null,
-    (data?.location as string | undefined) || null
+    (data?.location as string | undefined) || null,
   );
   const pageBgStyle = {
     backgroundColor: header?.backgroundColor || undefined,
@@ -73,7 +76,7 @@ export default async function SignupPage({
   const formatRangeLabel = (
     startInput?: string | null,
     endInput?: string | null,
-    options?: { timeZone?: string | null; allDay?: boolean | null }
+    options?: { timeZone?: string | null; allDay?: boolean | null },
   ): string | null => {
     const timeZone = options?.timeZone || undefined;
     const allDay = Boolean(options?.allDay);
@@ -120,19 +123,17 @@ export default async function SignupPage({
   };
 
   const authHref = `/api/auth/signin?callbackUrl=${encodeURIComponent(
-    `/smart-signup-form/${row.id}`
+    `/smart-signup-form/${row.id}`,
   )}`;
 
   if (!sessionEmail) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
         <main className="mx-auto w-full max-w-2xl px-5 py-14 space-y-4">
-          <h1 className="text-3xl font-bold text-neutral-900 text-center">
-            Sign in to respond
-          </h1>
+          <h1 className="text-3xl font-bold text-neutral-900 text-center">Sign in to respond</h1>
           <p className="text-center text-neutral-700">
-            Only invitees can view and submit this sign-up form. Use the same
-            email or phone number the organizer used to invite you.
+            Only invitees can view and submit this sign-up form. Use the same email or phone number
+            the organizer used to invite you.
           </p>
           <div className="flex justify-center">
             <a
@@ -155,9 +156,8 @@ export default async function SignupPage({
             Access limited to invitees
           </h1>
           <p className="text-center text-neutral-700">
-            This sign-up is restricted to contacts the organizer invited.
-            Please ask them to share access with your account before you
-            continue.
+            This sign-up is restricted to contacts the organizer invited. Please ask them to share
+            access with your account before you continue.
           </p>
         </main>
       </div>
@@ -227,9 +227,7 @@ export default async function SignupPage({
                       })()}
                     </span>
                     <span className="leading-tight">
-                      <div>
-                        Created by {(session?.user?.name as string) || ""}
-                      </div>
+                      <div>Created by {(session?.user?.name as string) || ""}</div>
                       <div className="opacity-90">
                         {(() => {
                           const label = formatRangeLabel(
@@ -250,7 +248,7 @@ export default async function SignupPage({
                                 (data?.allDay as boolean | null) ||
                                 (signupForm.allDay as boolean | null) ||
                                 null,
-                            }
+                            },
                           );
                           return label || "";
                         })()}
@@ -262,7 +260,7 @@ export default async function SignupPage({
                   const text = combinedLocation || signupForm.location || "";
                   if (!text) return null;
                   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    text
+                    text,
                   )}`;
                   return (
                     <a
@@ -272,10 +270,7 @@ export default async function SignupPage({
                       className="text-[0.95rem] underline text-foreground/70"
                     >
                       {signupForm.venue ? signupForm.venue : ""}
-                      {signupForm.venue &&
-                      (signupForm.location || combinedLocation)
-                        ? ", "
-                        : ""}
+                      {signupForm.venue && (signupForm.location || combinedLocation) ? ", " : ""}
                       {signupForm.location || combinedLocation}
                     </a>
                   );
@@ -295,22 +290,14 @@ export default async function SignupPage({
             {/* Guest share actions inside header footer */}
             <div className="mt-4 pt-3 border-t border-border/60">
               <EventActions
-                shareUrl={`/smart-signup-form/${row.id}`}
+                shareUrl={`/smart-signup-form/${canonicalSegment}`}
                 historyId={row.id}
                 event={
                   {
-                    title:
-                      (row.title as string) ||
-                      (signupForm.title as string) ||
-                      "Event",
+                    title: (row.title as string) || (signupForm.title as string) || "Event",
                     start:
-                      (data?.startISO as string | null) ||
-                      (data?.start as string | null) ||
-                      null,
-                    end:
-                      (data?.endISO as string | null) ||
-                      (data?.end as string | null) ||
-                      null,
+                      (data?.startISO as string | null) || (data?.start as string | null) || null,
+                    end: (data?.endISO as string | null) || (data?.end as string | null) || null,
                     location: (data?.location as string | null) || null,
                     venue: (data?.venue as string | null) || null,
                     description: (data?.description as string | null) || null,

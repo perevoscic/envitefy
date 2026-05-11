@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";
 import { buildAssistantMessage } from "@/lib/concierge/fallback";
 import { finalizeCreationIntake, resolveCreationIntakeDraft } from "@/lib/concierge/intake";
 import { streamConciergePersona } from "@/lib/concierge/persona";
@@ -119,7 +120,7 @@ export async function POST(req: Request) {
           send("done", { ok: true });
         } catch (error) {
           send("error", {
-            error: error instanceof Error ? error.message : "Creation intake stream failed.",
+            error: conciergeApiErrorMessage(error, "Creation intake stream failed."),
           });
         } finally {
           controller.close();
@@ -137,7 +138,7 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     return responseWithJsonError(
-      error instanceof Error ? error.message : "Creation intake stream failed.",
+      conciergeApiErrorMessage(error, "Creation intake stream failed."),
       500,
     );
   }

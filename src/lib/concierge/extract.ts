@@ -577,6 +577,9 @@ export async function extractConciergeDraft(
     fallback.sourceContext.boundary === "envitefy_question" ||
     fallback.sourceContext.boundary === "non_creation" ||
     fallback.sourceContext.boundary === "off_domain" ||
+    fallback.sourceContext.boundary === "secret_detected" ||
+    fallback.sourceContext.boundary === "unsafe_guest_data" ||
+    fallback.sourceContext.boundary === "ambiguous_edit" ||
     fallback.currentQuestion === "invite_source" ||
     isNonCreationRequest(message) ||
     (isGreetingMessage(message) && !request.draft && !request.ocrContext) ||

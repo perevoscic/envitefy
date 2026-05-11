@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";
 import { listCreationSessions } from "@/lib/concierge/event-storage";
 import type {
   CreationSession,
@@ -75,7 +76,7 @@ export async function GET(req: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Unable to load AI creation threads.",
+        error: conciergeApiErrorMessage(error, "Unable to load AI creation threads."),
       } satisfies CreationThreadsResponse,
       { status: 500 },
     );

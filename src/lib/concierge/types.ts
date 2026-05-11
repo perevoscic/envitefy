@@ -95,7 +95,15 @@ export type CreationSourceContext = {
   signals?: SourceIntentSignal[];
   requiresUserConfirmation?: boolean;
   originalCategory?: string | null;
-  boundary?: "private_data" | "non_creation" | "off_domain" | "envitefy_question" | null;
+  boundary?:
+    | "private_data"
+    | "non_creation"
+    | "off_domain"
+    | "envitefy_question"
+    | "secret_detected"
+    | "unsafe_guest_data"
+    | "ambiguous_edit"
+    | null;
   resolvedId?: string | null;
   candidates?: Array<{
     type: SourceContextType;

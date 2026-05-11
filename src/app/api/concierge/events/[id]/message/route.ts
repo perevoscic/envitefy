@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";
 import { applyEventActions, buildEventActionPlan } from "@/lib/concierge/event-actions";
 import {
   appendConversationMessage,
@@ -93,15 +94,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         title: `${event.title || "Event"} assistant`,
       }),
     );
-    await timing.time("db_write", () =>
-      appendConversationMessage({
-        threadId: thread.id,
-        userId,
-        role: "user",
-        content: message,
-        metadata: {},
-      }),
-    );
 
     const [assets, history] = await timing.time("db_read", () =>
       Promise.all([listEventAssets(eventId, userId), listConversationMessages(thread.id, 30)]),
@@ -137,6 +129,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       appendConversationMessage({
         threadId: thread.id,
         userId,
+        role: "user",
+        content: message,
+        metadata: { acceptedAt: new Date().toISOString() },
+      }),
+    );
+    await timing.time("db_write", () =>
+      appendConversationMessage({
+        threadId: thread.id,
+        userId,
         role: "assistant",
         content: assistantMessage,
         metadata: { actions: applied.appliedActions },
@@ -165,7 +166,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       timing,
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Event assistant request failed.",
+        error: conciergeApiErrorMessage(error, "Event assistant request failed."),
       } satisfies ConciergeEventMessageResponse,
       { status: 500 },
     );

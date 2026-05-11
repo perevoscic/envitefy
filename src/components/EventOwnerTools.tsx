@@ -8,6 +8,7 @@ import {
   Clock3,
   ExternalLink,
   LayoutDashboard,
+  Link2,
   Loader2,
   type LucideIcon,
   MapPin,
@@ -636,6 +637,20 @@ function absoluteBrowserUrl(path: string): string {
   return new URL(path, window.location.origin).toString();
 }
 
+function readSlugFromHref(path: string): string {
+  try {
+    const parsed = new URL(path || "/", "https://envitefy.local");
+    const segment = parsed.pathname.split("/").filter(Boolean).at(-1) || "";
+    return decodeURIComponent(segment)
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  } catch {
+    return "";
+  }
+}
+
 function buildOwnerTabHref(baseHref: string, eventId: string, tab: EventContextTab): string {
   const fallbackPath = `/event/${encodeURIComponent(eventId)}`;
   try {
@@ -708,6 +723,7 @@ export default function EventOwnerTools({
   const [designPreviewOverride, setDesignPreviewOverride] =
     useState<Partial<ProductPreviewModel> | null>(null);
   const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
+  const [publicUrlOverride, setPublicUrlOverride] = useState<string | null>(null);
   const preview = useMemo(() => buildProductPreviewModel(eventData), [eventData]);
   const effectivePreview = useMemo(
     () => (designPreviewOverride ? { ...preview, ...designPreviewOverride } : preview),
@@ -715,11 +731,30 @@ export default function EventOwnerTools({
   );
   const rsvpEnabled = hasActionableRsvp(eventData, numberOfGuests);
   const publicUrl = useMemo(() => {
+    if (publicUrlOverride) return publicUrlOverride;
     if (shouldOpenPreviewInStudioCard(eventData, effectivePreview)) {
-      return buildStudioCardPath(eventId, currentEventTitle || eventTitle);
+      return buildStudioCardPath(
+        eventId,
+        currentEventTitle || eventTitle,
+        undefined,
+        firstString(eventData?.publicSlug, eventData?.public_slug),
+      );
     }
     return eventHref || ownerHref;
-  }, [currentEventTitle, effectivePreview, eventData, eventHref, eventId, eventTitle, ownerHref]);
+  }, [
+    currentEventTitle,
+    effectivePreview,
+    eventData,
+    eventHref,
+    eventId,
+    eventTitle,
+    ownerHref,
+    publicUrlOverride,
+  ]);
+  const publicSlug = useMemo(
+    () => firstString(eventData?.publicSlug, eventData?.public_slug, readSlugFromHref(publicUrl)),
+    [eventData, publicUrl],
+  );
   const activeOwnerTab: EventContextTab =
     rsvpEnabled || initialTab === "design" ? initialTab : "design";
   const ownerWorkspaceTabs = useMemo(
@@ -737,6 +772,7 @@ export default function EventOwnerTools({
   useEffect(() => {
     setCurrentEventTitle(eventTitle);
     setDesignPreviewOverride(null);
+    setPublicUrlOverride(null);
   }, [eventData, eventId, eventTitle, preview]);
 
   useEffect(() => {
@@ -811,6 +847,15 @@ export default function EventOwnerTools({
               ownerHref={ownerHref}
               eventId={eventId}
               tabs={ownerWorkspaceTabs}
+            />
+          ) : null}
+          {activeOwnerTab === "design" ? (
+            <OwnerPublicLinkPanel
+              eventId={eventId}
+              activeTab={activeOwnerTab}
+              publicSlug={publicSlug}
+              publicUrl={publicUrl}
+              onUpdated={(nextPath) => setPublicUrlOverride(nextPath)}
             />
           ) : null}
           <OwnerTabContent
@@ -1168,6 +1213,147 @@ function OwnerWorkspaceHeader({
         </div>
       </div>
     </header>
+  );
+}
+
+function OwnerPublicLinkPanel({
+  eventId,
+  activeTab,
+  publicSlug,
+  publicUrl,
+  onUpdated,
+}: {
+  eventId: string;
+  activeTab: EventContextTab;
+  publicSlug: string;
+  publicUrl: string;
+  onUpdated: (nextPath: string) => void;
+}) {
+  const router = useRouter();
+  const [slug, setSlug] = useState(publicSlug);
+  const [origin, setOrigin] = useState("");
+  const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setSlug(publicSlug);
+    setError("");
+    setStatus("idle");
+  }, [publicSlug]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setOrigin(window.location.origin);
+  }, []);
+
+  const normalizedSlug = slug
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const hasChanges = normalizedSlug !== publicSlug;
+  const currentPath = useMemo(() => {
+    try {
+      return new URL(publicUrl || "/", "https://envitefy.local").pathname;
+    } catch {
+      return "";
+    }
+  }, [publicUrl]);
+  const publicPathPrefix = currentPath.startsWith("/card/")
+    ? "card"
+    : currentPath.startsWith("/smart-signup-form/")
+      ? "smart-signup-form"
+      : "event";
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!normalizedSlug || normalizedSlug === "event" || !hasChanges) return;
+    setStatus("saving");
+    setError("");
+    try {
+      const res = await fetch(`/api/events/${encodeURIComponent(eventId)}/public-slug`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ publicSlug: normalizedSlug }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          typeof data?.error === "string" ? data.error : "The event link could not be updated.",
+        );
+      }
+
+      const nextPath = currentPath.startsWith("/card/")
+        ? data.cardPath || data.eventPath
+        : currentPath.startsWith("/smart-signup-form/")
+          ? data.signupFormPath || data.eventPath
+          : data.eventPath;
+      onUpdated(nextPath || `/event/${normalizedSlug}`);
+      window.dispatchEvent(new CustomEvent("history:updated", { detail: { id: eventId } }));
+      setStatus("saved");
+      if (data.eventPath) {
+        router.replace(`${data.eventPath}?tab=${activeTab}`);
+        router.refresh();
+      }
+    } catch (err) {
+      setStatus("idle");
+      setError(err instanceof Error ? err.message : "The event link could not be updated.");
+    }
+  }
+
+  return (
+    <section className="owner-workspace-glass relative overflow-hidden rounded-[22px] border border-white/75 bg-white/92 p-3 shadow-[0_14px_38px_rgba(79,70,128,0.09)] backdrop-blur-xl sm:p-4">
+      <form className="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]" onSubmit={handleSubmit}>
+        <div className="flex items-center gap-2 text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
+          <Link2 size={16} aria-hidden="true" />
+          Public link
+        </div>
+        <label className="min-w-0">
+          <span className="sr-only">Public link slug</span>
+          <div className="flex min-h-11 min-w-0 items-center overflow-hidden rounded-2xl border border-violet-900/20 bg-white/68 text-sm font-semibold text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.16)]">
+            <span className="hidden shrink-0 pl-3 pr-1 text-slate-400 sm:inline">
+              {origin || "https://envitefy.com"}/{publicPathPrefix}/
+            </span>
+            <input
+              value={slug}
+              onChange={(event) => setSlug(event.target.value)}
+              className="min-w-0 flex-1 bg-transparent px-3 py-2 outline-none sm:px-1"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+          </div>
+        </label>
+        <button
+          type="submit"
+          disabled={!hasChanges || status === "saving" || !normalizedSlug}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-bold text-white shadow-[0_12px_24px_rgba(15,23,42,0.14)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+        >
+          {status === "saving" ? (
+            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+          ) : (
+            <Save size={16} aria-hidden="true" />
+          )}
+          {status === "saving" ? "Saving" : "Save link"}
+        </button>
+      </form>
+      {status === "saved" || error ? (
+        <p
+          className={`mt-2 inline-flex items-start gap-2 text-sm font-semibold ${
+            error ? "text-rose-700" : "text-emerald-700"
+          }`}
+          role={error ? "alert" : undefined}
+        >
+          {error ? (
+            <AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+          ) : (
+            <CheckCircle2 size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+          )}
+          <span>{error || "Link updated"}</span>
+        </p>
+      ) : null}
+    </section>
   );
 }
 

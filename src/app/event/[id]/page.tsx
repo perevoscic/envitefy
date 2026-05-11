@@ -37,6 +37,7 @@ import SponsoredSupplies from "@/components/SponsoredSupplies";
 import ThumbnailModal from "@/components/ThumbnailModal";
 import { absoluteUrl, sanitizePersistedMediaUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
+import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { isScannedInviteCreatedVia, normalizeDashboardEventOwnership } from "@/lib/dashboard-data";
 import {
@@ -55,7 +56,6 @@ import { getEventTheme } from "@/lib/event-theme";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
-import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
 import {
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
@@ -210,18 +210,25 @@ export async function generateMetadata(props: {
   );
   const data: any = row?.data || {};
   const title = (typeof data?.title === "string" && data.title) || row?.title || "Event";
+  const publicSlug =
+    (typeof row?.public_slug === "string" && row.public_slug) ||
+    (typeof data?.publicSlug === "string" && data.publicSlug) ||
+    null;
 
   // Only expose a generic description publicly to avoid leaking private details
   const description = "View the event details, schedule, and RSVP right here.";
 
-  // Generate OG image URL
-  const img = await absoluteUrl(`/event/${encodeURIComponent(awaitedParams.id)}/opengraph-image`);
+  // Generate OG image URL from the canonical public slug so link previews stay stable.
+  const ogImageSegment = row
+    ? buildEventSlugSegment(row.id, title, publicSlug)
+    : encodeURIComponent(awaitedParams.id);
+  const img = await absoluteUrl(`/event/${ogImageSegment}/opengraph-image`);
 
   // Generate canonical URL
   const canonicalPath = row
     ? isCardFirstEventProduct(getPrimaryEventProductOutput(data, title))
-      ? buildStudioCardPath(row.id, title)
-      : buildEventPath(row.id, title)
+      ? buildStudioCardPath(row.id, title, undefined, publicSlug)
+      : buildEventPath(row.id, title, undefined, publicSlug)
     : `/event/${encodeURIComponent(awaitedParams.id)}`;
   const url = await absoluteUrl(canonicalPath);
 
@@ -928,10 +935,13 @@ export default async function EventPage({
             requestedTab === "design"
           ? (requestedTab as "dashboard" | "rsvps" | "messages" | "design")
           : null;
+  const publicSlug =
+    row.public_slug ||
+    (typeof (data as any)?.publicSlug === "string" ? (data as any).publicSlug : null);
   const ownerPreviewReturnHref =
     readRouteSearchParam((awaitedSearchParams as any)?.preview) === "owner"
       ? sanitizeInternalReturnHref(readRouteSearchParam((awaitedSearchParams as any)?.returnTo)) ||
-        `${buildEventPath(row.id, title)}?tab=dashboard`
+        `${buildEventPath(row.id, title, undefined, publicSlug)}?tab=dashboard`
       : "";
   const eventPageBackgroundColor = resolveEventPageBackgroundColor(data);
   const renderWithEventPageBackground = (children: ReactNode) => (
@@ -956,13 +966,14 @@ export default async function EventPage({
   const canEditCreatedEvent = canManageCreatedEvent && !isScannedOrUploadedEventData(data);
   const numberOfGuests = getRsvpDashboardGuestCount(data);
   const ownerRsvpDashboardEnabled = canShowOwnerRsvpDashboard(data);
-  const ownerEventHref = buildEventPath(row.id, title);
+  const ownerEventHref = buildEventPath(row.id, title, undefined, publicSlug);
   const primaryProductOutput = getPrimaryEventProductOutput(data, title);
   const publicEventHref = buildEventProductPath({
     eventId: row.id,
     title,
     data,
     output: primaryProductOutput,
+    publicSlug,
   });
   const discoveryWorkflow = isDiscoveryV2
     ? "gymnastics"
@@ -1410,10 +1421,10 @@ export default async function EventPage({
       }
     }
   }
-  const canonicalSegment = buildEventSlugSegment(row.id, title);
-  const canonical = buildEventPath(row.id, title);
+  const canonicalSegment = buildEventSlugSegment(row.id, title, publicSlug);
+  const canonical = buildEventPath(row.id, title, undefined, publicSlug);
   const cardFirstCanonical = isCardFirstEventProduct(primaryProductOutput)
-    ? buildStudioCardPath(row.id, title)
+    ? buildStudioCardPath(row.id, title, undefined, publicSlug)
     : null;
   const shareUrl = await absoluteUrl(canonical);
 
@@ -1426,13 +1437,18 @@ export default async function EventPage({
   }
   const editHref = buildEditLink(row.id, data, title);
 
-  // Redirect to canonical slug-id URL if needed, preserving key query params
+  // Redirect legacy id/slug-id/alias URLs to the canonical public slug.
   if (cardFirstCanonical && !ownerToolsTab) {
     redirect(cardFirstCanonical);
   }
 
   if (awaitedParams.id !== canonicalSegment || autoAccept) {
-    const next = buildEventPath(row.id, title, createdParam ? { created: true } : undefined);
+    const next = buildEventPath(
+      row.id,
+      title,
+      createdParam ? { created: true } : undefined,
+      publicSlug,
+    );
     redirect(next);
   }
 

@@ -3,10 +3,15 @@ import { ImageResponse } from "next/og";
 /** Base URL for same-origin API calls (keeps db out of this bundle). */
 function getBaseUrl(): string {
   const v = process.env.VERCEL_URL;
-  if (v) return `https://${v}`;
-  return (
-    process.env.APP_URL || process.env.NEXTAUTH_URL || "https://envitefy.com"
-  );
+  const base = v
+    ? `https://${v}`
+    : process.env.NEXT_PUBLIC_BASE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXTAUTH_URL ||
+      process.env.PUBLIC_BASE_URL ||
+      process.env.APP_URL ||
+      "https://envitefy.com";
+  return base.replace(/\/+$/, "");
 }
 
 export const runtime = "edge";

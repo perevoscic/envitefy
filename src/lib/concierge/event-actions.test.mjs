@@ -31,6 +31,10 @@ test("create_asset writes event assets with matching event and user ids", () => 
   assert.match(source, /userId: params\.userId/);
   assert.match(source, /eventId: params\.eventId/);
   assert.match(source, /assetType: action\.assetType/);
+  assert.match(source, /params\.event\.user_id !== params\.userId/);
+  assert.match(source, /eventAssistantActionKey/);
+  assert.match(source, /listEventAssets\(params\.eventId, params\.userId\)/);
+  assert.match(source, /asset\.metadata\?\.eventAssistantActionKey === eventAssistantActionKey/);
 });
 
 test("event updates keep generated live-card copy aligned", () => {
@@ -51,4 +55,17 @@ test("weather questions stay read-only and use bounded context", () => {
   assert.match(source, /weatherContext\?\.message/);
   assert.match(source, /return buildWeatherPlan\(params\.weatherContext\)/);
   assert.doesNotMatch(source, /type: "update_event"[\s\S]{0,240}weatherContext/);
+});
+
+test("event assistant constrains persona and refuses unsafe event requests", () => {
+  const source = readSource("src/lib/concierge/event-actions.ts");
+
+  assert.match(source, /Use concise, warm, professional language/);
+  assert.match(source, /Never use markdown, bullets, numbered lists/);
+  assert.match(source, /Ask at most two short questions/);
+  assert.match(source, /Do not claim an action was completed unless/);
+  assert.match(source, /Do not execute destructive guest response changes/);
+  assert.match(source, /guardedEventAssistantPlan/);
+  assert.match(source, /Do not put API keys, passwords, or secrets in an invite/);
+  assert.match(source, /I can't help scrape private RSVP data or bulk-change guest responses/);
 });

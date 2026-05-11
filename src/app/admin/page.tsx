@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
+import { buildEventProductPath } from "@/utils/event-product-route";
 
 const EVENT_TYPE_LABELS = {
   scans_birthdays: "Birthdays",
@@ -16,6 +17,17 @@ const EVENT_TYPE_LABELS = {
 
 type EventTypeKey = keyof typeof EVENT_TYPE_LABELS;
 type EventCategoryTotals = Partial<Record<EventTypeKey, number>>;
+
+type AdminEventDebugLink = {
+  id: string;
+  title: string | null;
+  category: string | null;
+  publicSlug: string | null;
+  primaryOutput: string | null;
+  createdVia: string | null;
+  sourceType: string | null;
+  createdAt: string | null;
+};
 
 const USER_EVENT_CATEGORY_KEYS: Record<EventTypeKey, string> = {
   scans_birthdays: "events_birthdays",
@@ -541,6 +553,8 @@ export default function AdminPage() {
                         u.events_total,
                         eventBreakdown.reduce((sum, item) => sum + item.count, 0),
                       );
+                      const eventLinks = getUserEventDebugLinks(u);
+                      const scanLinks = getUserScanDebugLinks(u);
                       const scanTotal =
                         typeof u.scans_total === "number" && Number.isFinite(u.scans_total)
                           ? u.scans_total
@@ -575,6 +589,7 @@ export default function AdminPage() {
                                   label="Events"
                                   count={eventTotal}
                                   breakdown={eventBreakdown}
+                                  eventLinks={eventLinks}
                                   variant="inline"
                                 />
                               </div>
@@ -586,6 +601,7 @@ export default function AdminPage() {
                                   label="Scans"
                                   count={scanTotal}
                                   breakdown={scanBreakdown}
+                                  eventLinks={scanLinks}
                                   variant="inline"
                                 />
                               </div>
@@ -596,10 +612,10 @@ export default function AdminPage() {
                             <div className="space-y-2">
                               <div>
                                 <p className="text-xs uppercase tracking-wider text-[#8b7fb6] mb-1">
-                                  Last scan/upload/snap
+                                  Last event
                                 </p>
                                 <p className="text-sm text-[#5b4d86]">
-                                  {formatDate(u.last_scan_created_at, { forceUsNumeric: true })}
+                                  {formatDate(u.last_event_created_at, { forceUsNumeric: true })}
                                 </p>
                               </div>
                               <div>
@@ -635,7 +651,7 @@ export default function AdminPage() {
                           <th className="px-4 py-3">Email</th>
                           <th className="px-4 py-3 text-right">Scans</th>
                           <th className="px-4 py-3">Events</th>
-                          <th className="px-4 py-3">Last scan/upload/snap</th>
+                          <th className="px-4 py-3">Last event</th>
                           <th className="px-4 py-3">Joined</th>
                           <th className="px-4 py-3 text-right">Actions</th>
                         </tr>
@@ -648,6 +664,8 @@ export default function AdminPage() {
                             u.events_total,
                             eventBreakdown.reduce((sum, item) => sum + item.count, 0),
                           );
+                          const eventLinks = getUserEventDebugLinks(u);
+                          const scanLinks = getUserScanDebugLinks(u);
                           const scanTotal =
                             typeof u.scans_total === "number" && Number.isFinite(u.scans_total)
                               ? u.scans_total
@@ -663,6 +681,7 @@ export default function AdminPage() {
                                   label="Scans"
                                   count={scanTotal}
                                   breakdown={scanBreakdown}
+                                  eventLinks={scanLinks}
                                 />
                               </td>
                               <td className="px-4 py-3 text-sm text-foreground/80">
@@ -670,10 +689,11 @@ export default function AdminPage() {
                                   label="Events"
                                   count={eventTotal}
                                   breakdown={eventBreakdown}
+                                  eventLinks={eventLinks}
                                 />
                               </td>
                               <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
-                                {formatDate(u.last_scan_created_at, { forceUsNumeric: true })}
+                                {formatDate(u.last_event_created_at, { forceUsNumeric: true })}
                               </td>
                               <td className="px-4 py-3 text-foreground/80 whitespace-nowrap">
                                 {formatDate(u.created_at)}
@@ -870,14 +890,25 @@ type BreakdownPopupProps = {
   label: string;
   count: number;
   breakdown: Array<{ key: EventTypeKey; label: string; count: number }>;
+  eventLinks?: AdminEventDebugLink[];
   variant?: BreakdownPopupVariant;
 };
 
-function BreakdownPopup({ label, count, breakdown, variant = "popover" }: BreakdownPopupProps) {
+function BreakdownPopup({
+  label,
+  count,
+  breakdown,
+  eventLinks = [],
+  variant = "popover",
+}: BreakdownPopupProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
   const normalizedCount = Number.isFinite(count) ? count : 0;
   const hasItems = breakdown.length > 0;
+  const hasEventLinks = eventLinks.length > 0;
+  const isScanBreakdown = label.toLowerCase() === "scans";
+  const debugLinksHeading = isScanBreakdown ? "Dev scan URLs" : "Dev event URLs";
+  const showMissingScanLinks = isScanBreakdown && normalizedCount > 0 && !hasEventLinks;
 
   useEffect(() => {
     if (!open) return;
@@ -925,7 +956,46 @@ function BreakdownPopup({ label, count, breakdown, variant = "popover" }: Breakd
           </div>
         ))
       ) : (
-        <p className="text-xs text-[#9186bb]">No {label.toLowerCase()} yet</p>
+        <p className="text-xs text-[#9186bb]">
+          {normalizedCount > 0 ? `No categorized ${label.toLowerCase()} yet` : `No ${label.toLowerCase()} yet`}
+        </p>
+      )}
+      {hasEventLinks && (
+        <div className="mt-3 border-t border-[#e8e1fb] pt-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8b7fb6]">
+            {debugLinksHeading}
+          </p>
+          <div className="max-h-56 space-y-2 overflow-auto pr-1">
+            {eventLinks.map((event) => {
+              const href = buildAdminEventDebugHref(event);
+              return (
+                <div key={event.id} className="text-xs text-[#4b3f72]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium">{event.title || "Untitled event"}</span>
+                    {(event.sourceType || event.createdVia || event.category) && (
+                      <span className="shrink-0 text-[10px] uppercase tracking-wide text-[#9186bb]">
+                        {event.sourceType || event.createdVia || event.category}
+                      </span>
+                    )}
+                  </div>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-0.5 block break-all font-mono text-[11px] text-[#6e55c8] underline decoration-[#c7baf4] underline-offset-2 hover:text-[#4e38a2]"
+                  >
+                    {href}
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {showMissingScanLinks && (
+        <p className="mt-3 border-t border-[#e8e1fb] pt-3 text-xs text-[#9186bb]">
+          No saved scan URLs yet
+        </p>
       )}
     </div>
   );
@@ -947,12 +1017,21 @@ function BreakdownPopup({ label, count, breakdown, variant = "popover" }: Breakd
     <div ref={ref} className="relative inline-flex">
       {summary}
       {open && (
-        <div className="absolute right-0 top-full z-10 mt-2 w-56 rounded-2xl border border-[#ddd5f6] bg-white p-3 shadow-xl">
+        <div className="absolute right-0 top-full z-10 mt-2 w-96 max-w-[calc(100vw-2rem)] rounded-2xl border border-[#ddd5f6] bg-white p-3 shadow-xl">
           {content}
         </div>
       )}
     </div>
   );
+}
+
+function buildAdminEventDebugHref(event: AdminEventDebugLink): string {
+  return buildEventProductPath({
+    eventId: event.id,
+    title: event.title,
+    data: event.primaryOutput ? { primaryOutput: event.primaryOutput } : null,
+    publicSlug: event.publicSlug,
+  });
 }
 
 function getEventTypeStats(source: Partial<Record<EventTypeKey, number>> | null | undefined) {
@@ -977,6 +1056,46 @@ function getUserEventTypeStats(source: Record<string, unknown> | null | undefine
     })
     .filter((item) => item.count > 0)
     .sort((a, b) => b.count - a.count);
+}
+
+function getUserEventDebugLinks(source: Record<string, unknown> | null | undefined) {
+  return readAdminDebugLinks(source, "event_debug_links");
+}
+
+function getUserScanDebugLinks(source: Record<string, unknown> | null | undefined) {
+  return readAdminDebugLinks(source, "scan_debug_links");
+}
+
+function readAdminDebugLinks(
+  source: Record<string, unknown> | null | undefined,
+  key: "event_debug_links" | "scan_debug_links",
+) {
+  const rawValue = source?.[key];
+  const rawItems: unknown[] = Array.isArray(rawValue) ? rawValue : [];
+  const eventLinks: AdminEventDebugLink[] = [];
+
+  for (const item of rawItems) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const record = item as Record<string, unknown>;
+    const id = readAdminDebugString(record.id);
+    if (!id) continue;
+    eventLinks.push({
+      id,
+      title: readAdminDebugString(record.title) || null,
+      category: readAdminDebugString(record.category) || null,
+      publicSlug: readAdminDebugString(record.publicSlug) || null,
+      primaryOutput: readAdminDebugString(record.primaryOutput) || null,
+      createdVia: readAdminDebugString(record.createdVia) || null,
+      sourceType: readAdminDebugString(record.sourceType) || null,
+      createdAt: readAdminDebugString(record.createdAt) || null,
+    });
+  }
+
+  return eventLinks;
+}
+
+function readAdminDebugString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function getFiniteNumber(value: unknown, fallback = 0): number {

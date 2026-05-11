@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
   createOrUpdateEventShare,
+  type EventShareRow,
   getEventHistoryById,
   getUserIdByEmail,
   incrementUserSharesSent,
-  type EventShareRow,
 } from "@/lib/db";
 import { sendShareEventEmail } from "@/lib/email";
-import { absoluteUrl } from "@/lib/absolute-url";
 import { invalidateUserHistory } from "@/lib/history-cache";
-import { invalidateUserDashboard } from "@/lib/dashboard-cache";
+import { buildEventPath } from "@/utils/event-url";
 
 export const runtime = "nodejs";
 
@@ -35,14 +36,16 @@ function getErrorMessage(error: unknown): string {
   return String(error || "");
 }
 
-function shareErrorResponse(
-  error: unknown
-): { body: { error: string; code: string }; status: number } {
+function shareErrorResponse(error: unknown): {
+  body: { error: string; code: string };
+  status: number;
+} {
   const message = getErrorMessage(error);
   if (/recipient user not found/i.test(message)) {
     return {
       body: {
-        error: "Recipient must have an Envitefy account before this event can appear under Invited Events.",
+        error:
+          "Recipient must have an Envitefy account before this event can appear under Invited Events.",
         code: "recipient_user_not_found",
       },
       status: 409,
@@ -76,10 +79,17 @@ export async function POST(request: NextRequest) {
 
     const body = (await request.json().catch(() => ({}))) as ShareRequestBody;
     const eventId = String(body.eventId || "").trim();
-    const recipientEmail = String(body.recipientEmail || "").trim().toLowerCase();
-    const recipientFirstName = (String(body.recipientFirstName || "").trim() || null) as string | null;
-    const recipientLastName = (String(body.recipientLastName || "").trim() || null) as string | null;
-    if (!eventId || !recipientEmail) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    const recipientEmail = String(body.recipientEmail || "")
+      .trim()
+      .toLowerCase();
+    const recipientFirstName = (String(body.recipientFirstName || "").trim() || null) as
+      | string
+      | null;
+    const recipientLastName = (String(body.recipientLastName || "").trim() || null) as
+      | string
+      | null;
+    if (!eventId || !recipientEmail)
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
     const existing = await getEventHistoryById(eventId);
     if (!existing) return NextResponse.json({ error: "Event not found" }, { status: 404 });
@@ -119,11 +129,9 @@ export async function POST(request: NextRequest) {
         typeof existing.title === "string" && existing.title.trim().length
           ? existing.title
           : "Event";
-      const slug = slugTitle
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "") || "event";
-      const eventUrl = await absoluteUrl(`/event/${slug}-${eventId}`);
+      const eventUrl = await absoluteUrl(
+        buildEventPath(eventId, slugTitle, undefined, existing.public_slug),
+      );
       await sendShareEventEmail({
         toEmail: recipientEmail,
         ownerEmail,
@@ -133,17 +141,21 @@ export async function POST(request: NextRequest) {
         recipientLastName,
       });
     } catch (error: unknown) {
-      try { console.error("[share] email send failed", error); } catch {}
+      try {
+        console.error("[share] email send failed", error);
+      } catch {}
     }
 
     return NextResponse.json({ ok: true, share });
   } catch (error: unknown) {
-    try { console.error("[share] POST error", error); } catch {}
+    try {
+      console.error("[share] POST error", error);
+    } catch {}
     return NextResponse.json(
       {
         error: getErrorMessage(error) || "unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

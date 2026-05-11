@@ -671,6 +671,72 @@ export function isNonCreationRequest(text: string) {
   );
 }
 
+function hasActiveEventContext(activeContext?: ConciergeActiveContext | null) {
+  return Boolean(
+    cleanCreationString(activeContext?.currentEventId) ||
+      cleanCreationString(activeContext?.currentDraftId) ||
+      cleanCreationString(activeContext?.selectedUploadId) ||
+      cleanCreationString(activeContext?.selectedTemplateId) ||
+      cleanCreationString(activeContext?.currentAssetId),
+  );
+}
+
+export function isSecretLikeRequest(text: string) {
+  const cleaned = cleanCreationString(text);
+  if (!cleaned) return false;
+  return (
+    /\b(?:api\s*key|secret|password|auth\s*token|session\s*token|access\s*token|bearer\s+token|private\s*key|credential)s?\b/i.test(
+      cleaned,
+    ) ||
+    /\b(?:sk-(?:test|live|proj|[a-z0-9_-]{4,})|ghp_[a-z0-9_]{8,}|github_pat_[a-z0-9_]{8,}|xox[baprs]-[a-z0-9-]{8,}|AIza[0-9A-Za-z_-]{8,}|AKIA[0-9A-Z]{8,})\b/i.test(
+      cleaned,
+    )
+  );
+}
+
+export function isUnsafeGuestDataRequest(text: string) {
+  const cleaned = cleanCreationString(text);
+  if (!cleaned) return false;
+  return (
+    /\b(?:scrape|harvest|extract|export|download|dump|collect)\b[\s\S]{0,80}\b(?:private\s+)?(?:rsvp|guest|attendee)[\s\S]{0,40}\b(?:emails?|phone|contacts?|data)\b/i.test(
+      cleaned,
+    ) ||
+    /\b(?:delete|remove|wipe)\b[\s\S]{0,80}\b(?:all\s+)?(?:of\s+)?(?:[A-Z][a-z]+['’]s\s+)?(?:guest\s+list|guests?|rsvp\s+responses?)\b/i.test(
+      cleaned,
+    ) ||
+    /\bclear\b[\s\S]{0,80}\b(?:all\s+)?(?:of\s+)?(?:[A-Z][a-z]+['’]s\s+)?(?:guest\s+list|rsvp\s+responses?)\b/i.test(
+      cleaned,
+    ) ||
+    /\bmark\s+(?:everyone|everybody|all|all\s+guests?|guests?|attendees?)\s+(?:as\s+)?(?:yes|no|maybe|attending|declined)\b/i.test(
+      cleaned,
+    )
+  );
+}
+
+export function isAmbiguousEditRequest(
+  text: string,
+  options: { activeContext?: ConciergeActiveContext | null; previous?: ConciergeEventDraft | null } = {},
+) {
+  const cleaned = cleanCreationString(text);
+  if (!cleaned || options.previous || hasActiveEventContext(options.activeContext)) return false;
+  if (
+    /\b(birthday|bday|turning|turns|wedding|getting\s+married|baby\s+shower|gender\s+reveal|bridal\s+shower|graduation|game\s+day|football|open\s+house|housewarming|appointment|workshop|party|celebration|ceremony|reception|fundraiser)\b/i.test(
+      cleaned,
+    ) &&
+    /\b(?:on|at)\b/i.test(cleaned)
+  ) {
+    return false;
+  }
+  return (
+    /\b(?:make|change|update|edit|revise|refine|polish)\b[\s\S]{0,80}\b(?:it|this|the\s+)?(?:invite|invitation|card|flyer|event\s+page)\b[\s\S]{0,80}\b(?:elegant|prettier|nicer|modern|formal|fun|playful|style|vibe|tone|theme|color|colors|design)\b/i.test(
+      cleaned,
+    ) ||
+    /\b(?:make|change|update|edit|revise|refine|polish)\b[\s\S]{0,80}\b(?:elegant|prettier|nicer|modern|formal|fun|playful)\b[\s\S]{0,80}\b(?:invite|invitation|card|flyer|event\s+page)\b/i.test(
+      cleaned,
+    )
+  );
+}
+
 export function isOffDomainRequest(text: string) {
   const cleaned = cleanCreationString(text);
   if (!cleaned) return false;
@@ -684,10 +750,44 @@ export function isOffDomainRequest(text: string) {
   const asksForHelp =
     /^(?:can|could|would|will)\s+you\s+(?:help|fix|write|explain|tell|make|create)\b/i.test(
       cleaned,
-    ) || /\bhelp\s+me\b/i.test(cleaned);
+    ) ||
+    /^(?:tell|write|explain|show)\s+me\b/i.test(cleaned) ||
+    /^(?:what|why|how)\b/i.test(cleaned) ||
+    /\bhelp\s+me\b/i.test(cleaned);
   if (!asksForHelp && !/[?]$/.test(cleaned)) return false;
-  return /\b(printer|wifi|wi-fi|router|computer|laptop|phone|homework|essay|recipe|tax|taxes|resume|math|code|bug|browser|password|account|spreadsheet|document)\b/i.test(
+  return /\b(printer|wifi|wi-fi|router|computer|laptop|phone|homework|essay|recipe|tax|taxes|resume|math|code|bug|browser|password|account|spreadsheet|document|joke|database|databases|script|debug)\b/i.test(
     cleaned,
+  );
+}
+
+export function classifyCreationBoundary(
+  text: string,
+  options: { activeContext?: ConciergeActiveContext | null; previous?: ConciergeEventDraft | null } = {},
+): Exclude<CreationSourceContext["boundary"], null | undefined> | null {
+  if (isSecretLikeRequest(text)) return "secret_detected";
+  if (isUnsafeGuestDataRequest(text)) return "unsafe_guest_data";
+  if (isNonCreationRequest(text)) return "non_creation";
+  if (isAmbiguousEditRequest(text, options)) return "ambiguous_edit";
+  if (isOffDomainRequest(text)) return "off_domain";
+  return null;
+}
+
+export function hasClearCreationSignal(text: string) {
+  const cleaned = cleanCreationString(text);
+  if (!cleaned || isGreetingMessage(cleaned)) return false;
+  if (hasReceivedInviteLanguage(cleaned)) return true;
+  if (
+    /\b(birthday|bday|turning|turns|wedding|baby\s+shower|gender\s+reveal|bridal\s+shower|graduation|graduate|gymnastics|gym\s+meet|meet\s+schedule|game\s+day|gameday|football|sports?\s+event|field\s+trip|field\s+day|open\s+house|housewarming|appointment|consultation|workshop|class|seminar|training|party|celebration|ceremony|reception|fundraiser|dinner|brunch|luncheon|meeting|event)\b/i.test(
+      cleaned,
+    )
+  ) {
+    return true;
+  }
+  return (
+    hasCreateVerb(cleaned) &&
+    /\b(event|invite|invitation|flyer|card|live\s*card|event\s+page|rsvp\s+page|sign[-\s]?up|signup|instagram\s+story|text\s+message|whats\s?app|poster|menu|welcome\s+sign)\b/i.test(
+      cleaned,
+    )
   );
 }
 

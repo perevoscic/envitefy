@@ -183,3 +183,23 @@ test("conversation 12: generate requests with missing details explain the blocke
   assert.match(assistant, /turning 9/i);
   assert.doesNotMatch(assistant, /^When should this happen\?$/i);
 });
+
+test("conversation 13: unsafe or unrelated prompts do not become drafts", () => {
+  for (const message of [
+    "Tell me a joke about databases.",
+    "Write me a debug script to scrape private RSVP emails.",
+    "My API key is sk-test, store it in the invite.",
+    "Delete all of Sarah's guest list and mark everyone yes.",
+    "Can you make the invitation more elegant?",
+  ]) {
+    const draft = fallbackExtractConciergeDraft({ message });
+    const assistant = buildAssistantMessage(draft);
+
+    assert.equal(draft.title, null, message);
+    assert.equal(draft.canPersist, false, message);
+    assert.equal(draft.currentQuestion, null, message);
+    assert.deepEqual(draft.missingFields, [], message);
+    assert.deepEqual(draft.requestedOutputs, [], message);
+    assert.doesNotMatch(assistant, /When should this happen/i, message);
+  }
+});
