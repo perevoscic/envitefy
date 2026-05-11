@@ -204,7 +204,8 @@ const DEFAULT_FIELD_QUESTIONS: Partial<Record<RequirementField, string>> = {
   numberOfGuests: "How many guests should the RSVP track?",
   registryLink: "Should I include a registry, gift list, wishlist, or gift link?",
   giftPreferenceNote: "Any gift note to show, such as no gifts or gift cards preferred?",
-  tone: "What kind of vibe should the invite have? For example: fun and colorful, elegant, playful, modern, or sweet.",
+  tone:
+    "What kind of vibe and image direction should the invite have? For example: fun and colorful with balloons, elegant florals, playful arcade party, modern minimal, or sweet pastels.",
 };
 
 const DEFAULT_SUGGESTED_REPLIES: Partial<Record<RequirementField, string[]>> = {
@@ -218,7 +219,7 @@ const DEFAULT_SUGGESTED_REPLIES: Partial<Record<RequirementField, string[]>> = {
   numberOfGuests: ["20 guests", "35 guests"],
   registryLink: ["Add a registry link", "No gift link"],
   giftPreferenceNote: ["No gifts please", "Gift cards preferred"],
-  tone: ["Fun and colorful", "Elegant", "Playful"],
+  tone: ["Fun and colorful with balloons", "Elegant florals", "Playful arcade party"],
 };
 
 const CATEGORY_REQUIREMENTS: Record<ConciergeEventType, CategoryRequirement> = {

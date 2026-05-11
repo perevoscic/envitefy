@@ -84,7 +84,7 @@ test("left sidebar exposes signed-in AI Concierge entry", () => {
     source,
     /opacity-0[\s\S]*group-hover:opacity-100[\s\S]*group-focus-within:opacity-100/,
   );
-  assert.match(source, /Recents/);
+  assert.match(source, /Drafts/);
   assert.match(controllerSource, /resetSidebarToRoot: \(\) => void;/);
   assert.match(controllerSource, /resetSidebarToRoot,/);
   assert.match(controllerSource, /openAiThreadsPage: \(\) => void;/);

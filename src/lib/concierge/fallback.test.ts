@@ -934,6 +934,23 @@ test("birthday live-card prompt aggregates inline name age venue and interests",
   assert.match(message, /Should Envitefy collect RSVPs/i);
 });
 
+test("birthday live-card prompt tolerates a mistyped for before name and age", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Birthday Live Card fro Lara, 7",
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.deepEqual(draft.requestedOutputs, ["live_card"]);
+  assert.equal(draft.eventType, "birthday");
+  assert.equal(draft.honoreeName, "Lara");
+  assert.equal(draft.ageOrMilestone, "7");
+  assert.equal(draft.title, "Lara is turning 7");
+  assert.equal(draft.currentQuestion, "date");
+  assert.doesNotMatch(draft.missingFields.join(","), /honoreeName|ageOrMilestone/);
+  assert.doesNotMatch(message, /Who is the birthday for/i);
+  assert.match(message, /When should this happen/i);
+});
+
 test("time-only edit keeps the existing event date", () => {
   const first = fallbackExtractConciergeDraft({
     message:
@@ -1125,6 +1142,126 @@ test("OpenAI normalization cannot override an explicit no-RSVP request", () => {
   assert.deepEqual(draft.outputs, ["event_page"]);
   assert.doesNotMatch(draft.missingFields.join(","), /numberOfGuests/);
   assert.equal(buildAssistantMessage(draft).includes("How many guests"), false);
+});
+
+test("OpenAI normalization cannot treat RSVP guest count as visual direction", () => {
+  let fallback = fallbackExtractConciergeDraft({
+    message: "Create a birthday live card with RSVP.",
+  });
+  fallback = fallbackExtractConciergeDraft({ message: "Ava, 7", draft: fallback });
+  fallback = fallbackExtractConciergeDraft({ message: "Saturday at 3 at Sky Zone", draft: fallback });
+
+  assert.equal(fallback.currentQuestion, "numberOfGuests");
+
+  const draft = normalizeConciergeDraft(
+    {
+      numberOfGuests: 10,
+      tone: "polished birthday invite",
+      draftStatus: "preview_ready",
+      missingFields: [],
+    },
+    fallback,
+    { message: "10" },
+  );
+
+  assert.equal(draft.numberOfGuests, 10);
+  assert.equal(draft.tone, null);
+  assert.equal(draft.currentQuestion, "tone");
+  assert.match(buildAssistantMessage(draft), /vibe and image direction/i);
+});
+
+test("conversation repair messages preserve draft details and bypass extraction", async () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Birthday Live Card fro Lara, 7",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "May 23rd", draft });
+  draft = fallbackExtractConciergeDraft({ message: "AMC Theater Destin", draft });
+  draft = fallbackExtractConciergeDraft({ message: "yes", draft });
+  draft = fallbackExtractConciergeDraft({ message: "10", draft });
+
+  assert.equal(draft.honoreeName, "Lara");
+  assert.equal(draft.rsvpEnabled, true);
+  assert.equal(draft.numberOfGuests, 10);
+  assert.equal(draft.currentQuestion, "tone");
+
+  const repaired = fallbackExtractConciergeDraft({
+    message: "who are you?",
+    draft,
+  });
+
+  assert.equal(repaired.honoreeName, "Lara");
+  assert.equal(repaired.ageOrMilestone, "7");
+  assert.equal(repaired.rsvpEnabled, true);
+  assert.equal(repaired.numberOfGuests, 10);
+  assert.equal(repaired.currentQuestion, "tone");
+  assert.match(buildAssistantMessage(repaired), /Envitefy's event concierge/i);
+  assert.match(buildAssistantMessage(repaired), /RSVP guest count: 10/i);
+  assert.match(buildAssistantMessage(repaired), /vibe and image direction/i);
+
+  let aiCalls = 0;
+  const result = await extractConciergeDraft(
+    { message: "you already asked for RSVP", draft },
+    {
+      openAiApiKey: "test-key",
+      createOpenAiClient: () => {
+        aiCalls += 1;
+        return {
+          chat: {
+            completions: {
+              create: async () => ({
+                choices: [
+                  {
+                    message: {
+                      content: JSON.stringify({
+                        honoreeName: "You Already Asked",
+                        rsvpEnabled: null,
+                        numberOfGuests: null,
+                        missingFields: ["rsvpEnabled"],
+                      }),
+                    },
+                  },
+                ],
+              }),
+            },
+          },
+        } as any;
+      },
+    },
+  );
+
+  assert.equal(aiCalls, 0);
+  assert.equal(result.usedAi, false);
+  assert.equal(result.draft.honoreeName, "Lara");
+  assert.equal(result.draft.rsvpEnabled, true);
+  assert.equal(result.draft.numberOfGuests, 10);
+  assert.match(result.assistantMessage, /RSVP enabled with a guest count of 10/i);
+});
+
+test("unclear replies rephrase the missing detail instead of repeating the same question", () => {
+  const dateDraft = fallbackExtractConciergeDraft({
+    message: "Birthday Live Card for Lara, 7",
+  });
+  const dateReply = fallbackExtractConciergeDraft({ message: "not sure", draft: dateDraft });
+  const dateMessage = buildAssistantMessage(dateReply);
+
+  assert.equal(dateReply.currentQuestion, "date");
+  assert.match(dateMessage, /No problem/i);
+  assert.match(dateMessage, /Even a rough date works/i);
+  assert.doesNotMatch(dateMessage, /When should this happen/i);
+
+  let rsvpDraft = fallbackExtractConciergeDraft({
+    message: "Birthday Live Card for Lara, 7",
+  });
+  rsvpDraft = fallbackExtractConciergeDraft({ message: "May 23rd", draft: rsvpDraft });
+  rsvpDraft = fallbackExtractConciergeDraft({ message: "AMC Theater Destin", draft: rsvpDraft });
+  rsvpDraft = fallbackExtractConciergeDraft({ message: "yes", draft: rsvpDraft });
+
+  const rsvpReply = fallbackExtractConciergeDraft({ message: "sure", draft: rsvpDraft });
+  const rsvpMessage = buildAssistantMessage(rsvpReply);
+
+  assert.equal(rsvpReply.currentQuestion, "numberOfGuests");
+  assert.match(rsvpMessage, /A rough RSVP cap is enough/i);
+  assert.doesNotMatch(rsvpMessage, /How many guests should the RSVP track/i);
 });
 
 test("OpenAI readiness is downgraded when source and purpose are missing", async () => {

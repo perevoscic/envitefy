@@ -82,9 +82,19 @@ function publicActionLabelForOutput(selectedOutput: RequestedOutput) {
   return "Open Product";
 }
 
-function previewPlaceholderText(draft: ConciergeEventDraft | null) {
-  if (draft?.currentQuestion) return "Answer the next question to unlock Generate.";
-  return "Preview placeholder. Generate to publish.";
+function previewProcessStatusText({
+  draft,
+  hasDraftProduct,
+  publicHref,
+}: {
+  draft: ConciergeEventDraft | null;
+  hasDraftProduct: boolean;
+  publicHref: string | null;
+}) {
+  if (publicHref) return "Published preview: open the link to review what guests will see.";
+  if (hasDraftProduct) return "Generated draft: review it here, then save/publish when ready.";
+  if (draft?.currentQuestion) return "Placeholder preview: not a final product yet.";
+  return "Placeholder preview: generate when the details look ready.";
 }
 
 type OutputPreviewSurfaceProps = {
@@ -310,7 +320,11 @@ export default function ChatProductPreview({
   });
   const hasGeneratedProduct = Boolean(liveEventId || hasDraftProduct);
   const publicActionLabel = publicActionLabelForOutput(selectedOutput);
-  const placeholderText = previewPlaceholderText(draft);
+  const previewProcessStatus = previewProcessStatusText({
+    draft,
+    hasDraftProduct,
+    publicHref,
+  });
   const shouldShowDraftActions = hasDraftProduct && !publicHref;
 
   return (
@@ -325,12 +339,12 @@ export default function ChatProductPreview({
             <div className="relative aspect-[9/17] h-[min(34rem,calc(100dvh-12rem))] max-w-full w-auto sm:aspect-[9/16] sm:h-[min(36rem,calc(100dvh-12rem))]">
               {isGenerating ? (
                 <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 rounded-[2.2rem] bg-white/78 text-[#8b8298] backdrop-blur-[3px]">
-                  <Loader2 className="size-11 animate-spin text-[#7c4dff]" aria-hidden="true" />
+                  <Loader2 className="size-11 animate-spin text-[#5c5be5]" aria-hidden="true" />
                   <div className="w-full max-w-[18rem] px-4 text-center">
                     <p className="text-sm font-bold text-[#2d1b36]">{currentBuildStep}</p>
                     <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eadfff]">
                       <div
-                        className="h-full rounded-full bg-[#7c4dff] transition-[width] duration-300"
+                        className="h-full rounded-full bg-[#5c5be5] transition-[width] duration-300"
                         style={{ width: `${buildProgress}%` }}
                       />
                     </div>
@@ -394,11 +408,9 @@ export default function ChatProductPreview({
                 </button>
               </div>
             ) : null}
-            {!hasGeneratedProduct ? (
-              <p className="max-w-full px-3 text-center text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#4f416a]">
-                {placeholderText}
-              </p>
-            ) : null}
+            <p className="mt-3 max-w-full px-3 text-center text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#4f416a]">
+              {previewProcessStatus}
+            </p>
           </div>
         </div>
       </div>

@@ -74,6 +74,30 @@ function firstDraftString(...values: unknown[]): string | null {
   return null;
 }
 
+function messageCannotAnswerVisualDirection(message: string, fallback: ConciergeEventDraft) {
+  const cleaned = cleanString(message.replace(/[.!?]+$/g, "")) || "";
+  if (!cleaned) return false;
+  if (fallback.currentQuestion === "tone" || fallback.missingFields.includes("tone")) return false;
+  if (/^\d{1,4}$/.test(cleaned)) return true;
+  if (
+    /^(yes|yep|yeah|sure|no|nope|skip|skip it|not needed|no rsvp|no rsvps|collect rsvps?|track rsvps?)$/i.test(
+      cleaned,
+    )
+  ) {
+    return true;
+  }
+  if (fallback.currentQuestion === "numberOfGuests" || fallback.currentQuestion === "rsvpEnabled") {
+    return true;
+  }
+  return false;
+}
+
+function normalizeAiVisualDirection(value: string | null, fallback: ConciergeEventDraft, message: string) {
+  if (!value) return null;
+  if (messageCannotAnswerVisualDirection(message, fallback)) return null;
+  return value;
+}
+
 function normalizeSource(value: unknown, fallback: ConciergeSource): ConciergeSource {
   const normalized = cleanString(value)?.toLowerCase();
   if (normalized === "text" || normalized === "upload" || normalized === "mixed") {
@@ -164,6 +188,7 @@ function reconciledMissingFields(
 export function normalizeConciergeDraft(
   value: unknown,
   fallback: ConciergeEventDraft,
+  options: { message?: string | null } = {},
 ): ConciergeEventDraft {
   const record = asRecord(value);
   const eventData = asRecord(record.eventData);
@@ -249,8 +274,13 @@ export function normalizeConciergeDraft(
   const ageOrMilestone =
     firstDraftString(record.ageOrMilestone, eventData.ageOrMilestone, eventData.age) ||
     fallback.ageOrMilestone;
-  const theme = firstDraftString(record.theme, eventData.theme) || fallback.theme;
-  const tone = firstDraftString(record.tone, eventData.tone) || fallback.tone;
+  const message = cleanString(options.message) || "";
+  const theme =
+    normalizeAiVisualDirection(firstDraftString(record.theme, eventData.theme), fallback, message) ||
+    fallback.theme;
+  const tone =
+    normalizeAiVisualDirection(firstDraftString(record.tone, eventData.tone), fallback, message) ||
+    fallback.tone;
   const rsvpRecord =
     record.rsvp && typeof record.rsvp === "object" && !Array.isArray(record.rsvp)
       ? (record.rsvp as Record<string, unknown>)
@@ -474,6 +504,7 @@ async function extractWithOpenAi(
               "When the previous draft is asking for a specific missing field, treat a short user reply as the answer to that field unless it clearly changes topics.",
               "Treat venue as satisfying the location requirement; if only one of venue or location is known, return it in both fields.",
               "If the previous draft asks whether Envitefy should collect RSVPs, set rsvpEnabled true for yes/include/collect/track replies and false for no/skip/not needed replies.",
+              "If the previous draft asks for RSVP guest count or RSVP choice, a numeric or yes/no reply must not satisfy theme or tone. Visual products still need a later vibe/image direction question unless the user already supplied concrete visual direction.",
               "Do not mark drafts ready when event purpose/source is missing. Do not classify uploads as invited based only on event category.",
               "When the user says they received, got, or were sent an invite and wants to save it, set sourceContext.detectedSourceIntent to received_invite and ownership to invited.",
               "If that received-invite request has no invite image/text or concrete event details, ask for an upload or pasted invite text before asking host-authoring questions.",
@@ -502,7 +533,9 @@ async function extractWithOpenAi(
   const content = response.choices?.[0]?.message?.content;
   const parsed = parseAiJson(content);
   if (!parsed) return null;
-  return normalizeConciergeDraft(parsed.draft || parsed, fallback);
+  return normalizeConciergeDraft(parsed.draft || parsed, fallback, {
+    message: request.message || "",
+  });
 }
 
 function shouldUsePremiumExtractionModel(request: ConciergeMessageRequest): boolean {

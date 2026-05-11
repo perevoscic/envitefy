@@ -1102,6 +1102,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const chatPaneRef = useRef<HTMLDivElement | null>(null);
   const composerCardRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const shouldRefocusComposerRef = useRef(false);
   const [input, setInput] = useState("");
   const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput | null>(null);
   const [selectedStarterCategory, setSelectedStarterCategory] =
@@ -1245,6 +1246,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       const end = textarea.value.length;
       textarea.setSelectionRange(end, end);
     });
+  }
+
+  function refocusComposerAfterResponse() {
+    if (!shouldRefocusComposerRef.current) return;
+    shouldRefocusComposerRef.current = false;
+    focusComposerAtEnd();
   }
 
   function selectionPrefix(categoryLabel: string | null, productOutput: RequestedOutput | null) {
@@ -1672,6 +1679,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setError(err instanceof Error ? err.message : "Draft update failed.");
     } finally {
       setIsSending(false);
+      refocusComposerAfterResponse();
     }
   }
 
@@ -1709,6 +1717,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setError(err instanceof Error ? err.message : "Preview update failed.");
     } finally {
       setIsSending(false);
+      refocusComposerAfterResponse();
     }
   }
 
@@ -1872,6 +1881,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     } finally {
       setIsStreamingAssistant(false);
       setIsSending(false);
+      refocusComposerAfterResponse();
     }
   }
 
@@ -1894,6 +1904,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     const value = input.trim();
     if (!value) return;
     setInput("");
+    shouldRefocusComposerRef.current = true;
     if (canGenerateProduct && draft && isGenerateConfirmationMessage(value)) {
       setIsReadyChatComposerOpen(false);
       await generateProductForDraft(draft);
@@ -2053,12 +2064,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                 role="status"
                 aria-live="polite"
               >
-                <Loader2 className="size-4 animate-spin text-[#7c4dff]" aria-hidden="true" />
+                <Loader2 className="size-4 animate-spin text-[#5c5be5]" aria-hidden="true" />
                 {message.text}
               </div>
             ) : message.role === "user" ? (
               <div className="flex max-w-[94%] items-start justify-end gap-2 sm:max-w-[88%]">
-                <div className="min-w-0 whitespace-pre-line rounded-3xl rounded-tr-md bg-[#6f4cff] px-4 py-3 text-sm leading-6 text-white shadow-sm shadow-[#6f4cff]/15">
+                <div className="min-w-0 whitespace-pre-line rounded-3xl rounded-tr-md bg-[#5c5be5] px-4 py-3 text-sm leading-6 text-white shadow-sm shadow-[#5c5be5]/15">
                   {message.text}
                 </div>
                 <UserChatAvatar initials={userAvatarInitials} />
@@ -2114,7 +2125,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             autoOpenIntervalMs={2000}
             autoOpenCycles={3}
             ariaLabel="Choose product format"
-            className="w-full !min-w-0 bg-[#e0e5ec]"
+            className="w-full !min-w-0 bg-[#eff1f8]"
             onValueChange={(value) => {
               const option = PRODUCT_OPTIONS.find((item) => item.output === value);
               if (option) handleProductChoice(option);
@@ -2139,7 +2150,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             )}
           >
             {isThinking ? null : (
-              <Loader2 className="size-4 animate-spin text-[#7c4dff]" aria-hidden="true" />
+              <Loader2 className="size-4 animate-spin text-[#5c5be5]" aria-hidden="true" />
             )}
             {busyLabel}
           </div>
@@ -2169,7 +2180,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               ? `Choose product format for ${selectedStarterCategory.label}`
               : "Choose product format"
           }
-          className="w-full !min-w-0 !max-w-full bg-[#e0e5ec]"
+          className="w-full !min-w-0 !max-w-full bg-[#eff1f8]"
           onValueChange={(value) => {
             const option = PRODUCT_OPTIONS.find((item) => item.output === value);
             if (option) handleStarterProductChoice(option);
@@ -2177,7 +2188,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         />
       </div>
       <div
-        className="hidden max-w-full items-center justify-center gap-2 rounded-full bg-[#e0e5ec] p-2 shadow-[10px_10px_20px_#b8bec7,-10px_-10px_20px_#ffffff] sm:flex"
+        className="hidden max-w-full items-center justify-center gap-2 rounded-full bg-[#eff1f8] p-2 shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] sm:flex"
         aria-label={
           selectedStarterCategory
             ? `Choose product format for ${selectedStarterCategory.label}`
@@ -2202,8 +2213,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               className={cn(
                 "group relative inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55 sm:px-8 sm:py-4 sm:text-sm",
                 isSelected
-                  ? "text-indigo-600 shadow-[inset_4px_4px_8px_#b8bec7,inset_-4px_-4px_8px_#ffffff]"
-                  : "text-zinc-500 hover:text-zinc-700",
+                  ? "text-[#5c5be5] shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff]"
+                  : "text-[#747684] hover:text-[#5d6070]",
               )}
             >
               <Icon
@@ -2219,7 +2230,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               {isSelected ? (
                 <motion.span
                   layoutId="chatProductActiveUnderline"
-                  className="absolute bottom-2 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-indigo-600 opacity-40"
+                  className="absolute bottom-2 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-[#5c5be5] opacity-40"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 0.4 }}
                 />
@@ -2288,7 +2299,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               onFocus={() => setIsComposerFocused(true)}
               onBlur={() => setIsComposerFocused(false)}
               className={cn(
-                "min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#7c4dff] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base",
+                "min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#5c5be5] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base",
                 isCompactEmptyComposer &&
                   "max-md:min-h-[34px] max-md:px-2 max-md:py-1.5 max-md:text-sm max-md:[&::placeholder]:text-[0.78rem]",
               )}
@@ -2303,7 +2314,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                     disabled={isBusy}
                     onClick={openSnapUploadPicker}
                     className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff] disabled:cursor-not-allowed disabled:opacity-50",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:cursor-not-allowed disabled:opacity-50",
                       isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
                     )}
                     aria-label="Upload file"
@@ -2321,7 +2332,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                     disabled={isBusy}
                     onClick={openSnapCameraPicker}
                     className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff] disabled:cursor-not-allowed disabled:opacity-50",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:cursor-not-allowed disabled:opacity-50",
                       isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
                     )}
                     aria-label="Use camera"
@@ -2354,8 +2365,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                     void handleVoiceInput();
                   }}
                   className={cn(
-                    "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#7c4dff] disabled:pointer-events-none disabled:opacity-50",
-                    (input.trim() || isListening) && "text-[#7c4dff]",
+                    "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:pointer-events-none disabled:opacity-50",
+                    (input.trim() || isListening) && "text-[#5c5be5]",
                     isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
                   )}
                   aria-label={input.trim() ? "Send" : "Use voice input"}
@@ -2363,7 +2374,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                   {isBusy ? (
                     <Loader2
                       className={cn(
-                        "size-5 animate-spin text-[#7c4dff]",
+                        "size-5 animate-spin text-[#5c5be5]",
                         isCompactEmptyComposer && "max-md:size-4",
                       )}
                       aria-hidden="true"
@@ -2416,19 +2427,19 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#ded2f5] bg-white px-3 text-sm font-bold text-[#4f3a73] transition hover:border-[#c7b4ee] hover:bg-[#f5f0ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55"
           >
             <MessageCircle className="size-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">Keep chatting</span>
+            <span className="truncate">Keep editing</span>
           </button>
           <button
             type="button"
             onClick={() => {
               if (draft) void generateProductForDraft(draft);
             }}
-            className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#6f4cff] px-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(111,76,255,0.24)] transition hover:bg-[#5f3ff0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#5c5be5] px-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,91,229,0.24)] transition hover:bg-[#4f4ed2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isGeneratingCard || !canGenerateProduct}
             aria-label={
               isGeneratingCard
                 ? `Generating ${effectiveSelectedProductLabel.toLowerCase()}`
-                : `Generate ${effectiveSelectedProductLabel.toLowerCase()}`
+                : `Generate now: ${effectiveSelectedProductLabel.toLowerCase()}`
             }
           >
             {isGeneratingCard ? (
@@ -2436,7 +2447,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             ) : (
               <Sparkles className="size-4 shrink-0" aria-hidden="true" />
             )}
-            <span className="truncate">{isGeneratingCard ? "Generating" : "Generate"}</span>
+            <span className="truncate">{isGeneratingCard ? "Generating" : "Generate now"}</span>
           </button>
         </div>
         {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
@@ -2487,7 +2498,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                     type="button"
                     onClick={() => setMobileView("chat")}
                     className={`h-8 rounded-md px-4 text-xs font-bold transition ${
-                      mobileView === "chat" ? "bg-white text-[#7c4dff] shadow-sm" : "text-[#8b8298]"
+                      mobileView === "chat" ? "bg-white text-[#5c5be5] shadow-sm" : "text-[#8b8298]"
                     }`}
                   >
                     Chat
@@ -2497,7 +2508,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                     onClick={() => setMobileView("preview")}
                     className={`h-8 rounded-md px-4 text-xs font-bold transition ${
                       mobileView === "preview"
-                        ? "bg-white text-[#7c4dff] shadow-sm"
+                        ? "bg-white text-[#5c5be5] shadow-sm"
                         : "text-[#8b8298]"
                     }`}
                   >
@@ -2517,7 +2528,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                 ref={chatPaneRef}
                 className={cn(
                   "min-h-0 w-full flex-col overflow-hidden",
-                  isEmptyState ? "bg-[#e0e5ec]" : "bg-white/28 backdrop-blur-sm",
+                  isEmptyState ? "bg-[#eff1f8]" : "bg-white/28 backdrop-blur-sm",
                   shouldShowProductPanel && "md:border-r md:border-[#e5dff0]",
                   mobileView === "chat" ? "flex" : "hidden md:flex",
                   !shouldShowProductPanel && "md:border-r-0",
@@ -2559,14 +2570,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                               aria-label={`Choose ${tile.label}`}
                               aria-pressed={isSelected}
                               className={cn(
-                                "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl bg-[#e0e5ec] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8b0bc] focus-visible:ring-offset-4 focus-visible:ring-offset-[#e0e5ec] disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(5.5rem,16dvh,7.25rem)] max-md:w-[clamp(5.5rem,16dvh,7.25rem)]",
+                                "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl bg-[#eff1f8] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8b0bc] focus-visible:ring-offset-4 focus-visible:ring-offset-[#eff1f8] disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(5.5rem,16dvh,7.25rem)] max-md:w-[clamp(5.5rem,16dvh,7.25rem)]",
                                 isSelected &&
                                   cn(
-                                    "scale-95 shadow-[inset_6px_6px_12px_#b8bec7,inset_-6px_-6px_12px_#ffffff]",
+                                    "scale-95 shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff]",
                                     tile.color,
                                   ),
                                 !isSelected &&
-                                  "text-zinc-400 shadow-[10px_10px_20px_#b8bec7,-10px_-10px_20px_#ffffff] hover:text-zinc-500 active:scale-95",
+                                  "text-[#9a9daa] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] hover:text-[#7f8290] active:scale-95",
                               )}
                             >
                               {isSelected ? (
@@ -2584,7 +2595,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                                 <span
                                   className={cn(
                                     "text-center text-[10px] font-bold uppercase leading-[1.35] tracking-widest transition-colors sm:text-xs",
-                                    isSelected ? "text-current" : "text-zinc-400",
+                                    isSelected ? "text-current" : "text-[#9a9daa]",
                                   )}
                                 >
                                   {tile.label}

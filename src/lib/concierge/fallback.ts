@@ -245,7 +245,7 @@ function detectAge(text: string, previous?: ConciergeEventDraft | null) {
   const turning = text.match(/\b(?:turning|turns|is turning|turn)\s+(\d{1,3})\b/i);
   if (turning?.[1] && Number(turning[1]) <= 120) return turning[1];
   const birthdayForAge = text.match(
-    /\b(?:birthday|bday)(?:\s+(?:live\s*card|event\s+page|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite|party|product))*\s+for\s+[a-z][a-zA-Z'-]{1,30}\s*,\s*(\d{1,3})(?=\s*(?:,|\b(?:for|on|at|turning|turns)\b|$))/i,
+    /\b(?:birthday|bday)(?:\s+(?:live\s*card|event\s+page|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite|party|product))*\s+(?:for|fro)\s+[a-z][a-zA-Z'-]{1,30}\s*,?\s+(\d{1,3})(?=\s*(?:,|\b(?:for|fro|on|at|turning|turns)\b|$))/i,
   );
   if (birthdayForAge?.[1] && Number(birthdayForAge[1]) <= 120) return birthdayForAge[1];
   const commaAge = text.match(/,\s*(\d{1,3})\s*(?:$|[.,;!?])/);
@@ -279,7 +279,7 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
 
   if (previous?.eventType === "birthday" || /\b(?:birthday|bday)\b/i.test(text)) {
     const birthdayForName = text.match(
-      /\b(?:birthday|bday)(?:\s+(?:live\s*card|event\s+page|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite|party|product))*\s+for\s+([a-z][a-zA-Z'-]{1,30})(?=\s*(?:,|\b(?:turning|turns|is turning|on|at|for)\b|$))/i,
+      /\b(?:birthday|bday)(?:\s+(?:live\s*card|event\s+page|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite|party|product))*\s+(?:for|fro)\s+([a-z][a-zA-Z'-]{1,30})(?=\s*(?:,|\d{1,3}\b|\b(?:turning|turns|is turning|on|at|for|fro)\b|$))/i,
     );
     if (birthdayForName?.[1]) return titleCaseName(birthdayForName[1]);
   }
@@ -625,6 +625,23 @@ function asksEnvitefyKnowledgeQuestion(message: string) {
   );
 }
 
+function isStatePreservingConversationMessage(message: string, previous?: ConciergeEventDraft | null) {
+  if (!previous) return false;
+  const text = cleanString(message) || "";
+  if (!text) return false;
+  if (/\b(create|make|build|generate|draft|design|change|update|set|switch)\b/i.test(text)) {
+    return false;
+  }
+  return (
+    /^(are you here|you there|hello\??|hi\??|who are you|what are you|why would i do that)\??$/i.test(
+      text,
+    ) ||
+    /\b(i\s+(already\s+)?gave\s+you\s+the\s+name|you\s+already\s+(asked|have)\s+(for\s+)?rsvp|forgot\s+rsvp|dropped\s+(the\s+)?rsvp|you\s+(lost|dropped|forgot)\s+(the\s+)?(?:rsvp|name|guest count|details?))\b/i.test(
+      text,
+    )
+  );
+}
+
 function pendingDetailLine(previous?: ConciergeEventDraft | null) {
   const field = cleanString(previous?.currentQuestion) || cleanString(previous?.missingFields?.[0]);
   if (!field) return null;
@@ -641,6 +658,52 @@ function pendingDetailLine(previous?: ConciergeEventDraft | null) {
               ? "event purpose"
               : field;
   return `For this draft, I still need the ${label}.`;
+}
+
+function currentDraftContinuation(draft: ConciergeEventDraft) {
+  if (!draft.currentQuestion) {
+    return readyVerificationMessage(draft);
+  }
+  return buildAssistantMessage({
+    ...draft,
+    knowledgeAnswer: null,
+    assistantGuidance: null,
+    sourceContext: {
+      ...draft.sourceContext,
+      boundary:
+        draft.sourceContext.boundary === "envitefy_question" ? null : draft.sourceContext.boundary,
+    },
+  });
+}
+
+function buildStatePreservingConversationAnswer(
+  message: string,
+  previous: ConciergeEventDraft,
+) {
+  const text = cleanString(message) || "";
+  let opener = "I still have the current draft details.";
+  if (/^(are you here|you there|hello\??|hi\??)$/i.test(text)) {
+    opener = "Yes - I'm here.";
+  } else if (/^(who are you|what are you)\??$/i.test(text)) {
+    opener = "I'm Envitefy's event concierge, here to shape this event product with you.";
+  } else if (/\bi\s+(already\s+)?gave\s+you\s+the\s+name\b/i.test(text)) {
+    opener = previous.honoreeName
+      ? `You're right - I have ${previous.honoreeName} as the featured name.`
+      : "You're right to call that out. I do not have a usable featured name saved yet.";
+  } else if (/\b(?:you\s+already\s+(?:asked|have)\s+(?:for\s+)?rsvp|forgot\s+rsvp|dropped\s+(?:the\s+)?rsvp|you\s+(?:lost|dropped|forgot)\s+(?:the\s+)?rsvp)\b/i.test(text)) {
+    opener =
+      previous.rsvpEnabled === true
+        ? previous.numberOfGuests
+          ? `You're right - I have RSVP enabled with a guest count of ${previous.numberOfGuests}.`
+          : "You're right - I have RSVP enabled."
+        : previous.rsvpEnabled === false
+          ? "You're right - I have RSVP turned off."
+          : "You're right to check. I do not have an RSVP choice saved yet.";
+  } else if (/^why would i do that\??$/i.test(text)) {
+    opener =
+      "Generating creates the actual shareable invite from these saved details, including the visual style once you provide it.";
+  }
+  return [opener, currentDraftContinuation(previous)].filter(Boolean).join("\n\n");
 }
 
 function buildEnvitefyKnowledgeAnswer(message: string, previous?: ConciergeEventDraft | null) {
@@ -695,6 +758,34 @@ function missingFieldLabel(field: string) {
   return field;
 }
 
+function followUpForUnresolvedField(field: string, plan: ReturnType<typeof getRequirementPlan>) {
+  if (field === "honoreeName") {
+    return "Give me the name that should be featured on the invite, even if the rest stays flexible.";
+  }
+  if (field === "ageOrMilestone") {
+    return "What age or milestone should I show, if any?";
+  }
+  if (field === "date") {
+    return "Even a rough date works, like \"next Saturday\" or \"TBD for now.\"";
+  }
+  if (field === "time") {
+    return "A rough time is enough, like \"afternoon,\" \"6 PM,\" or \"TBD for now.\"";
+  }
+  if (field === "location") {
+    return "Tell me the place, city, or venue. If it is not final, say the rough area or \"TBD.\"";
+  }
+  if (field === "rsvpEnabled") {
+    return "Should guests RSVP through Envitefy: yes or no?";
+  }
+  if (field === "numberOfGuests") {
+    return "A rough RSVP cap is enough here, like \"10 guests\" or \"about 25.\"";
+  }
+  if (field === "tone") {
+    return "Give me a few words for the vibe and image direction, like \"pink balloons,\" \"movie theater neon,\" or \"sweet pastels.\"";
+  }
+  return questionForRequirementField(field as RequirementField, plan);
+}
+
 function buildUnresolvedFieldGuidance(args: {
   message: string;
   draft: ConciergeEventDraft;
@@ -718,15 +809,28 @@ function buildUnresolvedFieldGuidance(args: {
   const prefix = isGenerateConfirmationReply(args.message)
     ? `I can generate this once the missing detail is filled in. I still need ${detailList}.`
     : `No problem. I can keep this flexible, but I still need ${detailList} before generating.`;
-  const question = questionForRequirementField(
-    firstMissing as RequirementField,
-    getRequirementPlan({
-      eventType: args.draft.eventType,
-      requestedOutputs: args.draft.requestedOutputs,
-      sourceContext: args.draft.sourceContext,
-    }),
-  );
+  const plan = getRequirementPlan({
+    eventType: args.draft.eventType,
+    requestedOutputs: args.draft.requestedOutputs,
+    sourceContext: args.draft.sourceContext,
+  });
+  const question = followUpForUnresolvedField(firstMissing, plan);
   return verification ? `${prefix}\n${verification}\n${question}` : `${prefix}\n${question}`;
+}
+
+function questionForMissingField(
+  field: string,
+  draft: ConciergeEventDraft,
+  plan: ReturnType<typeof getRequirementPlan>,
+) {
+  if (
+    draft.assistantGuidance &&
+    cleanString(field) ===
+      (cleanString(draft.currentQuestion) || cleanString(draft.missingFields[0]))
+  ) {
+    return followUpForUnresolvedField(field, plan);
+  }
+  return questionForRequirementField(field as RequirementField, plan);
 }
 
 function stripLeadingTimeFromLocation(value: string | null) {
@@ -1186,9 +1290,14 @@ function readyVerificationMessage(draft: ConciergeEventDraft) {
   ].join("\n");
 }
 
-function detailConfirmationQuestion(draft: ConciergeEventDraft, question: string) {
+function detailConfirmationQuestion(
+  draft: ConciergeEventDraft,
+  question: string,
+  options: { includeRsvp?: boolean } = {},
+) {
+  const includeRsvp = options.includeRsvp !== false;
   const lines = compactVerificationLines(draft).filter(
-    (line) => !/^RSVP(?: guest count)?:/i.test(line),
+    (line) => includeRsvp || !/^RSVP(?: guest count)?:/i.test(line),
   );
   if (lines.length < 2) return question;
   return ["I have these details.", ...lines, question].join("\n");
@@ -1260,20 +1369,26 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
     sourceContext: draft.sourceContext,
   });
   if (firstMissing === "honoreeName" || firstMissing === "ageOrMilestone") {
-    return questionForRequirementField(firstMissing, plan);
+    return questionForMissingField(firstMissing, draft, plan);
   }
   if (firstMissing === "date" || firstMissing === "time") {
-    return questionForRequirementField(firstMissing, plan);
+    return questionForMissingField(firstMissing, draft, plan);
   }
-  if (firstMissing === "location") return questionForRequirementField(firstMissing, plan);
+  if (firstMissing === "location") return questionForMissingField(firstMissing, draft, plan);
   if (firstMissing === "rsvpEnabled") {
-    return detailConfirmationQuestion(draft, questionForRequirementField(firstMissing, plan));
+    return detailConfirmationQuestion(draft, questionForMissingField(firstMissing, draft, plan), {
+      includeRsvp: false,
+    });
   }
   if (firstMissing === "numberOfGuests") {
-    return detailConfirmationQuestion(draft, questionForRequirementField(firstMissing, plan));
+    return detailConfirmationQuestion(draft, questionForMissingField(firstMissing, draft, plan), {
+      includeRsvp: false,
+    });
   }
   if (firstMissing === "tone") {
-    return detailConfirmationQuestion(draft, questionForRequirementField(firstMissing, plan));
+    return detailConfirmationQuestion(draft, questionForMissingField(firstMissing, draft, plan), {
+      includeRsvp: true,
+    });
   }
   return "What detail should we add next?";
 }
@@ -1355,7 +1470,18 @@ export function fallbackExtractConciergeDraft(args: {
     : nonCreationRequest
       ? { ...resolvedSourceContext, boundary: "non_creation" as const }
       : resolvedSourceContext;
-  if (asksEnvitefyKnowledgeQuestion(message)) {
+  if (!privateDataMutationRequest && isStatePreservingConversationMessage(message, previous)) {
+    return {
+      ...previous!,
+      sourceContext: {
+        ...previous!.sourceContext,
+        boundary: "envitefy_question",
+      },
+      knowledgeAnswer: buildStatePreservingConversationAnswer(message, previous!),
+      assistantGuidance: null,
+    };
+  }
+  if (!privateDataMutationRequest && asksEnvitefyKnowledgeQuestion(message)) {
     const knowledgeAnswer = buildEnvitefyKnowledgeAnswer(message, previous);
     if (previous) {
       return {

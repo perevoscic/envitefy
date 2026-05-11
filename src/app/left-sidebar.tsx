@@ -937,7 +937,7 @@ function AiThreadsPanel({
         <section className="space-y-1">
           <div className="px-1 pt-1">
             <p className="font-[var(--font-josefin-sans)] text-[0.82rem] font-bold uppercase tracking-[0.13em] leading-none text-[#6b5fc2]">
-              Recents
+              Drafts
             </p>
             <div className={`mt-1 ${SIDEBAR_DIVIDER_CLASS}`} />
           </div>
