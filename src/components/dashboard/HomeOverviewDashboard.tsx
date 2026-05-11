@@ -1,40 +1,25 @@
 "use client";
 
 import {
-  Activity,
-  AlertCircle,
-  ArrowRight,
-  CalendarDays,
+  Calendar,
+  Camera,
   CheckCircle2,
-  Clipboard,
-  Copy,
-  Eye,
-  ListChecks,
-  MapPin,
-  MessageSquareText,
-  PartyPopper,
-  Send,
-  Share2,
-  Sparkles,
-  Users,
-  WandSparkles,
+  ChevronRight,
+  Clock,
+  CloudSun,
   type LucideIcon,
+  MapPin,
+  Navigation,
+  WandSparkles,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { FlipClock } from "@/components/ui/flip-clock";
-import { type ThumbnailFocus, thumbnailFocusToObjectPosition } from "@/lib/thumbnail-focus";
-import { buildEventPath } from "@/utils/event-url";
 import {
-  conciergePromptSuggestions,
-  mockActivity,
-  mockDashboardStats,
-  mockEvents,
-  shouldUseAdminDashboardMockData,
-  type MockDashboardActivity,
-  type MockDashboardEvent,
-} from "./adminDashboardMockData";
+  type ThumbnailFocus,
+  thumbnailFocusToObjectPosition,
+} from "@/lib/thumbnail-focus";
 
 type DashboardEventItem = {
   id: string;
@@ -51,7 +36,6 @@ type DashboardEventItem = {
   reminderCount?: number;
   mapsUrl?: string | null;
   createdVia?: string | null;
-  updatedAt?: string | null;
   ownership?: "owned" | "invited";
   shareStatus?: "accepted" | "pending" | null;
   userRsvpResponse?: "yes" | "no" | "maybe" | null;
@@ -131,85 +115,345 @@ type HomeOverviewDashboardProps = {
   onForceTravel: () => void;
 };
 
-type RsvpBreakdown = {
-  yes: number;
-  no: number;
-  maybe: number;
-  noResponse: number;
-};
+type CardTone = "indigo" | "pink" | "sky" | "amber";
 
-type EventHealthItem = {
-  id: string;
-  label: string;
-  done: boolean;
-};
-
-type CreatorDashboardEvent = {
-  id: string;
-  title: string;
-  type: string;
-  status: "Draft" | "Published" | "Upcoming" | "Past" | "Invited";
-  startAt: string | null;
-  endAt: string | null;
-  location: string | null;
-  rsvps: RsvpBreakdown;
-  views: number | null;
-  completionScore: number;
-  lastUpdated: string | null;
-  needsAttention: string[];
-  healthItems: EventHealthItem[];
-  coverImageUrl?: string | null;
-  thumbnailFocus?: ThumbnailFocus | null;
-  createdVia?: string | null;
-  ownership: "owned" | "invited";
-  hasRsvp: boolean;
-  isSample: boolean;
-};
-
-type DashboardActivityItem = {
-  id: string;
-  type: MockDashboardActivity["type"];
-  message: string;
-  timestamp: string;
-};
-
-type SmartAction = {
-  eyebrow: string;
-  title: string;
-  body: string;
-  href: string;
-  actionLabel: string;
-  eventId?: string;
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  birthday: "Birthday",
-  birthdays: "Birthday",
-  baby_shower: "Baby Shower",
-  "baby shower": "Baby Shower",
-  wedding: "Wedding",
-  weddings: "Wedding",
+/** Internal `event_history.data.category` slugs → human copy for the invite card pill (avoids SPORT_* raw strings). */
+const INVITE_CARD_CATEGORY_BADGE: Record<string, string> = {
   sport_gymnastics_schedule: "Gymnastics",
-  sport_gymnastics: "Gymnastics",
-  sport_football_season: "Football",
-  football: "Football",
-  gender_reveal: "Gender Reveal",
-  sport_event: "Sports",
-  general_event: "General Event",
 };
 
-const STATUS_STYLES: Record<CreatorDashboardEvent["status"], string> = {
-  Draft: "border-amber-200 bg-amber-50 text-amber-700",
-  Published: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  Upcoming: "border-indigo-200 bg-indigo-50 text-indigo-700",
-  Past: "border-slate-200 bg-slate-50 text-slate-600",
-  Invited: "border-violet-200 bg-violet-50 text-violet-700",
+function inviteCardCategoryBadge(
+  category: string | null | undefined,
+  fallback: string,
+): string {
+  const raw = String(category || "").trim();
+  if (!raw) return fallback;
+  return INVITE_CARD_CATEGORY_BADGE[raw] ?? raw;
+}
+
+function getDashboardThumbnailObjectPosition(
+  item: DashboardEventItem,
+): string | undefined {
+  const explicitPosition = thumbnailFocusToObjectPosition(item.thumbnailFocus);
+  if (explicitPosition) return explicitPosition;
+  const createdVia = String(item.createdVia || "")
+    .trim()
+    .toLowerCase();
+  return createdVia.startsWith("ocr") ? "50% 22%" : undefined;
+}
+
+const CARD_TONE_STYLES: Record<
+  CardTone,
+  { iconClassName: string; shadowClassName: string }
+> = {
+  indigo: {
+    iconClassName: "bg-indigo-50 text-indigo-600",
+    shadowClassName: "hover:shadow-indigo-100/70",
+  },
+  pink: {
+    iconClassName: "bg-pink-50 text-pink-500",
+    shadowClassName: "hover:shadow-pink-100/70",
+  },
+  sky: {
+    iconClassName: "bg-sky-50 text-sky-600",
+    shadowClassName: "hover:shadow-sky-100/70",
+  },
+  amber: {
+    iconClassName: "bg-amber-50 text-amber-500",
+    shadowClassName: "hover:shadow-amber-100/70",
+  },
 };
 
-function getViewerLabel(viewerName: string): string {
-  const trimmed = viewerName.trim();
-  if (!trimmed) return "there";
-  return trimmed.split(/\s+/)[0] || "there";
+type InfoCardProps = {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  tone: CardTone;
+  href?: string | null;
+  external?: boolean;
+};
+
+type InvitationCardStat = {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+};
+
+type InvitationAction = {
+  label: string;
+  href?: string | null;
+  onClick?: () => void;
+  icon?: LucideIcon;
+  external?: boolean;
+};
+
+type InvitationEventCardProps = {
+  item: DashboardEventItem;
+  now: number;
+  primary?: boolean;
+  stats: InvitationCardStat[];
+  primaryAction: InvitationAction;
+  secondaryAction?: InvitationAction | null;
+};
+
+function InfoCard({
+  label,
+  value,
+  icon: Icon,
+  tone,
+  href,
+  external = false,
+}: InfoCardProps) {
+  const toneStyles = CARD_TONE_STYLES[tone];
+  const className = `group block rounded-[32px] border border-slate-100 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.06)] transition-all duration-500 hover:-translate-y-1 hover:border-indigo-100 ${toneStyles.shadowClassName}`;
+  const content = (
+    <>
+      <div className="mb-4 flex items-start justify-between">
+        <div
+          className={`flex h-12 w-12 items-center justify-center rounded-2xl ${toneStyles.iconClassName}`}
+        >
+          <Icon size={20} />
+        </div>
+      </div>
+      <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+        {label}
+      </p>
+      <p className="text-[1.35rem] font-black leading-none tracking-tight text-slate-900 sm:text-2xl">
+        {value}
+      </p>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={className}
+        target={external ? "_blank" : undefined}
+        rel={external ? "noreferrer" : undefined}
+        aria-label={`${label}: ${value}`}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return <article className={className}>{content}</article>;
+}
+
+function InvitationEventCard({
+  item,
+  now,
+  primary = false,
+  stats,
+  primaryAction,
+  secondaryAction,
+}: InvitationEventCardProps) {
+  const relationLabel = eventRelationLabel(item);
+  const statusLabel = getEventStatusLabel(item);
+  const statusTone = getInvitationStatusTone(item);
+  const statusClassName = getInvitationStatusTextClass(item);
+  const countdown = buildCountdownParts(parseSafeDate(item.startAt), now);
+  const isInvited = item.ownership === "invited";
+  const thumbnailObjectPosition = getDashboardThumbnailObjectPosition(item);
+  const primaryButtonClassName = `group/btn inline-flex min-h-[56px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[20px] px-5 py-4 text-sm font-bold text-white shadow-xl transition-all sm:min-h-[60px] sm:min-w-[170px] sm:px-8 sm:text-base ${
+    isInvited
+      ? "bg-indigo-600 hover:opacity-90"
+      : "bg-slate-900 hover:bg-indigo-600"
+  }`;
+  const secondaryButtonClassName =
+    "inline-flex min-h-[56px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[20px] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50 sm:min-h-[60px] sm:min-w-[170px] sm:px-8 sm:text-base";
+
+  const renderAction = (
+    action: InvitationAction,
+    className: string,
+    trailingChevron = false,
+  ) => {
+    const Icon = action.icon;
+    const content = (
+      <>
+        <span>{action.label}</span>
+        {trailingChevron ? (
+          <ChevronRight
+            size={16}
+            className="transition-transform group-hover/btn:translate-x-1"
+          />
+        ) : Icon ? (
+          <Icon size={14} />
+        ) : null}
+      </>
+    );
+
+    if (action.onClick) {
+      return (
+        <button type="button" onClick={action.onClick} className={className}>
+          {content}
+        </button>
+      );
+    }
+
+    return (
+      <Link
+        href={action.href || "#"}
+        target={action.external ? "_blank" : undefined}
+        rel={action.external ? "noreferrer" : undefined}
+        className={className}
+      >
+        {content}
+      </Link>
+    );
+  };
+
+  return (
+    <div className="group relative w-full">
+      <div
+        className={`pointer-events-none absolute -inset-1 rounded-[42px] bg-gradient-to-r opacity-0 blur transition duration-1000 group-hover:opacity-10 ${
+          statusTone === "green"
+            ? "from-emerald-400 to-indigo-500"
+            : "from-indigo-400 to-purple-500"
+        }`}
+      />
+      <div className="relative overflow-hidden rounded-[40px] border border-slate-100 bg-white shadow-xl transition-all duration-500 hover:shadow-2xl">
+        <div className="flex min-h-[400px] flex-col md:flex-row">
+          <div className="relative min-h-[280px] w-full overflow-hidden md:w-[48%]">
+            {item.coverImageUrl ? (
+              <>
+                <Image
+                  src={item.coverImageUrl}
+                  alt={item.title}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 48vw"
+                  className="object-cover transition-transform duration-[4000ms] group-hover:scale-105"
+                  style={
+                    thumbnailObjectPosition
+                      ? { objectPosition: thumbnailObjectPosition }
+                      : undefined
+                  }
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent" />
+              </>
+            ) : (
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(129,140,248,0.85),_rgba(79,70,229,0.92)_45%,_rgba(30,41,59,0.96)_100%)]" />
+            )}
+
+            <div className="absolute left-6 top-6">
+              <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-xl">
+                {inviteCardCategoryBadge(item.category, relationLabel)}
+              </span>
+            </div>
+
+            <div className="absolute bottom-8 left-8 right-8 top-20 flex flex-col justify-end md:bottom-10 md:left-10 md:right-10 md:top-24">
+              <h3
+                className={`mb-3 font-black leading-snug tracking-tight text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.7)] ${
+                  primary
+                    ? "text-2xl sm:text-3xl md:text-4xl"
+                    : "text-xl sm:text-2xl md:text-3xl"
+                }`}
+                style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
+              >
+                {item.title}
+              </h3>
+              <p className="flex items-center gap-2 text-sm font-medium text-white">
+                <MapPin size={16} className="text-white/60" />
+                {item.locationText || "Location details coming soon"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-6 sm:p-8 md:p-12">
+            <div
+              className={`flex flex-col gap-8 ${primary ? "md:flex-row md:justify-between" : ""}`}
+            >
+              {primary ? (
+                <div className="space-y-4 md:min-w-0 md:flex-1 md:pr-8">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    Countdown
+                  </p>
+                  <FlipClock
+                    units={[
+                      { label: "Days", value: countdown.days },
+                      { label: "Hours", value: countdown.hours },
+                      { label: "Mins", value: countdown.minutes },
+                    ]}
+                    className="justify-start"
+                  />
+                </div>
+              ) : null}
+
+              <div
+                className={`space-y-2 ${
+                  primary ? "text-left md:w-auto md:shrink-0 md:text-right" : "text-left"
+                }`}
+              >
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  Current Status
+                </p>
+                <div
+                  className={`flex items-start justify-between gap-4 ${
+                    primary ? "md:block" : "sm:block"
+                  }`}
+                >
+                  <p
+                    className={`text-3xl font-black tracking-tight leading-none ${statusClassName}`}
+                  >
+                    {statusLabel}
+                  </p>
+                  <div
+                    className={`space-y-0.5 pt-1 text-right opacity-60 ${
+                      primary ? "md:pt-0 md:text-right" : "sm:pt-0 sm:text-left"
+                    }`}
+                  >
+                    <p className="text-xs font-bold text-slate-900">
+                      {formatLongDate(item.startAt)}
+                    </p>
+                    <p className="text-[11px] font-medium text-slate-500">
+                      {formatTimeOnlyRange(item.startAt, item.endAt)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className={`my-8 grid gap-3 ${
+                stats.length === 1 ? "grid-cols-1" : "grid-cols-2"
+              }`}
+            >
+              {stats.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <div
+                    key={`${item.id}-${stat.label}`}
+                    className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+                  >
+                    <div className="text-indigo-500">
+                      <Icon size={18} />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-300">
+                        {stat.label}
+                      </p>
+                      <p className="text-sm font-bold text-slate-700">
+                        {stat.value}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-3 sm:gap-4">
+              {renderAction(primaryAction, primaryButtonClassName, true)}
+              {secondaryAction
+                ? renderAction(secondaryAction, secondaryButtonClassName)
+                : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function parseSafeDate(value: string | null | undefined): Date | null {
@@ -219,109 +463,99 @@ function parseSafeDate(value: string | null | undefined): Date | null {
   return parsed;
 }
 
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("en-US").format(value);
-}
-
-function formatEventDate(value: string | null): string {
+function formatLongDate(value: string | null | undefined): string {
   const parsed = parseSafeDate(value);
   if (!parsed) return "Date pending";
   return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
+    weekday: "long",
     month: "short",
-    day: "numeric",
+    day: "2-digit",
   }).format(parsed);
 }
 
-function formatEventTime(startAt: string | null, endAt: string | null): string {
-  const start = parseSafeDate(startAt);
+function formatTimeOnlyRange(
+  startRaw: string | null | undefined,
+  endRaw: string | null | undefined,
+): string {
+  const start = parseSafeDate(startRaw);
   if (!start) return "Time pending";
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const startTime = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
-  });
-  const startLabel = formatter.format(start);
-  const end = parseSafeDate(endAt);
-  if (!end || end.getTime() <= start.getTime()) return startLabel;
-  return `${startLabel} - ${formatter.format(end)}`;
+  }).format(start);
+  const end = parseSafeDate(endRaw);
+  if (!end || end.getTime() <= start.getTime()) {
+    return startTime;
+  }
+  const endTime = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(end);
+  return `${startTime} - ${endTime}`;
 }
 
-function formatLastUpdated(value: string | null): string {
-  const parsed = parseSafeDate(value);
-  if (!parsed) return "Not updated yet";
-  const diffMs = Date.now() - parsed.getTime();
-  const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-  if (diffDays <= 0) return "Updated today";
-  if (diffDays === 1) return "Updated yesterday";
-  if (diffDays < 14) return `Updated ${diffDays} days ago`;
-  return `Updated ${new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-  }).format(parsed)}`;
+function eventRelationLabel(
+  item: DashboardEventItem | null | undefined,
+): string {
+  if (!item) return "My Event";
+  if (item.ownership === "invited") {
+    return item.shareStatus === "pending" ? "Pending Invite" : "Invited";
+  }
+  return "My Event";
 }
 
-function categoryLabel(category: string | null | undefined): string {
-  const raw = String(category || "").trim();
-  if (!raw) return "Event";
-  const normalized = raw.toLowerCase().replace(/[-\s]+/g, "_");
-  return CATEGORY_LABELS[normalized] || CATEGORY_LABELS[raw.toLowerCase()] || titleCase(raw);
+function getViewerLabel(viewerName: string): string {
+  const trimmed = viewerName.trim();
+  if (!trimmed) return "there";
+  return trimmed.split(/\s+/)[0] || trimmed;
 }
 
-function titleCase(value: string): string {
-  return value
-    .replace(/[_-]+/g, " ")
-    .split(" ")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-}
-
-function normalizeStatus(
-  status: string | null | undefined,
-  startAt: string | null,
-  ownership: "owned" | "invited",
-): CreatorDashboardEvent["status"] {
-  if (ownership === "invited") return "Invited";
-  const normalized = String(status || "")
-    .trim()
-    .toLowerCase();
+function getEventStatusLabel(item: DashboardEventItem | null): string {
+  if (!item) return "Ready";
+  if (item.ownership === "invited") {
+    if (item.shareStatus === "pending") return "Pending";
+    const rsvp = item.userRsvpResponse;
+    if (rsvp === "yes") return "Confirmed";
+    if (rsvp === "maybe") return "Maybe";
+    if (rsvp === "no") return "Declined";
+    return "Invited";
+  }
+  const normalized = String(item.status || "").toLowerCase();
   if (normalized === "draft") return "Draft";
-  if (normalized === "published") return "Published";
-  const start = parseSafeDate(startAt);
-  if (start && start.getTime() < Date.now()) return "Past";
+  if (normalized === "cancelled" || normalized === "canceled")
+    return "Canceled";
+  if (normalized === "archived") return "Archived";
+  const rsvp = item.userRsvpResponse;
+  if (rsvp === "yes") return "Confirmed";
+  if (rsvp === "maybe") return "Maybe";
+  if (rsvp === "no") return "Declined";
   return "Upcoming";
 }
 
-function sampleIso(date: string, time: string): string {
-  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!match) return `${date}T12:00:00`;
-  const hourRaw = Number(match[1]);
-  const minute = match[2];
-  const period = match[3].toUpperCase();
-  const hour =
-    period === "PM" && hourRaw < 12
-      ? hourRaw + 12
-      : period === "AM" && hourRaw === 12
-        ? 0
-        : hourRaw;
-  return `${date}T${String(hour).padStart(2, "0")}:${minute}:00`;
+function getInvitationStatusTone(
+  item: DashboardEventItem | null | undefined,
+): "green" | "orange" {
+  const label = getEventStatusLabel(item ?? null).toLowerCase();
+  if (label === "confirmed") return "green";
+  return "orange";
 }
 
-function getDashboardThumbnailObjectPosition(item: {
-  thumbnailFocus?: ThumbnailFocus | null;
-  createdVia?: string | null;
-}): string | undefined {
-  const explicitPosition = thumbnailFocusToObjectPosition(item.thumbnailFocus);
-  if (explicitPosition) return explicitPosition;
-  const createdVia = String(item.createdVia || "")
-    .trim()
-    .toLowerCase();
-  return createdVia.startsWith("ocr") ? "50% 22%" : undefined;
+function getInvitationStatusTextClass(
+  item: DashboardEventItem | null | undefined,
+): string {
+  return getInvitationStatusTone(item) === "green"
+    ? "text-emerald-500"
+    : "text-orange-500";
 }
 
 function buildCountdownParts(target: Date | null, now: number) {
   if (!target) {
-    return { days: "00", hours: "00", minutes: "00" };
+    return {
+      days: "00",
+      hours: "00",
+      minutes: "00",
+      totalMinutes: "00",
+    };
   }
   const diffMs = Math.max(target.getTime() - now, 0);
   const totalMinutes = Math.floor(diffMs / 60000);
@@ -332,830 +566,148 @@ function buildCountdownParts(target: Date | null, now: number) {
     days: String(days).padStart(2, "0"),
     hours: String(hours).padStart(2, "0"),
     minutes: String(minutes).padStart(2, "0"),
+    totalMinutes: String(totalMinutes).padStart(2, "0"),
   };
 }
 
-function eventHref(event: CreatorDashboardEvent, params?: Record<string, string>): string {
-  if (event.isSample) return "/studio";
-  return buildEventPath(event.id, event.title, params);
-}
-
-function manageEventHref(event: CreatorDashboardEvent): string {
-  if (event.isSample) return "/studio";
-  const createdVia = String(event.createdVia || "").toLowerCase();
-  if (/(ocr|scan|upload)/.test(createdVia)) {
-    return `/events/${encodeURIComponent(event.id)}/manage`;
-  }
-  return eventHref(event, { tab: "dashboard" });
-}
-
-function buildAbsoluteUrl(href: string): string {
-  if (typeof window === "undefined") return href;
-  return new URL(href, window.location.origin).toString();
-}
-
-function rsvpTotal(rsvps: RsvpBreakdown): number {
-  return rsvps.yes + rsvps.no + rsvps.maybe;
-}
-
-function buildHealthItems(event: {
-  title: string;
-  startAt: string | null;
-  location: string | null;
-  coverImageUrl?: string | null;
-  hasRsvp: boolean;
-  rsvps: RsvpBreakdown;
-  numberOfGuests?: number;
-  reminderCount?: number;
-  status: CreatorDashboardEvent["status"];
-  isSample?: boolean;
-  sampleNeedsAttention?: string[];
-}): EventHealthItem[] {
-  const sampleNeeds = event.sampleNeedsAttention || [];
-  const needsRegistry = sampleNeeds.some((item) => /registry/i.test(item));
-  const needsReminder = sampleNeeds.some((item) => /reminder/i.test(item));
-  const needsParking = sampleNeeds.some((item) => /parking/i.test(item));
-  return [
-    {
-      id: "details",
-      label: "Event details added",
-      done: Boolean(event.title && event.startAt),
-    },
-    {
-      id: "location",
-      label: "Location added",
-      done: Boolean(event.location),
-    },
-    {
-      id: "rsvp",
-      label: "RSVP enabled",
-      done: event.hasRsvp || rsvpTotal(event.rsvps) > 0,
-    },
-    {
-      id: "image",
-      label: "Image or banner added",
-      done: Boolean(event.coverImageUrl) || Boolean(event.isSample),
-    },
-    {
-      id: "audience",
-      label: "Guest list started",
-      done: (event.numberOfGuests || 0) > 0 || rsvpTotal(event.rsvps) > 0,
-    },
-    {
-      id: "registry",
-      label: "Registry or helpful links added",
-      done: event.isSample ? !needsRegistry : true,
-    },
-    {
-      id: "parking",
-      label: "Parking or arrival info added",
-      done: event.isSample ? !needsParking : true,
-    },
-    {
-      id: "reminder",
-      label: "Reminder or announcement ready",
-      done: event.isSample ? !needsReminder : (event.reminderCount || 0) > 0,
-    },
-    {
-      id: "publish",
-      label: "Published for guests",
-      done: event.status !== "Draft",
-    },
-  ];
-}
-
-function completionFromHealth(items: EventHealthItem[]): number {
-  if (items.length === 0) return 0;
-  const completed = items.filter((item) => item.done).length;
-  return Math.round((completed / items.length) * 100);
-}
-
-function attentionFromHealth(items: EventHealthItem[]): string[] {
-  return items
-    .filter((item) => !item.done)
-    .map((item) => item.label)
-    .slice(0, 3);
-}
-
-function realRsvpForEvent(item: DashboardEventItem, data: DashboardResponse | null): RsvpBreakdown {
-  if (item.id === data?.nextEvent?.id && data.rsvp) {
-    return {
-      yes: data.rsvp.going,
-      no: data.rsvp.declined,
-      maybe: data.rsvp.maybe,
-      noResponse: data.rsvp.pending,
-    };
-  }
-  return {
-    yes: 0,
-    no: 0,
-    maybe: 0,
-    noResponse: item.hasRsvp ? Math.max(0, item.numberOfGuests || 0) : 0,
-  };
-}
-
-function buildCreatorEventFromDashboardItem(
+function buildInvitationStats(
   item: DashboardEventItem,
-  data: DashboardResponse | null,
-): CreatorDashboardEvent {
-  const ownership = item.ownership || "owned";
-  const status = normalizeStatus(item.status, item.startAt, ownership);
-  const rsvps = realRsvpForEvent(item, data);
-  const healthItems = buildHealthItems({
-    title: item.title,
-    startAt: item.startAt,
-    location: item.locationText,
-    coverImageUrl: item.coverImageUrl,
-    hasRsvp: Boolean(item.hasRsvp),
-    rsvps,
-    numberOfGuests: item.numberOfGuests,
-    reminderCount: item.reminderCount,
-    status,
-  });
-  const attention = attentionFromHealth(healthItems);
-  return {
-    id: item.id,
-    title: item.title || "Untitled event",
-    type: categoryLabel(item.category),
-    status,
-    startAt: item.startAt,
-    endAt: item.endAt,
-    location: item.locationText,
-    rsvps,
-    views: null,
-    completionScore: completionFromHealth(healthItems),
-    lastUpdated: item.updatedAt || null,
-    needsAttention: attention,
-    healthItems,
-    coverImageUrl: item.coverImageUrl,
-    thumbnailFocus: item.thumbnailFocus,
-    createdVia: item.createdVia,
-    ownership,
-    hasRsvp: Boolean(item.hasRsvp),
-    isSample: false,
-  };
-}
+  options: {
+    isPrimary: boolean;
+    rsvp: DashboardResponse["rsvp"] | null | undefined;
+    metrics: DashboardMetricsCache | null;
+    metricsLoading: boolean;
+  },
+): InvitationCardStat[] {
+  const timeValue = formatTimeOnlyRange(item.startAt, null);
+  const travelValue =
+    options.metricsLoading && options.isPrimary
+      ? "Refreshing"
+      : options.metrics?.travelMinutes != null
+        ? `${options.metrics.travelMinutes} min`
+        : null;
+  const weatherValue =
+    options.metrics?.weatherTemp != null
+      ? `${Math.round(options.metrics.weatherTemp)}°F`
+      : null;
 
-function buildCreatorEventFromDraft(
-  item: DashboardResponse["drafts"]["items"][number],
-): CreatorDashboardEvent {
-  const rsvps = { yes: 0, no: 0, maybe: 0, noResponse: 0 };
-  const healthItems = buildHealthItems({
-    title: item.title,
-    startAt: item.startAt,
-    location: null,
-    hasRsvp: false,
-    rsvps,
-    status: "Draft",
-  });
-  return {
-    id: item.id,
-    title: item.title || "Untitled draft",
-    type: "Draft",
-    status: "Draft",
-    startAt: item.startAt,
-    endAt: null,
-    location: null,
-    rsvps,
-    views: null,
-    completionScore: completionFromHealth(healthItems),
-    lastUpdated: item.updatedAt,
-    needsAttention: attentionFromHealth(healthItems),
-    healthItems,
-    createdVia: null,
-    ownership: "owned",
-    hasRsvp: false,
-    isSample: false,
-  };
-}
-
-function buildRealCreatorEvents(data: DashboardResponse | null): CreatorDashboardEvent[] {
-  if (!data) return [];
-  const seen = new Set<string>();
-  const events: CreatorDashboardEvent[] = [];
-  const addEvent = (item: DashboardEventItem | null) => {
-    if (!item || seen.has(item.id)) return;
-    seen.add(item.id);
-    events.push(buildCreatorEventFromDashboardItem(item, data));
-  };
-  addEvent(data.nextEvent);
-  for (const item of data.upcoming || []) addEvent(item);
-  for (const draft of data.drafts.items || []) {
-    if (seen.has(draft.id)) continue;
-    seen.add(draft.id);
-    events.push(buildCreatorEventFromDraft(draft));
-  }
-  return events;
-}
-
-function buildSampleCreatorEvent(event: MockDashboardEvent): CreatorDashboardEvent {
-  const startAt = sampleIso(event.date, event.time);
-  const healthItems = buildHealthItems({
-    title: event.title,
-    startAt,
-    location: event.location,
-    hasRsvp: true,
-    rsvps: event.rsvps,
-    status: event.status,
-    isSample: true,
-    sampleNeedsAttention: event.needsAttention,
-  });
-  return {
-    id: event.id,
-    title: event.title,
-    type: event.type,
-    status: event.status,
-    startAt,
-    endAt: null,
-    location: event.location,
-    rsvps: event.rsvps,
-    views: event.views,
-    completionScore: event.completionScore,
-    lastUpdated: event.lastUpdated,
-    needsAttention: event.needsAttention,
-    healthItems,
-    createdVia: "sample",
-    ownership: "owned",
-    hasRsvp: true,
-    isSample: true,
-  };
-}
-
-function buildActivityItems(
-  data: DashboardResponse | null,
-  events: CreatorDashboardEvent[],
-  useSampleEvents: boolean,
-): DashboardActivityItem[] {
-  if (useSampleEvents) return mockActivity;
-
-  const activity: DashboardActivityItem[] = [];
-  const nextTitle = data?.nextEvent?.title || events[0]?.title || "your event";
-
-  for (const row of data?.rsvp?.recent || []) {
-    const status =
-      row.status === "going"
-        ? "Yes"
-        : row.status === "declined"
-          ? "No"
-          : row.status === "maybe"
-            ? "Maybe"
-            : "Pending";
-    activity.push({
-      id: `rsvp-${row.id}`,
-      type: "rsvp",
-      message: `${row.name} RSVP'd ${status} to ${nextTitle}`,
-      timestamp: row.updatedAt ? formatLastUpdated(row.updatedAt) : "Recently",
-    });
+  if (item.ownership === "invited") {
+    return [
+      {
+        icon: CheckCircle2,
+        label: "Invite",
+        value:
+          item.shareStatus === "pending" ? "Awaiting reply" : "Shared with you",
+      },
+      {
+        icon: travelValue ? Navigation : Clock,
+        label: travelValue ? "Travel" : "Starts",
+        value: travelValue || timeValue,
+      },
+    ];
   }
 
-  for (const event of events.slice(0, 4)) {
-    if (event.needsAttention.length > 0) {
-      activity.push({
-        id: `health-${event.id}`,
-        type: "concierge",
-        message: `Concierge suggested: ${event.needsAttention[0]} for ${event.title}`,
-        timestamp: "Needs attention",
-      });
-    } else if (event.lastUpdated) {
-      activity.push({
-        id: `updated-${event.id}`,
-        type: "update",
-        message: `${event.title} was updated`,
-        timestamp: formatLastUpdated(event.lastUpdated),
-      });
+  return [
+    { icon: Clock, label: "Starts", value: timeValue },
+    travelValue
+      ? { icon: Navigation, label: "Travel", value: travelValue }
+      : weatherValue && options.isPrimary
+        ? { icon: Calendar, label: "Forecast", value: weatherValue }
+        : options.isPrimary && options.rsvp
+          ? {
+              icon: CheckCircle2,
+              label: "Responses",
+              value: `${options.rsvp.going} going`,
+            }
+          : null,
+  ].filter(Boolean) as InvitationCardStat[];
+}
+
+function buildInvitationActions(
+  item: DashboardEventItem,
+  onForceTravel: () => void,
+): {
+  primaryAction: InvitationAction;
+  secondaryAction: InvitationAction | null;
+} {
+  const statusLabel = getEventStatusLabel(item);
+  const isInvitedWithoutResponse = statusLabel === "Invited";
+  const eventHref = `/event/${item.id}`;
+
+  if (!item.hasRsvp) {
+    if (item.mapsUrl) {
+      return {
+        primaryAction: {
+          href: item.mapsUrl,
+          label: "Get Directions",
+          icon: Navigation,
+          external: true,
+        },
+        secondaryAction: {
+          href: eventHref,
+          label: "View details",
+        },
+      };
     }
-  }
 
-  return activity.slice(0, 5);
-}
-
-function buildSmartAction(events: CreatorDashboardEvent[], useSampleEvents: boolean): SmartAction {
-  const attentionEvent = events.find((event) => event.needsAttention.length > 0);
-  if (attentionEvent) {
     return {
-      eyebrow: "Needs attention",
-      title: `${attentionEvent.title} is ${attentionEvent.completionScore}% complete`,
-      body: attentionEvent.needsAttention[0] || "A quick update will make this page more complete.",
-      href: useSampleEvents ? "/studio" : manageEventHref(attentionEvent),
-      actionLabel: useSampleEvents ? "Create similar event" : "Manage event",
-      eventId: attentionEvent.id,
+      primaryAction: { href: eventHref, label: "View details" },
+      secondaryAction: null,
     };
   }
 
-  const nextEvent = events[0];
-  if (nextEvent) {
+  if (isInvitedWithoutResponse && item.hasRsvp) {
     return {
-      eyebrow: "Ready to share",
-      title: `${nextEvent.title} is ready for guests`,
-      body: "Open the workspace to review content, copy the link, or send a fresh reminder.",
-      href: manageEventHref(nextEvent),
-      actionLabel: "Open workspace",
-      eventId: nextEvent.id,
+      primaryAction: { href: eventHref, label: "RSVP Now" },
+      secondaryAction: item.mapsUrl
+        ? {
+            href: eventHref,
+            label: "View details",
+          }
+        : {
+            label: "Estimate Travel",
+            icon: Navigation,
+            onClick: onForceTravel,
+          },
     };
   }
 
   return {
-    eyebrow: "Start here",
-    title: "Create your first live event page",
-    body: "Start from a message, upload, or template and Envitefy will turn the details into a hosted event page.",
-    href: "/studio",
-    actionLabel: "Create event",
+    primaryAction: { href: eventHref, label: "Open Event" },
+    secondaryAction: item.mapsUrl
+      ? {
+          href: item.mapsUrl,
+          label: "Get Directions",
+          icon: Navigation,
+          external: true,
+        }
+      : null,
   };
-}
-
-function DashboardStatCard({
-  label,
-  value,
-  detail,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  icon: LucideIcon;
-}) {
-  return (
-    <article className="rounded-2xl border border-[#e7e2f3] bg-white p-4 shadow-[0_16px_36px_rgba(82,54,145,0.07)]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold text-[#7d739f]">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-[#24193f]">{value}</p>
-        </div>
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#eee9fb] bg-[#f8f5ff] text-[#7c67c5]">
-          <Icon size={18} />
-        </span>
-      </div>
-      <p className="mt-3 text-xs font-medium text-[#8c83a8]">{detail}</p>
-    </article>
-  );
-}
-
-function SmartActionCard({
-  action,
-  nextEvent,
-  now,
-}: {
-  action: SmartAction;
-  nextEvent: CreatorDashboardEvent | null;
-  now: number;
-}) {
-  const countdown = buildCountdownParts(parseSafeDate(nextEvent?.startAt), now);
-  return (
-    <section
-      id="overview"
-      className="rounded-3xl border border-[#e3ddf4] bg-white p-5 shadow-[0_24px_70px_rgba(88,62,150,0.1)] sm:p-6"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-[#7c67c5]">{action.eyebrow}</p>
-          <h2 className="mt-2 text-2xl font-bold leading-tight text-[#24193f]">{action.title}</h2>
-          <p className="mt-3 text-sm leading-6 text-[#6f6786]">{action.body}</p>
-        </div>
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f5f0ff] text-[#7c67c5]">
-          <Sparkles size={20} />
-        </span>
-      </div>
-
-      {nextEvent ? (
-        <div className="mt-5 border-t border-[#eee9f7] pt-5">
-          <p className="mb-3 text-xs font-semibold text-[#8c83a8]">Next event countdown</p>
-          <FlipClock
-            units={[
-              { label: "Days", value: countdown.days },
-              { label: "Hours", value: countdown.hours },
-              { label: "Mins", value: countdown.minutes },
-            ]}
-            className="justify-start"
-          />
-        </div>
-      ) : null}
-
-      <Link
-        href={action.href}
-        className="mt-6 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#7c67c5] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(124,103,197,0.28)] transition hover:bg-[#715abf] sm:w-auto"
-      >
-        <span>{action.actionLabel}</span>
-        <ArrowRight size={16} />
-      </Link>
-    </section>
-  );
-}
-
-function EventManagementCard({
-  event,
-  copied,
-  onCopy,
-  onShare,
-}: {
-  event: CreatorDashboardEvent;
-  copied: boolean;
-  onCopy: (event: CreatorDashboardEvent) => void;
-  onShare: (event: CreatorDashboardEvent) => void;
-}) {
-  const liveHref = eventHref(event);
-  const manageHref = manageEventHref(event);
-  const thumbnailObjectPosition = getDashboardThumbnailObjectPosition(event);
-  const responseCount = rsvpTotal(event.rsvps);
-  const totalInvited = responseCount + event.rsvps.noResponse;
-
-  return (
-    <article className="overflow-hidden rounded-3xl border border-[#e5e0f0] bg-white shadow-[0_20px_60px_rgba(71,49,130,0.08)]">
-      <div className="grid gap-0 lg:grid-cols-[220px_1fr]">
-        <div className="relative min-h-[180px] overflow-hidden bg-[#f2eefb] lg:min-h-full">
-          {event.coverImageUrl ? (
-            <Image
-              src={event.coverImageUrl}
-              alt={event.title}
-              fill
-              unoptimized
-              sizes="(max-width: 1024px) 100vw, 220px"
-              className="object-cover"
-              style={
-                thumbnailObjectPosition ? { objectPosition: thumbnailObjectPosition } : undefined
-              }
-            />
-          ) : (
-            <div className="flex h-full min-h-[180px] items-center justify-center bg-[linear-gradient(135deg,#f7f2ff_0%,#fff_48%,#edf7f4_100%)]">
-              <PartyPopper size={38} className="text-[#8b73d1]" />
-            </div>
-          )}
-          <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-            <span className="rounded-full border border-white/70 bg-white/90 px-3 py-1 text-xs font-semibold text-[#5f5480] shadow-sm backdrop-blur">
-              {event.type}
-            </span>
-            {event.isSample ? (
-              <span className="rounded-full border border-[#ded6f4] bg-[#f7f3ff]/95 px-3 py-1 text-xs font-semibold text-[#7562bd] shadow-sm backdrop-blur">
-                Sample
-              </span>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="p-5 sm:p-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                    STATUS_STYLES[event.status]
-                  }`}
-                >
-                  {event.status}
-                </span>
-                <span className="text-xs font-medium text-[#8c83a8]">
-                  {formatLastUpdated(event.lastUpdated)}
-                </span>
-              </div>
-              <h3 className="mt-3 text-xl font-bold leading-tight text-[#24193f] sm:text-2xl">
-                {event.title}
-              </h3>
-              <div className="mt-3 grid gap-2 text-sm text-[#6f6786] sm:grid-cols-2">
-                <p className="flex items-center gap-2">
-                  <CalendarDays size={16} className="text-[#8b73d1]" />
-                  <span>
-                    {formatEventDate(event.startAt)} at{" "}
-                    {formatEventTime(event.startAt, event.endAt)}
-                  </span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <MapPin size={16} className="text-[#8b73d1]" />
-                  <span>{event.location || "Location pending"}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="min-w-[128px] rounded-2xl border border-[#ece7f7] bg-[#fbfafc] px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs font-semibold text-[#7d739f]">Event health</span>
-                <span className="text-lg font-bold text-[#24193f]">{event.completionScore}%</span>
-              </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eee9f7]">
-                <div
-                  className="h-full rounded-full bg-[#7c67c5]"
-                  style={{ width: `${Math.max(6, Math.min(100, event.completionScore))}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="border-t border-[#eee9f7] pt-3">
-              <p className="text-xs font-semibold text-[#8c83a8]">RSVPs</p>
-              <p className="mt-1 text-sm font-bold text-[#24193f]">
-                {responseCount > 0
-                  ? `${formatNumber(responseCount)} responses`
-                  : totalInvited > 0
-                    ? `${formatNumber(totalInvited)} invited`
-                    : "Not set"}
-              </p>
-            </div>
-            <div className="border-t border-[#eee9f7] pt-3">
-              <p className="text-xs font-semibold text-[#8c83a8]">Views</p>
-              <p className="mt-1 text-sm font-bold text-[#24193f]">
-                {event.views == null ? "Tracking soon" : formatNumber(event.views)}
-              </p>
-            </div>
-            <div className="border-t border-[#eee9f7] pt-3">
-              <p className="text-xs font-semibold text-[#8c83a8]">Attention</p>
-              <p className="mt-1 text-sm font-bold text-[#24193f]">
-                {event.needsAttention[0] || "Ready"}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href={manageHref}
-              className="inline-flex min-h-[50px] flex-1 items-center justify-center gap-2 rounded-2xl bg-[#24193f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#7c67c5]"
-            >
-              <span>{event.isSample ? "Create similar" : "Manage event"}</span>
-              <ArrowRight size={16} />
-            </Link>
-            <div className="grid grid-cols-3 gap-2 sm:w-auto">
-              <button
-                type="button"
-                onClick={() => onCopy(event)}
-                className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-[#ded8ec] bg-white px-3 text-sm font-semibold text-[#5f5480] transition hover:border-[#cfc5e8] hover:bg-[#fbf9ff]"
-                aria-label={`Copy link for ${event.title}`}
-              >
-                {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-                <span className="hidden md:inline">{copied ? "Copied" : "Copy"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onShare(event)}
-                className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-[#ded8ec] bg-white px-3 text-sm font-semibold text-[#5f5480] transition hover:border-[#cfc5e8] hover:bg-[#fbf9ff]"
-                aria-label={`Share ${event.title}`}
-              >
-                <Share2 size={16} />
-                <span className="hidden md:inline">Share</span>
-              </button>
-              <Link
-                href={liveHref}
-                className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-[#ded8ec] bg-white px-3 text-sm font-semibold text-[#5f5480] transition hover:border-[#cfc5e8] hover:bg-[#fbf9ff]"
-                aria-label={`View live card for ${event.title}`}
-              >
-                <Eye size={16} />
-                <span className="hidden md:inline">Live</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function UpcomingEventsList({
-  events,
-  copiedEventId,
-  onCopy,
-  onShare,
-}: {
-  events: CreatorDashboardEvent[];
-  copiedEventId: string | null;
-  onCopy: (event: CreatorDashboardEvent) => void;
-  onShare: (event: CreatorDashboardEvent) => void;
-}) {
-  return (
-    <section id="events" className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-[#7c67c5]">Upcoming events</p>
-          <h2 className="text-2xl font-bold text-[#24193f]">Manage what guests will see</h2>
-        </div>
-        <Link
-          href="/studio"
-          className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border border-[#ded8ec] bg-white px-4 py-2 text-sm font-semibold text-[#5f5480] shadow-sm transition hover:bg-[#fbf9ff]"
-        >
-          <WandSparkles size={16} />
-          <span>Create event</span>
-        </Link>
-      </div>
-
-      <div className="space-y-4">
-        {events.map((event) => (
-          <EventManagementCard
-            key={event.id}
-            event={event}
-            copied={copiedEventId === event.id}
-            onCopy={onCopy}
-            onShare={onShare}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function EventHealthChecklist({ event }: { event: CreatorDashboardEvent | null }) {
-  if (!event) {
-    return (
-      <section className="rounded-3xl border border-dashed border-[#ddd8e9] bg-white/80 px-5 py-8 text-center">
-        <ListChecks className="mx-auto text-[#8b73d1]" size={28} />
-        <h2 className="mt-3 text-lg font-bold text-[#24193f]">Event health</h2>
-        <p className="mt-2 text-sm text-[#6f6786]">
-          Create an event to see setup progress and suggested next steps.
-        </p>
-      </section>
-    );
-  }
-
-  return (
-    <section className="rounded-3xl border border-[#e5e0f0] bg-white p-5 shadow-[0_18px_48px_rgba(71,49,130,0.07)]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-[#7c67c5]">Event health</p>
-          <h2 className="mt-1 text-xl font-bold text-[#24193f]">{event.title}</h2>
-        </div>
-        <span className="text-2xl font-bold text-[#24193f]">{event.completionScore}%</span>
-      </div>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eee9f7]">
-        <div
-          className="h-full rounded-full bg-[#7c67c5]"
-          style={{ width: `${Math.max(6, Math.min(100, event.completionScore))}%` }}
-        />
-      </div>
-      <ul className="mt-5 space-y-3">
-        {event.healthItems.map((item) => (
-          <li key={item.id} className="flex items-start gap-3 text-sm">
-            <span
-              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                item.done ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-              }`}
-            >
-              {item.done ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-            </span>
-            <span className={item.done ? "text-[#6f6786]" : "font-semibold text-[#24193f]"}>
-              {item.label}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function RecentActivityPanel({ activity }: { activity: DashboardActivityItem[] }) {
-  const iconByType: Record<DashboardActivityItem["type"], LucideIcon> = {
-    rsvp: Users,
-    view: Eye,
-    update: Clipboard,
-    concierge: Sparkles,
-  };
-  return (
-    <section
-      id="activity"
-      className="rounded-3xl border border-[#e5e0f0] bg-white p-5 shadow-[0_18px_48px_rgba(71,49,130,0.07)]"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-[#7c67c5]">Recent activity</p>
-          <h2 className="mt-1 text-xl font-bold text-[#24193f]">Latest event signals</h2>
-        </div>
-        <Activity size={20} className="text-[#8b73d1]" />
-      </div>
-
-      {activity.length > 0 ? (
-        <ul className="mt-5 space-y-4">
-          {activity.map((item) => {
-            const Icon = iconByType[item.type];
-            return (
-              <li key={item.id} className="flex gap-3">
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[#f7f3ff] text-[#7c67c5]">
-                  <Icon size={16} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold leading-5 text-[#24193f]">
-                    {item.message}
-                  </span>
-                  <span className="mt-1 block text-xs font-medium text-[#8c83a8]">
-                    {item.timestamp}
-                  </span>
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <div className="mt-5 rounded-2xl border border-dashed border-[#ddd8e9] px-4 py-8 text-center text-sm text-[#8c83a8]">
-          Activity will appear after RSVPs, updates, shares, or Concierge suggestions.
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ConciergeSuggestionsCard({ focusEvent }: { focusEvent: CreatorDashboardEvent | null }) {
-  return (
-    <section
-      id="concierge"
-      className="rounded-3xl border border-[#e5e0f0] bg-white p-5 shadow-[0_18px_48px_rgba(71,49,130,0.07)]"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-[#7c67c5]">Envitefy Concierge</p>
-          <h2 className="mt-1 text-xl font-bold text-[#24193f]">Improve this event faster</h2>
-        </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#f5f0ff] text-[#7c67c5]">
-          <MessageSquareText size={18} />
-        </span>
-      </div>
-      <p className="mt-3 text-sm leading-6 text-[#6f6786]">
-        {focusEvent
-          ? `Ask for help with ${focusEvent.title}.`
-          : "Ask for help turning event details into a complete guest page."}
-      </p>
-      <div className="mt-5 flex flex-wrap gap-2">
-        {conciergePromptSuggestions.map((prompt) => (
-          <Link
-            key={prompt}
-            href="/chat"
-            className="inline-flex min-h-[38px] items-center rounded-full border border-[#ded8ec] bg-[#fbfafc] px-3 py-2 text-xs font-semibold text-[#5f5480] transition hover:border-[#cfc5e8] hover:bg-white"
-          >
-            {prompt}
-          </Link>
-        ))}
-      </div>
-      <Link
-        href="/chat"
-        className="mt-5 inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl bg-[#7c67c5] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#715abf]"
-      >
-        <span>Ask Concierge</span>
-        <Send size={15} />
-      </Link>
-    </section>
-  );
-}
-
-function MobileAdminNav() {
-  const items: Array<{ href: string; label: string; icon: LucideIcon }> = [
-    { href: "#overview", label: "Overview", icon: Sparkles },
-    { href: "#events", label: "Events", icon: CalendarDays },
-    { href: "#activity", label: "Activity", icon: Activity },
-    { href: "#concierge", label: "Concierge", icon: MessageSquareText },
-  ];
-  return (
-    <nav className="fixed inset-x-3 bottom-3 z-[55] rounded-3xl border border-[#ded8ec] bg-white/94 p-1.5 shadow-[0_18px_46px_rgba(55,36,104,0.2)] backdrop-blur-xl lg:hidden">
-      <div className="grid grid-cols-4 gap-1">
-        {items.map((item) => {
-          const Icon = item.icon;
-          return (
-            <a
-              key={item.href}
-              href={item.href}
-              className="flex min-h-[50px] flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-semibold text-[#6f6786] transition hover:bg-[#f7f3ff] hover:text-[#7c67c5]"
-            >
-              <Icon size={16} />
-              <span>{item.label}</span>
-            </a>
-          );
-        })}
-      </div>
-    </nav>
-  );
 }
 
 function LoadingDashboardState() {
   return (
-    <div className="space-y-6 pt-20 md:pt-8">
-      <div className="h-36 animate-pulse rounded-3xl bg-white shadow-[0_20px_60px_rgba(71,49,130,0.08)]" />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div key={index} className="h-28 animate-pulse rounded-2xl bg-white" />
+    <div className="space-y-8">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <div className="space-y-3">
+          <div className="h-3 w-40 animate-pulse rounded-full bg-indigo-100" />
+          <div className="h-14 w-72 animate-pulse rounded-[24px] bg-slate-200" />
+          <div className="h-5 w-96 max-w-full animate-pulse rounded-full bg-slate-100" />
+        </div>
+        <div className="h-14 w-44 animate-pulse rounded-[24px] bg-slate-200" />
+      </div>
+      <div className="grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">
+        <div className="min-h-[440px] animate-pulse rounded-[40px] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]" />
+      </div>
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className="h-[176px] animate-pulse rounded-[32px] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.06)]"
+          />
         ))}
       </div>
-      <div className="h-72 animate-pulse rounded-3xl bg-white" />
     </div>
-  );
-}
-
-function EmptyStateCard() {
-  return (
-    <section className="rounded-3xl border border-dashed border-[#dcd6ea] bg-white/90 px-5 py-10 text-center shadow-[0_18px_48px_rgba(71,49,130,0.06)]">
-      <WandSparkles className="mx-auto text-[#7c67c5]" size={32} />
-      <h2 className="mt-4 text-2xl font-bold text-[#24193f]">Create your first event page</h2>
-      <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#6f6786]">
-        Start from a message, a template, or an upload. Your dashboard will show readiness, guest
-        responses, and activity once events are live.
-      </p>
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <Link
-          href="/studio"
-          className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl bg-[#24193f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#7c67c5]"
-        >
-          <WandSparkles size={16} />
-          <span>Create in Studio</span>
-        </Link>
-        <Link
-          href="/event"
-          className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-[#ded8ec] bg-white px-5 py-3 text-sm font-semibold text-[#5f5480] transition hover:bg-[#fbf9ff]"
-        >
-          <Clipboard size={16} />
-          <span>Snap/upload</span>
-        </Link>
-      </div>
-    </section>
   );
 }
 
@@ -1169,228 +721,244 @@ export default function HomeOverviewDashboard({
   onForceTravel,
 }: HomeOverviewDashboardProps) {
   const [now, setNow] = useState(() => Date.now());
-  const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
 
-  const realEvents = useMemo(() => buildRealCreatorEvents(data), [data]);
-  const ownedEvents = realEvents.filter((event) => event.ownership !== "invited");
-  const invitedEvents = realEvents.filter((event) => event.ownership === "invited");
-  const useSampleEvents = shouldUseAdminDashboardMockData && realEvents.length === 0 && !loading;
-  const events = useMemo(
-    () => (useSampleEvents ? mockEvents.map(buildSampleCreatorEvent) : ownedEvents),
-    [ownedEvents, useSampleEvents],
-  );
-  const activity = useMemo(
-    () => buildActivityItems(data, events, useSampleEvents),
-    [data, events, useSampleEvents],
-  );
-  const smartAction = useMemo(
-    () => buildSmartAction(events, useSampleEvents),
-    [events, useSampleEvents],
-  );
-  const focusEvent =
-    events.find((event) => event.id === smartAction.eventId) ||
-    events.find((event) => event.needsAttention.length > 0) ||
-    events[0] ||
-    null;
-  const nextEvent = events[0] || null;
-  const totalRsvps = events.reduce((sum, event) => sum + rsvpTotal(event.rsvps), 0);
-  const totalViewsValue = events.some((event) => event.views != null)
-    ? events.reduce((sum, event) => sum + (event.views || 0), 0)
-    : null;
-  const attentionCount = events.reduce((sum, event) => sum + event.needsAttention.length, 0);
+  const nextEvent = data?.nextEvent ?? null;
   const viewerLabel = getViewerLabel(viewerName);
-  const travelContext =
-    metricsLoading || metrics?.travelMinutes != null || enrichMeta?.hasDestination
-      ? "Travel details stay in event view"
-      : "Creator workspace";
-  void onForceTravel;
+  const relationLabel = eventRelationLabel(nextEvent);
+  const hasTravelMetrics =
+    metrics?.travelMinutes != null || metrics?.travelDistanceKm != null;
+  const travelMissingOrigin =
+    enrichMeta?.hasDestination && enrichMeta?.hasOrigin === false;
+  const weatherEligible = Boolean(data?.metricsEligibility.weatherEligible);
+  const topKicker = nextEvent
+    ? nextEvent.ownership === "invited"
+      ? "Upcoming Invitation"
+      : "Dashboard Focus"
+    : "Dashboard Overview";
+  const heroSummary = nextEvent
+    ? `${nextEvent.title} is next on your calendar. Keep track of timing, travel, and what still needs attention.`
+    : "Your home dashboard will spotlight countdowns, travel, weather, and upcoming invites as soon as you add an event.";
+  const nextEventStats = useMemo(
+    () =>
+      nextEvent
+        ? buildInvitationStats(nextEvent, {
+            isPrimary: true,
+            rsvp: data?.rsvp,
+            metrics,
+            metricsLoading,
+          })
+        : [],
+    [data?.rsvp, metrics, metricsLoading, nextEvent],
+  );
+  const nextEventActions = useMemo(
+    () => (nextEvent ? buildInvitationActions(nextEvent, onForceTravel) : null),
+    [nextEvent, onForceTravel],
+  );
 
-  const stats = useSampleEvents
-    ? [
-        {
-          label: "Active events",
-          value: String(mockDashboardStats.activeEvents),
-          detail: "Sample creator workspace",
-          icon: CalendarDays,
-        },
-        {
-          label: "Upcoming",
-          value: String(mockDashboardStats.upcomingEvents),
-          detail: "Next 90 days",
-          icon: PartyPopper,
-        },
-        {
-          label: "RSVPs",
-          value: formatNumber(mockDashboardStats.totalRsvps),
-          detail: "Sample responses",
-          icon: Users,
-        },
-        {
-          label: "Page views",
-          value: formatNumber(mockDashboardStats.totalViews),
-          detail: "Sample engagement",
-          icon: Eye,
-        },
-        {
-          label: "Needs attention",
-          value: String(mockDashboardStats.needsAttention),
-          detail: "Suggested updates",
-          icon: AlertCircle,
-        },
-      ]
-    : [
-        {
-          label: "Active events",
-          value: String(events.length),
-          detail: travelContext,
-          icon: CalendarDays,
-        },
-        {
-          label: "Upcoming",
-          value: String(data?.snapshot.upcomingCount30Days ?? events.length),
-          detail: "Next 30 days",
-          icon: PartyPopper,
-        },
-        {
-          label: "RSVPs",
-          value: formatNumber(totalRsvps),
-          detail: totalRsvps > 0 ? "Responses received" : "Waiting for responses",
-          icon: Users,
-        },
-        {
-          label: "Page views",
-          value: totalViewsValue == null ? "Soon" : formatNumber(totalViewsValue),
-          detail: "Backend tracking pending",
-          icon: Eye,
-        },
-        {
-          label: "Needs attention",
-          value: String(attentionCount),
-          detail: attentionCount > 0 ? "Quick fixes available" : "No urgent gaps",
-          icon: AlertCircle,
-        },
-      ];
-
-  const handleCopy = async (event: CreatorDashboardEvent) => {
-    const href = buildAbsoluteUrl(eventHref(event));
-    try {
-      await navigator.clipboard.writeText(href);
-      setCopiedEventId(event.id);
-      window.setTimeout(() => setCopiedEventId(null), 1800);
-    } catch {
-      setCopiedEventId(null);
-    }
-  };
-
-  const handleShare = async (event: CreatorDashboardEvent) => {
-    const href = buildAbsoluteUrl(eventHref(event));
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: event.title,
-          text: `View ${event.title} on Envitefy.`,
-          url: href,
-        });
-        return;
-      }
-      await navigator.clipboard.writeText(href);
-      setCopiedEventId(event.id);
-      window.setTimeout(() => setCopiedEventId(null), 1800);
-    } catch {
-      // Native share cancellation should not surface an error state.
-    }
-  };
+  const infoCards: InfoCardProps[] = [
+    {
+      label: "Upcoming",
+      value: `${data?.snapshot.upcomingCount30Days ?? 0} Events`,
+      icon: Calendar,
+      tone: "pink",
+    },
+    {
+      label: "Travel Time",
+      value: metricsLoading
+        ? "Refreshing"
+        : hasTravelMetrics
+          ? `${metrics?.travelMinutes ?? "--"} min`
+          : travelMissingOrigin
+            ? "Add Origin"
+            : "Estimate",
+      icon: Navigation,
+      tone: "sky",
+    },
+    {
+      label: "Weather",
+      value: metricsLoading
+        ? "Refreshing"
+        : metrics?.weatherTemp != null
+          ? `${Math.round(metrics.weatherTemp)}°F`
+          : weatherEligible
+            ? "Pending"
+            : "72h Window",
+      icon: CloudSun,
+      tone: "amber",
+    },
+    {
+      label: "Directions",
+      value: nextEvent?.mapsUrl
+        ? "Open Route"
+        : nextEvent
+          ? "Add Venue"
+          : "No Event",
+      icon: MapPin,
+      tone: "indigo",
+      href: nextEvent?.mapsUrl || null,
+      external: true,
+    },
+  ];
 
   if (loading && !data) {
     return <LoadingDashboardState />;
   }
 
   return (
-    <div className="space-y-8 pb-28 pt-20 md:pt-8 lg:pb-10">
-      <header className="rounded-3xl border border-[#e5e0f0] bg-white/92 p-5 shadow-[0_24px_70px_rgba(88,62,150,0.09)] sm:p-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-[#7c67c5]">Welcome back</p>
-            <h1 className="mt-2 max-w-3xl text-3xl font-bold leading-tight text-[#24193f] sm:text-4xl">
-              Here is what is happening with your events, {viewerLabel}.
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6f6786] sm:text-base">
-              Track upcoming pages, finish setup gaps, and jump into the right event workspace
-              without digging through repeated actions.
-            </p>
+    <div className="pt-20 md:pt-10 space-y-8 md:space-y-10">
+      <header className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-600" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600">
+              {topKicker}
+            </span>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/studio"
-              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[#24193f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#7c67c5]"
-            >
-              <WandSparkles size={16} />
-              <span>Create event</span>
-            </Link>
-            <Link
-              href="/event"
-              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-[#ded8ec] bg-white px-5 py-3 text-sm font-semibold text-[#5f5480] transition hover:bg-[#fbf9ff]"
-            >
-              <Clipboard size={16} />
-              <span>Snap/upload</span>
-            </Link>
-          </div>
+          <h1 className="text-4xl font-black leading-none tracking-tight text-slate-900 md:text-5xl">
+            Welcome, <span className="text-indigo-600">{viewerLabel}.</span>
+          </h1>
+          <p className="mt-4 max-w-2xl text-base font-medium text-slate-400">
+            {heroSummary}
+          </p>
         </div>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        {stats.map((stat) => (
-          <DashboardStatCard key={stat.label} {...stat} />
+      <section>
+        {nextEvent && nextEventActions ? (
+          <InvitationEventCard
+            item={nextEvent}
+            now={now}
+            primary
+            stats={nextEventStats}
+            primaryAction={nextEventActions.primaryAction}
+            secondaryAction={nextEventActions.secondaryAction}
+          />
+        ) : (
+          <article className="relative overflow-hidden rounded-[40px] border border-slate-100 bg-white shadow-xl">
+            <div className="flex min-h-[400px] flex-col md:flex-row">
+              <div className="relative min-h-[280px] w-full overflow-hidden md:w-[48%]">
+                <Image
+                  src="/no-event-placeholder-card-wide.webp"
+                  alt="Decorative empty state invitation background"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 48vw"
+                  quality={60}
+                  className="object-cover object-center opacity-90"
+                />
+                <div className="absolute inset-0 bg-slate-900/18" />
+                <div className="absolute left-6 top-6">
+                  <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-xl">
+                    {relationLabel}
+                  </span>
+                </div>
+                <div className="absolute bottom-8 left-8 right-8 md:bottom-10 md:left-10 md:right-10">
+                  <h2 className="mb-4 text-3xl font-black leading-tight tracking-tighter text-white md:text-5xl">
+                    Nothing is scheduled yet
+                  </h2>
+                  <p className="text-sm font-medium text-white">
+                    Create or import an event and your home dashboard will start
+                    highlighting what is next.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-1 flex-col justify-between bg-slate-50/30 p-6 sm:p-8 md:p-12">
+                <div className="space-y-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    Countdown
+                  </p>
+                  <FlipClock
+                    units={[
+                      { label: "Days", value: "00" },
+                      { label: "Hours", value: "00" },
+                      { label: "Mins", value: "00" },
+                    ]}
+                    className="justify-start"
+                  />
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                      Current Status
+                    </p>
+                    <p className="text-3xl font-black tracking-tight text-slate-900">
+                      Ready
+                    </p>
+                    <p className="text-sm font-medium text-slate-400">
+                      Create an event to unlock live timing and travel details.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-8 flex flex-wrap gap-4">
+                  <Link
+                    href="/studio"
+                    className="inline-flex min-h-[56px] min-w-[150px] flex-1 items-center justify-center gap-2 rounded-[20px] bg-slate-900 px-6 py-4 text-sm font-bold text-white shadow-xl transition-all hover:bg-indigo-600 sm:min-w-[170px] sm:px-8"
+                  >
+                    <WandSparkles size={16} />
+                    <span>Create in Studio</span>
+                  </Link>
+                  <Link
+                    href="/event"
+                    className="inline-flex min-h-[56px] min-w-[150px] flex-1 items-center justify-center gap-2 rounded-[20px] border border-slate-200 bg-white px-6 py-4 text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-indigo-100 hover:bg-slate-50 sm:min-w-[170px] sm:px-8"
+                  >
+                    <Camera size={16} />
+                    <span>Snap/upload</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </article>
+        )}
+      </section>
+
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4">
+        {infoCards.map((card) => (
+          <InfoCard key={card.label} {...card} />
         ))}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.8fr)]">
-        <div className="space-y-8">
-          <SmartActionCard action={smartAction} nextEvent={nextEvent} now={now} />
-          {events.length > 0 ? (
-            <UpcomingEventsList
-              events={events}
-              copiedEventId={copiedEventId}
-              onCopy={handleCopy}
-              onShare={handleShare}
-            />
-          ) : (
-            <EmptyStateCard />
-          )}
-
-          {invitedEvents.length > 0 ? (
-            <section className="rounded-3xl border border-[#e5e0f0] bg-white p-5 shadow-[0_18px_48px_rgba(71,49,130,0.07)]">
-              <p className="text-sm font-semibold text-[#7c67c5]">Invited events</p>
-              <h2 className="mt-1 text-xl font-bold text-[#24193f]">Shared with you</h2>
-              <div className="mt-4 space-y-3">
-                {invitedEvents.slice(0, 3).map((event) => (
-                  <Link
-                    key={event.id}
-                    href={eventHref(event)}
-                    className="flex min-h-[58px] items-center justify-between gap-3 rounded-2xl border border-[#eee9f7] px-4 py-3 text-sm font-semibold text-[#24193f] transition hover:bg-[#fbf9ff]"
-                  >
-                    <span className="min-w-0 truncate">{event.title}</span>
-                    <ArrowRight size={16} className="shrink-0 text-[#8b73d1]" />
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ) : null}
-        </div>
-
-        <aside className="space-y-6">
-          <EventHealthChecklist event={focusEvent} />
-          <RecentActivityPanel activity={activity} />
-          <ConciergeSuggestionsCard focusEvent={focusEvent} />
-        </aside>
-      </div>
-
-      <MobileAdminNav />
+      {(() => {
+        const upcomingRest = (data?.upcoming ?? []).filter(
+          (e) => e.id !== nextEvent?.id,
+        );
+        if (upcomingRest.length === 0) return null;
+        return (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-black tracking-tight text-slate-900">
+                Upcoming Events
+              </h2>
+              <span className="text-xs font-bold text-slate-400">
+                {upcomingRest.length} event
+                {upcomingRest.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <div className="space-y-6">
+              {upcomingRest.map((ev) => {
+                const actions = buildInvitationActions(ev, onForceTravel);
+                return (
+                  <InvitationEventCard
+                    key={ev.id}
+                    item={ev}
+                    now={now}
+                    primary={false}
+                    stats={buildInvitationStats(ev, {
+                      isPrimary: false,
+                      rsvp: null,
+                      metrics: null,
+                      metricsLoading: false,
+                    })}
+                    primaryAction={actions.primaryAction}
+                    secondaryAction={actions.secondaryAction}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
     </div>
   );
 }
