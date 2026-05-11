@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import {
+  openAiChatTemperatureParam,
   resolveConciergeOpenAiPersonaModel,
   resolveConciergeOpenAiPersonaTimeoutMs,
   resolveConciergeStreamFirstTokenTimeoutMs,
@@ -149,7 +150,9 @@ function streamFallback(fallbackMessage: string, onDelta: (text: string) => void
 function shouldUseDeterministicFallback(draft: ConciergeEventDraft) {
   return (
     draft.sourceContext.boundary === "envitefy_question" ||
-    draft.sourceContext.boundary === "non_creation" || draft.currentQuestion === "date_confirmation"
+    draft.sourceContext.boundary === "non_creation" ||
+    draft.sourceContext.boundary === "off_domain" ||
+    draft.currentQuestion === "date_confirmation"
   );
 }
 
@@ -188,7 +191,7 @@ export async function streamConciergePersona(
       {
         model,
         stream: true,
-        temperature: 0.55,
+        ...openAiChatTemperatureParam(model, 0.55),
         max_completion_tokens: 220,
         messages: [
           {

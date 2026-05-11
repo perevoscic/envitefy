@@ -1873,10 +1873,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Concierge request failed.";
       setPhase(draft ? "collecting_details" : "intake_empty");
-      if (streamAssistantId && !streamedAssistantText.trim()) {
+      if (streamAssistantId) {
         setMessages((prev) => prev.filter((item) => item.id !== streamAssistantId));
       }
-      setError(errorMessage);
+      setError(null);
       setFailedRequest({ ...params, error: errorMessage });
     } finally {
       setIsStreamingAssistant(false);
@@ -1996,6 +1996,13 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     let didRoute = false;
     try {
       await savePendingSnapUpload({ file, scanAttemptId });
+      setMessages((prev) => [
+        ...prev,
+        newMessage(
+          "assistant",
+          "I'll open the upload scanner so Envitefy can read this file and bring the details back into your event flow.",
+        ),
+      ]);
       router.push("/?action=upload");
       didRoute = true;
     } catch (err) {

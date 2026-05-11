@@ -18,6 +18,7 @@ import {
 } from "./fallback.ts";
 import { shouldSkipOpenAiForCreationRequest } from "./fast-paths.ts";
 import {
+  openAiChatTemperatureParam,
   resolveConciergeOpenAiExtractionModel,
   runWithConciergeOpenAiTimeout,
 } from "./openai-config.ts";
@@ -92,7 +93,11 @@ function messageCannotAnswerVisualDirection(message: string, fallback: Concierge
   return false;
 }
 
-function normalizeAiVisualDirection(value: string | null, fallback: ConciergeEventDraft, message: string) {
+function normalizeAiVisualDirection(
+  value: string | null,
+  fallback: ConciergeEventDraft,
+  message: string,
+) {
   if (!value) return null;
   if (messageCannotAnswerVisualDirection(message, fallback)) return null;
   return value;
@@ -276,8 +281,11 @@ export function normalizeConciergeDraft(
     fallback.ageOrMilestone;
   const message = cleanString(options.message) || "";
   const theme =
-    normalizeAiVisualDirection(firstDraftString(record.theme, eventData.theme), fallback, message) ||
-    fallback.theme;
+    normalizeAiVisualDirection(
+      firstDraftString(record.theme, eventData.theme),
+      fallback,
+      message,
+    ) || fallback.theme;
   const tone =
     normalizeAiVisualDirection(firstDraftString(record.tone, eventData.tone), fallback, message) ||
     fallback.tone;
@@ -482,7 +490,7 @@ async function extractWithOpenAi(
     client.chat.completions.create(
       {
         model,
-        temperature: 0.1,
+        ...openAiChatTemperatureParam(model, 0.1),
         response_format: { type: "json_object" },
         max_completion_tokens: 650,
         messages: [
@@ -568,6 +576,7 @@ export async function extractConciergeDraft(
   const shouldUseDeterministicFastPath =
     fallback.sourceContext.boundary === "envitefy_question" ||
     fallback.sourceContext.boundary === "non_creation" ||
+    fallback.sourceContext.boundary === "off_domain" ||
     fallback.currentQuestion === "invite_source" ||
     isNonCreationRequest(message) ||
     (isGreetingMessage(message) && !request.draft && !request.ocrContext) ||

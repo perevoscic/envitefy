@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  openAiChatTemperatureParam,
   resolveConciergeOpenAiChatModel,
   resolveConciergeOpenAiExtractionModel,
   resolveConciergeOpenAiModel,
@@ -122,13 +123,19 @@ test("concierge planner routes simple work to mini, base work to 5.4, and premiu
   });
 });
 
-test("concierge timeout defaults to 3000ms and accepts bounded overrides", () => {
+test("concierge timeout defaults to 10000ms and accepts bounded overrides", () => {
   withEnv({}, () => {
-    assert.equal(resolveConciergeOpenAiTimeoutMs(), 3000);
+    assert.equal(resolveConciergeOpenAiTimeoutMs(), 10000);
   });
   withEnv({ OPENAI_CONCIERGE_TIMEOUT_MS: "2500" }, () => {
     assert.equal(resolveConciergeOpenAiTimeoutMs(), 2500);
   });
+});
+
+test("GPT-5 chat requests omit custom temperature", () => {
+  assert.deepEqual(openAiChatTemperatureParam("gpt-5.4", 0.1), {});
+  assert.deepEqual(openAiChatTemperatureParam("gpt-5.4-mini", 0.55), {});
+  assert.deepEqual(openAiChatTemperatureParam("gpt-4.1", 0.1), { temperature: 0.1 });
 });
 
 test("concierge persona model defaults to base reasoning model", () => {

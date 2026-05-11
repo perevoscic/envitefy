@@ -7,6 +7,7 @@ import {
   isGreetingMessage,
   isMeaningfulEventText,
   isNonCreationRequest,
+  isOffDomainRequest,
   normalizeCreationIntent,
   normalizeRequestedOutputs,
   outputQuestion,
@@ -93,11 +94,49 @@ function looksLikeCreationPrompt(value: string | null) {
   const text = cleanString(value);
   if (!text) return false;
   return (
-    text.length > 90 &&
-    /\b(create|make|build|draft|design|generate|product|envitefy|event\s+page|live\s*card|digital\s+flyer|guest-facing|call\s+to\s+action)\b/i.test(
+    /\b(create|make|build|draft|design|generate)\b[\s\S]{0,80}\b(product|envitefy|event\s+page|live\s*card|digital\s+flyer|flyer|invitation|invite|rsvp\s+page|guest-facing|call\s+to\s+action)\b/i.test(
       text,
-    )
+    ) ||
+    (text.length > 90 &&
+      /\b(create|make|build|draft|design|generate|product|envitefy|event\s+page|live\s*card|digital\s+flyer|guest-facing|call\s+to\s+action)\b/i.test(
+        text,
+      ))
   );
+}
+
+function cleanMessageEventPurpose(value: string | null, requestedOutputs: RequestedOutput[]) {
+  let cleaned = cleanString(value);
+  if (!cleaned) return null;
+  cleaned = cleaned
+    .replace(
+      /^(?:please\s+)?(?:make|create|build|turn|convert|draft|design|generate|write)\s+(?:me\s+)?(?:a|an|the)?\s*/i,
+      "",
+    )
+    .replace(
+      /^(?:as\s+)?(?:a|an|the)?\s*(?:live\s*card|event\s*page|digital\s+flyer|flyer\s*(?:\/|&|\+|and)?\s*(?:invite|invitation)?|invite|invitation|rsvp\s+page|smart\s+sign[-\s]?up|signup\s+form|product)\s*(?:of|for|about|from|with)?\s*(?:a|an|the)?\s*/i,
+      "",
+    )
+    .replace(/^(?:of|for|about)\s+(?:a|an|the)?\s*/i, "");
+  for (const output of requestedOutputs) {
+    cleaned = cleaned.replace(new RegExp(output.replace(/_/g, "\\s*"), "gi"), " ");
+  }
+  cleaned = cleaned
+    .replace(/\b(?:no|without|skip|disable)\s+(?:envitefy\s+)?rsvps?\b[\s\S]*$/i, "")
+    .replace(/\b(?:with|include|enable|collect|track|add)\s+(?:envitefy\s+)?rsvps?\b[\s\S]*$/i, "")
+    .replace(
+      /\s+\b(?:on|at)\s+(?:today|tomorrow|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday|jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?|\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?)\b[\s\S]*$/i,
+      "",
+    )
+    .replace(
+      /\s+\b(?:warm|cozy|fun|playful|elegant|modern|classic|bright|soft)\b[\s\S]*\b(?:style|vibe|theme|tone)\b[\s\S]*$/i,
+      "",
+    )
+    .replace(/[.!?;:,]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned || cleaned.length < 3 || cleaned.length > 80) return null;
+  if (looksLikeCreationPrompt(cleaned) || isInstructionFragment(cleaned)) return null;
+  return cleaned;
 }
 
 function isInstructionFragment(value: string | null) {
@@ -196,6 +235,13 @@ function mergeStarterCategory(message: string, starterCategory?: string | null) 
 }
 
 function detectEventType(text: string, previous?: ConciergeEventDraft | null): ConciergeEventType {
+  if (
+    firstMissingField(previous) === "tone" &&
+    previous?.eventType &&
+    previous.eventType !== "unknown"
+  ) {
+    return previous.eventType;
+  }
   const haystack = text.toLowerCase();
   if (/\b(birthday|turning|turns|bday)\b/.test(haystack)) return "birthday";
   if (/\b(wedding|married|marriage|bride|groom)\b/.test(haystack)) return "wedding";
@@ -403,8 +449,13 @@ function detectGuestCount(text: string, previous?: ConciergeEventDraft | null) {
       /\b(?:guest count|guest list|guests?|kids?|children|people|attendees|invitees)\s*(?:is|should be|:)?\s*(\d{1,4})\b/i,
     ) ||
     text.match(/\b(\d{1,4})\s*(?:guests?|kids?|children|people|attendees|invitees)\b/i);
+  const contextual = expectsGuestCount
+    ? text.match(
+        /\b(?:yes\s+)?(?:collect|track|include|cap|count)\s+(?:rsvps?\s+)?(?:for\s+)?(?:about\s+)?(\d{1,4})\b/i,
+      ) || text.match(/^\s*(?:yes[, ]+)?(?:about\s+)?(\d{1,4})\s*$/i)
+    : null;
   const plain = expectsGuestCount ? text.match(/^\s*(\d{1,4})\s*$/) : null;
-  const raw = explicit?.[1] || plain?.[1];
+  const raw = explicit?.[1] || contextual?.[1] || plain?.[1];
   if (raw) {
     const count = Number.parseInt(raw, 10);
     if (Number.isFinite(count) && count > 0 && count <= 9999) return count;
@@ -537,6 +588,16 @@ function detectTone(text: string, previous?: ConciergeEventDraft | null) {
   ) {
     return previous?.tone || null;
   }
+  if (expectsTone) {
+    const cleaned = cleanString(
+      text
+        .replace(/[.!?]+$/g, "")
+        .replace(/^(?:make|keep|use)\s+(?:it|this|the\s+invite|the\s+card)?\s*/i, ""),
+    );
+    if (cleaned && cleaned.length <= 140 && !isInstructionFragment(cleaned)) {
+      return cleaned;
+    }
+  }
   const explicit =
     text.match(
       /\b(?:vibe|tone|feel|mood)\s*(?:is|should be|as|:)?\s+([a-z0-9][a-z0-9 '&-]{1,70})\b/i,
@@ -625,7 +686,10 @@ function asksEnvitefyKnowledgeQuestion(message: string) {
   );
 }
 
-function isStatePreservingConversationMessage(message: string, previous?: ConciergeEventDraft | null) {
+function isStatePreservingConversationMessage(
+  message: string,
+  previous?: ConciergeEventDraft | null,
+) {
   if (!previous) return false;
   const text = cleanString(message) || "";
   if (!text) return false;
@@ -650,13 +714,15 @@ function pendingDetailLine(previous?: ConciergeEventDraft | null) {
       ? "featured name"
       : field === "ageOrMilestone"
         ? "age or milestone"
-        : field === "rsvpEnabled"
-          ? "RSVP choice"
-          : field === "numberOfGuests"
-            ? "RSVP guest count"
-            : field === "eventPurpose"
-              ? "event purpose"
-              : field;
+        : field === "what_are_we_celebrating"
+          ? "event to celebrate"
+          : field === "rsvpEnabled"
+            ? "RSVP choice"
+            : field === "numberOfGuests"
+              ? "RSVP guest count"
+              : field === "eventPurpose"
+                ? "event purpose"
+                : field;
   return `For this draft, I still need the ${label}.`;
 }
 
@@ -676,10 +742,7 @@ function currentDraftContinuation(draft: ConciergeEventDraft) {
   });
 }
 
-function buildStatePreservingConversationAnswer(
-  message: string,
-  previous: ConciergeEventDraft,
-) {
+function buildStatePreservingConversationAnswer(message: string, previous: ConciergeEventDraft) {
   const text = cleanString(message) || "";
   let opener = "I still have the current draft details.";
   if (/^(are you here|you there|hello\??|hi\??)$/i.test(text)) {
@@ -690,7 +753,11 @@ function buildStatePreservingConversationAnswer(
     opener = previous.honoreeName
       ? `You're right - I have ${previous.honoreeName} as the featured name.`
       : "You're right to call that out. I do not have a usable featured name saved yet.";
-  } else if (/\b(?:you\s+already\s+(?:asked|have)\s+(?:for\s+)?rsvp|forgot\s+rsvp|dropped\s+(?:the\s+)?rsvp|you\s+(?:lost|dropped|forgot)\s+(?:the\s+)?rsvp)\b/i.test(text)) {
+  } else if (
+    /\b(?:you\s+already\s+(?:asked|have)\s+(?:for\s+)?rsvp|forgot\s+rsvp|dropped\s+(?:the\s+)?rsvp|you\s+(?:lost|dropped|forgot)\s+(?:the\s+)?rsvp)\b/i.test(
+      text,
+    )
+  ) {
     opener =
       previous.rsvpEnabled === true
         ? previous.numberOfGuests
@@ -766,22 +833,22 @@ function followUpForUnresolvedField(field: string, plan: ReturnType<typeof getRe
     return "What age or milestone should I show, if any?";
   }
   if (field === "date") {
-    return "Even a rough date works, like \"next Saturday\" or \"TBD for now.\"";
+    return 'Even a rough date works, like "next Saturday" or "TBD for now."';
   }
   if (field === "time") {
-    return "A rough time is enough, like \"afternoon,\" \"6 PM,\" or \"TBD for now.\"";
+    return 'A rough time is enough, like "afternoon," "6 PM," or "TBD for now."';
   }
   if (field === "location") {
-    return "Tell me the place, city, or venue. If it is not final, say the rough area or \"TBD.\"";
+    return 'Tell me the place, city, or venue. If it is not final, say the rough area or "TBD."';
   }
   if (field === "rsvpEnabled") {
     return "Should guests RSVP through Envitefy: yes or no?";
   }
   if (field === "numberOfGuests") {
-    return "A rough RSVP cap is enough here, like \"10 guests\" or \"about 25.\"";
+    return 'A rough RSVP cap is enough here, like "10 guests" or "about 25."';
   }
   if (field === "tone") {
-    return "Give me a few words for the vibe and image direction, like \"pink balloons,\" \"movie theater neon,\" or \"sweet pastels.\"";
+    return 'Give me a few words for the vibe and image direction, like "pink balloons," "movie theater neon," or "sweet pastels."';
   }
   return questionForRequirementField(field as RequirementField, plan);
 }
@@ -1323,6 +1390,9 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
   if (draft.sourceContext.boundary === "non_creation") {
     return "Got it. I won't create an event from that.";
   }
+  if (draft.sourceContext.boundary === "off_domain") {
+    return "I can help with Envitefy event products, RSVP, uploads, guest pages, and event edits. Tell me what you're creating or choose a category.";
+  }
   if (draft.sourceContext.boundary === "private_data") {
     return "I can't change owners, user IDs, or private account data here. I can help with event details, RSVP, copy, design, or weather planning.";
   }
@@ -1444,20 +1514,22 @@ export function fallbackExtractConciergeDraft(args: {
   const sessionDraft = args.draft || null;
   const previous = shouldStartFreshEvent(message, sessionDraft) ? null : sessionDraft;
   const nonCreationRequest = isNonCreationRequest(message);
+  const offDomainRequest = isOffDomainRequest(message);
   const hasExplicitOutputs =
     Array.isArray(args.requestedOutputs) && args.requestedOutputs.length > 0;
-  const requestedOutputs = nonCreationRequest
-    ? []
-    : normalizeRequestedOutputs(
-        hasExplicitOutputs
-          ? args.requestedOutputs
-          : previous?.requestedOutputs || previous?.outputs,
-        {
-          text,
-          previous: hasExplicitOutputs ? null : previous,
-          defaultOutput: !previous && isGreetingMessage(message) ? null : undefined,
-        },
-      );
+  const requestedOutputs =
+    nonCreationRequest || offDomainRequest
+      ? []
+      : normalizeRequestedOutputs(
+          hasExplicitOutputs
+            ? args.requestedOutputs
+            : previous?.requestedOutputs || previous?.outputs,
+          {
+            text,
+            previous: hasExplicitOutputs ? null : previous,
+            defaultOutput: !previous && isGreetingMessage(message) ? null : undefined,
+          },
+        );
   const resolvedSourceContext = resolveCreationSourceContext({
     message,
     activeContext: args.activeContext || null,
@@ -1467,9 +1539,11 @@ export function fallbackExtractConciergeDraft(args: {
   const privateDataMutationRequest = isPrivateDataMutationRequest(message);
   const sourceContext = privateDataMutationRequest
     ? { ...resolvedSourceContext, boundary: "private_data" as const }
-    : nonCreationRequest
-      ? { ...resolvedSourceContext, boundary: "non_creation" as const }
-      : resolvedSourceContext;
+    : offDomainRequest
+      ? { ...resolvedSourceContext, boundary: "off_domain" as const }
+      : nonCreationRequest
+        ? { ...resolvedSourceContext, boundary: "non_creation" as const }
+        : resolvedSourceContext;
   if (!privateDataMutationRequest && isStatePreservingConversationMessage(message, previous)) {
     return {
       ...previous!,
@@ -1556,7 +1630,8 @@ export function fallbackExtractConciergeDraft(args: {
   }
   const source: ConciergeSource =
     args.source || (args.ocrContext ? (message ? "mixed" : "upload") : previous?.source || "text");
-  const eventType = nonCreationRequest ? "unknown" : detectEventType(text, previous);
+  const eventType =
+    nonCreationRequest || offDomainRequest ? "unknown" : detectEventType(text, previous);
   const relationship = detectRelationship(text, previous);
   const honoreeName =
     detectHonoreeName(text, previous) ||
@@ -1596,9 +1671,15 @@ export function fallbackExtractConciergeDraft(args: {
       eventType !== "general",
   );
   const messageEventPurpose =
-    rawMessageEventPurpose && !shouldSuppressRawCreationPrompt ? rawMessageEventPurpose : null;
+    rawMessageEventPurpose && !shouldSuppressRawCreationPrompt
+      ? looksLikeCreationPrompt(rawMessageEventPurpose)
+        ? cleanMessageEventPurpose(rawMessageEventPurpose, requestedOutputs) ||
+          rawMessageEventPurpose
+        : rawMessageEventPurpose
+      : null;
   const eventPurpose =
     nonCreationRequest ||
+    offDomainRequest ||
     privateDataMutationRequest ||
     (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
@@ -1615,6 +1696,7 @@ export function fallbackExtractConciergeDraft(args: {
     });
   const title =
     nonCreationRequest ||
+    offDomainRequest ||
     privateDataMutationRequest ||
     (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
@@ -1644,29 +1726,30 @@ export function fallbackExtractConciergeDraft(args: {
     firstString(fieldsGuess.tone) ||
     (isSportEventType(eventType) ? theme : null);
   const toneForStatus = tone || theme;
-  const status = nonCreationRequest
-    ? {
-        draftStatus: "needs_source_or_event" as const,
-        missingFields: [],
-        currentQuestion: null,
-        canPersist: false,
-      }
-    : deriveCreationStatus({
-        sourceContext,
-        eventPurpose,
-        title,
-        eventType,
-        requestedOutputs,
-        dateText,
-        timeText,
-        startISO,
-        location,
-        honoreeName,
-        ageOrMilestone,
-        rsvpEnabled,
-        numberOfGuests,
-        tone: toneForStatus,
-      });
+  const status =
+    nonCreationRequest || offDomainRequest
+      ? {
+          draftStatus: "needs_source_or_event" as const,
+          missingFields: [],
+          currentQuestion: null,
+          canPersist: false,
+        }
+      : deriveCreationStatus({
+          sourceContext,
+          eventPurpose,
+          title,
+          eventType,
+          requestedOutputs,
+          dateText,
+          timeText,
+          startISO,
+          location,
+          honoreeName,
+          ageOrMilestone,
+          rsvpEnabled,
+          numberOfGuests,
+          tone: toneForStatus,
+        });
   const needsDateConfirmation = Boolean(chronoResult.needsConfirmation);
   const base = {
     creationSessionId: createCreationSessionId(sessionDraft),

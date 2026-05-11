@@ -1149,7 +1149,10 @@ test("OpenAI normalization cannot treat RSVP guest count as visual direction", (
     message: "Create a birthday live card with RSVP.",
   });
   fallback = fallbackExtractConciergeDraft({ message: "Ava, 7", draft: fallback });
-  fallback = fallbackExtractConciergeDraft({ message: "Saturday at 3 at Sky Zone", draft: fallback });
+  fallback = fallbackExtractConciergeDraft({
+    message: "Saturday at 3 at Sky Zone",
+    draft: fallback,
+  });
 
   assert.equal(fallback.currentQuestion, "numberOfGuests");
 
@@ -1262,6 +1265,75 @@ test("unclear replies rephrase the missing detail instead of repeating the same 
   assert.equal(rsvpReply.currentQuestion, "numberOfGuests");
   assert.match(rsvpMessage, /A rough RSVP cap is enough/i);
   assert.doesNotMatch(rsvpMessage, /How many guests should the RSVP track/i);
+});
+
+test("RSVP guest count accepts natural collect-for shorthand", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Create a birthday live card with RSVP.",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "Nora, 5", draft });
+  draft = fallbackExtractConciergeDraft({
+    message: "June 1 at 4 PM at Little Gym Plano",
+    draft,
+  });
+
+  const reply = fallbackExtractConciergeDraft({ message: "yes collect for 20", draft });
+
+  assert.equal(reply.rsvpEnabled, true);
+  assert.equal(reply.numberOfGuests, 20);
+  assert.equal(reply.currentQuestion, "tone");
+  assert.match(buildAssistantMessage(reply), /vibe and image direction/i);
+});
+
+test("tone reply preserves full creative direction without changing event type", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Create a birthday live card with RSVP.",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "Nora, 5", draft });
+  draft = fallbackExtractConciergeDraft({
+    message: "June 1 at 4 PM at Little Gym Plano",
+    draft,
+  });
+  draft = fallbackExtractConciergeDraft({ message: "20 guests", draft });
+
+  const reply = fallbackExtractConciergeDraft({
+    message: "soft pastel gymnastics theme",
+    draft,
+  });
+
+  assert.equal(reply.eventType, "birthday");
+  assert.equal(reply.tone, "soft pastel gymnastics theme");
+  assert.equal(reply.currentQuestion, null);
+  assert.match(buildAssistantMessage(reply), /Vibe: soft pastel gymnastics theme/i);
+});
+
+test("off-domain help requests stay bounded and do not become event drafts", async () => {
+  const draft = fallbackExtractConciergeDraft({ message: "Can you help me fix my printer?" });
+  const assistant = buildAssistantMessage(draft);
+
+  assert.equal(draft.sourceContext.boundary, "off_domain");
+  assert.deepEqual(draft.requestedOutputs, []);
+  assert.deepEqual(draft.missingFields, []);
+  assert.equal(draft.currentQuestion, null);
+  assert.match(assistant, /Envitefy event products/i);
+  assert.doesNotMatch(assistant, /When should this happen/i);
+
+  let aiCalls = 0;
+  const result = await extractConciergeDraft(
+    { message: "Can you help me fix my printer?" },
+    {
+      openAiApiKey: "test-key",
+      createOpenAiClient: () => {
+        aiCalls += 1;
+        throw new Error("OpenAI should not run for off-domain prompts");
+      },
+    },
+  );
+
+  assert.equal(aiCalls, 0);
+  assert.equal(result.usedAi, false);
+  assert.equal(result.draft.sourceContext.boundary, "off_domain");
+  assert.match(result.assistantMessage, /Envitefy event products/i);
 });
 
 test("OpenAI readiness is downgraded when source and purpose are missing", async () => {

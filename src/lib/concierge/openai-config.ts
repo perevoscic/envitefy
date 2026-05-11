@@ -3,7 +3,7 @@ const DEFAULT_OPENAI_CONCIERGE_CHAT_MODEL = "gpt-5.4-mini";
 const DEFAULT_OPENAI_CONCIERGE_FAST_MODEL = DEFAULT_OPENAI_CONCIERGE_CHAT_MODEL;
 const DEFAULT_OPENAI_CONCIERGE_PREMIUM_MODEL = "gpt-5.5";
 const DEFAULT_OPENAI_CONCIERGE_PERSONA_MODEL = DEFAULT_OPENAI_CONCIERGE_MODEL;
-const DEFAULT_OPENAI_CONCIERGE_TIMEOUT_MS = 3_000;
+const DEFAULT_OPENAI_CONCIERGE_TIMEOUT_MS = 10_000;
 const DEFAULT_OPENAI_CONCIERGE_PERSONA_TIMEOUT_MS = 5_000;
 const DEFAULT_OPENAI_CONCIERGE_STREAM_FIRST_TOKEN_TIMEOUT_MS = 5_000;
 
@@ -120,6 +120,12 @@ export function resolveConciergeStreamFirstTokenTimeoutMs(): number {
     process.env.OPENAI_CONCIERGE_STREAM_FIRST_TOKEN_TIMEOUT_MS,
     DEFAULT_OPENAI_CONCIERGE_STREAM_FIRST_TOKEN_TIMEOUT_MS,
   );
+}
+
+export function openAiChatTemperatureParam(model: unknown, temperature: number) {
+  const normalized = cleanString(model)?.toLowerCase() || "";
+  if (/^gpt-5(?:[.-]|$)/.test(normalized)) return {};
+  return { temperature };
 }
 
 export async function runWithConciergeOpenAiTimeout<T>(

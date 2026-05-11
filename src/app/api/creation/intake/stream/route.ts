@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
-import { buildAssistantMessage, fallbackExtractConciergeDraft } from "@/lib/concierge/fallback";
+import { buildAssistantMessage } from "@/lib/concierge/fallback";
 import { finalizeCreationIntake, resolveCreationIntakeDraft } from "@/lib/concierge/intake";
 import { streamConciergePersona } from "@/lib/concierge/persona";
 import type {
@@ -76,34 +76,24 @@ export async function POST(req: Request) {
         };
 
         try {
-          const fallbackDraft = await timing.time("deterministic_draft", async () =>
-            fallbackExtractConciergeDraft({
-              message,
-              draft: request.draft || null,
-              ocrContext: request.ocrContext || null,
-              requestedOutputs: request.requestedOutputs || null,
-              activeContext: request.activeContext || null,
-              action: request.action || "message",
-              starterCategory: request.starterCategory || null,
-            }),
-          );
-          const fallbackMessage = buildAssistantMessage(fallbackDraft);
-          const weatherContext = await timing.time("weather_context", () =>
-            resolveConciergeWeatherContextFromDraft({
-              message,
-              draft: fallbackDraft,
-            }),
-          );
-          const chatMessages = normalizeChatMessages(request.chatMessages);
-          const extractionPromise = resolveCreationIntakeDraft({
+          const result = await resolveCreationIntakeDraft({
             request,
             timing,
           });
+          const responseDraft = result.draft;
+          const fallbackMessage = buildAssistantMessage(responseDraft);
+          const weatherContext = await timing.time("weather_context", () =>
+            resolveConciergeWeatherContextFromDraft({
+              message,
+              draft: responseDraft,
+            }),
+          );
+          const chatMessages = normalizeChatMessages(request.chatMessages);
           const personaResult = await timing.time("persona_generation", () =>
             streamConciergePersona({
               message,
               chatMessages,
-              draft: fallbackDraft,
+              draft: responseDraft,
               fallbackMessage,
               weatherContext,
               onDelta: (text) => send("assistant_delta", { text }),
@@ -114,7 +104,6 @@ export async function POST(req: Request) {
             usedAi: personaResult.usedAi,
           });
 
-          const result = await extractionPromise;
           const finalState = await finalizeCreationIntake({
             userId,
             request,

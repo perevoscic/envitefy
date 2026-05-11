@@ -671,6 +671,26 @@ export function isNonCreationRequest(text: string) {
   );
 }
 
+export function isOffDomainRequest(text: string) {
+  const cleaned = cleanCreationString(text);
+  if (!cleaned) return false;
+  if (
+    /\b(envitefy|event|invite|invitation|rsvp|guest|guests|calendar|upload|snap|ocr|flyer|live\s*card|event\s+page|sign[-\s]?up|signup|registry|gift\s*list|wishlist|birthday|wedding|shower|party|graduation|open\s+house|housewarming|game\s+day|football|gym\s+meet|gymnastics|workshop|appointment)\b/i.test(
+      cleaned,
+    )
+  ) {
+    return false;
+  }
+  const asksForHelp =
+    /^(?:can|could|would|will)\s+you\s+(?:help|fix|write|explain|tell|make|create)\b/i.test(
+      cleaned,
+    ) || /\bhelp\s+me\b/i.test(cleaned);
+  if (!asksForHelp && !/[?]$/.test(cleaned)) return false;
+  return /\b(printer|wifi|wi-fi|router|computer|laptop|phone|homework|essay|recipe|tax|taxes|resume|math|code|bug|browser|password|account|spreadsheet|document)\b/i.test(
+    cleaned,
+  );
+}
+
 export function deriveCreationStatus(args: {
   sourceContext: CreationSourceContext;
   eventPurpose: string | null;

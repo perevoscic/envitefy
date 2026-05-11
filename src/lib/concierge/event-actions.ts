@@ -17,6 +17,7 @@ import {
 } from "./event-storage.ts";
 import { isConciergeFastActionsEnabled, shouldSkipOpenAiForEventAction } from "./fast-paths.ts";
 import {
+  openAiChatTemperatureParam,
   resolveConciergeOpenAiPlannerModel,
   runWithConciergeOpenAiTimeout,
 } from "./openai-config.ts";
@@ -447,11 +448,12 @@ async function planWithOpenAi(params: {
   const client = new OpenAI({ apiKey });
   const simple = shouldSkipOpenAiForEventAction(params.message);
   const premium = shouldUsePremiumPlannerModel(params);
+  const model = resolveConciergeOpenAiPlannerModel({ simple, premium });
   const response = await runWithConciergeOpenAiTimeout((signal) =>
     client.chat.completions.create(
       {
-        model: resolveConciergeOpenAiPlannerModel({ simple, premium }),
-        temperature: 0.1,
+        model,
+        ...openAiChatTemperatureParam(model, 0.1),
         response_format: { type: "json_object" },
         max_completion_tokens: 650,
         messages: [
