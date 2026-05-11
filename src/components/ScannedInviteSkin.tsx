@@ -244,6 +244,7 @@ export default function ScannedInviteSkin({
   });
   const neutralSurfaceMutedTextColor =
     mixHexColors(neutralSurfaceTextColor, neutralSurface, 0.38) || neutralSurfaceTextColor;
+  const heroTitleColor = "#f8fafc";
   const directionsButtonBackground = colors.primary;
   const directionsButtonTextColor = ensureReadableTextColor(directionsButtonBackground, "#ffffff", {
     minContrast: 4.5,
@@ -435,7 +436,10 @@ export default function ScannedInviteSkin({
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               className="serif text-5xl leading-[0.95] tracking-tight md:text-7xl"
-              style={{ color: "var(--theme-text)" }}
+              style={{
+                color: heroTitleColor,
+                textShadow: "0 2px 18px rgba(0,0,0,0.45)",
+              }}
             >
               {displayTitle}
             </motion.h1>

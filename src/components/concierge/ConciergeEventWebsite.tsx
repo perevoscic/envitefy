@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, ExternalLink, Gift, MapPin, Menu, Share2, X } from "lucide-react";
+import { CalendarDays, ExternalLink, Gift, MapPin, Menu, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
@@ -124,15 +124,6 @@ export default function ConciergeEventWebsite({
           </nav>
           <div className="flex items-center gap-2">
             {actions}
-            {shareUrl ? (
-              <a
-                href={shareUrl}
-                className="hidden h-10 items-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800 sm:inline-flex"
-              >
-                <Share2 className="h-4 w-4" aria-hidden="true" />
-                Share
-              </a>
-            ) : null}
             <button
               type="button"
               onClick={() => setMenuOpen((value) => !value)}
