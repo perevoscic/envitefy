@@ -40,11 +40,11 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /userConciergeLogo/);
   assert.match(client, /<UserChatAvatar initials=\{userAvatarInitials\}/);
   assert.doesNotMatch(client, /Hi \$\{cleaned\}, what are we celebrating\?/);
-  assert.match(client, /<span>What are we<\/span>/);
-  assert.match(client, /<br \/>/);
-  assert.match(client, /<span>celebrating\?<\/span>/);
+  assert.doesNotMatch(client, /<span>What are we<\/span>/);
+  assert.doesNotMatch(client, /<br \/>/);
+  assert.doesNotMatch(client, /<span>celebrating\?<\/span>/);
   assert.match(client, /isOpeningAssistantPrompt/);
-  assert.match(client, /text-3xl/);
+  assert.match(client, /text-2xl/);
   assert.match(client, /sm:text-4xl/);
   assert.match(client, /lg:text-5xl/);
   assert.match(client, /STUDIO_CATEGORY_TILES/);
@@ -78,9 +78,10 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /selectedStarterCategory \? "starter_category" : undefined/);
   assert.match(client, /aria-label="Choose celebration category"/);
   assert.match(client, /h-28 w-28/);
-  assert.match(client, /max-md:h-\[clamp\(5\.5rem,16dvh,7\.25rem\)\]/);
-  assert.match(client, /max-md:w-\[clamp\(5\.5rem,16dvh,7\.25rem\)\]/);
+  assert.match(client, /max-md:h-\[clamp\(6rem,17dvh,8rem\)\]/);
+  assert.match(client, /max-md:w-\[clamp\(6rem,17dvh,8rem\)\]/);
   assert.match(client, /sm:h-40 sm:w-40/);
+  assert.match(client, /max-md:gap-\[clamp\(0\.9rem,2\.2dvh,1\.4rem\)\]/);
   assert.match(client, /flex-1 grid-cols-2 content-center/);
   assert.doesNotMatch(client, /Upload invite or photo/);
   assert.doesNotMatch(client, /CHAT_STUDIO_GRID_COMPOSITION/);
@@ -198,10 +199,13 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /pb-44/);
   assert.match(
     client,
-    /className="mx-auto mb-6 flex w-full max-w-3xl justify-center sm:mb-7 sm:max-w-4xl/,
+    /className="mx-auto mb-10 flex w-full max-w-3xl justify-center sm:mb-12 sm:max-w-4xl/,
   );
   assert.match(client, /className="flex w-full justify-center sm:hidden"/);
-  assert.match(client, /className="w-full !min-w-0 !max-w-full/);
+  assert.match(
+    client,
+    /className="w-\[calc\(\(clamp\(6rem,17dvh,8rem\)\*2\)\+clamp\(0\.9rem,2\.2dvh,1\.4rem\)\)\] !min-w-0 !max-w-full/,
+  );
   assert.match(
     client,
     /className="flex w-full justify-center sm:hidden"[\s\S]{0,900}autoOpenCycles=\{3\}/,

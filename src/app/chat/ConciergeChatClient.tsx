@@ -2164,7 +2164,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="mx-auto mb-6 flex w-full max-w-3xl justify-center sm:mb-7 sm:max-w-4xl"
+      className="mx-auto mb-10 flex w-full max-w-3xl justify-center sm:mb-12 sm:max-w-4xl"
     >
       <div className="flex w-full justify-center sm:hidden">
         <BottomNavBar
@@ -2180,7 +2180,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               ? `Choose product format for ${selectedStarterCategory.label}`
               : "Choose product format"
           }
-          className="w-full !min-w-0 !max-w-full bg-[#eff1f8]"
+          className="w-[calc((clamp(6rem,17dvh,8rem)*2)+clamp(0.9rem,2.2dvh,1.4rem))] !min-w-0 !max-w-full bg-[#eff1f8]"
           onValueChange={(value) => {
             const option = PRODUCT_OPTIONS.find((item) => item.output === value);
             if (option) handleStarterProductChoice(option);
@@ -2545,17 +2545,15 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                       <motion.h1
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mx-auto max-w-3xl text-3xl font-medium leading-tight tracking-normal text-[#2d1b36] sm:text-4xl lg:text-5xl max-h-[700px]:max-md:text-[1.8rem]"
+                        className="mx-auto max-w-3xl text-2xl font-medium leading-tight tracking-normal text-[#2d1b36] sm:text-4xl lg:text-5xl max-h-[700px]:max-md:text-[1.45rem]"
                       >
-                        <span>What are we</span>
-                        <br />
-                        <span>celebrating?</span>
+                        What are we celebrating?
                       </motion.h1>
                       <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base max-md:mt-2 max-md:text-xs max-md:leading-5 max-h-[620px]:max-md:hidden">
                         Pick a category or describe it in your own words.
                       </p>
                       <nav
-                        className="mx-auto mt-8 grid w-full max-w-[39rem] flex-1 grid-cols-2 content-center justify-items-center gap-8 text-center sm:gap-12 md:grid-cols-3 max-md:mt-3 max-md:gap-x-[clamp(1.25rem,8vw,3rem)] max-md:gap-y-[clamp(0.75rem,2.4dvh,1.25rem)] max-h-[700px]:max-md:mt-2"
+                        className="mx-auto mt-8 grid w-full max-w-[39rem] flex-1 grid-cols-2 content-center justify-items-center gap-8 text-center sm:gap-12 md:grid-cols-3 max-md:mt-3 max-md:gap-[clamp(0.9rem,2.2dvh,1.4rem)] max-h-[700px]:max-md:mt-2"
                         aria-label="Choose celebration category"
                       >
                         {CELEBRATION_STARTER_TILES.map((tile) => {
@@ -2570,7 +2568,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                               aria-label={`Choose ${tile.label}`}
                               aria-pressed={isSelected}
                               className={cn(
-                                "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl bg-[#eff1f8] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8b0bc] focus-visible:ring-offset-4 focus-visible:ring-offset-[#eff1f8] disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(5.5rem,16dvh,7.25rem)] max-md:w-[clamp(5.5rem,16dvh,7.25rem)]",
+                                "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl bg-[#eff1f8] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8b0bc] focus-visible:ring-offset-4 focus-visible:ring-offset-[#eff1f8] disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(6rem,17dvh,8rem)] max-md:w-[clamp(6rem,17dvh,8rem)]",
                                 isSelected &&
                                   cn(
                                     "scale-95 shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff]",
