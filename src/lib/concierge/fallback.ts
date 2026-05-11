@@ -628,7 +628,18 @@ function asksEnvitefyKnowledgeQuestion(message: string) {
 function pendingDetailLine(previous?: ConciergeEventDraft | null) {
   const field = cleanString(previous?.currentQuestion) || cleanString(previous?.missingFields?.[0]);
   if (!field) return null;
-  const label = field === "honoreeName" ? "featured name" : field === "ageOrMilestone" ? "age or milestone" : field === "rsvpEnabled" ? "RSVP choice" : field === "numberOfGuests" ? "RSVP guest count" : field === "eventPurpose" ? "event purpose" : field;
+  const label =
+    field === "honoreeName"
+      ? "featured name"
+      : field === "ageOrMilestone"
+        ? "age or milestone"
+        : field === "rsvpEnabled"
+          ? "RSVP choice"
+          : field === "numberOfGuests"
+            ? "RSVP guest count"
+            : field === "eventPurpose"
+              ? "event purpose"
+              : field;
   return `For this draft, I still need the ${label}.`;
 }
 
@@ -689,7 +700,8 @@ function buildUnresolvedFieldGuidance(args: {
   draft: ConciergeEventDraft;
   previous?: ConciergeEventDraft | null;
 }) {
-  const previousField = cleanString(args.previous?.currentQuestion) || cleanString(args.previous?.missingFields?.[0]);
+  const previousField =
+    cleanString(args.previous?.currentQuestion) || cleanString(args.previous?.missingFields?.[0]);
   const firstMissing = cleanString(args.draft.missingFields[0]);
   if (!previousField || !firstMissing || previousField !== firstMissing) return null;
   if (!cleanString(args.message)) return null;
