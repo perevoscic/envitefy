@@ -286,6 +286,7 @@ test("event route renders concierge live cards with public details and direct RS
   const source = readSource("src/app/event/[id]/page.tsx");
 
   assert.match(source, /const liveCardRecord = asPlainRecord\(data\?\.liveCard\);/);
+  assert.match(source, /import \{ sanitizeGuestCopy, sanitizeGuestTitle \}/);
   assert.match(source, /const publicEventRecord = asPlainRecord\(data\?\.publicEvent\);/);
   assert.match(
     source,
@@ -304,6 +305,8 @@ test("event route renders concierge live cards with public details and direct RS
     /Boolean\(firstDisplayString\(liveCardRecord\.headline, liveCardCopyRecord\.headline\)\)/,
   );
   assert.match(source, /const publicEventSubheadline = isConciergeVisualProduct/);
+  assert.match(source, /firstGuestTitleString\(/);
+  assert.match(source, /firstGuestCopyString\(/);
   assert.match(source, /liveCardRecord\.subheadline/);
   assert.match(source, /publicEventRecord\.subheadline/);
   assert.match(source, /liveCardRecord\.scheduleLine/);

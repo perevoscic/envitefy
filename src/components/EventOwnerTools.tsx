@@ -1342,7 +1342,7 @@ function OwnerDesignPanel({
     setCandidate(null);
     setStatus("idle");
     setError("");
-  }, [eventData, eventId, eventTitle]);
+  }, [eventData, eventId]);
 
   function updateField(key: keyof DesignFormState, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -1656,7 +1656,7 @@ function OwnerDesignPanel({
               ) : (
                 <WandSparkles size={16} aria-hidden="true" />
               )}
-              {status === "previewing" ? "Updating" : "Update"}
+              {status === "previewing" ? "Previewing" : "Preview"}
             </button>
             <button
               type="button"

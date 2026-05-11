@@ -120,6 +120,8 @@ function draftContext(draft: ConciergeEventDraft) {
     giftPreferenceNote: draft.giftPreferenceNote || draft.giftNote,
     theme: draft.theme,
     tone: draft.tone,
+    knowledgeAnswer: draft.knowledgeAnswer,
+    assistantGuidance: draft.assistantGuidance,
     missingFields: draft.missingFields,
     canPersist: draft.canPersist,
   };
@@ -146,6 +148,7 @@ function streamFallback(fallbackMessage: string, onDelta: (text: string) => void
 
 function shouldUseDeterministicFallback(draft: ConciergeEventDraft) {
   return (
+    draft.sourceContext.boundary === "envitefy_question" ||
     draft.sourceContext.boundary === "non_creation" || draft.currentQuestion === "date_confirmation"
   );
 }

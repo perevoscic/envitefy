@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import SharedStudioCardPage from "@/components/studio/SharedStudioCardPage";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
 import { getEventHistoryPublicRenderBySlugOrId } from "@/lib/db";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import { buildEventPath, buildStudioCardPath } from "@/utils/event-url";
@@ -179,23 +180,28 @@ function buildFallbackInvitationData(data: Record<string, unknown>) {
     data.heroTextMode === "overlay" || data.heroTextMode === "image"
       ? data.heroTextMode
       : undefined;
-  const title = readFirstString(
-    liveCard?.headline,
-    publicEvent?.headline,
-    data.headlineTitle,
-    data.title,
+  const title =
+    sanitizeGuestTitle(
+      readFirstString(liveCard?.headline, publicEvent?.headline, data.headlineTitle, data.title),
+    ) || "";
+  const subtitle = sanitizeGuestCopy(
+    readFirstString(liveCard?.subheadline, publicEvent?.subheadline, previewCopy?.subheadline),
   );
-  const subtitle = readFirstString(
-    liveCard?.subheadline,
-    publicEvent?.subheadline,
-    previewCopy?.subheadline,
+  const description = sanitizeGuestCopy(
+    readFirstString(liveCard?.body, publicEvent?.body, previewCopy?.body, data.description),
   );
-  const description = readFirstString(
-    liveCard?.body,
-    publicEvent?.body,
-    previewCopy?.body,
-    data.description,
-  );
+  const rawDetailsDescription = sanitizeGuestCopy(eventDetailsRaw?.detailsDescription);
+  const rawDetailsMessage = sanitizeGuestCopy(eventDetailsRaw?.message);
+  const eventTitle =
+    sanitizeGuestTitle(
+      readFirstString(
+        eventDetailsRaw?.eventTitle,
+        liveCard?.headline,
+        publicEvent?.headline,
+        data.headlineTitle,
+        data.title,
+      ),
+    ) || title;
   const scheduleLine = readFirstString(
     liveCard?.scheduleLine,
     publicEvent?.scheduleLine,
@@ -236,13 +242,34 @@ function buildFallbackInvitationData(data: Record<string, unknown>) {
       rsvpName: readString(eventDetailsRaw?.rsvpName),
       rsvpContact: readString(eventDetailsRaw?.rsvpContact ?? data.rsvp),
       rsvpDeadline: readString(eventDetailsRaw?.rsvpDeadline ?? data.rsvpDeadline),
-      detailsDescription: readString(eventDetailsRaw?.detailsDescription) || description,
+      eventTitle,
+      detailsDescription: rawDetailsDescription || description || "",
       guestImageUrls: readGuestImageUrls(eventDetailsRaw?.guestImageUrls),
-      message: readString(eventDetailsRaw?.message) || subtitle,
+      message: rawDetailsMessage || subtitle || "",
       registryLink:
         Array.isArray(data.registries) && data.registries[0] && isRecord(data.registries[0])
           ? readString(data.registries[0].url)
           : "",
+    },
+  };
+}
+
+function sanitizeInvitationData(value: Record<string, unknown>): Record<string, unknown> {
+  const eventDetails = isRecord(value.eventDetails) ? value.eventDetails : {};
+  const title = sanitizeGuestTitle(value.title) || sanitizeGuestTitle(eventDetails.eventTitle);
+  const subtitle = sanitizeGuestCopy(value.subtitle) || sanitizeGuestCopy(eventDetails.message);
+  const description =
+    sanitizeGuestCopy(value.description) || sanitizeGuestCopy(eventDetails.detailsDescription);
+  return {
+    ...value,
+    title: title || "Invitation",
+    subtitle: subtitle || "",
+    description: description || "",
+    eventDetails: {
+      ...eventDetails,
+      eventTitle: sanitizeGuestTitle(eventDetails.eventTitle) || title || "Invitation",
+      detailsDescription: sanitizeGuestCopy(eventDetails.detailsDescription) || description || "",
+      message: sanitizeGuestCopy(eventDetails.message) || subtitle || "",
     },
   };
 }
@@ -285,7 +312,7 @@ async function resolveSharedCard(value: string) {
 
   const data = isRecord(row.data) ? row.data : {};
   const studioCard = isRecord(data.studioCard) ? data.studioCard : null;
-  const title = readString(row.title) || readString(data.title) || "Invitation";
+  const title = sanitizeGuestTitle(row.title) || sanitizeGuestTitle(data.title) || "Invitation";
   const imageUrl = await normalizeSharedCardImageUrl(
     readString(data.coverImageUrl) ||
       readString(studioCard?.imageUrl) ||
@@ -303,8 +330,8 @@ async function resolveSharedCard(value: string) {
     imageUrl,
     invitationData: withDirectRsvpInvitationData({
       invitationData: isRecord(studioCard?.invitationData)
-        ? studioCard.invitationData
-        : buildFallbackInvitationData(data),
+        ? sanitizeInvitationData(studioCard.invitationData)
+        : sanitizeInvitationData(buildFallbackInvitationData(data)),
       row,
       title,
     }),
@@ -326,20 +353,19 @@ export async function generateMetadata(props: {
 
   const canonical = buildStudioCardPath(sharedCard.row.id, sharedCard.title);
   const url = await absoluteUrl(canonical);
+  const description =
+    sanitizeGuestCopy((sharedCard.invitationData as Record<string, unknown>)?.description) ||
+    "View a shared Envitefy Studio card.";
 
   return {
     title: `${sharedCard.title} — Envitefy`,
-    description:
-      readString((sharedCard.invitationData as Record<string, unknown>)?.description) ||
-      "View a shared Envitefy Studio card.",
+    description,
     alternates: {
       canonical: url,
     },
     openGraph: {
       title: `${sharedCard.title} — Envitefy`,
-      description:
-        readString((sharedCard.invitationData as Record<string, unknown>)?.description) ||
-        "View a shared Envitefy Studio card.",
+      description,
       url,
       images: [{ url: sharedCard.imageUrl }],
     },

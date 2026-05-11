@@ -1,4 +1,5 @@
 import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
+import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
 import type {
   StudioEventDetails,
   StudioGenerateSurface,
@@ -204,7 +205,7 @@ function buildReferencePhotoPromptRules(
 function hasRealismIntent(event: StudioEventDetails, guidance?: StudioGenerationGuidance): boolean {
   const combined = [
     event.category,
-    event.title,
+    sanitizeGuestTitle(event.title),
     event.userIdea,
     event.description,
     event.occasion,
@@ -228,7 +229,7 @@ function buildOccasionBlob(event: StudioEventDetails): string {
   return [
     event.category,
     event.occasion,
-    event.title,
+    sanitizeGuestTitle(event.title),
     event.userIdea,
     event.description,
     event.honoreeName,
@@ -560,7 +561,7 @@ export function buildInvitationTextPrompt(
     "",
     "Event details:",
     line("Category", event.category),
-    line("Title", event.title),
+    line("Title", sanitizeGuestTitle(event.title)),
     line("Occasion", event.occasion),
     line("Event Year", event.eventYear),
     line("Host Name", event.hostName),
@@ -720,7 +721,7 @@ export function buildLiveCardPrompt(
     "",
     "Event details:",
     line("Category", event.category),
-    line("Title", event.title),
+    line("Title", sanitizeGuestTitle(event.title)),
     line("Occasion", event.occasion),
     line("Event Year", event.eventYear),
     line("Host Name", event.hostName),
@@ -912,7 +913,7 @@ function collectVisibleCopyTokens(value: string | null | undefined): Set<string>
 
 function buildEventVisibleCopySource(event: StudioEventDetails): string {
   return [
-    event.title,
+    sanitizeGuestTitle(event.title),
     event.category,
     event.occasion,
     event.eventYear,
@@ -1008,8 +1009,10 @@ function sanitizeVisibleCopyLineForPrivateVisualDirection(
 ): string {
   const trimmed = trimOrEmpty(value);
   if (!trimmed) return "";
-  if (!containsPrivateVisualDirectionOnlyToken(event, trimmed)) return trimmed;
-  const cleaned = removePrivateVisualDirectionOnlyTokens(event, trimmed);
+  const publicCopy = sanitizeGuestCopy(trimmed) || sanitizeGuestTitle(trimmed);
+  if (!publicCopy) return "";
+  if (!containsPrivateVisualDirectionOnlyToken(event, publicCopy)) return publicCopy;
+  const cleaned = removePrivateVisualDirectionOnlyTokens(event, publicCopy);
   return collectVisibleCopyTokens(cleaned).size > 0 ? cleaned : "";
 }
 
@@ -1039,7 +1042,8 @@ function sanitizeStudioInvitationVisibleCopy(
   return {
     title:
       sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.title) ||
-      trimOrEmpty(event.title),
+      sanitizeGuestTitle(event.title) ||
+      "Invitation",
     subtitle: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.subtitle),
     openingLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.openingLine),
     scheduleLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.scheduleLine),
@@ -1064,8 +1068,8 @@ export function sanitizeStudioLiveCardVisibleCopy(
   const title =
     sanitizeVisibleCopyLineForPrivateVisualDirection(event, liveCard.title) ||
     invitation.title ||
-    trimOrEmpty(event.title) ||
-    liveCard.title;
+    sanitizeGuestTitle(event.title) ||
+    "Invitation";
   const description =
     sanitizeVisibleCopyLineForPrivateVisualDirection(event, liveCard.description) ||
     sanitizeVisibleCopyLineForPrivateVisualDirection(event, event.description) ||
@@ -1112,6 +1116,10 @@ function buildApprovedVisibleCopySection(
   liveCard?: StudioLiveCardMetadata | null,
 ): string {
   const visibleLiveCard = liveCard ? sanitizeStudioLiveCardVisibleCopy(event, liveCard) : null;
+  const mainTitle =
+    sanitizeGuestTitle(visibleLiveCard?.title) ||
+    sanitizeGuestTitle(visibleLiveCard?.invitation?.title) ||
+    sanitizeGuestTitle(event.title);
   const invitationOpeningLine = trimOrEmpty(visibleLiveCard?.invitation?.openingLine);
   const shortOpeningLine =
     invitationOpeningLine &&
@@ -1120,12 +1128,7 @@ function buildApprovedVisibleCopySection(
       ? invitationOpeningLine
       : "";
   const lines = [
-    line(
-      "Main Title",
-      trimOrEmpty(visibleLiveCard?.title) ||
-        trimOrEmpty(visibleLiveCard?.invitation?.title) ||
-        trimOrEmpty(event.title),
-    ),
+    line("Main Title", mainTitle),
     line("Subtitle / Theme Line", trimOrEmpty(visibleLiveCard?.invitation?.subtitle)),
     line("Opening Line", shortOpeningLine),
     line("Schedule Line", trimOrEmpty(visibleLiveCard?.invitation?.scheduleLine)),
@@ -1336,7 +1339,7 @@ export function buildInvitationImagePrompt(
     "- Do not duplicate or mirror scene elements. Avoid repeated tables, repeated floral arrangements, repeated gazebos, repeated desserts, repeated arches, repeated portraits, or second copies of the main scene stacked elsewhere in the card.",
     "- Do not create an unrelated solid bar, footer slab, color block, green strip, dark strip, or banner panel near the bottom of the card.",
     "- Treat all visible text as post-production-grade invitation copy, not generic placeholder wording.",
-    "- Do not generate UI controls, interface overlays, app controls, buttons, badges, arrows, floating controls, share symbols, chat symbols, phone symbols, plus buttons, camera buttons, circular controls, watermarks, or screenshot-style overlays. The only allowed icons are the tiny decorative date/time/place icons inside approved event-title info chips.",
+    "- Do not generate any UI elements, interface overlays, app controls, buttons, icons, badges, arrows, floating controls, share symbols, chat symbols, phone symbols, plus buttons, camera buttons, circular controls, watermarks, or screenshot-style overlays. The only allowed icons are the tiny decorative date/time/place icons inside approved event-title info chips.",
     "- Keep the top edge free of faux phone UI: no carrier names, clock text, battery icons, signal icons, status icons, notches, camera cutouts, or device chrome.",
     "- Keep the bottom action-button zone art-only and completely free of information. End the final visible text line well above the bottom controls area.",
     "- Compose with the bottom action controls in mind: the lower 24-30% should be decorative continuation only, with no essential subject matter that would be hidden behind app buttons.",
@@ -1373,7 +1376,7 @@ export function buildInvitationImagePrompt(
             "- This image is a finished live-card invitation raster, not a blank background.",
             "- Visible event wording belongs in the raster for this live card, but it must feel like part of one designed invitation composition rather than detached overlay text.",
             "- Keep the text concentrated in the upper and middle portions of the card and resolve the final visible text line well above the bottom action buttons.",
-            "- Do not draw interface elements in the raster: no buttons, circular controls, app pill bars, chat inputs, nav bars, status bars, carrier labels, clock readouts, battery indicators, notches, home indicators, camera cutouts, or device chrome. Small decorative date/time/place chips near the event title are allowed when supplied above.",
+            "- Do not draw interface elements in the raster: no buttons, icons, circular controls, pill-shaped bars, chat inputs, nav bars, status bars, carrier labels, clock readouts, battery indicators, notches, home indicators, camera cutouts, or device chrome. Small decorative date/time/place chips near the event title are allowed when supplied above.",
             "- Keep the typography elegant, readable, and invitation-first, not like a flyer app screenshot or a dense poster wall of text.",
           ]
       : [
@@ -1521,7 +1524,7 @@ export function buildInvitationImagePrompt(
     "",
     "Event details to influence visual style:",
     line("Category", event.category),
-    line("Title", event.title),
+    line("Title", sanitizeGuestTitle(event.title)),
     line("Occasion", event.occasion),
     line("Event Year", event.eventYear),
     ...(openHouse

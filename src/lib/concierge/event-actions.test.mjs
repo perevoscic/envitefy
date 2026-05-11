@@ -18,6 +18,7 @@ test("event actions preserve event_history as source of truth and invalidate cac
   assert.match(source, /"status"/);
   assert.match(source, /normalizeCanonicalStartFields\(nextData\)/);
   assert.match(source, /syncLiveCardCopyFromPatch\(nextData, patch\)/);
+  assert.match(source, /sanitizeConciergePublicEventData\(nextData\)/);
   assert.match(source, /updateEventHistoryData\(params\.eventId, nextData\)/);
   assert.match(source, /invalidateUserHistory\(params\.userId\)/);
   assert.match(source, /invalidateUserDashboard\(params\.userId\)/);
@@ -36,7 +37,7 @@ test("event updates keep generated live-card copy aligned", () => {
   const source = readSource("src/lib/concierge/event-actions.ts");
 
   assert.match(source, /function syncLiveCardCopyFromPatch/);
-  assert.match(source, /assignCopyField\("subheadline", theme \? `\$\{theme\} theme` : null\)/);
+  assert.doesNotMatch(source, /assignCopyField\("subheadline", theme/);
   assert.match(source, /data\.liveCard = liveCard/);
   assert.match(source, /data\.publicEvent = publicEvent/);
   assert.match(source, /data\.previewCopy = previewCopy/);

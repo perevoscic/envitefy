@@ -273,6 +273,8 @@ test("studio prompt sources require baked-in invitation text while keeping the b
     promptSource,
     /line\("Private Visual Direction", sanitizeImagePromptBriefText\(event\.userIdea\)\)/,
   );
+  assert.match(promptSource, /sanitizeGuestTitle\(event\.title\)/);
+  assert.match(promptSource, /sanitizeGuestCopy\(trimmed\) \|\| sanitizeGuestTitle\(trimmed\)/);
   assert.match(
     promptSource,
     /line\("Supporting Context", sanitizeImagePromptBriefText\(event\.description\)\)/,

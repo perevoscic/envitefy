@@ -20,6 +20,11 @@ import {
   questionForRequirementField,
   suggestedRepliesForRequirementField,
 } from "./requirements.ts";
+import {
+  guestSubheadlineForEvent,
+  looksLikeInternalCreativeDirection,
+  sanitizeConciergePreviewCopy,
+} from "./public-copy.ts";
 import type {
   ConciergeAction,
   ConciergeActiveContext,
@@ -547,7 +552,14 @@ function detectTone(text: string, previous?: ConciergeEventDraft | null) {
   if (cleanedRaw && !isInstructionFragment(cleanedRaw)) return cleanedRaw;
   if (expectsTone) {
     const cleaned = cleanString(text.replace(/[.!?]+$/g, ""));
-    if (cleaned && cleaned.length <= 80) return cleaned;
+    if (
+      cleaned &&
+      cleaned.length <= 80 &&
+      !looksLikeInternalCreativeDirection(cleaned) &&
+      !/\b(?:vibe|tone|theme|style)\b/i.test(cleaned)
+    ) {
+      return cleaned;
+    }
   }
   return previous?.tone || null;
 }
@@ -581,6 +593,128 @@ function isPrivateDataMutationRequest(message: string) {
       text,
     )
   );
+}
+
+const GENERATE_CONFIRMATION_RE =
+  /^(yes|yep|yeah|sure|please|go ahead|generate|generate it|create it|make it|do it|let'?s go)$/i;
+
+function isGenerateConfirmationReply(message: string) {
+  return GENERATE_CONFIRMATION_RE.test((cleanString(message) || "").replace(/[.!?]+$/g, ""));
+}
+
+function isDeferralOrUnclearReply(message: string) {
+  const text = (cleanString(message) || "").replace(/[.!?]+$/g, "");
+  return /^(not sure|i'?m not sure|unsure|i don'?t know|dont know|idk|unknown|tbd|later|not yet|skip for now|leave it blank|decide later|we can decide later)$/i.test(
+    text,
+  );
+}
+
+function asksEnvitefyKnowledgeQuestion(message: string) {
+  const text = cleanString(message) || "";
+  if (!text) return false;
+  if (isGenerateConfirmationReply(text)) return false;
+  const hasQuestionShape =
+    /[?]$/.test(text) ||
+    /^(what|how|can|could|does|do|is|are|will|where|why|tell me|explain)\b/i.test(text);
+  if (!hasQuestionShape) return false;
+  if (/\b(create|make|build|generate|draft|design|publish|turn this into)\b/i.test(text)) {
+    return false;
+  }
+  return /\b(envitefy|concierge|rsvp|live\s*card|event\s+page|flyer|invitation|invite|registry|gift\s*list|wishlist|smart\s+sign[-\s]?up|signup|upload|snap|ocr|my\s+events|invited\s+events|guest\s+page|public\s+event|calendar|passcode)\b/i.test(
+    text,
+  );
+}
+
+function pendingDetailLine(previous?: ConciergeEventDraft | null) {
+  const field = cleanString(previous?.currentQuestion) || cleanString(previous?.missingFields?.[0]);
+  if (!field) return null;
+  const label = field === "honoreeName" ? "featured name" : field === "ageOrMilestone" ? "age or milestone" : field === "rsvpEnabled" ? "RSVP choice" : field === "numberOfGuests" ? "RSVP guest count" : field === "eventPurpose" ? "event purpose" : field;
+  return `For this draft, I still need the ${label}.`;
+}
+
+function buildEnvitefyKnowledgeAnswer(message: string, previous?: ConciergeEventDraft | null) {
+  const text = cleanString(message) || "";
+  const lower = text.toLowerCase();
+  let answer: string;
+  if (/\brsvp|respond|response|guest count|yes,?\s*no,?\s*or maybe\b/i.test(lower)) {
+    answer =
+      "Envitefy RSVP lets guests respond from the event link with yes, no, or maybe. For hosts, it keeps the count attached to the event instead of buried in texts or group chats.";
+  } else if (/\bevent\s+page|website|guest\s+page|public\s+event\b/i.test(lower)) {
+    answer =
+      "An Envitefy event page is a public guest-facing website for the event: details, schedule, location, calendar actions, RSVP when enabled, and registry or gift links when you provide them.";
+  } else if (/\blive\s*card|card\b/i.test(lower)) {
+    answer =
+      "A live card is the polished invite surface guests open from a link. It keeps the visual invitation, event details, calendar/location actions, and RSVP together.";
+  } else if (/\bflyer|invitation|invite\b/i.test(lower)) {
+    answer =
+      "Flyer/invitation products are visual invites built from your event details and style direction. They can still connect guests to the live event details instead of being only a static image.";
+  } else if (/\bregistry|gift\s*list|wishlist|no gifts?|gift\b/i.test(lower)) {
+    answer =
+      "Envitefy can show registry, wishlist, gift-list, or no-gifts notes on supported social event pages and invites when you provide the link or wording.";
+  } else if (/\bsmart\s+sign[-\s]?up|signup|sign[-\s]?up\b/i.test(lower)) {
+    answer =
+      "Smart sign-up is for collecting volunteers, items, time slots, or responses around an event. It is separate from a simple RSVP because guests can claim specific spots or needs.";
+  } else if (/\bupload|snap|ocr|photo|pdf|image\b/i.test(lower)) {
+    answer =
+      "Uploads and snaps help Envitefy read existing event material. Classic received invite cards belong in Invited events; flyers, schedules, and authoring material for your own event become My events.";
+  } else if (/\bmy\s+events|invited\s+events|owned|received\b/i.test(lower)) {
+    answer =
+      "My events are events you are creating or hosting. Invited events are received invite-card cases, like a birthday, wedding, or gender reveal invite someone sent you.";
+  } else if (/\bcalendar|google|apple|outlook\b/i.test(lower)) {
+    answer =
+      "Envitefy event links can give guests a clean place to view the date, time, and location, then add the event to their calendar when those details are available.";
+  } else if (/\bpasscode|private|access\b/i.test(lower)) {
+    answer =
+      "Event passcodes restrict access to a shared event page. Guests unlock the page with the code, while owners can still manage the event from their workspace.";
+  } else {
+    answer =
+      "Envitefy helps create and manage guest-facing event products: live cards, event pages, flyer invitations, RSVP pages, smart sign-ups, reminders, and related event assets.";
+  }
+  const pending = pendingDetailLine(previous);
+  return pending ? `${answer}\n${pending}` : answer;
+}
+
+function missingFieldLabel(field: string) {
+  if (field === "honoreeName") return "featured name";
+  if (field === "ageOrMilestone") return "age or milestone";
+  if (field === "rsvpEnabled") return "whether RSVP should be on";
+  if (field === "numberOfGuests") return "RSVP guest count";
+  if (field === "eventPurpose") return "what the event is for";
+  if (field === "sourceContext") return "source to use";
+  return field;
+}
+
+function buildUnresolvedFieldGuidance(args: {
+  message: string;
+  draft: ConciergeEventDraft;
+  previous?: ConciergeEventDraft | null;
+}) {
+  const previousField = cleanString(args.previous?.currentQuestion) || cleanString(args.previous?.missingFields?.[0]);
+  const firstMissing = cleanString(args.draft.missingFields[0]);
+  if (!previousField || !firstMissing || previousField !== firstMissing) return null;
+  if (!cleanString(args.message)) return null;
+  if (!isGenerateConfirmationReply(args.message) && !isDeferralOrUnclearReply(args.message)) {
+    return null;
+  }
+
+  const missing = args.draft.missingFields.map(missingFieldLabel);
+  const detailList =
+    missing.length <= 1
+      ? missing[0]
+      : `${missing.slice(0, -1).join(", ")} and ${missing[missing.length - 1]}`;
+  const verification = compactVerificationLines(args.draft).join("\n");
+  const prefix = isGenerateConfirmationReply(args.message)
+    ? `I can generate this once the missing detail is filled in. I still need ${detailList}.`
+    : `No problem. I can keep this flexible, but I still need ${detailList} before generating.`;
+  const question = questionForRequirementField(
+    firstMissing as RequirementField,
+    getRequirementPlan({
+      eventType: args.draft.eventType,
+      requestedOutputs: args.draft.requestedOutputs,
+      sourceContext: args.draft.sourceContext,
+    }),
+  );
+  return verification ? `${prefix}\n${verification}\n${question}` : `${prefix}\n${question}`;
 }
 
 function stripLeadingTimeFromLocation(value: string | null) {
@@ -900,11 +1034,12 @@ function buildPreviewCopy(args: {
   rsvpEnabled: boolean | null;
 }): ConciergePreviewCopy {
   const headline = args.title || "Event draft";
-  const themeLine = args.theme
-    ? `${args.theme} theme`
-    : args.tone
-      ? `${args.tone} vibe`
-      : "Details coming soon";
+  const subheadline = guestSubheadlineForEvent({
+    eventType: args.eventType,
+    title: headline,
+    honoreeName: args.honoreeName,
+    ageOrMilestone: args.ageOrMilestone,
+  });
   const dateTextHasTime = Boolean(
     args.dateText &&
       /\b(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b/i.test(args.dateText),
@@ -926,7 +1061,7 @@ function buildPreviewCopy(args: {
             : `Join us for this ${getEventTypeLabel(args.eventType)}.`;
   return {
     headline,
-    subheadline: themeLine,
+    subheadline,
     body,
     scheduleLine,
     locationLine,
@@ -1060,6 +1195,10 @@ function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
 }
 
 export function buildAssistantMessage(draft: ConciergeEventDraft): string {
+  if (draft.sourceContext.boundary === "envitefy_question" && draft.knowledgeAnswer) {
+    return draft.knowledgeAnswer;
+  }
+  if (draft.assistantGuidance) return draft.assistantGuidance;
   if (draft.sourceContext.boundary === "non_creation") {
     return "Got it. I won't create an event from that.";
   }
@@ -1204,6 +1343,68 @@ export function fallbackExtractConciergeDraft(args: {
     : nonCreationRequest
       ? { ...resolvedSourceContext, boundary: "non_creation" as const }
       : resolvedSourceContext;
+  if (asksEnvitefyKnowledgeQuestion(message)) {
+    const knowledgeAnswer = buildEnvitefyKnowledgeAnswer(message, previous);
+    if (previous) {
+      return {
+        ...previous,
+        sourceContext: {
+          ...previous.sourceContext,
+          boundary: "envitefy_question",
+        },
+        knowledgeAnswer,
+        assistantGuidance: null,
+      };
+    }
+    return {
+      intent: "unknown",
+      creationSessionId: createCreationSessionId(sessionDraft),
+      requestedOutputs,
+      sourceContext: {
+        ...sourceContext,
+        boundary: "envitefy_question",
+      },
+      eventPurpose: null,
+      eventType: "unknown",
+      title: null,
+      ownership: "unknown",
+      draftStatus: "needs_source_or_event",
+      currentQuestion: null,
+      canPersist: false,
+      honoreeName: null,
+      relationship: null,
+      ageOrMilestone: null,
+      dateText: null,
+      timeText: null,
+      startISO: null,
+      endISO: null,
+      timezone: DEFAULT_TIMEZONE,
+      location: null,
+      venue: null,
+      rsvpEnabled: null,
+      rsvpDeadline: null,
+      rsvpName: null,
+      rsvpContact: null,
+      numberOfGuests: null,
+      registryLink: null,
+      giftPreferenceNote: null,
+      theme: null,
+      tone: null,
+      knowledgeAnswer,
+      assistantGuidance: null,
+      outputs: toLegacyOutputs(requestedOutputs),
+      missingFields: [],
+      previewCopy: {
+        headline: "Envitefy Concierge",
+        subheadline: "Ask about event products, RSVP, uploads, or guest pages.",
+        body: "Envitefy helps turn event details into shareable guest-facing products.",
+        scheduleLine: "Date TBD",
+        locationLine: "Location TBD",
+        cta: "View details",
+      },
+      source: "text",
+    };
+  }
   if (privateDataMutationRequest && previous) {
     return {
       ...previous,
@@ -1211,6 +1412,8 @@ export function fallbackExtractConciergeDraft(args: {
         ...previous.sourceContext,
         ...sourceContext,
       },
+      knowledgeAnswer: null,
+      assistantGuidance: null,
     };
   }
   const source: ConciergeSource =
@@ -1363,26 +1566,45 @@ export function fallbackExtractConciergeDraft(args: {
     giftPreferenceNote,
     theme,
     tone,
+    knowledgeAnswer: null,
+    assistantGuidance: null,
     outputs: toLegacyOutputs(requestedOutputs),
-    previewCopy: buildPreviewCopy({
-      eventType,
-      title: title || eventPurpose || "Event draft",
-      honoreeName,
-      ageOrMilestone,
-      dateText,
-      timeText,
-      location,
-      theme,
-      tone,
-      rsvpEnabled,
-    }),
+    previewCopy: sanitizeConciergePreviewCopy(
+      buildPreviewCopy({
+        eventType,
+        title: title || eventPurpose || "Event draft",
+        honoreeName,
+        ageOrMilestone,
+        dateText,
+        timeText,
+        location,
+        theme,
+        tone,
+        rsvpEnabled,
+      }),
+      {
+        eventType,
+        title,
+        eventPurpose,
+        honoreeName,
+        ageOrMilestone,
+      },
+    ),
     source,
   } satisfies Omit<ConciergeEventDraft, "missingFields">;
 
-  return {
+  const draft = {
     ...base,
     missingFields: Array.from(
       new Set([...(needsDateConfirmation ? ["date"] : []), ...status.missingFields]),
     ),
+  };
+  return {
+    ...draft,
+    assistantGuidance: buildUnresolvedFieldGuidance({
+      message,
+      draft,
+      previous,
+    }),
   };
 }

@@ -131,19 +131,19 @@ test("concierge timeout defaults to 3000ms and accepts bounded overrides", () =>
   });
 });
 
-test("concierge persona model defaults to mini", () => {
+test("concierge persona model defaults to base reasoning model", () => {
   withEnv({}, () => {
-    assert.equal(resolveConciergeOpenAiPersonaModel(), "gpt-5.4-mini");
+    assert.equal(resolveConciergeOpenAiPersonaModel(), "gpt-5.4");
   });
   withEnv({ OPENAI_CONCIERGE_PERSONA_MODEL: "gpt-persona-custom" }, () => {
     assert.equal(resolveConciergeOpenAiPersonaModel(), "gpt-persona-custom");
   });
 });
 
-test("concierge persona streaming timeouts have tight defaults and accept overrides", () => {
+test("concierge persona streaming timeouts leave room for reasoning and accept overrides", () => {
   withEnv({}, () => {
-    assert.equal(resolveConciergeOpenAiPersonaTimeoutMs(), 2200);
-    assert.equal(resolveConciergeStreamFirstTokenTimeoutMs(), 2200);
+    assert.equal(resolveConciergeOpenAiPersonaTimeoutMs(), 5000);
+    assert.equal(resolveConciergeStreamFirstTokenTimeoutMs(), 5000);
   });
   withEnv(
     {

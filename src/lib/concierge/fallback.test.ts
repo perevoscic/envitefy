@@ -700,12 +700,10 @@ test("theme and tone label is not captured as event theme copy", () => {
     draft.theme,
     "elegant garden wedding with white flowers, candles, and refined typography",
   );
-  assert.equal(
-    draft.previewCopy.subheadline,
-    "elegant garden wedding with white flowers, candles, and refined typography theme",
-  );
+  assert.equal(draft.previewCopy.subheadline, "Celebrate with us");
   assert.notEqual(draft.theme, "and tone");
   assert.doesNotMatch(draft.previewCopy.subheadline, /and tone theme/i);
+  assert.doesNotMatch(draft.previewCopy.subheadline, /elegant garden wedding/i);
 });
 
 test("private token trick questions refuse while preserving the current draft", () => {
@@ -1217,6 +1215,82 @@ test("save payload stores generated concierge products as owned My Events rows",
   assert.equal(payload.data.studioCard.invitationData.title, "Ava is turning 7");
   assert.equal(payload.data.studioCard.invitationData.heroTextMode, "image");
   assert.equal(payload.data.studioCard.invitationData.eventDetails.category, "Birthday");
+});
+
+test("save payload keeps vibe prompt text out of guest-facing event copy", () => {
+  const draft = normalizeConciergeDraft(
+    {
+      eventType: "general",
+      title: "Event Page for mothers day",
+      eventPurpose: "mothers day",
+      outputs: ["event_page"],
+      dateText: "May 10",
+      timeText: "5:00 PM",
+      location: "The End of the Day",
+      rsvpEnabled: false,
+      tone: "don't have kids vibe vibe",
+      previewCopy: {
+        headline: "Event Page for mothers day",
+        subheadline: "don't have kids vibe vibe",
+        body: "don't have kids vibe vibe",
+        scheduleLine: "May 10 at 5:00 PM",
+        locationLine: "The End of the Day",
+        cta: "View details",
+      },
+    },
+    fallbackExtractConciergeDraft({
+      message:
+        "Create an event page for mothers day on May 10 at 5 PM at The End of the Day. No RSVP.",
+    }),
+  );
+  const payload = buildConciergeHistoryPayload(draft);
+  const publicCopy = JSON.stringify({
+    previewCopy: payload.data.previewCopy,
+    liveCard: payload.data.liveCard,
+    publicEvent: payload.data.publicEvent,
+    studioCard: payload.data.studioCard,
+  });
+
+  assert.doesNotMatch(publicCopy, /don't have kids/i);
+  assert.doesNotMatch(publicCopy, /vibe vibe/i);
+  assert.doesNotMatch(payload.data.publicEvent.subheadline, /vibe/i);
+});
+
+test("save payload strips product prompt prefixes from live-card titles", () => {
+  const draft = normalizeConciergeDraft(
+    {
+      eventType: "sport_event",
+      title: "Live card of a Basketball Tournament with my boys",
+      eventPurpose: "Basketball Tournament",
+      outputs: ["live_card"],
+      dateText: "May 9",
+      timeText: "5:00 PM",
+      location: "The Gym",
+      rsvpEnabled: false,
+      previewCopy: {
+        headline: "Live card of a Basketball Tournament with my boys",
+        subheadline: "Live card of a Basketball Tournament with my boys",
+        body: "Live card of a Basketball Tournament with my boys",
+        scheduleLine: "May 9 at 5:00 PM",
+        locationLine: "The Gym",
+        cta: "View details",
+      },
+    },
+    fallbackExtractConciergeDraft({
+      message:
+        "Create a live card for a basketball tournament on May 9 at 5 PM at The Gym. No RSVP.",
+    }),
+  );
+  const payload = buildConciergeHistoryPayload(draft);
+  const publicCopy = JSON.stringify({
+    previewCopy: payload.data.previewCopy,
+    liveCard: payload.data.liveCard,
+    publicEvent: payload.data.publicEvent,
+    studioCard: payload.data.studioCard,
+  });
+
+  assert.doesNotMatch(publicCopy, /Live card of a/i);
+  assert.match(payload.data.liveCard.headline, /Basketball Tournament/i);
 });
 
 test("save payload preserves event page as the primary product", () => {

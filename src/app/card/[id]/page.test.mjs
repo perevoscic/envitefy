@@ -45,8 +45,11 @@ test("shared card route can render concierge live-card events", () => {
   );
   assert.match(pageSource, /hasLiveCardOutput\(data\)/);
   assert.match(pageSource, /birthday: "\/studio\/birthday\.webp"/);
+  assert.match(pageSource, /import \{ sanitizeGuestCopy, sanitizeGuestTitle \}/);
   assert.match(pageSource, /liveCard\?\.headline/);
   assert.match(pageSource, /publicEvent\?\.headline/);
+  assert.match(pageSource, /function sanitizeInvitationData/);
+  assert.match(pageSource, /sanitizeInvitationData\(studioCard\.invitationData\)/);
   assert.match(
     pageSource,
     /heroTextMode: heroTextMode \|\| \(hasLiveCardOutput\(data\) \? "image" : undefined\)/,
@@ -108,7 +111,10 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
     pageSource,
     /const ownerWorkspaceHref = `\$\{buildEventPath\(sharedCard\.row\.id, sharedCard\.title\)\}\?tab=\$\{ownerWorkspaceTab\}`;/,
   );
-  assert.match(pageSource, /if \(isOwner && !explicitOwnerPreview\) \{\s*redirect\(ownerWorkspaceHref\);\s*\}/s);
+  assert.match(
+    pageSource,
+    /if \(isOwner && !explicitOwnerPreview\) \{\s*redirect\(ownerWorkspaceHref\);\s*\}/s,
+  );
   assert.match(pageSource, /buildOwnerPreviewSearch\(returnHref\)/);
   assert.match(sharedPageSource, /returnHref\?: string \| null;/);
   assert.match(sharedPageSource, /aria-label="Close preview"/);

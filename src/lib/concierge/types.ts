@@ -95,7 +95,7 @@ export type CreationSourceContext = {
   signals?: SourceIntentSignal[];
   requiresUserConfirmation?: boolean;
   originalCategory?: string | null;
-  boundary?: "private_data" | "non_creation" | null;
+  boundary?: "private_data" | "non_creation" | "envitefy_question" | null;
   resolvedId?: string | null;
   candidates?: Array<{
     type: SourceContextType;
@@ -260,6 +260,8 @@ export type ConciergeEventDraft = {
   giftPreferenceNote?: string | null;
   theme: string | null;
   tone: string | null;
+  knowledgeAnswer?: string | null;
+  assistantGuidance?: string | null;
   outputs: ConciergeOutput[];
   missingFields: string[];
   previewCopy: ConciergePreviewCopy;

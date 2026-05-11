@@ -55,6 +55,7 @@ import { getEventTheme } from "@/lib/event-theme";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
+import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
 import {
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
@@ -637,6 +638,22 @@ function cleanDisplayString(value: unknown): string | null {
 function firstDisplayString(...values: unknown[]): string | null {
   for (const value of values) {
     const cleaned = cleanDisplayString(value);
+    if (cleaned) return cleaned;
+  }
+  return null;
+}
+
+function firstGuestTitleString(...values: unknown[]): string | null {
+  for (const value of values) {
+    const cleaned = sanitizeGuestTitle(value);
+    if (cleaned) return cleaned;
+  }
+  return null;
+}
+
+function firstGuestCopyString(...values: unknown[]): string | null {
+  for (const value of values) {
+    const cleaned = sanitizeGuestCopy(value);
     if (cleaned) return cleaned;
   }
   return null;
@@ -1477,7 +1494,7 @@ export default async function EventPage({
       (hasEventPageOutput && !publicEventPrimaryOutput));
   const isConciergeVisualProduct = isConciergeLiveCardEvent || isConciergeEventPageProduct;
   const publicEventTitle = isConciergeVisualProduct
-    ? firstDisplayString(
+    ? firstGuestTitleString(
         liveCardRecord.headline,
         liveCardCopyRecord.headline,
         publicEventRecord.headline,
@@ -1487,14 +1504,14 @@ export default async function EventPage({
       ) || title
     : title;
   const publicEventSubheadline = isConciergeVisualProduct
-    ? firstDisplayString(
+    ? firstGuestCopyString(
         liveCardRecord.subheadline,
         liveCardCopyRecord.subheadline,
         publicEventRecord.subheadline,
       )
     : null;
   const publicDescription = isConciergeVisualProduct
-    ? firstDisplayString(
+    ? firstGuestCopyString(
         liveCardRecord.body,
         liveCardCopyRecord.body,
         publicEventRecord.body,

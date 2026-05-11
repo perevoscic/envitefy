@@ -155,3 +155,31 @@ test("conversation 10: unrelated private-data mutation is not an event detail", 
     /can't change owners, user IDs, or private account data/i,
   );
 });
+
+test("conversation 11: Envitefy product questions are answered instead of becoming drafts", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "What does Envitefy RSVP do?",
+  });
+  const assistant = buildAssistantMessage(draft);
+
+  assert.equal(draft.canPersist, false);
+  assert.equal(draft.sourceContext.boundary, "envitefy_question");
+  assert.equal(draft.currentQuestion, null);
+  assert.deepEqual(draft.missingFields, []);
+  assert.match(assistant, /guests respond/i);
+  assert.doesNotMatch(assistant, /When should this happen/i);
+});
+
+test("conversation 12: generate requests with missing details explain the blocker", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Create a birthday event page for Your Momma turning 9.",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "do it", draft });
+  const assistant = buildAssistantMessage(draft);
+
+  assert.equal(draft.currentQuestion, "date");
+  assert.match(assistant, /missing detail|still need/i);
+  assert.match(assistant, /date/i);
+  assert.match(assistant, /turning 9/i);
+  assert.doesNotMatch(assistant, /^When should this happen\?$/i);
+});

@@ -711,7 +711,7 @@ function draftHeadline(draft: ConciergeEventDraft | null) {
 }
 
 function draftSubheadline(draft: ConciergeEventDraft | null) {
-  return draft?.previewCopy.subheadline || draft?.theme || "Details coming together";
+  return draft?.previewCopy.subheadline || "Details coming together";
 }
 
 function draftScheduleLine(draft: ConciergeEventDraft | null) {

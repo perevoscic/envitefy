@@ -21,6 +21,7 @@ import {
   resolveConciergeOpenAiExtractionModel,
   runWithConciergeOpenAiTimeout,
 } from "./openai-config.ts";
+import { sanitizeConciergePreviewCopy } from "./public-copy.ts";
 import type {
   ConciergeEventDraft,
   ConciergeMessageRequest,
@@ -384,13 +385,24 @@ export function normalizeConciergeDraft(
     giftPreferenceNote,
     theme,
     tone,
+    knowledgeAnswer: fallback.knowledgeAnswer || null,
+    assistantGuidance: fallback.assistantGuidance || null,
     outputs: toLegacyOutputs(requestedOutputs),
     missingFields: Array.isArray(record.missingFields)
       ? record.missingFields.map(cleanString).filter((item): item is string => Boolean(item))
       : status.missingFields,
-    previewCopy: normalizePreviewCopy(
-      record.previewCopy ?? eventData.previewCopy ?? eventData.liveCard,
-      fallback.previewCopy,
+    previewCopy: sanitizeConciergePreviewCopy(
+      normalizePreviewCopy(
+        record.previewCopy ?? eventData.previewCopy ?? eventData.liveCard,
+        fallback.previewCopy,
+      ),
+      {
+        eventType,
+        title,
+        eventPurpose,
+        honoreeName,
+        ageOrMilestone,
+      },
     ),
     source: normalizeSource(record.source, fallback.source),
   };
@@ -466,6 +478,8 @@ async function extractWithOpenAi(
               "When the user says they received, got, or were sent an invite and wants to save it, set sourceContext.detectedSourceIntent to received_invite and ownership to invited.",
               "If that received-invite request has no invite image/text or concrete event details, ask for an upload or pasted invite text before asking host-authoring questions.",
               "Ask for the minimum missing fields. Produce preview copy even when details are missing.",
+              "Theme, tone, style, vibe, and edit instructions are internal creative direction. Never put raw user vibe/prompt/instruction text into guest-facing title, previewCopy.headline, previewCopy.subheadline, previewCopy.body, liveCard, or publicEvent copy.",
+              "Preview copy must read like polished guest-facing invitation text. Do not include product phrases such as live card of, event page for, complete Envitefy product, guest-facing call to action, or repeated prompt fragments.",
               "Never choose a user id, owner id, or fetch private user data.",
             ].join(" "),
           },
@@ -519,6 +533,7 @@ export async function extractConciergeDraft(
   });
 
   const shouldUseDeterministicFastPath =
+    fallback.sourceContext.boundary === "envitefy_question" ||
     fallback.sourceContext.boundary === "non_creation" ||
     fallback.currentQuestion === "invite_source" ||
     isNonCreationRequest(message) ||

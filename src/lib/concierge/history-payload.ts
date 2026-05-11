@@ -1,4 +1,9 @@
 import { canPersistCreationDraft, rsvpTrackingEnabled } from "./creation-intent.ts";
+import {
+  sanitizeConciergePreviewCopy,
+  sanitizeConciergePublicEventData,
+  sanitizeGuestTitle,
+} from "./public-copy.ts";
 import type { ConciergeEventDraft, ConciergeStudioInvite } from "./types.ts";
 
 const CATEGORY_LABELS: Record<ConciergeEventDraft["eventType"], string> = {
@@ -124,25 +129,31 @@ export function buildConciergeHistoryPayload(
   const category = CATEGORY_LABELS[draft.eventType] || "General Event";
   const rsvpEnabled = rsvpTrackingEnabled(draft);
   const eventPlace = normalizeVenueLocation(draft.venue, draft.location);
+  const safePreviewCopy = sanitizeConciergePreviewCopy(draft.previewCopy, {
+    eventType: draft.eventType,
+    title,
+    eventPurpose: draft.eventPurpose,
+    honoreeName: draft.honoreeName,
+    ageOrMilestone: draft.ageOrMilestone,
+  });
   const scheduleLine =
-    cleanString(draft.previewCopy.scheduleLine) ||
+    cleanString(safePreviewCopy.scheduleLine) ||
     [cleanString(draft.dateText), cleanString(draft.timeText)].filter(Boolean).join(" at ") ||
     null;
   const locationLine =
-    cleanString(draft.previewCopy.locationLine) ||
+    cleanString(safePreviewCopy.locationLine) ||
     [eventPlace.venue, eventPlace.location]
       .filter((value, index, values) => value && values.indexOf(value) === index)
       .join(", ") ||
     null;
   const description =
-    cleanString(draft.previewCopy.body) ||
+    cleanString(safePreviewCopy.body) ||
     (draft.eventType === "birthday" && draft.honoreeName
       ? `Join us to celebrate ${draft.honoreeName}.`
       : `Join us for ${title}.`);
-  const liveCardHeadline = cleanString(draft.previewCopy.headline) || title;
-  const liveCardSubheadline =
-    cleanString(draft.previewCopy.subheadline) || cleanString(draft.theme) || category;
-  const rawLiveCardCta = cleanString(draft.previewCopy.cta);
+  const liveCardHeadline = cleanString(safePreviewCopy.headline) || title;
+  const liveCardSubheadline = cleanString(safePreviewCopy.subheadline) || category;
+  const rawLiveCardCta = cleanString(safePreviewCopy.cta);
   const liveCardCta = rsvpEnabled
     ? rawLiveCardCta || "RSVP"
     : rawLiveCardCta && !/^rsvp$/i.test(rawLiveCardCta)
@@ -239,7 +250,7 @@ export function buildConciergeHistoryPayload(
         }
       : null;
 
-  return {
+  const payload = {
     title,
     data: {
       creationIntent: draft.intent,
@@ -295,7 +306,7 @@ export function buildConciergeHistoryPayload(
       giftPreferenceNote: giftNote,
       registries: registryLinks,
       outputs: requestedOutputs,
-      previewCopy: draft.previewCopy,
+      previewCopy: safePreviewCopy,
       rsvpEnabled,
       rsvpMode: "envitefy",
       rsvp: {
@@ -310,6 +321,7 @@ export function buildConciergeHistoryPayload(
       },
       conciergeDraft: {
         ...draft,
+        previewCopy: safePreviewCopy,
         requestedOutputs,
         outputs: requestedOutputs,
       },
@@ -364,4 +376,7 @@ export function buildConciergeHistoryPayload(
       ...(signupForm ? { signupForm } : {}),
     },
   };
+  sanitizeConciergePublicEventData(payload.data);
+  payload.title = sanitizeGuestTitle(payload.data.title) || title;
+  return payload;
 }

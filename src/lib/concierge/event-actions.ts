@@ -20,6 +20,7 @@ import {
   resolveConciergeOpenAiPlannerModel,
   runWithConciergeOpenAiTimeout,
 } from "./openai-config.ts";
+import { sanitizeConciergePublicEventData } from "./public-copy.ts";
 import type {
   ConciergeEventAction,
   ConciergeWeatherContext,
@@ -257,10 +258,6 @@ function syncLiveCardCopyFromPatch(data: Record<string, unknown>, patch: Record<
   if (hasPatchField(patch, ["description"])) {
     assignCopyField("body", data.description);
   }
-  if (hasPatchField(patch, ["theme"])) {
-    const theme = cleanString(data.theme);
-    assignCopyField("subheadline", theme ? `${theme} theme` : null);
-  }
   if (hasPatchField(patch, ["date", "dateText", "time", "timeText", "whenLabel", "scheduleLine"])) {
     assignCopyField("scheduleLine", scheduleLineFromData(data));
   }
@@ -467,6 +464,7 @@ async function planWithOpenAi(params: {
               "Allowed action types: update_event, create_asset, update_asset, ask_question.",
               "Never choose or accept user_id. Never modify ownership.",
               "Only patch event fields relevant to event details, RSVP, copy, status, and design tone.",
+              "Theme, tone, style, and editInstruction are internal creative direction. Do not copy raw user vibe, prompt, or instruction text into visible title, headlineTitle, description, liveCard, publicEvent, or previewCopy fields; only patch those fields with polished guest-facing copy.",
               "If the user asks about weather, use only weatherContext. If it is unavailable, ask for the missing date/location or suggest adding a backup note without inventing a forecast.",
             ].join(" "),
           },
@@ -563,6 +561,7 @@ export async function applyEventActions(params: {
       const nextData = { ...asRecord(event.data), ...patch };
       normalizeCanonicalStartFields(nextData);
       syncLiveCardCopyFromPatch(nextData, patch);
+      sanitizeConciergePublicEventData(nextData);
       const updated = await updateEventHistoryData(params.eventId, nextData);
       if (updated) {
         event = updated;
