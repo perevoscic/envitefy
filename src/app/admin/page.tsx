@@ -1,22 +1,4 @@
 "use client";
-import {
-  Activity,
-  ArrowRight,
-  BarChart3,
-  CalendarCheck2,
-  FileText,
-  Image as ImageIcon,
-  Loader2,
-  type LucideIcon,
-  Mail,
-  Megaphone,
-  Search,
-  ShieldCheck,
-  Trash2,
-  Users,
-  WandSparkles,
-  X,
-} from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -58,44 +40,6 @@ const USER_EVENT_CATEGORY_KEYS: Record<EventTypeKey, string> = {
   scans_car_pool: "events_car_pool",
 };
 
-const ADMIN_ACTIONS: Array<{
-  href: string;
-  label: string;
-  description: string;
-  icon: LucideIcon;
-  tone: string;
-}> = [
-  {
-    href: "/admin/campaigns",
-    label: "Email campaigns",
-    description: "Compose, preview, and send bulk user updates.",
-    icon: Mail,
-    tone: "bg-[#f4efff] text-[#6f57c8]",
-  },
-  {
-    href: "/admin/emails",
-    label: "Email templates",
-    description: "Review transactional and marketing email designs.",
-    icon: FileText,
-    tone: "bg-[#f3f7ff] text-[#566fbd]",
-  },
-  {
-    href: "/admin/marketing-images",
-    label: "Creative runs",
-    description: "Storyboard, caption, QA, and render marketing assets.",
-    icon: ImageIcon,
-    tone: "bg-[#edf9f5] text-[#287e65]",
-  },
-];
-
-const ADMIN_CONCIERGE_PROMPTS = [
-  "Summarize platform health",
-  "Find users with scans but no events",
-  "Spot RSVP setup issues",
-  "Audit event ownership drift",
-  "Suggest campaign audience",
-];
-
 type Overview = {
   totalUsers: number;
   totalEvents: number;
@@ -106,7 +50,6 @@ type Overview = {
 };
 
 type StatView = "all" | "scans" | "shares" | null;
-type UserOpsTab = "directory" | "contact";
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
@@ -119,7 +62,6 @@ export default function AdminPage() {
   const [usersError, setUsersError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [activeStatView, setActiveStatView] = useState<StatView>(null);
-  const [activeUserOpsTab, setActiveUserOpsTab] = useState<UserOpsTab>("directory");
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -280,65 +222,88 @@ export default function AdminPage() {
 
   return (
     <div
-      className="min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,#ffffff_0,#faf8ff_34%,#f1edfb_100%)] text-[#24193f] transition-colors"
+      className="min-h-[100dvh] bg-gradient-to-br from-[#ffffff] via-[#f6f3ff] to-[#f1ecff] text-[#3f3269] transition-colors"
       suppressHydrationWarning
     >
-      <div
-        className="mx-auto max-w-[1500px] space-y-5 px-4 pb-10 pt-5 sm:px-6 lg:px-8"
-        suppressHydrationWarning
-      >
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6" suppressHydrationWarning>
         {/* Header */}
-        <div
-          className="flex flex-col gap-4 rounded-[1.75rem] border border-white/80 bg-white/80 p-5 shadow-[0_24px_80px_rgba(76,57,140,0.12)] backdrop-blur md:flex-row md:items-end md:justify-between"
-          suppressHydrationWarning
-        >
-          <div className="max-w-3xl space-y-3" suppressHydrationWarning>
-            <div
-              className="inline-flex items-center gap-2 rounded-full border border-[#e6ddfb] bg-[#f7f2ff] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#735cc5]"
-              suppressHydrationWarning
-            >
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Internal admin
-            </div>
-            <div className="space-y-2" suppressHydrationWarning>
-              <h1
-                className="text-balance text-3xl font-semibold tracking-normal text-[#24193f] sm:text-4xl"
-                suppressHydrationWarning
-              >
-                Admin Dashboard
-              </h1>
-              <p className="max-w-2xl text-sm leading-6 text-[#766a99]" suppressHydrationWarning>
-                Platform health, creator activity, event intelligence, and the operational tools
-                needed to keep Envitefy moving.
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex" suppressHydrationWarning>
-            <Link
-              href="/admin/campaigns"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[#dfd6f6] bg-white px-4 text-sm font-semibold text-[#5b469c] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <Mail className="h-4 w-4" />
-              Campaigns
-            </Link>
-            <Link
-              href="/admin/marketing-images"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#24193f] px-4 text-sm font-semibold text-white shadow-lg shadow-[#6f57c8]/20 transition hover:-translate-y-0.5"
-            >
-              <ImageIcon className="h-4 w-4" />
-              Creative
-            </Link>
-          </div>
+        <div className="flex flex-col gap-2 pt-8" suppressHydrationWarning>
+          <h1
+            className="text-3xl font-bold bg-gradient-to-r from-[#6f57c8] to-[#9278e3] bg-clip-text text-transparent"
+            suppressHydrationWarning
+          >
+            Admin Dashboard
+          </h1>
+          <p className="text-sm text-[#8c80b6]" suppressHydrationWarning>
+            Platform insights, user analytics, and administrative tools
+          </p>
         </div>
 
         {/* Quick Actions */}
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]" suppressHydrationWarning>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {ADMIN_ACTIONS.map((action) => (
-              <AdminActionCard key={action.href} {...action} />
-            ))}
+        <section suppressHydrationWarning>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Link
+              href="/admin/campaigns"
+              className="group relative overflow-hidden rounded-2xl border border-[#dcd4f5] bg-white shadow transition-all hover:shadow-lg"
+            >
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
+                      Email Campaigns
+                    </p>
+                    <p className="text-sm text-[#5b4d86]">Send bulk emails to users</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#c9b9f9] to-[#9072e5] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#fff]">
+                    EC
+                  </div>
+                </div>
+              </div>
+              <div className="h-1 bg-gradient-to-r from-[#9f8ceb] to-[#6f57c8] opacity-80" />
+            </Link>
+
+            <Link
+              href="/admin/emails"
+              className="group relative overflow-hidden rounded-2xl border border-[#dcd4f5] bg-white shadow transition-all hover:shadow-lg"
+            >
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
+                      Email Templates
+                    </p>
+                    <p className="text-sm text-[#5b4d86]">Preview email designs</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#c9b9f9] to-[#9072e5] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#fff]">
+                    ET
+                  </div>
+                </div>
+              </div>
+              <div className="h-1 bg-gradient-to-r from-[#b4a4ef] to-[#7b63cf] opacity-80" />
+            </Link>
+
+            <Link
+              href="/admin/marketing-images"
+              className="group relative overflow-hidden rounded-2xl border border-[#dcd4f5] bg-white shadow transition-all hover:shadow-lg"
+            >
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
+                      Marketing Images
+                    </p>
+                    <p className="text-sm text-[#5b4d86]">
+                      Branded storyboards, image frames, and video renders
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#c6f1e3] to-[#46bb91] flex items-center justify-center text-xl shadow-lg flex-shrink-0 text-[#fff]">
+                    MI
+                  </div>
+                </div>
+              </div>
+              <div className="h-1 bg-gradient-to-r from-[#63caa2] to-[#2e9d78] opacity-80" />
+            </Link>
           </div>
-          <AdminConciergeCard overview={overview} />
         </section>
 
         {error && (
@@ -361,39 +326,40 @@ export default function AdminPage() {
 
         {/* Overview Stats */}
         <section suppressHydrationWarning>
-          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div suppressHydrationWarning>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8f80bd]">
-                Platform Overview
-              </p>
-              <h2 className="mt-1 text-2xl font-semibold text-[#24193f]" suppressHydrationWarning>
-                Creator activity at a glance
-              </h2>
-            </div>
-            {overview && (
-              <p className="text-sm text-[#766a99]" suppressHydrationWarning>
-                {overview.totalEvents.toLocaleString()} events from{" "}
-                {overview.totalUsers.toLocaleString()} users
-              </p>
-            )}
-          </div>
+          <h2 className="text-xl font-semibold mb-3 text-[#43366f]" suppressHydrationWarning>
+            Platform Overview
+          </h2>
           {!overview ? (
-            <div className="flex items-center justify-center rounded-[1.5rem] border border-[#e5def6] bg-white/75 py-14 shadow-sm">
+            <div className="flex items-center justify-center py-12">
               <div
-                className="flex items-center gap-3 text-sm font-medium text-[#766a99]"
+                className="flex items-center gap-3 text-muted-foreground"
                 suppressHydrationWarning
               >
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Loading overview...
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Loading overview…
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <StatCard
                 label="Total Users"
                 value={overview.totalUsers}
-                description="Search, review, and triage accounts."
-                icon={Users}
+                icon="U"
+                gradient="from-[#bbaaf3] to-[#7f67d3]"
                 onClick={() => handleStatClick("all")}
                 isActive={activeStatView === "all"}
               />
@@ -401,21 +367,11 @@ export default function AdminPage() {
                 label="Total Scans"
                 scanStats={scanStats}
                 total={overview.totalScans}
-                onClick={() => handleStatClick("scans")}
-                isActive={activeStatView === "scans"}
               />
               <CategoryBreakdownCard
                 label="Total Events Created"
                 categoryStats={categoryStats}
                 total={overview.totalEvents}
-              />
-              <StatCard
-                label="Shares Sent"
-                value={overview.totalShares}
-                description="Creators actively distributing event links."
-                icon={Megaphone}
-                onClick={() => handleStatClick("shares")}
-                isActive={activeStatView === "shares"}
               />
             </div>
           )}
@@ -424,67 +380,43 @@ export default function AdminPage() {
         {/* User Search */}
         <section suppressHydrationWarning>
           <div
-            className="overflow-hidden rounded-[1.75rem] border border-white/80 bg-white/85 shadow-[0_24px_70px_rgba(76,57,140,0.14)] backdrop-blur"
+            className="bg-white border border-[#ddd5f6] rounded-2xl overflow-hidden shadow-xl"
             suppressHydrationWarning
           >
-            <div
-              className="flex flex-col gap-3 border-b border-[#ebe5f8] px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6"
-              suppressHydrationWarning
-            >
-              <div suppressHydrationWarning>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8f80bd]">
-                  User operations
-                </p>
-                <h2 className="mt-1 text-xl font-semibold text-[#24193f]" suppressHydrationWarning>
-                  {getActiveViewTitle()}
-                </h2>
-                <p className="mt-1 text-sm text-[#766a99]" suppressHydrationWarning>
-                  {activeStatView
-                    ? `Showing ${
-                        activeStatView === "all"
-                          ? "all users"
-                          : activeStatView === "scans"
-                            ? "users sorted by total scans"
-                            : "users sorted by shares sent"
-                      }`
-                    : "Search users, inspect event URLs, and clean up test accounts."}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-[#f7f3ff] px-3 py-2 text-xs font-semibold text-[#6f57c8]">
-                Dev event URLs available
-              </div>
+            <div className="px-6 py-4 border-b border-[#e4def9]" suppressHydrationWarning>
+              <h2 className="text-lg font-semibold text-[#43366f]" suppressHydrationWarning>
+                {getActiveViewTitle()}
+              </h2>
+              <p className="text-sm text-[#8c80b6] mt-1" suppressHydrationWarning>
+                {activeStatView
+                  ? `Showing ${
+                      activeStatView === "all"
+                        ? "all users"
+                        : activeStatView === "scans"
+                          ? "users sorted by total scans"
+                          : "users sorted by shares sent"
+                    }`
+                  : "Search for users by email, first name, or last name"}
+              </p>
             </div>
-            <div className="p-4 sm:p-6">
-              <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                <div className="rounded-xl border border-[#e3daf7] bg-[#faf7ff] px-3 py-2">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#8f80bd]">Total users</p>
-                  <p className="text-lg font-semibold text-[#3f2f73]">
-                    {overview?.totalUsers?.toLocaleString() || "—"}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-[#e3daf7] bg-[#faf7ff] px-3 py-2">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#8f80bd]">
-                    Total result set
-                  </p>
-                  <p className="text-lg font-semibold text-[#3f2f73]">{users.length.toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl border border-[#e3daf7] bg-[#faf7ff] px-3 py-2">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#8f80bd]">Active mode</p>
-                  <p className="text-sm font-semibold text-[#3f2f73]">
-                    {activeUserOpsTab === "directory" ? "User directory" : "Contact details"}
-                  </p>
-                </div>
-              </div>
+            <div className="p-6">
               {activeStatView && (
-                <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-[#d8cdf4] bg-[#f7f2ff] px-4 py-3">
+                <div className="mb-4 flex items-center justify-between rounded-lg border border-[#cbbbf1] bg-[#f4efff] px-4 py-3">
                   <span className="text-sm text-[#6f57c8] font-medium">
                     Active Filter: {getActiveViewTitle()}
                   </span>
                   <button
                     onClick={handleClearSearch}
-                    className="flex items-center gap-1 text-sm font-semibold text-[#6f57c8] transition hover:text-[#5a42b7]"
+                    className="text-sm text-[#6f57c8] hover:text-[#5a42b7] font-semibold flex items-center gap-1"
                   >
-                    <X className="h-4 w-4" />
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
                     Clear Filter
                   </button>
                 </div>
@@ -503,17 +435,39 @@ export default function AdminPage() {
                     className="w-full pl-11 pr-10 py-3 text-sm rounded-2xl border border-[#d8d0f3] bg-white text-[#483a74] placeholder:text-[#9a8fc0] focus:border-[#9b86df] focus:ring-2 focus:ring-[#baa9ea]/55 focus:outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     suppressHydrationWarning
                   />
-                  <Search
-                    className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#998fc0]"
+                  <svg
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#998fc0]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                     suppressHydrationWarning
-                  />
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
                   {q && (
                     <button
                       onClick={handleClearSearch}
                       className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors hover:bg-[#f1edff]"
                       title="Clear search"
                     >
-                      <X className="h-4 w-4 text-[#998fc0]" />
+                      <svg
+                        className="w-4 h-4 text-[#998fc0]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
                     </button>
                   )}
                 </div>
@@ -524,39 +478,41 @@ export default function AdminPage() {
                 >
                   {usersLoading ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Searching...
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Searching…
                     </>
                   ) : (
                     <>
-                      <Search className="h-4 w-4" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
                       Search
                     </>
                   )}
-                </button>
-              </div>
-              <div className="mb-4 inline-flex rounded-2xl border border-[#d8cdf4] bg-[#f7f2ff] p-1">
-                <button
-                  type="button"
-                  onClick={() => setActiveUserOpsTab("directory")}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
-                    activeUserOpsTab === "directory"
-                      ? "bg-white text-[#5b469c] shadow-sm"
-                      : "text-[#7d6ab5] hover:text-[#5b469c]"
-                  }`}
-                >
-                  User directory
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveUserOpsTab("contact")}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
-                    activeUserOpsTab === "contact"
-                      ? "bg-white text-[#5b469c] shadow-sm"
-                      : "text-[#7d6ab5] hover:text-[#5b469c]"
-                  }`}
-                >
-                  Contact details
                 </button>
               </div>
 
@@ -616,14 +572,10 @@ export default function AdminPage() {
                               <p className="text-base font-semibold text-[#43366f] truncate">
                                 {[u.first_name, u.last_name].filter(Boolean).join(" ") || "-"}
                               </p>
-                              {activeUserOpsTab === "contact" && (
-                                <>
-                                  <p className="text-xs uppercase tracking-[0.3em] text-[#8b7fb6]">
-                                    Email
-                                  </p>
-                                  <p className="text-sm text-[#5b4d86] break-words">{u.email}</p>
-                                </>
-                              )}
+                              <p className="text-xs uppercase tracking-[0.3em] text-[#8b7fb6]">
+                                Email
+                              </p>
+                              <p className="text-sm text-[#5b4d86] break-words">{u.email}</p>
                             </div>
                           </div>
 
@@ -677,10 +629,9 @@ export default function AdminPage() {
                               type="button"
                               onClick={() => handleDeleteUser(u)}
                               disabled={deletingUserId === u.id}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#f0b8c7] bg-[#fff2f5] px-3 py-2 text-sm font-semibold text-[#b84367] transition-colors hover:bg-[#ffe7ee] disabled:cursor-not-allowed disabled:opacity-60"
+                              className="rounded-xl border border-[#f0b8c7] bg-[#fff2f5] px-3 py-2 text-sm font-semibold text-[#b84367] transition-colors hover:bg-[#ffe7ee] disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                              <Trash2 className="h-4 w-4" />
-                              {deletingUserId === u.id ? "Deleting..." : "Delete"}
+                              {deletingUserId === u.id ? "Deleting…" : "Delete"}
                             </button>
                           </div>
                         </div>
@@ -697,7 +648,7 @@ export default function AdminPage() {
                       <thead className="bg-[#faf8ff] text-xs uppercase tracking-wider font-semibold text-[#8b7fb6] border-b border-[#e4def9]">
                         <tr>
                           <th className="px-4 py-3">Name</th>
-                          {activeUserOpsTab === "contact" && <th className="px-4 py-3">Email</th>}
+                          <th className="px-4 py-3">Email</th>
                           <th className="px-4 py-3 text-right">Scans</th>
                           <th className="px-4 py-3">Events</th>
                           <th className="px-4 py-3">Last event</th>
@@ -724,9 +675,7 @@ export default function AdminPage() {
                               <td className="px-4 py-3 text-foreground/80">
                                 {[u.first_name, u.last_name].filter(Boolean).join(" ") || "-"}
                               </td>
-                              {activeUserOpsTab === "contact" && (
-                                <td className="px-4 py-3 font-medium text-foreground">{u.email}</td>
-                              )}
+                              <td className="px-4 py-3 font-medium text-foreground">{u.email}</td>
                               <td className="px-4 py-3 text-right font-semibold text-foreground">
                                 <BreakdownPopup
                                   label="Scans"
@@ -754,10 +703,9 @@ export default function AdminPage() {
                                   type="button"
                                   onClick={() => handleDeleteUser(u)}
                                   disabled={deletingUserId === u.id}
-                                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#f0b8c7] bg-[#fff2f5] px-3 py-2 text-sm font-semibold text-[#b84367] transition-colors hover:bg-[#ffe7ee] disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="rounded-xl border border-[#f0b8c7] bg-[#fff2f5] px-3 py-2 text-sm font-semibold text-[#b84367] transition-colors hover:bg-[#ffe7ee] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                  {deletingUserId === u.id ? "Deleting..." : "Delete"}
+                                  {deletingUserId === u.id ? "Deleting…" : "Delete"}
                                 </button>
                               </td>
                             </tr>
@@ -791,118 +739,51 @@ export default function AdminPage() {
   );
 }
 
-function AdminActionCard({
-  href,
-  label,
-  description,
-  icon: Icon,
-  tone,
-}: {
-  href: string;
-  label: string;
-  description: string;
-  icon: LucideIcon;
-  tone: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group flex min-h-[156px] flex-col justify-between rounded-[1.5rem] border border-white/80 bg-white/85 p-5 shadow-[0_18px_55px_rgba(76,57,140,0.1)] backdrop-blur transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(76,57,140,0.16)]"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${tone}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <ArrowRight className="h-4 w-4 text-[#b4a9d6] transition group-hover:translate-x-0.5 group-hover:text-[#735cc5]" />
-      </div>
-      <div className="space-y-1.5">
-        <h3 className="text-base font-semibold text-[#24193f]">{label}</h3>
-        <p className="text-sm leading-5 text-[#766a99]">{description}</p>
-      </div>
-    </Link>
-  );
-}
-
-function AdminConciergeCard({ overview }: { overview: Overview | null }) {
-  const engagementSummary = overview
-    ? `${overview.totalEvents.toLocaleString()} events, ${overview.totalScans.toLocaleString()} scans`
-    : "Waiting for platform stats";
-
-  return (
-    <div className="relative overflow-hidden rounded-[1.5rem] border border-[#e4dbf7] bg-[#24193f] p-5 text-white shadow-[0_24px_80px_rgba(36,25,63,0.22)]">
-      <div className="absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_20%_10%,rgba(197,177,255,0.34),transparent_42%),radial-gradient(circle_at_90%_0%,rgba(123,214,187,0.22),transparent_40%)]" />
-      <div className="relative space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/12 text-[#e8ddff] ring-1 ring-white/15">
-            <WandSparkles className="h-5 w-5" />
-          </div>
-          <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-[#e8ddff]">
-            Concierge preview
-          </span>
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold">Ask Concierge what needs attention</h3>
-          <p className="mt-1 text-sm leading-6 text-[#d9d0ef]">
-            Turn admin data into practical next steps for campaigns, event setup, and creator
-            follow-up.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2 text-sm text-[#f0eaff] ring-1 ring-white/10">
-          <BarChart3 className="h-4 w-4 text-[#c8bbff]" />
-          {engagementSummary}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {ADMIN_CONCIERGE_PROMPTS.map((prompt) => (
-            <button
-              key={prompt}
-              type="button"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#f4efff] ring-1 ring-white/10 transition hover:bg-white/15"
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function StatCard({
   label,
   value,
   icon,
+  gradient,
   onClick,
   isActive,
-  description,
+  helperText,
 }: {
   label: string;
   value: number;
-  icon: LucideIcon;
+  icon: string;
+  gradient: string;
   onClick?: () => void;
   isActive?: boolean;
-  description?: string;
+  helperText?: string;
 }) {
-  const Icon = icon;
+  const activeBorderClass = isActive ? "border-2 border-[#7f67d3] shadow-2xl" : "";
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-[1.5rem] border bg-white/88 p-5 shadow-[0_18px_55px_rgba(76,57,140,0.1)] ring-1 ring-white/70 transition ${
-        isActive ? "border-[#7f67d3] shadow-[0_24px_70px_rgba(111,87,200,0.22)]" : "border-white/80"
-      } ${onClick ? "cursor-pointer hover:-translate-y-0.5" : ""}`}
+      className={`relative overflow-hidden rounded-xl bg-white border border-[#ddd5f6] transition-all shadow-lg cursor-pointer ring-1 ring-[#ede7ff] ${activeBorderClass} ${
+        onClick ? "hover:-translate-y-0.5" : ""
+      }`}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8f80bd]">{label}</p>
-          <p className="mt-2 truncate text-3xl font-semibold text-[#24193f]">
-            {value.toLocaleString()}
-          </p>
-          {description && <p className="mt-2 text-sm leading-5 text-[#766a99]">{description}</p>}
-        </div>
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-[#f4efff] text-[#6f57c8] ring-1 ring-[#e4dbf7]">
-          <Icon className="h-5 w-5" />
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8b7fb6] mb-1.5">
+              {label}
+            </p>
+            <p className="text-2xl sm:text-3xl font-bold text-[#43366f] truncate">
+              {value.toLocaleString()}
+            </p>
+            {helperText && <p className="text-xs text-[#8c80b6] mt-1 line-clamp-2">{helperText}</p>}
+          </div>
+          <div
+            className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-lg sm:text-xl shadow-2xl border border-[#e8e1fb] text-white`}
+          >
+            {icon}
+          </div>
         </div>
       </div>
+      <div className={`h-1 bg-gradient-to-r ${gradient} opacity-80`} />
     </div>
   );
 }
@@ -911,46 +792,34 @@ function CategoryBreakdownCard({
   label,
   categoryStats,
   total,
-  onClick,
-  isActive,
 }: {
   label: string;
   categoryStats: Array<{ key: EventTypeKey; label: string; count: number }>;
   total: number;
-  onClick?: () => void;
-  isActive?: boolean;
 }) {
   return (
-    <div
-      className={`relative overflow-hidden rounded-[1.5rem] border bg-white/88 p-5 shadow-[0_18px_55px_rgba(76,57,140,0.1)] ring-1 ring-white/70 transition ${
-        isActive ? "border-[#7f67d3] shadow-[0_24px_70px_rgba(111,87,200,0.22)]" : "border-white/80"
-      } ${onClick ? "cursor-pointer hover:-translate-y-0.5" : ""}`}
-      onClick={onClick}
-    >
-      <div className="space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8f80bd]">
+    <div className="relative overflow-hidden rounded-xl bg-white transition-all shadow-lg ring-1 ring-[#ede7ff] border border-[#ddd5f6]">
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wider text-[#8b7fb6] mb-1.5">
               {label}
             </p>
-            <p className="mt-2 truncate text-3xl font-semibold text-[#24193f]">
+            <p className="text-2xl sm:text-3xl font-bold text-[#43366f] truncate">
               {total.toLocaleString()}
             </p>
-            <p className="mt-2 text-sm leading-5 text-[#766a99]">
-              Published and draft events by type.
-            </p>
           </div>
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-[#f4efff] text-[#6f57c8] ring-1 ring-[#e4dbf7]">
-            <CalendarCheck2 className="h-5 w-5" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-[#c9b9f9] to-[#9072e5] flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
+            🗂️
           </div>
         </div>
-        <div className="border-t border-[#eee8f8] pt-4">
+        <div className="mt-3 pt-3 border-t border-[#e7e1fb]">
           {categoryStats.length > 0 ? (
             <div className="space-y-2">
               {categoryStats.map((item) => (
                 <div key={item.key} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="truncate font-medium text-[#5b4d86]">{item.label}</span>
-                  <span className="whitespace-nowrap font-semibold text-[#24193f]">
+                  <span className="text-[#5b4d86] font-medium truncate">{item.label}</span>
+                  <span className="text-[#43366f] font-semibold whitespace-nowrap">
                     {item.count.toLocaleString()}
                   </span>
                 </div>
@@ -961,6 +830,7 @@ function CategoryBreakdownCard({
           )}
         </div>
       </div>
+      <div className="h-1 bg-gradient-to-r from-[#b8a8f0] to-[#7d65d2] opacity-80" />
     </div>
   );
 }
@@ -969,46 +839,34 @@ function ScanBreakdownCard({
   label,
   scanStats,
   total,
-  onClick,
-  isActive,
 }: {
   label: string;
   scanStats: Array<{ key: EventTypeKey; label: string; count: number }>;
   total: number;
-  onClick?: () => void;
-  isActive?: boolean;
 }) {
   return (
-    <div
-      className={`relative overflow-hidden rounded-[1.5rem] border bg-white/88 p-5 shadow-[0_18px_55px_rgba(76,57,140,0.1)] ring-1 ring-white/70 transition ${
-        isActive ? "border-[#7f67d3] shadow-[0_24px_70px_rgba(111,87,200,0.22)]" : "border-white/80"
-      } ${onClick ? "cursor-pointer hover:-translate-y-0.5" : ""}`}
-      onClick={onClick}
-    >
-      <div className="space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8f80bd]">
+    <div className="relative overflow-hidden rounded-xl bg-white transition-all shadow-lg ring-1 ring-[#ede7ff] border border-[#ddd5f6]">
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wider text-[#8b7fb6] mb-1.5">
               {label}
             </p>
-            <p className="mt-2 truncate text-3xl font-semibold text-[#24193f]">
+            <p className="text-2xl sm:text-3xl font-bold text-[#43366f] truncate">
               {total.toLocaleString()}
             </p>
-            <p className="mt-2 text-sm leading-5 text-[#766a99]">
-              Input volume from uploads and snaps.
-            </p>
           </div>
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-[#f4efff] text-[#6f57c8] ring-1 ring-[#e4dbf7]">
-            <Activity className="h-5 w-5" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-[#c9b9f9] to-[#9072e5] flex items-center justify-center text-lg sm:text-xl shadow-lg flex-shrink-0">
+            🌀
           </div>
         </div>
-        <div className="border-t border-[#eee8f8] pt-4">
+        <div className="mt-3 pt-3 border-t border-[#e7e1fb]">
           {scanStats.length > 0 ? (
             <div className="space-y-2">
               {scanStats.map((item) => (
                 <div key={item.key} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="truncate font-medium text-[#5b4d86]">{item.label}</span>
-                  <span className="whitespace-nowrap font-semibold text-[#24193f]">
+                  <span className="text-[#5b4d86] font-medium truncate">{item.label}</span>
+                  <span className="text-[#43366f] font-semibold whitespace-nowrap">
                     {item.count.toLocaleString()}
                   </span>
                 </div>
@@ -1021,6 +879,7 @@ function ScanBreakdownCard({
           )}
         </div>
       </div>
+      <div className="h-1 bg-gradient-to-r from-[#b8a8f0] to-[#7d65d2] opacity-80" />
     </div>
   );
 }
@@ -1098,9 +957,7 @@ function BreakdownPopup({
         ))
       ) : (
         <p className="text-xs text-[#9186bb]">
-          {normalizedCount > 0
-            ? `No categorized ${label.toLowerCase()} yet`
-            : `No ${label.toLowerCase()} yet`}
+          {normalizedCount > 0 ? `No categorized ${label.toLowerCase()} yet` : `No ${label.toLowerCase()} yet`}
         </p>
       )}
       {hasEventLinks && (
