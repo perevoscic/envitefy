@@ -113,6 +113,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         weatherContext,
       }),
     );
+    await timing.time("db_write", () =>
+      appendConversationMessage({
+        threadId: thread.id,
+        userId,
+        role: "user",
+        content: message,
+        metadata: { acceptedAt: new Date().toISOString() },
+      }),
+    );
     const applied = await timing.time("db_write", () =>
       applyEventActions({
         userId,
@@ -125,25 +134,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       applied.appliedActions[0]?.type === "ask_question"
         ? applied.appliedActions[0].question
         : plan.assistantMessage;
-    await timing.time("db_write", () =>
-      appendConversationMessage({
-        threadId: thread.id,
-        userId,
-        role: "user",
-        content: message,
-        metadata: { acceptedAt: new Date().toISOString() },
-      }),
-    );
-    await timing.time("db_write", () =>
-      appendConversationMessage({
-        threadId: thread.id,
-        userId,
-        role: "assistant",
-        content: assistantMessage,
-        metadata: { actions: applied.appliedActions },
-      }),
-    );
-    await timing.time("db_write", () => touchConversationThread(thread.id));
+    try {
+      await timing.time("db_write", () =>
+        appendConversationMessage({
+          threadId: thread.id,
+          userId,
+          role: "assistant",
+          content: assistantMessage,
+          metadata: { actions: applied.appliedActions },
+        }),
+      );
+      await timing.time("db_write", () => touchConversationThread(thread.id));
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[concierge] Event assistant response persistence failed after action apply", error);
+      }
+    }
 
     return timedJson(timing, {
       ok: true,

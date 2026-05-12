@@ -22,6 +22,12 @@ type ShowcaseCardItem = {
   preview: StudioShowcasePreview;
 };
 
+type LandingLiveCardShowcaseProps = {
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+};
+
 const revealIn = {
   initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
@@ -39,7 +45,11 @@ const showcaseCards: ShowcaseCardItem[] = landingShowcasePreviews.map((preview) 
   preview,
 }));
 
-export default function LandingLiveCardShowcase() {
+export default function LandingLiveCardShowcase({
+  eyebrow,
+  title = "Live Card Showcase",
+  description = "See how hosts use Envitefy Studio to create memorable event experiences.",
+}: LandingLiveCardShowcaseProps = {}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showcaseOverlayIndex, setShowcaseOverlayIndex] = useState<number | null>(null);
   const [fullscreenShowcaseIndex, setFullscreenShowcaseIndex] = useState<number | null>(null);
@@ -271,10 +281,7 @@ export default function LandingLiveCardShowcase() {
     }, 280);
   };
 
-  const handleShowcasePointerDown = (
-    index: number,
-    event: React.PointerEvent<HTMLDivElement>,
-  ) => {
+  const handleShowcasePointerDown = (index: number, event: React.PointerEvent<HTMLDivElement>) => {
     if (!event.isPrimary || event.pointerType === "mouse" || event.pointerType === "touch") return;
     showcaseSwipeStateRef.current = {
       pointerId: event.pointerId,
@@ -377,14 +384,19 @@ export default function LandingLiveCardShowcase() {
         <div className="mx-auto w-full max-w-7xl">
           <div className="flex flex-col gap-6">
             <div>
+              {eyebrow ? (
+                <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-[#3f7f72]">
+                  {eyebrow}
+                </p>
+              ) : null}
               <h2
                 className="text-5xl font-extrabold leading-[0.9] tracking-tight text-slate-900 sm:text-6xl lg:text-[5.25rem]"
                 style={{ fontFamily: '"Outfit", "Inter", ui-sans-serif, system-ui, sans-serif' }}
               >
-                Live Card Showcase
+                {title}
               </h2>
               <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base lg:text-lg">
-                See how hosts use Envitefy Studio to create memorable event experiences.
+                {description}
               </p>
             </div>
           </div>

@@ -237,6 +237,50 @@ test("persona strips markdown emphasis and star separators from confirmations", 
   assert.equal(result.assistantMessage, "Perfect - Honoree: Lara turning 7\n\nTime: 12:00 PM");
 });
 
+test("persona prompt and sanitizer keep streamed tone polished", async () => {
+  async function* streamChunks() {
+    yield {
+      choices: [
+        {
+          delta: {
+            content: "OMG bestie!!! **Honoree:** Lara turning 7 🎉",
+          },
+        },
+      ],
+    };
+  }
+
+  let requestPayload = null;
+  const result = await withEnv({ OPENAI_API_KEY: "test-key" }, () =>
+    streamConciergePersona(
+      {
+        message: "Lara turning 7",
+        chatMessages: [],
+        draft: BASE_DRAFT,
+        fallbackMessage: "When should this happen?",
+        onDelta: () => {},
+      },
+      {
+        createOpenAiClient: () => ({
+          chat: {
+            completions: {
+              create: async (request) => {
+                requestPayload = request;
+                return streamChunks();
+              },
+            },
+          },
+        }),
+      },
+    ),
+  );
+
+  assert.match(requestPayload?.messages?.[0]?.content || "", /Do not use slang, emojis/);
+  assert.doesNotMatch(result.assistantMessage, /\b(?:OMG|bestie)\b/i);
+  assert.doesNotMatch(result.assistantMessage, /🎉|!!/);
+  assert.equal(result.assistantMessage, "Honoree: Lara turning 7");
+});
+
 test("persona publicizes product labels instead of raw output keys", async () => {
   async function* streamChunks() {
     yield {

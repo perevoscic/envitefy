@@ -242,6 +242,30 @@ function isUnsafeGuestDataEventRequest(message: string): boolean {
   );
 }
 
+function isOffDomainEventAssistantRequest(message: string): boolean {
+  if (shouldResolveConciergeWeatherContext(message)) return false;
+  if (inferAssetTypeFromMessage(message)) return false;
+  if (/\b(?:rsvp|respond)\s+by\s+[^.,;]+/i.test(message)) return false;
+  if (
+    /\b(?:make|set|change|update|use|switch|go|more|less)\b[\s\S]{0,80}\b(?:elegant|luxury|fun|playful|kids|formal|casual|modern|rustic|floral|tone|style|theme)\b/i.test(
+      message,
+    )
+  ) {
+    return false;
+  }
+  const asksForGeneralHelp =
+    /^(?:can|could|would|will)\s+you\s+(?:help|fix|write|explain|tell|make|create)\b/i.test(
+      message,
+    ) ||
+    /^(?:tell|write|explain|show)\s+me\b/i.test(message) ||
+    /^(?:what|why|how)\b/i.test(message) ||
+    /\bhelp\s+me\b/i.test(message);
+  if (!asksForGeneralHelp && !/[?]$/.test(message.trim())) return false;
+  return /\b(?:jokes?|toasts?|speeches?|vows?|recipe|homework|essay|resume|tax(?:es)?|spreadsheet|printer|wifi|wi-fi|router|computer|laptop|phone|code|bug|debug|script|database)\b/i.test(
+    message,
+  );
+}
+
 function guardedEventAssistantPlan(message: string): EventActionPlan | null {
   if (isSecretLikeEventRequest(message)) {
     return {
@@ -271,6 +295,22 @@ function guardedEventAssistantPlan(message: string): EventActionPlan | null {
       assistantMessage:
         "I can't help scrape private RSVP data or bulk-change guest responses. I can help edit invitation copy, RSVP settings, or guest-facing details.",
       suggestedReplies: ["Edit RSVP settings", "Update invite copy", "Create a reminder"],
+    };
+  }
+  if (isOffDomainEventAssistantRequest(message)) {
+    const question =
+      "I can help edit this event, RSVP settings, guest-facing copy, assets, or weather planning. What should I change for this event?";
+    const suggestedReplies = ["Update invite copy", "Add RSVP details", "Create an event asset"];
+    return {
+      actions: [
+        {
+          type: "ask_question",
+          question,
+          suggestedReplies,
+        },
+      ],
+      assistantMessage: question,
+      suggestedReplies,
     };
   }
   return null;

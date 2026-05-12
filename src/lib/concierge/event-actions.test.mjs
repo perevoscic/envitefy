@@ -69,3 +69,20 @@ test("event assistant constrains persona and refuses unsafe event requests", () 
   assert.match(source, /Do not put API keys, passwords, or secrets in an invite/);
   assert.match(source, /I can't help scrape private RSVP data or bulk-change guest responses/);
 });
+
+test("event assistant bounds off-domain support without event mutations", () => {
+  const source = readSource("src/lib/concierge/event-actions.ts");
+  const guardBlock = source.match(/function isOffDomainEventAssistantRequest[\s\S]*?function guardedEventAssistantPlan/);
+  const offDomainPlanBlock = source.match(/if \(isOffDomainEventAssistantRequest\(message\)\) \{[\s\S]*?return null;/);
+
+  assert.match(source, /isOffDomainEventAssistantRequest/);
+  assert.match(source, /jokes\?\|toasts\?\|speeches\?/);
+  assert.match(source, /printer\|wifi\|wi-fi\|router/);
+  assert.match(source, /tax\(\?:es\)\?\|spreadsheet/);
+  assert.match(
+    source,
+    /I can help edit this event, RSVP settings, guest-facing copy, assets, or weather planning/,
+  );
+  assert.doesNotMatch(guardBlock?.[0] || "", /type: "update_event"/);
+  assert.doesNotMatch(offDomainPlanBlock?.[0] || "", /type: "update_event"|type: "create_asset"/);
+});

@@ -4,27 +4,27 @@ import { landingFaqItems } from "./faq-data";
 import LandingExperience from "./LandingExperience";
 
 export const metadata: Metadata = {
-  title: "Envitefy | Live Cards, Event Pages, Invitations & RSVP Links",
+  title: "Envitefy | AI Concierge for Invites, RSVP & Event Pages",
   description:
-    "Create live cards, invitation designs, hosted event pages, RSVP links, registry links, schedules, and gymnastics meet pages from a photo, PDF, flyer, or studio workflow.",
+    "Create a shareable event hub with invites, RSVP, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, flyer, invite, PDF, schedule, or design idea.",
   keywords: [
+    "AI event concierge",
     "live card invitations",
     "event page builder",
     "event RSVP page",
-    "invitation design tool",
     "hosted event hub",
     "registry links on invitation",
+    "smart sign-up forms",
     "wedding weekend page",
     "birthday RSVP invitation",
-    "gymnastics meet page",
     "pdf to event page",
     "flyer to event page",
   ],
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Envitefy | Live Cards, Event Pages, Invitations & RSVP Links",
+    title: "Envitefy | AI Concierge for Invites, RSVP & Event Pages",
     description:
-      "Create live cards, invitation designs, hosted event pages, RSVP links, registry links, schedules, and gymnastics meet pages from a photo, PDF, flyer, or studio workflow.",
+      "Create a shareable event hub with invites, RSVP, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, flyer, invite, PDF, schedule, or design idea.",
     url: "https://envitefy.com/",
     siteName: "Envitefy",
     images: [
@@ -39,15 +39,15 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Envitefy | Live Cards, Event Pages, Invitations & RSVP Links",
+    title: "Envitefy | AI Concierge for Invites, RSVP & Event Pages",
     description:
-      "Create live cards, invitation designs, hosted event pages, RSVP links, registry links, schedules, and gymnastics meet pages from a photo, PDF, flyer, or studio workflow.",
+      "Create a shareable event hub with invites, RSVP, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, flyer, invite, PDF, schedule, or design idea.",
     images: ["https://envitefy.com/og-default.jpg"],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1d1534",
+  themeColor: "#fbf6ff",
 };
 
 export default async function LandingPage() {
@@ -57,7 +57,7 @@ export default async function LandingPage() {
     name: "Envitefy",
     url: "https://envitefy.com/",
     description:
-      "Create live cards, invitation designs, hosted event pages, RSVP links, registry links, schedules, and gymnastics meet pages from a photo, PDF, flyer, or studio workflow.",
+      "Create a shareable event hub with invites, RSVP, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, flyer, invite, PDF, schedule, or design idea.",
   };
 
   const faqLd = {

@@ -103,6 +103,7 @@ export type LeftSidebarControllerViewModel = {
   otherCreateMenuItems: Array<{ label: string; href: string }>;
   isOtherEventsActive: boolean;
   isCreateEntryActive: boolean;
+  isAdmin: boolean;
   createdEventsCount: number;
   invitedEventsCount: number;
   myEventsGrouped: ReturnType<typeof buildGroupedEventLists>["myEvents"];
@@ -137,6 +138,7 @@ export type LeftSidebarControllerViewModel = {
   startNewAiChat: () => void;
   openMyEventsPage: () => void;
   openInvitedEventsPage: () => void;
+  openAdminPage: () => void;
   backToRoot: () => void;
   backToCreateEvent: () => void;
   backToCreateEventOther: () => void;
@@ -264,6 +266,7 @@ export function useLeftSidebarController({
   const ownerNavigationPendingRef = useRef(false);
   const invitedNavigationPendingRef = useRef(false);
   const prevSidebarPageRef = useRef<SidebarPage>("root");
+  const lastAdminRouteSyncPathRef = useRef<string | null>(null);
 
   const mirrorLocalCalendarDefault = useCallback((provider: CalendarProviderKey | null) => {
     if (typeof window === "undefined") return;
@@ -521,6 +524,18 @@ export function useLeftSidebarController({
   }, [eventContextSourcePage, pathname, selectedEventId]);
 
   useEffect(() => {
+    if (!pathname?.startsWith("/admin")) {
+      lastAdminRouteSyncPathRef.current = null;
+      return;
+    }
+    if (lastAdminRouteSyncPathRef.current === pathname) return;
+
+    lastAdminRouteSyncPathRef.current = pathname;
+    clearEventContext();
+    setSidebarPage("admin");
+  }, [clearEventContext, pathname]);
+
+  useEffect(() => {
     const prevPage = prevSidebarPageRef.current;
     if (sidebarPage === "invitedEvents" && prevPage !== "invitedEvents") {
       setShowPastInvitedEvents(false);
@@ -563,23 +578,13 @@ export function useLeftSidebarController({
           colorClass: "text-purple-500",
           bgClass: "bg-purple-50",
         },
-        ...(isAdmin
-          ? [
-              {
-                href: "/admin",
-                label: "Admin",
-                colorClass: "text-slate-500",
-                bgClass: "bg-slate-50",
-              },
-            ]
-          : []),
       ] as Array<{
         href: string;
         label: string;
         colorClass: string;
         bgClass: string;
       }>,
-    [isAdmin],
+    [],
   );
 
   useEffect(() => {
@@ -948,6 +953,11 @@ export function useLeftSidebarController({
     () => openCompactEventsPage("invitedEvents"),
     [openCompactEventsPage],
   );
+  const openAdminPage = useCallback(() => {
+    clearEventContext();
+    setIsCollapsed(false);
+    setSidebarPage("admin");
+  }, [clearEventContext, setIsCollapsed]);
 
   const isCompactNavActive = useCallback(
     (id: CompactNavItemId) => {
@@ -1489,6 +1499,7 @@ export function useLeftSidebarController({
     otherCreateMenuItems,
     isOtherEventsActive,
     isCreateEntryActive,
+    isAdmin,
     createdEventsCount,
     invitedEventsCount,
     myEventsGrouped,
@@ -1518,6 +1529,7 @@ export function useLeftSidebarController({
     startNewAiChat,
     openMyEventsPage,
     openInvitedEventsPage,
+    openAdminPage,
     backToRoot: () => setSidebarPage("root"),
     backToCreateEvent: () => {
       setForcedCreateActiveLabel(null);

@@ -23,15 +23,33 @@ test("event assistant route is event-scoped and owner-enforced", () => {
 test("event assistant persists private thread history and applies server actions", () => {
   const source = readSource("src/app/api/concierge/events/[id]/message/route.ts");
   const applyIndex = source.indexOf("applyEventActions({");
-  const userAppendIndex = source.indexOf('role: "user"', applyIndex);
+  const userAppendIndex = source.indexOf('role: "user"');
+  const assistantAppendIndex = source.indexOf('role: "assistant"');
 
   assert.match(source, /getOrCreateEventThread/);
   assert.match(source, /appendConversationMessage/);
   assert.match(source, /buildEventActionPlan/);
   assert.match(source, /applyEventActions/);
   assert.ok(applyIndex > 0);
-  assert.ok(userAppendIndex > applyIndex);
+  assert.ok(userAppendIndex > 0);
+  assert.ok(userAppendIndex < applyIndex);
+  assert.ok(assistantAppendIndex > applyIndex);
   assert.match(source, /acceptedAt: new Date\(\)\.toISOString\(\)/);
+});
+
+test("event assistant returns successful mutations even if assistant persistence fails", () => {
+  const source = readSource("src/app/api/concierge/events/[id]/message/route.ts");
+  const applyIndex = source.indexOf("applyEventActions({");
+  const persistenceCatchIndex = source.indexOf(
+    "Event assistant response persistence failed after action apply",
+  );
+  const successIndex = source.indexOf("ok: true");
+
+  assert.ok(applyIndex > 0);
+  assert.ok(persistenceCatchIndex > applyIndex);
+  assert.ok(successIndex > persistenceCatchIndex);
+  assert.match(source, /try \{[\s\S]*role: "assistant"[\s\S]*touchConversationThread/);
+  assert.match(source, /console\.warn\("\[concierge\] Event assistant response persistence failed after action apply"/);
 });
 
 test("event assistant route emits optional timings and Server-Timing headers", () => {

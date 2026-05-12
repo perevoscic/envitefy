@@ -1376,6 +1376,38 @@ test("conversation repair messages preserve draft details and bypass extraction"
   assert.match(result.assistantMessage, /RSVP enabled with a guest count of 10/i);
 });
 
+test("standalone frustrated detail replies acknowledge missing session context", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "You already asked me that. It is at 5 PM at the library.",
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.equal(draft.sourceContext.boundary, "envitefy_question");
+  assert.equal(draft.canPersist, false);
+  assert.deepEqual(draft.requestedOutputs, []);
+  assert.deepEqual(draft.missingFields, []);
+  assert.match(message, /do not have the earlier draft loaded/i);
+  assert.match(message, /5:00 PM/i);
+  assert.match(message, /library/i);
+  assert.match(message, /What event should I attach that to/i);
+});
+
+test("frustrated detail replies can still fill the active draft slot", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "Create a birthday live card for Ava turning 7 on June 20 2026.",
+  });
+  const reply = fallbackExtractConciergeDraft({
+    message: "You already asked me that. It is at 5 PM at the library.",
+    draft: first,
+  });
+
+  assert.equal(first.currentQuestion, "location");
+  assert.equal(reply.timeText, "5:00 PM");
+  assert.equal(reply.location, "the library");
+  assert.equal(reply.venue, "the library");
+  assert.doesNotMatch(buildAssistantMessage(reply), /do not have the earlier draft loaded/i);
+});
+
 test("unclear replies rephrase the missing detail instead of repeating the same question", () => {
   const dateDraft = fallbackExtractConciergeDraft({
     message: "Birthday Live Card for Lara, 7",
@@ -1499,6 +1531,31 @@ test("unsafe and unrelated standalone prompts do not become event drafts", () =>
       boundary: "ambiguous_edit",
       reply: /Which invite should I update/i,
     },
+    {
+      message: "Tell me a birthday joke.",
+      boundary: "off_domain",
+      reply: /Envitefy event products/i,
+    },
+    {
+      message: "Write a wedding toast for my sister.",
+      boundary: "off_domain",
+      reply: /Envitefy event products/i,
+    },
+    {
+      message: "Can you help fix my printer for my wedding?",
+      boundary: "off_domain",
+      reply: /Envitefy event products/i,
+    },
+    {
+      message: "Tell me a recipe for a birthday cake.",
+      boundary: "off_domain",
+      reply: /Envitefy event products/i,
+    },
+    {
+      message: "Write a tax spreadsheet for my event business.",
+      boundary: "off_domain",
+      reply: /Envitefy event products/i,
+    },
   ] as const;
 
   for (const { message, boundary, reply } of cases) {
@@ -1514,6 +1571,20 @@ test("unsafe and unrelated standalone prompts do not become event drafts", () =>
     assert.match(assistant, reply, message);
     assert.doesNotMatch(assistant, /When should this happen/i, message);
   }
+});
+
+test("event-adjacent content words still allow explicit Envitefy product creation", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create a birthday joke-themed invite for Ava turning 7 on June 20 2026 at 3 PM at Sky Zone. Fun and colorful. No RSVP.",
+  });
+
+  assert.notEqual(draft.sourceContext.boundary, "off_domain");
+  assert.equal(draft.eventType, "birthday");
+  assert.deepEqual(draft.requestedOutputs, ["digital_flyer"]);
+  assert.equal(draft.honoreeName, "Ava");
+  assert.equal(draft.rsvpEnabled, false);
+  assert.equal(canSaveConciergeDraft(draft), true);
 });
 
 test("unsafe boundaries bypass OpenAI extraction", async () => {

@@ -279,6 +279,25 @@ function hasReceivedInviteLanguage(text: string): boolean {
   );
 }
 
+function asksForEnvitefyProductOrEdit(text: string): boolean {
+  if (hasReceivedInviteLanguage(text)) return true;
+  if (
+    asksForCoreProductBundle(text) ||
+    asksForFlyerProduct(text) ||
+    asksForInvitationProduct(text) ||
+    asksForRsvpProduct(text) ||
+    asksForRsvpFeature(text)
+  ) {
+    return true;
+  }
+  return (
+    hasCreateVerb(text) &&
+    /\b(?:envitefy|invite|invitation|flyer|live\s*card|event\s+page|rsvp\s+page|smart\s+sign[-\s]?up|signup|sign[-\s]?up|printable\s+flyer|instagram\s+story|whats\s?app|sms|text message|reminder|thank\s*you|menu|welcome sign)\b/i.test(
+      text,
+    )
+  );
+}
+
 export function isGreetingMessage(text: string): boolean {
   return /^(hi|hello|hey|yo|sup|howdy|good morning|good afternoon|good evening)[!.\s]*$/i.test(
     text.trim(),
@@ -740,6 +759,15 @@ export function isAmbiguousEditRequest(
 export function isOffDomainRequest(text: string) {
   const cleaned = cleanCreationString(text);
   if (!cleaned) return false;
+  const eventAdjacent =
+    /\b(birthday|bday|wedding|bridal|bride|groom|shower|graduation|party|event|invite|invitation|rsvp|guest|ceremony|reception|housewarming|open\s+house)\b/i.test(
+      cleaned,
+    );
+  const offTopicRequest =
+    /\b(jokes?|toasts?|speeches?|vows?|recipe|cake recipe|homework|essay|resume|tax(?:es)?|spreadsheet|printer|wifi|wi-fi|router|computer|laptop|phone|code|bug|debug|script|database)\b/i.test(
+      cleaned,
+    );
+  if (eventAdjacent && offTopicRequest && !asksForEnvitefyProductOrEdit(cleaned)) return true;
   if (
     /\b(envitefy|event|invite|invitation|rsvp|guest|guests|calendar|upload|snap|ocr|flyer|live\s*card|event\s+page|sign[-\s]?up|signup|registry|gift\s*list|wishlist|birthday|wedding|shower|party|graduation|open\s+house|housewarming|game\s+day|football|gym\s+meet|gymnastics|workshop|appointment)\b/i.test(
       cleaned,

@@ -94,7 +94,8 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                 />
               </Link>
               <p className="mt-4 max-w-sm text-sm leading-7 text-[#8b7568]">
-                Turn schedules, PDFs, invites, and flyers into cleaner shareable event pages.
+                Create invites, RSVP pages, event hubs, registry links, and sign-ups from a message,
+                upload, flyer, PDF, or schedule.
               </p>
             </div>
 
@@ -104,16 +105,16 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                   Product
                 </h4>
                 <div className="mt-4 space-y-3 text-sm text-[#8b7568]">
-                  <Link href="/studio" className="block hover:text-[#2b1b16]">
-                    Studio
+                  <Link href="/landing#concierge" className="block hover:text-[#2b1b16]">
+                    AI Concierge
                   </Link>
-                  <Link href="/gymnastics" className="block hover:text-[#2b1b16]">
-                    Gymnastics
+                  <Link href="/landing#showcase" className="block hover:text-[#2b1b16]">
+                    Live cards
                   </Link>
-                  <Link href="/snap" className="block hover:text-[#2b1b16]">
-                    Snap
+                  <Link href="/landing#guest-experience" className="block hover:text-[#2b1b16]">
+                    RSVP pages
                   </Link>
-                  <Link href="/how-it-works" className="block hover:text-[#2b1b16]">
+                  <Link href="/landing#workflow" className="block hover:text-[#2b1b16]">
                     How it works
                   </Link>
                 </div>
@@ -130,8 +131,8 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                   <Link href="/guides/pdf-to-event-page" className="block hover:text-[#2b1b16]">
                     PDF to event page
                   </Link>
-                  <Link href="/guides/gymnastics-meet-page" className="block hover:text-[#2b1b16]">
-                    Gymnastics meet page
+                  <Link href="/landing#platform" className="block hover:text-[#2b1b16]">
+                    Event examples
                   </Link>
                 </div>
               </div>
@@ -175,14 +176,17 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
             <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-6 text-sm text-[#9a867a] sm:px-8 lg:px-10">
               <p>© {new Date().getFullYear()} Envitefy</p>
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                <Link href="/studio" className="hover:text-[#2b1b16]">
-                  Studio
+                <Link href="/landing#platform" className="hover:text-[#2b1b16]">
+                  Invites
                 </Link>
-                <Link href="/gymnastics" className="hover:text-[#2b1b16]">
-                  Start with Gymnastics
+                <Link href="/landing#guest-experience" className="hover:text-[#2b1b16]">
+                  RSVP
                 </Link>
-                <Link href="/snap" className="hover:text-[#2b1b16]">
-                  Explore Snap
+                <Link href="/landing#concierge" className="hover:text-[#2b1b16]">
+                  Event Pages
+                </Link>
+                <Link href="/landing#workflow" className="hover:text-[#2b1b16]">
+                  Sign-ups
                 </Link>
               </div>
             </div>
@@ -197,8 +201,8 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
       <div className="mx-auto max-w-7xl px-3 py-6 text-[10px] text-foreground/80 sm:text-xs md:text-sm">
         <div className="w-full">
           <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:whitespace-nowrap">
-            <Link href="/studio" className="hover:text-foreground">
-              Studio
+            <Link href="/" className="hover:text-foreground">
+              Envitefy
             </Link>
             <span className="hidden opacity-40 sm:inline">•</span>
             <Link href="/how-it-works" className="hover:text-foreground">

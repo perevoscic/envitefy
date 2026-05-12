@@ -7,6 +7,7 @@ export type SidebarPage =
   | "aiThreads"
   | "myEvents"
   | "invitedEvents"
+  | "admin"
   | "eventContext";
 
 export type EventSidebarMode = "owner" | "guest";

@@ -1,383 +1,374 @@
 "use client";
 
-import { motion, type Transition, useReducedMotion, type Variants } from "framer-motion";
+import Image from "next/image";
+import Link from "next/link";
+import { type ReactNode, useState } from "react";
 import {
   ArrowRight,
-  Calendar,
-  Camera,
-  CheckCircle2,
-  ChevronRight,
-  FileText,
-  Hotel,
-  Image as ImageIcon,
-  Layout,
-  type LucideIcon,
+  Baby,
+  Bell,
+  CalendarCheck2,
+  CakeSlice,
+  ClipboardList,
+  FileUp,
+  Gift,
+  Heart,
+  HelpCircle,
   MapPin,
-  MessageSquare,
-  Share2,
-  Users,
-  WandSparkles,
-  Zap,
+  MessageCircle,
+  School,
+  Send,
+  TicketCheck,
+  Upload,
 } from "lucide-react";
-import Link from "next/link";
-import { type ReactNode, useEffect, useState } from "react";
+import conciergeLogo from "@/assets/envitefy-concierge-logo.png";
 import AuthModal from "@/components/auth/AuthModal";
 import LandingLiveCardShowcase from "@/components/landing/LandingLiveCardShowcase";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
-import { buildMarketingHeroNav } from "@/components/navigation/marketing-hero-nav";
-import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
-import styles from "./LandingExperience.module.css";
 import LandingFaq from "./sections/LandingFaq";
 
 const landingSectionSpacingClass = "px-4 py-6 sm:px-6 lg:px-8";
 
-const sectionReveal: Variants = {
-  hidden: { opacity: 0, y: 28 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
-  },
-};
+const landingHeroNavLinks = [
+  { label: "Concierge", href: "#concierge" },
+  { label: "Gallery", href: "#showcase" },
+  { label: "Examples", href: "#examples" },
+  { label: "Workflow", href: "#workflow" },
+  { label: "FAQ", href: "#faq" },
+] as const;
 
-const scrollReveal: Variants = {
-  hidden: { opacity: 0, y: 18 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] },
+const intentTiles = [
+  {
+    title: "Birthday party",
+    description: "Invite, RSVP, directions, gifts",
+    icon: CakeSlice,
+    href: "/chat",
+    tone: "blush",
   },
-};
+  {
+    title: "Wedding",
+    description: "Schedule, registry, hotels, RSVP",
+    icon: Heart,
+    href: "/chat",
+    tone: "lavender",
+  },
+  {
+    title: "Baby shower",
+    description: "Registry, food slots, guest notes",
+    icon: Baby,
+    href: "/chat",
+    tone: "blush",
+  },
+  {
+    title: "Team or school",
+    description: "Schedules, sign-ups, parent details",
+    icon: School,
+    href: "/chat",
+    tone: "sage",
+  },
+  {
+    title: "Upload flyer/PDF",
+    description: "Convert what you already have",
+    icon: FileUp,
+    href: "/?action=upload",
+    tone: "lavender",
+  },
+  {
+    title: "Something else",
+    description: "Start open-ended with Concierge",
+    icon: HelpCircle,
+    href: "/chat",
+    tone: "lavender",
+  },
+] as const;
 
-const scrollRevealViewport = {
-  once: true,
-  amount: 0.08,
-  margin: "0px 0px -8% 0px",
+const guestActions = [
+  { label: "RSVP", icon: TicketCheck, tone: "lavender" },
+  { label: "Save date", icon: CalendarCheck2, tone: "blush" },
+  { label: "Open map", icon: MapPin, tone: "sage" },
+  { label: "Registry", icon: Gift, tone: "lavender" },
+  { label: "Sign-up slots", icon: ClipboardList, tone: "blush" },
+  { label: "Updates", icon: Bell, tone: "sage" },
+  { label: "Share", icon: Send, tone: "lavender" },
+  { label: "Message host", icon: MessageCircle, tone: "blush" },
+] as const;
+
+const examples = [
+  {
+    title: "Birthday parties",
+    image: "/images/marketing/use-case-birthday.webp",
+    note: "Invite, RSVP, directions, gifts",
+  },
+  {
+    title: "Wedding weekends",
+    image: "/images/marketing/use-case-wedding.webp",
+    note: "Schedule, registry, hotel notes",
+  },
+  {
+    title: "Baby showers",
+    image: "/images/marketing/use-case-baby.webp",
+    note: "Guest list, gift links, reminders",
+  },
+  {
+    title: "School events",
+    image: "/images/marketing/use-case-school.webp",
+    note: "Parent info, sign-ups, field trips",
+  },
+  {
+    title: "Team weekends",
+    image: "/images/marketing/use-case-gymnastics.webp",
+    note: "Schedules, venues, live updates",
+  },
+  {
+    title: "Open houses",
+    image: "/images/marketing/use-case-team.webp",
+    note: "Client events and professional gatherings",
+  },
+] as const;
+
+const workflow = [
+  {
+    title: "Tell or upload",
+    description: "Describe the event, paste details, or upload a flyer, invite, PDF, or schedule.",
+  },
+  {
+    title: "Review the draft",
+    description:
+      "Confirm the date, location, RSVP needs, registry links, sign-up slots, and visuals.",
+  },
+  {
+    title: "Share the live link",
+    description:
+      "Publish a mobile event page that guests can use before, during, and after the event.",
+  },
+] as const;
+
+const phonePreviews = {
+  eventHub: {
+    tone: "lavender",
+    userMessage: "Make a garden brunch invite with RSVP, a map, and a registry link.",
+    attachment: "/images/marketing/landing-hero-live-card.webp",
+    attachmentAlt: "Garden brunch live card preview",
+    attachmentLabel: "Invite uploaded",
+    assistantMessage:
+      "I drafted the invite, event page, RSVP flow, map section, registry links, and update notes.",
+    draftTitle: "Garden brunch",
+    chips: ["RSVP", "Map", "Registry", "Updates"],
+    inputPlaceholder: "Message Concierge",
+  },
+  signup: {
+    tone: "lavender",
+    userMessage: "Turn this school carnival flyer into a page with volunteer slots and updates.",
+    attachment: "/images/marketing/use-case-school.webp",
+    attachmentAlt: "School event flyer preview",
+    attachmentLabel: "Flyer uploaded",
+    assistantMessage:
+      "I found the schedule, location, parent sign-up needs, reminder notes, and share page.",
+    draftTitle: "Spring carnival",
+    chips: ["Volunteer slots", "Schedule", "Map", "Reminders"],
+    inputPlaceholder: "Ask about sign-ups",
+  },
 } as const;
 
-const floatTransition: Transition = {
-  duration: 5,
-  repeat: Number.POSITIVE_INFINITY,
-  ease: "easeInOut",
-};
+const intentTileToneClasses = {
+  sage: {
+    card: "hover:border-[#8ab8aa] hover:shadow-[0_20px_42px_rgba(39,104,92,0.13),inset_0_1px_0_rgba(255,255,255,0.92)]",
+    icon: "border-[#d7e7df] bg-[#e8f4ef] text-[#27685c] group-hover:border-[#241c2b] group-hover:bg-[#241c2b] group-hover:text-white",
+  },
+  lavender: {
+    card: "hover:border-[#cdbdeb] hover:shadow-[0_20px_42px_rgba(116,87,166,0.16),inset_0_1px_0_rgba(255,255,255,0.92)]",
+    icon: "border-[#d8ccef] bg-[#f1ecfb] text-[#7457a6] group-hover:border-[#7457a6] group-hover:bg-[#7457a6] group-hover:text-white",
+  },
+  blush: {
+    card: "hover:border-[#f0c8dc] hover:shadow-[0_20px_42px_rgba(186,89,133,0.14),inset_0_1px_0_rgba(255,255,255,0.92)]",
+    icon: "border-[#f0d4e3] bg-[#fff1f7] text-[#a84f79] group-hover:border-[#a84f79] group-hover:bg-[#a84f79] group-hover:text-white",
+  },
+} as const;
 
-// Preserve these references for the existing landing source guards.
-void [
-  styles.gymnasticsSportsPdfCard,
-  styles.gymnasticsSportsScanBeam,
-  styles.gymnasticsSportsConnector,
-  styles.gymnasticsSportsPhoneShell,
-];
-
-const comparisonCards = [
-  {
-    eyebrow: "The Artistic Keepsake",
-    title: "Signature Invitation Design",
-    description:
-      "Create polished invitation artwork for print, text threads, and keepsake sharing from the same production workflow.",
-    image: "/images/studio/invite-wedding-weekend.webp",
-    imageAlt: "Wedding invitation design preview",
-    tags: ["Print-Ready Layouts", "Premium Art Direction"],
-    surfaceClassName: "bg-[#f3e3d6] text-[#4d352c]",
-    titleClassName: "",
-    bodyClassName: "text-[#6c5448]",
-    accentClassName: "bg-white text-[#4d352c]",
-    imageFrameClassName:
-      "aspect-[10/16] max-w-[320px] rotate-[-2deg] rounded-[2.1rem] border-[10px] border-white bg-white shadow-[0_30px_70px_rgba(43,27,22,0.16)]",
-    imageClassName: "object-cover object-center",
-  },
-  {
-    eyebrow: "The Interactive Hub",
-    title: "Live Card Event Hub",
-    description:
-      "Publish a mobile-ready live card and hosted page with RSVP, calendar saves, maps, registry links, and guest actions in one destination.",
-    image: "/images/landing/interactive-hub-phone-cutout.webp",
-    imageAlt: "Hosted event hub preview on a mobile phone",
-    tags: ["RSVP, Calendar & Maps", "Registry, Details & Share"],
-    surfaceClassName: "bg-[#1f1838] text-white",
-    titleClassName: "!text-white",
-    bodyClassName: "text-white/72",
-    accentClassName: "bg-[#c98f6b] text-white",
-    imageFrameClassName: "aspect-[10/16] max-w-[320px] rounded-[2.1rem] bg-transparent",
-    imageClassName: "object-contain object-center scale-[0.9]",
-  },
-] as const;
-
-const studioFeatures = [
-  {
-    icon: Layout,
-    title: "Structured Layouts",
-    desc: "Start from polished invitation and event-page formats instead of rebuilding the presentation layer for every event.",
-  },
-  {
-    icon: Share2,
-    title: "Live Card Actions",
-    desc: "Offer RSVP, directions, calendar saves, registry links, details, and sharing from the same guest-facing card.",
-  },
-  {
-    icon: Calendar,
-    title: "Schedules & Update Layers",
-    desc: "Keep timelines, hotel notes, venue instructions, and last-minute changes attached to the hosted page guests already have open.",
-  },
-  {
-    icon: Zap,
-    title: "Faster Publishing",
-    desc: "Move from approved layout to a live, mobile-ready guest experience without reformatting or duplicate entry.",
-  },
-] as const;
-
-const snapCards = [
-  {
-    icon: ImageIcon,
-    title: "Flyers & Social Captures",
-    desc: "Convert screenshots, promos, and image-based invites into a structured event draft in seconds.",
-  },
-  {
-    icon: FileText,
-    title: "PDF Schedules",
-    desc: "Extract timing, venue notes, lodging details, and logistics from long-form event documents.",
-  },
-  {
-    icon: Calendar,
-    title: "Invites, Programs & Rundowns",
-    desc: "Handle birthday invites, wedding inserts, school calendars, and multi-session event schedules in the same intake flow.",
-  },
-] as const;
-
-const gymnasticsFeatures = [
-  {
-    icon: WandSparkles,
-    title: "Live Results",
-    desc: "Point families to live score destinations without burying the link in a team thread.",
-  },
-  {
-    icon: MapPin,
-    title: "Venue & Parking",
-    desc: "Keep entrance notes, parking guidance, and venue context on one page.",
-  },
-  {
-    icon: Hotel,
-    title: "Hotel Blocks",
-    desc: "Attach booking links, codes, and hotel notes where everyone can actually find them.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Coach Notes",
-    desc: "Publish quick reminders for warmups, arrival windows, attire, and meet-day changes.",
-  },
-  {
-    icon: Zap,
-    title: "Live Updates",
-    desc: "Shift times, awards, or locations once and let the hosted page carry the latest version.",
-  },
-  {
-    icon: Users,
-    title: "Team Tracking",
-    desc: "Use the same event hub to coordinate families, volunteers, and attendance questions.",
-  },
-] as const;
-
-const useCases = [
-  {
-    title: "Gymnastics Meet",
-    image: "/images/marketing/use-case-gymnastics.webp",
-    large: true,
-  },
-  {
-    title: "Birthday Party",
-    image: "/images/marketing/use-case-birthday.webp",
-    large: false,
-  },
-  {
-    title: "Wedding Weekend",
-    image: "/images/marketing/use-case-wedding.webp",
-    large: false,
-  },
-  {
-    title: "School Event",
-    image: "/images/marketing/use-case-school.webp",
-    large: false,
-  },
-  {
-    title: "Community Meetup",
-    image: "/images/marketing/use-case-community.webp",
-    large: true,
-  },
-  {
-    title: "Sports Schedule",
-    image: "/images/marketing/use-case-sports.webp",
-    large: false,
-  },
-] as const;
-
-const hostInitials = ["AL", "MJ", "SK", "TR"] as const;
-
-const howItWorksPaths = [
-  {
-    tone: "light" as const,
-    icon: Layout,
-    title: "Create in Studio",
-    steps: [
-      {
-        title: "Design",
-        desc: "Start with a polished live card or adapt a layout to the event you are hosting.",
-      },
-      {
-        title: "Enhance",
-        desc: "Add your content, structure, action buttons, and the details guests actually need.",
-      },
-      {
-        title: "Publish",
-        desc: "Share one hosted link instead of a stack of screenshots and follow-up texts.",
-      },
-    ],
-  },
-  {
-    tone: "dark" as const,
-    icon: Camera,
-    title: "Snap & Upload",
-    steps: [
-      {
-        title: "Upload",
-        desc: "Take a photo, upload a screenshot, or drop in a meet PDF from the files you already have.",
-      },
-      {
-        title: "Extract",
-        desc: "Envitefy pulls dates, times, locations, and structured event details into a usable draft.",
-      },
-      {
-        title: "Go Live",
-        desc: "Publish the draft into a shareable event page with RSVP, maps, and updates built in.",
-      },
-    ],
-  },
-] as const;
-
-const rsvpHighlights = [
-  "One-tap response from any mobile device",
-  "Calendar save built into the same guest flow",
-  "Venue details and directions on the same event page",
-] as const;
-
-const landingHeroNavLinks = buildMarketingHeroNav("landing", [
-  { label: "Features", href: "#what-you-can-snap" },
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Why it works", href: "#use-cases" },
-  { label: "RSVP", href: "#rsvp-calendar" },
-  { label: "FAQ", href: "#faq" },
-]);
+const guestActionToneClasses = {
+  sage: "bg-[#e8f4ef] text-[#27685c]",
+  lavender: "bg-[#f1ecfb] text-[#7457a6]",
+  blush: "bg-[#fff1f7] text-[#a84f79]",
+} as const;
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
-function SectionIntro({
+function SectionHeader({
   eyebrow,
   title,
   description,
-  align = "left",
-  className,
+  center = false,
 }: {
   eyebrow: string;
-  title: ReactNode;
+  title: string;
   description: string;
-  align?: "left" | "center";
-  className?: string;
+  center?: boolean;
 }) {
   return (
-    <div className={cx("max-w-3xl", align === "center" && "mx-auto text-center", className)}>
-      <div className={styles.eyebrow}>{eyebrow}</div>
-      <h2
-        className={cx(
-          styles.headline,
-          "mt-6 text-4xl font-extrabold tracking-tight text-[#2b1b16] sm:text-5xl lg:text-6xl",
-        )}
-      >
+    <div className={cx("max-w-2xl", center && "mx-auto text-center")}>
+      <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#7457a6]">{eyebrow}</p>
+      <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-[#241c2b] sm:text-4xl">
         {title}
       </h2>
-      <p className="mt-6 text-lg leading-8 text-[#6a5549] sm:text-xl">{description}</p>
+      <p className="mt-4 text-base leading-7 text-[#62586a]">{description}</p>
     </div>
   );
 }
 
-function LinkOrButton({
-  href,
-  onClick,
-  className,
-  children,
-}: {
-  href?: string;
-  onClick?: () => void;
-  className: string;
-  children: ReactNode;
-}) {
-  if (href) {
-    if (href.startsWith("#")) {
-      return (
-        <a href={href} className={className}>
-          {children}
-        </a>
-      );
-    }
-
-    return (
-      <Link href={href} className={className}>
-        {children}
-      </Link>
-    );
-  }
-
+function PrimaryButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className={className}>
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#7457a6] px-5 text-sm font-semibold text-white shadow-[0_16px_32px_rgba(116,87,166,0.24)] transition hover:-translate-y-0.5 hover:bg-[#654796]"
+    >
       {children}
     </button>
   );
 }
 
-function PrimaryAction({
-  href,
-  onClick,
-  label,
-  light = false,
-  icon = ArrowRight,
-  className,
-}: {
-  href?: string;
-  onClick?: () => void;
-  label: string;
-  light?: boolean;
-  icon?: LucideIcon;
-  className?: string;
-}) {
+function SecondaryLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <LinkOrButton
+    <Link
       href={href}
-      onClick={onClick}
-      className={cx(
-        styles.btnRolling,
-        "cta-shell inline-flex h-14 items-center justify-center rounded-2xl px-8 text-base font-bold transition-transform hover:scale-[1.02] sm:h-16 sm:px-10 sm:text-lg",
-        light
-          ? "border border-white/12 bg-white/[0.08] text-white shadow-[0_20px_45px_rgba(14,7,26,0.18)] hover:bg-white/[0.12]"
-          : "bg-[#c98f6b] text-white shadow-[0_24px_60px_rgba(201,143,107,0.35)] hover:bg-[#bc825f]",
-        className,
-      )}
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#eadcf5] bg-white px-5 text-sm font-semibold text-[#241c2b] transition hover:-translate-y-0.5 hover:border-[#cdbdeb] hover:bg-[#fffafd]"
     >
-      <AnimatedButtonLabel label={label} icon={icon} iconClassName="h-5 w-5" className="gap-3" />
-    </LinkOrButton>
+      {children}
+    </Link>
   );
 }
 
-function PhoneShell({ children, className }: { children: ReactNode; className?: string }) {
+function PhoneConciergePreview({ variant = "eventHub" }: { variant?: keyof typeof phonePreviews }) {
+  const preview = phonePreviews[variant];
+  const isLavender = preview.tone === "lavender";
+
   return (
-    <div
-      className={cx(
-        "relative isolate overflow-hidden rounded-[3.5rem] border-[4px] border-[#18181b] bg-black p-1 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)]",
-        className,
-      )}
-    >
-      <div className="absolute left-1/2 top-3 z-30 h-5 w-20 -translate-x-1/2 rounded-full bg-black" />
-      <div className="h-full overflow-hidden rounded-[3.2rem] bg-white">{children}</div>
-      <div className="pointer-events-none absolute bottom-3 left-1/2 z-30 h-1.5 w-24 -translate-x-1/2 rounded-full bg-black/85" />
+    <div className="mx-auto w-full max-w-[330px]">
+      <div className="relative aspect-[9/19.5] overflow-hidden rounded-[2.4rem] border-[7px] border-[#151918] bg-[#151918] shadow-[0_26px_70px_rgba(23,33,31,0.22)]">
+        <div className="absolute left-1/2 top-2 z-20 h-5 w-24 -translate-x-1/2 rounded-full bg-[#151918]" />
+        <div className="flex h-full flex-col overflow-hidden rounded-[1.95rem] bg-[#fbf8ff]">
+          <div className="border-b border-[#eadcf5] bg-[#fffafd] px-4 pb-3 pt-8">
+            <div className="flex items-center gap-3">
+              <Image
+                src={conciergeLogo}
+                alt=""
+                width={34}
+                height={34}
+                className="h-8 w-8 object-contain"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-[#241c2b]">Envitefy Concierge</p>
+                <p className={cx("text-xs", isLavender ? "text-[#7457a6]" : "text-[#3f7f72]")}>
+                  Active now
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-3 overflow-hidden px-3 py-4">
+            <div className="flex items-end gap-2">
+              <Image
+                src={conciergeLogo}
+                alt=""
+                width={26}
+                height={26}
+                className="h-6 w-6 shrink-0 object-contain"
+              />
+              <div className="max-w-[78%] rounded-[1.1rem] rounded-bl-sm bg-white px-3.5 py-2.5 text-[13px] leading-5 text-[#2f2535] shadow-sm">
+                Tell me what you are hosting, or send the invite you already have.
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <div
+                className={cx(
+                  "max-w-[80%] rounded-[1.1rem] rounded-br-sm px-3.5 py-2.5 text-[13px] leading-5 text-white shadow-sm",
+                  isLavender ? "bg-[#7457a6]" : "bg-[#27685c]",
+                )}
+              >
+                {preview.userMessage}
+              </div>
+            </div>
+
+            <div className="ml-auto max-w-[76%] overflow-hidden rounded-[1rem] border border-[#eadcf5] bg-white shadow-sm">
+              <img
+                src={preview.attachment}
+                alt={preview.attachmentAlt}
+                className="h-28 w-full object-cover"
+              />
+              <div className="px-3 py-2 text-[12px] font-medium text-[#62586a]">
+                {preview.attachmentLabel}
+              </div>
+            </div>
+
+            <div className="flex items-end gap-2">
+              <Image
+                src={conciergeLogo}
+                alt=""
+                width={26}
+                height={26}
+                className="h-6 w-6 shrink-0 object-contain"
+              />
+              <div className="max-w-[82%] rounded-[1.1rem] rounded-bl-sm bg-white px-3.5 py-2.5 text-[13px] leading-5 text-[#2f2535] shadow-sm">
+                {preview.assistantMessage}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[#eadcf5] bg-white p-3 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p
+                    className={cx(
+                      "text-[11px] font-semibold uppercase tracking-[0.16em]",
+                      isLavender ? "text-[#7457a6]" : "text-[#3f7f72]",
+                    )}
+                  >
+                    Draft ready
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[#241c2b]">{preview.draftTitle}</p>
+                </div>
+                <span
+                  className={cx(
+                    "rounded-md px-2 py-1 text-[11px] font-semibold",
+                    isLavender ? "bg-[#f1ecfb] text-[#7457a6]" : "bg-[#e8f4ef] text-[#27685c]",
+                  )}
+                >
+                  Review
+                </span>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-semibold text-[#62586a]">
+                {preview.chips.map((chip) => (
+                  <span
+                    key={chip}
+                    className={cx(
+                      "rounded-md px-2 py-1.5",
+                      isLavender ? "bg-[#f6f2fc]" : "bg-[#eef8f3]",
+                    )}
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-[#eadcf5] bg-[#fffafd] px-3 py-3">
+            <div className="flex items-center gap-2 rounded-full bg-[#f1ecfb] px-3 py-2">
+              <span className="flex-1 text-[12px] text-[#7a8580]">{preview.inputPlaceholder}</span>
+              <span
+                className={cx(
+                  "flex h-7 w-7 items-center justify-center rounded-full text-white",
+                  isLavender ? "bg-[#7457a6]" : "bg-[#27685c]",
+                )}
+              >
+                <ArrowRight className="h-3.5 w-3.5" />
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -385,1168 +376,341 @@ function PhoneShell({ children, className }: { children: ReactNode; className?: 
 export default function LandingExperience() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const shouldReduceMotion = useReducedMotion();
-  const disableHeavyLandingMotion = shouldReduceMotion || isSmallScreen;
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
   };
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const mediaQuery = window.matchMedia("(max-width: 639px)");
-    const syncIsSmallScreen = () => setIsSmallScreen(mediaQuery.matches);
-
-    syncIsSmallScreen();
-    mediaQuery.addEventListener("change", syncIsSmallScreen);
-
-    return () => mediaQuery.removeEventListener("change", syncIsSmallScreen);
-  }, []);
-
   return (
     <>
-      <div
-        className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-clip bg-transparent text-[#2b1b16] selection:bg-[#c98f6b]/30 selection:text-[#2b1b16]`}
-      >
+      <main className="min-h-screen bg-[#fcf7fb] text-[#241c2b] selection:bg-[#cdbdeb]/50 selection:text-[#241c2b]">
         <HeroTopNav
-          navLinks={landingHeroNavLinks}
-          variant="glass-dark"
-          authenticatedPrimaryHref="/"
+          navLinks={[...landingHeroNavLinks]}
+          primaryCtaLabel="Start with Concierge"
+          authenticatedPrimaryHref="/chat"
           loginSuccessRedirectUrl="/"
           onGuestLoginAction={() => openAuth("login")}
           onGuestPrimaryAction={() => openAuth("signup")}
         />
 
-        <section
-          id="snap"
-          className="hash-anchor-below-fixed-nav px-4 pb-6 pt-32 sm:px-6 lg:px-8 lg:pt-40"
-        >
-          <motion.header
-            id="landing-hero"
-            variants={sectionReveal}
-            initial="hidden"
-            animate="visible"
-            className="mx-auto w-full max-w-7xl"
-          >
-            <div
-              className={cx(
-                styles.heroGradient,
-                "relative overflow-hidden rounded-[2.75rem] px-6 py-10 text-white shadow-[0_44px_120px_-32px_rgba(24,16,51,0.45)] sm:px-10 lg:px-14 lg:py-16",
-              )}
-            >
-              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,8,29,0.08),rgba(15,8,29,0.2)_55%,rgba(15,8,29,0.42)_100%)]" />
-              <div className="absolute left-[-5%] top-[-12%] h-64 w-64 rounded-full bg-white/12 blur-3xl" />
-              <div className="absolute bottom-[-18%] right-[-8%] h-80 w-80 rounded-full bg-[#c98f6b]/30 blur-3xl" />
-
-              <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(320px,430px)] lg:items-center">
-                <div className="max-w-3xl">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-4 py-2 text-[0.7rem] font-bold uppercase tracking-[0.3em] text-white/90 shadow-[0_12px_28px_rgba(8,4,18,0.2)]">
-                    <WandSparkles className="h-4 w-4" />
-                    The Future of Invitations
-                  </div>
-
-                  <h1
-                    className={cx(
-                      styles.headline,
-                      "mt-8 text-5xl font-extrabold leading-[0.9] tracking-tight sm:text-6xl lg:text-[5.25rem]",
-                    )}
+        <section id="landing-hero" className="border-b border-[#eadcf5] bg-[#fbf6ff] pt-24">
+          <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)] lg:px-10 lg:py-24">
+            <div className="flex flex-col justify-center">
+              <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-[#eadcf5] bg-[#fffafd] px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#7457a6]">
+                <Image
+                  src={conciergeLogo}
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="h-5 w-5 object-contain"
+                />
+                Event creation assistant
+              </div>
+              <h1 className="mt-7 max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.04em] text-[#241c2b] sm:text-6xl lg:text-[4.9rem]">
+                Create the invite, RSVP, and event page in one place.
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-[#62586a]">
+                Envitefy turns a message, upload, flyer, invite, PDF, schedule, or design idea into
+                a shareable event hub with RSVP, calendar, maps, registry links, updates, and
+                sign-ups.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <PrimaryButton onClick={() => openAuth("signup")}>
+                  Start with Concierge
+                  <ArrowRight className="h-4 w-4" />
+                </PrimaryButton>
+                <SecondaryLink href="/?action=upload">
+                  Upload an invite or PDF
+                  <Upload className="h-4 w-4" />
+                </SecondaryLink>
+              </div>
+              <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                {["Invites", "RSVP", "Event pages", "Sign-ups"].map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-lg border border-[#eadcf5] bg-[#fffafd] px-4 py-3"
                   >
-                    Create. Snap.
-                    <br />
-                    <span className={styles.textGradient}>Host Like a Pro.</span>
-                  </h1>
-
-                  <p className="mt-8 max-w-2xl text-lg leading-8 text-white/74 sm:text-xl">
-                    Turn any design into a high-performance event hub. RSVP, maps, updates, and
-                    polished mobile sharing all live behind one beautiful link.
-                  </p>
-
-                  <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-                    <PrimaryAction href="/snap" label="Try Snap Upload" />
-                    <PrimaryAction
-                      onClick={() => openAuth("signup")}
-                      label="Open Studio"
-                      light
-                      icon={Layout}
-                    />
+                    <p className="font-semibold text-[#241c2b]">{item}</p>
                   </div>
-
-                  <div className="mt-10 flex flex-wrap gap-4">
-                    <Link
-                      href="/snap"
-                      className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-black/15 px-5 py-3 text-sm font-semibold text-white/88 transition hover:bg-black/20"
-                    >
-                      <Camera className="h-4 w-4" />
-                      Scan flyers, screenshots, and PDFs
-                    </Link>
-                    <Link
-                      href="/gymnastics"
-                      className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-black/15 px-5 py-3 text-sm font-semibold text-white/88 transition hover:bg-black/20"
-                    >
-                      <Zap className="h-4 w-4" />
-                      Explore gymnastics meet pages
-                    </Link>
-                  </div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 24 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.7, duration: 0.6 }}
-                    className={cx(
-                      styles.glassCard,
-                      "mt-10 flex max-w-md items-center gap-5 rounded-[2rem] px-5 py-5",
-                    )}
-                  >
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#c98f6b]/18 text-[#ffd2b6]">
-                      <Zap className="h-7 w-7" />
-                    </div>
-                    <div>
-                      <p className="text-[0.68rem] font-bold uppercase tracking-[0.3em] text-white/70">
-                        Live Demo
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-white/84">
-                        See how a <span className="font-bold">gymnastics meet</span> hub handles
-                        schedules, venue notes, and updates in one place.
-                      </p>
-                    </div>
-                  </motion.div>
-
-                  <div className="mt-12 flex flex-col gap-8">
-                    <div className="flex items-center gap-5">
-                      <div className="flex -space-x-3">
-                        {hostInitials.map((initials, index) => (
-                          <div
-                            key={initials}
-                            aria-hidden="true"
-                            className={cx(
-                              "flex h-11 w-11 items-center justify-center rounded-full border-4 border-white/85 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-white shadow-lg",
-                              index % 2 === 0 ? "bg-[#c98f6b]" : "bg-[#7b63d8]",
-                            )}
-                          >
-                            {initials}
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-sm font-medium text-white/74">
-                        Trusted by <span className="font-bold text-white">2,500+</span> hosts,
-                        coaches, and gymnastics parents
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
-                  className="relative"
-                >
-                  <PhoneShell className="mx-auto aspect-[9/18.1] max-w-[264px] sm:aspect-[9/19.5] sm:max-w-[320px]">
-                    <div className="relative flex h-full flex-col">
-                      <div className="relative h-44 overflow-hidden bg-[#c98f6b] sm:h-64">
-                        <img
-                          src="/images/marketing/landing-hero-live-card.webp"
-                          alt="Birthday event preview"
-                          className="h-full w-full object-cover opacity-90"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-                        <div className="absolute bottom-4 left-4 text-white sm:bottom-7 sm:left-6">
-                          <h3
-                            className={cx(
-                              styles.headline,
-                              "text-[1.65rem] font-extrabold sm:text-3xl",
-                            )}
-                          >
-                            Leo&apos;s 5th Birthday
-                          </h3>
-                          <p className="mt-0.5 text-[0.78rem] text-white/72 sm:mt-1 sm:text-sm">
-                            Superhero Adventure Party
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 space-y-3.5 p-3.5 sm:space-y-7 sm:p-7">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#c98f6b]/12 text-[#c98f6b] sm:h-12 sm:w-12">
-                            <Calendar className="h-5 w-5 sm:h-6 sm:w-6" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#9f8f85]">
-                              Date & Time
-                            </p>
-                            <p className="mt-0.5 text-[0.9rem] font-bold leading-5 text-[#2b1b16] sm:mt-1 sm:text-base">
-                              Saturday, Dec 12 @ 2:00 PM
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 sm:gap-4">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#c98f6b]/12 text-[#c98f6b] sm:h-12 sm:w-12">
-                            <MapPin className="h-5 w-5 sm:h-6 sm:w-6" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#9f8f85]">
-                              Location
-                            </p>
-                            <p className="mt-0.5 text-[0.9rem] font-bold leading-5 text-[#2b1b16] sm:mt-1 sm:text-base">
-                              The Adventure Park, Hall B
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 pt-0 sm:space-y-3 sm:pt-2">
-                          <button
-                            type="button"
-                            className="w-full rounded-2xl bg-[#c98f6b] py-2.5 text-[0.92rem] font-bold text-white shadow-[0_22px_50px_rgba(201,143,107,0.28)] sm:py-4 sm:text-sm"
-                          >
-                            RSVP Now
-                          </button>
-                          <button
-                            type="button"
-                            className="w-full rounded-2xl border border-[#f0e4dc] bg-[#faf7f2] py-2.5 text-[0.92rem] font-bold text-[#6b4c3f] sm:py-4 sm:text-sm"
-                          >
-                            Get Directions
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </PhoneShell>
-
-                  <motion.div
-                    animate={{ y: [0, -14, 0] }}
-                    transition={floatTransition}
-                    className={cx(
-                      styles.glassCard,
-                      "absolute -right-2 top-12 z-20 hidden items-center gap-4 rounded-[1.8rem] px-5 py-4 text-white shadow-[0_32px_60px_rgba(12,8,24,0.26)] lg:flex",
-                    )}
-                  >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-green-500 text-white">
-                      <Users className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/68">
-                        RSVPs
-                      </p>
-                      <p className="mt-1 text-xl font-bold text-white">12 Kids</p>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    animate={{ y: [0, 12, 0] }}
-                    transition={{ ...floatTransition, delay: 0.8, duration: 5.8 }}
-                    className={cx(
-                      styles.glassCard,
-                      "absolute -left-2 bottom-16 z-20 hidden items-center gap-4 rounded-[1.8rem] px-5 py-4 text-white shadow-[0_32px_60px_rgba(12,8,24,0.26)] lg:flex",
-                    )}
-                  >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c98f6b] text-white">
-                      <Zap className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/68">
-                        Status
-                      </p>
-                      <p className="mt-1 text-xl font-bold text-white">Live Updates</p>
-                    </div>
-                  </motion.div>
-                </motion.div>
+                ))}
               </div>
             </div>
-          </motion.header>
-        </section>
 
-        <LandingLiveCardShowcase />
-
-        <section
-          id="what-you-can-snap"
-          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
-        >
-          <div className="mx-auto max-w-7xl">
-            <div
-              className={cx(
-                styles.surfacePanel,
-                "rounded-[2.75rem] bg-[#fbf7f2] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14",
-              )}
-            >
-              <motion.div
-                variants={scrollReveal}
-                initial="hidden"
-                whileInView="visible"
-                viewport={scrollRevealViewport}
-              >
-                <SectionIntro
-                  eyebrow="One Studio. Infinite Ways to Host."
-                  title={
-                    <>
-                      Design once.
-                      <br />
-                      <span className={styles.textGradient}>
-                        Deliver every guest-facing surface.
-                      </span>
-                    </>
-                  }
-                  description="Create polished invitation artwork, live cards, hosted event hubs, and mobile-ready guest experiences from the same studio workflow."
-                  align="center"
-                />
-              </motion.div>
-
-              <motion.div
-                variants={scrollReveal}
-                initial="hidden"
-                whileInView="visible"
-                viewport={scrollRevealViewport}
-                className="mt-10 grid gap-6 lg:mt-14 lg:grid-cols-2 lg:gap-8"
-              >
-                {comparisonCards.map((card, index) => (
-                  <motion.div
-                    key={card.title}
-                    whileHover={{ y: -8 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                    className={cx(
-                      "relative overflow-hidden rounded-[2.25rem] border border-black/5 p-6 shadow-[0_24px_68px_rgba(43,27,22,0.08)] sm:rounded-[2.5rem] sm:p-8",
-                      card.surfaceClassName,
-                    )}
-                  >
-                    {index === 0 ? (
-                      <div
-                        className={cx(
-                          styles.paperTexture,
-                          "pointer-events-none absolute inset-0 opacity-[0.06]",
-                        )}
-                      />
-                    ) : null}
-                    <div className="relative flex h-full flex-col">
+            <div className="relative">
+              <div className="grid items-center gap-5 lg:grid-cols-[minmax(290px,0.9fr)_minmax(0,1.1fr)]">
+                <PhoneConciergePreview />
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-[#eadcf5] bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between gap-4 border-b border-[#f0e7f8] pb-4">
                       <div>
-                        <div className="inline-flex rounded-full border border-current/10 bg-white/40 px-4 py-2 text-[0.66rem] font-bold uppercase tracking-[0.28em]">
-                          {card.eyebrow}
-                        </div>
-                        <h3
-                          className={cx(
-                            styles.headline,
-                            "mt-5 text-[2rem] font-extrabold leading-[1.05] sm:mt-6 sm:text-4xl",
-                            card.titleClassName,
-                          )}
-                        >
-                          {card.title}
-                        </h3>
-                        <p
-                          className={cx(
-                            "mt-4 max-w-xl text-base leading-7 sm:mt-5 sm:text-lg sm:leading-8",
-                            card.bodyClassName,
-                          )}
-                        >
-                          {card.description}
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7457a6]">
+                          From chat to live link
                         </p>
+                        <h2 className="mt-1 text-xl font-semibold">Garden brunch</h2>
                       </div>
-
-                      <div className="relative mt-8 pt-2 sm:mt-auto sm:pt-10">
-                        <div
-                          className={cx(
-                            "mx-auto overflow-hidden",
-                            card.imageFrameClassName,
-                            "max-w-[260px] sm:max-w-[320px]",
-                          )}
-                        >
-                          <img
-                            src={card.image}
-                            alt={card.imageAlt}
-                            loading="lazy"
-                            decoding="async"
-                            className={cx(
-                              "h-full w-full transition-transform duration-700 hover:scale-105",
-                              card.imageClassName,
-                            )}
-                          />
-                        </div>
-                        <div className="mt-4 flex flex-wrap justify-center gap-3 sm:mt-5">
-                          {card.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className={cx(
-                                "inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold shadow-[0_18px_40px_rgba(43,27,22,0.12)] sm:px-5 sm:py-3",
-                                card.accentClassName,
-                              )}
-                            >
-                              <CheckCircle2 className="h-4 w-4" />
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-
-              <motion.div
-                variants={scrollReveal}
-                initial="hidden"
-                whileInView="visible"
-                viewport={scrollRevealViewport}
-                className="mt-12 grid gap-10 lg:mt-16 lg:grid-cols-[minmax(320px,540px)_minmax(0,1fr)] lg:items-center lg:gap-12"
-              >
-                <div className="order-2 lg:order-1">
-                  <div className="relative overflow-hidden rounded-[2.25rem] bg-[#1f1838] p-3 shadow-[0_36px_100px_-28px_rgba(24,16,51,0.5)] sm:rounded-[2.75rem]">
-                    <div className="rounded-[2rem] bg-white p-5 sm:rounded-[2.25rem] sm:p-6">
-                      <div className="mb-6 flex items-center justify-between border-b border-[#efe4db] pb-4 sm:mb-8 sm:pb-5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c98f6b] text-white">
-                            <Layout className="h-5 w-5" />
-                          </div>
-                          <span className={cx(styles.headline, "text-lg font-bold text-[#2b1b16]")}>
-                            Studio Editor
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <div className="h-3 w-3 rounded-full bg-[#efe4db]" />
-                          <div className="h-3 w-3 rounded-full bg-[#efe4db]" />
-                          <div className="h-3 w-3 rounded-full bg-[#efe4db]" />
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4 sm:gap-6">
-                        <div className="hidden w-1/3 space-y-4 md:block">
-                          <div className="space-y-2">
-                            <div className="h-2 w-1/2 rounded bg-[#f1e7de]" />
-                            <div className="h-10 rounded-xl border border-[#efe4db] bg-[#faf6f2]" />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="h-2 w-1/3 rounded bg-[#f1e7de]" />
-                            <div className="h-24 rounded-xl border border-[#efe4db] bg-[#faf6f2]" />
-                          </div>
-                          <div className="space-y-3 pt-4">
-                            <div className="h-2 w-2/3 rounded bg-[#f1e7de]" />
-                            <div className="flex gap-3">
-                              <div className="h-10 w-10 rounded-xl border border-[#d9b7a1] bg-[#ead1c1]" />
-                              <div className="h-10 w-10 rounded-xl border border-[#efe4db] bg-[#faf6f2]" />
-                              <div className="h-10 w-10 rounded-xl border border-[#efe4db] bg-[#faf6f2]" />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="relative flex flex-1 items-center justify-center overflow-hidden rounded-[1.7rem] border border-[#efe4db] bg-[#fbf7f2] p-4 sm:rounded-[2rem] sm:p-6">
-                          <motion.div
-                            animate={disableHeavyLandingMotion ? undefined : { y: [0, -8, 0] }}
-                            transition={
-                              disableHeavyLandingMotion
-                                ? undefined
-                                : { ...floatTransition, duration: 3.8 }
-                            }
-                            className="relative w-full max-w-[15rem] overflow-hidden rounded-[1.5rem] border border-[#e7d8ce] bg-white shadow-[0_24px_50px_rgba(43,27,22,0.12)] sm:max-w-[18rem] sm:rounded-[1.75rem]"
-                          >
-                            <img
-                              src="/images/studio/editor-preview.webp"
-                              alt="Studio editor invitation preview"
-                              loading="lazy"
-                              decoding="async"
-                              className="h-full w-full object-cover"
-                            />
-                            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(243,225,212,0.92)_0%,rgba(243,225,212,0.48)_16%,rgba(243,225,212,0)_34%),linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0.18)_100%)]" />
-                            <div className="pointer-events-none absolute inset-0 rounded-[1.5rem] ring-1 ring-inset ring-white/58 sm:rounded-[1.75rem]" />
-                            <div className="absolute inset-x-3 top-3 rounded-[1.15rem] bg-white/88 px-3 py-2.5 shadow-[0_18px_36px_rgba(43,27,22,0.12)] backdrop-blur sm:inset-x-4 sm:top-4 sm:rounded-[1.35rem] sm:px-4 sm:py-3">
-                              <div className="inline-flex items-center gap-2 rounded-full bg-[#f8efe7] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[#8c6149]">
-                                <WandSparkles className="h-3.5 w-3.5" />
-                                Invitation Canvas
-                              </div>
-                              <p
-                                className={cx(
-                                  styles.headline,
-                                  "mt-2 text-base font-bold text-[#2b1b16] sm:text-lg",
-                                )}
-                              >
-                                Wedding Weekend
-                              </p>
-                              <p className="mt-1 text-xs leading-5 text-[#6a5549]">
-                                Coordinated print design with live event actions ready to publish.
-                              </p>
-                            </div>
-                            <div className="absolute inset-x-3 bottom-3 rounded-[1.15rem] bg-[#201939]/82 p-3 text-white shadow-[0_18px_36px_rgba(24,16,51,0.26)] backdrop-blur sm:inset-x-4 sm:bottom-4 sm:rounded-[1.35rem] sm:p-4">
-                              <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/66">
-                                Linked Actions
-                              </div>
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {["RSVP", "Directions", "Calendar", "Registry", "Share"].map(
-                                  (tag) => (
-                                    <span
-                                      key={tag}
-                                      className="rounded-full border border-white/12 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/86"
-                                    >
-                                      {tag}
-                                    </span>
-                                  ),
-                                )}
-                              </div>
-                            </div>
-                          </motion.div>
-
-                          <div className="absolute bottom-4 right-4 flex gap-3 sm:bottom-5 sm:right-5">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#c98f6b] text-white shadow-lg shadow-[#c98f6b]/30">
-                              <Share2 className="h-5 w-5" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="order-1 lg:order-2">
-                  <SectionIntro
-                    eyebrow="Studio Workflow"
-                    title={
-                      <>
-                        From layout approval
-                        <br />
-                        <span className={styles.textGradient}>to live distribution.</span>
-                      </>
-                    }
-                    description="Configure the presentation layer, connect guest actions, and publish a page that is ready for attendance, directions, hotel links, registry links, and live updates."
-                  />
-
-                  <div className="mt-8 space-y-5 sm:mt-10 sm:space-y-6">
-                    {studioFeatures.map((feature) => (
-                      <div key={feature.title} className="flex gap-4 sm:gap-5">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#efe4db] bg-white shadow-lg sm:h-14 sm:w-14">
-                          <feature.icon className="h-5 w-5 text-[#c98f6b] sm:h-6 sm:w-6" />
-                        </div>
-                        <div>
-                          <h3
-                            className={cx(
-                              styles.headline,
-                              "text-lg font-bold text-[#2b1b16] sm:text-xl",
-                            )}
-                          >
-                            {feature.title}
-                          </h3>
-                          <p className="mt-2 text-[0.98rem] leading-7 text-[#6a5549] sm:text-base">
-                            {feature.desc}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <PrimaryAction
-                    onClick={() => openAuth("signup")}
-                    label="Start Creating"
-                    className="mt-8 sm:mt-10"
-                  />
-                </div>
-              </motion.div>
-
-              <motion.div
-                variants={scrollReveal}
-                initial="hidden"
-                whileInView="visible"
-                viewport={scrollRevealViewport}
-                className="mt-12 overflow-hidden rounded-[2.25rem] bg-[#211936] px-5 py-8 text-white shadow-[0_36px_100px_-28px_rgba(24,16,51,0.46)] sm:mt-16 sm:rounded-[2.75rem] sm:px-8 sm:py-10 lg:px-10 lg:py-12"
-              >
-                <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
-                  <div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.28em] text-[#f3dccd]">
-                      <Camera className="h-4 w-4" />
-                      <span className="text-[#fff3ea]">Snap. Extract. Go Live.</span>
-                    </div>
-                    <h3
-                      className={cx(
-                        styles.headline,
-                        "mt-6 text-4xl font-extrabold leading-tight text-[#fff8f2] sm:text-5xl",
-                      )}
-                    >
-                      <span className="[text-shadow:0_6px_24px_rgba(255,226,210,0.16)] text-[#fffaf5]">
-                        Already have the source file?
+                      <span className="rounded-md bg-[#f1ecfb] px-2.5 py-1 text-xs font-semibold text-[#7457a6]">
+                        Published
                       </span>
-                      <br />
-                      <span className="bg-[linear-gradient(135deg,#ffe2d2_0%,#ffb697_100%)] bg-clip-text text-transparent">
-                        Let Envitefy structure it.
-                      </span>
-                    </h3>
-                    <p className="mt-6 max-w-2xl text-lg leading-8 text-white/68">
-                      Upload a flyer, screenshot, or meet PDF and Envitefy turns it into a
-                      structured draft that is ready to publish as a live event page.
-                    </p>
-
-                    <div className="mt-10 grid gap-5 sm:grid-cols-2">
-                      {snapCards.map((card) => (
-                        <div
-                          key={card.title}
-                          className="rounded-[2rem] border border-white/10 bg-white/6 p-6"
-                        >
-                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#c98f6b]/18 text-[#f4d4c0]">
-                            <card.icon className="h-7 w-7" />
-                          </div>
-                          <h4
-                            className={cx(
-                              styles.headline,
-                              "mt-6 text-2xl font-bold text-[#fff4ec]",
-                            )}
-                          >
-                            <span className="[text-shadow:0_4px_18px_rgba(255,226,210,0.14)] text-[#fffaf5]">
-                              {card.title}
-                            </span>
-                          </h4>
-                          <p className="mt-3 text-sm leading-7 text-white/66">{card.desc}</p>
+                    </div>
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                      {[
+                        ["42", "RSVPs"],
+                        ["8", "Sign-up slots"],
+                        ["3", "Registry links"],
+                        ["1", "Share URL"],
+                      ].map(([value, label]) => (
+                        <div key={label} className="rounded-lg bg-[#fff1f7] p-3">
+                          <p className="text-2xl font-semibold">{value}</p>
+                          <p className="mt-1 text-xs font-medium text-[#62586a]">{label}</p>
                         </div>
                       ))}
                     </div>
-
-                    <PrimaryAction href="/snap" label="Try Snap Upload" className="mt-10" />
+                    <div className="mt-5 space-y-2">
+                      {[
+                        "Concierge fills the missing details",
+                        "Guests can RSVP from the page",
+                        "Maps, registry, and updates travel together",
+                      ].map((item) => (
+                        <div key={item} className="flex items-center gap-3 text-sm text-[#62586a]">
+                          <span className="h-2 w-2 rounded-full bg-[#7457a6]" />
+                          {item}
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="relative">
-                    <PhoneShell className="mx-auto aspect-[9/19.5] max-w-[320px] border-white/10">
-                      <div className="relative h-full overflow-hidden bg-[#120f1e] text-white">
-                        <img
-                          src="/images/landing/snap-phone-lara.webp"
-                          alt="Flyer scan preview"
-                          loading="lazy"
-                          decoding="async"
-                          className="h-full w-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,8,18,0.06)_0%,rgba(10,8,18,0.24)_100%)]" />
-                        <motion.div
-                          animate={
-                            disableHeavyLandingMotion ? undefined : { top: ["0%", "100%", "0%"] }
-                          }
-                          transition={
-                            disableHeavyLandingMotion
-                              ? undefined
-                              : {
-                                  duration: 4,
-                                  repeat: Number.POSITIVE_INFINITY,
-                                  ease: "linear",
-                                }
-                          }
-                          className="absolute left-0 right-0 h-1.5 bg-[#c98f6b] shadow-[0_0_30px_rgba(201,143,107,0.95)]"
-                        />
-
-                        <motion.div
-                          initial={{ opacity: 0, x: 20 }}
-                          whileInView={{ opacity: 1, x: 0 }}
-                          viewport={{ once: true }}
-                          transition={{ delay: 0.2, duration: 0.45 }}
-                          className={cx(
-                            styles.glassDarkCard,
-                            "absolute right-4 top-[18%] flex items-center gap-2 rounded-xl px-3 py-3 text-[10px] font-bold",
-                          )}
-                        >
-                          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#c98f6b] text-white">
-                            <Calendar className="h-3 w-3" />
-                          </div>
-                          Saturday, May 23
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, x: -20 }}
-                          whileInView={{ opacity: 1, x: 0 }}
-                          viewport={{ once: true }}
-                          transition={{ delay: 0.4, duration: 0.45 }}
-                          className={cx(
-                            styles.glassDarkCard,
-                            "absolute left-4 top-[44%] flex items-center gap-2 rounded-xl px-3 py-3 text-[10px] font-bold",
-                          )}
-                        >
-                          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#c98f6b] text-white">
-                            <MapPin className="h-3 w-3" />
-                          </div>
-                          Movie Theater
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 18 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          viewport={{ once: true }}
-                          transition={{ delay: 0.55, duration: 0.45 }}
-                          className={cx(
-                            styles.glassDarkCard,
-                            "absolute bottom-[20%] left-1/2 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-3 text-[10px] font-bold",
-                          )}
-                        >
-                          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#c98f6b] text-white">
-                            <Users className="h-3 w-3" />
-                          </div>
-                          RSVP Required
-                        </motion.div>
-                      </div>
-                    </PhoneShell>
+                  <div className="overflow-hidden rounded-lg border border-[#eadcf5] bg-white shadow-sm">
+                    <img
+                      src="/images/marketing/landing-hero-live-card.webp"
+                      alt="Live card gallery preview"
+                      className="h-64 w-full object-cover object-top"
+                    />
+                    <div className="grid grid-cols-3 divide-x divide-[#f0e7f8] border-t border-[#f0e7f8] text-center text-xs font-semibold text-[#62586a]">
+                      {["Invite", "RSVP", "Updates"].map((item) => (
+                        <span key={item} className="px-2 py-3">
+                          {item}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section
-          id="gymnastics"
-          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
-        >
-          <motion.div
-            variants={sectionReveal}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            className="mx-auto max-w-7xl"
-          >
-            <div
-              className={cx(
-                styles.gymnasticsShell,
-                "relative isolate overflow-hidden px-5 py-6 sm:px-7 sm:py-8 lg:px-10 lg:py-10",
-              )}
-            >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -right-20 -top-16 h-80 w-80 rounded-full bg-[#8b5cf6]/22 blur-[100px]"
-              />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-[#22d3ee]/18 blur-[90px]"
-              />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute left-1/2 top-1/2 h-[min(100%,28rem)] w-[min(100%,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#7c3aed]/[0.06] blur-3xl"
-              />
-
-              <div className="relative z-[1] space-y-10">
-                <div className="relative overflow-hidden rounded-[1.75rem] border border-white/12 bg-gradient-to-br from-[#251447] via-[#1a0d2e] to-[#0f081c] px-6 py-9 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] sm:rounded-[2rem] sm:px-9 sm:py-11">
-                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_15%_-20%,rgba(124,58,237,0.55),transparent_55%)]" />
-                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_90%_100%,rgba(14,165,233,0.2),transparent_50%)]" />
-
-                  <div className="relative">
-                    <span className="inline-flex items-center rounded-full border border-white/18 bg-white/[0.08] px-4 py-2 text-[0.68rem] font-extrabold uppercase tracking-[0.26em] text-white/88 shadow-[0_12px_32px_rgba(0,0,0,0.2)] backdrop-blur-md">
-                      Gymnastics · Meet pages
+        <section id="platform" className="border-b border-[#eadcf5] bg-[#fff1f7]">
+          <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
+            <SectionHeader
+              eyebrow="Intent chooser"
+              title="Pick the closest starting point."
+              description="A soft chooser works best when it feels like Envitefy: warm surface, sage action, lavender accents, charcoal text, and enough contrast to stay practical."
+              center
+            />
+            <div className="mx-auto mt-5 h-1 w-24 rounded-full bg-[#cdbdeb]" />
+            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {intentTiles.map((option) => {
+                const Icon = option.icon;
+                const toneClasses = intentTileToneClasses[option.tone];
+                return (
+                  <Link
+                    key={option.title}
+                    href={option.href}
+                    className={cx(
+                      "group flex min-h-[164px] flex-col items-center justify-center rounded-lg border border-[#eadcf5] bg-[#fffafd] px-5 py-6 text-center shadow-[0_16px_34px_rgba(116,87,166,0.08),inset_0_1px_0_rgba(255,255,255,0.86)] transition hover:-translate-y-1 hover:bg-white",
+                      toneClasses.card,
+                    )}
+                    aria-label={`Start ${option.title.toLowerCase()} with Envitefy`}
+                  >
+                    <span
+                      className={cx(
+                        "flex h-12 w-12 items-center justify-center rounded-lg border shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_10px_18px_rgba(23,33,31,0.07)] transition",
+                        toneClasses.icon,
+                      )}
+                    >
+                      <Icon className="h-6 w-6" />
                     </span>
+                    <span className="mt-5 text-sm font-bold uppercase tracking-[0.14em] text-[#241c2b]">
+                      {option.title}
+                    </span>
+                    <span className="mt-2 max-w-[13rem] text-sm leading-5 text-[#62586a]">
+                      {option.description}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
 
-                    <h2
-                      className={cx(
-                        styles.headline,
-                        "mt-7 max-w-[22ch] text-[1.85rem] font-extrabold leading-[1.08] tracking-tight text-white sm:max-w-none sm:text-4xl lg:text-[2.65rem] lg:leading-[1.05]",
-                      )}
-                    >
-                      Weekend logistics,{" "}
-                      <span className="bg-gradient-to-r from-[#c4b5fd] via-[#7dd3fc] to-[#5eead4] bg-clip-text text-transparent">
-                        one calm link
-                      </span>
-                      <span className="text-white/95">.</span>
-                    </h2>
+        <section className="border-y border-[#eadcf5] bg-[#fbf8ff]">
+          <LandingLiveCardShowcase
+            eyebrow="Live card gallery"
+            title="A polished card guests want to open."
+            description="Explore how a shared Envitefy link can feel designed, personal, and useful on a phone."
+          />
+        </section>
 
-                    <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/72 sm:text-lg sm:leading-8">
-                      Stop re-explaining parking, hotels, and last-minute changes across group
-                      threads. Envitefy turns the packet into a single mobile hub parents actually
-                      open.
-                    </p>
-
-                    <div className="mt-8 flex flex-wrap gap-2.5">
-                      {[
-                        { label: "Packet → polished page", icon: FileText },
-                        { label: "Update once, everyone sees it", icon: Zap },
-                        { label: "Built for gym families", icon: Users },
-                      ].map((chip) => {
-                        const ChipIcon = chip.icon;
-                        return (
-                          <span
-                            key={chip.label}
-                            className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-3.5 py-2 text-[0.8rem] font-semibold text-white/88 backdrop-blur-sm"
-                          >
-                            <ChipIcon className="h-3.5 w-3.5 shrink-0 text-[#a5b4fc]" />
-                            {chip.label}
-                          </span>
-                        );
-                      })}
-                    </div>
+        <section id="concierge" className="border-y border-[#eadcf5] bg-white">
+          <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
+            <div>
+              <SectionHeader
+                eyebrow="Concierge"
+                title="The front door is a conversation."
+                description="Concierge is the simplest way to get from loose event details to a useful page, while upload and manual creation stay available paths."
+              />
+              <div className="mt-8 grid gap-3">
+                {[
+                  "Tell Envitefy what you're planning",
+                  "Attach the invite, flyer, PDF, screenshot, or schedule",
+                  "Review missing date, location, registry, and RSVP details",
+                  "Publish a live card, event page, or smart sign-up",
+                ].map((item, index) => (
+                  <div
+                    key={item}
+                    className="flex items-start gap-3 rounded-lg border border-[#eadcf5] bg-[#fffafd] p-4"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#7457a6] text-xs font-semibold text-white">
+                      {index + 1}
+                    </span>
+                    <p className="text-sm font-medium leading-6 text-[#3b3044]">{item}</p>
                   </div>
-                </div>
-
+                ))}
+              </div>
+            </div>
+            <div className="rounded-lg border border-[#eadcf5] bg-[#fbf6ff] px-5 py-6 shadow-sm sm:px-8">
+              <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
-                  <div className="mb-5 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
-                    <h3
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7457a6]">
+                    Phone-first preview
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[#62586a]">
+                    The page should show Concierge where hosts expect it: in a real chat flow,
+                    inside a phone, with a draft event emerging from the conversation.
+                  </p>
+                </div>
+              </div>
+              <PhoneConciergePreview variant="signup" />
+            </div>
+          </div>
+        </section>
+
+        <section id="guest-experience" className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
+          <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr]">
+            <SectionHeader
+              eyebrow="Guest experience"
+              title="A link with real utility after the invite is sent."
+              description="Guests should understand what to do next. Hosts should have fewer duplicate texts, fewer scattered links, and a clearer record of responses."
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              {guestActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <div
+                    key={action.label}
+                    className="flex items-center gap-3 rounded-lg border border-[#eadcf5] bg-white p-4 shadow-sm"
+                  >
+                    <span
                       className={cx(
-                        styles.headline,
-                        "text-xl font-bold tracking-tight text-[#1f1533] sm:text-2xl",
+                        "flex h-9 w-9 items-center justify-center rounded-lg",
+                        guestActionToneClasses[action.tone],
                       )}
                     >
-                      What your meet hub can carry
-                    </h3>
-                    <p className="max-w-md text-sm leading-relaxed text-[#5c4d6e] sm:text-right sm:text-[0.9rem]">
-                      Mix and match sections—families get one place to scan before they hit the
-                      venue.
-                    </p>
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="text-sm font-semibold">{action.label}</span>
                   </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
-                    {gymnasticsFeatures.map((feature) => {
-                      const FeatureIcon = feature.icon;
-                      return (
-                        <motion.div
-                          key={feature.title}
-                          initial={false}
-                          whileHover={{ y: -5 }}
-                          transition={{ duration: 0.22, ease: "easeOut" }}
-                          className="group relative overflow-hidden rounded-2xl border border-[#e4daf7] bg-white/95 p-5 shadow-[0_14px_40px_rgba(31,21,51,0.06)] transition-[box-shadow,border-color] duration-300 hover:border-[#c4b5fd]/80 hover:shadow-[0_22px_56px_rgba(124,58,237,0.14)]"
-                        >
-                          <div
-                            aria-hidden
-                            className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br from-[#ede9fe] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                          />
-                          <div className="relative flex gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#7c3aed]/12 to-[#0ea5e9]/10 text-[#5b21b6] shadow-inner ring-1 ring-[#7c3aed]/10">
-                              <FeatureIcon className="h-5 w-5" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <h4
-                                className={cx(
-                                  styles.headline,
-                                  "text-[1.05rem] font-bold text-[#1f1533]",
-                                )}
-                              >
-                                {feature.title}
-                              </h4>
-                              <p className="mt-1.5 text-sm leading-relaxed text-[#5c4d6e]">
-                                {feature.desc}
-                              </p>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="mt-10 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-center text-sm font-medium text-[#5c4d6e] sm:text-left">
-                      Ready to ship a page for your next meet?
-                    </p>
-                    <PrimaryAction
-                      href="/gymnastics"
-                      label="Explore gymnastics meet pages"
-                      className="!w-full !bg-[#7c3aed] !shadow-[0_22px_56px_rgba(124,58,237,0.38)] hover:!scale-[1.01] hover:!bg-[#6d28d9] sm:!w-auto"
-                    />
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
-          </motion.div>
+          </div>
         </section>
 
-        <section
-          id="how-it-works"
-          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
-        >
-          <motion.div
-            variants={sectionReveal}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            className="mx-auto max-w-7xl"
-          >
-            <div
-              className={cx(
-                styles.surfacePanel,
-                "rounded-[2.75rem] bg-white px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14",
-              )}
-            >
-              <SectionIntro
-                eyebrow="Two paths to event perfection"
-                title={
-                  <>
-                    Two paths to
-                    <br />
-                    <span className={styles.textGradient}>event perfection.</span>
-                  </>
-                }
-                description="Start from scratch in Studio or bring your existing invite into Snap. Both routes end with a shareable event page."
-                align="center"
-              />
-
-              <div className="mt-14 grid gap-8 md:grid-cols-2">
-                {howItWorksPaths.map((path, pathIndex) => (
-                  <motion.div
-                    key={path.title}
-                    whileHover={{ y: -8 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                    className={cx(
-                      "relative overflow-hidden rounded-[2.75rem] p-8 shadow-[0_26px_80px_rgba(43,27,22,0.08)]",
-                      path.tone === "dark"
-                        ? "bg-[#201939] text-white"
-                        : "border border-[#efe4db] bg-[#fbf7f2] text-[#2b1b16]",
-                    )}
-                  >
-                    <div className="absolute right-8 top-8 text-7xl font-black text-black/4">
-                      0{pathIndex + 1}
-                    </div>
-                    <div className="relative">
-                      <div
-                        className={cx(
-                          "flex h-16 w-16 items-center justify-center rounded-2xl",
-                          path.tone === "dark"
-                            ? "bg-[#e5c2a7] text-[#201939]"
-                            : "bg-[#ead7cc] text-[#c98f6b]",
-                        )}
-                      >
-                        <path.icon className="h-8 w-8" />
-                      </div>
-                      <h3
-                        className={cx(
-                          styles.headline,
-                          "mt-8 text-3xl font-bold",
-                          path.tone === "dark" && "text-[#fff4ec]",
-                        )}
-                      >
-                        {path.tone === "dark" ? (
-                          <span className="[text-shadow:0_5px_20px_rgba(255,226,210,0.14)] text-[#fffaf5]">
-                            {path.title}
-                          </span>
-                        ) : (
-                          path.title
-                        )}
-                      </h3>
-
-                      <div className="mt-10 space-y-8">
-                        {path.steps.map((step, stepIndex) => (
-                          <div key={step.title} className="flex gap-5">
-                            <div
-                              className={cx(
-                                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold",
-                                path.tone === "dark"
-                                  ? "bg-[#e5c2a7] text-[#201939]"
-                                  : "bg-[#c98f6b] text-white",
-                              )}
-                            >
-                              {stepIndex + 1}
-                            </div>
-                            <div>
-                              <h4
-                                className={cx(
-                                  "text-lg font-bold",
-                                  path.tone === "dark" && "text-[#fff0e6]",
-                                )}
-                              >
-                                {path.tone === "dark" ? (
-                                  <span className="[text-shadow:0_4px_18px_rgba(255,226,210,0.12)] text-[#fff7f0]">
-                                    {step.title}
-                                  </span>
-                                ) : (
-                                  step.title
-                                )}
-                              </h4>
-                              <p
-                                className={cx(
-                                  "mt-2 text-base leading-7",
-                                  path.tone === "dark" ? "text-white/68" : "text-[#6a5549]",
-                                )}
-                              >
-                                {step.desc}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </section>
-
-        <section
-          id="use-cases"
-          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
-        >
-          <motion.div
-            variants={sectionReveal}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            className="mx-auto max-w-7xl"
-          >
-            <div
-              className={cx(
-                styles.surfacePanel,
-                "rounded-[2.75rem] bg-[#f8f5ff] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14",
-              )}
-            >
-              <SectionIntro
-                eyebrow="Why it works"
-                title={
-                  <>
-                    The Power to
-                    <br />
-                    <span className={styles.textGradient}>Host Anything.</span>
-                  </>
-                }
-                description="From competition weekends to intimate celebrations, Envitefy scales from a single invite to a full live event surface."
-                align="center"
-              />
-
-              <div className="mt-14 grid grid-cols-2 gap-5 md:grid-cols-4">
-                {useCases.map((item) => (
-                  <motion.div
-                    key={item.title}
-                    whileHover={{ y: -8 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                    className={cx(
-                      "group relative h-[15rem] overflow-hidden rounded-[2.25rem] shadow-[0_22px_70px_rgba(43,27,22,0.08)] sm:h-[18rem] md:h-[24rem] lg:h-[28rem]",
-                      item.large ? "md:col-span-2" : "",
-                    )}
-                  >
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/20 to-transparent" />
-                    <div className="absolute inset-x-6 bottom-6 flex items-end justify-between gap-4">
-                      <div>
-                        <h3
-                          className={cx(
-                            styles.headline,
-                            "text-2xl font-bold !text-white [text-shadow:0_10px_28px_rgba(0,0,0,0.65)]",
-                          )}
-                        >
-                          {item.title}
-                        </h3>
-                      </div>
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/18 bg-white/10 text-white opacity-0 transition group-hover:opacity-100">
-                        <ArrowRight className="h-5 w-5" />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </section>
-
-        <section
-          id="rsvp-calendar"
-          className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}
-        >
-          <motion.div
-            variants={sectionReveal}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            className="mx-auto max-w-7xl"
-          >
-            <div
-              className={cx(
-                styles.surfacePanel,
-                "overflow-visible rounded-[2.75rem] bg-[#fbf7f2] px-6 py-10 shadow-[0_28px_90px_rgba(43,27,22,0.08)] sm:px-8 lg:px-10 lg:py-14",
-              )}
-            >
-              <div className="grid gap-12 lg:grid-cols-[minmax(300px,420px)_minmax(0,1fr)] lg:items-center">
-                <div className="relative order-2 h-[420px] lg:order-1">
-                  <div className="absolute inset-0 overflow-hidden rounded-[2.6rem] border border-[#efe4db] bg-white shadow-[0_28px_80px_rgba(43,27,22,0.12)]">
-                    <img
-                      src="/images/landing/rsvp-flow-generated.webp"
-                      alt="RSVP flow mobile preview"
-                      className="h-full w-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02)_0%,rgba(255,255,255,0.16)_100%)]" />
-                  </div>
-
-                  <div className="absolute left-4 top-4 rounded-full bg-white px-5 py-4 text-[#2b1b16] shadow-[0_28px_70px_rgba(43,27,22,0.12)]">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-[#c98f6b]" />
-                      <span className="text-sm font-extrabold sm:text-base">
-                        Confirmed in one tap
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="order-1 lg:order-2">
-                  <SectionIntro
-                    eyebrow="RSVP Flow"
-                    title={
-                      <>
-                        Designed to get a
-                        <br />
-                        <span className={styles.textGradient}>yes.</span>
-                      </>
-                    }
-                    description="The RSVP experience stays fast, legible, and conversion-focused so guests can confirm, save the date, and open directions from the same page."
+        <section id="examples" className="border-y border-[#eadcf5] bg-[#fbf6ff]">
+          <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
+            <SectionHeader
+              eyebrow="Examples"
+              title="Broad enough for everyday events, specific enough to feel useful."
+              description="Envitefy works across celebrations, school needs, team weekends, community logistics, and professional gatherings."
+              center
+            />
+            <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {examples.map((example) => (
+                <article
+                  key={example.title}
+                  className="overflow-hidden rounded-lg border border-[#eadcf5] bg-white shadow-sm"
+                >
+                  <img
+                    src={example.image}
+                    alt={`${example.title} example`}
+                    className="h-52 w-full object-cover"
                   />
-
-                  <ul className="mt-10 space-y-5">
-                    {rsvpHighlights.map((item) => (
-                      <li
-                        key={item}
-                        className="flex items-center gap-4 text-base font-semibold text-[#2b1b16] sm:text-lg"
-                      >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f0e2d7] text-[#c98f6b]">
-                          <CheckCircle2 className="h-5 w-5" />
-                        </div>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold">{example.title}</h3>
+                    <p className="mt-1 text-sm text-[#62586a]">{example.note}</p>
+                  </div>
+                </article>
+              ))}
             </div>
-          </motion.div>
+          </div>
+        </section>
+
+        <section id="workflow" className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
+          <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+            <SectionHeader
+              eyebrow="Workflow"
+              title="Simple enough to remember."
+              description="The page avoids product taxonomy and explains the creation path in three steps."
+            />
+            <div className="grid gap-4 md:grid-cols-3">
+              {workflow.map((step, index) => (
+                <article
+                  key={step.title}
+                  className="rounded-lg border border-[#eadcf5] bg-white p-5 shadow-sm"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7457a6] text-sm font-semibold text-white">
+                    {index + 1}
+                  </span>
+                  <h3 className="mt-5 text-lg font-semibold">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-[#62586a]">{step.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
         </section>
 
         <LandingFaq />
 
         <section id="cta" className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}>
-          <motion.div
-            variants={sectionReveal}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            className="mx-auto max-w-5xl"
-          >
-            <div
-              className={cx(
-                styles.ctaPanel,
-                "relative overflow-hidden rounded-[2.75rem] px-6 py-12 text-center text-white shadow-[0_40px_110px_-26px_rgba(24,16,51,0.48)] sm:px-8 lg:px-12 lg:py-16",
-              )}
-            >
-              <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
-              <div className="relative z-10">
-                <h2
-                  className={cx(
-                    styles.headline,
-                    "mx-auto max-w-4xl text-4xl font-extrabold leading-tight sm:text-5xl lg:text-6xl",
-                  )}
-                >
-                  <span className="text-[#fffaf5] [text-shadow:0_6px_24px_rgba(255,226,210,0.16)]">
-                    Ready to host
-                  </span>
-                  <br />
-                  <span className={styles.textGradient}>like a pro?</span>
-                </h2>
-                <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-white/72 sm:text-xl">
-                  Join the creators, coaches, and hosts who have moved beyond static flyers into
-                  live event hubs.
-                </p>
-
-                <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                  <PrimaryAction href="/snap" label="Get Started for Free" />
-                  <PrimaryAction href="#landing-hero" label="View Demo" light icon={ChevronRight} />
-                </div>
-
-                <div className="mt-14 flex flex-wrap items-center justify-center gap-8 text-xl font-black tracking-tight text-white/34">
-                  <span>ENVITEFY</span>
-                  <span>STUDIO</span>
-                  <span>SNAP</span>
-                  <span>MEET</span>
-                </div>
-              </div>
+          <div className="mx-auto grid max-w-7xl gap-8 rounded-lg border border-[#eadcf5] bg-[#fffafd] px-5 py-14 shadow-sm sm:px-8 lg:grid-cols-[1fr_auto] lg:items-center lg:px-10">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#7457a6]">
+                Start with what you have
+              </p>
+              <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-[-0.02em] sm:text-4xl">
+                One useful event link for invites, RSVP, event pages, and sign-ups.
+              </h2>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-[#62586a]">
+                Concierge is the fastest path, upload is there when you already have a file, and
+                manual creation stays available for hosts who know exactly what they want.
+              </p>
             </div>
-          </motion.div>
+            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+              <PrimaryButton onClick={() => openAuth("signup")}>
+                Start with Concierge
+                <ArrowRight className="h-4 w-4" />
+              </PrimaryButton>
+              <SecondaryLink href="/?action=upload">Upload what you have</SecondaryLink>
+            </div>
+          </div>
         </section>
-      </div>
+      </main>
 
       <AuthModal
         open={authModalOpen}
         mode={authMode}
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
-        signupSource="snap"
         successRedirectUrl="/"
         allowSignupSwitch={false}
       />

@@ -2,6 +2,8 @@
 
 import {
   Baby,
+  BarChart3,
+  Bot,
   Cake,
   CalendarDays,
   Camera,
@@ -9,15 +11,21 @@ import {
   ChevronRight,
   FileEdit,
   Footprints,
+  Gauge,
   GraduationCap,
+  HeartPulse,
   Heart,
   Home,
+  Image as ImageIcon,
   Info,
+  LayoutDashboard,
   LogOut,
   Mail,
   Music,
   PartyPopper,
   Plus,
+  Search,
+  Settings,
   Share2,
   ShieldCheck,
   Stethoscope,
@@ -25,6 +33,7 @@ import {
   Trophy,
   Upload,
   User,
+  Users,
   WandSparkles,
 } from "lucide-react";
 import Image from "next/image";
@@ -43,6 +52,7 @@ import {
 } from "react";
 import { useEventCache } from "@/app/event-cache-context";
 import conciergeMenuIcon from "@/assets/concierge-menu-icon.png";
+import { adminNavItems, type AdminNavItemId } from "@/components/admin/nav";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import EventSidebar from "@/components/navigation/EventSidebar";
 import { useMenu } from "@/contexts/MenuContext";
@@ -150,13 +160,7 @@ function SidebarFootballMenuIcon({
   );
 }
 
-function ConciergeLogoIcon({
-  size = 17,
-  isActive = true,
-}: {
-  size?: number;
-  isActive?: boolean;
-}) {
+function ConciergeLogoIcon({ size = 17, isActive = true }: { size?: number; isActive?: boolean }) {
   return (
     <Image
       src={conciergeMenuIcon}
@@ -172,13 +176,7 @@ function ConciergeLogoIcon({
   );
 }
 
-function DraftThreadIcon({
-  size = 17,
-  className,
-}: {
-  size?: number;
-  className?: string;
-}) {
+function DraftThreadIcon({ size = 17, className }: { size?: number; className?: string }) {
   return (
     <svg
       width={size}
@@ -277,7 +275,6 @@ const footerItemIcons: Record<string, ComponentType<{ size?: number }>> = {
   Profile: User,
   "About us": Info,
   "Contact us": Mail,
-  Admin: ShieldCheck,
 };
 
 const SIDEBAR_SUBMENU_CARD_CLASS =
@@ -364,22 +361,26 @@ function RootNavigationPanel({
   eventContextSourcePage,
   hasCreateEventAccess,
   isCreateEntryActive,
+  isAdmin,
   createdEventsCount,
   onHome,
   onAiThreads,
   onCreate,
   onMyEvents,
+  onAdmin,
 }: {
   pathname: string | null;
   sidebarPage: string;
   eventContextSourcePage: string;
   hasCreateEventAccess: boolean;
   isCreateEntryActive: boolean;
+  isAdmin: boolean;
   createdEventsCount: number;
   onHome: () => void;
   onAiThreads: () => void;
   onCreate: () => void;
   onMyEvents: () => void;
+  onAdmin: () => void;
 }) {
   const isHomeActive = pathname === "/" && sidebarPage === "root";
   const isChatActive = pathname === "/chat" || sidebarPage === "aiThreads";
@@ -392,6 +393,8 @@ function RootNavigationPanel({
     sidebarPage === "myEvents" ||
     (sidebarPage === "eventContext" && eventContextSourcePage === "myEvents") ||
     (isViewingEventFromListInRoot && eventContextSourcePage === "myEvents");
+  const isAdminActive =
+    sidebarPage === "admin" || (Boolean(pathname?.startsWith("/admin")) && sidebarPage === "root");
   const mainActiveAccent = getSidebarPrimaryActiveAccent();
   const rootMenuActiveChipClass = "nav-chrome-sidebar-chip-active";
   const rootMenuChipClass = SIDEBAR_ICON_CHIP_ACCENT_CLASS;
@@ -517,6 +520,127 @@ function RootNavigationPanel({
             <span className={`ml-auto ${SIDEBAR_BADGE_CLASS}`}>{createdEventsCount}</span>
           ) : null}
         </button>
+      </div>
+
+      {isAdmin ? (
+        <div className="space-y-2">
+          <div className="px-4">
+            <div className="nav-chrome-divider h-px" />
+          </div>
+          <button
+            type="button"
+            onClick={onAdmin}
+            className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
+              isAdminActive ? activeRowClass : inactiveRowClass
+            } py-3 pl-4 pr-4`}
+            style={isAdminActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
+          >
+            <span
+              className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+                isAdminActive ? rootMenuActiveChipClass : rootMenuChipClass
+              } ${rootIconClass(isAdminActive)}`}
+            >
+              <ShieldCheck size={17} strokeWidth={1.9} />
+            </span>
+            <span
+              className={`truncate ${rootRowTextClass} ${
+                isAdminActive
+                  ? rootActiveTextClass
+                  : `${rootInactiveTextClass} ${rootHoverTextClass}`
+              }`}
+            >
+              Admin
+            </span>
+            <ChevronRight
+              size={15}
+              className={`ml-auto transition-colors ${
+                isAdminActive ? "text-[#b4acef]" : "text-[#beb9e8] group-hover:text-[#aba4e3]"
+              }`}
+            />
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+const adminSidebarIcons: Record<
+  AdminNavItemId,
+  ComponentType<{ size?: number; strokeWidth?: number }>
+> = {
+  dashboard: LayoutDashboard,
+  users: Users,
+  events: Gauge,
+  concierge: Bot,
+  scans: Search,
+  emails: Mail,
+  "marketing-assets": ImageIcon,
+  analytics: BarChart3,
+  settings: Settings,
+  health: HeartPulse,
+};
+
+function isAdminNavItemActive(pathname: string | null, href: string) {
+  if (!pathname) return false;
+  if (href === "/admin") return pathname === "/admin";
+  if (href === "/admin/marketing-images") {
+    return (
+      pathname.startsWith("/admin/marketing-images") ||
+      pathname.startsWith("/admin/marketing-assets")
+    );
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function AdminNavigationPanel({
+  pathname,
+  onBack,
+}: {
+  pathname: string | null;
+  onBack: () => void;
+}) {
+  return (
+    <div className="space-y-4 pt-2">
+      <div className={SUBPAGE_STICKY_HEADER_CLASS}>
+        <PanelBackButton onClick={onBack} />
+        <div className="px-2 pb-1 pt-1">
+          <p className={SIDEBAR_SUBPAGE_TITLE_CLASS}>Admin</p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {adminNavItems.map((item) => {
+          const Icon = adminSidebarIcons[item.id];
+          const isActive = isAdminNavItemActive(pathname, item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`${SIDEBAR_SUBMENU_ROW_CLASS} ${
+                isActive ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
+              }`}
+            >
+              <span
+                className={`${SIDEBAR_SUBMENU_ICON_CLASS} ${
+                  isActive ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS : SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS
+                }`}
+              >
+                <Icon size={16} strokeWidth={1.9} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span
+                  className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${
+                    isActive
+                      ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
+                      : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
@@ -1206,6 +1330,8 @@ export default function LeftSidebar() {
     viewModel.sidebarPage === "createEventOther" ? "translateX(0%)" : "translateX(100%)";
   const aiThreadsPanelTransform =
     viewModel.sidebarPage === "aiThreads" ? "translateX(0%)" : "translateX(100%)";
+  const adminPanelTransform =
+    viewModel.sidebarPage === "admin" ? "translateX(0%)" : "translateX(100%)";
   const showOwnerEventsPanel =
     viewModel.sidebarPage === "myEvents" ||
     (viewModel.sidebarPage === "eventContext" &&
@@ -1376,12 +1502,22 @@ export default function LeftSidebar() {
                       eventContextSourcePage={viewModel.eventContextSourcePage}
                       hasCreateEventAccess={viewModel.hasCreateEventAccess}
                       isCreateEntryActive={viewModel.isCreateEntryActive}
+                      isAdmin={viewModel.isAdmin}
                       createdEventsCount={viewModel.createdEventsCount}
                       onHome={viewModel.goHomeFromSidebar}
                       onAiThreads={viewModel.openAiThreadsPage}
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}
+                      onAdmin={viewModel.openAdminPage}
                     />
+                  </div>
+
+                  <div
+                    className={`${SIDEBAR_PANEL_CLASS} z-[9]`}
+                    style={panelStyle(adminPanelTransform, viewModel.sidebarPage === "admin")}
+                    aria-hidden={viewModel.sidebarPage !== "admin"}
+                  >
+                    <AdminNavigationPanel pathname={pathname} onBack={viewModel.backToRoot} />
                   </div>
 
                   <div

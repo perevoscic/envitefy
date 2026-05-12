@@ -781,6 +781,7 @@ function isStatePreservingConversationMessage(
   if (/\b(create|make|build|generate|draft|design|change|update|set|switch)\b/i.test(text)) {
     return false;
   }
+  if (hasLikelyAnswerForCurrentDraftQuestion(text, previous)) return false;
   return (
     /^(are you here|you there|hello\??|hi\??|who are you|what are you|why would i do that)\??$/i.test(
       text,
@@ -789,6 +790,24 @@ function isStatePreservingConversationMessage(
       text,
     )
   );
+}
+
+function hasLikelyAnswerForCurrentDraftQuestion(message: string, previous?: ConciergeEventDraft | null) {
+  const field = firstMissingField(previous);
+  const text = cleanString(message) || "";
+  if (!field || !text) return false;
+  if (field === "date" || field === "time" || field === "date_confirmation") {
+    return /\b(?:today|tomorrow|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday|jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)|\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?))\b/i.test(
+      text,
+    );
+  }
+  if (field === "location") {
+    return Boolean(detectVenueOrLocation(text) || detectLocationFollowUp(text, previous));
+  }
+  if (field === "numberOfGuests") {
+    return /\b\d{1,4}\s*(?:guests?|people|kids|children|attendees|invitees)\b/i.test(text);
+  }
+  return false;
 }
 
 function pendingDetailLine(previous?: ConciergeEventDraft | null) {
@@ -898,6 +917,82 @@ function buildEnvitefyKnowledgeAnswer(message: string, previous?: ConciergeEvent
   }
   const pending = pendingDetailLine(previous);
   return pending ? `${answer}\n${pending}` : answer;
+}
+
+function isStandaloneLostContextReply(message: string) {
+  const text = cleanString(message) || "";
+  if (!text) return false;
+  return /\b(?:you\s+already\s+asked|already\s+answered|already\s+told\s+you|i\s+already\s+gave|you\s+(?:lost|forgot|dropped)|earlier\s+draft|previous\s+draft)\b/i.test(
+    text,
+  );
+}
+
+function buildStandaloneLostContextAnswer(message: string) {
+  const chronoResult = parseChrono(message);
+  const location = detectVenueOrLocation(message);
+  const details = [
+    chronoResult.timeText || chronoResult.dateText,
+    location ? `at ${location}` : null,
+  ].filter(Boolean);
+  const caught = details.length ? `, but I caught ${details.join(" ")}` : "";
+  return `I do not have the earlier draft loaded here${caught}. What event should I attach that to?`;
+}
+
+function buildEmptyConversationDraft(args: {
+  sessionDraft?: ConciergeEventDraft | null;
+  requestedOutputs: RequestedOutput[];
+  sourceContext: ConciergeEventDraft["sourceContext"];
+  knowledgeAnswer: string;
+}): ConciergeEventDraft {
+  return {
+    intent: "unknown",
+    creationSessionId: createCreationSessionId(args.sessionDraft),
+    requestedOutputs: args.requestedOutputs,
+    sourceContext: {
+      ...args.sourceContext,
+      boundary: "envitefy_question",
+    },
+    eventPurpose: null,
+    eventType: "unknown",
+    title: null,
+    ownership: "unknown",
+    draftStatus: "needs_source_or_event",
+    currentQuestion: null,
+    canPersist: false,
+    honoreeName: null,
+    relationship: null,
+    ageOrMilestone: null,
+    dateText: null,
+    timeText: null,
+    startISO: null,
+    endISO: null,
+    timezone: DEFAULT_TIMEZONE,
+    location: null,
+    venue: null,
+    rsvpEnabled: null,
+    rsvpDeadline: null,
+    rsvpName: null,
+    rsvpContact: null,
+    numberOfGuests: null,
+    registryLink: null,
+    giftPreferenceNote: null,
+    giftPromptDismissed: null,
+    theme: null,
+    tone: null,
+    knowledgeAnswer: args.knowledgeAnswer,
+    assistantGuidance: null,
+    outputs: toLegacyOutputs(args.requestedOutputs),
+    missingFields: [],
+    previewCopy: {
+      headline: "Envitefy Concierge",
+      subheadline: "Ask about event products, RSVP, uploads, or guest pages.",
+      body: "Envitefy helps turn event details into shareable guest-facing products.",
+      scheduleLine: "Date TBD",
+      locationLine: "Location TBD",
+      cta: "View details",
+    },
+    source: "text",
+  };
 }
 
 function missingFieldLabel(field: string) {
@@ -1663,6 +1758,14 @@ export function fallbackExtractConciergeDraft(args: {
   const sourceContext = blockingBoundary
     ? { ...resolvedSourceContext, boundary: blockingBoundary }
     : resolvedSourceContext;
+  if (!previous && !privateDataMutationRequest && isStandaloneLostContextReply(message)) {
+    return buildEmptyConversationDraft({
+      sessionDraft,
+      requestedOutputs,
+      sourceContext,
+      knowledgeAnswer: buildStandaloneLostContextAnswer(message),
+    });
+  }
   if (!privateDataMutationRequest && isStatePreservingConversationMessage(message, previous)) {
     return {
       ...previous!,
@@ -1687,55 +1790,12 @@ export function fallbackExtractConciergeDraft(args: {
         assistantGuidance: null,
       };
     }
-    return {
-      intent: "unknown",
-      creationSessionId: createCreationSessionId(sessionDraft),
+    return buildEmptyConversationDraft({
+      sessionDraft,
       requestedOutputs,
-      sourceContext: {
-        ...sourceContext,
-        boundary: "envitefy_question",
-      },
-      eventPurpose: null,
-      eventType: "unknown",
-      title: null,
-      ownership: "unknown",
-      draftStatus: "needs_source_or_event",
-      currentQuestion: null,
-      canPersist: false,
-      honoreeName: null,
-      relationship: null,
-      ageOrMilestone: null,
-      dateText: null,
-      timeText: null,
-      startISO: null,
-      endISO: null,
-      timezone: DEFAULT_TIMEZONE,
-      location: null,
-      venue: null,
-      rsvpEnabled: null,
-      rsvpDeadline: null,
-      rsvpName: null,
-      rsvpContact: null,
-      numberOfGuests: null,
-      registryLink: null,
-      giftPreferenceNote: null,
-      giftPromptDismissed: null,
-      theme: null,
-      tone: null,
+      sourceContext,
       knowledgeAnswer,
-      assistantGuidance: null,
-      outputs: toLegacyOutputs(requestedOutputs),
-      missingFields: [],
-      previewCopy: {
-        headline: "Envitefy Concierge",
-        subheadline: "Ask about event products, RSVP, uploads, or guest pages.",
-        body: "Envitefy helps turn event details into shareable guest-facing products.",
-        scheduleLine: "Date TBD",
-        locationLine: "Location TBD",
-        cta: "View details",
-      },
-      source: "text",
-    };
+    });
   }
   if (blockingBoundary && previous) {
     return {

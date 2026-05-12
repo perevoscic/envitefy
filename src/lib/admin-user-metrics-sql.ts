@@ -21,60 +21,12 @@ export const ADMIN_USER_METRICS_CTE_SQL = `
       coalesce(sum(case when is_scan and category like '%general%' then 1 else 0 end), 0)::integer as scans_from_history_general_events,
       coalesce(sum(case when is_scan and (category like '%car%' or category like '%pool%') then 1 else 0 end), 0)::integer as scans_from_history_car_pool,
       max(created_at) as last_event_created_at,
-      max(case when is_scan then created_at else null end) as last_scan_created_at,
-      coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'id', id,
-            'title', title,
-            'category', nullif(category_label, ''),
-            'publicSlug', nullif(public_slug, ''),
-            'primaryOutput', nullif(primary_output, ''),
-            'createdAt', created_at
-          )
-          order by created_at desc nulls last, id desc
-        ) filter (where event_rank <= 20),
-        '[]'::jsonb
-      ) as event_debug_links,
-      coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'id', id,
-            'title', title,
-            'category', nullif(category_label, ''),
-            'publicSlug', nullif(public_slug, ''),
-            'primaryOutput', nullif(primary_output, ''),
-            'createdVia', nullif(created_via, ''),
-            'sourceType', nullif(source_type, ''),
-            'createdAt', created_at
-          )
-          order by created_at desc nulls last, id desc
-        ) filter (where is_scan and scan_rank <= 20),
-        '[]'::jsonb
-      ) as scan_debug_links
+      max(case when is_scan then created_at else null end) as last_scan_created_at
     from (
       select
-        event_base.*,
-        row_number() over (partition by user_id order by created_at desc nulls last, id desc) as event_rank,
-        row_number() over (partition by user_id, is_scan order by created_at desc nulls last, id desc) as scan_rank
-      from (
-        select
-        id,
         user_id,
-        title,
         created_at,
-        coalesce(data->>'category', '') as category_label,
         lower(coalesce(data->>'category', '')) as category,
-        coalesce(data->>'createdVia', '') as created_via,
-        coalesce(data->'sourceContext'->>'type', '') as source_type,
-        coalesce(nullif(data->>'publicSlug', ''), nullif(data->>'public_slug', '')) as public_slug,
-        coalesce(
-          nullif(data->>'primaryOutput', ''),
-          nullif(data->>'productType', ''),
-          nullif(data->>'publicRenderer', ''),
-          nullif(data->'publicEvent'->>'primaryOutput', ''),
-          nullif(data->'publicEvent'->>'renderer', '')
-        ) as primary_output,
         (
           lower(coalesce(data->>'createdVia', '')) = 'ocr'
           or lower(coalesce(data->>'createdVia', '')) like 'ocr-%'
@@ -82,7 +34,6 @@ export const ADMIN_USER_METRICS_CTE_SQL = `
         ) as is_scan
       from event_history
       where user_id is not null
-      ) event_base
     ) event_rows
     group by user_id
   ),
@@ -121,9 +72,7 @@ export const ADMIN_USER_METRICS_CTE_SQL = `
       coalesce(em.events_general_events, 0)::integer as events_general_events,
       coalesce(em.events_car_pool, 0)::integer as events_car_pool,
       em.last_event_created_at,
-      em.last_scan_created_at,
-      coalesce(em.event_debug_links, '[]'::jsonb) as event_debug_links,
-      coalesce(em.scan_debug_links, '[]'::jsonb) as scan_debug_links
+      em.last_scan_created_at
     from users u
     left join event_metrics em on em.user_id = u.id
     left join share_metrics sm on sm.user_id = u.id
@@ -138,5 +87,5 @@ export const ADMIN_USER_METRICS_SELECT_SQL = `
   events_total, events_birthdays, events_weddings, events_sport_events,
   events_appointments, events_doctor_appointments, events_play_days,
   events_general_events, events_car_pool,
-  last_event_created_at, last_scan_created_at, event_debug_links, scan_debug_links
+  last_event_created_at, last_scan_created_at
 `;

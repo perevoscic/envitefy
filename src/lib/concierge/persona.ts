@@ -76,6 +76,9 @@ function sanitizePersonaCopy(value: string, options: { trim?: boolean } = {}) {
     .replace(/\*{1,3}([^*\n]+?)\*{1,3}/g, "$1")
     .replace(/\*{2,}/g, "")
     .replace(/__([^_\n]+?)__/g, "$1")
+    .replace(/\b(?:bestie|babe|girlie|queen|omg|lol)\b[!,. ]*/gi, "")
+    .replace(/\p{Extended_Pictographic}/gu, "")
+    .replace(/!{2,}/g, "!")
     .replace(/\s+(?:in|using|for)\s+[A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?\s+time\b/gi, "")
     .replace(/\s+[A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?\s+time\b/gi, "")
     .replace(/\s*\([A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?\)\s*/gi, " ")
@@ -208,6 +211,7 @@ export async function streamConciergePersona(
               "Use currentDraft.selectedProducts for product names. Never expose raw snake_case identifiers such as digital_flyer, rsvp_page, live_card, or event_page.",
               "Use currentDraft.capturedDetails.names for featured names. Do not include QA or test prefixes as part of the featured names.",
               "Never use markdown, asterisks, star separators, or horizontal dividers. The interface handles bold detail highlighting.",
+              "Do not use slang, emojis, excessive exclamation, or over-familiar compliments.",
               "When confirming user-provided event details, put each detail on its own plain line, for example: Honoree: Lara turning 7. Time: 12:00 PM. Location: AMC Theater. RSVP guest count: 23.",
               "When repeating captured user-entered details, use label/value lines so the interface can bold the values.",
               "If details are missing, ask at most two short questions total.",
