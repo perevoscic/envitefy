@@ -11,6 +11,19 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminAnalyticsPage() {
   const analytics = await getAdminAnalyticsSnapshot();
+  const ga4ReportAvailable = analytics.ga4Report.status === "available";
+  const ga4ConfigPresent = analytics.ga4.connected;
+  const ga4StatusTone = ga4ReportAvailable ? "success" : ga4ConfigPresent ? "warning" : "warning";
+  const ga4StatusLabel = ga4ReportAvailable
+    ? "Connected"
+    : ga4ConfigPresent
+      ? "Needs access"
+      : "Disconnected";
+  const ga4Description = ga4ReportAvailable
+    ? analytics.ga4.message
+    : ga4ConfigPresent
+      ? analytics.ga4Report.message
+      : analytics.ga4.configurationError || analytics.ga4.message;
 
   return (
     <div className="space-y-6">
@@ -22,10 +35,10 @@ export default async function AdminAnalyticsPage() {
 
       <AdminPanel
         title="Google Analytics"
-        description={analytics.ga4.message}
+        description={ga4Description}
         action={
-          <AdminStatusBadge tone={analytics.ga4.connected ? "success" : "warning"}>
-            {analytics.ga4.connected ? "Connected" : "Disconnected"}
+          <AdminStatusBadge tone={ga4StatusTone}>
+            {ga4StatusLabel}
           </AdminStatusBadge>
         }
       >
