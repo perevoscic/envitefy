@@ -15,15 +15,15 @@ test("landing page is Concierge-led and outcome-focused", () => {
 
   assert.match(page, /<LandingExperience \/>/);
   assert.match(page, /AI Concierge for Invites, RSVP & Event Pages/);
-  assert.match(page, /message, upload, flyer, invite, PDF, schedule, or design idea/);
+  assert.match(page, /message, upload, snap, flyer, invite, PDF, schedule, or design idea/);
 
   assert.match(landingExperience, /id="landing-hero"/);
   assert.match(landingExperience, /Create the invite, RSVP, and event page in one place/);
   assert.match(landingExperience, /Start with Concierge/);
-  assert.match(landingExperience, /Upload an invite or PDF/);
+  assert.match(landingExperience, /Upload or snap an invite/);
   assert.match(landingExperience, /id="platform"/);
-  assert.match(landingExperience, /Intent chooser/);
-  assert.match(landingExperience, /warm surface, sage action, lavender accents, charcoal text/);
+  assert.match(landingExperience, /Product stack/);
+  assert.match(landingExperience, /What Envitefy creates from one starting point/);
   assert.match(landingExperience, /#fcf7fb/);
   assert.match(landingExperience, /#fbf6ff/);
   assert.match(landingExperience, /#fff1f7/);
@@ -31,15 +31,17 @@ test("landing page is Concierge-led and outcome-focused", () => {
   assert.match(landingExperience, /#241c2b/);
   assert.match(landingExperience, /#7457a6/);
   assert.match(page, /themeColor: "#fbf6ff"/);
-  assert.match(landingExperience, /Birthday party/);
-  assert.match(landingExperience, /Upload flyer\/PDF/);
-  assert.match(landingExperience, /Something else/);
+  assert.match(landingExperience, /Public event pages/);
+  assert.match(landingExperience, /RSVP tracking/);
+  assert.match(landingExperience, /Upload \/ Snap imports/);
   assert.match(landingExperience, /PhoneConciergePreview/);
   assert.match(landingExperience, /variant="signup"/);
   assert.match(landingExperience, /Spring carnival/);
   assert.match(landingExperience, /Ask about sign-ups/);
+  assert.match(landingExperience, /id="event-pages"/);
+  assert.match(landingExperience, /id="rsvp-tracking"/);
+  assert.match(landingExperience, /id="upload"/);
   assert.match(landingExperience, /id="concierge"/);
-  assert.match(landingExperience, /id="guest-experience"/);
   assert.match(landingExperience, /id="examples"/);
   assert.match(landingExperience, /id="workflow"/);
   assert.match(landingExperience, /<LandingFaq/);
@@ -50,8 +52,11 @@ test("landing page is Concierge-led and outcome-focused", () => {
 
   assert.match(landingFaqData, /What does Envitefy Concierge create/);
   assert.match(landingFaqData, /Can I upload a PDF, flyer, screenshot, or invite/);
+  assert.match(landingFaqData, /What happens when I upload someone else's invite/);
+  assert.match(landingFaqData, /Can I track RSVPs/);
+  assert.match(landingFaqData, /Can I create volunteer or supply sign-ups/);
   assert.match(landingFaqData, /manual event creation and upload-based creation/);
-  assert.match(landingFaq, /Concierge, uploads, event pages, sharing, and RSVPs/);
+  assert.match(landingFaq, /RSVP tracking, smart sign-ups/);
   assert.match(landingFaq, /#fffafd/);
   assert.match(landingFaq, /#eadcf5/);
 
@@ -90,7 +95,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
 
   assert.match(landingExperience, /<LandingLiveCardShowcase/);
   assert.match(landingExperience, /eyebrow="Live card gallery"/);
-  assert.match(landingExperience, /A polished card guests want to open/);
+  assert.match(landingExperience, /Live cards guests actually want to open/);
   assert.match(landingShowcase, /type LandingLiveCardShowcaseProps/);
   assert.match(landingShowcase, /id="showcase"/);
   assert.match(landingShowcase, /Open live card/);
@@ -121,6 +126,8 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(conditionalFooter, /AI Concierge/);
   assert.match(conditionalFooter, /Live cards/);
   assert.match(conditionalFooter, /RSVP pages/);
+  assert.match(conditionalFooter, /RSVP tracking/);
+  assert.match(conditionalFooter, /Upload or Snap/);
   assert.match(conditionalFooter, /Invites/);
   assert.match(conditionalFooter, /Sign-ups/);
   assert.match(conditionalFooter, /href="\/privacy"/);

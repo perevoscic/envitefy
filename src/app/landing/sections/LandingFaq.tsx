@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { landingFaqItems } from "../faq-data";
-import styles from "../LandingExperience.module.css";
 
 export default function LandingFaq() {
   const [open, setOpen] = useState<number | null>(0);
@@ -15,19 +14,20 @@ export default function LandingFaq() {
       aria-labelledby="landing-faq-heading"
     >
       <div className="mx-auto max-w-5xl">
-        <div
-          className={`${styles.surfacePanel} overflow-hidden rounded-[2.75rem] border border-[#eadcf5] bg-[#fffafd] px-7 py-8 shadow-[0_28px_90px_rgba(116,87,166,0.09)] md:px-12 md:py-10`}
-        >
+        <div className="overflow-hidden rounded-[2rem] border border-[#eadcf5] bg-[#fffafd] px-7 py-8 shadow-[0_28px_90px_rgba(116,87,166,0.09)] md:px-12 md:py-10">
           <div className="mx-auto w-full max-w-3xl text-center lg:text-left">
-            <span className={styles.eyebrow}>FAQ</span>
+            <span className="inline-flex rounded-full border border-[#eadcf5] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-[#7457a6]">
+              FAQ
+            </span>
             <h2
               id="landing-faq-heading"
-              className={`${styles.headline} mt-6 w-full text-3xl font-bold tracking-tight text-[#241c2b] sm:text-4xl lg:text-5xl`}
+              className="mt-6 w-full text-3xl font-bold tracking-tight text-[#241c2b] sm:text-4xl lg:text-5xl"
             >
               Questions before you try it
             </h2>
             <p className="mt-4 max-w-none text-lg leading-relaxed text-[#62586a]">
-              Quick answers about Concierge, uploads, event pages, sharing, and RSVPs.
+              Quick answers about Concierge, uploads, event pages, RSVP tracking, smart sign-ups,
+              sharing, and guests.
             </p>
 
             <div className="mt-10 space-y-3">

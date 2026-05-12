@@ -82,9 +82,9 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
   if (isMarketingRoute) {
     return (
       <footer className="relative z-[2] bg-transparent px-4 pt-8 pb-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl isolate overflow-hidden rounded-[2rem] border border-[#eadfd5] bg-[rgba(255,250,246,0.9)] shadow-[0_30px_80px_rgba(43,27,22,0.10)] backdrop-blur-[12px] [backface-visibility:hidden] [transform:translateZ(0)] [will-change:transform]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.82),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.72),rgba(255,255,255,0.4)_46%,rgba(201,143,107,0.08)_100%)]" />
-          <div className="relative grid gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(0,1.1fr)_repeat(4,minmax(0,0.68fr))] lg:px-10">
+        <div className="isolate mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-[#eadcf5] bg-[#fffafd]/95 shadow-[0_30px_80px_rgba(116,87,166,0.10)] backdrop-blur-[12px] [backface-visibility:hidden] [transform:translateZ(0)] [will-change:transform]">
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.86),rgba(251,246,255,0.62)_48%,rgba(255,241,247,0.72)_100%)]" />
+          <div className="relative grid gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(0,1.05fr)_repeat(5,minmax(0,0.62fr))] lg:px-10">
             <div className="max-lg:col-span-full pr-4">
               <Link href="/" className="inline-flex items-center overflow-visible">
                 <EnvitefyWordmark
@@ -93,57 +93,118 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                   tone="gradient"
                 />
               </Link>
-              <p className="mt-4 max-w-sm text-sm leading-7 text-[#8b7568]">
-                Create invites, RSVP pages, event hubs, registry links, and sign-ups from a message,
-                upload, flyer, PDF, or schedule.
+              <p className="mt-4 max-w-sm text-sm leading-7 text-[#62586a]">
+                Create live cards, RSVP pages, event hubs, registry links, smart sign-ups, and guest
+                tracking from a message, upload, snap, flyer, PDF, or schedule.
               </p>
             </div>
 
             <div className="col-span-full grid grid-cols-2 gap-x-6 gap-y-8 lg:contents">
               <div>
-                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#4d352c]">
-                  Product
+                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
+                  Create
                 </h4>
-                <div className="mt-4 space-y-3 text-sm text-[#8b7568]">
+                <div className="mt-4 space-y-3 text-sm text-[#62586a]">
                   <Link href="/landing#concierge" className="block hover:text-[#2b1b16]">
                     AI Concierge
+                  </Link>
+                  <Link href="/landing#upload" className="block hover:text-[#2b1b16]">
+                    Upload or Snap
                   </Link>
                   <Link href="/landing#showcase" className="block hover:text-[#2b1b16]">
                     Live cards
                   </Link>
-                  <Link href="/landing#guest-experience" className="block hover:text-[#2b1b16]">
-                    RSVP pages
-                  </Link>
-                  <Link href="/landing#workflow" className="block hover:text-[#2b1b16]">
-                    How it works
+                  <Link href="/landing#event-pages" className="block hover:text-[#2b1b16]">
+                    Smart sign-ups
                   </Link>
                 </div>
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#4d352c]">
-                  Guides
+                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
+                  Event Pages
                 </h4>
-                <div className="mt-4 space-y-3 text-sm text-[#8b7568]">
+                <div className="mt-4 space-y-3 text-sm text-[#62586a]">
+                  <Link href="/landing#event-pages" className="block hover:text-[#2b1b16]">
+                    Public event pages
+                  </Link>
+                  <Link href="/landing#event-pages" className="block hover:text-[#2b1b16]">
+                    RSVP pages
+                  </Link>
+                  <Link href="/landing#rsvp-tracking" className="block hover:text-[#2b1b16]">
+                    RSVP tracking
+                  </Link>
+                  <Link href="/landing#event-pages" className="block hover:text-[#2b1b16]">
+                    Registry links
+                  </Link>
+                  <Link href="/landing#event-pages" className="block hover:text-[#2b1b16]">
+                    Calendar and maps
+                  </Link>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
+                  Use Cases
+                </h4>
+                <div className="mt-4 space-y-3 text-sm text-[#62586a]">
+                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
+                    Birthdays
+                  </Link>
+                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
+                    Weddings
+                  </Link>
+                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
+                    Baby showers
+                  </Link>
+                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
+                    School events
+                  </Link>
+                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
+                    Sports teams
+                  </Link>
+                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
+                    Community events
+                  </Link>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
+                  Resources
+                </h4>
+                <div className="mt-4 space-y-3 text-sm text-[#62586a]">
                   <Link href="/guides" className="block hover:text-[#2b1b16]">
                     Guides hub
                   </Link>
                   <Link href="/guides/pdf-to-event-page" className="block hover:text-[#2b1b16]">
                     PDF to event page
                   </Link>
-                  <Link href="/landing#platform" className="block hover:text-[#2b1b16]">
-                    Event examples
+                  <Link href="/guides/flyer-to-event-page" className="block hover:text-[#2b1b16]">
+                    Flyer to event page
+                  </Link>
+                  <Link href="/guides/rsvp-event-page" className="block hover:text-[#2b1b16]">
+                    RSVP event page
+                  </Link>
+                  <Link href="/guides/live-card-invitations" className="block hover:text-[#2b1b16]">
+                    Live card invitations
                   </Link>
                 </div>
               </div>
 
-              <div>
-                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#4d352c]">
+              <div className="col-span-2 lg:col-span-1">
+                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
                   Company
                 </h4>
-                <div className="mt-4 space-y-3 text-sm text-[#8b7568]">
+                <div className="mt-4 space-y-3 text-sm text-[#62586a]">
                   <Link href="/about" className="block hover:text-[#2b1b16]">
                     About
+                  </Link>
+                  <Link href="/contact" className="block hover:text-[#2b1b16]">
+                    Contact
+                  </Link>
+                  <Link href="/faq" className="block hover:text-[#2b1b16]">
+                    FAQ
                   </Link>
                   <Link href="/privacy" className="block hover:text-[#2b1b16]">
                     Privacy
@@ -153,40 +214,29 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                   </Link>
                 </div>
               </div>
-
-              <div className="col-span-2 lg:col-span-1">
-                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#4d352c]">
-                  Support
-                </h4>
-                <div className="mt-4 space-y-3 text-sm text-[#8b7568]">
-                  <Link href="/faq" className="block hover:text-[#2b1b16]">
-                    FAQ
-                  </Link>
-                  <Link href="/contact" className="block hover:text-[#2b1b16]">
-                    Contact
-                  </Link>
-                  <Link href="/who-its-for" className="block hover:text-[#2b1b16]">
-                    Who it&apos;s for
-                  </Link>
-                </div>
-              </div>
             </div>
           </div>
-          <div className="relative border-t border-[#eadfd5]">
-            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-6 text-sm text-[#9a867a] sm:px-8 lg:px-10">
+          <div className="relative border-t border-[#eadcf5]">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-6 text-sm text-[#62586a] sm:px-8 lg:px-10">
               <p>© {new Date().getFullYear()} Envitefy</p>
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
                 <Link href="/landing#platform" className="hover:text-[#2b1b16]">
                   Invites
                 </Link>
-                <Link href="/landing#guest-experience" className="hover:text-[#2b1b16]">
+                <Link href="/landing#event-pages" className="hover:text-[#2b1b16]">
                   RSVP
                 </Link>
-                <Link href="/landing#concierge" className="hover:text-[#2b1b16]">
+                <Link href="/landing#rsvp-tracking" className="hover:text-[#2b1b16]">
+                  RSVP Tracking
+                </Link>
+                <Link href="/landing#event-pages" className="hover:text-[#2b1b16]">
                   Event Pages
                 </Link>
-                <Link href="/landing#workflow" className="hover:text-[#2b1b16]">
+                <Link href="/landing#event-pages" className="hover:text-[#2b1b16]">
                   Sign-ups
+                </Link>
+                <Link href="/landing#upload" className="hover:text-[#2b1b16]">
+                  Upload
                 </Link>
               </div>
             </div>

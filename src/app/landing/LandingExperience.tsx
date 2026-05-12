@@ -5,21 +5,22 @@ import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import {
   ArrowRight,
-  Baby,
+  BarChart3,
   Bell,
   CalendarCheck2,
-  CakeSlice,
+  Camera,
+  CheckCircle2,
   ClipboardList,
-  FileUp,
   Gift,
-  Heart,
-  HelpCircle,
+  Globe2,
   MapPin,
   MessageCircle,
-  School,
   Send,
+  Smartphone,
+  Sparkles,
   TicketCheck,
   Upload,
+  Users,
 } from "lucide-react";
 import conciergeLogo from "@/assets/envitefy-concierge-logo.png";
 import AuthModal from "@/components/auth/AuthModal";
@@ -30,55 +31,56 @@ import LandingFaq from "./sections/LandingFaq";
 const landingSectionSpacingClass = "px-4 py-6 sm:px-6 lg:px-8";
 
 const landingHeroNavLinks = [
-  { label: "Concierge", href: "#concierge" },
-  { label: "Gallery", href: "#showcase" },
+  { label: "Live Cards", href: "#showcase" },
+  { label: "Event Pages", href: "#event-pages" },
+  { label: "RSVP", href: "#rsvp-tracking" },
+  { label: "Upload", href: "#upload" },
   { label: "Examples", href: "#examples" },
-  { label: "Workflow", href: "#workflow" },
   { label: "FAQ", href: "#faq" },
 ] as const;
 
-const intentTiles = [
+const productOutputs = [
   {
-    title: "Birthday party",
-    description: "Invite, RSVP, directions, gifts",
-    icon: CakeSlice,
-    href: "/chat",
-    tone: "blush",
-  },
-  {
-    title: "Wedding",
-    description: "Schedule, registry, hotels, RSVP",
-    icon: Heart,
-    href: "/chat",
+    title: "Live cards",
+    description: "A polished phone-first invitation connected to the event details.",
+    icon: Sparkles,
+    href: "#showcase",
     tone: "lavender",
   },
   {
-    title: "Baby shower",
-    description: "Registry, food slots, guest notes",
-    icon: Baby,
-    href: "/chat",
-    tone: "blush",
-  },
-  {
-    title: "Team or school",
-    description: "Schedules, sign-ups, parent details",
-    icon: School,
-    href: "/chat",
+    title: "Public event pages",
+    description: "One guest link for schedule, location, registry, updates, and sharing.",
+    icon: Globe2,
+    href: "#event-pages",
     tone: "sage",
   },
   {
-    title: "Upload flyer/PDF",
-    description: "Convert what you already have",
-    icon: FileUp,
-    href: "/?action=upload",
+    title: "RSVP pages",
+    description: "Guests can answer from the page without hunting for the host's text.",
+    icon: TicketCheck,
+    href: "#event-pages",
+    tone: "blush",
+  },
+  {
+    title: "RSVP tracking",
+    description: "Hosts see replies, pending guests, and updates tied to the event.",
+    icon: BarChart3,
+    href: "#rsvp-tracking",
     tone: "lavender",
   },
   {
-    title: "Something else",
-    description: "Start open-ended with Concierge",
-    icon: HelpCircle,
-    href: "/chat",
-    tone: "lavender",
+    title: "Smart sign-ups",
+    description: "Volunteer slots, supply lists, food stations, and capacity-aware claims.",
+    icon: ClipboardList,
+    href: "#event-pages",
+    tone: "blush",
+  },
+  {
+    title: "Upload / Snap imports",
+    description: "Turn an invite, flyer, screenshot, schedule, or PDF into a useful page.",
+    icon: Camera,
+    href: "#upload",
+    tone: "sage",
   },
 ] as const;
 
@@ -100,7 +102,7 @@ const examples = [
     note: "Invite, RSVP, directions, gifts",
   },
   {
-    title: "Wedding weekends",
+    title: "Weddings",
     image: "/images/marketing/use-case-wedding.webp",
     note: "Schedule, registry, hotel notes",
   },
@@ -115,21 +117,22 @@ const examples = [
     note: "Parent info, sign-ups, field trips",
   },
   {
-    title: "Team weekends",
-    image: "/images/marketing/use-case-gymnastics.webp",
+    title: "Sports and team weekends",
+    image: "/images/marketing/use-case-sports.webp",
     note: "Schedules, venues, live updates",
   },
   {
-    title: "Open houses",
-    image: "/images/marketing/use-case-team.webp",
-    note: "Client events and professional gatherings",
+    title: "Community and volunteer events",
+    image: "/images/marketing/use-case-community.webp",
+    note: "Roles, supplies, reminders",
   },
 ] as const;
 
 const workflow = [
   {
-    title: "Tell or upload",
-    description: "Describe the event, paste details, or upload a flyer, invite, PDF, or schedule.",
+    title: "Tell, upload, or snap",
+    description:
+      "Start with a chat message, flyer, invite, screenshot, PDF, schedule, or design idea.",
   },
   {
     title: "Review the draft",
@@ -137,9 +140,62 @@ const workflow = [
       "Confirm the date, location, RSVP needs, registry links, sign-up slots, and visuals.",
   },
   {
-    title: "Share the live link",
+    title: "Share and track",
     description:
-      "Publish a mobile event page that guests can use before, during, and after the event.",
+      "Send one link, collect RSVPs, watch sign-ups, and keep guest details in one place.",
+  },
+] as const;
+
+const eventPageHighlights = [
+  {
+    label: "Mobile event hub",
+    description:
+      "The invite, schedule, location, RSVP, calendar, registry, and updates travel together.",
+    icon: Smartphone,
+    tone: "lavender",
+  },
+  {
+    label: "Guest actions",
+    description: "People can RSVP, save the date, open the map, claim a slot, or share the event.",
+    icon: CheckCircle2,
+    tone: "sage",
+  },
+  {
+    label: "Host control",
+    description: "Keep details editable after the first share instead of resending screenshots.",
+    icon: Users,
+    tone: "blush",
+  },
+] as const;
+
+const rsvpRows = [
+  { name: "Maya Patel", email: "maya@example.com", response: "Attending", updated: "2h ago" },
+  { name: "Jordan Lee", email: "jordan@example.com", response: "Pending", updated: "Yesterday" },
+  { name: "Nora Chen", email: "nora@example.com", response: "Declined", updated: "May 9" },
+] as const;
+
+const uploadPaths = [
+  {
+    title: "I am hosting",
+    badge: "My events",
+    image: "/images/marketing/use-case-school.webp",
+    description:
+      "Upload a flyer, schedule, PDF, or design and Envitefy turns it into your owned event page.",
+    points: [
+      "Best for school events, team schedules, fundraisers, and hosted celebrations",
+      "Creates an event you can edit, share, and track",
+    ],
+  },
+  {
+    title: "I was invited",
+    badge: "Invited events",
+    image: "/images/landing/snap-phone-lara.webp",
+    description:
+      "Snap someone else's birthday, wedding, gender reveal, or similar invite card so the details are easy to save.",
+    points: [
+      "Best for received invite cards",
+      "Keeps the original invite useful without making you the host",
+    ],
   },
 ] as const;
 
@@ -170,7 +226,7 @@ const phonePreviews = {
   },
 } as const;
 
-const intentTileToneClasses = {
+const tileToneClasses = {
   sage: {
     card: "hover:border-[#8ab8aa] hover:shadow-[0_20px_42px_rgba(39,104,92,0.13),inset_0_1px_0_rgba(255,255,255,0.92)]",
     icon: "border-[#d7e7df] bg-[#e8f4ef] text-[#27685c] group-hover:border-[#241c2b] group-hover:bg-[#241c2b] group-hover:text-white",
@@ -410,9 +466,9 @@ export default function LandingExperience() {
                 Create the invite, RSVP, and event page in one place.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-[#62586a]">
-                Envitefy turns a message, upload, flyer, invite, PDF, schedule, or design idea into
-                a shareable event hub with RSVP, calendar, maps, registry links, updates, and
-                sign-ups.
+                Envitefy turns a message, upload, snap, flyer, invite, PDF, schedule, or design idea
+                into a shareable event hub with live cards, RSVP, calendar, maps, registry links,
+                updates, sign-ups, and host tracking.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <PrimaryButton onClick={() => openAuth("signup")}>
@@ -420,12 +476,12 @@ export default function LandingExperience() {
                   <ArrowRight className="h-4 w-4" />
                 </PrimaryButton>
                 <SecondaryLink href="/?action=upload">
-                  Upload an invite or PDF
+                  Upload or snap an invite
                   <Upload className="h-4 w-4" />
                 </SecondaryLink>
               </div>
               <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-                {["Invites", "RSVP", "Event pages", "Sign-ups"].map((item) => (
+                {["Live cards", "Event pages", "RSVP tracking", "Smart sign-ups"].map((item) => (
                   <div
                     key={item}
                     className="rounded-lg border border-[#eadcf5] bg-[#fffafd] px-4 py-3"
@@ -454,7 +510,7 @@ export default function LandingExperience() {
                     </div>
                     <div className="mt-5 grid grid-cols-2 gap-3">
                       {[
-                        ["42", "RSVPs"],
+                        ["42", "RSVP replies"],
                         ["8", "Sign-up slots"],
                         ["3", "Registry links"],
                         ["1", "Share URL"],
@@ -469,7 +525,7 @@ export default function LandingExperience() {
                       {[
                         "Concierge fills the missing details",
                         "Guests can RSVP from the page",
-                        "Maps, registry, and updates travel together",
+                        "RSVP tracking stays attached to the event",
                       ].map((item) => (
                         <div key={item} className="flex items-center gap-3 text-sm text-[#62586a]">
                           <span className="h-2 w-2 rounded-full bg-[#7457a6]" />
@@ -492,6 +548,9 @@ export default function LandingExperience() {
                         </span>
                       ))}
                     </div>
+                    <div className="border-t border-[#f0e7f8] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#7457a6]">
+                      From chat, flyer, PDF, or invite
+                    </div>
                   </div>
                 </div>
               </div>
@@ -502,16 +561,16 @@ export default function LandingExperience() {
         <section id="platform" className="border-b border-[#eadcf5] bg-[#fff1f7]">
           <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
             <SectionHeader
-              eyebrow="Intent chooser"
-              title="Pick the closest starting point."
-              description="A soft chooser works best when it feels like Envitefy: warm surface, sage action, lavender accents, charcoal text, and enough contrast to stay practical."
+              eyebrow="Product stack"
+              title="What Envitefy creates from one starting point."
+              description="Start with a message, upload, or snap. Envitefy turns it into a guest-ready link with the right tools attached."
               center
             />
             <div className="mx-auto mt-5 h-1 w-24 rounded-full bg-[#cdbdeb]" />
             <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {intentTiles.map((option) => {
+              {productOutputs.map((option) => {
                 const Icon = option.icon;
-                const toneClasses = intentTileToneClasses[option.tone];
+                const toneClasses = tileToneClasses[option.tone];
                 return (
                   <Link
                     key={option.title}
@@ -546,9 +605,196 @@ export default function LandingExperience() {
         <section className="border-y border-[#eadcf5] bg-[#fbf8ff]">
           <LandingLiveCardShowcase
             eyebrow="Live card gallery"
-            title="A polished card guests want to open."
-            description="Explore how a shared Envitefy link can feel designed, personal, and useful on a phone."
+            title="Live cards guests actually want to open."
+            description="Explore how Envitefy cards feel designed, personal, and useful on a phone."
           />
+        </section>
+
+        <section id="event-pages" className="border-y border-[#eadcf5] bg-white">
+          <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[0.86fr_1.14fr] lg:px-10">
+            <div>
+              <SectionHeader
+                eyebrow="Event pages"
+                title="One link with real utility after the invite is sent."
+                description="Guests get a clear page with the details and actions they need. Hosts avoid resending the address, registry, RSVP link, and updates across separate threads."
+              />
+              <div className="mt-8 grid gap-4">
+                {eventPageHighlights.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div
+                      key={item.label}
+                      className="flex gap-4 rounded-lg border border-[#eadcf5] bg-[#fffafd] p-4"
+                    >
+                      <span
+                        className={cx(
+                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                          guestActionToneClasses[item.tone],
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <h3 className="text-sm font-semibold text-[#241c2b]">{item.label}</h3>
+                        <p className="mt-1 text-sm leading-6 text-[#62586a]">{item.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="grid gap-5 lg:grid-cols-[minmax(220px,0.82fr)_minmax(0,1fr)] lg:items-center">
+              <div className="mx-auto w-full max-w-[290px]">
+                <img
+                  src="/images/landing/interactive-hub-phone-cutout.webp"
+                  alt="Envitefy public event page preview on a phone"
+                  className="w-full object-contain drop-shadow-[0_28px_44px_rgba(36,28,43,0.18)]"
+                />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                {guestActions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <div
+                      key={action.label}
+                      className="flex items-center gap-3 rounded-lg border border-[#eadcf5] bg-white p-4 shadow-sm"
+                    >
+                      <span
+                        className={cx(
+                          "flex h-9 w-9 items-center justify-center rounded-lg",
+                          guestActionToneClasses[action.tone],
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <span className="text-sm font-semibold">{action.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="rsvp-tracking" className="border-b border-[#eadcf5] bg-[#fbf6ff]">
+          <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[0.82fr_1.18fr] lg:px-10">
+            <SectionHeader
+              eyebrow="RSVP tracking"
+              title="Know who is coming without chasing replies."
+              description="RSVPs stay attached to the event instead of disappearing into texts, email chains, or screenshots. Hosts can see the count, the pending list, and the latest response."
+            />
+            <div className="overflow-hidden rounded-lg border border-[#eadcf5] bg-white shadow-[0_24px_54px_rgba(116,87,166,0.11)]">
+              <div className="border-b border-[#eadcf5] bg-[#fffafd] px-5 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7457a6]">
+                      Host dashboard
+                    </p>
+                    <h3 className="mt-1 text-xl font-semibold text-[#241c2b]">RSVP Dashboard</h3>
+                  </div>
+                  <span className="rounded-full bg-[#f1ecfb] px-3 py-1 text-xs font-semibold text-[#7457a6]">
+                    Live responses
+                  </span>
+                </div>
+              </div>
+              <div className="grid gap-3 p-5 sm:grid-cols-3">
+                {[
+                  { label: "Invites Sent", value: "64", sub: "Tracked guests" },
+                  { label: "Attending", value: "42", sub: "Confirmed" },
+                  { label: "Pending", value: "19", sub: "Awaiting replies" },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-lg border border-[#eadcf5] bg-[#fbf8ff] p-4"
+                  >
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7a6c99]">
+                      {stat.label}
+                    </p>
+                    <p className="mt-2 text-3xl font-semibold text-[#241c2b]">{stat.value}</p>
+                    <p className="mt-1 text-xs text-[#62586a]">{stat.sub}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="overflow-x-auto border-t border-[#eadcf5]">
+                <table className="w-full min-w-[36rem] text-left">
+                  <thead className="bg-[#fffafd]">
+                    <tr>
+                      {["Guest", "Email Address", "RSVP", "Updated"].map((heading) => (
+                        <th
+                          key={heading}
+                          className="px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#7a6c99]"
+                        >
+                          {heading}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#eadcf5]">
+                    {rsvpRows.map((row) => (
+                      <tr key={row.email}>
+                        <td className="px-5 py-4 text-sm font-semibold text-[#241c2b]">
+                          {row.name}
+                        </td>
+                        <td className="px-5 py-4 text-sm text-[#62586a]">{row.email}</td>
+                        <td className="px-5 py-4">
+                          <span
+                            className={cx(
+                              "rounded-full px-3 py-1 text-xs font-bold",
+                              row.response === "Attending" && "bg-[#e8f4ef] text-[#27685c]",
+                              row.response === "Pending" && "bg-[#f1ecfb] text-[#7457a6]",
+                              row.response === "Declined" && "bg-[#fff1f7] text-[#a84f79]",
+                            )}
+                          >
+                            {row.response}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-sm text-[#62586a]">{row.updated}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="upload" className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
+          <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr]">
+            <SectionHeader
+              eyebrow="Upload and snap"
+              title="Start from what you already have."
+              description="Hosted flyers and schedules become My events. Received birthday, wedding, gender reveal, and similar invite cards become Invited events."
+            />
+            <div className="grid gap-5 md:grid-cols-2">
+              {uploadPaths.map((path) => (
+                <article
+                  key={path.title}
+                  className="overflow-hidden rounded-lg border border-[#eadcf5] bg-white shadow-sm"
+                >
+                  <img
+                    src={path.image}
+                    alt={`${path.title} upload path`}
+                    className="h-56 w-full object-cover"
+                  />
+                  <div className="p-5">
+                    <span className="rounded-full bg-[#f1ecfb] px-3 py-1 text-xs font-semibold text-[#7457a6]">
+                      {path.badge}
+                    </span>
+                    <h3 className="mt-4 text-xl font-semibold text-[#241c2b]">{path.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-[#62586a]">{path.description}</p>
+                    <div className="mt-4 space-y-2">
+                      {path.points.map((point) => (
+                        <div key={point} className="flex gap-2 text-sm leading-6 text-[#3b3044]">
+                          <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[#7457a6]" />
+                          <span>{point}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section id="concierge" className="border-y border-[#eadcf5] bg-white">
@@ -556,14 +802,14 @@ export default function LandingExperience() {
             <div>
               <SectionHeader
                 eyebrow="Concierge"
-                title="The front door is a conversation."
-                description="Concierge is the simplest way to get from loose event details to a useful page, while upload and manual creation stay available paths."
+                title="The front door is still a conversation."
+                description="Concierge is the fastest way to assemble the invite, page, RSVP flow, registry links, sign-up slots, and guest-facing copy without making the host learn product settings first."
               />
               <div className="mt-8 grid gap-3">
                 {[
-                  "Tell Envitefy what you're planning",
+                  "Tell Envitefy what you are planning",
                   "Attach the invite, flyer, PDF, screenshot, or schedule",
-                  "Review missing date, location, registry, and RSVP details",
+                  "Review missing date, location, registry, RSVP, and sign-up details",
                   "Publish a live card, event page, or smart sign-up",
                 ].map((item, index) => (
                   <div
@@ -585,43 +831,12 @@ export default function LandingExperience() {
                     Phone-first preview
                   </p>
                   <p className="mt-2 text-sm leading-6 text-[#62586a]">
-                    The page should show Concierge where hosts expect it: in a real chat flow,
-                    inside a phone, with a draft event emerging from the conversation.
+                    Concierge keeps setup in a familiar chat flow, with the draft event emerging as
+                    the host answers and uploads details.
                   </p>
                 </div>
               </div>
               <PhoneConciergePreview variant="signup" />
-            </div>
-          </div>
-        </section>
-
-        <section id="guest-experience" className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
-          <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr]">
-            <SectionHeader
-              eyebrow="Guest experience"
-              title="A link with real utility after the invite is sent."
-              description="Guests should understand what to do next. Hosts should have fewer duplicate texts, fewer scattered links, and a clearer record of responses."
-            />
-            <div className="grid gap-3 sm:grid-cols-2">
-              {guestActions.map((action) => {
-                const Icon = action.icon;
-                return (
-                  <div
-                    key={action.label}
-                    className="flex items-center gap-3 rounded-lg border border-[#eadcf5] bg-white p-4 shadow-sm"
-                  >
-                    <span
-                      className={cx(
-                        "flex h-9 w-9 items-center justify-center rounded-lg",
-                        guestActionToneClasses[action.tone],
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="text-sm font-semibold">{action.label}</span>
-                  </div>
-                );
-              })}
             </div>
           </div>
         </section>
@@ -660,7 +875,7 @@ export default function LandingExperience() {
             <SectionHeader
               eyebrow="Workflow"
               title="Simple enough to remember."
-              description="The page avoids product taxonomy and explains the creation path in three steps."
+              description="A host only needs to remember three actions: start, review, then share and track."
             />
             <div className="grid gap-4 md:grid-cols-3">
               {workflow.map((step, index) => (

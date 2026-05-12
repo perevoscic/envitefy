@@ -6,7 +6,7 @@ import LandingExperience from "./LandingExperience";
 export const metadata: Metadata = {
   title: "Envitefy | AI Concierge for Invites, RSVP & Event Pages",
   description:
-    "Create a shareable event hub with invites, RSVP, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, flyer, invite, PDF, schedule, or design idea.",
+    "Create a shareable event hub with live cards, RSVP tracking, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, snap, flyer, invite, PDF, schedule, or design idea.",
   keywords: [
     "AI event concierge",
     "live card invitations",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Envitefy | AI Concierge for Invites, RSVP & Event Pages",
     description:
-      "Create a shareable event hub with invites, RSVP, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, flyer, invite, PDF, schedule, or design idea.",
+      "Create a shareable event hub with live cards, RSVP tracking, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, snap, flyer, invite, PDF, schedule, or design idea.",
     url: "https://envitefy.com/",
     siteName: "Envitefy",
     images: [
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Envitefy | AI Concierge for Invites, RSVP & Event Pages",
     description:
-      "Create a shareable event hub with invites, RSVP, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, flyer, invite, PDF, schedule, or design idea.",
+      "Create a shareable event hub with live cards, RSVP tracking, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, snap, flyer, invite, PDF, schedule, or design idea.",
     images: ["https://envitefy.com/og-default.jpg"],
   },
 };
@@ -57,7 +57,7 @@ export default async function LandingPage() {
     name: "Envitefy",
     url: "https://envitefy.com/",
     description:
-      "Create a shareable event hub with invites, RSVP, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, flyer, invite, PDF, schedule, or design idea.",
+      "Create a shareable event hub with live cards, RSVP tracking, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, snap, flyer, invite, PDF, schedule, or design idea.",
   };
 
   const faqLd = {
