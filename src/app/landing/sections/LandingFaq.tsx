@@ -34,7 +34,7 @@ export default function LandingFaq() {
               {landingFaqItems.map((item, idx) => (
                 <div
                   key={item.q}
-                  className="overflow-hidden rounded-[1.6rem] border border-[#eadcf5] bg-[#fbf8ff] shadow-[0_16px_40px_rgba(116,87,166,0.06)]"
+                  className="overflow-hidden rounded-[2rem] border border-[#eadcf5] bg-[#fbf8ff] shadow-[0_16px_40px_rgba(116,87,166,0.06)]"
                 >
                   <button
                     type="button"

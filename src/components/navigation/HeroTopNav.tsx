@@ -191,9 +191,9 @@ export default function HeroTopNav({
             "nav-chrome-glass-header px-4 py-3 sm:px-6",
             isDarkGlass
               ? cx(
-                  "theme-glass-nav rounded-[1.8rem] border-white/14 shadow-[0_18px_40px_rgba(3,1,10,0.24)]",
+                  "theme-glass-nav rounded-[2rem] border-white/14 shadow-[0_18px_40px_rgba(3,1,10,0.24)]",
                 )
-              : "hero-top-nav-shell-light rounded-[1.8rem]",
+              : "hero-top-nav-shell-light rounded-[2rem]",
           )}
         >
           <div className="flex items-center justify-between gap-4">
@@ -444,7 +444,7 @@ export default function HeroTopNav({
                           <div className="overflow-hidden">
                             <div
                               className={cx(
-                                "rounded-[1.35rem] px-4 py-4",
+                                "rounded-[2rem] px-4 py-4",
                                 "border border-[#e7dcff] bg-white/92 shadow-[0_18px_44px_rgba(89,70,171,0.12)]",
                               )}
                             >

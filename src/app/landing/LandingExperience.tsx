@@ -348,7 +348,7 @@ function PhoneConciergePreview({ variant = "eventHub" }: { variant?: keyof typeo
               </div>
             </div>
 
-            <div className="ml-auto max-w-[76%] overflow-hidden rounded-[1rem] border border-[#eadcf5] bg-white shadow-sm">
+            <div className="ml-auto max-w-[76%] overflow-hidden rounded-[2rem] border border-[#eadcf5] bg-white shadow-sm">
               <img
                 src={preview.attachment}
                 alt={preview.attachmentAlt}
@@ -372,7 +372,7 @@ function PhoneConciergePreview({ variant = "eventHub" }: { variant?: keyof typeo
               </div>
             </div>
 
-            <div className="rounded-xl border border-[#eadcf5] bg-white p-3 shadow-sm">
+            <div className="rounded-[2rem] border border-[#eadcf5] bg-white p-3 shadow-sm">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p
@@ -452,7 +452,7 @@ export default function LandingExperience() {
         <section id="landing-hero" className="border-b border-[#eadcf5] bg-[#fbf6ff] pt-24">
           <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)] lg:px-10 lg:py-24">
             <div className="flex flex-col justify-center">
-              <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-[#eadcf5] bg-[#fffafd] px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#7457a6]">
+              <div className="inline-flex w-fit items-center gap-2 rounded-[2rem] border border-[#eadcf5] bg-[#fffafd] px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#7457a6]">
                 <Image
                   src={conciergeLogo}
                   alt=""
@@ -484,7 +484,7 @@ export default function LandingExperience() {
                 {["Live cards", "Event pages", "RSVP tracking", "Smart sign-ups"].map((item) => (
                   <div
                     key={item}
-                    className="rounded-lg border border-[#eadcf5] bg-[#fffafd] px-4 py-3"
+                    className="rounded-[2rem] border border-[#eadcf5] bg-[#fffafd] px-4 py-3"
                   >
                     <p className="font-semibold text-[#241c2b]">{item}</p>
                   </div>
@@ -496,7 +496,7 @@ export default function LandingExperience() {
               <div className="grid items-center gap-5 lg:grid-cols-[minmax(290px,0.9fr)_minmax(0,1.1fr)]">
                 <PhoneConciergePreview />
                 <div className="space-y-4">
-                  <div className="rounded-lg border border-[#eadcf5] bg-white p-5 shadow-sm">
+                  <div className="rounded-[2rem] border border-[#eadcf5] bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between gap-4 border-b border-[#f0e7f8] pb-4">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7457a6]">
@@ -515,7 +515,7 @@ export default function LandingExperience() {
                         ["3", "Registry links"],
                         ["1", "Share URL"],
                       ].map(([value, label]) => (
-                        <div key={label} className="rounded-lg bg-[#fff1f7] p-3">
+                        <div key={label} className="rounded-[2rem] bg-[#fff1f7] p-3">
                           <p className="text-2xl font-semibold">{value}</p>
                           <p className="mt-1 text-xs font-medium text-[#62586a]">{label}</p>
                         </div>
@@ -535,7 +535,7 @@ export default function LandingExperience() {
                     </div>
                   </div>
 
-                  <div className="overflow-hidden rounded-lg border border-[#eadcf5] bg-white shadow-sm">
+                  <div className="overflow-hidden rounded-[2rem] border border-[#eadcf5] bg-white shadow-sm">
                     <img
                       src="/images/marketing/landing-hero-live-card.webp"
                       alt="Live card gallery preview"
@@ -576,7 +576,7 @@ export default function LandingExperience() {
                     key={option.title}
                     href={option.href}
                     className={cx(
-                      "group flex min-h-[164px] flex-col items-center justify-center rounded-lg border border-[#eadcf5] bg-[#fffafd] px-5 py-6 text-center shadow-[0_16px_34px_rgba(116,87,166,0.08),inset_0_1px_0_rgba(255,255,255,0.86)] transition hover:-translate-y-1 hover:bg-white",
+                      "group flex min-h-[164px] flex-col items-center justify-center rounded-[2rem] border border-[#eadcf5] bg-[#fffafd] px-5 py-6 text-center shadow-[0_16px_34px_rgba(116,87,166,0.08),inset_0_1px_0_rgba(255,255,255,0.86)] transition hover:-translate-y-1 hover:bg-white",
                       toneClasses.card,
                     )}
                     aria-label={`Start ${option.title.toLowerCase()} with Envitefy`}
@@ -624,7 +624,7 @@ export default function LandingExperience() {
                   return (
                     <div
                       key={item.label}
-                      className="flex gap-4 rounded-lg border border-[#eadcf5] bg-[#fffafd] p-4"
+                      className="flex gap-4 rounded-[2rem] border border-[#eadcf5] bg-[#fffafd] p-4"
                     >
                       <span
                         className={cx(
@@ -657,7 +657,7 @@ export default function LandingExperience() {
                   return (
                     <div
                       key={action.label}
-                      className="flex items-center gap-3 rounded-lg border border-[#eadcf5] bg-white p-4 shadow-sm"
+                      className="flex items-center gap-3 rounded-[2rem] border border-[#eadcf5] bg-white p-4 shadow-sm"
                     >
                       <span
                         className={cx(
@@ -683,7 +683,7 @@ export default function LandingExperience() {
               title="Know who is coming without chasing replies."
               description="RSVPs stay attached to the event instead of disappearing into texts, email chains, or screenshots. Hosts can see the count, the pending list, and the latest response."
             />
-            <div className="overflow-hidden rounded-lg border border-[#eadcf5] bg-white shadow-[0_24px_54px_rgba(116,87,166,0.11)]">
+            <div className="overflow-hidden rounded-[2rem] border border-[#eadcf5] bg-white shadow-[0_24px_54px_rgba(116,87,166,0.11)]">
               <div className="border-b border-[#eadcf5] bg-[#fffafd] px-5 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -705,7 +705,7 @@ export default function LandingExperience() {
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="rounded-lg border border-[#eadcf5] bg-[#fbf8ff] p-4"
+                    className="rounded-[2rem] border border-[#eadcf5] bg-[#fbf8ff] p-4"
                   >
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7a6c99]">
                       {stat.label}
@@ -769,7 +769,7 @@ export default function LandingExperience() {
               {uploadPaths.map((path) => (
                 <article
                   key={path.title}
-                  className="overflow-hidden rounded-lg border border-[#eadcf5] bg-white shadow-sm"
+                  className="overflow-hidden rounded-[2rem] border border-[#eadcf5] bg-white shadow-sm"
                 >
                   <img
                     src={path.image}
@@ -814,7 +814,7 @@ export default function LandingExperience() {
                 ].map((item, index) => (
                   <div
                     key={item}
-                    className="flex items-start gap-3 rounded-lg border border-[#eadcf5] bg-[#fffafd] p-4"
+                    className="flex items-start gap-3 rounded-[2rem] border border-[#eadcf5] bg-[#fffafd] p-4"
                   >
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#7457a6] text-xs font-semibold text-white">
                       {index + 1}
@@ -824,7 +824,7 @@ export default function LandingExperience() {
                 ))}
               </div>
             </div>
-            <div className="rounded-lg border border-[#eadcf5] bg-[#fbf6ff] px-5 py-6 shadow-sm sm:px-8">
+            <div className="rounded-[2rem] border border-[#eadcf5] bg-[#fbf6ff] px-5 py-6 shadow-sm sm:px-8">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7457a6]">
@@ -853,7 +853,7 @@ export default function LandingExperience() {
               {examples.map((example) => (
                 <article
                   key={example.title}
-                  className="overflow-hidden rounded-lg border border-[#eadcf5] bg-white shadow-sm"
+                  className="overflow-hidden rounded-[2rem] border border-[#eadcf5] bg-white shadow-sm"
                 >
                   <img
                     src={example.image}
@@ -881,7 +881,7 @@ export default function LandingExperience() {
               {workflow.map((step, index) => (
                 <article
                   key={step.title}
-                  className="rounded-lg border border-[#eadcf5] bg-white p-5 shadow-sm"
+                  className="rounded-[2rem] border border-[#eadcf5] bg-white p-5 shadow-sm"
                 >
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7457a6] text-sm font-semibold text-white">
                     {index + 1}
@@ -897,7 +897,7 @@ export default function LandingExperience() {
         <LandingFaq />
 
         <section id="cta" className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}>
-          <div className="mx-auto grid max-w-7xl gap-8 rounded-lg border border-[#eadcf5] bg-[#fffafd] px-5 py-14 shadow-sm sm:px-8 lg:grid-cols-[1fr_auto] lg:items-center lg:px-10">
+          <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] border border-[#eadcf5] bg-[#fffafd] px-5 py-14 shadow-sm sm:px-8 lg:grid-cols-[1fr_auto] lg:items-center lg:px-10">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#7457a6]">
                 Start with what you have
