@@ -106,6 +106,7 @@ type Overview = {
 };
 
 type StatView = "all" | "scans" | "shares" | null;
+type UserOpsTab = "directory" | "contact";
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
@@ -118,6 +119,7 @@ export default function AdminPage() {
   const [usersError, setUsersError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [activeStatView, setActiveStatView] = useState<StatView>(null);
+  const [activeUserOpsTab, setActiveUserOpsTab] = useState<UserOpsTab>("directory");
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -453,6 +455,26 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="p-4 sm:p-6">
+              <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="rounded-xl border border-[#e3daf7] bg-[#faf7ff] px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#8f80bd]">Total users</p>
+                  <p className="text-lg font-semibold text-[#3f2f73]">
+                    {overview?.totalUsers?.toLocaleString() || "—"}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-[#e3daf7] bg-[#faf7ff] px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#8f80bd]">
+                    Total result set
+                  </p>
+                  <p className="text-lg font-semibold text-[#3f2f73]">{users.length.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl border border-[#e3daf7] bg-[#faf7ff] px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#8f80bd]">Active mode</p>
+                  <p className="text-sm font-semibold text-[#3f2f73]">
+                    {activeUserOpsTab === "directory" ? "User directory" : "Contact details"}
+                  </p>
+                </div>
+              </div>
               {activeStatView && (
                 <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-[#d8cdf4] bg-[#f7f2ff] px-4 py-3">
                   <span className="text-sm text-[#6f57c8] font-medium">
@@ -513,6 +535,30 @@ export default function AdminPage() {
                   )}
                 </button>
               </div>
+              <div className="mb-4 inline-flex rounded-2xl border border-[#d8cdf4] bg-[#f7f2ff] p-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveUserOpsTab("directory")}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                    activeUserOpsTab === "directory"
+                      ? "bg-white text-[#5b469c] shadow-sm"
+                      : "text-[#7d6ab5] hover:text-[#5b469c]"
+                  }`}
+                >
+                  User directory
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveUserOpsTab("contact")}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                    activeUserOpsTab === "contact"
+                      ? "bg-white text-[#5b469c] shadow-sm"
+                      : "text-[#7d6ab5] hover:text-[#5b469c]"
+                  }`}
+                >
+                  Contact details
+                </button>
+              </div>
 
               {usersError && (
                 <div className="rounded-lg border border-error/30 bg-error/10 text-error p-3 text-sm mb-4">
@@ -570,10 +616,14 @@ export default function AdminPage() {
                               <p className="text-base font-semibold text-[#43366f] truncate">
                                 {[u.first_name, u.last_name].filter(Boolean).join(" ") || "-"}
                               </p>
-                              <p className="text-xs uppercase tracking-[0.3em] text-[#8b7fb6]">
-                                Email
-                              </p>
-                              <p className="text-sm text-[#5b4d86] break-words">{u.email}</p>
+                              {activeUserOpsTab === "contact" && (
+                                <>
+                                  <p className="text-xs uppercase tracking-[0.3em] text-[#8b7fb6]">
+                                    Email
+                                  </p>
+                                  <p className="text-sm text-[#5b4d86] break-words">{u.email}</p>
+                                </>
+                              )}
                             </div>
                           </div>
 
@@ -647,7 +697,7 @@ export default function AdminPage() {
                       <thead className="bg-[#faf8ff] text-xs uppercase tracking-wider font-semibold text-[#8b7fb6] border-b border-[#e4def9]">
                         <tr>
                           <th className="px-4 py-3">Name</th>
-                          <th className="px-4 py-3">Email</th>
+                          {activeUserOpsTab === "contact" && <th className="px-4 py-3">Email</th>}
                           <th className="px-4 py-3 text-right">Scans</th>
                           <th className="px-4 py-3">Events</th>
                           <th className="px-4 py-3">Last event</th>
@@ -674,7 +724,9 @@ export default function AdminPage() {
                               <td className="px-4 py-3 text-foreground/80">
                                 {[u.first_name, u.last_name].filter(Boolean).join(" ") || "-"}
                               </td>
-                              <td className="px-4 py-3 font-medium text-foreground">{u.email}</td>
+                              {activeUserOpsTab === "contact" && (
+                                <td className="px-4 py-3 font-medium text-foreground">{u.email}</td>
+                              )}
                               <td className="px-4 py-3 text-right font-semibold text-foreground">
                                 <BreakdownPopup
                                   label="Scans"
