@@ -955,9 +955,14 @@ export function useLeftSidebarController({
   );
   const openAdminPage = useCallback(() => {
     clearEventContext();
-    setIsCollapsed(false);
+    router.push("/admin");
     setSidebarPage("admin");
-  }, [clearEventContext, setIsCollapsed]);
+    if (isDesktop) {
+      setIsCollapsed(false);
+    } else {
+      collapseSidebarOnTouch();
+    }
+  }, [clearEventContext, collapseSidebarOnTouch, isDesktop, router, setIsCollapsed]);
 
   const isCompactNavActive = useCallback(
     (id: CompactNavItemId) => {
