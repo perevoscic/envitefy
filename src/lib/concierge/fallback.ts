@@ -1880,9 +1880,7 @@ export function fallbackExtractConciergeDraft(args: {
   const timeText = chronoResult.timeText || firstString(fieldsGuess.time);
   const startISO = fieldStartIso || chronoResult.startISO;
   const endISO = fieldEndIso || chronoResult.endISO;
-  const numberOfGuests =
-    detectGuestCount(message, previous) ||
-    firstPositiveNumber(fieldsGuess.numberOfGuests, fieldsGuess.guestCount);
+  const numberOfGuests = detectGuestCount(message, previous);
   const rsvpEnabled = detectRsvpEnabled(message, previous, requestedOutputs, fieldsGuess);
   const rsvpDeadline = detectRsvpDeadline(text, previous);
   const rsvpContact = detectRsvpContact(text, fieldsGuess, previous);
