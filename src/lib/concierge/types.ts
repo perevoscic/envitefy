@@ -120,6 +120,11 @@ export type ConciergeActiveContext = {
   selectedTemplateId?: string | null;
   currentAssetId?: string | null;
   lastUserAction?: string | null;
+  selectedCategory?: string | null;
+  selectedProduct?: RequestedOutput | string | null;
+  inputMethod?: "upload" | "snap" | "text" | "guided" | "paste" | "existing_event" | null;
+  selectedSkin?: string | null;
+  previewStatus?: "empty" | "extracting" | "review" | "preview_ready" | "published" | null;
 };
 
 export type EventAssetType =

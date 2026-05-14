@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
   Cake,
-  Camera,
   FileImage,
   Gift,
   Globe,
@@ -13,13 +12,12 @@ import {
   Loader2,
   MessageCircle,
   Mic,
-  Paperclip,
   Sparkles,
   Trophy,
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   type ComponentType,
   type FormEvent,
@@ -59,12 +57,13 @@ import type {
   CreationSessionResumeResponse,
   RequestedOutput,
 } from "@/lib/concierge/types";
-import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
-import { getUploadAcceptAttribute } from "@/lib/upload-config";
-import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
+import {
+  skinLabelForCategoryName,
+  skinLabelForConciergeDraft,
+} from "@/lib/concierge/skins";
 import { buildEventProductPath } from "@/utils/event-product-route";
 import { buildEventPath, buildEventSlug } from "@/utils/event-url";
-import { persistImageMediaValue, validateClientUploadFile } from "@/utils/media-upload-client";
+import { persistImageMediaValue } from "@/utils/media-upload-client";
 import { getAmazonRegistryCreateUrlForCategory } from "@/utils/registry-links";
 import ChatProductPreview from "./ChatProductPreview";
 
@@ -261,23 +260,30 @@ const PRODUCT_OPTIONS: ProductOption[] = [
   {
     label: "Live Card",
     output: "live_card",
-    description: "Animated invite with RSVP and guest actions.",
+    description: "A simple shareable card with event details and quick buttons.",
     prompt: "Create a live card",
     icon: IdCard,
   },
   {
     label: "Flyer/Invitation",
     output: "digital_flyer",
-    description: "Shareable flyer invitation from typed details.",
+    description: "A designed invite image you can send or download.",
     prompt: "Create a flyer invitation",
     icon: FileImage,
   },
   {
     label: "Event Page",
     output: "event_page",
-    description: "Hosted page for details, links, and updates.",
+    description: "A full live page with RSVP, location, registry, and sharing.",
     prompt: "Create an event page",
     icon: Globe,
+  },
+  {
+    label: "RSVP Page",
+    output: "rsvp_page",
+    description: "A focused RSVP link for collecting guest responses.",
+    prompt: "Create an RSVP page",
+    icon: MessageCircle,
   },
 ];
 
@@ -318,7 +324,7 @@ const OUTPUT_LABELS: Record<RequestedOutput, string> = {
   welcome_sign: "Welcome sign",
 };
 
-const EMPTY_ASSISTANT_PROMPT = "What are we celebrating?";
+const EMPTY_ASSISTANT_PROMPT = "Start with an invite, or create from scratch.";
 
 type ConciergeChatClientProps = {
   userInitials?: string | null;
@@ -470,7 +476,10 @@ function parseConciergeStreamEvent(rawEvent: string) {
   }
 }
 
-async function readConciergeIntakeStream(response: Response, handlers: ConciergeStreamHandlers) {
+async function readConciergeIntakeStream(
+  response: Response,
+  handlers: ConciergeStreamHandlers,
+): Promise<ConciergeStreamStatePayload | null> {
   if (!response.body) throw new Error("Concierge stream did not include a response body.");
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -550,6 +559,10 @@ const PREVIEW_CATEGORY_BY_EVENT_TYPE: Partial<Record<ConciergeEventType, string>
   smart_signup: "Custom Invite",
   general: "Custom Invite",
 };
+
+function skinLabelForDraft(draft: ConciergeEventDraft | null) {
+  return skinLabelForConciergeDraft(draft);
+}
 
 const CELEBRATION_STARTER_TILES = [
   {
@@ -969,6 +982,8 @@ function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
   const location = stringValue(draft.location) || venueName;
   const honoreeName = stringValue(draft.honoreeName) || "";
   const theme = stringValue(draft.theme) || stringValue(draft.tone) || `${category} invite`;
+  const skinLabel = skinLabelForDraft(draft);
+  const skinInstruction = `Use the ${skinLabel} Envitefy template family.`;
   const registryLink = stringValue(draft.registryLink) || stringValue(draft.giftRegistryLink) || "";
   const giftPreferenceNote =
     stringValue(draft.giftPreferenceNote) || stringValue(draft.giftNote) || "";
@@ -988,12 +1003,17 @@ function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
     location,
     detailsDescription: body,
     message: draftSubheadline(draft),
-    specialInstructions: isEventPageProduct
-      ? "Generate website hero/background artwork for the event page. Do not bake large title text, date/time, address, faux buttons, phone chrome, or website UI into the image because the event page renders real navigation, headings, schedule, location, RSVP form, calendar actions, and registry links in HTML."
-      : "",
+    specialInstructions: [
+      skinInstruction,
+      isEventPageProduct
+        ? "Generate website hero/background artwork for the event page. Do not bake large title text, date/time, address, faux buttons, phone chrome, or website UI into the image because the event page renders real navigation, headings, schedule, location, RSVP form, calendar actions, and registry links in HTML."
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" "),
     theme,
     style: stringValue(draft.tone) || "",
-    visualPreferences: theme,
+    visualPreferences: `${skinLabel}. ${theme}`,
     name: category === "Birthday" ? honoreeName : "",
     age: category === "Birthday" ? stringValue(draft.ageOrMilestone) || "" : "",
     honoreeNames: category !== "Birthday" ? honoreeName : "",
@@ -1143,12 +1163,9 @@ function notifyCreationThreadsChanged() {
 }
 
 export default function ConciergeChatClient({ userInitials = null }: ConciergeChatClientProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const initialAssistantPrompt = buildInitialAssistantPrompt();
   const userAvatarInitials = normalizeUserInitials(userInitials);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const chatPaneRef = useRef<HTMLDivElement | null>(null);
   const composerCardRef = useRef<HTMLDivElement | null>(null);
@@ -1165,7 +1182,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [draft, setDraft] = useState<ConciergeEventDraft | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isStreamingAssistant, setIsStreamingAssistant] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [buildProgress, setBuildProgress] = useState(0);
   const [liveCardEventId, setLiveCardEventId] = useState<string | null>(null);
   const [liveCardTitle, setLiveCardTitle] = useState<string | null>(null);
@@ -1189,8 +1205,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     messages.length === 1 &&
     messages[0]?.role === "assistant" &&
     !draft &&
-    !isSending &&
-    !isUploading;
+    !isSending;
   const visibleMessages = messages.filter((message, index) => {
     if (message.type !== "upload_status" && !message.text.trim()) {
       return false;
@@ -1202,16 +1217,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       isOpeningAssistantPrompt(message.text, initialAssistantPrompt)
     );
   });
-  const isBusy = isSending || isUploading || isGeneratingCard || isPublishingCard;
-  const busyLabel = isUploading
-    ? "Preparing upload"
-    : isEditingGeneratedCard
-      ? "Updating preview"
-      : isGeneratingCard
-        ? "Generating invite"
-        : isPublishingCard
-          ? "Publishing invite"
-          : "Concierge is thinking...";
+  const isBusy = isSending || isGeneratingCard || isPublishingCard;
+  const busyLabel = isEditingGeneratedCard
+    ? "Updating preview"
+    : isGeneratingCard
+      ? "Generating invite"
+      : isPublishingCard
+        ? "Publishing invite"
+        : "Concierge is thinking...";
   const isThinking = busyLabel === "Concierge is thinking..." && !isStreamingAssistant;
   const isCompactEmptyComposer =
     isEmptyState && !input.trim() && !isComposerFocused && !isListening;
@@ -1248,6 +1261,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   );
   const threadId = searchParams.get("thread")?.trim() || null;
   const currentPreviewImage = generatedInviteImageUrl || previewImageForDraft(draft);
+  const selectedCategoryLabel =
+    starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
+  const selectedSkinLabel =
+    skinLabelForCategoryName(selectedCategoryLabel) || skinLabelForDraft(draft);
   const hasInitialEventContext =
     Boolean(draft) || visibleMessages.some((message) => message.role === "user");
   const shouldShowProductFormatTiles =
@@ -1801,9 +1818,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     starterCategory?: string | null;
     echo?: string;
     suppressUserEcho?: boolean;
-  }) {
+  }): Promise<ConciergeStreamStatePayload | null> {
     const message = params.message.trim();
-    if (!message && !params.ocrContext) return;
+    if (!message && !params.ocrContext) return null;
 
     setError(null);
     setFailedRequest(null);
@@ -1820,7 +1837,15 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     let streamAssistantId: string | null = null;
     let streamedAssistantText = "";
     try {
-      const activeContext: ConciergeActiveContext = params.activeContext || {
+      const contextCategory =
+        params.starterCategory ||
+        starterSelectionLabel(selectedStarterCategory) ||
+        categoryLabelForDraft(draft);
+      const contextSkin =
+        skinLabelForCategoryName(contextCategory) ||
+        params.activeContext?.selectedSkin ||
+        selectedSkinLabel;
+      const baseActiveContext: ConciergeActiveContext = params.activeContext || {
         route: "/chat",
         currentEventId: liveCardEventId,
         currentDraftId: draft?.creationSessionId || null,
@@ -1828,6 +1853,18 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         selectedTemplateId: null,
         currentAssetId: null,
         lastUserAction: params.action || "message",
+      };
+      const activeContext: ConciergeActiveContext = {
+        ...baseActiveContext,
+        selectedCategory: baseActiveContext.selectedCategory ?? contextCategory,
+        selectedProduct:
+          baseActiveContext.selectedProduct ?? params.requestedOutputs?.[0] ?? selectedProductOutput,
+        inputMethod:
+          baseActiveContext.inputMethod ?? (params.ocrContext ? "upload" : message ? "text" : null),
+        selectedSkin: baseActiveContext.selectedSkin ?? contextSkin,
+        previewStatus:
+          baseActiveContext.previewStatus ??
+          (draft ? (isReadyProductDraft(draft) ? "preview_ready" : "review") : "empty"),
       };
       const draftRequestedOutputs = draft?.requestedOutputs?.length ? draft.requestedOutputs : null;
       const shouldPreserveDraftOutputs = Boolean(
@@ -1912,7 +1949,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           },
         });
         if (!finalState) throw new Error("Concierge stream ended before draft state arrived.");
-        return;
+        return finalState;
       }
 
       const response = await fetch(withConciergeTiming(CREATION_INTAKE_URL), {
@@ -1937,10 +1974,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         setIsReadyChatComposerOpen(false);
         setPhase("ready_to_generate");
         if (!json.chatMessages?.length) setMessages((prev) => [...prev, assistantMessage]);
-        return;
+        return json;
       }
       setPhase("collecting_details");
       if (!json.chatMessages?.length) setMessages((prev) => [...prev, assistantMessage]);
+      return json;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Concierge request failed.";
       setPhase(draft ? "collecting_details" : "intake_empty");
@@ -1949,6 +1987,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       }
       setError(null);
       setFailedRequest({ ...params, error: errorMessage });
+      return null;
     } finally {
       setIsStreamingAssistant(false);
       setIsSending(false);
@@ -2051,73 +2090,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setIsListening(false);
     };
     recognition.start();
-  }
-
-  async function routeSelectedSnapFile(file: File | null | undefined, source: "camera" | "upload") {
-    if (!file || isBusy) return;
-    const validationError = validateClientUploadFile(file, "attachment");
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setError(null);
-    setIsUploading(true);
-    const scanAttemptId = createClientAttemptId("scan");
-    let didRoute = false;
-    try {
-      await savePendingSnapUpload({ file, scanAttemptId });
-      setMessages((prev) => [
-        ...prev,
-        newMessage(
-          "assistant",
-          "I'll open the upload scanner so Envitefy can read this file and bring the details back into your event flow.",
-        ),
-      ]);
-      router.push("/?action=upload");
-      didRoute = true;
-    } catch (err) {
-      reportClientLog({
-        area: "snap-upload",
-        stage: "pending-save",
-        scanAttemptId,
-        error: err,
-        details: {
-          route: "/chat",
-          source,
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type,
-        },
-      });
-      setError("Unable to prepare this upload. Please try again.");
-    } finally {
-      if (!didRoute) setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      if (cameraInputRef.current) cameraInputRef.current.value = "";
-    }
-  }
-
-  function openSnapUploadPicker() {
-    if (isBusy) return;
-    setError(null);
-    try {
-      fileInputRef.current?.click();
-    } catch (err) {
-      console.error("Failed to open file picker:", err);
-      setError("Unable to open the file picker. Please try again.");
-    }
-  }
-
-  function openSnapCameraPicker() {
-    if (isBusy) return;
-    setError(null);
-    try {
-      cameraInputRef.current?.click();
-    } catch (err) {
-      console.error("Failed to open camera picker:", err);
-      setError("Unable to open the camera. Please try again.");
-    }
   }
 
   const chatThread = (
@@ -2242,7 +2214,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="mx-auto mb-10 flex w-full max-w-3xl justify-center sm:mb-12 sm:max-w-4xl"
+      className="mx-auto mb-8 flex w-full max-w-3xl justify-center sm:mb-10 sm:max-w-4xl"
     >
       <div className="flex w-full justify-center sm:hidden">
         <BottomNavBar
@@ -2331,27 +2303,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       <div ref={composerCardRef} className="pointer-events-auto w-full">
         {isEmptyState ? emptyProductFormatSelector : null}
         <form onSubmit={handleSubmit}>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={getUploadAcceptAttribute("attachment")}
-            className="hidden"
-            onChange={(event) => {
-              void routeSelectedSnapFile(event.currentTarget.files?.[0], "upload");
-              event.currentTarget.value = "";
-            }}
-          />
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept={getUploadAcceptAttribute("header")}
-            capture="environment"
-            className="hidden"
-            onChange={(event) => {
-              void routeSelectedSnapFile(event.currentTarget.files?.[0], "camera");
-              event.currentTarget.value = "";
-            }}
-          />
           <PromptInput
             value={input}
             onValueChange={handleComposerValueChange}
@@ -2365,131 +2316,90 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                 "border-[#8b5cf6] shadow-[0_18px_46px_rgba(124,77,255,0.24),inset_0_1px_0_rgba(255,255,255,0.95)]",
             )}
           >
-            <PromptInputTextarea
-              placeholder={
-                liveCardEventId
-                  ? "Tell me what to change..."
-                  : isCompactEmptyComposer
-                    ? "Type instead..."
-                    : "Or just start typing and let's get going..."
-              }
-              aria-label={liveCardEventId ? "Refine invite" : "Start planning from scratch"}
-              onFocus={() => setIsComposerFocused(true)}
-              onBlur={() => setIsComposerFocused(false)}
+            <div
               className={cn(
-                "min-h-[44px] px-3 py-2.5 text-base !text-[#25183a] caret-[#5c5be5] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base",
-                isCompactEmptyComposer &&
-                  "max-md:min-h-[34px] max-md:px-2 max-md:py-1.5 max-md:text-sm max-md:[&::placeholder]:text-[0.78rem]",
+                "flex min-h-[52px] items-center gap-2",
+                isCompactEmptyComposer && "max-md:min-h-[42px]",
               )}
-            />
-            <PromptInputActions
-              className={cn("justify-between gap-2 pt-2", isCompactEmptyComposer && "max-md:pt-1")}
             >
-              <div className="flex min-w-0 items-center gap-1">
-                <PromptInputAction tooltip="Upload file">
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={openSnapUploadPicker}
-                    className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:cursor-not-allowed disabled:opacity-50",
-                      isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
-                    )}
-                    aria-label="Upload file"
-                  >
-                    <Paperclip
-                      className={cn("size-6", isCompactEmptyComposer && "max-md:size-5")}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </PromptInputAction>
-
-                <PromptInputAction tooltip="Use camera">
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={openSnapCameraPicker}
-                    className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:cursor-not-allowed disabled:opacity-50",
-                      isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
-                    )}
-                    aria-label="Use camera"
-                  >
-                    <Camera
-                      className={cn("size-6", isCompactEmptyComposer && "max-md:size-5")}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </PromptInputAction>
-              </div>
-
-              <PromptInputAction
-                tooltip={
-                  isBusy
-                    ? busyLabel
-                    : input.trim()
-                      ? "Send message"
-                      : isListening
-                        ? "Listening"
-                        : "Voice message"
+              <PromptInputTextarea
+                placeholder={
+                  liveCardEventId
+                    ? "Tell me what to change..."
+                    : isCompactEmptyComposer
+                      ? "Type instead..."
+                      : "Or just start typing and let's get going..."
                 }
-              >
-                <button
-                  type={input.trim() ? "submit" : "button"}
-                  disabled={isBusy || (!input.trim() && isListening)}
-                  onClick={(event) => {
-                    if (input.trim()) return;
-                    event.preventDefault();
-                    void handleVoiceInput();
-                  }}
-                  className={cn(
-                    "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:pointer-events-none disabled:opacity-50",
-                    (input.trim() || isListening) && "text-[#5c5be5]",
-                    isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
-                  )}
-                  aria-label={input.trim() ? "Send" : "Use voice input"}
+                aria-label={liveCardEventId ? "Refine invite" : "Start planning from scratch"}
+                onFocus={() => setIsComposerFocused(true)}
+                onBlur={() => setIsComposerFocused(false)}
+                className={cn(
+                  "min-h-[44px] flex-1 px-3 py-2.5 text-base !text-[#25183a] caret-[#5c5be5] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base",
+                  isCompactEmptyComposer &&
+                    "max-md:min-h-[34px] max-md:px-2 max-md:py-1.5 max-md:text-sm max-md:[&::placeholder]:text-[0.78rem]",
+                )}
+              />
+              <PromptInputActions className="shrink-0 justify-end gap-2">
+                <PromptInputAction
+                  tooltip={
+                    isBusy
+                      ? busyLabel
+                      : input.trim()
+                        ? "Send message"
+                        : isListening
+                          ? "Listening"
+                          : "Voice message"
+                  }
                 >
-                  {isBusy ? (
-                    <Loader2
-                      className={cn(
-                        "size-5 animate-spin text-[#5c5be5]",
-                        isCompactEmptyComposer && "max-md:size-4",
-                      )}
-                      aria-hidden="true"
-                    />
-                  ) : input.trim() ? (
-                    <ArrowUp
-                      className={cn(
-                        "size-6 text-current",
-                        isCompactEmptyComposer && "max-md:size-5",
-                      )}
-                      strokeWidth={2.5}
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Mic
-                      className={cn(
-                        "size-6 text-current",
-                        isCompactEmptyComposer && "max-md:size-5",
-                      )}
-                      strokeWidth={2.4}
-                      aria-hidden="true"
-                    />
-                  )}
-                </button>
-              </PromptInputAction>
-            </PromptInputActions>
+                  <button
+                    type={input.trim() ? "submit" : "button"}
+                    disabled={isBusy || (!input.trim() && isListening)}
+                    onClick={(event) => {
+                      if (input.trim()) return;
+                      event.preventDefault();
+                      void handleVoiceInput();
+                    }}
+                    className={cn(
+                      "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:pointer-events-none disabled:opacity-50",
+                      (input.trim() || isListening) && "text-[#5c5be5]",
+                      isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
+                    )}
+                    aria-label={input.trim() ? "Send" : "Use voice input"}
+                  >
+                    {isBusy ? (
+                      <Loader2
+                        className={cn(
+                          "size-5 animate-spin text-[#5c5be5]",
+                          isCompactEmptyComposer && "max-md:size-4",
+                        )}
+                        aria-hidden="true"
+                      />
+                    ) : input.trim() ? (
+                      <ArrowUp
+                        className={cn(
+                          "size-6 text-current",
+                          isCompactEmptyComposer && "max-md:size-5",
+                        )}
+                        strokeWidth={2.5}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Mic
+                        className={cn(
+                          "size-6 text-current",
+                          isCompactEmptyComposer && "max-md:size-5",
+                        )}
+                        strokeWidth={2.4}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </button>
+                </PromptInputAction>
+              </PromptInputActions>
+            </div>
           </PromptInput>
         </form>
         {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
-        <p
-          className={cn(
-            "mt-4 text-center text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#8d7daf]",
-            isEmptyState && "max-md:hidden",
-          )}
-        >
-          Envitefy Concierge - Beta
-        </p>
       </div>
     </div>
   );
@@ -2560,9 +2470,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           </button>
         </div>
         {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
-        <p className="mt-4 text-center text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#8d7daf]">
-          Envitefy Concierge - Beta
-        </p>
       </div>
     </div>
   );
@@ -2580,6 +2487,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       publicHref={liveCardPublicHref}
       rsvpDashboardHref={rsvpDashboardHref}
       hasDraftProduct={hasGeneratedDraftProduct}
+      skinLabel={selectedSkinLabel}
       isPublishing={isPublishingCard}
       onPublish={() => void publishGeneratedDraft()}
       rsvp={{
@@ -2656,10 +2564,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                         animate={{ opacity: 1, y: 0 }}
                         className="mx-auto max-w-3xl text-2xl font-medium leading-tight tracking-normal text-[#2d1b36] sm:text-4xl lg:text-5xl max-h-[700px]:max-md:text-[1.45rem]"
                       >
-                        What are we celebrating?
+                        Start with an invite, or create from scratch
                       </motion.h1>
                       <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base max-md:mt-2 max-md:text-xs max-md:leading-5 max-h-[620px]:max-md:hidden">
-                        Pick a category or describe it in your own words.
+                        Choose a category, pick a product, or describe the event in your own words.
                       </p>
                       <nav
                         className="mx-auto mt-8 grid w-full max-w-[39rem] flex-1 grid-cols-2 content-center justify-items-center gap-8 text-center sm:gap-12 md:grid-cols-3 max-md:mt-3 max-md:gap-[clamp(0.9rem,2.2dvh,1.4rem)] max-h-[700px]:max-md:mt-2"

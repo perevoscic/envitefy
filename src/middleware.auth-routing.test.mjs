@@ -14,22 +14,34 @@ test("login form supports redirect targets passed by the caller", () => {
 
   assert.match(loginForm, /successRedirectUrl = "\/"/);
   assert.match(loginForm, /callbackUrl: successRedirectUrl/);
-  assert.match(loginForm, /showAuthTransition\("Taking you to your workspace\.\.\."\)/);
+  assert.match(loginForm, /showAuthTransition\("Opening Envitefy\.\.\."\)/);
   assert.match(loginForm, /window\.location\.replace\(successRedirectUrl\)/);
   assert.match(loginForm, /signIn\("google", \{ callbackUrl: successRedirectUrl \}\)/);
   assert.match(authModal, /<LoginForm[\s\S]*successRedirectUrl=\{successRedirectUrl\}/s);
   assert.match(studioPage, /successRedirectUrl="\/studio"/);
 });
 
-test("middleware redirects signed-in marketing page visits to root", () => {
+test("middleware redirects signed-in landing and gymnastics marketing visits to root", () => {
   const middleware = readSource("src/middleware.ts");
 
   assert.match(middleware, /normalizedPathname === "\/landing"/);
-  assert.match(middleware, /normalizedPathname === "\/snap"/);
   assert.match(middleware, /normalizedPathname === "\/gymnastics"/);
   assert.match(middleware, /if \(authState\.hasSession\) \{/);
   assert.match(middleware, /url\.pathname = "\/"/);
   assert.match(middleware, /return redirectWithMarker\(url, 302\);/);
+});
+
+test("middleware lets authenticated users open /snap for the app launch cards", () => {
+  const middleware = readSource("src/middleware.ts");
+  const appShell = readSource("src/app/AppShell.tsx");
+
+  assert.match(middleware, /if \(normalizedPathname === "\/snap"\) \{/);
+  assert.match(
+    middleware,
+    /if \(!authState\.hasSession\) \{\s*return attachSignupSourceCookie\(ok\(\), "snap"\);\s*\}/s,
+  );
+  assert.match(middleware, /return ok\(\);/);
+  assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[^\]]*"\/snap"/s);
 });
 
 test("middleware keeps Studio public without treating it as a marketing redirect", () => {

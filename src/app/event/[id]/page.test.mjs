@@ -333,6 +333,7 @@ test("event route renders concierge event pages as full website products", () =>
     /const hasEventPageOutput = requestedOutputValues\.includes\("event_page"\);/,
   );
   assert.match(source, /const isConciergeEventPageProduct =/);
+  assert.doesNotMatch(source, /isScanEventPageCreatedVia/);
   assert.match(source, /publicEventPrimaryOutput === "event_page"/);
   assert.match(source, /publicEventRenderer === "event_page"/);
   assert.match(

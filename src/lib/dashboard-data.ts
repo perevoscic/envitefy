@@ -224,7 +224,11 @@ export function isStudioCreatedVia(createdViaRaw: unknown): boolean {
 
 export function isScannedInviteCreatedVia(createdViaRaw: unknown): boolean {
   const normalized = normalizeCreatedVia(createdViaRaw);
-  return normalized === "ocr" || Boolean(normalized?.startsWith("ocr-"));
+  return (
+    normalized === "ocr" ||
+    normalized === "scan-event-page" ||
+    Boolean(normalized?.startsWith("ocr-"))
+  );
 }
 
 export function isInvitedEventLikeRecord(record: InvitedEventLikeRecord): boolean {

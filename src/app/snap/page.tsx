@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { getServerSession, type Session } from "next-auth";
 import { Inter, Outfit } from "next/font/google";
 import Script from "next/script";
+import SnapLaunchCards from "@/app/event/SnapLaunchCards";
 import SnapLanding from "@/components/snap-landing/SnapLanding";
+import { authOptions } from "@/lib/auth";
 import { themeColorPalette } from "@/lib/theme-color";
 import styles from "./page.module.css";
 
@@ -42,7 +45,39 @@ export const viewport: Viewport = {
   themeColor: themeColorPalette.eventFallback,
 };
 
-export default function SnapPage() {
+function AuthenticatedSnapUploadStart() {
+  return (
+    <main
+      className="min-h-screen bg-transparent px-4 py-10 sm:px-6 lg:px-10"
+      data-theme-color={themeColorPalette.eventFallback}
+    >
+      <div className="mx-auto w-full max-w-5xl">
+        <section className="mx-auto max-w-4xl text-center">
+          <p className="mb-4 text-xs font-bold uppercase tracking-[0.26em] text-[#6b5ee8]">
+            Snap / Upload
+          </p>
+          <h1 className="pb-[0.08em] text-[clamp(1.65rem,8.8vw,2.85rem)] font-semibold leading-[1] tracking-[-0.06em] text-[#151229] [font-family:var(--font-playfair),Georgia,serif] sm:text-[clamp(3.2rem,8vw,5.5rem)]">
+            <span className="inline-block max-w-full whitespace-nowrap">Snap or upload your</span>
+            <br />
+            <span className="mt-3 inline-block bg-[linear-gradient(135deg,#5c43ff_0%,#8f42ff_55%,#b24cff_100%)] bg-clip-text pb-[0.1em] pr-[0.08em] italic text-transparent">
+              flyer or invite
+            </span>
+          </h1>
+        </section>
+        <SnapLaunchCards />
+        <p className="mx-auto mt-6 max-w-3xl pb-10 text-center text-lg leading-8 text-[#767287] sm:mt-8 sm:text-[1.35rem]">
+          Envitefy reads the details, detects invitation types, and routes them into polished,
+          interactive event pages automatically.
+        </p>
+      </div>
+    </main>
+  );
+}
+
+export default async function SnapPage() {
+  const session = (await getServerSession(authOptions as any)) as Session | null;
+  const isAuthenticated = Boolean(session?.user);
+
   const snapServiceLd = {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -61,10 +96,16 @@ export default function SnapPage() {
 
   return (
     <div className={`${outfit.variable} ${inter.variable} ${styles.snapPage}`}>
-      <SnapLanding />
-      <Script id="ld-snap-service" type="application/ld+json">
-        {JSON.stringify(snapServiceLd)}
-      </Script>
+      {isAuthenticated ? (
+        <AuthenticatedSnapUploadStart />
+      ) : (
+        <>
+          <SnapLanding />
+          <Script id="ld-snap-service" type="application/ld+json">
+            {JSON.stringify(snapServiceLd)}
+          </Script>
+        </>
+      )}
     </div>
   );
 }

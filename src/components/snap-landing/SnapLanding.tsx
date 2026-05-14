@@ -688,7 +688,6 @@ export default function SnapLanding() {
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
         signupSource="snap"
-        allowSignupSwitch={false}
         successRedirectUrl="/"
       />
     </div>

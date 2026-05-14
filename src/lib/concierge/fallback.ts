@@ -1614,7 +1614,7 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
     draft.missingFields[0] === "eventPurpose"
   ) {
     if (!draft.requestedOutputs.length) {
-      return "Hi, what are we celebrating?\nPick a category or describe the event.";
+      return "Start with an invite, or create from scratch.\nUpload from the main menu, choose a category, or describe the event.";
     }
     return outputQuestion(draft.requestedOutputs[0] || "live_card");
   }
@@ -1712,7 +1712,11 @@ export function fallbackExtractConciergeDraft(args: {
   starterCategory?: string | null;
 }): ConciergeEventDraft {
   const message = cleanString(args.message) || "";
-  const inferenceMessage = mergeStarterCategory(message, args.starterCategory);
+  const selectedCategory = cleanString(args.activeContext?.selectedCategory);
+  const inferenceMessage = mergeStarterCategory(
+    message,
+    args.starterCategory || selectedCategory,
+  );
   const combined = mergeText(inferenceMessage, args.ocrContext);
   const text = combined || message;
   const sessionDraft = args.draft || null;

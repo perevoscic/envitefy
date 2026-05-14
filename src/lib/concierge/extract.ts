@@ -512,6 +512,8 @@ async function extractWithOpenAi(
               "Event pages are full guest-facing websites with navigation/menu, detail sections, RSVP form when enabled, calendar/location actions, and registry or gift-list sections when supplied.",
               "For birthdays, weddings, baby showers, gender reveals, bridal showers, housewarmings, anniversaries, and graduations, preserve any registry, gift-list, wishlist, gift preference, or no-gifts note.",
               "Resolve 'this' only from supplied activeContext. If no context exists, ask what source or event to use.",
+              "When activeContext.selectedCategory is supplied, preserve it as the event category unless the uploaded or typed content clearly conflicts; mention the conflict instead of silently switching.",
+              "When activeContext.selectedProduct is supplied, preserve it as the requested output unless the user explicitly changes the product.",
               "Use eventType unknown until the user or source gives a real category. Supported eventType values are unknown, birthday, wedding, baby_shower, gender_reveal, bridal_shower, graduation, gym_meet, game_day, football, sport_event, field_trip, open_house, housewarming, appointment, workshop, special_event, smart_signup, and general. Do not use general as a fallback.",
               "Prioritize eventPurpose/title before strict event type. Do not ask for date/time before event purpose/source.",
               "When the previous draft is asking for a specific missing field, treat a short user reply as the answer to that field unless it clearly changes topics.",

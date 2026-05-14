@@ -15,7 +15,7 @@ const LeftSidebar = dynamic(() => import("./left-sidebar"), {
 });
 
 /** Must stay aligned with middleware signed-in redirects for marketing URLs. */
-const MARKETING_PATHS = new Set(["/snap", "/gymnastics", "/landing"]);
+const MARKETING_PATHS = new Set(["/gymnastics", "/landing"]);
 
 function isMarketingPath(pathname: string) {
   return MARKETING_PATHS.has(pathname);

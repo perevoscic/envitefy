@@ -361,9 +361,11 @@ function RootNavigationPanel({
   eventContextSourcePage,
   hasCreateEventAccess,
   isCreateEntryActive,
+  isSnapUploadActive,
   isAdmin,
   createdEventsCount,
   onHome,
+  onSnapUpload,
   onAiThreads,
   onCreate,
   onMyEvents,
@@ -374,16 +376,18 @@ function RootNavigationPanel({
   eventContextSourcePage: string;
   hasCreateEventAccess: boolean;
   isCreateEntryActive: boolean;
+  isSnapUploadActive: boolean;
   isAdmin: boolean;
   createdEventsCount: number;
   onHome: () => void;
+  onSnapUpload: () => void;
   onAiThreads: () => void;
   onCreate: () => void;
   onMyEvents: () => void;
   onAdmin: () => void;
 }) {
   const isHomeActive = pathname === "/" && sidebarPage === "root";
-  const isChatActive = pathname === "/chat" || sidebarPage === "aiThreads";
+  const isChatActive = (pathname === "/chat" || sidebarPage === "aiThreads") && !isSnapUploadActive;
   const isViewingEventFromListInRoot =
     sidebarPage === "root" &&
     Boolean(
@@ -437,6 +441,32 @@ function RootNavigationPanel({
             Home
           </span>
         </Link>
+
+        <button
+          type="button"
+          onClick={onSnapUpload}
+          className={`${SIDEBAR_ITEM_CARD_CLASS} ${SIDEBAR_MENU_ROW_CLASS} ${
+            isSnapUploadActive ? activeRowClass : inactiveRowClass
+          } py-3 pl-4 pr-4`}
+          style={isSnapUploadActive ? (mainActiveAccent.buttonStyle as CSSProperties) : undefined}
+        >
+          <span
+            className={`${SIDEBAR_ICON_CHIP_CLASS} ${
+              isSnapUploadActive ? rootMenuActiveChipClass : rootMenuChipClass
+            } ${rootIconClass(isSnapUploadActive)}`}
+          >
+            <Upload size={17} strokeWidth={1.9} />
+          </span>
+          <span
+            className={`truncate ${rootRowTextClass} ${
+              isSnapUploadActive
+                ? rootActiveTextClass
+                : `${rootInactiveTextClass} ${rootHoverTextClass}`
+            }`}
+          >
+            Snap / Upload
+          </span>
+        </button>
 
         <button
           type="button"
@@ -1272,6 +1302,7 @@ export default function LeftSidebar() {
   const searchParams = useSearchParams();
   const isChatPath = (pathname || "").replace(/\/+$/, "") === "/chat";
   const activeAiThreadId = searchParams.get("thread")?.trim() || null;
+  const isSnapUploadStartActive = (pathname || "").replace(/\/+$/, "") === "/snap";
   const [aiThreads, setAiThreads] = useState<CreationThreadSummary[]>([]);
 
   useEffect(() => {
@@ -1502,9 +1533,11 @@ export default function LeftSidebar() {
                       eventContextSourcePage={viewModel.eventContextSourcePage}
                       hasCreateEventAccess={viewModel.hasCreateEventAccess}
                       isCreateEntryActive={viewModel.isCreateEntryActive}
+                      isSnapUploadActive={isSnapUploadStartActive}
                       isAdmin={viewModel.isAdmin}
                       createdEventsCount={viewModel.createdEventsCount}
                       onHome={viewModel.goHomeFromSidebar}
+                      onSnapUpload={viewModel.handleRootSnapNavigate}
                       onAiThreads={viewModel.openAiThreadsPage}
                       onCreate={viewModel.openCreateEventPage}
                       onMyEvents={viewModel.openMyEventsPage}

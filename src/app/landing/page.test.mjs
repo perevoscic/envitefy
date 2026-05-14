@@ -89,7 +89,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(landingExperience, /mode=\{authMode\}/);
   assert.match(landingExperience, /onModeChange=\{setAuthMode\}/);
   assert.match(landingExperience, /successRedirectUrl="\/"/);
-  assert.match(landingExperience, /allowSignupSwitch=\{false\}/);
+  assert.doesNotMatch(landingExperience, /allowSignupSwitch=\{false\}/);
   assert.doesNotMatch(landingExperience, /signupSource=/);
   assert.doesNotMatch(landingExperience, /buildMarketingHeroNav/);
 

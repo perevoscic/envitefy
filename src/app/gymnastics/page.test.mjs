@@ -71,7 +71,7 @@ test("/gymnastics keeps gymnastics signup and launch wiring", () => {
   assert.match(gymnasticsLanding, /onGuestPrimaryAction=\{\(\) => openAuth\("signup"\)\}/);
   assert.match(gymnasticsLanding, /signupSource="gymnastics"/);
   assert.match(gymnasticsLanding, /successRedirectUrl="\/"/);
-  assert.match(gymnasticsLanding, /allowSignupSwitch=\{false\}/);
+  assert.doesNotMatch(gymnasticsLanding, /allowSignupSwitch=\{false\}/);
   assert.match(gymnasticsLanding, /href=\{isAuthenticated \? "\/" : undefined\}/);
   assert.match(
     gymnasticsLanding,

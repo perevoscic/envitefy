@@ -19,6 +19,9 @@ test("/snap renders the new landing component with key sections", () => {
   ]).map((link) => link.label);
 
   assert.match(page, /<SnapLanding \/>/);
+  assert.match(page, /getServerSession\(authOptions as any\)/);
+  assert.match(page, /AuthenticatedSnapUploadStart/);
+  assert.match(page, /<SnapLaunchCards \/>/);
   assert.match(snapLanding, /buildMarketingHeroNav\("snap", \[/);
   assert.deepEqual(navLabels, [
     "Home",
@@ -75,10 +78,15 @@ test("/snap includes the updated social-proof and CTA copy", () => {
   assert.match(snapLanding, /Get Started Free/);
 });
 
-test("/snap public auth flows redirect authenticated users to home", () => {
+test("/snap keeps public auth CTAs but renders direct upload cards for authenticated users", () => {
+  const page = readSource("src/app/snap/page.tsx");
   const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
   const snapSignupLanding = readSource("src/components/snap-landing/SnapSignupLanding.tsx");
 
+  assert.match(page, /isAuthenticated \? \(/);
+  assert.match(page, /AuthenticatedSnapUploadStart/);
+  assert.match(page, /Snap \/ Upload/);
+  assert.match(page, /Snap or upload your/);
   assert.match(snapLanding, /authenticatedPrimaryHref="\/"/);
   assert.match(snapLanding, /loginSuccessRedirectUrl="\/"/);
   assert.match(snapLanding, /primaryHref=\{isAuthenticated \? "\/" : undefined\}/);

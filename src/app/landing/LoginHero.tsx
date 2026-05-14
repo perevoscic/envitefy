@@ -315,7 +315,6 @@ export default function LoginHero() {
         mode={mode}
         onClose={() => setModalOpen(false)}
         onModeChange={setMode}
-        allowSignupSwitch={false}
       />
     </section>
   );

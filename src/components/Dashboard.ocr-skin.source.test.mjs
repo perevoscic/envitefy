@@ -92,7 +92,10 @@ test("dashboard OCR save returns owned uploads to My Events owner workspace", ()
   const source = readSource("src/components/Dashboard.tsx");
 
   assert.match(source, /ownership: "owned" \| "invited";/);
-  assert.match(source, /return \{ ok: true, eventId, ownership: historyOwnership, savedTitle \};/);
+  assert.match(
+    source,
+    /return \{ ok: true, eventId, ownership: historyOwnership, savedTitle, publicSlug \};/,
+  );
   assert.match(
     source,
     /ownership === "owned" \? \{ created: true, tab: "dashboard" \} : \{ created: true \}/,
@@ -101,4 +104,14 @@ test("dashboard OCR save returns owned uploads to My Events owner workspace", ()
     source,
     /setEventContextSourcePage\(ownership === "owned" \? "myEvents" : "invitedEvents"\);/,
   );
+});
+
+test("dashboard snap upload hard-navigates to the created event after save", () => {
+  const source = readSource("src/components/Dashboard.tsx");
+
+  assert.match(source, /const eventHref = buildEventPath\(/);
+  assert.match(source, /stage: "event-navigation-start"/);
+  assert.match(source, /window\.location\.replace\(eventHref\);/);
+  assert.match(source, /router\.replace\(eventHref\);/);
+  assert.doesNotMatch(source, /router\.push\(eventHref\);/);
 });

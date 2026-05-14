@@ -11,6 +11,11 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   const page = readSource("src/app/chat/page.tsx");
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
   const preview = readSource("src/app/chat/ChatProductPreview.tsx");
+  const snapPage = readSource("src/app/snap/page.tsx");
+  const snapLaunchCards = readSource("src/app/event/SnapLaunchCards.tsx");
+  const skins = readSource("src/lib/concierge/skins.ts");
+  const sidebar = readSource("src/app/left-sidebar.tsx");
+  const sidebarController = readSource("src/app/left-sidebar.controller.ts");
   const chatSurface = `${client}\n${preview}`;
   const liveCardSurface = readSource("src/components/studio/StudioLiveCardActionSurface.tsx");
   const bottomNav = readSource("src/components/ui/bottom-nav-bar.tsx");
@@ -26,7 +31,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(page, /isAdmin/);
   assert.doesNotMatch(page, /notFound\(/);
 
-  assert.match(client, /What are we celebrating\?/);
+  assert.match(client, /Start with an invite, or create from scratch/);
   assert.match(client, /DETAIL_CONFIRMATION_LINE/);
   assert.match(client, /RSVP\(\?: guest count\| by\| deadline\| line\)\?/);
   assert.match(
@@ -50,12 +55,23 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /STUDIO_CATEGORY_TILES/);
   assert.match(client, /CHAT_STARTER_PROMPTS/);
   assert.match(client, /CELEBRATION_STARTER_TILES/);
-  assert.match(client, /What are we celebrating\?/);
+  assert.doesNotMatch(client, /Upload or snap an invite/);
+  assert.match(snapPage, /AuthenticatedSnapUploadStart/);
+  assert.match(snapPage, /SnapLaunchCards/);
+  assert.match(snapLaunchCards, /Snap flyer/);
+  assert.match(snapLaunchCards, /Upload file/);
   assert.match(client, /Or just start typing and let's get going/);
   assert.doesNotMatch(client, /Describe what you're planning/);
   assert.doesNotMatch(client, /Choose a format or describe what you need/);
   assert.match(client, /\[&::placeholder\]:text-\[0\.82rem\]/);
-  assert.match(client, /Pick a category or describe it in your own words/);
+  assert.doesNotMatch(client, /AI reads the image first/);
+  assert.match(client, /selectedSkinLabel/);
+  assert.match(skins, /function skinLabelForCategoryName/);
+  assert.match(client, /Use the \$\{skinLabel\} Envitefy template family/);
+  assert.match(preview, /Skin: \$\{skinLabel\}/);
+  assert.match(sidebar, /Snap \/ Upload/);
+  assert.match(sidebar, /isSnapUploadStartActive/);
+  assert.match(sidebarController, /router\.push\("\/snap"\)/);
   assert.match(client, /label: "Birthday"/);
   assert.match(client, /label: "Wedding"/);
   assert.match(client, /label: "Baby Shower"/);
@@ -199,7 +215,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /pb-44/);
   assert.match(
     client,
-    /className="mx-auto mb-10 flex w-full max-w-3xl justify-center sm:mb-12 sm:max-w-4xl/,
+    /className="mx-auto mb-8 flex w-full max-w-3xl justify-center sm:mb-10 sm:max-w-4xl/,
   );
   assert.match(client, /className="flex w-full justify-center sm:hidden"/);
   assert.match(
@@ -215,6 +231,8 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /icon: Mail/);
   assert.match(client, /icon: FileImage/);
   assert.match(client, /icon: Globe/);
+  assert.match(client, /label: "RSVP Page"/);
+  assert.match(client, /icon: MessageCircle/);
   assert.doesNotMatch(client, /className="grid grid-cols-2 gap-3"/);
   assert.doesNotMatch(client, /rounded-\[1\.05rem\]/);
   assert.doesNotMatch(client, /max-w-\[22\.5rem\]/);
@@ -281,7 +299,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /Recent Chats/);
   assert.doesNotMatch(client, /isSidebarOpen/);
   assert.doesNotMatch(client, /isSidebarCollapsed/);
-  assert.match(client, /useRouter/);
+  assert.doesNotMatch(client, /useRouter/);
   assert.doesNotMatch(client, /router\.push\(`\/chat\?thread=/);
 
   assert.match(client, /fetch\("\/api\/creation\/intake"/);
@@ -312,7 +330,6 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /handleSuggestedReply/);
   assert.doesNotMatch(client, /suggestedReplies/);
   assert.doesNotMatch(client, /shouldShowSuggestedReplies/);
-  assert.doesNotMatch(client, /detectedSourceIntent/);
   assert.match(preview, /weatherContext: ConciergeWeatherContext \| null/);
   assert.doesNotMatch(preview, /Umbrella/);
 
@@ -438,21 +455,40 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /sendGeneratedCardEdit/);
   assert.match(client, /fetch\(`\/api\/concierge\/events\/\$\{liveCardEventId\}\/message`/);
 
-  assert.match(client, /savePendingSnapUpload/);
-  assert.match(client, /createClientAttemptId\("scan"\)/);
-  assert.match(client, /validateClientUploadFile\(file, "attachment"\)/);
-  assert.match(client, /router\.push\("\/\?action=upload"\)/);
-  assert.match(client, /area: "snap-upload"/);
-  assert.match(client, /accept=\{getUploadAcceptAttribute\("header"\)\}/);
-  assert.match(client, /onClick=\{openSnapUploadPicker\}/);
-  assert.match(client, /onClick=\{openSnapCameraPicker\}/);
-  assert.match(client, /Preparing upload/);
+  assert.doesNotMatch(client, /createClientAttemptId\("scan"\)/);
+  assert.match(snapLaunchCards, /createClientAttemptId\("scan"\)/);
+  assert.match(snapLaunchCards, /validateClientUploadFile\(file, "attachment"\)/);
+  assert.doesNotMatch(client, /shouldUseConciergeUploadFlow/);
+  assert.doesNotMatch(client, /createScannedEventPageFromUpload/);
+  assert.doesNotMatch(client, /fetch\("\/api\/scan\/event-page"/);
+  assert.doesNotMatch(client, /router\.push\(created\.eventPath\)/);
+  assert.doesNotMatch(client, /uploadMediaFile/);
+  assert.doesNotMatch(client, /updateGeneratedDraftImageFromUpload\(file, scanAttemptId\)/);
+  assert.doesNotMatch(client, /sourceImageUrl: uploadedImageUrl/);
+  assert.doesNotMatch(client, /autoPublishEventPage/);
+  assert.doesNotMatch(client, /publishScannedEventPageDraft/);
+  assert.doesNotMatch(client, /router\.push\(buildEventPath\(savedEventId/);
+  assert.doesNotMatch(client, /shouldHidePendingScanPlaceholder/);
+  assert.doesNotMatch(client, /!shouldHidePendingScanPlaceholder &&/);
+  assert.doesNotMatch(client, /savePendingSnapUpload/);
+  assert.doesNotMatch(client, /router\.push\("\/\?action=upload"\)/);
+  assert.match(snapLaunchCards, /savePendingSnapUpload/);
+  assert.match(snapLaunchCards, /router\.push\("\/\?action=upload"\)/);
+  assert.match(snapLaunchCards, /area: "snap-upload"/);
+  assert.doesNotMatch(client, /stage: "scan-event-page-created"/);
+  assert.match(snapLaunchCards, /accept=\{getUploadAcceptAttribute\("header"\)\}/);
+  assert.doesNotMatch(client, /openSnapUploadPicker/);
+  assert.doesNotMatch(client, /openSnapCameraPicker/);
   assert.doesNotMatch(client, /NEXT_PUBLIC_CONCIERGE_FAST_UPLOADS/);
   assert.doesNotMatch(client, /FAST_UPLOAD_OCR_URL/);
   assert.doesNotMatch(client, /DEFAULT_UPLOAD_OCR_URL/);
   assert.doesNotMatch(client, /ENABLE_FAST_UPLOAD_OCR/);
-  assert.match(client, /aria-label="Upload file"/);
-  assert.match(client, /aria-label="Use camera"/);
+  assert.doesNotMatch(client, /aria-label="Upload invite image"/);
+  assert.doesNotMatch(client, /aria-label="Snap invite photo"/);
+  assert.match(snapLaunchCards, /Upload file/);
+  assert.match(snapLaunchCards, /Snap flyer/);
+  assert.doesNotMatch(client, /tooltip="Upload file"/);
+  assert.doesNotMatch(client, /tooltip="Use camera"/);
   assert.match(client, /bg-\[#fbf9ff\]/);
   assert.match(client, /border-\[#d8caff\]/);
   assert.match(client, /!text-\[#25183a\]/);
@@ -466,8 +502,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(bottomNav, /aria-label=\{item\.label\}/);
   assert.doesNotMatch(client, /choiceClassName/);
   assert.doesNotMatch(client, /choiceIconClassName/);
-  assert.match(client, /<Paperclip[\s\S]{0,80}"size-6"/);
-  assert.match(client, /<Camera[\s\S]{0,80}"size-6"/);
+  assert.doesNotMatch(client, /<Paperclip/);
   assert.match(client, /Concierge is thinking\.\.\./);
   assert.match(client, /isThinking && "animate-pulse"/);
   assert.match(client, /isThinking \? null : \(/);

@@ -722,35 +722,6 @@ export function useLeftSidebarController({
     } catch {}
   }, [collapseSidebarOnTouch, router]);
 
-  const openSnapFromSidebar = useCallback(
-    (mode: "camera" | "upload") => {
-      try {
-        router.push(`/?action=${mode}`);
-        return;
-      } catch {}
-      triggerCreateEvent();
-    },
-    [router, triggerCreateEvent],
-  );
-
-  const launchSnapFromMenu = useCallback(
-    (mode: "camera" | "upload") => {
-      const runtimeWindow = window as any;
-      const openFn =
-        mode === "camera" ? runtimeWindow.__openSnapCamera : runtimeWindow.__openSnapUpload;
-      collapseSidebarOnTouch();
-      setSidebarPage("root");
-      try {
-        if (typeof openFn === "function") {
-          openFn();
-          return;
-        }
-      } catch {}
-      openSnapFromSidebar(mode);
-    },
-    [collapseSidebarOnTouch, openSnapFromSidebar],
-  );
-
   const resetSidebarToRoot = useCallback(() => {
     clearEventContext();
     setSidebarPage("root");
@@ -771,8 +742,13 @@ export function useLeftSidebarController({
   }, [pathname, resetSidebarToRoot, router]);
 
   const handleRootSnapNavigate = useCallback(() => {
-    resetSidebarToRoot();
-  }, [resetSidebarToRoot]);
+    clearEventContext();
+    setSidebarPage("root");
+    collapseSidebarOnTouch();
+    try {
+      router.push("/snap");
+    } catch {}
+  }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage]);
 
   const visibleTemplateKeys = featureVisibility.visibleTemplateKeys;
   const visibleTemplateLinks = useMemo(
@@ -1027,13 +1003,11 @@ export function useLeftSidebarController({
       setForcedCreateActiveLabel(label);
       setLastCreateSelection(label);
       if (label === "Snap Event") {
-        collapseSidebarOnTouch();
-        setSidebarPage("root");
-        router.push("/event");
+        handleRootSnapNavigate();
         return;
       }
       if (label === "Upload Event") {
-        launchSnapFromMenu("upload");
+        handleRootSnapNavigate();
         return;
       }
       if (label === "Smart sign-up forms" || label === "Sign up") {
@@ -1055,7 +1029,13 @@ export function useLeftSidebarController({
       setSidebarPage("root");
       triggerCreateEvent();
     },
-    [collapseSidebarOnTouch, launchSnapFromMenu, router, templateHrefMap, triggerCreateEvent],
+    [
+      collapseSidebarOnTouch,
+      handleRootSnapNavigate,
+      router,
+      templateHrefMap,
+      triggerCreateEvent,
+    ],
   );
 
   const isCreateMenuButtonActive = useCallback(

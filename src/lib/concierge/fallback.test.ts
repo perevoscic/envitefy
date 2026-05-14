@@ -332,7 +332,7 @@ test("greeting short-circuits AI extraction and stays conversational", async () 
   assert.equal(result.usedAi, false);
   assert.equal(result.draft.intent, "unknown");
   assert.deepEqual(result.draft.requestedOutputs, []);
-  assert.match(result.assistantMessage, /what are we celebrating/i);
+  assert.match(result.assistantMessage, /start with an invite/i);
   assert.doesNotMatch(result.assistantMessage, /live card be for/i);
 });
 

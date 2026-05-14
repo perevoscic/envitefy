@@ -221,11 +221,7 @@ export async function middleware(req: NextRequest) {
     return { hasSession: Boolean(sessionCookie.value), token: null as any };
   };
 
-  if (
-    normalizedPathname === "/landing" ||
-    normalizedPathname === "/snap" ||
-    normalizedPathname === "/gymnastics"
-  ) {
+  if (normalizedPathname === "/landing" || normalizedPathname === "/gymnastics") {
     const authState = await resolveAuthState();
     if (authState.hasSession) {
       const url = req.nextUrl.clone();
@@ -233,12 +229,17 @@ export async function middleware(req: NextRequest) {
       url.search = "";
       return redirectWithMarker(url, 302);
     }
-    if (normalizedPathname === "/snap" || normalizedPathname === "/gymnastics") {
+    if (normalizedPathname === "/gymnastics") {
       const response = ok();
-      return attachSignupSourceCookie(
-        response,
-        normalizedPathname === "/gymnastics" ? "gymnastics" : "snap",
-      );
+      return attachSignupSourceCookie(response, "gymnastics");
+    }
+    return ok();
+  }
+
+  if (normalizedPathname === "/snap") {
+    const authState = await resolveAuthState();
+    if (!authState.hasSession) {
+      return attachSignupSourceCookie(ok(), "snap");
     }
     return ok();
   }

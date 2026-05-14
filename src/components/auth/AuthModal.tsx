@@ -101,19 +101,22 @@ export default function AuthModal({
           <div className="flex flex-col items-center gap-3 pb-7 text-center">
             <p className="wedding-kicker">{heroKicker}</p>
             <div>
-              <EnvitefyWordmark className="text-[2.7rem] leading-none" />
+              <EnvitefyWordmark
+                scaled={false}
+                className="text-[3.25rem] leading-none sm:text-[3.75rem]"
+              />
             </div>
           </div>
           {isLogin ? (
             <LoginForm
               onSuccess={onClose}
               successRedirectUrl={successRedirectUrl}
-              onSwitchMode={allowSignupSwitch ? () => onModeChange?.("signup") : undefined}
+              onSwitchMode={allowSignupSwitch && onModeChange ? () => onModeChange("signup") : undefined}
             />
           ) : (
             <SignupForm
               onSuccess={onClose}
-              onSwitchMode={() => onModeChange?.("login")}
+              onSwitchMode={onModeChange ? () => onModeChange("login") : undefined}
               successRedirectUrl={successRedirectUrl}
               signupSource={signupSource}
             />

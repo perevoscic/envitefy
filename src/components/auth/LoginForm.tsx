@@ -221,26 +221,29 @@ export default function LoginForm({
             Reset password
           </Link>
         </p>
-        <p
-          className={cx(
-            "text-center text-sm text-muted-foreground",
-            isInlineLight
-              ? "text-[11px] leading-4 tracking-tight text-[#7c6aa8]"
-              : "text-[11px] leading-4 tracking-tight text-white/76",
-          )}
-        >
-          Don&apos;t have an account?{" "}
-          <button
-            type="button"
-            onClick={() => onSwitchMode("signup")}
+        {onSwitchMode ? (
+          <p
             className={cx(
-              "font-semibold hover:underline",
-              isInlineLight ? "text-[#6a57eb]" : "text-white",
+              "text-center text-sm text-muted-foreground",
+              isInline &&
+                (isInlineLight
+                  ? "text-[11px] leading-4 tracking-tight text-[#7c6aa8]"
+                  : "text-[11px] leading-4 tracking-tight text-white/76"),
             )}
           >
-            Sign up
-          </button>
-        </p>
+            Don&apos;t have an account?{" "}
+            <button
+              type="button"
+              onClick={() => onSwitchMode("signup")}
+              className={cx(
+                "font-semibold text-secondary hover:underline",
+                isInline && (isInlineLight ? "text-[#6a57eb]" : "text-white"),
+              )}
+            >
+              Sign up
+            </button>
+          </p>
+        ) : null}
       </div>
       {isInline && onSwitchMode ? (
         <div className="grid grid-cols-2 gap-3">
@@ -284,18 +287,6 @@ export default function LoginForm({
           {submitting ? "Signing in..." : "Sign in"}
         </button>
       )}
-      {onSwitchMode && !isInline ? (
-        <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account yet?{" "}
-          <button
-            type="button"
-            onClick={() => onSwitchMode("signup")}
-            className="text-secondary hover:underline"
-          >
-            Sign up
-          </button>
-        </p>
-      ) : null}
       {message ? (
         <p className={cx("text-sm font-medium text-error", isInline && "text-[#ffd7d7]")}>
           {message}

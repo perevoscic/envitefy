@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  isScannedInviteCreatedVia,
   isInvitedEventLikeRecord,
   normalizeDashboardEventOwnership,
   toDashboardEvent,
@@ -15,6 +16,10 @@ test("normalizeDashboardEventOwnership treats explicit invited ownership as invi
 test("normalizeDashboardEventOwnership treats invitedFromScan rows as invited", () => {
   assert.equal(normalizeDashboardEventOwnership("owned", "manual", true), "invited");
   assert.equal(isInvitedEventLikeRecord({ ownership: "owned", invitedFromScan: true }), true);
+});
+
+test("isScannedInviteCreatedVia treats direct scan event pages as scanned rows", () => {
+  assert.equal(isScannedInviteCreatedVia("scan-event-page"), true);
 });
 
 test("normalizeDashboardEventOwnership prefers v2 source intent over legacy scan marker", () => {

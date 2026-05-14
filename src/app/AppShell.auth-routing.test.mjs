@@ -11,7 +11,7 @@ test("AppShell hides app chrome on marketing and full live-card routes", () => {
   const appShell = readSource("src/app/AppShell.tsx");
 
   assert.match(appShell, /MARKETING_PATHS/);
-  assert.match(appShell, /"\/snap"/);
+  assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[^\]]*"\/snap"/s);
   assert.match(appShell, /"\/gymnastics"/);
   assert.match(appShell, /"\/landing"/);
   assert.match(appShell, /function isStudioCardSharePath\(pathname: string\)/);

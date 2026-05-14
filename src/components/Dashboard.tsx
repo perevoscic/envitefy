@@ -1801,7 +1801,11 @@ export default function Dashboard({
           scanAttemptId,
           details: { eventId, eventHref },
         });
-        router.push(eventHref);
+        if (typeof window !== "undefined") {
+          window.location.replace(eventHref);
+        } else {
+          router.replace(eventHref);
+        }
         return true;
       } finally {
         isSubmittingRef.current = false;

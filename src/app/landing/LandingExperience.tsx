@@ -927,7 +927,6 @@ export default function LandingExperience() {
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
         successRedirectUrl="/"
-        allowSignupSwitch={false}
       />
     </>
   );
