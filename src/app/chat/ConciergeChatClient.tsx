@@ -1180,6 +1180,31 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [rsvpPreview, setRsvpPreview] = useState<RsvpPreviewState>(EMPTY_RSVP_PREVIEW);
   const [weatherContext, setWeatherContext] = useState<ConciergeWeatherContext | null>(null);
   const [isReadyChatComposerOpen, setIsReadyChatComposerOpen] = useState(false);
+  const scanStatusFromQuery = searchParams.get("scanStatus");
+  const scanErrorFromQuery = searchParams.get("scanError");
+
+  useEffect(() => {
+    if (!scanStatusFromQuery) return;
+    if (scanStatusFromQuery === "failed") {
+      const errorMessage =
+        typeof scanErrorFromQuery === "string" && scanErrorFromQuery.trim()
+          ? scanErrorFromQuery
+          : "Upload scan failed before event creation. Please try again.";
+      setError(errorMessage);
+      setMessages((prev) => [
+        ...prev,
+        newMessage(
+          "assistant",
+          "I couldn't finish creating your event from that upload. Please retry or upload a clearer image.",
+        ),
+      ]);
+    }
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("scanStatus");
+    next.delete("scanError");
+    const query = next.toString();
+    router.replace(query ? `/chat?${query}` : "/chat");
+  }, [router, scanErrorFromQuery, scanStatusFromQuery, searchParams]);
 
   const isGeneratingCard = phase === "generating_card";
   const isPublishingCard = phase === "publishing_card";
@@ -2074,7 +2099,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           "I'll open the upload scanner so Envitefy can read this file and bring the details back into your event flow.",
         ),
       ]);
-      router.push("/?action=upload");
+      const returnTo = encodeURIComponent("/chat");
+      router.push(`/?action=upload&returnTo=${returnTo}`);
       didRoute = true;
     } catch (err) {
       reportClientLog({

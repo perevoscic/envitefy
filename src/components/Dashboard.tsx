@@ -284,6 +284,7 @@ export default function Dashboard({
   const cancelledByUserRef = useRef(false);
   const isSubmittingRef = useRef(false);
   const activeScanAttemptIdRef = useRef<string | null>(null);
+  const uploadReturnToRef = useRef<string | null>(null);
   const objectPreviewUrlRef = useRef<string | null>(null);
   const submitScannedEventRef = useRef<(params: SubmitScannedEventParams) => Promise<boolean>>(
     async () => false,
@@ -341,6 +342,19 @@ export default function Dashboard({
       objectPreviewUrlRef.current = null;
     }
   }, []);
+
+  const handleSnapFailureForChatReturn = useCallback(
+    (message: string) => {
+      if (uploadReturnToRef.current !== "/chat") return false;
+      const qs = new URLSearchParams({
+        scanStatus: "failed",
+        scanError: message || "Upload scan failed before event creation. Please try again.",
+      });
+      router.push(`/chat?${qs.toString()}`);
+      return true;
+    },
+    [router],
+  );
 
   useEffect(() => {
     return () => {
@@ -913,6 +927,10 @@ export default function Dashboard({
 
       const validationError = validateClientUploadFile(incoming, "attachment");
       if (validationError) {
+        if (handleSnapFailureForChatReturn(validationError)) {
+          setLoading(false);
+          return;
+        }
         setError(validationError);
         logUploadIssue(new Error(validationError), "client-validation", {
           fileName: incoming.name,
@@ -1233,9 +1251,23 @@ export default function Dashboard({
             },
           });
           if (!created) {
+            if (
+              handleSnapFailureForChatReturn(
+                "Unable to create an event from this scan. Please try again.",
+              )
+            ) {
+              return;
+            }
             resetScanUi();
           }
         } else {
+          if (
+            handleSnapFailureForChatReturn(
+              "Unable to create an event from this scan. Please try again.",
+            )
+          ) {
+            return;
+          }
           resetScanUi();
           setError("Unable to create an event from this scan. Please try again.");
         }
@@ -1257,8 +1289,14 @@ export default function Dashboard({
           });
         }
         if (err instanceof Error) {
+          if (handleSnapFailureForChatReturn(err.message)) {
+            return;
+          }
           setError(err.message);
         } else {
+          if (handleSnapFailureForChatReturn("Failed to scan file. Please try again.")) {
+            return;
+          }
           setError("Failed to scan file. Please try again.");
         }
       } finally {
@@ -1267,7 +1305,7 @@ export default function Dashboard({
         setLoading(false);
       }
     },
-    [finishScanUi, logUploadIssue, resetScanUi],
+    [finishScanUi, handleSnapFailureForChatReturn, logUploadIssue, resetScanUi],
   );
 
   const onFile = useCallback(
@@ -1345,11 +1383,17 @@ export default function Dashboard({
       try {
         const params = new URLSearchParams(window.location.search);
         const action = (params.get("action") || "").toLowerCase();
+        const returnTo =
+          typeof params.get("returnTo") === "string" && params.get("returnTo")
+            ? params.get("returnTo")
+            : null;
+        uploadReturnToRef.current = returnTo;
         if (!action) return;
         const cleanup = () => {
           try {
             const url = new URL(window.location.href);
             url.searchParams.delete("action");
+            url.searchParams.delete("returnTo");
             window.history.replaceState({}, "", url.toString());
           } catch {
             // noop
@@ -1765,6 +1809,9 @@ export default function Dashboard({
       try {
         const ready = buildSubmissionEvent(eventInput);
         if (!ready) {
+          if (handleSnapFailureForChatReturn("Missing start time for event creation")) {
+            return false;
+          }
           setError("Missing start time for event creation");
           return false;
         }
@@ -1777,6 +1824,13 @@ export default function Dashboard({
           ocrMeta,
         });
         if (!saveResult.ok) {
+          if (
+            handleSnapFailureForChatReturn(
+              saveResult.error || "We couldn't save this event to your account. Please try again.",
+            )
+          ) {
+            return false;
+          }
           setError(
             saveResult.error === "Unable to resolve signed-in account"
               ? "We couldn't verify your signed-in account. Sign out and sign back in, then try again."
@@ -1807,7 +1861,7 @@ export default function Dashboard({
         isSubmittingRef.current = false;
       }
     },
-    [buildSubmissionEvent, router, saveToEnvitefyHistory],
+    [buildSubmissionEvent, handleSnapFailureForChatReturn, router, saveToEnvitefyHistory],
   );
 
   submitScannedEventRef.current = submitScannedEvent;
