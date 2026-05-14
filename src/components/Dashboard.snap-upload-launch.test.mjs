@@ -55,3 +55,13 @@ test("dashboard sends scan attempt ids through OCR, media upload, and history", 
   assert.match(source, /scanAttemptId,\s*\}\);/);
   assert.match(source, /body: JSON\.stringify\(\{ \.\.\.payload, scanAttemptId \}\)/);
 });
+
+test("dashboard scan overlay avoids full-viewport mobile backdrop blur", () => {
+  const source = readSource("src/components/Dashboard.tsx");
+
+  assert.match(source, /bg-\[#f4eeff\]\/95 p-4 md:bg-\[#f4eeff\]\/78 md:backdrop-blur-md/);
+  assert.doesNotMatch(
+    source,
+    /bg-\[#f4eeff\]\/78 p-4 backdrop-blur-md lg:left-\[20rem\]/,
+  );
+});

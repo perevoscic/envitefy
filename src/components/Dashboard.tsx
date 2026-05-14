@@ -284,6 +284,7 @@ export default function Dashboard({
   const cancelledByUserRef = useRef(false);
   const isSubmittingRef = useRef(false);
   const activeScanAttemptIdRef = useRef<string | null>(null);
+  const uploadReturnToRef = useRef<string | null>(null);
   const objectPreviewUrlRef = useRef<string | null>(null);
   const submitScannedEventRef = useRef<(params: SubmitScannedEventParams) => Promise<boolean>>(
     async () => false,
@@ -1345,11 +1346,17 @@ export default function Dashboard({
       try {
         const params = new URLSearchParams(window.location.search);
         const action = (params.get("action") || "").toLowerCase();
+        const returnTo =
+          typeof params.get("returnTo") === "string" && params.get("returnTo")
+            ? params.get("returnTo")
+            : null;
+        uploadReturnToRef.current = returnTo;
         if (!action) return;
         const cleanup = () => {
           try {
             const url = new URL(window.location.href);
             url.searchParams.delete("action");
+            url.searchParams.delete("returnTo");
             window.history.replaceState({}, "", url.toString());
           } catch {
             // noop
@@ -1777,6 +1784,15 @@ export default function Dashboard({
           ocrMeta,
         });
         if (!saveResult.ok) {
+          if (uploadReturnToRef.current === "/chat") {
+            const qs = new URLSearchParams({
+              scanStatus: "failed",
+              scanError:
+                saveResult.error || "We couldn't save this event to your account. Please try again.",
+            });
+            router.push(`/chat?${qs.toString()}`);
+            return false;
+          }
           setError(
             saveResult.error === "Unable to resolve signed-in account"
               ? "We couldn't verify your signed-in account. Sign out and sign back in, then try again."
@@ -1971,7 +1987,7 @@ export default function Dashboard({
         </div>
       )}
       {scanStatus !== "idle" && (
-        <div className="fixed inset-y-0 left-0 right-0 z-[65] flex items-center justify-center bg-[#f4eeff]/78 p-4 backdrop-blur-md lg:left-[20rem]">
+        <div className="fixed inset-y-0 left-0 right-0 z-[65] flex items-center justify-center bg-[#f4eeff]/95 p-4 md:bg-[#f4eeff]/78 md:backdrop-blur-md lg:left-[20rem]">
           <div role="status" aria-live="polite" className="w-full max-w-md">
             <SnapProcessingCard
               status={scanStatus}

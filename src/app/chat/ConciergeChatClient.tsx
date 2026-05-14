@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
   Cake,
+  Camera,
   FileImage,
   Gift,
   Globe,
@@ -12,12 +13,13 @@ import {
   Loader2,
   MessageCircle,
   Mic,
+  Paperclip,
   Sparkles,
   Trophy,
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   type ComponentType,
   type FormEvent,
@@ -61,9 +63,12 @@ import {
   skinLabelForCategoryName,
   skinLabelForConciergeDraft,
 } from "@/lib/concierge/skins";
+import { runSnapOcrUpload, type SnapOcrUploadResult } from "@/lib/snap-upload-pipeline";
+import { getUploadAcceptAttribute } from "@/lib/upload-config";
+import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
 import { buildEventProductPath } from "@/utils/event-product-route";
 import { buildEventPath, buildEventSlug } from "@/utils/event-url";
-import { persistImageMediaValue } from "@/utils/media-upload-client";
+import { persistImageMediaValue, validateClientUploadFile } from "@/utils/media-upload-client";
 import { getAmazonRegistryCreateUrlForCategory } from "@/utils/registry-links";
 import ChatProductPreview from "./ChatProductPreview";
 
@@ -92,6 +97,15 @@ type ConciergePhase =
   | "publishing_card"
   | "card_ready"
   | "editing_card";
+
+type ChatUploadStage =
+  | "idle"
+  | "preparing_upload"
+  | "scanning"
+  | "ocr_ready"
+  | "creating_event"
+  | "success"
+  | "error";
 
 type LiveCardSummary = {
   headline: string;
@@ -347,6 +361,12 @@ type FailedConciergeRequest = {
   starterCategory?: string | null;
   echo?: string;
   suppressUserEcho?: boolean;
+  error: string;
+};
+
+type FailedSnapUploadRequest = {
+  file: File;
+  source: "camera" | "upload";
   error: string;
 };
 
@@ -671,6 +691,35 @@ function chatMessagesForPersistence(
       text: message.text.slice(0, 4000),
       type: "text",
     }));
+}
+
+function uploadedFileLabel(file: File) {
+  const name = file.name.replace(/\s+/g, " ").trim();
+  return name || "uploaded file";
+}
+
+function buildChatOcrContext(
+  result: SnapOcrUploadResult,
+  scanAttemptId: string,
+): ConciergeOcrContext {
+  return {
+    ocrText: result.ocrText || null,
+    fieldsGuess: result.fieldsGuess || null,
+    category: result.category || null,
+    birthdayTemplateHint: result.birthdayTemplateHint ?? null,
+    ocrSkin: result.ocrSkin || null,
+    metadata: {
+      scanAttemptId,
+      sourceRoute: "/chat",
+      thumbnailFocus: result.thumbnailFocus ?? null,
+      openHouse: result.openHouse || null,
+    },
+  };
+}
+
+function chatUploadFailureMessage(error: string) {
+  const trimmed = error.trim();
+  return trimmed || "Upload scan failed before event creation. Please try again.";
 }
 
 function cleanNumber(value: unknown) {
@@ -1163,9 +1212,12 @@ function notifyCreationThreadsChanged() {
 }
 
 export default function ConciergeChatClient({ userInitials = null }: ConciergeChatClientProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialAssistantPrompt = buildInitialAssistantPrompt();
   const userAvatarInitials = normalizeUserInitials(userInitials);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const chatPaneRef = useRef<HTMLDivElement | null>(null);
   const composerCardRef = useRef<HTMLDivElement | null>(null);
@@ -1182,6 +1234,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [draft, setDraft] = useState<ConciergeEventDraft | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isStreamingAssistant, setIsStreamingAssistant] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [chatUploadStage, setChatUploadStage] = useState<ChatUploadStage>("idle");
   const [buildProgress, setBuildProgress] = useState(0);
   const [liveCardEventId, setLiveCardEventId] = useState<string | null>(null);
   const [liveCardTitle, setLiveCardTitle] = useState<string | null>(null);
@@ -1190,12 +1244,38 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [draftStudioInvite, setDraftStudioInvite] = useState<GeneratedInvitePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [failedRequest, setFailedRequest] = useState<FailedConciergeRequest | null>(null);
+  const [failedSnapUpload, setFailedSnapUpload] = useState<FailedSnapUploadRequest | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat");
   const [rsvpPreview, setRsvpPreview] = useState<RsvpPreviewState>(EMPTY_RSVP_PREVIEW);
   const [weatherContext, setWeatherContext] = useState<ConciergeWeatherContext | null>(null);
   const [isReadyChatComposerOpen, setIsReadyChatComposerOpen] = useState(false);
+  const scanStatusFromQuery = searchParams.get("scanStatus");
+  const scanErrorFromQuery = searchParams.get("scanError");
+
+  useEffect(() => {
+    if (!scanStatusFromQuery) return;
+    if (scanStatusFromQuery === "failed") {
+      const errorMessage =
+        typeof scanErrorFromQuery === "string" && scanErrorFromQuery.trim()
+          ? scanErrorFromQuery
+          : "Upload scan failed before event creation. Please try again.";
+      setError(errorMessage);
+      setMessages((prev) => [
+        ...prev,
+        newMessage(
+          "assistant",
+          "I couldn't finish creating your event from that upload. Please retry or upload a clearer image.",
+        ),
+      ]);
+    }
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("scanStatus");
+    next.delete("scanError");
+    const query = next.toString();
+    router.replace(query ? `/chat?${query}` : "/chat");
+  }, [router, scanErrorFromQuery, scanStatusFromQuery, searchParams]);
 
   const isGeneratingCard = phase === "generating_card";
   const isPublishingCard = phase === "publishing_card";
@@ -1205,7 +1285,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     messages.length === 1 &&
     messages[0]?.role === "assistant" &&
     !draft &&
-    !isSending;
+    !isSending &&
+    !isUploading;
   const visibleMessages = messages.filter((message, index) => {
     if (message.type !== "upload_status" && !message.text.trim()) {
       return false;
@@ -1217,14 +1298,22 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       isOpeningAssistantPrompt(message.text, initialAssistantPrompt)
     );
   });
-  const isBusy = isSending || isGeneratingCard || isPublishingCard;
-  const busyLabel = isEditingGeneratedCard
-    ? "Updating preview"
-    : isGeneratingCard
-      ? "Generating invite"
-      : isPublishingCard
-        ? "Publishing invite"
-        : "Concierge is thinking...";
+  const isBusy = isSending || isUploading || isGeneratingCard || isPublishingCard;
+  const busyLabel = isUploading
+    ? chatUploadStage === "creating_event"
+      ? "Creating event"
+      : chatUploadStage === "ocr_ready"
+        ? "Reading upload"
+        : chatUploadStage === "scanning"
+          ? "Scanning upload"
+          : "Preparing upload"
+    : isEditingGeneratedCard
+      ? "Updating preview"
+      : isGeneratingCard
+        ? "Generating invite"
+        : isPublishingCard
+          ? "Publishing invite"
+          : "Concierge is thinking...";
   const isThinking = busyLabel === "Concierge is thinking..." && !isStreamingAssistant;
   const isCompactEmptyComposer =
     isEmptyState && !input.trim() && !isComposerFocused && !isListening;
@@ -1306,6 +1395,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setSelectedProductOutput(null);
     setSelectedStarterCategory(null);
     setFailedRequest(null);
+    setFailedSnapUpload(null);
+    setIsUploading(false);
+    setChatUploadStage("idle");
     setWeatherContext(null);
     setMobileView("chat");
     setIsReadyChatComposerOpen(false);
@@ -2009,6 +2101,75 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     });
   }
 
+  async function saveOcrReadyDraftToEvent(params: {
+    draft: ConciergeEventDraft;
+    scanAttemptId: string;
+    statusMessageId: string;
+  }) {
+    setChatUploadStage("creating_event");
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === params.statusMessageId
+          ? { ...message, text: "Creating your event..." }
+          : message,
+      ),
+    );
+    const response = await fetch("/api/creation/intake", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        message: "",
+        action: "save",
+        draft: params.draft,
+        persistSession: true,
+        chatMessages: chatMessagesForPersistence(messages),
+      }),
+    });
+    const json = (await response.json().catch(() => null)) as ConciergeMessageResponse | null;
+    if (!response.ok || !json?.ok) {
+      throw new Error(json && !json.ok ? json.error : "Unable to create event from upload.");
+    }
+    const savedEventId = json.savedEventId;
+    if (!savedEventId) throw new Error("Event was created without an event id.");
+
+    const savedDraft = normalizeDraftProductOutputs(json.draft || params.draft);
+    const savedOutput =
+      savedDraft.requestedOutputs
+        .map(visibleProductOutput)
+        .find((output) => PRODUCT_OPTIONS.some((option) => option.output === output)) || null;
+    setBuildProgress(100);
+    setDraft(savedDraft);
+    setSelectedProductOutput(savedOutput);
+    setLiveCardEventId(savedEventId);
+    setLiveCardTitle(draftHeadline(savedDraft));
+    setLiveCardSummary(
+      liveCardSummaryFromDraft(savedDraft, savedOutput || effectiveSelectedProductOutput),
+    );
+    setWeatherContext(json.weatherContext || null);
+    setPhase("card_ready");
+    setMobileView("preview");
+    setChatUploadStage("success");
+    setMessages((prev) => {
+      const withoutStatus = prev.filter((message) => message.id !== params.statusMessageId);
+      const persisted = json.chatMessages?.length
+        ? chatMessagesFromSnapshots(json.chatMessages)
+        : withoutStatus;
+      return [
+        ...persisted,
+        newMessage("assistant", `I created ${draftHeadline(savedDraft)}. You can open it now.`),
+      ];
+    });
+    notifyCreationThreadsChanged();
+  }
+
+  async function retryFailedSnapUpload() {
+    if (!failedSnapUpload || isBusy) return;
+    const { file, source } = failedSnapUpload;
+    setFailedSnapUpload(null);
+    await routeSelectedSnapFile(file, source);
+  }
+
   async function submitComposerInput() {
     if (isBusy) return;
     const value = input.trim();
@@ -2092,6 +2253,136 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     recognition.start();
   }
 
+  async function routeSelectedSnapFile(file: File | null | undefined, source: "camera" | "upload") {
+    if (!file || isBusy) return;
+    const validationError = validateClientUploadFile(file, "attachment");
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setError(null);
+    setFailedRequest(null);
+    setFailedSnapUpload(null);
+    setIsUploading(true);
+    setChatUploadStage("preparing_upload");
+    const scanAttemptId = createClientAttemptId("scan");
+    const statusMessage = newMessage("assistant", "Preparing upload...", "upload_status");
+    setMessages((prev) => [
+      ...prev,
+      newMessage("user", `Uploaded ${uploadedFileLabel(file)}`),
+      statusMessage,
+    ]);
+    const updateUploadStatus = (text: string) => {
+      setMessages((prev) =>
+        prev.map((message) => (message.id === statusMessage.id ? { ...message, text } : message)),
+      );
+    };
+    const clearUploadStatus = () => {
+      setMessages((prev) => prev.filter((message) => message.id !== statusMessage.id));
+    };
+    try {
+      setChatUploadStage("scanning");
+      updateUploadStatus("Scanning image...");
+      reportClientLog({
+        area: "snap-upload",
+        stage: "chat-ocr-start",
+        scanAttemptId,
+        details: {
+          route: "/chat",
+          source,
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+        },
+      });
+      const ocrResult = await runSnapOcrUpload({ file, scanAttemptId });
+      setChatUploadStage("ocr_ready");
+      updateUploadStatus("Reading event details...");
+      const intakeResult = await sendToConcierge({
+        message: "Create an event from this uploaded file.",
+        action: "ocr_result",
+        ocrContext: buildChatOcrContext(ocrResult, scanAttemptId),
+        requestedOutputs: selectedProductOutput ? [selectedProductOutput] : ["live_card"],
+        suppressUserEcho: true,
+      });
+      if (!intakeResult?.ok) {
+        throw new Error("I scanned the file, but couldn't turn it into event details.");
+      }
+      const scannedDraft = normalizeDraftProductOutputs(intakeResult.draft);
+      if (isReadyProductDraft(scannedDraft)) {
+        await saveOcrReadyDraftToEvent({
+          draft: scannedDraft,
+          scanAttemptId,
+          statusMessageId: statusMessage.id,
+        });
+      } else {
+        clearUploadStatus();
+        setChatUploadStage("success");
+      }
+    } catch (err) {
+      clearUploadStatus();
+      setChatUploadStage("error");
+      reportClientLog({
+        area: "snap-upload",
+        stage: "chat-upload-failed",
+        scanAttemptId,
+        error: err,
+        details: {
+          route: "/chat",
+          source,
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+        },
+      });
+      const errorMessage = chatUploadFailureMessage(
+        err instanceof Error ? err.message : "Failed to scan file. Please try again.",
+      );
+      setFailedRequest(null);
+      setFailedSnapUpload({ file, source, error: errorMessage });
+      setError(errorMessage);
+      setMessages((prev) => [
+        ...prev,
+        newMessage(
+          "assistant",
+          "I couldn't finish creating your event from that upload. Retry it, upload a different file, or keep going manually.",
+        ),
+      ]);
+    } finally {
+      setIsUploading(false);
+      setChatUploadStage((current) =>
+        current === "error" || current === "success" ? current : "idle",
+      );
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+    }
+  }
+
+  function openSnapUploadPicker() {
+    if (isBusy) return;
+    setError(null);
+    setFailedSnapUpload(null);
+    try {
+      fileInputRef.current?.click();
+    } catch (err) {
+      console.error("Failed to open file picker:", err);
+      setError("Unable to open the file picker. Please try again.");
+    }
+  }
+
+  function openSnapCameraPicker() {
+    if (isBusy) return;
+    setError(null);
+    setFailedSnapUpload(null);
+    try {
+      cameraInputRef.current?.click();
+    } catch (err) {
+      console.error("Failed to open camera picker:", err);
+      setError("Unable to open the camera. Please try again.");
+    }
+  }
+
   const chatThread = (
     <div
       className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-end gap-5 px-4 py-8 sm:px-6"
@@ -2156,6 +2447,50 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             >
               Try again
             </button>
+          </div>
+        </motion.div>
+      ) : null}
+
+      {failedSnapUpload ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-start gap-2"
+        >
+          <ConciergeChatAvatar />
+          <div className="min-w-0 max-w-[94%] rounded-3xl rounded-tl-md border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800 shadow-sm sm:max-w-[88%]">
+            <p className="font-semibold">Upload could not be turned into an event.</p>
+            <p>{failedSnapUpload.error}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void retryFailedSnapUpload()}
+                disabled={isBusy}
+                className="inline-flex h-9 items-center justify-center rounded-full border border-red-200 bg-white px-4 text-xs font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Retry file
+              </button>
+              <button
+                type="button"
+                onClick={openSnapUploadPicker}
+                disabled={isBusy}
+                className="inline-flex h-9 items-center justify-center rounded-full border border-red-200 bg-white px-4 text-xs font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Upload different
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFailedSnapUpload(null);
+                  setError(null);
+                  focusComposerAtEnd();
+                }}
+                disabled={isBusy}
+                className="inline-flex h-9 items-center justify-center rounded-full border border-red-200 bg-white px-4 text-xs font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Continue manually
+              </button>
+            </div>
           </div>
         </motion.div>
       ) : null}
@@ -2303,6 +2638,27 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       <div ref={composerCardRef} className="pointer-events-auto w-full">
         {isEmptyState ? emptyProductFormatSelector : null}
         <form onSubmit={handleSubmit}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={getUploadAcceptAttribute("attachment")}
+            className="hidden"
+            onChange={(event) => {
+              void routeSelectedSnapFile(event.currentTarget.files?.[0], "upload");
+              event.currentTarget.value = "";
+            }}
+          />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept={getUploadAcceptAttribute("header")}
+            capture="environment"
+            className="hidden"
+            onChange={(event) => {
+              void routeSelectedSnapFile(event.currentTarget.files?.[0], "camera");
+              event.currentTarget.value = "";
+            }}
+          />
           <PromptInput
             value={input}
             onValueChange={handleComposerValueChange}
@@ -2340,6 +2696,40 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                 )}
               />
               <PromptInputActions className="shrink-0 justify-end gap-2">
+                <PromptInputAction tooltip="Upload file">
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={openSnapUploadPicker}
+                    className={cn(
+                      "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:cursor-not-allowed disabled:opacity-50",
+                      isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
+                    )}
+                    aria-label="Upload file"
+                  >
+                    <Paperclip
+                      className={cn("size-6", isCompactEmptyComposer && "max-md:size-5")}
+                      aria-hidden="true"
+                    />
+                  </button>
+                </PromptInputAction>
+                <PromptInputAction tooltip="Use camera">
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={openSnapCameraPicker}
+                    className={cn(
+                      "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:cursor-not-allowed disabled:opacity-50",
+                      isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
+                    )}
+                    aria-label="Use camera"
+                  >
+                    <Camera
+                      className={cn("size-6", isCompactEmptyComposer && "max-md:size-5")}
+                      aria-hidden="true"
+                    />
+                  </button>
+                </PromptInputAction>
                 <PromptInputAction
                   tooltip={
                     isBusy
