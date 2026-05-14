@@ -58,7 +58,7 @@ export default async function AdminDashboardPage() {
         }
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <AdminMetricCard
           label="Users"
           value={formatNumber(overview.kpis.users)}
@@ -97,7 +97,7 @@ export default async function AdminDashboardPage() {
         />
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-5">
           <AdminPanel
             title="Platform Funnel"
@@ -113,7 +113,7 @@ export default async function AdminDashboardPage() {
                     className="block rounded-md p-1 hover:bg-slate-50"
                   >
                     <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="font-medium text-slate-800">{step.label}</span>
+                      <span className="min-w-0 pr-2 font-medium text-slate-800">{step.label}</span>
                       <span className="font-semibold text-slate-950">
                         {formatNumber(step.value)}
                       </span>
@@ -131,7 +131,7 @@ export default async function AdminDashboardPage() {
             title="Event Category Performance"
             description="Event, scan, share, and RSVP mix by stored event category."
           >
-            <div className="overflow-x-auto">
+            <div className="-mx-1 overflow-x-auto px-1 sm:mx-0 sm:px-0">
               <table className="w-full min-w-[680px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.12em] text-slate-500">
@@ -165,9 +165,12 @@ export default async function AdminDashboardPage() {
             title="Growth Insights"
             description="Seven-day first-party movement compared with the previous seven days."
           >
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
               {overview.growthInsights.map((insight) => (
-                <div key={insight.label} className="rounded-lg border border-slate-200 p-4">
+                <div
+                  key={insight.label}
+                  className="rounded-lg border border-slate-200 p-3 sm:p-4"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{insight.label}</p>
@@ -179,7 +182,7 @@ export default async function AdminDashboardPage() {
                       {formatDelta(insight.delta)}
                     </AdminStatusBadge>
                   </div>
-                  <div className="mt-4">
+                  <div className="mt-3 sm:mt-4">
                     <AdminSparkline
                       label={`${insight.label} trend`}
                       values={[insight.previous7Days, insight.current7Days]}
@@ -209,7 +212,7 @@ export default async function AdminDashboardPage() {
           >
             {overview.ga4Report.status === "available" ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid grid-cols-2 gap-2 text-sm sm:gap-3">
                   <div className="rounded-md bg-slate-50 p-3">
                     <p className="text-slate-500">Active users 30d</p>
                     <p className="mt-1 text-lg font-semibold text-slate-950">
@@ -271,7 +274,7 @@ export default async function AdminDashboardPage() {
                 value: status.count,
               }))}
             />
-            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div className="mt-4 grid grid-cols-2 gap-2 text-sm sm:gap-3">
               <div className="rounded-md bg-slate-50 p-3">
                 <p className="text-slate-500">Sessions</p>
                 <p className="mt-1 text-lg font-semibold text-slate-950">
@@ -296,7 +299,7 @@ export default async function AdminDashboardPage() {
                   className="block rounded-md border border-slate-200 p-3 hover:border-violet-300 hover:bg-violet-50/40"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                    <p className="min-w-0 pr-1 text-sm font-semibold text-slate-900">{item.title}</p>
                     <AdminStatusBadge tone={item.tone}>{item.tone}</AdminStatusBadge>
                   </div>
                   <p className="mt-1 text-xs leading-5 text-slate-600">{item.detail}</p>
