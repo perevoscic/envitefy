@@ -15,6 +15,10 @@ import {
 } from "@/lib/ocr/constants";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
 import {
+  normalizeOcrLocationFields,
+  normalizeOcrRsvpFields,
+} from "@/lib/ocr/field-normalization";
+import {
   extractGymnasticsScheduleHeuristics,
   extractGymnasticsScheduleWithLlm,
   hasGymnasticsScheduleText,
@@ -395,7 +399,9 @@ export async function handleOcrRequest(request: Request) {
         .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
         .grayscale()
         .normalize()
+        .jpeg({ quality: 90 })
         .toBuffer();
+      visionMime = "image/jpeg";
     } catch {}
     stage.preprocessMs = Date.now() - preprocessStartedAt;
 
@@ -1363,18 +1369,29 @@ export async function handleOcrRequest(request: Request) {
         { label: "Good to Know", value: guestReminderFacts },
       ]),
     );
+    const normalizedFieldLocation = normalizeOcrLocationFields({
+      venue: finalVenue,
+      location: finalAddress,
+      context: [raw, description, finalTitle].filter(Boolean).join("\n"),
+    });
+    const normalizedFieldRsvp = normalizeOcrRsvpFields({
+      rsvp: deferredRsvp,
+      rsvpUrl: deferredRsvpUrl,
+      rsvpDeadline: deferredRsvpDeadline,
+      sourceText: raw,
+    });
     const fieldsGuess = {
       title: finalTitle,
       start: toLocalNoZ(finalStart),
       end: toLocalNoZ(finalEnd),
       timeFound: rawHasExplicitTime || parsedHadExplicitTime,
-      location: finalAddress,
-      venue: finalVenue || null,
+      location: normalizedFieldLocation.location,
+      venue: normalizedFieldLocation.venue,
       description,
       timezone: "",
-      rsvp: deferredRsvp || null,
-      rsvpUrl: deferredRsvpUrl || null,
-      rsvpDeadline: deferredRsvpDeadline || null,
+      rsvp: normalizedFieldRsvp.rsvp,
+      rsvpUrl: normalizedFieldRsvp.rsvpUrl,
+      rsvpDeadline: normalizedFieldRsvp.rsvpDeadline,
       hostName: hostNameFinal,
       goodToKnow: goodToKnowFinal,
       ocrFacts: ocrFacts.length ? ocrFacts : null,

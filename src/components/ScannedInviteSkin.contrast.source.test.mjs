@@ -16,6 +16,13 @@ test("scanned invite skin computes readable colors for variable dark and light s
   assert.match(source, /title=\{displayRsvpTitle\}/);
   assert.match(source, /const hasRsvpDisplayContact = Boolean/);
   assert.match(source, /hasRsvpAction \|\| hasRsvpDisplayContact/);
+  assert.match(source, /const hasDisplayLocation = Boolean/);
+  assert.match(source, /const directionsHref = hasDisplayLocation \?/);
+  assert.match(source, /function groupRepeatedOcrFacts/);
+  assert.match(source, /const groupedDisplayOcrFacts = groupRepeatedOcrFacts\(displayOcrFacts\)/);
+  assert.match(source, /href=\{`tel:\$\{contactPhone\.replace/);
+  assert.match(source, /href=\{`mailto:\$\{contactEmail\}`\}/);
+  assert.match(source, /href=\{normalizedContactWebsite\}/);
 
   assert.match(source, /const detailCardTextColor = ensureReadableTextColor/);
   assert.match(source, /backgroundColor: detailCardBackground/);
@@ -49,6 +56,7 @@ test("scanned invite skin computes readable colors for variable dark and light s
     /className="text-2xl font-bold text-black\/90">\{displayDetailCopy\}/,
   );
   assert.doesNotMatch(source, /ICS File/);
+  assert.doesNotMatch(source, /Location TBD/);
 });
 
 test("birthday skin computes readable colors for variable dark and light skins", () => {

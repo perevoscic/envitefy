@@ -39,11 +39,12 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next-dev/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "src/components/BackgroundSlider.tsx",
     "src/types/**/*.d.ts",
-    ".next-dev/types/**/*.ts"
+    ".next-dev-3001/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

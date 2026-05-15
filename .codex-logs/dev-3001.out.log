@@ -1,0 +1,3495 @@
+
+> envitefy@0.1.0 dev
+> node scripts/dev-single.js --port 3001
+
+   ▲ Next.js 15.5.9
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.10.245:3001
+   - Environments: .env
+
+ ✓ Starting...
+
+   We detected TypeScript in your project and reconfigured your tsconfig.json file for you.
+   The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
+
+   	- include was updated to add '.next-dev-3001/types/**/*.ts'
+
+ ✓ Ready in 2.2s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 622ms (215 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 6.9s (2753 modules)
+ ✓ Compiled in 2.1s (1102 modules)
+ ✓ Compiled in 477ms (1102 modules)
+ GET / 200 in 10576ms
+ ✓ Compiled in 709ms (1102 modules)
+ ✓ Compiled in 497ms (1102 modules)
+ ✓ Compiled in 432ms (1102 modules)
+ ✓ Compiled /favicon.ico in 374ms (1668 modules)
+ GET /favicon.ico 200 in 481ms
+ ✓ Compiled in 640ms (1102 modules)
+ ✓ Compiled in 559ms (1102 modules)
+ ✓ Compiled in 516ms (1102 modules)
+ ✓ Compiled in 531ms (1102 modules)
+ ✓ Compiled in 507ms (1102 modules)
+ ✓ Compiled in 552ms (1102 modules)
+ ✓ Compiled in 501ms (1102 modules)
+ GET / 200 in 2046ms
+ GET /favicon.ico 200 in 35ms
+ ○ Compiling /api/history ...
+ ✓ Compiled /snap in 4s (2871 modules)
+ GET /api/user/feature-visibility 200 in 4870ms
+ GET /api/user/profile 200 in 5392ms
+ ✓ Compiled in 515ms (1128 modules)
+ GET /snap 200 in 3909ms
+ GET /snap 200 in 396ms
+ GET /api/creation/threads?limit=20 200 in 5929ms
+ GET /snap 200 in 1145ms
+ GET /api/dashboard?timing=1 200 in 6049ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 6082ms
+ GET /api/creation/threads?limit=20 200 in 448ms
+ ✓ Compiled in 427ms (1128 modules)
+ ✓ Compiled in 439ms (1128 modules)
+ GET /snap 200 in 895ms
+ GET /snap 200 in 390ms
+ ✓ Compiled in 506ms (1128 modules)
+ GET /snap 200 in 412ms
+ ✓ Compiled in 535ms (1128 modules)
+ GET /snap 200 in 874ms
+ ✓ Compiled in 515ms (1128 modules)
+ GET /snap 200 in 395ms
+ GET /snap?action=upload 200 in 761ms
+ ✓ Compiled in 431ms (1128 modules)
+ GET /snap?action=upload 200 in 397ms
+ ○ Compiling /api/dashboard/enrich-next-event ...
+ ✓ Compiled /api/dashboard/enrich-next-event in 3.6s (3269 modules)
+ ✓ Compiled in 1870ms (1128 modules)
+ GET /api/blob/event-media/upload-7cd2b0d5-53a8-40c5-a51b-bcda488fa7ba/header/display.webp 200 in 6184ms
+ GET /api/blob/event-media/upload-12493c6a-dfd8-412c-83de-7c529e6c26ab/attachment/display.webp 200 in 6379ms
+ GET /api/blob/event-media/upload-d5a06fe2-c4f2-4262-9389-59e2a81b9f82/attachment/display.webp 200 in 6381ms
+ ✓ Compiled in 1033ms (1128 modules)
+ GET /api/blob/event-media/upload-110a7fa6-8949-4ddb-9314-e759f789c109/attachment/display.webp 200 in 6548ms
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 25000, fastMode: false, ocrModel: 'gpt-5.5' }
+>>> Using OpenAI model: gpt-5.5
+>>> Making OpenAI Vision API call...
+ ✓ Compiled in 861ms (1128 modules)
+ ✓ Compiled in 670ms (1128 modules)
+ GET /snap 200 in 1787ms
+ POST /api/dashboard/enrich-next-event 200 in 8920ms
+ ✓ Compiled in 591ms (1128 modules)
+ GET /snap 200 in 1621ms
+ GET /snap 200 in 1662ms
+ ✓ Compiled in 745ms (1128 modules)
+ GET /snap 200 in 1601ms
+ ✓ Compiled in 547ms (1128 modules)
+ GET /snap 200 in 954ms
+ GET /snap 200 in 2289ms
+ GET /snap 200 in 835ms
+ ✓ Compiled in 475ms (1128 modules)
+ GET /snap 200 in 828ms
+ GET /snap 200 in 396ms
+ POST /api/ocr?fast=0&skin=0 200 in 11622ms
+ ✓ Compiled /api/client-log in 304ms (3271 modules)
+ POST /api/client-log 200 in 371ms
+ ✓ Compiled in 429ms (1128 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1369ms (3611 modules)
+ GET /snap 500 in 1800ms
+ GET /snap 200 in 1017ms
+ GET /snap 200 in 858ms
+ GET /snap 200 in 815ms
+ GET /snap 200 in 1210ms
+ ✓ Compiled in 982ms (1280 modules)
+ ✓ Compiled in 571ms (1280 modules)
+ GET /api/user/feature-visibility 200 in 903ms
+ GET /api/user/profile 200 in 960ms
+ ✓ Compiled in 466ms (1280 modules)
+ GET /snap 200 in 892ms
+ GET /snap 200 in 782ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 1861ms
+ ✓ Compiled in 474ms (1280 modules)
+ GET /snap 200 in 806ms
+ GET /api/creation/threads?limit=20 200 in 2263ms
+ GET /snap 200 in 658ms
+ ✓ Compiled in 443ms (1280 modules)
+ ✓ Compiled in 455ms (1280 modules)
+ GET /snap 200 in 791ms
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+>>> OpenAI extracted data: {
+  title: 'Kona Ice Is Coming! — Gateway Academy',
+  start: '2026-05-19T09:30:00',
+  end: '2026-05-19T13:40:00',
+  address: null,
+  venueName: 'Gateway Academy',
+  description: 'On Tuesday, May 19, Kona Ice will be at Gateway Academy from 9:30 to 1:40.',
+  category: 'General Events',
+  rsvp: null,
+  rsvpUrl: null,
+  rsvpDeadline: null,
+  hostName: null,
+  activities: null,
+  attire: null,
+  registryUrl: null,
+  ocrFacts: [
+    {
+      label: 'Menu Prices',
+      value: 'Klassic $4; King $5; Color Changing $6, $4 Refill; Kowabunga $7, $4 Refill; Kollectable $8, $4 Refill; TopZ Sour Powder $1'
+    },
+    {
+      label: 'Flavors',
+      value: "Blue Raspberry; Tiger's Blood; Groovy Grape; Island Rush; Lucky Lime; Monster Mango; Ninja Cherry; Piña Colada; Strawberry'd Treasure; Watermelon Wave"
+    },
+    {
+      label: 'Vendor Contact',
+      value: 'Kona Ice of South Walton County, 850.567.5057 | wscott@kona-ice.com | www.kona-ice.com'
+    }
+  ],
+  yearVisible: false,
+  birthdayAudience: null,
+  birthdaySignals: [],
+  birthdayName: null,
+  birthdayAge: null,
+  goodToKnow: null,
+  thumbnailFocus: { target: 'title', x: 0.24, y: 0.16, confidence: 0.88 },
+  openHouse: null
+}
+>>> OpenAI title: Kona Ice Is Coming! — Gateway Academy
+>>> OpenAI description: On Tuesday, May 19, Kona Ice will be at Gateway Academy from 9:30 to 1:40.
+ GET /snap 200 in 406ms
+ ✓ Compiled in 432ms (1280 modules)
+ GET /snap 200 in 391ms
+>>> OCR timing (ms) {
+  totalMs: 18501,
+  preprocessMs: 747,
+  primaryOcrMs: 14023,
+  fallbackOcrMs: 0,
+  rewriteMs: 1437,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: false,
+  enableRewrites: true,
+  enableSkinInference: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.5',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'scan_4b58063b-e7d9-46f7-82bb-136c2d2f4590',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  fileSize: 1778862,
+  mimeType: 'application/pdf',
+  category: null,
+  timings: {
+    totalMs: 18501,
+    preprocessMs: 747,
+    primaryOcrMs: 14023,
+    fallbackOcrMs: 0,
+    rewriteMs: 1437,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: true,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.5',
+    ocrSource: 'openai'
+  }
+}
+ ✓ Compiled in 435ms (1280 modules)
+ GET /snap 200 in 388ms
+ ✓ Compiled in 433ms (1280 modules)
+ GET /snap 200 in 644ms
+ ✓ Compiled in 450ms (1280 modules)
+ GET /snap 200 in 390ms
+ ✓ Compiled in 437ms (1280 modules)
+ GET /snap 200 in 390ms
+ ✓ Compiled in 451ms (1280 modules)
+ GET /snap 200 in 397ms
+ ✓ Compiled in 446ms (1280 modules)
+ GET /snap 200 in 388ms
+ ✓ Compiled in 425ms (1280 modules)
+ GET /snap 200 in 436ms
+ ✓ Compiled in 465ms (1280 modules)
+ GET /snap 200 in 399ms
+ ✓ Compiled in 451ms (1280 modules)
+ GET /snap 200 in 410ms
+ ✓ Compiled in 447ms (1280 modules)
+ GET /snap 200 in 387ms
+ ✓ Compiled in 454ms (1280 modules)
+ GET /snap 200 in 390ms
+ ✓ Compiled in 446ms (1280 modules)
+ GET /snap 200 in 442ms
+ ✓ Compiled in 489ms (1280 modules)
+ GET /snap 200 in 388ms
+ ✓ Compiled in 455ms (1280 modules)
+ GET /snap 200 in 418ms
+ ✓ Compiled in 442ms (1280 modules)
+ GET /snap 200 in 390ms
+ ✓ Compiled in 450ms (1280 modules)
+ GET /snap 200 in 453ms
+ ✓ Compiled in 460ms (1280 modules)
+ GET /snap 200 in 388ms
+ ✓ Compiled in 448ms (1280 modules)
+ GET /snap 200 in 390ms
+ ✓ Compiled in 434ms (1280 modules)
+ GET /snap 200 in 417ms
+ ✓ Compiled in 446ms (1280 modules)
+ GET /snap 200 in 389ms
+ ✓ Compiled in 447ms (1280 modules)
+ GET /snap 200 in 423ms
+ ✓ Compiled in 456ms (1280 modules)
+ GET /snap 200 in 393ms
+ ✓ Compiled in 479ms (1280 modules)
+ ✓ Compiled in 453ms (1280 modules)
+ GET /snap 200 in 737ms
+ GET /snap 200 in 742ms
+ ✓ Compiled in 435ms (1280 modules)
+ GET /snap 200 in 636ms
+ ✓ Compiled in 485ms (1280 modules)
+ GET /snap 200 in 385ms
+ ✓ Compiled in 589ms (1280 modules)
+ GET /snap 200 in 874ms
+ ✓ Compiled in 553ms (1280 modules)
+ ✓ Compiled in 575ms (1280 modules)
+ GET /snap 200 in 935ms
+ GET /snap 200 in 876ms
+ ✓ Compiled in 535ms (1280 modules)
+ GET /snap?action=upload 200 in 414ms
+ GET /snap?action=upload 200 in 858ms
+ ✓ Compiled in 525ms (1280 modules)
+ GET /snap?action=upload 200 in 389ms
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 25000, fastMode: false, ocrModel: 'gpt-5.5' }
+>>> Using OpenAI model: gpt-5.5
+>>> Making OpenAI Vision API call...
+ ✓ Compiled in 1877ms (1280 modules)
+ GET /api/dashboard?timing=1 200 in 3167ms
+ ✓ Compiled in 746ms (1280 modules)
+ GET /api/blob/event-media/upload-d5a06fe2-c4f2-4262-9389-59e2a81b9f82/attachment/display.webp 200 in 1222ms
+ ✓ Compiled in 1003ms (1280 modules)
+ GET /snap 200 in 2603ms
+ ✓ Compiled in 594ms (1280 modules)
+ ✓ Compiled in 731ms (1280 modules)
+ ✓ Compiled in 537ms (1280 modules)
+ GET /snap 200 in 3097ms
+ GET /snap 200 in 2006ms
+ ✓ Compiled in 556ms (1280 modules)
+ POST /api/dashboard/enrich-next-event 200 in 4202ms
+ GET /snap 200 in 887ms
+ ✓ Compiled in 631ms (1280 modules)
+ GET /snap 200 in 2579ms
+ ✓ Compiled in 523ms (1280 modules)
+ GET /snap 200 in 2570ms
+ ✓ Compiled in 519ms (1280 modules)
+ GET /snap 200 in 1750ms
+ GET /snap 200 in 855ms
+ GET /snap 200 in 440ms
+ GET /snap 200 in 407ms
+ POST /api/ocr?fast=0&skin=0 200 in 9663ms
+ POST /api/client-log 200 in 42ms
+ ✓ Compiled in 475ms (1280 modules)
+ ✓ Compiled in 467ms (1280 modules)
+ GET /snap 200 in 789ms
+ GET /snap 200 in 403ms
+ ✓ Compiled in 818ms (1280 modules)
+ GET /snap 200 in 1430ms
+ ✓ Compiled in 526ms (1280 modules)
+ GET /snap 200 in 388ms
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+>>> OpenAI extracted data: {
+  title: 'Kona Ice Is Coming — Gateway Academy',
+  start: '2026-05-19T09:30:00',
+  end: '2026-05-19T13:40:00',
+  address: null,
+  venueName: 'Gateway Academy',
+  description: 'Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 AM to 1:40 PM.',
+  category: 'General Events',
+  rsvp: null,
+  rsvpUrl: null,
+  rsvpDeadline: null,
+  hostName: null,
+  activities: null,
+  attire: null,
+  registryUrl: null,
+  ocrFacts: [
+    {
+      label: 'Menu Prices',
+      value: 'Klassic $4; King $5; Color Changing $6, $4 Refill; Kowabunga $7, $4 Refill; Kollectable $8, $4 Refill; TopZ Sour Powder $1'
+    },
+    {
+      label: 'Flavors',
+      value: "Blue Raspberry; Tiger's Blood; Groovy Grape; Island Rush; Lucky Lime; Monster Mango; Ninja Cherry; Piña Colada; Strawberry'd Treasure; Watermelon Wave"
+    },
+    { label: 'Vendor', value: 'Kona Ice of South Walton County' },
+    {
+      label: 'Vendor Contact',
+      value: '850.567.5057 | wscott@kona-ice.com | www.kona-ice.com'
+    }
+  ],
+  yearVisible: false,
+  birthdayAudience: null,
+  birthdaySignals: [],
+  birthdayName: null,
+  birthdayAge: null,
+  goodToKnow: null,
+  thumbnailFocus: { target: 'title', x: 0.22, y: 0.18, confidence: 0.86 },
+  openHouse: null
+}
+>>> OpenAI title: Kona Ice Is Coming — Gateway Academy
+>>> OpenAI description: Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 AM to 1:40 PM.
+ ✓ Compiled in 623ms (1280 modules)
+>>> OCR timing (ms) {
+  totalMs: 16639,
+  preprocessMs: 178,
+  primaryOcrMs: 12765,
+  fallbackOcrMs: 0,
+  rewriteMs: 2073,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: false,
+  enableRewrites: true,
+  enableSkinInference: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.5',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'scan_c0585ed4-fcf8-4d0a-87c5-1dfb3cde141d',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  fileSize: 1778862,
+  mimeType: 'application/pdf',
+  category: null,
+  timings: {
+    totalMs: 16639,
+    preprocessMs: 178,
+    primaryOcrMs: 12765,
+    fallbackOcrMs: 0,
+    rewriteMs: 2073,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: true,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.5',
+    ocrSource: 'openai'
+  }
+}
+ ✓ Compiled in 501ms (1280 modules)
+ GET /snap 200 in 839ms
+ GET /snap 200 in 412ms
+ ✓ Compiled in 497ms (1280 modules)
+ GET /snap 200 in 391ms
+ ✓ Compiled in 445ms (1280 modules)
+ GET /snap 200 in 644ms
+ ✓ Compiled in 471ms (1280 modules)
+ GET /snap 200 in 385ms
+ ✓ Compiled in 434ms (1279 modules)
+ GET /snap 200 in 414ms
+ ✓ Compiled in 445ms (1279 modules)
+ GET /snap 200 in 386ms
+ ✓ Compiled in 476ms (1279 modules)
+ GET /snap 200 in 412ms
+ ✓ Compiled in 463ms (1279 modules)
+ GET /snap 200 in 412ms
+ ✓ Compiled in 456ms (1279 modules)
+ GET /snap 200 in 387ms
+ ✓ Compiled in 456ms (1279 modules)
+ GET /snap 200 in 387ms
+ ✓ Compiled in 2.4s (3515 modules)
+ ✓ Compiled in 475ms (1279 modules)
+ GET /snap 200 in 1113ms
+ GET /snap 200 in 387ms
+ ✓ Compiled in 471ms (1279 modules)
+ GET /snap 200 in 406ms
+ ✓ Compiled in 686ms (3515 modules)
+ GET /snap 200 in 663ms
+ ✓ Compiled in 444ms (1279 modules)
+ GET /snap 200 in 384ms
+ ✓ Compiled in 453ms (1279 modules)
+ GET /snap 200 in 402ms
+ ✓ Compiled in 469ms (1279 modules)
+ GET /snap 200 in 387ms
+ ✓ Compiled in 481ms (1279 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1011ms (3594 modules)
+ GET /snap 500 in 1304ms
+ ✓ Compiled in 489ms (1280 modules)
+ GET /snap 200 in 1626ms
+ ✓ Compiled in 642ms (1280 modules)
+ GET /snap 200 in 1571ms
+ ✓ Compiled /api/user/profile in 823ms (3623 modules)
+ ✓ Compiled in 756ms (3623 modules)
+ GET /api/user/feature-visibility 200 in 1978ms
+ GET /snap 200 in 2491ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 2894ms
+ GET /snap 200 in 1445ms
+ GET /api/user/profile 200 in 3019ms
+ GET /api/creation/threads?limit=20 200 in 3139ms
+ ✓ Compiled in 1229ms (1280 modules)
+ ✓ Compiled in 561ms (1280 modules)
+ GET /snap 200 in 841ms
+ ✓ Compiled in 470ms (1280 modules)
+ GET /snap 200 in 822ms
+ ✓ Compiled in 746ms (3609 modules)
+ GET /snap 500 in 977ms
+ GET /snap 200 in 780ms
+ ✓ Compiled in 578ms (1280 modules)
+ GET /snap 200 in 1123ms
+ ✓ Compiled in 495ms (1280 modules)
+ GET /api/user/feature-visibility 200 in 492ms
+ GET /api/user/profile 200 in 531ms
+ ✓ Compiled in 483ms (1280 modules)
+ GET /api/creation/threads?limit=20 200 in 1360ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 1500ms
+ GET /snap 200 in 390ms
+ ✓ Compiled in 440ms (1280 modules)
+ ✓ Compiled in 462ms (1280 modules)
+ GET /snap 200 in 788ms
+ GET /snap 200 in 388ms
+ ✓ Compiled in 460ms (1280 modules)
+ GET /snap 200 in 383ms
+ ✓ Compiled in 465ms (1280 modules)
+ ✓ Compiled in 468ms (1280 modules)
+ GET /snap 200 in 939ms
+ GET /snap 200 in 403ms
+ ✓ Compiled in 520ms (1280 modules)
+ GET /snap 200 in 400ms
+ ✓ Compiled in 1065ms (1280 modules)
+ ✓ Compiled in 494ms (1280 modules)
+ GET /snap 200 in 818ms
+ GET /snap 200 in 392ms
+ ✓ Compiled in 453ms (1280 modules)
+ GET /snap 200 in 388ms
+ ✓ Compiled in 512ms (1280 modules)
+ GET /snap 200 in 421ms
+ ✓ Compiled in 443ms (1280 modules)
+ GET /snap 200 in 385ms
+ ✓ Compiled in 464ms (1280 modules)
+ GET /snap 200 in 417ms
+ ✓ Compiled in 470ms (1280 modules)
+ ✓ Compiled in 767ms (3163 modules)
+ GET /snap 500 in 999ms
+ GET /snap 200 in 1171ms
+ ✓ Compiled in 584ms (1280 modules)
+ GET /snap 200 in 1106ms
+ ✓ Compiled in 520ms (1280 modules)
+ ✓ Compiled in 468ms (1280 modules)
+ ✓ Compiled in 540ms (1280 modules)
+ ✓ Compiled in 500ms (1280 modules)
+ ✓ Compiled in 498ms (1280 modules)
+ ✓ Compiled in 491ms (1280 modules)
+ ✓ Compiled in 552ms (1280 modules)
+ ✓ Compiled in 484ms (1280 modules)
+ ✓ Compiled in 493ms (1280 modules)
+ ✓ Compiled in 560ms (1280 modules)
+ ✓ Compiled in 489ms (1280 modules)
+ ✓ Compiled in 482ms (1280 modules)
+ ✓ Compiled in 472ms (1280 modules)
+ ✓ Compiled in 454ms (1280 modules)
+ ✓ Compiled in 468ms (1280 modules)
+ ✓ Compiled in 993ms (1280 modules)
+ ✓ Compiled in 656ms (1280 modules)
+ ✓ Compiled in 853ms (1280 modules)
+ ✓ Compiled in 617ms (1280 modules)
+ ✓ Compiled in 630ms (1280 modules)
+ ✓ Compiled in 654ms (1280 modules)
+ ✓ Compiled in 764ms (1280 modules)
+ ✓ Compiled in 601ms (1280 modules)
+ ✓ Compiled in 744ms (1280 modules)
+ ✓ Compiled in 847ms (1280 modules)
+ ✓ Compiled in 632ms (1280 modules)
+ ✓ Compiled in 671ms (1280 modules)
+ ✓ Compiled in 596ms (1280 modules)
+ ✓ Compiled in 587ms (1280 modules)
+ ✓ Compiled in 898ms (1280 modules)
+ ✓ Compiled in 878ms (1280 modules)
+ ✓ Compiled in 804ms (1280 modules)
+ ✓ Compiled in 783ms (1280 modules)
+ ✓ Compiled in 659ms (1280 modules)
+ ✓ Compiled in 557ms (1280 modules)
+ ✓ Compiled in 518ms (1280 modules)
+ ✓ Compiled in 455ms (1280 modules)
+ ✓ Compiled in 477ms (1280 modules)
+ ✓ Compiled in 468ms (1280 modules)
+ ✓ Compiled in 487ms (1280 modules)
+ ✓ Compiled in 771ms (1280 modules)
+ ✓ Compiled in 899ms (1280 modules)
+ ✓ Compiled in 772ms (1280 modules)
+ ✓ Compiled in 824ms (1280 modules)
+ ✓ Compiled in 770ms (1280 modules)
+ ✓ Compiled in 717ms (1280 modules)
+ ✓ Compiled in 621ms (1280 modules)
+ ✓ Compiled in 1077ms (1280 modules)
+ ✓ Compiled in 952ms (1280 modules)
+ ✓ Compiled in 563ms (1280 modules)
+ ✓ Compiled in 817ms (1280 modules)
+ ✓ Compiled in 718ms (1280 modules)
+ ✓ Compiled in 1454ms (1280 modules)
+ ✓ Compiled in 728ms (1280 modules)
+ ✓ Compiled in 562ms (1280 modules)
+ ✓ Compiled in 584ms (1280 modules)
+ ✓ Compiled in 571ms (1280 modules)
+ ✓ Compiled in 620ms (1280 modules)
+ ✓ Compiled in 558ms (1280 modules)
+ ✓ Compiled in 556ms (1280 modules)
+ ✓ Compiled in 643ms (1280 modules)
+ ✓ Compiled in 662ms (1280 modules)
+ ✓ Compiled in 632ms (1280 modules)
+ ✓ Compiled in 597ms (1279 modules)
+ ✓ Compiled in 602ms (1279 modules)
+ ✓ Compiled in 871ms (1279 modules)
+ ✓ Compiled in 591ms (1279 modules)
+ ✓ Compiled in 645ms (1279 modules)
+ ✓ Compiled in 574ms (1279 modules)
+ ✓ Compiled in 549ms (1279 modules)
+ ✓ Compiled in 576ms (1279 modules)
+ ✓ Compiled in 607ms (1279 modules)
+ ✓ Compiled in 706ms (1279 modules)
+ ✓ Compiled in 559ms (1279 modules)
+ ✓ Compiled in 554ms (1279 modules)
+ ✓ Compiled in 632ms (1279 modules)
+ ✓ Compiled in 560ms (1279 modules)
+ ✓ Compiled in 547ms (1279 modules)
+ ✓ Compiled in 972ms (1279 modules)
+ ✓ Compiled in 711ms (1279 modules)
+ ✓ Compiled in 660ms (1279 modules)
+ ✓ Compiled in 777ms (1279 modules)
+ ✓ Compiled in 657ms (1279 modules)
+ ✓ Compiled in 651ms (1279 modules)
+ ✓ Compiled in 701ms (1279 modules)
+ ✓ Compiled in 709ms (1279 modules)
+ ✓ Compiled in 1008ms (1279 modules)
+ ✓ Compiled in 702ms (1279 modules)
+ ✓ Compiled in 736ms (1279 modules)
+ ✓ Compiled in 945ms (1279 modules)
+ ✓ Compiled in 674ms (1279 modules)
+ ✓ Compiled in 631ms (1279 modules)
+ ✓ Compiled in 589ms (1279 modules)
+ ✓ Compiled in 668ms (1279 modules)
+ ✓ Compiled in 600ms (1279 modules)
+ ✓ Compiled in 707ms (1279 modules)
+ ✓ Compiled in 622ms (1279 modules)
+ ✓ Compiled in 596ms (1279 modules)
+ ✓ Compiled in 662ms (1279 modules)
+ ✓ Compiled in 586ms (1279 modules)
+ ✓ Compiled in 952ms (1279 modules)
+ ✓ Compiled in 898ms (1279 modules)
+ ✓ Compiled in 1111ms (1279 modules)
+ ✓ Compiled in 798ms (1279 modules)
+ ✓ Compiled in 956ms (1279 modules)
+ ✓ Compiled in 894ms (1279 modules)
+ ✓ Compiled in 1013ms (1279 modules)
+ ✓ Compiled in 795ms (1279 modules)
+ ✓ Compiled in 649ms (1279 modules)
+ ✓ Compiled in 630ms (1279 modules)
+ ✓ Compiled in 616ms (1279 modules)
+ ✓ Compiled in 606ms (1279 modules)
+ ✓ Compiled in 604ms (1279 modules)
+ ✓ Compiled in 861ms (1279 modules)
+ ✓ Compiled in 764ms (1279 modules)
+ ✓ Compiled in 512ms (1279 modules)
+ GET /snap 200 in 1291ms
+ ✓ Compiled in 901ms (1279 modules)
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 2.8s (3086 modules)
+ GET /favicon.ico 200 in 2496ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 2525ms
+ GET /api/user/feature-visibility 200 in 2577ms
+ GET /api/user/profile 200 in 2580ms
+ GET /api/creation/threads?limit=20 200 in 3211ms
+ ✓ Compiled in 758ms (1279 modules)
+ ✓ Compiled in 525ms (1279 modules)
+ GET /snap 200 in 1617ms
+ GET /snap 200 in 885ms
+ GET /snap 200 in 813ms
+ GET /favicon.ico 200 in 475ms
+ ✓ Compiled in 551ms (1279 modules)
+ ✓ Compiled in 607ms (1279 modules)
+ GET /snap 200 in 969ms
+ ✓ Compiled in 506ms (1279 modules)
+ GET /snap 200 in 826ms
+ GET /snap 200 in 423ms
+ GET /favicon.ico 200 in 40ms
+ ✓ Compiled in 957ms (1279 modules)
+ ✓ Compiled in 600ms (1279 modules)
+ ✓ Compiled in 567ms (1279 modules)
+ GET /snap 200 in 1546ms
+ GET /snap 200 in 856ms
+ ✓ Compiled in 602ms (1279 modules)
+ GET /snap 200 in 959ms
+ ✓ Compiled in 535ms (1279 modules)
+ GET /snap 200 in 858ms
+ GET /snap 200 in 401ms
+ ✓ Compiled in 541ms (1279 modules)
+ ✓ Compiled in 520ms (1279 modules)
+ GET /favicon.ico 200 in 69ms
+ GET /snap 200 in 871ms
+ GET /snap 200 in 935ms
+ ✓ Compiled in 590ms (1279 modules)
+ GET /snap 200 in 943ms
+ ✓ Compiled in 693ms (1279 modules)
+ ✓ Compiled in 585ms (1279 modules)
+ GET /snap 200 in 921ms
+ GET /snap 200 in 1012ms
+ ✓ Compiled in 663ms (1279 modules)
+ ✓ Compiled in 580ms (1279 modules)
+ GET /snap 200 in 1082ms
+ GET /snap 200 in 1152ms
+ ✓ Compiled in 691ms (1279 modules)
+ GET /snap 200 in 1093ms
+ ✓ Compiled in 620ms (1279 modules)
+ GET /snap 200 in 1098ms
+ ✓ Compiled in 728ms (1279 modules)
+ GET /snap 200 in 1101ms
+ ✓ Compiled in 582ms (1279 modules)
+ GET /api/user/feature-visibility 200 in 1050ms
+ GET /api/user/profile 200 in 1091ms
+ GET /snap 200 in 915ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 1978ms
+ ✓ Compiled in 614ms (1279 modules)
+ GET /snap 200 in 964ms
+ GET /snap 200 in 911ms
+ GET /api/creation/threads?limit=20 200 in 2094ms
+ GET /snap 200 in 1805ms
+ ✓ Compiled in 517ms (1279 modules)
+ GET /snap 200 in 855ms
+ GET /snap 200 in 862ms
+ GET /snap 200 in 407ms
+ GET /snap 200 in 403ms
+ GET /favicon.ico 200 in 43ms
+ ✓ Compiled in 543ms (1279 modules)
+ GET /snap 200 in 939ms
+ GET /snap 200 in 968ms
+ ✓ Compiled in 631ms (1279 modules)
+ ✓ Compiled in 661ms (1279 modules)
+ GET /snap 200 in 1027ms
+ GET /snap 200 in 1025ms
+ ✓ Compiled in 644ms (1279 modules)
+ GET /snap 200 in 1024ms
+ GET /snap 200 in 983ms
+ ✓ Compiled in 669ms (1279 modules)
+ GET /snap 200 in 1031ms
+ GET /snap 200 in 997ms
+ ✓ Compiled in 613ms (1279 modules)
+ GET /snap 200 in 951ms
+ GET /snap 200 in 963ms
+ ✓ Compiled in 643ms (1279 modules)
+ GET /snap 200 in 1014ms
+ GET /snap 200 in 984ms
+ ✓ Compiled in 691ms (1279 modules)
+ GET /snap 200 in 1218ms
+ GET /snap 200 in 1226ms
+ GET /snap 200 in 396ms
+ GET /snap 200 in 393ms
+ GET /favicon.ico 200 in 37ms
+ ✓ Compiled in 670ms (1279 modules)
+ ✓ Compiled in 534ms (1279 modules)
+ GET /snap 200 in 886ms
+ GET /snap 200 in 870ms
+ GET /snap 200 in 1032ms
+ ✓ Compiled in 660ms (1279 modules)
+ GET /snap 200 in 982ms
+ ✓ Compiled in 508ms (1279 modules)
+ GET /snap 200 in 806ms
+ GET /snap 200 in 809ms
+ GET /snap 200 in 407ms
+ GET /snap 200 in 405ms
+ GET /favicon.ico 200 in 39ms
+ ✓ Compiled in 555ms (1279 modules)
+ GET /snap 200 in 958ms
+ ✓ Compiled in 576ms (1279 modules)
+ GET /snap 200 in 922ms
+ GET /snap 200 in 861ms
+ ✓ Compiled in 509ms (1279 modules)
+ GET /snap 200 in 836ms
+ GET /snap 200 in 388ms
+ GET /snap 200 in 384ms
+ GET /favicon.ico 200 in 33ms
+ ✓ Compiled in 464ms (1279 modules)
+ GET /snap 200 in 393ms
+ GET /snap 200 in 389ms
+ GET /favicon.ico 200 in 37ms
+ ✓ Compiled in 519ms (1279 modules)
+ GET /snap 200 in 409ms
+ GET /snap 200 in 401ms
+ GET /favicon.ico 200 in 70ms
+ ✓ Compiled in 971ms (1279 modules)
+ ✓ Compiled in 761ms (1279 modules)
+ ✓ Compiled in 554ms (1279 modules)
+ GET /snap 200 in 1456ms
+ GET /snap 200 in 892ms
+ GET /snap 200 in 872ms
+ GET /snap 200 in 850ms
+ ✓ Compiled in 574ms (1279 modules)
+ GET /snap 200 in 955ms
+ GET /snap 200 in 892ms
+ ✓ Compiled in 561ms (1279 modules)
+ GET /snap 200 in 929ms
+ GET /snap 200 in 891ms
+ GET /snap 200 in 887ms
+ ✓ Compiled in 529ms (1279 modules)
+ GET /snap 200 in 847ms
+ GET /snap 200 in 404ms
+ GET /snap 200 in 982ms
+ ✓ Compiled in 643ms (1279 modules)
+ ✓ Compiled in 545ms (1279 modules)
+ GET /favicon.ico 200 in 111ms
+ GET /snap 200 in 908ms
+ GET /snap 200 in 951ms
+ ✓ Compiled in 588ms (1279 modules)
+ GET /snap 200 in 965ms
+ GET /snap 200 in 1301ms
+ ✓ Compiled in 509ms (1279 modules)
+ GET /snap 200 in 494ms
+ GET /snap 200 in 408ms
+ GET /snap 200 in 396ms
+ GET /snap 200 in 419ms
+ GET /favicon.ico 200 in 24ms
+ ✓ Compiled in 586ms (1279 modules)
+ ✓ Compiled in 537ms (1279 modules)
+ GET /snap 200 in 869ms
+ GET /snap 200 in 849ms
+ GET /snap 200 in 943ms
+ GET /snap 200 in 959ms
+ ✓ Compiled in 635ms (1279 modules)
+ ✓ Compiled in 588ms (1279 modules)
+ GET /snap 200 in 1061ms
+ GET /snap 200 in 1095ms
+ ✓ Compiled in 558ms (1279 modules)
+ GET /snap 200 in 876ms
+ GET /snap 200 in 858ms
+ GET /snap 200 in 849ms
+ ✓ Compiled in 504ms (1279 modules)
+ GET /snap 200 in 813ms
+ GET /snap 200 in 401ms
+ GET /snap 200 in 394ms
+ GET /favicon.ico 200 in 34ms
+ ✓ Compiled in 568ms (1279 modules)
+ ✓ Compiled in 863ms (1279 modules)
+ GET /snap 200 in 1196ms
+ GET /snap 200 in 1158ms
+ ✓ Compiled in 732ms (1279 modules)
+ GET /snap 200 in 1082ms
+ ✓ Compiled in 578ms (1279 modules)
+ GET /snap 200 in 1481ms
+ GET /snap 200 in 899ms
+ GET /snap 200 in 875ms
+ ✓ Compiled in 548ms (1279 modules)
+ GET /snap 200 in 914ms
+ GET /snap 200 in 864ms
+ GET /snap 200 in 845ms
+ GET /snap 200 in 849ms
+ ✓ Compiled in 514ms (1279 modules)
+ GET /snap 200 in 391ms
+ GET /snap 200 in 387ms
+ GET /favicon.ico 200 in 47ms
+ ✓ Compiled in 1178ms (1279 modules)
+ ✓ Compiled in 563ms (1279 modules)
+ GET /snap 200 in 994ms
+ GET /snap 200 in 975ms
+ ✓ Compiled in 590ms (1279 modules)
+ GET /snap 200 in 919ms
+ GET /snap 200 in 908ms
+ ✓ Compiled in 540ms (1279 modules)
+ GET /snap 200 in 866ms
+ GET /snap 200 in 1126ms
+ ✓ Compiled in 538ms (1279 modules)
+ GET /snap 200 in 1095ms
+ GET /snap 200 in 1076ms
+ GET /snap 200 in 924ms
+ ✓ Compiled in 550ms (1279 modules)
+ GET /snap 200 in 898ms
+ GET /snap 200 in 549ms
+ GET /snap 200 in 637ms
+ ✓ Compiled in 2.2s (3086 modules)
+ GET /favicon.ico 200 in 1694ms
+ ✓ Compiled in 696ms (1279 modules)
+ ✓ Compiled in 639ms (1279 modules)
+ GET /snap 200 in 994ms
+ GET /snap 200 in 1710ms
+ GET /snap 200 in 1004ms
+ GET /snap 200 in 1102ms
+ ✓ Compiled in 603ms (1279 modules)
+ GET /snap 200 in 1042ms
+ GET /snap 200 in 967ms
+ ✓ Compiled in 584ms (1279 modules)
+ GET /snap 200 in 940ms
+ GET /snap 200 in 866ms
+ GET /snap 200 in 934ms
+ ✓ Compiled in 594ms (1279 modules)
+ GET /snap 200 in 901ms
+ ✓ Compiled in 562ms (1279 modules)
+ GET /snap 200 in 1084ms
+ GET /snap 200 in 1045ms
+ ✓ Compiled in 582ms (1279 modules)
+ GET /snap 200 in 968ms
+ GET /snap 200 in 922ms
+ ✓ Compiled in 745ms (1279 modules)
+ GET /snap 200 in 1117ms
+ GET /snap 200 in 1079ms
+ ✓ Compiled in 567ms (1279 modules)
+ GET /snap 200 in 945ms
+ GET /snap 200 in 912ms
+ GET /snap 200 in 913ms
+ ✓ Compiled in 555ms (1279 modules)
+ GET /snap 200 in 949ms
+ ✓ Compiled in 678ms (1279 modules)
+ GET /snap 200 in 1032ms
+ GET /snap 200 in 1247ms
+ ✓ Compiled in 555ms (1279 modules)
+ GET /snap 200 in 896ms
+ GET /snap 200 in 892ms
+ ✓ Compiled in 572ms (1279 modules)
+ GET /snap 200 in 948ms
+ GET /snap 200 in 962ms
+ GET /snap 200 in 1503ms
+ GET /snap 200 in 1221ms
+ ✓ Compiled in 2.1s (3069 modules)
+ GET /favicon.ico 200 in 603ms
+ ✓ Compiled in 685ms (1279 modules)
+ ✓ Compiled in 547ms (1279 modules)
+ GET /snap 200 in 1253ms
+ GET /snap 200 in 937ms
+ ✓ Compiled in 508ms (1279 modules)
+ GET /snap 200 in 1593ms
+ GET /snap 200 in 876ms
+ GET /snap 200 in 973ms
+ GET /snap 200 in 1033ms
+ GET /snap 200 in 426ms
+ GET /snap 200 in 388ms
+ GET /favicon.ico 200 in 25ms
+ ✓ Compiled in 614ms (1279 modules)
+ ✓ Compiled in 573ms (1279 modules)
+ GET /snap 200 in 923ms
+ GET /snap 200 in 887ms
+ ✓ Compiled in 585ms (1279 modules)
+ GET /snap 200 in 929ms
+ GET /snap 200 in 869ms
+ ✓ Compiled in 543ms (1279 modules)
+ GET /snap 200 in 869ms
+ GET /snap 200 in 1082ms
+ GET /snap 200 in 928ms
+ ✓ Compiled in 534ms (1279 modules)
+ GET /snap 200 in 880ms
+ GET /snap 200 in 921ms
+ ✓ Compiled in 1530ms (3069 modules)
+ GET /favicon.ico 200 in 246ms
+ GET /snap 200 in 533ms
+ GET /snap 200 in 497ms
+ GET /snap 200 in 2356ms
+ ○ Compiling /api/dashboard ...
+ ✓ Compiled /api/dashboard in 2.8s (3076 modules)
+ GET /favicon.ico 200 in 2890ms
+ ✓ Compiled in 973ms (1279 modules)
+ GET /snap 200 in 2057ms
+ ✓ Compiled in 831ms (1279 modules)
+ GET /snap 200 in 2256ms
+ GET /snap 200 in 1099ms
+ GET /api/dashboard?timing=1 200 in 6204ms
+ GET /snap 200 in 1829ms
+ ✓ Compiled in 766ms (1279 modules)
+ GET /snap 200 in 1719ms
+ GET /snap 200 in 1633ms
+ ✓ Compiled /api/dashboard/enrich-next-event in 936ms (3078 modules)
+ GET /api/dashboard?timing=1 200 in 1034ms
+ ✓ Compiled in 850ms (1279 modules)
+ ✓ Compiled in 809ms (1279 modules)
+ ✓ Compiled in 543ms (1279 modules)
+ GET /snap 200 in 3021ms
+ GET /snap 200 in 984ms
+ ✓ Compiled in 754ms (1279 modules)
+ GET /snap 200 in 1162ms
+ GET /snap 200 in 1237ms
+ GET /snap 200 in 1084ms
+ POST /api/dashboard/enrich-next-event 200 in 3055ms
+ POST /api/dashboard/enrich-next-event 200 in 4715ms
+ GET /snap 200 in 1792ms
+ ✓ Compiled in 784ms (1279 modules)
+ ✓ Compiled in 801ms (1279 modules)
+ GET /snap 200 in 2979ms
+ ✓ Compiled in 1245ms (1279 modules)
+ ✓ Compiled in 550ms (1279 modules)
+ ✓ Compiled in 725ms (1279 modules)
+ GET /snap 200 in 2711ms
+ GET /snap 200 in 2030ms
+ GET /snap 200 in 1724ms
+ GET /snap 200 in 1458ms
+ ✓ Compiled in 1612ms (3078 modules)
+ GET /snap 200 in 504ms
+ GET /snap 200 in 1538ms
+ ✓ Compiled in 1433ms (1279 modules)
+ GET /snap 200 in 565ms
+ ✓ Compiled in 584ms (1279 modules)
+ ✓ Compiled in 529ms (1279 modules)
+ GET /snap 200 in 869ms
+ GET /snap 200 in 890ms
+ ✓ Compiled in 509ms (1279 modules)
+ GET /snap 200 in 402ms
+ ✓ Compiled in 467ms (1279 modules)
+ ✓ Compiled in 524ms (1279 modules)
+ GET /snap 200 in 1543ms
+ ✓ Compiled in 742ms (1279 modules)
+ GET /snap 200 in 1127ms
+ ✓ Compiled in 889ms (1279 modules)
+ GET /snap 200 in 1216ms
+ ✓ Compiled in 745ms (1279 modules)
+ GET /snap 200 in 1097ms
+ ✓ Compiled in 829ms (1279 modules)
+ GET /snap 200 in 1192ms
+ ✓ Compiled in 695ms (1279 modules)
+ GET /snap 200 in 1016ms
+ ✓ Compiled in 949ms (1279 modules)
+ ✓ Compiled in 970ms (1279 modules)
+ GET /snap 200 in 2127ms
+ ✓ Compiled in 581ms (1279 modules)
+ ✓ Compiled in 612ms (1279 modules)
+ GET /snap 200 in 1513ms
+ GET /snap 200 in 1529ms
+ ✓ Compiled in 600ms (1279 modules)
+ GET /snap 200 in 1062ms
+ GET /snap 200 in 1096ms
+ ✓ Compiled in 546ms (1279 modules)
+ GET /snap 200 in 885ms
+ GET /snap 200 in 1040ms
+ ✓ Compiled in 690ms (1279 modules)
+ ✓ Compiled in 566ms (1279 modules)
+ GET /snap 200 in 859ms
+ GET /snap 200 in 1074ms
+ ✓ Compiled in 736ms (1279 modules)
+ ✓ Compiled in 637ms (1279 modules)
+ ✓ Compiled in 655ms (1279 modules)
+ GET /snap 200 in 1585ms
+ GET /snap 200 in 985ms
+ ✓ Compiled in 603ms (1279 modules)
+ GET /snap 200 in 942ms
+ ✓ Compiled in 591ms (1279 modules)
+ GET /snap 200 in 932ms
+ ✓ Compiled in 530ms (1279 modules)
+ GET /snap 200 in 869ms
+ GET /snap 200 in 805ms
+ ✓ Compiled in 479ms (1279 modules)
+ GET /snap 200 in 410ms
+ ✓ Compiled in 505ms (1279 modules)
+ GET /snap 200 in 402ms
+ ✓ Compiled in 482ms (1279 modules)
+ GET /snap 200 in 409ms
+ ✓ Compiled in 501ms (1279 modules)
+ GET /snap 200 in 572ms
+ ✓ Compiled in 706ms (1279 modules)
+ ✓ Compiled in 566ms (1279 modules)
+ GET /snap 200 in 896ms
+ ✓ Compiled in 625ms (1279 modules)
+ GET /snap 200 in 1022ms
+ ✓ Compiled in 934ms (1279 modules)
+ GET /snap 200 in 1289ms
+ ✓ Compiled in 619ms (1279 modules)
+ GET /snap 200 in 898ms
+ ✓ Compiled in 516ms (1279 modules)
+ GET /snap 200 in 843ms
+ GET /snap 200 in 1193ms
+ ✓ Compiled in 1120ms (3078 modules)
+ ✓ Compiled in 891ms (1279 modules)
+ ✓ Compiled in 603ms (1279 modules)
+ GET /snap 200 in 1903ms
+ GET /snap 200 in 944ms
+ ✓ Compiled in 678ms (1279 modules)
+ ✓ Compiled in 760ms (1279 modules)
+ GET /snap 200 in 1080ms
+ GET /snap 200 in 2110ms
+ ✓ Compiled in 576ms (1279 modules)
+ GET /snap 200 in 905ms
+ GET /snap 200 in 917ms
+ ✓ Compiled in 565ms (1279 modules)
+ GET /snap 200 in 407ms
+ ✓ Compiled in 975ms (1279 modules)
+ ✓ Compiled in 748ms (1279 modules)
+ GET /snap 200 in 1040ms
+ ✓ Compiled in 989ms (1279 modules)
+ GET /snap 200 in 1346ms
+ ✓ Compiled in 769ms (1279 modules)
+ GET /snap 200 in 1506ms
+ ✓ Compiled in 476ms (1279 modules)
+ GET /snap 200 in 791ms
+ GET /snap 200 in 397ms
+ ✓ Compiled in 488ms (1279 modules)
+ GET /snap 200 in 399ms
+ ✓ Compiled in 515ms (1279 modules)
+ GET /snap 200 in 406ms
+ ✓ Compiled in 522ms (1279 modules)
+ GET /snap 200 in 509ms
+ ✓ Compiled in 567ms (1279 modules)
+ GET /snap 200 in 979ms
+ ✓ Compiled in 638ms (1279 modules)
+ ✓ Compiled in 615ms (1279 modules)
+ GET /snap 200 in 984ms
+ ✓ Compiled in 566ms (1279 modules)
+ GET /snap 200 in 877ms
+ GET /snap 200 in 892ms
+ ✓ Compiled in 558ms (1279 modules)
+ GET /snap 200 in 914ms
+ ✓ Compiled in 558ms (1279 modules)
+ GET /snap 200 in 823ms
+ ✓ Compiled in 496ms (1279 modules)
+ GET /snap 200 in 401ms
+ ✓ Compiled in 1651ms (1279 modules)
+ GET /snap 200 in 498ms
+ ✓ Compiled in 674ms (1279 modules)
+ ✓ Compiled in 610ms (1279 modules)
+ GET /snap 200 in 969ms
+ ✓ Compiled in 525ms (1279 modules)
+ GET /snap 200 in 880ms
+ ✓ Compiled in 492ms (1279 modules)
+ GET /snap 200 in 991ms
+ GET /snap 200 in 407ms
+ ✓ Compiled in 481ms (1279 modules)
+ GET /snap 200 in 440ms
+ ✓ Compiled in 509ms (1279 modules)
+ GET /snap 200 in 405ms
+ ✓ Compiled in 636ms (1279 modules)
+ ✓ Compiled in 599ms (1279 modules)
+ GET /snap 200 in 922ms
+ ✓ Compiled in 743ms (1279 modules)
+ GET /snap 200 in 1094ms
+ GET /snap 200 in 408ms
+ ✓ Compiled in 817ms (1279 modules)
+ ✓ Compiled in 771ms (1279 modules)
+ GET /snap 200 in 1925ms
+ ✓ Compiled in 734ms (1279 modules)
+ GET /snap 200 in 1024ms
+ ✓ Compiled in 649ms (1279 modules)
+ GET /snap 200 in 985ms
+ GET /snap 200 in 990ms
+ ✓ Compiled in 660ms (1279 modules)
+ ✓ Compiled in 588ms (1279 modules)
+ GET /snap 200 in 950ms
+ GET /snap 200 in 949ms
+ ✓ Compiled in 652ms (1279 modules)
+ ✓ Compiled in 597ms (1279 modules)
+ GET /snap 200 in 938ms
+ ✓ Compiled in 567ms (1279 modules)
+ GET /snap 200 in 943ms
+ GET /snap 200 in 410ms
+ ✓ Compiled in 598ms (1279 modules)
+ ✓ Compiled in 568ms (1279 modules)
+ GET /snap 200 in 962ms
+ GET /snap 200 in 463ms
+ ✓ Compiled in 742ms (1279 modules)
+ ✓ Compiled in 590ms (1279 modules)
+ GET /snap 200 in 920ms
+ ✓ Compiled in 830ms (1279 modules)
+ GET /snap 200 in 1202ms
+ ✓ Compiled in 752ms (1279 modules)
+ GET /snap 200 in 2205ms
+ ✓ Compiled in 905ms (1279 modules)
+ ✓ Compiled in 538ms (1279 modules)
+ GET /snap 200 in 2093ms
+ GET /snap 200 in 834ms
+ GET /snap 200 in 1388ms
+ ✓ Compiled in 1013ms (1279 modules)
+ ✓ Compiled in 614ms (1279 modules)
+ ✓ Compiled in 512ms (1279 modules)
+ GET /snap 200 in 1727ms
+ GET /snap 200 in 959ms
+ GET /snap 200 in 400ms
+ ✓ Compiled in 816ms (1279 modules)
+ ✓ Compiled in 579ms (1279 modules)
+ GET /snap 200 in 995ms
+ ✓ Compiled in 539ms (1279 modules)
+ GET /snap 200 in 849ms
+ GET /snap 200 in 825ms
+ ✓ Compiled in 508ms (1279 modules)
+ GET /snap 200 in 471ms
+ ✓ Compiled in 721ms (1279 modules)
+ ✓ Compiled in 724ms (1279 modules)
+ GET /snap 200 in 1054ms
+ GET /snap 200 in 928ms
+ ✓ Compiled in 789ms (1279 modules)
+ ✓ Compiled in 599ms (1279 modules)
+ ✓ Compiled in 504ms (1279 modules)
+ ✓ Compiled in 585ms (1279 modules)
+ ✓ Compiled in 546ms (1279 modules)
+ ✓ Compiled in 510ms (1279 modules)
+ ✓ Compiled in 489ms (1279 modules)
+ ✓ Compiled in 527ms (1279 modules)
+ ✓ Compiled in 535ms (1279 modules)
+ ✓ Compiled in 540ms (1279 modules)
+ ✓ Compiled in 546ms (1279 modules)
+ ✓ Compiled in 559ms (1279 modules)
+ ✓ Compiled in 557ms (1279 modules)
+ ✓ Compiled in 752ms (1279 modules)
+ ✓ Compiled in 543ms (1279 modules)
+ ✓ Compiled in 504ms (1279 modules)
+ ✓ Compiled in 622ms (1279 modules)
+ ✓ Compiled in 476ms (1279 modules)
+ ✓ Compiled in 651ms (1279 modules)
+ ✓ Compiled in 516ms (1279 modules)
+ ✓ Compiled in 483ms (1279 modules)
+ ✓ Compiled in 488ms (1279 modules)
+ ✓ Compiled in 553ms (1279 modules)
+ ✓ Compiled in 472ms (1279 modules)
+ ✓ Compiled in 488ms (1279 modules)
+ ✓ Compiled in 586ms (1279 modules)
+ ✓ Compiled in 755ms (1279 modules)
+ ✓ Compiled in 620ms (1279 modules)
+ ✓ Compiled in 493ms (1279 modules)
+ ✓ Compiled in 761ms (1279 modules)
+ ✓ Compiled in 966ms (1279 modules)
+ ✓ Compiled in 764ms (1279 modules)
+ ✓ Compiled in 808ms (1279 modules)
+ ✓ Compiled in 645ms (1279 modules)
+ ✓ Compiled in 617ms (1279 modules)
+ ✓ Compiled in 533ms (1279 modules)
+ ○ Compiling /api/ocr ...
+ ✓ Compiled /api/ocr in 2.7s (3504 modules)
+ ✓ Compiled in 902ms (1279 modules)
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 25000, fastMode: false, ocrModel: 'gpt-5.5' }
+>>> Using OpenAI model: gpt-5.5
+>>> Making OpenAI Vision API call...
+ ✓ Compiled in 546ms (1279 modules)
+ ✓ Compiled in 537ms (1279 modules)
+ ✓ Compiled in 530ms (1279 modules)
+ ✓ Compiled in 625ms (1279 modules)
+ ✓ Compiled in 553ms (1279 modules)
+ ✓ Compiled in 682ms (1279 modules)
+ ✓ Compiled in 529ms (1279 modules)
+ ✓ Compiled in 531ms (1279 modules)
+ ✓ Compiled in 565ms (1279 modules)
+ ✓ Compiled in 614ms (1279 modules)
+ ✓ Compiled in 481ms (1279 modules)
+ ✓ Compiled in 480ms (1279 modules)
+ ✓ Compiled in 588ms (1279 modules)
+ ✓ Compiled in 606ms (1279 modules)
+ ✓ Compiled in 632ms (1279 modules)
+ ✓ Compiled in 758ms (1279 modules)
+ ✓ Compiled in 808ms (1279 modules)
+ ✓ Compiled in 658ms (1279 modules)
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+>>> OpenAI extracted data: {
+  title: 'Kona Ice Is Coming — Gateway Academy',
+  start: '2026-05-19T09:30:00',
+  end: '2026-05-19T13:40:00',
+  address: null,
+  venueName: 'Gateway Academy',
+  description: 'Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 AM to 1:40 PM.',
+  category: 'General Events',
+  rsvp: null,
+  rsvpUrl: null,
+  rsvpDeadline: null,
+  hostName: null,
+  activities: null,
+  attire: null,
+  registryUrl: null,
+  ocrFacts: [
+    {
+      label: 'Message',
+      value: "You've worked hard all school year and now it's time to enjoy the fruits of your labor. Enjoy a Kona Ice with your teachers, classmates and friends. We hope you have a very fun, safe summer!"
+    },
+    {
+      label: 'Menu Prices',
+      value: 'Klassic $4; King $5; Color Changing $6, $4 Refill; Kowabunga $7, $4 Refill; Kollectable $8, $4 Refill; TopZ Sour Powder $1'
+    },
+    {
+      label: 'Flavors',
+      value: "Blue Raspberry; Tiger's Blood; Groovy Grape; Island Rush; Lucky Lime; Monster Mango; Ninja Cherry; Piña Colada; Strawberry'd Treasure; Watermelon Wave"
+    },
+    {
+      label: 'Vendor Contact',
+      value: 'Kona Ice of South Walton County — 850.567.5057 | wscott@kona-ice.com | www.kona-ice.com'
+    },
+    { label: 'Slogan', value: 'BE GOOD, DO GOOD, FOR GOOD!' }
+  ],
+  yearVisible: false,
+  birthdayAudience: null,
+  birthdaySignals: [],
+  birthdayName: null,
+  birthdayAge: null,
+  goodToKnow: null,
+  thumbnailFocus: { target: 'title', x: 0.23, y: 0.17, confidence: 0.86 },
+  openHouse: null
+}
+>>> OpenAI title: Kona Ice Is Coming — Gateway Academy
+>>> OpenAI description: Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 AM to 1:40 PM.
+ ✓ Compiled in 714ms (1279 modules)
+>>> OCR timing (ms) {
+  totalMs: 22032,
+  preprocessMs: 90,
+  primaryOcrMs: 19775,
+  fallbackOcrMs: 0,
+  rewriteMs: 1001,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: false,
+  enableRewrites: true,
+  enableSkinInference: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.5',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'scan_4e0923f6-6f3e-4c43-9b25-a2d70777d2af',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  fileSize: 1778862,
+  mimeType: 'application/pdf',
+  category: null,
+  timings: {
+    totalMs: 22032,
+    preprocessMs: 90,
+    primaryOcrMs: 19775,
+    fallbackOcrMs: 0,
+    rewriteMs: 1001,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: true,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.5',
+    ocrSource: 'openai'
+  }
+}
+ POST /api/ocr?fast=0&skin=0 200 in 25429ms
+ ○ Compiling /api/upload ...
+ ✓ Compiled /api/upload in 2.2s (3506 modules)
+[media-upload] processing {
+  scopeId: 'upload-597addcc-f48b-499d-861f-5ccd647d2e0d',
+  usage: 'attachment',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  mimeType: 'application/pdf',
+  inputType: 'pdf',
+  originalSize: 1778862,
+  scanAttemptId: 'scan_4e0923f6-6f3e-4c43-9b25-a2d70777d2af'
+}
+ ✓ Compiled in 667ms (1279 modules)
+ ✓ Compiled in 484ms (1279 modules)
+[media-upload] complete {
+  scopeId: 'upload-597addcc-f48b-499d-861f-5ccd647d2e0d',
+  usage: 'attachment',
+  kind: 'pdf',
+  originalSize: 1778862,
+  displaySize: 202128,
+  sourceSize: 1778862,
+  optimizedByQpdf: false,
+  scanAttemptId: 'scan_4e0923f6-6f3e-4c43-9b25-a2d70777d2af'
+}
+ POST /api/upload 200 in 3607ms
+ ○ Compiling /api/history ...
+ ✓ Compiled /api/history in 1147ms (3512 modules)
+ ✓ Compiled in 520ms (1279 modules)
+ ✓ Compiled in 473ms (1279 modules)
+[history] scan insert start {
+  scanAttemptId: 'scan_4e0923f6-6f3e-4c43-9b25-a2d70777d2af',
+  resolvedUserId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  title: 'Kona Ice Is Coming — Gateway Academy',
+  category: null,
+  createdVia: 'ocr',
+  payloadBytes: 2397
+}
+[history] scan insert complete {
+  scanAttemptId: 'scan_4e0923f6-6f3e-4c43-9b25-a2d70777d2af',
+  id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03'
+}
+ POST /api/history 201 in 3090ms
+ ✓ Compiled /event/[id] in 251ms (2235 modules)
+ ○ Compiling /api/dashboard ...
+ ✓ Compiled /api/dashboard in 4.7s (4189 modules)
+ POST /api/client-log 200 in 5435ms
+ ✓ Compiled in 598ms (1570 modules)
+ ✓ Compiled in 563ms (1570 modules)
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 7531ms
+ ✓ Compiled in 586ms (1570 modules)
+ GET /api/dashboard?refresh=1&timing=1 200 in 7700ms
+ ✓ Compiled in 567ms (1570 modules)
+ ✓ Compiled in 644ms (1570 modules)
+ ✓ Compiled in 522ms (1570 modules)
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 2764ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 10179ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 2182ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 3085ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 2993ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 2102ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 816ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 820ms
+ ✓ Compiled in 609ms (1570 modules)
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1391ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1450ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1334ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1292ms
+ ✓ Compiled in 782ms (1570 modules)
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1783ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1877ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1926ms
+ ✓ Compiled in 731ms (1570 modules)
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1893ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1835ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1942ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 2087ms
+ ✓ Compiled in 784ms (1570 modules)
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 2189ms
+ ✓ Compiled in 564ms (1570 modules)
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 2001ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1987ms
+ ✓ Compiled in 666ms (1570 modules)
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1718ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1845ms
+ ✓ Compiled in 646ms (1570 modules)
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1969ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1912ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1822ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1852ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1177ms
+ ✓ Compiled in 588ms (1570 modules)
+ ✓ Compiled in 468ms (1570 modules)
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 2029ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1461ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1394ms
+ GET /event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard 200 in 1502ms
+ ✓ Compiled in 607ms (1570 modules)
+ ✓ Compiled in 586ms (1570 modules)
+ ✓ Compiled in 739ms (1570 modules)
+ ✓ Compiled in 708ms (1570 modules)
+ ✓ Compiled in 687ms (1570 modules)
+ ✓ Compiled in 585ms (1570 modules)
+ ✓ Compiled in 731ms (1570 modules)
+ ✓ Compiled in 579ms (1570 modules)
+ ✓ Compiled in 624ms (1570 modules)
+ ✓ Compiled in 582ms (1570 modules)
+ ✓ Compiled in 674ms (1570 modules)
+ ✓ Compiled in 591ms (1570 modules)
+ ✓ Compiled in 527ms (1570 modules)
+ ✓ Compiled in 606ms (1570 modules)
+ ✓ Compiled in 538ms (1570 modules)
+ ✓ Compiled in 868ms (1570 modules)
+ ✓ Compiled in 756ms (1570 modules)
+ ✓ Compiled in 554ms (1570 modules)
+ ✓ Compiled in 539ms (1570 modules)
+ ✓ Compiled in 596ms (1570 modules)
+ ✓ Compiled in 538ms (1570 modules)
+ ✓ Compiled in 505ms (1570 modules)
+ ✓ Compiled in 510ms (1570 modules)
+ ✓ Compiled in 499ms (1570 modules)
+ ✓ Compiled in 636ms (1570 modules)
+ ✓ Compiled in 671ms (1570 modules)
+ ✓ Compiled in 619ms (1570 modules)
+ ✓ Compiled in 633ms (1570 modules)
+ ✓ Compiled in 652ms (1570 modules)
+ ✓ Compiled in 625ms (1570 modules)
+ ✓ Compiled in 535ms (1570 modules)
+ ✓ Compiled in 597ms (1570 modules)
+ ✓ Compiled in 653ms (1570 modules)
+ ✓ Compiled in 694ms (1570 modules)
+ ✓ Compiled in 578ms (1570 modules)
+ ✓ Compiled in 583ms (1570 modules)
+ ✓ Compiled in 812ms (1570 modules)
+ ✓ Compiled in 870ms (1570 modules)
+ ✓ Compiled in 675ms (1570 modules)
+ ✓ Compiled in 778ms (1570 modules)
+ ✓ Compiled in 531ms (1570 modules)
+ ✓ Compiled in 576ms (1570 modules)
+ ✓ Compiled in 496ms (1570 modules)
+ ✓ Compiled in 1697ms (1570 modules)
+ ✓ Compiled in 657ms (1570 modules)
+ ✓ Compiled in 558ms (1570 modules)
+ ✓ Compiled in 855ms (1570 modules)
+ ✓ Compiled in 621ms (1570 modules)
+ ✓ Compiled in 601ms (1570 modules)
+ ✓ Compiled in 734ms (1570 modules)
+ ✓ Compiled in 615ms (1570 modules)
+ ✓ Compiled in 546ms (1570 modules)
+ ✓ Compiled in 859ms (1570 modules)
+ ✓ Compiled in 757ms (1570 modules)
+ ✓ Compiled in 542ms (1570 modules)
+ ✓ Compiled in 583ms (1570 modules)
+ ✓ Compiled in 595ms (1570 modules)
+ ✓ Compiled in 548ms (1570 modules)
+ ✓ Compiled in 878ms (1570 modules)
+ ✓ Compiled in 750ms (1570 modules)
+ ✓ Compiled in 593ms (1570 modules)
+ ✓ Compiled in 527ms (1570 modules)
+ ✓ Compiled in 525ms (1570 modules)
+ ✓ Compiled in 626ms (1570 modules)
+ ✓ Compiled in 605ms (1570 modules)
+ ✓ Compiled in 545ms (1570 modules)
+ ✓ Compiled in 600ms (1570 modules)
+ ✓ Compiled in 802ms (1570 modules)
+ ✓ Compiled in 561ms (1570 modules)
+ ✓ Compiled in 589ms (1570 modules)
+ ✓ Compiled in 608ms (1570 modules)
+ ✓ Compiled in 660ms (1570 modules)
+ ✓ Compiled in 664ms (1570 modules)
+ ✓ Compiled in 613ms (1570 modules)
+ ✓ Compiled in 517ms (1570 modules)
+ ✓ Compiled in 620ms (1570 modules)
+ ✓ Compiled in 603ms (1570 modules)
+ ✓ Compiled in 600ms (1570 modules)
+ ✓ Compiled in 553ms (1570 modules)
+ ✓ Compiled in 509ms (1570 modules)
+ ✓ Compiled in 812ms (1570 modules)
+ ✓ Compiled in 653ms (1570 modules)
+ ✓ Compiled in 641ms (1570 modules)
+ ✓ Compiled in 748ms (1570 modules)
+ ✓ Compiled in 1007ms (1570 modules)
+ ✓ Compiled in 851ms (1570 modules)
+ ✓ Compiled in 610ms (1570 modules)
+ ✓ Compiled in 887ms (1570 modules)
+ ✓ Compiled in 650ms (1570 modules)
+ ✓ Compiled in 603ms (1570 modules)
+ ✓ Compiled in 512ms (1570 modules)
+ ✓ Compiled in 551ms (1570 modules)
+ ✓ Compiled in 553ms (1570 modules)
+ ✓ Compiled in 576ms (1570 modules)
+ ✓ Compiled in 578ms (1570 modules)
+ ✓ Compiled in 654ms (1570 modules)
+ ✓ Compiled in 822ms (1570 modules)
+ ✓ Compiled in 1200ms (1570 modules)
+ ✓ Compiled in 623ms (1570 modules)
+ ✓ Compiled in 547ms (1570 modules)
+ ✓ Compiled in 592ms (1570 modules)
+ ✓ Compiled in 546ms (1570 modules)
+ ✓ Compiled in 534ms (1570 modules)
+ ✓ Compiled in 551ms (1570 modules)
+ ✓ Compiled in 576ms (1570 modules)
+ ✓ Compiled in 557ms (1570 modules)
+ ✓ Compiled in 599ms (1570 modules)
+ ✓ Compiled in 611ms (1570 modules)
+ ✓ Compiled in 530ms (1570 modules)
+ ✓ Compiled in 517ms (1570 modules)
+ ✓ Compiled in 570ms (1570 modules)
+ ✓ Compiled in 653ms (1570 modules)
+ ✓ Compiled in 929ms (1570 modules)
+ ✓ Compiled in 617ms (1570 modules)
+ ✓ Compiled in 594ms (1570 modules)
+ ✓ Compiled in 544ms (1570 modules)
+ ✓ Compiled in 538ms (1570 modules)
+ ✓ Compiled in 523ms (1570 modules)
+ ✓ Compiled in 551ms (1570 modules)
+ ✓ Compiled in 509ms (1570 modules)
+ ✓ Compiled in 464ms (1570 modules)
+ ✓ Compiled in 581ms (1570 modules)
+ ✓ Compiled in 534ms (1570 modules)
+ ✓ Compiled in 563ms (1570 modules)
+ ✓ Compiled in 539ms (1570 modules)
+ ✓ Compiled in 503ms (1570 modules)
+ ✓ Compiled in 516ms (1570 modules)
+ ✓ Compiled in 481ms (1570 modules)
+ ✓ Compiled in 487ms (1570 modules)
+ ✓ Compiled in 557ms (1570 modules)
+ ✓ Compiled in 539ms (1570 modules)
+ ✓ Compiled in 477ms (1570 modules)
+ ✓ Compiled in 467ms (1570 modules)
+ ✓ Compiled in 506ms (1570 modules)
+ ✓ Compiled in 654ms (1570 modules)
+ ✓ Compiled in 577ms (1570 modules)
+ ✓ Compiled in 596ms (1570 modules)
+ ✓ Compiled in 576ms (1570 modules)
+ ✓ Compiled in 545ms (1570 modules)
+ ✓ Compiled in 627ms (1570 modules)
+ ✓ Compiled in 616ms (1570 modules)
+ ✓ Compiled in 586ms (1570 modules)
+ ✓ Compiled in 626ms (1570 modules)
+ ✓ Compiled in 611ms (1570 modules)
+ ✓ Compiled in 614ms (1570 modules)
+ ✓ Compiled in 475ms (1570 modules)
+ ✓ Compiled in 594ms (1570 modules)
+ ✓ Compiled in 713ms (1570 modules)
+ ✓ Compiled in 525ms (1570 modules)
+ ✓ Compiled in 543ms (1570 modules)
+ ✓ Compiled in 496ms (1570 modules)
+ ✓ Compiled in 510ms (1570 modules)
+ ✓ Compiled in 487ms (1570 modules)
+ ✓ Compiled in 507ms (1570 modules)
+ ✓ Compiled in 546ms (1570 modules)
+ ✓ Compiled in 499ms (1570 modules)
+ ✓ Compiled in 473ms (1570 modules)
+ ✓ Compiled in 468ms (1570 modules)
+ ✓ Compiled in 477ms (1570 modules)
+ ✓ Compiled in 1258ms (1570 modules)
+ ✓ Compiled in 519ms (1570 modules)
+ ✓ Compiled in 502ms (1570 modules)
+ ✓ Compiled in 499ms (1570 modules)
+ ✓ Compiled in 495ms (1570 modules)
+ ✓ Compiled in 521ms (1570 modules)
+ GET /api/ocr 405 in 113ms
+ ✓ Compiled in 535ms (1570 modules)
+ ✓ Compiled in 520ms (1570 modules)
+ ✓ Compiled in 506ms (1570 modules)
+ ✓ Compiled in 502ms (1570 modules)
+ ✓ Compiled in 478ms (1570 modules)
+ ✓ Compiled in 565ms (1570 modules)
+ ✓ Compiled in 515ms (1570 modules)
+ ✓ Compiled in 610ms (1570 modules)
+ ✓ Compiled in 707ms (1570 modules)
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 25000, fastMode: false, ocrModel: 'gpt-5.5' }
+>>> Using OpenAI model: gpt-5.5
+>>> Making OpenAI Vision API call...
+ ✓ Compiled in 689ms (1570 modules)
+ ✓ Compiled in 548ms (1570 modules)
+ ✓ Compiled in 492ms (1570 modules)
+ ✓ Compiled in 497ms (1570 modules)
+ ✓ Compiled in 511ms (1570 modules)
+ ✓ Compiled in 528ms (1570 modules)
+ ✓ Compiled in 808ms (1570 modules)
+ ✓ Compiled in 594ms (1570 modules)
+ ✓ Compiled in 555ms (1570 modules)
+ ✓ Compiled in 525ms (1570 modules)
+ ✓ Compiled in 580ms (1570 modules)
+ ✓ Compiled in 493ms (1570 modules)
+ ✓ Compiled in 510ms (1570 modules)
+ ✓ Compiled in 511ms (1570 modules)
+ ✓ Compiled in 738ms (1570 modules)
+ ✓ Compiled in 766ms (1570 modules)
+ ✓ Compiled in 780ms (1570 modules)
+ ✓ Compiled in 867ms (1570 modules)
+ ✓ Compiled in 705ms (1570 modules)
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+>>> OpenAI extracted data: {
+  title: 'Kona Ice Is Coming — Gateway Academy',
+  start: '2026-05-19T09:30:00',
+  end: '2026-05-19T13:40:00',
+  address: null,
+  venueName: 'Gateway Academy',
+  description: 'Kona Ice will visit Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.',
+  category: 'General Events',
+  rsvp: null,
+  rsvpUrl: null,
+  rsvpDeadline: null,
+  hostName: null,
+  activities: null,
+  attire: null,
+  registryUrl: null,
+  ocrFacts: [
+    {
+      label: 'Menu Prices',
+      value: 'Klassic $4; King $5; Color Changing $6, $4 Refill; Kowabunga $7, $4 Refill; Kollectable $8, $4 Refill; TopZ Sour Powder $1'
+    },
+    {
+      label: 'Flavors',
+      value: "Blue Raspberry; Tiger's Blood; Groovy Grape; Island Rush; Lucky Lime; Monster Mango; Ninja Cherry; Piña Colada; Strawberry'd Treasure; Watermelon Wave"
+    },
+    { label: 'Vendor', value: 'Kona Ice of South Walton County' },
+    {
+      label: 'Contact',
+      value: '850.567.5057 | wscott@kona-ice.com | www.kona-ice.com'
+    },
+    { label: 'Motto', value: 'BE GOOD, DO GOOD, FOR GOOD!' }
+  ],
+  yearVisible: false,
+  birthdayAudience: null,
+  birthdaySignals: [],
+  birthdayName: null,
+  birthdayAge: null,
+  goodToKnow: null,
+  thumbnailFocus: { target: 'title', x: 0.23, y: 0.18, confidence: 0.85 },
+  openHouse: null
+}
+>>> OpenAI title: Kona Ice Is Coming — Gateway Academy
+>>> OpenAI description: Kona Ice will visit Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.
+ ✓ Compiled in 539ms (1570 modules)
+ ✓ Compiled in 625ms (1570 modules)
+ ✓ Compiled in 572ms (1570 modules)
+>>> OCR timing (ms) {
+  totalMs: 25150,
+  preprocessMs: 545,
+  primaryOcrMs: 22109,
+  fallbackOcrMs: 0,
+  rewriteMs: 2212,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: false,
+  enableRewrites: true,
+  enableSkinInference: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.5',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'codex-timing-kona-pdf',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  fileSize: 1778862,
+  mimeType: 'application/pdf',
+  category: null,
+  timings: {
+    totalMs: 25150,
+    preprocessMs: 545,
+    primaryOcrMs: 22109,
+    fallbackOcrMs: 0,
+    rewriteMs: 2212,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: true,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.5',
+    ocrSource: 'openai'
+  }
+}
+ POST /api/ocr?fast=0&skin=0&timing=1 200 in 25192ms
+ ✓ Compiled in 633ms (1570 modules)
+ ✓ Compiled in 629ms (1570 modules)
+ ✓ Compiled in 547ms (1570 modules)
+ ✓ Compiled in 544ms (1570 modules)
+ ✓ Compiled in 628ms (1570 modules)
+ ✓ Compiled in 641ms (1570 modules)
+ ✓ Compiled in 539ms (1570 modules)
+ ✓ Compiled in 592ms (1570 modules)
+ ✓ Compiled in 585ms (1570 modules)
+ ✓ Compiled in 518ms (1570 modules)
+ ✓ Compiled in 783ms (1570 modules)
+ ✓ Compiled in 892ms (1570 modules)
+ ✓ Compiled in 636ms (1570 modules)
+ ✓ Compiled in 664ms (1570 modules)
+ ✓ Compiled in 551ms (1570 modules)
+ ✓ Compiled in 544ms (1570 modules)
+ ✓ Compiled in 522ms (1570 modules)
+ ✓ Compiled in 538ms (1570 modules)
+ ○ Compiling /api/scan/event-page ...
+ ✓ Compiled /api/scan/event-page in 1541ms (3788 modules)
+ ✓ Compiled in 991ms (1570 modules)
+ ✓ Compiled in 910ms (1570 modules)
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 25000, fastMode: false, ocrModel: 'gpt-5.5' }
+>>> Using OpenAI model: gpt-5.5
+>>> Making OpenAI Vision API call...
+ ✓ Compiled in 670ms (1570 modules)
+ ✓ Compiled in 507ms (1570 modules)
+ ✓ Compiled in 545ms (1570 modules)
+ ✓ Compiled in 520ms (1570 modules)
+ ✓ Compiled in 519ms (1570 modules)
+ ✓ Compiled in 538ms (1570 modules)
+ ✓ Compiled in 534ms (1570 modules)
+ ✓ Compiled in 508ms (1570 modules)
+ ✓ Compiled in 531ms (1570 modules)
+ ✓ Compiled in 499ms (1570 modules)
+ ✓ Compiled in 950ms (1570 modules)
+ ✓ Compiled in 568ms (1570 modules)
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+>>> OpenAI extracted data: {
+  title: 'Kona Ice Is Coming! — Gateway Academy',
+  start: '2026-05-19T09:30:00',
+  end: '2026-05-19T13:40:00',
+  address: null,
+  venueName: 'Gateway Academy',
+  description: 'Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.',
+  category: 'General Events',
+  rsvp: null,
+  rsvpUrl: null,
+  rsvpDeadline: null,
+  hostName: null,
+  activities: null,
+  attire: null,
+  registryUrl: null,
+  ocrFacts: [
+    {
+      label: 'Menu Prices',
+      value: 'Klassic $4; King $5; Color Changing $6, $4 Refill; Kowabunga $7, $4 Refill; Kollectable $8, $4 Refill; TopZ Sour Powder $1'
+    },
+    {
+      label: 'Flavors',
+      value: "Blue Raspberry; Tiger's Blood; Groovy Grape; Island Rush; Lucky Lime; Monster Mango; Ninja Cherry; Piña Colada; Strawberry'd Treasure; Watermelon Wave"
+    },
+    {
+      label: 'Vendor Contact',
+      value: 'Kona Ice of South Walton County, 850.567.5057 | wscott@kona-ice.com | www.kona-ice.com'
+    },
+    {
+      label: 'Message',
+      value: "You've worked hard all school year and now it's time to enjoy the fruits of your labor. Enjoy a Kona Ice with your teachers, classmates and friends. We hope you have a very fun, safe summer!"
+    }
+  ],
+  yearVisible: false,
+  birthdayAudience: null,
+  birthdaySignals: [],
+  birthdayName: null,
+  birthdayAge: null,
+  goodToKnow: null,
+  thumbnailFocus: { target: 'title', x: 0.23, y: 0.18, confidence: 0.86 },
+  openHouse: null
+}
+>>> OpenAI title: Kona Ice Is Coming! — Gateway Academy
+>>> OpenAI description: Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.
+ ✓ Compiled in 562ms (1570 modules)
+>>> OCR timing (ms) {
+  totalMs: 15772,
+  preprocessMs: 574,
+  primaryOcrMs: 12787,
+  fallbackOcrMs: 0,
+  rewriteMs: 844,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: false,
+  enableRewrites: true,
+  enableSkinInference: true,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.5',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'codex-fullscan-kona-pdf',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  fileSize: 1778862,
+  mimeType: 'application/pdf',
+  category: null,
+  timings: {
+    totalMs: 15772,
+    preprocessMs: 574,
+    primaryOcrMs: 12787,
+    fallbackOcrMs: 0,
+    rewriteMs: 844,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: true,
+    enableSkinInference: true,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.5',
+    ocrSource: 'openai'
+  }
+}
+[media-upload] processing {
+  scopeId: 'upload-b21a90a0-bfb4-4c73-8f4d-751d2e974453',
+  usage: 'attachment',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  mimeType: 'application/pdf',
+  inputType: 'pdf',
+  originalSize: 1778862,
+  scanAttemptId: 'codex-fullscan-kona-pdf'
+}
+ ✓ Compiled in 785ms (1570 modules)
+[media-upload] complete {
+  scopeId: 'upload-b21a90a0-bfb4-4c73-8f4d-751d2e974453',
+  usage: 'attachment',
+  kind: 'pdf',
+  originalSize: 1778862,
+  displaySize: 202128,
+  sourceSize: 1778862,
+  optimizedByQpdf: false,
+  scanAttemptId: 'codex-fullscan-kona-pdf'
+}
+ ✓ Compiled in 609ms (1570 modules)
+ POST /api/scan/event-page 200 in 20315ms
+ ✓ Compiled in 675ms (1570 modules)
+ ✓ Compiled in 576ms (1570 modules)
+ ✓ Compiled in 537ms (1570 modules)
+ ✓ Compiled in 564ms (1570 modules)
+ ✓ Compiled in 513ms (1570 modules)
+ ✓ Compiled in 596ms (1570 modules)
+ ✓ Compiled in 704ms (1570 modules)
+ ✓ Compiled in 612ms (1570 modules)
+ ✓ Compiled in 513ms (1570 modules)
+ ✓ Compiled in 538ms (1570 modules)
+ ✓ Compiled in 505ms (1570 modules)
+ ✓ Compiled in 506ms (1570 modules)
+ ✓ Compiled in 661ms (1570 modules)
+ ✓ Compiled in 864ms (1570 modules)
+ ✓ Compiled in 845ms (1570 modules)
+ ✓ Compiled in 566ms (1570 modules)
+ ✓ Compiled in 520ms (1570 modules)
+ ✓ Compiled in 591ms (1570 modules)
+ ✓ Compiled in 596ms (1570 modules)
+ ✓ Compiled in 656ms (1570 modules)
+ ✓ Compiled in 856ms (1570 modules)
+ ✓ Compiled in 620ms (1570 modules)
+ ✓ Compiled in 573ms (1570 modules)
+ ✓ Compiled in 508ms (1570 modules)
+ ✓ Compiled in 520ms (1570 modules)
+ ✓ Compiled in 516ms (1570 modules)
+ ✓ Compiled in 760ms (1570 modules)
+ ✓ Compiled in 606ms (1570 modules)
+ ✓ Compiled in 567ms (1570 modules)
+ ✓ Compiled in 513ms (1570 modules)
+ ✓ Compiled in 583ms (1570 modules)
+ ✓ Compiled in 527ms (1570 modules)
+ ✓ Compiled in 570ms (1570 modules)
+ ✓ Compiled in 551ms (1570 modules)
+ ✓ Compiled in 580ms (1570 modules)
+ ✓ Compiled in 828ms (1570 modules)
+ ✓ Compiled in 686ms (1570 modules)
+ ✓ Compiled in 1796ms (1570 modules)
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 25000, fastMode: true, ocrModel: 'gpt-5.4-mini' }
+>>> Using OpenAI model: gpt-5.4-mini
+>>> Making OpenAI Vision API call...
+ ✓ Compiled in 675ms (1570 modules)
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+>>> OpenAI extracted data: {
+  title: 'Kona Ice Is Coming! — Gateway Academy',
+  start: '2026-05-19T09:30:00',
+  end: '2026-05-19T13:40:00',
+  address: null,
+  venueName: 'Gateway Academy',
+  description: 'Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.',
+  category: 'General Events',
+  rsvp: null,
+  rsvpUrl: null,
+  rsvpDeadline: null,
+  hostName: null,
+  activities: null,
+  attire: null,
+  registryUrl: null,
+  ocrFacts: [
+    { label: 'Footer slogan', value: 'BE GOOD, DO GOOD, FOR GOOD!' },
+    { label: 'Vendor', value: 'KONA ICE OF SOUTH WALTON COUNTY' },
+    { label: 'Phone', value: '850.567.5057' },
+    { label: 'Email', value: 'wscott@kona-ice.com' },
+    { label: 'Website', value: 'www.kona-ice.com' }
+  ],
+  yearVisible: false,
+  birthdayAudience: null,
+  birthdaySignals: [],
+  birthdayName: null,
+  birthdayAge: null,
+  goodToKnow: null,
+  thumbnailFocus: { target: 'title', x: 0.5, y: 0.18, confidence: 0.89 },
+  openHouse: null
+}
+>>> OpenAI title: Kona Ice Is Coming! — Gateway Academy
+>>> OpenAI description: Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.
+>>> OCR timing (ms) {
+  totalMs: 5842,
+  preprocessMs: 110,
+  primaryOcrMs: 3544,
+  fallbackOcrMs: 0,
+  rewriteMs: 0,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: true,
+  enableRewrites: false,
+  enableSkinInference: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.4-mini',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'codex-timing-kona-pdf-fast',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  fileSize: 1778862,
+  mimeType: 'application/pdf',
+  category: null,
+  timings: {
+    totalMs: 5842,
+    preprocessMs: 110,
+    primaryOcrMs: 3544,
+    fallbackOcrMs: 0,
+    rewriteMs: 0,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: true,
+    enableRewrites: false,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.4-mini',
+    ocrSource: 'openai'
+  }
+}
+ POST /api/ocr?fast=1&skin=0&timing=1 200 in 5901ms
+ ✓ Compiled in 703ms (1570 modules)
+ ✓ Compiled in 709ms (1570 modules)
+ ✓ Compiled in 592ms (1570 modules)
+ ✓ Compiled in 528ms (1570 modules)
+ ✓ Compiled in 531ms (1570 modules)
+ ✓ Compiled in 650ms (1570 modules)
+ ✓ Compiled in 568ms (1570 modules)
+ ✓ Compiled in 531ms (1570 modules)
+ ✓ Compiled in 581ms (1570 modules)
+ ✓ Compiled in 540ms (1570 modules)
+ ✓ Compiled in 616ms (1570 modules)
+ ✓ Compiled in 543ms (1570 modules)
+ ✓ Compiled in 687ms (1570 modules)
+ ✓ Compiled in 796ms (1570 modules)
+ ✓ Compiled in 620ms (1570 modules)
+ ✓ Compiled in 533ms (1570 modules)
+ ✓ Compiled in 538ms (1570 modules)
+ ✓ Compiled in 582ms (1570 modules)
+ ✓ Compiled in 605ms (1570 modules)
+ ✓ Compiled in 552ms (1570 modules)
+ ✓ Compiled in 509ms (1570 modules)
+ ✓ Compiled in 571ms (1570 modules)
+ ✓ Compiled in 583ms (1570 modules)
+ ✓ Compiled in 538ms (1570 modules)
+ ✓ Compiled in 547ms (1570 modules)
+ ✓ Compiled in 528ms (1570 modules)
+ ✓ Compiled in 636ms (1570 modules)
+ ✓ Compiled in 588ms (1570 modules)
+ ✓ Compiled in 892ms (1570 modules)
+ ✓ Compiled in 694ms (1570 modules)
+ ✓ Compiled in 770ms (1570 modules)
+ ✓ Compiled in 789ms (1570 modules)
+ ✓ Compiled in 518ms (1570 modules)
+ ✓ Compiled in 641ms (1570 modules)
+ ✓ Compiled in 1900ms (3795 modules)
+ ○ Compiling /api/dashboard/enrich-next-event ...
+ ✓ Compiled /api/dashboard/enrich-next-event in 1299ms (3799 modules)
+ ✓ Compiled in 648ms (1570 modules)
+ ✓ Compiled in 692ms (1570 modules)
+ ✓ Compiled in 637ms (1570 modules)
+ ✓ Compiled in 639ms (1570 modules)
+ ✓ Compiled in 790ms (1570 modules)
+ ✓ Compiled in 496ms (1570 modules)
+ POST /api/dashboard/enrich-next-event 200 in 5611ms
+ ✓ Compiled in 647ms (1570 modules)
+ ✓ Compiled in 694ms (1570 modules)
+ ✓ Compiled in 450ms (1570 modules)
+ ✓ Compiled in 521ms (1570 modules)
+ ✓ Compiled in 546ms (1570 modules)
+ ✓ Compiled in 640ms (1570 modules)
+ ✓ Compiled in 521ms (1570 modules)
+ ✓ Compiled in 603ms (1570 modules)
+ ✓ Compiled in 487ms (1570 modules)
+ ✓ Compiled in 483ms (1570 modules)
+ ✓ Compiled in 494ms (1570 modules)
+ ✓ Compiled in 542ms (1570 modules)
+ ✓ Compiled in 583ms (1570 modules)
+ ✓ Compiled in 575ms (1570 modules)
+ ✓ Compiled in 648ms (1570 modules)
+ ✓ Compiled in 524ms (1570 modules)
+ ✓ Compiled in 514ms (1570 modules)
+ ✓ Compiled in 536ms (1570 modules)
+ ✓ Compiled in 573ms (1570 modules)
+ ✓ Compiled in 647ms (1570 modules)
+ ✓ Compiled in 672ms (1570 modules)
+ ✓ Compiled in 580ms (1570 modules)
+ ✓ Compiled in 604ms (1570 modules)
+ ✓ Compiled in 730ms (1570 modules)
+ ✓ Compiled in 721ms (1570 modules)
+ ✓ Compiled in 732ms (1570 modules)
+ ✓ Compiled in 769ms (1570 modules)
+ ✓ Compiled in 628ms (1570 modules)
+ ✓ Compiled in 508ms (1570 modules)
+ ✓ Compiled in 725ms (3364 modules)
+ ✓ Compiled in 1612ms (1570 modules)
+ ✓ Compiled in 571ms (1570 modules)
+ ✓ Compiled in 677ms (1570 modules)
+ ✓ Compiled in 912ms (1570 modules)
+ ✓ Compiled in 948ms (1570 modules)
+ ✓ Compiled in 750ms (1570 modules)
+ ✓ Compiled in 841ms (1570 modules)
+ ✓ Compiled in 730ms (1570 modules)
+ ✓ Compiled in 639ms (1570 modules)
+ ✓ Compiled in 635ms (1570 modules)
+ ✓ Compiled in 496ms (1570 modules)
+ ✓ Compiled in 2.6s (1570 modules)
+ ✓ Compiled in 657ms (1570 modules)
+ ✓ Compiled in 590ms (1570 modules)
+ ✓ Compiled in 562ms (1570 modules)
+ ✓ Compiled in 547ms (1570 modules)
+ ✓ Compiled in 569ms (1570 modules)
+ ✓ Compiled in 592ms (1570 modules)
+ ✓ Compiled in 540ms (1570 modules)
+ ✓ Compiled in 535ms (1570 modules)
+ ✓ Compiled in 543ms (1570 modules)
+ ✓ Compiled in 543ms (1570 modules)
+ ✓ Compiled in 537ms (1570 modules)
+ ✓ Compiled in 545ms (1570 modules)
+ ✓ Compiled in 626ms (1570 modules)
+ ✓ Compiled in 705ms (1570 modules)
+ ✓ Compiled in 577ms (1570 modules)
+ ✓ Compiled in 611ms (1570 modules)
+ ✓ Compiled in 624ms (1570 modules)
+ ✓ Compiled in 730ms (1570 modules)
+ ✓ Compiled in 685ms (1570 modules)
+ ✓ Compiled in 484ms (1570 modules)
+ ✓ Compiled in 581ms (1570 modules)
+ ✓ Compiled in 517ms (1570 modules)
+ ✓ Compiled in 695ms (1570 modules)
+ ✓ Compiled in 588ms (1570 modules)
+ ✓ Compiled in 585ms (1570 modules)
+ ✓ Compiled in 513ms (1570 modules)
+ ✓ Compiled in 615ms (1570 modules)
+ ✓ Compiled in 530ms (1570 modules)
+ ✓ Compiled in 548ms (1570 modules)
+ ✓ Compiled in 643ms (1570 modules)
+ ✓ Compiled in 515ms (1570 modules)
+ ✓ Compiled in 528ms (1570 modules)
+ ✓ Compiled in 1338ms (3343 modules)
+ ○ Compiling /api/dashboard/enrich-next-event ...
+ ✓ Compiled /api/dashboard/enrich-next-event in 1035ms (3364 modules)
+ ✓ Compiled in 633ms (1570 modules)
+ ✓ Compiled in 532ms (1570 modules)
+ ✓ Compiled in 603ms (1570 modules)
+ ✓ Compiled in 780ms (1570 modules)
+ POST /api/dashboard/enrich-next-event 200 in 5736ms
+ ✓ Compiled in 698ms (1570 modules)
+ ✓ Compiled in 539ms (1570 modules)
+ ✓ Compiled in 590ms (1570 modules)
+ ✓ Compiled in 592ms (1570 modules)
+ ✓ Compiled in 571ms (1570 modules)
+ ✓ Compiled in 759ms (1570 modules)
+ ✓ Compiled in 640ms (1570 modules)
+ ✓ Compiled in 583ms (1570 modules)
+ ✓ Compiled in 517ms (1570 modules)
+ ✓ Compiled in 571ms (1570 modules)
+ ✓ Compiled in 541ms (1570 modules)
+ ✓ Compiled in 572ms (1570 modules)
+ ✓ Compiled in 556ms (1570 modules)
+ ✓ Compiled in 523ms (1570 modules)
+ ○ Compiling /api/ocr ...
+ ✓ Compiled /api/ocr in 4s (3800 modules)
+ ✓ Compiled in 1652ms (1570 modules)
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 25000, fastMode: false, ocrModel: 'gpt-5.5' }
+>>> Using OpenAI model: gpt-5.5
+>>> Making OpenAI Vision API call...
+ ✓ Compiled in 726ms (1570 modules)
+ ✓ Compiled in 612ms (1570 modules)
+ ✓ Compiled in 590ms (1570 modules)
+ ✓ Compiled in 743ms (1570 modules)
+ ✓ Compiled in 927ms (1570 modules)
+ ✓ Compiled in 611ms (1570 modules)
+ ✓ Compiled in 552ms (1570 modules)
+ ✓ Compiled in 535ms (1570 modules)
+ ✓ Compiled in 510ms (1570 modules)
+ ✓ Compiled in 502ms (1570 modules)
+ ✓ Compiled in 582ms (1570 modules)
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+>>> OpenAI extracted data: {
+  title: 'Kona Ice Is Coming — Gateway Academy',
+  start: '2026-05-19T09:30:00',
+  end: '2026-05-19T13:40:00',
+  address: null,
+  venueName: 'Gateway Academy',
+  description: 'Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.',
+  category: 'General Events',
+  rsvp: null,
+  rsvpUrl: null,
+  rsvpDeadline: null,
+  hostName: 'Kona Ice of South Walton County',
+  activities: null,
+  attire: null,
+  registryUrl: null,
+  ocrFacts: [
+    {
+      label: 'Menu Prices',
+      value: 'Klassic $4; King $5; Color Changing $6, $4 Refill; Kowabunga $7, $4 Refill; Kollectable $8, $4 Refill; TopZ Sour Powder $1'
+    },
+    {
+      label: 'Flavors',
+      value: "Blue Raspberry; Tiger's Blood; Groovy Grape; Island Rush; Lucky Lime; Monster Mango; Ninja Cherry; Piña Colada; Strawberry'd Treasure; Watermelon Wave"
+    },
+    {
+      label: 'Message',
+      value: "You've worked hard all school year and now it's time to enjoy the fruits of your labor. Enjoy a Kona Ice with your teachers, classmates and friends. We hope you have a very fun, safe summer!"
+    },
+    { label: 'Motto', value: 'BE GOOD, DO GOOD, FOR GOOD!' },
+    {
+      label: 'Contact',
+      value: '850.567.5057 | wscott@kona-ice.com | www.kona-ice.com'
+    }
+  ],
+  yearVisible: false,
+  birthdayAudience: null,
+  birthdaySignals: [],
+  birthdayName: null,
+  birthdayAge: null,
+  goodToKnow: null,
+  thumbnailFocus: { target: 'title', x: 0.22, y: 0.16, confidence: 0.9 },
+  openHouse: null
+}
+>>> OpenAI title: Kona Ice Is Coming — Gateway Academy
+>>> OpenAI description: Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.
+ ✓ Compiled in 544ms (1570 modules)
+>>> OCR timing (ms) {
+  totalMs: 14932,
+  preprocessMs: 71,
+  primaryOcrMs: 12851,
+  fallbackOcrMs: 0,
+  rewriteMs: 856,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: false,
+  enableRewrites: true,
+  enableSkinInference: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.5',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'codex-timing-kona-pdf-after',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  fileSize: 1778862,
+  mimeType: 'application/pdf',
+  category: null,
+  timings: {
+    totalMs: 14932,
+    preprocessMs: 71,
+    primaryOcrMs: 12851,
+    fallbackOcrMs: 0,
+    rewriteMs: 856,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: true,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.5',
+    ocrSource: 'openai'
+  }
+}
+ POST /api/ocr?fast=0&skin=0&timing=1 200 in 19638ms
+ ✓ Compiled in 556ms (1570 modules)
+ ✓ Compiled in 655ms (1570 modules)
+ ✓ Compiled in 563ms (1570 modules)
+ ✓ Compiled in 500ms (1570 modules)
+ ✓ Compiled in 550ms (1570 modules)
+ ✓ Compiled in 617ms (1570 modules)
+ ✓ Compiled in 550ms (1570 modules)
+ ✓ Compiled in 520ms (1570 modules)
+ ✓ Compiled in 550ms (1570 modules)
+ ✓ Compiled in 735ms (1570 modules)
+ ✓ Compiled in 579ms (1570 modules)
+ ✓ Compiled in 557ms (1570 modules)
+ ✓ Compiled in 583ms (1570 modules)
+ ✓ Compiled in 520ms (1570 modules)
+ ✓ Compiled in 520ms (1570 modules)
+ ✓ Compiled in 559ms (1570 modules)
+ ✓ Compiled in 812ms (1570 modules)
+ ✓ Compiled in 674ms (1570 modules)
+ ✓ Compiled in 565ms (1570 modules)
+ ✓ Compiled in 608ms (1570 modules)
+ ✓ Compiled in 583ms (1570 modules)
+ ✓ Compiled in 612ms (1570 modules)
+ ✓ Compiled in 702ms (1570 modules)
+ ✓ Compiled in 582ms (1570 modules)
+ ✓ Compiled in 547ms (1570 modules)
+ ✓ Compiled in 534ms (1570 modules)
+ ✓ Compiled in 730ms (1570 modules)
+ ✓ Compiled in 607ms (1570 modules)
+ ✓ Compiled in 569ms (1570 modules)
+ ✓ Compiled in 567ms (1570 modules)
+ ✓ Compiled in 490ms (1570 modules)
+ ✓ Compiled in 523ms (1570 modules)
+ ✓ Compiled in 534ms (1570 modules)
+ ✓ Compiled in 479ms (1570 modules)
+ ✓ Compiled in 740ms (1570 modules)
+ ✓ Compiled in 688ms (1570 modules)
+ ✓ Compiled in 677ms (1570 modules)
+ ✓ Compiled in 998ms (1570 modules)
+ ✓ Compiled in 1018ms (1570 modules)
+ ✓ Compiled in 683ms (1570 modules)
+ ✓ Compiled in 558ms (1570 modules)
+ ✓ Compiled in 3.6s (1570 modules)
+ ✓ Compiled in 1392ms (1570 modules)
+ ✓ Compiled in 1353ms (1570 modules)
+ ✓ Compiled in 627ms (1570 modules)
+ ✓ Compiled in 803ms (1570 modules)
+ ✓ Compiled in 782ms (1570 modules)
+ ✓ Compiled in 562ms (1570 modules)
+ ✓ Compiled in 515ms (1570 modules)
+ ✓ Compiled in 541ms (1570 modules)
+ ✓ Compiled in 590ms (1570 modules)
+ ✓ Compiled in 750ms (1570 modules)
+ ✓ Compiled in 607ms (1570 modules)
+ ✓ Compiled in 558ms (1570 modules)
+ ✓ Compiled in 579ms (1570 modules)
+ ✓ Compiled in 592ms (1570 modules)
+ ✓ Compiled in 644ms (1570 modules)
+ ✓ Compiled in 752ms (1570 modules)
+ ✓ Compiled in 634ms (1570 modules)
+ ✓ Compiled in 520ms (1570 modules)
+ ✓ Compiled in 642ms (1570 modules)
+ ✓ Compiled in 638ms (1570 modules)
+ ✓ Compiled in 654ms (1570 modules)
+ ✓ Compiled in 877ms (1570 modules)
+ ✓ Compiled in 562ms (1570 modules)
+ ✓ Compiled in 590ms (1570 modules)
+ ✓ Compiled in 487ms (1570 modules)
+ ✓ Compiled in 565ms (1570 modules)
+ ✓ Compiled in 613ms (1570 modules)
+ ✓ Compiled in 547ms (1570 modules)
+ ✓ Compiled in 562ms (1570 modules)
+ ✓ Compiled in 533ms (1570 modules)
+ ✓ Compiled in 608ms (1570 modules)
+ ✓ Compiled in 513ms (1570 modules)
+ ✓ Compiled in 537ms (1570 modules)
+ ✓ Compiled in 554ms (1570 modules)
+ ✓ Compiled in 1229ms (1570 modules)
+ ✓ Compiled in 1072ms (1570 modules)
+ ✓ Compiled in 613ms (1570 modules)
+ ✓ Compiled in 610ms (1570 modules)
+ ✓ Compiled in 894ms (1570 modules)
+ ✓ Compiled in 1087ms (1570 modules)
+ ✓ Compiled in 609ms (1570 modules)
+ ✓ Compiled in 946ms (1570 modules)
+ ✓ Compiled in 975ms (1570 modules)
+ ✓ Compiled in 651ms (1570 modules)
+ ✓ Compiled in 518ms (1570 modules)
+ ✓ Compiled in 530ms (1570 modules)
+ ✓ Compiled in 528ms (1570 modules)
+ ✓ Compiled in 683ms (1570 modules)
+ ✓ Compiled in 594ms (1570 modules)
+ ✓ Compiled in 542ms (1570 modules)
+ ✓ Compiled in 510ms (1570 modules)
+ ✓ Compiled in 545ms (1570 modules)
+ ✓ Compiled in 666ms (1570 modules)
+ ✓ Compiled in 665ms (1570 modules)
+ ✓ Compiled in 2.2s (3343 modules)
+ ✓ Compiled in 788ms (1570 modules)
+ ✓ Compiled in 788ms (1570 modules)
+ ✓ Compiled in 722ms (1570 modules)
+ ✓ Compiled in 806ms (1570 modules)
+ ✓ Compiled in 660ms (1570 modules)
+ ✓ Compiled in 544ms (1570 modules)
+ ✓ Compiled in 555ms (1570 modules)
+ ✓ Compiled in 534ms (1570 modules)
+ ✓ Compiled in 491ms (1570 modules)
+ ✓ Compiled in 539ms (1570 modules)
+ ✓ Compiled in 498ms (1570 modules)
+ ✓ Compiled in 481ms (1570 modules)
+ ✓ Compiled in 770ms (1570 modules)
+ ✓ Compiled in 719ms (1570 modules)
+ ✓ Compiled in 529ms (1570 modules)
+ ✓ Compiled in 502ms (1570 modules)
+ ✓ Compiled in 622ms (1570 modules)
+ ✓ Compiled in 553ms (1570 modules)
+ ✓ Compiled in 518ms (1570 modules)
+ ✓ Compiled in 527ms (1570 modules)
+ ✓ Compiled in 563ms (1570 modules)
+ ✓ Compiled in 563ms (1570 modules)
+ ✓ Compiled in 488ms (1570 modules)
+ ✓ Compiled in 519ms (1570 modules)
+ ✓ Compiled in 469ms (1570 modules)
+ ✓ Compiled in 498ms (1570 modules)
+ ✓ Compiled in 765ms (1570 modules)
+ ✓ Compiled in 562ms (1570 modules)
+ ✓ Compiled in 516ms (1570 modules)
+ ✓ Compiled in 502ms (1570 modules)
+ ✓ Compiled in 564ms (1570 modules)
+ ✓ Compiled in 532ms (1570 modules)
+ ✓ Compiled in 543ms (1570 modules)
+ ✓ Compiled in 545ms (1570 modules)
+ ✓ Compiled in 530ms (1570 modules)
+ ✓ Compiled in 568ms (1570 modules)
+ ✓ Compiled in 490ms (1570 modules)
+ ✓ Compiled in 500ms (1570 modules)
+ ✓ Compiled /api/ocr in 317ms (2226 modules)
+ ✓ Compiled in 695ms (1570 modules)
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 25000, fastMode: false, ocrModel: 'gpt-5.5' }
+>>> Using OpenAI model: gpt-5.5
+>>> Making OpenAI Vision API call...
+ ✓ Compiled in 593ms (1570 modules)
+ ✓ Compiled in 678ms (1570 modules)
+ ✓ Compiled in 558ms (1570 modules)
+ ✓ Compiled in 681ms (1570 modules)
+ ✓ Compiled in 572ms (1570 modules)
+ ✓ Compiled in 595ms (1570 modules)
+ ✓ Compiled in 576ms (1570 modules)
+ ✓ Compiled in 542ms (1570 modules)
+ ✓ Compiled in 511ms (1570 modules)
+ ✓ Compiled in 532ms (1570 modules)
+ ✓ Compiled in 492ms (1570 modules)
+ ✓ Compiled in 497ms (1570 modules)
+ ✓ Compiled in 481ms (1570 modules)
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+>>> OpenAI extracted data: {
+  title: 'Kona Ice Is Coming! — Gateway Academy',
+  start: '2026-05-19T09:30:00',
+  end: '2026-05-19T13:40:00',
+  address: null,
+  venueName: 'Gateway Academy',
+  description: 'Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.',
+  category: 'General Events',
+  rsvp: null,
+  rsvpUrl: null,
+  rsvpDeadline: null,
+  hostName: null,
+  activities: null,
+  attire: null,
+  registryUrl: null,
+  ocrFacts: [
+    {
+      label: 'Menu Prices',
+      value: 'Klassic $4; King $5; Color Changing $6, $4 Refill; Kowabunga $7, $4 Refill; Kollectable $8, $4 Refill; TopZ Sour Powder $1'
+    },
+    {
+      label: 'Flavors',
+      value: "Blue Raspberry; Tiger's Blood; Groovy Grape; Island Rush; Lucky Lime; Monster Mango; Ninja Cherry; Piña Colada; Strawberry'd Treasure; Watermelon Wave"
+    },
+    { label: 'Vendor', value: 'Kona Ice of South Walton County' },
+    {
+      label: 'Vendor Contact',
+      value: '850.567.5057 | wscott@kona-ice.com | www.kona-ice.com'
+    },
+    {
+      label: 'Message',
+      value: "You've worked hard all school year and now it's time to enjoy the fruits of your labor. Enjoy a Kona Ice with your teachers, classmates and friends. We hope you have a very fun, safe summer!"
+    },
+    { label: 'Motto', value: 'BE GOOD, DO GOOD, FOR GOOD!' }
+  ],
+  yearVisible: false,
+  birthdayAudience: null,
+  birthdaySignals: [],
+  birthdayName: null,
+  birthdayAge: null,
+  goodToKnow: null,
+  thumbnailFocus: { target: 'title', x: 0.23, y: 0.16, confidence: 0.86 },
+  openHouse: null
+}
+>>> OpenAI title: Kona Ice Is Coming! — Gateway Academy
+>>> OpenAI description: Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.
+ ✓ Compiled in 478ms (1570 modules)
+>>> OCR timing (ms) {
+  totalMs: 15979,
+  preprocessMs: 454,
+  primaryOcrMs: 13407,
+  fallbackOcrMs: 0,
+  rewriteMs: 1239,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: false,
+  enableRewrites: true,
+  enableSkinInference: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.5',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'codex-timing-kona-pdf-jpg',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  fileSize: 1778862,
+  mimeType: 'application/pdf',
+  category: null,
+  timings: {
+    totalMs: 15979,
+    preprocessMs: 454,
+    primaryOcrMs: 13407,
+    fallbackOcrMs: 0,
+    rewriteMs: 1239,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: true,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.5',
+    ocrSource: 'openai'
+  }
+}
+ POST /api/ocr?fast=0&skin=0&timing=1 200 in 16902ms
+ ✓ Compiled in 558ms (1570 modules)
+ ✓ Compiled in 551ms (1570 modules)
+ ✓ Compiled in 683ms (1570 modules)
+ ✓ Compiled in 813ms (1570 modules)
+ ✓ Compiled in 682ms (1570 modules)
+ ✓ Compiled in 838ms (1570 modules)
+ ✓ Compiled in 1164ms (1570 modules)
+ ✓ Compiled in 986ms (1570 modules)
+ ✓ Compiled in 1072ms (1570 modules)
+ ✓ Compiled in 1112ms (1570 modules)
+ ✓ Compiled in 1037ms (1570 modules)
+ ✓ Compiled in 717ms (1570 modules)
+ ✓ Compiled in 717ms (1570 modules)
+ ✓ Compiled in 480ms (1570 modules)
+ ✓ Compiled in 507ms (1570 modules)
+ ✓ Compiled in 478ms (1570 modules)
+ ✓ Compiled in 557ms (1570 modules)
+ ✓ Compiled in 507ms (1570 modules)
+ ✓ Compiled in 506ms (1570 modules)
+ ✓ Compiled in 538ms (1570 modules)
+ ✓ Compiled in 516ms (1570 modules)
+ ✓ Compiled in 467ms (1570 modules)
+ ✓ Compiled in 491ms (1570 modules)
+ ✓ Compiled in 489ms (1570 modules)
+ ✓ Compiled in 507ms (1570 modules)
+ ✓ Compiled in 473ms (1570 modules)
+ ✓ Compiled in 470ms (1570 modules)
+ ✓ Compiled in 464ms (1570 modules)
+ ✓ Compiled in 459ms (1570 modules)
+ ✓ Compiled in 475ms (1570 modules)
+ ✓ Compiled in 547ms (1570 modules)
+ ✓ Compiled in 514ms (1570 modules)
+ ✓ Compiled in 489ms (1570 modules)
+ ✓ Compiled in 466ms (1570 modules)
+ ✓ Compiled in 650ms (1570 modules)
+ ✓ Compiled in 522ms (1570 modules)
+ ✓ Compiled in 518ms (1570 modules)
+ ✓ Compiled in 497ms (1570 modules)
+ ✓ Compiled in 549ms (1570 modules)
+ ✓ Compiled in 526ms (1570 modules)
+ ✓ Compiled in 492ms (1570 modules)
+ ✓ Compiled in 476ms (1570 modules)
+ ✓ Compiled in 479ms (1570 modules)
+ ✓ Compiled in 471ms (1570 modules)
+ ✓ Compiled in 490ms (1570 modules)
+ ✓ Compiled in 453ms (1570 modules)
+ ✓ Compiled in 759ms (1570 modules)
+ ✓ Compiled in 516ms (1570 modules)
+ ✓ Compiled in 533ms (1570 modules)
+ ✓ Compiled in 689ms (1570 modules)
+ ✓ Compiled in 691ms (1570 modules)
+ ✓ Compiled in 577ms (1570 modules)
+ ✓ Compiled in 928ms (1570 modules)
+ ✓ Compiled in 612ms (1570 modules)
+ ✓ Compiled in 501ms (1570 modules)
+ ✓ Compiled in 496ms (1570 modules)
+ ✓ Compiled in 521ms (1570 modules)
+ ✓ Compiled in 539ms (1570 modules)
+ ✓ Compiled in 516ms (1570 modules)
+ ✓ Compiled in 481ms (1570 modules)
+ ✓ Compiled in 540ms (1570 modules)
+ ✓ Compiled in 540ms (1570 modules)
+ ✓ Compiled in 706ms (1570 modules)
+ ✓ Compiled in 894ms (1570 modules)
+ ✓ Compiled in 994ms (1570 modules)
+ ✓ Compiled in 995ms (1570 modules)
+ ✓ Compiled in 857ms (1570 modules)
+ ✓ Compiled in 542ms (1570 modules)
+ ✓ Compiled in 472ms (1570 modules)
+ ✓ Compiled in 494ms (1570 modules)
+ ✓ Compiled in 570ms (1570 modules)
+ ✓ Compiled in 544ms (1570 modules)
+ ✓ Compiled in 700ms (1570 modules)
+ ✓ Compiled in 664ms (1570 modules)
+ ✓ Compiled in 647ms (1570 modules)
+ ✓ Compiled in 730ms (1570 modules)
+ ✓ Compiled in 699ms (1570 modules)
+ ✓ Compiled in 650ms (1570 modules)
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 25000, fastMode: false, ocrModel: 'gpt-5.5' }
+>>> Using OpenAI model: gpt-5.5
+>>> Making OpenAI Vision API call...
+ ✓ Compiled in 844ms (1570 modules)
+ ✓ Compiled in 649ms (1570 modules)
+ ✓ Compiled in 535ms (1570 modules)
+ ✓ Compiled in 486ms (1570 modules)
+ ✓ Compiled in 550ms (1570 modules)
+ ✓ Compiled in 521ms (1570 modules)
+ ✓ Compiled in 500ms (1570 modules)
+ ✓ Compiled in 498ms (1570 modules)
+ ✓ Compiled in 493ms (1570 modules)
+ ✓ Compiled in 492ms (1570 modules)
+ ✓ Compiled in 529ms (1570 modules)
+ ✓ Compiled in 552ms (1570 modules)
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+>>> OpenAI extracted data: {
+  title: 'Kona Ice Is Coming — Gateway Academy',
+  start: '2026-05-19T09:30:00',
+  end: '2026-05-19T13:40:00',
+  address: null,
+  venueName: 'Gateway Academy',
+  description: 'Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 AM to 1:40 PM.',
+  category: 'General Events',
+  rsvp: null,
+  rsvpUrl: null,
+  rsvpDeadline: null,
+  hostName: null,
+  activities: null,
+  attire: null,
+  registryUrl: null,
+  ocrFacts: [
+    {
+      label: 'Menu Prices',
+      value: 'Klassic $4; King $5; Color Changing $6, $4 Refill; Kowabunga $7, $4 Refill; Kollectable $8, $4 Refill; TopZ Sour Powder $1'
+    },
+    {
+      label: 'Flavors',
+      value: "Blue Raspberry; Tiger's Blood; Groovy Grape; Island Rush; Lucky Lime; Monster Mango; Ninja Cherry; Piña Colada; Strawberry'd Treasure; Watermelon Wave"
+    },
+    {
+      label: 'Vendor Contact',
+      value: 'Kona Ice of South Walton County, 850.567.5057 | wscott@kona-ice.com | www.kona-ice.com'
+    },
+    {
+      label: 'Message',
+      value: "You've worked hard all school year and now it's time to enjoy the fruits of your labor. Enjoy a Kona Ice with your teachers, classmates and friends. We hope you have a very fun, safe summer!"
+    }
+  ],
+  yearVisible: false,
+  birthdayAudience: null,
+  birthdaySignals: [],
+  birthdayName: null,
+  birthdayAge: null,
+  goodToKnow: null,
+  thumbnailFocus: { target: 'title', x: 0.25, y: 0.18, confidence: 0.9 },
+  openHouse: null
+}
+>>> OpenAI title: Kona Ice Is Coming — Gateway Academy
+>>> OpenAI description: Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 AM to 1:40 PM.
+ ✓ Compiled in 536ms (1570 modules)
+>>> OCR timing (ms) {
+  totalMs: 14291,
+  preprocessMs: 177,
+  primaryOcrMs: 13147,
+  fallbackOcrMs: 0,
+  rewriteMs: 570,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: false,
+  enableRewrites: true,
+  enableSkinInference: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.5',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'scan_d23b35d9-6606-4726-ba4b-d4a4a5811463',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  fileSize: 1778862,
+  mimeType: 'application/pdf',
+  category: null,
+  timings: {
+    totalMs: 14291,
+    preprocessMs: 177,
+    primaryOcrMs: 13147,
+    fallbackOcrMs: 0,
+    rewriteMs: 570,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: true,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.5',
+    ocrSource: 'openai'
+  }
+}
+ POST /api/ocr?fast=0&skin=0 200 in 14408ms
+ ○ Compiling /api/upload ...
+ ✓ Compiled /api/upload in 2.4s (3798 modules)
+[media-upload] processing {
+  scopeId: 'upload-6a0c091a-a6fa-494c-8804-f362b01dfc7b',
+  usage: 'attachment',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  mimeType: 'application/pdf',
+  inputType: 'pdf',
+  originalSize: 1778862,
+  scanAttemptId: 'scan_d23b35d9-6606-4726-ba4b-d4a4a5811463'
+}
+ ✓ Compiled in 529ms (1570 modules)
+[media-upload] complete {
+  scopeId: 'upload-6a0c091a-a6fa-494c-8804-f362b01dfc7b',
+  usage: 'attachment',
+  kind: 'pdf',
+  originalSize: 1778862,
+  displaySize: 202128,
+  sourceSize: 1778862,
+  optimizedByQpdf: false,
+  scanAttemptId: 'scan_d23b35d9-6606-4726-ba4b-d4a4a5811463'
+}
+ POST /api/upload 200 in 4099ms
+ ○ Compiling /api/history ...
+ ✓ Compiled /api/history in 1943ms (3804 modules)
+ ✓ Compiled in 587ms (1570 modules)
+[history] scan insert start {
+  scanAttemptId: 'scan_d23b35d9-6606-4726-ba4b-d4a4a5811463',
+  resolvedUserId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  title: 'Kona Ice Is Coming — Gateway Academy',
+  category: null,
+  createdVia: 'ocr',
+  payloadBytes: 2222
+}
+ ✓ Compiled in 595ms (1570 modules)
+[history] scan insert complete {
+  scanAttemptId: 'scan_d23b35d9-6606-4726-ba4b-d4a4a5811463',
+  id: '00420d3a-508e-4faf-ad20-c63978e1edd3',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03'
+}
+ POST /api/history 201 in 3353ms
+ ✓ Compiled /api/dashboard in 317ms (2236 modules)
+ ✓ Compiled in 1946ms (1570 modules)
+ POST /api/client-log 200 in 2467ms
+ ✓ Compiled in 1014ms (1570 modules)
+ ✓ Compiled in 638ms (1570 modules)
+ ✓ Compiled in 544ms (1570 modules)
+ GET /api/dashboard?refresh=1&timing=1 200 in 5380ms
+ GET /event/kona-ice-is-coming-gateway-academy-2?created=1&tab=dashboard 200 in 1338ms
+ GET /event/kona-ice-is-coming-gateway-academy-2?created=1&tab=dashboard 200 in 5617ms
+ GET /event/kona-ice-is-coming-gateway-academy-2?created=1&tab=dashboard 200 in 2144ms
+ GET /event/kona-ice-is-coming-gateway-academy-2?created=1&tab=dashboard 200 in 1931ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 6176ms
+ ✓ Compiled in 671ms (1570 modules)
+ ✓ Compiled in 625ms (1570 modules)
+ ✓ Compiled in 620ms (1570 modules)
+ ✓ Compiled in 629ms (1570 modules)
+ ✓ Compiled in 705ms (1570 modules)
+ ✓ Compiled in 510ms (1570 modules)
+ ✓ Compiled in 556ms (1570 modules)
+ ✓ Compiled in 502ms (1570 modules)
+ ✓ Compiled in 537ms (1570 modules)
+ ✓ Compiled in 550ms (1570 modules)
+ ✓ Compiled in 549ms (1570 modules)
+ ✓ Compiled in 548ms (1570 modules)
+ ✓ Compiled in 516ms (1570 modules)
+ ✓ Compiled in 543ms (1570 modules)
+ ✓ Compiled in 533ms (1570 modules)
+ ✓ Compiled in 590ms (1570 modules)
+ ✓ Compiled in 562ms (1570 modules)
+ ✓ Compiled in 509ms (1570 modules)
+ ✓ Compiled in 518ms (1570 modules)
+ ✓ Compiled in 499ms (1570 modules)
+ ✓ Compiled in 536ms (1570 modules)
+ ✓ Compiled in 540ms (1570 modules)
+ ✓ Compiled in 640ms (1570 modules)
+ ✓ Compiled in 558ms (1570 modules)
+ ✓ Compiled in 545ms (1570 modules)
+ ✓ Compiled in 571ms (1570 modules)
+ ✓ Compiled in 526ms (1570 modules)
+ ✓ Compiled in 524ms (1570 modules)
+ ✓ Compiled in 554ms (1570 modules)
+ ✓ Compiled in 493ms (1570 modules)
+ ✓ Compiled in 553ms (1570 modules)
+ ✓ Compiled in 602ms (1570 modules)
+ ✓ Compiled in 738ms (1570 modules)
+ ✓ Compiled in 679ms (1570 modules)
+ ✓ Compiled in 594ms (1570 modules)
+ ✓ Compiled in 1127ms (1570 modules)
+ ✓ Compiled in 778ms (1570 modules)
+ ✓ Compiled in 861ms (1570 modules)
+ ✓ Compiled in 801ms (1570 modules)
+ ✓ Compiled in 766ms (1570 modules)
+ ✓ Compiled in 753ms (1570 modules)
+ ✓ Compiled in 575ms (1570 modules)
+ ✓ Compiled in 568ms (1570 modules)
+ ✓ Compiled in 556ms (1570 modules)
+ ✓ Compiled in 582ms (1570 modules)
+ ✓ Compiled in 514ms (1570 modules)
+ ✓ Compiled in 517ms (1570 modules)
+ ✓ Compiled in 532ms (1570 modules)
+ ✓ Compiled in 502ms (1570 modules)
+ ✓ Compiled in 562ms (1570 modules)
+ ✓ Compiled in 543ms (1570 modules)
+ ✓ Compiled in 549ms (1570 modules)
+ ✓ Compiled in 843ms (1570 modules)
+ ✓ Compiled in 606ms (1570 modules)
+ ✓ Compiled in 526ms (1570 modules)
+ ✓ Compiled in 525ms (1570 modules)
+ ✓ Compiled in 1518ms (1570 modules)
+ ✓ Compiled in 891ms (1570 modules)
+ ✓ Compiled in 701ms (1570 modules)
+ ✓ Compiled in 534ms (1570 modules)
+ ✓ Compiled in 627ms (1570 modules)
+ ✓ Compiled in 557ms (1570 modules)
+ ✓ Compiled in 612ms (1570 modules)
+ ✓ Compiled in 578ms (1570 modules)
+ ✓ Compiled in 580ms (1570 modules)
+ ✓ Compiled in 509ms (1570 modules)
+ ✓ Compiled in 531ms (1570 modules)
+ ✓ Compiled in 492ms (1570 modules)
+ ✓ Compiled in 568ms (1570 modules)
+ ✓ Compiled in 588ms (1570 modules)
+ ✓ Compiled in 2s (1570 modules)
+ ✓ Compiled in 842ms (1570 modules)
+ ✓ Compiled in 750ms (1570 modules)
+ ✓ Compiled in 1187ms (1570 modules)
+ ✓ Compiled in 867ms (1570 modules)
+ ✓ Compiled in 1323ms (1570 modules)
+ ✓ Compiled in 1083ms (1570 modules)
+ ✓ Compiled in 863ms (1570 modules)
+ ✓ Compiled in 975ms (1570 modules)
+ ✓ Compiled in 1020ms (1570 modules)
+ ✓ Compiled in 665ms (1570 modules)
+ ✓ Compiled in 884ms (1570 modules)
+ ✓ Compiled in 712ms (1570 modules)
+ ✓ Compiled in 662ms (1570 modules)
+ ✓ Compiled in 972ms (1570 modules)
+ ✓ Compiled in 709ms (1570 modules)
+ ✓ Compiled in 597ms (1570 modules)
+ ✓ Compiled in 651ms (1570 modules)
+ ✓ Compiled in 875ms (1570 modules)
+ ✓ Compiled in 756ms (1570 modules)
+ ✓ Compiled in 663ms (1570 modules)
+ ✓ Compiled in 637ms (1570 modules)
+ ✓ Compiled in 701ms (1570 modules)
+ ✓ Compiled in 677ms (1570 modules)
+ ✓ Compiled in 710ms (1570 modules)
+ ✓ Compiled in 630ms (1570 modules)
+ ✓ Compiled in 579ms (1570 modules)
+ ✓ Compiled in 585ms (1570 modules)
+ ✓ Compiled in 575ms (1570 modules)
+ ✓ Compiled in 606ms (1570 modules)
+ ✓ Compiled in 625ms (1570 modules)
+ ✓ Compiled in 649ms (1570 modules)
+ ✓ Compiled in 699ms (1570 modules)
+ ✓ Compiled in 749ms (1570 modules)
+ ✓ Compiled in 1285ms (1570 modules)
+ ✓ Compiled in 1206ms (1570 modules)
+ ✓ Compiled in 705ms (1570 modules)
+ ✓ Compiled in 536ms (1570 modules)
+ ✓ Compiled in 536ms (1570 modules)
+ ✓ Compiled in 753ms (1570 modules)
+ ✓ Compiled in 722ms (1570 modules)
+ ✓ Compiled in 734ms (1570 modules)
+ ✓ Compiled in 664ms (1570 modules)
+ ✓ Compiled in 631ms (1570 modules)
+ ✓ Compiled in 740ms (1570 modules)
+ ✓ Compiled in 701ms (1570 modules)
+ ✓ Compiled in 831ms (1570 modules)
+ ✓ Compiled in 759ms (1570 modules)
+ ✓ Compiled in 640ms (1570 modules)
+ ✓ Compiled in 526ms (1570 modules)
+ ✓ Compiled in 511ms (1570 modules)
+ ✓ Compiled in 508ms (1570 modules)
+ ✓ Compiled in 521ms (1570 modules)
+ ✓ Compiled in 525ms (1570 modules)
+ ✓ Compiled in 506ms (1570 modules)
+ ✓ Compiled in 503ms (1570 modules)
+ ✓ Compiled in 598ms (1570 modules)
+ ✓ Compiled in 540ms (1570 modules)
+ ✓ Compiled in 487ms (1570 modules)
+ ✓ Compiled in 556ms (1570 modules)
+ ✓ Compiled in 542ms (1570 modules)
+ ✓ Compiled in 552ms (1570 modules)
+ ✓ Compiled in 608ms (1570 modules)
+ ✓ Compiled in 540ms (1570 modules)
+ ✓ Compiled in 587ms (1570 modules)
+ ✓ Compiled in 540ms (1570 modules)
+ ✓ Compiled in 511ms (1570 modules)
+ ✓ Compiled in 501ms (1570 modules)
+ ✓ Compiled in 781ms (1570 modules)
+ ✓ Compiled in 613ms (1570 modules)
+ ✓ Compiled in 567ms (1570 modules)
+ ✓ Compiled in 585ms (1570 modules)
+ ✓ Compiled in 581ms (1570 modules)
+ ✓ Compiled in 579ms (1570 modules)
+ ✓ Compiled in 564ms (1570 modules)
+ ✓ Compiled in 500ms (1570 modules)
+ ✓ Compiled in 522ms (1570 modules)
+ ✓ Compiled in 542ms (1570 modules)
+ ✓ Compiled in 549ms (1570 modules)
+ ✓ Compiled in 649ms (1570 modules)
+ ✓ Compiled in 634ms (1570 modules)
+ ✓ Compiled in 587ms (1570 modules)
+ ✓ Compiled in 576ms (1570 modules)
+ ✓ Compiled in 530ms (1570 modules)
+ ✓ Compiled in 605ms (1570 modules)
+ ✓ Compiled in 541ms (1570 modules)
+ ✓ Compiled in 506ms (1570 modules)
+ ✓ Compiled in 494ms (1570 modules)
+ ✓ Compiled in 559ms (1570 modules)
+ ✓ Compiled in 495ms (1570 modules)
+ ✓ Compiled in 530ms (1570 modules)
+ ✓ Compiled in 533ms (1570 modules)
+ ✓ Compiled in 548ms (1570 modules)
+ ✓ Compiled in 511ms (1570 modules)
+ ✓ Compiled in 1279ms (1570 modules)
+ ✓ Compiled in 908ms (1570 modules)
+ ✓ Compiled in 735ms (1570 modules)
+ ✓ Compiled in 711ms (1570 modules)
+ ✓ Compiled in 722ms (1570 modules)
+ ✓ Compiled in 513ms (1570 modules)
+ ✓ Compiled in 523ms (1570 modules)
+ ✓ Compiled in 514ms (1570 modules)
+ ✓ Compiled in 616ms (1570 modules)
+ ✓ Compiled in 525ms (1570 modules)
+ ✓ Compiled in 479ms (1570 modules)
+ ✓ Compiled in 459ms (1570 modules)
+ ✓ Compiled in 495ms (1570 modules)
+ ✓ Compiled in 639ms (1570 modules)
+ ✓ Compiled in 590ms (1570 modules)
+ ✓ Compiled in 686ms (1570 modules)
+ ✓ Compiled in 570ms (1570 modules)
+ ✓ Compiled in 570ms (1570 modules)
+ ✓ Compiled in 522ms (1570 modules)
+ ✓ Compiled in 511ms (1570 modules)
+ ✓ Compiled in 503ms (1570 modules)
+ ✓ Compiled in 517ms (1570 modules)
+ ✓ Compiled in 543ms (1570 modules)
+ ✓ Compiled in 600ms (1570 modules)
+ ✓ Compiled in 616ms (1570 modules)
+ ✓ Compiled in 646ms (1570 modules)
+ ✓ Compiled in 573ms (1570 modules)
+ ✓ Compiled in 831ms (1570 modules)
+ ✓ Compiled in 520ms (1570 modules)
+ ✓ Compiled in 523ms (1570 modules)
+ ✓ Compiled in 608ms (1570 modules)
+ ✓ Compiled in 632ms (1570 modules)
+ ✓ Compiled in 588ms (1570 modules)
+ ✓ Compiled in 564ms (1570 modules)
+ ✓ Compiled in 550ms (1570 modules)
+ ✓ Compiled in 680ms (1570 modules)
+ ✓ Compiled in 543ms (1570 modules)
+ ✓ Compiled in 511ms (1570 modules)
+ ✓ Compiled in 507ms (1570 modules)
+ ✓ Compiled in 522ms (1570 modules)
+ ✓ Compiled in 623ms (1570 modules)
+ ✓ Compiled in 557ms (1570 modules)
+ ✓ Compiled in 568ms (1570 modules)
+ ✓ Compiled in 642ms (1570 modules)
+ ✓ Compiled in 580ms (1570 modules)
+ ✓ Compiled in 565ms (1570 modules)
+ ✓ Compiled in 570ms (1570 modules)
+ ✓ Compiled in 531ms (1570 modules)
+ ✓ Compiled in 524ms (1570 modules)
+ ✓ Compiled in 491ms (1570 modules)
+ ✓ Compiled in 483ms (1570 modules)
+ ✓ Compiled in 1088ms (1570 modules)
+ ✓ Compiled in 884ms (1570 modules)
+ ✓ Compiled in 661ms (1570 modules)
+ ✓ Compiled in 697ms (1570 modules)
+ ✓ Compiled in 565ms (1570 modules)
+ ✓ Compiled in 527ms (1570 modules)
+ ✓ Compiled in 582ms (1570 modules)
+ ✓ Compiled in 541ms (1570 modules)
+ ✓ Compiled in 515ms (1570 modules)
+ ✓ Compiled in 551ms (1570 modules)
+ ✓ Compiled in 511ms (1570 modules)
+ ✓ Compiled in 529ms (1570 modules)
+ ✓ Compiled in 513ms (1570 modules)
+ ✓ Compiled in 498ms (1570 modules)
+ ✓ Compiled in 566ms (1570 modules)
+ ✓ Compiled in 543ms (1570 modules)
+ ✓ Compiled in 603ms (1570 modules)
+ ✓ Compiled in 528ms (1570 modules)
+ ✓ Compiled in 639ms (1570 modules)
+ GET /api/ocr 405 in 319ms
+ ✓ Compiled in 569ms (1570 modules)
+ ✓ Compiled in 537ms (1570 modules)
+ ✓ Compiled in 515ms (1570 modules)
+ ✓ Compiled in 499ms (1570 modules)
+ ✓ Compiled in 507ms (1570 modules)
+ ✓ Compiled in 497ms (1570 modules)
+ ✓ Compiled in 493ms (1570 modules)
+ ✓ Compiled in 497ms (1570 modules)
+ ✓ Compiled in 567ms (1570 modules)
+ ✓ Compiled in 536ms (1570 modules)
+ ✓ Compiled in 529ms (1570 modules)
+ ✓ Compiled in 532ms (1570 modules)
+ ✓ Compiled in 510ms (1570 modules)
+ ✓ Compiled in 518ms (1570 modules)
+ ✓ Compiled in 510ms (1570 modules)
+ ✓ Compiled in 495ms (1570 modules)
+ ✓ Compiled in 502ms (1570 modules)
+ ✓ Compiled in 495ms (1570 modules)
+ ✓ Compiled in 504ms (1570 modules)
+ ✓ Compiled in 495ms (1570 modules)
+ ✓ Compiled in 600ms (1570 modules)
+ ✓ Compiled in 628ms (1570 modules)
+ ✓ Compiled in 530ms (1570 modules)
+ ✓ Compiled in 534ms (1570 modules)
+ ✓ Compiled in 544ms (1570 modules)
+ ✓ Compiled in 503ms (1570 modules)
+ ✓ Compiled in 518ms (1570 modules)
+ ✓ Compiled in 512ms (1570 modules)
+ ✓ Compiled in 491ms (1570 modules)
+ ✓ Compiled in 537ms (1570 modules)
+ ✓ Compiled in 511ms (1570 modules)
+ ✓ Compiled in 638ms (1570 modules)
+ ✓ Compiled in 662ms (1570 modules)
+ ✓ Compiled in 638ms (1570 modules)
+ ✓ Compiled in 790ms (1570 modules)
+ ✓ Compiled in 687ms (1570 modules)
+ ✓ Compiled in 602ms (1570 modules)
+ ✓ Compiled in 514ms (1570 modules)
+ ✓ Compiled in 501ms (1570 modules)
+ ✓ Compiled in 504ms (1570 modules)
+ ✓ Compiled in 508ms (1570 modules)
+ ✓ Compiled in 573ms (1570 modules)
+ ✓ Compiled in 575ms (1570 modules)
+ ✓ Compiled in 540ms (1570 modules)
+ ✓ Compiled in 537ms (1570 modules)
+ ✓ Compiled in 560ms (1570 modules)
+ ✓ Compiled in 652ms (1570 modules)
+ ✓ Compiled in 772ms (1570 modules)
+ ✓ Compiled in 563ms (1570 modules)
+ ✓ Compiled in 616ms (1570 modules)
+ ✓ Compiled in 651ms (1570 modules)
+ ✓ Compiled in 534ms (1570 modules)
+ ✓ Compiled in 589ms (1570 modules)
+ ✓ Compiled in 550ms (1570 modules)
+ ✓ Compiled in 541ms (1570 modules)
+ ✓ Compiled in 536ms (1570 modules)
+ ✓ Compiled in 555ms (1570 modules)
+ ✓ Compiled in 523ms (1570 modules)
+ ✓ Compiled in 512ms (1570 modules)
+ ✓ Compiled in 532ms (1570 modules)
+ ✓ Compiled in 705ms (1570 modules)
+ ✓ Compiled in 691ms (1570 modules)
+ ✓ Compiled in 808ms (1570 modules)
+ ✓ Compiled in 749ms (1570 modules)
+ ✓ Compiled in 532ms (1570 modules)
+ ✓ Compiled in 524ms (1570 modules)
+ ✓ Compiled in 516ms (1570 modules)
+ ✓ Compiled in 499ms (1570 modules)
+ ✓ Compiled in 956ms (1570 modules)
+ ✓ Compiled in 685ms (1570 modules)
+ ✓ Compiled in 672ms (1570 modules)
+ ✓ Compiled in 982ms (1570 modules)
+ ✓ Compiled in 608ms (1570 modules)
+ ✓ Compiled in 591ms (1570 modules)
+ ✓ Compiled in 838ms (1570 modules)
+ ✓ Compiled in 707ms (1570 modules)
+ ✓ Compiled in 759ms (1570 modules)
+ ✓ Compiled in 701ms (1570 modules)
+ ✓ Compiled in 742ms (1570 modules)
+ ✓ Compiled in 744ms (1570 modules)
+ ✓ Compiled in 533ms (1570 modules)
+ ✓ Compiled in 762ms (1570 modules)
+ ✓ Compiled in 814ms (1570 modules)
+ ✓ Compiled in 733ms (1570 modules)
+ ✓ Compiled in 567ms (1570 modules)
+ ✓ Compiled in 605ms (1570 modules)
+ ✓ Compiled in 572ms (1570 modules)
+ ✓ Compiled in 710ms (1570 modules)
+ ✓ Compiled in 806ms (1570 modules)
+ ✓ Compiled in 777ms (1570 modules)
+ ✓ Compiled in 715ms (1570 modules)
+ ✓ Compiled in 794ms (1570 modules)
+ ✓ Compiled in 825ms (1570 modules)
+ ✓ Compiled in 719ms (1570 modules)
+ ✓ Compiled in 551ms (1570 modules)
+ ✓ Compiled in 628ms (1570 modules)
+ ✓ Compiled in 622ms (1570 modules)
+ ✓ Compiled in 716ms (1570 modules)
+ ✓ Compiled in 614ms (1570 modules)
+ ✓ Compiled in 587ms (1570 modules)
+ ✓ Compiled in 637ms (1570 modules)
+ ✓ Compiled in 546ms (1570 modules)
+ ✓ Compiled in 519ms (1570 modules)
+ ✓ Compiled in 543ms (1570 modules)
+ ✓ Compiled in 581ms (1570 modules)
+ ✓ Compiled in 537ms (1570 modules)
+ ✓ Compiled in 708ms (1570 modules)
+ ✓ Compiled in 629ms (1570 modules)
+ ✓ Compiled in 633ms (1570 modules)
+ ✓ Compiled in 580ms (1570 modules)
+ ✓ Compiled in 549ms (1570 modules)
+ ✓ Compiled in 556ms (1570 modules)
+ ✓ Compiled in 708ms (1570 modules)
+ ✓ Compiled in 679ms (1570 modules)
+ ✓ Compiled in 585ms (1570 modules)
+ ✓ Compiled in 623ms (1570 modules)
+ ✓ Compiled in 602ms (1570 modules)
+ ✓ Compiled in 567ms (1570 modules)
+ ✓ Compiled in 642ms (1570 modules)
+ ✓ Compiled in 658ms (1570 modules)
+ ✓ Compiled in 521ms (1570 modules)
+ ✓ Compiled in 613ms (1570 modules)
+ ✓ Compiled in 680ms (1570 modules)
+ ✓ Compiled in 882ms (1570 modules)
+ ✓ Compiled in 582ms (1570 modules)
+ ✓ Compiled in 604ms (1570 modules)
+ ✓ Compiled in 571ms (1570 modules)
+ ✓ Compiled in 728ms (1570 modules)
+ ✓ Compiled in 591ms (1570 modules)
+ ✓ Compiled in 523ms (1570 modules)
+ ✓ Compiled in 542ms (1570 modules)
+ ✓ Compiled in 625ms (1570 modules)
+ ✓ Compiled in 780ms (1570 modules)
+ ✓ Compiled in 609ms (1570 modules)
+ ✓ Compiled in 582ms (1570 modules)
+ ✓ Compiled in 615ms (1570 modules)
+ ✓ Compiled in 600ms (1570 modules)
+ ✓ Compiled in 602ms (1570 modules)
+ ✓ Compiled in 602ms (1570 modules)
+ ✓ Compiled in 550ms (1570 modules)
+ ✓ Compiled in 698ms (1570 modules)
+ ✓ Compiled in 532ms (1570 modules)
+ ✓ Compiled in 569ms (1570 modules)
+ ✓ Compiled in 701ms (1570 modules)
+ ✓ Compiled in 564ms (1570 modules)
+ ✓ Compiled in 950ms (1570 modules)
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 25000, fastMode: true, ocrModel: 'gpt-5.4-mini' }
+>>> Using OpenAI model: gpt-5.4-mini
+>>> Making OpenAI Vision API call...
+ ✓ Compiled in 812ms (1570 modules)
+ ✓ Compiled in 814ms (1570 modules)
+ ✓ Compiled in 757ms (1570 modules)
+ ✓ Compiled in 730ms (1570 modules)
+ ✓ Compiled in 602ms (1570 modules)
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+>>> OpenAI extracted data: {
+  title: 'Kona Ice Is Coming! — Gateway Academy',
+  start: '2026-05-19T09:30:00',
+  end: '2026-05-19T14:00:00',
+  address: null,
+  venueName: 'Gateway Academy',
+  description: 'Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.',
+  category: 'General Events',
+  rsvp: null,
+  rsvpUrl: null,
+  rsvpDeadline: null,
+  hostName: null,
+  activities: null,
+  attire: null,
+  registryUrl: null,
+  ocrFacts: [
+    {
+      label: 'Event Note',
+      value: "You've worked hard all school year and now it's time to enjoy the fruits of your labor."
+    },
+    {
+      label: 'Message',
+      value: 'Enjoy a Kona Ice with your teachers, classmates and friends.'
+    },
+    { label: 'Slogan', value: 'BE GOOD, DO GOOD, FOR GOOD!' },
+    {
+      label: 'Menu Prices',
+      value: 'Klassic $4; King $5; Color Changing $6; Kowabunga $7; Kollectable $8; Topz Sour Powder $1'
+    },
+    { label: 'Refills', value: '$4 Refill' },
+    {
+      label: 'Flavors',
+      value: "Blue Raspberry; Tiger's Blood; Groovy Grape; Island Rush; Lucky Lime; Monster Mango; Ninja Cherry; Piña Colada; Strawberry'd Treasure; Watermelon Wave"
+    },
+    { label: 'Vendor', value: 'Kona Ice of South Walton County' },
+    {
+      label: 'Contact',
+      value: '850.567.5057 | wscott@kona-ice.com | www.kona-ice.com'
+    }
+  ],
+  yearVisible: false,
+  birthdayAudience: null,
+  birthdaySignals: [],
+  birthdayName: null,
+  birthdayAge: null,
+  goodToKnow: null,
+  thumbnailFocus: { target: 'title', x: 0.602, y: 0.119, confidence: 0.93 },
+  openHouse: null
+}
+>>> OpenAI title: Kona Ice Is Coming! — Gateway Academy
+>>> OpenAI description: Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.
+>>> OCR timing (ms) {
+  totalMs: 8316,
+  preprocessMs: 72,
+  primaryOcrMs: 6548,
+  fallbackOcrMs: 0,
+  rewriteMs: 0,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: true,
+  enableRewrites: false,
+  enableSkinInference: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.4-mini',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'codex-fast-after-jpeg',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  fileSize: 1778862,
+  mimeType: 'application/pdf',
+  category: null,
+  timings: {
+    totalMs: 8316,
+    preprocessMs: 72,
+    primaryOcrMs: 6548,
+    fallbackOcrMs: 0,
+    rewriteMs: 0,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: true,
+    enableRewrites: false,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.4-mini',
+    ocrSource: 'openai'
+  }
+}
+ POST /api/ocr?fast=1&skin=0&timing=1 200 in 8356ms
+ ✓ Compiled in 633ms (1570 modules)
+ ✓ Compiled in 615ms (1570 modules)
+ ✓ Compiled in 605ms (1570 modules)
+ ✓ Compiled in 686ms (1570 modules)
+ ✓ Compiled in 577ms (1570 modules)
+ ✓ Compiled in 544ms (1570 modules)
+ ✓ Compiled in 605ms (1570 modules)
+ ✓ Compiled in 566ms (1570 modules)
+ ✓ Compiled in 652ms (1570 modules)
+ ✓ Compiled in 753ms (1570 modules)
+ ✓ Compiled in 737ms (1570 modules)
+ ✓ Compiled in 777ms (1570 modules)
+ ✓ Compiled in 637ms (1570 modules)
+ ✓ Compiled in 551ms (1570 modules)
+ ✓ Compiled in 534ms (1570 modules)
+ ✓ Compiled in 576ms (1570 modules)
+ ✓ Compiled in 595ms (1570 modules)
+ ✓ Compiled in 572ms (1570 modules)
+ ✓ Compiled in 724ms (1570 modules)
+ ✓ Compiled in 534ms (1570 modules)
+ ✓ Compiled in 617ms (1570 modules)
+ ✓ Compiled in 617ms (1570 modules)
+ ✓ Compiled in 564ms (1570 modules)
+ ✓ Compiled in 562ms (1570 modules)
+ ✓ Compiled in 635ms (1570 modules)
+ ✓ Compiled in 518ms (1570 modules)
+ ✓ Compiled in 491ms (1570 modules)
+ ✓ Compiled in 500ms (1570 modules)
+ ✓ Compiled in 571ms (1570 modules)
+ ✓ Compiled in 578ms (1570 modules)
+ ✓ Compiled in 524ms (1570 modules)
+ ✓ Compiled in 518ms (1570 modules)
+ ✓ Compiled in 613ms (1570 modules)
+ ✓ Compiled in 583ms (1570 modules)
+ ✓ Compiled in 518ms (1570 modules)
+ ✓ Compiled in 596ms (1570 modules)
+ ✓ Compiled in 714ms (1570 modules)
+ ✓ Compiled in 578ms (1570 modules)
+ ✓ Compiled in 590ms (1570 modules)
+ ✓ Compiled in 545ms (1570 modules)
+ ✓ Compiled in 609ms (1570 modules)
+ ✓ Compiled in 711ms (1570 modules)
+ ✓ Compiled in 1084ms (1570 modules)
+ ✓ Compiled in 778ms (1570 modules)
+ ✓ Compiled in 560ms (1570 modules)
+ ✓ Compiled in 686ms (1570 modules)
+ ✓ Compiled in 676ms (1570 modules)
+ ✓ Compiled in 600ms (1570 modules)
+ ✓ Compiled in 621ms (1570 modules)
+ ✓ Compiled in 631ms (1570 modules)
+ ✓ Compiled in 520ms (1570 modules)
+ ✓ Compiled in 562ms (1570 modules)
+ ✓ Compiled in 1111ms (1570 modules)
+ ✓ Compiled in 1037ms (1570 modules)
+ ✓ Compiled in 1008ms (1570 modules)
+ ✓ Compiled in 714ms (1570 modules)
+ ✓ Compiled in 905ms (1570 modules)
+ ✓ Compiled in 784ms (1570 modules)
+ ✓ Compiled in 698ms (1570 modules)
+ ✓ Compiled in 667ms (1570 modules)
+ ✓ Compiled in 790ms (1570 modules)
+ ✓ Compiled in 737ms (1570 modules)
+ ✓ Compiled in 563ms (1570 modules)
+ ✓ Compiled in 602ms (1570 modules)
+ ✓ Compiled in 601ms (1570 modules)
+ ✓ Compiled in 585ms (1570 modules)
+ ✓ Compiled in 584ms (1570 modules)
+ ✓ Compiled in 5s (3343 modules)
+ ✓ Compiled in 628ms (1570 modules)
+ ✓ Compiled in 625ms (1570 modules)
+ ✓ Compiled in 1752ms (3343 modules)
+ ○ Compiling /api/dashboard/enrich-next-event ...
+ ✓ Compiled /api/dashboard/enrich-next-event in 1701ms (3364 modules)
+ ✓ Compiled in 704ms (1570 modules)
+ ✓ Compiled in 505ms (1570 modules)
+ ○ Compiling /api/ocr ...
+ ✓ Compiled /api/ocr in 1361ms (3800 modules)
+ ✓ Compiled in 708ms (1570 modules)
+ POST /api/dashboard/enrich-next-event 200 in 6511ms
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 25000, fastMode: false, ocrModel: 'gpt-5.5' }
+>>> Using OpenAI model: gpt-5.5
+>>> Making OpenAI Vision API call...
+ ✓ Compiled in 1101ms (1570 modules)
+ ✓ Compiled in 642ms (1570 modules)
+ ✓ Compiled in 504ms (1570 modules)
+ ✓ Compiled in 580ms (1570 modules)
+ ✓ Compiled in 588ms (1570 modules)
+ ✓ Compiled in 625ms (1570 modules)
+ ✓ Compiled in 581ms (1570 modules)
+ ✓ Compiled in 549ms (1570 modules)
+ ✓ Compiled in 531ms (1570 modules)
+ ✓ Compiled in 708ms (1570 modules)
+ ✓ Compiled in 681ms (1570 modules)
+ ✓ Compiled in 601ms (1570 modules)
+ ✓ Compiled in 770ms (1570 modules)
+ ✓ Compiled in 863ms (1570 modules)
+ ✓ Compiled in 617ms (1570 modules)
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+>>> OpenAI extracted data: {
+  title: 'Kona Ice Is Coming — Gateway Academy',
+  start: '2026-05-19T09:30:00',
+  end: '2026-05-19T13:40:00',
+  address: null,
+  venueName: 'Gateway Academy',
+  description: 'Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.',
+  category: 'General Events',
+  rsvp: null,
+  rsvpUrl: null,
+  rsvpDeadline: null,
+  hostName: null,
+  activities: null,
+  attire: null,
+  registryUrl: null,
+  ocrFacts: [
+    {
+      label: 'Menu Prices',
+      value: 'Klassic $4; King $5; Color Changing $6, $4 refill; Kowabunga $7, $4 refill; Kollectable $8, $4 refill; Sour Powder $1'
+    },
+    {
+      label: 'Flavors',
+      value: "Blue Raspberry; Tiger's Blood; Groovy Grape; Island Rush; Lucky Lime; Monster Mango; Ninja Cherry; Piña Colada; Strawberry'd Treasure; Watermelon Wave"
+    },
+    {
+      label: 'Vendor Contact',
+      value: 'Kona Ice of South Walton County; 850.567.5057 | wscott@kona-ice.com | www.kona-ice.com'
+    },
+    {
+      label: 'Message',
+      value: "You've worked hard all school year and now it's time to enjoy the fruits of your labor. Enjoy a Kona Ice with your teachers, classmates and friends. We hope you have a very fun, safe summer!"
+    }
+  ],
+  yearVisible: false,
+  birthdayAudience: null,
+  birthdaySignals: [],
+  birthdayName: null,
+  birthdayAge: null,
+  goodToKnow: null,
+  thumbnailFocus: { target: 'title', x: 0.23, y: 0.18, confidence: 0.85 },
+  openHouse: null
+}
+>>> OpenAI title: Kona Ice Is Coming — Gateway Academy
+>>> OpenAI description: Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 to 1:40.
+ ✓ Compiled in 593ms (1570 modules)
+>>> OCR timing (ms) {
+  totalMs: 16183,
+  preprocessMs: 884,
+  primaryOcrMs: 13274,
+  fallbackOcrMs: 0,
+  rewriteMs: 1047,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: false,
+  enableRewrites: true,
+  enableSkinInference: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.5',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'scan_e6775702-8372-4ecd-aa7e-3f54deb5f38e',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  fileSize: 1778862,
+  mimeType: 'application/pdf',
+  category: null,
+  timings: {
+    totalMs: 16183,
+    preprocessMs: 884,
+    primaryOcrMs: 13274,
+    fallbackOcrMs: 0,
+    rewriteMs: 1047,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: true,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.5',
+    ocrSource: 'openai'
+  }
+}
+ POST /api/ocr?fast=0&skin=0 200 in 17998ms
+ ○ Compiling /api/upload ...
+ ✓ Compiled /api/upload in 2.9s (3802 modules)
+[media-upload] processing {
+  scopeId: 'upload-7dce339d-2cfd-4f81-9b70-ae8dbecfda42',
+  usage: 'attachment',
+  fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+  mimeType: 'application/pdf',
+  inputType: 'pdf',
+  originalSize: 1778862,
+  scanAttemptId: 'scan_e6775702-8372-4ecd-aa7e-3f54deb5f38e'
+}
+ ✓ Compiled in 1267ms (1570 modules)
+ ✓ Compiled in 832ms (1570 modules)
+ ✓ Compiled in 635ms (1570 modules)
+ ✓ Compiled in 1128ms (1570 modules)
+[media-upload] complete {
+  scopeId: 'upload-7dce339d-2cfd-4f81-9b70-ae8dbecfda42',
+  usage: 'attachment',
+  kind: 'pdf',
+  originalSize: 1778862,
+  displaySize: 202128,
+  sourceSize: 1778862,
+  optimizedByQpdf: false,
+  scanAttemptId: 'scan_e6775702-8372-4ecd-aa7e-3f54deb5f38e'
+}
+ POST /api/upload 200 in 7542ms
+ ○ Compiling /api/history ...
+ ✓ Compiled /api/history in 2.1s (3808 modules)
+ ✓ Compiled in 561ms (1570 modules)
+[history] scan insert start {
+  scanAttemptId: 'scan_e6775702-8372-4ecd-aa7e-3f54deb5f38e',
+  resolvedUserId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  title: 'Kona Ice Is Coming — Gateway Academy — Kona Ice will be at Gateway Academy on Tuesday',
+  category: null,
+  createdVia: 'ocr',
+  payloadBytes: 2218
+}
+ ✓ Compiled in 556ms (1570 modules)
+[history] scan insert complete {
+  scanAttemptId: 'scan_e6775702-8372-4ecd-aa7e-3f54deb5f38e',
+  id: 'd1cf9432-6ed0-46be-88fb-308c8cf80c38',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03'
+}
+ POST /api/history 201 in 3406ms
+ ○ Compiling /api/dashboard ...
+ ✓ Compiled /api/dashboard in 5.8s (4191 modules)
+ POST /api/client-log 200 in 6404ms
+ ✓ Compiled in 1294ms (1570 modules)
+ ✓ Compiled in 797ms (1570 modules)
+ ✓ Compiled in 746ms (1570 modules)
+ GET /api/dashboard?refresh=1&timing=1 200 in 10006ms
+ ✓ Compiled in 808ms (1570 modules)
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 10748ms
+ ○ Compiling /_error ...
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 4571ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 2978ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 12001ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 3750ms
+ ✓ Compiled /_error in 3.2s (4284 modules)
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 500 in 3882ms
+ ✓ Compiled in 650ms (1571 modules)
+ ✓ Compiled in 1056ms (1571 modules)
+ ✓ Compiled in 594ms (1571 modules)
+ ✓ Compiled in 1811ms (1571 modules)
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 2217ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 3913ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 2115ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 2856ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 2118ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 2348ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 905ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 2446ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 2508ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 2309ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 2110ms
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 2391ms
+ ✓ Compiled in 2.7s (1571 modules)
+ GET /event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard 200 in 3271ms
+ ✓ Compiled in 722ms (1571 modules)
+ ✓ Compiled in 555ms (1571 modules)
+ ✓ Compiled in 665ms (1571 modules)
+ ✓ Compiled in 674ms (1571 modules)
+ ✓ Compiled in 1283ms (1571 modules)
+ ✓ Compiled in 724ms (1571 modules)
+ ✓ Compiled in 862ms (1571 modules)
+ ✓ Compiled in 609ms (1571 modules)
+ ✓ Compiled in 1041ms (1571 modules)
+ ✓ Compiled in 858ms (1571 modules)
+ ✓ Compiled in 830ms (1571 modules)
+ ✓ Compiled in 649ms (1571 modules)
+ ✓ Compiled in 608ms (1571 modules)
+ ✓ Compiled in 959ms (1571 modules)
+ ✓ Compiled in 555ms (1571 modules)
+ ✓ Compiled in 577ms (1571 modules)
+ ✓ Compiled in 638ms (1571 modules)
+ ✓ Compiled in 630ms (1571 modules)
+ ✓ Compiled in 734ms (1571 modules)
+ ✓ Compiled in 559ms (1571 modules)
+ ✓ Compiled in 591ms (1571 modules)
+ ✓ Compiled in 1073ms (1571 modules)
+ ✓ Compiled in 881ms (1571 modules)
+ ✓ Compiled in 705ms (1571 modules)
+ ✓ Compiled in 619ms (1571 modules)
+ ✓ Compiled in 587ms (1571 modules)
+ ✓ Compiled in 510ms (1571 modules)
+ ✓ Compiled in 495ms (1571 modules)
+ ✓ Compiled in 496ms (1571 modules)
+ ✓ Compiled in 532ms (1571 modules)
+ ✓ Compiled in 532ms (1571 modules)
+ ✓ Compiled in 545ms (1571 modules)
+ ✓ Compiled in 647ms (1571 modules)
+ ✓ Compiled in 552ms (1571 modules)
+ ✓ Compiled in 538ms (1571 modules)
+ ✓ Compiled in 585ms (1571 modules)
+ ✓ Compiled in 1096ms (1571 modules)
+ ✓ Compiled in 1016ms (1571 modules)
+ ✓ Compiled in 791ms (1571 modules)
+ ✓ Compiled in 1017ms (1571 modules)
+ ✓ Compiled in 626ms (1571 modules)
+ ✓ Compiled in 626ms (1571 modules)
+ ✓ Compiled in 554ms (1571 modules)
+ ✓ Compiled in 571ms (1571 modules)
+ ✓ Compiled in 545ms (1571 modules)
+ ✓ Compiled in 667ms (1571 modules)
+ ✓ Compiled in 660ms (1571 modules)
+ ✓ Compiled in 823ms (1571 modules)
+ ✓ Compiled in 2.2s (1571 modules)
+ ✓ Compiled in 1064ms (1571 modules)
+ ✓ Compiled in 931ms (1571 modules)
+ ✓ Compiled in 567ms (1571 modules)
+ ✓ Compiled in 518ms (1571 modules)
+ ✓ Compiled in 527ms (1571 modules)
+ ✓ Compiled in 545ms (1571 modules)
+ ✓ Compiled in 513ms (1571 modules)
+ ✓ Compiled in 788ms (1571 modules)
+ ✓ Compiled in 647ms (1570 modules)
+ ✓ Compiled in 715ms (1570 modules)
+ ✓ Compiled in 765ms (1570 modules)
+ ✓ Compiled in 566ms (1570 modules)
+ ✓ Compiled in 492ms (1570 modules)
+ ✓ Compiled in 493ms (1570 modules)
+ ✓ Compiled in 671ms (1570 modules)
+ ✓ Compiled in 1012ms (1570 modules)
+ ✓ Compiled in 604ms (1570 modules)
+ ✓ Compiled in 545ms (1570 modules)
+ GET /snap 200 in 2921ms
+ ✓ Compiled in 658ms (1570 modules)
+ ✓ Compiled /favicon.ico in 1054ms (3360 modules)
+ GET /favicon.ico 200 in 708ms
+ ✓ Compiled in 533ms (1570 modules)
+ ✓ Compiled in 874ms (1570 modules)
+ ✓ Compiled in 1134ms (1570 modules)
+ ✓ Compiled in 1299ms (1570 modules)
+ ✓ Compiled in 1306ms (1570 modules)
+ ✓ Compiled in 1126ms (1570 modules)
+ ✓ Compiled in 758ms (1570 modules)
+ ✓ Compiled in 1059ms (1570 modules)
+ ✓ Compiled in 767ms (1570 modules)
+ ✓ Compiled in 636ms (1570 modules)
+ ✓ Compiled in 846ms (1570 modules)
+ ✓ Compiled in 745ms (1570 modules)
+ ✓ Compiled in 694ms (1570 modules)
+ ✓ Compiled in 722ms (1570 modules)
+ ✓ Compiled in 895ms (1570 modules)
+ ✓ Compiled in 1053ms (1570 modules)
+ ✓ Compiled in 769ms (1570 modules)
+ ✓ Compiled in 988ms (1570 modules)
+ ✓ Compiled in 681ms (1570 modules)
+ ✓ Compiled in 586ms (1570 modules)
+ ✓ Compiled in 587ms (1570 modules)
+ ✓ Compiled in 675ms (1570 modules)
+ ✓ Compiled in 947ms (1570 modules)
+ ✓ Compiled in 1174ms (1570 modules)
+ ✓ Compiled in 1071ms (1570 modules)
+ ✓ Compiled in 1036ms (1570 modules)
+ ✓ Compiled in 1031ms (1570 modules)
+ ✓ Compiled in 1236ms (1570 modules)
+ ✓ Compiled in 1014ms (1570 modules)
+ ✓ Compiled in 871ms (1570 modules)
+ ✓ Compiled in 899ms (1570 modules)
+ ✓ Compiled in 608ms (1570 modules)
+ ✓ Compiled in 644ms (1570 modules)
+ ✓ Compiled in 740ms (1570 modules)
+ ✓ Compiled in 875ms (1570 modules)
+ ✓ Compiled in 834ms (1570 modules)
+ ✓ Compiled in 601ms (1570 modules)

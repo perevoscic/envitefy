@@ -195,5 +195,88 @@ test("scan event page payload can rescue Kona title date and venue from OCR text
   assert.match(String(payload.data.scheduleLine), /May 19, 2026/);
   assert.match(String(payload.data.scheduleLine), /9:30 AM/);
   assert.equal(payload.data.venue, "Gateway Academy");
+  assert.equal(payload.data.location, undefined);
   assert.equal(payload.data.locationLabel, "Gateway Academy");
+});
+
+test("scan event page payload applies provider-enriched addresses without hardcoding", () => {
+  const payload = buildScanEventPageHistoryPayload({
+    source: "upload",
+    scanAttemptId: "scan-kona-enriched-1",
+    ocr: {
+      category: "General Events",
+      ocrText: [
+        "Kona Ice Is Coming",
+        "Gateway Academy",
+        "Tuesday, May 19",
+        "9:30 AM - 1:40 PM",
+        "KONA ICE OF SOUTH WALTON COUNTY",
+      ].join("\n"),
+      fieldsGuess: {
+        title: "Event from flyer",
+        description: "Kona Ice is coming to Gateway Academy on May 19 from 9:30 AM to 1:40 PM.",
+        start: null,
+        location: "On Tuesday",
+        venue: "On Tuesday",
+        rsvp: "Host",
+      },
+    },
+    locationEnrichment: {
+      address: "122 Poinciana Blvd, Miramar Beach, FL 32550",
+      provider: "google_places",
+      query: "Gateway Academy Walton County",
+      placeName: "Gateway Academy",
+      placeId: "provider-place-id",
+    },
+  });
+
+  assert.equal(payload.data.venue, "Gateway Academy");
+  assert.equal(payload.data.location, "122 Poinciana Blvd, Miramar Beach, FL 32550");
+  assert.equal(payload.data.rsvp, undefined);
+  assert.deepEqual(payload.data.locationEnrichment, {
+    address: "122 Poinciana Blvd, Miramar Beach, FL 32550",
+    provider: "google_places",
+    query: "Gateway Academy Walton County",
+    placeName: "Gateway Academy",
+    placeId: "provider-place-id",
+  });
+  assert.equal(
+    payload.data.locationLabel,
+    "Gateway Academy, 122 Poinciana Blvd, Miramar Beach, FL 32550",
+  );
+});
+
+test("scan event page payload rejects model-invented RSVP and venue sentences", () => {
+  const payload = buildScanEventPageHistoryPayload({
+    source: "upload",
+    scanAttemptId: "scan-kona-model-noise-1",
+    ocr: {
+      category: "General Events",
+      ocrText: [
+        "Kona Ice Is Coming!",
+        "Gateway Academy",
+        "Tuesday, May 19",
+        "9:30 AM - 1:40 PM",
+        "Contact: 850.567.5057 | wscott@kona-ice.com | www.kona-ice.com",
+      ].join("\n"),
+      fieldsGuess: {
+        title: "Kona Ice Is Coming! — Gateway Academy — Kona Ice will be at Gateway Academy on Tuesday",
+        description: "Kona Ice will be at Gateway Academy on Tuesday, May 19 from 9:30 AM to 1:40 PM.",
+        start: "2026-05-19T09:30:00",
+        end: "2026-05-19T13:40:00",
+        location: "May 19 from 9:30 to 1:40.",
+        venue: "Kona Ice will be at Gateway Academy on Tuesday",
+        rsvp: "RSVP: 850.567.5057",
+      },
+    },
+  });
+
+  assert.equal(payload.data.venue, "Gateway Academy");
+  assert.equal(payload.data.location, undefined);
+  assert.equal(payload.data.rsvp, undefined);
+  assert.equal(payload.data.rsvpPhone, undefined);
+  assert.deepEqual(
+    payload.data.skinSections?.filter((section) => section.label === "RSVP"),
+    [],
+  );
 });

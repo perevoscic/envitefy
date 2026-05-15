@@ -56,7 +56,7 @@ import { getEventAccessCookieName, verifyEventAccessCookieValue } from "@/lib/ev
 import { getEventTheme } from "@/lib/event-theme";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
-import { normalizeOcrRsvpFields } from "@/lib/ocr/field-normalization";
+import { normalizeOcrLocationFields, normalizeOcrRsvpFields } from "@/lib/ocr/field-normalization";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
 import {
   isBasketballOcrSkinCandidate,
@@ -1196,8 +1196,13 @@ export default async function EventPage({
     categoryNormalized === "baby showers" || categoryNormalized === "baby shower";
   const isGraduationCategory =
     categoryNormalized === "graduations" || categoryNormalized === "graduation";
-  const locationText = typeof data?.location === "string" ? (data.location as string) : "";
-  const rawVenueText = typeof data?.venue === "string" ? (data.venue as string) : "";
+  const normalizedPublicLocation = normalizeOcrLocationFields({
+    venue: typeof data?.venue === "string" ? data.venue : "",
+    location: typeof data?.location === "string" ? data.location : "",
+    context: [data?.ocrText, data?.description, data?.title, title].filter(Boolean).join("\n"),
+  });
+  const locationText = normalizedPublicLocation.location || "";
+  const rawVenueText = normalizedPublicLocation.venue || "";
   const venueText = isGraduationCategory ? cleanGraduationVenueName(rawVenueText) : rawVenueText;
   const hasMapLocation = Boolean(venueText?.trim() || locationText?.trim());
   const registryCopy = getRegistrySectionCopyForCategory(categoryRaw);
@@ -1481,12 +1486,14 @@ export default async function EventPage({
         ? normalizeUrlValue(rsvpRecord.link.trim()) || ""
         : "";
   const rsvpField = typeof data?.rsvp === "string" ? data.rsvp : structuredRsvpContact || "";
-  const aggregateContactText = `${rsvpField} ${structuredRsvpUrl} ${
-    (data?.description as string | undefined) || ""
-  } ${(data?.location as string | undefined) || ""}`.trim();
+  const aggregateContactText = `${rsvpField} ${structuredRsvpUrl}`.trim();
   const rsvpPhone = extractFirstPhoneNumber(aggregateContactText);
+  const explicitRsvpEmail =
+    (typeof data?.rsvpEmail === "string" && data.rsvpEmail.trim()) ||
+    (typeof rsvpRecord?.email === "string" && rsvpRecord.email.trim()) ||
+    "";
   const rsvpEmail =
-    findFirstEmail(rsvpField) ?? findFirstEmail(aggregateContactText) ?? findFirstEmail(data);
+    findFirstEmail(rsvpField) ?? findFirstEmail(aggregateContactText) ?? findFirstEmail(explicitRsvpEmail);
   const rsvpUrl =
     structuredRsvpUrl ||
     normalizeUrlValue(findFirstUrl(rsvpField)) ||
@@ -1606,10 +1613,12 @@ export default async function EventPage({
     rsvp: rsvpField,
     rsvpUrl,
     extractedContact: structuredRsvpContact,
+    sourceText: data?.ocrText,
   });
   const publicRsvpField = normalizedPublicRsvp.rsvp || "";
+  const publicRsvpUrl = normalizedPublicRsvp.rsvpUrl || "";
   const hasPublicRsvpAction = Boolean(
-    rsvpPhone || rsvpEmail || rsvpUrl || directRsvpEnabled || publicRsvpField,
+    rsvpPhone || rsvpEmail || publicRsvpUrl || directRsvpEnabled || publicRsvpField,
   );
   const rsvpContactSource =
     storedRsvpName ||
@@ -2040,7 +2049,7 @@ export default async function EventPage({
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
-        rsvpUrl={rsvpUrl}
+        rsvpUrl={publicRsvpUrl}
         registryLinks={registryCards}
         actions={conciergeEventActions}
       />,
@@ -2092,7 +2101,7 @@ export default async function EventPage({
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
-        rsvpUrl={rsvpUrl}
+        rsvpUrl={publicRsvpUrl}
         rsvpSenderName={userName || null}
         rsvpSenderEmail={sessionEmail}
         planCopy={birthdayPlanCopy}
@@ -2307,7 +2316,7 @@ export default async function EventPage({
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
-        rsvpUrl={rsvpUrl}
+        rsvpUrl={publicRsvpUrl}
         rsvpDeadline={rsvpDeadline || null}
         registryCards={registryCards}
         ocrFacts={scannedInviteOcrFacts}
@@ -2397,7 +2406,7 @@ export default async function EventPage({
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
-        rsvpUrl={rsvpUrl}
+        rsvpUrl={publicRsvpUrl}
         rsvpSenderName={userName || null}
         rsvpSenderEmail={sessionEmail}
         detailCopy={scannedInviteDetailCopy}
@@ -2492,7 +2501,7 @@ export default async function EventPage({
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
-        rsvpUrl={rsvpUrl}
+        rsvpUrl={publicRsvpUrl}
         rsvpSenderName={userName || null}
         rsvpSenderEmail={sessionEmail}
         detailCopy={scannedInviteDetailCopy}
@@ -2587,7 +2596,7 @@ export default async function EventPage({
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
-        rsvpUrl={rsvpUrl}
+        rsvpUrl={publicRsvpUrl}
         rsvpSenderName={userName || null}
         rsvpSenderEmail={sessionEmail}
         detailCopy={scannedInviteDetailCopy}
@@ -2649,7 +2658,7 @@ export default async function EventPage({
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
-        rsvpUrl={rsvpUrl}
+        rsvpUrl={publicRsvpUrl}
         detailCopy={scannedInviteDetailCopy}
         ocrFacts={scannedInviteOcrFacts}
         openHouse={((data as any)?.openHouse as any) || null}
@@ -2749,7 +2758,7 @@ export default async function EventPage({
           rsvpName={rsvpName}
           rsvpPhone={rsvpPhone}
           rsvpEmail={rsvpEmail}
-          rsvpUrl={rsvpUrl}
+          rsvpUrl={publicRsvpUrl}
           rsvpSenderName={userName || null}
           rsvpSenderEmail={sessionEmail}
           detailCopy={scannedInviteDetailCopy}
@@ -2782,7 +2791,7 @@ export default async function EventPage({
           rsvpName={rsvpName}
           rsvpPhone={rsvpPhone}
           rsvpEmail={rsvpEmail}
-          rsvpUrl={rsvpUrl}
+          rsvpUrl={publicRsvpUrl}
           rsvpSenderName={userName || null}
           rsvpSenderEmail={sessionEmail}
           detailCopy={scannedInviteDetailCopy}
@@ -2816,7 +2825,7 @@ export default async function EventPage({
           rsvpName={rsvpName}
           rsvpPhone={rsvpPhone}
           rsvpEmail={rsvpEmail}
-          rsvpUrl={rsvpUrl}
+          rsvpUrl={publicRsvpUrl}
           rsvpSenderName={userName || null}
           rsvpSenderEmail={sessionEmail}
           detailCopy={scannedInviteDetailCopy}
@@ -2849,7 +2858,7 @@ export default async function EventPage({
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
-        rsvpUrl={rsvpUrl}
+        rsvpUrl={publicRsvpUrl}
         rsvpSenderName={userName || null}
         rsvpSenderEmail={sessionEmail}
         detailCopy={scannedInviteDetailCopy}
@@ -2886,7 +2895,7 @@ export default async function EventPage({
         rsvpName={rsvpName}
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
-        rsvpUrl={rsvpUrl}
+        rsvpUrl={publicRsvpUrl}
         rsvpSenderName={userName || null}
         rsvpSenderEmail={sessionEmail}
         detailCopy={
@@ -3301,7 +3310,7 @@ export default async function EventPage({
                     rsvpName={rsvpName}
                     rsvpPhone={rsvpPhone}
                     rsvpEmail={rsvpEmail}
-                    rsvpUrl={rsvpUrl}
+                    rsvpUrl={publicRsvpUrl}
                     eventTitle={publicEventTitle}
                     eventCategory={categoryRaw || categoryNormalized}
                     shareUrl={shareUrl}

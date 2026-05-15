@@ -17,12 +17,29 @@ const snapLaunchIconClass =
 const snapLaunchLabelClass =
   "text-center text-[10px] font-bold uppercase leading-[1.35] tracking-widest transition-colors sm:text-xs";
 
-export default function SnapLaunchCards() {
+type SnapLaunchCardsProps = {
+  processInPage?: boolean;
+  uploadActionHref?: string;
+};
+
+export default function SnapLaunchCards({
+  processInPage = false,
+  uploadActionHref = "/?action=upload",
+}: SnapLaunchCardsProps) {
   const router = useRouter();
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const getSnapProcessorWindow = useCallback(() => {
+    if (!processInPage || typeof window === "undefined") return null;
+    return window as Window & {
+      __openSnapCamera?: () => void;
+      __openSnapUpload?: () => void;
+      __processSnapUploadFile?: (file: File) => void;
+    };
+  }, [processInPage]);
 
   const routeSelectedFile = useCallback(
     async (file: File | null) => {
@@ -34,6 +51,16 @@ export default function SnapLaunchCards() {
       }
 
       setError(null);
+      const processorWindow = getSnapProcessorWindow();
+      if (processorWindow?.__processSnapUploadFile) {
+        processorWindow.__processSnapUploadFile(file);
+        return;
+      }
+      if (processInPage) {
+        setError("Upload is still getting ready. Please try again.");
+        return;
+      }
+
       const scanAttemptId = createClientAttemptId("scan");
       try {
         await savePendingSnapUpload({ file, scanAttemptId });
@@ -53,30 +80,48 @@ export default function SnapLaunchCards() {
         return;
       }
 
-      router.push("/?action=upload");
+      router.push(uploadActionHref);
     },
-    [router],
+    [getSnapProcessorWindow, processInPage, router, uploadActionHref],
   );
 
   const openCameraPicker = useCallback(() => {
     setError(null);
+    const processorWindow = getSnapProcessorWindow();
+    if (processorWindow?.__openSnapCamera) {
+      processorWindow.__openSnapCamera();
+      return;
+    }
+    if (processInPage) {
+      setError("Camera is still getting ready. Please try again.");
+      return;
+    }
     try {
       cameraInputRef.current?.click();
     } catch (err) {
       console.error("Failed to open camera picker:", err);
       setError("Unable to open the camera. Please try again.");
     }
-  }, []);
+  }, [getSnapProcessorWindow, processInPage]);
 
   const openUploadPicker = useCallback(() => {
     setError(null);
+    const processorWindow = getSnapProcessorWindow();
+    if (processorWindow?.__openSnapUpload) {
+      processorWindow.__openSnapUpload();
+      return;
+    }
+    if (processInPage) {
+      setError("Upload is still getting ready. Please try again.");
+      return;
+    }
     try {
       uploadInputRef.current?.click();
     } catch (err) {
       console.error("Failed to open file picker:", err);
       setError("Unable to open the file picker. Please try again.");
     }
-  }, []);
+  }, [getSnapProcessorWindow, processInPage]);
 
   const handleUploadDrop = useCallback(
     (event: DragEvent<HTMLButtonElement>) => {

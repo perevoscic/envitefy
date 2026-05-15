@@ -23,7 +23,10 @@ test("/event upload launch persists the selected file before navigation", () => 
 
   assert.match(launchCards, /const scanAttemptId = createClientAttemptId\("scan"\);/);
   assert.match(launchCards, /await savePendingSnapUpload\(\{ file, scanAttemptId \}\);/);
-  assert.match(launchCards, /router\.push\("\/\?action=upload"\);/);
+  assert.match(launchCards, /uploadActionHref = "\/\?action=upload"/);
+  assert.match(launchCards, /router\.push\(uploadActionHref\);/);
+  assert.match(launchCards, /processInPage = false/);
+  assert.match(launchCards, /__processSnapUploadFile/);
   assert.doesNotMatch(launchCards, /readFileAsDataUrl/);
   assert.doesNotMatch(launchCards, /__pendingSnapUpload/);
 });

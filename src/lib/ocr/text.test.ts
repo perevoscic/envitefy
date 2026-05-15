@@ -213,6 +213,9 @@ test("extractCommonOcrFactsFromFlyerText groups Kona menu prices and flavors", (
       "Pina Colada",
       "Strawberry Treasure",
       "Watermelon Wave",
+      "850.555.1212",
+      "events@example.com",
+      "www.example.com",
     ].join("\n"),
   );
 
@@ -220,6 +223,9 @@ test("extractCommonOcrFactsFromFlyerText groups Kona menu prices and flavors", (
   assert.match(facts.find((fact) => fact.label === "Menu Prices")?.value || "", /TopZ Sour Powder \$1/);
   assert.match(facts.find((fact) => fact.label === "Flavors")?.value || "", /Blue Raspberry/);
   assert.match(facts.find((fact) => fact.label === "Flavors")?.value || "", /Watermelon Wave/);
+  assert.equal(facts.find((fact) => fact.label === "Phone")?.value, "850.555.1212");
+  assert.equal(facts.find((fact) => fact.label === "Email")?.value, "events@example.com");
+  assert.equal(facts.find((fact) => fact.label === "Website")?.value, "www.example.com");
 });
 
 test("appendVenueToVendorVisitTitle keeps school in food vendor visit titles", () => {

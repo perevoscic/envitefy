@@ -5,7 +5,9 @@ import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { insertEventHistory } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { processPublicUpload } from "@/lib/media-upload";
+import { normalizeOcrLocationFields } from "@/lib/ocr/field-normalization";
 import { handleOcrRequest } from "@/lib/ocr/pipeline";
+import { enrichOcrVenueAddress } from "@/lib/ocr/place-enrichment";
 import {
   buildScanEventPageHistoryPayload,
   type ScanEventPageOcrResult,
@@ -28,6 +30,34 @@ function normalizeScanSource(value: FormDataEntryValue | null): ScanEventPageSou
 function normalizeScanAttemptId(value: FormDataEntryValue | null): string | null {
   const raw = String(value || "").trim();
   return raw ? raw.slice(0, 120) : null;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function cleanString(value: unknown): string {
+  return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+}
+
+function buildOcrLocationContext(ocr: ScanEventPageOcrResult): {
+  fieldsGuess: Record<string, unknown>;
+  context: string;
+} {
+  const fieldsGuess = asRecord(ocr.fieldsGuess);
+  const context = [
+    typeof ocr.ocrText === "string" ? ocr.ocrText : "",
+    fieldsGuess.title,
+    fieldsGuess.description,
+    fieldsGuess.location,
+    fieldsGuess.address,
+    fieldsGuess.venue,
+    fieldsGuess.venueName,
+  ]
+    .map(cleanString)
+    .filter(Boolean)
+    .join("\n");
+  return { fieldsGuess, context };
 }
 
 async function runScanOcr(params: {
@@ -89,6 +119,19 @@ export async function POST(request: Request) {
 
     const ocr = await runScanOcr({ requestUrl: request.url, file, scanAttemptId });
     if (!ocr.ok) return ocr.response;
+    const { fieldsGuess, context: locationContext } = buildOcrLocationContext(ocr.payload);
+    const normalizedLocation = normalizeOcrLocationFields({
+      venue: fieldsGuess.venue,
+      venueName: fieldsGuess.venueName,
+      location: fieldsGuess.location,
+      address: fieldsGuess.address,
+      context: locationContext,
+    });
+    const locationEnrichment = await enrichOcrVenueAddress({
+      venue: normalizedLocation.venue,
+      location: normalizedLocation.location,
+      context: locationContext,
+    });
 
     const media = await processPublicUpload({
       file,
@@ -101,6 +144,7 @@ export async function POST(request: Request) {
       media,
       scanAttemptId,
       source,
+      locationEnrichment,
     });
     const row = await insertEventHistory({
       userId: userId || null,

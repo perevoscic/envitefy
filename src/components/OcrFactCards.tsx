@@ -22,13 +22,34 @@ export default function OcrFactCards({
   borderColor,
 }: Props) {
   const displayFacts = Array.isArray(facts) ? facts.filter((fact) => fact.label && fact.value) : [];
-  if (!displayFacts.length) return null;
+  const groupedFacts = displayFacts.reduce<Array<{ label: string; values: string[] }>>(
+    (groups, fact) => {
+      const label = fact.label.trim();
+      const values = fact.value
+        .split(/\s*(?:;|\n)\s*/)
+        .map((value) => value.trim())
+        .filter(Boolean);
+      const group = groups.find((item) => item.label.toLowerCase() === label.toLowerCase());
+      if (group) {
+        for (const value of values) {
+          if (!group.values.some((existing) => existing.toLowerCase() === value.toLowerCase())) {
+            group.values.push(value);
+          }
+        }
+      } else {
+        groups.push({ label, values });
+      }
+      return groups;
+    },
+    [],
+  );
+  if (!groupedFacts.length) return null;
 
   return (
     <div className={className}>
-      {displayFacts.map((fact, index) => (
+      {groupedFacts.map((fact, index) => (
         <section
-          key={`${fact.label}-${fact.value}-${index}`}
+          key={`${fact.label}-${fact.values.join("|")}-${index}`}
           className={cardClassName}
           style={{
             backgroundColor,
@@ -42,7 +63,15 @@ export default function OcrFactCards({
             {fact.label}
           </div>
           <div className="mt-2 text-lg font-bold leading-snug" style={{ color: valueColor }}>
-            {fact.value}
+            {fact.values.length > 1 ? (
+              <ul className="grid gap-1 sm:grid-cols-2">
+                {fact.values.map((value) => (
+                  <li key={value}>{value}</li>
+                ))}
+              </ul>
+            ) : (
+              fact.values[0]
+            )}
           </div>
         </section>
       ))}

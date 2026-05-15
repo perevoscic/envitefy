@@ -1,7 +1,17 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Calendar, CalendarPlus, Clock, MapPin, MessageSquare, Sparkles } from "lucide-react";
+import {
+  Calendar,
+  CalendarPlus,
+  Clock,
+  Globe2,
+  Mail,
+  MapPin,
+  MessageSquare,
+  Phone,
+  Sparkles,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -95,7 +105,7 @@ const DEFAULT_PALETTE = {
 
 function buildMapsHref(location: string | null | undefined): string | null {
   const value = String(location || "").trim();
-  if (!value || value === "Location TBD") return null;
+  if (!value || /^location\s+tbd$/i.test(value)) return null;
   return buildPreferredDirectionsHref(
     value,
     typeof navigator !== "undefined" ? navigator.userAgent : undefined,
@@ -172,6 +182,34 @@ function normalizeInlineSentences(value: string): string {
       return true;
     });
   return sentences.length ? sentences.join(" ") : withSentenceSpaces.trim();
+}
+
+function groupRepeatedOcrFacts(facts: OcrFact[]): OcrFact[] {
+  const groups: OcrFact[] = [];
+  for (const fact of facts) {
+    const label = String(fact.label || "").trim();
+    const value = String(fact.value || "").trim();
+    if (!label || !value) continue;
+
+    const existing = groups.find((group) => group.label.toLowerCase() === label.toLowerCase());
+    if (!existing) {
+      groups.push({ label, value });
+      continue;
+    }
+
+    const values = new Set(
+      existing.value
+        .split(/\s*(?:;|\n)\s*/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    );
+    for (const item of value.split(/\s*(?:;|\n)\s*/)) {
+      const trimmed = item.trim();
+      if (trimmed) values.add(trimmed);
+    }
+    existing.value = Array.from(values).join("; ");
+  }
+  return groups;
 }
 
 function isRedundantPickleballSummary(value: string): boolean {
@@ -295,7 +333,12 @@ export default function ScannedInviteSkin({
   const displayDate = String(dateLabel || "").trim() || "Date TBD";
   const displayTime = String(timeLabel || "").trim();
   const displayVenueName = String(venueName || "").trim();
-  const displayLocation = String(location || "").trim() || "Location TBD";
+  const displayLocation = String(location || "").trim();
+  const hasDisplayLocation = Boolean(
+    displayLocation &&
+      !/^location\s+tbd$/i.test(displayLocation) &&
+      (!displayVenueName || displayLocation.toLowerCase() !== displayVenueName.toLowerCase()),
+  );
   const rawDetailCopy = String(detailCopy || "").trim();
   const isPickleballSkin = String(sportKind || "").toLowerCase() === "pickleball";
   const normalizedOcrFacts = normalizeOcrFacts(ocrFacts);
@@ -326,13 +369,31 @@ export default function ScannedInviteSkin({
         : "";
   const displayRsvpName = String(rsvpName || "").trim();
   const displayRsvpTitle = displayRsvpName.replace(/^hosted\s+by\s+/i, "").trim() || "Host";
+  const contactFactText = normalizedOcrFacts
+    .filter((fact) => /\b(?:phone|email|website|site|contact)\b/i.test(fact.label))
+    .map((fact) => fact.value)
+    .join(" ");
+  const contactPhone =
+    String(rsvpPhone || "").trim() ||
+    contactFactText.match(/\b(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/)?.[0] ||
+    "";
+  const contactEmail =
+    String(rsvpEmail || "").trim() ||
+    contactFactText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ||
+    "";
+  const contactWebsite =
+    String(rsvpUrl || "").trim() ||
+    contactFactText.match(/\b(?:https?:\/\/|www\.)[^\s,;]+/i)?.[0] ||
+    "";
+  const normalizedContactWebsite =
+    contactWebsite && !/^https?:\/\//i.test(contactWebsite) ? `https://${contactWebsite}` : contactWebsite;
   const directionsLocation = [
     displayVenueName,
-    displayLocation !== "Location TBD" ? displayLocation : "",
+    hasDisplayLocation ? displayLocation : "",
   ]
     .filter(Boolean)
     .join(", ");
-  const directionsHref = buildMapsHref(directionsLocation || location);
+  const directionsHref = hasDisplayLocation ? buildMapsHref(directionsLocation || location) : null;
   const directRsvpHref = buildRsvpHref({
     rsvpUrl,
     rsvpPhone,
@@ -381,6 +442,7 @@ export default function ScannedInviteSkin({
   const factsForCards = filterRegistryOcrFacts(
     normalizedOcrFacts.filter(
       (fact) =>
+        !/\b(?:phone|email|website|site|contact)\b/i.test(fact.label) &&
         !(
           isPickleballSkin &&
           (/\b(?:check[-\s]?in|games?\s+start(?:ing)?)\b/i.test(`${fact.label} ${fact.value}`) ||
@@ -394,7 +456,7 @@ export default function ScannedInviteSkin({
     displayDate,
     displayTime,
     displayVenueName,
-    displayLocation,
+    hasDisplayLocation ? displayLocation : "",
     displayDetailCopy,
     displayEntryFee,
     displayAttire,
@@ -403,9 +465,13 @@ export default function ScannedInviteSkin({
     displayRsvpName,
     rsvpPhone,
     rsvpEmail,
+    contactPhone,
+    contactEmail,
+    contactWebsite,
   ]);
-  const leftColumnOcrFacts = displayOcrFacts.slice(0, 2);
-  const rightColumnOcrFacts = displayOcrFacts.slice(2);
+  const groupedDisplayOcrFacts = groupRepeatedOcrFacts(displayOcrFacts);
+  const leftColumnOcrFacts = groupedDisplayOcrFacts.slice(0, 2);
+  const rightColumnOcrFacts = groupedDisplayOcrFacts.slice(2);
   const detailsGridClassName =
     detailLayout === "wideDetails"
       ? "grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(390px,1.12fr)_minmax(0,1fr)] xl:grid-cols-[minmax(440px,1.15fr)_minmax(0,0.95fr)]"
@@ -619,12 +685,14 @@ export default function ScannedInviteSkin({
                   />
                 ) : null}
 
-                <InfoBlock
-                  icon={<MapPin className="h-7 w-7" />}
-                  swatchColor={detailIconSwatchColor}
-                  label="Where"
-                  title={displayLocation}
-                />
+                {hasDisplayLocation ? (
+                  <InfoBlock
+                    icon={<MapPin className="h-7 w-7" />}
+                    swatchColor={detailIconSwatchColor}
+                    label="Where"
+                    title={displayLocation}
+                  />
+                ) : null}
 
                 {hasRsvpAction || hasRsvpDisplayContact ? (
                   <InfoBlock
@@ -637,21 +705,23 @@ export default function ScannedInviteSkin({
                 ) : null}
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (!directionsHref || previewMode) return;
-                  window.open(directionsHref, "_blank", "noopener,noreferrer");
-                }}
-                disabled={!directionsHref || previewMode}
-                className="mt-8 w-full rounded-[1.6rem] py-5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  backgroundColor: directionsButtonBackground,
-                  color: directionsButtonTextColor,
-                }}
-              >
-                Get Directions
-              </button>
+              {directionsHref ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (previewMode) return;
+                    window.open(directionsHref, "_blank", "noopener,noreferrer");
+                  }}
+                  disabled={previewMode}
+                  className="mt-8 w-full rounded-[1.6rem] py-5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    backgroundColor: directionsButtonBackground,
+                    color: directionsButtonTextColor,
+                  }}
+                >
+                  Get Directions
+                </button>
+              ) : null}
             </motion.section>
 
             <OcrFactCards
@@ -663,7 +733,7 @@ export default function ScannedInviteSkin({
 
           <div className="grid grid-cols-2 gap-6">
             <ActionTile
-              icon={<CalendarPlus className="h-10 w-10" />}
+              icon={<CalendarPlus className="h-7 w-7" />}
               label="Save to Calendar"
               backgroundColor="var(--theme-primary)"
               textColor={primaryTileTextColor}
@@ -674,7 +744,7 @@ export default function ScannedInviteSkin({
 
             {hasRsvpAction ? (
               <ActionTile
-                icon={<MessageSquare className="h-10 w-10" />}
+                icon={<MessageSquare className="h-7 w-7" />}
                 label="RSVP Now"
                 backgroundColor="var(--theme-secondary)"
                 textColor={secondaryTileTextColor}
@@ -682,6 +752,40 @@ export default function ScannedInviteSkin({
                 onClick={handleRsvpTileClick}
                 disabled={previewMode}
               />
+            ) : null}
+
+            {contactPhone || contactEmail || normalizedContactWebsite ? (
+              <section className="col-span-2 flex flex-wrap items-center gap-3 rounded-[2rem] border border-black/5 bg-white p-4 shadow-sm">
+                {contactPhone ? (
+                  <a
+                    href={`tel:${contactPhone.replace(/[^\d+]/g, "")}`}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
+                    aria-label="Call"
+                  >
+                    <Phone className="h-5 w-5" />
+                  </a>
+                ) : null}
+                {contactEmail ? (
+                  <a
+                    href={`mailto:${contactEmail}`}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
+                    aria-label="Email"
+                  >
+                    <Mail className="h-5 w-5" />
+                  </a>
+                ) : null}
+                {normalizedContactWebsite ? (
+                  <a
+                    href={normalizedContactWebsite}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
+                    aria-label="Website"
+                  >
+                    <Globe2 className="h-5 w-5" />
+                  </a>
+                ) : null}
+              </section>
             ) : null}
 
             {displayDetailCopy ? (
@@ -995,11 +1099,11 @@ function ActionTile({
   );
 
   const className = wide
-    ? "col-span-2 flex min-h-[6.75rem] w-full items-center justify-center rounded-[2.5rem] px-6 py-5 shadow-[0_22px_54px_rgba(59,74,84,0.12)] transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[7.5rem] sm:px-7 sm:py-6 md:min-h-[8rem] md:rounded-[3rem] md:px-10 md:py-7"
-    : "flex min-h-[10.5rem] w-full items-center justify-center rounded-[3rem] px-4 py-6 shadow-[0_22px_54px_rgba(59,74,84,0.12)] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[12rem] sm:px-5 sm:py-7 md:aspect-square md:min-h-0 md:p-8";
+    ? "col-span-2 flex min-h-[4.75rem] w-full items-center justify-center rounded-[2rem] px-5 py-4 shadow-[0_16px_38px_rgba(59,74,84,0.1)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[5.25rem] sm:px-6 md:min-h-[5.5rem]"
+    : "flex min-h-[7rem] w-full items-center justify-center rounded-[2.1rem] px-4 py-5 shadow-[0_16px_38px_rgba(59,74,84,0.1)] transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[8rem] md:min-h-[8.5rem]";
   const contentClassName = wide
     ? "flex flex-row items-center justify-center gap-4"
-    : "flex flex-col items-center gap-4";
+    : "flex flex-col items-center gap-3";
 
   if (href && !disabled) {
     if (isRsvpMailtoHref(href)) {

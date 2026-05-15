@@ -77,7 +77,11 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /rsvpName=\{rsvpName\}/);
   assert.match(source, /rsvpPhone=\{rsvpPhone\}/);
   assert.match(source, /rsvpEmail=\{rsvpEmail\}/);
-  assert.match(source, /rsvpUrl=\{rsvpUrl\}/);
+  assert.match(source, /rsvpUrl=\{publicRsvpUrl\}/);
+  assert.match(source, /normalizeOcrLocationFields/);
+  assert.match(source, /normalizeOcrRsvpFields/);
+  assert.match(source, /const publicRsvpUrl = normalizedPublicRsvp\.rsvpUrl \|\| ""/);
+  assert.doesNotMatch(source, /findFirstEmail\(data\)/);
   assert.match(source, /const hasPublicRsvpAction = Boolean\(/);
   assert.match(source, /const showPublicRsvp = hasPublicRsvpAction;/);
   assert.match(source, /planCopy=\{birthdayPlanCopy\}/);
@@ -130,7 +134,7 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /rsvpName=\{rsvpName\}/);
   assert.match(source, /rsvpPhone=\{rsvpPhone\}/);
   assert.match(source, /rsvpEmail=\{rsvpEmail\}/);
-  assert.match(source, /rsvpUrl=\{rsvpUrl\}/);
+  assert.match(source, /rsvpUrl=\{publicRsvpUrl\}/);
   assert.match(source, /rsvpDeadline=\{rsvpDeadline \|\| null\}/);
   assert.match(source, /registryCards=\{registryCards\}/);
   assert.match(source, /ocrFacts=\{scannedInviteOcrFacts\}/);
@@ -281,7 +285,7 @@ test("event route sanitizes stored RSVP names before host fallback", () => {
   );
   assert.match(
     source,
-    /storedRsvpName \|\| hostName \|\| structuredRsvpContact \|\| rsvpField \|\| rsvpEmail/,
+    /storedRsvpName \|\|\s*publicRsvpField \|\|\s*rsvpEmail \|\|\s*\(hasPublicRsvpAction \? hostName : ""\)/,
   );
 });
 

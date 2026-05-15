@@ -21,7 +21,7 @@ test("/snap renders the new landing component with key sections", () => {
   assert.match(page, /<SnapLanding \/>/);
   assert.match(page, /getServerSession\(authOptions as any\)/);
   assert.match(page, /AuthenticatedSnapUploadStart/);
-  assert.match(page, /<SnapLaunchCards \/>/);
+  assert.match(page, /<SnapLaunchCards processInPage \/>/);
   assert.match(snapLanding, /buildMarketingHeroNav\("snap", \[/);
   assert.deepEqual(navLabels, [
     "Home",
@@ -87,6 +87,8 @@ test("/snap keeps public auth CTAs but renders direct upload cards for authentic
   assert.match(page, /AuthenticatedSnapUploadStart/);
   assert.match(page, /Snap \/ Upload/);
   assert.match(page, /Snap or upload your/);
+  assert.match(page, /<Dashboard snapProcessingMode \/>/);
+  assert.doesNotMatch(page, /uploadActionHref="\/snap\?action=upload"/);
   assert.match(snapLanding, /authenticatedPrimaryHref="\/"/);
   assert.match(snapLanding, /loginSuccessRedirectUrl="\/"/);
   assert.match(snapLanding, /primaryHref=\{isAuthenticated \? "\/" : undefined\}/);

@@ -15,6 +15,7 @@ import {
   normalizeOcrRsvpFields,
 } from "./ocr/field-normalization.ts";
 import { mergeOcrFacts, normalizeOcrFacts } from "./ocr/facts.ts";
+import type { PlaceAddressEnrichment } from "./ocr/place-enrichment.ts";
 import {
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
@@ -620,11 +621,25 @@ export function buildScanEventPageHistoryPayload(params: {
   media?: UploadResponse | null;
   scanAttemptId?: string | null;
   source: ScanEventPageSource;
+  locationEnrichment?: PlaceAddressEnrichment | null;
 }): ScanEventPageHistoryPayload {
   const fieldsGuess = asRecord(params.ocr.fieldsGuess);
   const rawOcrText =
     typeof params.ocr.ocrText === "string" ? params.ocr.ocrText.trim() : "";
   const ocrText = cleanString(rawOcrText);
+  const rawContextText = [
+    rawOcrText,
+    fieldsGuess.title,
+    fieldsGuess.description,
+    fieldsGuess.start,
+    fieldsGuess.dateText,
+    fieldsGuess.timeText,
+    fieldsGuess.location,
+    fieldsGuess.address,
+  ]
+    .map((value) => cleanString(value))
+    .filter(Boolean)
+    .join("\n");
   const rescueText = [
     rawOcrText,
     ...[
@@ -656,6 +671,8 @@ export function buildScanEventPageHistoryPayload(params: {
     venue: firstSpecificString(fieldsGuess.venue, fieldsGuess.venueName),
     location: firstSpecificString(fieldsGuess.location, fieldsGuess.address),
     fallbackLocation: rescuedLocation,
+    enrichedLocation: params.locationEnrichment?.address,
+    context: rawContextText,
   });
   const venue = normalizedLocation.venue;
   const location = normalizedLocation.location;
@@ -669,6 +686,7 @@ export function buildScanEventPageHistoryPayload(params: {
     extractedContact: rsvpDetails.contact,
     extractedUrl: rsvpDetails.url,
     extractedDeadline: rsvpDetails.deadline,
+    sourceText: rawOcrText,
   });
   const rsvpText = normalizedRsvp.rsvp;
   const rsvpUrl = normalizedRsvp.rsvpUrl;
@@ -797,6 +815,7 @@ export function buildScanEventPageHistoryPayload(params: {
     venue: venue || undefined,
     locationLabel: locationLine,
     locationText: locationLine,
+    locationEnrichment: params.locationEnrichment || undefined,
     placeName: venue || location || undefined,
     coverImageUrl: thumbnail,
     thumbnail,

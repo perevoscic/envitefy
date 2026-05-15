@@ -3,6 +3,7 @@ import { getServerSession, type Session } from "next-auth";
 import { Inter, Outfit } from "next/font/google";
 import Script from "next/script";
 import SnapLaunchCards from "@/app/event/SnapLaunchCards";
+import Dashboard from "@/components/Dashboard";
 import SnapLanding from "@/components/snap-landing/SnapLanding";
 import { authOptions } from "@/lib/auth";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
@@ -69,7 +70,7 @@ function AuthenticatedSnapUploadStart() {
             </span>
           </h1>
         </section>
-        <SnapLaunchCards />
+        <SnapLaunchCards processInPage />
         <p className="mx-auto mt-6 max-w-3xl pb-10 text-center text-lg leading-8 text-[#767287] sm:mt-8 sm:text-[1.35rem]">
           Envitefy reads the details, detects invitation types, and routes them into polished,
           interactive event pages automatically.
@@ -102,7 +103,10 @@ export default async function SnapPage() {
   return (
     <div className={`${outfit.variable} ${inter.variable} ${styles.snapPage}`}>
       {isAuthenticated ? (
-        <AuthenticatedSnapUploadStart />
+        <>
+          <AuthenticatedSnapUploadStart />
+          <Dashboard snapProcessingMode />
+        </>
       ) : (
         <>
           <SnapLanding />

@@ -2,7 +2,7 @@
 import { Calendar, Clock, MapPin, Upload, User, WandSparkles, X } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 
-export type SnapProcessingStatus = "idle" | "uploading" | "scanning";
+export type SnapProcessingStatus = "idle" | "uploading" | "scanning" | "creating";
 export type SnapPreviewKind = "image" | "pdf" | "file" | null;
 
 type SnapProcessingCardProps = {
@@ -28,6 +28,13 @@ export function SnapProcessingCard({
 
   if (status === "idle") return null;
 
+  const isScanning = status === "scanning";
+  const isCreating = status === "creating";
+  const statusLabel = isCreating ? "Creating Event Page" : isScanning ? "Analysing Flyer" : "Uploading Flyer";
+  const statusIntro = isCreating
+    ? "Building the event page from the extracted details."
+    : "Upload your flyer, we'll extract the details.";
+
   return (
     <div className="w-full max-w-md">
       <div className="snap-processing-card relative overflow-hidden rounded-3xl border border-[#dfd6fb] bg-gradient-to-br from-[#ffffff] via-[#f8f4ff] to-[#f2ecff] p-6 text-[#2f2550] shadow-[0_24px_60px_rgba(84,61,140,0.24)]">
@@ -35,7 +42,7 @@ export function SnapProcessingCard({
         <div className="snap-processing-glow pointer-events-none absolute -left-14 -bottom-14 h-36 w-36 rounded-full bg-[#88d2ff]/15 blur-3xl" />
         <div className="mb-4 text-center">
           <p className="text-sm font-medium text-[#625089]">
-            Upload your flyer, we&apos;ll extract the details.
+            {statusIntro}
           </p>
         </div>
 
@@ -63,7 +70,7 @@ export function SnapProcessingCard({
               </div>
             )}
 
-            {status === "scanning" && (
+            {(isScanning || isCreating) && (
               <>
                 <div className="snap-processing-dim pointer-events-none absolute inset-0 z-10 hidden bg-[#1f1844]/35" />
                 <div className="animate-scan-line absolute left-0 top-0 z-20 h-1 w-full bg-gradient-to-r from-transparent via-[#8f75de] to-transparent shadow-[0_0_14px_rgba(143,117,222,0.85)]" />
@@ -122,13 +129,13 @@ export function SnapProcessingCard({
           <div className="w-full">
             <div className="mb-2 flex items-center justify-between">
               <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[#685691]">
-                {status === "scanning" ? (
+                {isScanning || isCreating ? (
                   <>
                     <WandSparkles className="h-4 w-4 animate-pulse text-[#7f64d4]" />
-                    Analysing
+                    {statusLabel}
                   </>
                 ) : (
-                  "Uploading Flyer"
+                  statusLabel
                 )}
               </span>
               <button
@@ -141,7 +148,7 @@ export function SnapProcessingCard({
               </button>
             </div>
 
-            {status === "scanning" && (
+            {(isScanning || isCreating) && (
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#e9e1ff]">
                 <div className="animate-scanning-bar h-full bg-gradient-to-r from-[#8f75de] via-[#7a63d8] to-[#6e8eff]" />
               </div>

@@ -14,6 +14,15 @@ test("pipeline still validates upload metadata before OCR work", async () => {
   assert.match(source, /if \(!validation\.ok\)/);
 });
 
+test("pipeline sends preprocessed OCR images to vision as JPEG", async () => {
+  const source = await readFile(new URL("./pipeline.ts", import.meta.url), "utf8");
+
+  assert.match(source, /rasterizePdfPageToPng\(inputBuffer, 0\)/);
+  assert.match(source, /\.grayscale\(\)\s*\.normalize\(\)\s*\.jpeg\(\{ quality: 90 \}\)/);
+  assert.match(source, /visionMime = "image\/jpeg";/);
+  assert.match(source, /llmExtractEventFromImage\(ocrBuffer, visionMime/);
+});
+
 test("pipeline rejects empty or generic OCR instead of saving a placeholder event", async () => {
   const source = await readFile(new URL("./pipeline.ts", import.meta.url), "utf8");
 

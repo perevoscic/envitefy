@@ -475,7 +475,8 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /savePendingSnapUpload/);
   assert.doesNotMatch(client, /router\.push\("\/\?action=upload"\)/);
   assert.match(snapLaunchCards, /savePendingSnapUpload/);
-  assert.match(snapLaunchCards, /router\.push\("\/\?action=upload"\)/);
+  assert.match(snapLaunchCards, /uploadActionHref = "\/\?action=upload"/);
+  assert.match(snapLaunchCards, /router\.push\(uploadActionHref\)/);
   assert.match(snapLaunchCards, /area: "snap-upload"/);
   assert.doesNotMatch(client, /stage: "scan-event-page-created"/);
   assert.match(snapLaunchCards, /accept=\{getUploadAcceptAttribute\("header"\)\}/);

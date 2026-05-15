@@ -56,12 +56,38 @@ test("dashboard sends scan attempt ids through OCR, media upload, and history", 
   assert.match(source, /body: JSON\.stringify\(\{ \.\.\.payload, scanAttemptId \}\)/);
 });
 
+test("dashboard validates RSVP against the actual OCR source text and separates create state", () => {
+  const source = readSource("src/components/Dashboard.tsx");
+  const processingCard = readSource("src/components/snap/SnapProcessingCard.tsx");
+
+  assert.match(source, /sourceText: typeof data\?\.ocrText === "string" \? data\.ocrText : null/);
+  assert.match(source, /setScanStatus\("creating"\);/);
+  assert.match(processingCard, /"idle" \| "uploading" \| "scanning" \| "creating"/);
+  assert.match(processingCard, /Creating Event Page/);
+});
+
 test("dashboard scan overlay avoids full-viewport mobile backdrop blur", () => {
   const source = readSource("src/components/Dashboard.tsx");
 
-  assert.match(source, /bg-\[#f4eeff\]\/95 p-4 md:bg-\[#f4eeff\]\/78 md:backdrop-blur-md/);
+  assert.match(
+    source,
+    /bg-\[#f4eeff\]\/95 px-4 pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\] pt-\[calc\(env\(safe-area-inset-top\)\+1rem\)\]/,
+  );
+  assert.match(source, /md:p-4 md:bg-\[#f4eeff\]\/78 md:backdrop-blur-md/);
   assert.doesNotMatch(
     source,
     /bg-\[#f4eeff\]\/78 p-4 backdrop-blur-md lg:left-\[20rem\]/,
   );
+});
+
+test("dashboard snap processing mode suppresses the home dashboard behind OCR", () => {
+  const source = readSource("src/components/Dashboard.tsx");
+
+  assert.match(source, /snapProcessingMode = false/);
+  assert.match(source, /snapProcessingMode\s*\?\s*"contents"/);
+  assert.match(source, /__processSnapUploadFile\?:/);
+  assert.match(source, /w\.__processSnapUploadFile = onFile;/);
+  assert.match(source, /!snapProcessingMode && isSignedIn/);
+  assert.match(source, /showScanSection && !snapProcessingMode/);
+  assert.match(source, /showScanSection && snapProcessingMode/);
 });

@@ -234,6 +234,11 @@ declare global {
     __openCreateEvent?: () => void;
     __openSnapCamera?: () => void;
     __openSnapUpload?: () => void;
+    __processSnapUploadFile?: (
+      file: File,
+      previewUrl?: string | null,
+      scanAttemptId?: string | null,
+    ) => void;
     __pendingSnapUpload?: PendingSnapUpload | null;
   }
 }
@@ -249,8 +254,10 @@ type DashboardInitialEventContext = {
 
 export default function Dashboard({
   initialEventContext = null,
+  snapProcessingMode = false,
 }: {
   initialEventContext?: DashboardInitialEventContext | null;
+  snapProcessingMode?: boolean;
 }) {
   const { data: session } = useSession();
   const pathname = usePathname();
@@ -1079,6 +1086,7 @@ export default function Dashboard({
           rsvpUrl: (data?.fieldsGuess as { rsvpUrl?: unknown })?.rsvpUrl,
           rsvpLink: (data?.fieldsGuess as { rsvpLink?: unknown })?.rsvpLink,
           rsvpDeadline: (data?.fieldsGuess as { rsvpDeadline?: unknown })?.rsvpDeadline,
+          sourceText: typeof data?.ocrText === "string" ? data.ocrText : null,
         });
         const rawRsvp = normalizedScanRsvp.rsvp;
         const cleanedRsvp = rawRsvp ? cleanRsvp(rawRsvp) : null;
@@ -1114,6 +1122,13 @@ export default function Dashboard({
           venueName: (data?.fieldsGuess as { venueName?: unknown })?.venueName,
           location: (data?.fieldsGuess as { location?: unknown })?.location,
           address: (data?.fieldsGuess as { address?: unknown })?.address,
+          context: [
+            (data?.fieldsGuess as { title?: unknown })?.title,
+            data?.ocrText,
+            (data?.fieldsGuess as { description?: unknown })?.description,
+          ]
+            .filter(Boolean)
+            .join("\n"),
         });
         const venueFromScan = normalizedScanLocation.venue;
         const isWeddingOcrResult =
@@ -1225,6 +1240,7 @@ export default function Dashboard({
             }
           : null;
         await finishScanUi();
+        setScanStatus("creating");
         setOcrText(data.ocrText || "");
         setUploadedFile(fileToUpload);
         setOcrCategory(data?.category || null);
@@ -1338,6 +1354,7 @@ export default function Dashboard({
     const w = window as any;
     w.__openSnapCamera = openCamera;
     w.__openSnapUpload = openUpload;
+    w.__processSnapUploadFile = onFile;
     return () => {
       if (w.__openSnapCamera === openCamera) {
         delete w.__openSnapCamera;
@@ -1345,8 +1362,11 @@ export default function Dashboard({
       if (w.__openSnapUpload === openUpload) {
         delete w.__openSnapUpload;
       }
+      if (w.__processSnapUploadFile === onFile) {
+        delete w.__processSnapUploadFile;
+      }
     };
-  }, [openCamera, openUpload]);
+  }, [onFile, openCamera, openUpload]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1894,8 +1914,12 @@ export default function Dashboard({
     };
   }, []);
 
+  const dashboardShellClassName = snapProcessingMode
+    ? "contents"
+    : "relative flex min-h-[100dvh] w-full flex-col items-center bg-transparent px-3 pb-20 pt-2 text-foreground md:px-8 md:pt-16";
+
   return (
-    <main className="relative flex min-h-[100dvh] w-full flex-col items-center bg-transparent px-3 pb-20 pt-2 text-foreground md:px-8 md:pt-16">
+    <main className={dashboardShellClassName}>
       <input
         ref={cameraInputRef}
         type="file"
@@ -1911,7 +1935,7 @@ export default function Dashboard({
         onChange={(event) => onFile(event.target.files?.[0] ?? null)}
         className="hidden"
       />
-      {showHeaderRow && (
+      {!snapProcessingMode && showHeaderRow && (
         <div
           className={`w-full max-w-6xl mt-0 flex flex-col gap-4 ${
             showWelcomeMessage ? "mb-8 md:mb-10" : "mb-4 md:mb-6"
@@ -2001,7 +2025,7 @@ export default function Dashboard({
           </div>
         </div>
       )}
-      {isSignedIn && (
+      {!snapProcessingMode && isSignedIn && (
         <div className="w-full max-w-6xl mb-6 flex flex-col gap-6 md:mb-8 md:gap-8">
           {showOwnerDashboard ? (
             <EventOwnerDashboardPanel
@@ -2046,7 +2070,7 @@ export default function Dashboard({
         </div>
       )}
 
-      {showScanSection && (
+      {showScanSection && !snapProcessingMode && (
         <section id="scan" className="mt-12 w-full max-w-4xl space-y-5">
           <div className="space-y-3">
             {error && (
@@ -2056,6 +2080,11 @@ export default function Dashboard({
             )}
           </div>
         </section>
+      )}
+      {showScanSection && snapProcessingMode && (
+        <div className="fixed inset-x-4 bottom-4 z-[7001] mx-auto max-w-md rounded-xl border border-[#f3cade] bg-[#fff6fb] p-3 text-sm font-medium text-[#9f2d5d] shadow-sm">
+          {error}
+        </div>
       )}
     </main>
   );

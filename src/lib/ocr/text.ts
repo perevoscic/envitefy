@@ -805,7 +805,10 @@ export function extractCommonOcrFactsFromFlyerText(
     if (!key || !valueKey || seen.has(key) || seenValues.has(valueKey)) return;
     seen.add(key);
     seenValues.add(valueKey);
-    facts.push({ label, value: cleaned.charAt(0).toUpperCase() + cleaned.slice(1) });
+    facts.push({
+      label,
+      value: /^(?:email|website)$/i.test(label) ? cleaned : cleaned.charAt(0).toUpperCase() + cleaned.slice(1),
+    });
   };
 
   const normalized = text.replace(/\r/g, "\n");
@@ -862,6 +865,12 @@ export function extractCommonOcrFactsFromFlyerText(
   if (printedPerks.length) addFact("Perks", printedPerks.join(", "));
   if (menuPriceMatches.length >= 2) addFact("Menu Prices", menuPriceMatches.join("; "));
   if (printedFlavors.length >= 2) addFact("Flavors", printedFlavors.join(", "));
+  const contactPhone = compact.match(/\b(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/)?.[0];
+  const contactEmail = compact.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
+  const contactWebsite = compact.match(/\b(?:https?:\/\/|www\.)[^\s,;]+/i)?.[0];
+  if (contactPhone) addFact("Phone", contactPhone);
+  if (contactEmail) addFact("Email", contactEmail);
+  if (contactWebsite) addFact("Website", contactWebsite);
   addFact("Good to Know", compact.match(/\ball\s+skills?\s+levels?\s+welcome\b/i)?.[0]);
   addFact("Good to Know", compact.match(/\bages?\s*\d{1,2}\s*(?:\+|plus)?/i)?.[0]);
   addFact("Good to Know", compact.match(/\bfree\s+(?:to\s+play|entry|admission)\b/i)?.[0]);

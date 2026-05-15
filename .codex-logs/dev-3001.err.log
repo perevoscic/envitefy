@@ -1,0 +1,3502 @@
+Image with src "/no-event-placeholder-card-wide.webp" is using quality "60" which is not configured in images.qualities. This config will be required starting in Next.js 16.
+Read more: https://nextjs.org/docs/messages/next-image-unconfigured-qualities
+Image with src "/no-event-placeholder-card-wide.webp" is using quality "60" which is not configured in images.qualities. This config will be required starting in Next.js 16.
+Read more: https://nextjs.org/docs/messages/next-image-unconfigured-qualities
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 40,
+    returnedEventCount: 37,
+    droppedMissingStartCount: 3,
+    fallbackUsed: false,
+    fallbackReason: null,
+    emptyReason: null
+  },
+  nextEvent: {
+    id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+    title: "Harper's 11th Birthday Party",
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'ocr-birthday-skin',
+    startAt: '2026-05-16T17:00:00.000Z'
+  },
+  upcomingCount: 24,
+  eventSample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      title: "Harper's 11th Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-16T17:00:00.000Z',
+      status: null
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      ownership: 'invited',
+      shareStatus: null,
+      createdVia: 'ocr-open-house-skin',
+      startAt: '2026-05-18T18:00:00.000Z',
+      status: null
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: null
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    }
+  ]
+}
+[db] listDashboardHistoryFallbackForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 78,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 10636
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[client-log] {
+  area: 'snap-upload',
+  stage: 'ingest-final',
+  scanAttemptId: 'scan_4b58063b-e7d9-46f7-82bb-136c2d2f4590',
+  details: {
+    fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+    fileSize: 1778862,
+    fileType: 'application/pdf',
+    scanAttemptId: 'scan_4b58063b-e7d9-46f7-82bb-136c2d2f4590'
+  },
+  error: {
+    name: 'Error',
+    message: 'Upload timed out. Please check your connection and try again.',
+    stack: 'Error: Upload timed out. Please check your connection and try again.\n' +
+      '    at Dashboard.useCallback[ingest] (webpack-internal:///(app-pages-browser)/./src/components/Dashboard.tsx:830:31)'
+  },
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
+    viewport: { width: 1920, height: 911, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 10, rtt: 50, saveData: false }
+  },
+  timestamp: '2026-05-15T20:20:42.932Z'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/snap'
+}
+[db] listDashboardHistoryFallbackForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 78,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 40,
+    returnedEventCount: 37,
+    droppedMissingStartCount: 3,
+    fallbackUsed: false,
+    fallbackReason: null,
+    emptyReason: null
+  },
+  nextEvent: {
+    id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+    title: "Harper's 11th Birthday Party",
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'ocr-birthday-skin',
+    startAt: '2026-05-16T17:00:00.000Z'
+  },
+  upcomingCount: 24,
+  eventSample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      title: "Harper's 11th Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-16T17:00:00.000Z',
+      status: null
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      ownership: 'invited',
+      shareStatus: null,
+      createdVia: 'ocr-open-house-skin',
+      startAt: '2026-05-18T18:00:00.000Z',
+      status: null
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: null
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 10637
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[client-log] {
+  area: 'snap-upload',
+  stage: 'ingest-final',
+  scanAttemptId: 'scan_c0585ed4-fcf8-4d0a-87c5-1dfb3cde141d',
+  details: {
+    fileName: 'ef3ebb3e-1da2-44e5-9f34-cee3b501fd55.pdf___1778492664___1209600___1___pGQgKvfnAMb1BjOS_oo4FBpPX2zAqeOzs878JU1A_HvnKuetTohkVPdqfIPzVABQW3uaPNMedCveECNV-5w51w.pdf',
+    fileSize: 1778862,
+    fileType: 'application/pdf',
+    scanAttemptId: 'scan_c0585ed4-fcf8-4d0a-87c5-1dfb3cde141d'
+  },
+  error: {
+    name: 'Error',
+    message: 'Upload timed out. Please check your connection and try again.',
+    stack: 'Error: Upload timed out. Please check your connection and try again.\n' +
+      '    at Dashboard.useCallback[ingest] (webpack-internal:///(app-pages-browser)/./src/components/Dashboard.tsx:830:31)'
+  },
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
+    viewport: { width: 1920, height: 911, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 10, rtt: 50, saveData: false }
+  },
+  timestamp: '2026-05-15T20:21:43.395Z'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/snap'
+}
+[db] listDashboardHistoryFallbackForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 78,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/snap'
+}
+[db] listDashboardHistoryFallbackForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 78,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/snap'
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[db] listDashboardHistoryFallbackForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 78,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[db] listDashboardHistoryFallbackForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 78,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 40,
+    returnedEventCount: 37,
+    droppedMissingStartCount: 3,
+    fallbackUsed: false,
+    fallbackReason: null,
+    emptyReason: null
+  },
+  nextEvent: {
+    id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+    title: "Harper's 11th Birthday Party",
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'ocr-birthday-skin',
+    startAt: '2026-05-16T17:00:00.000Z'
+  },
+  upcomingCount: 24,
+  eventSample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      title: "Harper's 11th Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-16T17:00:00.000Z',
+      status: null
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      ownership: 'invited',
+      shareStatus: null,
+      createdVia: 'ocr-open-house-skin',
+      startAt: '2026-05-18T18:00:00.000Z',
+      status: null
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: null
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 10639
+}
+[dashboard] response_bytes {
+  state: 'fresh',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 10454
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '7266027e-d453-4bda-909a-6fb98593b128',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:50:55.534Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[client-log] {
+  area: 'snap-upload',
+  stage: 'event-navigation-start',
+  scanAttemptId: 'scan_4e0923f6-6f3e-4c43-9b25-a2d70777d2af',
+  details: {
+    eventId: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+    eventHref: '/event/kona-ice-is-coming-gateway-academy?created=1&tab=dashboard'
+  },
+  error: null,
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
+    viewport: { width: 1920, height: 911, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 10, rtt: 50, saveData: false }
+  },
+  timestamp: '2026-05-15T20:29:49.437Z'
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:29:49.123Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[db] listDashboardHistoryFallbackForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 79,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:29:49.123Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 40,
+    returnedEventCount: 37,
+    droppedMissingStartCount: 3,
+    fallbackUsed: false,
+    fallbackReason: null,
+    emptyReason: null
+  },
+  nextEvent: {
+    id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+    title: "Harper's 11th Birthday Party",
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'ocr-birthday-skin',
+    startAt: '2026-05-16T17:00:00.000Z'
+  },
+  upcomingCount: 25,
+  eventSample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      title: "Harper's 11th Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-16T17:00:00.000Z',
+      status: null
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      ownership: 'invited',
+      shareStatus: null,
+      createdVia: 'ocr-open-house-skin',
+      startAt: '2026-05-18T18:00:00.000Z',
+      status: null
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: null
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 10520
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:29:49.123Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:29:49.123Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    },
+    {
+      id: '58f3ba34-fd36-4352-b95d-951bb0f32179',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:52:43.083Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[client-log] {
+  area: 'snap-upload',
+  stage: 'event-navigation-start',
+  scanAttemptId: 'scan_d23b35d9-6606-4726-ba4b-d4a4a5811463',
+  details: {
+    eventId: '00420d3a-508e-4faf-ad20-c63978e1edd3',
+    eventHref: '/event/kona-ice-is-coming-gateway-academy-2?created=1&tab=dashboard'
+  },
+  error: null,
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
+    viewport: { width: 1920, height: 911, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 10, rtt: 50, saveData: false }
+  },
+  timestamp: '2026-05-15T20:42:28.651Z'
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '00420d3a-508e-4faf-ad20-c63978e1edd3',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:42:28.333Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:29:49.123Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 40,
+    returnedEventCount: 37,
+    droppedMissingStartCount: 3,
+    fallbackUsed: false,
+    fallbackReason: null,
+    emptyReason: null
+  },
+  nextEvent: {
+    id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+    title: "Harper's 11th Birthday Party",
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'ocr-birthday-skin',
+    startAt: '2026-05-16T17:00:00.000Z'
+  },
+  upcomingCount: 26,
+  eventSample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      title: "Harper's 11th Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-16T17:00:00.000Z',
+      status: null
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      ownership: 'invited',
+      shareStatus: null,
+      createdVia: 'ocr-open-house-skin',
+      startAt: '2026-05-18T18:00:00.000Z',
+      status: null
+    },
+    {
+      id: '00420d3a-508e-4faf-ad20-c63978e1edd3',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: null
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-06-20T19:00:00.000Z',
+      status: 'published'
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 10425
+}
+[db] listDashboardHistoryFallbackForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 80,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '00420d3a-508e-4faf-ad20-c63978e1edd3',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:42:28.333Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:29:49.123Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: '00420d3a-508e-4faf-ad20-c63978e1edd3',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:42:28.333Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:29:49.123Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'aae46365-4c13-4ae9-ba1e-1f1b6cf98d35',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T18:53:52.412Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-06-20T19:00:00.000Z'
+    }
+  ]
+}
+[client-log] {
+  area: 'snap-upload',
+  stage: 'event-navigation-start',
+  scanAttemptId: 'scan_e6775702-8372-4ecd-aa7e-3f54deb5f38e',
+  details: {
+    eventId: 'd1cf9432-6ed0-46be-88fb-308c8cf80c38',
+    eventHref: '/event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2?created=1&tab=dashboard'
+  },
+  error: null,
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
+    viewport: { width: 1920, height: 911, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 10, rtt: 50, saveData: false }
+  },
+  timestamp: '2026-05-15T20:51:32.519Z'
+}
+[db] listDashboardHistoryWindowForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 40,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: 'd1cf9432-6ed0-46be-88fb-308c8cf80c38',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — Kona Ice will be at Gateway Academy on Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:51:32.197Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: '00420d3a-508e-4faf-ad20-c63978e1edd3',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:42:28.333Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:29:49.123Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    }
+  ]
+}
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 40,
+    returnedEventCount: 37,
+    droppedMissingStartCount: 3,
+    fallbackUsed: false,
+    fallbackReason: null,
+    emptyReason: null
+  },
+  nextEvent: {
+    id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+    title: "Harper's 11th Birthday Party",
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'ocr-birthday-skin',
+    startAt: '2026-05-16T17:00:00.000Z'
+  },
+  upcomingCount: 27,
+  eventSample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      title: "Harper's 11th Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-16T17:00:00.000Z',
+      status: null
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      ownership: 'invited',
+      shareStatus: null,
+      createdVia: 'ocr-open-house-skin',
+      startAt: '2026-05-18T18:00:00.000Z',
+      status: null
+    },
+    {
+      id: 'd1cf9432-6ed0-46be-88fb-308c8cf80c38',
+      title: 'Kona Ice Is Coming — Gateway Academy — Kona Ice will be at Gateway Academy on Tuesday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: '00420d3a-508e-4faf-ad20-c63978e1edd3',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-05-19T14:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      title: 'Lara is turning 7',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr-birthday-skin',
+      startAt: '2026-05-23T17:00:00.000Z',
+      status: null
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 10382
+}
+[db] listDashboardHistoryFallbackForUser shared-fast {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  count: 81,
+  sample: [
+    {
+      id: 'e5a4b041-01e9-451f-bfd8-057db69b6591',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: "Harper's 11th Birthday Party",
+      publicSlug: null,
+      createdAt: 2026-05-01T23:46:16.017Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-16T17:00:00.000Z'
+    },
+    {
+      id: '3785a331-ff73-480d-822c-26cf9c4dc3be',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Open House — Oceanview Drive, Miramar Beach, FL',
+      publicSlug: null,
+      createdAt: 2026-04-29T01:41:00.924Z,
+      ownership: 'invited',
+      invitedFromScan: true,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-open-house-skin',
+      status: null,
+      startAt: '2026-05-18T18:00:00.000Z'
+    },
+    {
+      id: 'd1cf9432-6ed0-46be-88fb-308c8cf80c38',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — Kona Ice will be at Gateway Academy on Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:51:32.197Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: '00420d3a-508e-4faf-ad20-c63978e1edd3',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:42:28.333Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'a523b113-1d57-4e90-9aa6-d06f4eb263b9',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy',
+      publicSlug: null,
+      createdAt: 2026-05-15T20:29:49.123Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: '3857b15c-095d-4647-b292-4d5bdfee51cf',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Kona Ice Is Coming — Gateway Academy — On Tuesday',
+      publicSlug: null,
+      createdAt: 2026-05-15T19:52:14.079Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr',
+      status: null,
+      startAt: '2026-05-19T14:30:00.000Z'
+    },
+    {
+      id: 'cc61d699-47d7-45c3-976e-7584cc377973',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Lara is turning 7',
+      publicSlug: null,
+      createdAt: 2026-05-09T20:55:24.146Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'concierge',
+      status: 'published',
+      startAt: '2026-05-23T17:00:00.000Z'
+    },
+    {
+      id: 'd284b7b1-d6d6-4aa6-90d0-2390b694a5fa',
+      userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+      title: 'Let’s Bowl! — Emma’s 7th Birthday',
+      publicSlug: null,
+      createdAt: 2026-05-06T20:37:59.408Z,
+      ownership: 'owned',
+      invitedFromScan: false,
+      shareStatus: null,
+      shared: null,
+      sharedOut: null,
+      createdVia: 'ocr-birthday-skin',
+      status: null,
+      startAt: '2026-05-23T17:00:00.000Z'
+    }
+  ]
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/event/kona-ice-is-coming-gateway-academy-kona-ice-will-be-at-gateway-academy-on-tuesday-2'
+}
