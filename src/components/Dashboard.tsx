@@ -29,6 +29,7 @@ import { normalizeThumbnailFocus, type ThumbnailFocus } from "@/lib/thumbnail-fo
 import { buildWeddingScanFlyerColorsFromImageColors } from "@/lib/wedding-scan";
 import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
 import { findFirstEmail, normalizeUrlValue } from "@/utils/contact";
+import { resolveEditHref } from "@/utils/event-edit-route";
 import { buildEventPath } from "@/utils/event-url";
 import { extractColorsFromImage } from "@/utils/image-colors";
 import {
@@ -255,6 +256,12 @@ export default function Dashboard({
     selectedEventHref: sidebarSelectedEventHref,
     selectedEventEditHref: sidebarSelectedEventEditHref,
     activeEventTab: sidebarActiveEventTab,
+    setSelectedEventId,
+    setSelectedEventTitle,
+    setSelectedEventHref,
+    setSelectedEventOwnerHref,
+    setSelectedEventEditHref,
+    setActiveEventTab,
     setEventContextSourcePage,
     clearEventContext,
   } = useSidebar();
@@ -886,14 +893,15 @@ export default function Dashboard({
     (input: EventFields) => {
       const timezone = input.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const startIso = parseStartToIso(input.start, timezone);
-      if (!startIso) return null;
       const hasExplicitTime = input.timeFound !== false;
-      const endIso = input.end
-        ? parseStartToIso(input.end, timezone) ||
-          new Date(new Date(startIso).getTime() + 90 * 60 * 1000).toISOString()
-        : hasExplicitTime
-          ? new Date(new Date(startIso).getTime() + 90 * 60 * 1000).toISOString()
-          : null;
+      const endIso = startIso
+        ? input.end
+          ? parseStartToIso(input.end, timezone) ||
+            new Date(new Date(startIso).getTime() + 90 * 60 * 1000).toISOString()
+          : hasExplicitTime
+            ? new Date(new Date(startIso).getTime() + 90 * 60 * 1000).toISOString()
+            : null
+        : null;
       const location = normalizeAddress(input.location || "");
       return {
         ...input,
@@ -951,7 +959,7 @@ export default function Dashboard({
 
         let res: Response;
         try {
-          res = await fetch("/api/ocr?fast=0", {
+          res = await fetch("/api/ocr?fast=0&skin=0", {
             method: "POST",
             body: form,
             signal: controller.signal,
@@ -1733,6 +1741,7 @@ export default function Dashboard({
               detail: {
                 id: eventId,
                 title: historyData?.title || payload.title,
+                public_slug: publicSlug || null,
                 created_at: historyData?.created_at || new Date().toISOString(),
                 start: ready.start,
                 category: normalizedOcrCategory || null,
@@ -1771,11 +1780,6 @@ export default function Dashboard({
       isSubmittingRef.current = true;
       try {
         const ready = buildSubmissionEvent(eventInput);
-        if (!ready) {
-          setError("Missing start time for event creation");
-          return false;
-        }
-
         const saveResult = await saveToEnvitefyHistory({
           eventInput,
           ready,
@@ -1803,31 +1807,72 @@ export default function Dashboard({
         const { eventId, ownership, savedTitle, publicSlug } = saveResult;
 
         const eventTitle = savedTitle || eventInput.title || "Event";
+        const ownerEventHref = buildEventPath(eventId, eventTitle, undefined, publicSlug);
         const eventHref = buildEventPath(
           eventId,
           eventTitle,
           ownership === "owned" ? { created: true, tab: "dashboard" } : { created: true },
           publicSlug,
         );
-        clearEventContext();
-        setEventContextSourcePage(ownership === "owned" ? "myEvents" : "invitedEvents");
+        if (ownership === "owned") {
+          const editHref = resolveEditHref(
+            eventId,
+            { sourceContext: { type: "upload" } },
+            eventTitle,
+          );
+          setSelectedEventId(eventId);
+          setSelectedEventTitle(eventTitle);
+          setSelectedEventHref(ownerEventHref);
+          setSelectedEventOwnerHref(ownerEventHref);
+          setSelectedEventEditHref(editHref);
+          setActiveEventTab("dashboard");
+          setEventContextSourcePage("myEvents");
+          if (typeof window !== "undefined") {
+            try {
+              window.sessionStorage.setItem(
+                "envitefy:created-event-context:v1",
+                JSON.stringify({
+                  id: eventId,
+                  title: eventTitle,
+                  href: ownerEventHref,
+                  ownerHref: ownerEventHref,
+                  editHref,
+                  eventHref,
+                  sourcePage: "myEvents",
+                  activeTab: "dashboard",
+                }),
+              );
+            } catch {}
+          }
+        } else {
+          clearEventContext();
+          setEventContextSourcePage("invitedEvents");
+        }
         reportClientLog({
           area: "snap-upload",
           stage: "event-navigation-start",
           scanAttemptId,
           details: { eventId, eventHref },
         });
-        if (typeof window !== "undefined") {
-          window.location.replace(eventHref);
-        } else {
-          router.replace(eventHref);
-        }
+        router.replace(eventHref);
         return true;
       } finally {
         isSubmittingRef.current = false;
       }
     },
-    [buildSubmissionEvent, router, saveToEnvitefyHistory],
+    [
+      buildSubmissionEvent,
+      clearEventContext,
+      router,
+      saveToEnvitefyHistory,
+      setActiveEventTab,
+      setEventContextSourcePage,
+      setSelectedEventEditHref,
+      setSelectedEventHref,
+      setSelectedEventId,
+      setSelectedEventOwnerHref,
+      setSelectedEventTitle,
+    ],
   );
 
   submitScannedEventRef.current = submitScannedEvent;
@@ -1987,7 +2032,7 @@ export default function Dashboard({
         </div>
       )}
       {scanStatus !== "idle" && (
-        <div className="fixed inset-y-0 left-0 right-0 z-[65] flex items-center justify-center bg-[#f4eeff]/95 p-4 md:bg-[#f4eeff]/78 md:backdrop-blur-md lg:left-[20rem]">
+        <div className="fixed left-0 right-0 top-0 z-[7000] flex h-[100svh] items-start justify-center overflow-y-auto bg-[#f4eeff]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+1rem)] md:inset-y-0 md:h-auto md:items-center md:p-4 md:bg-[#f4eeff]/78 md:backdrop-blur-md lg:left-[20rem]">
           <div role="status" aria-live="polite" className="w-full max-w-md">
             <SnapProcessingCard
               status={scanStatus}

@@ -128,6 +128,7 @@ export async function GET(req: Request) {
         return {
           id: row.id,
           title: row.title,
+          public_slug: row.public_slug || null,
           created_at: row.created_at || null,
           data,
         };

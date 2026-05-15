@@ -19,6 +19,9 @@ test("scanned invite skin computes readable colors for variable dark and light s
   assert.match(source, /backgroundColor: detailCardBackground/);
   assert.match(source, /color: detailCardTextColor/);
   assert.match(source, /style=\{\{ color: detailCardMutedTextColor \}\}/);
+  assert.match(source, /label="Venue"[\s\S]*?title=\{displayVenueName\}/);
+  assert.match(source, /label="Where"[\s\S]*?title=\{displayLocation\}/);
+  assert.doesNotMatch(source, /Event Location/);
   assert.match(source, /OcrFactCards/);
   assert.match(source, /filterRenderedOcrFacts/);
   assert.match(source, /detailLayout\?: "default" \| "wideDetails"/);
@@ -60,7 +63,9 @@ test("birthday skin computes readable colors for variable dark and light skins",
   assert.match(source, /color: planCardTextColor/);
   assert.match(source, /style=\{\{ color: planCardMutedTextColor \}\}/);
   assert.match(source, /const displayRsvpTitle = displayRsvpName\.replace[\s\S]*\|\| "Host"/);
-  assert.match(source, /title=\{displayVenueName \|\| "Party Location"\}/);
+  assert.match(source, /label="Venue"[\s\S]*?title=\{displayVenueName\}/);
+  assert.match(source, /label="Where"[\s\S]*?title=\{displayLocation\}/);
+  assert.doesNotMatch(source, /Party Location/);
   assert.match(source, /OcrFactCards/);
   assert.match(source, /filterRenderedOcrFacts/);
   assert.match(

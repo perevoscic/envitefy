@@ -37,12 +37,23 @@ test("/event launch validates explicit supported upload types", () => {
   assert.doesNotMatch(launchCards, /accept="image\/\*"/);
 });
 
-test("/event launch cards stack on mobile and hide helper copy on small screens", () => {
+test("/event launch buttons match the chat starter tile treatment", () => {
   const launchCards = readSource("src/app/event/SnapLaunchCards.tsx");
 
-  assert.match(launchCards, /className="mt-10 grid grid-cols-1 gap-3 pb-10 sm:grid-cols-2 sm:gap-6"/);
-  assert.match(launchCards, /min-h-\[180px\]/);
-  assert.match(launchCards, /text-sm text-white\/80 sm:block/);
-  assert.match(launchCards, /src="\/images\/snap\.webp"/);
-  assert.match(launchCards, /src="\/images\/upload\.webp"/);
+  assert.match(launchCards, /const snapLaunchTileClass =/);
+  assert.match(launchCards, /h-28 w-28/);
+  assert.match(launchCards, /sm:h-40 sm:w-40/);
+  assert.match(launchCards, /max-md:h-\[clamp\(6rem,17dvh,8rem\)\]/);
+  assert.match(launchCards, /bg-\[#eff1f8\]/);
+  assert.match(launchCards, /shadow-\[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff\]/);
+  assert.match(
+    launchCards,
+    /shadow-\[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff\]/,
+  );
+  assert.match(launchCards, /grid-cols-2 content-center justify-items-center/);
+  assert.match(launchCards, /max-md:gap-\[clamp\(0\.9rem,2\.2dvh,1\.4rem\)\]/);
+  assert.match(launchCards, /<Camera/);
+  assert.match(launchCards, /<Upload/);
+  assert.doesNotMatch(launchCards, /src="\/images\/snap\.webp"/);
+  assert.doesNotMatch(launchCards, /src="\/images\/upload\.webp"/);
 });

@@ -134,7 +134,12 @@ export default function ScannedWeddingInviteView({
   const couple = useMemo(() => parseWeddingCoupleNames(title), [title]);
   const displayVenueName = venueName?.trim() || "";
   const displayLocation = location?.trim() || "Location TBD";
-  const directionsLocation = [displayVenueName, displayLocation].filter(Boolean).join(", ");
+  const directionsLocation = [
+    displayVenueName,
+    displayLocation !== "Location TBD" ? displayLocation : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
   const displayDate = dateLabel?.trim() || "Date TBD";
   const displayTime = timeLabel?.trim() || "";
   const hasRsvp = Boolean(rsvpName || rsvpUrl);
@@ -154,6 +159,8 @@ export default function ScannedWeddingInviteView({
       scheduleRows.map((row) => row.time),
       registryCards.map((card) => card.url),
       registryCards.map((card) => card.host),
+      displayVenueName,
+      displayLocation,
       rsvpName,
       rsvpPhone,
       rsvpEmail,
@@ -344,14 +351,24 @@ export default function ScannedWeddingInviteView({
                   />
                 ) : null}
               </div>
-              <DetailItem
-                icon={<MapPin className="h-5 w-5" />}
-                label="Where"
-                title={displayVenueName || "The Venue"}
-                subtitle={displayVenueName ? undefined : displayLocation}
-                colors={colors}
-                darkMode={isNoirModern}
-              />
+              <div className="space-y-10">
+                {displayVenueName ? (
+                  <DetailItem
+                    icon={<MapPin className="h-5 w-5" />}
+                    label="Venue"
+                    title={displayVenueName}
+                    colors={colors}
+                    darkMode={isNoirModern}
+                  />
+                ) : null}
+                <DetailItem
+                  icon={<MapPin className="h-5 w-5" />}
+                  label="Where"
+                  title={displayLocation}
+                  colors={colors}
+                  darkMode={isNoirModern}
+                />
+              </div>
             </div>
 
             {timelineRows.length > 0 ? (

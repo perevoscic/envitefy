@@ -27,7 +27,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     await requireAdminSession();
     return (
       <div className="min-h-[100dvh] bg-slate-50 text-slate-950">
-        <div className="mx-auto w-full max-w-[1600px] px-3 py-3 sm:px-5 lg:px-6 lg:py-5">
+        <div className="mx-auto w-full max-w-[1600px] px-3 pb-3 pt-24 sm:px-5 sm:pb-5 sm:pt-28 lg:px-6 lg:pb-6">
           {children}
         </div>
       </div>

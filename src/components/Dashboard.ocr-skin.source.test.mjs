@@ -10,6 +10,7 @@ function readSource(relPath) {
 test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence", () => {
   const source = readSource("src/components/Dashboard.tsx");
 
+  assert.match(source, /fetch\("\/api\/ocr\?fast=0&skin=0"/);
   assert.match(source, /ocrSkin\?: OcrSkinSelection \| null;/);
   assert.match(source, /thumbnailFocus\?: ThumbnailFocus \| null;/);
   assert.match(source, /openHouse\?: Record<string, unknown> \| null;/);
@@ -100,18 +101,47 @@ test("dashboard OCR save returns owned uploads to My Events owner workspace", ()
     source,
     /ownership === "owned" \? \{ created: true, tab: "dashboard" \} : \{ created: true \}/,
   );
-  assert.match(
-    source,
-    /setEventContextSourcePage\(ownership === "owned" \? "myEvents" : "invitedEvents"\);/,
-  );
+  assert.match(source, /setEventContextSourcePage\("myEvents"\);/);
+  assert.match(source, /setEventContextSourcePage\("invitedEvents"\);/);
 });
 
-test("dashboard snap upload hard-navigates to the created event after save", () => {
+test("dashboard scan save seeds owned upload selection before event navigation", () => {
+  const source = readSource("src/components/Dashboard.tsx");
+
+  assert.match(source, /setSelectedEventId,/);
+  assert.match(source, /setSelectedEventTitle,/);
+  assert.match(source, /setSelectedEventHref,/);
+  assert.match(source, /setSelectedEventOwnerHref,/);
+  assert.match(source, /setSelectedEventEditHref,/);
+  assert.match(source, /setActiveEventTab,/);
+  assert.match(source, /const ownerEventHref = buildEventPath\(eventId, eventTitle, undefined, publicSlug\);/);
+  assert.match(source, /if \(ownership === "owned"\) \{/);
+  assert.match(source, /setSelectedEventId\(eventId\);/);
+  assert.match(source, /setSelectedEventTitle\(eventTitle\);/);
+  assert.match(source, /setSelectedEventHref\(ownerEventHref\);/);
+  assert.match(source, /setSelectedEventOwnerHref\(ownerEventHref\);/);
+  assert.match(source, /setActiveEventTab\("dashboard"\);/);
+  assert.match(source, /setEventContextSourcePage\("myEvents"\);/);
+  assert.match(source, /window\.sessionStorage\.setItem\(/);
+  assert.match(source, /"envitefy:created-event-context:v1"/);
+  assert.match(source, /public_slug: publicSlug \|\| null/);
+});
+
+test("dashboard snap upload navigates in-app to the created event after save", () => {
   const source = readSource("src/components/Dashboard.tsx");
 
   assert.match(source, /const eventHref = buildEventPath\(/);
   assert.match(source, /stage: "event-navigation-start"/);
-  assert.match(source, /window\.location\.replace\(eventHref\);/);
   assert.match(source, /router\.replace\(eventHref\);/);
+  assert.doesNotMatch(source, /window\.location\.replace\(eventHref\);/);
   assert.doesNotMatch(source, /router\.push\(eventHref\);/);
+});
+
+test("dashboard snap upload can save an event page without an OCR date", () => {
+  const source = readSource("src/components/Dashboard.tsx");
+
+  assert.doesNotMatch(source, /setError\("Missing start time for event creation"\)/);
+  assert.match(source, /const startIso = parseStartToIso\(input\.start, timezone\);/);
+  assert.match(source, /const endIso = startIso/);
+  assert.match(source, /start: startIso,/);
 });

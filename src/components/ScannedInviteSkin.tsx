@@ -308,7 +308,12 @@ export default function ScannedInviteSkin({
         : "";
   const displayRsvpName = String(rsvpName || "").trim();
   const displayRsvpTitle = displayRsvpName.replace(/^hosted\s+by\s+/i, "").trim() || "Host";
-  const directionsLocation = [displayVenueName, displayLocation].filter(Boolean).join(", ");
+  const directionsLocation = [
+    displayVenueName,
+    displayLocation !== "Location TBD" ? displayLocation : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
   const directionsHref = buildMapsHref(directionsLocation || location);
   const directRsvpHref = buildRsvpHref({
     rsvpUrl,
@@ -356,6 +361,7 @@ export default function ScannedInviteSkin({
     displayTitle,
     displayDate,
     displayTime,
+    displayVenueName,
     displayLocation,
     displayDetailCopy,
     displayEntryFee,
@@ -537,12 +543,20 @@ export default function ScannedInviteSkin({
                   />
                 ) : null}
 
+                {displayVenueName ? (
+                  <InfoBlock
+                    icon={<MapPin className="h-7 w-7" />}
+                    swatchColor={detailIconSwatchColor}
+                    label="Venue"
+                    title={displayVenueName}
+                  />
+                ) : null}
+
                 <InfoBlock
                   icon={<MapPin className="h-7 w-7" />}
                   swatchColor={detailIconSwatchColor}
                   label="Where"
-                  title={displayVenueName || "Event Location"}
-                  subtitle={displayVenueName ? undefined : displayLocation}
+                  title={displayLocation}
                 />
 
                 {rsvpName || rsvpPhone || rsvpEmail ? (

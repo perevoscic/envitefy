@@ -1,10 +1,21 @@
 "use client";
 
+import { Camera, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type DragEvent, type KeyboardEvent, useCallback, useRef, useState } from "react";
 import { savePendingSnapUpload } from "@/lib/pending-snap-upload";
+import { cn } from "@/lib/utils";
 import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
 import { getUploadAcceptAttribute, validateClientUploadFile } from "@/utils/media-upload-client";
+
+const snapLaunchTileClass =
+  "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl bg-[#eff1f8] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8b0bc] focus-visible:ring-offset-4 focus-visible:ring-offset-[#eff1f8] disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(6rem,17dvh,8rem)] max-md:w-[clamp(6rem,17dvh,8rem)]";
+
+const snapLaunchIconClass =
+  "h-8 w-8 transition-transform duration-300 sm:h-10 sm:w-10 max-h-[620px]:max-md:h-7 max-h-[620px]:max-md:w-7";
+
+const snapLaunchLabelClass =
+  "text-center text-[10px] font-bold uppercase leading-[1.35] tracking-widest transition-colors sm:text-xs";
 
 export default function SnapLaunchCards() {
   const router = useRouter();
@@ -68,7 +79,7 @@ export default function SnapLaunchCards() {
   }, []);
 
   const handleUploadDrop = useCallback(
-    (event: DragEvent<HTMLDivElement>) => {
+    (event: DragEvent<HTMLButtonElement>) => {
       event.preventDefault();
       setIsDragging(false);
       void routeSelectedFile(event.dataTransfer.files?.[0] ?? null);
@@ -77,14 +88,14 @@ export default function SnapLaunchCards() {
   );
 
   const handleUploadDragOver = useCallback(
-    (event: DragEvent<HTMLDivElement>) => {
+    (event: DragEvent<HTMLButtonElement>) => {
       event.preventDefault();
       if (!isDragging) setIsDragging(true);
     },
     [isDragging],
   );
 
-  const handleUploadDragLeave = useCallback((event: DragEvent<HTMLDivElement>) => {
+  const handleUploadDragLeave = useCallback((event: DragEvent<HTMLButtonElement>) => {
     event.preventDefault();
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
       setIsDragging(false);
@@ -92,7 +103,7 @@ export default function SnapLaunchCards() {
   }, []);
 
   const handleUploadKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLDivElement>) => {
+    (event: KeyboardEvent<HTMLButtonElement>) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         openUploadPicker();
@@ -103,81 +114,70 @@ export default function SnapLaunchCards() {
 
   return (
     <>
-      <div className="mt-10 grid grid-cols-1 gap-3 pb-10 sm:grid-cols-2 sm:gap-6">
+      <div
+        className="mx-auto mt-10 grid w-full max-w-[22rem] grid-cols-2 content-center justify-items-center gap-8 pb-10 text-center sm:max-w-[25rem] sm:gap-12 max-md:mt-8 max-md:gap-[clamp(0.9rem,2.2dvh,1.4rem)]"
+        role="group"
+        aria-label="Choose snap or upload"
+      >
         <button
           type="button"
           onClick={openCameraPicker}
-          className="group relative min-w-0 overflow-hidden rounded-[1.5rem] border border-white/50 bg-[#221b38] p-4 text-left shadow-[0_18px_48px_rgba(99,102,241,0.18)] transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-[0_24px_56px_rgba(99,102,241,0.24)] sm:rounded-[2rem] sm:p-8"
+          className={cn(
+            snapLaunchTileClass,
+            "text-[#9a9daa] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] hover:text-[#7f8290] active:scale-95",
+          )}
+          aria-label="Snap flyer"
         >
-          <div className="absolute inset-0">
-            <img
-              src="/images/snap.webp"
-              alt=""
-              aria-hidden="true"
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(24,14,42,0.08),rgba(21,15,36,0.2)_34%,rgba(14,12,28,0.56))]" />
-          </div>
-
-          <div className="relative flex min-h-[180px] flex-col justify-end sm:min-h-[235px]">
-            <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/78">
-              Camera
-            </span>
-            <span className="mt-2 text-base font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-xl">
+          <Camera
+            className={cn(snapLaunchIconClass, "group-hover:scale-105")}
+            strokeWidth={2}
+            aria-hidden="true"
+          />
+          <span className="relative mt-2 flex max-w-[6.75rem] justify-center sm:mt-4 sm:max-w-[8.5rem] max-h-[620px]:max-md:mt-1.5">
+            <span className={snapLaunchLabelClass}>
               Snap flyer
             </span>
-            <span className="mt-2 hidden text-sm text-white/80 sm:block">
-              Open the camera and capture the invitation in one shot.
-            </span>
-          </div>
+          </span>
         </button>
 
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           onClick={openUploadPicker}
           onKeyDown={handleUploadKeyDown}
           onDrop={handleUploadDrop}
           onDragOver={handleUploadDragOver}
           onDragLeave={handleUploadDragLeave}
-          className={`group relative min-w-0 cursor-pointer overflow-hidden rounded-[1.5rem] border bg-[#221b38] p-4 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 sm:rounded-[2rem] sm:p-8 ${
+          className={cn(
+            snapLaunchTileClass,
             isDragging
-              ? "border-indigo-300 shadow-[0_24px_56px_rgba(99,102,241,0.22)]"
-              : "border-white/50 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-[0_18px_48px_rgba(99,102,241,0.18)]"
-          }`}
+              ? "scale-95 text-[#5c5be5] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff]"
+              : "text-[#9a9daa] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] hover:text-[#7f8290] active:scale-95",
+          )}
+          aria-label="Upload file"
         >
-          <div className="absolute inset-0">
-            <img
-              src="/images/upload.webp"
-              alt=""
-              aria-hidden="true"
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div
-              className={`absolute inset-0 ${
-                isDragging
-                  ? "bg-[linear-gradient(180deg,rgba(49,46,129,0.12),rgba(49,46,129,0.2)_34%,rgba(30,27,75,0.44))]"
-                  : "bg-[linear-gradient(180deg,rgba(24,14,42,0.08),rgba(21,15,36,0.18)_34%,rgba(14,12,28,0.48))]"
-              }`}
-            />
-          </div>
-
-          <div className="relative flex min-h-[180px] flex-col justify-end sm:min-h-[235px]">
-            <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/78">
-              From device
-            </span>
-            <span className="mt-2 text-base font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-xl">
+          <Upload
+            className={cn(
+              snapLaunchIconClass,
+              isDragging ? "scale-110" : "group-hover:scale-105",
+            )}
+            strokeWidth={2}
+            aria-hidden="true"
+          />
+          <span className="relative mt-2 flex max-w-[6.75rem] justify-center sm:mt-4 sm:max-w-[8.5rem] max-h-[620px]:max-md:mt-1.5">
+            <span className={snapLaunchLabelClass}>
               Upload file
             </span>
-            <span className="mt-2 hidden text-sm text-white/80 sm:block">
-              {isDragging
-                ? "Drop it here to start scanning."
-                : "A photo, screenshot, or PDF from your phone or computer."}
-            </span>
-            {error ? <span className="mt-3 text-sm font-medium text-rose-200">{error}</span> : null}
-          </div>
-        </div>
+            {isDragging ? (
+              <span className="absolute -bottom-1 left-0 right-0 h-[2px] rounded-full bg-current" />
+            ) : null}
+          </span>
+        </button>
       </div>
+      {error ? (
+        <p className="mx-auto -mt-4 mb-8 max-w-md text-center text-sm font-medium text-red-600">
+          {error}
+        </p>
+      ) : null}
 
       <input
         ref={cameraInputRef}

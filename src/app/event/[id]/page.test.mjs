@@ -55,10 +55,11 @@ test("event route branches football discovery/template events into the football 
   assert.doesNotMatch(source, /BirthdayTemplateView/);
   assert.match(source, /import \{ cleanGraduationVenueName \} from "@\/lib\/ocr\/text";/);
   assert.match(source, /const rawVenueText =/);
-  assert.match(
-    source,
-    /categoryNormalized === "graduations"\s*\?\s*cleanGraduationVenueName\(rawVenueText\)/,
-  );
+  assert.match(source, /const isGraduationCategory =/);
+  assert.match(source, /categoryNormalized === "graduations" \|\| categoryNormalized === "graduation"/);
+  assert.match(source, /isGraduationCategory \? cleanGraduationVenueName\(rawVenueText\)/);
+  assert.match(source, /if \(isGraduationCategory\) \{/);
+  assert.match(source, /<GraduationSkin/);
   assert.match(
     source,
     /const isBirthdaySkinEvent = categoryNormalized === "birthdays" && isOcrEvent;/,

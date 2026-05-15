@@ -1,6 +1,7 @@
 export const DEFAULT_OCR_MODEL = "gpt-5.5";
 export const OPENAI_TIMEOUT_MS = 25_000;
 export const OCR_TOTAL_BUDGET_MS = 35_000;
+export const OCR_SKIN_TIMEOUT_MS = 3_500;
 
 export function clampTimeoutMs(ms: number, maxMs: number): number {
   if (!Number.isFinite(ms) || ms <= 0) return 0;

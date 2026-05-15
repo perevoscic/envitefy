@@ -15,6 +15,8 @@ import type {
 
 export function llmEventToRawText(payload: any): string {
   const parts: string[] = [];
+  if (typeof payload?.category === "string" && payload.category.trim())
+    parts.push(payload.category.trim());
   if (typeof payload?.title === "string" && payload.title.trim()) parts.push(payload.title.trim());
   if (typeof payload?.start === "string" && payload.start.trim()) parts.push(payload.start.trim());
   if (typeof payload?.end === "string" && payload.end.trim()) parts.push(payload.end.trim());
@@ -110,6 +112,29 @@ function getOpenAiKey(): string | null {
   return process.env.OPENAI_API_KEY || null;
 }
 
+function supportsCustomTemperature(model: string): boolean {
+  return !/^gpt-5(?:[.-]|$)/i.test(model.trim());
+}
+
+function buildChatPayload({
+  model,
+  temperature,
+  responseFormat,
+  messages,
+}: {
+  model: string;
+  temperature: number;
+  responseFormat?: Record<string, unknown>;
+  messages: unknown[];
+}) {
+  return {
+    model,
+    ...(supportsCustomTemperature(model) ? { temperature } : {}),
+    ...(responseFormat ? { response_format: responseFormat } : {}),
+    messages,
+  };
+}
+
 export async function llmExtractEventFromImage(
   imageBytes: Buffer,
   mime: string,
@@ -139,21 +164,23 @@ export async function llmExtractEventFromImage(
       {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          temperature: 0.1,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: prompt.system },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: prompt.user },
-                { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
-              ],
-            },
-          ],
-        }),
+        body: JSON.stringify(
+          buildChatPayload({
+            model,
+            temperature: 0.1,
+            responseFormat: { type: "json_object" },
+            messages: [
+              { role: "system", content: prompt.system },
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: prompt.user },
+                  { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
+                ],
+              },
+            ],
+          }),
+        ),
       },
       timeoutMs,
     );
@@ -211,21 +238,23 @@ export async function llmExtractGymnasticsScheduleFromImage(
       {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          temperature: 0.1,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: prompt.system },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: prompt.user },
-                { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
-              ],
-            },
-          ],
-        }),
+        body: JSON.stringify(
+          buildChatPayload({
+            model,
+            temperature: 0.1,
+            responseFormat: { type: "json_object" },
+            messages: [
+              { role: "system", content: prompt.system },
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: prompt.user },
+                  { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
+                ],
+              },
+            ],
+          }),
+        ),
       },
       timeoutMs,
     );
@@ -294,21 +323,23 @@ export async function llmExtractPracticeScheduleFromImage(
       {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          temperature: 0.1,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: prompt.system },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: prompt.user },
-                { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
-              ],
-            },
-          ],
-        }),
+        body: JSON.stringify(
+          buildChatPayload({
+            model,
+            temperature: 0.1,
+            responseFormat: { type: "json_object" },
+            messages: [
+              { role: "system", content: prompt.system },
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: prompt.user },
+                  { type: "input_image", image_url: { url: `data:${mime};base64,${base64}` } },
+                ],
+              },
+            ],
+          }),
+        ),
       },
       timeoutMs,
     );
@@ -343,14 +374,16 @@ export async function llmRewriteBirthdayDescription(
       {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          temperature: 0.2,
-          messages: [
-            { role: "system", content: prompt.system },
-            { role: "user", content: prompt.user },
-          ],
-        }),
+        body: JSON.stringify(
+          buildChatPayload({
+            model,
+            temperature: 0.2,
+            messages: [
+              { role: "system", content: prompt.system },
+              { role: "user", content: prompt.user },
+            ],
+          }),
+        ),
       },
       timeoutMs,
     );
@@ -381,15 +414,17 @@ export async function llmRewriteWedding(
       {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          temperature: 0.2,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: prompt.system },
-            { role: "user", content: prompt.user },
-          ],
-        }),
+        body: JSON.stringify(
+          buildChatPayload({
+            model,
+            temperature: 0.2,
+            responseFormat: { type: "json_object" },
+            messages: [
+              { role: "system", content: prompt.system },
+              { role: "user", content: prompt.user },
+            ],
+          }),
+        ),
       },
       timeoutMs,
     );
@@ -433,14 +468,16 @@ export async function llmRewriteSmartDescription(
       {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          temperature: 0.2,
-          messages: [
-            { role: "system", content: prompt.system },
-            { role: "user", content: prompt.user },
-          ],
-        }),
+        body: JSON.stringify(
+          buildChatPayload({
+            model,
+            temperature: 0.2,
+            messages: [
+              { role: "system", content: prompt.system },
+              { role: "user", content: prompt.user },
+            ],
+          }),
+        ),
       },
       timeoutMs,
     );

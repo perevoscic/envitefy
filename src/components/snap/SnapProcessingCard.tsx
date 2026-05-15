@@ -1,6 +1,6 @@
 "use client";
 import { Calendar, Clock, MapPin, Upload, User, WandSparkles, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 export type SnapProcessingStatus = "idle" | "uploading" | "scanning";
 export type SnapPreviewKind = "image" | "pdf" | "file" | null;
@@ -30,9 +30,9 @@ export function SnapProcessingCard({
 
   return (
     <div className="w-full max-w-md">
-      <div className="relative overflow-hidden rounded-3xl border border-[#dfd6fb] bg-gradient-to-br from-[#ffffff] via-[#f8f4ff] to-[#f2ecff] p-6 text-[#2f2550] shadow-[0_24px_60px_rgba(84,61,140,0.24)]">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#b7a5ff]/20 blur-2xl" />
-        <div className="pointer-events-none absolute -left-14 -bottom-14 h-36 w-36 rounded-full bg-[#88d2ff]/15 blur-3xl" />
+      <div className="snap-processing-card relative overflow-hidden rounded-3xl border border-[#dfd6fb] bg-gradient-to-br from-[#ffffff] via-[#f8f4ff] to-[#f2ecff] p-6 text-[#2f2550] shadow-[0_24px_60px_rgba(84,61,140,0.24)]">
+        <div className="snap-processing-glow pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#b7a5ff]/20 blur-2xl" />
+        <div className="snap-processing-glow pointer-events-none absolute -left-14 -bottom-14 h-36 w-36 rounded-full bg-[#88d2ff]/15 blur-3xl" />
         <div className="mb-4 text-center">
           <p className="text-sm font-medium text-[#625089]">
             Upload your flyer, we&apos;ll extract the details.
@@ -45,7 +45,7 @@ export function SnapProcessingCard({
               <img
                 src={previewUrl}
                 alt="Flyer preview"
-                className={`h-full w-full object-cover transition-all duration-700 ${
+                className={`snap-processing-preview h-full w-full object-cover transition-all duration-700 ${
                   status === "scanning"
                     ? "brightness-[0.65] saturate-[0.9]"
                     : ""
@@ -65,6 +65,7 @@ export function SnapProcessingCard({
 
             {status === "scanning" && (
               <>
+                <div className="snap-processing-dim pointer-events-none absolute inset-0 z-10 hidden bg-[#1f1844]/35" />
                 <div className="animate-scan-line absolute left-0 top-0 z-20 h-1 w-full bg-gradient-to-r from-transparent via-[#8f75de] to-transparent shadow-[0_0_14px_rgba(143,117,222,0.85)]" />
                 <DataNode
                   label="Event Date"
@@ -199,6 +200,33 @@ export function SnapProcessingCard({
           animation: scanning-bar 1.5s infinite linear;
           will-change: transform;
           transform: translateZ(0);
+        }
+        @media (max-width: 767px) {
+          .snap-processing-card {
+            border-radius: 1.25rem;
+            box-shadow: 0 12px 32px rgba(84, 61, 140, 0.16);
+          }
+          .snap-processing-glow {
+            display: none;
+          }
+          .snap-processing-preview {
+            filter: none !important;
+          }
+          .snap-processing-dim {
+            display: block;
+          }
+          .animate-float-node {
+            animation: none;
+            box-shadow: 0 4px 12px rgba(102, 77, 171, 0.14);
+            transform: translateZ(0);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-scan-line,
+          .animate-float-node,
+          .animate-scanning-bar {
+            animation: none;
+          }
         }
       `}</style>
     </div>

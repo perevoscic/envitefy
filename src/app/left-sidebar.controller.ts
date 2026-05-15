@@ -40,6 +40,24 @@ import {
 import type { EventContextTab } from "./sidebar-context";
 
 const MOBILE_SIDEBAR_SCROLL_LOCK_CLASS = "sidebar-mobile-open";
+const CREATED_EVENT_CONTEXT_STORAGE_KEY = "envitefy:created-event-context:v1";
+
+type InferredEventListItem = {
+  source: EventListPage;
+  item: GroupedEventItem;
+  bucket: "upcoming" | "past";
+};
+
+type PendingCreatedEventContext = {
+  id: string;
+  title: string;
+  href: string;
+  ownerHref: string;
+  editHref: string;
+  eventHref: string;
+  sourcePage: EventListPage;
+  activeTab: EventContextTab;
+};
 
 type LeftSidebarControllerArgs = {
   session: any;
@@ -186,6 +204,68 @@ async function removeInvitedEventRequest(eventId: string, data: unknown): Promis
   if (!response.ok) {
     throw new Error("Failed to remove invited event");
   }
+}
+
+function readPathnameFromHref(href: string): string {
+  try {
+    return new URL(href, "https://envitefy.local").pathname;
+  } catch {
+    return href.split("?")[0] || "";
+  }
+}
+
+function readPendingCreatedEventContext(): PendingCreatedEventContext | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(CREATED_EVENT_CONTEXT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const id = typeof parsed.id === "string" ? parsed.id.trim() : "";
+    const title = typeof parsed.title === "string" ? parsed.title.trim() : "";
+    const href = typeof parsed.href === "string" ? parsed.href.trim() : "";
+    const ownerHref = typeof parsed.ownerHref === "string" ? parsed.ownerHref.trim() : "";
+    const editHref = typeof parsed.editHref === "string" ? parsed.editHref.trim() : "";
+    const eventHref = typeof parsed.eventHref === "string" ? parsed.eventHref.trim() : "";
+    const sourcePage = parsed.sourcePage === "myEvents" ? "myEvents" : null;
+    const activeTab = parsed.activeTab === "dashboard" ? "dashboard" : null;
+    if (!id || !sourcePage || !activeTab) return null;
+    return {
+      id,
+      title: title || "Untitled event",
+      href: href || ownerHref || eventHref || `/event/${encodeURIComponent(id)}`,
+      ownerHref: ownerHref || href || eventHref || `/event/${encodeURIComponent(id)}`,
+      editHref,
+      eventHref,
+      sourcePage,
+      activeTab,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function clearPendingCreatedEventContext() {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(CREATED_EVENT_CONTEXT_STORAGE_KEY);
+  } catch {}
+}
+
+function pendingCreatedEventMatchesPath(
+  pending: PendingCreatedEventContext,
+  currentPath: string | null,
+): boolean {
+  const routePath = String(currentPath || "").trim();
+  if (!routePath) return false;
+  const paths = [pending.href, pending.ownerHref, pending.eventHref]
+    .map(readPathnameFromHref)
+    .filter(Boolean);
+  return (
+    paths.includes(routePath) ||
+    routePath === `/event/${pending.id}` ||
+    routePath === `/smart-signup-form/${pending.id}` ||
+    routePath.endsWith(`-${pending.id}`)
+  );
 }
 
 export function useLeftSidebarController({
@@ -931,14 +1011,9 @@ export function useLeftSidebarController({
   );
   const openAdminPage = useCallback(() => {
     clearEventContext();
-    router.push("/admin");
     setSidebarPage("admin");
-    if (isDesktop) {
-      setIsCollapsed(false);
-    } else {
-      collapseSidebarOnTouch();
-    }
-  }, [clearEventContext, collapseSidebarOnTouch, isDesktop, router, setIsCollapsed]);
+    setIsCollapsed(false);
+  }, [clearEventContext, setIsCollapsed, setSidebarPage]);
 
   const isCompactNavActive = useCallback(
     (id: CompactNavItemId) => {
@@ -1074,8 +1149,8 @@ export function useLeftSidebarController({
     [invitedEventsGrouped.past, invitedEventsGrouped.upcoming],
   );
 
-  const inferEventListSourceFromPath = useCallback(
-    (currentPath: string | null): EventListPage | null => {
+  const findEventListItemFromPath = useCallback(
+    (currentPath: string | null): InferredEventListItem | null => {
       const routePath = String(currentPath || "").trim();
       if (
         !routePath ||
@@ -1084,7 +1159,7 @@ export function useLeftSidebarController({
         return null;
       }
 
-      const matchesItem = (item: GroupedEventItem) => {
+      const matchesItem = (item: GroupedEventItem): boolean => {
         const itemPaths = [item.href, item.publicHref, item.ownerHref]
           .map((href) => String(href || "").trim())
           .filter(Boolean)
@@ -1105,17 +1180,28 @@ export function useLeftSidebarController({
         );
       };
 
-      const invitedItems = [
-        ...invitedEventsGrouped.upcoming.flatMap((section) => section.items),
-        ...invitedEventsGrouped.past.flatMap((section) => section.items),
-      ];
-      if (invitedItems.some(matchesItem)) return "invitedEvents";
+      const findInSections = (
+        source: EventListPage,
+        bucket: "upcoming" | "past",
+        sections: Array<{ items: GroupedEventItem[] }>,
+      ): InferredEventListItem | null => {
+        for (const section of sections) {
+          for (const item of section.items) {
+            if (matchesItem(item)) return { source, item, bucket };
+          }
+        }
+        return null;
+      };
 
-      const ownedItems = [
-        ...myEventsGrouped.upcoming.flatMap((section) => section.items),
-        ...myEventsGrouped.past.flatMap((section) => section.items),
-      ];
-      if (ownedItems.some(matchesItem)) return "myEvents";
+      const invitedMatch =
+        findInSections("invitedEvents", "upcoming", invitedEventsGrouped.upcoming) ||
+        findInSections("invitedEvents", "past", invitedEventsGrouped.past);
+      if (invitedMatch) return invitedMatch;
+
+      const ownedMatch =
+        findInSections("myEvents", "upcoming", myEventsGrouped.upcoming) ||
+        findInSections("myEvents", "past", myEventsGrouped.past);
+      if (ownedMatch) return ownedMatch;
 
       return null;
     },
@@ -1125,6 +1211,12 @@ export function useLeftSidebarController({
       myEventsGrouped.past,
       myEventsGrouped.upcoming,
     ],
+  );
+
+  const inferEventListSourceFromPath = useCallback(
+    (currentPath: string | null): EventListPage | null =>
+      findEventListItemFromPath(currentPath)?.source || null,
+    [findEventListItemFromPath],
   );
   const isCreateEntryActive =
     isCreateRouteActive || sidebarPage === "createEvent" || sidebarPage === "createEventOther";
@@ -1139,6 +1231,63 @@ export function useLeftSidebarController({
       setEventSidebarMode("guest");
     }
   }, [eventContextSourcePage, inferEventListSourceFromPath, pathname, setEventContextSourcePage]);
+
+  useEffect(() => {
+    const createdHint = String(searchParams?.get("created") || "")
+      .trim()
+      .toLowerCase();
+    if (createdHint !== "true" && createdHint !== "1") return;
+    const inferred = findEventListItemFromPath(pathname);
+    if (inferred && inferred.source === "myEvents") {
+      const { item, bucket } = inferred;
+      const { row } = item;
+      const title = row.title || item.title || "Untitled event";
+      const publicHref = item.publicHref || item.href;
+      const ownerHref = item.ownerHref || buildEventPath(row.id, title);
+
+      setSelectedEventId(row.id);
+      setSelectedEventTitle(title);
+      setSelectedEventHref(publicHref);
+      setSelectedEventOwnerHref(ownerHref);
+      setSelectedEventEditHref(resolveEditHref(row.id, row.data, title));
+      setActiveEventTab("dashboard");
+      setEventSidebarMode("owner");
+      setEventContextSourcePage("myEvents");
+      setSidebarPage("myEvents");
+      if (bucket === "past") {
+        setShowPastMyEvents(true);
+      }
+      clearPendingCreatedEventContext();
+      return;
+    }
+
+    const pending = readPendingCreatedEventContext();
+    if (!pending || !pendingCreatedEventMatchesPath(pending, pathname)) return;
+    setSelectedEventId(pending.id);
+    setSelectedEventTitle(pending.title);
+    setSelectedEventHref(pending.href);
+    setSelectedEventOwnerHref(pending.ownerHref);
+    setSelectedEventEditHref(pending.editHref || resolveEditHref(pending.id, null, pending.title));
+    setActiveEventTab("dashboard");
+    setEventSidebarMode("owner");
+    setEventContextSourcePage("myEvents");
+    setSidebarPage("myEvents");
+    clearPendingCreatedEventContext();
+  }, [
+    buildEventPath,
+    findEventListItemFromPath,
+    pathname,
+    searchParams,
+    setActiveEventTab,
+    setEventContextSourcePage,
+    setSelectedEventEditHref,
+    setSelectedEventHref,
+    setSelectedEventId,
+    setSelectedEventOwnerHref,
+    setSelectedEventTitle,
+    setSidebarPage,
+    setShowPastMyEvents,
+  ]);
 
   useEffect(() => {
     if (!selectedEventId) return;

@@ -2066,10 +2066,19 @@ function EditorialFeatureLayout({
                 value={formattedTime || "All day"}
                 accent={theme.colors.secondary}
               />
+              {venueText ? (
+                <EditorialStatCard
+                  icon={<MapPin className="h-7 w-7" />}
+                  label="Venue"
+                  value={venueText}
+                  accent={theme.colors.secondary}
+                  className="col-span-2 sm:col-span-1"
+                />
+              ) : null}
               <EditorialStatCard
                 icon={<MapPin className="h-7 w-7" />}
-                label="Venue"
-                value={venueText || locationText || "Location TBD"}
+                label="Where"
+                value={locationText || "Location TBD"}
                 accent={theme.colors.secondary}
                 className="col-span-2 sm:col-span-1"
               />
@@ -2232,7 +2241,7 @@ function EditorialFeatureLayout({
               </div>
               <div className="space-y-4 p-7">
                 <h3 className="text-xl font-black" style={{ fontFamily: theme.fonts.headline }}>
-                  {venueText || "Party Location"}
+                  {venueText || "Where"}
                 </h3>
                 <p className="text-sm leading-6 text-slate-600">
                   {locationText || "Location details will be shared soon."}

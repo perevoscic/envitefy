@@ -8,7 +8,6 @@ import {
   FileImage,
   Gift,
   Globe,
-  HelpCircle,
   IdCard,
   Loader2,
   MessageCircle,
@@ -16,6 +15,7 @@ import {
   Paperclip,
   Sparkles,
   Trophy,
+  Upload,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -292,13 +292,6 @@ const PRODUCT_OPTIONS: ProductOption[] = [
     prompt: "Create an event page",
     icon: Globe,
   },
-  {
-    label: "RSVP Page",
-    output: "rsvp_page",
-    description: "A focused RSVP link for collecting guest responses.",
-    prompt: "Create an RSVP page",
-    icon: MessageCircle,
-  },
 ];
 
 function chatProductNavItem(option: ProductOption): BottomNavItem {
@@ -338,7 +331,7 @@ const OUTPUT_LABELS: Record<RequestedOutput, string> = {
   welcome_sign: "Welcome sign",
 };
 
-const EMPTY_ASSISTANT_PROMPT = "Start with an invite, or create from scratch.";
+const EMPTY_ASSISTANT_PROMPT = "What are we celebrating?";
 
 type ConciergeChatClientProps = {
   userInitials?: string | null;
@@ -556,7 +549,7 @@ const CHAT_STARTER_PROMPTS = [
   "Wedding",
   "Baby Shower",
   "Game Day",
-  "Custom Invite",
+  "Upload",
 ];
 
 const PREVIEW_CATEGORY_BY_EVENT_TYPE: Partial<Record<ConciergeEventType, string>> = {
@@ -616,16 +609,18 @@ const CELEBRATION_STARTER_TILES = [
     color: "text-emerald-600",
   },
   {
-    label: "None of the above",
+    label: "Upload",
     prompt: CHAT_STARTER_PROMPTS[5],
-    icon: HelpCircle,
+    icon: Upload,
     color: "text-zinc-600",
+    action: "upload",
   },
 ] as const satisfies readonly {
   label: string;
   prompt: string;
   icon: StarterIconComponent;
   color: string;
+  action?: "upload";
 }[];
 
 type CelebrationStarterTile = (typeof CELEBRATION_STARTER_TILES)[number];
@@ -2208,6 +2203,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   function handleStarterPrompt(tile: CelebrationStarterTile) {
     if (isBusy) return;
     setError(null);
+    if ("action" in tile && tile.action === "upload") {
+      setSelectedStarterCategory(null);
+      openSnapUploadPicker();
+      return;
+    }
     const isSelected = selectedStarterCategory?.label === tile.label;
     setSelectedStarterCategory(isSelected ? null : tile);
     updateComposerSelection(isSelected ? null : tile.prompt, selectedProductOutput);
@@ -2954,7 +2954,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                         animate={{ opacity: 1, y: 0 }}
                         className="mx-auto max-w-3xl text-2xl font-medium leading-tight tracking-normal text-[#2d1b36] sm:text-4xl lg:text-5xl max-h-[700px]:max-md:text-[1.45rem]"
                       >
-                        Start with an invite, or create from scratch
+                        What are we celebrating?
                       </motion.h1>
                       <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base max-md:mt-2 max-md:text-xs max-md:leading-5 max-h-[620px]:max-md:hidden">
                         Choose a category, pick a product, or describe the event in your own words.

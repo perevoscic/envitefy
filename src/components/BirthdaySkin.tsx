@@ -270,6 +270,7 @@ export default function BirthdaySkin({
       displayName,
       displayDate,
       displayTime,
+      displayVenueName,
       displayLocation,
       displayPlanCopy,
       displayAttire,
@@ -426,11 +427,20 @@ export default function BirthdaySkin({
                   />
                 ) : null}
 
+                {displayVenueName ? (
+                  <InfoBlock
+                    icon={<MapPin className="h-7 w-7" />}
+                    swatchColor={detailIconSwatchColor}
+                    label="Venue"
+                    title={displayVenueName}
+                  />
+                ) : null}
+
                 <InfoBlock
                   icon={<MapPin className="h-7 w-7" />}
                   swatchColor={detailIconSwatchColor}
-                  label="The Spot"
-                  title={displayVenueName || "Party Location"}
+                  label="Where"
+                  title={displayLocation}
                 />
 
                 {rsvpName || rsvpPhone || rsvpEmail ? (

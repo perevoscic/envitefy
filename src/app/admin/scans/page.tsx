@@ -1,6 +1,7 @@
 import {
   AdminBarList,
   AdminMetricCard,
+  AdminMobileRecordList,
   AdminPageHeader,
   AdminPanel,
 } from "@/components/admin/AdminPrimitives";
@@ -34,7 +35,7 @@ export default async function AdminScansPage() {
         <AdminMetricCard label="Snaps" value={scans.summary.snaps.toLocaleString()} />
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
         <AdminPanel title="Scan Categories">
           <AdminBarList
             rows={scans.categories.map((category) => ({
@@ -49,7 +50,21 @@ export default async function AdminScansPage() {
           title="Recent Scans"
           description="Rows inferred from createdVia/sourceContext scan markers."
         >
-          <div className="overflow-x-auto">
+          <AdminMobileRecordList
+            rows={scans.recentScans.map((scan) => ({
+              key: scan.id,
+              title: scan.title,
+              fields: [
+                { label: "Category", value: scan.category },
+                { label: "Source", value: scan.sourceType || "-" },
+                { label: "Created via", value: scan.createdVia || "-" },
+                { label: "Date", value: formatDate(scan.createdAt) },
+              ],
+            }))}
+            emptyTitle="No recent scans"
+            emptyDescription="No scan rows are available."
+          />
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.12em] text-slate-500">

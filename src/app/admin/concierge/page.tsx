@@ -1,6 +1,7 @@
 import {
   AdminBarList,
   AdminMetricCard,
+  AdminMobileRecordList,
   AdminPageHeader,
   AdminPanel,
 } from "@/components/admin/AdminPrimitives";
@@ -34,7 +35,7 @@ export default async function AdminConciergePage() {
         <AdminMetricCard label="Messages" value={concierge.summary.messages.toLocaleString()} />
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
         <AdminPanel title="Session Statuses">
           <AdminBarList
             rows={concierge.statuses.map((status) => ({
@@ -47,34 +48,54 @@ export default async function AdminConciergePage() {
 
         <AdminPanel title="Recent Sessions">
           {concierge.available ? (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[680px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.12em] text-slate-500">
-                    <th className="py-2 pr-3 font-semibold">Session</th>
-                    <th className="px-3 py-2 font-semibold">Owner</th>
-                    <th className="px-3 py-2 font-semibold">Status</th>
-                    <th className="px-3 py-2 font-semibold">Created</th>
-                    <th className="py-2 pl-3 font-semibold">Updated</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {concierge.recentSessions.map((session) => (
-                    <tr key={session.id}>
-                      <td className="max-w-[220px] truncate py-3 pr-3 font-mono text-xs text-slate-700">
-                        {session.id}
-                      </td>
-                      <td className="max-w-[220px] truncate px-3 py-3 text-slate-700">
-                        {session.ownerEmail || "-"}
-                      </td>
-                      <td className="px-3 py-3 text-slate-700">{session.status}</td>
-                      <td className="px-3 py-3 text-slate-700">{formatDate(session.createdAt)}</td>
-                      <td className="py-3 pl-3 text-slate-700">{formatDate(session.updatedAt)}</td>
+            <>
+              <AdminMobileRecordList
+                rows={concierge.recentSessions.map((session) => ({
+                  key: session.id,
+                  title: session.id,
+                  subtitle: session.ownerEmail || "No owner email",
+                  fields: [
+                    { label: "Status", value: session.status },
+                    { label: "Created", value: formatDate(session.createdAt) },
+                    { label: "Updated", value: formatDate(session.updatedAt) },
+                  ],
+                }))}
+                emptyTitle="No recent sessions"
+                emptyDescription="No creation sessions are available."
+              />
+              <div className="hidden overflow-x-auto md:block">
+                <table className="w-full min-w-[680px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.12em] text-slate-500">
+                      <th className="py-2 pr-3 font-semibold">Session</th>
+                      <th className="px-3 py-2 font-semibold">Owner</th>
+                      <th className="px-3 py-2 font-semibold">Status</th>
+                      <th className="px-3 py-2 font-semibold">Created</th>
+                      <th className="py-2 pl-3 font-semibold">Updated</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {concierge.recentSessions.map((session) => (
+                      <tr key={session.id}>
+                        <td className="max-w-[220px] truncate py-3 pr-3 font-mono text-xs text-slate-700">
+                          {session.id}
+                        </td>
+                        <td className="max-w-[220px] truncate px-3 py-3 text-slate-700">
+                          {session.ownerEmail || "-"}
+                        </td>
+                        <td className="px-3 py-3 text-slate-700">{session.status}</td>
+                        <td className="px-3 py-3 text-slate-700">
+                          {formatDate(session.createdAt)}
+                        </td>
+                        <td className="py-3 pl-3 text-slate-700">
+                          {formatDate(session.updatedAt)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : (
             <p className="text-sm text-slate-600">
               Creation session tables are not available in this database.

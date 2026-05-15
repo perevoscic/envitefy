@@ -1,6 +1,7 @@
 import {
   AdminBarList,
   AdminMetricCard,
+  AdminMobileRecordList,
   AdminPageHeader,
   AdminPanel,
 } from "@/components/admin/AdminPrimitives";
@@ -37,7 +38,7 @@ export default async function AdminEventsPage() {
         <AdminMetricCard label="RSVPs" value={events.summary.rsvps.toLocaleString()} />
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
         <AdminPanel title="Top Categories">
           <AdminBarList
             rows={events.categories.map((category) => ({
@@ -53,7 +54,27 @@ export default async function AdminEventsPage() {
           title="Recent Events"
           description="Latest rows with owner, category, and public slug context."
         >
-          <div className="overflow-x-auto">
+          <AdminMobileRecordList
+            rows={events.recentEvents.map((event) => ({
+              key: event.id,
+              title: event.title,
+              subtitle: event.ownerEmail || "No owner email",
+              fields: [
+                { label: "Category", value: event.category },
+                { label: "Shares", value: event.shares.toLocaleString() },
+                { label: "RSVPs", value: event.rsvps.toLocaleString() },
+                { label: "Created", value: formatDate(event.createdAt) },
+                {
+                  label: "Public slug",
+                  value: event.publicSlug || "-",
+                  className: "font-mono text-xs",
+                },
+              ],
+            }))}
+            emptyTitle="No recent events"
+            emptyDescription="No event rows are available."
+          />
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[820px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.12em] text-slate-500">

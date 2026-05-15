@@ -189,7 +189,7 @@ test("buildGroupedEventLists keeps concierge product hrefs but opens owner works
   assert.equal(byId.get("legacy-live-1")?.openMode, "dashboard");
 });
 
-test("buildGroupedEventLists opens owner workspaces for created events but previews uploaded scans", async () => {
+test("buildGroupedEventLists opens owner workspaces for created and owned uploaded events", async () => {
   const { buildGroupedEventLists } = await loadModelModule();
 
   const grouped = buildGroupedEventLists({
@@ -262,10 +262,10 @@ test("buildGroupedEventLists opens owner workspaces for created events but previ
   assert.equal(byId.get("manual-rsvp")?.hasOwnerRsvp, true);
   assert.equal(byId.get("manual-no-guests")?.openMode, "dashboard");
   assert.equal(byId.get("manual-no-guests")?.hasOwnerRsvp, false);
-  assert.equal(byId.get("uploaded-rsvp")?.openMode, "preview");
+  assert.equal(byId.get("uploaded-rsvp")?.openMode, "dashboard");
   assert.equal(byId.get("uploaded-rsvp")?.hasOwnerRsvp, false);
-  assert.equal(byId.get("snapped-rsvp")?.openMode, "preview");
-  assert.equal(byId.get("stored-media-rsvp")?.openMode, "preview");
+  assert.equal(byId.get("snapped-rsvp")?.openMode, "dashboard");
+  assert.equal(byId.get("stored-media-rsvp")?.openMode, "dashboard");
 });
 
 test("left sidebar opens non-RSVP owner events on the design workspace tab", () => {
@@ -280,4 +280,30 @@ test("left sidebar opens non-RSVP owner events on the design workspace tab", () 
   );
   assert.match(controllerSource, /setActiveEventTab\(initialOwnerTab\);/);
   assert.match(controllerSource, /buildEventOwnerHref\(ownerHref, row\.id, initialOwnerTab\)/);
+});
+
+test("left sidebar reopens My Events and selects newly created upload routes", () => {
+  const controllerSource = fs.readFileSync(
+    path.join(repoRoot, "src/app/left-sidebar.controller.ts"),
+    "utf8"
+  );
+
+  assert.match(controllerSource, /type InferredEventListItem =/);
+  assert.match(controllerSource, /const CREATED_EVENT_CONTEXT_STORAGE_KEY = "envitefy:created-event-context:v1";/);
+  assert.match(controllerSource, /function readPendingCreatedEventContext\(\)/);
+  assert.match(controllerSource, /function pendingCreatedEventMatchesPath\(/);
+  assert.match(controllerSource, /const findEventListItemFromPath = useCallback/);
+  assert.match(controllerSource, /const createdHint = String\(searchParams\?\.get\("created"\) \|\| ""\)/);
+  assert.match(controllerSource, /if \(createdHint !== "true" && createdHint !== "1"\) return;/);
+  assert.match(controllerSource, /if \(inferred && inferred\.source === "myEvents"\) \{/);
+  assert.match(controllerSource, /const pending = readPendingCreatedEventContext\(\);/);
+  assert.match(controllerSource, /if \(!pending \|\| !pendingCreatedEventMatchesPath\(pending, pathname\)\) return;/);
+  assert.match(controllerSource, /setSelectedEventId\(row\.id\);/);
+  assert.match(controllerSource, /setSelectedEventId\(pending\.id\);/);
+  assert.match(controllerSource, /setSelectedEventTitle\(title\);/);
+  assert.match(controllerSource, /setSelectedEventHref\(publicHref\);/);
+  assert.match(controllerSource, /setSelectedEventOwnerHref\(ownerHref\);/);
+  assert.match(controllerSource, /setActiveEventTab\("dashboard"\);/);
+  assert.match(controllerSource, /setEventContextSourcePage\("myEvents"\);/);
+  assert.match(controllerSource, /setSidebarPage\("myEvents"\);/);
 });

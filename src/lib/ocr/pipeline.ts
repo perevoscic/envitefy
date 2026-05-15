@@ -7,6 +7,7 @@ import { corsJson } from "@/lib/cors";
 import { incrementUserScanCounters } from "@/lib/db";
 import {
   clampTimeoutMs,
+  OCR_SKIN_TIMEOUT_MS,
   OCR_TOTAL_BUDGET_MS,
   OPENAI_TIMEOUT_MS,
   remainingBudgetMs,
@@ -94,6 +95,27 @@ function hasExplicitTimeText(text: string): boolean {
     /\b(?:noon|midnight)\b/i.test(text) ||
     Boolean(detectSpelledTime(text))
   );
+}
+
+async function withFallbackTimeout<T>(
+  work: Promise<T>,
+  timeoutMs: number,
+  fallback: T,
+): Promise<{ timedOut: boolean; value: T }> {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<{ timedOut: boolean; value: T }>((resolve) => {
+    timeout = setTimeout(() => resolve({ timedOut: true, value: fallback }), timeoutMs);
+  });
+  try {
+    return await Promise.race([
+      work
+        .then((value) => ({ timedOut: false, value }))
+        .catch(() => ({ timedOut: false, value: fallback })),
+      timeoutPromise,
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 /** Party headline from title when combined with birthday (e.g. "Name's 9th Birthday — Pool Bash"). */
@@ -261,6 +283,7 @@ export async function handleOcrRequest(request: Request) {
       fallbackOcrMs: 0,
       rewriteMs: 0,
       scheduleMs: 0,
+      skinMs: 0,
     };
 
     const url = new URL(request.url);
@@ -273,10 +296,18 @@ export async function handleOcrRequest(request: Request) {
     const includeTimings =
       url.searchParams.get("timing") === "1" || url.searchParams.get("debug") === "1";
     const rewritesRequested = url.searchParams.get("rewrite") === "1";
+    const skinParam = String(url.searchParams.get("skin") || "").trim().toLowerCase();
+    const enableSkinInference = skinParam !== "0" && skinParam !== "false";
     const enableRewrites =
       rewritesRequested || !fastMode || process.env.OCR_ENABLE_REWRITES === "1";
     const allowDeepScheduleExtraction = !fastMode || forceLLM || gymOnly;
     const ocrModel = resolveOcrModel(fastMode);
+    const configuredSkinTimeoutMs = Number(process.env.OCR_SKIN_TIMEOUT_MS);
+    const skinTimeoutMs =
+      Number.isFinite(configuredSkinTimeoutMs) && configuredSkinTimeoutMs >= 1_000
+        ? Math.min(configuredSkinTimeoutMs, 10_000)
+        : OCR_SKIN_TIMEOUT_MS;
+    let skinInferenceTimedOut = false;
 
     const formData = await request.formData();
     scanAttemptId = String(formData.get("scanAttemptId") || "").trim() || null;
@@ -1239,7 +1270,19 @@ export async function handleOcrRequest(request: Request) {
       extractHostedByFromFlyerText(description) ||
       null;
     const registryContext = {
-      category: detectCategory(raw),
+      category: detectCategory(
+        [
+          raw,
+          llmImage?.category,
+          finalTitle,
+          description,
+          finalVenue,
+          finalAddress,
+          hostNameFinal,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      ),
       title: finalTitle,
       description,
       ocrText: raw,
@@ -1292,6 +1335,7 @@ export async function handleOcrRequest(request: Request) {
           : null,
       registryUrl,
       registryProvider,
+      category: null as string | null,
     };
 
     const tz = fieldsGuess.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -1587,7 +1631,18 @@ export async function handleOcrRequest(request: Request) {
       if (schedLabel) fieldsGuess.description = schedLabel;
     }
 
-    let category: string | null = detectCategory(raw);
+    const categoryDetectionText = [
+      raw,
+      llmImage?.category,
+      fieldsGuess.title,
+      fieldsGuess.description,
+      fieldsGuess.venue,
+      fieldsGuess.location,
+      fieldsGuess.hostName,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    let category: string | null = detectCategory(categoryDetectionText);
     if (practiceSchedule.detected) category = "Sport Events";
     const normalizedOpenHouse = await uploadOpenHouseVisualAssets({
       imageBytes: colorBuffer,
@@ -1625,6 +1680,7 @@ export async function handleOcrRequest(request: Request) {
     if (isPickleballOcrEvent || isFootballOcrEvent || isBasketballOcrEvent) {
       category = "Sport Events";
     }
+    fieldsGuess.category = category;
     fieldsGuess.registryUrl = normalizeRegistryUrlForDetectedEvent({
       category,
       title: fieldsGuess.title || finalTitle,
@@ -1655,8 +1711,11 @@ export async function handleOcrRequest(request: Request) {
           ? "basketball"
           : category;
     const ocrSkinSportKind = isPickleballOcrEvent ? "pickleball" : null;
-    const ocrSkin = isOcrInviteCategory(ocrSkinCategory)
-      ? await inferOcrSkinSelection({
+    let ocrSkin: Awaited<ReturnType<typeof inferOcrSkinSelection>> = null;
+    if (enableSkinInference && isOcrInviteCategory(ocrSkinCategory)) {
+      const skinStartedAt = Date.now();
+      const skinResult = await withFallbackTimeout(
+        inferOcrSkinSelection({
           category: ocrSkinCategory || "general",
           sportKind: ocrSkinSportKind,
           imageBytes: colorBuffer,
@@ -1676,8 +1735,14 @@ export async function handleOcrRequest(request: Request) {
                   themeId: birthdayTemplateHint.themeId,
                 }
               : null,
-        })
-      : null;
+        }),
+        skinTimeoutMs,
+        null,
+      );
+      skinInferenceTimedOut = skinResult.timedOut;
+      ocrSkin = skinResult.value;
+      stage.skinMs = Date.now() - skinStartedAt;
+    }
     const thumbnailFocus = normalizeThumbnailFocus(llmImage?.thumbnailFocus);
 
     void (async () => {
@@ -1698,8 +1763,12 @@ export async function handleOcrRequest(request: Request) {
       fallbackOcrMs: stage.fallbackOcrMs,
       rewriteMs: stage.rewriteMs,
       scheduleMs: stage.scheduleMs,
+      skinMs: stage.skinMs,
       fastMode,
       enableRewrites,
+      enableSkinInference,
+      skinInferenceTimedOut,
+      skinTimeoutMs,
       turboMode,
       model: ocrModel,
       ocrSource,

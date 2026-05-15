@@ -1,5 +1,6 @@
 import {
   AdminMetricCard,
+  AdminMobileRecordList,
   AdminPageHeader,
   AdminPanel,
   AdminStatusBadge,
@@ -36,11 +37,7 @@ export default async function AdminAnalyticsPage() {
       <AdminPanel
         title="Google Analytics"
         description={ga4Description}
-        action={
-          <AdminStatusBadge tone={ga4StatusTone}>
-            {ga4StatusLabel}
-          </AdminStatusBadge>
-        }
+        action={<AdminStatusBadge tone={ga4StatusTone}>{ga4StatusLabel}</AdminStatusBadge>}
       >
         <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-lg border border-slate-200 p-4">
@@ -181,7 +178,24 @@ export default async function AdminAnalyticsPage() {
       </section>
 
       <AdminPanel title="Tracking Plan">
-        <div className="overflow-x-auto">
+        <AdminMobileRecordList
+          rows={analytics.trackingGaps.map((gap) => ({
+            key: gap.eventName,
+            title: gap.eventName,
+            badge: (
+              <AdminStatusBadge tone={gap.status === "missing" ? "warning" : "neutral"}>
+                {gap.status}
+              </AdminStatusBadge>
+            ),
+            fields: [
+              { label: "Owner", value: gap.owner },
+              { label: "Description", value: gap.description, wide: true },
+            ],
+          }))}
+          emptyTitle="No tracking plan rows"
+          emptyDescription="No tracking gaps are configured."
+        />
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.12em] text-slate-500">

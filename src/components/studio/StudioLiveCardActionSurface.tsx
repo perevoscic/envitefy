@@ -766,7 +766,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     ) : null}
                   </div>
                   <h4 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
-                    {props.activeTab === "location" ? "Event Location" : null}
+                    {props.activeTab === "location" ? "Where" : null}
                     {props.activeTab === "calendar" ? "Add to Calendar" : null}
                     {props.activeTab === "registry" ? "Gift Registry" : null}
                     {props.activeTab === "logo" ? "Logo" : null}

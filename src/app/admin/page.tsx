@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   AdminBarList,
   AdminMetricCard,
+  AdminMobileRecordList,
   AdminPageHeader,
   AdminPanel,
   AdminSparkline,
@@ -48,14 +49,6 @@ export default async function AdminDashboardPage() {
         eyebrow="Operations"
         title="Admin Dashboard"
         description="A first-party view of Envitefy growth, event creation, share activity, AI Concierge usage, and tracking readiness."
-        action={
-          <Link
-            href="/admin/analytics"
-            className="inline-flex min-h-11 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm hover:border-violet-300 hover:text-violet-800"
-          >
-            Review tracking
-          </Link>
-        }
       />
 
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -97,8 +90,8 @@ export default async function AdminDashboardPage() {
         />
       </section>
 
-      <div className="grid gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-5">
+      <div className="grid min-w-0 gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 space-y-5">
           <AdminPanel
             title="Platform Funnel"
             description="Current first-party counts. View, share-click, registry-click, and attribution events are documented as missing tracking below."
@@ -131,7 +124,22 @@ export default async function AdminDashboardPage() {
             title="Event Category Performance"
             description="Event, scan, share, and RSVP mix by stored event category."
           >
-            <div className="-mx-1 overflow-x-auto px-1 sm:mx-0 sm:px-0">
+            <AdminMobileRecordList
+              rows={overview.categoryPerformance.map((category) => ({
+                key: category.category,
+                title: category.label,
+                fields: [
+                  { label: "Events", value: formatNumber(category.events) },
+                  { label: "Scans", value: formatNumber(category.scans) },
+                  { label: "Shares", value: formatNumber(category.shares) },
+                  { label: "RSVPs", value: formatNumber(category.rsvps) },
+                  { label: "Latest", value: formatDate(category.lastCreatedAt), wide: true },
+                ],
+              }))}
+              emptyTitle="No category rows yet"
+              emptyDescription="No stored event category rows are available."
+            />
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[680px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.12em] text-slate-500">
@@ -165,12 +173,9 @@ export default async function AdminDashboardPage() {
             title="Growth Insights"
             description="Seven-day first-party movement compared with the previous seven days."
           >
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 md:gap-4">
               {overview.growthInsights.map((insight) => (
-                <div
-                  key={insight.label}
-                  className="rounded-lg border border-slate-200 p-3 sm:p-4"
-                >
+                <div key={insight.label} className="rounded-lg border border-slate-200 p-3 sm:p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{insight.label}</p>
@@ -194,7 +199,7 @@ export default async function AdminDashboardPage() {
           </AdminPanel>
         </div>
 
-        <aside className="space-y-5">
+        <aside className="min-w-0 space-y-5">
           <AdminPanel
             title="GA4 Snapshot"
             description={
@@ -212,7 +217,7 @@ export default async function AdminDashboardPage() {
           >
             {overview.ga4Report.status === "available" ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-2 text-sm sm:gap-3">
+                <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 sm:gap-3">
                   <div className="rounded-md bg-slate-50 p-3">
                     <p className="text-slate-500">Active users 30d</p>
                     <p className="mt-1 text-lg font-semibold text-slate-950">
@@ -274,7 +279,7 @@ export default async function AdminDashboardPage() {
                 value: status.count,
               }))}
             />
-            <div className="mt-4 grid grid-cols-2 gap-2 text-sm sm:gap-3">
+            <div className="mt-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 sm:gap-3">
               <div className="rounded-md bg-slate-50 p-3">
                 <p className="text-slate-500">Sessions</p>
                 <p className="mt-1 text-lg font-semibold text-slate-950">
@@ -299,7 +304,9 @@ export default async function AdminDashboardPage() {
                   className="block rounded-md border border-slate-200 p-3 hover:border-violet-300 hover:bg-violet-50/40"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="min-w-0 pr-1 text-sm font-semibold text-slate-900">{item.title}</p>
+                    <p className="min-w-0 pr-1 text-sm font-semibold text-slate-900">
+                      {item.title}
+                    </p>
                     <AdminStatusBadge tone={item.tone}>{item.tone}</AdminStatusBadge>
                   </div>
                   <p className="mt-1 text-xs leading-5 text-slate-600">{item.detail}</p>

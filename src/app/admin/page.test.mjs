@@ -55,15 +55,16 @@ test("admin compatibility redirects stay wired", () => {
   assert.match(marketingAssets, /redirect\("\/admin\/marketing-images"\)/);
 });
 
-test("main sidebar admin entry opens the dashboard and keeps the admin submenu", () => {
+test("main sidebar admin entry opens the admin chooser before loading a section", () => {
   const model = readSource("src/app/left-sidebar.model.ts");
   const controller = readSource("src/app/left-sidebar.controller.ts");
   const sidebar = readSource("src/app/left-sidebar.tsx");
 
   assert.match(model, /"admin"/);
   assert.match(controller, /openAdminPage/);
-  assert.match(controller, /router\.push\("\/admin"\)/);
+  assert.doesNotMatch(controller, /router\.push\("\/admin"\)/);
   assert.match(controller, /setSidebarPage\("admin"\)/);
+  assert.match(controller, /setIsCollapsed\(false\)/);
   assert.match(controller, /pathname\?\.startsWith\("\/admin"\)/);
   assert.match(controller, /lastAdminRouteSyncPathRef/);
   assert.match(sidebar, /function AdminNavigationPanel/);

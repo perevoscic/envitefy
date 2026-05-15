@@ -1614,7 +1614,7 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
     draft.missingFields[0] === "eventPurpose"
   ) {
     if (!draft.requestedOutputs.length) {
-      return "Start with an invite, or create from scratch.\nUpload from the main menu, choose a category, or describe the event.";
+      return "What are we celebrating?\nUpload from the main menu, choose a category, or describe the event.";
     }
     return outputQuestion(draft.requestedOutputs[0] || "live_card");
   }

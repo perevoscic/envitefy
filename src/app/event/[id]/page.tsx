@@ -1181,10 +1181,11 @@ export default async function EventPage({
   const categoryNormalized = categoryRaw.toLowerCase();
   const isBabyShowerCategory =
     categoryNormalized === "baby showers" || categoryNormalized === "baby shower";
+  const isGraduationCategory =
+    categoryNormalized === "graduations" || categoryNormalized === "graduation";
   const locationText = typeof data?.location === "string" ? (data.location as string) : "";
   const rawVenueText = typeof data?.venue === "string" ? (data.venue as string) : "";
-  const venueText =
-    categoryNormalized === "graduations" ? cleanGraduationVenueName(rawVenueText) : rawVenueText;
+  const venueText = isGraduationCategory ? cleanGraduationVenueName(rawVenueText) : rawVenueText;
   const hasMapLocation = Boolean(venueText?.trim() || locationText?.trim());
   const registryCopy = getRegistrySectionCopyForCategory(categoryRaw);
   const registriesAllowed = registryCopy.allowsLinks;
@@ -2729,7 +2730,7 @@ export default async function EventPage({
       );
     }
 
-    if (categoryNormalized === "graduations") {
+    if (isGraduationCategory) {
       return renderWithEventPageBackground(
         <GraduationSkin
           title={title}

@@ -935,8 +935,7 @@ export function buildGroupedEventLists(args: {
       rawShareStatus === "accepted" ? "accepted" : rawShareStatus === "pending" ? "pending" : null;
     const isSnappedOrUploaded =
       Boolean(data?.invitedFromScan) || isSidebarScannedOrUploadedEvent(data);
-    const openMode: GroupedEventItem["openMode"] =
-      isInvited || isSnappedOrUploaded ? "preview" : "dashboard";
+    const openMode: GroupedEventItem["openMode"] = isInvited ? "preview" : "dashboard";
 
     const categoryColor = defaultCategoryColor(category);
     const palette = colorClasses(isInvited ? "slate" : categoryColor);

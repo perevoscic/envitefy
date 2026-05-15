@@ -18,6 +18,7 @@ export const EVENT_CACHE_RESET_EVENT = "envitefy:events:reset";
 type HistoryRow = {
   id: string;
   title: string;
+  public_slug?: string | null;
   created_at?: string | null;
   data?: any;
 };
@@ -391,6 +392,12 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
         const nextItem: HistoryRow = {
           id: String(detail.id),
           title: String(detail.title || "Event"),
+          public_slug:
+            typeof detail.public_slug === "string" && detail.public_slug.trim()
+              ? detail.public_slug.trim()
+              : typeof (detailData as Record<string, unknown>).publicSlug === "string"
+                ? String((detailData as Record<string, unknown>).publicSlug)
+                : null,
           created_at: String(detail.created_at || new Date().toISOString()),
           data: {
             ...detailData,
