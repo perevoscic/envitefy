@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
+
+const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Envitefy",
@@ -11,14 +14,7 @@ export const metadata: Metadata = {
       "This policy summarizes how Envitefy handles account, event, RSVP, and sign-up information.",
     url: "https://envitefy.com/privacy",
     siteName: "Envitefy",
-    images: [
-      {
-        url: "https://envitefy.com/og-default.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Envitefy preview",
-      },
-    ],
+    images: [buildSiteOgImage(siteOgImageUrl)],
     type: "website",
   },
 };

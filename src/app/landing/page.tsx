@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import { landingFaqItems } from "./faq-data";
 import LandingExperience from "./LandingExperience";
+
+const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 export const metadata: Metadata = {
   title: "Envitefy | AI Concierge for Invites, RSVP & Event Pages",
@@ -27,14 +30,7 @@ export const metadata: Metadata = {
       "Create a shareable event hub with live cards, RSVP tracking, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, snap, flyer, invite, PDF, schedule, or design idea.",
     url: "https://envitefy.com/",
     siteName: "Envitefy",
-    images: [
-      {
-        url: "https://envitefy.com/og-default.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Envitefy event pages and invitations preview",
-      },
-    ],
+    images: [buildSiteOgImage(siteOgImageUrl, "Envitefy event pages and invitations preview")],
     type: "website",
   },
   twitter: {
@@ -42,7 +38,7 @@ export const metadata: Metadata = {
     title: "Envitefy | AI Concierge for Invites, RSVP & Event Pages",
     description:
       "Create a shareable event hub with live cards, RSVP tracking, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, snap, flyer, invite, PDF, schedule, or design idea.",
-    images: ["https://envitefy.com/og-default.jpg"],
+    images: [siteOgImageUrl],
   },
 };
 

@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import GymnasticsLanding from "@/components/gymnastics-landing/GymnasticsLanding";
+import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import { themeColorPalette } from "@/lib/theme-color";
+
+const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 export const metadata: Metadata = {
   title: "Envitefy Gymnastics | Premium meet pages for families and coaches",
@@ -13,6 +16,7 @@ export const metadata: Metadata = {
       "Premium gymnastics meet pages with editorial layouts, live updates, hotel details, and mobile-first presentation.",
     url: "https://envitefy.com/gymnastics",
     siteName: "Envitefy",
+    images: [buildSiteOgImage(siteOgImageUrl, "Envitefy Gymnastics preview")],
     type: "website",
   },
   twitter: {
@@ -20,6 +24,7 @@ export const metadata: Metadata = {
     title: "Envitefy Gymnastics",
     description:
       "Premium gymnastics meet pages with editorial layouts, live updates, hotel details, and mobile-first presentation.",
+    images: [siteOgImageUrl],
   },
   alternates: { canonical: "/gymnastics" },
 };

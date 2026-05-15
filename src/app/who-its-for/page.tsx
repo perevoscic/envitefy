@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
+import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import UseCases from "../landing/sections/UseCases";
+
+const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 export const metadata: Metadata = {
   title: "Who Envitefy is for",
@@ -12,14 +15,7 @@ export const metadata: Metadata = {
     description: "See how parents, gymnastics families, coaches, and meet organizers use Envitefy.",
     url: "https://envitefy.com/who-its-for",
     siteName: "Envitefy",
-    images: [
-      {
-        url: "https://envitefy.com/og-default.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Envitefy preview",
-      },
-    ],
+    images: [buildSiteOgImage(siteOgImageUrl)],
     type: "website",
   },
   alternates: { canonical: "/who-its-for" },

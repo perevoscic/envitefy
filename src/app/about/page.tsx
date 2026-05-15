@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
+
+const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 export const metadata: Metadata = {
   title: "About — Envitefy",
@@ -12,14 +15,7 @@ export const metadata: Metadata = {
       "Envitefy is a professional event platform for event creation, public event pages, RSVP and sign-up flows, and calendar-ready coordination.",
     url: "https://envitefy.com/about",
     siteName: "Envitefy",
-    images: [
-      {
-        url: "https://envitefy.com/og-default.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Envitefy preview",
-      },
-    ],
+    images: [buildSiteOgImage(siteOgImageUrl)],
     type: "website",
   },
   alternates: { canonical: "/about" },

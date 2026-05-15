@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
+import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import { guidePages } from "./guide-content";
 
 const SITE_URL = "https://envitefy.com";
+const siteOgImageUrl = getRandomSiteOgImageUrl(SITE_URL);
 
 export const metadata: Metadata = {
   title: "Envitefy Guides | Live cards, uploads, RSVPs, and meet pages",
@@ -16,14 +18,7 @@ export const metadata: Metadata = {
       "Guides for live cards, Snap uploads, RSVP event pages, guest sharing, and gymnastics meet pages.",
     url: `${SITE_URL}/guides`,
     siteName: "Envitefy",
-    images: [
-      {
-        url: `${SITE_URL}/og-default.jpg`,
-        width: 1200,
-        height: 630,
-        alt: "Envitefy preview",
-      },
-    ],
+    images: [buildSiteOgImage(siteOgImageUrl)],
     type: "website",
   },
 };

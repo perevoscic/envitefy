@@ -6,13 +6,14 @@ import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { getEventHistoryById } from "@/lib/db";
 import { buildLandingShowcasePath, resolveLandingShowcaseSnapshot } from "@/lib/landing-showcase";
+import { getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import StudioMarketingPage from "./StudioMarketingPage";
 import StudioWorkspace from "./StudioWorkspace";
 
 const DEFAULT_TITLE = "Envitefy Studio | Live Cards, Invitation Design & Event Pages";
 const DEFAULT_DESCRIPTION =
   "Explore Envitefy Studio to shape live cards, invitation designs, and hosted event pages with RSVP, registry, schedule, and sharing actions.";
-const DEFAULT_IMAGE = "https://envitefy.com/og-default.jpg";
+const DEFAULT_IMAGE = getRandomSiteOgImageUrl();
 
 function readSearchParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) {

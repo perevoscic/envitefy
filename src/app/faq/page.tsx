@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import FAQ from "../landing/sections/FAQ";
+
+const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 export const metadata: Metadata = {
   title: "Envitefy FAQ",
@@ -10,14 +13,7 @@ export const metadata: Metadata = {
     description: "Find answers about Snap, Gymnastics, calendars, and existing accounts.",
     url: "https://envitefy.com/faq",
     siteName: "Envitefy",
-    images: [
-      {
-        url: "https://envitefy.com/og-default.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Envitefy preview",
-      },
-    ],
+    images: [buildSiteOgImage(siteOgImageUrl)],
     type: "website",
   },
   alternates: { canonical: "/faq" },

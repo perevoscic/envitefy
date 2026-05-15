@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
+
+const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 export const metadata: Metadata = {
   title: "Contact Envitefy",
@@ -9,14 +12,7 @@ export const metadata: Metadata = {
     description: "Questions, feedback, or partnership ideas? Send us a note.",
     url: "https://envitefy.com/contact",
     siteName: "Envitefy",
-    images: [
-      {
-        url: "https://envitefy.com/og-default.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Envitefy preview",
-      },
-    ],
+    images: [buildSiteOgImage(siteOgImageUrl)],
     type: "website",
   },
 };

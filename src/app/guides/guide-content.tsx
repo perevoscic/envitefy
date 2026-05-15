@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
+import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 
 const SITE_URL = "https://envitefy.com";
-const DEFAULT_IMAGE = `${SITE_URL}/og-default.jpg`;
+const DEFAULT_IMAGE = getRandomSiteOgImageUrl(SITE_URL);
 
 export type GuideSlug =
   | "pdf-to-event-page"
@@ -318,14 +319,7 @@ export function buildGuideMetadata(slug: GuideSlug): Metadata {
       description: guide.description,
       url: `${SITE_URL}${path}`,
       siteName: "Envitefy",
-      images: [
-        {
-          url: DEFAULT_IMAGE,
-          width: 1200,
-          height: 630,
-          alt: "Envitefy preview",
-        },
-      ],
+      images: [buildSiteOgImage(DEFAULT_IMAGE)],
       type: "article",
     },
     twitter: {

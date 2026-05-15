@@ -7,6 +7,7 @@ import AppShell from "./AppShell";
 import "./globals.css";
 import { authOptions } from "@/lib/auth";
 import { GOOGLE_ANALYTICS_MEASUREMENT_ID } from "@/lib/google-analytics";
+import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import { themeColorPalette } from "@/lib/theme-color";
 import { Suspense } from "react";
@@ -20,6 +21,7 @@ const siteUrl = (
   process.env.PUBLIC_BASE_URL ||
   "https://envitefy.com"
 ).replace(/\/+$/, "");
+const siteOgImageUrl = getRandomSiteOgImageUrl(siteUrl);
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -92,12 +94,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName: "Envitefy",
     images: [
-      {
-        url: `${siteUrl}/og-default.jpg`,
-        width: 1200,
-        height: 630,
-        alt: "Envitefy thumbnail",
-      },
+      buildSiteOgImage(siteOgImageUrl, "Envitefy thumbnail"),
     ],
     type: "website",
   },
@@ -106,7 +103,7 @@ export const metadata: Metadata = {
     title: "Envitefy | Event Pages, Invitations & RSVPs",
     description:
       "Create invitation designs, live cards, hosted event pages, RSVPs, registry links, schedules, and gymnastics meet pages from uploads or from scratch.",
-    images: [`${siteUrl}/og-default.jpg`],
+    images: [siteOgImageUrl],
   },
 };
 

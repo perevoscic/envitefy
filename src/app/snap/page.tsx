@@ -5,8 +5,11 @@ import Script from "next/script";
 import SnapLaunchCards from "@/app/event/SnapLaunchCards";
 import SnapLanding from "@/components/snap-landing/SnapLanding";
 import { authOptions } from "@/lib/auth";
+import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import { themeColorPalette } from "@/lib/theme-color";
 import styles from "./page.module.css";
+
+const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -30,6 +33,7 @@ export const metadata: Metadata = {
       "Upload an invite, flyer, screenshot, schedule, or PDF and turn it into a polished event page with RSVPs, links, and mobile-friendly sharing.",
     url: "https://envitefy.com/snap",
     siteName: "Envitefy",
+    images: [buildSiteOgImage(siteOgImageUrl, "Envitefy Snap preview")],
     type: "website",
   },
   twitter: {
@@ -37,6 +41,7 @@ export const metadata: Metadata = {
     title: "Envitefy Snap",
     description:
       "Upload an invite, flyer, screenshot, schedule, or PDF and turn it into a polished event page with RSVPs, links, and mobile-friendly sharing.",
+    images: [siteOgImageUrl],
   },
   alternates: { canonical: "/snap" },
 };
