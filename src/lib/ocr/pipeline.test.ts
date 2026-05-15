@@ -14,6 +14,16 @@ test("pipeline still validates upload metadata before OCR work", async () => {
   assert.match(source, /if \(!validation\.ok\)/);
 });
 
+test("pipeline rejects empty or generic OCR instead of saving a placeholder event", async () => {
+  const source = await readFile(new URL("./pipeline.ts", import.meta.url), "utf8");
+
+  assert.match(source, /function hasUsableOcrResult/);
+  assert.match(source, /OPENAI_GENERIC/);
+  assert.match(source, /OCR_NOT_CONFIGURED/);
+  assert.match(source, /OCR_UNREADABLE/);
+  assert.match(source, /Set OPENAI_API_KEY/);
+});
+
 test("pipeline normalizes graduation venue names before returning fields", async () => {
   const source = await readFile(new URL("./pipeline.ts", import.meta.url), "utf8");
 

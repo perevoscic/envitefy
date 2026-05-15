@@ -933,6 +933,23 @@ export function combineGuestInfoFacts(...values: Array<string | null | undefined
   return facts.length ? facts.join(". ") : null;
 }
 
+export function appendVenueToVendorVisitTitle(
+  title: string | null | undefined,
+  venue: string | null | undefined,
+  rawText?: string | null,
+): string {
+  const cleanTitle = cleanFlyerFact(String(title || ""));
+  const cleanVenue = cleanFlyerFact(String(venue || ""));
+  if (!cleanTitle || !cleanVenue) return cleanTitle;
+  if (cleanTitle.toLowerCase().includes(cleanVenue.toLowerCase())) return cleanTitle;
+  const probe = `${cleanTitle}\n${rawText || ""}`;
+  const looksLikeVendorVisit =
+    /\b(?:is\s+coming|food\s+truck|kona\s+ice|ice\s+cream|shaved\s+ice|snow\s+cone|treats?|menu|flavo[u]?rs?)\b/i.test(
+      probe,
+    );
+  return looksLikeVendorVisit ? `${cleanTitle} — ${cleanVenue}` : cleanTitle;
+}
+
 export function extractHostedByFromFlyerText(text: string | null | undefined): string | null {
   if (!text || typeof text !== "string") return null;
   const lines = text

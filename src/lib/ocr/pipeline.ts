@@ -55,6 +55,7 @@ import {
   combineGuestInfoFacts,
   detectCategory,
   detectSpelledTime,
+  appendVenueToVendorVisitTitle,
   extractCommonOcrFactsFromFlyerText,
   extractGuestAttendanceFactsFromFlyerText,
   extractGuestReminderFromFlyerText,
@@ -94,6 +95,38 @@ function hasExplicitTimeText(text: string): boolean {
     /\b\d{1,2}\s*(?:a\.?m\.?|p\.?m\.?)\b/i.test(text) ||
     /\b(?:noon|midnight)\b/i.test(text) ||
     Boolean(detectSpelledTime(text))
+  );
+}
+
+function hasUsableOcrResult(payload: unknown, rawText: string): boolean {
+  const record = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+  const title = typeof record.title === "string" ? record.title.trim() : "";
+  const genericTitle = /^(?:event\s+from\s+flyer|scanned\s+event|general\s+event|uploaded\s+event|event)$/i.test(
+    title,
+  );
+  const hasSpecificTitle = Boolean(title && !genericTitle);
+  const hasDate = typeof record.start === "string" && record.start.trim();
+  const hasPlace =
+    (typeof record.address === "string" && record.address.trim()) ||
+    (typeof record.venueName === "string" && record.venueName.trim());
+  const hasDescription = typeof record.description === "string" && record.description.trim();
+  const hasFacts =
+    (Array.isArray((record as { ocrFacts?: unknown }).ocrFacts) &&
+      (record as { ocrFacts?: unknown[] }).ocrFacts!.length > 0) ||
+    (Array.isArray((record as { facts?: unknown }).facts) &&
+      (record as { facts?: unknown[] }).facts!.length > 0);
+  const meaningfulRaw = rawText
+    .replace(/\b(?:general events?|event from flyer|scanned event|uploaded event)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return Boolean(
+    hasSpecificTitle ||
+      hasDate ||
+      hasPlace ||
+      hasDescription ||
+      hasFacts ||
+      meaningfulRaw.length >= 20,
   );
 }
 
@@ -374,6 +407,7 @@ export async function handleOcrRequest(request: Request) {
       const llm = await llmExtractEventFromImage(ocrBuffer, visionMime, timeoutMs, ocrModel);
       const rawText = llmEventToRawText(llm);
       if (!llm || !rawText) throw new Error("OPENAI_EMPTY");
+      if (!hasUsableOcrResult(llm, rawText)) throw new Error("OPENAI_GENERIC");
       return { rawText, llm };
     };
 
@@ -422,6 +456,21 @@ export async function handleOcrRequest(request: Request) {
       }
     }
     stage.primaryOcrMs = Date.now() - primaryStartedAt;
+
+    if (!raw.trim()) {
+      const providerConfigured = Boolean(process.env.OPENAI_API_KEY);
+      return corsJson(
+        request,
+        {
+          error: providerConfigured
+            ? "OCR could not read enough event details from this file. Please try a clearer image or enter the event manually."
+            : "OCR is not configured. Set OPENAI_API_KEY before snapping or uploading event flyers.",
+          code: providerConfigured ? "OCR_UNREADABLE" : "OCR_NOT_CONFIGURED",
+          ocrSource,
+        },
+        { status: providerConfigured ? 422 : 503 },
+      );
+    }
 
     const lines = raw
       .split("\n")
@@ -994,6 +1043,7 @@ export async function handleOcrRequest(request: Request) {
     if (detectCategory(`${raw}\n${finalTitle}`) === "Graduations") {
       finalVenue = cleanGraduationVenueName(finalVenue);
     }
+    finalTitle = appendVenueToVendorVisitTitle(finalTitle, finalVenue, raw);
 
     const locationForNarrative = finalVenue
       ? `${finalVenue}${finalAddress ? `, ${finalAddress}` : ""}`

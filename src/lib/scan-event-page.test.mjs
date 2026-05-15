@@ -163,3 +163,37 @@ test("scan event page payload keeps Kona menu details out of location and RSVP",
     /Watermelon Wave/,
   );
 });
+
+test("scan event page payload can rescue Kona title date and venue from OCR text", () => {
+  const payload = buildScanEventPageHistoryPayload({
+    source: "upload",
+    scanAttemptId: "scan-kona-raw-1",
+    ocr: {
+      category: "General Events",
+      ocrText: [
+        "Kona Ice Is Coming",
+        "Gateway Academy",
+        "Tuesday, May 19",
+        "9:30 AM - 1:40 PM",
+        "Klassic $4",
+        "King $5",
+        "Blue Raspberry",
+        "Watermelon Wave",
+      ].join("\n"),
+      fieldsGuess: {
+        title: "Event from flyer",
+        description: "",
+        start: null,
+        location: "",
+        venue: "Gateway Academy",
+        rsvp: null,
+      },
+    },
+  });
+
+  assert.equal(payload.title, "Kona Ice Is Coming — Gateway Academy");
+  assert.match(String(payload.data.scheduleLine), /May 19, 2026/);
+  assert.match(String(payload.data.scheduleLine), /9:30 AM/);
+  assert.equal(payload.data.venue, "Gateway Academy");
+  assert.equal(payload.data.locationLabel, "Gateway Academy");
+});

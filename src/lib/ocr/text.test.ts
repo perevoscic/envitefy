@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  appendVenueToVendorVisitTitle,
   cleanGraduationVenueName,
   combineGuestInfoFacts,
   detectCategory,
@@ -219,6 +220,21 @@ test("extractCommonOcrFactsFromFlyerText groups Kona menu prices and flavors", (
   assert.match(facts.find((fact) => fact.label === "Menu Prices")?.value || "", /TopZ Sour Powder \$1/);
   assert.match(facts.find((fact) => fact.label === "Flavors")?.value || "", /Blue Raspberry/);
   assert.match(facts.find((fact) => fact.label === "Flavors")?.value || "", /Watermelon Wave/);
+});
+
+test("appendVenueToVendorVisitTitle keeps school in food vendor visit titles", () => {
+  assert.equal(
+    appendVenueToVendorVisitTitle(
+      "Kona Ice Is Coming",
+      "Gateway Academy",
+      "Kona Ice Is Coming\nGateway Academy\nKlassic $4\nFLAVORWAVE",
+    ),
+    "Kona Ice Is Coming — Gateway Academy",
+  );
+  assert.equal(
+    appendVenueToVendorVisitTitle("Mia's Birthday Party", "Play Cafe", "birthday party"),
+    "Mia's Birthday Party",
+  );
 });
 
 test("extractGuestReminderFromFlyerText keeps bring instructions without questions footer", () => {

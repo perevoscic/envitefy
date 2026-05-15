@@ -44,3 +44,13 @@ test("event OCR prompt keeps RSVP contact guidance generic", () => {
   assert.match(promptSource, /When a contact-instruction line has a phone\/email\/link/);
   assert.match(promptSource, /use any nearby host\/sponsor line for hostName/);
 });
+
+test("event OCR prompt separates food vendor menu facts from location and RSVP", () => {
+  const promptSource = readFileSync(new URL("./prompts.ts", import.meta.url), "utf8");
+
+  assert.match(promptSource, /Food truck\/vendor\/school visit flyers/);
+  assert.match(promptSource, /Menu Prices/);
+  assert.match(promptSource, /Flavors/);
+  assert.match(promptSource, /Do not put prices or flavor names in address\/location\/venueName/);
+  assert.match(promptSource, /leave RSVP fields null/);
+});

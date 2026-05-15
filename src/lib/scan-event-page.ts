@@ -2,6 +2,7 @@ import * as chrono from "chrono-node";
 import type { ConciergeEventType, DetectedSourceIntent } from "./concierge/types.ts";
 import { sanitizeConciergePublicEventData } from "./concierge/public-copy.ts";
 import {
+  appendVenueToVendorVisitTitle,
   cleanAddressLabel,
   detectCategory,
   extractCommonOcrFactsFromFlyerText,
@@ -647,7 +648,7 @@ export function buildScanEventPageHistoryPayload(params: {
   );
   const categoryRaw = firstString(rescuedCategory, originalCategoryRaw);
   const rescuedTitle = deriveTitleFromOcr(ocrLines, rescueText);
-  const title =
+  const baseTitle =
     firstSpecificTitle(fieldsGuess.title, rescuedTitle, categoryRaw, "Scanned Event") ||
     "Scanned Event";
   const rescuedLocation = extractAddressFromOcr(ocrLines);
@@ -659,6 +660,7 @@ export function buildScanEventPageHistoryPayload(params: {
   const venue = normalizedLocation.venue;
   const location = normalizedLocation.location;
   const locationLine = normalizedLocation.locationLine || "Location TBD";
+  const title = appendVenueToVendorVisitTitle(baseTitle, venue, rescueText);
   const rsvpDetails = extractRsvpDetails(rescueText);
   const normalizedRsvp = normalizeOcrRsvpFields({
     rsvp: firstSpecificString(fieldsGuess.rsvp, fieldsGuess.rsvpText),
