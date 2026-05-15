@@ -1,6 +1,0 @@
-{
-  "name": "Envitefy Concierge",
-  "description": "An AI-powered event concierge that turns your celebration ideas into polished event workspaces.",
-  "requestFramePermissions": ["camera", "microphone"],
-  "majorCapabilities": ["AI-powered event creation", "Voice and photo intake", "Real-time workspace preview"]
-}

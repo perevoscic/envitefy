@@ -1,6 +1,0 @@
-{
-  "name": "Balloons Celebration App",
-  "description": "A fun React application featuring an interactive 3D-like balloons celebration component built with Tailwind CSS and shadcn/ui.",
-  "requestFramePermissions": [],
-  "majorCapabilities": []
-}
