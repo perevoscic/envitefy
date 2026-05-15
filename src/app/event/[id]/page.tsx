@@ -203,6 +203,28 @@ const parseDatePreserveFloating = (input: string): { date: Date; floating: boole
   return { date: parsed, floating: false };
 };
 
+function titleSegmentLooksLikeOcrVenueNarrative(value: string): boolean {
+  return (
+    /\b(?:will|is|are|be|visit|visits|coming|come)\b.+\b(?:at|to)\b/i.test(value) ||
+    /\b(?:on|from)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tues?|wed|thu|thur|fri|sat|sun|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/i.test(
+      value,
+    )
+  );
+}
+
+function sanitizeScannedOcrDisplayTitle(value: string, data: Record<string, unknown>): string {
+  const createdVia = typeof data.createdVia === "string" ? data.createdVia : "";
+  const isOcr = createdVia.startsWith("ocr") || Boolean(data.ocrFacts) || Boolean(data.scan);
+  if (!isOcr) return value;
+  const parts = value
+    .split(/\s+[—–-]\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length < 3) return value;
+  const kept = parts.filter((part, index) => index < 2 || !titleSegmentLooksLikeOcrVenueNarrative(part));
+  return kept.join(" — ") || value;
+}
+
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
@@ -212,7 +234,8 @@ export async function generateMetadata(props: {
     getCachedEventHistoryBySlugOrId(awaitedParams.id, null),
   );
   const data: any = row?.data || {};
-  const title = (typeof data?.title === "string" && data.title) || row?.title || "Event";
+  const rawTitle = (typeof data?.title === "string" && data.title) || row?.title || "Event";
+  const title = sanitizeScannedOcrDisplayTitle(rawTitle, data);
   const publicSlug =
     (typeof row?.public_slug === "string" && row.public_slug) ||
     (typeof data?.publicSlug === "string" && data.publicSlug) ||
@@ -864,7 +887,6 @@ export default async function EventPage({
       }
     }
   }
-  const title = row.title as string;
   const _createdAt = row.created_at as string | undefined;
   const data = (() => {
     if (!row.data) return {};
@@ -878,6 +900,7 @@ export default async function EventPage({
     }
     return typeof row.data === "object" ? (row.data as any) : {};
   })();
+  const title = sanitizeScannedOcrDisplayTitle(row.title as string, data);
   const media = row.media;
   const buildMediaUrl = (
     variant?: "thumbnail" | "attachment" | "profile" | "hero" | "signup-header",
@@ -1487,14 +1510,14 @@ export default async function EventPage({
         : "";
   const rsvpField = typeof data?.rsvp === "string" ? data.rsvp : structuredRsvpContact || "";
   const aggregateContactText = `${rsvpField} ${structuredRsvpUrl}`.trim();
-  const rsvpPhone = extractFirstPhoneNumber(aggregateContactText);
+  const rawRsvpPhone = extractFirstPhoneNumber(aggregateContactText);
   const explicitRsvpEmail =
     (typeof data?.rsvpEmail === "string" && data.rsvpEmail.trim()) ||
     (typeof rsvpRecord?.email === "string" && rsvpRecord.email.trim()) ||
     "";
-  const rsvpEmail =
+  const rawRsvpEmail =
     findFirstEmail(rsvpField) ?? findFirstEmail(aggregateContactText) ?? findFirstEmail(explicitRsvpEmail);
-  const rsvpUrl =
+  const rawRsvpUrl =
     structuredRsvpUrl ||
     normalizeUrlValue(findFirstUrl(rsvpField)) ||
     normalizeUrlValue(findFirstUrl(aggregateContactText)) ||
@@ -1601,6 +1624,9 @@ export default async function EventPage({
       Boolean(rsvpRecord?.enabled) ||
       Boolean(rsvpRecord?.direct) ||
       Boolean((isConciergeLiveCardEvent || isConciergeEventPageProduct) && hasRsvpOutput));
+  const rsvpPhone = explicitRsvpDisabled ? "" : rawRsvpPhone;
+  const rsvpEmail = explicitRsvpDisabled ? "" : rawRsvpEmail;
+  const rsvpUrl = explicitRsvpDisabled ? "" : rawRsvpUrl;
 
   const hostName =
     typeof data?.hostName === "string" && data.hostName.trim()
@@ -1618,7 +1644,8 @@ export default async function EventPage({
   const publicRsvpField = normalizedPublicRsvp.rsvp || "";
   const publicRsvpUrl = normalizedPublicRsvp.rsvpUrl || "";
   const hasPublicRsvpAction = Boolean(
-    rsvpPhone || rsvpEmail || publicRsvpUrl || directRsvpEnabled || publicRsvpField,
+    !explicitRsvpDisabled &&
+      (rsvpPhone || rsvpEmail || publicRsvpUrl || directRsvpEnabled || publicRsvpField),
   );
   const rsvpContactSource =
     storedRsvpName ||
@@ -1644,7 +1671,7 @@ export default async function EventPage({
     storedRsvpName ||
     (hasPublicRsvpAction ? hostName : "") ||
     (rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "");
-  const showPublicRsvp = hasPublicRsvpAction;
+  const showPublicRsvp = !explicitRsvpDisabled && hasPublicRsvpAction;
   const userName = ((session as any)?.user?.name as string | undefined) || "";
   const _smsIntroParts = [
     "Hi, there,",

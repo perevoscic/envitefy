@@ -777,6 +777,91 @@ export type ExtractedOcrFact = {
   value: string;
 };
 
+function splitFlyerFactLines(value: string): string[] {
+  return value
+    .split(/\n+|[•·]/)
+    .map((line) => cleanFlyerFact(line))
+    .filter(Boolean);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function looksLikeMenuPriceLine(value: string): boolean {
+  return /\b[A-Z][A-Za-z0-9' -]{2,34}?\s+\$\s*\d+(?:\.\d{2})?(?:\s*,?\s*\$\s*\d+(?:\.\d{2})?\s*refill)?\b/i.test(
+    value,
+  );
+}
+
+function looksLikeFlavorSectionHeading(value: string): boolean {
+  return /^(?:flavo[u]?rs?|flavor\s*wave|flavorwave|syrups?|choices?)\s*:?\s*$/i.test(value);
+}
+
+function looksLikeFlavorSectionStop(value: string): boolean {
+  if (!value) return true;
+  if (looksLikeMenuPriceLine(value)) return true;
+  return (
+    /\$\s*\d/.test(value) ||
+    RSVP_EMAIL_REGEX.test(value) ||
+    RSVP_PHONE_REGEX.test(value) ||
+    RSVP_URL_REGEX.test(value) ||
+    /\b(?:contact|questions?|text|call|rsvp|hosted|sponsored|presented|menu|prices?|refill|phone|email|website|www\.|\.com)\b/i.test(
+      value,
+    ) ||
+    /\b(?:mon|tue|wed|thu|fri|sat|sun)(?:day)?\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\b/i.test(
+      value,
+    ) ||
+    /\b(?:academy|school|county|company|llc|inc|corp|organization|foundation)\b/i.test(value)
+  );
+}
+
+function splitFlavorLine(value: string): string[] {
+  return value
+    .split(/\s*(?:,|\/|\||\band\b)\s*/i)
+    .map((part) => cleanFlyerFact(part))
+    .filter((part) => /^[A-Za-z][A-Za-z' -]{2,34}$/.test(part));
+}
+
+function extractPrintedFlavors(lines: string[], compact: string): string[] {
+  const seen = new Set<string>();
+  const flavors: string[] = [];
+  const addFlavor = (value: string) => {
+    const cleaned = cleanFlyerFact(value);
+    if (!cleaned || !/^[A-Za-z][A-Za-z' -]{2,34}$/.test(cleaned)) return;
+    const key = cleaned.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    flavors.push(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
+  };
+
+  const knownFlavors = [
+    "Blue Raspberry",
+    "Tiger's Blood",
+    "Groovy Grape",
+    "Island Rush",
+    "Lucky Lime",
+    "Monster Mango",
+    "Ninja Cherry",
+    "Pina Colada",
+    "Strawberry Treasure",
+    "Watermelon Wave",
+  ];
+  for (const flavor of knownFlavors) {
+    if (new RegExp(`\\b${escapeRegExp(flavor)}\\b`, "i").test(compact)) addFlavor(flavor);
+  }
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!looksLikeFlavorSectionHeading(lines[index])) continue;
+    for (const line of lines.slice(index + 1)) {
+      if (looksLikeFlavorSectionStop(line)) break;
+      for (const flavor of splitFlavorLine(line)) addFlavor(flavor);
+    }
+  }
+
+  return flavors.slice(0, 16);
+}
+
 export function extractCommonOcrFactsFromFlyerText(
   text: string | null | undefined,
 ): ExtractedOcrFact[] {
@@ -813,6 +898,7 @@ export function extractCommonOcrFactsFromFlyerText(
 
   const normalized = text.replace(/\r/g, "\n");
   const compact = normalized.replace(/\s+/g, " ").trim();
+  const parts = splitFlyerFactLines(normalized);
   const normalizePrintedTime = (value: string | null | undefined) =>
     cleanFlyerFact(String(value || ""))
       .replace(/\./g, "")
@@ -836,18 +922,7 @@ export function extractCommonOcrFactsFromFlyerText(
     .filter((perk) => perk.pattern.test(compact))
     .map((perk) => perk.label);
   const hasCombinedPerks = printedPerks.length >= 2;
-  const printedFlavors = [
-    "Blue Raspberry",
-    "Tiger's Blood",
-    "Groovy Grape",
-    "Island Rush",
-    "Lucky Lime",
-    "Monster Mango",
-    "Ninja Cherry",
-    "Pina Colada",
-    "Strawberry Treasure",
-    "Watermelon Wave",
-  ].filter((flavor) => new RegExp(`\\b${flavor.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(compact));
+  const printedFlavors = extractPrintedFlavors(parts, compact);
   const menuPriceMatches = [
     ...compact.matchAll(
       /\b([A-Z][A-Za-z0-9' -]{2,34}?)\s+(\$\s*\d+(?:\.\d{2})?(?:\s*,?\s*\$\s*\d+(?:\.\d{2})?\s*refill)?)\b/gi,
@@ -878,10 +953,6 @@ export function extractCommonOcrFactsFromFlyerText(
   const host = extractHostedByFromFlyerText(text);
   if (host) addFact("Host", host);
 
-  const parts = normalized
-    .split(/\n+|[•·]/)
-    .map((line) => line.trim())
-    .filter(Boolean);
   for (const part of parts) {
     if (/\b(?:rsvp|questions?|text|call)\b/i.test(part)) continue;
     if (RSVP_EMAIL_REGEX.test(part) || RSVP_PHONE_REGEX.test(part) || RSVP_URL_REGEX.test(part)) {

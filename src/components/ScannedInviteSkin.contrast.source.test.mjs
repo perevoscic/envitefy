@@ -17,12 +17,27 @@ test("scanned invite skin computes readable colors for variable dark and light s
   assert.match(source, /const hasRsvpDisplayContact = Boolean/);
   assert.match(source, /hasRsvpAction \|\| hasRsvpDisplayContact/);
   assert.match(source, /const hasDisplayLocation = Boolean/);
-  assert.match(source, /const directionsHref = hasDisplayLocation \?/);
+  assert.match(source, /const directionsHref = buildMapsHref/);
   assert.match(source, /function groupRepeatedOcrFacts/);
   assert.match(source, /const groupedDisplayOcrFacts = groupRepeatedOcrFacts\(displayOcrFacts\)/);
-  assert.match(source, /href=\{`tel:\$\{contactPhone\.replace/);
-  assert.match(source, /href=\{`mailto:\$\{contactEmail\}`\}/);
-  assert.match(source, /href=\{normalizedContactWebsite\}/);
+  assert.match(source, /href=\{`tel:\$\{phone\.replace/);
+  assert.match(source, /href=\{`mailto:\$\{email\}`\}/);
+  assert.match(source, /href=\{website\}/);
+  assert.match(
+    source,
+    /const displayVendorName = String\(vendorFact\?\.value \|\| ""\)\.trim\(\);/,
+  );
+  assert.match(source, /label="Vendor"[\s\S]*?title=\{displayVendorName\}/);
+  assert.match(source, /function ContactTile/);
+  assert.match(source, /flex w-full flex-wrap items-center justify-end gap-3/);
+  assert.match(source, /min-h-\[4\.25rem\]/);
+  assert.match(source, /max-w-\[11rem\]/);
+  assert.match(
+    source,
+    /const directionsHref = buildMapsHref\(directionsLocation \|\| displayVenueName \|\| location\);/,
+  );
+  assert.match(source, /function isRedundantEventSummary/);
+  assert.doesNotMatch(source, /wide=\{!hasRsvpAction\}/);
 
   assert.match(source, /const detailCardTextColor = ensureReadableTextColor/);
   assert.match(source, /backgroundColor: detailCardBackground/);
@@ -37,13 +52,21 @@ test("scanned invite skin computes readable colors for variable dark and light s
   assert.match(source, /const detailsGridClassName =/);
   assert.match(
     source,
-    /items-start gap-6 lg:grid-cols-\[minmax\(280px,0\.8fr\)_minmax\(0,1\.45fr\)\]/,
+    /items-start gap-6 lg:grid-cols-\[minmax\(360px,1fr\)_minmax\(0,1\.1fr\)\] xl:grid-cols-\[minmax\(400px,1\.05fr\)_minmax\(0,1fr\)\]/,
   );
   assert.match(
     source,
     /items-start gap-6 lg:grid-cols-\[minmax\(390px,1\.12fr\)_minmax\(0,1fr\)\] xl:grid-cols-\[minmax\(440px,1\.15fr\)_minmax\(0,0\.95fr\)\]/,
   );
   assert.match(source, /self-start rounded-\[2\.6rem\]/);
+  assert.match(
+    source,
+    /const leftColumnOcrFacts =\s*detailLayout === "wideDetails" \? groupedDisplayOcrFacts\.slice\(0, 2\) : \[\];/,
+  );
+  assert.match(
+    source,
+    /const rightColumnOcrFacts =\s*detailLayout === "wideDetails" \? groupedDisplayOcrFacts\.slice\(2\) : groupedDisplayOcrFacts;/,
+  );
   assert.match(source, /facts=\{leftColumnOcrFacts\}/);
   assert.match(source, /facts=\{rightColumnOcrFacts\}/);
   assert.match(source, />\s*Apple\s*<\/button>/);

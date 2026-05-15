@@ -54,6 +54,9 @@ test("event route branches football discovery/template events into the football 
   assert.doesNotMatch(source, /href=\{`\/events\/\$\{row\.id\}\/manage`\}/);
   assert.doesNotMatch(source, /BirthdayTemplateView/);
   assert.match(source, /import \{ cleanGraduationVenueName \} from "@\/lib\/ocr\/text";/);
+  assert.match(source, /function sanitizeScannedOcrDisplayTitle/);
+  assert.match(source, /titleSegmentLooksLikeOcrVenueNarrative/);
+  assert.match(source, /const title = sanitizeScannedOcrDisplayTitle\(row\.title as string, data\);/);
   assert.match(source, /const rawVenueText =/);
   assert.match(source, /const isGraduationCategory =/);
   assert.match(source, /categoryNormalized === "graduations" \|\| categoryNormalized === "graduation"/);
@@ -80,10 +83,16 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /rsvpUrl=\{publicRsvpUrl\}/);
   assert.match(source, /normalizeOcrLocationFields/);
   assert.match(source, /normalizeOcrRsvpFields/);
+  assert.match(source, /const rsvpPhone = explicitRsvpDisabled \? "" : rawRsvpPhone;/);
+  assert.match(source, /const rsvpEmail = explicitRsvpDisabled \? "" : rawRsvpEmail;/);
+  assert.match(source, /const rsvpUrl = explicitRsvpDisabled \? "" : rawRsvpUrl;/);
   assert.match(source, /const publicRsvpUrl = normalizedPublicRsvp\.rsvpUrl \|\| ""/);
   assert.doesNotMatch(source, /findFirstEmail\(data\)/);
   assert.match(source, /const hasPublicRsvpAction = Boolean\(/);
-  assert.match(source, /const showPublicRsvp = hasPublicRsvpAction;/);
+  assert.match(
+    source,
+    /const showPublicRsvp = !explicitRsvpDisabled && hasPublicRsvpAction;/,
+  );
   assert.match(source, /planCopy=\{birthdayPlanCopy\}/);
   assert.match(source, /ocrFacts=\{scannedInviteOcrFacts\}/);
   assert.ok(

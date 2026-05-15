@@ -228,6 +228,32 @@ test("extractCommonOcrFactsFromFlyerText groups Kona menu prices and flavors", (
   assert.equal(facts.find((fact) => fact.label === "Website")?.value, "www.example.com");
 });
 
+test("extractCommonOcrFactsFromFlyerText groups generic menu prices and printed flavor sections", () => {
+  const facts = extractCommonOcrFactsFromFlyerText(
+    [
+      "Cool Treats Is Coming",
+      "Sunrise Elementary",
+      "Small Cup $3",
+      "Large Cup $5",
+      "Toppings Bar $1",
+      "Flavors",
+      "Cherry Blast",
+      "Mango Tango",
+      "Cotton Candy",
+      "Lemon Lime",
+      "Contact: 850.555.1212",
+      "Cool Treats of Bay County",
+    ].join("\n"),
+  );
+
+  assert.match(facts.find((fact) => fact.label === "Menu Prices")?.value || "", /Small Cup \$3/);
+  assert.match(facts.find((fact) => fact.label === "Menu Prices")?.value || "", /Toppings Bar \$1/);
+  assert.match(facts.find((fact) => fact.label === "Flavors")?.value || "", /Cherry Blast/);
+  assert.match(facts.find((fact) => fact.label === "Flavors")?.value || "", /Lemon Lime/);
+  assert.doesNotMatch(facts.find((fact) => fact.label === "Flavors")?.value || "", /Bay County/);
+  assert.equal(facts.find((fact) => fact.label === "Phone")?.value, "850.555.1212");
+});
+
 test("appendVenueToVendorVisitTitle keeps school in food vendor visit titles", () => {
   assert.equal(
     appendVenueToVendorVisitTitle(

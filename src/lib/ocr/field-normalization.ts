@@ -61,7 +61,7 @@ function looksLikeVenueNarrative(value: unknown): boolean {
   if (!text) return false;
   return (
     /\b(?:will|is|are|be|visit|visits|coming|come)\b.+\b(?:at|to)\b/i.test(text) ||
-    /\b(?:on|from)\s+(?:mon|tue|tues|wed|thu|thur|fri|sat|sun|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/i.test(
+    /\b(?:on|from)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tues?|wed|thu|thur|fri|sat|sun|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/i.test(
       text,
     )
   );
@@ -70,18 +70,27 @@ function looksLikeVenueNarrative(value: unknown): boolean {
 function inferVenueFromContext(value: unknown): string | null {
   const text = typeof value === "string" ? value.trim() : "";
   if (!text) return null;
-  const dashVenue = text.match(/[—–-]\s*([A-Z][A-Za-z0-9'&. -]{2,80}\b(?:Academy|School|Center|Centre|Church|Gym|Hall|Park|Cafe|Café|Restaurant|Stadium|Arena|Auditorium))\b/i)?.[1];
+  const venueSuffix =
+    "(?:Academy|School|Elementary|Middle|High|Preschool|Pre-K|Center|Centre|Church|Gym|Hall|Park|Cafe|Café|Restaurant|Stadium|Arena|Auditorium)";
+  const dashVenue = text.match(
+    new RegExp(`[—–-]\\s*([A-Z][A-Za-z0-9'&. -]{2,80}\\b${venueSuffix})\\b`, "i"),
+  )?.[1];
   if (dashVenue) return dashVenue.trim();
-  const phraseVenue = text.match(/\b(?:to|at)\s+([A-Z][A-Za-z0-9'&. -]{2,80}\b(?:Academy|School|Center|Centre|Church|Gym|Hall|Park|Cafe|Café|Restaurant|Stadium|Arena|Auditorium))\b/i)?.[1];
+  const phraseVenue = text.match(
+    new RegExp(`\\b(?:to|at)\\s+([A-Z][A-Za-z0-9'&. -]{2,80}\\b${venueSuffix})\\b`, "i"),
+  )?.[1];
   if (phraseVenue) return phraseVenue.trim();
+  const visitVenue = text.match(
+    new RegExp(
+      `\\b(?:visits?|visiting|serving|stops?\\s+by)\\s+([A-Z][A-Za-z0-9'&. -]{2,80}\\b${venueSuffix})\\b`,
+      "i",
+    ),
+  )?.[1];
+  if (visitVenue) return visitVenue.trim();
   const lineVenue = text
     .split(/\r?\n+/)
     .map((line) => line.trim())
-    .find((line) =>
-      /^[A-Z][A-Za-z0-9'&. -]{2,80}\b(?:Academy|School|Center|Centre|Church|Gym|Hall|Park|Cafe|Café|Restaurant|Stadium|Arena|Auditorium)\b/i.test(
-        line,
-      ),
-    );
+    .find((line) => new RegExp(`^[A-Z][A-Za-z0-9'&. -]{2,80}\\b${venueSuffix}\\b`, "i").test(line));
   return lineVenue || null;
 }
 
@@ -112,12 +121,13 @@ export function normalizeOcrLocationFields(args: {
     !looksLikeDateOrTimeFragment(venueCandidate) &&
     !looksLikeVenueNarrative(venueCandidate)
       ? venueCandidate
-      : inferVenueFromContext(args.context);
+      : inferVenueFromContext([venueCandidate, args.context].filter(Boolean).join("\n"));
   const locationCandidate = firstCleanString(args.location, args.address, args.fallbackLocation);
   const normalizedLocation =
     locationCandidate &&
     !looksLikeMenuOrFlavorDetails(locationCandidate) &&
     !looksLikeDateOrTimeFragment(locationCandidate) &&
+    !looksLikeVenueNarrative(locationCandidate) &&
     (!venue || locationCandidate.toLowerCase() !== venue.toLowerCase())
       ? locationCandidate
       : null;

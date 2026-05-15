@@ -199,6 +199,96 @@ test("scan event page payload can rescue Kona title date and venue from OCR text
   assert.equal(payload.data.locationLabel, "Gateway Academy");
 });
 
+test("scan event page payload keeps Kona visit sentence out of venue and where", () => {
+  const payload = buildScanEventPageHistoryPayload({
+    source: "upload",
+    scanAttemptId: "scan-kona-narrative-location-1",
+    ocr: {
+      category: "General Events",
+      ocrText: [
+        "Kona Ice Is Coming",
+        "Gateway Academy",
+        "Tuesday, May 19",
+        "9:30 AM - 1:40 PM",
+        "Klassic $4",
+        "Blue Raspberry",
+        "Watermelon Wave",
+      ].join("\n"),
+      fieldsGuess: {
+        title: "Kona Ice Is Coming — Gateway Academy",
+        description: "Kona Ice visits Gateway Academy on Tuesday, May 19 from 9:30 AM to 1:40 PM.",
+        start: "2026-05-19T09:30:00",
+        end: "2026-05-19T13:40:00",
+        venue: "Kona Ice visits Gateway Academy on Tuesday",
+        location: "Kona Ice visits Gateway Academy on Tuesday",
+        rsvp: "Host",
+      },
+    },
+  });
+
+  assert.equal(payload.data.venue, "Gateway Academy");
+  assert.equal(payload.data.location, undefined);
+  assert.equal(payload.data.locationLabel, "Gateway Academy");
+  assert.equal(payload.data.rsvp, undefined);
+  assert.deepEqual(
+    payload.data.skinSections?.filter((section) => section.label === "RSVP"),
+    [],
+  );
+});
+
+test("scan event page payload handles similar vendor school flyers without Kona-specific wording", () => {
+  const payload = buildScanEventPageHistoryPayload({
+    source: "upload",
+    scanAttemptId: "scan-vendor-school-1",
+    ocr: {
+      category: "General Events",
+      ocrText: [
+        "Cool Treats Is Coming",
+        "Sunrise Elementary",
+        "Wednesday, June 10",
+        "10:15 AM - 2:00 PM",
+        "Small Cup $3",
+        "Large Cup $5",
+        "Toppings Bar $1",
+        "Flavors",
+        "Cherry Blast",
+        "Mango Tango",
+        "Cotton Candy",
+        "Lemon Lime",
+        "Contact: 850.555.1212",
+      ].join("\n"),
+      fieldsGuess: {
+        title: "Cool Treats Is Coming — Sunrise Elementary — Cool Treats will be at Sunrise Elementary on Wednesday",
+        description: "Cool Treats will be at Sunrise Elementary on Wednesday, June 10 from 10:15 AM to 2:00 PM.",
+        start: "2026-06-10T10:15:00",
+        end: "2026-06-10T14:00:00",
+        venue: "Cool Treats will be at Sunrise Elementary on Wednesday",
+        location: "Cool Treats will be at Sunrise Elementary on Wednesday",
+        rsvp: "RSVP: 850.555.1212",
+      },
+    },
+  });
+
+  assert.equal(payload.title, "Cool Treats Is Coming — Sunrise Elementary");
+  assert.equal(payload.data.venue, "Sunrise Elementary");
+  assert.equal(payload.data.location, undefined);
+  assert.equal(payload.data.locationLabel, "Sunrise Elementary");
+  assert.equal(payload.data.rsvp, undefined);
+  assert.equal(payload.data.rsvpPhone, undefined);
+  assert.match(
+    payload.data.ocrFacts?.find((fact) => fact.label === "Menu Prices")?.value || "",
+    /Small Cup \$3/,
+  );
+  assert.match(
+    payload.data.ocrFacts?.find((fact) => fact.label === "Flavors")?.value || "",
+    /Cherry Blast/,
+  );
+  assert.deepEqual(
+    payload.data.skinSections?.filter((section) => section.label === "RSVP"),
+    [],
+  );
+});
+
 test("scan event page payload applies provider-enriched addresses without hardcoding", () => {
   const payload = buildScanEventPageHistoryPayload({
     source: "upload",
@@ -271,8 +361,10 @@ test("scan event page payload rejects model-invented RSVP and venue sentences", 
     },
   });
 
+  assert.equal(payload.title, "Kona Ice Is Coming! — Gateway Academy");
   assert.equal(payload.data.venue, "Gateway Academy");
   assert.equal(payload.data.location, undefined);
+  assert.equal(payload.data.locationLabel, "Gateway Academy");
   assert.equal(payload.data.rsvp, undefined);
   assert.equal(payload.data.rsvpPhone, undefined);
   assert.deepEqual(

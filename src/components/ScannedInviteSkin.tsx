@@ -238,6 +238,45 @@ function splitDisplayTimeRange(value: string): [string, string] | null {
   return [extractTimeFromFact(match[1]), extractTimeFromFact(match[2])];
 }
 
+function normalizedTextKey(value: string | null | undefined): string {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function isRedundantEventSummary(
+  value: string,
+  context: {
+    title: string;
+    date: string;
+    time: string;
+    venue: string;
+    location: string;
+  },
+): boolean {
+  const text = normalizedTextKey(value);
+  if (!text) return true;
+  const venue = normalizedTextKey(context.venue);
+  const location = normalizedTextKey(context.location);
+  const title = normalizedTextKey(context.title);
+  const date = normalizedTextKey(context.date);
+  const time = normalizedTextKey(context.time);
+  const hasPlace = Boolean(
+    (venue && text.includes(venue)) || (location && text.includes(location)),
+  );
+  const hasSchedule = Boolean(
+    (date && text.includes(date)) ||
+      (time && text.includes(time)) ||
+      /\b(?:from|at|on)\s+\d{1,2}\b/.test(text) ||
+      /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/.test(text),
+  );
+  const hasVisitVerb =
+    /\b(?:scheduled|visits?|visiting|will be|coming|come|serving|stops? by)\b/.test(text);
+  if (hasPlace && hasSchedule && hasVisitVerb) return true;
+  return Boolean(title && text.includes(title) && hasSchedule);
+}
+
 function isEntryFeeFact(label: string, value: string): boolean {
   return /\b(?:entry|registration|admission)\s*(?:fee|cost)?\b|\bfee\b|\$\s*\d+/i.test(
     `${label} ${value}`,
@@ -342,6 +381,8 @@ export default function ScannedInviteSkin({
   const rawDetailCopy = String(detailCopy || "").trim();
   const isPickleballSkin = String(sportKind || "").toLowerCase() === "pickleball";
   const normalizedOcrFacts = normalizeOcrFacts(ocrFacts);
+  const vendorFact = normalizedOcrFacts.find((fact) => /^vendor$/i.test(fact.label));
+  const displayVendorName = String(vendorFact?.value || "").trim();
   const checkInFact = normalizedOcrFacts.find((fact) => /\bcheck[-\s]?in\b/i.test(fact.label));
   const gamesStartFact = normalizedOcrFacts.find((fact) =>
     /\bgames?\s+start(?:ing)?\b/i.test(fact.label),
@@ -375,7 +416,9 @@ export default function ScannedInviteSkin({
     .join(" ");
   const contactPhone =
     String(rsvpPhone || "").trim() ||
-    contactFactText.match(/\b(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/)?.[0] ||
+    contactFactText.match(
+      /\b(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/,
+    )?.[0] ||
     "";
   const contactEmail =
     String(rsvpEmail || "").trim() ||
@@ -386,14 +429,13 @@ export default function ScannedInviteSkin({
     contactFactText.match(/\b(?:https?:\/\/|www\.)[^\s,;]+/i)?.[0] ||
     "";
   const normalizedContactWebsite =
-    contactWebsite && !/^https?:\/\//i.test(contactWebsite) ? `https://${contactWebsite}` : contactWebsite;
-  const directionsLocation = [
-    displayVenueName,
-    hasDisplayLocation ? displayLocation : "",
-  ]
+    contactWebsite && !/^https?:\/\//i.test(contactWebsite)
+      ? `https://${contactWebsite}`
+      : contactWebsite;
+  const directionsLocation = [displayVenueName, hasDisplayLocation ? displayLocation : ""]
     .filter(Boolean)
     .join(", ");
-  const directionsHref = hasDisplayLocation ? buildMapsHref(directionsLocation || location) : null;
+  const directionsHref = buildMapsHref(directionsLocation || displayVenueName || location);
   const directRsvpHref = buildRsvpHref({
     rsvpUrl,
     rsvpPhone,
@@ -409,7 +451,9 @@ export default function ScannedInviteSkin({
   });
   const hasRsvpAction = Boolean(directRsvpHref);
   const hasRsvpDisplayContact = Boolean(
-    String(rsvpPhone || "").trim() || String(rsvpEmail || "").trim() || String(rsvpUrl || "").trim(),
+    String(rsvpPhone || "").trim() ||
+      String(rsvpEmail || "").trim() ||
+      String(rsvpUrl || "").trim(),
   );
   const isGeneratedOutboundRsvpHref = Boolean(
     directRsvpHref && !String(rsvpUrl || "").trim() && /^(?:sms:|mailto:)/i.test(directRsvpHref),
@@ -420,7 +464,14 @@ export default function ScannedInviteSkin({
   const shouldPromptForRsvpIdentity = isGeneratedOutboundRsvpHref && !hasKnownRsvpIdentity;
   const normalizedDetailCopy = normalizeInlineSentences(rawDetailCopy);
   const baseDetailCopy =
-    isPickleballSkin && isRedundantPickleballSummary(normalizedDetailCopy)
+    (isPickleballSkin && isRedundantPickleballSummary(normalizedDetailCopy)) ||
+    isRedundantEventSummary(normalizedDetailCopy, {
+      title: displayTitle,
+      date: displayDate,
+      time: displayTime,
+      venue: displayVenueName,
+      location: hasDisplayLocation ? displayLocation : "",
+    })
       ? ""
       : normalizedDetailCopy;
   const displayEntryFee = isPickleballSkin ? String(entryFeeFact?.value || "").trim() : "";
@@ -443,6 +494,7 @@ export default function ScannedInviteSkin({
     normalizedOcrFacts.filter(
       (fact) =>
         !/\b(?:phone|email|website|site|contact)\b/i.test(fact.label) &&
+        !/^vendor$/i.test(fact.label) &&
         !(
           isPickleballSkin &&
           (/\b(?:check[-\s]?in|games?\s+start(?:ing)?)\b/i.test(`${fact.label} ${fact.value}`) ||
@@ -470,12 +522,14 @@ export default function ScannedInviteSkin({
     contactWebsite,
   ]);
   const groupedDisplayOcrFacts = groupRepeatedOcrFacts(displayOcrFacts);
-  const leftColumnOcrFacts = groupedDisplayOcrFacts.slice(0, 2);
-  const rightColumnOcrFacts = groupedDisplayOcrFacts.slice(2);
+  const leftColumnOcrFacts =
+    detailLayout === "wideDetails" ? groupedDisplayOcrFacts.slice(0, 2) : [];
+  const rightColumnOcrFacts =
+    detailLayout === "wideDetails" ? groupedDisplayOcrFacts.slice(2) : groupedDisplayOcrFacts;
   const detailsGridClassName =
     detailLayout === "wideDetails"
       ? "grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(390px,1.12fr)_minmax(0,1fr)] xl:grid-cols-[minmax(440px,1.15fr)_minmax(0,0.95fr)]"
-      : "grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.45fr)]";
+      : "grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(360px,1fr)_minmax(0,1.1fr)] xl:grid-cols-[minmax(400px,1.05fr)_minmax(0,1fr)]";
 
   useEffect(() => {
     if (previewMode) return;
@@ -685,6 +739,15 @@ export default function ScannedInviteSkin({
                   />
                 ) : null}
 
+                {displayVendorName ? (
+                  <InfoBlock
+                    icon={<Sparkles className="h-7 w-7" />}
+                    swatchColor={detailIconSwatchColor}
+                    label="Vendor"
+                    title={displayVendorName}
+                  />
+                ) : null}
+
                 {hasDisplayLocation ? (
                   <InfoBlock
                     icon={<MapPin className="h-7 w-7" />}
@@ -731,62 +794,37 @@ export default function ScannedInviteSkin({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
-            <ActionTile
-              icon={<CalendarPlus className="h-7 w-7" />}
-              label="Save to Calendar"
-              backgroundColor="var(--theme-primary)"
-              textColor={primaryTileTextColor}
-              onClick={() => setShowCalendarMenu(true)}
-              disabled={!calendarLinks || previewMode}
-              wide={!hasRsvpAction}
-            />
-
-            {hasRsvpAction ? (
+          <div className="grid grid-cols-2 items-start justify-items-end gap-4">
+            <div className="col-span-2 flex w-full flex-wrap items-center justify-end gap-3">
               <ActionTile
-                icon={<MessageSquare className="h-7 w-7" />}
-                label="RSVP Now"
-                backgroundColor="var(--theme-secondary)"
-                textColor={secondaryTileTextColor}
-                href={shouldPromptForRsvpIdentity ? null : directRsvpHref}
-                onClick={handleRsvpTileClick}
-                disabled={previewMode}
+                icon={<CalendarPlus className="h-6 w-6" />}
+                label="Save to Calendar"
+                backgroundColor="var(--theme-primary)"
+                textColor={primaryTileTextColor}
+                onClick={() => setShowCalendarMenu(true)}
+                disabled={!calendarLinks || previewMode}
               />
-            ) : null}
 
-            {contactPhone || contactEmail || normalizedContactWebsite ? (
-              <section className="col-span-2 flex flex-wrap items-center gap-3 rounded-[2rem] border border-black/5 bg-white p-4 shadow-sm">
-                {contactPhone ? (
-                  <a
-                    href={`tel:${contactPhone.replace(/[^\d+]/g, "")}`}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
-                    aria-label="Call"
-                  >
-                    <Phone className="h-5 w-5" />
-                  </a>
-                ) : null}
-                {contactEmail ? (
-                  <a
-                    href={`mailto:${contactEmail}`}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
-                    aria-label="Email"
-                  >
-                    <Mail className="h-5 w-5" />
-                  </a>
-                ) : null}
-                {normalizedContactWebsite ? (
-                  <a
-                    href={normalizedContactWebsite}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
-                    aria-label="Website"
-                  >
-                    <Globe2 className="h-5 w-5" />
-                  </a>
-                ) : null}
-              </section>
-            ) : null}
+              {hasRsvpAction ? (
+                <ActionTile
+                  icon={<MessageSquare className="h-6 w-6" />}
+                  label="RSVP Now"
+                  backgroundColor="var(--theme-secondary)"
+                  textColor={secondaryTileTextColor}
+                  href={shouldPromptForRsvpIdentity ? null : directRsvpHref}
+                  onClick={handleRsvpTileClick}
+                  disabled={previewMode}
+                />
+              ) : null}
+
+              {contactPhone || contactEmail || normalizedContactWebsite ? (
+                <ContactTile
+                  phone={contactPhone}
+                  email={contactEmail}
+                  website={normalizedContactWebsite}
+                />
+              ) : null}
+            </div>
 
             {displayDetailCopy ? (
               <motion.section
@@ -1072,6 +1110,45 @@ function InfoBlock({
   );
 }
 
+function ContactTile({ phone, email, website }: { phone: string; email: string; website: string }) {
+  return (
+    <section className="flex min-h-[4.25rem] w-full max-w-[11rem] flex-col items-center justify-center gap-2 rounded-[1.5rem] border border-black/5 bg-white px-3 py-3 text-black/75 shadow-[0_10px_24px_rgba(59,74,84,0.1)] sm:min-h-[4.75rem] md:min-h-[5rem]">
+      <div className="flex items-center justify-center gap-2">
+        {phone ? (
+          <a
+            href={`tel:${phone.replace(/[^\d+]/g, "")}`}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
+            aria-label="Call"
+          >
+            <Phone className="h-4 w-4" />
+          </a>
+        ) : null}
+        {email ? (
+          <a
+            href={`mailto:${email}`}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
+            aria-label="Email"
+          >
+            <Mail className="h-4 w-4" />
+          </a>
+        ) : null}
+        {website ? (
+          <a
+            href={website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
+            aria-label="Website"
+          >
+            <Globe2 className="h-4 w-4" />
+          </a>
+        ) : null}
+      </div>
+      <span className="text-center text-sm font-bold uppercase tracking-tight">Contact</span>
+    </section>
+  );
+}
+
 function ActionTile({
   icon,
   label,
@@ -1099,8 +1176,8 @@ function ActionTile({
   );
 
   const className = wide
-    ? "col-span-2 flex min-h-[4.75rem] w-full items-center justify-center rounded-[2rem] px-5 py-4 shadow-[0_16px_38px_rgba(59,74,84,0.1)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[5.25rem] sm:px-6 md:min-h-[5.5rem]"
-    : "flex min-h-[7rem] w-full items-center justify-center rounded-[2.1rem] px-4 py-5 shadow-[0_16px_38px_rgba(59,74,84,0.1)] transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[8rem] md:min-h-[8.5rem]";
+    ? "col-span-2 flex min-h-[3.5rem] w-full max-w-[16rem] items-center justify-center rounded-[1.5rem] px-5 py-3 shadow-[0_10px_24px_rgba(59,74,84,0.1)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[4rem] sm:px-6"
+    : "flex min-h-[4.25rem] w-full max-w-[11rem] items-center justify-center rounded-[1.5rem] px-3 py-3 shadow-[0_10px_24px_rgba(59,74,84,0.1)] transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[4.75rem] md:min-h-[5rem]";
   const contentClassName = wide
     ? "flex flex-row items-center justify-center gap-4"
     : "flex flex-col items-center gap-3";

@@ -301,6 +301,27 @@ function normalizeDetectedTitle(value: string): string {
     .trim();
 }
 
+function titleSegmentLooksLikeVenueNarrative(value: string): boolean {
+  return (
+    /\b(?:will|is|are|be|visit|visits|coming|come)\b.+\b(?:at|to)\b/i.test(value) ||
+    /\b(?:on|from)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tues?|wed|thu|thur|fri|sat|sun|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/i.test(
+      value,
+    )
+  );
+}
+
+function stripTitleVenueNarrativeSuffix(value: string | null): string | null {
+  const title = cleanString(value);
+  if (!title) return null;
+  const parts = title
+    .split(/\s+[—–-]\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length < 2) return title;
+  const kept = parts.filter((part, index) => index < 2 || !titleSegmentLooksLikeVenueNarrative(part));
+  return kept.join(" — ") || title;
+}
+
 function deriveTitleFromOcr(lines: string[], rawText: string | null): string | null {
   for (const line of lines) {
     const cleaned = normalizeDetectedTitle(line);
@@ -666,6 +687,7 @@ export function buildScanEventPageHistoryPayload(params: {
   const baseTitle =
     firstSpecificTitle(fieldsGuess.title, rescuedTitle, categoryRaw, "Scanned Event") ||
     "Scanned Event";
+  const normalizedBaseTitle = stripTitleVenueNarrativeSuffix(baseTitle) || baseTitle;
   const rescuedLocation = extractAddressFromOcr(ocrLines);
   const normalizedLocation = normalizeOcrLocationFields({
     venue: firstSpecificString(fieldsGuess.venue, fieldsGuess.venueName),
@@ -677,7 +699,7 @@ export function buildScanEventPageHistoryPayload(params: {
   const venue = normalizedLocation.venue;
   const location = normalizedLocation.location;
   const locationLine = normalizedLocation.locationLine || "Location TBD";
-  const title = appendVenueToVendorVisitTitle(baseTitle, venue, rescueText);
+  const title = appendVenueToVendorVisitTitle(normalizedBaseTitle, venue, rescueText);
   const rsvpDetails = extractRsvpDetails(rescueText);
   const normalizedRsvp = normalizeOcrRsvpFields({
     rsvp: firstSpecificString(fieldsGuess.rsvp, fieldsGuess.rsvpText),
