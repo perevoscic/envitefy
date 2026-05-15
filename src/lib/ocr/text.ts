@@ -833,6 +833,26 @@ export function extractCommonOcrFactsFromFlyerText(
     .filter((perk) => perk.pattern.test(compact))
     .map((perk) => perk.label);
   const hasCombinedPerks = printedPerks.length >= 2;
+  const printedFlavors = [
+    "Blue Raspberry",
+    "Tiger's Blood",
+    "Groovy Grape",
+    "Island Rush",
+    "Lucky Lime",
+    "Monster Mango",
+    "Ninja Cherry",
+    "Pina Colada",
+    "Strawberry Treasure",
+    "Watermelon Wave",
+  ].filter((flavor) => new RegExp(`\\b${flavor.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(compact));
+  const menuPriceMatches = [
+    ...compact.matchAll(
+      /\b([A-Z][A-Za-z0-9' -]{2,34}?)\s+(\$\s*\d+(?:\.\d{2})?(?:\s*,?\s*\$\s*\d+(?:\.\d{2})?\s*refill)?)\b/gi,
+    ),
+  ]
+    .map((match) => `${cleanFlyerFact(match[1])} ${cleanFlyerFact(match[2])}`)
+    .filter((value) => !/\b(?:may|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(value))
+    .slice(0, 8);
 
   if (checkInMatch?.[1]) addFact("Check-in", `Check-in ${normalizePrintedTime(checkInMatch[1])}`);
   if (gameStartMatch?.[1]) {
@@ -840,6 +860,8 @@ export function extractCommonOcrFactsFromFlyerText(
   }
   if (entryFeeMatch?.[1]) addFact("Entry Fee", normalizePrintedTime(entryFeeMatch[1]));
   if (printedPerks.length) addFact("Perks", printedPerks.join(", "));
+  if (menuPriceMatches.length >= 2) addFact("Menu Prices", menuPriceMatches.join("; "));
+  if (printedFlavors.length >= 2) addFact("Flavors", printedFlavors.join(", "));
   addFact("Good to Know", compact.match(/\ball\s+skills?\s+levels?\s+welcome\b/i)?.[0]);
   addFact("Good to Know", compact.match(/\bages?\s*\d{1,2}\s*(?:\+|plus)?/i)?.[0]);
   addFact("Good to Know", compact.match(/\bfree\s+(?:to\s+play|entry|admission)\b/i)?.[0]);

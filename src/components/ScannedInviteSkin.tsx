@@ -347,6 +347,9 @@ export default function ScannedInviteSkin({
     rsvpSenderEmail,
   });
   const hasRsvpAction = Boolean(directRsvpHref);
+  const hasRsvpDisplayContact = Boolean(
+    String(rsvpPhone || "").trim() || String(rsvpEmail || "").trim() || String(rsvpUrl || "").trim(),
+  );
   const isGeneratedOutboundRsvpHref = Boolean(
     directRsvpHref && !String(rsvpUrl || "").trim() && /^(?:sms:|mailto:)/i.test(directRsvpHref),
   );
@@ -623,7 +626,7 @@ export default function ScannedInviteSkin({
                   title={displayLocation}
                 />
 
-                {rsvpName || rsvpPhone || rsvpEmail ? (
+                {hasRsvpAction || hasRsvpDisplayContact ? (
                   <InfoBlock
                     icon={<MessageSquare className="h-7 w-7" />}
                     swatchColor={detailIconSwatchColor}

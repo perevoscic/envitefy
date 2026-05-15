@@ -14,6 +14,8 @@ test("scanned invite skin computes readable colors for variable dark and light s
   assert.match(source, /backgroundColor: directionsButtonBackground/);
   assert.match(source, /color: directionsButtonTextColor/);
   assert.match(source, /title=\{displayRsvpTitle\}/);
+  assert.match(source, /const hasRsvpDisplayContact = Boolean/);
+  assert.match(source, /hasRsvpAction \|\| hasRsvpDisplayContact/);
 
   assert.match(source, /const detailCardTextColor = ensureReadableTextColor/);
   assert.match(source, /backgroundColor: detailCardBackground/);

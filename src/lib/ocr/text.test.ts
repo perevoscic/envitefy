@@ -192,6 +192,35 @@ test("extractCommonOcrFactsFromFlyerText preserves pickleball timing, fee, and p
   ]);
 });
 
+test("extractCommonOcrFactsFromFlyerText groups Kona menu prices and flavors", () => {
+  const facts = extractCommonOcrFactsFromFlyerText(
+    [
+      "Klassic $4",
+      "King $5",
+      "Color Changing $6, $4 Refill",
+      "Kowabunga $7, $4 Refill",
+      "Kollectable $8, $4 Refill",
+      "TopZ Sour Powder $1",
+      "FLAVORWAVE",
+      "Blue Raspberry",
+      "Tiger's Blood",
+      "Groovy Grape",
+      "Island Rush",
+      "Lucky Lime",
+      "Monster Mango",
+      "Ninja Cherry",
+      "Pina Colada",
+      "Strawberry Treasure",
+      "Watermelon Wave",
+    ].join("\n"),
+  );
+
+  assert.match(facts.find((fact) => fact.label === "Menu Prices")?.value || "", /Klassic \$4/);
+  assert.match(facts.find((fact) => fact.label === "Menu Prices")?.value || "", /TopZ Sour Powder \$1/);
+  assert.match(facts.find((fact) => fact.label === "Flavors")?.value || "", /Blue Raspberry/);
+  assert.match(facts.find((fact) => fact.label === "Flavors")?.value || "", /Watermelon Wave/);
+});
+
 test("extractGuestReminderFromFlyerText keeps bring instructions without questions footer", () => {
   const reminder = extractGuestReminderFromFlyerText(
     "Bring water and both light & dark shirts\nQuestions? Text (555) 014-2277",

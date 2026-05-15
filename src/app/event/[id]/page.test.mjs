@@ -78,6 +78,8 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /rsvpPhone=\{rsvpPhone\}/);
   assert.match(source, /rsvpEmail=\{rsvpEmail\}/);
   assert.match(source, /rsvpUrl=\{rsvpUrl\}/);
+  assert.match(source, /const hasPublicRsvpAction = Boolean\(/);
+  assert.match(source, /const showPublicRsvp = hasPublicRsvpAction;/);
   assert.match(source, /planCopy=\{birthdayPlanCopy\}/);
   assert.match(source, /ocrFacts=\{scannedInviteOcrFacts\}/);
   assert.ok(

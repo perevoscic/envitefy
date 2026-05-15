@@ -56,6 +56,7 @@ import { getEventAccessCookieName, verifyEventAccessCookieValue } from "@/lib/ev
 import { getEventTheme } from "@/lib/event-theme";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
+import { normalizeOcrRsvpFields } from "@/lib/ocr/field-normalization";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
 import {
   isBasketballOcrSkinCandidate,
@@ -1601,8 +1602,20 @@ export default async function EventPage({
   const storedRsvpNameRaw =
     typeof data?.rsvpName === "string" && data.rsvpName.trim() ? data.rsvpName.trim() : "";
   const storedRsvpName = storedRsvpNameRaw ? cleanRsvpContactLabel(storedRsvpNameRaw) : "";
+  const normalizedPublicRsvp = normalizeOcrRsvpFields({
+    rsvp: rsvpField,
+    rsvpUrl,
+    extractedContact: structuredRsvpContact,
+  });
+  const publicRsvpField = normalizedPublicRsvp.rsvp || "";
+  const hasPublicRsvpAction = Boolean(
+    rsvpPhone || rsvpEmail || rsvpUrl || directRsvpEnabled || publicRsvpField,
+  );
   const rsvpContactSource =
-    storedRsvpName || hostName || structuredRsvpContact || rsvpField || rsvpEmail || "";
+    storedRsvpName ||
+    publicRsvpField ||
+    rsvpEmail ||
+    (hasPublicRsvpAction ? hostName : "");
   // Extract just the name from RSVP field (remove "RSVP:" prefix, phone number, and option text)
   const rsvpNameRaw = rsvpContactSource
     ? rsvpContactSource
@@ -1619,10 +1632,10 @@ export default async function EventPage({
         .trim()
     : "";
   const rsvpName =
-    storedRsvpName || hostName || (rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "");
-  const showPublicRsvp = Boolean(
-    rsvpName || rsvpPhone || rsvpEmail || rsvpUrl || directRsvpEnabled,
-  );
+    storedRsvpName ||
+    (hasPublicRsvpAction ? hostName : "") ||
+    (rsvpNameRaw ? cleanRsvpContactLabel(rsvpNameRaw) : "");
+  const showPublicRsvp = hasPublicRsvpAction;
   const userName = ((session as any)?.user?.name as string | undefined) || "";
   const _smsIntroParts = [
     "Hi, there,",

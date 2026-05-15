@@ -4,10 +4,16 @@ import { sanitizeConciergePublicEventData } from "./concierge/public-copy.ts";
 import {
   cleanAddressLabel,
   detectCategory,
+  extractCommonOcrFactsFromFlyerText,
   extractRsvpDetails,
   inferTimezoneFromAddress,
   pickTitle,
 } from "./ocr/text.ts";
+import {
+  normalizeOcrLocationFields,
+  normalizeOcrRsvpFields,
+} from "./ocr/field-normalization.ts";
+import { mergeOcrFacts, normalizeOcrFacts } from "./ocr/facts.ts";
 import {
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
@@ -102,12 +108,6 @@ function formatScheduleLine(startIso: string | null, timeFound: unknown, timezon
   return `${dateText} at ${timeText}`;
 }
 
-function uniqueDisplayLine(...values: unknown[]): string | null {
-  const parts = values.map(cleanString).filter((value): value is string => Boolean(value));
-  const unique = parts.filter((value, index) => parts.indexOf(value) === index);
-  return unique.join(", ") || null;
-}
-
 function eventTypeFromText(category: string | null, title: string | null, ocrText: string | null) {
   const haystack = [category, title, ocrText].filter(Boolean).join("\n").toLowerCase();
   if (/\bbirthday|bday|turns?\s+\d+|turning\s+\d+/.test(haystack)) return "birthday";
@@ -196,10 +196,6 @@ function inferScanSourceIntent(args: {
     };
   }
   return { intent: "unknown", confidence: "low", signals: [] };
-}
-
-function normalizeFactArray(value: unknown) {
-  return Array.isArray(value) ? value.filter((item) => item && typeof item === "object") : [];
 }
 
 function isOcrInviteCategory(value: unknown): boolean {
@@ -655,13 +651,26 @@ export function buildScanEventPageHistoryPayload(params: {
     firstSpecificTitle(fieldsGuess.title, rescuedTitle, categoryRaw, "Scanned Event") ||
     "Scanned Event";
   const rescuedLocation = extractAddressFromOcr(ocrLines);
-  const venue = firstSpecificString(fieldsGuess.venue, fieldsGuess.venueName);
-  const location = firstSpecificString(fieldsGuess.location, fieldsGuess.address, rescuedLocation);
-  const locationLine = uniqueDisplayLine(venue, location) || "Location TBD";
+  const normalizedLocation = normalizeOcrLocationFields({
+    venue: firstSpecificString(fieldsGuess.venue, fieldsGuess.venueName),
+    location: firstSpecificString(fieldsGuess.location, fieldsGuess.address),
+    fallbackLocation: rescuedLocation,
+  });
+  const venue = normalizedLocation.venue;
+  const location = normalizedLocation.location;
+  const locationLine = normalizedLocation.locationLine || "Location TBD";
   const rsvpDetails = extractRsvpDetails(rescueText);
-  const rsvpText = firstSpecificString(fieldsGuess.rsvp, fieldsGuess.rsvpText, rsvpDetails.contact);
-  const rsvpUrl = firstSpecificString(fieldsGuess.rsvpUrl, fieldsGuess.rsvpLink, rsvpDetails.url);
-  const rsvpDeadline = firstSpecificString(fieldsGuess.rsvpDeadline, rsvpDetails.deadline);
+  const normalizedRsvp = normalizeOcrRsvpFields({
+    rsvp: firstSpecificString(fieldsGuess.rsvp, fieldsGuess.rsvpText),
+    rsvpUrl: firstSpecificString(fieldsGuess.rsvpUrl, fieldsGuess.rsvpLink),
+    rsvpDeadline: firstSpecificString(fieldsGuess.rsvpDeadline),
+    extractedContact: rsvpDetails.contact,
+    extractedUrl: rsvpDetails.url,
+    extractedDeadline: rsvpDetails.deadline,
+  });
+  const rsvpText = normalizedRsvp.rsvp;
+  const rsvpUrl = normalizedRsvp.rsvpUrl;
+  const rsvpDeadline = normalizedRsvp.rsvpDeadline;
   const eventType = eventTypeFromText(categoryRaw, title, ocrText);
   const initialCategory = categoryLabelForEventType(eventType, categoryRaw);
   const ocrSkin = asRecord(params.ocr.ocrSkin);
@@ -727,13 +736,18 @@ export function buildScanEventPageHistoryPayload(params: {
   const hostName = firstString(fieldsGuess.hostName, fieldsGuess.host);
   const rsvpName = extractRsvpName(rsvpText);
   const rsvpPhone = extractPhone(rsvpText);
-  const ocrFacts = normalizeFactArray(fieldsGuess.ocrFacts || fieldsGuess.facts);
+  const goodToKnow = firstString(fieldsGuess.goodToKnow);
+  const ocrFacts = mergeOcrFacts(
+    normalizeOcrFacts(fieldsGuess.ocrFacts || fieldsGuess.facts),
+    extractCommonOcrFactsFromFlyerText(rescueText),
+    goodToKnow ? [{ label: "Good to Know", value: goodToKnow }] : [],
+  );
   const publicSections = [
     { label: "Overview", value: description },
     { label: "When", value: scheduleLine || "Date TBD" },
     { label: "Where", value: locationLine },
     ...(hostName ? [{ label: "Host", value: hostName }] : []),
-    ...(rsvpText ? [{ label: "RSVP", value: rsvpText }] : []),
+    ...(rsvpText || rsvpUrl ? [{ label: "RSVP", value: rsvpText || rsvpUrl }] : []),
     ...(registryUrl ? [{ label: "Registry", value: registryUrl }] : []),
   ];
 
@@ -810,8 +824,8 @@ export function buildScanEventPageHistoryPayload(params: {
     attire: firstString(fieldsGuess.attire) || undefined,
     registryUrl: registryUrl || undefined,
     registryProvider: firstString(fieldsGuess.registryProvider) || undefined,
-    goodToKnow: description,
-    thingsToDo: description,
+    goodToKnow: goodToKnow || undefined,
+    thingsToDo: goodToKnow || undefined,
     previewCopy: {
       headline: title,
       subheadline: category,

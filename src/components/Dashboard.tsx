@@ -15,6 +15,10 @@ import {
 } from "@/components/snap/SnapProcessingCard";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { resolveSourceIntent } from "@/lib/concierge/creation-intent";
+import {
+  normalizeOcrLocationFields,
+  normalizeOcrRsvpFields,
+} from "@/lib/ocr/field-normalization";
 import { normalizeOcrFacts, type OcrFact } from "@/lib/ocr/facts";
 import {
   isBasketballOcrSkinCandidate,
@@ -1069,10 +1073,14 @@ export default function Dashboard({
           return cleanedName && /[A-Za-z]/.test(cleanedName) ? cleanedName : null;
         };
 
-        const rawRsvp =
-          typeof data?.fieldsGuess?.rsvp === "string" && data.fieldsGuess.rsvp.trim()
-            ? data.fieldsGuess.rsvp.trim()
-            : null;
+        const normalizedScanRsvp = normalizeOcrRsvpFields({
+          rsvp: (data?.fieldsGuess as { rsvp?: unknown })?.rsvp,
+          rsvpText: (data?.fieldsGuess as { rsvpText?: unknown })?.rsvpText,
+          rsvpUrl: (data?.fieldsGuess as { rsvpUrl?: unknown })?.rsvpUrl,
+          rsvpLink: (data?.fieldsGuess as { rsvpLink?: unknown })?.rsvpLink,
+          rsvpDeadline: (data?.fieldsGuess as { rsvpDeadline?: unknown })?.rsvpDeadline,
+        });
+        const rawRsvp = normalizedScanRsvp.rsvp;
         const cleanedRsvp = rawRsvp ? cleanRsvp(rawRsvp) : null;
         const openHouseFromScan =
           data?.openHouse && typeof data.openHouse === "object"
@@ -1089,16 +1097,10 @@ export default function Dashboard({
             ? openHouseFromScan.realtorEmail.trim()
             : null;
         const rsvpNameFromScan = extractRsvpName(rawRsvp);
-        const scannedRsvpUrl =
-          typeof (data?.fieldsGuess as { rsvpUrl?: unknown })?.rsvpUrl === "string" &&
-          (data.fieldsGuess as { rsvpUrl?: string }).rsvpUrl?.trim()
-            ? normalizeUrlValue((data.fieldsGuess as { rsvpUrl?: string }).rsvpUrl!.trim())
-            : null;
-        const scannedRsvpDeadline =
-          typeof (data?.fieldsGuess as { rsvpDeadline?: unknown })?.rsvpDeadline === "string" &&
-          (data.fieldsGuess as { rsvpDeadline?: string }).rsvpDeadline?.trim()
-            ? (data.fieldsGuess as { rsvpDeadline?: string }).rsvpDeadline!.trim()
-            : null;
+        const scannedRsvpUrl = normalizedScanRsvp.rsvpUrl
+          ? normalizeUrlValue(normalizedScanRsvp.rsvpUrl)
+          : null;
+        const scannedRsvpDeadline = normalizedScanRsvp.rsvpDeadline;
         const rawHostNameFromScan =
           typeof (data?.fieldsGuess as { hostName?: unknown })?.hostName === "string" &&
           (data.fieldsGuess as { hostName?: string }).hostName?.trim()
@@ -1107,14 +1109,13 @@ export default function Dashboard({
         const hostNameFromScan = rawHostNameFromScan
           ? cleanRsvpContactLabel(rawHostNameFromScan)
           : null;
-        const venueFromScan =
-          typeof (data?.fieldsGuess as { venue?: unknown; venueName?: unknown })?.venue ===
-            "string" && (data.fieldsGuess as { venue?: string }).venue?.trim()
-            ? (data.fieldsGuess as { venue?: string }).venue!.trim()
-            : typeof (data?.fieldsGuess as { venueName?: unknown })?.venueName === "string" &&
-                (data.fieldsGuess as { venueName?: string }).venueName?.trim()
-              ? (data.fieldsGuess as { venueName?: string }).venueName!.trim()
-              : null;
+        const normalizedScanLocation = normalizeOcrLocationFields({
+          venue: (data?.fieldsGuess as { venue?: unknown })?.venue,
+          venueName: (data?.fieldsGuess as { venueName?: unknown })?.venueName,
+          location: (data?.fieldsGuess as { location?: unknown })?.location,
+          address: (data?.fieldsGuess as { address?: unknown })?.address,
+        });
+        const venueFromScan = normalizedScanLocation.venue;
         const isWeddingOcrResult =
           String(data?.category || "")
             .trim()
@@ -1195,7 +1196,7 @@ export default function Dashboard({
                 typeof data.fieldsGuess.timeFound === "boolean"
                   ? data.fieldsGuess.timeFound
                   : undefined,
-              location: String(data.fieldsGuess.location || ""),
+              location: normalizedScanLocation.location || "",
               description: String(data.fieldsGuess.description || ""),
               timezone: String(data.fieldsGuess.timezone || tz || "UTC"),
               reminders: [{ minutes: 1440 }],

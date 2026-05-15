@@ -96,3 +96,70 @@ test("scan event page payload rescues obvious invite details from raw OCR text",
   assert.equal(payload.data.rsvpPhone, "850-687-2596");
   assert.doesNotMatch(String(payload.data.goodToKnow), /Event from flyer/);
 });
+
+test("scan event page payload keeps Kona menu details out of location and RSVP", () => {
+  const payload = buildScanEventPageHistoryPayload({
+    source: "upload",
+    scanAttemptId: "scan-kona-1",
+    ocr: {
+      category: "General Events",
+      ocrText: [
+        "Kona Ice Is Coming",
+        "Gateway Academy",
+        "Tuesday, May 19",
+        "9:30 AM - 1:40 PM",
+        "Klassic $4",
+        "King $5",
+        "Color Changing $6, $4 Refill",
+        "Kowabunga $7, $4 Refill",
+        "Kollectable $8, $4 Refill",
+        "TopZ Sour Powder $1",
+        "FLAVORWAVE",
+        "Blue Raspberry",
+        "Tiger's Blood",
+        "Groovy Grape",
+        "Island Rush",
+        "Lucky Lime",
+        "Monster Mango",
+        "Ninja Cherry",
+        "Pina Colada",
+        "Strawberry Treasure",
+        "Watermelon Wave",
+        "We hope you have a very fun, safe summer!",
+      ].join("\n"),
+      fieldsGuess: {
+        title: "Kona Ice Is Coming — Gateway Academy",
+        start: "2026-05-19T09:30:00",
+        end: "2026-05-19T13:40:00",
+        timeFound: true,
+        venue: "Gateway Academy",
+        location:
+          "4; King $5; Color Changing $6, $4 Refill; Kowabunga $7, $4 Refill; Kollectable $8, $4 Refill; TopZ Sour Powder $1",
+        description: "Kona Ice is coming to Gateway Academy on May 19 from 9:30 AM to 1:40 PM.",
+        rsvp: "Host",
+        goodToKnow: null,
+      },
+    },
+  });
+
+  assert.equal(payload.ownership, "owned");
+  assert.equal(payload.data.location, undefined);
+  assert.equal(payload.data.venue, "Gateway Academy");
+  assert.equal(payload.data.locationLabel, "Gateway Academy");
+  assert.equal(payload.data.rsvp, undefined);
+  assert.equal(payload.data.rsvpName, undefined);
+  assert.equal(payload.data.goodToKnow, undefined);
+  assert.equal(payload.data.thingsToDo, undefined);
+  assert.deepEqual(
+    payload.data.skinSections?.filter((section) => section.label === "RSVP"),
+    [],
+  );
+  assert.match(
+    payload.data.ocrFacts?.find((fact) => fact.label === "Menu Prices")?.value || "",
+    /Klassic \$4/,
+  );
+  assert.match(
+    payload.data.ocrFacts?.find((fact) => fact.label === "Flavors")?.value || "",
+    /Watermelon Wave/,
+  );
+});
