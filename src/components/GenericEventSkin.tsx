@@ -38,6 +38,8 @@ type Props = {
   rsvpPhone?: string | null;
   rsvpEmail?: string | null;
   rsvpUrl?: string | null;
+  rsvpSenderName?: string | null;
+  rsvpSenderEmail?: string | null;
   detailCopy?: string | null;
   activities?: string[] | null;
   attire?: string | null;

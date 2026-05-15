@@ -21,6 +21,7 @@ import {
 } from "@/components/CalendarIcons";
 import ConciergeEventWebsite from "@/components/concierge/ConciergeEventWebsite";
 import EventActions from "@/components/EventActions";
+import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventMap from "@/components/EventMap";
 import EventRsvpDashboard from "@/components/EventRsvpDashboard";
@@ -80,6 +81,7 @@ import {
 import type { SignupForm } from "@/types/signup";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { findFirstEmail, findFirstUrl, normalizeUrlValue } from "@/utils/contact";
+import { resolveEventCelebrationKind } from "@/utils/event-celebration";
 import { buildEditLink, resolveEditHref } from "@/utils/event-edit-route";
 import {
   buildEventProductPath,
@@ -944,8 +946,16 @@ export default async function EventPage({
         `${buildEventPath(row.id, title, undefined, publicSlug)}?tab=dashboard`
       : "";
   const eventPageBackgroundColor = resolveEventPageBackgroundColor(data);
-  const renderWithEventPageBackground = (children: ReactNode) => (
+  const celebrationKind = resolveEventCelebrationKind(data as any, title);
+  const guestCelebrationKind = sessionEmail ? null : celebrationKind;
+  const renderWithEventPageBackground = (
+    children: ReactNode,
+    options?: { suppressCelebration?: boolean },
+  ) => (
     <EventPageBackgroundStyle color={eventPageBackgroundColor}>
+      {!options?.suppressCelebration && guestCelebrationKind ? (
+        <EventCelebrationOverlay kind={guestCelebrationKind} />
+      ) : null}
       {ownerPreviewReturnHref ? <OwnerPreviewReturnLink href={ownerPreviewReturnHref} /> : null}
       {children}
     </EventPageBackgroundStyle>
@@ -1064,6 +1074,7 @@ export default async function EventPage({
         initialTab={resolvedOwnerToolsTab}
         numberOfGuests={numberOfGuests}
       />,
+      { suppressCelebration: true },
     );
   }
 
@@ -1150,6 +1161,7 @@ export default async function EventPage({
           </div>
         </section>
       </main>,
+      { suppressCelebration: true },
     );
   }
 
@@ -2068,6 +2080,8 @@ export default async function EventPage({
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
         rsvpUrl={rsvpUrl}
+        rsvpSenderName={userName || null}
+        rsvpSenderEmail={sessionEmail}
         planCopy={birthdayPlanCopy}
         activities={birthdayActivities}
         attire={birthdayAttire}
@@ -2371,6 +2385,8 @@ export default async function EventPage({
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
         rsvpUrl={rsvpUrl}
+        rsvpSenderName={userName || null}
+        rsvpSenderEmail={sessionEmail}
         detailCopy={scannedInviteDetailCopy}
         activities={scannedInviteActivities}
         attire={scannedInviteAttire}
@@ -2464,6 +2480,8 @@ export default async function EventPage({
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
         rsvpUrl={rsvpUrl}
+        rsvpSenderName={userName || null}
+        rsvpSenderEmail={sessionEmail}
         detailCopy={scannedInviteDetailCopy}
         activities={scannedInviteActivities}
         attire={scannedInviteAttire}
@@ -2557,6 +2575,8 @@ export default async function EventPage({
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
         rsvpUrl={rsvpUrl}
+        rsvpSenderName={userName || null}
+        rsvpSenderEmail={sessionEmail}
         detailCopy={scannedInviteDetailCopy}
         activities={scannedInviteActivities}
         attire={scannedInviteAttire}
@@ -2717,6 +2737,8 @@ export default async function EventPage({
           rsvpPhone={rsvpPhone}
           rsvpEmail={rsvpEmail}
           rsvpUrl={rsvpUrl}
+          rsvpSenderName={userName || null}
+          rsvpSenderEmail={sessionEmail}
           detailCopy={scannedInviteDetailCopy}
           activities={scannedInviteActivities}
           attire={scannedInviteAttire}
@@ -2748,6 +2770,8 @@ export default async function EventPage({
           rsvpPhone={rsvpPhone}
           rsvpEmail={rsvpEmail}
           rsvpUrl={rsvpUrl}
+          rsvpSenderName={userName || null}
+          rsvpSenderEmail={sessionEmail}
           detailCopy={scannedInviteDetailCopy}
           activities={scannedInviteActivities}
           attire={scannedInviteAttire}
@@ -2780,6 +2804,8 @@ export default async function EventPage({
           rsvpPhone={rsvpPhone}
           rsvpEmail={rsvpEmail}
           rsvpUrl={rsvpUrl}
+          rsvpSenderName={userName || null}
+          rsvpSenderEmail={sessionEmail}
           detailCopy={scannedInviteDetailCopy}
           activities={scannedInviteActivities}
           attire={scannedInviteAttire}
@@ -2811,6 +2837,8 @@ export default async function EventPage({
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
         rsvpUrl={rsvpUrl}
+        rsvpSenderName={userName || null}
+        rsvpSenderEmail={sessionEmail}
         detailCopy={scannedInviteDetailCopy}
         activities={scannedInviteActivities}
         attire={scannedInviteAttire}
@@ -2846,6 +2874,8 @@ export default async function EventPage({
         rsvpPhone={rsvpPhone}
         rsvpEmail={rsvpEmail}
         rsvpUrl={rsvpUrl}
+        rsvpSenderName={userName || null}
+        rsvpSenderEmail={sessionEmail}
         detailCopy={
           (typeof data?.goodToKnow === "string" && data.goodToKnow.trim()) ||
           (typeof data?.thingsToDo === "string" && data.thingsToDo.trim()) ||

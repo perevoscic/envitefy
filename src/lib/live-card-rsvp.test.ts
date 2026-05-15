@@ -25,10 +25,45 @@ test("formatLiveCardRsvpDraftBody includes response title and live card URL", ()
   const body = formatLiveCardRsvpDraftBody({
     eventTitle: "Summer Party",
     responseLabel: "Yes",
+    responseKey: "yes",
     shareUrl: "https://example.com/card/abc/summer-party",
   });
   assert.match(body, /Yes, we can attend Summer Party/);
   assert.match(body, /Event link: https:\/\/example\.com\/card\/abc\/summer-party/);
+});
+
+test("formatLiveCardRsvpDraftBody uses direct RSVP host, sender, and date copy", () => {
+  const body = formatLiveCardRsvpDraftBody({
+    eventTitle: "Graduation Party",
+    responseLabel: "RSVP",
+    shareUrl: "https://example.com/card/abc/graduation-party",
+    hostName: "Liz",
+    senderName: "Jordan Lee",
+    eventDateLabel: "Friday, May 15",
+  });
+  assert.equal(
+    body,
+    [
+      "Hi Liz, this is Jordan Lee.",
+      "",
+      "I would like to RSVP for Graduation Party. That is on Friday, May 15.",
+      "",
+      "See you there!",
+    ].join("\n"),
+  );
+});
+
+test("formatLiveCardRsvpDraftBody includes anonymous guest email in direct RSVP copy", () => {
+  const body = formatLiveCardRsvpDraftBody({
+    eventTitle: "Graduation Party",
+    responseLabel: "RSVP",
+    shareUrl: "",
+    hostName: "Liz",
+    senderName: "Jordan Lee",
+    senderEmail: "jordan@example.com",
+    eventDateLabel: "Friday, May 15",
+  });
+  assert.match(body, /You can reach me at jordan@example\.com\./);
 });
 
 test("formatLiveCardRsvpDraftBody uses category-specific birthday replies", () => {

@@ -12,6 +12,7 @@ import {
   EVENT_SKIN_FOOTER_TEXT_CLASS,
 } from "@/components/event-skin-layout";
 import OcrFactCards from "@/components/OcrFactCards";
+import RsvpIdentityModal from "@/components/RsvpIdentityModal";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
@@ -66,6 +67,8 @@ type Props = {
   rsvpPhone?: string | null;
   rsvpEmail?: string | null;
   rsvpUrl?: string | null;
+  rsvpSenderName?: string | null;
+  rsvpSenderEmail?: string | null;
   detailCopy?: string | null;
   activities?: string[] | null;
   attire?: string | null;
@@ -107,6 +110,10 @@ function buildRsvpHref({
   shareUrl,
   categoryLabel,
   backgroundCategory,
+  dateLabel,
+  rsvpName,
+  rsvpSenderName,
+  rsvpSenderEmail,
 }: Pick<
   Props,
   | "rsvpUrl"
@@ -116,6 +123,10 @@ function buildRsvpHref({
   | "shareUrl"
   | "categoryLabel"
   | "backgroundCategory"
+  | "dateLabel"
+  | "rsvpName"
+  | "rsvpSenderName"
+  | "rsvpSenderEmail"
 >): string | null {
   const url = String(rsvpUrl || "").trim();
   if (url) return url;
@@ -126,6 +137,10 @@ function buildRsvpHref({
     responseLabel: "RSVP",
     shareUrl: shareUrl || "",
     category: categoryLabel || backgroundCategory || null,
+    hostName: rsvpName,
+    senderName: rsvpSenderName,
+    senderEmail: rsvpSenderEmail,
+    eventDateLabel: dateLabel,
   });
   return href || null;
 }
@@ -210,6 +225,8 @@ export default function ScannedInviteSkin({
   rsvpPhone,
   rsvpEmail,
   rsvpUrl,
+  rsvpSenderName,
+  rsvpSenderEmail,
   detailCopy,
   activities,
   attire,
@@ -225,6 +242,7 @@ export default function ScannedInviteSkin({
 }: Props) {
   const [showCalendarMenu, setShowCalendarMenu] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
+  const [showRsvpIdentityModal, setShowRsvpIdentityModal] = useState(false);
 
   const colors = useMemo(
     () => normalizeScannedInvitePalette(palette as any, DEFAULT_PALETTE as any),
@@ -323,8 +341,19 @@ export default function ScannedInviteSkin({
     shareUrl,
     categoryLabel,
     backgroundCategory,
+    dateLabel,
+    rsvpName,
+    rsvpSenderName,
+    rsvpSenderEmail,
   });
   const hasRsvpAction = Boolean(directRsvpHref);
+  const isGeneratedOutboundRsvpHref = Boolean(
+    directRsvpHref && !String(rsvpUrl || "").trim() && /^(?:sms:|mailto:)/i.test(directRsvpHref),
+  );
+  const hasKnownRsvpIdentity = Boolean(
+    String(rsvpSenderName || "").trim() && String(rsvpSenderEmail || "").trim(),
+  );
+  const shouldPromptForRsvpIdentity = isGeneratedOutboundRsvpHref && !hasKnownRsvpIdentity;
   const normalizedDetailCopy = normalizeInlineSentences(rawDetailCopy);
   const baseDetailCopy =
     isPickleballSkin && isRedundantPickleballSummary(normalizedDetailCopy)
@@ -402,6 +431,41 @@ export default function ScannedInviteSkin({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [showImageLightbox]);
+
+  const openRsvpHref = (href: string) => {
+    if (isRsvpMailtoHref(href)) {
+      openRsvpMailtoHref(href);
+      return;
+    }
+    window.location.href = href;
+  };
+
+  const handleRsvpTileClick = () => {
+    if (!directRsvpHref || previewMode) return;
+    if (shouldPromptForRsvpIdentity) {
+      setShowRsvpIdentityModal(true);
+      return;
+    }
+    openRsvpHref(directRsvpHref);
+  };
+
+  const handleRsvpIdentitySubmit = (identity: { name: string; email: string }) => {
+    const href = buildRsvpHref({
+      rsvpUrl,
+      rsvpPhone,
+      rsvpEmail,
+      title,
+      shareUrl,
+      categoryLabel,
+      backgroundCategory,
+      dateLabel,
+      rsvpName,
+      rsvpSenderName: identity.name,
+      rsvpSenderEmail: identity.email,
+    });
+    setShowRsvpIdentityModal(false);
+    if (href) openRsvpHref(href);
+  };
 
   const themeStyle = {
     ["--theme-primary" as string]: colors.primary,
@@ -611,7 +675,8 @@ export default function ScannedInviteSkin({
                 label="RSVP Now"
                 backgroundColor="var(--theme-secondary)"
                 textColor={secondaryTileTextColor}
-                href={directRsvpHref}
+                href={shouldPromptForRsvpIdentity ? null : directRsvpHref}
+                onClick={handleRsvpTileClick}
                 disabled={previewMode}
               />
             ) : null}
@@ -846,6 +911,17 @@ export default function ScannedInviteSkin({
           </div>
         ) : null}
       </AnimatePresence>
+
+      {showRsvpIdentityModal ? (
+        <RsvpIdentityModal
+          eventTitle={displayTitle}
+          hostName={displayRsvpTitle}
+          initialName={rsvpSenderName}
+          initialEmail={rsvpSenderEmail}
+          onClose={() => setShowRsvpIdentityModal(false)}
+          onSubmit={handleRsvpIdentitySubmit}
+        />
+      ) : null}
     </motion.div>
   );
 }

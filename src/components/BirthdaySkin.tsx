@@ -12,6 +12,7 @@ import {
   EVENT_SKIN_FOOTER_TEXT_CLASS,
 } from "@/components/event-skin-layout";
 import OcrFactCards from "@/components/OcrFactCards";
+import RsvpIdentityModal from "@/components/RsvpIdentityModal";
 import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
@@ -64,6 +65,8 @@ type Props = {
   rsvpPhone?: string | null;
   rsvpEmail?: string | null;
   rsvpUrl?: string | null;
+  rsvpSenderName?: string | null;
+  rsvpSenderEmail?: string | null;
   planCopy?: string | null;
   activities?: string[] | null;
   attire?: string | null;
@@ -101,7 +104,22 @@ function buildRsvpHref({
   rsvpEmail,
   title,
   shareUrl,
-}: Pick<Props, "rsvpUrl" | "rsvpPhone" | "rsvpEmail" | "title" | "shareUrl">): string | null {
+  dateLabel,
+  rsvpName,
+  rsvpSenderName,
+  rsvpSenderEmail,
+}: Pick<
+  Props,
+  | "rsvpUrl"
+  | "rsvpPhone"
+  | "rsvpEmail"
+  | "title"
+  | "shareUrl"
+  | "dateLabel"
+  | "rsvpName"
+  | "rsvpSenderName"
+  | "rsvpSenderEmail"
+>): string | null {
   const url = String(rsvpUrl || "").trim();
   if (url) return url;
   const contact = `${String(rsvpEmail || "").trim()} ${String(rsvpPhone || "").trim()}`.trim();
@@ -111,6 +129,10 @@ function buildRsvpHref({
     responseLabel: "RSVP",
     shareUrl: shareUrl || "",
     category: "Birthday",
+    hostName: rsvpName,
+    senderName: rsvpSenderName,
+    senderEmail: rsvpSenderEmail,
+    eventDateLabel: dateLabel,
   });
   return href || null;
 }
@@ -181,6 +203,8 @@ export default function BirthdaySkin({
   rsvpPhone,
   rsvpEmail,
   rsvpUrl,
+  rsvpSenderName,
+  rsvpSenderEmail,
   planCopy,
   activities,
   attire,
@@ -194,6 +218,7 @@ export default function BirthdaySkin({
 }: Props) {
   const [showCalendarMenu, setShowCalendarMenu] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
+  const [showRsvpIdentityModal, setShowRsvpIdentityModal] = useState(false);
 
   const colors = useMemo(
     () => normalizeScannedInvitePalette(palette as any, DEFAULT_PALETTE as any),
@@ -219,8 +244,25 @@ export default function BirthdaySkin({
     .filter(Boolean)
     .join(", ");
   const directionsHref = buildMapsHref(directionsLocation || location);
-  const directRsvpHref = buildRsvpHref({ rsvpUrl, rsvpPhone, rsvpEmail, title, shareUrl });
+  const directRsvpHref = buildRsvpHref({
+    rsvpUrl,
+    rsvpPhone,
+    rsvpEmail,
+    title,
+    shareUrl,
+    dateLabel,
+    rsvpName,
+    rsvpSenderName,
+    rsvpSenderEmail,
+  });
   const hasRsvpAction = Boolean(directRsvpHref);
+  const isGeneratedOutboundRsvpHref = Boolean(
+    directRsvpHref && !String(rsvpUrl || "").trim() && /^(?:sms:|mailto:)/i.test(directRsvpHref),
+  );
+  const hasKnownRsvpIdentity = Boolean(
+    String(rsvpSenderName || "").trim() && String(rsvpSenderEmail || "").trim(),
+  );
+  const shouldPromptForRsvpIdentity = isGeneratedOutboundRsvpHref && !hasKnownRsvpIdentity;
   const displayAttire = String(attire || "").trim();
   const displayRegistryName = String(registryName || "").trim();
   const displayRegistryHelperText = String(registryHelperText || "").trim();
@@ -309,6 +351,39 @@ export default function BirthdaySkin({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [showImageLightbox]);
+
+  const openRsvpHref = (href: string) => {
+    if (isRsvpMailtoHref(href)) {
+      openRsvpMailtoHref(href);
+      return;
+    }
+    window.location.href = href;
+  };
+
+  const handleRsvpTileClick = () => {
+    if (!directRsvpHref || previewMode) return;
+    if (shouldPromptForRsvpIdentity) {
+      setShowRsvpIdentityModal(true);
+      return;
+    }
+    openRsvpHref(directRsvpHref);
+  };
+
+  const handleRsvpIdentitySubmit = (identity: { name: string; email: string }) => {
+    const href = buildRsvpHref({
+      rsvpUrl,
+      rsvpPhone,
+      rsvpEmail,
+      title,
+      shareUrl,
+      dateLabel,
+      rsvpName,
+      rsvpSenderName: identity.name,
+      rsvpSenderEmail: identity.email,
+    });
+    setShowRsvpIdentityModal(false);
+    if (href) openRsvpHref(href);
+  };
 
   const themeStyle = {
     ["--theme-primary" as string]: colors.primary,
@@ -494,7 +569,8 @@ export default function BirthdaySkin({
                 label="RSVP Now"
                 backgroundColor="var(--theme-secondary)"
                 textColor={secondaryTileTextColor}
-                href={directRsvpHref}
+                href={shouldPromptForRsvpIdentity ? null : directRsvpHref}
+                onClick={handleRsvpTileClick}
                 disabled={previewMode}
               />
             ) : null}
@@ -715,6 +791,17 @@ export default function BirthdaySkin({
           </div>
         ) : null}
       </AnimatePresence>
+
+      {showRsvpIdentityModal ? (
+        <RsvpIdentityModal
+          eventTitle={title}
+          hostName={displayRsvpTitle}
+          initialName={rsvpSenderName}
+          initialEmail={rsvpSenderEmail}
+          onClose={() => setShowRsvpIdentityModal(false)}
+          onSubmit={handleRsvpIdentitySubmit}
+        />
+      ) : null}
     </motion.div>
   );
 }

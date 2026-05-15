@@ -37,6 +37,8 @@ type Props = {
   rsvpPhone?: string | null;
   rsvpEmail?: string | null;
   rsvpUrl?: string | null;
+  rsvpSenderName?: string | null;
+  rsvpSenderEmail?: string | null;
   detailCopy?: string | null;
   activities?: string[] | null;
   attire?: string | null;
@@ -64,6 +66,8 @@ export default function GraduationSkin({
   rsvpPhone,
   rsvpEmail,
   rsvpUrl,
+  rsvpSenderName,
+  rsvpSenderEmail,
   detailCopy,
   activities,
   attire,
@@ -103,6 +107,8 @@ export default function GraduationSkin({
       rsvpPhone={rsvpPhone}
       rsvpEmail={rsvpEmail}
       rsvpUrl={rsvpUrl}
+      rsvpSenderName={rsvpSenderName}
+      rsvpSenderEmail={rsvpSenderEmail}
       detailCopy={detailCopy}
       activities={activities}
       attire={attire}

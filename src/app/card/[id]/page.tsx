@@ -7,6 +7,7 @@ import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
 import { getEventHistoryPublicRenderBySlugOrId } from "@/lib/db";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
+import { resolveEventCelebrationKind } from "@/utils/event-celebration";
 import { buildEventPath, buildStudioCardPath } from "@/utils/event-url";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -424,6 +425,9 @@ export default async function SharedCardPage(props: {
   }
 
   const shareUrl = await absoluteUrl(canonical);
+  const celebrationKind = userId
+    ? null
+    : resolveEventCelebrationKind(sharedCard.row.data as any, sharedCard.title);
 
   return (
     <SharedStudioCardPage
@@ -433,6 +437,7 @@ export default async function SharedCardPage(props: {
       positions={sharedCard.positions as any}
       shareUrl={shareUrl}
       returnHref={returnHref}
+      celebrationKind={celebrationKind}
     />
   );
 }

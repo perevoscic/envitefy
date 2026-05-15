@@ -36,7 +36,9 @@ function inferRsvpResponseKey(label: unknown): LiveCardRsvpResponseKey | null {
 }
 
 function normalizeCategory(value: unknown): string {
-  const normalized = readTrimmed(value).toLowerCase().replace(/[^a-z0-9]+/g, " ");
+  const normalized = readTrimmed(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ");
   if (/\bbirthday\b|\bbirthdays\b/.test(normalized)) return "birthday";
   if (/\bwedding\b|\bweddings\b/.test(normalized)) return "wedding";
   if (/\bbridal\b/.test(normalized)) return "bridal-shower";
@@ -77,7 +79,8 @@ function buildContextualRsvpSentence(params: {
     if (responseKey === "yes") return `Yes, we can celebrate the bridal shower at ${title}.`;
     if (responseKey === "no")
       return `Sorry, we cannot attend the bridal shower at ${title}. Sending our best wishes.`;
-    if (responseKey === "maybe") return `Maybe for the bridal shower at ${title}. We will confirm soon.`;
+    if (responseKey === "maybe")
+      return `Maybe for the bridal shower at ${title}. We will confirm soon.`;
     return `I would like to RSVP for the bridal shower at ${title}.`;
   }
 
@@ -85,7 +88,8 @@ function buildContextualRsvpSentence(params: {
     if (responseKey === "yes") return `Yes, we can celebrate the baby shower at ${title}.`;
     if (responseKey === "no")
       return `Sorry, we cannot attend the baby shower at ${title}. Sending our best wishes.`;
-    if (responseKey === "maybe") return `Maybe for the baby shower at ${title}. We will confirm soon.`;
+    if (responseKey === "maybe")
+      return `Maybe for the baby shower at ${title}. We will confirm soon.`;
     return `I would like to RSVP for the baby shower at ${title}.`;
   }
 
@@ -93,7 +97,8 @@ function buildContextualRsvpSentence(params: {
     if (responseKey === "yes") return `Yes, we can join the gender reveal for ${title}.`;
     if (responseKey === "no")
       return `Sorry, we cannot make it to the gender reveal for ${title}. Have a wonderful time.`;
-    if (responseKey === "maybe") return `Maybe for the gender reveal for ${title}. We will confirm soon.`;
+    if (responseKey === "maybe")
+      return `Maybe for the gender reveal for ${title}. We will confirm soon.`;
     return `I would like to RSVP for the gender reveal for ${title}.`;
   }
 
@@ -101,7 +106,8 @@ function buildContextualRsvpSentence(params: {
     if (responseKey === "yes") return `Yes, we can come celebrate the new home at ${title}.`;
     if (responseKey === "no")
       return `Sorry, we cannot make it to the housewarming at ${title}. Wishing you a great celebration.`;
-    if (responseKey === "maybe") return `Maybe for the housewarming at ${title}. We will confirm soon.`;
+    if (responseKey === "maybe")
+      return `Maybe for the housewarming at ${title}. We will confirm soon.`;
     return `I would like to RSVP for the housewarming at ${title}.`;
   }
 
@@ -109,7 +115,8 @@ function buildContextualRsvpSentence(params: {
     if (responseKey === "yes") return `Yes, we can celebrate the anniversary at ${title}.`;
     if (responseKey === "no")
       return `Sorry, we cannot attend the anniversary celebration at ${title}. Sending our best.`;
-    if (responseKey === "maybe") return `Maybe for the anniversary celebration at ${title}. We will confirm soon.`;
+    if (responseKey === "maybe")
+      return `Maybe for the anniversary celebration at ${title}. We will confirm soon.`;
     return `I would like to RSVP for the anniversary celebration at ${title}.`;
   }
 
@@ -117,7 +124,8 @@ function buildContextualRsvpSentence(params: {
     if (responseKey === "yes") return `Yes, we can celebrate the graduation at ${title}.`;
     if (responseKey === "no")
       return `Sorry, we cannot make it to the graduation celebration at ${title}. Sending congratulations.`;
-    if (responseKey === "maybe") return `Maybe for the graduation celebration at ${title}. We will confirm soon.`;
+    if (responseKey === "maybe")
+      return `Maybe for the graduation celebration at ${title}. We will confirm soon.`;
     return `I would like to RSVP for the graduation celebration at ${title}.`;
   }
 
@@ -172,15 +180,39 @@ export function formatLiveCardRsvpDraftBody(params: {
   category?: string | null;
   hostName?: string | null;
   senderName?: string | null;
+  senderEmail?: string | null;
   guestName?: string | null;
   senderPhone?: string | null;
+  eventDateLabel?: string | null;
 }): string {
   const title = readTrimmed(params.eventTitle) || "the event";
   const hostName = readTrimmed(params.hostName) || "there";
   const senderName = readTrimmed(params.senderName);
+  const senderEmail = readTrimmed(params.senderEmail);
   const guestName = readTrimmed(params.guestName);
+  const eventDateLabel = readTrimmed(params.eventDateLabel);
   const responseKey =
     normalizeRsvpResponseKey(params.responseKey) || inferRsvpResponseKey(params.responseLabel);
+
+  if (!responseKey) {
+    const greeting = senderName
+      ? `Hi ${hostName}, this is ${senderName}.`
+      : guestName
+        ? `Hi ${hostName}, this RSVP is for ${guestName}.`
+        : `Hi ${hostName},`;
+    const eventSentence = eventDateLabel
+      ? `I would like to RSVP for ${title}. That is on ${eventDateLabel}.`
+      : `I would like to RSVP for ${title}.`;
+    return [
+      greeting,
+      "",
+      eventSentence,
+      ...(senderEmail ? ["", `You can reach me at ${senderEmail}.`] : []),
+      "",
+      "See you there!",
+    ].join("\n");
+  }
+
   const sentence = buildContextualRsvpSentence({
     category: normalizeCategory(params.category),
     eventTitle: title,
@@ -214,8 +246,10 @@ export function buildLiveCardRsvpOutboundHref(params: {
   category?: string | null;
   hostName?: string | null;
   senderName?: string | null;
+  senderEmail?: string | null;
   guestName?: string | null;
   senderPhone?: string | null;
+  eventDateLabel?: string | null;
 }): string {
   const parsed = parseLiveCardRsvpContact(params.rsvpContact);
   const body = formatLiveCardRsvpDraftBody({
@@ -226,8 +260,10 @@ export function buildLiveCardRsvpOutboundHref(params: {
     category: params.category,
     hostName: params.hostName,
     senderName: params.senderName,
+    senderEmail: params.senderEmail,
     guestName: params.guestName,
     senderPhone: params.senderPhone,
+    eventDateLabel: params.eventDateLabel,
   });
   const title = readTrimmed(params.eventTitle) || "Event";
   const subject = `RSVP for ${title}`;

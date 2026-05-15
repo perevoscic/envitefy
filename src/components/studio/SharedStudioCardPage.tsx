@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import Link from "next/link";
 import { type CSSProperties, useState } from "react";
+import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
   isPosterFirstHeroCard,
@@ -10,6 +11,7 @@ import StudioLiveCardActionSurface, {
   type LiveCardButtonPositions,
   type LiveCardInvitationData,
 } from "@/components/studio/StudioLiveCardActionSurface";
+import type { EventCelebrationKind } from "@/utils/event-celebration";
 import { resolveNativeShareData } from "@/utils/native-share";
 
 type SharedStudioCardProps = {
@@ -19,6 +21,7 @@ type SharedStudioCardProps = {
   positions?: LiveCardButtonPositions | null;
   shareUrl?: string | null;
   returnHref?: string | null;
+  celebrationKind?: EventCelebrationKind | null;
 };
 
 type SharedStudioCardFrameProps = SharedStudioCardProps & {
@@ -107,6 +110,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
 
   return (
     <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950">
+      {props.celebrationKind ? <EventCelebrationOverlay kind={props.celebrationKind} /> : null}
       {props.returnHref ? (
         <Link
           href={props.returnHref}
