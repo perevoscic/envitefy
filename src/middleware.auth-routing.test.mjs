@@ -54,6 +54,14 @@ test("middleware keeps Studio public without treating it as a marketing redirect
   assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[\s\S]*"\/studio"/s);
 });
 
+test("middleware keeps event share OG image routes public for link preview crawlers", () => {
+  const middleware = readSource("src/middleware.ts");
+
+  assert.match(middleware, /const isEventShareMetadataImagePath = \(pathname: string\) =>/);
+  assert.match(middleware, /segments\[2\] === "opengraph-image"/);
+  assert.match(middleware, /if \(isEventShareMetadataImagePath\(normalized\)\) return true;/);
+});
+
 test("middleware redirects disabled event builders to gymnastics", () => {
   const middleware = readSource("src/middleware.ts");
   const featureVisibility = readSource("src/config/feature-visibility.ts");

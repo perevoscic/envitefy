@@ -47,6 +47,17 @@ const isEventSharePath = (pathname: string) => {
   return segments.length === 2 && segments[0] === "event" && !RESERVED_EVENT_PATHS.has(segments[1]);
 };
 
+const isEventShareMetadataImagePath = (pathname: string) => {
+  const normalized = stripTrailingSlash(pathname);
+  const segments = normalized.split("/").filter(Boolean);
+  return (
+    segments.length === 3 &&
+    segments[0] === "event" &&
+    segments[2] === "opengraph-image" &&
+    !RESERVED_EVENT_PATHS.has(segments[1])
+  );
+};
+
 const isSmartSignupSharePath = (pathname: string) => {
   const normalized = stripTrailingSlash(pathname);
   return /^\/smart-signup-form\/[^/]+$/.test(normalized);
@@ -66,6 +77,7 @@ const isAllowedForUnauth = (pathname: string) => {
   const normalized = stripTrailingSlash(pathname);
   if (PUBLIC_UNAUTH_PATHS.has(normalized)) return true;
   if (isEventSharePath(normalized)) return true;
+  if (isEventShareMetadataImagePath(normalized)) return true;
   if (isSmartSignupSharePath(normalized)) return true;
   if (isStudioCardSharePath(normalized)) return true;
   if (isLandingShowcasePath(normalized)) return true;
