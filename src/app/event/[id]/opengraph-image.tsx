@@ -1,18 +1,5 @@
 import { ImageResponse } from "next/og";
-
-/** Base URL for same-origin API calls (keeps db out of this bundle). */
-function getBaseUrl(): string {
-  const v = process.env.VERCEL_URL;
-  const base = v
-    ? `https://${v}`
-    : process.env.NEXT_PUBLIC_BASE_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.NEXTAUTH_URL ||
-      process.env.PUBLIC_BASE_URL ||
-      process.env.APP_URL ||
-      "https://envitefy.com";
-  return base.replace(/\/+$/, "");
-}
+import { absoluteUrl } from "@/lib/absolute-url";
 
 export const runtime = "edge";
 export const size = { width: 1200, height: 630 };
@@ -35,7 +22,7 @@ async function loadFont(): Promise<{
     // Try to load Inter font from Google Fonts
     const fontResponse = await fetch(
       "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2",
-      { cache: "force-cache" }
+      { cache: "force-cache" },
     );
     if (fontResponse.ok) {
       const fontData = await fontResponse.arrayBuffer();
@@ -54,9 +41,9 @@ async function loadFont(): Promise<{
 }
 
 // Helper to load image as base64 data URL
-async function loadImageAsDataUrl(imagePath: string): Promise<string> {
+async function loadImageAsDataUrl(imagePath: string): Promise<string | null> {
   try {
-    const url = `${getBaseUrl()}${imagePath.startsWith("/") ? imagePath : `/${imagePath}`}`;
+    const url = await absoluteUrl(imagePath.startsWith("/") ? imagePath : `/${imagePath}`);
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -76,21 +63,18 @@ async function loadImageAsDataUrl(imagePath: string): Promise<string> {
       error: error instanceof Error ? error.message : String(error),
       imagePath,
     });
-    // Return a solid color as fallback
-    return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    return null;
   }
 }
 
-export default async function OgImage(props: {
-  params: Promise<{ id: string }> | { id: string };
-}) {
+export default async function OgImage(props: { params: Promise<{ id: string }> | { id: string } }) {
   try {
     const awaitedParams = await (props as any).params;
     if (!awaitedParams?.id) {
       throw new Error("Missing event ID");
     }
 
-    const apiUrl = `${getBaseUrl()}/api/events/${encodeURIComponent(awaitedParams.id)}/og-data`;
+    const apiUrl = await absoluteUrl(`/api/events/${encodeURIComponent(awaitedParams.id)}/og-data`);
     let ogData: {
       title?: string;
       description?: string | null;
@@ -111,20 +95,18 @@ export default async function OgImage(props: {
       const font = await loadFont();
       const _fonts = font ? [font] : [];
       return new ImageResponse(
-        (
-          <div
-            style={{
-              width: size.width,
-              height: size.height,
-              position: "relative",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: font
-                ? "Inter"
-                : "system-ui, -apple-system, sans-serif",
-            }}
-          >
+        <div
+          style={{
+            width: size.width,
+            height: size.height,
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: font ? "Inter" : "system-ui, -apple-system, sans-serif",
+          }}
+        >
+          {defaultBg && (
             <img
               src={defaultBg}
               alt=""
@@ -136,35 +118,33 @@ export default async function OgImage(props: {
                 objectFit: "cover",
               }}
             />
-            <div
-              style={{
-                position: "relative",
-                color: "#ffffff",
-                fontSize: 48,
-                fontWeight: 800,
-                textShadow: "0 2px 8px rgba(0,0,0,0.8)",
-              }}
-            >
-              Envitefy Event
-            </div>
+          )}
+          <div
+            style={{
+              position: "relative",
+              color: "#ffffff",
+              fontSize: 48,
+              fontWeight: 800,
+              textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+            }}
+          >
+            Envitefy Event
           </div>
-        ),
-        size
+        </div>,
+        size,
       );
     }
 
     const title = ogData.title ?? "Envitefy Event";
 
     // Extract description if available
-    const description = ogData.description
-      ? truncateText(ogData.description, 120)
-      : null;
+    const description = ogData.description ? truncateText(ogData.description, 120) : null;
 
     // Extract location if available
     const location = ogData.location ? truncateText(ogData.location, 80) : null;
 
     // Use event's header image (thumbnail) if available, otherwise fall back to default
-    let bg: string;
+    let bg: string | null;
     if (ogData.thumbnail) {
       bg = ogData.thumbnail;
     } else if (ogData.attachmentDataUrl) {
@@ -179,20 +159,20 @@ export default async function OgImage(props: {
     const fonts = font ? [font] : [];
 
     return new ImageResponse(
-      (
-        <div
-          style={{
-            width: size.width,
-            height: size.height,
-            position: "relative",
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "flex-start",
-            fontFamily: font ? "Inter" : "system-ui, -apple-system, sans-serif",
-            background: "#0b0b0f",
-          }}
-        >
-          {/* Background Image */}
+      <div
+        style={{
+          width: size.width,
+          height: size.height,
+          position: "relative",
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "flex-start",
+          fontFamily: font ? "Inter" : "system-ui, -apple-system, sans-serif",
+          background: "#0b0b0f",
+        }}
+      >
+        {/* Background Image */}
+        {bg && (
           <img
             src={bg}
             alt=""
@@ -204,105 +184,104 @@ export default async function OgImage(props: {
               objectFit: "cover",
             }}
           />
+        )}
 
-          {/* Gradient Overlay - stronger at bottom for text readability */}
+        {/* Gradient Overlay - stronger at bottom for text readability */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.75) 100%)",
+          }}
+        />
+
+        {/* Content Container */}
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            padding: "48px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
+          {/* Title */}
           <div
             style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.75) 100%)",
-            }}
-          />
-
-          {/* Content Container */}
-          <div
-            style={{
-              position: "relative",
-              width: "100%",
-              padding: "48px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
+              color: "#ffffff",
+              fontSize: title.length > 50 ? 56 : 72,
+              fontWeight: 800,
+              lineHeight: 1.1,
+              textShadow: "0 2px 12px rgba(0,0,0,0.8), 0 0 24px rgba(0,0,0,0.4)",
+              letterSpacing: "-0.02em",
             }}
           >
-            {/* Title */}
+            {truncateText(title, 80)}
+          </div>
+
+          {/* Description (if available) */}
+          {description && (
+            <div
+              style={{
+                color: "#f0f0f0",
+                fontSize: 28,
+                fontWeight: 400,
+                lineHeight: 1.4,
+                textShadow: "0 1px 8px rgba(0,0,0,0.8)",
+                maxWidth: "90%",
+                opacity: 0.95,
+              }}
+            >
+              {description}
+            </div>
+          )}
+
+          {/* Location (if available and no description) */}
+          {!description && location && (
+            <div
+              style={{
+                color: "#e0e0e0",
+                fontSize: 24,
+                fontWeight: 500,
+                lineHeight: 1.4,
+                textShadow: "0 1px 8px rgba(0,0,0,0.8)",
+                opacity: 0.9,
+              }}
+            >
+              📍 {location}
+            </div>
+          )}
+
+          {/* Branding */}
+          <div
+            style={{
+              marginTop: "auto",
+              paddingTop: "24px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
             <div
               style={{
                 color: "#ffffff",
-                fontSize: title.length > 50 ? 56 : 72,
-                fontWeight: 800,
-                lineHeight: 1.1,
-                textShadow:
-                  "0 2px 12px rgba(0,0,0,0.8), 0 0 24px rgba(0,0,0,0.4)",
-                letterSpacing: "-0.02em",
+                fontSize: 20,
+                fontWeight: 600,
+                textShadow: "0 1px 6px rgba(0,0,0,0.8)",
+                opacity: 0.9,
               }}
             >
-              {truncateText(title, 80)}
-            </div>
-
-            {/* Description (if available) */}
-            {description && (
-              <div
-                style={{
-                  color: "#f0f0f0",
-                  fontSize: 28,
-                  fontWeight: 400,
-                  lineHeight: 1.4,
-                  textShadow: "0 1px 8px rgba(0,0,0,0.8)",
-                  maxWidth: "90%",
-                  opacity: 0.95,
-                }}
-              >
-                {description}
-              </div>
-            )}
-
-            {/* Location (if available and no description) */}
-            {!description && location && (
-              <div
-                style={{
-                  color: "#e0e0e0",
-                  fontSize: 24,
-                  fontWeight: 500,
-                  lineHeight: 1.4,
-                  textShadow: "0 1px 8px rgba(0,0,0,0.8)",
-                  opacity: 0.9,
-                }}
-              >
-                📍 {location}
-              </div>
-            )}
-
-            {/* Branding */}
-            <div
-              style={{
-                marginTop: "auto",
-                paddingTop: "24px",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-              }}
-            >
-              <div
-                style={{
-                  color: "#ffffff",
-                  fontSize: 20,
-                  fontWeight: 600,
-                  textShadow: "0 1px 6px rgba(0,0,0,0.8)",
-                  opacity: 0.9,
-                }}
-              >
-                Envitefy
-              </div>
+              Envitefy
             </div>
           </div>
         </div>
-      ),
+      </div>,
       {
         ...size,
         fonts,
-      }
+      },
     );
   } catch (error) {
     // Fallback to simple error image
@@ -316,27 +295,25 @@ export default async function OgImage(props: {
       const font = await loadFont();
       const fonts = font ? [font] : [];
       return new ImageResponse(
-        (
-          <div
-            style={{
-              width: size.width,
-              height: size.height,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "#0b0b0f",
-              color: "#ffffff",
-              fontSize: 48,
-              fontFamily: font ? "Inter" : "system-ui",
-            }}
-          >
-            Envitefy Event
-          </div>
-        ),
+        <div
+          style={{
+            width: size.width,
+            height: size.height,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "#0b0b0f",
+            color: "#ffffff",
+            fontSize: 48,
+            fontFamily: font ? "Inter" : "system-ui",
+          }}
+        >
+          Envitefy Event
+        </div>,
         {
           ...size,
           fonts,
-        }
+        },
       );
     } catch (fallbackError) {
       console.error("Fallback ImageResponse also failed:", fallbackError);

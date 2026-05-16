@@ -13,6 +13,7 @@ test("event OG metadata uses the canonical public slug image route", () => {
   assert.match(pageSource, /const ogImageSegment = row/);
   assert.match(pageSource, /buildEventSlugSegment\(row\.id, title, publicSlug\)/);
   assert.match(pageSource, /\/event\/\$\{ogImageSegment\}\/opengraph-image/);
+  assert.match(pageSource, /EVENT_OG_IMAGE_VERSION/);
 });
 
 test("event OG data route resolves public slugs and chooses saved event artwork", () => {
@@ -29,12 +30,17 @@ test("event OG data route resolves public slugs and chooses saved event artwork"
   assert.match(routeSource, /req\.nextUrl\.origin/);
 });
 
-test("event OG image route avoids stale APP_URL before public app origins", () => {
+test("event OG image route uses the request-aware public origin for self fetches", () => {
   const imageSource = readSource("src/app/event/[id]/opengraph-image.tsx");
-  const nextAuthIndex = imageSource.indexOf("process.env.NEXTAUTH_URL");
-  const appUrlIndex = imageSource.indexOf("process.env.APP_URL");
 
-  assert.ok(nextAuthIndex > 0, "NEXTAUTH_URL should remain a fallback for local dev");
-  assert.ok(appUrlIndex > nextAuthIndex, "APP_URL should not outrank the canonical app origins");
-  assert.match(imageSource, /\/api\/events\/\$\{encodeURIComponent\(awaitedParams\.id\)\}\/og-data/);
+  assert.match(imageSource, /import \{ absoluteUrl \} from "@\/lib\/absolute-url"/);
+  assert.doesNotMatch(imageSource, /process\.env\.VERCEL_URL/);
+  assert.match(
+    imageSource,
+    /\/api\/events\/\$\{encodeURIComponent\(awaitedParams\.id\)\}\/og-data/,
+  );
+  assert.doesNotMatch(
+    imageSource,
+    /iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk\+M9Q/,
+  );
 });

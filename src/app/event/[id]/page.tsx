@@ -177,6 +177,7 @@ function OwnerPreviewReturnLink({ href }: { href: string }) {
 
 export const dynamic = "force-dynamic";
 const EVENT_PAGE_TIMING_ENV = process.env.EVENT_PAGE_TIMING === "1";
+const EVENT_OG_IMAGE_VERSION = "2";
 
 const getCachedEventHistoryBySlugOrId = cache(async (value: string, userId?: string | null) =>
   getEventHistoryPublicRenderBySlugOrId({
@@ -248,7 +249,9 @@ export async function generateMetadata(props: {
   const ogImageSegment = row
     ? buildEventSlugSegment(row.id, title, publicSlug)
     : encodeURIComponent(awaitedParams.id);
-  const img = await absoluteUrl(`/event/${ogImageSegment}/opengraph-image`);
+  const img = await absoluteUrl(
+    `/event/${ogImageSegment}/opengraph-image?v=${EVENT_OG_IMAGE_VERSION}`,
+  );
 
   // Generate canonical URL
   const canonicalPath = row
