@@ -24,6 +24,8 @@ export default function Demo() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewKind, setPreviewKind] = useState<SnapPreviewKind>(null);
+  const [previewFileName, setPreviewFileName] = useState<string | null>(null);
+  const [previewMimeType, setPreviewMimeType] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeAbortRef = useRef<AbortController | null>(null);
@@ -56,9 +58,11 @@ export default function Demo() {
         currentPreviewUrlRef.current = null;
         setPreviewUrl(null);
         setPreviewKind(null);
+        setPreviewFileName(null);
+        setPreviewMimeType(null);
       }
     },
-    [clearTimers]
+    [clearTimers],
   );
 
   const startProcessing = useCallback(
@@ -70,13 +74,20 @@ export default function Demo() {
       }
       currentPreviewUrlRef.current = null;
 
+      const selectedIsPdf = selected.type === "application/pdf" || /\.pdf$/i.test(selected.name);
       const nextPreviewKind: SnapPreviewKind = selected.type.startsWith("image/")
         ? "image"
-        : selected.type === "application/pdf"
+        : selectedIsPdf
           ? "pdf"
           : "file";
       setPreviewKind(nextPreviewKind);
+      setPreviewFileName(selected.name || null);
+      setPreviewMimeType(selected.type || null);
       if (nextPreviewKind === "image") {
+        const nextPreviewUrl = URL.createObjectURL(selected);
+        currentPreviewUrlRef.current = nextPreviewUrl;
+        setPreviewUrl(nextPreviewUrl);
+      } else if (nextPreviewKind === "pdf") {
         const nextPreviewUrl = URL.createObjectURL(selected);
         currentPreviewUrlRef.current = nextPreviewUrl;
         setPreviewUrl(nextPreviewUrl);
@@ -101,7 +112,7 @@ export default function Demo() {
         });
       }, 100);
     },
-    [clearTimers]
+    [clearTimers],
   );
 
   const finishProcessing = useCallback(async () => {
@@ -116,9 +127,7 @@ export default function Demo() {
     }
 
     const minScanRevealMs = 1200;
-    const elapsed = scanStartedAtRef.current
-      ? Date.now() - scanStartedAtRef.current
-      : 0;
+    const elapsed = scanStartedAtRef.current ? Date.now() - scanStartedAtRef.current : 0;
     if (elapsed < minScanRevealMs) {
       await new Promise<void>((resolve) => {
         setTimeout(resolve, minScanRevealMs - elapsed);
@@ -146,7 +155,7 @@ export default function Demo() {
       }
       currentPreviewUrlRef.current = null;
     },
-    [clearTimers]
+    [clearTimers],
   );
 
   const onPick = () => fileInputRef.current?.click();
@@ -167,10 +176,7 @@ export default function Demo() {
     } catch (readErr) {
       // If reading fails, fall back to using the original file object
       // (works on most platforms but may fail on Android)
-      console.warn(
-        "Failed to prepare OCR upload file, using original file object:",
-        readErr
-      );
+      console.warn("Failed to prepare OCR upload file, using original file object:", readErr);
     }
 
     const form = new FormData();
@@ -225,15 +231,11 @@ export default function Demo() {
   return (
     <section id="demo" aria-labelledby="live-demo" className="w-full">
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <h2
-          id="live-demo"
-          className="text-2xl sm:text-3xl font-bold text-center"
-        >
+        <h2 id="live-demo" className="text-2xl sm:text-3xl font-bold text-center">
           Live demo
         </h2>
         <p className="mt-2 text-center text-foreground/70 max-w-2xl mx-auto">
-          Upload an image from your device. We only use uploads to extract
-          details.
+          Upload an image from your device. We only use uploads to extract details.
         </p>
 
         <div className="mt-6 flex flex-col items-center gap-4">
@@ -267,6 +269,8 @@ export default function Demo() {
               progress={uploadProgress}
               previewUrl={previewUrl}
               previewKind={previewKind}
+              previewFileName={previewFileName}
+              previewMimeType={previewMimeType}
               onCancel={cancelProcessing}
             />
           </div>

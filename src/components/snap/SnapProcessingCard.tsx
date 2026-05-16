@@ -1,5 +1,5 @@
 "use client";
-import { Calendar, Clock, MapPin, Upload, User, WandSparkles, X } from "lucide-react";
+import { Calendar, Clock, FileText, MapPin, User, WandSparkles, X } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 
 export type SnapProcessingStatus = "idle" | "uploading" | "scanning" | "creating";
@@ -10,6 +10,8 @@ type SnapProcessingCardProps = {
   progress: number;
   previewUrl: string | null;
   previewKind: SnapPreviewKind;
+  previewFileName?: string | null;
+  previewMimeType?: string | null;
   onCancel: () => void;
 };
 
@@ -18,6 +20,8 @@ export function SnapProcessingCard({
   progress,
   previewUrl,
   previewKind,
+  previewFileName,
+  previewMimeType,
   onCancel,
 }: SnapProcessingCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -30,10 +34,21 @@ export function SnapProcessingCard({
 
   const isScanning = status === "scanning";
   const isCreating = status === "creating";
-  const statusLabel = isCreating ? "Creating Event Page" : isScanning ? "Analysing Flyer" : "Uploading Flyer";
+  const statusLabel = isCreating
+    ? "Creating Event Page"
+    : isScanning
+      ? "Analysing Flyer"
+      : "Uploading Flyer";
   const statusIntro = isCreating
     ? "Building the event page from the extracted details."
     : "Upload your flyer, we'll extract the details.";
+  const fileLabel =
+    previewFileName?.trim() ||
+    (previewKind === "pdf" ? "Uploaded PDF" : previewKind === "file" ? "Uploaded file" : "Upload");
+  const fileTypeLabel =
+    previewKind === "pdf" ? "PDF preview" : previewMimeType?.trim() || "Uploaded file";
+  const pdfPreviewUrl =
+    previewKind === "pdf" && previewUrl ? `${previewUrl}#toolbar=0&view=FitH` : null;
 
   return (
     <div className="w-full max-w-md">
@@ -41,9 +56,7 @@ export function SnapProcessingCard({
         <div className="snap-processing-glow pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#b7a5ff]/20 blur-2xl" />
         <div className="snap-processing-glow pointer-events-none absolute -left-14 -bottom-14 h-36 w-36 rounded-full bg-[#88d2ff]/15 blur-3xl" />
         <div className="mb-4 text-center">
-          <p className="text-sm font-medium text-[#625089]">
-            {statusIntro}
-          </p>
+          <p className="text-sm font-medium text-[#625089]">{statusIntro}</p>
         </div>
 
         <div className="relative flex flex-col items-center">
@@ -53,21 +66,26 @@ export function SnapProcessingCard({
                 src={previewUrl}
                 alt="Flyer preview"
                 className={`snap-processing-preview h-full w-full object-cover transition-all duration-700 ${
-                  status === "scanning"
-                    ? "brightness-[0.65] saturate-[0.9]"
-                    : ""
+                  status === "scanning" ? "brightness-[0.65] saturate-[0.9]" : ""
                 }`}
                 onError={() => setImageFailed(true)}
               />
-            ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#fbf9ff] via-[#f5eeff] to-[#eef5ff] text-[#5c4c83]">
-                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8e74df] to-[#7392ff] text-white shadow-[0_12px_30px_rgba(99,73,175,0.35)]">
-                  <Upload className="h-7 w-7" />
-                </span>
-                <p className="text-sm font-semibold">
-                  {previewKind === "pdf" ? "PDF ready to scan" : "File ready to scan"}
-                </p>
+            ) : pdfPreviewUrl ? (
+              <div className="relative h-full w-full bg-white">
+                <object
+                  data={pdfPreviewUrl}
+                  type="application/pdf"
+                  aria-label={`${fileLabel} preview`}
+                  className="h-full w-full"
+                >
+                  <FileFallback fileLabel={fileLabel} fileTypeLabel="PDF selected" />
+                </object>
+                <div className="pointer-events-none absolute inset-x-3 bottom-3 z-30 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#5c4a8e] shadow-[0_8px_20px_rgba(102,77,171,0.16)]">
+                  {fileTypeLabel}
+                </div>
               </div>
+            ) : (
+              <FileFallback fileLabel={fileLabel} fileTypeLabel={fileTypeLabel} />
             )}
 
             {(isScanning || isCreating) && (
@@ -240,6 +258,22 @@ export function SnapProcessingCard({
   );
 }
 
+function FileFallback({ fileLabel, fileTypeLabel }: { fileLabel: string; fileTypeLabel: string }) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#fbf9ff] via-[#f5eeff] to-[#eef5ff] px-6 text-center text-[#5c4c83]">
+      <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8e74df] to-[#7392ff] text-white shadow-[0_12px_30px_rgba(99,73,175,0.35)]">
+        <FileText className="h-7 w-7" />
+      </span>
+      <div className="max-w-full space-y-1">
+        <p className="truncate text-sm font-semibold">{fileLabel}</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7d6aa9]">
+          {fileTypeLabel}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function ProgressRing({
   radius,
   stroke,
@@ -255,12 +289,7 @@ function ProgressRing({
     circumference - (Math.max(0, Math.min(100, progress)) / 100) * circumference;
 
   return (
-    <svg
-      height={radius * 2}
-      width={radius * 2}
-      className="-rotate-90 transform"
-      aria-hidden="true"
-    >
+    <svg height={radius * 2} width={radius * 2} className="-rotate-90 transform" aria-hidden="true">
       <circle
         stroke="rgba(110, 92, 164, 0.18)"
         fill="transparent"

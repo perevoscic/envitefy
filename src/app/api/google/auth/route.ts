@@ -3,11 +3,26 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+function normalizeInternalRedirect(value: string | null): string | null {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
+    return null;
+  }
+  return value;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const forceConsent = searchParams.get("consent") === "1";
   const includeAnalyticsScope = searchParams.get("analytics") === "1";
-  const state = searchParams.get("state") || undefined;
+  const explicitState = searchParams.get("state") || undefined;
+  const nextPath = normalizeInternalRedirect(searchParams.get("next"));
+  const redirectState =
+    !explicitState && nextPath
+      ? Buffer.from(
+          encodeURIComponent(JSON.stringify({ type: "oauth_redirect", next: nextPath })),
+        ).toString("base64")
+      : undefined;
+  const state = explicitState ?? redirectState;
   const oAuth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID!,
     process.env.GOOGLE_CLIENT_SECRET!,

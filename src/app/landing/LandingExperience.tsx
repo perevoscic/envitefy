@@ -39,6 +39,8 @@ const landingHeroNavLinks = [
   { label: "FAQ", href: "#faq" },
 ] as const;
 
+const gardenBrunchLiveCardImage = "/images/landing/live-cards/madeline-s-garden-brunch.webp";
+
 const productOutputs = [
   {
     title: "Live cards",
@@ -203,7 +205,7 @@ const phonePreviews = {
   eventHub: {
     tone: "lavender",
     userMessage: "Make a garden brunch invite with RSVP, a map, and a registry link.",
-    attachment: "/images/marketing/landing-hero-live-card.webp",
+    attachment: gardenBrunchLiveCardImage,
     attachmentAlt: "Garden brunch live card preview",
     attachmentLabel: "Invite uploaded",
     assistantMessage:
@@ -349,10 +351,14 @@ function PhoneConciergePreview({ variant = "eventHub" }: { variant?: keyof typeo
             </div>
 
             <div className="ml-auto max-w-[76%] overflow-hidden rounded-[2rem] border border-[#eadcf5] bg-white shadow-sm">
-              <img
+              <Image
                 src={preview.attachment}
                 alt={preview.attachmentAlt}
-                className="h-28 w-full object-cover"
+                width={1024}
+                height={1536}
+                priority={variant === "eventHub"}
+                sizes="(max-width: 768px) 210px, 250px"
+                className="h-28 w-full object-cover object-top"
               />
               <div className="px-3 py-2 text-[12px] font-medium text-[#62586a]">
                 {preview.attachmentLabel}
@@ -449,9 +455,9 @@ export default function LandingExperience() {
           onGuestPrimaryAction={() => openAuth("signup")}
         />
 
-        <section id="landing-hero" className="border-b border-[#eadcf5] bg-[#fbf6ff] pt-24">
-          <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)] lg:px-10 lg:py-24">
-            <div className="flex flex-col justify-center">
+        <section id="landing-hero" className="border-b border-[#eadcf5] bg-[#fbf6ff] pt-20 sm:pt-24">
+          <div className="mx-auto grid max-w-7xl gap-8 px-4 py-6 sm:px-8 sm:py-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)] lg:gap-12 lg:px-10 lg:py-24">
+            <div className="order-2 flex flex-col justify-center lg:order-1">
               <div className="inline-flex w-fit items-center gap-2 rounded-[2rem] border border-[#eadcf5] bg-[#fffafd] px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#7457a6]">
                 <Image
                   src={conciergeLogo}
@@ -492,10 +498,10 @@ export default function LandingExperience() {
               </div>
             </div>
 
-            <div className="relative">
+            <div className="relative order-1 lg:order-2">
               <div className="grid items-center gap-5 lg:grid-cols-[minmax(290px,0.9fr)_minmax(0,1.1fr)]">
                 <PhoneConciergePreview />
-                <div className="space-y-4">
+                <div className="hidden space-y-4 lg:block">
                   <div className="rounded-[2rem] border border-[#eadcf5] bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between gap-4 border-b border-[#f0e7f8] pb-4">
                       <div>
@@ -537,7 +543,7 @@ export default function LandingExperience() {
 
                   <div className="overflow-hidden rounded-[2rem] border border-[#eadcf5] bg-white shadow-sm">
                     <img
-                      src="/images/marketing/landing-hero-live-card.webp"
+                      src={gardenBrunchLiveCardImage}
                       alt="Live card gallery preview"
                       className="h-64 w-full object-cover object-top"
                     />

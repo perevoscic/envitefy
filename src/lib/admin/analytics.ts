@@ -66,7 +66,7 @@ export function getAdminGa4Status(): AdminGa4Status {
       ? "Google Analytics Data API reporting is connected."
       : "Google Analytics is not connected.",
     setupHint:
-      "Set GOOGLE_ANALYTICS_PROPERTY_ID plus either Google service-account credentials or GOOGLE_ANALYTICS_REFRESH_TOKEN to enable server-side GA4 snapshots.",
+      "Set GOOGLE_ANALYTICS_PROPERTY_ID plus either Google service-account credentials or GOOGLE_ANALYTICS_OAUTH_EMAIL. Then use Connect Google to store an Analytics refresh token, or set GOOGLE_ANALYTICS_REFRESH_TOKEN directly.",
     configurationError: config.configurationError,
   };
 }

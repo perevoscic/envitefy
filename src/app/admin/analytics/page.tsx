@@ -6,6 +6,7 @@ import {
   AdminStatusBadge,
 } from "@/components/admin/AdminPrimitives";
 import { getAdminAnalyticsSnapshot } from "@/lib/admin/analytics";
+import { LogIn } from "lucide-react";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +26,9 @@ export default async function AdminAnalyticsPage() {
     : ga4ConfigPresent
       ? analytics.ga4Report.message
       : analytics.ga4.configurationError || analytics.ga4.message;
+  const googleAnalyticsAuthHref = `/api/google/auth?consent=1&analytics=1&next=${encodeURIComponent(
+    "/admin/analytics",
+  )}`;
 
   return (
     <div className="space-y-6">
@@ -37,7 +41,20 @@ export default async function AdminAnalyticsPage() {
       <AdminPanel
         title="Google Analytics"
         description={ga4Description}
-        action={<AdminStatusBadge tone={ga4StatusTone}>{ga4StatusLabel}</AdminStatusBadge>}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            {!ga4ReportAvailable ? (
+              <a
+                href={googleAnalyticsAuthHref}
+                className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-violet-300 hover:text-violet-700"
+              >
+                <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
+                Connect Google
+              </a>
+            ) : null}
+            <AdminStatusBadge tone={ga4StatusTone}>{ga4StatusLabel}</AdminStatusBadge>
+          </div>
+        }
       >
         <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-lg border border-slate-200 p-4">

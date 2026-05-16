@@ -54,6 +54,32 @@ function emailFromIdToken(idToken?: string | null): string | undefined {
   }
 }
 
+function normalizeInternalRedirect(value: unknown): string | null {
+  if (
+    typeof value !== "string" ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("\\")
+  ) {
+    return null;
+  }
+  return value;
+}
+
+function applyGoogleRefreshCookie(response: NextResponse, refresh: string | undefined) {
+  if (!refresh) return response;
+  response.cookies.set({
+    name: "g_refresh",
+    value: refresh,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+  return response;
+}
+
 async function emailFromGoogle(accessToken?: string | null): Promise<string | undefined> {
   if (!accessToken) return undefined;
   try {
@@ -143,6 +169,23 @@ export async function GET(request: Request) {
       try {
         const json = Buffer.from(state, "base64").toString("utf8");
         const decoded = JSON.parse(decodeURIComponent(json));
+        const redirectPath =
+          decoded?.type === "oauth_redirect" ? normalizeInternalRedirect(decoded.next) : null;
+        if (redirectPath) {
+          const redirectUrl = new URL(await absoluteUrl(redirectPath));
+          redirectUrl.searchParams.set("googleAuth", debug.tokenPersisted ? "stored" : "not-stored");
+          if (!debug.tokenPersisted) {
+            redirectUrl.searchParams.set(
+              "googleAuthReason",
+              debug.persistError
+                ? "persist-error"
+                : debug.hasRefreshToken || debug.hasCookieRefresh
+                  ? "missing-email"
+                  : "missing-refresh-token",
+            );
+          }
+          return applyGoogleRefreshCookie(NextResponse.redirect(redirectUrl), refresh);
+        }
         const reminders = Array.isArray(decoded?.reminders)
           ? decoded.reminders
               .map((entry: any) => {
@@ -267,19 +310,7 @@ export async function GET(request: Request) {
         if (!state) {
           openUrl.searchParams.set("googleAuth", debug.tokenPersisted ? "stored" : "not-stored");
         }
-        const redirectResp = NextResponse.redirect(openUrl);
-        if (refresh) {
-          redirectResp.cookies.set({
-            name: "g_refresh",
-            value: refresh,
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            path: "/",
-            maxAge: 60 * 60 * 24 * 365,
-          });
-        }
-        return redirectResp;
+        return applyGoogleRefreshCookie(NextResponse.redirect(openUrl), refresh);
       } catch {
         // Fall through to home if creation fails
       }
@@ -297,19 +328,7 @@ export async function GET(request: Request) {
             : "missing-refresh-token",
       );
     }
-    const homeRedirect = NextResponse.redirect(homeUrl);
-    if (refresh) {
-      homeRedirect.cookies.set({
-        name: "g_refresh",
-        value: refresh,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 365,
-      });
-    }
-    return homeRedirect;
+    return applyGoogleRefreshCookie(NextResponse.redirect(homeUrl), refresh);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });

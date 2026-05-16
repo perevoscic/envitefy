@@ -115,7 +115,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   );
   assert.match(
     landingShowcase,
-    /<StudioShowcaseLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+interactive=\{activeIndex === index\}\s+imageLoading="lazy"\s+showcaseOverlay=/,
+    /<StudioShowcaseLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+interactive=\{activeIndex === index\}\s+imageLoading=\{index <= 2 \|\| activeIndex === index \? "eager" : "lazy"\}\s+imageFetchPriority=\{activeIndex === index \? "high" : "auto"\}\s+showcaseOverlay=/,
   );
   assert.doesNotMatch(landingShowcase, /createMarketingInvitationData/);
   assert.doesNotMatch(landingShowcase, /\/api\/blob\/event-media\//);

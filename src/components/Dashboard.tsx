@@ -15,10 +15,7 @@ import {
 } from "@/components/snap/SnapProcessingCard";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { resolveSourceIntent } from "@/lib/concierge/creation-intent";
-import {
-  normalizeOcrLocationFields,
-  normalizeOcrRsvpFields,
-} from "@/lib/ocr/field-normalization";
+import { normalizeOcrLocationFields, normalizeOcrRsvpFields } from "@/lib/ocr/field-normalization";
 import { normalizeOcrFacts, type OcrFact } from "@/lib/ocr/facts";
 import {
   isBasketballOcrSkinCandidate,
@@ -297,6 +294,8 @@ export default function Dashboard({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewKind, setPreviewKind] = useState<SnapPreviewKind>(null);
+  const [previewFileName, setPreviewFileName] = useState<string | null>(null);
+  const [previewMimeType, setPreviewMimeType] = useState<string | null>(null);
   const uploadIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeOcrAbortRef = useRef<AbortController | null>(null);
   const cancelledByUserRef = useRef(false);
@@ -378,6 +377,8 @@ export default function Dashboard({
         previewLoadIdRef.current += 1;
         setPreviewUrl(null);
         setPreviewKind(null);
+        setPreviewFileName(null);
+        setPreviewMimeType(null);
       }
     },
     [clearObjectPreviewUrl, clearScanTimers],
@@ -390,20 +391,25 @@ export default function Dashboard({
       scanStartedAtRef.current = null;
       previewLoadIdRef.current += 1;
 
+      const selectedIsPdf = selected.type === "application/pdf" || /\.pdf$/i.test(selected.name);
       const nextPreviewKind: SnapPreviewKind = selected.type.startsWith("image/")
         ? "image"
-        : selected.type === "application/pdf"
+        : selectedIsPdf
           ? "pdf"
           : "file";
       setPreviewKind(nextPreviewKind);
-      if (nextPreviewKind === "image") {
-        if (previewOverride) {
-          setPreviewUrl(previewOverride);
-        } else {
-          const objectUrl = createObjectUrlPreview(selected);
-          objectPreviewUrlRef.current = objectUrl;
-          setPreviewUrl(objectUrl);
-        }
+      setPreviewFileName(selected.name || null);
+      setPreviewMimeType(selected.type || null);
+      if (previewOverride) {
+        setPreviewUrl(previewOverride);
+      } else if (nextPreviewKind === "image") {
+        const objectUrl = createObjectUrlPreview(selected);
+        objectPreviewUrlRef.current = objectUrl;
+        setPreviewUrl(objectUrl);
+      } else if (nextPreviewKind === "pdf") {
+        const objectUrl = URL.createObjectURL(selected);
+        objectPreviewUrlRef.current = objectUrl;
+        setPreviewUrl(objectUrl);
       } else {
         setPreviewUrl(null);
       }
@@ -1002,10 +1008,19 @@ export default function Dashboard({
 
         if (!res.ok) {
           const payload = await res.json().catch(() => ({}));
-          const errorMsg = (payload as { error?: string })?.error || `Server error (${res.status})`;
+          const errorPayload = payload as {
+            code?: string;
+            detail?: string;
+            error?: string;
+            ocrSource?: string;
+          };
+          const errorMsg = errorPayload.error || `Server error (${res.status})`;
           logUploadIssue(new Error(errorMsg || "HTTP error"), "http", {
             status: res.status,
             statusText: res.statusText,
+            code: errorPayload.code,
+            detail: errorPayload.detail,
+            ocrSource: errorPayload.ocrSource,
             fileName: incoming.name,
             fileSize: incoming.size,
             fileType: incoming.type,
@@ -1813,7 +1828,8 @@ export default function Dashboard({
             const qs = new URLSearchParams({
               scanStatus: "failed",
               scanError:
-                saveResult.error || "We couldn't save this event to your account. Please try again.",
+                saveResult.error ||
+                "We couldn't save this event to your account. Please try again.",
             });
             router.push(`/chat?${qs.toString()}`);
             return false;
@@ -2057,13 +2073,15 @@ export default function Dashboard({
         </div>
       )}
       {scanStatus !== "idle" && (
-        <div className="fixed left-0 right-0 top-0 z-[7000] flex h-[100svh] items-start justify-center overflow-y-auto bg-[#f4eeff]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+1rem)] md:inset-y-0 md:h-auto md:items-center md:p-4 md:bg-[#f4eeff]/78 md:backdrop-blur-md lg:left-[20rem]">
+        <div className="fixed left-0 right-0 top-0 z-[7000] flex h-[100svh] items-start justify-center overflow-y-auto bg-[#f4eeff]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+5.75rem)] md:inset-y-0 md:h-auto md:items-center md:p-4 md:bg-[#f4eeff]/78 md:backdrop-blur-md lg:left-[20rem]">
           <div role="status" aria-live="polite" className="w-full max-w-md">
             <SnapProcessingCard
               status={scanStatus}
               progress={uploadProgress}
               previewUrl={previewUrl}
               previewKind={previewKind}
+              previewFileName={previewFileName}
+              previewMimeType={previewMimeType}
               onCancel={resetForm}
             />
           </div>

@@ -409,8 +409,8 @@ export async function handleOcrRequest(request: Request) {
     let raw = "";
     let ocrSource = "none";
 
-    const runOpenAiPrimary = async (timeoutMs: number) => {
-      const llm = await llmExtractEventFromImage(ocrBuffer, visionMime, timeoutMs, ocrModel);
+    const runOpenAiCandidate = async (imageBytes: Buffer, mimeType: string, timeoutMs: number) => {
+      const llm = await llmExtractEventFromImage(imageBytes, mimeType, timeoutMs, ocrModel);
       const rawText = llmEventToRawText(llm);
       if (!llm || !rawText) throw new Error("OPENAI_EMPTY");
       if (!hasUsableOcrResult(llm, rawText)) throw new Error("OPENAI_GENERIC");
@@ -430,7 +430,7 @@ export async function handleOcrRequest(request: Request) {
             fastMode,
             ocrModel,
           });
-          const primary = await runOpenAiPrimary(openAiTimeoutMs);
+          const primary = await runOpenAiCandidate(ocrBuffer, visionMime, openAiTimeoutMs);
           raw = primary.rawText;
           llmImage = primary.llm;
           ocrSource = "openai";
@@ -452,7 +452,7 @@ export async function handleOcrRequest(request: Request) {
             fastMode,
             ocrModel,
           });
-          const primary = await runOpenAiPrimary(primaryTimeoutMs);
+          const primary = await runOpenAiCandidate(ocrBuffer, visionMime, primaryTimeoutMs);
           raw = primary.rawText;
           llmImage = primary.llm;
           ocrSource = "openai";
@@ -463,8 +463,52 @@ export async function handleOcrRequest(request: Request) {
     }
     stage.primaryOcrMs = Date.now() - primaryStartedAt;
 
+    if (!raw) {
+      const fallbackStartedAt = Date.now();
+      const fallbackTimeoutMs = clampTimeoutMs(
+        Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 2_000)),
+        OPENAI_TIMEOUT_MS,
+      );
+      if (fallbackTimeoutMs >= 3_000) {
+        try {
+          log(">>> OCR: Trying OpenAI Vision (color fallback)...", {
+            timeoutMs: fallbackTimeoutMs,
+            fastMode,
+            ocrModel,
+          });
+          const fallback = await runOpenAiCandidate(colorBuffer, colorMime, fallbackTimeoutMs);
+          raw = fallback.rawText;
+          llmImage = fallback.llm;
+          ocrSource = "openai-color";
+        } catch (error) {
+          console.error(">>> OCR: OpenAI Vision color fallback failed with error:", error);
+        } finally {
+          stage.fallbackOcrMs = Date.now() - fallbackStartedAt;
+        }
+      }
+    }
+
     if (!raw.trim()) {
       const providerConfigured = Boolean(process.env.OPENAI_API_KEY);
+      if (scanAttemptId) {
+        console.warn("[ocr] unreadable", {
+          scanAttemptId,
+          fileName: file.name || null,
+          fileSize: file.size || null,
+          mimeType: mime,
+          providerConfigured,
+          timings: {
+            totalMs: Date.now() - startedAt,
+            preprocessMs: stage.preprocessMs,
+            primaryOcrMs: stage.primaryOcrMs,
+            fallbackOcrMs: stage.fallbackOcrMs,
+            fastMode,
+            turboMode,
+            model: ocrModel,
+            ocrSource,
+          },
+        });
+      }
       return corsJson(
         request,
         {

@@ -20,7 +20,9 @@ test("pipeline sends preprocessed OCR images to vision as JPEG", async () => {
   assert.match(source, /rasterizePdfPageToPng\(inputBuffer, 0\)/);
   assert.match(source, /\.grayscale\(\)\s*\.normalize\(\)\s*\.jpeg\(\{ quality: 90 \}\)/);
   assert.match(source, /visionMime = "image\/jpeg";/);
-  assert.match(source, /llmExtractEventFromImage\(ocrBuffer, visionMime/);
+  assert.match(source, /runOpenAiCandidate\(ocrBuffer, visionMime/);
+  assert.match(source, /runOpenAiCandidate\(colorBuffer, colorMime/);
+  assert.match(source, /ocrSource = "openai-color"/);
 });
 
 test("pipeline rejects empty or generic OCR instead of saving a placeholder event", async () => {

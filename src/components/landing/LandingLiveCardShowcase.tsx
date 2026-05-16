@@ -465,7 +465,8 @@ export default function LandingLiveCardShowcase({
                       compactChrome
                       showcaseMode
                       interactive={activeIndex === index}
-                      imageLoading="lazy"
+                      imageLoading={index <= 2 || activeIndex === index ? "eager" : "lazy"}
+                      imageFetchPriority={activeIndex === index ? "high" : "auto"}
                       showcaseOverlay={
                         showcaseOverlayIndex === index && activeIndex === index ? (
                           <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/45 backdrop-blur-md">
