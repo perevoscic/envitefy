@@ -62,6 +62,14 @@ export default async function AdminAnalyticsPage() {
                   ? "Configured but invalid"
                   : "Missing"}
             </p>
+            {analytics.ga4.serviceAccountEmail ? (
+              <p className="mt-2 break-all text-xs text-slate-600">
+                {analytics.ga4.serviceAccountEmail}
+              </p>
+            ) : null}
+            {analytics.ga4.oauthEmail ? (
+              <p className="mt-2 break-all text-xs text-slate-600">{analytics.ga4.oauthEmail}</p>
+            ) : null}
           </div>
           <div className="rounded-lg border border-slate-200 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -92,7 +100,15 @@ export default async function AdminAnalyticsPage() {
           </AdminStatusBadge>
         }
       >
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <AdminMetricCard
+            label="GA users now"
+            value={analytics.ga4Report.totals.activeUsersNow.toLocaleString()}
+          />
+          <AdminMetricCard
+            label="GA active users today"
+            value={analytics.ga4Report.totals.activeUsersToday.toLocaleString()}
+          />
           <AdminMetricCard
             label="GA active users 30d"
             value={analytics.ga4Report.totals.activeUsers30Days.toLocaleString()}

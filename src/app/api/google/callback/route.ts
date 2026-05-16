@@ -8,6 +8,17 @@ import { getGoogleRefreshToken, saveGoogleRefreshToken, updatePreferredProviderB
 
 export const runtime = "nodejs";
 
+type GoogleCallbackDebug = {
+  callbackReached: true;
+  hasRefreshToken: boolean;
+  hasCookieRefresh: boolean;
+  hasAccessToken: boolean;
+  tokenEmail: string | null;
+  sessionEmail: string | null;
+  tokenPersisted: boolean;
+  persistError: string | null;
+};
+
 function readCookie(header: string | null, name: string): string | null {
   if (!header) return null;
   const pairs = header.split(";");
@@ -88,10 +99,18 @@ export async function GET(request: Request) {
       refresh = cookieRefresh;
     }
 
-    let sessionEmail = sessionEmailFromJwt || emailFromIdToken(tokens.id_token);
-    if (!sessionEmail && tokens.access_token) {
-      sessionEmail = await emailFromGoogle(tokens.access_token);
-    }
+    const tokenEmail = emailFromIdToken(tokens.id_token) || (await emailFromGoogle(tokens.access_token));
+    const sessionEmail = tokenEmail || sessionEmailFromJwt;
+    const debug: GoogleCallbackDebug = {
+      callbackReached: true,
+      hasRefreshToken: Boolean(tokens.refresh_token),
+      hasCookieRefresh: Boolean(cookieRefresh),
+      hasAccessToken: Boolean(tokens.access_token),
+      tokenEmail: tokenEmail ?? null,
+      sessionEmail: sessionEmail ?? null,
+      tokenPersisted: false,
+      persistError: null,
+    };
 
     try {
       if (!refresh && sessionEmail) {
@@ -102,11 +121,23 @@ export async function GET(request: Request) {
       }
       if (refresh && sessionEmail) {
         await saveGoogleRefreshToken(sessionEmail, refresh);
-        await updatePreferredProviderByEmail({ email: sessionEmail, preferredProvider: "google" });
+        debug.tokenPersisted = true;
+        await updatePreferredProviderByEmail({
+          email: sessionEmail,
+          preferredProvider: "google",
+        }).catch((error: unknown) => {
+          if (error instanceof Error && error.message === "No local account found for this email") {
+            return;
+          }
+          throw error;
+        });
       }
-    } catch {
+    } catch (error) {
       // Persistence is best-effort; continue even if storage fails.
+      debug.persistError = error instanceof Error ? error.message : String(error);
+      console.error("[google/callback] Failed to persist Google refresh token:", error);
     }
+    console.info("[google/callback]", debug);
 
     if (state) {
       try {
@@ -233,6 +264,9 @@ export async function GET(request: Request) {
 
         const openUrl = new URL(await absoluteUrl("/open"));
         openUrl.searchParams.set("url", link);
+        if (!state) {
+          openUrl.searchParams.set("googleAuth", debug.tokenPersisted ? "stored" : "not-stored");
+        }
         const redirectResp = NextResponse.redirect(openUrl);
         if (refresh) {
           redirectResp.cookies.set({
@@ -251,7 +285,19 @@ export async function GET(request: Request) {
       }
     }
 
-    const homeRedirect = NextResponse.redirect(await absoluteUrl("/"));
+    const homeUrl = new URL(await absoluteUrl("/"));
+    homeUrl.searchParams.set("googleAuth", debug.tokenPersisted ? "stored" : "not-stored");
+    if (!debug.tokenPersisted) {
+      homeUrl.searchParams.set(
+        "googleAuthReason",
+        debug.persistError
+          ? "persist-error"
+          : debug.hasRefreshToken || debug.hasCookieRefresh
+            ? "missing-email"
+            : "missing-refresh-token",
+      );
+    }
+    const homeRedirect = NextResponse.redirect(homeUrl);
     if (refresh) {
       homeRedirect.cookies.set({
         name: "g_refresh",

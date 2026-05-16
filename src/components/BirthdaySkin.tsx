@@ -1,7 +1,15 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Calendar, CalendarPlus, Clock, MapPin, MessageSquare, Sparkles } from "lucide-react";
+import {
+  Calendar,
+  CalendarPlus,
+  Clock,
+  MapPin,
+  MessageSquare,
+  Navigation,
+  Sparkles,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -290,7 +298,7 @@ export default function BirthdaySkin({
     mixHexColors(neutralSurfaceTextColor, neutralSurface, 0.38) || neutralSurfaceTextColor;
   const directionsButtonBackground = colors.primary;
   const directionsButtonTextColor = ensureReadableTextColor(directionsButtonBackground, "#ffffff", {
-    minContrast: 4.5,
+    minContrast: 3,
   });
   const planCardBackground =
     mixHexColors(colors.background, "#ffffff", pageIsDark ? 0.14 : 0.12) || colors.background;
@@ -303,7 +311,7 @@ export default function BirthdaySkin({
   const calendarModalButtonTextColor = ensureReadableTextColor(
     calendarModalButtonBackground,
     "#ffffff",
-    { minContrast: 4.5 },
+    { minContrast: 3 },
   );
   const detailIconSwatchColor = "var(--theme-primary)";
   const displayOcrFacts = filterRenderedOcrFacts(
@@ -398,13 +406,19 @@ export default function BirthdaySkin({
       data-skin-id="birthday-skin"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="relative min-h-screen overflow-hidden pb-10 font-sans"
+      className="relative min-h-screen overflow-hidden pb-10 font-sans lg:overflow-visible"
       style={{
         ...themeStyle,
         backgroundColor: "var(--theme-background)",
         color: "var(--theme-text)",
       }}
     >
+      <style>{`
+        body {
+          overflow-x: clip !important;
+          overflow-y: visible !important;
+        }
+      `}</style>
       <ScannedSkinBackground
         category="birthday"
         title={title}
@@ -448,7 +462,7 @@ export default function BirthdaySkin({
               if (!imageUrl) return;
               setShowImageLightbox(true);
             }}
-            className="group relative block w-full max-w-[300px] rounded-[2.5rem] border-8 border-white bg-white p-3 text-left shadow-2xl transition-all duration-500 disabled:cursor-default"
+            className="group relative block w-full max-w-[300px] rounded-[2.5rem] border-8 border-white bg-white p-3 text-left shadow-2xl transition-all duration-500 disabled:cursor-default lg:hidden"
             disabled={!imageUrl}
           >
             <div
@@ -535,13 +549,14 @@ export default function BirthdaySkin({
                   window.open(directionsHref, "_blank", "noopener,noreferrer");
                 }}
                 disabled={!directionsHref || previewMode}
-                className="mt-8 w-full rounded-[1.6rem] py-5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mx-auto mt-8 flex w-fit items-center justify-center gap-2 rounded-[1.6rem] px-7 py-5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   backgroundColor: directionsButtonBackground,
                   color: directionsButtonTextColor,
                 }}
               >
-                Get Directions
+                <Navigation className="h-4 w-4" />
+                <span>Get Directions</span>
               </button>
             </motion.section>
 
@@ -552,121 +567,159 @@ export default function BirthdaySkin({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
-            <ActionTile
-              icon={<CalendarPlus className="h-10 w-10" />}
-              label="Save to Calendar"
-              backgroundColor="var(--theme-primary)"
-              textColor={primaryTileTextColor}
-              onClick={() => setShowCalendarMenu(true)}
-              disabled={!calendarLinks || previewMode}
-              wide={!hasRsvpAction}
-            />
-
-            {hasRsvpAction ? (
-              <ActionTile
-                icon={<MessageSquare className="h-10 w-10" />}
-                label="RSVP Now"
-                backgroundColor="var(--theme-secondary)"
-                textColor={secondaryTileTextColor}
-                href={shouldPromptForRsvpIdentity ? null : directRsvpHref}
-                onClick={handleRsvpTileClick}
-                disabled={previewMode}
-              />
-            ) : null}
-
-            {displayPlanCopy ? (
-              <motion.section
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="col-span-2 flex items-center justify-between gap-6 rounded-[3rem] border border-black/5 p-7 shadow-sm backdrop-blur-sm md:p-10"
-                style={{
-                  backgroundColor: planCardBackground,
-                  color: planCardTextColor,
+          {/* RIGHT COLUMN: Flyer & Sticky Actions */}
+          <div className="no-scrollbar self-start space-y-8 lg:sticky lg:top-12 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:pb-2 lg:pr-1">
+            <div className="grid grid-cols-2 gap-6">
+              <motion.button
+                type="button"
+                whileHover={imageUrl ? { rotate: 2, scale: 1.02 } : undefined}
+                onClick={() => {
+                  if (!imageUrl) return;
+                  setShowImageLightbox(true);
                 }}
+                className="group relative col-span-2 hidden w-full rounded-[2.5rem] border-8 border-white bg-white p-3 text-left shadow-2xl transition-all duration-500 disabled:cursor-default lg:block"
+                disabled={!imageUrl}
               >
-                <div className="space-y-1">
-                  <div
-                    className="text-[10px] font-black uppercase tracking-widest"
-                    style={{ color: planCardMutedTextColor }}
-                  >
-                    Plan of Action
-                  </div>
-                  <div className="text-2xl font-bold">{displayPlanCopy}</div>
-                </div>
                 <div
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
-                  style={{ color: "var(--theme-secondary)" }}
+                  className="absolute -right-4 -top-4 z-10 flex h-16 w-16 items-center justify-center rounded-full shadow-xl"
+                  style={{ backgroundColor: "var(--theme-primary)", color: primaryTileTextColor }}
                 >
-                  <Sparkles className="h-6 w-6" />
+                  <Sparkles className="h-8 w-8" />
                 </div>
-              </motion.section>
-            ) : null}
-            {displayAttire ? (
-              <motion.section
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.45 }}
-                className="col-span-1 flex flex-col justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:col-span-1"
-              >
-                <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
-                  Dress Code
+                <div className="overflow-hidden rounded-[1.8rem] bg-white">
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={`${title} invitation`}
+                      className="aspect-[3/4] h-full w-full object-cover transition-all duration-700 group-hover:scale-[1.02]"
+                    />
+                  ) : (
+                    <div
+                      className="aspect-[3/4] w-full"
+                      style={{
+                        background:
+                          "linear-gradient(180deg, var(--theme-primary) 0%, var(--theme-accent) 100%)",
+                      }}
+                    />
+                  )}
                 </div>
-                <div className="mt-2 text-xl font-bold text-black/90">{displayAttire}</div>
-              </motion.section>
-            ) : null}
-            {displayRegistryUrl ? (
-              <motion.a
-                href={displayRegistryUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.48 }}
-                className={`${displayRegistryHelperText ? "col-span-2" : "col-span-1 md:col-span-1"} flex items-center justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 text-center shadow-sm transition hover:scale-[1.01]`}
-              >
-                <div>
+              </motion.button>
+
+              <ActionTile
+                icon={<CalendarPlus className="h-10 w-10" />}
+                label="Save to Calendar"
+                backgroundColor="var(--theme-primary)"
+                textColor={primaryTileTextColor}
+                onClick={() => setShowCalendarMenu(true)}
+                disabled={!calendarLinks || previewMode}
+                wide={!hasRsvpAction}
+              />
+
+              {hasRsvpAction ? (
+                <ActionTile
+                  icon={<MessageSquare className="h-10 w-10" />}
+                  label="RSVP Now"
+                  backgroundColor="var(--theme-secondary)"
+                  textColor={secondaryTileTextColor}
+                  href={shouldPromptForRsvpIdentity ? null : directRsvpHref}
+                  onClick={handleRsvpTileClick}
+                  disabled={previewMode}
+                />
+              ) : null}
+
+              {displayPlanCopy ? (
+                <motion.section
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="col-span-2 flex items-center justify-between gap-6 rounded-[3rem] border border-black/5 p-7 shadow-sm backdrop-blur-sm md:p-10"
+                  style={{
+                    backgroundColor: planCardBackground,
+                    color: planCardTextColor,
+                  }}
+                >
+                  <div className="space-y-1">
+                    <div
+                      className="text-[10px] font-black uppercase tracking-widest"
+                      style={{ color: planCardMutedTextColor }}
+                    >
+                      Plan of Action
+                    </div>
+                    <div className="text-2xl font-bold">{displayPlanCopy}</div>
+                  </div>
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
+                    style={{ color: "var(--theme-secondary)" }}
+                  >
+                    <Sparkles className="h-6 w-6" />
+                  </div>
+                </motion.section>
+              ) : null}
+              {displayAttire ? (
+                <motion.section
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.45 }}
+                  className="col-span-1 flex flex-col justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:col-span-1"
+                >
                   <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
-                    Gift List
+                    Dress Code
                   </div>
-                  {displayRegistryName ? (
-                    <div className="mt-2 text-base font-semibold text-black/80">
-                      {displayRegistryName}
+                  <div className="mt-2 text-xl font-bold text-black/90">{displayAttire}</div>
+                </motion.section>
+              ) : null}
+              {displayRegistryUrl ? (
+                <motion.a
+                  href={displayRegistryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.48 }}
+                  className={`${displayRegistryHelperText ? "col-span-2" : "col-span-1 md:col-span-1"} flex items-center justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 text-center shadow-sm transition hover:scale-[1.01]`}
+                >
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
+                      Gift List
                     </div>
-                  ) : null}
-                  <div className="mt-2 text-lg font-bold text-black/90">
-                    {resolvedRegistryActionLabel}
+                    {displayRegistryName ? (
+                      <div className="mt-2 text-base font-semibold text-black/80">
+                        {displayRegistryName}
+                      </div>
+                    ) : null}
+                    <div className="mt-2 text-lg font-bold text-black/90">
+                      {resolvedRegistryActionLabel}
+                    </div>
+                    {displayRegistryHelperText ? (
+                      <div className="mt-3 whitespace-pre-line text-sm font-medium leading-relaxed text-black/55">
+                        {displayRegistryHelperText}
+                      </div>
+                    ) : null}
                   </div>
-                  {displayRegistryHelperText ? (
-                    <div className="mt-3 whitespace-pre-line text-sm font-medium leading-relaxed text-black/55">
-                      {displayRegistryHelperText}
-                    </div>
-                  ) : null}
-                </div>
-              </motion.a>
-            ) : null}
-            {displayActivities.length ? (
-              <motion.section
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="col-span-2 rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm"
-              >
-                <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
-                  Event Flow
-                </div>
-                <ul className="mt-3 space-y-1 text-sm font-medium text-black/80">
-                  {displayActivities.map((item) => (
-                    <li key={item}>- {item}</li>
-                  ))}
-                </ul>
-              </motion.section>
-            ) : null}
-            <OcrFactCards
-              facts={rightColumnOcrFacts}
-              cardClassName="col-span-1 rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:col-span-1"
-            />
+                </motion.a>
+              ) : null}
+              {displayActivities.length ? (
+                <motion.section
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="col-span-2 rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm"
+                >
+                  <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
+                    Event Flow
+                  </div>
+                  <ul className="mt-3 space-y-1 text-sm font-medium text-black/80">
+                    {displayActivities.map((item) => (
+                      <li key={item}>- {item}</li>
+                    ))}
+                  </ul>
+                </motion.section>
+              ) : null}
+              <OcrFactCards
+                facts={rightColumnOcrFacts}
+                cardClassName="col-span-1 rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:col-span-1"
+              />
+            </div>
           </div>
         </div>
 

@@ -1073,8 +1073,8 @@ export async function saveMicrosoftRefreshToken(
   const lower = email.toLowerCase();
   const userId = await getUserIdByEmail(lower);
   await query(
-    `insert into oauth_tokens (email, provider, refresh_token, user_id)
-     values ($1, 'microsoft', $2, $3)
+    `insert into oauth_tokens (email, provider, refresh_token, user_id, updated_at, created_at)
+     values ($1, 'microsoft', $2, $3, now(), now())
      on conflict (email, provider)
      do update set refresh_token = excluded.refresh_token,
                    user_id = coalesce(excluded.user_id, oauth_tokens.user_id),
@@ -1115,8 +1115,8 @@ export async function saveGoogleRefreshToken(email: string, refreshToken: string
   const lower = email.toLowerCase();
   const userId = await getUserIdByEmail(lower);
   await query(
-    `insert into oauth_tokens (email, provider, refresh_token, user_id)
-     values ($1, 'google', $2, $3)
+    `insert into oauth_tokens (email, provider, refresh_token, user_id, updated_at, created_at)
+     values ($1, 'google', $2, $3, now(), now())
      on conflict (email, provider)
      do update set refresh_token = excluded.refresh_token,
                    user_id = coalesce(excluded.user_id, oauth_tokens.user_id),

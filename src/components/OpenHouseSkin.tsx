@@ -339,9 +339,15 @@ export default function OpenHouseSkin({
       data-skin-id="open-house-skin"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="relative min-h-screen overflow-hidden pb-10 font-sans"
+      className="relative min-h-screen overflow-hidden pb-10 font-sans lg:overflow-visible"
       style={{ ...themeStyle, backgroundColor: colors.background, color: pageText }}
     >
+      <style>{`
+        body {
+          overflow-x: clip !important;
+          overflow-y: visible !important;
+        }
+      `}</style>
       <ScannedSkinBackground
         category="open-house"
         title={displayTitle}
@@ -476,7 +482,7 @@ export default function OpenHouseSkin({
             ) : null}
           </div>
 
-          <aside className="grid gap-5 self-start">
+          <aside className="no-scrollbar grid gap-5 self-start lg:sticky lg:top-12 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:pb-2 lg:pr-1">
             <section
               className="rounded-[2rem] border border-black/5 p-6 shadow-xl"
               style={{ backgroundColor: surface, color: surfaceText }}

@@ -57,14 +57,14 @@ export default function OcrFactCards({
           }}
         >
           <div
-            className="text-[10px] font-black uppercase tracking-widest"
+            className="mb-4 text-[10px] font-bold uppercase tracking-widest"
             style={{ color: labelColor }}
           >
             {fact.label}
           </div>
-          <div className="mt-2 text-lg font-bold leading-snug" style={{ color: valueColor }}>
+          <div className="text-sm font-bold leading-snug" style={{ color: valueColor }}>
             {fact.values.length > 1 ? (
-              <ul className="grid gap-1 sm:grid-cols-2">
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-2">
                 {fact.values.map((value) => (
                   <li key={value}>{value}</li>
                 ))}

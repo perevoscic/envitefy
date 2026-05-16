@@ -255,13 +255,19 @@ export default function ScannedWeddingInviteView({
   return (
     <div
       data-skin-id={resolvedSkinId}
-      className="relative min-h-screen overflow-hidden pb-10"
+      className="relative min-h-screen overflow-hidden pb-10 lg:overflow-visible"
       style={{
         backgroundColor: colors.background,
         color: colors.text,
         backgroundImage: rootBackgroundImage,
       }}
     >
+      <style>{`
+        body {
+          overflow-x: clip !important;
+          overflow-y: visible !important;
+        }
+      `}</style>
       <ScannedSkinBackground
         category="wedding"
         title={title}
@@ -612,7 +618,7 @@ export default function ScannedWeddingInviteView({
           />
         </div>
 
-        <aside className="lg:col-span-4 lg:sticky lg:top-10">
+        <aside className="no-scrollbar self-start space-y-8 lg:col-span-4 lg:sticky lg:top-12 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:pb-2 lg:pr-1">
           <section
             className="overflow-hidden rounded-[2.4rem] p-5 shadow-[0_24px_80px_rgba(37,26,10,0.12)]"
             style={{

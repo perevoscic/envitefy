@@ -16,6 +16,8 @@ export type AdminGa4Status = {
   credentialsConfigured: boolean;
   credentialsValid: boolean;
   credentialsSource: AdminGa4CredentialSource;
+  serviceAccountEmail: string | null;
+  oauthEmail: string | null;
   propertyId: string | null;
   message: string;
   setupHint: string;
@@ -57,12 +59,14 @@ export function getAdminGa4Status(): AdminGa4Status {
     credentialsConfigured: config.credentialsConfigured,
     credentialsValid: config.credentialsValid,
     credentialsSource: config.credentialsSource,
+    serviceAccountEmail: config.serviceAccountEmail,
+    oauthEmail: config.oauthEmail,
     propertyId: config.propertyId,
     message: connected
       ? "Google Analytics Data API reporting is connected."
       : "Google Analytics is not connected.",
     setupHint:
-      "Set GOOGLE_ANALYTICS_PROPERTY_ID plus Google service-account credentials to enable server-side GA4 snapshots.",
+      "Set GOOGLE_ANALYTICS_PROPERTY_ID plus either Google service-account credentials or GOOGLE_ANALYTICS_REFRESH_TOKEN to enable server-side GA4 snapshots.",
     configurationError: config.configurationError,
   };
 }

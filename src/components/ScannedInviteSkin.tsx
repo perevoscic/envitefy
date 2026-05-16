@@ -9,6 +9,7 @@ import {
   Mail,
   MapPin,
   MessageSquare,
+  Navigation,
   Phone,
   Sparkles,
 } from "lucide-react";
@@ -351,8 +352,12 @@ export default function ScannedInviteSkin({
     : "0 2px 16px rgba(255,255,255,0.72), 0 1px 3px rgba(47,31,69,0.1)";
   const directionsButtonBackground = colors.primary;
   const directionsButtonTextColor = ensureReadableTextColor(directionsButtonBackground, "#ffffff", {
-    minContrast: 4.5,
+    minContrast: 3,
   });
+  const pageShellBackground =
+    mixHexColors(colors.background, "#f0f4f8", pageIsDark ? 0.18 : 0.58) || colors.background;
+  const sidebarCardBackground =
+    mixHexColors(colors.background, "#ffffff", pageIsDark ? 0.08 : 0.72) || "#ffffff";
   const detailCardBackground =
     mixHexColors(colors.background, "#ffffff", pageIsDark ? 0.14 : 0.12) || colors.background;
   const detailCardTextColor = ensureReadableTextColor(detailCardBackground, colors.text, {
@@ -364,7 +369,7 @@ export default function ScannedInviteSkin({
   const calendarModalButtonTextColor = ensureReadableTextColor(
     calendarModalButtonBackground,
     "#ffffff",
-    { minContrast: 4.5 },
+    { minContrast: 3 },
   );
   const detailIconSwatchColor = "var(--theme-primary)";
   const displayTitle = String(title || "").trim() || "Celebration";
@@ -526,10 +531,6 @@ export default function ScannedInviteSkin({
     detailLayout === "wideDetails" ? groupedDisplayOcrFacts.slice(0, 2) : [];
   const rightColumnOcrFacts =
     detailLayout === "wideDetails" ? groupedDisplayOcrFacts.slice(2) : groupedDisplayOcrFacts;
-  const detailsGridClassName =
-    detailLayout === "wideDetails"
-      ? "grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(390px,1.12fr)_minmax(0,1fr)] xl:grid-cols-[minmax(440px,1.15fr)_minmax(0,0.95fr)]"
-      : "grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(360px,1fr)_minmax(0,1.1fr)] xl:grid-cols-[minmax(400px,1.05fr)_minmax(0,1fr)]";
 
   useEffect(() => {
     if (previewMode) return;
@@ -590,6 +591,107 @@ export default function ScannedInviteSkin({
     if (href) openRsvpHref(href);
   };
 
+  const renderContactCard = () => {
+    if (!contactPhone && !contactEmail && !normalizedContactWebsite) return null;
+
+    return (
+      <ContactTile
+        phone={contactPhone}
+        email={contactEmail}
+        website={normalizedContactWebsite}
+        contactName={displayVendorName || displayRsvpTitle}
+        backgroundColor={sidebarCardBackground}
+      />
+    );
+  };
+
+  const renderHubSidebar = (mobile: boolean) => {
+    const content = (
+      <>
+        <motion.button
+          type="button"
+          initial={{ opacity: 0, scale: 0.94 }}
+          animate={{ opacity: 1, scale: 1 }}
+          whileHover={imageUrl ? { rotate: -1, y: -2 } : undefined}
+          onClick={() => {
+            if (!imageUrl) return;
+            setShowImageLightbox(true);
+          }}
+          disabled={!imageUrl}
+          className="group relative block w-full rounded-[2rem] bg-white p-4 text-left shadow-xl transition-transform disabled:cursor-default"
+        >
+          <div className="relative aspect-[3/4] overflow-hidden rounded-[1.5rem]">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={`${title} invitation`}
+                className="h-full w-full object-cover transition-all duration-700 group-hover:scale-[1.02]"
+              />
+            ) : (
+              <div
+                className="flex h-full w-full flex-col items-center justify-center p-8 text-center text-white"
+                style={{
+                  background:
+                    "linear-gradient(180deg, var(--theme-primary) 0%, var(--theme-accent) 100%)",
+                }}
+              >
+                <Sparkles className="mb-4 h-16 w-16 drop-shadow-lg" />
+                <div className="serif text-3xl leading-tight">{displayTitle}</div>
+              </div>
+            )}
+            <div
+              className="absolute -right-12 -top-12 h-48 w-48 rounded-full blur-3xl"
+              style={{ backgroundColor: `${colors.accent}33` }}
+            />
+          </div>
+          <div className="absolute right-4 top-4 p-4">
+            <span
+              className="flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-transform group-hover:scale-110"
+              style={{
+                backgroundColor: "var(--theme-primary)",
+                color: primaryTileTextColor,
+              }}
+            >
+              <Sparkles className="h-6 w-6" />
+            </span>
+          </div>
+        </motion.button>
+
+        <div className="space-y-4">
+          <AnimatePresence>
+            {hasRsvpAction ? (
+              <ActionTile
+                key="rsvp-btn"
+                icon={<MessageSquare className="h-5 w-5" />}
+                label="RSVP Now"
+                backgroundColor="var(--theme-secondary)"
+                textColor={secondaryTileTextColor}
+                href={shouldPromptForRsvpIdentity ? null : directRsvpHref}
+                onClick={handleRsvpTileClick}
+                disabled={previewMode}
+              />
+            ) : null}
+          </AnimatePresence>
+
+          <ActionTile
+            icon={<CalendarPlus className="h-5 w-5" />}
+            label="Save to Calendar"
+            backgroundColor="var(--theme-primary)"
+            textColor={primaryTileTextColor}
+            onClick={() => setShowCalendarMenu(true)}
+            disabled={!calendarLinks || previewMode}
+          />
+
+          {mobile ? null : renderContactCard()}
+        </div>
+      </>
+    );
+
+    if (!mobile) return content;
+
+    return <div className="mx-auto w-full max-w-sm space-y-5">{content}</div>;
+  };
+
   const themeStyle = {
     ["--theme-primary" as string]: colors.primary,
     ["--theme-secondary" as string]: colors.secondary,
@@ -603,13 +705,19 @@ export default function ScannedInviteSkin({
       data-skin-id="scanned-invite-skin"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="relative min-h-screen overflow-hidden pb-10 font-sans"
+      className="relative min-h-screen overflow-hidden pb-10 font-sans lg:overflow-visible"
       style={{
         ...themeStyle,
-        backgroundColor: "var(--theme-background)",
+        backgroundColor: pageShellBackground,
         color: "var(--theme-text)",
       }}
     >
+      <style>{`
+        body {
+          overflow-x: clip !important;
+          overflow-y: visible !important;
+        }
+      `}</style>
       <ScannedSkinBackground
         category={backgroundCategory || categoryLabel || "general"}
         title={title}
@@ -623,81 +731,44 @@ export default function ScannedInviteSkin({
       >
         {actions ? <div className={EVENT_SKIN_ACTIONS_CLASS}>{actions}</div> : null}
 
-        <div className="mb-12 flex max-w-6xl flex-col items-center justify-between gap-8 pt-4 text-center md:flex-row md:items-center md:pt-12 md:text-left">
-          <div className="flex-1 space-y-4 text-center md:text-left">
-            <motion.div
-              initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: 1, rotate: -5 }}
-              className="inline-block rounded-full px-6 py-2 text-[10px] font-black uppercase tracking-[0.3em] shadow-lg"
-              style={{
-                backgroundColor: "var(--theme-accent)",
-                boxShadow: `0 10px 20px -5px ${colors.accent}`,
-                color: chipTextColor,
-              }}
-            >
-              {displayCategoryLabel}
-            </motion.div>
-            <motion.h1
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              className="serif text-5xl leading-[0.95] tracking-tight md:text-7xl"
-              style={{
-                color: heroTitleColor,
-                textShadow: heroTitleTextShadow,
-              }}
-            >
-              {displayTitle}
-            </motion.h1>
-          </div>
+        <div className="grid grid-cols-1 items-start gap-8 pt-4 lg:grid-cols-12 lg:gap-8">
+          <div className="space-y-10 lg:col-span-8">
+            <header className="space-y-4 pt-2 md:pt-8">
+              <motion.div
+                initial={{ scale: 0, rotate: -20 }}
+                animate={{ scale: 1, rotate: -5 }}
+                className="inline-flex items-center gap-2 rounded-full px-6 py-2 text-[10px] font-black uppercase tracking-[0.3em] shadow-lg"
+                style={{
+                  backgroundColor: "var(--theme-accent)",
+                  boxShadow: `0 10px 20px -5px ${colors.accent}`,
+                  color: chipTextColor,
+                }}
+              >
+                {displayCategoryLabel}
+              </motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="serif max-w-4xl text-5xl leading-[1.02] md:text-7xl"
+                style={{
+                  color: heroTitleColor,
+                  textShadow: heroTitleTextShadow,
+                }}
+              >
+                {displayTitle}
+              </motion.h1>
+              <div className="pt-2 lg:hidden">{renderHubSidebar(true)}</div>
+            </header>
 
-          <motion.button
-            type="button"
-            whileHover={{ rotate: 5, scale: 1.05 }}
-            onClick={() => {
-              if (!imageUrl) return;
-              setShowImageLightbox(true);
-            }}
-            className="group relative block w-full max-w-[300px] rounded-[2.5rem] border-8 border-white bg-white p-3 text-left shadow-2xl transition-all duration-500 disabled:cursor-default"
-            disabled={!imageUrl}
-          >
-            <div
-              className="absolute -right-4 -top-4 z-10 flex h-16 w-16 items-center justify-center rounded-full shadow-xl"
-              style={{
-                backgroundColor: "var(--theme-primary)",
-                color: primaryTileTextColor,
-              }}
-            >
-              <Sparkles className="h-8 w-8" />
-            </div>
-            <div className="overflow-hidden rounded-[1.8rem] bg-white">
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={`${title} invitation`}
-                  className="aspect-[3/4] h-full w-full object-cover transition-all duration-700"
-                />
-              ) : (
-                <div
-                  className="aspect-[3/4] w-full"
-                  style={{
-                    background:
-                      "linear-gradient(180deg, var(--theme-primary) 0%, var(--theme-accent) 100%)",
-                  }}
-                />
-              )}
-            </div>
-          </motion.button>
-        </div>
-
-        <div className={detailsGridClassName}>
-          <div className="grid gap-6">
             <motion.section
+              layout
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
-              className="self-start rounded-[2.6rem] border border-black/5 bg-white p-6 shadow-xl transition-shadow hover:shadow-2xl md:p-8"
+              className="relative overflow-hidden rounded-[2.5rem] border border-white/60 bg-white p-6 shadow-sm md:p-10"
             >
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <InfoBlock
                   icon={<Calendar className="h-7 w-7" />}
                   swatchColor={detailIconSwatchColor}
@@ -739,15 +810,6 @@ export default function ScannedInviteSkin({
                   />
                 ) : null}
 
-                {displayVendorName ? (
-                  <InfoBlock
-                    icon={<Sparkles className="h-7 w-7" />}
-                    swatchColor={detailIconSwatchColor}
-                    label="Vendor"
-                    title={displayVendorName}
-                  />
-                ) : null}
-
                 {hasDisplayLocation ? (
                   <InfoBlock
                     icon={<MapPin className="h-7 w-7" />}
@@ -757,149 +819,118 @@ export default function ScannedInviteSkin({
                   />
                 ) : null}
 
-                {hasRsvpAction || hasRsvpDisplayContact ? (
-                  <InfoBlock
-                    icon={<MessageSquare className="h-7 w-7" />}
-                    swatchColor={detailIconSwatchColor}
-                    label="RSVP"
-                    title={displayRsvpTitle}
-                    divider
-                  />
+                <AnimatePresence mode="wait">
+                  {displayVendorName ? (
+                    <motion.div
+                      key="vendor"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <InfoBlock
+                        icon={<Sparkles className="h-7 w-7" />}
+                        swatchColor={detailIconSwatchColor}
+                        label="Vendor"
+                        title={displayVendorName}
+                        divider
+                      />
+                    </motion.div>
+                  ) : hasRsvpAction || hasRsvpDisplayContact ? (
+                    <motion.div
+                      key="rsvp"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <InfoBlock
+                        icon={<MessageSquare className="h-7 w-7" />}
+                        swatchColor={detailIconSwatchColor}
+                        label="RSVP"
+                        title={displayRsvpTitle}
+                        divider
+                      />
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+
+                {directionsHref ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (previewMode) return;
+                      window.open(directionsHref, "_blank", "noopener,noreferrer");
+                    }}
+                    disabled={previewMode}
+                    className="mx-auto flex w-fit items-center justify-center gap-2 rounded-[1.25rem] px-7 py-5 text-xs font-bold uppercase tracking-[0.18em] shadow-lg transition-all hover:scale-[1.01] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      backgroundColor: directionsButtonBackground,
+                      boxShadow: `0 18px 42px -26px ${directionsButtonBackground}`,
+                      color: directionsButtonTextColor,
+                    }}
+                  >
+                    <Navigation className="h-4 w-4" />
+                    <span>Get Directions</span>
+                  </button>
                 ) : null}
               </div>
-
-              {directionsHref ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (previewMode) return;
-                    window.open(directionsHref, "_blank", "noopener,noreferrer");
-                  }}
-                  disabled={previewMode}
-                  className="mt-8 w-full rounded-[1.6rem] py-5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                  style={{
-                    backgroundColor: directionsButtonBackground,
-                    color: directionsButtonTextColor,
-                  }}
-                >
-                  Get Directions
-                </button>
-              ) : null}
             </motion.section>
 
-            <OcrFactCards
-              facts={leftColumnOcrFacts}
-              className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1"
-              cardClassName="rounded-[2rem] border border-black/5 bg-white p-6 shadow-sm"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 items-start justify-items-end gap-4">
-            <div className="col-span-2 flex w-full flex-wrap items-center justify-end gap-3">
-              <ActionTile
-                icon={<CalendarPlus className="h-6 w-6" />}
-                label="Save to Calendar"
-                backgroundColor="var(--theme-primary)"
-                textColor={primaryTileTextColor}
-                onClick={() => setShowCalendarMenu(true)}
-                disabled={!calendarLinks || previewMode}
-              />
-
-              {hasRsvpAction ? (
-                <ActionTile
-                  icon={<MessageSquare className="h-6 w-6" />}
-                  label="RSVP Now"
-                  backgroundColor="var(--theme-secondary)"
-                  textColor={secondaryTileTextColor}
-                  href={shouldPromptForRsvpIdentity ? null : directRsvpHref}
-                  onClick={handleRsvpTileClick}
-                  disabled={previewMode}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {displayDetailCopy ? (
+                <HubDetailCard
+                  label="Good to Know"
+                  title={displayDetailCopy}
+                  icon={<Sparkles className="h-5 w-5" />}
+                  backgroundColor={detailCardBackground}
+                  textColor={detailCardTextColor}
+                  mutedColor={detailCardMutedTextColor}
+                  accentColor="var(--theme-secondary)"
                 />
               ) : null}
 
-              {contactPhone || contactEmail || normalizedContactWebsite ? (
-                <ContactTile
-                  phone={contactPhone}
-                  email={contactEmail}
-                  website={normalizedContactWebsite}
+              {displayEntryFee ? (
+                <HubDetailCard
+                  label="Entry Fee"
+                  title={displayEntryFee}
+                  backgroundColor="#ffffff"
+                  textColor="#111827"
+                  mutedColor="rgba(0,0,0,0.35)"
+                  accentColor="var(--theme-primary)"
                 />
               ) : null}
-            </div>
 
-            {displayDetailCopy ? (
-              <motion.section
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="col-span-2 flex items-center justify-between gap-6 rounded-[3rem] border border-black/5 p-7 shadow-sm backdrop-blur-sm md:p-10"
-                style={{
-                  backgroundColor: detailCardBackground,
-                  color: detailCardTextColor,
-                }}
-              >
-                <div className="space-y-1">
-                  <div
-                    className="text-[10px] font-black uppercase tracking-widest"
-                    style={{ color: detailCardMutedTextColor }}
-                  >
-                    Good to Know
-                  </div>
-                  <div className="text-2xl font-bold">{displayDetailCopy}</div>
-                </div>
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
-                  style={{ color: "var(--theme-secondary)" }}
+              {displayAttire ? (
+                <HubDetailCard
+                  label="Dress Code"
+                  title={displayAttire}
+                  backgroundColor="#ffffff"
+                  textColor="#111827"
+                  mutedColor="rgba(0,0,0,0.35)"
+                  accentColor="var(--theme-primary)"
+                />
+              ) : null}
+
+              {displayRegistryUrl ? (
+                <motion.a
+                  href={displayRegistryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.48 }}
+                  className="rounded-[2rem] border border-white/60 bg-white p-7 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
-                  <Sparkles className="h-6 w-6" />
-                </div>
-              </motion.section>
-            ) : null}
-            {displayEntryFee ? (
-              <motion.section
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.43 }}
-                className="col-span-2 flex flex-col justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:p-7"
-              >
-                <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
-                  Entry Fee
-                </div>
-                <div className="mt-2 text-xl font-bold text-black/90">{displayEntryFee}</div>
-              </motion.section>
-            ) : null}
-            {displayAttire ? (
-              <motion.section
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.45 }}
-                className="col-span-1 flex flex-col justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:col-span-1"
-              >
-                <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
-                  Dress Code
-                </div>
-                <div className="mt-2 text-xl font-bold text-black/90">{displayAttire}</div>
-              </motion.section>
-            ) : null}
-            {displayRegistryUrl ? (
-              <motion.a
-                href={displayRegistryUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.48 }}
-                className={`${displayRegistryHelperText ? "col-span-2" : "col-span-1 md:col-span-1"} flex items-center justify-center rounded-[2.2rem] border border-black/5 bg-white p-6 text-center shadow-sm transition hover:scale-[1.01]`}
-              >
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-black/35">
                     {registryLabel}
                   </div>
                   {displayRegistryName ? (
-                    <div className="mt-2 text-base font-semibold text-black/80">
+                    <div className="mt-3 text-base font-semibold text-black/70">
                       {displayRegistryName}
                     </div>
                   ) : null}
-                  <div className="mt-2 text-lg font-bold text-black/90">
+                  <div className="mt-2 text-xl font-bold text-black/90">
                     {resolvedRegistryActionLabel}
                   </div>
                   {displayRegistryHelperText ? (
@@ -907,32 +938,46 @@ export default function ScannedInviteSkin({
                       {displayRegistryHelperText}
                     </div>
                   ) : null}
-                </div>
-              </motion.a>
-            ) : null}
-            {displayActivities.length ? (
-              <motion.section
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="col-span-2 rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm"
-              >
-                <div className="text-[10px] font-black uppercase tracking-widest text-black/35">
-                  Event Flow
-                </div>
-                <ul className="mt-3 space-y-1 text-sm font-medium text-black/80">
-                  {displayActivities.map((item) => (
-                    <li key={item}>- {item}</li>
-                  ))}
-                </ul>
-              </motion.section>
-            ) : null}
-            <OcrFactCards
-              facts={rightColumnOcrFacts}
-              cardClassName="col-span-1 rounded-[2.2rem] border border-black/5 bg-white p-6 shadow-sm md:col-span-1"
-            />
+                </motion.a>
+              ) : null}
+
+              {displayActivities.length ? (
+                <motion.section
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="rounded-[2rem] border border-white/60 bg-white p-7 shadow-sm"
+                >
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-black/35">
+                    Event Flow
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {displayActivities.map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full bg-slate-50 px-3 py-1 text-sm font-bold text-slate-800"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </motion.section>
+              ) : null}
+
+              <OcrFactCards
+                facts={[...leftColumnOcrFacts, ...rightColumnOcrFacts]}
+                cardClassName="rounded-[2rem] border border-white/60 bg-white p-7 shadow-sm"
+              />
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: Flyer & Sticky Actions */}
+          <div className="no-scrollbar hidden space-y-8 self-start lg:col-span-4 lg:sticky lg:top-12 lg:block lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:pb-2 lg:pr-1">
+            {renderHubSidebar(false)}
           </div>
         </div>
+
+        <div className="mx-auto mt-8 w-full max-w-sm lg:hidden">{renderContactCard()}</div>
 
         <div className={EVENT_SKIN_FOOTER_CLASS}>
           <div
@@ -1110,26 +1155,90 @@ function InfoBlock({
   );
 }
 
-function ContactTile({ phone, email, website }: { phone: string; email: string; website: string }) {
+function HubDetailCard({
+  label,
+  title,
+  icon,
+  backgroundColor,
+  textColor,
+  mutedColor,
+  accentColor,
+}: {
+  label: string;
+  title: string;
+  icon?: ReactNode;
+  backgroundColor: string;
+  textColor: string;
+  mutedColor: string;
+  accentColor: string;
+}) {
   return (
-    <section className="flex min-h-[4.25rem] w-full max-w-[11rem] flex-col items-center justify-center gap-2 rounded-[1.5rem] border border-black/5 bg-white px-3 py-3 text-black/75 shadow-[0_10px_24px_rgba(59,74,84,0.1)] sm:min-h-[4.75rem] md:min-h-[5rem]">
-      <div className="flex items-center justify-center gap-2">
+    <motion.section
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: 0.4 }}
+      className="flex min-h-[10rem] items-center justify-between gap-6 rounded-[2rem] border border-white/60 p-7 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      style={{
+        backgroundColor,
+        color: textColor,
+      }}
+    >
+      <div className="min-w-0 space-y-2">
+        <div
+          className="text-[10px] font-bold uppercase tracking-widest"
+          style={{ color: mutedColor }}
+        >
+          {label}
+        </div>
+        <div className="break-words text-xl font-bold leading-tight md:text-2xl">{title}</div>
+      </div>
+      {icon ? (
+        <div
+          className="hidden h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-lg sm:flex"
+          style={{ color: accentColor }}
+        >
+          {icon}
+        </div>
+      ) : null}
+    </motion.section>
+  );
+}
+
+function ContactTile({
+  phone,
+  email,
+  website,
+  contactName,
+  backgroundColor,
+}: {
+  phone: string;
+  email: string;
+  website: string;
+  contactName: string;
+  backgroundColor: string;
+}) {
+  return (
+    <section
+      className="flex w-full flex-col items-center justify-center gap-3 rounded-[1.25rem] border border-slate-200/60 px-5 py-5 text-black/75 shadow-sm"
+      style={{ backgroundColor }}
+    >
+      <div className="flex w-full items-center justify-around gap-2">
         {phone ? (
           <a
             href={`tel:${phone.replace(/[^\d+]/g, "")}`}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition hover:bg-slate-100"
             aria-label="Call"
           >
-            <Phone className="h-4 w-4" />
+            <Phone className="h-5 w-5" />
           </a>
         ) : null}
         {email ? (
           <a
             href={`mailto:${email}`}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition hover:bg-slate-100"
             aria-label="Email"
           >
-            <Mail className="h-4 w-4" />
+            <Mail className="h-5 w-5" />
           </a>
         ) : null}
         {website ? (
@@ -1137,14 +1246,19 @@ function ContactTile({ phone, email, website }: { phone: string; email: string; 
             href={website}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-black/75 transition hover:bg-black/10"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition hover:bg-slate-100"
             aria-label="Website"
           >
-            <Globe2 className="h-4 w-4" />
+            <Globe2 className="h-5 w-5" />
           </a>
         ) : null}
       </div>
-      <span className="text-center text-sm font-bold uppercase tracking-tight">Contact</span>
+      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        Contact
+      </span>
+      {contactName ? (
+        <p className="text-center text-sm font-bold text-slate-800">{contactName}</p>
+      ) : null}
     </section>
   );
 }
@@ -1171,23 +1285,24 @@ function ActionTile({
   const content = (
     <>
       <span>{icon}</span>
-      <span className="text-center text-sm font-bold uppercase tracking-tight">{label}</span>
+      <span className="text-center text-xs font-bold uppercase tracking-[0.18em]">{label}</span>
     </>
   );
 
   const className = wide
-    ? "col-span-2 flex min-h-[3.5rem] w-full max-w-[16rem] items-center justify-center rounded-[1.5rem] px-5 py-3 shadow-[0_10px_24px_rgba(59,74,84,0.1)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[4rem] sm:px-6"
-    : "flex min-h-[4.25rem] w-full max-w-[11rem] items-center justify-center rounded-[1.5rem] px-3 py-3 shadow-[0_10px_24px_rgba(59,74,84,0.1)] transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-65 sm:min-h-[4.75rem] md:min-h-[5rem]";
+    ? "flex w-full items-center justify-center rounded-[1.25rem] px-6 py-5 shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-65"
+    : "flex w-full items-center justify-center rounded-[1.25rem] px-6 py-5 shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-65";
   const contentClassName = wide
     ? "flex flex-row items-center justify-center gap-4"
-    : "flex flex-col items-center gap-3";
+    : "flex flex-row items-center justify-center gap-3";
 
   if (href && !disabled) {
-    if (isRsvpMailtoHref(href)) {
+    const linkHref = href;
+    if (isRsvpMailtoHref(linkHref)) {
       return (
         <button
           type="button"
-          onClick={() => openRsvpMailtoHref(href)}
+          onClick={() => openRsvpMailtoHref(linkHref)}
           className={className}
           style={{ backgroundColor, color: textColor }}
         >
@@ -1196,11 +1311,12 @@ function ActionTile({
       );
     }
 
+    const isExternalHref = /^https?:\/\//i.test(linkHref);
     return (
       <a
-        href={href}
-        target={href.startsWith("http") ? "_blank" : undefined}
-        rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+        href={linkHref}
+        target={isExternalHref ? "_blank" : undefined}
+        rel={isExternalHref ? "noopener noreferrer" : undefined}
         className={className}
         style={{ backgroundColor, color: textColor }}
       >
