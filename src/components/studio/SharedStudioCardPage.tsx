@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import Link from "next/link";
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useCallback, useState } from "react";
 import EventCelebrationOverlay from "@/components/EventCelebrationOverlay";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
@@ -113,19 +113,31 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
 export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   const invitationData = props.invitationData || null;
   const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
+  const handleClose = useCallback(() => {
+    if (props.returnHref) {
+      window.location.assign(props.returnHref);
+      return;
+    }
+
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+
+    window.location.assign("/landing");
+  }, [props.returnHref]);
 
   return (
     <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950">
       {props.celebrationKind ? <EventCelebrationOverlay kind={props.celebrationKind} /> : null}
-      {props.returnHref ? (
-        <Link
-          href={props.returnHref}
-          aria-label="Close preview"
-          className="fixed right-[max(0.75rem,env(safe-area-inset-right))] top-[max(calc(var(--app-mobile-topbar-offset,4rem)+0.75rem),calc(env(safe-area-inset-top)+0.75rem))] z-[7001] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/92 text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:top-[max(1rem,env(safe-area-inset-top))]"
-        >
-          <X size={18} aria-hidden="true" />
-        </Link>
-      ) : null}
+      <button
+        type="button"
+        onClick={handleClose}
+        aria-label="Close preview"
+        className="fixed right-[max(0.75rem,env(safe-area-inset-right))] top-[max(calc(var(--app-mobile-topbar-offset,4rem)+0.75rem),calc(env(safe-area-inset-top)+0.75rem))] z-[7001] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/92 text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:left-[calc(20rem+1rem)] lg:right-auto lg:top-[max(1rem,env(safe-area-inset-top))]"
+      >
+        <X size={18} aria-hidden="true" />
+      </button>
 
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
         <img
