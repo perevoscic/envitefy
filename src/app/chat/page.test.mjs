@@ -58,6 +58,9 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /STUDIO_CATEGORY_TILES/);
   assert.match(client, /CHAT_STARTER_PROMPTS/);
   assert.match(client, /CELEBRATION_STARTER_TILES/);
+  assert.match(client, /I can't post to Facebook/);
+  assert.match(client, /Envitefy event link/);
+  assert.doesNotMatch(client, /short video brief/);
   assert.doesNotMatch(client, /Upload or snap an invite/);
   assert.match(snapPage, /AuthenticatedSnapUploadStart/);
   assert.match(snapPage, /SnapLaunchCards/);

@@ -55,7 +55,7 @@ export async function runSnapOcrUpload(params: {
   form.append("scanAttemptId", params.scanAttemptId);
 
   const controller = new AbortController();
-  const timeoutMs = Number.isFinite(params.timeoutMs) ? Math.max(1000, params.timeoutMs!) : 60_000;
+  const timeoutMs = Number.isFinite(params.timeoutMs) ? Math.max(1000, params.timeoutMs!) : 75_000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let response: Response;

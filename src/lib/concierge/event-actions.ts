@@ -300,8 +300,8 @@ function guardedEventAssistantPlan(message: string): EventActionPlan | null {
   }
   if (isExternalPlatformActionRequest(message)) {
     const question =
-      "I can help with that, but I can't post to Facebook, create social media event pages, or contact people for you. I can write the post copy, create an Envitefy event link, or draft a short video brief you can share yourself.";
-    const suggestedReplies = ["Write post copy", "Create event page", "Draft video brief"];
+      "I can help with that, but I can't post to Facebook, create social media event pages, or contact people for you. I can write the post copy or help create an Envitefy event link you can share yourself.";
+    const suggestedReplies = ["Write post copy", "Create event page"];
     return {
       actions: [
         {

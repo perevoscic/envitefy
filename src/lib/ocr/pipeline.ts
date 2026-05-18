@@ -29,6 +29,7 @@ import {
   llmEventToRawText,
   llmExtractEventFromImage,
   llmExtractVisibleTextFromImage,
+  OpenAiOcrError,
   llmExtractPracticeScheduleFromImage,
   llmRewriteBirthdayDescription,
   llmRewriteSmartDescription,
@@ -441,9 +442,26 @@ export async function handleOcrRequest(request: Request) {
     let llmImage: any = null;
     let raw = "";
     let ocrSource = "none";
+    let lastOcrFailureCode: string | null = null;
+    const fallbackOcrModel = resolveOcrModel(true);
 
-    const runOpenAiCandidate = async (imageBytes: Buffer, mimeType: string, timeoutMs: number) => {
-      const llm = await llmExtractEventFromImage(imageBytes, mimeType, timeoutMs, ocrModel);
+    const openAiFailureCode = (error: unknown) => {
+      if (error instanceof OpenAiOcrError) return error.code;
+      if (error instanceof Error && error.name === "AbortError") return "OPENAI_TIMEOUT";
+      return error instanceof Error && error.message ? error.message : "OPENAI_ERROR";
+    };
+    const logOpenAiFailure = (message: string, error: unknown) => {
+      lastOcrFailureCode = openAiFailureCode(error);
+      console.error(message, error);
+    };
+
+    const runOpenAiCandidate = async (
+      imageBytes: Buffer,
+      mimeType: string,
+      timeoutMs: number,
+      model: string,
+    ) => {
+      const llm = await llmExtractEventFromImage(imageBytes, mimeType, timeoutMs, model);
       const rawText = llmEventToRawText(llm);
       if (!llm || !rawText) throw new Error("OPENAI_EMPTY");
       if (!hasUsableOcrResult(llm, rawText)) throw new Error("OPENAI_GENERIC");
@@ -453,13 +471,9 @@ export async function handleOcrRequest(request: Request) {
       imageBytes: Buffer,
       mimeType: string,
       timeoutMs: number,
+      model: string,
     ) => {
-      const rawText = await llmExtractVisibleTextFromImage(
-        imageBytes,
-        mimeType,
-        timeoutMs,
-        ocrModel,
-      );
+      const rawText = await llmExtractVisibleTextFromImage(imageBytes, mimeType, timeoutMs, model);
       if (!rawText) throw new Error("OPENAI_TEXT_EMPTY");
       if (!hasUsableRawOcrText(rawText)) throw new Error("OPENAI_TEXT_GENERIC");
       return rawText;
@@ -478,12 +492,17 @@ export async function handleOcrRequest(request: Request) {
             fastMode,
             ocrModel,
           });
-          const primary = await runOpenAiCandidate(ocrBuffer, visionMime, openAiTimeoutMs);
+          const primary = await runOpenAiCandidate(
+            ocrBuffer,
+            visionMime,
+            openAiTimeoutMs,
+            ocrModel,
+          );
           raw = primary.rawText;
           llmImage = primary.llm;
           ocrSource = "openai";
         } catch (error) {
-          console.error(">>> OCR turbo mode: OpenAI Vision failed with error:", error);
+          logOpenAiFailure(">>> OCR turbo mode: OpenAI Vision failed with error:", error);
         }
       }
     }
@@ -500,12 +519,17 @@ export async function handleOcrRequest(request: Request) {
             fastMode,
             ocrModel,
           });
-          const primary = await runOpenAiCandidate(ocrBuffer, visionMime, primaryTimeoutMs);
+          const primary = await runOpenAiCandidate(
+            ocrBuffer,
+            visionMime,
+            primaryTimeoutMs,
+            ocrModel,
+          );
           raw = primary.rawText;
           llmImage = primary.llm;
           ocrSource = "openai";
         } catch (error) {
-          console.error(">>> OCR: OpenAI Vision failed with error:", error);
+          logOpenAiFailure(">>> OCR: OpenAI Vision failed with error:", error);
         }
       }
     }
@@ -522,14 +546,19 @@ export async function handleOcrRequest(request: Request) {
           log(">>> OCR: Trying OpenAI Vision (color fallback)...", {
             timeoutMs: fallbackTimeoutMs,
             fastMode,
-            ocrModel,
+            ocrModel: fallbackOcrModel,
           });
-          const fallback = await runOpenAiCandidate(colorBuffer, colorMime, fallbackTimeoutMs);
+          const fallback = await runOpenAiCandidate(
+            colorBuffer,
+            colorMime,
+            fallbackTimeoutMs,
+            fallbackOcrModel,
+          );
           raw = fallback.rawText;
           llmImage = fallback.llm;
           ocrSource = "openai-color";
         } catch (error) {
-          console.error(">>> OCR: OpenAI Vision color fallback failed with error:", error);
+          logOpenAiFailure(">>> OCR: OpenAI Vision color fallback failed with error:", error);
         } finally {
           stage.fallbackOcrMs = Date.now() - fallbackStartedAt;
         }
@@ -547,13 +576,18 @@ export async function handleOcrRequest(request: Request) {
           log(">>> OCR: Trying OpenAI visible-text fallback...", {
             timeoutMs: textFallbackTimeoutMs,
             fastMode,
-            ocrModel,
+            ocrModel: fallbackOcrModel,
           });
-          raw = await runOpenAiTextCandidate(colorBuffer, colorMime, textFallbackTimeoutMs);
+          raw = await runOpenAiTextCandidate(
+            colorBuffer,
+            colorMime,
+            textFallbackTimeoutMs,
+            fallbackOcrModel,
+          );
           llmImage = null;
           ocrSource = "openai-text";
         } catch (error) {
-          console.error(">>> OCR: OpenAI visible-text fallback failed with error:", error);
+          logOpenAiFailure(">>> OCR: OpenAI visible-text fallback failed with error:", error);
         } finally {
           stage.fallbackOcrMs += Date.now() - textFallbackStartedAt;
         }
@@ -577,20 +611,33 @@ export async function handleOcrRequest(request: Request) {
             fastMode,
             turboMode,
             model: ocrModel,
+            fallbackModel: fallbackOcrModel,
             ocrSource,
+            failureCode: lastOcrFailureCode,
           },
         });
       }
+      const providerError =
+        lastOcrFailureCode === "OPENAI_TIMEOUT"
+          ? "OCR timed out before OpenAI returned event details. Please try again, or enter the event manually if the image is complex."
+          : "OCR could not read enough event details from this file. Please try a clearer image or enter the event manually.";
       return corsJson(
         request,
         {
           error: providerConfigured
-            ? "OCR could not read enough event details from this file. Please try a clearer image or enter the event manually."
+            ? providerError
             : "OCR is not configured. Set OPENAI_API_KEY before snapping or uploading event flyers.",
-          code: providerConfigured ? "OCR_UNREADABLE" : "OCR_NOT_CONFIGURED",
+          code: providerConfigured
+            ? lastOcrFailureCode === "OPENAI_TIMEOUT"
+              ? "OCR_TIMEOUT"
+              : "OCR_UNREADABLE"
+            : "OCR_NOT_CONFIGURED",
+          detail: providerConfigured ? lastOcrFailureCode : undefined,
           ocrSource,
         },
-        { status: providerConfigured ? 422 : 503 },
+        {
+          status: providerConfigured ? (lastOcrFailureCode === "OPENAI_TIMEOUT" ? 504 : 422) : 503,
+        },
       );
     }
 
@@ -876,7 +923,7 @@ export async function handleOcrRequest(request: Request) {
     let finalDescription = cleanDescription;
     let keepTitleInDescription = false;
 
-    if (ocrSource === "openai" && llmImage) {
+    if (llmImage) {
       const safeDate = (value?: string | null) => {
         if (!value) return null;
         const parsedDate = new Date(value);
@@ -1082,7 +1129,7 @@ export async function handleOcrRequest(request: Request) {
           .replace(/\b\w/g, (match) => match.toUpperCase());
 
       const openAIHasGoodTitle =
-        ocrSource === "openai" &&
+        Boolean(llmImage) &&
         finalTitle &&
         finalTitle !== "Doctor Appointment" &&
         !/^\s*appointment\s*$/i.test(finalTitle);
@@ -1100,7 +1147,7 @@ export async function handleOcrRequest(request: Request) {
       if (facilityMatch) descParts.push(`Location: ${facilityMatch[0].trim()}`);
 
       const openAIHasGoodDesc =
-        ocrSource === "openai" &&
+        Boolean(llmImage) &&
         finalDescription &&
         finalDescription !== "Doctor Appointment." &&
         finalDescription.length > 20;
@@ -1321,7 +1368,7 @@ export async function handleOcrRequest(request: Request) {
 
     const rawHasYearDigits = /\b(19|20)\d{2}\b/.test(raw);
     let containsExplicitYear = rawHasYearDigits;
-    if (ocrSource === "openai") {
+    if (llmImage) {
       if (typeof llmImage?.yearVisible === "boolean")
         containsExplicitYear = Boolean(llmImage.yearVisible);
       else containsExplicitYear = rawHasYearDigits;
@@ -1421,9 +1468,7 @@ export async function handleOcrRequest(request: Request) {
     const guestReminderFacts =
       extractGuestReminderFromFlyerText(raw) || extractGuestReminderFromFlyerText(description);
     let goodToKnowFinal: string | null =
-      ocrSource === "openai" &&
-      typeof llmImage?.goodToKnow === "string" &&
-      llmImage.goodToKnow.trim()
+      llmImage && typeof llmImage?.goodToKnow === "string" && llmImage.goodToKnow.trim()
         ? llmImage.goodToKnow.trim()
         : null;
     goodToKnowFinal = combineGuestInfoFacts(

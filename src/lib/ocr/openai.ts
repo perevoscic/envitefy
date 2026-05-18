@@ -13,6 +13,27 @@ import type {
   PracticeScheduleLLMResponse,
 } from "./types";
 
+export class OpenAiOcrError extends Error {
+  code: string;
+  status?: number;
+  timeoutMs?: number;
+
+  constructor(message: string, options: { code: string; status?: number; timeoutMs?: number }) {
+    super(message);
+    this.name = "OpenAiOcrError";
+    this.code = options.code;
+    this.status = options.status;
+    this.timeoutMs = options.timeoutMs;
+  }
+}
+
+function isAbortLikeError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.name === "AbortError" || error.message.toLowerCase().includes("aborted"))
+  );
+}
+
 export function llmEventToRawText(payload: any): string {
   const parts: string[] = [];
   if (typeof payload?.category === "string" && payload.category.trim())
@@ -100,9 +121,23 @@ export function llmEventToRawText(payload: any): string {
 
 export async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutError = new OpenAiOcrError(`OpenAI request timed out after ${timeoutMs}ms`, {
+    code: "OPENAI_TIMEOUT",
+    timeoutMs,
+  });
+  const timeout = setTimeout(() => controller.abort(timeoutError), timeoutMs);
   try {
     return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      const reason = controller.signal.reason;
+      if (reason instanceof OpenAiOcrError) throw reason;
+      throw new OpenAiOcrError(`OpenAI request timed out after ${timeoutMs}ms`, {
+        code: "OPENAI_TIMEOUT",
+        timeoutMs,
+      });
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -188,7 +223,10 @@ export async function llmExtractEventFromImage(
     if (!res.ok) {
       const errorBody = await res.text();
       console.error(">>> OpenAI API error:", { status: res.status, body: errorBody });
-      return null;
+      throw new OpenAiOcrError(`OpenAI API returned ${res.status}`, {
+        code: "OPENAI_HTTP_ERROR",
+        status: res.status,
+      });
     }
     const j: any = await res.json();
     log(">>> OpenAI API response received");
@@ -216,6 +254,9 @@ export async function llmExtractEventFromImage(
     }
   } catch (err) {
     console.error(">>> OpenAI Vision API exception:", err);
+    if (err instanceof OpenAiOcrError || isAbortLikeError(err)) {
+      throw err;
+    }
     return null;
   }
 }
@@ -276,7 +317,10 @@ export async function llmExtractVisibleTextFromImage(
     if (!res.ok) {
       const errorBody = await res.text();
       console.error(">>> OpenAI visible-text OCR error:", { status: res.status, body: errorBody });
-      return null;
+      throw new OpenAiOcrError(`OpenAI visible-text OCR returned ${res.status}`, {
+        code: "OPENAI_HTTP_ERROR",
+        status: res.status,
+      });
     }
     const j: any = await res.json();
     const text = j?.choices?.[0]?.message?.content || "";
@@ -291,6 +335,9 @@ export async function llmExtractVisibleTextFromImage(
     }
   } catch (err) {
     console.error(">>> OpenAI visible-text OCR exception:", err);
+    if (err instanceof OpenAiOcrError || isAbortLikeError(err)) {
+      throw err;
+    }
     return null;
   }
 }

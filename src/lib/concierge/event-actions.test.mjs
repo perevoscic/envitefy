@@ -70,6 +70,9 @@ test("event assistant constrains persona and refuses unsafe event requests", () 
   assert.match(source, /I can't help scrape private RSVP data or bulk-change guest responses/);
   assert.match(source, /isExternalPlatformActionRequest/);
   assert.match(source, /I can't post to Facebook/);
+  assert.match(source, /Write post copy/);
+  assert.match(source, /Create event page/);
+  assert.doesNotMatch(source, /Draft video brief|short video brief/);
 });
 
 test("event assistant bounds off-domain support without event mutations", () => {

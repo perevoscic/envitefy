@@ -1938,6 +1938,11 @@ test("unsafe and unrelated standalone prompts do not become event drafts", () =>
     assert.deepEqual(draft.missingFields, [], message);
     assert.deepEqual(draft.requestedOutputs, [], message);
     assert.match(assistant, reply, message);
+    if (boundary === "external_action") {
+      assert.match(assistant, /write the post copy/i, message);
+      assert.match(assistant, /Envitefy event link/i, message);
+      assert.doesNotMatch(assistant, /video brief/i, message);
+    }
     assert.doesNotMatch(assistant, /When should this happen/i, message);
   }
 });

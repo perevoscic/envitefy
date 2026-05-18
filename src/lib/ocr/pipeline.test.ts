@@ -16,13 +16,17 @@ test("pipeline still validates upload metadata before OCR work", async () => {
 
 test("pipeline sends preprocessed OCR images to vision as JPEG", async () => {
   const source = await readFile(new URL("./pipeline.ts", import.meta.url), "utf8");
+  const constants = await readFile(new URL("./constants.ts", import.meta.url), "utf8");
 
+  assert.match(constants, /export const DEFAULT_OCR_MODEL = "gpt-5\.4-mini";/);
   assert.match(source, /rasterizePdfPageToPng\(inputBuffer, 0\)/);
   assert.match(source, /\.grayscale\(\)\s*\.normalize\(\)\s*\.jpeg\(\{ quality: 90 \}\)/);
   assert.match(source, /visionMime = "image\/jpeg";/);
-  assert.match(source, /runOpenAiCandidate\(ocrBuffer, visionMime/);
-  assert.match(source, /runOpenAiCandidate\(colorBuffer, colorMime/);
+  assert.match(source, /runOpenAiCandidate\(\s*ocrBuffer,\s*visionMime/);
+  assert.match(source, /const fallbackOcrModel = resolveOcrModel\(true\);/);
+  assert.match(source, /runOpenAiCandidate\(\s*colorBuffer,\s*colorMime,[\s\S]*?fallbackOcrModel/);
   assert.match(source, /ocrSource = "openai-color"/);
+  assert.match(source, /if \(llmImage\) \{/);
 });
 
 test("pipeline rejects empty or generic OCR instead of saving a placeholder event", async () => {
@@ -32,6 +36,8 @@ test("pipeline rejects empty or generic OCR instead of saving a placeholder even
   assert.match(source, /function hasUsableRawOcrText/);
   assert.match(source, /OPENAI_GENERIC/);
   assert.match(source, /OPENAI_TEXT_GENERIC/);
+  assert.match(source, /OCR_TIMEOUT/);
+  assert.match(source, /failureCode: lastOcrFailureCode/);
   assert.match(source, /OCR_NOT_CONFIGURED/);
   assert.match(source, /OCR_UNREADABLE/);
   assert.match(source, /Set OPENAI_API_KEY/);
@@ -87,7 +93,12 @@ test("OpenAI OCR omits unsupported custom temperature for GPT-5 models", async (
 
   assert.match(openAiSource, /function supportsCustomTemperature\(model: string\): boolean/);
   assert.match(openAiSource, /return !\/\^gpt-5\(\?:\[\.-\]\|\$\)\/i\.test\(model\.trim\(\)\);/);
+  assert.match(openAiSource, /export class OpenAiOcrError extends Error/);
+  assert.match(openAiSource, /controller\.abort\(timeoutError\)/);
   assert.match(openAiSource, /function buildChatPayload/);
-  assert.match(openAiSource, /\.\.\.\(supportsCustomTemperature\(model\) \? \{ temperature \} : \{\}\)/);
+  assert.match(
+    openAiSource,
+    /\.\.\.\(supportsCustomTemperature\(model\) \? \{ temperature \} : \{\}\)/,
+  );
   assert.match(openAiSource, /buildChatPayload\(\{\s*model,\s*temperature: 0\.1,/);
 });

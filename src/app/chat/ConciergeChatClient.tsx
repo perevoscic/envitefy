@@ -409,7 +409,7 @@ function isUnsupportedExternalConciergeRequest(message: string) {
 }
 
 const UNSUPPORTED_EXTERNAL_CONCIERGE_MESSAGE =
-  "I can help with that, but I can't post to Facebook, create social media event pages, or contact people for you.\nI can write the post copy, create an Envitefy event link, or draft a short video brief you can share yourself.";
+  "I can help with that, but I can't post to Facebook, create social media event pages, or contact people for you.\nI can write the post copy or help create an Envitefy event link you can share yourself.";
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

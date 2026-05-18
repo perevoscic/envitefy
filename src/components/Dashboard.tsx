@@ -950,7 +950,7 @@ export default function Dashboard({
         // Add timeout handling for mobile/network issues
         const controller = new AbortController();
         activeOcrAbortRef.current = controller;
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 75_000);
 
         let res: Response;
         try {
