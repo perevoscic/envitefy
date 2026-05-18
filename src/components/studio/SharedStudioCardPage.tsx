@@ -42,8 +42,6 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
   async function handleShare() {
     const shareUrl = props.shareUrl || (typeof window !== "undefined" ? window.location.href : "");
     const shareData = {
-      title: props.title,
-      text: props.title || "Envitefy invitation",
       url: shareUrl,
     };
 

@@ -450,6 +450,8 @@ export async function sendRsvpConfirmationEmail(params: {
   response: "yes" | "no" | "maybe";
   dateLabel?: string | null;
   locationLabel?: string | null;
+  eventImageUrl?: string | null;
+  eventImageAlt?: string | null;
   calendarLinks?: Array<{ label: string; url: string }> | null;
 }): Promise<void> {
   const { from } = resolveNoReplySender("RSVP confirmation");
@@ -459,6 +461,20 @@ export async function sendRsvpConfirmationEmail(params: {
   const subject = `RSVP ${statusLabel.toLowerCase()}: ${params.eventTitle}`;
   const preheader = `Your RSVP for ${params.eventTitle} is saved.`;
   const greeting = params.guestName ? `Hi ${escapeHtml(params.guestName)}` : "Hello";
+  const eventImageUrl =
+    typeof params.eventImageUrl === "string" && /^https?:\/\//i.test(params.eventImageUrl.trim())
+      ? params.eventImageUrl.trim()
+      : null;
+  const eventImageAlt =
+    typeof params.eventImageAlt === "string" && params.eventImageAlt.trim()
+      ? params.eventImageAlt.trim()
+      : params.eventTitle;
+  const eventImageBlock = eventImageUrl
+    ? `
+    <div style="margin:0 0 18px 0; border-radius:14px; overflow:hidden; border:1px solid #E5E7EB; background:#F9FAFB;">
+      <img src="${escapeHtml(eventImageUrl)}" width="544" alt="${escapeHtml(eventImageAlt)}" style="display:block; width:100%; max-width:544px; height:auto; border:0; outline:none; text-decoration:none;" />
+    </div>`
+    : "";
 
   const detailsRows = [
     `<p style="margin:0 0 4px 0; font-size:14px;"><strong>RSVP:</strong> ${escapeHtml(statusLabel)}</p>`,
@@ -497,6 +513,7 @@ export async function sendRsvpConfirmationEmail(params: {
     <p style="margin:0 0 16px 0; font-size:16px; line-height:1.6;">
       Your RSVP for <strong>${escapeHtml(params.eventTitle)}</strong> is saved.
     </p>
+    ${eventImageBlock}
     <div style="background:#F9FAFB; border:1px solid #E5E7EB; padding:14px 16px; border-radius:10px; margin:16px 0;">
       ${detailsRows}
     </div>

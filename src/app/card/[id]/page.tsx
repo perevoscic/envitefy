@@ -291,6 +291,20 @@ function sanitizeInvitationData(value: Record<string, unknown>): Record<string, 
   };
 }
 
+function resolveSharedCardMetaDescription(invitationData: Record<string, unknown>): string {
+  const eventDetails = isRecord(invitationData.eventDetails) ? invitationData.eventDetails : {};
+  return (
+    sanitizeGuestCopy(
+      readFirstString(
+        invitationData.subtitle,
+        invitationData.description,
+        eventDetails.message,
+        eventDetails.detailsDescription,
+      ),
+    ) || "View a shared Envitefy Studio card."
+  );
+}
+
 function withDirectRsvpInvitationData(args: {
   invitationData: Record<string, unknown>;
   row: Awaited<ReturnType<typeof getEventHistoryPublicRenderBySlugOrId>>;
@@ -380,9 +394,9 @@ export async function generateMetadata(props: {
     sharedCard.row.public_slug,
   );
   const url = await absoluteUrl(canonical);
-  const description =
-    sanitizeGuestCopy((sharedCard.invitationData as Record<string, unknown>)?.description) ||
-    "View a shared Envitefy Studio card.";
+  const description = resolveSharedCardMetaDescription(
+    sharedCard.invitationData as Record<string, unknown>,
+  );
 
   return {
     title: `${sharedCard.title} — Envitefy`,

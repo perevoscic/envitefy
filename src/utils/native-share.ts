@@ -45,6 +45,16 @@ function pushUniqueCandidate(candidates: ShareData[], seen: Set<string>, candida
   candidates.push(candidate);
 }
 
+function isStudioCardShareUrl(value?: string): boolean {
+  if (!value) return false;
+  try {
+    const parsed = new URL(value, "https://envitefy.local");
+    return parsed.pathname.startsWith("/card/");
+  } catch {
+    return value.startsWith("/card/");
+  }
+}
+
 export function resolveNativeShareData(input: NativeShareInput): ShareData | null {
   if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
     return null;
@@ -56,11 +66,15 @@ export function resolveNativeShareData(input: NativeShareInput): ShareData | nul
   const candidates: ShareData[] = [];
   const seen = new Set<string>();
 
-  pushUniqueCandidate(candidates, seen, { title, text, url });
-  pushUniqueCandidate(candidates, seen, { title, url });
-  pushUniqueCandidate(candidates, seen, { url });
-  pushUniqueCandidate(candidates, seen, { title, text });
-  pushUniqueCandidate(candidates, seen, { text });
+  if (isStudioCardShareUrl(url)) {
+    pushUniqueCandidate(candidates, seen, { url });
+  } else {
+    pushUniqueCandidate(candidates, seen, { title, text, url });
+    pushUniqueCandidate(candidates, seen, { title, url });
+    pushUniqueCandidate(candidates, seen, { url });
+    pushUniqueCandidate(candidates, seen, { title, text });
+    pushUniqueCandidate(candidates, seen, { text });
+  }
 
   if (candidates.length === 0) {
     return null;

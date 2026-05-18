@@ -40,3 +40,14 @@ test("native share data strips internal generation instructions from text payloa
   assert.match(source, /\\bAdditional event stops\?:\\s\*/);
   assert.match(source, /change\|replace\|update\|fix/);
 });
+
+test("native share data sends studio card links without extra message copy", () => {
+  const source = readSource("src/utils/native-share.ts");
+
+  assert.match(source, /function isStudioCardShareUrl\(value\?: string\): boolean/);
+  assert.match(source, /return parsed\.pathname\.startsWith\("\/card\/"\);/);
+  assert.match(
+    source,
+    /if \(isStudioCardShareUrl\(url\)\) \{\s*pushUniqueCandidate\(candidates, seen, \{ url \}\);\s*\} else \{/s,
+  );
+});

@@ -4,6 +4,7 @@ import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
 import { getUserIdByEmail, query } from "@/lib/db";
 import { sendRsvpConfirmationEmail } from "@/lib/email";
+import { buildPublicAssetUrl } from "@/lib/public-asset-url";
 import {
   createServerTimingTracker,
   isTimingRequested,
@@ -166,6 +167,51 @@ function buildEventTitle(row: EventDetailsRow): string {
   const fieldsGuess = nestedRecord(data, "fieldsGuess");
   const event = nestedRecord(data, "event");
   return firstString(row.title, data?.title, fieldsGuess?.title, event?.title) || "Event";
+}
+
+function isSafeEmailImageSource(value: string): boolean {
+  return value.startsWith("/") || /^https?:\/\//i.test(value);
+}
+
+function resolveRsvpEmailEventImageUrl(
+  eventId: string,
+  data: Record<string, unknown> | null,
+): string | null {
+  const attachment = nestedRecord(data, "attachment");
+  const attachmentType = String(attachment?.type || "").trim().toLowerCase();
+  const studioCard = nestedRecord(data, "studioCard");
+  const publicEvent = nestedRecord(data, "publicEvent");
+
+  const candidates: Array<{
+    value: unknown;
+    inlineVariant?: "thumbnail" | "hero" | "attachment";
+  }> = [
+    { value: data?.coverImageUrl },
+    { value: data?.thumbnail, inlineVariant: "thumbnail" },
+    { value: data?.customHeroImage, inlineVariant: "hero" },
+    { value: data?.heroImage, inlineVariant: "hero" },
+    ...(attachmentType.startsWith("image/")
+      ? [{ value: attachment?.dataUrl, inlineVariant: "attachment" as const }]
+      : []),
+    { value: attachment?.previewImageUrl },
+    { value: attachment?.thumbnailUrl },
+    { value: studioCard?.imageUrl },
+    { value: publicEvent?.imageUrl },
+  ];
+
+  for (const candidate of candidates) {
+    const raw = firstString(candidate.value);
+    if (!raw) continue;
+    if (/^data:image\//i.test(raw)) {
+      if (!candidate.inlineVariant) continue;
+      const params = new URLSearchParams({ variant: candidate.inlineVariant });
+      return buildPublicAssetUrl(`/api/events/${eventId}/thumbnail?${params.toString()}`);
+    }
+    if (!isSafeEmailImageSource(raw)) continue;
+    return buildPublicAssetUrl(raw);
+  }
+
+  return null;
 }
 
 function getEventDescription(data: Record<string, unknown> | null): string | null {
@@ -370,6 +416,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const eventTitle = buildEventTitle(eventRow);
     const dateLabel = buildDateLabel(eventRow.data);
     const locationLabel = buildLocationLabel(eventRow.data);
+    const eventImageUrl = resolveRsvpEmailEventImageUrl(eventId, eventRow.data);
     const calendarLinks = await timing.time("calendar_links", () =>
       buildRsvpCalendarLinks({
         title: eventTitle,
@@ -388,6 +435,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           response: responseValue,
           dateLabel,
           locationLabel,
+          eventImageUrl,
+          eventImageAlt: eventTitle,
           calendarLinks,
         });
       } catch (err) {

@@ -105,7 +105,14 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   );
   assert.match(sharedPageSource, /Created by Envitefy Studio/);
   assert.match(sharedPageSource, /href="\/studio"/);
-  assert.match(sharedPageSource, /text: props\.title \|\| "Envitefy invitation"/);
+  assert.match(sharedPageSource, /const shareData = \{\s*url: shareUrl,\s*\};/s);
+  assert.doesNotMatch(sharedPageSource, /text: props\.title \|\| "Envitefy invitation"/);
+  assert.match(pageSource, /function resolveSharedCardMetaDescription/);
+  assert.match(
+    pageSource,
+    /readFirstString\(\s*invitationData\.subtitle,\s*invitationData\.description,\s*eventDetails\.message,\s*eventDetails\.detailsDescription,\s*\)/s,
+  );
+  assert.match(pageSource, /const description = resolveSharedCardMetaDescription/);
   assert.doesNotMatch(sharedPageSource, /interactiveMetadata\?\.shareNote \|\|/);
   assert.match(pageSource, /function sanitizeInternalReturnHref\(value: string\): string/);
   assert.match(pageSource, /readSearchParam\(awaitedSearchParams\.preview\) === "owner"/);
