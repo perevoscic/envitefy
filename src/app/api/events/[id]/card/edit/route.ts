@@ -64,6 +64,47 @@ function quoteEditValue(value: string): string {
   return `"${value.replace(/"/g, "'")}"`;
 }
 
+function compactDateForCardPrompt(year: number, month: number, day: number): string {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return "";
+  }
+  return `${month}/${day}`;
+}
+
+function formatCardPromptDate(value: unknown): string {
+  const raw = readString(value);
+  if (!raw) return "";
+
+  const isoDate = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/);
+  if (isoDate) {
+    return compactDateForCardPrompt(
+      Number(isoDate[1]),
+      Number(isoDate[2]),
+      Number(isoDate[3]),
+    );
+  }
+
+  const numericDate = raw.match(/^(\d{1,2})\/(\d{1,2})(?:\/(?:\d{2}|\d{4}))?$/);
+  if (numericDate) {
+    return `${Number(numericDate[1])}/${Number(numericDate[2])}`;
+  }
+
+  return raw;
+}
+
+function promptValueForDesignField(field: DesignFieldMapping, nextDetails: EventDetails): string {
+  if (field.detailKey === "eventDate") {
+    return formatCardPromptDate(nextDetails[field.detailKey]);
+  }
+  return readString(nextDetails[field.detailKey]);
+}
+
 function readAction(value: unknown): CardEditAction {
   return readString(value) === "save" ? "save" : "preview";
 }
@@ -109,7 +150,7 @@ function buildExplicitEditPrompt(params: {
   const instructions = params.changedFields
     .map((field) => {
       if (!field.editLabel) return "";
-      const value = readString(params.nextDetails[field.detailKey]);
+      const value = promptValueForDesignField(field, params.nextDetails);
       if (!value) return "";
       if (field.detailKey === "theme") {
         return `User requested card change: ${value}.`;

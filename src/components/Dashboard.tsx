@@ -1,13 +1,14 @@
 "use client";
 
 import * as chrono from "chrono-node";
-import { Eye, Mail, Pencil, Share2, Trash2, UserPlus } from "lucide-react";
+import { Eye, Mail, Pencil, Share2, UserPlus } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useEventCache } from "@/app/event-cache-context";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
 import HomeOverviewDashboard from "@/components/dashboard/HomeOverviewDashboard";
+import EventDeleteModal from "@/components/EventDeleteModal";
 import {
   type SnapPreviewKind,
   SnapProcessingCard,
@@ -819,39 +820,6 @@ export default function Dashboard({
     );
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }, [selectedEventHref, selectedEventLabel]);
-
-  const handleHeaderDelete = useCallback(async () => {
-    if (!selectedEventId) return;
-    const ok = window.confirm(
-      `Are you sure you want to delete this event?\n\n${selectedEventLabel}`,
-    );
-    if (!ok) return;
-    try {
-      const response = await fetch(`/api/history/${selectedEventId}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to delete event");
-      }
-      window.dispatchEvent(new CustomEvent("history:deleted", { detail: { id: selectedEventId } }));
-      invalidateEventCache({ force: true, source: "dashboard-delete" });
-      clearEventContext();
-      const currentPath = typeof window !== "undefined" ? window.location.pathname : pathname;
-      if (
-        currentPath &&
-        (currentPath === `/event/${selectedEventId}` ||
-          currentPath.startsWith(`/event/${selectedEventId}/`) ||
-          currentPath === `/smart-signup-form/${selectedEventId}` ||
-          currentPath.startsWith(`/smart-signup-form/${selectedEventId}/`) ||
-          currentPath.endsWith(`-${selectedEventId}`))
-      ) {
-        router.replace("/");
-        router.refresh();
-      }
-    } catch {
-      // no-op placeholder until a global toast system is wired here
-    }
-  }, [clearEventContext, pathname, router, selectedEventId, selectedEventLabel]);
 
   const resetForm = useCallback(() => {
     cancelledByUserRef.current = true;
@@ -2027,14 +1995,14 @@ export default function Dashboard({
                     <Mail size={14} />
                     <span>Email</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleHeaderDelete}
-                    className={headerSecondaryActionButtonClass}
-                  >
-                    <Trash2 size={14} />
-                    <span>Delete</span>
-                  </button>
+                  {selectedEventId ? (
+                    <EventDeleteModal
+                      eventId={selectedEventId}
+                      eventTitle={selectedEventLabel}
+                      buttonClassName={headerSecondaryActionButtonClass}
+                      labelClassName="inline"
+                    />
+                  ) : null}
                 </div>
               </div>
             )}

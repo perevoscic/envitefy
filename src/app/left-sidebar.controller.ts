@@ -41,6 +41,7 @@ import type { EventContextTab } from "./sidebar-context";
 
 const MOBILE_SIDEBAR_SCROLL_LOCK_CLASS = "sidebar-mobile-open";
 const CREATED_EVENT_CONTEXT_STORAGE_KEY = "envitefy:created-event-context:v1";
+const OPEN_MY_EVENTS_SIDEBAR_EVENT = "envitefy:sidebar:open-my-events";
 
 type InferredEventListItem = {
   source: EventListPage;
@@ -1375,6 +1376,20 @@ export function useLeftSidebarController({
       window.removeEventListener("history:deleted", onDeleted as EventListener);
     };
   }, [clearEventContext, selectedEventId]);
+
+  useEffect(() => {
+    const onOpenMyEvents = () => {
+      setEventContextSourcePage("myEvents");
+      setEventSidebarMode("owner");
+      setSidebarPage("myEvents");
+      setIsCollapsed(false);
+    };
+
+    window.addEventListener(OPEN_MY_EVENTS_SIDEBAR_EVENT, onOpenMyEvents);
+    return () => {
+      window.removeEventListener(OPEN_MY_EVENTS_SIDEBAR_EVENT, onOpenMyEvents);
+    };
+  }, [setEventContextSourcePage, setEventSidebarMode, setIsCollapsed, setSidebarPage]);
 
   const buildEventOwnerHref = useCallback(
     (baseHref: string | null | undefined, eventId: string, tab: EventContextTab) => {

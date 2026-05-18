@@ -62,6 +62,18 @@ test("card edit route preserves existing artwork by default", () => {
   assert.doesNotMatch(source, /Apply this visual direction where it affects the card art/);
 });
 
+test("card edit route formats date picker values before prompting card artwork edits", () => {
+  const source = readSource("src/app/api/events/[id]/card/edit/route.ts");
+
+  assert.match(source, /function formatCardPromptDate\(value: unknown\): string/);
+  assert.ok(source.includes("raw.match(/^(\\d{4})-(\\d{2})-(\\d{2})(?:[T ].*)?$/)"));
+  assert.match(source, /return `\$\{month\}\/\$\{day\}`;/);
+  assert.match(source, /function promptValueForDesignField/);
+  assert.match(source, /field\.detailKey === "eventDate"/);
+  assert.match(source, /formatCardPromptDate\(nextDetails\[field\.detailKey\]\)/);
+  assert.match(source, /const value = promptValueForDesignField\(field, params\.nextDetails\);/);
+});
+
 test("card edit route saves selected preview data and invalidates owner and recipient caches", () => {
   const source = readSource("src/app/api/events/[id]/card/edit/route.ts");
 

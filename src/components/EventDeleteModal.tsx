@@ -3,13 +3,91 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { emitEventCacheInvalidation } from "@/app/event-cache-context";
+import { emitEventCacheInvalidation, useEventCache } from "@/app/event-cache-context";
+import {
+  type EventContextTab,
+  useSidebar,
+} from "@/app/sidebar-context";
+import {
+  buildGroupedEventLists,
+  type GroupedEventItem,
+  type HistoryRow,
+} from "@/app/left-sidebar.model";
+import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
+import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
+import { resolveEditHref } from "@/utils/event-edit-route";
+import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
+import { buildEventPath } from "@/utils/event-url";
 
 interface EventDeleteModalProps {
   eventId: string;
   eventTitle: string;
   buttonClassName?: string;
   labelClassName?: string;
+}
+
+type DeleteModalHistoryRow = {
+  id: string;
+  title: string;
+  public_slug?: string | null;
+  created_at?: string | null;
+  data?: unknown;
+};
+
+function normalizeHistoryRows(history: DeleteModalHistoryRow[]): HistoryRow[] {
+  return history.map((row) => ({
+    id: row.id,
+    title: row.title,
+    public_slug: row.public_slug,
+    created_at: row.created_at || undefined,
+    data: row.data,
+  }));
+}
+
+function flattenMyEventItems(history: DeleteModalHistoryRow[]): GroupedEventItem[] {
+  const grouped = buildGroupedEventLists({
+    history: normalizeHistoryRows(history),
+    getEventStartIso,
+    buildEventPath,
+    isSportsPreviewFirstEvent,
+    isInvitedEventLikeRecord,
+    canShowOwnerRsvpDashboard: (data) =>
+      data && typeof data === "object" && !Array.isArray(data)
+        ? canShowOwnerRsvpDashboard(data as Record<string, unknown>)
+        : false,
+  });
+
+  return [...grouped.myEvents.upcoming, ...grouped.myEvents.past]
+    .flatMap((section) => section.items)
+    .filter((item) => !item.isInvited);
+}
+
+function findNextMyEventAfterDelete(
+  history: DeleteModalHistoryRow[],
+  deletedEventId: string,
+): GroupedEventItem | null {
+  const items = flattenMyEventItems(history);
+  const deletedIndex = items.findIndex((item) => item.row.id === deletedEventId);
+  if (deletedIndex < 0) {
+    return items.find((item) => item.row.id !== deletedEventId) || null;
+  }
+  return items[deletedIndex + 1] || items[deletedIndex - 1] || null;
+}
+
+function buildEventOwnerHref(baseHref: string, eventId: string, tab: EventContextTab) {
+  const fallbackPath = `/event/${encodeURIComponent(eventId)}`;
+  try {
+    const parsed = new URL(baseHref || fallbackPath, "https://envitefy.local");
+    parsed.searchParams.set("tab", tab);
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return `${fallbackPath}?tab=${encodeURIComponent(tab)}`;
+  }
+}
+
+function openMyEventsSidebar() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("envitefy:sidebar:open-my-events"));
 }
 
 export default function EventDeleteModal({
@@ -22,6 +100,17 @@ export default function EventDeleteModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const { data: session } = useSession();
+  const { historySidebarItems } = useEventCache();
+  const {
+    clearEventContext,
+    setActiveEventTab,
+    setEventContextSourcePage,
+    setSelectedEventEditHref,
+    setSelectedEventHref,
+    setSelectedEventId,
+    setSelectedEventOwnerHref,
+    setSelectedEventTitle,
+  } = useSidebar();
   const router = useRouter();
 
   useEffect(() => {
@@ -31,6 +120,7 @@ export default function EventDeleteModal({
   const handleDelete = async () => {
     if (!session) return;
 
+    const nextMyEvent = findNextMyEventAfterDelete(historySidebarItems, eventId);
     setIsLoading(true);
     try {
       const response = await fetch(`/api/history/${eventId}`, {
@@ -52,8 +142,14 @@ export default function EventDeleteModal({
         }
       } catch {}
 
-      // Redirect to home page after successful deletion
-      router.replace("/");
+      openMyEventsSidebar();
+      if (nextMyEvent) {
+        openNextMyEvent(nextMyEvent);
+      } else {
+        clearEventContext();
+        setEventContextSourcePage("myEvents");
+        router.replace("/");
+      }
       router.refresh();
     } catch (error) {
       console.error("Failed to delete event:", error);
@@ -61,6 +157,23 @@ export default function EventDeleteModal({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const openNextMyEvent = (item: GroupedEventItem) => {
+    const nextEventId = item.row.id;
+    const nextTitle = item.row.title || item.title || "Untitled event";
+    const nextPublicHref = item.publicHref || item.href;
+    const nextOwnerHref = item.ownerHref || buildEventPath(nextEventId, nextTitle);
+    const nextTab: EventContextTab = item.hasOwnerRsvp ? "dashboard" : "design";
+
+    setSelectedEventId(nextEventId);
+    setSelectedEventTitle(nextTitle);
+    setSelectedEventHref(nextPublicHref);
+    setSelectedEventOwnerHref(nextOwnerHref);
+    setSelectedEventEditHref(resolveEditHref(nextEventId, item.row.data, nextTitle));
+    setActiveEventTab(nextTab);
+    setEventContextSourcePage("myEvents");
+    router.replace(buildEventOwnerHref(nextOwnerHref, nextEventId, nextTab));
   };
 
   if (!session) return null;
