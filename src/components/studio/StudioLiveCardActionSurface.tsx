@@ -444,8 +444,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   );
   const [directRsvpChoice, setDirectRsvpChoice] = useState<LiveCardRsvpResponseKey | null>(null);
   const [directRsvpName, setDirectRsvpName] = useState("");
-  const [directRsvpPhone, setDirectRsvpPhone] = useState("");
-  const [directRsvpMessage, setDirectRsvpMessage] = useState("");
+  const [directRsvpEmail, setDirectRsvpEmail] = useState("");
   const [directRsvpStatus, setDirectRsvpStatus] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
@@ -548,6 +547,12 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       setDirectRsvpError("Enter your name to send your RSVP.");
       return;
     }
+    const email = directRsvpEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setDirectRsvpStatus("error");
+      setDirectRsvpError("Enter a valid email to send your RSVP.");
+      return;
+    }
 
     setDirectRsvpStatus("submitting");
     setDirectRsvpError("");
@@ -559,8 +564,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         body: JSON.stringify({
           response: directRsvpChoice,
           name,
-          phone: directRsvpPhone.trim() || undefined,
-          message: directRsvpMessage.trim() || undefined,
+          email,
         }),
       });
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -921,21 +925,14 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                 />
                               </label>
                               <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                Phone optional
+                                Email
                                 <input
-                                  value={directRsvpPhone}
-                                  onChange={(event) => setDirectRsvpPhone(event.target.value)}
+                                  value={directRsvpEmail}
+                                  onChange={(event) => setDirectRsvpEmail(event.target.value)}
                                   className="mt-1 h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-900 outline-none focus:border-neutral-900"
-                                  placeholder="Phone"
-                                />
-                              </label>
-                              <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                Note optional
-                                <textarea
-                                  value={directRsvpMessage}
-                                  onChange={(event) => setDirectRsvpMessage(event.target.value)}
-                                  className="mt-1 min-h-16 w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900 outline-none focus:border-neutral-900"
-                                  placeholder="Message"
+                                  placeholder="Email"
+                                  type="email"
+                                  required
                                 />
                               </label>
                               {directRsvpStatus === "error" && directRsvpError ? (

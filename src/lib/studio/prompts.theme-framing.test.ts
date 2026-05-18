@@ -147,6 +147,10 @@ test("studio prompts treat raw design-idea fragments as visual direction instead
 
   assert.match(
     liveCardPrompt,
+    /If Event Details includes an additional event stop, secondary place, after-party, reception, dinner, lunch, pizza, or another 'then\/later\/after' destination, preserve it in `invitation\.detailsLine` as one concise guest-facing line\./,
+  );
+  assert.match(
+    liveCardPrompt,
     /If the Design Idea contains prompt-like visual fragments such as 'realistic neon robots at the movie', translate that into imagery and mood instead of printing it as guest-facing copy\./,
   );
   assert.match(
@@ -203,6 +207,7 @@ test("studio prompts treat raw design-idea fragments as visual direction instead
   );
 
   assert.match(imagePromptWithGeneratedCopy, /Opening Line: Join us for popcorn, pizza, and fun!/);
+  assert.match(imagePromptWithGeneratedCopy, /Details Line: Pizza after the movie/);
   assert.doesNotMatch(imagePromptWithGeneratedCopy, /Opening Line:.*robots/i);
   assert.doesNotMatch(imagePromptWithGeneratedCopy, /ShareNote:.*robots/i);
   assert.match(
@@ -824,6 +829,7 @@ test("birthday image prompts bake approved invitation copy into the image while 
   assert.match(prompt, /Opening Line: Meet us under the lights\./);
   assert.match(prompt, /Schedule Line: Friday May 10th at 7:00 PM/);
   assert.match(prompt, /Location Line: Moonlight Hall/);
+  assert.match(prompt, /Details Line: Cocktail attire/);
   assert.match(prompt, /Theme Style: cinematic garden/);
   assert.match(prompt, /Palette: #101828, #f5d0fe, #f59e0b/);
   assert.match(

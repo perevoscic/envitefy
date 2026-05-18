@@ -884,6 +884,35 @@ function previewImageForDraft(draft: ConciergeEventDraft | null) {
   );
 }
 
+async function preloadGeneratedPreviewImage(imageUrl: string | null) {
+  const url = stringValue(imageUrl);
+  if (!url || typeof window === "undefined") return;
+
+  await new Promise<void>((resolve) => {
+    const image = new Image();
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      resolve();
+    };
+    const timeoutId = window.setTimeout(finish, 7_000);
+    image.onload = async () => {
+      try {
+        await image.decode?.();
+      } catch {}
+      finish();
+    };
+    image.onerror = finish;
+    image.src = url;
+    if (image.complete) {
+      const decodePromise = image.decode ? image.decode() : Promise.resolve();
+      void decodePromise.catch(() => null).finally(finish);
+    }
+  });
+}
+
 function generatedProductHref(
   eventId: string | null,
   selectedOutput: RequestedOutput,
@@ -1376,7 +1405,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     rsvpDashboardHref,
   );
   const threadId = searchParams.get("thread")?.trim() || null;
-  const currentPreviewImage = generatedInviteImageUrl || previewImageForDraft(draft);
+  const currentPreviewImage =
+    draftStudioInvite?.imageUrl || generatedInviteImageUrl || previewImageForDraft(draft);
   const selectedCategoryLabel =
     starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
   const selectedSkinLabel =
@@ -1756,6 +1786,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     );
     try {
       const studioInvite = await generateStudioInviteForDraft(productDraft);
+      await preloadGeneratedPreviewImage(studioInvite.imageUrl);
       setDraft(productDraft);
       setDraftStudioInvite(studioInvite);
       setGeneratedInviteImageUrl(studioInvite.imageUrl);

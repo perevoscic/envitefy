@@ -373,6 +373,8 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /rsvpPreview\.stats\.yes/);
   assert.match(client, /rsvpPreview\.responses\.map/);
   assert.match(client, /function generatedProductHref/);
+  assert.match(client, /async function preloadGeneratedPreviewImage/);
+  assert.match(client, /draftStudioInvite\?\.imageUrl \|\| generatedInviteImageUrl/);
   assert.match(client, /buildEventProductPath\(\{ eventId, output: selectedOutput \}\)/);
   assert.match(client, /params\.set\("preview", "owner"\)/);
   assert.match(client, /params\.set\("returnTo", returnHref\)/);
@@ -394,6 +396,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /modify only those characters inside the existing label/);
   assert.match(client, /function additionalLocationNarrative/);
   assert.match(client, /Preserve the full event flow in the generated live card/);
+  assert.match(client, /await preloadGeneratedPreviewImage\(studioInvite\.imageUrl\);/);
   assert.match(client, /if \(draftStudioInvite && !liveCardEventId\)/);
   assert.match(client, /function isGenerateConfirmationMessage/);
   assert.match(

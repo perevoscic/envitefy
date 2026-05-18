@@ -76,6 +76,10 @@ test("shared card route carries direct RSVP metadata into live-card actions", ()
     surfaceSource,
     /fetch\(`\/api\/events\/\$\{encodeURIComponent\(directRsvpEventId\)\}\/rsvp`/,
   );
+  assert.match(surfaceSource, />\s*Your name\s*</);
+  assert.match(surfaceSource, />\s*Email\s*</);
+  assert.doesNotMatch(surfaceSource, />\s*Phone optional\s*</);
+  assert.doesNotMatch(surfaceSource, />\s*Note optional\s*</);
   assert.match(surfaceSource, /Choose yes, no, or maybe to RSVP from the card\./);
 });
 

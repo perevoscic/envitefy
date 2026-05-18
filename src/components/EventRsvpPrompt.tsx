@@ -10,8 +10,7 @@ type ResponseIntent = "attend" | "decline" | "maybe" | null;
 type StoredSender = {
   firstName: string;
   lastName: string;
-  forWho: string;
-  phone: string;
+  email: string;
 };
 
 type EventRsvpPromptProps = {
@@ -42,8 +41,7 @@ const STORAGE_KEY = "snapmydate:rsvp-sender";
 const initialSender: StoredSender = {
   firstName: "",
   lastName: "",
-  forWho: "",
-  phone: "",
+  email: "",
 };
 
 function responseKeyForIntent(intent: NonNullable<ResponseIntent>): "yes" | "no" | "maybe" {
@@ -92,8 +90,7 @@ export default function EventRsvpPrompt({
         setSender({
           firstName: parsed.firstName || "",
           lastName: parsed.lastName || "",
-          forWho: parsed.forWho || "",
-          phone: parsed.phone || "",
+          email: parsed.email || "",
         });
       }
     } catch {}
@@ -172,8 +169,7 @@ export default function EventRsvpPrompt({
       category: resolvedCategory,
       hostName: rsvpName,
       senderName,
-      guestName: sender.forWho,
-      senderPhone: sender.phone,
+      senderEmail: sender.email,
     });
   };
 
@@ -195,7 +191,7 @@ export default function EventRsvpPrompt({
 
         console.log("[RSVP] Submitting decline:", {
           eventId,
-          email: rsvpEmail,
+          email: sender.email,
           name: senderName,
         });
 
@@ -205,7 +201,7 @@ export default function EventRsvpPrompt({
           credentials: "include",
           body: JSON.stringify({
             response: "no",
-            email: rsvpEmail || undefined,
+            email: sender.email.trim() || undefined,
             name: senderName || undefined,
           }),
         });
@@ -243,8 +239,8 @@ export default function EventRsvpPrompt({
       setError("Please enter both first and last name.");
       return;
     }
-    if (contactMode === "sms" && intent !== "decline" && !sender.phone.trim()) {
-      setError("Please enter a phone number we can share with the host.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sender.email.trim())) {
+      setError("Please enter a valid email.");
       return;
     }
     setError(null);
@@ -268,7 +264,7 @@ export default function EventRsvpPrompt({
           body: JSON.stringify({
             response: rsvpResponse,
             name: senderName,
-            phone: sender.phone.trim() || undefined,
+            email: sender.email.trim(),
           }),
         });
         const data = await res.json();
@@ -306,13 +302,15 @@ export default function EventRsvpPrompt({
             : nextIntent === "maybe"
             ? "maybe"
             : "no";
+        const senderName = `${sender.firstName.trim()} ${sender.lastName.trim()}`.trim();
         const res = await fetch(`/api/events/${eventId}/rsvp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
             response: rsvpResponse,
-            email: rsvpEmail,
+            name: senderName || undefined,
+            email: sender.email.trim() || undefined,
           }),
         });
         const data = await res.json();
@@ -370,11 +368,8 @@ export default function EventRsvpPrompt({
       if (nextIntent === "decline") {
         // Build the apology card text and open decline card (combined flow)
         const eventLabel = eventTitle?.trim() || "the event";
-        const guest = sender.forWho.trim();
         const declineParts: string[] = [
-          guest
-            ? `We're sorry, unfortunately, ${guest} can't make it to ${eventLabel}.`
-            : `We're sorry, unfortunately, you can't make it to ${eventLabel}.`,
+          `We're sorry, unfortunately, we can't make it to ${eventLabel}.`,
         ];
         if (rsvpName && rsvpPhone) {
           declineParts.push(
@@ -406,11 +401,8 @@ export default function EventRsvpPrompt({
     if (nextIntent === "decline") {
       // Build the apology card text and open decline card (combined flow)
       const eventLabel = eventTitle?.trim() || "the event";
-      const guest = sender.forWho.trim();
       const declineParts: string[] = [
-        guest
-          ? `We're sorry, unfortunately, ${guest} can't make it to ${eventLabel}.`
-          : `We're sorry, unfortunately, you can't make it to ${eventLabel}.`,
+        `We're sorry, unfortunately, we can't make it to ${eventLabel}.`,
       ];
       if (rsvpName && rsvpPhone) {
         declineParts.push(
@@ -546,6 +538,10 @@ export default function EventRsvpPrompt({
                   setError("Please enter both first and last name.");
                   return;
                 }
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sender.email.trim())) {
+                  setError("Please enter a valid email.");
+                  return;
+                }
                 setError(null);
                 try {
                   if (typeof window !== "undefined") {
@@ -568,7 +564,7 @@ export default function EventRsvpPrompt({
                       body: JSON.stringify({
                         response: "no",
                         name: senderName,
-                        phone: sender.phone.trim() || undefined,
+                        email: sender.email.trim(),
                       }),
                     });
                     const data = await res.json();
@@ -620,34 +616,18 @@ export default function EventRsvpPrompt({
                 </label>
               </div>
               <label className="text-sm block">
-                <span className="text-foreground/70">RSVP for who?</span>
+                <span className="text-foreground/70">Email</span>
                 <input
-                  type="text"
-                  value={sender.forWho}
+                  type="email"
+                  required
+                  value={sender.email}
                   onChange={(event) =>
                     setSender((prev) => ({
                       ...prev,
-                      forWho: event.target.value,
+                      email: event.target.value,
                     }))
                   }
-                  placeholder="Add the guest’s name (optional)"
-                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                />
-              </label>
-              <label className="text-sm block">
-                <span className="text-foreground/70">
-                  Your phone number{contactMode === "direct" ? " (optional)" : ""}
-                </span>
-                <input
-                  type="tel"
-                  value={sender.phone}
-                  onChange={(event) =>
-                    setSender((prev) => ({
-                      ...prev,
-                      phone: event.target.value,
-                    }))
-                  }
-                  placeholder="We’ll include this so the host can reach you"
+                  placeholder="you@example.com"
                   className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </label>
@@ -676,8 +656,7 @@ export default function EventRsvpPrompt({
         </div>
       )}
 
-      {/* Single modal handles name capture for Yes/Maybe and Decline.
-          When intent === 'decline', we hide the phone input and submit without opening SMS/email. */}
+      {/* Single modal handles name and email capture for Yes/Maybe and Decline. */}
 
       {modalOpen && intent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -752,35 +731,18 @@ export default function EventRsvpPrompt({
                 </label>
               </div>
               <label className="text-sm block">
-                <span className="text-foreground/70">RSVP for who?</span>
+                <span className="text-foreground/70">Email</span>
                 <input
-                  type="text"
-                  value={sender.forWho}
+                  type="email"
+                  required
+                  value={sender.email}
                   onChange={(event) =>
                     setSender((prev) => ({
                       ...prev,
-                      forWho: event.target.value,
+                      email: event.target.value,
                     }))
                   }
-                  placeholder="Add the guest’s name (optional)"
-                  className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                />
-              </label>
-              <label className="text-sm block">
-                <span className="text-foreground/70">
-                  Your phone number{contactMode === "direct" ? " (optional)" : ""}
-                </span>
-                <input
-                  type="tel"
-                  required={contactMode === "sms"}
-                  value={sender.phone}
-                  onChange={(event) =>
-                    setSender((prev) => ({
-                      ...prev,
-                      phone: event.target.value,
-                    }))
-                  }
-                  placeholder="We’ll include this so the host can reach you"
+                  placeholder="you@example.com"
                   className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </label>

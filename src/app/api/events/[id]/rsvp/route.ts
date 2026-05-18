@@ -24,8 +24,6 @@ type RsvpMutationBody = {
   email?: unknown;
   firstName?: unknown;
   lastName?: unknown;
-  phone?: unknown;
-  message?: unknown;
   target?: unknown;
 };
 
@@ -145,8 +143,6 @@ export async function POST(
     const email = asTrimmedString(body.email);
     const firstName = asTrimmedString(body.firstName);
     const lastName = asTrimmedString(body.lastName);
-    const phone = asTrimmedString(body.phone);
-    const message = asTrimmedString(body.message);
 
     const finalName =
       firstName && lastName
@@ -166,6 +162,14 @@ export async function POST(
     const rsvpEmail = email || sessionUser?.email || null;
     const rsvpName = finalName || sessionUser?.name || null;
 
+    if (!rsvpName || !rsvpEmail) {
+      return jsonWithTiming(
+        timing,
+        { error: "Name and email required for RSVP" },
+        { status: 400 }
+      );
+    }
+
     if (userId) {
       await timing.time("upsert_user", () =>
         query(
@@ -184,13 +188,13 @@ export async function POST(
             rsvpName,
             firstName,
             lastName,
-            phone,
-            message,
+            null,
+            null,
             responseValue,
           ]
         )
       );
-    } else if (rsvpEmail) {
+    } else {
       await timing.time("upsert_email", () =>
         query(
           `
@@ -207,38 +211,11 @@ export async function POST(
             rsvpName,
             firstName,
             lastName,
-            phone,
-            message,
+            null,
+            null,
             responseValue,
           ]
         )
-      );
-    } else if (rsvpName) {
-      await timing.time("upsert_name", () =>
-        query(
-          `
-        INSERT INTO rsvp_responses (event_id, name, first_name, last_name, phone, message, response, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, now())
-        ON CONFLICT (event_id, LOWER(name)) WHERE email IS NULL AND user_id IS NULL AND name IS NOT NULL
-        DO UPDATE SET response = EXCLUDED.response, first_name = EXCLUDED.first_name,
-        last_name = EXCLUDED.last_name, phone = EXCLUDED.phone, message = EXCLUDED.message, updated_at = now()
-      `,
-          [
-            eventId,
-            rsvpName,
-            firstName,
-            lastName,
-            phone,
-            message,
-            responseValue,
-          ]
-        )
-      );
-    } else {
-      return jsonWithTiming(
-        timing,
-        { error: "Name or email required for RSVP" },
-        { status: 400 }
       );
     }
 

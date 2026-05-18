@@ -668,6 +668,7 @@ export function buildLiveCardPrompt(
     "- Resolve the final visible text line well above the bottom action buttons. If space is tight, shorten copy instead of pushing it lower.",
     "- Prefer fewer words over crowded copy.",
     `- \`invitation.scheduleLine\` is for visible date/time only. Prefer ${CARD_SCHEDULE_EXAMPLE}; if time is missing, use ${CARD_SCHEDULE_DATE_ONLY_EXAMPLE}. Keep venue/location on \`invitation.locationLine\`, not inside \`invitation.scheduleLine\`.`,
+    "- If Event Details includes an additional event stop, secondary place, after-party, reception, dinner, lunch, pizza, or another 'then/later/after' destination, preserve it in `invitation.detailsLine` as one concise guest-facing line. Do not drop secondary locations from live-card copy.",
     "- Visible card schedule/date lines should omit the year unless the user explicitly typed year wording that must be preserved.",
     "- Build the live card around the selected event type first, then express the Design Idea through that celebration type.",
     "- Treat the Design Idea as private art direction for themeStyle, palette, and artwork concept when one is provided.",
@@ -1133,6 +1134,7 @@ function buildApprovedVisibleCopySection(
     line("Opening Line", shortOpeningLine),
     line("Schedule Line", trimOrEmpty(visibleLiveCard?.invitation?.scheduleLine)),
     line("Location Line", trimOrEmpty(visibleLiveCard?.invitation?.locationLine)),
+    line("Details Line", trimOrEmpty(visibleLiveCard?.invitation?.detailsLine)),
   ].filter(
     (item) =>
       !item.endsWith("Not provided") && !containsOpenHouseRasterForbiddenAgentCopy(event, item),

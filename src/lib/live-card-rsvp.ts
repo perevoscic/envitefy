@@ -227,8 +227,9 @@ export function formatLiveCardRsvpDraftBody(params: {
           ? `This RSVP is for ${guestName}. `
           : "";
   const lines = [`Hi ${hostName},`, "", `${intro}${sentence}`];
+  if (senderEmail) lines.push("", `You can reach me at ${senderEmail}.`);
   const phone = readTrimmed(params.senderPhone);
-  if (phone) lines.push("", `You can reach me at ${phone}.`);
+  if (!senderEmail && phone) lines.push("", `You can reach me at ${phone}.`);
   const url = readTrimmed(params.shareUrl);
   if (url) lines.push("", `Event link: ${url}`);
   return lines.join("\n");

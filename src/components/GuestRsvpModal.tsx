@@ -52,10 +52,8 @@ export default function GuestRsvpModal({
 }: GuestRsvpModalProps) {
   const { data: session } = useSession();
   const [response, setResponse] = useState<RsvpResponse>(null);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -75,22 +73,21 @@ export default function GuestRsvpModal({
       if (savedInfo) {
         try {
           const data = JSON.parse(savedInfo);
-          if (data.firstName || data.lastName) {
-            setFirstName(data.firstName || "");
-            setLastName(data.lastName || "");
-            setPhone(data.phone || "");
+          if (data.name || data.email || data.firstName || data.lastName) {
+            setName(data.name || `${data.firstName || ""} ${data.lastName || ""}`.trim());
+            setEmail(data.email || session?.user?.email?.trim() || "");
             prefilled = true;
           }
         } catch (_e) {}
       }
       // Fall back to signed-in session name when localStorage is empty
       if (!prefilled && session?.user?.name) {
-        const parts = session.user.name.trim().split(/\s+/);
-        setFirstName(parts[0] || "");
-        setLastName(parts.slice(1).join(" ") || "");
+        setName(session.user.name.trim());
+      }
+      if (!prefilled && session?.user?.email) {
+        setEmail(session.user.email.trim());
       }
       setResponse(initialResponse || null);
-      setMessage("");
       setSuccess(false);
       setFollowUpHref("");
       setFollowUpKind(null);
@@ -128,8 +125,14 @@ export default function GuestRsvpModal({
       setError("Please select if you are coming!");
       return;
     }
-    if (!firstName || !lastName || !phone) {
-      setError("Please fill in your name and phone number");
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    if (!trimmedName) {
+      setError("Please enter your name.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Please enter a valid email.");
       return;
     }
 
@@ -142,19 +145,16 @@ export default function GuestRsvpModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           response,
-          firstName,
-          lastName,
-          phone,
-          message,
+          name: trimmedName,
+          email: trimmedEmail,
         }),
       });
 
       if (res.ok) {
         setSuccess(true);
         localStorage.setItem("envitefy_rsvp_guest_info", JSON.stringify({
-          firstName,
-          lastName,
-          phone
+          name: trimmedName,
+          email: trimmedEmail,
         }));
         localStorage.setItem(`envitefy_rsvp_${eventId}`, response!);
 
@@ -169,8 +169,8 @@ export default function GuestRsvpModal({
               shareUrl: shareUrl || "",
               category: eventCategory,
               hostName: rsvpName,
-              senderName: `${firstName.trim()} ${lastName.trim()}`.trim(),
-              senderPhone: phone,
+              senderName: trimmedName,
+              senderEmail: trimmedEmail,
             })
           : "";
         const nextFollowUpKind = outboundHref.startsWith("sms:")
@@ -187,7 +187,6 @@ export default function GuestRsvpModal({
             closeModal();
             setTimeout(() => {
               setResponse(null);
-              setMessage("");
               setSuccess(false);
             }, 500);
           }, 2000);
@@ -290,51 +289,27 @@ export default function GuestRsvpModal({
               </div>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="ml-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">First Name</label>
-                    <input
-                      required
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder=""
-                      className={inputClassName}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="ml-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Last Name</label>
-                    <input
-                      required
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder=""
-                      className={inputClassName}
-                    />
-                  </div>
-                </div>
-
                 <div className="space-y-1.5">
-                  <label className="ml-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Phone Number</label>
+                  <label className="ml-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Name</label>
                   <input
                     required
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(555) 000-0000"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Name"
                     className={inputClassName}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="ml-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Leave a Message</label>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="We're so excited! See you there!"
-                    rows={3}
-                    className="w-full resize-none rounded-[1.15rem] border border-slate-200 bg-slate-50 p-3.5 text-sm font-semibold text-slate-900 outline-none transition-all focus:border-purple-300 focus:bg-white focus:ring-2 focus:ring-purple-100"
+                  <label className="ml-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Email</label>
+                  <input
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                    className={inputClassName}
                   />
                 </div>
               </div>
