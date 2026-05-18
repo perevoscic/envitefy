@@ -1,5 +1,7 @@
 "use client";
 
+import { prepareOcrUploadFile } from "@/utils/media-upload-client";
+
 export type SnapOcrUploadResult = {
   ocrText?: string | null;
   fieldsGuess?: Record<string, unknown> | null;
@@ -46,7 +48,8 @@ export async function runSnapOcrUpload(params: {
   scanAttemptId: string;
   timeoutMs?: number;
 }): Promise<SnapOcrUploadResult> {
-  const fileToUpload = await cloneFileForUpload(params.file);
+  const preparedFile = await prepareOcrUploadFile(params.file);
+  const fileToUpload = await cloneFileForUpload(preparedFile);
   const form = new FormData();
   form.append("file", fileToUpload);
   form.append("scanAttemptId", params.scanAttemptId);

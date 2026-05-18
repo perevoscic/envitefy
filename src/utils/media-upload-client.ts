@@ -9,6 +9,24 @@ import {
   validateUploadFileMeta,
 } from "@/lib/upload-config";
 import type { SignupHeaderImageAsset } from "@/types/signup";
+import { preparePickedImage } from "@/utils/pickImage";
+
+const LIVE_MULTIPART_IMAGE_TARGET_BYTES = 3.75 * 1024 * 1024;
+
+const OCR_IMAGE_PREP_STEPS = [
+  { maxSide: 2000, quality: 0.86 },
+  { maxSide: 1800, quality: 0.82 },
+  { maxSide: 1600, quality: 0.78 },
+  { maxSide: 1400, quality: 0.74 },
+  { maxSide: 1200, quality: 0.7 },
+] as const;
+
+const OCR_IMAGE_PREP_ERROR =
+  "This image is too large to upload from this browser. Please try a screenshot or a smaller image.";
+
+function isClientImageFile(file: File): boolean {
+  return file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name);
+}
 
 export function validateClientUploadFile(file: File, usage: UploadUsage): string | null {
   const validation = validateUploadFileMeta({
@@ -18,6 +36,34 @@ export function validateClientUploadFile(file: File, usage: UploadUsage): string
     usage,
   });
   return validation.ok ? null : validation.error;
+}
+
+export async function prepareOcrUploadFile(file: File): Promise<File> {
+  if (!isClientImageFile(file) || file.size <= LIVE_MULTIPART_IMAGE_TARGET_BYTES) {
+    return file;
+  }
+
+  let smallest: File | null = null;
+  for (const step of OCR_IMAGE_PREP_STEPS) {
+    try {
+      const prepared = await preparePickedImage(file, step);
+      const candidate = prepared.file;
+      if (!smallest || candidate.size < smallest.size) {
+        smallest = candidate;
+      }
+      if (candidate.size <= LIVE_MULTIPART_IMAGE_TARGET_BYTES) {
+        return candidate;
+      }
+    } catch {
+      throw new Error(OCR_IMAGE_PREP_ERROR);
+    }
+  }
+
+  if (smallest && smallest.size <= LIVE_MULTIPART_IMAGE_TARGET_BYTES) {
+    return smallest;
+  }
+
+  throw new Error(OCR_IMAGE_PREP_ERROR);
 }
 
 export function createObjectUrlPreview(file: File | null): string | null {

@@ -110,6 +110,11 @@ type ChatUploadStage =
   | "success"
   | "error";
 
+type PendingChatUpload = {
+  file: File;
+  source: "camera" | "upload";
+};
+
 type LiveCardSummary = {
   headline: string;
   subheadline: string;
@@ -1441,6 +1446,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [draftStudioInvite, setDraftStudioInvite] = useState<GeneratedInvitePayload | null>(null);
   const [uploadedPreviewImageUrl, setUploadedPreviewImageUrl] = useState<string | null>(null);
   const [uploadedPreviewFileName, setUploadedPreviewFileName] = useState<string | null>(null);
+  const [pendingChatUpload, setPendingChatUpload] = useState<PendingChatUpload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [failedRequest, setFailedRequest] = useState<FailedConciergeRequest | null>(null);
   const [failedSnapUpload, setFailedSnapUpload] = useState<FailedSnapUploadRequest | null>(null);
@@ -1450,7 +1456,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [rsvpPreview, setRsvpPreview] = useState<RsvpPreviewState>(EMPTY_RSVP_PREVIEW);
   const [weatherContext, setWeatherContext] = useState<ConciergeWeatherContext | null>(null);
   const [isReadyChatComposerOpen, setIsReadyChatComposerOpen] = useState(false);
-  const [isUploadProductChoiceOpen, setIsUploadProductChoiceOpen] = useState(false);
   const scanStatusFromQuery = searchParams.get("scanStatus");
   const scanErrorFromQuery = searchParams.get("scanError");
 
@@ -1608,6 +1613,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setDraftStudioInvite(null);
     setUploadedPreviewImageUrl(null);
     setUploadedPreviewFileName(null);
+    setPendingChatUpload(null);
     setBuildProgress(0);
     setRsvpPreview(EMPTY_RSVP_PREVIEW);
     setSelectedProductOutput(null);
@@ -1619,7 +1625,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setWeatherContext(null);
     setMobileView("chat");
     setIsReadyChatComposerOpen(false);
-    setIsUploadProductChoiceOpen(false);
     setMessages([newMessage("assistant", initialAssistantPrompt)]);
   }
 
@@ -1706,16 +1711,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     if (isBusy) return;
     const nextCategoryLabel =
       starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
-    setIsUploadProductChoiceOpen(false);
     setSelectedProductOutput(option.output);
     updateComposerSelection(nextCategoryLabel, option.output);
-  }
-
-  function handleUploadProductChoice(option: ProductOption) {
-    if (isBusy) return;
-    setSelectedProductOutput(option.output);
-    setIsUploadProductChoiceOpen(false);
-    openSnapUploadPicker();
   }
 
   useEffect(() => {
@@ -2525,26 +2522,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setError(null);
     if ("action" in tile && tile.action === "upload") {
       setSelectedStarterCategory(null);
-      if (selectedProductOutput) {
-        openSnapUploadPicker();
-        return;
-      }
-      setIsUploadProductChoiceOpen(true);
-      setMessages((prev) => {
-        if (prev.some((message) => message.id === "upload-product-choice")) return prev;
-        return [
-          ...prev,
-          {
-            id: "upload-product-choice",
-            role: "assistant",
-            text: "Choose what this upload should become.",
-            type: "text",
-          },
-        ];
-      });
+      openSnapUploadPicker();
       return;
     }
-    setIsUploadProductChoiceOpen(false);
+    setPendingChatUpload(null);
     const isSelected = selectedStarterCategory?.label === tile.label;
     setSelectedStarterCategory(isSelected ? null : tile);
     updateComposerSelection(isSelected ? null : tile.prompt, selectedProductOutput);
@@ -2554,8 +2535,13 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     if (isBusy) return;
     const nextCategoryLabel =
       starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
-    setIsUploadProductChoiceOpen(false);
     setSelectedProductOutput(option.output);
+    if (pendingChatUpload) {
+      const upload = pendingChatUpload;
+      setPendingChatUpload(null);
+      void routeSelectedSnapFile(upload.file, upload.source, option.output);
+      return;
+    }
     updateComposerSelection(nextCategoryLabel, option.output);
   }
 
@@ -2591,7 +2577,31 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     recognition.start();
   }
 
-  async function routeSelectedSnapFile(file: File | null | undefined, source: "camera" | "upload") {
+  function handleSelectedSnapFile(file: File | null | undefined, source: "camera" | "upload") {
+    if (!file || isBusy) return;
+    const validationError = validateClientUploadFile(file, "attachment");
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setError(null);
+    setFailedRequest(null);
+    setFailedSnapUpload(null);
+    if (!selectedProductOutput && isEmptyState) {
+      setPendingChatUpload({ file, source });
+      return;
+    }
+
+    setPendingChatUpload(null);
+    void routeSelectedSnapFile(file, source);
+  }
+
+  async function routeSelectedSnapFile(
+    file: File | null | undefined,
+    source: "camera" | "upload",
+    requestedOutputOverride?: RequestedOutput,
+  ) {
     if (!file || isBusy) return;
     const validationError = validateClientUploadFile(file, "attachment");
     if (validationError) {
@@ -2604,16 +2614,15 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setFailedSnapUpload(null);
     setIsUploading(true);
     setChatUploadStage("preparing_upload");
-    setIsUploadProductChoiceOpen(false);
     const uploadPreviewUrl = createObjectUrlPreview(file);
     setUploadedPreviewImageUrl(uploadPreviewUrl);
     setUploadedPreviewFileName(uploadPreviewUrl ? uploadedFileLabel(file) : null);
     const scanAttemptId = createClientAttemptId("scan");
-    const uploadRequestedOutput = selectedProductOutput || "live_card";
+    const uploadRequestedOutput = requestedOutputOverride || selectedProductOutput || "live_card";
     const statusMessage = newMessage("assistant", "Preparing upload...", "upload_status");
     setMessages((prev) => [
       ...prev,
-      newMessage("user", `Uploaded ${uploadedFileLabel(file)}`),
+      newMessage("user", "Uploaded 1 file"),
       statusMessage,
     ]);
     const updateUploadStatus = (text: string) => {
@@ -2765,30 +2774,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           </motion.div>
         ))}
       </AnimatePresence>
-
-      {isUploadProductChoiceOpen ? (
-        <motion.div
-          initial={{ opacity: 0, y: 10, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="w-full max-w-full self-start"
-        >
-          <BottomNavBar
-            items={PRODUCT_OPTIONS.map(chatProductNavItem)}
-            activeValue={selectedProductOutput}
-            defaultIndex={-1}
-            spreadItems
-            autoOpenOnMount
-            autoOpenIntervalMs={2000}
-            autoOpenCycles={3}
-            ariaLabel="Choose upload product format"
-            className="w-full !min-w-0 bg-[#eff1f8]"
-            onValueChange={(value) => {
-              const option = PRODUCT_OPTIONS.find((item) => item.output === value);
-              if (option) handleUploadProductChoice(option);
-            }}
-          />
-        </motion.div>
-      ) : null}
 
       {failedRequest ? (
         <motion.div
@@ -3005,7 +2990,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             accept={getUploadAcceptAttribute("attachment")}
             className="hidden"
             onChange={(event) => {
-              void routeSelectedSnapFile(event.currentTarget.files?.[0], "upload");
+              handleSelectedSnapFile(event.currentTarget.files?.[0], "upload");
               event.currentTarget.value = "";
             }}
           />
@@ -3313,14 +3298,21 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                       >
                         {CELEBRATION_STARTER_TILES.map((tile) => {
                           const Icon = tile.icon;
-                          const isSelected = selectedStarterCategory?.label === tile.label;
+                          const isUploadTile = "action" in tile && tile.action === "upload";
+                          const isSelected =
+                            selectedStarterCategory?.label === tile.label ||
+                            Boolean(isUploadTile && pendingChatUpload);
                           return (
                             <button
                               key={tile.label}
                               type="button"
                               onClick={() => handleStarterPrompt(tile)}
                               disabled={isBusy}
-                              aria-label={`Choose ${tile.label}`}
+                              aria-label={
+                                isUploadTile && pendingChatUpload
+                                  ? "Choose Upload, 1 upload selected"
+                                  : `Choose ${tile.label}`
+                              }
                               aria-pressed={isSelected}
                               className={cn(
                                 "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl bg-[#eff1f8] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8b0bc] focus-visible:ring-offset-4 focus-visible:ring-offset-[#eff1f8] disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(6rem,17dvh,8rem)] max-md:w-[clamp(6rem,17dvh,8rem)]",
@@ -3333,9 +3325,17 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                                   "text-[#9a9daa] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] hover:text-[#7f8290] active:scale-95",
                               )}
                             >
-                              {isSelected ? (
+                              {isSelected && !(isUploadTile && pendingChatUpload) ? (
                                 <span className="absolute right-3 top-3 opacity-40 sm:right-4 sm:top-4">
                                   <X size={14} aria-hidden="true" />
+                                </span>
+                              ) : null}
+                              {isUploadTile && pendingChatUpload ? (
+                                <span
+                                  className="absolute right-3 top-3 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-[#5c5be5] px-2 text-[11px] font-black leading-none text-white shadow-[0_10px_20px_rgba(92,91,229,0.24)] sm:right-4 sm:top-4"
+                                  aria-hidden="true"
+                                >
+                                  +1
                                 </span>
                               ) : null}
                               <Icon

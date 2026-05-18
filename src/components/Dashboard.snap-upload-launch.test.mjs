@@ -56,6 +56,17 @@ test("dashboard sends scan attempt ids through OCR, media upload, and history", 
   assert.match(source, /body: JSON\.stringify\(\{ \.\.\.payload, scanAttemptId \}\)/);
 });
 
+test("dashboard prepares oversized image scans before OCR upload", () => {
+  const source = readSource("src/components/Dashboard.tsx");
+  const uploadClient = readSource("src/utils/media-upload-client.ts");
+
+  assert.match(source, /prepareOcrUploadFile/);
+  assert.match(source, /const preparedUpload = await prepareOcrUploadFile\(incoming\);/);
+  assert.match(source, /form\.append\("file", fileToUpload\);/);
+  assert.match(uploadClient, /LIVE_MULTIPART_IMAGE_TARGET_BYTES = 3\.75 \* 1024 \* 1024/);
+  assert.match(uploadClient, /preparePickedImage\(file, step\)/);
+});
+
 test("dashboard validates RSVP against the actual OCR source text and separates create state", () => {
   const source = readSource("src/components/Dashboard.tsx");
   const processingCard = readSource("src/components/snap/SnapProcessingCard.tsx");
@@ -71,7 +82,7 @@ test("dashboard scan overlay avoids full-viewport mobile backdrop blur", () => {
 
   assert.match(
     source,
-    /bg-\[#f4eeff\]\/95 px-4 pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\] pt-\[calc\(env\(safe-area-inset-top\)\+1rem\)\]/,
+    /bg-\[#f4eeff\]\/95 px-4 pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\] pt-\[calc\(env\(safe-area-inset-top\)\+5\.75rem\)\]/,
   );
   assert.match(source, /md:p-4 md:bg-\[#f4eeff\]\/78 md:backdrop-blur-md/);
   assert.doesNotMatch(

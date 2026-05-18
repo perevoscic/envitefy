@@ -31,14 +31,18 @@ test("chat snap upload exposes retry controls on failure", () => {
   assert.match(source, /failedSnapUpload/);
 });
 
-test("chat upload asks for product choice before opening a fresh upload", () => {
+test("chat upload queues the picked file before product selection", () => {
   const source = readSource("src/app/chat/ConciergeChatClient.tsx");
 
-  assert.match(source, /isUploadProductChoiceOpen/);
-  assert.match(source, /Choose what this upload should become\./);
-  assert.match(source, /ariaLabel="Choose upload product format"/);
-  assert.match(source, /function handleUploadProductChoice\(option: ProductOption\)/);
+  assert.match(source, /type PendingChatUpload/);
+  assert.match(source, /setPendingChatUpload\(\{ file, source \}\)/);
+  assert.match(source, /routeSelectedSnapFile\(upload\.file, upload\.source, option\.output\)/);
   assert.match(source, /openSnapUploadPicker\(\)/);
+  assert.match(source, />\s*\+1\s*<\/span>/);
+  assert.match(source, /newMessage\("user", "Uploaded 1 file"\)/);
+  assert.doesNotMatch(source, /Choose what this upload should become\./);
+  assert.doesNotMatch(source, /ariaLabel="Choose upload product format"/);
+  assert.doesNotMatch(source, /Uploaded \$\{uploadedFileLabel\(file\)\}/);
 });
 
 test("chat live-card uploads can drive the preview image", () => {

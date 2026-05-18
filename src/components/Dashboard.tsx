@@ -37,6 +37,7 @@ import { extractColorsFromImage } from "@/utils/image-colors";
 import {
   createObjectUrlPreview,
   getUploadAcceptAttribute,
+  prepareOcrUploadFile,
   revokeObjectUrl,
   uploadMediaFile,
   validateClientUploadFile,
@@ -920,17 +921,17 @@ export default function Dashboard({
       }
 
       try {
-        let fileToUpload: File = incoming;
+        const preparedUpload = await prepareOcrUploadFile(incoming);
+        let fileToUpload: File = preparedUpload;
         try {
-          const arrayBuffer = await incoming.arrayBuffer();
-          fileToUpload = new File([arrayBuffer], incoming.name, {
-            type: incoming.type || "application/octet-stream",
-            lastModified: incoming.lastModified,
+          const arrayBuffer = await preparedUpload.arrayBuffer();
+          fileToUpload = new File([arrayBuffer], preparedUpload.name, {
+            type: preparedUpload.type || "application/octet-stream",
+            lastModified: preparedUpload.lastModified,
           });
         } catch (readErr) {
-          // If reading fails, fall back to using the original file object
-          // (works on most platforms but may fail on Android)
-          console.warn("Failed to prepare OCR upload file, using original file object:", readErr);
+          // If cloning fails, fall back to the prepared file object.
+          console.warn("Failed to clone OCR upload file, using prepared file object:", readErr);
         }
 
         const form = new FormData();
