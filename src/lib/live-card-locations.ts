@@ -4,6 +4,7 @@ export type LiveCardLocationSource = "primary" | "details";
 
 export type LiveCardLocationInput = {
   venueName?: unknown;
+  locationLine?: unknown;
   location?: unknown;
   detailsDescription?: unknown;
   additionalLocations?: unknown;
@@ -76,14 +77,19 @@ function findInlineStreetAddress(value: string): { venue: string; address: strin
 
 function buildPrimaryLocationAction(details: LiveCardLocationInput): LiveCardLocationAction | null {
   const venueName = readString(details.venueName);
+  const locationLine = readString(details.locationLine);
   const rawLocation = readString(details.location);
-  if (!venueName && !rawLocation) return null;
+  if (!venueName && !locationLine && !rawLocation) return null;
+  const rawLocationKey = normalizeComparableText(rawLocation);
+  const locationLineKey = normalizeComparableText(locationLine);
+  const displayVenue =
+    venueName || (locationLine && locationLineKey !== rawLocationKey ? locationLine : "");
 
-  if (venueName) {
+  if (displayVenue) {
     return {
-      id: makeLocationId("primary", venueName, 0),
-      label: venueName,
-      mapQuery: combineVenueAndLocation(venueName, rawLocation),
+      id: makeLocationId("primary", displayVenue, 0),
+      label: displayVenue,
+      mapQuery: combineVenueAndLocation(displayVenue, rawLocation),
       source: "primary",
     };
   }

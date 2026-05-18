@@ -512,12 +512,12 @@ function detectGuestCount(text: string, previous?: ConciergeEventDraft | null) {
   const expectsGuestCount = firstMissingField(previous) === "numberOfGuests";
   const explicit =
     text.match(
-      /\brsvps?\s+for\s+(\d{1,4})\s*(?:guests?|kids?|children|people|attendees|invitees|famil(?:y|ies))\b/i,
+      /\brsvps?\s+for\s+(\d{1,4})\s*(?:guests?|kids?|children|peoples?|attendees|invitees|famil(?:y|ies))\b/i,
     ) ||
     text.match(
-      /\b(?:guest count|guest list|guests?|kids?|children|people|attendees|invitees)\s*(?:is|should be|:)?\s*(\d{1,4})\b/i,
+      /\b(?:guest count|guest list|guests?|kids?|children|peoples?|attendees|invitees)\s*(?:is|should be|:)?\s*(\d{1,4})\b/i,
     ) ||
-    text.match(/\b(\d{1,4})\s*(?:guests?|kids?|children|people|attendees|invitees)\b/i);
+    text.match(/\b(\d{1,4})\s*(?:guests?|kids?|children|peoples?|attendees|invitees)\b/i);
   const contextual = expectsGuestCount
     ? text.match(
         /\b(?:yes\s+)?(?:collect|track|include|cap|count)\s+(?:rsvps?\s+)?(?:for\s+)?(?:about\s+)?(\d{1,4})\b/i,
@@ -569,7 +569,7 @@ function detectRsvpEnabled(
       /^(yes|yep|yeah|sure|please|yes please|include it|add it|turn it on|enable it|collect rsvps?|track rsvps?)$/i.test(
         cleaned,
       ) ||
-      /^(?:yes|yep|yeah|sure|please|yes please)[,\s]+(?:for\s+)?\d{1,4}\s*(?:guests?|kids?|children|people|attendees|invitees|famil(?:y|ies))?$/i.test(
+      /^(?:yes|yep|yeah|sure|please|yes please)[,\s]+(?:for\s+)?\d{1,4}\s*(?:guests?|kids?|children|peoples?|attendees|invitees|famil(?:y|ies))?$/i.test(
         cleaned,
       )
     ) {
@@ -599,6 +599,8 @@ function detectRsvpEnabled(
 }
 
 const RSVP_PHONE_PATTERN = /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}/;
+const RSVP_GUEST_COUNT_UNIT_PATTERN =
+  "guests?|kids?|children|peoples?|attendees|invitees|famil(?:y|ies)";
 
 function extractRsvpIdentityParts(value: unknown): { name: string | null; contact: string | null } {
   const source = cleanString(value);
@@ -611,15 +613,23 @@ function extractRsvpIdentityParts(value: unknown): { name: string | null; contac
 
   const contactIndex = source.toLowerCase().indexOf(contact.toLowerCase());
   const beforeContact = contactIndex > 0 ? source.slice(0, contactIndex) : "";
+  const explicitRsvpPrefix = new RegExp(
+    `\\brsvps?\\s+(?:for\\s+)?\\d{1,4}\\s*(?:${RSVP_GUEST_COUNT_UNIT_PATTERN})?\\b\\s*,?\\s*(?:to|for|with|by|at)?\\s*([^,.;\\n]{2,80}?)\\s*(?:at|by|via|phone|email)?\\s*$`,
+    "i",
+  );
+  const rsvpTailName = cleanString(beforeContact.match(explicitRsvpPrefix)?.[1]);
   const name = cleanString(
-    beforeContact
+    (rsvpTailName || beforeContact)
       .replace(/^(?:yes|yep|yeah|sure|please|yes please)\b[\s,]*/i, "")
       .replace(
-        /^(?:for\s+)?\d{1,4}\s*(?:guests?|kids?|children|people|attendees|invitees|famil(?:y|ies))?\b[\s,]*/i,
+        new RegExp(
+          `^(?:for\\s+)?\\d{1,4}\\s*(?:${RSVP_GUEST_COUNT_UNIT_PATTERN})?\\b[\\s,]*`,
+          "i",
+        ),
         "",
       )
       .replace(/^(?:rsvps?|rsvp)?\s*(?:contact|host|name)?\s*(?:at|is|:)?\s*/i, "")
-      .replace(/^(?:at|by|for)\s+/i, "")
+      .replace(/^(?:at|by|for|to)\s+/i, "")
       .replace(/\b(?:at|is|for|rsvp|contact|host|name)\s*$/i, "")
       .replace(/[,:;\s]+$/g, ""),
   );
@@ -643,10 +653,21 @@ function detectRsvpName(
   const direct = firstString(fieldsGuess.rsvpName, fieldsGuess.hostName, fieldsGuess.host);
   if (direct) return direct;
   if (previous?.rsvpName && previous.currentQuestion !== "rsvpName") return previous.rsvpName;
+  const explicit =
+    text.match(
+      /\b(?:rsvp\s+name|rsvp\s+contact\s+name|hosted\s+by|host|organizer)\s*:?\s*([^.\n;]{2,80})/i,
+    ) ||
+    text.match(/\bhosted\s+by\s+([^.\n;]{2,80})/i);
+  const explicitIdentity = extractRsvpIdentityParts(explicit?.[1]);
+  const explicitName =
+    explicitIdentity.name || cleanString(explicit?.[1]?.replace(/[.!?]+$/g, ""));
+  if (explicitName) return explicitName;
+
   const identity = extractRsvpIdentityParts(text);
   if (
     identity.name &&
-    (previous?.currentQuestion === "rsvpName" ||
+    (/\brsvps?\s+for\s+\d{1,4}\b/i.test(text) ||
+      previous?.currentQuestion === "rsvpName" ||
       previous?.currentQuestion === "rsvpEnabled" ||
       previous?.currentQuestion === "numberOfGuests")
   ) {
@@ -658,18 +679,7 @@ function detectRsvpName(
     );
     if (reply && !/@/.test(reply) && !/\d{3}/.test(reply)) return reply;
   }
-  const explicit =
-    text.match(
-      /\b(?:rsvp\s+name|rsvp\s+contact\s+name|hosted\s+by|host|organizer)\s*:?\s*([^.\n;]{2,80})/i,
-    ) ||
-    text.match(/\bhosted\s+by\s+([^.\n;]{2,80})/i);
-  const explicitIdentity = extractRsvpIdentityParts(explicit?.[1]);
-  return (
-    explicitIdentity.name ||
-    cleanString(explicit?.[1]?.replace(/[.!?]+$/g, "")) ||
-    previous?.rsvpName ||
-    null
-  );
+  return previous?.rsvpName || null;
 }
 
 function detectRsvpContact(
@@ -928,7 +938,7 @@ function hasLikelyAnswerForCurrentDraftQuestion(message: string, previous?: Conc
     return Boolean(detectVenueOrLocation(text) || detectLocationFollowUp(text, previous));
   }
   if (field === "numberOfGuests") {
-    return /\b\d{1,4}\s*(?:guests?|people|kids|children|attendees|invitees)\b/i.test(text);
+    return /\b\d{1,4}\s*(?:guests?|peoples?|kids|children|attendees|invitees)\b/i.test(text);
   }
   return false;
 }
@@ -1216,7 +1226,7 @@ function stripLeadingTimeFromLocation(value: string | null) {
   );
   const withoutTrailingIntent = withoutTime
     .replace(
-      /\s+(?:for|with)\s+(?:about\s+)?\d{1,4}\s*(?:guests?|kids?|children|people|attendees|invitees)\b[\s\S]*$/i,
+      /\s+(?:for|with)\s+(?:about\s+)?\d{1,4}\s*(?:guests?|kids?|children|peoples?|attendees|invitees)\b[\s\S]*$/i,
       "",
     )
     .replace(

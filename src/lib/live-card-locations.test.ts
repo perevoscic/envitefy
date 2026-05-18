@@ -39,6 +39,18 @@ test("getLiveCardPrimaryLocationLabel falls back to an address-only location", (
   );
 });
 
+test("buildLiveCardLocationActions displays venue label while directions use address", () => {
+  const actions = buildLiveCardLocationActions({
+    locationLine: "Nana's and Nanu's Pool",
+    location: "206 Dawson Rd, Santa Rosa Beach, FL 32459",
+  });
+
+  assert.equal(actions.length, 1);
+  assert.equal(actions[0]?.label, "Nana's and Nanu's Pool");
+  assert.match(actions[0]?.mapQuery || "", /Nana's and Nanu's Pool/);
+  assert.match(actions[0]?.mapQuery || "", /206 Dawson Rd/);
+});
+
 test("buildLiveCardLocationActions dedupes detail destinations that repeat the primary venue", () => {
   const actions = buildLiveCardLocationActions({
     location: "AMC Boulevard 10 465 Grand Boulevard, Miramar Beach, FL",

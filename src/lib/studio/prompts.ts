@@ -38,6 +38,17 @@ function stripInternalInstructionCopy(value: string | null | undefined): string 
     .trim();
 }
 
+function looksLikeMalformedInvitationCopy(value: string): boolean {
+  const normalized = trimOrEmpty(value).toLowerCase();
+  if (!normalized) return true;
+  if (/\b(?:with|for|at|in|on|to|of|from|by|featuring|including)\s*,/.test(normalized)) {
+    return true;
+  }
+  if (/\bjoin us for fun\b/.test(normalized)) return true;
+  if (/\bfun with\b/.test(normalized)) return true;
+  return false;
+}
+
 function sanitizeImagePromptBriefText(value: string | null | undefined): string | undefined {
   if (!value?.trim()) return undefined;
   return stripInternalInstructionCopy(value)
@@ -680,6 +691,9 @@ export function buildLiveCardPrompt(
     "- Double-check every visible word and proper noun letter-by-letter before returning JSON.",
     "- Do not intentionally misspell words for style. Never invent pun spellings unless they are explicitly provided in the event details.",
     "- If a word risks being misspelled, shorten the copy or omit that word instead of guessing.",
+    "- Avoid vague filler invitation lines such as 'Join us for fun', 'fun with...', or 'Join us for fun with...'.",
+    "- Never put a comma directly after a preposition such as with, for, at, in, on, to, of, from, or by.",
+    "- For birthday openingLine copy, prefer a short specific line anchored to the honoree and activity, such as 'A cozy movie birthday for Lara.'",
     "- If the user gives a concrete visual direction, keep the copy aligned with it and avoid novelty puns unless they are explicitly requested.",
     "- Do not repeat or duplicate the same visible word, title, or phrase across multiple invitation fields unless the user explicitly asked for repetition.",
     "- Copy must be layout-safe: keep every text field short enough for a mobile invitation card.",
@@ -1032,8 +1046,10 @@ function sanitizeVisibleCopyLineForPrivateVisualDirection(
   if (!trimmed) return "";
   const publicCopy = sanitizeGuestCopy(trimmed) || sanitizeGuestTitle(trimmed);
   if (!publicCopy) return "";
+  if (looksLikeMalformedInvitationCopy(publicCopy)) return "";
   if (!containsPrivateVisualDirectionOnlyToken(event, publicCopy)) return publicCopy;
   const cleaned = removePrivateVisualDirectionOnlyTokens(event, publicCopy);
+  if (looksLikeMalformedInvitationCopy(cleaned)) return "";
   return collectVisibleCopyTokens(cleaned).size > 0 ? cleaned : "";
 }
 

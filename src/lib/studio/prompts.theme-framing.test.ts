@@ -151,6 +151,14 @@ test("studio prompts treat raw design-idea fragments as visual direction instead
   );
   assert.match(
     liveCardPrompt,
+    /Avoid vague filler invitation lines such as 'Join us for fun', 'fun with\.\.\.', or 'Join us for fun with\.\.\.'\./,
+  );
+  assert.match(
+    liveCardPrompt,
+    /Never put a comma directly after a preposition such as with, for, at, in, on, to, of, from, or by\./,
+  );
+  assert.match(
+    liveCardPrompt,
     /If the Design Idea contains prompt-like visual fragments such as 'realistic neon robots at the movie', translate that into imagery and mood instead of printing it as guest-facing copy\./,
   );
   assert.match(
@@ -214,6 +222,59 @@ test("studio prompts treat raw design-idea fragments as visual direction instead
     imagePromptWithGeneratedCopy,
     /The approved invitation copy is the complete visible-text whitelist\./,
   );
+});
+
+test("studio image prompts drop malformed generated opening lines before approving raster text", () => {
+  const prompt = buildInvitationImagePrompt(
+    {
+      title: "Lara Turns 7",
+      category: "Birthday",
+      occasion: "Birthday",
+      honoreeName: "Lara",
+      ageOrMilestone: "7",
+      userIdea: "cats drinking sodas, hugging plushies, eating pizza and popcorn",
+      description:
+        "We will see Sheep Detective at AMC Destin Commons 14, then pizza at Pazzo Destin.",
+      date: "05/21",
+      startTime: "5:00 PM",
+      venueName: "AMC Destin Commons 14",
+      links: [],
+    },
+    undefined,
+    {
+      title: "Lara Turns 7",
+      description: "Movie birthday with pizza after.",
+      palette: {
+        primary: "#111827",
+        secondary: "#F9FAFB",
+        accent: "#F59E0B",
+      },
+      themeStyle: "cozy movie birthday",
+      interactiveMetadata: {
+        rsvpMessage: "Let us know if you can make it.",
+        funFacts: [],
+        ctaLabel: "RSVP",
+        shareNote: "Join Lara for a movie birthday.",
+      },
+      invitation: {
+        title: "Lara Turns 7",
+        subtitle: "A cozy movie & pizza party",
+        openingLine: "Join us for fun with, pizza!",
+        scheduleLine: "Thursday at 5:00 PM",
+        locationLine: "AMC Destin Commons 14",
+        detailsLine: "Then pizza at Pazzo Destin",
+        callToAction: "RSVP",
+        socialCaption: "Join Lara for a movie birthday.",
+        hashtags: [],
+      },
+    },
+    { surface: "page" },
+  );
+
+  assert.match(prompt, /Approved invitation copy to use verbatim if visible text appears/);
+  assert.doesNotMatch(prompt, /Opening Line:/);
+  assert.doesNotMatch(prompt, /Join us for fun with, pizza!/);
+  assert.match(prompt, /Details Line: Then pizza at Pazzo Destin/);
 });
 
 test("studio baked-text invitation prompts give every non-birthday-wedding category explicit invitation guidance", () => {

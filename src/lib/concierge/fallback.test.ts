@@ -1755,6 +1755,42 @@ test("RSVP decision reply can include guest count, host name, and phone", () => 
   assert.deepEqual(draft.missingFields, []);
 });
 
+test("RSVP decision reply accepts informal peoples wording with contact recipient", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message:
+      "Birthday Live Card Lara, 7, we will go to see Sheep Detective at 5PM Thursday at AMC Destin Commons 14",
+  });
+
+  assert.equal(draft.currentQuestion, "rsvpEnabled");
+
+  draft = fallbackExtractConciergeDraft({
+    message: "yes, 2 peoples, to Veronica at 850-642-4339",
+    draft,
+  });
+
+  assert.equal(draft.rsvpEnabled, true);
+  assert.equal(draft.numberOfGuests, 2);
+  assert.equal(draft.rsvpName, "Veronica");
+  assert.equal(draft.rsvpContact, "850-642-4339");
+  assert.equal(draft.currentQuestion, null);
+  assert.deepEqual(draft.missingFields, []);
+});
+
+test("initial birthday live-card prompt consumes RSVP host and contact from same message", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Birthday Live Card for Lara, 7, we will go to see Sheep Detective at 5PM Thursday at AMC Destin Commons 14, then we are going to have pizza at Pazzo Destin. She likes cats and plushies, have the cats drinking sodas, hugging plushies, eating pizza and popcorn at the movie theater, RSVP for 2 people, to Veronica at 850-642-4339. No gift link",
+  });
+
+  assert.equal(draft.rsvpEnabled, true);
+  assert.equal(draft.numberOfGuests, 2);
+  assert.equal(draft.rsvpName, "Veronica");
+  assert.equal(draft.rsvpContact, "850-642-4339");
+  assert.equal(draft.currentQuestion, null);
+  assert.deepEqual(draft.missingFields, []);
+  assert.doesNotMatch(buildAssistantMessage(draft), /Who should guests see as the host/i);
+});
+
 test("RSVP contact repair splits host name and phone number", () => {
   let draft = fallbackExtractConciergeDraft({
     message:

@@ -472,11 +472,16 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const registryActionLabel = getRegistryActionLabel(details);
   const registryPanelTitle = getRegistryPanelTitle(details);
   const locationDetails = useMemo(() => {
-    if (!details || !openHouseAgentCard) return details;
+    if (!details) return details;
+    const withDisplayLocation = {
+      ...details,
+      locationLine: readString(invitationData?.locationLine),
+    };
+    if (!openHouseAgentCard) return withDisplayLocation;
     const propertyAddress = readString(details?.eventTitle);
-    if (!propertyAddress || readString(details?.location)) return details;
-    return { ...details, location: propertyAddress };
-  }, [details, openHouseAgentCard]);
+    if (!propertyAddress || readString(details?.location)) return withDisplayLocation;
+    return { ...withDisplayLocation, location: propertyAddress };
+  }, [details, invitationData?.locationLine, openHouseAgentCard]);
   const locationActions = useMemo(
     () => buildLiveCardLocationActions(locationDetails),
     [locationDetails],

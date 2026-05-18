@@ -3165,12 +3165,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           </div>
         ) : null}
         {!shouldShowGiftRegistryPrompt && !shouldShowReceivedInviteActions ? (
-          <div className="grid grid-cols-2 gap-2 rounded-[1.35rem] border border-[#d8caff] bg-[#fbf9ff]/96 p-2 shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur">
+          <div className="mx-auto grid w-full max-w-[22rem] grid-cols-2 gap-1.5 rounded-2xl border border-[#d8caff] bg-[#fbf9ff]/96 p-1.5 shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur">
             <button
               type="button"
               onClick={() => setIsReadyChatComposerOpen(true)}
               disabled={isGeneratingCard}
-              className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#ded2f5] bg-white px-3 text-sm font-bold text-[#4f3a73] transition hover:border-[#c7b4ee] hover:bg-[#f5f0ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55"
+              className="inline-flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[#ded2f5] bg-white px-2.5 text-sm font-bold text-[#4f3a73] transition hover:border-[#c7b4ee] hover:bg-[#f5f0ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55"
             >
               <MessageCircle className="size-4 shrink-0" aria-hidden="true" />
               <span className="truncate">Keep editing</span>
@@ -3180,7 +3180,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               onClick={() => {
                 if (draft) void generateProductForDraft(draft);
               }}
-              className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#5c5be5] px-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,91,229,0.24)] transition hover:bg-[#4f4ed2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl bg-[#5c5be5] px-2.5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,91,229,0.24)] transition hover:bg-[#4f4ed2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isGeneratingCard || !canGenerateProduct}
               aria-label={
                 isGeneratingCard
