@@ -50,6 +50,11 @@ test("event route branches football discovery/template events into the football 
     source,
     /if \(cardFirstCanonical && !ownerToolsTab\) \{\s*redirect\(cardFirstCanonical\);/,
   );
+  assert.ok(
+    source.indexOf("if (cardFirstCanonical && !ownerToolsTab)") <
+      source.indexOf("const discoveryWorkflow ="),
+    "card-first event URLs should redirect before public renderer setup",
+  );
   assert.doesNotMatch(source, /title="Manage event"/);
   assert.doesNotMatch(source, /href=\{`\/events\/\$\{row\.id\}\/manage`\}/);
   assert.doesNotMatch(source, /BirthdayTemplateView/);

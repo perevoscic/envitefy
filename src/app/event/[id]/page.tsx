@@ -1044,6 +1044,9 @@ export default async function EventPage({
   const ownerRsvpDashboardEnabled = canShowOwnerRsvpDashboard(data);
   const ownerEventHref = buildEventPath(row.id, title, undefined, publicSlug);
   const primaryProductOutput = getPrimaryEventProductOutput(data, title);
+  const cardFirstCanonical = isCardFirstEventProduct(primaryProductOutput)
+    ? buildStudioCardPath(row.id, title, undefined, publicSlug)
+    : null;
   const publicEventHref = buildEventProductPath({
     eventId: row.id,
     title,
@@ -1051,6 +1054,9 @@ export default async function EventPage({
     output: primaryProductOutput,
     publicSlug,
   });
+  if (cardFirstCanonical && !ownerToolsTab) {
+    redirect(cardFirstCanonical);
+  }
   const discoveryWorkflow = isDiscoveryV2
     ? "gymnastics"
     : String((data as any)?.discoverySource?.workflow || "").toLowerCase();
@@ -1507,9 +1513,6 @@ export default async function EventPage({
   }
   const canonicalSegment = buildEventSlugSegment(row.id, title, publicSlug);
   const canonical = buildEventPath(row.id, title, undefined, publicSlug);
-  const cardFirstCanonical = isCardFirstEventProduct(primaryProductOutput)
-    ? buildStudioCardPath(row.id, title, undefined, publicSlug)
-    : null;
   const shareUrl = await absoluteUrl(canonical);
 
   if (timing.enabled) {
@@ -1522,10 +1525,6 @@ export default async function EventPage({
   const editHref = buildEditLink(row.id, data, title);
 
   // Redirect legacy id/slug-id/alias URLs to the canonical public slug.
-  if (cardFirstCanonical && !ownerToolsTab) {
-    redirect(cardFirstCanonical);
-  }
-
   if (awaitedParams.id !== canonicalSegment || autoAccept) {
     const next = buildEventPath(
       row.id,
