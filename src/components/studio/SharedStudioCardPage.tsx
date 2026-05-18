@@ -139,7 +139,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
             href="/studio"
             className="inline-flex rounded-full border border-white/14 bg-white/8 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.24em] text-white/70 backdrop-blur-md transition hover:border-white/22 hover:bg-white/12 hover:text-white/88"
           >
-            Created by Envitefy Studio
+            Created by Envitefy Concierge
           </Link>
         </div>
       ) : (
@@ -148,7 +148,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
             href="/studio"
             className="text-[10px] font-medium uppercase tracking-[0.24em] text-white/55 transition hover:text-white/80"
           >
-            Created by Envitefy Studio
+            Created by Envitefy Concierge
           </Link>
         </footer>
       )}
