@@ -114,6 +114,10 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   const invitationData = props.invitationData || null;
   const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
 
+  const closeButtonLeft = posterFirstHeroCard
+    ? "calc(50vw + min(calc(100vw - 2rem), calc((100dvh - 6.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 2 / 3)) / 2 + 0.75rem)"
+    : "calc(50vw + min(calc(100vw - 2rem), calc((100dvh - 6.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 9 / 16)) / 2 + 0.75rem)";
+
   return (
     <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950">
       {props.celebrationKind ? <EventCelebrationOverlay kind={props.celebrationKind} /> : null}
@@ -121,7 +125,8 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
         <Link
           href={props.returnHref}
           aria-label="Close preview"
-          className="fixed right-4 top-[calc(var(--app-mobile-topbar-offset,4rem)+0.75rem)] z-[7001] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/92 text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:right-auto lg:left-[calc(20rem+(100vw-20rem)/2+min(calc(100vw-2rem),calc((100dvh-6.5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))*2/3))/2+0.75rem)] lg:top-[max(1rem,env(safe-area-inset-top))]"
+          className="fixed top-[calc(var(--app-mobile-topbar-offset,4rem)+0.75rem)] z-[7001] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/92 text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:top-[max(1rem,env(safe-area-inset-top))]"
+          style={{ left: closeButtonLeft }}
         >
           <X size={18} aria-hidden="true" />
         </Link>
