@@ -1390,8 +1390,7 @@ export type EventHistoryRow = {
   created_at?: string;
 };
 
-const EVENT_HISTORY_DEBUG =
-  process.env.EVENT_HISTORY_DEBUG === "1" || process.env.NODE_ENV !== "production";
+const EVENT_HISTORY_DEBUG = process.env.EVENT_HISTORY_DEBUG === "1";
 
 function summarizeEventHistoryRowForLog(row: EventHistoryRow) {
   const data = row?.data && typeof row.data === "object" ? row.data : {};

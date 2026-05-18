@@ -63,7 +63,12 @@ import { getUploadAcceptAttribute } from "@/lib/upload-config";
 import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
 import { buildEventProductPath } from "@/utils/event-product-route";
 import { buildEventPath, buildEventSlug } from "@/utils/event-url";
-import { persistImageMediaValue, validateClientUploadFile } from "@/utils/media-upload-client";
+import {
+  createObjectUrlPreview,
+  persistImageMediaValue,
+  revokeObjectUrl,
+  validateClientUploadFile,
+} from "@/utils/media-upload-client";
 import { getAmazonRegistryCreateUrlForCategory } from "@/utils/registry-links";
 import ChatProductPreview from "./ChatProductPreview";
 
@@ -307,6 +312,13 @@ const BUILDING_STEPS = [
   "Generating the invite artwork",
   "Creating RSVP and sharing links",
   "Finalizing the public invite",
+];
+
+const PREVIEW_UPDATE_STEPS = [
+  "Reading your change",
+  "Updating the invite artwork",
+  "Refreshing the preview details",
+  "Finalizing the preview",
 ];
 
 const OUTPUT_LABELS: Record<RequestedOutput, string> = {
@@ -695,13 +707,40 @@ function uploadedFileLabel(file: File) {
   return name || "uploaded file";
 }
 
+function birthdayHintRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function stringFromKnownValue(value: unknown): string | null {
+  if (typeof value === "number" && Number.isFinite(value)) return String(Math.round(value));
+  return stringValue(value);
+}
+
+function buildChatFieldsGuess(result: SnapOcrUploadResult): Record<string, unknown> | null {
+  const fieldsGuess = result.fieldsGuess ? { ...result.fieldsGuess } : {};
+  const birthdayHint = birthdayHintRecord(result.birthdayTemplateHint);
+  const honoreeName = stringFromKnownValue(birthdayHint.honoreeName);
+  const ageOrMilestone = stringFromKnownValue(birthdayHint.age);
+
+  if (honoreeName && !stringFromKnownValue(fieldsGuess.honoreeName)) {
+    fieldsGuess.honoreeName = honoreeName;
+  }
+  if (ageOrMilestone && !stringFromKnownValue(fieldsGuess.ageOrMilestone)) {
+    fieldsGuess.ageOrMilestone = ageOrMilestone;
+  }
+
+  return Object.keys(fieldsGuess).length ? fieldsGuess : null;
+}
+
 function buildChatOcrContext(
   result: SnapOcrUploadResult,
   scanAttemptId: string,
 ): ConciergeOcrContext {
   return {
     ocrText: result.ocrText || null,
-    fieldsGuess: result.fieldsGuess || null,
+    fieldsGuess: buildChatFieldsGuess(result),
     category: result.category || null,
     birthdayTemplateHint: result.birthdayTemplateHint ?? null,
     ocrSkin: result.ocrSkin || null,
@@ -1309,6 +1348,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [liveCardSummary, setLiveCardSummary] = useState<LiveCardSummary | null>(null);
   const [generatedInviteImageUrl, setGeneratedInviteImageUrl] = useState<string | null>(null);
   const [draftStudioInvite, setDraftStudioInvite] = useState<GeneratedInvitePayload | null>(null);
+  const [uploadedPreviewImageUrl, setUploadedPreviewImageUrl] = useState<string | null>(null);
+  const [uploadedPreviewFileName, setUploadedPreviewFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [failedRequest, setFailedRequest] = useState<FailedConciergeRequest | null>(null);
   const [failedSnapUpload, setFailedSnapUpload] = useState<FailedSnapUploadRequest | null>(null);
@@ -1318,6 +1359,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [rsvpPreview, setRsvpPreview] = useState<RsvpPreviewState>(EMPTY_RSVP_PREVIEW);
   const [weatherContext, setWeatherContext] = useState<ConciergeWeatherContext | null>(null);
   const [isReadyChatComposerOpen, setIsReadyChatComposerOpen] = useState(false);
+  const [isUploadProductChoiceOpen, setIsUploadProductChoiceOpen] = useState(false);
   const scanStatusFromQuery = searchParams.get("scanStatus");
   const scanErrorFromQuery = searchParams.get("scanError");
 
@@ -1347,6 +1389,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const isGeneratingCard = phase === "generating_card";
   const isPublishingCard = phase === "publishing_card";
   const isEditingGeneratedCard = phase === "editing_card";
+  const isUpdatingPreview = isEditingGeneratedCard && isSending;
   const isEmptyState =
     phase === "intake_empty" &&
     messages.length === 1 &&
@@ -1384,9 +1427,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const isThinking = busyLabel === "Concierge is thinking..." && !isStreamingAssistant;
   const isCompactEmptyComposer =
     isEmptyState && !input.trim() && !isComposerFocused && !isListening;
+  const activeBuildSteps = isUpdatingPreview ? PREVIEW_UPDATE_STEPS : BUILDING_STEPS;
   const currentBuildStep = Math.min(
-    Math.floor((buildProgress / 100) * BUILDING_STEPS.length),
-    BUILDING_STEPS.length - 1,
+    Math.floor((buildProgress / 100) * activeBuildSteps.length),
+    activeBuildSteps.length - 1,
   );
   const effectiveSelectedProductOutput = selectedProductOutput || "live_card";
   const effectiveSelectedProductLabel = productActionLabel(draft, effectiveSelectedProductOutput);
@@ -1423,7 +1467,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   );
   const threadId = searchParams.get("thread")?.trim() || null;
   const currentPreviewImage =
-    draftStudioInvite?.imageUrl || generatedInviteImageUrl || previewImageForDraft(draft);
+    draftStudioInvite?.imageUrl ||
+    generatedInviteImageUrl ||
+    (effectiveSelectedProductOutput === "live_card" ? uploadedPreviewImageUrl : null) ||
+    previewImageForDraft(draft);
   const selectedCategoryLabel =
     starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
   const selectedSkinLabel =
@@ -1468,6 +1515,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setLiveCardSummary(null);
     setGeneratedInviteImageUrl(null);
     setDraftStudioInvite(null);
+    setUploadedPreviewImageUrl(null);
+    setUploadedPreviewFileName(null);
     setBuildProgress(0);
     setRsvpPreview(EMPTY_RSVP_PREVIEW);
     setSelectedProductOutput(null);
@@ -1479,6 +1528,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setWeatherContext(null);
     setMobileView("chat");
     setIsReadyChatComposerOpen(false);
+    setIsUploadProductChoiceOpen(false);
     setMessages([newMessage("assistant", initialAssistantPrompt)]);
   }
 
@@ -1565,13 +1615,27 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     if (isBusy) return;
     const nextCategoryLabel =
       starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
+    setIsUploadProductChoiceOpen(false);
     setSelectedProductOutput(option.output);
     updateComposerSelection(nextCategoryLabel, option.output);
+  }
+
+  function handleUploadProductChoice(option: ProductOption) {
+    if (isBusy) return;
+    setSelectedProductOutput(option.output);
+    setIsUploadProductChoiceOpen(false);
+    openSnapUploadPicker();
   }
 
   useEffect(() => {
     if (!canGenerateProduct) setIsReadyChatComposerOpen(false);
   }, [canGenerateProduct]);
+
+  useEffect(() => {
+    return () => {
+      revokeObjectUrl(uploadedPreviewImageUrl);
+    };
+  }, [uploadedPreviewImageUrl]);
 
   useEffect(() => {
     if (isReadyChatComposerOpen) focusComposerAtEnd();
@@ -1673,7 +1737,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   }, [messages, isBusy]);
 
   useEffect(() => {
-    if (!isGeneratingCard) return;
+    if (!isGeneratingCard && !isUpdatingPreview) return;
     const interval = window.setInterval(() => {
       setBuildProgress((current) => {
         if (current >= 92) return current;
@@ -1681,7 +1745,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       });
     }, 420);
     return () => window.clearInterval(interval);
-  }, [isGeneratingCard]);
+  }, [isGeneratingCard, isUpdatingPreview]);
 
   useEffect(() => {
     if (!liveCardEventId) {
@@ -1790,6 +1854,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     };
   }
 
+  async function uploadedLiveCardSourceImageUrl() {
+    if (effectiveSelectedProductOutput !== "live_card" || !uploadedPreviewImageUrl) return null;
+    return persistImageMediaValue({
+      value: uploadedPreviewImageUrl,
+      fileName: uploadedPreviewFileName || "uploaded-live-card-source.png",
+    });
+  }
+
   async function generateProductForDraft(draftToGenerate: ConciergeEventDraft) {
     const productDraft = normalizeDraftProductOutputs(draftToGenerate);
     if (!isReadyProductDraft(productDraft)) {
@@ -1804,7 +1876,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       `Your ${effectiveSelectedProductLabel.toLowerCase()} is generated. You can review it in the preview or tell me what to change.`,
     );
     try {
-      const studioInvite = await generateStudioInviteForDraft(productDraft);
+      const sourceImageUrl = await uploadedLiveCardSourceImageUrl();
+      const studioInvite = await generateStudioInviteForDraft(productDraft, {
+        sourceImageUrl,
+      });
       await preloadGeneratedPreviewImage(studioInvite.imageUrl);
       setDraft(productDraft);
       setDraftStudioInvite(studioInvite);
@@ -1892,6 +1967,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setFailedRequest(null);
     setIsSending(true);
     setPhase("editing_card");
+    setBuildProgress(8);
     setMessages((prev) => [...prev, userMessage]);
     try {
       const response = await fetch(withConciergeTiming(CREATION_INTAKE_URL), {
@@ -1932,6 +2008,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         sourceImageUrl: draftStudioInvite?.imageUrl || generatedInviteImageUrl,
         previousDraft: draft,
       });
+      await preloadGeneratedPreviewImage(studioInvite.imageUrl);
       setDraft(updatedDraft);
       setDraftStudioInvite(studioInvite);
       setGeneratedInviteImageUrl(studioInvite.imageUrl);
@@ -1939,6 +2016,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setLiveCardTitle(draftHeadline(updatedDraft));
       setLiveCardSummary(liveCardSummaryFromDraft(updatedDraft, effectiveSelectedProductOutput));
       setWeatherContext(json.weatherContext || null);
+      setBuildProgress(100);
       setPhase("card_ready");
       setMobileView("preview");
       setMessages((prev) => [
@@ -1950,6 +2028,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       ]);
       notifyCreationThreadsChanged();
     } catch (err) {
+      setBuildProgress(0);
       setPhase("card_ready");
       setError(err instanceof Error ? err.message : "Draft update failed.");
     } finally {
@@ -1966,6 +2045,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setFailedRequest(null);
     setIsSending(true);
     setPhase("editing_card");
+    setBuildProgress(8);
     setMessages((prev) => [...prev, newMessage("user", trimmed)]);
     try {
       const response = await fetch(`/api/concierge/events/${liveCardEventId}/message`, {
@@ -1985,9 +2065,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setLiveCardTitle(json.event.title || liveCardTitle || draftHeadline(draft));
       setLiveCardSummary(liveCardSummaryFromEvent(json.event, fallbackSummary));
       setWeatherContext(json.weatherContext || null);
+      setBuildProgress(100);
       setPhase("card_ready");
       setMessages((prev) => [...prev, newMessage("assistant", json.assistantMessage)]);
     } catch (err) {
+      setBuildProgress(0);
       setPhase("card_ready");
       setError(err instanceof Error ? err.message : "Preview update failed.");
     } finally {
@@ -2334,9 +2416,26 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setError(null);
     if ("action" in tile && tile.action === "upload") {
       setSelectedStarterCategory(null);
-      openSnapUploadPicker();
+      if (selectedProductOutput) {
+        openSnapUploadPicker();
+        return;
+      }
+      setIsUploadProductChoiceOpen(true);
+      setMessages((prev) => {
+        if (prev.some((message) => message.id === "upload-product-choice")) return prev;
+        return [
+          ...prev,
+          {
+            id: "upload-product-choice",
+            role: "assistant",
+            text: "Choose what this upload should become.",
+            type: "text",
+          },
+        ];
+      });
       return;
     }
+    setIsUploadProductChoiceOpen(false);
     const isSelected = selectedStarterCategory?.label === tile.label;
     setSelectedStarterCategory(isSelected ? null : tile);
     updateComposerSelection(isSelected ? null : tile.prompt, selectedProductOutput);
@@ -2346,6 +2445,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     if (isBusy) return;
     const nextCategoryLabel =
       starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
+    setIsUploadProductChoiceOpen(false);
     setSelectedProductOutput(option.output);
     updateComposerSelection(nextCategoryLabel, option.output);
   }
@@ -2395,7 +2495,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setFailedSnapUpload(null);
     setIsUploading(true);
     setChatUploadStage("preparing_upload");
+    setIsUploadProductChoiceOpen(false);
+    const uploadPreviewUrl = createObjectUrlPreview(file);
+    setUploadedPreviewImageUrl(uploadPreviewUrl);
+    setUploadedPreviewFileName(uploadPreviewUrl ? uploadedFileLabel(file) : null);
     const scanAttemptId = createClientAttemptId("scan");
+    const uploadRequestedOutput = selectedProductOutput || "live_card";
     const statusMessage = newMessage("assistant", "Preparing upload...", "upload_status");
     setMessages((prev) => [
       ...prev,
@@ -2432,7 +2537,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         message: "Create an event from this uploaded file.",
         action: "ocr_result",
         ocrContext: buildChatOcrContext(ocrResult, scanAttemptId),
-        requestedOutputs: selectedProductOutput ? [selectedProductOutput] : ["live_card"],
+        requestedOutputs: [uploadRequestedOutput],
         suppressUserEcho: true,
       });
       if (!intakeResult?.ok) {
@@ -2551,6 +2656,30 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           </motion.div>
         ))}
       </AnimatePresence>
+
+      {isUploadProductChoiceOpen ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="w-full max-w-full self-start"
+        >
+          <BottomNavBar
+            items={PRODUCT_OPTIONS.map(chatProductNavItem)}
+            activeValue={selectedProductOutput}
+            defaultIndex={-1}
+            spreadItems
+            autoOpenOnMount
+            autoOpenIntervalMs={2000}
+            autoOpenCycles={3}
+            ariaLabel="Choose upload product format"
+            className="w-full !min-w-0 bg-[#eff1f8]"
+            onValueChange={(value) => {
+              const option = PRODUCT_OPTIONS.find((item) => item.output === value);
+              if (option) handleUploadProductChoice(option);
+            }}
+          />
+        </motion.div>
+      ) : null}
 
       {failedRequest ? (
         <motion.div
@@ -2971,9 +3100,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       summary={{ ...currentLiveCardSummary, headline: previewTitle }}
       selectedOutput={effectiveSelectedProductOutput}
       previewImageUrl={currentPreviewImage}
-      isGenerating={isGeneratingCard}
+      isGenerating={isGeneratingCard || isUpdatingPreview}
       buildProgress={buildProgress}
-      currentBuildStep={BUILDING_STEPS[currentBuildStep]}
+      currentBuildStep={activeBuildSteps[currentBuildStep]}
       liveEventId={liveCardEventId}
       publicHref={liveCardPublicHref}
       rsvpDashboardHref={rsvpDashboardHref}

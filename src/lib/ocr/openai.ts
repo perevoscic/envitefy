@@ -220,6 +220,81 @@ export async function llmExtractEventFromImage(
   }
 }
 
+export async function llmExtractVisibleTextFromImage(
+  imageBytes: Buffer,
+  mime: string,
+  timeoutMs = OPENAI_TIMEOUT_MS,
+  modelOverride?: string,
+): Promise<string | null> {
+  const apiKey = getOpenAiKey();
+  if (!apiKey) {
+    console.error(">>> OpenAI API key not found in environment");
+    return null;
+  }
+  const model = modelOverride || resolveOcrModel();
+  const debug = process.env.NODE_ENV !== "production";
+  const log = (...args: any[]) => {
+    if (debug) console.log(...args);
+  };
+  const base64 = imageBytes.toString("base64");
+
+  try {
+    log(">>> Making OpenAI visible-text OCR call...");
+    const res = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify(
+          buildChatPayload({
+            model,
+            temperature: 0,
+            responseFormat: { type: "json_object" },
+            messages: [
+              {
+                role: "system",
+                content:
+                  'You are a precise OCR engine. Return strict JSON {"text": string}. Extract only visible printed text from the image, preserving line breaks and labels. Do not infer missing dates, locations, names, or descriptions. If no readable text is visible, return {"text": ""}.',
+              },
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: 'Return only strict JSON {"text": string} with the visible text in reading order.',
+                  },
+                  { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
+                ],
+              },
+            ],
+          }),
+        ),
+      },
+      timeoutMs,
+    );
+    log(">>> OpenAI visible-text OCR response status:", res.status);
+    if (!res.ok) {
+      const errorBody = await res.text();
+      console.error(">>> OpenAI visible-text OCR error:", { status: res.status, body: errorBody });
+      return null;
+    }
+    const j: any = await res.json();
+    const text = j?.choices?.[0]?.message?.content || "";
+    if (!text) return null;
+    try {
+      const parsed = JSON.parse(text);
+      const visibleText = typeof parsed?.text === "string" ? parsed.text.trim() : "";
+      return visibleText || null;
+    } catch (parseErr) {
+      console.error(">>> Failed to parse OpenAI visible-text OCR JSON:", parseErr, "Raw:", text);
+      return null;
+    }
+  } catch (err) {
+    console.error(">>> OpenAI visible-text OCR exception:", err);
+    return null;
+  }
+}
+
 export async function llmExtractGymnasticsScheduleFromImage(
   imageBytes: Buffer,
   mime: string,

@@ -81,6 +81,10 @@ test("shared card route carries direct RSVP metadata into live-card actions", ()
   assert.doesNotMatch(surfaceSource, />\s*Phone optional\s*</);
   assert.doesNotMatch(surfaceSource, />\s*Note optional\s*</);
   assert.match(surfaceSource, /Choose yes, no, or maybe to RSVP from the card\./);
+  assert.match(surfaceSource, /const directRsvpVenueLabel =/);
+  assert.match(surfaceSource, /Thank you for RSVP-ing\./);
+  assert.match(surfaceSource, /See you at \$\{directRsvpVenueLabel\}\./);
+  assert.match(surfaceSource, /new CustomEvent\("rsvp-submitted"/);
 });
 
 test("shared card page keeps public shares in a centered live-card frame", () => {

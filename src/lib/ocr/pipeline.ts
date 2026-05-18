@@ -28,6 +28,7 @@ import { normalizeOpenHousePayload, uploadOpenHouseVisualAssets } from "@/lib/oc
 import {
   llmEventToRawText,
   llmExtractEventFromImage,
+  llmExtractVisibleTextFromImage,
   llmExtractPracticeScheduleFromImage,
   llmRewriteBirthdayDescription,
   llmRewriteSmartDescription,
@@ -132,6 +133,31 @@ function hasUsableOcrResult(payload: unknown, rawText: string): boolean {
       hasFacts ||
       meaningfulRaw.length >= 20,
   );
+}
+
+function hasUsableRawOcrText(rawText: string): boolean {
+  const meaningfulRaw = rawText
+    .replace(
+      /\b(?:no readable text|unable to read|cannot read|can't read|not enough information|image only|no text visible)\b/gi,
+      "",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+  if (meaningfulRaw.length < 20 || !/[a-z]/i.test(meaningfulRaw)) return false;
+  const hasEventSignal =
+    /\b(?:birthday|party|wedding|shower|appointment|open\s*house|graduation|ceremony|reception|rsvp|invite|invitation|movie|meet|game|practice|class|workshop|fundraiser|dinner|brunch)\b/i.test(
+      meaningfulRaw,
+    );
+  const hasLabeledDetail =
+    /\b(?:when|where|date|time|venue|location|address|movie|after\s+the\s+movie|after)\s*:/i.test(
+      meaningfulRaw,
+    );
+  const hasCalendarOrTime =
+    hasExplicitTimeText(meaningfulRaw) ||
+    /\b(?:today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b/i.test(
+      meaningfulRaw,
+    );
+  return hasEventSignal || hasLabeledDetail || hasCalendarOrTime;
 }
 
 async function withFallbackTimeout<T>(
@@ -364,8 +390,8 @@ export async function handleOcrRequest(request: Request) {
     }
 
     const mime = validation.mimeType;
-    const inputBuffer = Buffer.from(await file.arrayBuffer());
-    let ocrBuffer = inputBuffer;
+    const inputBuffer: Buffer = Buffer.from(await file.arrayBuffer());
+    let ocrBuffer: Buffer = inputBuffer;
     let visionMime = mime || "application/octet-stream";
 
     if (/pdf/i.test(mime)) {
@@ -381,7 +407,7 @@ export async function handleOcrRequest(request: Request) {
       visionMime = "image/png";
     }
 
-    let colorBuffer = ocrBuffer;
+    let colorBuffer: Buffer = ocrBuffer;
     let colorMime = visionMime;
     try {
       colorBuffer = await sharp(ocrBuffer)
@@ -415,6 +441,21 @@ export async function handleOcrRequest(request: Request) {
       if (!llm || !rawText) throw new Error("OPENAI_EMPTY");
       if (!hasUsableOcrResult(llm, rawText)) throw new Error("OPENAI_GENERIC");
       return { rawText, llm };
+    };
+    const runOpenAiTextCandidate = async (
+      imageBytes: Buffer,
+      mimeType: string,
+      timeoutMs: number,
+    ) => {
+      const rawText = await llmExtractVisibleTextFromImage(
+        imageBytes,
+        mimeType,
+        timeoutMs,
+        ocrModel,
+      );
+      if (!rawText) throw new Error("OPENAI_TEXT_EMPTY");
+      if (!hasUsableRawOcrText(rawText)) throw new Error("OPENAI_TEXT_GENERIC");
+      return rawText;
     };
 
     const primaryStartedAt = Date.now();
@@ -484,6 +525,30 @@ export async function handleOcrRequest(request: Request) {
           console.error(">>> OCR: OpenAI Vision color fallback failed with error:", error);
         } finally {
           stage.fallbackOcrMs = Date.now() - fallbackStartedAt;
+        }
+      }
+    }
+
+    if (!raw) {
+      const textFallbackStartedAt = Date.now();
+      const textFallbackTimeoutMs = clampTimeoutMs(
+        Math.min(12_000, OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 2_000)),
+        OPENAI_TIMEOUT_MS,
+      );
+      if (textFallbackTimeoutMs >= 3_000) {
+        try {
+          log(">>> OCR: Trying OpenAI visible-text fallback...", {
+            timeoutMs: textFallbackTimeoutMs,
+            fastMode,
+            ocrModel,
+          });
+          raw = await runOpenAiTextCandidate(colorBuffer, colorMime, textFallbackTimeoutMs);
+          llmImage = null;
+          ocrSource = "openai-text";
+        } catch (error) {
+          console.error(">>> OCR: OpenAI visible-text fallback failed with error:", error);
+        } finally {
+          stage.fallbackOcrMs += Date.now() - textFallbackStartedAt;
         }
       }
     }

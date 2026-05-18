@@ -905,6 +905,32 @@ test("bare location reply fills the active location slot instead of repeating th
   assert.notEqual(buildAssistantMessage(draft), "Where should guests go?");
 });
 
+test("labeled invitation details fill when and where before creative prompt prose", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: `Create a cute, magical birthday movie-night invitation for Lara's 7th birthday.
+
+Theme: cats, plushies, pizza, popcorn, soda, and a movie theater adventure.
+
+Invitation details:
+
+Movie: Sheep Detective
+When: Thursday at 5:00 PM
+Where: AMC Destin Commons 14
+After the Movie: Pizza at Pazzo Destin
+
+Style: whimsical illustrated invitation, pastel colors with pops of pink, lavender, yellow, and teal.`,
+  });
+
+  assert.equal(draft.honoreeName, "Lara");
+  assert.equal(draft.ageOrMilestone, "7");
+  assert.equal(draft.dateText, "Thursday at 5:00 PM");
+  assert.equal(draft.timeText, "5:00 PM");
+  assert.equal(draft.location, "AMC Destin Commons 14");
+  assert.equal(draft.additionalLocations[0]?.location, "Pazzo Destin");
+  assert.doesNotMatch(draft.missingFields.join(","), /location/);
+  assert.notEqual(buildAssistantMessage(draft), "Where should guests go?");
+});
+
 test("short birthday follow-ups fill name and age slots", () => {
   const first = fallbackExtractConciergeDraft({
     message: "my daughter's birthday Saturday at 4 at home",
@@ -934,6 +960,32 @@ test("birthday name and turning age shorthand fills both slots", () => {
 
   assert.equal(draft.honoreeName, "Mia");
   assert.equal(draft.ageOrMilestone, "6");
+  assert.doesNotMatch(draft.missingFields.join(","), /honoreeName|ageOrMilestone/);
+});
+
+test("birthday OCR hint fills honoree and age when text extraction is sparse", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Create an event from this uploaded file.",
+    requestedOutputs: ["live_card"],
+    ocrContext: {
+      ocrText: "Movie: Sheep Detective\nWhen: Thursday at 5:00 PM\nWhere: AMC Destin Commons 14",
+      fieldsGuess: {
+        title: "Lara is Turning 7!",
+        category: "Birthdays",
+        time: "5:00 PM",
+        location: "AMC Destin Commons 14",
+      },
+      category: "Birthdays",
+      birthdayTemplateHint: {
+        detected: true,
+        honoreeName: "Lara",
+        age: 7,
+      },
+    },
+  });
+
+  assert.equal(draft.honoreeName, "Lara");
+  assert.equal(draft.ageOrMilestone, "7");
   assert.doesNotMatch(draft.missingFields.join(","), /honoreeName|ageOrMilestone/);
 });
 
@@ -1594,6 +1646,47 @@ test("RSVP guest count accepts natural collect-for shorthand", () => {
   assert.equal(reply.numberOfGuests, 20);
   assert.equal(reply.currentQuestion, "rsvpName");
   assert.match(buildAssistantMessage(reply), /host or RSVP contact/i);
+});
+
+test("RSVP decision reply can include guest count, host name, and phone", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message:
+      "Birthday Live Card Lara, 7, we will go to see Sheep Detective at 5PM Thursday at AMC Destin Commons 14, then we are going to have pizza at Pazzo Destin. She likes cats and plushes, have the cats drinking sodas, hugging plushies, eating pizza and popcorn at the movie theater",
+  });
+
+  assert.equal(draft.currentQuestion, "rsvpEnabled");
+
+  draft = fallbackExtractConciergeDraft({
+    message: "yes, for 2 people, at Veronica at 850-960-1214",
+    draft,
+  });
+
+  assert.equal(draft.rsvpEnabled, true);
+  assert.equal(draft.numberOfGuests, 2);
+  assert.equal(draft.rsvpName, "Veronica");
+  assert.equal(draft.rsvpContact, "850-960-1214");
+  assert.equal(draft.currentQuestion, null);
+  assert.deepEqual(draft.missingFields, []);
+});
+
+test("RSVP contact repair splits host name and phone number", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message:
+      "Birthday Live Card Lara, 7, we will go to see Sheep Detective at 5PM Thursday at AMC Destin Commons 14, then we are going to have pizza at Pazzo Destin. She likes cats and plushes, have the cats drinking sodas, hugging plushies, eating pizza and popcorn at the movie theater",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "yes, 2 people", draft });
+
+  assert.equal(draft.currentQuestion, "rsvpName");
+
+  draft = fallbackExtractConciergeDraft({
+    message: "RSVP contact: Veronica at 850-960-1214",
+    draft,
+  });
+
+  assert.equal(draft.rsvpName, "Veronica");
+  assert.equal(draft.rsvpContact, "850-960-1214");
+  assert.equal(draft.currentQuestion, null);
+  assert.deepEqual(draft.missingFields, []);
 });
 
 test("tone reply preserves full creative direction without changing event type", () => {

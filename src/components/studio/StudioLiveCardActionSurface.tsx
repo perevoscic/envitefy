@@ -27,13 +27,13 @@ import {
   CalendarIconGoogle,
   CalendarIconOutlook,
 } from "@/components/CalendarIcons";
+import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardDirectionsHref,
   buildLiveCardLocationActions,
 } from "@/lib/live-card-locations";
 import { getLiveCardRailLayout } from "@/lib/live-card-rail-layout";
-import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import {
   buildLiveCardRsvpOutboundHref,
   LIVE_CARD_RSVP_CHOICES,
@@ -449,6 +449,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     "idle" | "submitting" | "success" | "error"
   >("idle");
   const [directRsvpError, setDirectRsvpError] = useState("");
+  const directRsvpVenueLabel =
+    readString(details?.venueName) || readString(details?.location) || "";
   const agentName = readString(details?.realtorName) || readString(details?.rsvpName);
   const agentTitle = readString(details?.realtorTitle) || (agentName ? "Listing Agent" : "");
   const agentBrokerage = readString(details?.brokerageName);
@@ -570,6 +572,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
       if (!response.ok) throw new Error(payload?.error || "Failed to send RSVP.");
       setDirectRsvpStatus("success");
+      window.dispatchEvent(
+        new CustomEvent("rsvp-submitted", {
+          detail: { eventId: directRsvpEventId, response: directRsvpChoice },
+        }),
+      );
     } catch (error) {
       setDirectRsvpStatus("error");
       setDirectRsvpError(error instanceof Error ? error.message : "Failed to send RSVP.");
@@ -889,72 +896,85 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       </div>
                       {hasDirectEnvitefyRsvp ? (
                         <div className="mt-auto space-y-3 border-t border-neutral-100 pt-4">
-                          <div className="grid grid-cols-3 gap-2">
-                            {LIVE_CARD_RSVP_CHOICES.map((choice) => {
-                              const accent = accentClassForRsvpChoice(choice.key);
-                              const isSelected = directRsvpChoice === choice.key;
-                              return (
-                                <button
-                                  key={choice.key}
-                                  type="button"
-                                  onClick={() => {
-                                    setDirectRsvpChoice(choice.key);
-                                    setDirectRsvpStatus("idle");
-                                    setDirectRsvpError("");
-                                  }}
-                                  className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${
-                                    isSelected ? "ring-2 ring-neutral-900 ring-offset-2" : ""
-                                  } ${accent}`}
-                                  aria-pressed={isSelected}
-                                >
-                                  {choice.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {directRsvpChoice ? (
-                            <form className="space-y-2" onSubmit={submitDirectRsvp}>
-                              <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                Your name
-                                <input
-                                  value={directRsvpName}
-                                  onChange={(event) => setDirectRsvpName(event.target.value)}
-                                  className="mt-1 h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-900 outline-none focus:border-neutral-900"
-                                  placeholder="Name"
-                                  required
-                                />
-                              </label>
-                              <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                Email
-                                <input
-                                  value={directRsvpEmail}
-                                  onChange={(event) => setDirectRsvpEmail(event.target.value)}
-                                  className="mt-1 h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-900 outline-none focus:border-neutral-900"
-                                  placeholder="Email"
-                                  type="email"
-                                  required
-                                />
-                              </label>
-                              {directRsvpStatus === "error" && directRsvpError ? (
-                                <p className="text-xs font-semibold text-rose-600">
-                                  {directRsvpError}
-                                </p>
-                              ) : null}
-                              {directRsvpStatus === "success" ? (
-                                <p className="text-xs font-semibold text-emerald-700">RSVP sent.</p>
-                              ) : null}
-                              <button
-                                type="submit"
-                                disabled={directRsvpStatus === "submitting"}
-                                className="inline-flex w-full items-center justify-center rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-neutral-800 disabled:cursor-wait disabled:opacity-70"
-                              >
-                                {directRsvpStatus === "submitting" ? "Sending..." : "Send RSVP"}
-                              </button>
-                            </form>
+                          {directRsvpStatus === "success" ? (
+                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-5 text-center">
+                              <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-700" />
+                              <p className="mt-3 text-sm font-bold text-neutral-950">
+                                Thank you for RSVP-ing.
+                              </p>
+                              <p className="mt-1 text-sm font-medium text-neutral-700">
+                                {directRsvpVenueLabel
+                                  ? `See you at ${directRsvpVenueLabel}.`
+                                  : "We'll see you there."}
+                              </p>
+                            </div>
                           ) : (
-                            <p className="text-xs font-semibold text-neutral-500">
-                              Choose yes, no, or maybe to RSVP from the card.
-                            </p>
+                            <>
+                              <div className="grid grid-cols-3 gap-2">
+                                {LIVE_CARD_RSVP_CHOICES.map((choice) => {
+                                  const accent = accentClassForRsvpChoice(choice.key);
+                                  const isSelected = directRsvpChoice === choice.key;
+                                  return (
+                                    <button
+                                      key={choice.key}
+                                      type="button"
+                                      onClick={() => {
+                                        setDirectRsvpChoice(choice.key);
+                                        setDirectRsvpStatus("idle");
+                                        setDirectRsvpError("");
+                                      }}
+                                      className={`flex items-center justify-center rounded-xl border px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] transition hover:-translate-y-0.5 ${
+                                        isSelected ? "ring-2 ring-neutral-900 ring-offset-2" : ""
+                                      } ${accent}`}
+                                      aria-pressed={isSelected}
+                                    >
+                                      {choice.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              {directRsvpChoice ? (
+                                <form className="space-y-2" onSubmit={submitDirectRsvp}>
+                                  <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                    Your name
+                                    <input
+                                      value={directRsvpName}
+                                      onChange={(event) => setDirectRsvpName(event.target.value)}
+                                      className="mt-1 h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-900 outline-none focus:border-neutral-900"
+                                      placeholder="Name"
+                                      required
+                                    />
+                                  </label>
+                                  <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                    Email
+                                    <input
+                                      value={directRsvpEmail}
+                                      onChange={(event) => setDirectRsvpEmail(event.target.value)}
+                                      className="mt-1 h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-900 outline-none focus:border-neutral-900"
+                                      placeholder="Email"
+                                      type="email"
+                                      required
+                                    />
+                                  </label>
+                                  {directRsvpStatus === "error" && directRsvpError ? (
+                                    <p className="text-xs font-semibold text-rose-600">
+                                      {directRsvpError}
+                                    </p>
+                                  ) : null}
+                                  <button
+                                    type="submit"
+                                    disabled={directRsvpStatus === "submitting"}
+                                    className="inline-flex w-full items-center justify-center rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-neutral-800 disabled:cursor-wait disabled:opacity-70"
+                                  >
+                                    {directRsvpStatus === "submitting" ? "Sending..." : "Send RSVP"}
+                                  </button>
+                                </form>
+                              ) : (
+                                <p className="text-xs font-semibold text-neutral-500">
+                                  Choose yes, no, or maybe to RSVP from the card.
+                                </p>
+                              )}
+                            </>
                           )}
                         </div>
                       ) : rsvpContact ? (

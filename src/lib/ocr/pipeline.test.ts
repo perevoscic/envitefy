@@ -29,10 +29,23 @@ test("pipeline rejects empty or generic OCR instead of saving a placeholder even
   const source = await readFile(new URL("./pipeline.ts", import.meta.url), "utf8");
 
   assert.match(source, /function hasUsableOcrResult/);
+  assert.match(source, /function hasUsableRawOcrText/);
   assert.match(source, /OPENAI_GENERIC/);
+  assert.match(source, /OPENAI_TEXT_GENERIC/);
   assert.match(source, /OCR_NOT_CONFIGURED/);
   assert.match(source, /OCR_UNREADABLE/);
   assert.match(source, /Set OPENAI_API_KEY/);
+});
+
+test("pipeline falls back to visible-text OCR when structured extraction is empty", async () => {
+  const source = await readFile(new URL("./pipeline.ts", import.meta.url), "utf8");
+  const openAiSource = await readFile(new URL("./openai.ts", import.meta.url), "utf8");
+
+  assert.match(openAiSource, /export async function llmExtractVisibleTextFromImage/);
+  assert.match(openAiSource, /Return strict JSON \{"text": string\}/);
+  assert.match(source, /runOpenAiTextCandidate/);
+  assert.match(source, /llmExtractVisibleTextFromImage/);
+  assert.match(source, /ocrSource = "openai-text"/);
 });
 
 test("pipeline normalizes graduation venue names before returning fields", async () => {

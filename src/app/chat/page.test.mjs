@@ -601,6 +601,22 @@ test("/chat live-card preview preserves RSVP and registry action metadata", () =
   assert.match(preview, />Details</);
 });
 
+test("/chat preview updates reuse the preview progress overlay", () => {
+  const client = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const preview = readSource("src/app/chat/ChatProductPreview.tsx");
+
+  assert.match(client, /const PREVIEW_UPDATE_STEPS = \[/);
+  assert.match(client, /const isUpdatingPreview = isEditingGeneratedCard && isSending;/);
+  assert.match(
+    client,
+    /const activeBuildSteps = isUpdatingPreview \? PREVIEW_UPDATE_STEPS : BUILDING_STEPS;/,
+  );
+  assert.match(client, /if \(!isGeneratingCard && !isUpdatingPreview\) return;/);
+  assert.match(client, /isGenerating=\{isGeneratingCard \|\| isUpdatingPreview\}/);
+  assert.match(client, /currentBuildStep=\{activeBuildSteps\[currentBuildStep\]\}/);
+  assert.match(preview, /style=\{\{ width: `\$\{buildProgress\}%` \}\}/);
+});
+
 test("/cht typo route is not present", () => {
   assert.equal(fs.existsSync(path.join(repoRoot, "src/app/cht/page.tsx")), false);
 });

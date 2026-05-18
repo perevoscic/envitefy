@@ -24,6 +24,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
+import EventDeleteModal from "@/components/EventDeleteModal";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
@@ -831,6 +832,7 @@ export default function EventOwnerTools({
       >
         <section className="min-w-0 space-y-3 sm:space-y-4">
           <OwnerWorkspaceHeader
+            eventId={eventId}
             title={currentEventTitle}
             dateLine={effectivePreview.dateLine}
             timeLine={effectivePreview.timeLine}
@@ -1116,6 +1118,7 @@ function OwnerDetailChip({
 }
 
 function OwnerWorkspaceHeader({
+  eventId,
   title,
   dateLine,
   timeLine,
@@ -1126,6 +1129,7 @@ function OwnerWorkspaceHeader({
   onPreview,
   onShare,
 }: {
+  eventId: string;
   title: string;
   dateLine: string;
   timeLine: string;
@@ -1136,14 +1140,19 @@ function OwnerWorkspaceHeader({
   onPreview: () => void;
   onShare: () => void;
 }) {
+  const actionButtonClassName =
+    "h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 sm:w-auto sm:gap-1.5 sm:px-3";
+  const deleteButtonClassName =
+    "inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 sm:w-auto sm:gap-1.5 sm:px-3";
+
   return (
     <header className="owner-workspace-glass owner-workspace-summary-card relative overflow-hidden rounded-[24px] border border-white/75 bg-white/92 p-4 shadow-[0_16px_46px_rgba(79,70,128,0.10)] backdrop-blur-xl sm:p-5 lg:rounded-[28px]">
       <div className="space-y-3 sm:space-y-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-[0.66rem] font-black uppercase tracking-[0.16em] text-[#786bd6]">
             Owner workspace
           </p>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             {!detailsEditHref ? (
               <Link
                 href={editHref}
@@ -1154,32 +1163,41 @@ function OwnerWorkspaceHeader({
                 <Pencil size={20} strokeWidth={2.2} aria-hidden="true" />
               </Link>
             ) : null}
-            <button
-              type="button"
-              onClick={onPreview}
-              aria-label="Preview"
-              title="Preview"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 lg:hidden"
-            >
-              <ExternalLink size={20} strokeWidth={2.2} aria-hidden="true" />
-            </button>
-            <Link
-              href={previewHref}
-              aria-label="Preview"
-              title="Preview"
-              className="hidden h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 lg:inline-flex"
-            >
-              <ExternalLink size={20} strokeWidth={2.2} aria-hidden="true" />
-            </Link>
+            <EventDeleteModal
+              eventId={eventId}
+              eventTitle={title}
+              buttonClassName={deleteButtonClassName}
+              labelClassName="hidden sm:inline"
+            />
             <button
               type="button"
               onClick={onShare}
               aria-label="Share"
               title="Share"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-950 transition hover:text-[#786bd6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200"
+              className="inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-slate-950 transition hover:bg-violet-50 hover:text-[#786bd6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 sm:w-auto sm:gap-1.5 sm:px-3"
             >
               <Share2 size={21} strokeWidth={2.3} aria-hidden="true" />
+              <span className="hidden sm:inline">Share</span>
             </button>
+            <button
+              type="button"
+              onClick={onPreview}
+              aria-label="Preview"
+              title="Preview"
+              className={`inline-flex ${actionButtonClassName} lg:hidden`}
+            >
+              <ExternalLink size={20} strokeWidth={2.2} aria-hidden="true" />
+              <span className="hidden sm:inline">Preview</span>
+            </button>
+            <Link
+              href={previewHref}
+              aria-label="Preview"
+              title="Preview"
+              className={`hidden ${actionButtonClassName} lg:inline-flex`}
+            >
+              <ExternalLink size={20} strokeWidth={2.2} aria-hidden="true" />
+              <span className="hidden sm:inline">Preview</span>
+            </Link>
           </div>
         </div>
         <div className="min-w-0">

@@ -89,6 +89,17 @@ function firstString(...values: unknown[]): string | null {
   return null;
 }
 
+function stringFromKnownValue(value: unknown): string | null {
+  if (typeof value === "number" && Number.isFinite(value)) return String(Math.round(value));
+  return firstString(value);
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 function cleanUrlString(value: unknown): string | null {
   return cleanString(value)?.replace(/[),.;!?]+$/g, "") || null;
 }
@@ -519,6 +530,7 @@ function detectRsvpEnabled(
   const expectsRsvpDecision = firstMissingField(previous) === "rsvpEnabled";
   if (expectsRsvpDecision) {
     if (
+      /^(yes|yep|yeah|sure|please|yes please)\b/i.test(cleaned) ||
       /^(yes|yep|yeah|sure|please|yes please|include it|add it|turn it on|enable it|collect rsvps?|track rsvps?)$/i.test(
         cleaned,
       ) ||
@@ -551,6 +563,35 @@ function detectRsvpEnabled(
   return previous?.rsvpEnabled ?? null;
 }
 
+const RSVP_PHONE_PATTERN = /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}/;
+
+function extractRsvpIdentityParts(value: unknown): { name: string | null; contact: string | null } {
+  const source = cleanString(value);
+  if (!source) return { name: null, contact: null };
+
+  const email = source.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || null;
+  const phone = source.match(RSVP_PHONE_PATTERN)?.[0] || null;
+  const contact = email || phone;
+  if (!contact) return { name: null, contact: null };
+
+  const contactIndex = source.toLowerCase().indexOf(contact.toLowerCase());
+  const beforeContact = contactIndex > 0 ? source.slice(0, contactIndex) : "";
+  const name = cleanString(
+    beforeContact
+      .replace(/^(?:yes|yep|yeah|sure|please|yes please)\b[\s,]*/i, "")
+      .replace(
+        /^(?:for\s+)?\d{1,4}\s*(?:guests?|kids?|children|people|attendees|invitees|famil(?:y|ies))?\b[\s,]*/i,
+        "",
+      )
+      .replace(/^(?:rsvps?|rsvp)?\s*(?:contact|host|name)?\s*(?:at|is|:)?\s*/i, "")
+      .replace(/^(?:at|by|for)\s+/i, "")
+      .replace(/\b(?:at|is|for|rsvp|contact|host|name)\s*$/i, "")
+      .replace(/[,:;\s]+$/g, ""),
+  );
+
+  return { name, contact };
+}
+
 function detectRsvpDeadline(text: string, previous?: ConciergeEventDraft | null) {
   const match =
     text.match(/\brsvp\s+(?:deadline|due|responses?\s+due)\s*:?\s*([^.\n;]{2,80})/i) ||
@@ -567,6 +608,15 @@ function detectRsvpName(
   const direct = firstString(fieldsGuess.rsvpName, fieldsGuess.hostName, fieldsGuess.host);
   if (direct) return direct;
   if (previous?.rsvpName && previous.currentQuestion !== "rsvpName") return previous.rsvpName;
+  const identity = extractRsvpIdentityParts(text);
+  if (
+    identity.name &&
+    (previous?.currentQuestion === "rsvpName" ||
+      previous?.currentQuestion === "rsvpEnabled" ||
+      previous?.currentQuestion === "numberOfGuests")
+  ) {
+    return identity.name;
+  }
   if (previous?.currentQuestion === "rsvpName") {
     const reply = cleanString(
       text.replace(/^(?:hosted\s+by|host|organizer|rsvp\s+name)\s*:?\s*/i, ""),
@@ -578,7 +628,13 @@ function detectRsvpName(
       /\b(?:rsvp\s+name|rsvp\s+contact\s+name|hosted\s+by|host|organizer)\s*:?\s*([^.\n;]{2,80})/i,
     ) ||
     text.match(/\bhosted\s+by\s+([^.\n;]{2,80})/i);
-  return cleanString(explicit?.[1]?.replace(/[.!?]+$/g, "")) || previous?.rsvpName || null;
+  const explicitIdentity = extractRsvpIdentityParts(explicit?.[1]);
+  return (
+    explicitIdentity.name ||
+    cleanString(explicit?.[1]?.replace(/[.!?]+$/g, "")) ||
+    previous?.rsvpName ||
+    null
+  );
 }
 
 function detectRsvpContact(
@@ -587,11 +643,9 @@ function detectRsvpContact(
   previous?: ConciergeEventDraft | null,
 ) {
   const direct = firstString(fieldsGuess.rsvpContact, fieldsGuess.rsvpEmail, fieldsGuess.rsvpPhone);
-  if (direct) return direct;
+  if (direct) return extractRsvpIdentityParts(direct).contact || direct;
   const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
-  const phoneMatch = text.match(
-    /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}/,
-  )?.[0];
+  const phoneMatch = text.match(RSVP_PHONE_PATTERN)?.[0];
   if (previous?.currentQuestion === "rsvpContact") {
     const reply = cleanString(emailMatch || phoneMatch || text);
     if (reply) return reply;
@@ -602,7 +656,12 @@ function detectRsvpContact(
   if (explicitEmail?.[1]) return explicitEmail[1];
   const explicit = text.match(/\brsvp\s+contact\s*:?\s*([^.\n;]{3,120})/i);
   const email = explicit?.[1]?.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
-  const contact = cleanString(email || phoneMatch || explicit?.[1]?.replace(/[.!?]+$/g, ""));
+  const contact = cleanString(
+    email ||
+      extractRsvpIdentityParts(explicit?.[1]).contact ||
+      phoneMatch ||
+      explicit?.[1]?.replace(/[.!?]+$/g, ""),
+  );
   return contact || previous?.rsvpContact || null;
 }
 
@@ -1131,6 +1190,59 @@ function stripLeadingTimeFromLocation(value: string | null) {
     return null;
   }
   return cleanString(withoutTrailingIntent);
+}
+
+type LabeledInviteDetails = {
+  whenText: string | null;
+  location: string | null;
+};
+
+const DETAIL_LABEL_PATTERN =
+  "movie|when|date|time|where|venue|location|place|address|after\\s+the\\s+movie|after\\s+movie|after|style|layout|theme|scene|invitation\\s+details";
+
+function cleanLabeledDetailValue(value: unknown) {
+  const cleaned = cleanString(value);
+  if (!cleaned) return null;
+  return (
+    cleanString(
+      cleaned
+        .replace(new RegExp(`\\s+\\b(?:${DETAIL_LABEL_PATTERN})\\s*:[\\s\\S]*$`, "i"), "")
+        .replace(/^[\s"'([]+|[\s"').,\]]+$/g, ""),
+    ) || null
+  );
+}
+
+function findLabeledDetailValue(text: string, labels: string[]) {
+  if (!text) return null;
+  const labelPattern = labels.join("|");
+  const linePattern = new RegExp(`(?:^|[\\r\\n])\\s*(?:${labelPattern})\\s*:\\s*([^\\r\\n]+)`, "i");
+  const lineMatch = text.match(linePattern);
+  if (lineMatch?.[1]) return cleanLabeledDetailValue(lineMatch[1]);
+
+  const inlinePattern = new RegExp(
+    `\\b(?:${labelPattern})\\s*:\\s*([\\s\\S]{2,180}?)(?=\\s+\\b(?:${DETAIL_LABEL_PATTERN})\\s*:|[\\r\\n]|$)`,
+    "i",
+  );
+  const inlineMatch = text.match(inlinePattern);
+  return cleanLabeledDetailValue(inlineMatch?.[1]);
+}
+
+function detectLabeledInviteDetails(text: string): LabeledInviteDetails {
+  const when = findLabeledDetailValue(text, ["when"]);
+  const date = findLabeledDetailValue(text, ["date"]);
+  const time = findLabeledDetailValue(text, ["time"]);
+  const location = findLabeledDetailValue(text, ["where", "venue", "location", "place", "address"]);
+  const whenText =
+    when ||
+    (date && time ? `${date} at ${time}` : null) ||
+    date ||
+    time ||
+    null;
+
+  return {
+    whenText,
+    location,
+  };
 }
 
 function detectVenueOrLocation(text: string, ocrContext?: ConciergeOcrContext | null) {
@@ -1844,6 +1956,12 @@ export function fallbackExtractConciergeDraft(args: {
   );
   const combined = mergeText(inferenceMessage, args.ocrContext);
   const text = combined || message;
+  const detailText =
+    [args.message, args.ocrContext?.ocrText]
+      .map((value) => (typeof value === "string" ? value.trim() : ""))
+      .filter(Boolean)
+      .join("\n") || text;
+  const labeledDetails = detectLabeledInviteDetails(detailText);
   const sessionDraft = args.draft || null;
   const previous = shouldStartFreshEvent(message, sessionDraft) ? null : sessionDraft;
   const privateDataMutationRequest = isPrivateDataMutationRequest(message);
@@ -1941,23 +2059,29 @@ export function fallbackExtractConciergeDraft(args: {
     args.source || (args.ocrContext ? (message ? "mixed" : "upload") : previous?.source || "text");
   const eventType = blocksCreation ? "unknown" : detectEventType(text, previous);
   const relationship = detectRelationship(text, previous);
+  const fieldsGuess = args.ocrContext?.fieldsGuess || {};
+  const birthdayTemplateHint = recordValue(args.ocrContext?.birthdayTemplateHint);
   const honoreeName =
     detectHonoreeName(text, previous) ||
     detectHonoreeFollowUp(message, previous) ||
-    firstString(args.ocrContext?.fieldsGuess?.name, args.ocrContext?.fieldsGuess?.honoreeName);
-  const ageOrMilestone = detectAge(text, previous);
-  const chronoResult = parseChrono(text, previous);
-  const fieldsGuess = args.ocrContext?.fieldsGuess || {};
+    firstString(fieldsGuess.name, fieldsGuess.honoreeName, birthdayTemplateHint.honoreeName);
+  const ageOrMilestone =
+    detectAge(text, previous) ||
+    stringFromKnownValue(
+      fieldsGuess.ageOrMilestone || fieldsGuess.age || birthdayTemplateHint.age,
+    );
+  const chronoResult = parseChrono(labeledDetails.whenText || text, previous);
   const fieldStartIso = isoFromField(fieldsGuess.start);
   const fieldEndIso = isoFromField(fieldsGuess.end);
   const location =
-    detectPrimaryLabeledLocation(text) ||
+    labeledDetails.location ||
+    detectPrimaryLabeledLocation(detailText) ||
     detectVenueOrLocation(text, args.ocrContext) ||
     detectLocationFollowUp(message, previous) ||
     previous?.location ||
     previous?.venue ||
     null;
-  const additionalLocations = detectAdditionalLocations(text, location, previous);
+  const additionalLocations = detectAdditionalLocations(detailText, location, previous);
   const theme = detectTheme(text, previous);
   const receivedInviteWithoutSource =
     sourceContext.detectedSourceIntent === "received_invite" && !sourceContext.hasUsableContext;

@@ -8,11 +8,15 @@ import { emitEventCacheInvalidation } from "@/app/event-cache-context";
 interface EventDeleteModalProps {
   eventId: string;
   eventTitle: string;
+  buttonClassName?: string;
+  labelClassName?: string;
 }
 
 export default function EventDeleteModal({
   eventId,
   eventTitle,
+  buttonClassName,
+  labelClassName,
 }: EventDeleteModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,9 +44,7 @@ export default function EventDeleteModal({
       // Notify other views (e.g., calendar/sidebar) that this history row was deleted
       try {
         if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("history:deleted", { detail: { id: eventId } })
-          );
+          window.dispatchEvent(new CustomEvent("history:deleted", { detail: { id: eventId } }));
           emitEventCacheInvalidation({
             force: true,
             source: "event-delete-modal",
@@ -68,7 +70,10 @@ export default function EventDeleteModal({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-error transition-colors hover:bg-error/10 hover:text-error"
+        className={
+          buttonClassName ||
+          "inline-flex items-center gap-1 px-3 py-1.5 text-sm text-error transition-colors hover:bg-error/10 hover:text-error"
+        }
         title="Delete event"
       >
         <svg
@@ -86,7 +91,7 @@ export default function EventDeleteModal({
           <line x1="10" y1="11" x2="10" y2="17" />
           <line x1="14" y1="11" x2="14" y2="17" />
         </svg>
-        <span className="hidden sm:inline">Delete</span>
+        <span className={labelClassName || "hidden sm:inline"}>Delete</span>
       </button>
 
       {isMounted &&
@@ -144,9 +149,7 @@ export default function EventDeleteModal({
                     Are you sure you want to delete this event?
                   </p>
                   <div className="rounded-xl border border-border bg-background p-3">
-                    <p className="break-words text-sm font-medium text-foreground">
-                      {eventTitle}
-                    </p>
+                    <p className="break-words text-sm font-medium text-foreground">{eventTitle}</p>
                   </div>
                   <p className="mt-2 text-sm font-medium text-error">
                     This action cannot be undone.
@@ -173,7 +176,7 @@ export default function EventDeleteModal({
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </>
   );
