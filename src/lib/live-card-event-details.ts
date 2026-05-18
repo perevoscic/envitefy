@@ -1,11 +1,5 @@
 /** Guest-facing copy for live card "Event Details" tab. */
 
-import {
-  formatTimeLabelEn,
-  formatWeekdayMonthDayOrdinalEn,
-} from "@/utils/format-month-day-ordinal";
-import { getLiveCardPrimaryLocationLabel } from "@/lib/live-card-locations";
-
 export type LiveCardDetailsLike = {
   category?: string;
   name?: string;
@@ -59,28 +53,20 @@ function honoreeFromDetails(
 }
 
 /**
- * Opening line for Event Details: birthday = celebrate honoree's age at venue; other categories = generic invite + venue.
+ * Opening line for Event Details: keep this as invitation copy only. Venue and time are
+ * rendered as structured rows in the live-card Overview panel.
  */
 export function buildLiveCardDetailsWelcomeMessage(
   details: LiveCardDetailsLike | null | undefined,
   cardTitle?: string,
 ): string | null {
   const category = readTrim(details?.category);
-  const venue = getLiveCardPrimaryLocationLabel(details);
-  const eventDate = readTrim(details?.eventDate);
-  const dateLabel = eventDate ? formatWeekdayMonthDayOrdinalEn(eventDate) : "";
-  const timeLabel = formatTimeLabelEn(readTrim(details?.startTime));
-  const dateBit = dateLabel ? ` on ${dateLabel}${timeLabel ? ` at ${timeLabel}` : ""}` : "";
-
   if (category === "Birthday") {
     const honoree = honoreeFromDetails(details, cardTitle);
     if (!honoree) return null;
     const ord = ageToOrdinalWord(readTrim(details?.age));
     const ageBit = ord ? `${ord} ` : "";
-    if (venue) {
-      return `Join us to celebrate ${honoree}'s ${ageBit}birthday at ${venue}${dateBit}.`;
-    }
-    return `Join us to celebrate ${honoree}'s ${ageBit}birthday${dateBit}!`.replace(
+    return `Join us to celebrate ${honoree}'s ${ageBit}birthday.`.replace(
       "'s  birthday",
       "'s birthday",
     );
@@ -88,14 +74,8 @@ export function buildLiveCardDetailsWelcomeMessage(
 
   const headline =
     readTrim(details?.eventTitle) || readTrim(cardTitle) || readTrim(category) || "";
-  if (venue && headline) {
-    return `You're invited to ${headline} at ${venue}${dateBit}.`;
-  }
-  if (venue) {
-    return `Join us at ${venue}${dateBit}.`;
-  }
   if (headline) {
-    return `We'd love for you to join us for ${headline}${dateBit}.`;
+    return `We'd love for you to join us for ${headline}.`;
   }
   return null;
 }

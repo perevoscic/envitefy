@@ -635,10 +635,23 @@ export function createStudioMediaItemFromHistoryRow(row: unknown): MediaItem | n
     rawInvitationData && isRecord(rawInvitationData.eventDetails)
       ? rawInvitationData.eventDetails
       : null;
+  const liveCard = isRecord(data.liveCard) ? data.liveCard : null;
+  const publicEvent = isRecord(data.publicEvent) ? data.publicEvent : null;
+  const previewCopy = isRecord(data.previewCopy) ? data.previewCopy : null;
   const imageUrl = normalizeStudioLibraryImageUrl(extractHistoryStudioImageUrl(row)) || "";
   if (!imageUrl) return null;
 
-  const title = firstHistoryString(row.title, data.title, rawInvitationData?.title, "Invitation");
+  const title = firstHistoryString(
+    rawEventDetails?.eventTitle,
+    rawInvitationData?.title,
+    liveCard?.headline,
+    publicEvent?.headline,
+    previewCopy?.headline,
+    data.headlineTitle,
+    data.title,
+    row.title,
+    "Invitation",
+  );
   const category = normalizeHistoryStudioCategory(
     firstHistoryString(
       rawEventDetails?.category,

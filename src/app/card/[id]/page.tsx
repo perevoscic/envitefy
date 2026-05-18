@@ -461,6 +461,7 @@ export default async function SharedCardPage(props: {
 
   return (
     <SharedStudioCardPage
+      eventId={sharedCard.row.id}
       title={sharedCard.title}
       imageUrl={sharedCard.imageUrl}
       invitationData={sharedCard.invitationData as any}

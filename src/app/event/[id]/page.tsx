@@ -1019,10 +1019,12 @@ export default async function EventPage({
         <EventCelebrationOverlay kind={guestCelebrationKind} />
       ) : null}
       {ownerPreviewReturnHref ? <OwnerPreviewReturnLink href={ownerPreviewReturnHref} /> : null}
-      <EventViewTracker
-        eventId={row.id}
-        category={typeof (data as any)?.category === "string" ? (data as any).category : null}
-      />
+      {!isOwner ? (
+        <EventViewTracker
+          eventId={row.id}
+          category={typeof (data as any)?.category === "string" ? (data as any).category : null}
+        />
+      ) : null}
       {children}
     </EventPageBackgroundStyle>
   );

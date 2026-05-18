@@ -19,6 +19,7 @@ import {
   Share2,
   Users,
   WandSparkles,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,6 +31,7 @@ import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileT
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
 import { hasActionableRsvp } from "@/lib/dashboard-data";
 import { resolveArtworkEditHref, resolveEditHref } from "@/utils/event-edit-route";
+import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { buildStudioCardPath } from "@/utils/event-url";
 
 type EventOwnerToolsProps = {
@@ -598,6 +600,29 @@ function extractDesignEventDetails(eventData: Record<string, unknown> | null) {
   return asRecord(invitationData?.eventDetails) || asRecord(studioCard?.eventDetails);
 }
 
+function resolveDesignCardTitle(
+  eventTitle: string,
+  eventData: Record<string, unknown> | null,
+): string {
+  const studioCard = asRecord(eventData?.studioCard);
+  const invitationData = asRecord(studioCard?.invitationData);
+  const eventDetails = asRecord(invitationData?.eventDetails) || asRecord(studioCard?.eventDetails);
+  const liveCard = asRecord(eventData?.liveCard);
+  const publicEvent = asRecord(eventData?.publicEvent);
+  const previewCopy = asRecord(eventData?.previewCopy);
+
+  return firstString(
+    eventDetails?.eventTitle,
+    invitationData?.title,
+    liveCard?.headline,
+    publicEvent?.headline,
+    previewCopy?.headline,
+    eventData?.headlineTitle,
+    eventData?.title,
+    eventTitle,
+  );
+}
+
 function buildDesignFormState(
   eventTitle: string,
   eventData: Record<string, unknown> | null,
@@ -614,7 +639,7 @@ function buildDesignFormState(
   const endValue = firstString(eventData?.endISO, eventData?.endAt, eventData?.end);
 
   return {
-    title: firstString(eventDetails?.eventTitle, eventData?.title, eventTitle),
+    title: resolveDesignCardTitle(eventTitle, eventData),
     eventDate: formatDesignDateInput(startValue),
     startTime: formatDesignTimeInput(
       firstString(eventDetails?.startTime, eventData?.startTime, startValue),
@@ -817,6 +842,13 @@ export default function EventOwnerTools({
       url,
     };
     try {
+      trackEventInteraction({
+        eventId,
+        eventName: "share_link_click",
+        targetUrl: url,
+        targetLabel: currentEventTitle || "Event",
+        sourceSurface: "owner_workspace_header",
+      });
       if (navigator.share) {
         await navigator.share(data);
         return;
@@ -886,6 +918,7 @@ export default function EventOwnerTools({
 
         <aside className="hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)] lg:translate-x-6 lg:items-center lg:justify-end lg:self-start xl:translate-x-10">
           <EventProductPreview
+            eventId={eventId}
             eventTitle={currentEventTitle}
             preview={effectivePreview}
             publicUrl={publicUrl}
@@ -894,6 +927,7 @@ export default function EventOwnerTools({
       </div>
       <MobileOwnerPreviewDrawer
         open={isMobilePreviewOpen}
+        eventId={eventId}
         eventTitle={currentEventTitle}
         preview={effectivePreview}
         publicUrl={publicUrl}
@@ -1016,12 +1050,14 @@ function OwnerWorkspaceTabs({
 }
 
 function EventProductPreview({
+  eventId,
   eventTitle,
   preview,
   publicUrl,
   className = "",
   heightMode = "fixed",
 }: {
+  eventId: string;
   eventTitle: string;
   preview: ProductPreviewModel;
   publicUrl: string;
@@ -1048,6 +1084,7 @@ function EventProductPreview({
       >
         {preview.imageUrl ? (
           <SharedStudioCardFrame
+            eventId={eventId}
             title={eventTitle}
             imageUrl={preview.imageUrl}
             invitationData={preview.invitationData as any}
@@ -1430,12 +1467,14 @@ function OwnerTabContent({
 
 function MobileOwnerPreviewDrawer({
   open,
+  eventId,
   eventTitle,
   preview,
   publicUrl,
   onClose,
 }: {
   open: boolean;
+  eventId: string;
   eventTitle: string;
   preview: ProductPreviewModel;
   publicUrl: string;
@@ -1489,6 +1528,7 @@ function MobileOwnerPreviewDrawer({
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
           <div className="flex min-h-full items-center justify-center">
             <EventProductPreview
+              eventId={eventId}
               eventTitle={eventTitle}
               preview={preview}
               publicUrl={publicUrl}
@@ -1537,6 +1577,8 @@ function OwnerDesignPanel({
   const [error, setError] = useState("");
   const isBusy = status === "previewing" || status === "saving";
   const hasDesignChanges = !designFormsMatch(form, baselineForm);
+  const canCancelDesignChanges =
+    !isBusy && (hasDesignChanges || Boolean(candidate) || Boolean(error));
 
   useEffect(() => {
     const nextForm = buildDesignFormState(eventTitle, eventData, preview);
@@ -1564,6 +1606,21 @@ function OwnerDesignPanel({
     }
     if (status === "ready" || status === "saved") setStatus("idle");
     if (error) setError("");
+  }
+
+  function handleCancelChanges() {
+    if (isBusy) return;
+    setForm(baselineForm);
+    setCurrentImageUrl(preview.imageUrl);
+    setCurrentInvitationData(preview.invitationData);
+    setCurrentPositions(preview.positions);
+    setCandidate(null);
+    setStatus("idle");
+    setError("");
+    onDesignUpdated({
+      title: baselineForm.title || eventTitle,
+      preview: null,
+    });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1851,6 +1908,15 @@ function OwnerDesignPanel({
                 Changes saved
               </p>
             ) : null}
+            <button
+              type="button"
+              onClick={handleCancelChanges}
+              disabled={!canCancelDesignChanges}
+              className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white/80 px-4 text-sm font-bold text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition hover:bg-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-white/50 disabled:text-slate-300 sm:px-5"
+            >
+              <X size={16} aria-hidden="true" />
+              Cancel
+            </button>
             <button
               type="submit"
               disabled={!currentImageUrl || isBusy || !hasDesignChanges}

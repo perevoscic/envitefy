@@ -12,9 +12,11 @@ import StudioLiveCardActionSurface, {
   type LiveCardInvitationData,
 } from "@/components/studio/StudioLiveCardActionSurface";
 import type { EventCelebrationKind } from "@/utils/event-celebration";
+import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { resolveNativeShareData } from "@/utils/native-share";
 
 type SharedStudioCardProps = {
+  eventId?: string | null;
   title: string;
   imageUrl: string;
   invitationData?: LiveCardInvitationData | null;
@@ -47,6 +49,15 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
 
     try {
       setShareState("pending");
+      if (props.eventId) {
+        trackEventInteraction({
+          eventId: props.eventId,
+          eventName: "share_link_click",
+          targetUrl: shareUrl,
+          targetLabel: props.title,
+          sourceSurface: "studio_live_card",
+        });
+      }
       const nativeShareData = resolveNativeShareData(shareData);
       if (nativeShareData) {
         await navigator.share(nativeShareData);

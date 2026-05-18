@@ -103,8 +103,13 @@ test("birthday skin computes readable colors for variable dark and light skins",
   assert.match(source, /filterRenderedOcrFacts/);
   assert.match(
     source,
-    /items-start gap-6 lg:grid-cols-\[minmax\(390px,1\.12fr\)_minmax\(0,1fr\)\] xl:grid-cols-\[minmax\(440px,1\.15fr\)_minmax\(0,0\.95fr\)\]/,
+    /items-start gap-8 lg:grid-cols-\[minmax\(360px,0\.82fr\)_minmax\(520px,1\.18fr\)\] xl:grid-cols-\[minmax\(390px,0\.78fr\)_minmax\(620px,1\.22fr\)\]/,
   );
+  assert.match(source, /\/\* RIGHT COLUMN: Flyer & Actions \*\//);
+  assert.match(source, /className="self-start space-y-8"/);
+  assert.match(source, /max-h-\[min\(760px,calc\(100dvh-8rem\)\)\]/);
+  assert.doesNotMatch(source, /lg:sticky lg:top-12/);
+  assert.doesNotMatch(source, /lg:overflow-y-auto/);
   assert.match(source, /self-start rounded-\[2\.6rem\]/);
   assert.match(source, /facts=\{leftColumnOcrFacts\}/);
   assert.match(source, /facts=\{rightColumnOcrFacts\}/);

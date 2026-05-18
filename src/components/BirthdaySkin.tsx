@@ -430,11 +430,11 @@ export default function BirthdaySkin({
         background={background}
       />
       <div
-        className={`relative z-10 mx-auto max-w-6xl px-4 md:px-8 ${EVENT_SKIN_CONTENT_TOP_PADDING_CLASS}`}
+        className={`relative z-10 mx-auto max-w-7xl px-4 md:px-8 xl:px-12 ${EVENT_SKIN_CONTENT_TOP_PADDING_CLASS}`}
       >
         {actions ? <div className={EVENT_SKIN_ACTIONS_CLASS}>{actions}</div> : null}
 
-        <div className="mb-12 flex max-w-6xl flex-col items-center justify-between gap-8 pt-4 text-center md:flex-row md:items-center md:pt-12 md:text-left">
+        <div className="mb-12 flex max-w-7xl flex-col items-center justify-between gap-8 pt-4 text-center md:flex-row md:items-center md:pt-12 md:text-left">
           <div className="flex-1 space-y-4 text-center md:text-left">
             <motion.div
               initial={{ scale: 0, rotate: -20 }}
@@ -469,10 +469,10 @@ export default function BirthdaySkin({
             disabled={!imageUrl}
           >
             <div
-              className="absolute -right-4 -top-4 z-10 flex h-16 w-16 items-center justify-center rounded-full shadow-xl"
+              className="absolute right-3 top-3 z-10 flex h-14 w-14 items-center justify-center rounded-full shadow-xl"
               style={{ backgroundColor: "var(--theme-primary)", color: primaryTileTextColor }}
             >
-              <Sparkles className="h-8 w-8" />
+              <Sparkles className="h-7 w-7" />
             </div>
             <div className="overflow-hidden rounded-[1.8rem] bg-white">
               {imageUrl ? (
@@ -494,7 +494,7 @@ export default function BirthdaySkin({
           </motion.button>
         </div>
 
-        <div className="grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(390px,1.12fr)_minmax(0,1fr)] xl:grid-cols-[minmax(440px,1.15fr)_minmax(0,0.95fr)]">
+        <div className="grid max-w-7xl grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(360px,0.82fr)_minmax(520px,1.18fr)] xl:grid-cols-[minmax(390px,0.78fr)_minmax(620px,1.22fr)]">
           <div className="grid gap-6">
             <motion.section
               initial={{ y: 20, opacity: 0 }}
@@ -570,44 +570,44 @@ export default function BirthdaySkin({
             />
           </div>
 
-          {/* RIGHT COLUMN: Flyer & Sticky Actions */}
-          <div className="no-scrollbar self-start space-y-8 lg:sticky lg:top-12 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:pb-2 lg:pr-1">
-            <div className="grid grid-cols-2 gap-6">
-              <motion.button
-                type="button"
-                whileHover={imageUrl ? { rotate: 2, scale: 1.02 } : undefined}
-                onClick={() => {
-                  if (!imageUrl) return;
-                  setShowImageLightbox(true);
-                }}
-                className="group relative col-span-2 hidden w-full rounded-[2.5rem] border-8 border-white bg-white p-3 text-left shadow-2xl transition-all duration-500 disabled:cursor-default lg:block"
-                disabled={!imageUrl}
+          {/* RIGHT COLUMN: Flyer & Actions */}
+          <div className="self-start space-y-8">
+            <motion.button
+              type="button"
+              whileHover={imageUrl ? { rotate: 1.5, scale: 1.01 } : undefined}
+              onClick={() => {
+                if (!imageUrl) return;
+                setShowImageLightbox(true);
+              }}
+              className="group relative hidden w-full rounded-[2.5rem] border-8 border-white bg-white p-3 text-left shadow-2xl transition-all duration-500 disabled:cursor-default lg:block"
+              disabled={!imageUrl}
+            >
+              <div
+                className="absolute right-3 top-3 z-10 flex h-14 w-14 items-center justify-center rounded-full shadow-xl"
+                style={{ backgroundColor: "var(--theme-primary)", color: primaryTileTextColor }}
               >
-                <div
-                  className="absolute -right-4 -top-4 z-10 flex h-16 w-16 items-center justify-center rounded-full shadow-xl"
-                  style={{ backgroundColor: "var(--theme-primary)", color: primaryTileTextColor }}
-                >
-                  <Sparkles className="h-8 w-8" />
-                </div>
-                <div className="overflow-hidden rounded-[1.8rem] bg-white">
-                  {imageUrl ? (
-                    <img
-                      src={imageUrl}
-                      alt={`${title} invitation`}
-                      className="aspect-[3/4] h-full w-full object-cover transition-all duration-700 group-hover:scale-[1.02]"
-                    />
-                  ) : (
-                    <div
-                      className="aspect-[3/4] w-full"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, var(--theme-primary) 0%, var(--theme-accent) 100%)",
-                      }}
-                    />
-                  )}
-                </div>
-              </motion.button>
+                <Sparkles className="h-7 w-7" />
+              </div>
+              <div className="overflow-hidden rounded-[1.8rem] bg-white">
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={`${title} invitation`}
+                    className="max-h-[min(760px,calc(100dvh-8rem))] w-full object-contain transition-all duration-700 group-hover:scale-[1.01]"
+                  />
+                ) : (
+                  <div
+                    className="aspect-[3/4] w-full"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, var(--theme-primary) 0%, var(--theme-accent) 100%)",
+                    }}
+                  />
+                )}
+              </div>
+            </motion.button>
 
+            <div className="grid grid-cols-2 gap-6">
               <ActionTile
                 icon={<CalendarPlus className="h-10 w-10" />}
                 label="Save to Calendar"

@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { buildLiveCardDetailsWelcomeMessage } from "./live-card-event-details.ts";
 
-test("birthday welcome includes ordinal age and venue", () => {
+test("birthday welcome includes ordinal age without repeating venue and time", () => {
   const msg = buildLiveCardDetailsWelcomeMessage(
     {
       category: "Birthday",
@@ -18,11 +18,11 @@ test("birthday welcome includes ordinal age and venue", () => {
   );
   assert.equal(
     msg,
-    "Join us to celebrate Lara's 7th birthday at The Park Cafe on Saturday, May 23rd at 12PM.",
+    "Join us to celebrate Lara's 7th birthday.",
   );
 });
 
-test("birthday welcome parses venue from inline venue and address location", () => {
+test("birthday welcome ignores inline venue because overview renders location separately", () => {
   const msg = buildLiveCardDetailsWelcomeMessage(
     {
       category: "Birthday",
@@ -36,11 +36,11 @@ test("birthday welcome parses venue from inline venue and address location", () 
   );
   assert.equal(
     msg,
-    "Join us to celebrate Lara's 7th birthday at AMC Boulevard 10 on Saturday, May 23rd at 1PM.",
+    "Join us to celebrate Lara's 7th birthday.",
   );
 });
 
-test("birthday welcome falls back to address when no venue label is available", () => {
+test("birthday welcome does not include address fallback", () => {
   const msg = buildLiveCardDetailsWelcomeMessage(
     {
       category: "Birthday",
@@ -54,7 +54,7 @@ test("birthday welcome falls back to address when no venue label is available", 
   );
   assert.equal(
     msg,
-    "Join us to celebrate Lara's 7th birthday at 465 Grand Boulevard, Miramar Beach, FL on Saturday, May 23rd at 1PM.",
+    "Join us to celebrate Lara's 7th birthday.",
   );
 });
 
@@ -71,7 +71,7 @@ test("birthday welcome parses honoree from card title when name missing", () => 
   );
   assert.equal(
     msg,
-    "Join us to celebrate Sam's 30th birthday at Riverside Hall on Friday, July 10th at 6:30PM.",
+    "Join us to celebrate Sam's 30th birthday.",
   );
 });
 
@@ -86,7 +86,7 @@ test("birthday without honoree returns null", () => {
   );
 });
 
-test("non-birthday uses headline and venue", () => {
+test("non-birthday uses headline without repeating venue and time", () => {
   const msg = buildLiveCardDetailsWelcomeMessage(
     {
       category: "Party",
@@ -96,5 +96,5 @@ test("non-birthday uses headline and venue", () => {
     },
     "Summer BBQ",
   );
-  assert.equal(msg, "You're invited to Summer BBQ at Backyard on Saturday, August 1st.");
+  assert.equal(msg, "We'd love for you to join us for Summer BBQ.");
 });

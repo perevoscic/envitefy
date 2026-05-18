@@ -22,23 +22,20 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.match(globals, /owner-workspace-glass-panel/);
   assert.match(globals, /\.owner-workspace-summary-card/);
   assert.match(globals, /0 -10px 30px rgba\(15, 23, 42, 0\.08\)/);
-  assert.match(source, /flex items-center justify-between gap-3/);
-  assert.match(source, /flex shrink-0 items-center gap-2/);
+  assert.match(source, /flex flex-wrap items-center justify-between gap-3/);
+  assert.match(source, /flex shrink-0 flex-wrap items-center justify-end gap-2/);
   assert.match(source, /aria-label="Share"/);
   assert.match(source, /aria-label="Preview"/);
   assert.match(source, /aria-label="Edit"/);
   assert.match(
     source,
-    /className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-700/,
+    /className="inline-flex h-10 w-10 items-center justify-center rounded-full text-violet-700/,
   );
   assert.match(
     source,
-    /className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-950/,
+    /className="inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-slate-950/,
   );
-  assert.match(
-    source,
-    /className="hidden h-10 w-10 items-center justify-center rounded-full text-slate-700/,
-  );
+  assert.match(source, /className=\{`hidden \$\{actionButtonClassName\} lg:inline-flex`\}/);
   assert.match(source, /<ExternalLink size=\{20\}/);
   assert.match(source, /<Share2 size=\{21\}/);
   assert.match(
@@ -49,8 +46,8 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.match(source, /function MobileOwnerPreviewDrawer/);
   assert.match(source, /isMobilePreviewOpen \? "-translate-x-10" : "translate-x-0"/);
   assert.match(source, /open \? "translate-x-0" : "translate-x-full"/);
-  assert.doesNotMatch(source, /<span className="hidden sm:inline">Share<\/span>/);
-  assert.doesNotMatch(source, /<span className="hidden sm:inline">Preview<\/span>/);
+  assert.match(source, /<span className="hidden sm:inline">Share<\/span>/);
+  assert.match(source, /<span className="hidden sm:inline">Preview<\/span>/);
   assert.doesNotMatch(source, /<span className="hidden sm:inline">Edit<\/span>/);
   const headerBlock = source.match(
     /function OwnerWorkspaceHeader[\s\S]*?(?=\nfunction OwnerTabContent)/,
@@ -58,7 +55,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.ok(headerBlock, "expected OwnerWorkspaceHeader block");
   assert.match(
     headerBlock[0],
-    /href=\{editHref\}[\s\S]*href=\{previewHref\}[\s\S]*onClick=\{onShare\}/,
+    /href=\{editHref\}[\s\S]*onClick=\{onShare\}[\s\S]*onClick=\{onPreview\}[\s\S]*href=\{previewHref\}/,
   );
   assert.doesNotMatch(headerBlock[0], /rounded-2xl border border-slate-200 bg-white/);
   assert.doesNotMatch(headerBlock[0], /rounded-2xl bg-slate-950 text-white/);
@@ -210,7 +207,7 @@ test("generated card artwork opens the dashboard Design tab without losing detai
   );
   assert.match(ownerTools, /detailsEditHref=\{editHref\}/);
   assert.match(ownerTools, /href=\{detailsEditHref\}/);
-  assert.match(ownerTools, /className="flex shrink-0 items-center gap-2"/);
+  assert.match(ownerTools, /className="flex shrink-0 flex-wrap items-center justify-end gap-2"/);
   assert.match(ownerTools, /!detailsEditHref \? \(/);
   assert.match(studioSource, /searchParams\.get\("editEvent"\)/);
   assert.match(studioSource, /createStudioMediaItemFromHistoryRow\(row\)/);
@@ -218,6 +215,9 @@ test("generated card artwork opens the dashboard Design tab without losing detai
   assert.match(sanitizeSource, /publishedEventId: eventId/);
   assert.match(ownerTools, /if \(!rsvpEnabled \|\| activeTab === "design"\)/);
   assert.match(ownerTools, /function OwnerDesignPanel/);
+  assert.match(sanitizeSource, /rawEventDetails\?\.eventTitle,\s*rawInvitationData\?\.title,/s);
+  assert.match(sanitizeSource, /liveCard\?\.headline,\s*publicEvent\?\.headline,/s);
+  assert.match(sanitizeSource, /data\.title,\s*row\.title,/s);
 });
 
 test("owner Design tab previews card edits before saving them", () => {
@@ -226,11 +226,23 @@ test("owner Design tab previews card edits before saving them", () => {
   assert.ok(designBlock, "expected OwnerDesignPanel block");
 
   assert.match(source, /type DesignPreviewCandidate = \{/);
+  assert.match(source, /function resolveDesignCardTitle/);
+  assert.match(source, /eventDetails\?\.eventTitle,\s*invitationData\?\.title,/s);
+  assert.match(source, /liveCard\?\.headline,\s*publicEvent\?\.headline,/s);
   assert.match(
     source,
     /const \[candidate, setCandidate\] = useState<DesignPreviewCandidate \| null>\(null\);/,
   );
   assert.match(source, /status === "previewing" \|\| status === "saving"/);
+  assert.match(source, /const canCancelDesignChanges =/);
+  assert.match(source, /function handleCancelChanges\(\)/);
+  assert.match(source, /setForm\(baselineForm\)/);
+  assert.match(source, /setCurrentImageUrl\(preview\.imageUrl\)/);
+  assert.match(source, /setCandidate\(null\)/);
+  assert.match(source, /onClick=\{handleCancelChanges\}/);
+  assert.match(source, /disabled=\{!canCancelDesignChanges\}/);
+  assert.match(source, /<X size=\{16\} aria-hidden="true" \/>/);
+  assert.match(source, /Cancel/);
   assert.match(source, /action: "preview"/);
   assert.match(source, /imageDataUrl: nextImageDataUrl/);
   assert.match(source, /persisted: false/);

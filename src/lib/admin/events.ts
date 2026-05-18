@@ -15,6 +15,7 @@ export type AdminEventCategorySummary = {
   scans: number;
   shares: number;
   rsvps: number;
+  publicEventVisitors: number;
   publicEventViews: number;
   linkClicks: number;
   lastCreatedAt: string | null;
@@ -30,6 +31,7 @@ export type AdminEventListItem = {
   createdAt: string | null;
   shares: number;
   rsvps: number;
+  publicEventVisitors: number;
   publicEventViews: number;
   linkClicks: number;
   registryClicks: number;
@@ -56,6 +58,7 @@ export type AdminEventsData = {
     rsvps: number;
     shares: number;
     publicEventViews: number;
+    publicEventVisitors: number;
     linkClicks: number;
     registryClicks: number;
   };
@@ -74,6 +77,7 @@ type CategoryRow = {
   scans: string;
   shares: string | null;
   rsvps: string | null;
+  public_event_visitors: string | null;
   public_event_views: string | null;
   link_clicks: string | null;
   last_created_at: Date | string | null;
@@ -89,6 +93,7 @@ type EventRow = {
   created_at: Date | string | null;
   shares: string | null;
   rsvps: string | null;
+  public_event_visitors: string | null;
   public_event_views: string | null;
   link_clicks: string | null;
   registry_clicks: string | null;
@@ -127,6 +132,9 @@ export async function getAdminEventsData(
          select
            event_id,
            count(*) filter (where event_name = 'public_event_view')::integer as public_event_views,
+           count(distinct coalesce(viewer_user_id::text, visitor_id_hash, id::text))
+             filter (where event_name = 'public_event_view')::integer as public_event_visitors,
+           count(*) filter (where event_name = 'share_link_click')::integer as share_clicks,
            count(*) filter (where event_name in ('share_link_click', 'registry_click', 'event_link_click'))::integer as link_clicks,
            count(*) filter (where event_name = 'registry_click')::integer as registry_clicks
          from event_tracking_events
@@ -136,6 +144,10 @@ export async function getAdminEventsData(
   const publicEventViewsSelect = trackingEventsExist
     ? "coalesce(tracking_counts.public_event_views, 0)"
     : "0";
+  const publicEventVisitorsSelect = trackingEventsExist
+    ? "coalesce(tracking_counts.public_event_visitors, 0)"
+    : "0";
+  const shareClicksSelect = trackingEventsExist ? "coalesce(tracking_counts.share_clicks, 0)" : "0";
   const linkClicksSelect = trackingEventsExist ? "coalesce(tracking_counts.link_clicks, 0)" : "0";
   const registryClicksSelect = trackingEventsExist
     ? "coalesce(tracking_counts.registry_clicks, 0)"
@@ -162,10 +174,26 @@ export async function getAdminEventsData(
         : Promise.resolve({ rows: [{ n: "0" }] } as Awaited<
             ReturnType<typeof query<{ n: string }>>
           >),
-      query<{ n: string }>(`select count(*)::text as n from event_shares`),
+      trackingEventsExist
+        ? query<{ n: string }>(
+            `select (
+               (select count(*) from event_shares)
+               + (select count(*) from event_tracking_events where event_name = 'share_link_click')
+             )::text as n`,
+          )
+        : query<{ n: string }>(`select count(*)::text as n from event_shares`),
       trackingEventsExist
         ? query<{ n: string }>(
             `select count(*)::text as n
+             from event_tracking_events
+             where event_name = 'public_event_view'`,
+          )
+        : Promise.resolve({ rows: [{ n: "0" }] } as Awaited<
+            ReturnType<typeof query<{ n: string }>>
+          >),
+      trackingEventsExist
+        ? query<{ n: string }>(
+            `select count(distinct coalesce(viewer_user_id::text, visitor_id_hash, id::text))::text as n
              from event_tracking_events
              where event_name = 'public_event_view'`,
           )
@@ -201,8 +229,9 @@ export async function getAdminEventsData(
         coalesce(nullif(eh.data->>'category', ''), 'Uncategorized') as category,
         count(*)::text as events,
         coalesce(sum(case when ${ADMIN_SCAN_SQL} then 1 else 0 end), 0)::text as scans,
-        coalesce(sum(coalesce(share_counts.share_count, 0)), 0)::text as shares,
+        coalesce(sum(coalesce(share_counts.share_count, 0) + ${shareClicksSelect}), 0)::text as shares,
         coalesce(sum(${rsvpSelect}), 0)::text as rsvps,
+        coalesce(sum(${publicEventVisitorsSelect}), 0)::text as public_event_visitors,
         coalesce(sum(${publicEventViewsSelect}), 0)::text as public_event_views,
         coalesce(sum(${linkClicksSelect}), 0)::text as link_clicks,
         max(eh.created_at) as last_created_at
@@ -230,8 +259,9 @@ export async function getAdminEventsData(
             users.email as owner_email,
             nullif(eh.data->>'createdVia', '') as created_via,
             eh.created_at,
-            coalesce(share_counts.share_count, 0)::text as shares,
+            (coalesce(share_counts.share_count, 0) + ${shareClicksSelect})::text as shares,
             ${rsvpSelect}::text as rsvps,
+            ${publicEventVisitorsSelect}::text as public_event_visitors,
             ${publicEventViewsSelect}::text as public_event_views,
             ${linkClicksSelect}::text as link_clicks,
             ${registryClicksSelect}::text as registry_clicks
@@ -257,7 +287,7 @@ export async function getAdminEventsData(
             ete.target_domain,
             ete.target_label,
             count(*)::text as clicks,
-            count(distinct coalesce(ete.viewer_user_id::text, ete.visitor_id_hash))::text as unique_visitors,
+            count(distinct coalesce(ete.viewer_user_id::text, ete.visitor_id_hash, ete.id::text))::text as unique_visitors,
             max(ete.occurred_at) as last_clicked_at
           from event_tracking_events ete
           left join event_history eh on eh.id = ete.event_id
@@ -270,8 +300,18 @@ export async function getAdminEventsData(
       : Promise.resolve({ rows: [] as LinkClickRow[] }),
   ]);
 
-  const [total, publicEvents, events7, events30, rsvps, shares, publicEventViews, linkClicks, registryClicks] =
-    summary;
+  const [
+    total,
+    publicEvents,
+    events7,
+    events30,
+    rsvps,
+    shares,
+    publicEventViews,
+    publicEventVisitors,
+    linkClicks,
+    registryClicks,
+  ] = summary;
 
   return {
     summary: {
@@ -282,6 +322,7 @@ export async function getAdminEventsData(
       rsvps: toNumber(rsvps.rows[0]?.n),
       shares: toNumber(shares.rows[0]?.n),
       publicEventViews: toNumber(publicEventViews.rows[0]?.n),
+      publicEventVisitors: toNumber(publicEventVisitors.rows[0]?.n),
       linkClicks: toNumber(linkClicks.rows[0]?.n),
       registryClicks: toNumber(registryClicks.rows[0]?.n),
     },
@@ -292,6 +333,7 @@ export async function getAdminEventsData(
       scans: toNumber(row.scans),
       shares: toNumber(row.shares),
       rsvps: toNumber(row.rsvps),
+      publicEventVisitors: toNumber(row.public_event_visitors),
       publicEventViews: toNumber(row.public_event_views),
       linkClicks: toNumber(row.link_clicks),
       lastCreatedAt: toIsoString(row.last_created_at),
@@ -306,6 +348,7 @@ export async function getAdminEventsData(
       createdAt: toIsoString(row.created_at),
       shares: toNumber(row.shares),
       rsvps: toNumber(row.rsvps),
+      publicEventVisitors: toNumber(row.public_event_visitors),
       publicEventViews: toNumber(row.public_event_views),
       linkClicks: toNumber(row.link_clicks),
       registryClicks: toNumber(row.registry_clicks),

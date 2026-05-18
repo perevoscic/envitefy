@@ -415,6 +415,26 @@ function AgentDetailRow(props: { label: string; value: string }) {
   );
 }
 
+function OverviewDetailRow(props: { label: string; value: string; emphasized?: boolean }) {
+  if (!props.value) return null;
+  return (
+    <div className="border-b border-neutral-100 py-3 last:border-b-0 last:pb-0 first:pt-0">
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+        {props.label}
+      </p>
+      <p
+        className={
+          props.emphasized
+            ? "text-base font-semibold leading-snug text-neutral-950"
+            : "text-sm leading-relaxed text-neutral-900"
+        }
+      >
+        {props.value}
+      </p>
+    </div>
+  );
+}
+
 export default function StudioLiveCardActionSurface(props: StudioLiveCardActionSurfaceProps) {
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
@@ -428,10 +448,6 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const detailsDescription = readString(details?.detailsDescription);
   const secondaryDescription =
     readString(invitationData?.description) || readString(details?.message);
-  const shouldRenderSecondaryDescription =
-    shouldShowLiveCardDescriptionSection(readString(details?.message)) &&
-    !!secondaryDescription &&
-    normalizeComparableText(secondaryDescription) !== normalizeComparableText(detailsDescription);
   const rsvpContact = readString(details?.rsvpContact);
   const rsvpParsed = parseLiveCardRsvpContact(rsvpContact);
   const directRsvpHref = normalizeLiveCardActionHref(details?.rsvpUrl);
@@ -497,6 +513,24 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     () => buildLiveCardDetailsWelcomeMessage(details ?? undefined, props.title),
     [details, props.title],
   );
+  const overviewTitle =
+    readString(invitationData?.title) || readString(details?.eventTitle) || readString(props.title);
+  const overviewWhere = primaryLocationAction?.label || "";
+  const overviewWhen = formatCalendarSummary(
+    readString(details?.eventDate),
+    readString(details?.startTime),
+  );
+  const hasOverviewSummary = Boolean(
+    overviewTitle || detailsWelcome || overviewWhere || overviewWhen,
+  );
+  const shouldRenderDetailsDescription = Boolean(
+    detailsDescription && (props.showExtendedDetails || !hasOverviewSummary),
+  );
+  const shouldRenderSecondaryDescription =
+    shouldShowLiveCardDescriptionSection(readString(details?.message)) &&
+    !!secondaryDescription &&
+    normalizeComparableText(secondaryDescription) !== normalizeComparableText(detailsDescription) &&
+    (props.showExtendedDetails || (!hasOverviewSummary && !detailsDescription));
 
   useEffect(() => {
     if (props.activeTab === "none" || props.activeTab === "share") return;
@@ -1057,17 +1091,15 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
                 {props.activeTab === "details" ? (
                   <div className="max-h-[300px] space-y-4 overflow-y-auto pr-2">
-                    {detailsWelcome ? (
-                      <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-br from-purple-50 to-white p-4 shadow-sm">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C7B65]">
-                          Welcome
-                        </p>
-                        <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-900">
-                          {detailsWelcome}
-                        </p>
+                    {hasOverviewSummary ? (
+                      <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
+                        <OverviewDetailRow label="Title" value={overviewTitle} emphasized />
+                        <OverviewDetailRow label="Join" value={detailsWelcome || ""} />
+                        <OverviewDetailRow label="Where" value={overviewWhere} />
+                        <OverviewDetailRow label="When" value={overviewWhen} />
                       </div>
                     ) : null}
-                    {detailsDescription ? (
+                    {shouldRenderDetailsDescription ? (
                       <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                           {props.showExtendedDetails ? "Description" : "Event details"}
