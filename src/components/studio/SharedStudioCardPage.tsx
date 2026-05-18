@@ -134,7 +134,7 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
         type="button"
         onClick={handleClose}
         aria-label="Close preview"
-        className="fixed right-[max(0.75rem,env(safe-area-inset-right))] top-[max(calc(var(--app-mobile-topbar-offset,4rem)+0.75rem),calc(env(safe-area-inset-top)+0.75rem))] z-[7001] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/92 text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:left-[calc(20rem+1rem)] lg:right-auto lg:top-[max(1rem,env(safe-area-inset-top))]"
+        className="fixed right-[max(0.75rem,env(safe-area-inset-right))] top-[max(0.75rem,calc(env(safe-area-inset-top)+0.75rem))] z-[7001] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/92 text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:left-[calc(20rem+1rem)] lg:right-auto lg:top-[max(1rem,env(safe-area-inset-top))]"
       >
         <X size={18} aria-hidden="true" />
       </button>
