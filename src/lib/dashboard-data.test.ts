@@ -207,6 +207,25 @@ test("toDashboardEvent excludes studio-only cards from dashboard collections", (
   assert.equal(event, null);
 });
 
+test("toDashboardEvent keeps published product rows that were marked as studio", () => {
+  const event = toDashboardEvent({
+    id: "evt_studio_product",
+    title: "Published Live Card",
+    created_at: "2026-03-23T12:00:00.000Z",
+    data: {
+      startAt: "2026-06-02T18:00:00.000Z",
+      createdVia: "studio",
+      status: "published",
+      primaryOutput: "live_card",
+      ownerDefaultSurface: "card",
+      conciergeDraft: { creationSessionId: "session_123" },
+    },
+  });
+
+  assert.ok(event);
+  assert.equal(event.createdVia, "studio");
+});
+
 test("toDashboardEvent uses image attachment urls as dashboard covers", () => {
   const event = toDashboardEvent({
     id: "evt_3",

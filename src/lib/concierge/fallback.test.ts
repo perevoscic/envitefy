@@ -1397,7 +1397,7 @@ test("fallback fills birthday honoree from a name reply", () => {
 
   assert.equal(draft.honoreeName, "Nova");
   assert.equal(draft.ageOrMilestone, "6");
-  assert.equal(draft.previewCopy.body, "Join us for Nova as they turn 6.");
+  assert.equal(draft.previewCopy.body, "Join us to celebrate Nova turning 6.");
   assert.equal(draft.location, "Play Cafe, 123 Main St, Austin, TX");
   assert.doesNotMatch(draft.previewCopy.scheduleLine, /at 3:30 PM at 3:30 PM/);
 });

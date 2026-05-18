@@ -1834,7 +1834,7 @@ function OwnerDesignPanel({
               <input
                 value={form.designIdea}
                 onChange={(event) => updateField("designIdea", event.target.value)}
-                placeholder='e.g. Change the bottom sentence to "Join us for Lara as they turn 7."'
+                placeholder='e.g. Change the bottom sentence to "Join us to celebrate Lara turning 7."'
                 className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
               />
             </label>

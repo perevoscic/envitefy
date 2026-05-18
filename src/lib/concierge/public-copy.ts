@@ -6,6 +6,47 @@ function cleanString(value: unknown): string | null {
   return cleaned || null;
 }
 
+function normalizeAdditionalStopCopy(value: string): string {
+  return value.replace(
+    /\bAdditional event stops?:\s*([^.!?]+)([.!?]?)/gi,
+    (_match, rawStops: string, punctuation: string) => {
+      const stops = rawStops
+        .split(";")
+        .map((stop) => {
+          const cleaned = stop.trim();
+          const labeled = cleaned.match(/^([^:]{2,40}):\s*(.+)$/);
+          if (!labeled) return cleaned;
+          return `${labeled[1].trim()} at ${labeled[2].trim()}`;
+        })
+        .filter(Boolean);
+      if (!stops.length) return "";
+      return `${stops.join("; ")}${punctuation || "."}`;
+    },
+  );
+}
+
+function normalizeBirthdayFallbackCopy(value: string): string {
+  let next = value.replace(
+    /\bJoin us for ([A-Z][A-Za-z0-9' -]{1,60}?) as they turn (\d{1,3})\./g,
+    (_match, name: string, age: string) => `Join us to celebrate ${name.trim()} turning ${age}.`,
+  );
+  next = next.replace(
+    /\s+([A-Z][A-Za-z0-9' -]{1,60}?) is turning (\d{1,3})\.?$/g,
+    (match, name: string, age: string, offset: number, full: string) => {
+      const before = full.slice(0, offset).toLowerCase();
+      return before.includes(`${name.trim().toLowerCase()} turning ${age}`) ? "" : match;
+    },
+  );
+  return next;
+}
+
+function normalizeKnownGeneratedGuestCopy(value: string): string {
+  return normalizeBirthdayFallbackCopy(normalizeAdditionalStopCopy(value))
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function stripPromptPrefix(value: string): string {
   return value
     .replace(
@@ -31,6 +72,9 @@ export function looksLikeInternalCreativeDirection(value: unknown): boolean {
       cleaned,
     ) ||
     /\b(?:make|create|build|generate|draft|design)\s+(?:this|it|me|a|an|the)\b/i.test(cleaned) ||
+    /\b(?:change|replace|update|fix)\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+to\b/i.test(
+      cleaned,
+    ) ||
     /\b(?:live\s*card|event\s*page|digital\s+flyer|flyer\s+invitation|envitefy\s+product|guest-facing|call\s+to\s+action)\b/i.test(
       cleaned,
     ) ||
@@ -44,7 +88,7 @@ export function sanitizeGuestCopy(value: unknown): string | null {
   const cleaned = cleanString(value);
   if (!cleaned) return null;
   if (looksLikeInternalCreativeDirection(cleaned)) return null;
-  return cleaned;
+  return normalizeKnownGeneratedGuestCopy(cleaned) || null;
 }
 
 export function sanitizeGuestTitle(value: unknown): string | null {

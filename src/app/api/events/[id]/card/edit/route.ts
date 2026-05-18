@@ -109,6 +109,25 @@ function readAction(value: unknown): CardEditAction {
   return readString(value) === "save" ? "save" : "preview";
 }
 
+function isConciergeProductData(value: unknown): value is Record<string, unknown> {
+  if (!isRecord(value)) return false;
+  const createdVia = readString(value.createdVia).toLowerCase();
+  return createdVia === "concierge" || isRecord(value.conciergeDraft);
+}
+
+function buildCardEditHistoryDataPatch(
+  payloadData: Record<string, unknown>,
+  existingData: unknown,
+) {
+  if (!isConciergeProductData(existingData)) return payloadData;
+  const existingOwnership = readString(existingData.ownership);
+  return {
+    ...payloadData,
+    createdVia: "concierge",
+    ownership: existingOwnership || "owned",
+  };
+}
+
 function splitVenueAndAddress(venueName: string, location: string) {
   const venue = readString(venueName);
   const address = readString(location);
@@ -274,6 +293,7 @@ async function saveCardEdit(params: {
   id: string;
   item: MediaItem;
   userId: string;
+  existingData: unknown;
   fields: Record<string, unknown>;
   imageDataUrl: string;
 }) {
@@ -309,9 +329,10 @@ async function saveCardEdit(params: {
     status: "ready",
   };
   const payload = buildStudioPublishPayload(nextItem, imageUrl);
+  const dataPatch = buildCardEditHistoryDataPatch(payload.data, params.existingData);
 
   await updateEventHistoryTitle(params.id, payload.title);
-  const updatedRow = await updateEventHistoryDataMerge(params.id, payload.data);
+  const updatedRow = await updateEventHistoryDataMerge(params.id, dataPatch);
   invalidateHistoryAndDashboardForUser(params.userId);
   await invalidateSharedHistoryViewers(params.id);
 
@@ -360,7 +381,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       if (!imageDataUrl) {
         return NextResponse.json({ error: "No updated card preview to save." }, { status: 400 });
       }
-      return await saveCardEdit({ id, item, userId, fields, imageDataUrl });
+      return await saveCardEdit({
+        id,
+        item,
+        userId,
+        existingData: existing.data,
+        fields,
+        imageDataUrl,
+      });
     }
 
     return await previewCardEdit(item, fields);

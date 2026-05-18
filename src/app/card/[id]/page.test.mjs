@@ -50,6 +50,9 @@ test("shared card route can render concierge live-card events", () => {
   assert.match(pageSource, /publicEvent\?\.headline/);
   assert.match(pageSource, /function sanitizeInvitationData/);
   assert.match(pageSource, /sanitizeInvitationData\(studioCard\.invitationData\)/);
+  assert.match(pageSource, /shareNote: sanitizeGuestCopy\(interactiveMetadata\.shareNote\)/);
+  assert.match(pageSource, /themeStyle: sanitizeGuestCopy\(theme\.themeStyle\) \|\| ""/);
+  assert.match(pageSource, /specialInstructions: ""/);
   assert.match(
     pageSource,
     /heroTextMode: heroTextMode \|\| \(hasLiveCardOutput\(data\) \? "image" : undefined\)/,
@@ -102,6 +105,8 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   );
   assert.match(sharedPageSource, /Created by Envitefy Studio/);
   assert.match(sharedPageSource, /href="\/studio"/);
+  assert.match(sharedPageSource, /text: props\.title \|\| "Envitefy invitation"/);
+  assert.doesNotMatch(sharedPageSource, /interactiveMetadata\?\.shareNote \|\|/);
   assert.match(pageSource, /function sanitizeInternalReturnHref\(value: string\): string/);
   assert.match(pageSource, /readSearchParam\(awaitedSearchParams\.preview\) === "owner"/);
   assert.match(pageSource, /getServerSession\(authOptions as any\)/);

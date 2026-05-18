@@ -1916,9 +1916,22 @@ function _buildDashboardDataProjectionSql(
       else '[]'::jsonb
     end,
     'createdVia', ${dataSql}->'createdVia',
+    'primaryOutput', ${dataSql}->'primaryOutput',
+    'productType', ${dataSql}->'productType',
+    'publicRenderer', ${dataSql}->'publicRenderer',
+    'ownerDefaultSurface', ${dataSql}->'ownerDefaultSurface',
     'ownership', ${ownershipSql},
     'invitedFromScan', ${invitedFromScanSql},
     'shareStatus', ${shareStatusSql},
+    'conciergeDraft', case
+      when jsonb_typeof(${dataSql}->'conciergeDraft') = 'object' then
+        jsonb_build_object(
+          'creationSessionId', ${dataSql}#>'{conciergeDraft,creationSessionId}',
+          'primaryOutput', ${dataSql}#>'{conciergeDraft,primaryOutput}',
+          'productType', ${dataSql}#>'{conciergeDraft,productType}'
+        )
+      else null
+    end,
     'fieldsGuess', case
       when jsonb_typeof(${dataSql}->'fieldsGuess') = 'object' then
         jsonb_build_object(
@@ -1982,9 +1995,16 @@ type DashboardProjectionQueryRow = {
   rsvp_deadline: any;
   reminders: any;
   created_via: any;
+  primary_output: any;
+  product_type: any;
+  public_renderer: any;
+  owner_default_surface: any;
   ownership: any;
   invited_from_scan: any;
   share_status: any;
+  concierge_creation_session_id: any;
+  concierge_primary_output: any;
+  concierge_product_type: any;
   fields_guess_title: any;
   fields_guess_start: any;
   fields_guess_end: any;
@@ -2098,9 +2118,18 @@ function mapDashboardProjectionRowToEventHistoryRow(
       rsvpDeadline: row.rsvp_deadline ?? null,
       reminders: Array.isArray(row.reminders) ? row.reminders : [],
       createdVia: row.created_via ?? null,
+      primaryOutput: row.primary_output ?? null,
+      productType: row.product_type ?? null,
+      publicRenderer: row.public_renderer ?? null,
+      ownerDefaultSurface: row.owner_default_surface ?? null,
       ownership: row.ownership ?? null,
       invitedFromScan: row.invited_from_scan ?? null,
       shareStatus: row.share_status ?? null,
+      conciergeDraft: buildObjectOrNull([
+        ["creationSessionId", row.concierge_creation_session_id],
+        ["primaryOutput", row.concierge_primary_output],
+        ["productType", row.concierge_product_type],
+      ]),
       fieldsGuess: buildObjectOrNull([
         ["title", row.fields_guess_title],
         ["start", row.fields_guess_start],
@@ -2223,7 +2252,19 @@ function buildOwnedHistoryOwnershipTextSql(dataSql: string): string {
 }
 
 function buildOwnedHistoryStudioVisibilitySql(dataSql: string): string {
-  return `lower(coalesce(${dataSql}->>'createdVia', '')) <> 'studio'`;
+  return `(
+    lower(coalesce(${dataSql}->>'createdVia', '')) <> 'studio'
+    or (
+      lower(coalesce(${dataSql}->>'status', '')) = 'published'
+      and (
+        nullif(${dataSql}->>'primaryOutput', '') is not null
+        or nullif(${dataSql}->>'productType', '') is not null
+        or nullif(${dataSql}->>'publicRenderer', '') is not null
+        or nullif(${dataSql}->>'ownerDefaultSurface', '') is not null
+        or jsonb_typeof(${dataSql}->'conciergeDraft') = 'object'
+      )
+    )
+  )`;
 }
 
 async function listProjectedDashboardHistoryRowsByIds(
@@ -2295,9 +2336,16 @@ async function listProjectedDashboardHistoryRowsByIds(
          else '[]'::jsonb
        end as reminders,
        coalesce(eh.data, '{}'::jsonb)->'createdVia' as created_via,
+       coalesce(eh.data, '{}'::jsonb)->'primaryOutput' as primary_output,
+       coalesce(eh.data, '{}'::jsonb)->'productType' as product_type,
+       coalesce(eh.data, '{}'::jsonb)->'publicRenderer' as public_renderer,
+       coalesce(eh.data, '{}'::jsonb)->'ownerDefaultSurface' as owner_default_surface,
        to_jsonb(r.requested_ownership) as ownership,
        coalesce(eh.data, '{}'::jsonb)->'invitedFromScan' as invited_from_scan,
        to_jsonb(r.requested_share_status) as share_status,
+       coalesce(eh.data, '{}'::jsonb)#>'{conciergeDraft,creationSessionId}' as concierge_creation_session_id,
+       coalesce(eh.data, '{}'::jsonb)#>'{conciergeDraft,primaryOutput}' as concierge_primary_output,
+       coalesce(eh.data, '{}'::jsonb)#>'{conciergeDraft,productType}' as concierge_product_type,
        coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,title}' as fields_guess_title,
        coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,start}' as fields_guess_start,
        coalesce(eh.data, '{}'::jsonb)#>'{fieldsGuess,end}' as fields_guess_end,

@@ -37,4 +37,6 @@ test("native share data strips internal generation instructions from text payloa
     source,
     /\\bPreserve the full event flow in the generated live card and guest-facing details\\\.\?/,
   );
+  assert.match(source, /\\bAdditional event stops\?:\\s\*/);
+  assert.match(source, /change\|replace\|update\|fix/);
 });

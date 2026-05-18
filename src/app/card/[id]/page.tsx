@@ -257,6 +257,8 @@ function buildFallbackInvitationData(data: Record<string, unknown>) {
 
 function sanitizeInvitationData(value: Record<string, unknown>): Record<string, unknown> {
   const eventDetails = isRecord(value.eventDetails) ? value.eventDetails : {};
+  const interactiveMetadata = isRecord(value.interactiveMetadata) ? value.interactiveMetadata : {};
+  const theme = isRecord(value.theme) ? value.theme : {};
   const title = sanitizeGuestTitle(value.title) || sanitizeGuestTitle(eventDetails.eventTitle);
   const subtitle = sanitizeGuestCopy(value.subtitle) || sanitizeGuestCopy(eventDetails.message);
   const description =
@@ -266,11 +268,25 @@ function sanitizeInvitationData(value: Record<string, unknown>): Record<string, 
     title: title || "Invitation",
     subtitle: subtitle || "",
     description: description || "",
+    socialCaption: sanitizeGuestCopy(value.socialCaption) || description || title || "",
+    theme: {
+      ...theme,
+      themeStyle: sanitizeGuestCopy(theme.themeStyle) || "",
+    },
+    interactiveMetadata: {
+      ...interactiveMetadata,
+      rsvpMessage: sanitizeGuestCopy(interactiveMetadata.rsvpMessage) || "",
+      ctaLabel: sanitizeGuestCopy(interactiveMetadata.ctaLabel) || "",
+      shareNote: sanitizeGuestCopy(interactiveMetadata.shareNote) || description || title || "",
+    },
     eventDetails: {
       ...eventDetails,
       eventTitle: sanitizeGuestTitle(eventDetails.eventTitle) || title || "Invitation",
       detailsDescription: sanitizeGuestCopy(eventDetails.detailsDescription) || description || "",
       message: sanitizeGuestCopy(eventDetails.message) || subtitle || "",
+      specialInstructions: "",
+      theme: sanitizeGuestCopy(eventDetails.theme) || "",
+      visualPreferences: sanitizeGuestCopy(eventDetails.visualPreferences) || "",
     },
   };
 }

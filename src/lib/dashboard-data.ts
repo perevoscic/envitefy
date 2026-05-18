@@ -182,6 +182,20 @@ function normalizeCreatedVia(createdViaRaw: unknown): string | null {
   return normalized || null;
 }
 
+function isStudioOnlyCardRecord(data: any, createdVia: string | null): boolean {
+  if (createdVia !== "studio") return false;
+  const hasPublishedEventProduct =
+    normalizeStatus(data?.status) === "published" &&
+    hasNonEmptyString(
+      data?.primaryOutput,
+      data?.productType,
+      data?.publicRenderer,
+      data?.ownerDefaultSurface,
+      data?.conciergeDraft?.creationSessionId,
+    );
+  return !hasPublishedEventProduct;
+}
+
 function normalizeDashboardEventCategory(data: any, row: HistoryRow): string | null {
   const category = firstString(data?.category, row?.data?.category);
   const normalizedCategory = String(category || "")
@@ -351,7 +365,7 @@ export function getEventEndIso(data: any): string | null {
 export function toDashboardEvent(row: HistoryRow): DashboardEvent | null {
   const data = row?.data || {};
   const createdVia = normalizeCreatedVia(data?.createdVia);
-  if (createdVia === "studio") return null;
+  if (isStudioOnlyCardRecord(data, createdVia)) return null;
   const startAt = getEventStartIso(data);
   if (!startAt) return null;
 

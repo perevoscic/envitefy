@@ -9,6 +9,8 @@ const INTERNAL_INSTRUCTION_COPY_PATTERNS = [
   /\bPreserve the full event flow in the generated live card and guest-facing details\.?/gi,
   /\bGenerate website hero\/background artwork for the event page\.[^.]*\.?/gi,
   /\bDo not bake large title text[\s\S]*?in HTML\.?/gi,
+  /\bAdditional event stops?:\s*/gi,
+  /\b(?:change|replace|update|fix)\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+to\b[^.]*\.?/gi,
 ];
 
 function stripInternalInstructionCopy(value: string) {

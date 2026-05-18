@@ -55,6 +55,8 @@ const INTERNAL_INSTRUCTION_COPY_PATTERNS = [
   /\bPreserve the full event flow in the generated live card and guest-facing details\.?/gi,
   /\bGenerate website hero\/background artwork for the event page\.[^.]*\.?/gi,
   /\bDo not bake large title text[\s\S]*?in HTML\.?/gi,
+  /\bAdditional event stops?:\s*/gi,
+  /\b(?:change|replace|update|fix)\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+to\b[^.]*\.?/gi,
 ];
 
 export function stripStudioInternalInstructions(value: string | null | undefined) {
@@ -68,6 +70,52 @@ export function stripStudioInternalInstructions(value: string | null | undefined
     .replace(/(?:^|\s)[,.;:!?]+(?=\s|$)/g, " ")
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+function normalizeDescriptionComparable(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/\b(?:turning|turns|turned)\b/g, "turn")
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(" ")
+    .filter(
+      (token) =>
+        token &&
+        ![
+          "a",
+          "an",
+          "are",
+          "as",
+          "celebrate",
+          "for",
+          "is",
+          "join",
+          "the",
+          "they",
+          "to",
+          "us",
+        ].includes(token),
+    )
+    .join(" ");
+}
+
+function pushUniqueDescriptionPart(parts: string[], value: string | null | undefined) {
+  const next = stripStudioInternalInstructions(value);
+  if (!next) return;
+  const comparableNext = normalizeDescriptionComparable(next);
+  if (
+    parts.some((part) => {
+      const comparablePart = normalizeDescriptionComparable(part);
+      return (
+        comparablePart === comparableNext ||
+        comparablePart.includes(comparableNext) ||
+        comparableNext.includes(comparablePart)
+      );
+    })
+  ) {
+    return;
+  }
+  parts.push(next);
 }
 
 const DESIGN_IDEA_HELPER_TEXT_PATTERN =
@@ -505,14 +553,13 @@ function buildOpenHouseContextNotes(details: EventDetails): string[] {
 }
 
 export function buildDescription(details: EventDetails) {
-  const parts = [
-    stripStudioInternalInstructions(details.detailsDescription),
-    stripStudioInternalInstructions(details.message),
-    stripStudioInternalInstructions(details.activityNote),
-    stripStudioInternalInstructions(details.calloutText),
-    ...buildGameDayContextNotes(details),
-    ...buildOpenHouseContextNotes(details),
-  ].filter(Boolean);
+  const parts: string[] = [];
+  pushUniqueDescriptionPart(parts, details.detailsDescription);
+  pushUniqueDescriptionPart(parts, details.message);
+  pushUniqueDescriptionPart(parts, details.activityNote);
+  pushUniqueDescriptionPart(parts, details.calloutText);
+  for (const note of buildGameDayContextNotes(details)) pushUniqueDescriptionPart(parts, note);
+  for (const note of buildOpenHouseContextNotes(details)) pushUniqueDescriptionPart(parts, note);
   return stripStudioInternalInstructions(parts.join(" "));
 }
 

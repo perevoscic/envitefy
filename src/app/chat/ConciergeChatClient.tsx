@@ -1047,8 +1047,9 @@ function additionalLocationNarrative(draft: ConciergeEventDraft) {
       const label = stringValue(location.label);
       const timeText = stringValue(location.timeText);
       const description = stringValue(location.description);
+      const heading = label ? `${label} at ${place}` : place;
       return [
-        label ? `${label}: ${place}` : place,
+        heading,
         timeText ? `at ${timeText}` : null,
         description,
       ]
@@ -1057,7 +1058,7 @@ function additionalLocationNarrative(draft: ConciergeEventDraft) {
     })
     .filter((value): value is string => Boolean(value));
   if (!lines.length) return null;
-  return `Additional event stop${lines.length === 1 ? "" : "s"}: ${lines.join("; ")}.`;
+  return lines.length === 1 ? `${lines[0]}.` : `Event flow: ${lines.join("; ")}.`;
 }
 
 function outputLabelsFromUnknown(value: unknown, fallback: string[]) {

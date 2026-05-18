@@ -37,7 +37,10 @@ test("studio live-card builders preserve local invitation data and default gener
   );
   assert.match(source, /date: formatStudioPromptDate\(details\) \|\| null,/);
   assert.match(source, /export function refreshLiveCardInvitationData\(/);
-  assert.match(source, /const title = clean\(previous\?\.title\) \|\| getDisplayTitle\(details\);/);
+  assert.match(
+    source,
+    /const title = stripStudioInternalInstructions\(previous\?\.title\) \|\| getDisplayTitle\(details\);/,
+  );
   assert.match(
     source,
     /const scheduleLine = clean\(previous\?\.scheduleLine\) \|\| buildDeterministicScheduleLine\(details\);/,
@@ -63,7 +66,7 @@ test("studio live-card builders preserve local invitation data and default gener
   );
   assert.match(
     source,
-    /socialCaption:\s*liveCard\?\.interactiveMetadata\.shareNote\s*\|\|\s*invitation\?\.socialCaption\s*\|\|/s,
+    /socialCaption:\s*stripStudioInternalInstructions\(liveCard\?\.interactiveMetadata\.shareNote\)\s*\|\|\s*stripStudioInternalInstructions\(invitation\?\.socialCaption\)\s*\|\|/s,
   );
 });
 

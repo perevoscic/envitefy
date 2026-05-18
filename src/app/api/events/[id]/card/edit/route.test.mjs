@@ -92,8 +92,11 @@ test("card edit route saves selected preview data and invalidates owner and reci
   assert.match(source, /processBufferUpload\(\{/);
   assert.match(source, /const invitationData = buildUpdatedInvitationData\(nextDetails, item\)/);
   assert.match(source, /buildStudioPublishPayload\(nextItem, imageUrl\)/);
+  assert.match(source, /function buildCardEditHistoryDataPatch/);
+  assert.match(source, /createdVia: "concierge"/);
+  assert.match(source, /ownership: existingOwnership \|\| "owned"/);
   assert.match(source, /updateEventHistoryTitle\(params\.id, payload\.title\)/);
-  assert.match(source, /updateEventHistoryDataMerge\(params\.id, payload\.data\)/);
+  assert.match(source, /updateEventHistoryDataMerge\(params\.id, dataPatch\)/);
   assert.match(source, /invalidateHistoryAndDashboardForUser\(params\.userId\)/);
   assert.match(source, /async function invalidateSharedHistoryViewers\(eventId: string\)/);
   assert.match(source, /listShareRecipientUserIdsForEvent\(eventId\)/);
@@ -101,6 +104,6 @@ test("card edit route saves selected preview data and invalidates owner and reci
   assert.match(source, /if \(action === "save"\) \{/);
   assert.match(
     source,
-    /return await saveCardEdit\(\{ id, item, userId, fields, imageDataUrl \}\);/,
+    /return await saveCardEdit\(\{\s*id,\s*item,\s*userId,\s*existingData: existing\.data,\s*fields,\s*imageDataUrl,\s*\}\);/s,
   );
 });

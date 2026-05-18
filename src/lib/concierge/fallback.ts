@@ -1745,7 +1745,7 @@ function buildPreviewCopy(args: {
   const sportMatchup = isSportEventType(args.eventType) ? headline.split(/\s+vs\.?\s+/i) : [];
   const body =
     args.eventType === "birthday"
-      ? `Join us for ${args.honoreeName || "the guest of honor"}${args.ageOrMilestone ? ` as they turn ${args.ageOrMilestone}` : ""}.`
+      ? `Join us to celebrate ${args.honoreeName || "the guest of honor"}${args.ageOrMilestone ? ` turning ${args.ageOrMilestone}` : ""}.`
       : args.eventType === "wedding"
         ? `Join us to celebrate ${args.honoreeName || "the couple"}.`
         : sportMatchup.length === 2
