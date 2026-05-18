@@ -1,5 +1,5 @@
-import type { LiveCardRsvpChoice } from "@/lib/live-card-rsvp";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
+import type { LiveCardRsvpChoice } from "@/lib/live-card-rsvp";
 import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
 import {
   type StudioGenerateApiResponse,
@@ -48,6 +48,26 @@ export function formatDate(dateStr: string) {
 
 export function clean(value: string | null | undefined) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+const INTERNAL_INSTRUCTION_COPY_PATTERNS = [
+  /\bUse the [^.]{1,80}? Envitefy template family\.?/gi,
+  /\bPreserve the full event flow in the generated live card and guest-facing details\.?/gi,
+  /\bGenerate website hero\/background artwork for the event page\.[^.]*\.?/gi,
+  /\bDo not bake large title text[\s\S]*?in HTML\.?/gi,
+];
+
+export function stripStudioInternalInstructions(value: string | null | undefined) {
+  let stripped = clean(value);
+  if (!stripped) return "";
+  for (const pattern of INTERNAL_INSTRUCTION_COPY_PATTERNS) {
+    stripped = stripped.replace(pattern, " ");
+  }
+  return stripped
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/(?:^|\s)[,.;:!?]+(?=\s|$)/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 const DESIGN_IDEA_HELPER_TEXT_PATTERN =
@@ -486,15 +506,14 @@ function buildOpenHouseContextNotes(details: EventDetails): string[] {
 
 export function buildDescription(details: EventDetails) {
   const parts = [
-    clean(details.detailsDescription),
-    clean(details.message),
-    clean(details.specialInstructions),
-    clean(details.activityNote),
-    clean(details.calloutText),
+    stripStudioInternalInstructions(details.detailsDescription),
+    stripStudioInternalInstructions(details.message),
+    stripStudioInternalInstructions(details.activityNote),
+    stripStudioInternalInstructions(details.calloutText),
     ...buildGameDayContextNotes(details),
     ...buildOpenHouseContextNotes(details),
   ].filter(Boolean);
-  return parts.join(" ").trim();
+  return stripStudioInternalInstructions(parts.join(" "));
 }
 
 export function buildLinks(details: EventDetails) {
@@ -895,6 +914,7 @@ export function buildStudioRequest(
   const designIdea = sanitizeStudioDesignIdea(details.theme);
   const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);
   const baseDescription = buildDescription(details);
+  const internalInstructions = clean(details.specialInstructions);
   const sanitizedGuestImageUrls = hasStudioSubjectReferencePhotos(details)
     ? sanitizeGuestImageUrls(details.guestImageUrls)
     : [];
@@ -1021,6 +1041,7 @@ export function buildStudioRequest(
           visualDirection,
           categoryGuardrails,
           imageFinishPresetDirection,
+          internalInstructions,
           refinement,
           studioGuardrails,
         ]
@@ -1069,8 +1090,8 @@ export function buildInvitationData(
     title: liveCard?.title || invitation?.title,
     subtitle: invitation?.subtitle || buildStudioSubtitleFallback(details),
     description:
-      liveCard?.description ||
-      invitation?.openingLine ||
+      stripStudioInternalInstructions(liveCard?.description) ||
+      stripStudioInternalInstructions(invitation?.openingLine) ||
       buildDescription(details) ||
       "Celebrate together with a beautifully designed invitation.",
     scheduleLine: invitation?.scheduleLine,
@@ -1082,10 +1103,10 @@ export function buildInvitationData(
       details.calloutText,
     ),
     socialCaption:
-      liveCard?.interactiveMetadata.shareNote ||
-      invitation?.socialCaption ||
-      liveCard?.description ||
-      invitation?.openingLine,
+      stripStudioInternalInstructions(liveCard?.interactiveMetadata.shareNote) ||
+      stripStudioInternalInstructions(invitation?.socialCaption) ||
+      stripStudioInternalInstructions(liveCard?.description) ||
+      stripStudioInternalInstructions(invitation?.openingLine),
     heroTextMode: "image",
     theme: liveCard
       ? {
@@ -1112,11 +1133,12 @@ export function refreshLiveCardInvitationData(
 ): InvitationData {
   const fallbackTheme = getThemeColors(details);
   const description =
-    clean(previous?.description) ||
+    stripStudioInternalInstructions(previous?.description) ||
     buildDescription(details) ||
     "Celebrate together with a beautifully designed invitation.";
-  const title = clean(previous?.title) || getDisplayTitle(details);
-  const subtitle = clean(previous?.subtitle) || buildStudioSubtitleFallback(details);
+  const title = stripStudioInternalInstructions(previous?.title) || getDisplayTitle(details);
+  const subtitle =
+    stripStudioInternalInstructions(previous?.subtitle) || buildStudioSubtitleFallback(details);
   const scheduleLine = clean(previous?.scheduleLine) || buildDeterministicScheduleLine(details);
   const locationLine = clean(previous?.locationLine) || buildDeterministicLocationLine(details);
   const callToAction = resolveStudioCallToAction(
@@ -1125,6 +1147,7 @@ export function refreshLiveCardInvitationData(
     details.calloutText,
   );
   const socialCaption = clean(previous?.socialCaption) || description;
+  const publicSocialCaption = stripStudioInternalInstructions(socialCaption) || description;
   const heroTextMode =
     previous?.heroTextMode === "overlay" || previous?.heroTextMode === "image"
       ? previous.heroTextMode
@@ -1137,7 +1160,7 @@ export function refreshLiveCardInvitationData(
     scheduleLine,
     locationLine,
     callToAction,
-    socialCaption,
+    socialCaption: publicSocialCaption,
     heroTextMode,
     theme: {
       primaryColor: clean(previous?.theme?.primaryColor) || fallbackTheme.primaryColor,
@@ -1153,7 +1176,9 @@ export function refreshLiveCardInvitationData(
         previous?.interactiveMetadata?.ctaLabel,
         callToAction,
       ),
-      shareNote: clean(previous?.interactiveMetadata?.shareNote) || socialCaption,
+      shareNote:
+        stripStudioInternalInstructions(previous?.interactiveMetadata?.shareNote) ||
+        publicSocialCaption,
     },
     eventDetails: details,
   };

@@ -345,7 +345,7 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
 
   if (previous?.eventType === "birthday" || /\b(?:birthday|bday)\b/i.test(text)) {
     const birthdayForName = text.match(
-      /\b(?:birthday|bday)(?:\s+(?:live\s*card|event\s+page|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite|party|product))*\s+(?:for|fro)\s+([a-z][a-zA-Z'-]{1,30})(?=\s*(?:,|\d{1,3}\b|\b(?:turning|turns|is turning|on|at|for|fro)\b|$))/i,
+      /\b(?:birthday|bday)(?:\s+(?:live\s*card|event\s+page|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite|party|product))*\s+(?:for|fro)\s+([a-z][a-zA-Z'-]{1,30})(?=\s*(?:['’]s\b|,|\d{1,3}\b|\b(?:turning|turns|is turning|on|at|for|fro)\b|$))/i,
     );
     if (birthdayForName?.[1]) return titleCaseName(birthdayForName[1]);
 
@@ -365,7 +365,7 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
   }
 
   const possessive = text.match(
-    /\b([A-Z][a-zA-Z'-]{1,30})'s\s+(?:\d{1,3}(?:st|nd|rd|th)\s+)?(?:(?:baby|bridal)\s+)?(?:birthday|graduation|party|shower|gender\s+reveal|housewarming)\b/,
+    /\b([A-Z][a-zA-Z'-]{1,30})['’]s\s+(?:\d{1,3}(?:st|nd|rd|th)\s+)?(?:(?:baby|bridal)\s+)?(?:birthday|graduation|party|shower|gender\s+reveal|housewarming)\b/,
   );
   if (possessive?.[1]) return possessive[1];
 
@@ -433,6 +433,9 @@ function detectHonoreeFollowUp(text: string, previous?: ConciergeEventDraft | nu
 }
 
 function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
+  const labeledTheme = findLabeledDetailValue(text, ["theme"]);
+  if (labeledTheme && !isInstructionFragment(labeledTheme)) return labeledTheme;
+
   const themeAndTone = text.match(/\btheme\s+and\s+tone\s*:\s*([^.\n;]{2,160})/i);
   const themeAndToneValue = cleanString(themeAndTone?.[1]?.replace(/[.!?]+$/g, ""));
   if (themeAndToneValue && !isInstructionFragment(themeAndToneValue)) {
@@ -1195,10 +1198,11 @@ function stripLeadingTimeFromLocation(value: string | null) {
 type LabeledInviteDetails = {
   whenText: string | null;
   location: string | null;
+  honoreeName: string | null;
 };
 
 const DETAIL_LABEL_PATTERN =
-  "movie|when|date|time|where|venue|location|place|address|after\\s+the\\s+movie|after\\s+movie|after|style|layout|theme|scene|invitation\\s+details";
+  "movie|when|date|time|where|venue|location|place|address|for|honoree|birthday\\s+for|name|after\\s+the\\s+movie|after\\s+movie|after|style|layout|theme|scene|invitation\\s+details";
 
 function cleanLabeledDetailValue(value: unknown) {
   const cleaned = cleanString(value);
@@ -1232,6 +1236,9 @@ function detectLabeledInviteDetails(text: string): LabeledInviteDetails {
   const date = findLabeledDetailValue(text, ["date"]);
   const time = findLabeledDetailValue(text, ["time"]);
   const location = findLabeledDetailValue(text, ["where", "venue", "location", "place", "address"]);
+  const honoreeName = cleanHonoreePhrase(
+    findLabeledDetailValue(text, ["for", "honoree", "birthday\\s+for", "name"]),
+  );
   const whenText =
     when ||
     (date && time ? `${date} at ${time}` : null) ||
@@ -1242,6 +1249,7 @@ function detectLabeledInviteDetails(text: string): LabeledInviteDetails {
   return {
     whenText,
     location,
+    honoreeName,
   };
 }
 
@@ -2063,6 +2071,7 @@ export function fallbackExtractConciergeDraft(args: {
   const birthdayTemplateHint = recordValue(args.ocrContext?.birthdayTemplateHint);
   const honoreeName =
     detectHonoreeName(text, previous) ||
+    labeledDetails.honoreeName ||
     detectHonoreeFollowUp(message, previous) ||
     firstString(fieldsGuess.name, fieldsGuess.honoreeName, birthdayTemplateHint.honoreeName);
   const ageOrMilestone =

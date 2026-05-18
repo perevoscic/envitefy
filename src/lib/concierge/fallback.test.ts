@@ -931,6 +931,34 @@ Style: whimsical illustrated invitation, pastel colors with pops of pink, lavend
   assert.notEqual(buildAssistantMessage(draft), "Where should guests go?");
 });
 
+test("birthday invitation prompt accepts curly possessives and labeled for field", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: `Create a cute, magical pool party birthday invitation for Lara’s birthday.
+
+Theme: pool party, summer fun, floaties, sunshine, cute animals.
+
+Invitation details:
+
+When: Friday, May 22nd at 3:00 PM
+Where: Nana’s and Nanu’s Pool
+Theme: Pool Party
+For: Lara
+
+Style: whimsical illustrated invitation, pastel and bright summer colors.`,
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.equal(draft.eventType, "birthday");
+  assert.equal(draft.honoreeName, "Lara");
+  assert.equal(draft.dateText, "Friday, May 22nd at 3:00 PM");
+  assert.equal(draft.timeText, "3:00 PM");
+  assert.equal(draft.location, "Nana’s and Nanu’s Pool");
+  assert.equal(draft.theme, "pool party, summer fun, floaties, sunshine, cute animals");
+  assert.doesNotMatch(draft.missingFields.join(","), /honoreeName/);
+  assert.equal(draft.currentQuestion, "ageOrMilestone");
+  assert.doesNotMatch(message, /Who is the birthday for/i);
+});
+
 test("short birthday follow-ups fill name and age slots", () => {
   const first = fallbackExtractConciergeDraft({
     message: "my daughter's birthday Saturday at 4 at home",

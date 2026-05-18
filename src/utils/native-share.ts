@@ -4,26 +4,37 @@ type NativeShareInput = {
   url?: string | null;
 };
 
+const INTERNAL_INSTRUCTION_COPY_PATTERNS = [
+  /\bUse the [^.]{1,80}? Envitefy template family\.?/gi,
+  /\bPreserve the full event flow in the generated live card and guest-facing details\.?/gi,
+  /\bGenerate website hero\/background artwork for the event page\.[^.]*\.?/gi,
+  /\bDo not bake large title text[\s\S]*?in HTML\.?/gi,
+];
+
+function stripInternalInstructionCopy(value: string) {
+  let stripped = value;
+  for (const pattern of INTERNAL_INSTRUCTION_COPY_PATTERNS) {
+    stripped = stripped.replace(pattern, " ");
+  }
+  return stripped
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/(?:^|\s)[,.;:!?]+(?=\s|$)/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function normalizeShareValue(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
+  const trimmed = stripInternalInstructionCopy(value);
   return trimmed || undefined;
 }
 
-function pushUniqueCandidate(
-  candidates: ShareData[],
-  seen: Set<string>,
-  candidate: ShareData,
-) {
+function pushUniqueCandidate(candidates: ShareData[], seen: Set<string>, candidate: ShareData) {
   if (!candidate.title && !candidate.text && !candidate.url) {
     return;
   }
 
-  const key = JSON.stringify([
-    candidate.title || "",
-    candidate.text || "",
-    candidate.url || "",
-  ]);
+  const key = JSON.stringify([candidate.title || "", candidate.text || "", candidate.url || ""]);
   if (seen.has(key)) {
     return;
   }

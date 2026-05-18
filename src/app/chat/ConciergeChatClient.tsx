@@ -1241,6 +1241,27 @@ function buildGeneratedDraftImageEditPrompt(args: {
   return instructions.join(" ");
 }
 
+function isGeneratedDraftFullRedesignRequest(message: string): boolean {
+  const text = stringValue(message).toLowerCase();
+  if (!text) return false;
+  if (/\b(?:keep|preserve|reuse|use)\s+(?:the\s+)?same\s+image\b/.test(text)) return false;
+
+  return [
+    /\b(?:new|nme|fresh|different|another|alternate|alternative)\s+(?:design|image|invite|invitation|card|look|layout|style|version)\b/,
+    /\b(?:completely|totally|entirely|brand)\s+(?:new|different)\b/,
+    /\b(?:from scratch|start over|start again|redo|redesign|re[-\s]?design|regenerate|re[-\s]?generate|remake|rebuild)\b/,
+    /\b(?:nothing|nothin|not)\s+(?:the\s+)?same\b/,
+    /\bsame\s+image\b/,
+  ].some((pattern) => pattern.test(text));
+}
+
+function buildGeneratedDraftFullRedesignPrompt(userMessage: string): string {
+  const requestedEdit = stringValue(userMessage);
+  const instruction =
+    "Create a completely new invitation design from scratch. Do not use, preserve, trace, copy, or edit the previous generated image, artwork, characters, props, layout, colors, typography, lighting, framing, or composition. Keep only the event facts and guest-facing intent.";
+  return requestedEdit ? `${instruction} User requested: ${requestedEdit}.` : instruction;
+}
+
 function historyInviteImageFromEventData(data: Record<string, unknown>): string | null {
   const studioCard = recordValue(data.studioCard);
   return firstStringValue(
@@ -1962,11 +1983,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     const trimmed = message.trim();
     if (!trimmed || !draft) return;
 
+    const fullRedesign = isGeneratedDraftFullRedesignRequest(trimmed);
     const userMessage = newMessage("user", trimmed);
     setError(null);
     setFailedRequest(null);
     setIsSending(true);
-    setPhase("editing_card");
+    setPhase(fullRedesign ? "generating_card" : "editing_card");
     setBuildProgress(8);
     setMessages((prev) => [...prev, userMessage]);
     try {
@@ -1999,14 +2021,17 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       }
 
       const updatedDraft = normalizeDraftProductOutputs(json.draft);
+      const existingDraftImageUrl = draftStudioInvite?.imageUrl || generatedInviteImageUrl;
       const studioInvite = await generateStudioInviteForDraft(updatedDraft, {
-        editPrompt: buildGeneratedDraftImageEditPrompt({
-          userMessage: trimmed,
-          previousDraft: draft,
-          nextDraft: updatedDraft,
-        }),
-        sourceImageUrl: draftStudioInvite?.imageUrl || generatedInviteImageUrl,
-        previousDraft: draft,
+        editPrompt: fullRedesign
+          ? buildGeneratedDraftFullRedesignPrompt(trimmed)
+          : buildGeneratedDraftImageEditPrompt({
+              userMessage: trimmed,
+              previousDraft: draft,
+              nextDraft: updatedDraft,
+            }),
+        sourceImageUrl: fullRedesign ? null : existingDraftImageUrl,
+        previousDraft: fullRedesign ? null : draft,
       });
       await preloadGeneratedPreviewImage(studioInvite.imageUrl);
       setDraft(updatedDraft);
@@ -2023,7 +2048,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         ...prev,
         newMessage(
           "assistant",
-          "I updated that part of the draft preview. Keep chatting or save/publish when it looks right.",
+          fullRedesign
+            ? "I generated a completely new draft design from scratch. Review it in the preview, then keep chatting or save/publish when it looks right."
+            : "I updated that part of the draft preview. Keep chatting or save/publish when it looks right.",
         ),
       ]);
       notifyCreationThreadsChanged();

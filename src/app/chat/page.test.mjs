@@ -385,10 +385,19 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /async function publishGeneratedDraft\(\)/);
   assert.match(client, /action: "save"[\s\S]{0,260}studioInvite: draftStudioInvite/);
   assert.match(client, /async function sendGeneratedDraftEdit\(message: string\)/);
+  assert.match(client, /function isGeneratedDraftFullRedesignRequest\(message: string\)/);
+  assert.match(client, /function buildGeneratedDraftFullRedesignPrompt\(userMessage: string\)/);
+  assert.match(client, /const fullRedesign = isGeneratedDraftFullRedesignRequest\(trimmed\);/);
   assert.match(
     client,
-    /sourceImageUrl: draftStudioInvite\?\.imageUrl \|\| generatedInviteImageUrl/,
+    /const existingDraftImageUrl = draftStudioInvite\?\.imageUrl \|\| generatedInviteImageUrl;/,
   );
+  assert.match(
+    client,
+    /sourceImageUrl: fullRedesign \? null : existingDraftImageUrl/,
+  );
+  assert.match(client, /previousDraft: fullRedesign \? null : draft/);
+  assert.match(client, /I generated a completely new draft design from scratch/);
   assert.match(client, /sourceImageUrl \? "image" : "both"/);
   assert.match(client, /previousDraft: draft/);
   assert.match(client, /function buildGeneratedDraftImageEditPrompt/);

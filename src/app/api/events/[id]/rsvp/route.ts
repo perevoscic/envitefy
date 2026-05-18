@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
-import { query, getUserIdByEmail } from "@/lib/db";
+import { getUserIdByEmail, query } from "@/lib/db";
+import { sendRsvpConfirmationEmail } from "@/lib/email";
 import {
   createServerTimingTracker,
   isTimingRequested,
@@ -33,6 +35,12 @@ type RsvpTarget = {
   userId?: unknown;
 };
 
+type EventDetailsRow = {
+  title: string;
+  data: Record<string, unknown> | null;
+  public_slug: string | null;
+};
+
 let rsvpTableReady: boolean | null = null;
 let rsvpTableCheckInflight: Promise<boolean> | null = null;
 
@@ -57,6 +65,116 @@ function isRsvpResponse(value: string | null): value is "yes" | "no" | "maybe" {
   return value === "yes" || value === "no" || value === "maybe";
 }
 
+function firstString(...values: Array<unknown>): string | null {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (trimmed) return trimmed;
+  }
+  return null;
+}
+
+function nestedRecord(
+  record: Record<string, unknown> | null,
+  key: string,
+): Record<string, unknown> | null {
+  if (!record) return null;
+  return asRecord(record[key]);
+}
+
+function getEventStartRaw(data: Record<string, unknown> | null): string | null {
+  const fieldsGuess = nestedRecord(data, "fieldsGuess");
+  const event = nestedRecord(data, "event");
+  return firstString(data?.startAt, data?.startISO, data?.start, fieldsGuess?.start, event?.start);
+}
+
+function getEventEndRaw(data: Record<string, unknown> | null): string | null {
+  const fieldsGuess = nestedRecord(data, "fieldsGuess");
+  const event = nestedRecord(data, "event");
+  return firstString(data?.endAt, data?.endISO, data?.end, fieldsGuess?.end, event?.end);
+}
+
+function getEventTimezone(data: Record<string, unknown> | null): string | null {
+  const fieldsGuess = nestedRecord(data, "fieldsGuess");
+  const event = nestedRecord(data, "event");
+  return firstString(data?.timezone, data?.tz, fieldsGuess?.timezone, event?.timezone);
+}
+
+function parseDate(raw: string | null): Date | null {
+  if (!raw) return null;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function buildDateLabel(data: Record<string, unknown> | null): string | null {
+  const start = parseDate(getEventStartRaw(data));
+  if (!start) return null;
+  const end = parseDate(getEventEndRaw(data));
+  const timeZone = getEventTimezone(data) || undefined;
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    ...(timeZone ? { timeZone } : {}),
+  };
+
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", options);
+    const startLabel = formatter.format(start);
+    if (!end || end.getTime() <= start.getTime()) return startLabel;
+    return `${startLabel} - ${formatter.format(end)}`;
+  } catch {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    const startLabel = formatter.format(start);
+    if (!end || end.getTime() <= start.getTime()) return startLabel;
+    return `${startLabel} - ${formatter.format(end)}`;
+  }
+}
+
+function buildLocationLabel(data: Record<string, unknown> | null): string | null {
+  const fieldsGuess = nestedRecord(data, "fieldsGuess");
+  const event = nestedRecord(data, "event");
+  const venue = firstString(data?.venue, data?.placeName, event?.venue, event?.placeName);
+  const location = firstString(
+    data?.locationText,
+    data?.locationLabel,
+    data?.location,
+    data?.address,
+    fieldsGuess?.location,
+    event?.location,
+    event?.address,
+  );
+  if (venue && location && !location.toLowerCase().includes(venue.toLowerCase())) {
+    return `${venue}, ${location}`;
+  }
+  return location || venue;
+}
+
+function buildEventTitle(row: EventDetailsRow): string {
+  const data = row.data;
+  const fieldsGuess = nestedRecord(data, "fieldsGuess");
+  const event = nestedRecord(data, "event");
+  return firstString(row.title, data?.title, fieldsGuess?.title, event?.title) || "Event";
+}
+
+function maskEmailForLog(email: string): string {
+  if (!email.includes("@")) return email;
+  const [user, domain] = email.split("@");
+  if (!domain) return email;
+  const prefix = user?.slice(0, 2) || "*";
+  return `${prefix}***@${domain}`;
+}
+
 async function ensureRsvpTableReady() {
   if (rsvpTableReady === true) return true;
   if (rsvpTableCheckInflight) return rsvpTableCheckInflight;
@@ -64,7 +182,7 @@ async function ensureRsvpTableReady() {
   rsvpTableCheckInflight = (async () => {
     try {
       const res = await query<{ exists: string | null }>(
-        `select to_regclass('public.rsvp_responses')::text as exists`
+        `select to_regclass('public.rsvp_responses')::text as exists`,
       );
       const ready = Boolean(res.rows[0]?.exists);
       rsvpTableReady = ready;
@@ -83,7 +201,7 @@ async function ensureRsvpTableReady() {
 function jsonWithTiming(
   timing: ServerTimingTracker,
   payload: Record<string, unknown>,
-  init?: ResponseInit
+  init?: ResponseInit,
 ) {
   const body = timing.enabled
     ? {
@@ -99,19 +217,12 @@ function jsonWithTiming(
 async function assertRsvpBackendReady(timing: ServerTimingTracker) {
   const ready = await timing.time("table_check", () => ensureRsvpTableReady());
   if (!ready) {
-    return jsonWithTiming(
-      timing,
-      { error: "RSVP backend is not initialized" },
-      { status: 503 }
-    );
+    return jsonWithTiming(timing, { error: "RSVP backend is not initialized" }, { status: 503 });
   }
   return null;
 }
 
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const timing = createServerTimingTracker(isTimingRequested(req));
   try {
     const backendError = await assertRsvpBackendReady(timing);
@@ -120,11 +231,18 @@ export async function POST(
     const { id: eventId } = await timing.time("params", () => params);
 
     if (!eventId) {
-      return jsonWithTiming(
-        timing,
-        { error: "Event ID required" },
-        { status: 400 }
-      );
+      return jsonWithTiming(timing, { error: "Event ID required" }, { status: 400 });
+    }
+
+    const eventRes = await timing.time("event_details", () =>
+      query<EventDetailsRow>(
+        `SELECT title, data, public_slug FROM event_history WHERE id = $1 LIMIT 1`,
+        [eventId],
+      ),
+    );
+    const eventRow = eventRes.rows[0] || null;
+    if (!eventRow) {
+      return jsonWithTiming(timing, { error: "Event not found" }, { status: 404 });
     }
 
     const rawBody = await timing.time("body_parse", () => req.json());
@@ -135,7 +253,7 @@ export async function POST(
       return jsonWithTiming(
         timing,
         { error: "Valid response required (yes/no/maybe)" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -145,29 +263,22 @@ export async function POST(
     const lastName = asTrimmedString(body.lastName);
 
     const finalName =
-      firstName && lastName
-        ? `${firstName.trim()} ${lastName.trim()}`
-        : name || null;
+      firstName && lastName ? `${firstName.trim()} ${lastName.trim()}` : name || null;
 
     const session = (await timing.time("session", () =>
-      getServerSession(authOptions))) as SessionLike;
+      getServerSession(authOptions),
+    )) as SessionLike;
     const sessionUser = session?.user || null;
 
     const userId = sessionUser?.email
-      ? await timing.time("user_lookup", () =>
-          getUserIdByEmail(String(sessionUser.email))
-        )
+      ? await timing.time("user_lookup", () => getUserIdByEmail(String(sessionUser.email)))
       : null;
 
     const rsvpEmail = email || sessionUser?.email || null;
     const rsvpName = finalName || sessionUser?.name || null;
 
     if (!rsvpName || !rsvpEmail) {
-      return jsonWithTiming(
-        timing,
-        { error: "Name and email required for RSVP" },
-        { status: 400 }
-      );
+      return jsonWithTiming(timing, { error: "Name and email required for RSVP" }, { status: 400 });
     }
 
     if (userId) {
@@ -181,18 +292,8 @@ export async function POST(
         first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, phone = EXCLUDED.phone,
         message = EXCLUDED.message, updated_at = now()
       `,
-          [
-            eventId,
-            userId,
-            rsvpEmail,
-            rsvpName,
-            firstName,
-            lastName,
-            null,
-            null,
-            responseValue,
-          ]
-        )
+          [eventId, userId, rsvpEmail, rsvpName, firstName, lastName, null, null, responseValue],
+        ),
       );
     } else {
       await timing.time("upsert_email", () =>
@@ -205,19 +306,38 @@ export async function POST(
         first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, phone = EXCLUDED.phone,
         message = EXCLUDED.message, updated_at = now()
       `,
-          [
-            eventId,
-            rsvpEmail,
-            rsvpName,
-            firstName,
-            lastName,
-            null,
-            null,
-            responseValue,
-          ]
-        )
+          [eventId, rsvpEmail, rsvpName, firstName, lastName, null, null, responseValue],
+        ),
       );
     }
+
+    const publicSlug = firstString(eventRow.public_slug, eventRow.data?.publicSlug);
+    const eventUrl = await timing.time("event_url", () =>
+      absoluteUrl(`/event/${encodeURIComponent(publicSlug || eventId)}`),
+    );
+    const eventTitle = buildEventTitle(eventRow);
+    const dateLabel = buildDateLabel(eventRow.data);
+    const locationLabel = buildLocationLabel(eventRow.data);
+
+    void (async () => {
+      try {
+        await sendRsvpConfirmationEmail({
+          toEmail: rsvpEmail,
+          guestName: rsvpName,
+          eventTitle,
+          eventUrl,
+          response: responseValue,
+          dateLabel,
+          locationLabel,
+        });
+      } catch (err) {
+        console.error("[rsvp] confirmation email failed", {
+          to: maskEmailForLog(rsvpEmail),
+          eventId,
+          error: errorMessage(err, "Failed to send RSVP confirmation email"),
+        });
+      }
+    })();
 
     return jsonWithTiming(timing, { ok: true });
   } catch (err: unknown) {
@@ -225,15 +345,12 @@ export async function POST(
     return jsonWithTiming(
       timing,
       { error: errorMessage(err, "Failed to submit RSVP") },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const timing = createServerTimingTracker(isTimingRequested(req));
   try {
     const backendError = await assertRsvpBackendReady(timing);
@@ -246,8 +363,8 @@ export async function GET(
         `
       SELECT response, COUNT(*) as count FROM rsvp_responses WHERE event_id = $1 GROUP BY response
     `,
-        [eventId]
-      )
+        [eventId],
+      ),
     );
 
     const stats: Record<string, number> = { yes: 0, no: 0, maybe: 0 };
@@ -257,7 +374,7 @@ export async function GET(
     }
 
     const eventRes = await timing.time("event_query", () =>
-      query(`SELECT data FROM event_history WHERE id = $1 LIMIT 1`, [eventId])
+      query(`SELECT data FROM event_history WHERE id = $1 LIMIT 1`, [eventId]),
     );
     const eventData = asRecord(eventRes.rows[0]?.data);
     const numberOfGuests = eventData ? Number(eventData.numberOfGuests) || 0 : 0;
@@ -266,7 +383,8 @@ export async function GET(
     const remaining = Math.max(0, numberOfGuests - totalFilled);
 
     const session = (await timing.time("session", () =>
-      getServerSession(authOptions))) as SessionLike;
+      getServerSession(authOptions),
+    )) as SessionLike;
     const sessionUserEmail = session?.user?.email || null;
     let isOwner = false;
 
@@ -276,8 +394,8 @@ export async function GET(
           `
         SELECT u.email FROM event_history e JOIN users u ON e.user_id = u.id WHERE e.id = $1 LIMIT 1
       `,
-          [eventId]
-        )
+          [eventId],
+        ),
       );
       isOwner = ownerCheck.rows[0]?.email === sessionUserEmail;
     }
@@ -298,8 +416,8 @@ export async function GET(
       SELECT name, first_name as "firstName", last_name as "lastName", phone, message, email, response, created_at, updated_at
       FROM rsvp_responses WHERE event_id = $1 ORDER BY created_at DESC
     `,
-        [eventId]
-      )
+        [eventId],
+      ),
     );
 
     return jsonWithTiming(timing, {
@@ -316,15 +434,12 @@ export async function GET(
     return jsonWithTiming(
       timing,
       { error: errorMessage(err, "Failed to fetch RSVP") },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const timing = createServerTimingTracker(isTimingRequested(req));
   try {
     const backendError = await assertRsvpBackendReady(timing);
@@ -332,22 +447,19 @@ export async function PATCH(
 
     const { id: eventId } = await timing.time("params", () => params);
     const session = (await timing.time("session", () =>
-      getServerSession(authOptions))) as SessionLike;
+      getServerSession(authOptions),
+    )) as SessionLike;
     const sessionUserEmail = session?.user?.email || null;
     if (!sessionUserEmail)
-      return jsonWithTiming(
-        timing,
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return jsonWithTiming(timing, { error: "Unauthorized" }, { status: 401 });
 
     const ownerCheck = await timing.time("owner_check", () =>
       query(
         `
       SELECT u.id FROM event_history e JOIN users u ON e.user_id = u.id WHERE e.id = $1 AND u.email = $2 LIMIT 1
     `,
-        [eventId, sessionUserEmail]
-      )
+        [eventId, sessionUserEmail],
+      ),
     );
     if (ownerCheck.rows.length === 0)
       return jsonWithTiming(timing, { error: "Forbidden" }, { status: 403 });
@@ -356,11 +468,7 @@ export async function PATCH(
     const body = (asRecord(rawBody) || {}) as RsvpMutationBody;
     const responseValue = asTrimmedString(body.response);
     if (!isRsvpResponse(responseValue)) {
-      return jsonWithTiming(
-        timing,
-        { error: "Valid response required" },
-        { status: 400 }
-      );
+      return jsonWithTiming(timing, { error: "Valid response required" }, { status: 400 });
     }
 
     const target = (asRecord(body.target) || {}) as RsvpTarget;
@@ -372,39 +480,32 @@ export async function PATCH(
       await timing.time("update_user", () =>
         query(
           `UPDATE rsvp_responses SET response = $1, updated_at = now() WHERE event_id = $2 AND user_id = $3`,
-          [responseValue, eventId, tUserId]
-        )
+          [responseValue, eventId, tUserId],
+        ),
       );
     } else if (tEmail) {
       await timing.time("update_email", () =>
         query(
           `UPDATE rsvp_responses SET response = $1, updated_at = now() WHERE event_id = $2 AND lower(email) = lower($3)`,
-          [responseValue, eventId, tEmail]
-        )
+          [responseValue, eventId, tEmail],
+        ),
       );
     } else if (tName) {
       await timing.time("update_name", () =>
         query(
           `UPDATE rsvp_responses SET response = $1, updated_at = now() WHERE event_id = $2 AND email IS NULL AND user_id IS NULL AND lower(name) = lower($3)`,
-          [responseValue, eventId, tName]
-        )
+          [responseValue, eventId, tName],
+        ),
       );
     }
 
     return jsonWithTiming(timing, { ok: true });
   } catch (err: unknown) {
-    return jsonWithTiming(
-      timing,
-      { error: errorMessage(err, "Failed update") },
-      { status: 500 }
-    );
+    return jsonWithTiming(timing, { error: errorMessage(err, "Failed update") }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const timing = createServerTimingTracker(isTimingRequested(req));
   try {
     const backendError = await assertRsvpBackendReady(timing);
@@ -412,29 +513,24 @@ export async function DELETE(
 
     const { id: eventId } = await timing.time("params", () => params);
     const session = (await timing.time("session", () =>
-      getServerSession(authOptions))) as SessionLike;
+      getServerSession(authOptions),
+    )) as SessionLike;
     const sessionUserEmail = session?.user?.email || null;
     if (!sessionUserEmail)
-      return jsonWithTiming(
-        timing,
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return jsonWithTiming(timing, { error: "Unauthorized" }, { status: 401 });
 
     const ownerCheck = await timing.time("owner_check", () =>
       query(
         `
       SELECT u.id FROM event_history e JOIN users u ON e.user_id = u.id WHERE e.id = $1 AND u.email = $2 LIMIT 1
     `,
-        [eventId, sessionUserEmail]
-      )
+        [eventId, sessionUserEmail],
+      ),
     );
     if (ownerCheck.rows.length === 0)
       return jsonWithTiming(timing, { error: "Forbidden" }, { status: 403 });
 
-    const rawBody = await timing.time("body_parse", () =>
-      req.json().catch(() => ({}))
-    );
+    const rawBody = await timing.time("body_parse", () => req.json().catch(() => ({})));
     const body = (asRecord(rawBody) || {}) as RsvpMutationBody;
     const target = (asRecord(body.target) || {}) as RsvpTarget;
     const tEmail = asTrimmedString(target.email);
@@ -447,33 +543,29 @@ export async function DELETE(
         query(`DELETE FROM rsvp_responses WHERE event_id = $1 AND user_id = $2`, [
           eventId,
           tUserId,
-        ])
+        ]),
       );
       resultCount = res.rowCount || 0;
     } else if (tEmail) {
       const res = await timing.time("delete_email", () =>
-        query(
-          `DELETE FROM rsvp_responses WHERE event_id = $1 AND lower(email) = lower($2)`,
-          [eventId, tEmail]
-        )
+        query(`DELETE FROM rsvp_responses WHERE event_id = $1 AND lower(email) = lower($2)`, [
+          eventId,
+          tEmail,
+        ]),
       );
       resultCount = res.rowCount || 0;
     } else if (tName) {
       const res = await timing.time("delete_name", () =>
         query(
           `DELETE FROM rsvp_responses WHERE event_id = $1 AND email IS NULL AND user_id IS NULL AND lower(name) = lower($2)`,
-          [eventId, tName]
-        )
+          [eventId, tName],
+        ),
       );
       resultCount = res.rowCount || 0;
     }
 
     return jsonWithTiming(timing, { ok: true, deleted: resultCount });
   } catch (err: unknown) {
-    return jsonWithTiming(
-      timing,
-      { error: errorMessage(err, "Failed delete") },
-      { status: 500 }
-    );
+    return jsonWithTiming(timing, { error: errorMessage(err, "Failed delete") }, { status: 500 });
   }
 }

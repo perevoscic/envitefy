@@ -28,7 +28,7 @@ test("studio workspace request and form source wire image finish presets through
   assert.match(builders, /imageFinishPreset: imageFinishPreset\?\.label,/);
   assert.match(
     builders,
-    /style:\s*\[\s*visualDirection,\s*categoryGuardrails,\s*imageFinishPresetDirection,\s*refinement,\s*studioGuardrails,\s*\]/s,
+    /style:\s*\[\s*visualDirection,\s*categoryGuardrails,\s*imageFinishPresetDirection,\s*internalInstructions,\s*refinement,\s*studioGuardrails,\s*\]/s,
   );
   assert.match(
     editor,

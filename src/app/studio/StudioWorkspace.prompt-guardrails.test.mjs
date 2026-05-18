@@ -84,9 +84,39 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   assert.match(source, /visualPreferences:\s*clean\(details\.visualPreferences\)\s*\|\|\s*null,/);
   assert.match(
     source,
-    /style:\s*\[\s*visualDirection,\s*categoryGuardrails,\s*imageFinishPresetDirection,\s*refinement,\s*studioGuardrails,\s*\]\s*\.filter\(Boolean\)\s*\.join\("\. "\)\s*\|\|\s*null/s,
+    /style:\s*\[\s*visualDirection,\s*categoryGuardrails,\s*imageFinishPresetDirection,\s*internalInstructions,\s*refinement,\s*studioGuardrails,\s*\]\s*\.filter\(Boolean\)\s*\.join\("\. "\)\s*\|\|\s*null/s,
   );
   assert.match(source, /imageFinishPreset:\s*imageFinishPreset\?\.label,/);
+});
+
+test("studio public copy strips internal generation instructions from descriptions and share notes", () => {
+  const builderSource = readSource("src/app/studio/studio-workspace-builders.ts");
+  const promptSource = readSource("src/lib/studio/prompts.ts");
+  const buildDescriptionMatch = builderSource.match(
+    /export function buildDescription\(details: EventDetails\) \{[\s\S]*?\n\}/,
+  );
+
+  assert.ok(buildDescriptionMatch, "buildDescription should be present");
+  assert.doesNotMatch(buildDescriptionMatch[0], /details\.specialInstructions/);
+  assert.match(
+    builderSource,
+    /const internalInstructions = clean\(details\.specialInstructions\);/,
+  );
+  assert.match(
+    builderSource,
+    /stripStudioInternalInstructions\(previous\?\.description\) \|\|\s*buildDescription\(details\)/,
+  );
+  assert.match(
+    builderSource,
+    /stripStudioInternalInstructions\(previous\?\.interactiveMetadata\?\.shareNote\) \|\|\s*publicSocialCaption/,
+  );
+  assert.match(builderSource, /\\bUse the \[\^\.\]\{1,80\}\? Envitefy template family\\\.\?/);
+  assert.match(
+    builderSource,
+    /\\bPreserve the full event flow in the generated live card and guest-facing details\\\.\?/,
+  );
+  assert.match(promptSource, /function stripInternalInstructionCopy/);
+  assert.match(promptSource, /const trimmed = stripInternalInstructionCopy\(value\);/);
 });
 
 test("studio prompt sources require baked-in invitation text while keeping the bottom action zone clear", () => {

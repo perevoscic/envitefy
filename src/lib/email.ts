@@ -41,7 +41,10 @@ function resolveNoReplySender(context: string): { from: string; usedFallback: bo
 
   if (usedFallback) {
     try {
-      console.warn(`[email] ${context} using fallback sender`, { from: maskEmail(from), preferred: preferred || null });
+      console.warn(`[email] ${context} using fallback sender`, {
+        from: maskEmail(from),
+        preferred: preferred || null,
+      });
     } catch {}
   }
 
@@ -123,7 +126,11 @@ async function sendViaResend(params: {
         html: params.html,
       }),
     });
-    const data = (await res.json().catch(() => null)) as { id?: string; message?: string; error?: unknown } | null;
+    const data = (await res.json().catch(() => null)) as {
+      id?: string;
+      message?: string;
+      error?: unknown;
+    } | null;
     const errorMessage =
       (typeof data?.message === "string" && data.message) ||
       (typeof data?.error === "string" && data.error) ||
@@ -166,16 +173,16 @@ export async function sendPasswordResetEmail(params: {
     ``,
     `If you didn't request this, you can ignore this email.`,
   ].join("\n");
-  
+
   const body = `
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">We received a request to reset your password for your Envitefy account.</p>
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">Click the button below to create a new password:</p>
   `;
-  
+
   const footerText = `This link will expire soon for your security. If the button doesn't work, copy and paste this URL into your browser:<br/><br/>
     <a href="${escapeHtml(params.resetUrl)}" target="_blank" style="color:#2DD4BF; word-break: break-all;">${escapeHtml(params.resetUrl)}</a><br/><br/>
     If you didn't request this password reset, you can safely ignore this email.`;
-  
+
   const html = createEmailTemplate({
     preheader,
     title: "Reset your password",
@@ -292,7 +299,7 @@ export async function sendShareEventEmail(params: {
   const greetName = `${params.recipientFirstName || ""} ${params.recipientLastName || ""}`.trim();
   const greeting = greetName ? `Hi ${escapeHtml(greetName)}` : "Hello";
   const preheader = `${senderName || params.ownerEmail} shared "${params.eventTitle}" with you`;
-  
+
   const body = `
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
@@ -305,13 +312,13 @@ export async function sendShareEventEmail(params: {
       View the event details and add it to your calendar.
     </p>
   `;
-  
+
   const footerText = `
     Need an Envitefy account? 
     <a href="${escapeHtml(signupUrl)}" target="_blank" style="color:#2DD4BF; text-decoration: none;">Start with Snap</a> 
     to manage and save shared events.
   `;
-  
+
   const html = createEmailTemplate({
     preheader,
     title: "Event shared with you",
@@ -324,7 +331,9 @@ export async function sendShareEventEmail(params: {
   const cmd = new SendEmailCommand({
     FromEmailAddress: from,
     Destination: { ToAddresses: [to] },
-    Content: { Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } } },
+    Content: {
+      Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } },
+    },
   });
   // Lightweight instrumentation to surface SES delivery outcomes in logs
   try {
@@ -362,7 +371,7 @@ export async function sendPasswordChangeConfirmationEmail(params: {
   const subject = `Your Envitefy password was changed`;
   const preheader = `Your password was successfully changed.`;
   const greeting = params.userName ? `Hi ${escapeHtml(params.userName)}` : "Hello";
-  
+
   const timestamp = new Date().toLocaleString("en-US", {
     month: "long",
     day: "numeric",
@@ -371,7 +380,7 @@ export async function sendPasswordChangeConfirmationEmail(params: {
     minute: "2-digit",
     timeZoneName: "short",
   });
-  
+
   const body = `
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">${greeting},</p>
     <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6;">
@@ -387,9 +396,9 @@ export async function sendPasswordChangeConfirmationEmail(params: {
       If you didn't make this change, please contact us immediately to secure your account.
     </p>
   `;
-  
+
   const footerText = `If you didn't change your password, please reset it immediately or contact our support team.`;
-  
+
   const text = [
     `${greeting},`,
     ``,
@@ -410,7 +419,9 @@ export async function sendPasswordChangeConfirmationEmail(params: {
   const cmd = new SendEmailCommand({
     FromEmailAddress: from,
     Destination: { ToAddresses: [to] },
-    Content: { Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } } },
+    Content: {
+      Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } },
+    },
   });
 
   try {
@@ -431,6 +442,147 @@ export async function sendPasswordChangeConfirmationEmail(params: {
   }
 }
 
+export async function sendRsvpConfirmationEmail(params: {
+  toEmail: string;
+  guestName?: string | null;
+  eventTitle: string;
+  eventUrl: string;
+  response: "yes" | "no" | "maybe";
+  dateLabel?: string | null;
+  locationLabel?: string | null;
+}): Promise<void> {
+  const { from } = resolveNoReplySender("RSVP confirmation");
+  const to = params.toEmail;
+  const statusLabel =
+    params.response === "yes" ? "Going" : params.response === "no" ? "Not attending" : "Maybe";
+  const subject = `RSVP ${statusLabel.toLowerCase()}: ${params.eventTitle}`;
+  const preheader = `Your RSVP for ${params.eventTitle} is saved.`;
+  const greeting = params.guestName ? `Hi ${escapeHtml(params.guestName)}` : "Hello";
+
+  const detailsRows = [
+    `<p style="margin:0 0 4px 0; font-size:14px;"><strong>RSVP:</strong> ${escapeHtml(statusLabel)}</p>`,
+    params.dateLabel
+      ? `<p style="margin:0 0 4px 0; font-size:14px;"><strong>When:</strong> ${escapeHtml(params.dateLabel)}</p>`
+      : "",
+    params.locationLabel
+      ? `<p style="margin:0 0 4px 0; font-size:14px;"><strong>Where:</strong> ${escapeHtml(params.locationLabel)}</p>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const body = `
+    <p style="margin:0 0 12px 0; font-size:16px; line-height:1.6;">${greeting},</p>
+    <p style="margin:0 0 16px 0; font-size:16px; line-height:1.6;">
+      Your RSVP for <strong>${escapeHtml(params.eventTitle)}</strong> is saved.
+    </p>
+    <div style="background:#F9FAFB; border:1px solid #E5E7EB; padding:14px 16px; border-radius:10px; margin:16px 0;">
+      ${detailsRows}
+    </div>
+    <p style="margin:0 0 16px 0; font-size:16px; line-height:1.6;">
+      Use the event link below if you need to review details or update your response.
+    </p>
+  `;
+
+  const footerText = `If the button does not work, copy and paste this link into your browser:<br/><br/>
+    <a href="${escapeHtml(params.eventUrl)}" target="_blank" style="color:#7F67D3; word-break: break-all;">${escapeHtml(params.eventUrl)}</a>`;
+
+  const html = createEmailTemplate({
+    preheader,
+    title: `RSVP ${statusLabel}`,
+    body,
+    buttonText: "View Event Details",
+    buttonUrl: params.eventUrl,
+    footerText,
+  });
+
+  const text = [
+    `Your RSVP for ${params.eventTitle} is saved.`,
+    "",
+    `RSVP: ${statusLabel}`,
+    params.dateLabel ? `When: ${params.dateLabel}` : undefined,
+    params.locationLabel ? `Where: ${params.locationLabel}` : undefined,
+    "",
+    `Event link: ${params.eventUrl}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const cmd = new SendEmailCommand({
+    FromEmailAddress: from,
+    Destination: { ToAddresses: [to] },
+    Content: {
+      Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } },
+    },
+  });
+
+  try {
+    console.log("[email] sendRsvpConfirmationEmail dispatch", {
+      to: maskEmail(to),
+      response: params.response,
+    });
+    const result = await getSes().send(cmd);
+    console.log("[email] sendRsvpConfirmationEmail success", {
+      to: maskEmail(to),
+      provider: "ses",
+      messageId: (result as any)?.MessageId || (result as any)?.messageId || null,
+    });
+  } catch (err: any) {
+    try {
+      const resendResult = await sendViaResend({
+        from,
+        to,
+        subject,
+        text,
+        html,
+      });
+      if (resendResult.sent) {
+        console.log("[email] sendRsvpConfirmationEmail Resend fallback success", {
+          to: maskEmail(to),
+          provider: "resend",
+          messageId: resendResult.id || null,
+          sesError: err?.message || null,
+        });
+        return;
+      }
+
+      const smtpResult = await sendViaSmtp({
+        from,
+        to,
+        subject,
+        text,
+        html,
+      });
+      if (smtpResult.sent) {
+        console.log("[email] sendRsvpConfirmationEmail SMTP fallback success", {
+          to: maskEmail(to),
+          provider: "smtp",
+          messageId: smtpResult.messageId || null,
+          sesError: err?.message || null,
+          resendError: resendResult.reason || null,
+        });
+        return;
+      }
+
+      console.error("[email] sendRsvpConfirmationEmail failed", {
+        to: maskEmail(to),
+        error: err?.message,
+        name: err?.name,
+        resendError: resendResult.reason || null,
+        smtpError: smtpResult.reason || null,
+      });
+    } catch (fallbackErr: any) {
+      console.error("[email] sendRsvpConfirmationEmail fallback failed", {
+        to: maskEmail(to),
+        error: fallbackErr?.message,
+        name: fallbackErr?.name,
+        sesError: err?.message || null,
+      });
+    }
+    throw err;
+  }
+}
+
 export async function sendSignupConfirmationEmail(params: {
   toEmail: string;
   userName?: string | null;
@@ -442,10 +594,7 @@ export async function sendSignupConfirmationEmail(params: {
   // Use dedicated signup forms email if available, otherwise fall back to no-reply
   const signupFrom = process.env.SES_FROM_EMAIL_SIGNUP;
   const fromCandidate = signupFrom || process.env.SES_FROM_EMAIL_NO_REPLY;
-  assertEnv(
-    signupFrom ? "SES_FROM_EMAIL_SIGNUP" : "SES_FROM_EMAIL_NO_REPLY",
-    fromCandidate
-  );
+  assertEnv(signupFrom ? "SES_FROM_EMAIL_SIGNUP" : "SES_FROM_EMAIL_NO_REPLY", fromCandidate);
   const from = fromCandidate as string;
   const to = params.toEmail;
 
@@ -496,7 +645,7 @@ export async function sendSignupConfirmationEmail(params: {
       const section = params.form.sections.find((s) => s.id === sel.sectionId);
       const slot = section?.slots.find((s) => s.id === sel.slotId);
       if (!section || !slot) continue;
-      const qty = (sel.quantity && sel.quantity > 1) ? ` ×${sel.quantity}` : "";
+      const qty = sel.quantity && sel.quantity > 1 ? ` ×${sel.quantity}` : "";
       const range = (() => {
         const a = formatTime(slot.startTime);
         const b = formatTime(slot.endTime);
@@ -505,7 +654,9 @@ export async function sendSignupConfirmationEmail(params: {
         if (b) return `Ends ${b}`;
         return null;
       })();
-      entries.push(`${escapeHtml(section.title)}: ${escapeHtml(slot.label)}${qty}${range ? ` (${escapeHtml(range)})` : ""}`);
+      entries.push(
+        `${escapeHtml(section.title)}: ${escapeHtml(slot.label)}${qty}${range ? ` (${escapeHtml(range)})` : ""}`,
+      );
     }
     return entries;
   })();
@@ -556,14 +707,20 @@ export async function sendSignupConfirmationEmail(params: {
     `${status} for ${params.eventTitle}`,
     startLabel ? `Date: ${startLabel}` : undefined,
     (params.form as any)?.location ? `Location: ${(params.form as any).location}` : undefined,
-    slotSummaries.length ? `Selections:\n${slotSummaries.map((s) => `- ${s}`).join("\n")}` : undefined,
+    slotSummaries.length
+      ? `Selections:\n${slotSummaries.map((s) => `- ${s}`).join("\n")}`
+      : undefined,
     params.eventUrl ? `Open: ${params.eventUrl}` : undefined,
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   const cmd = new SendEmailCommand({
     FromEmailAddress: from,
     Destination: { ToAddresses: [to] },
-    Content: { Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } } },
+    Content: {
+      Simple: { Subject: { Data: subject }, Body: { Text: { Data: text }, Html: { Data: html } } },
+    },
   });
 
   try {
@@ -578,13 +735,13 @@ export async function sendSignupConfirmationEmail(params: {
     const errorMessage = err?.message || String(err);
     const statusCode = err?.$metadata?.httpStatusCode || null;
     const requestId = err?.$metadata?.requestId || null;
-    
+
     // Check for common AWS permission errors
-    const isPermissionError = 
+    const isPermissionError =
       errorName === "AccessDeniedException" ||
       errorMessage.includes("not authorized") ||
       errorMessage.includes("AccessDenied");
-    
+
     console.error("[email] sendSignupConfirmationEmail failed", {
       to: maskEmail(to),
       error: errorMessage,
@@ -592,9 +749,12 @@ export async function sendSignupConfirmationEmail(params: {
       statusCode,
       requestId,
       isPermissionError,
-      ...(isPermissionError ? {
-        suggestion: "Check AWS IAM permissions for SES SendEmail action. The IAM user/role needs ses:SendEmail permission for the SES identity."
-      } : {}),
+      ...(isPermissionError
+        ? {
+            suggestion:
+              "Check AWS IAM permissions for SES SendEmail action. The IAM user/role needs ses:SendEmail permission for the SES identity.",
+          }
+        : {}),
     });
     throw err;
   }
@@ -612,5 +772,3 @@ function maskEmail(email: string): string {
   const masked = `${user[0]}${"*".repeat(Math.max(1, user.length - 2))}${user[user.length - 1]}`;
   return `${masked}@${domain}`;
 }
-
-

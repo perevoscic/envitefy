@@ -13,7 +13,28 @@ test("studio workspace keeps native share inside the direct click path", () => {
   assert.match(source, /import \{ resolveNativeShareData \} from "@\/utils\/native-share";/);
   assert.match(source, /function getReusablePublicSharePath\(item: MediaItem\): string \| null \{/);
   assert.match(source, /const reusableSharePath = getReusablePublicSharePath\(item\);/);
-  assert.match(source, /const sharePath = reusableSharePath \?\? \(await ensurePublicSharePath\(item\)\);/);
-  assert.match(source, /const nativeShareData = reusableSharePath\s*\? resolveNativeShareData\(shareData\)\s*: null;/);
-  assert.doesNotMatch(source, /await ensurePublicSharePath\(item\);\s*[\s\S]*await navigator\.share\(shareData\);/);
+  assert.match(
+    source,
+    /const sharePath = reusableSharePath \?\? \(await ensurePublicSharePath\(item\)\);/,
+  );
+  assert.match(
+    source,
+    /const nativeShareData = reusableSharePath\s*\? resolveNativeShareData\(shareData\)\s*: null;/,
+  );
+  assert.doesNotMatch(
+    source,
+    /await ensurePublicSharePath\(item\);\s*[\s\S]*await navigator\.share\(shareData\);/,
+  );
+});
+
+test("native share data strips internal generation instructions from text payloads", () => {
+  const source = readSource("src/utils/native-share.ts");
+
+  assert.match(source, /function stripInternalInstructionCopy\(value: string\)/);
+  assert.match(source, /stripInternalInstructionCopy\(value\)/);
+  assert.match(source, /\\bUse the \[\^\.\]\{1,80\}\? Envitefy template family\\\.\?/);
+  assert.match(
+    source,
+    /\\bPreserve the full event flow in the generated live card and guest-facing details\\\.\?/,
+  );
 });

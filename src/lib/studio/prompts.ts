@@ -1,5 +1,5 @@
-import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
 import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
+import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
 import type {
   StudioEventDetails,
   StudioGenerateSurface,
@@ -18,9 +18,29 @@ function line(label: string, value: string | null | undefined): string {
 const DESIGN_IDEA_HELPER_TEXT_PATTERN =
   /\bDescribe the visual\/theme direction for the invite(?:\. Flyer uploads can leave this blank if the flyer already sets the look)?\.?/gi;
 
+const INTERNAL_INSTRUCTION_COPY_PATTERNS = [
+  /\bUse the [^.]{1,80}? Envitefy template family\.?/gi,
+  /\bPreserve the full event flow in the generated live card and guest-facing details\.?/gi,
+  /\bGenerate website hero\/background artwork for the event page\.[^.]*\.?/gi,
+  /\bDo not bake large title text[\s\S]*?in HTML\.?/gi,
+];
+
+function stripInternalInstructionCopy(value: string | null | undefined): string {
+  let stripped = trimOrEmpty(value);
+  if (!stripped) return "";
+  for (const pattern of INTERNAL_INSTRUCTION_COPY_PATTERNS) {
+    stripped = stripped.replace(pattern, " ");
+  }
+  return stripped
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/(?:^|\s)[,.;:!?]+(?=\s|$)/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function sanitizeImagePromptBriefText(value: string | null | undefined): string | undefined {
   if (!value?.trim()) return undefined;
-  return value
+  return stripInternalInstructionCopy(value)
     .replace(DESIGN_IDEA_HELPER_TEXT_PATTERN, "")
     .replace(/^\s*Design\s+Idea\b:?\s*/i, "")
     .replace(/\bDesign\s+Idea\b/gi, "private visual direction")
@@ -1008,7 +1028,7 @@ function sanitizeVisibleCopyLineForPrivateVisualDirection(
   event: StudioEventDetails,
   value: string | null | undefined,
 ): string {
-  const trimmed = trimOrEmpty(value);
+  const trimmed = stripInternalInstructionCopy(value);
   if (!trimmed) return "";
   const publicCopy = sanitizeGuestCopy(trimmed) || sanitizeGuestTitle(trimmed);
   if (!publicCopy) return "";
