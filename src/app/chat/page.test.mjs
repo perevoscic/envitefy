@@ -34,6 +34,9 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /What are we celebrating\?/);
   assert.match(client, /DETAIL_CONFIRMATION_LINE/);
   assert.match(client, /RSVP\(\?: guest count\| by\| deadline\| line\)\?/);
+  assert.match(client, /function draftVisualDirection\(draft: ConciergeEventDraft, fallback: string\)/);
+  assert.match(client, /tone\.toLowerCase\(\)\.includes\(theme\.toLowerCase\(\)\) \? tone : `\$\{theme\}\. \$\{tone\}`/);
+  assert.doesNotMatch(client, /const theme = stringValue\(draft\.theme\) \|\| stringValue\(draft\.tone\)/);
   assert.match(
     client,
     /themeValue && !\/\\btheme\$\/i\.test\(themeValue\) \? `\$\{themeValue\} theme` : null/,
@@ -403,6 +406,16 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /function buildGeneratedDraftImageEditPrompt/);
   assert.match(client, /localized correction to the current generated card/);
   assert.match(client, /modify only those characters inside the existing label/);
+  assert.match(client, /function isMetadataOnlyLocationEdit/);
+  assert.match(client, /function shouldRegenerateGeneratedDraftImageForEdit/);
+  assert.match(client, /function refreshGeneratedDraftInviteMetadata/);
+  assert.match(client, /refreshLiveCardInvitationData\(details, existingInvite\.invitationData\)/);
+  assert.match(client, /const canReuseCurrentImage =/);
+  assert.match(client, /!shouldRegenerateGeneratedDraftImageForEdit/);
+  assert.match(
+    client,
+    /canReuseCurrentImage && draftStudioInvite[\s\S]{0,120}refreshGeneratedDraftInviteMetadata/,
+  );
   assert.match(client, /function additionalLocationNarrative/);
   assert.match(client, /Preserve the full event flow in the generated live card/);
   assert.match(client, /await preloadGeneratedPreviewImage\(studioInvite\.imageUrl\);/);

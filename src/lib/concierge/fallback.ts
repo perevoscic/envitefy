@@ -476,6 +476,38 @@ function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
   return cleaned;
 }
 
+function joinCreativeDirectionParts(parts: string[]) {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const part of parts) {
+    const cleaned = cleanString(part);
+    if (!cleaned || isInstructionFragment(cleaned)) continue;
+    const key = cleaned.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(cleaned);
+  }
+  return unique.join(" ");
+}
+
+function detectLabeledCreativeDirection(text: string) {
+  const movie = findLabeledDetailValue(text, ["movie"]);
+  const theme = findLabeledDetailValue(text, ["theme"]);
+  const scene = findLabeledDetailValue(text, ["scene"]);
+  const style = findLabeledDetailValue(text, ["style"]);
+  const layout = findLabeledDetailValue(text, ["layout"]);
+  const direction = joinCreativeDirectionParts(
+    [
+      movie ? `Movie: ${movie}.` : "",
+      theme ? `Theme: ${theme}.` : "",
+      scene ? `Scene: ${scene}.` : "",
+      style ? `Style: ${style}.` : "",
+      layout ? `Layout: ${layout}.` : "",
+    ].filter(Boolean),
+  );
+  return direction || null;
+}
+
 function detectGuestCount(text: string, previous?: ConciergeEventDraft | null) {
   const expectsGuestCount = firstMissingField(previous) === "numberOfGuests";
   const explicit =
@@ -771,6 +803,9 @@ function detectTone(text: string, previous?: ConciergeEventDraft | null) {
       return cleaned;
     }
   }
+  const labeledCreativeDirection = detectLabeledCreativeDirection(text);
+  if (labeledCreativeDirection) return labeledCreativeDirection;
+
   const explicit =
     text.match(
       /\b(?:vibe|tone|feel|mood)\s*(?:is|should be|as|:)?\s+([a-z0-9][a-z0-9 '&-]{1,70})\b/i,
@@ -1288,6 +1323,47 @@ function detectVenueOrLocation(text: string, ocrContext?: ConciergeOcrContext | 
 const MULTI_LOCATION_LABELS =
   "ceremony|reception|cocktail\\s+hour|after[-\\s]?party|dinner|lunch|brunch|breakfast|pizza|meal|check[-\\s]?in|registration|pickup|drop[-\\s]?off|photos?";
 
+function eventFactTextForLocationExtraction(value: string) {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (!cleanString(text)) return "";
+  const invitationDetailsIndex = text.search(/\binvitation\s+details\s*:/i);
+  if (invitationDetailsIndex >= 0) return text.slice(invitationDetailsIndex);
+  return (
+    cleanString(
+      text
+        .replace(/\b(?:she|he|they|[A-Z][a-z]+)\s+likes\b[\s\S]*$/i, "")
+        .replace(/\b(?:theme|style|scene|visual\s+direction)\s*:[\s\S]*$/i, "")
+        .replace(
+          /(?:^|[,.]\s*)have\s+the\s+[^.\n,]{1,80}?\b(?:drinking|hugging|eating|holding|wearing|playing)\b[\s\S]*$/i,
+          "",
+        )
+        .replace(
+          /(?:^|[,.]\s*)(?:show|include|make)\s+[^.\n,]{1,80}?\b(?:drinking|hugging|eating|holding|wearing|playing)\b[\s\S]*$/i,
+          "",
+        ),
+    ) || text
+  );
+}
+
+function shouldPreservePreviousLocationDuringRsvpReply(
+  message: string,
+  previous?: ConciergeEventDraft | null,
+) {
+  if (!previous?.location && !previous?.venue) return false;
+  const currentField = firstMissingField(previous);
+  if (
+    currentField !== "rsvpEnabled" &&
+    currentField !== "numberOfGuests" &&
+    currentField !== "rsvpName" &&
+    currentField !== "rsvpContact"
+  ) {
+    return false;
+  }
+  return !/\b(?:location|venue|where|place|address)\b\s*(?:is|:|will be|should be)?/i.test(
+    message,
+  );
+}
+
 function titleCaseLocationLabel(value: string) {
   return value
     .replace(/[-_]+/g, " ")
@@ -1371,7 +1447,7 @@ function detectAdditionalLocations(
 }
 
 function detectPrimaryLabeledLocation(text: string) {
-  const locations = detectAdditionalLocations(text, null, null);
+  const locations = detectAdditionalLocations(eventFactTextForLocationExtraction(text), null, null);
   if (locations.length < 2) return null;
   return locations[0]?.location || locations[0]?.venue || null;
 }
@@ -2082,16 +2158,25 @@ export function fallbackExtractConciergeDraft(args: {
   const chronoResult = parseChrono(labeledDetails.whenText || text, previous);
   const fieldStartIso = isoFromField(fieldsGuess.start);
   const fieldEndIso = isoFromField(fieldsGuess.end);
-  const location =
-    labeledDetails.location ||
-    detectPrimaryLabeledLocation(detailText) ||
-    detectVenueOrLocation(text, args.ocrContext) ||
-    detectLocationFollowUp(message, previous) ||
-    previous?.location ||
-    previous?.venue ||
-    null;
-  const additionalLocations = detectAdditionalLocations(detailText, location, previous);
-  const theme = detectTheme(text, previous);
+  const shouldKeepPreviousLocation = shouldPreservePreviousLocationDuringRsvpReply(
+    message,
+    previous,
+  );
+  const locationFactText = eventFactTextForLocationExtraction(detailText);
+  const inferenceLocationText = eventFactTextForLocationExtraction(text);
+  const location = shouldKeepPreviousLocation
+    ? previous?.location || previous?.venue || null
+    : labeledDetails.location ||
+      detectPrimaryLabeledLocation(locationFactText) ||
+      detectVenueOrLocation(inferenceLocationText, args.ocrContext) ||
+      detectLocationFollowUp(message, previous) ||
+      previous?.location ||
+      previous?.venue ||
+      null;
+  const additionalLocations = shouldKeepPreviousLocation
+    ? previous?.additionalLocations || []
+    : detectAdditionalLocations(locationFactText, location, previous);
+  const theme = detectTheme(detailText, previous);
   const receivedInviteWithoutSource =
     sourceContext.detectedSourceIntent === "received_invite" && !sourceContext.hasUsableContext;
   const hasConcreteReceivedInviteDetails = Boolean(
@@ -2169,7 +2254,7 @@ export function fallbackExtractConciergeDraft(args: {
     previous?.giftPromptDismissed || giftPromptSkip || amazonRegistryCreate,
   );
   const tone =
-    detectTone(text, previous) ||
+    detectTone(detailText, previous) ||
     firstString(fieldsGuess.tone) ||
     (isSportEventType(eventType) ? theme : null);
   const toneForStatus = tone || theme;

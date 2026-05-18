@@ -37,14 +37,14 @@ type CardEditAction = "preview" | "save";
 
 const DESIGN_FIELD_MAPPINGS: DesignFieldMapping[] = [
   { inputKey: "title", detailKey: "eventTitle", editLabel: "event title" },
-  { inputKey: "eventDate", detailKey: "eventDate", editLabel: null },
-  { inputKey: "startTime", detailKey: "startTime", editLabel: null },
-  { inputKey: "endTime", detailKey: "endTime", editLabel: null },
+  { inputKey: "eventDate", detailKey: "eventDate", editLabel: "event date" },
+  { inputKey: "startTime", detailKey: "startTime", editLabel: "start time" },
+  { inputKey: "endTime", detailKey: "endTime", editLabel: "end time" },
   { inputKey: "venueName", detailKey: "venueName", editLabel: "venue name" },
   { inputKey: "location", detailKey: "location", editLabel: "address" },
   { inputKey: "rsvpContact", detailKey: "rsvpContact", editLabel: "RSVP contact" },
   { inputKey: "rsvpDeadline", detailKey: "rsvpDeadline", editLabel: "RSVP deadline" },
-  { inputKey: "theme", detailKey: "theme", editLabel: "visual direction" },
+  { inputKey: "theme", detailKey: "theme", editLabel: "requested card change" },
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -104,19 +104,21 @@ function buildExplicitEditPrompt(params: {
   changedFields: DesignFieldMapping[];
   nextDetails: EventDetails;
 }) {
+  const preserveExistingArtwork =
+    "Make only the requested edit. Keep the rest of the card artwork, layout, style, colors, imagery, and existing text unchanged.";
   const instructions = params.changedFields
     .map((field) => {
       if (!field.editLabel) return "";
       const value = readString(params.nextDetails[field.detailKey]);
       if (!value) return "";
       if (field.detailKey === "theme") {
-        return `Apply this visual direction where it affects the card art: ${value}.`;
+        return `User requested card change: ${value}.`;
       }
       return `Replace only the visible ${field.editLabel} with ${quoteEditValue(value)}.`;
     })
     .filter(Boolean);
 
-  return instructions.join(" ");
+  return [preserveExistingArtwork, ...instructions].join(" ");
 }
 
 function buildUpdatedInvitationData(nextDetails: EventDetails, item: MediaItem) {

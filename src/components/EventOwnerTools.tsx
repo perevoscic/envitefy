@@ -69,7 +69,7 @@ type DesignEditFields = {
   endTime: string;
   venueName: string;
   location: string;
-  theme: string;
+  theme?: string;
 };
 
 type DesignPreviewCandidate = {
@@ -571,15 +571,17 @@ function splitDesignVenueAndAddress(venueName: unknown, location: unknown) {
 
 function buildDesignEditFields(form: DesignFormState): DesignEditFields {
   const splitLocation = splitDesignVenueAndAddress(form.venueName, form.location);
-  return {
+  const fields: DesignEditFields = {
     title: form.title,
     eventDate: form.eventDate,
     startTime: form.startTime,
     endTime: form.endTime,
     venueName: splitLocation.venueName,
     location: splitLocation.location,
-    theme: form.designIdea,
   };
+  const requestedCardChange = readString(form.designIdea);
+  if (requestedCardChange) fields.theme = requestedCardChange;
+  return fields;
 }
 
 function designFormsMatch(left: DesignFormState, right: DesignFormState): boolean {
@@ -629,7 +631,7 @@ function buildDesignFormState(
         preview.locationLine,
       ),
     ),
-    designIdea: firstString(eventDetails?.theme, eventData?.themeStyle, eventData?.theme),
+    designIdea: "",
   };
 }
 
@@ -1710,7 +1712,7 @@ function OwnerDesignPanel({
         endTime: formatDesignTimeInput(details?.endTime) || candidate.fields.endTime,
         venueName: firstString(details?.venueName, candidate.fields.venueName),
         location: firstString(details?.location, candidate.fields.location),
-        designIdea: firstString(details?.theme, candidate.fields.theme),
+        designIdea: "",
       };
 
       setCurrentImageUrl(nextImageUrl);
@@ -1828,10 +1830,11 @@ function OwnerDesignPanel({
             </label>
 
             <label className="col-span-2 block text-xs font-black uppercase tracking-[0.13em] text-slate-500 md:col-span-3">
-              Design direction
+              Enter your change
               <input
                 value={form.designIdea}
                 onChange={(event) => updateField("designIdea", event.target.value)}
+                placeholder='e.g. Change the bottom sentence to "Join us for Lara as they turn 7."'
                 className="mt-2 min-h-11 w-full rounded-2xl border border-violet-900/20 bg-white/62 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 shadow-[inset_0_1px_3px_rgba(76,29,149,0.20)] outline-none backdrop-blur-md transition focus:border-violet-500/40 focus:bg-white/80 focus:ring-4 focus:ring-violet-200/60"
               />
             </label>

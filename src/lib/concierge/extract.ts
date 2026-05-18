@@ -104,6 +104,24 @@ function normalizeAiVisualDirection(
   return value;
 }
 
+function mergeVisualDirection(
+  value: string | null,
+  fallbackValue: string | null | undefined,
+  fallback: ConciergeEventDraft,
+  message: string,
+) {
+  const normalized = normalizeAiVisualDirection(value, fallback, message);
+  const fallbackDirection = cleanString(fallbackValue);
+  if (!normalized) return fallbackDirection;
+  if (!fallbackDirection) return normalized;
+
+  const normalizedLower = normalized.toLowerCase();
+  const fallbackLower = fallbackDirection.toLowerCase();
+  if (normalizedLower.includes(fallbackLower)) return normalized;
+  if (fallbackLower.includes(normalizedLower)) return fallbackDirection;
+  return `${normalized}. ${fallbackDirection}`;
+}
+
 function normalizeSource(value: unknown, fallback: ConciergeSource): ConciergeSource {
   const normalized = cleanString(value)?.toLowerCase();
   if (normalized === "text" || normalized === "upload" || normalized === "mixed") {
@@ -357,15 +375,18 @@ export function normalizeConciergeDraft(
     firstDraftString(record.ageOrMilestone, eventData.ageOrMilestone, eventData.age) ||
     fallback.ageOrMilestone;
   const message = cleanString(options.message) || "";
-  const theme =
-    normalizeAiVisualDirection(
-      firstDraftString(record.theme, eventData.theme),
-      fallback,
-      message,
-    ) || fallback.theme;
-  const tone =
-    normalizeAiVisualDirection(firstDraftString(record.tone, eventData.tone), fallback, message) ||
-    fallback.tone;
+  const theme = mergeVisualDirection(
+    firstDraftString(record.theme, eventData.theme),
+    fallback.theme,
+    fallback,
+    message,
+  );
+  const tone = mergeVisualDirection(
+    firstDraftString(record.tone, eventData.tone),
+    fallback.tone,
+    fallback,
+    message,
+  );
   const rsvpRecord =
     record.rsvp && typeof record.rsvp === "object" && !Array.isArray(record.rsvp)
       ? (record.rsvp as Record<string, unknown>)

@@ -911,6 +911,8 @@ test("labeled invitation details fill when and where before creative prompt pros
 
 Theme: cats, plushies, pizza, popcorn, soda, and a movie theater adventure.
 
+Scene: Inside a cozy movie theater with adorable cartoon cats celebrating Lara. Some cats are drinking sodas with straws, some are hugging soft plush toys, some are eating pizza slices, and others are holding popcorn buckets. Add playful birthday details like balloons, confetti, soft glowing marquee lights, and a cheerful cinema atmosphere.
+
 Invitation details:
 
 Movie: Sheep Detective
@@ -918,7 +920,8 @@ When: Thursday at 5:00 PM
 Where: AMC Destin Commons 14
 After the Movie: Pizza at Pazzo Destin
 
-Style: whimsical illustrated invitation, pastel colors with pops of pink, lavender, yellow, and teal.`,
+Style: whimsical illustrated invitation, pastel colors with pops of pink, lavender, yellow, and teal.
+Layout: vertical invitation, clean readable text, balanced spacing, cute decorative border, movie ticket or popcorn elements, no clutter.`,
   });
 
   assert.equal(draft.honoreeName, "Lara");
@@ -927,6 +930,13 @@ Style: whimsical illustrated invitation, pastel colors with pops of pink, lavend
   assert.equal(draft.timeText, "5:00 PM");
   assert.equal(draft.location, "AMC Destin Commons 14");
   assert.equal(draft.additionalLocations[0]?.location, "Pazzo Destin");
+  assert.equal(draft.theme, "cats, plushies, pizza, popcorn, soda, and a movie theater adventure");
+  assert.match(draft.tone || "", /Movie: Sheep Detective/);
+  assert.match(draft.tone || "", /Some cats are drinking sodas with straws/);
+  assert.match(draft.tone || "", /hugging soft plush toys/);
+  assert.match(draft.tone || "", /eating pizza slices/);
+  assert.match(draft.tone || "", /holding popcorn buckets/);
+  assert.match(draft.tone || "", /vertical invitation/);
   assert.doesNotMatch(draft.missingFields.join(","), /location/);
   assert.notEqual(buildAssistantMessage(draft), "Where should guests go?");
 });
@@ -1260,6 +1270,21 @@ test("birthday live-card prompt reads name after product label without for", () 
   assert.match(message, /Should Envitefy collect RSVPs/i);
 });
 
+test("birthday live-card prompt keeps itinerary locations separate from visual scene props", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Birthday Live Card Lara, 7, we will go to see Sheep Detective at 5PM Thursday at AMC Destin Commons 14, then we are going to have pizza at Pazzo Destin. She likes cats and plushes, have the cats drinking sodas, hugging plushies, eating pizza and popcorn at the movie theater",
+  });
+
+  assert.equal(draft.location, "AMC Destin Commons 14");
+  assert.equal(draft.previewCopy.locationLine, "AMC Destin Commons 14");
+  assert.ok(draft.additionalLocations.some((location) => location.location === "Pazzo Destin"));
+  assert.ok(
+    !draft.additionalLocations.some((location) => location.location === "the movie theater"),
+  );
+  assert.equal(draft.theme, "Sheep Detective, cats and plushes, have the cats drinking sodas, hugging plushies, eating pizza and popcorn");
+});
+
 test("OpenAI normalization treats fallback theme as visual direction", () => {
   const fallback = fallbackExtractConciergeDraft({
     message:
@@ -1282,6 +1307,37 @@ test("OpenAI normalization treats fallback theme as visual direction", () => {
   assert.equal(draft.currentQuestion, null);
   assert.deepEqual(draft.missingFields, []);
   assert.doesNotMatch(buildAssistantMessage(draft), /vibe and image direction/i);
+});
+
+test("OpenAI normalization preserves fallback scene details when AI shortens tone", () => {
+  const fallback = fallbackExtractConciergeDraft({
+    message: `Create a cute, magical birthday movie-night invitation for Lara's 7th birthday.
+
+Theme: cats, plushies, pizza, popcorn, soda, and a movie theater adventure.
+
+Scene: Inside a cozy movie theater with adorable cartoon cats celebrating Lara. Some cats are drinking sodas with straws, some are hugging soft plush toys, some are eating pizza slices, and others are holding popcorn buckets.
+
+Invitation details:
+
+Movie: Sheep Detective
+When: Thursday at 5:00 PM
+Where: AMC Destin Commons 14`,
+  });
+  const draft = normalizeConciergeDraft(
+    {
+      tone: "whimsical illustrated birthday movie invite",
+      rsvpEnabled: false,
+      draftStatus: "preview_ready",
+      missingFields: [],
+    },
+    fallback,
+    { message: fallback.previewCopy.body },
+  );
+
+  assert.match(draft.tone || "", /Some cats are drinking sodas with straws/);
+  assert.match(draft.tone || "", /hugging soft plush toys/);
+  assert.match(draft.tone || "", /eating pizza slices/);
+  assert.match(draft.tone || "", /holding popcorn buckets/);
 });
 
 test("birthday live-card prompt tolerates a mistyped for before name and age", () => {
@@ -1682,13 +1738,15 @@ test("RSVP decision reply can include guest count, host name, and phone", () => 
       "Birthday Live Card Lara, 7, we will go to see Sheep Detective at 5PM Thursday at AMC Destin Commons 14, then we are going to have pizza at Pazzo Destin. She likes cats and plushes, have the cats drinking sodas, hugging plushies, eating pizza and popcorn at the movie theater",
   });
 
+  assert.equal(draft.location, "AMC Destin Commons 14");
   assert.equal(draft.currentQuestion, "rsvpEnabled");
 
   draft = fallbackExtractConciergeDraft({
-    message: "yes, for 2 people, at Veronica at 850-960-1214",
+    message: "yes, 2 people at Veronica at 850-960-1214",
     draft,
   });
 
+  assert.equal(draft.location, "AMC Destin Commons 14");
   assert.equal(draft.rsvpEnabled, true);
   assert.equal(draft.numberOfGuests, 2);
   assert.equal(draft.rsvpName, "Veronica");

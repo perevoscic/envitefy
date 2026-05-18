@@ -51,6 +51,17 @@ test("card edit route normalizes duplicated venue and address fields", () => {
   assert.match(source, /const normalizedFields = normalizeDesignFields\(fields\);/);
 });
 
+test("card edit route preserves existing artwork by default", () => {
+  const source = readSource("src/app/api/events/[id]/card/edit/route.ts");
+
+  assert.match(
+    source,
+    /Make only the requested edit\. Keep the rest of the card artwork, layout, style, colors, imagery, and existing text unchanged\./,
+  );
+  assert.match(source, /User requested card change: \$\{value\}\./);
+  assert.doesNotMatch(source, /Apply this visual direction where it affects the card art/);
+});
+
 test("card edit route saves selected preview data and invalidates owner and recipient caches", () => {
   const source = readSource("src/app/api/events/[id]/card/edit/route.ts");
 

@@ -9,6 +9,7 @@ import {
   isTimingRequested,
   type ServerTimingTracker,
 } from "@/lib/server-timing";
+import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -167,6 +168,57 @@ function buildEventTitle(row: EventDetailsRow): string {
   return firstString(row.title, data?.title, fieldsGuess?.title, event?.title) || "Event";
 }
 
+function getEventDescription(data: Record<string, unknown> | null): string | null {
+  const event = nestedRecord(data, "event");
+  return firstString(data?.description, data?.details, data?.notes, event?.description);
+}
+
+function isEventAllDay(data: Record<string, unknown> | null): boolean {
+  return data?.allDay === true || data?.fullDay === true;
+}
+
+function getEventReminderMinutes(data: Record<string, unknown> | null): number[] | null {
+  const reminders = data?.reminders;
+  if (!Array.isArray(reminders)) return null;
+  const minutes = reminders
+    .map((item) => {
+      const record = asRecord(item);
+      const value = record?.minutes;
+      return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
+    })
+    .filter((value): value is number => value !== null);
+  return minutes.length ? minutes : null;
+}
+
+async function buildRsvpCalendarLinks(params: {
+  title: string;
+  data: Record<string, unknown> | null;
+  locationLabel: string | null;
+}): Promise<Array<{ label: string; url: string }> | null> {
+  const startRaw = getEventStartRaw(params.data);
+  if (!parseDate(startRaw)) return null;
+  const startIso = startRaw as string;
+  const allDay = isEventAllDay(params.data);
+  const endIso = ensureEndIso(startIso, getEventEndRaw(params.data), allDay);
+  const links = buildCalendarLinks({
+    title: params.title,
+    description: getEventDescription(params.data) || "",
+    location: params.locationLabel || "",
+    startIso,
+    endIso,
+    timezone: getEventTimezone(params.data) || "",
+    allDay,
+    reminders: getEventReminderMinutes(params.data),
+    recurrence: firstString(params.data?.recurrence) || null,
+  });
+  const appleUrl = await absoluteUrl(links.appleInline);
+  return [
+    { label: "Apple Calendar", url: appleUrl },
+    { label: "Google Calendar", url: links.google },
+    { label: "Outlook Calendar", url: links.outlook },
+  ];
+}
+
 function maskEmailForLog(email: string): string {
   if (!email.includes("@")) return email;
   const [user, domain] = email.split("@");
@@ -318,6 +370,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const eventTitle = buildEventTitle(eventRow);
     const dateLabel = buildDateLabel(eventRow.data);
     const locationLabel = buildLocationLabel(eventRow.data);
+    const calendarLinks = await timing.time("calendar_links", () =>
+      buildRsvpCalendarLinks({
+        title: eventTitle,
+        data: eventRow.data,
+        locationLabel,
+      }),
+    );
 
     void (async () => {
       try {
@@ -329,6 +388,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           response: responseValue,
           dateLabel,
           locationLabel,
+          calendarLinks,
         });
       } catch (err) {
         console.error("[rsvp] confirmation email failed", {

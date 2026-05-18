@@ -27,7 +27,10 @@ import {
   useState,
 } from "react";
 import { requestStudioGeneration } from "@/app/studio/studio-workspace-api";
-import { buildInvitationData } from "@/app/studio/studio-workspace-builders";
+import {
+  buildInvitationData,
+  refreshLiveCardInvitationData,
+} from "@/app/studio/studio-workspace-builders";
 import { createInitialDetails } from "@/app/studio/studio-workspace-sanitize";
 import type {
   EventDetails,
@@ -1121,6 +1124,15 @@ function timeInputFromDraft(value: string | null): string {
   return raw;
 }
 
+function draftVisualDirection(draft: ConciergeEventDraft, fallback: string): string {
+  const theme = stringValue(draft.theme);
+  const tone = stringValue(draft.tone);
+  if (theme && tone) {
+    return tone.toLowerCase().includes(theme.toLowerCase()) ? tone : `${theme}. ${tone}`;
+  }
+  return theme || tone || fallback;
+}
+
 function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
   const category = studioCategoryForDraft(draft);
   const details = createInitialDetails();
@@ -1133,7 +1145,7 @@ function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
   const venueName = stringValue(draft.venue) || "";
   const location = stringValue(draft.location) || venueName;
   const honoreeName = stringValue(draft.honoreeName) || "";
-  const theme = stringValue(draft.theme) || stringValue(draft.tone) || `${category} invite`;
+  const theme = draftVisualDirection(draft, `${category} invite`);
   const skinLabel = skinLabelForDraft(draft);
   const skinInstruction = `Use the ${skinLabel} Envitefy template family.`;
   const registryLink = stringValue(draft.registryLink) || stringValue(draft.giftRegistryLink) || "";
@@ -1239,6 +1251,63 @@ function buildGeneratedDraftImageEditPrompt(args: {
   );
 
   return instructions.join(" ");
+}
+
+function isMetadataOnlyLocationEdit(message: string) {
+  const text = stringValue(message).toLowerCase();
+  if (!text) return false;
+  if (/\b(?:image|artwork|picture|poster|design|visible|printed|card text|invite text)\b/.test(text)) {
+    return false;
+  }
+  return /\b(?:address|map|directions?|location\s+(?:tab|tile)|hide\s+(?:the\s+)?address)\b/.test(
+    text,
+  );
+}
+
+function shouldRegenerateGeneratedDraftImageForEdit(args: {
+  userMessage: string;
+  previousDraft: ConciergeEventDraft;
+  nextDraft: ConciergeEventDraft;
+}) {
+  const previousTime = stringValue(args.previousDraft.timeText);
+  const nextTime = stringValue(args.nextDraft.timeText);
+  if (previousTime && nextTime && previousTime !== nextTime) return true;
+
+  const previousDate = stringValue(args.previousDraft.dateText);
+  const nextDate = stringValue(args.nextDraft.dateText);
+  if (previousDate && nextDate && previousDate !== nextDate) return true;
+
+  const previousTitle = stringValue(args.previousDraft.title);
+  const nextTitle = stringValue(args.nextDraft.title);
+  if (previousTitle && nextTitle && previousTitle !== nextTitle) return true;
+
+  const previousTheme = [stringValue(args.previousDraft.theme), stringValue(args.previousDraft.tone)]
+    .filter(Boolean)
+    .join(" ");
+  const nextTheme = [stringValue(args.nextDraft.theme), stringValue(args.nextDraft.tone)]
+    .filter(Boolean)
+    .join(" ");
+  if (previousTheme && nextTheme && previousTheme !== nextTheme) return true;
+
+  const previousLocation =
+    stringValue(args.previousDraft.venue) || stringValue(args.previousDraft.location);
+  const nextLocation = stringValue(args.nextDraft.venue) || stringValue(args.nextDraft.location);
+  if (previousLocation && nextLocation && previousLocation !== nextLocation) {
+    return !isMetadataOnlyLocationEdit(args.userMessage);
+  }
+
+  return false;
+}
+
+function refreshGeneratedDraftInviteMetadata(
+  existingInvite: GeneratedInvitePayload,
+  updatedDraft: ConciergeEventDraft,
+): GeneratedInvitePayload {
+  const details = buildStudioDetailsFromDraft(updatedDraft);
+  return {
+    imageUrl: existingInvite.imageUrl,
+    invitationData: refreshLiveCardInvitationData(details, existingInvite.invitationData),
+  };
 }
 
 function isGeneratedDraftFullRedesignRequest(message: string): boolean {
@@ -2022,18 +2091,30 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
       const updatedDraft = normalizeDraftProductOutputs(json.draft);
       const existingDraftImageUrl = draftStudioInvite?.imageUrl || generatedInviteImageUrl;
-      const studioInvite = await generateStudioInviteForDraft(updatedDraft, {
-        editPrompt: fullRedesign
-          ? buildGeneratedDraftFullRedesignPrompt(trimmed)
-          : buildGeneratedDraftImageEditPrompt({
-              userMessage: trimmed,
-              previousDraft: draft,
-              nextDraft: updatedDraft,
-            }),
-        sourceImageUrl: fullRedesign ? null : existingDraftImageUrl,
-        previousDraft: fullRedesign ? null : draft,
-      });
-      await preloadGeneratedPreviewImage(studioInvite.imageUrl);
+      const canReuseCurrentImage =
+        !fullRedesign &&
+        Boolean(draftStudioInvite) &&
+        !shouldRegenerateGeneratedDraftImageForEdit({
+          userMessage: trimmed,
+          previousDraft: draft,
+          nextDraft: updatedDraft,
+        });
+      const studioInvite = canReuseCurrentImage && draftStudioInvite
+        ? refreshGeneratedDraftInviteMetadata(draftStudioInvite, updatedDraft)
+        : await generateStudioInviteForDraft(updatedDraft, {
+            editPrompt: fullRedesign
+              ? buildGeneratedDraftFullRedesignPrompt(trimmed)
+              : buildGeneratedDraftImageEditPrompt({
+                  userMessage: trimmed,
+                  previousDraft: draft,
+                  nextDraft: updatedDraft,
+                }),
+            sourceImageUrl: fullRedesign ? null : existingDraftImageUrl,
+            previousDraft: fullRedesign ? null : draft,
+          });
+      if (!canReuseCurrentImage) {
+        await preloadGeneratedPreviewImage(studioInvite.imageUrl);
+      }
       setDraft(updatedDraft);
       setDraftStudioInvite(studioInvite);
       setGeneratedInviteImageUrl(studioInvite.imageUrl);

@@ -450,6 +450,7 @@ export async function sendRsvpConfirmationEmail(params: {
   response: "yes" | "no" | "maybe";
   dateLabel?: string | null;
   locationLabel?: string | null;
+  calendarLinks?: Array<{ label: string; url: string }> | null;
 }): Promise<void> {
   const { from } = resolveNoReplySender("RSVP confirmation");
   const to = params.toEmail;
@@ -470,6 +471,26 @@ export async function sendRsvpConfirmationEmail(params: {
   ]
     .filter(Boolean)
     .join("\n");
+  const primaryCalendarLink = params.calendarLinks?.[0] || null;
+  const calendarRows = params.calendarLinks?.length
+    ? `
+    <div style="margin:24px 0 4px 0; text-align:center;">
+      ${
+        primaryCalendarLink
+          ? `<a href="${escapeHtml(primaryCalendarLink.url)}" style="background-color:#10B981 !important; color:#FFFFFF !important; border-radius:12px; padding:14px 28px; font-weight:700; display:inline-block; text-decoration:none; font-family:'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" target="_blank">Add to Calendar</a>`
+          : ""
+      }
+    </div>
+    <p style="margin:14px 0 8px 0; font-size:13px; color:#737373; text-align:center;">Choose your calendar:</p>
+    <p style="margin:0 0 18px 0; font-size:14px; line-height:1.7; text-align:center;">
+      ${params.calendarLinks
+        .map(
+          (link) =>
+            `<a href="${escapeHtml(link.url)}" target="_blank" style="color:#7F67D3; font-weight:600; text-decoration:none;">${escapeHtml(link.label)}</a>`,
+        )
+        .join('<span style="color:#D1D5DB;"> &nbsp;|&nbsp; </span>')}
+    </p>`
+    : "";
 
   const body = `
     <p style="margin:0 0 12px 0; font-size:16px; line-height:1.6;">${greeting},</p>
@@ -482,6 +503,7 @@ export async function sendRsvpConfirmationEmail(params: {
     <p style="margin:0 0 16px 0; font-size:16px; line-height:1.6;">
       Use the event link below if you need to review details or update your response.
     </p>
+    ${calendarRows}
   `;
 
   const footerText = `If the button does not work, copy and paste this link into your browser:<br/><br/>
@@ -502,6 +524,9 @@ export async function sendRsvpConfirmationEmail(params: {
     `RSVP: ${statusLabel}`,
     params.dateLabel ? `When: ${params.dateLabel}` : undefined,
     params.locationLabel ? `Where: ${params.locationLabel}` : undefined,
+    params.calendarLinks?.length
+      ? `Add to calendar:\n${params.calendarLinks.map((link) => `- ${link.label}: ${link.url}`).join("\n")}`
+      : undefined,
     "",
     `Event link: ${params.eventUrl}`,
   ]
