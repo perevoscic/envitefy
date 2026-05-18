@@ -881,6 +881,11 @@ function buildExistingImageEditInstruction(
     ? buildDeterministicScheduleLine(previousDetails)
     : "";
   const nextScheduleLine = buildDeterministicScheduleLine(details);
+  const previousVisibleLocation = previousDetails
+    ? resolveLiveCardVisibleLocationLine(previousDetails, previousDetails.location)
+    : "";
+  const nextVisibleLocation = resolveLiveCardVisibleLocationLine(details, details.location);
+  const previousStreetAddress = previousDetails ? clean(previousDetails.location) : "";
 
   if (previousTime && nextTime && previousTime !== nextTime && previousDate === nextDate) {
     instructions.push(
@@ -905,6 +910,32 @@ function buildExistingImageEditInstruction(
     );
     instructions.push(
       "Use the replacement text exactly as written; do not convert it to numeric date format.",
+    );
+  }
+
+  if (
+    nextVisibleLocation &&
+    previousVisibleLocation &&
+    previousVisibleLocation !== nextVisibleLocation
+  ) {
+    instructions.push(
+      `Replace the visible place/location chip or line ${quoteStudioEditText(previousVisibleLocation)} with ${quoteStudioEditText(nextVisibleLocation)}.`,
+    );
+    instructions.push(
+      "Do not print the street address in the visible artwork; keep the address only for maps and calendar metadata.",
+    );
+  }
+  if (
+    nextVisibleLocation &&
+    previousStreetAddress &&
+    previousStreetAddress !== nextVisibleLocation &&
+    looksLikeStreetAddress(previousStreetAddress)
+  ) {
+    instructions.push(
+      `If the artwork currently shows the street address ${quoteStudioEditText(previousStreetAddress)}, replace that visible place text with ${quoteStudioEditText(nextVisibleLocation)}.`,
+    );
+    instructions.push(
+      "Do not print the street address in the visible artwork; keep the address only for maps and calendar metadata.",
     );
   }
 
@@ -943,6 +974,46 @@ function buildDeterministicLocationLine(details: EventDetails): string {
     details.location,
     "Location TBD",
   );
+}
+
+function normalizeLocationComparable(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[.,]/g, "");
+}
+
+function looksLikeStreetAddress(value: string): boolean {
+  return (
+    /^\d{1,6}\s+\S+/.test(value.trim()) ||
+    /\b(?:street|st|road|rd|avenue|ave|drive|dr|lane|ln|boulevard|blvd|court|ct|circle|cir|way|place|pl)\b/i.test(
+      value,
+    )
+  );
+}
+
+export function resolveLiveCardVisibleLocationLine(
+  details: EventDetails,
+  previousLocationLine?: string | null,
+): string {
+  const fallback = buildDeterministicLocationLine(details);
+  if (details.category === "Open House") return clean(previousLocationLine) || fallback;
+
+  const venue = pickFirst(details.venueName, details.ceremonyVenue, details.receptionVenue);
+  const previous = clean(previousLocationLine);
+  if (!venue) return previous || fallback;
+  if (!previous) return venue;
+
+  const normalizedPrevious = normalizeLocationComparable(previous);
+  const normalizedAddress = normalizeLocationComparable(clean(details.location));
+  const normalizedVenue = normalizeLocationComparable(venue);
+
+  if (normalizedPrevious === normalizedVenue) return venue;
+  if (normalizedAddress && normalizedPrevious === normalizedAddress) return venue;
+  if (looksLikeStreetAddress(previous)) return venue;
+
+  return previous;
 }
 
 export function buildStudioRequest(
@@ -1187,7 +1258,7 @@ export function refreshLiveCardInvitationData(
   const subtitle =
     stripStudioInternalInstructions(previous?.subtitle) || buildStudioSubtitleFallback(details);
   const scheduleLine = clean(previous?.scheduleLine) || buildDeterministicScheduleLine(details);
-  const locationLine = clean(previous?.locationLine) || buildDeterministicLocationLine(details);
+  const locationLine = resolveLiveCardVisibleLocationLine(details, previous?.locationLine);
   const callToAction = resolveStudioCallToAction(
     details,
     previous?.callToAction,

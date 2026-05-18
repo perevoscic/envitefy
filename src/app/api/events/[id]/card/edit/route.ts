@@ -174,6 +174,12 @@ function buildExplicitEditPrompt(params: {
       if (field.detailKey === "theme") {
         return `User requested card change: ${value}.`;
       }
+      if (field.detailKey === "venueName") {
+        return `Replace the visible place/location chip or line with ${quoteEditValue(value)}. Do not print the street address in the visible artwork.`;
+      }
+      if (field.detailKey === "location" && readString(params.nextDetails.venueName)) {
+        return `Keep the visible place/location chip or line as ${quoteEditValue(readString(params.nextDetails.venueName))}; use the address only for maps and calendar metadata.`;
+      }
       return `Replace only the visible ${field.editLabel} with ${quoteEditValue(value)}.`;
     })
     .filter(Boolean);
@@ -183,15 +189,11 @@ function buildExplicitEditPrompt(params: {
 
 function buildUpdatedInvitationData(nextDetails: EventDetails, item: MediaItem) {
   const refreshed = refreshLiveCardInvitationData(nextDetails, item.data || undefined);
-  const locationLine =
-    [readString(nextDetails.venueName), readString(nextDetails.location)]
-      .filter(Boolean)
-      .join(", ") || refreshed.locationLine;
   return {
     ...refreshed,
     title: readString(nextDetails.eventTitle) || refreshed.title,
     scheduleLine: buildDeterministicScheduleLine(nextDetails) || refreshed.scheduleLine,
-    locationLine,
+    locationLine: refreshed.locationLine,
     theme: {
       ...refreshed.theme,
       themeStyle: readString(nextDetails.theme) || refreshed.theme.themeStyle,

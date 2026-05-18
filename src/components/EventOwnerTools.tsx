@@ -1698,10 +1698,8 @@ function OwnerDesignPanel({
         formatOwnerTimeChipValue(details?.startTime || candidate.fields.startTime) ||
         candidate.timeLine;
       const nextLocationLine = firstString(
-        details?.venueName && details?.location
-          ? `${readString(details.venueName)}, ${readString(details.location)}`
-          : "",
         details?.venueName,
+        details?.locationName,
         details?.location,
         candidate.locationLine,
       );

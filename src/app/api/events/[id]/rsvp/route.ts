@@ -76,6 +76,23 @@ function firstString(...values: Array<unknown>): string | null {
   return null;
 }
 
+function normalizePlaceLabelForComparison(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/['\u2019]s\b/g, "s")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function isSamePlaceLabel(left: string, right: string): boolean {
+  const normalizedLeft = normalizePlaceLabelForComparison(left);
+  const normalizedRight = normalizePlaceLabelForComparison(right);
+  if (!normalizedLeft || !normalizedRight) return false;
+  return normalizedLeft === normalizedRight || normalizedRight.includes(normalizedLeft);
+}
+
 function nestedRecord(
   record: Record<string, unknown> | null,
   key: string,
@@ -146,17 +163,27 @@ function buildDateLabel(data: Record<string, unknown> | null): string | null {
 function buildLocationLabel(data: Record<string, unknown> | null): string | null {
   const fieldsGuess = nestedRecord(data, "fieldsGuess");
   const event = nestedRecord(data, "event");
-  const venue = firstString(data?.venue, data?.placeName, event?.venue, event?.placeName);
+  const venue = firstString(
+    data?.venue,
+    data?.venueName,
+    data?.placeName,
+    event?.venue,
+    event?.venueName,
+    event?.placeName,
+  );
   const location = firstString(
     data?.locationText,
     data?.locationLabel,
+    data?.locationName,
     data?.location,
     data?.address,
     fieldsGuess?.location,
+    fieldsGuess?.locationName,
     event?.location,
+    event?.locationName,
     event?.address,
   );
-  if (venue && location && !location.toLowerCase().includes(venue.toLowerCase())) {
+  if (venue && location && !isSamePlaceLabel(venue, location)) {
     return `${venue}, ${location}`;
   }
   return location || venue;

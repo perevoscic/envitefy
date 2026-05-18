@@ -15,3 +15,8 @@ test("RSVP confirmation email rejects non-http image sources", () => {
   assert.match(source, /\^https\?:\\\/\\\/.*params\.eventImageUrl\.trim\(\)/);
   assert.doesNotMatch(source, /base64/);
 });
+
+test("RSVP confirmation email uses provider calendar choices without a duplicate CTA", () => {
+  assert.match(source, /Choose your calendar:/);
+  assert.doesNotMatch(source, />Add to Calendar<\/a>/);
+});

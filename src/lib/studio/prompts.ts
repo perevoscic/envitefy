@@ -49,6 +49,44 @@ function looksLikeMalformedInvitationCopy(value: string): boolean {
   return false;
 }
 
+function normalizeLocationComparable(value: string): string {
+  return trimOrEmpty(value)
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[.,]/g, "");
+}
+
+function looksLikeStreetAddress(value: string): boolean {
+  const trimmed = trimOrEmpty(value);
+  return (
+    /^\d{1,6}\s+\S+/.test(trimmed) ||
+    /\b(?:street|st|road|rd|avenue|ave|drive|dr|lane|ln|boulevard|blvd|court|ct|circle|cir|way|place|pl)\b/i.test(
+      trimmed,
+    )
+  );
+}
+
+function resolveVisibleLocationLineForStudioEvent(
+  event: StudioEventDetails,
+  value: string | null | undefined,
+): string {
+  const visible = trimOrEmpty(value);
+  const occasionType = getOccasionType(event);
+  if (occasionType === "open_house") return visible;
+
+  const venue = trimOrEmpty(event.venueName);
+  if (!venue) return visible;
+  if (!visible) return venue;
+
+  const normalizedVisible = normalizeLocationComparable(visible);
+  const normalizedVenue = normalizeLocationComparable(venue);
+  const normalizedAddress = normalizeLocationComparable(trimOrEmpty(event.venueAddress));
+  if (normalizedVisible === normalizedVenue) return venue;
+  if (normalizedAddress && normalizedVisible === normalizedAddress) return venue;
+  if (looksLikeStreetAddress(visible)) return venue;
+  return visible;
+}
+
 function sanitizeImagePromptBriefText(value: string | null | undefined): string | undefined {
   if (!value?.trim()) return undefined;
   return stripInternalInstructionCopy(value)
@@ -555,6 +593,7 @@ export function buildInvitationTextPrompt(
     "- Keep each line concise and ready for a card layout.",
     "- `hashtags` should be 1-6 short tags.",
     `- \`scheduleLine\` is for visible date/time only. Prefer ${CARD_SCHEDULE_EXAMPLE}; if time is missing, use ${CARD_SCHEDULE_DATE_ONLY_EXAMPLE}. Keep venue/location on the next line or separate field, not inside \`scheduleLine\`.`,
+    "- If both Venue Name and Venue Address are provided, `locationLine` must use the Venue Name only for non-Open-House events. Keep street addresses out of visible card copy; they are for maps/calendar metadata.",
     "- Visible card schedule/date lines should omit the year unless the user explicitly typed year wording that must be preserved.",
     "- Build the invitation around the selected event type first.",
     "- Treat the Design Idea as private art direction for themeStyle, palette, and artwork concept when one is provided.",
@@ -702,6 +741,7 @@ export function buildLiveCardPrompt(
     "- Resolve the final visible text line well above the bottom action buttons. If space is tight, shorten copy instead of pushing it lower.",
     "- Prefer fewer words over crowded copy.",
     `- \`invitation.scheduleLine\` is for visible date/time only. Prefer ${CARD_SCHEDULE_EXAMPLE}; if time is missing, use ${CARD_SCHEDULE_DATE_ONLY_EXAMPLE}. Keep venue/location on \`invitation.locationLine\`, not inside \`invitation.scheduleLine\`.`,
+    "- If both Venue Name and Venue Address are provided, `invitation.locationLine` must use the Venue Name only for non-Open-House events. Keep street addresses out of visible live-card copy; they are for maps/calendar metadata.",
     "- If Event Details includes an additional event stop, secondary place, after-party, reception, dinner, lunch, pizza, or another 'then/later/after' destination, preserve it in `invitation.detailsLine` as one concise guest-facing line. Do not drop secondary locations from live-card copy.",
     "- Visible card schedule/date lines should omit the year unless the user explicitly typed year wording that must be preserved.",
     "- Build the live card around the selected event type first, then express the Design Idea through that celebration type.",
@@ -1084,7 +1124,10 @@ function sanitizeStudioInvitationVisibleCopy(
     subtitle: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.subtitle),
     openingLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.openingLine),
     scheduleLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.scheduleLine),
-    locationLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.locationLine),
+    locationLine: resolveVisibleLocationLineForStudioEvent(
+      event,
+      sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.locationLine),
+    ),
     detailsLine: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.detailsLine),
     callToAction: sanitizeVisibleCopyLineForPrivateVisualDirection(event, invitation.callToAction),
     socialCaption: sanitizeVisibleCopyLineForPrivateVisualDirection(
@@ -1364,6 +1407,7 @@ export function buildInvitationImagePrompt(
     "- Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay.",
     "- Treat all visible text as integrated invitation typography inside the scene, not as interface chrome or floating app labels.",
     "- Form labels, section headings, prompt labels, and instruction text are internal only. Never print them anywhere in the image.",
+    "- For non-Open-House events with both a venue name and street address, visible place text must use the venue name only. Do not print the street address in the artwork.",
     "- Edge-safe composition: keep all essential text, faces, candles, balloons, gifts, cakes, addresses, dates, times, and other focal objects comfortably inset from every canvas edge and rounded corner.",
     "- Treat the outer 7% of the canvas as full-bleed background/decor only, so mild preview fill or rounded-corner clipping never cuts off important content.",
     "- Keep lighting, perspective, depth, and environment continuous across the full card.",

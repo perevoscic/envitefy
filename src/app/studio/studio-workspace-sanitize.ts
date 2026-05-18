@@ -13,7 +13,7 @@ import {
   getDisplayTitle,
   getFallbackThumbnail,
   getThemeColors,
-  pickFirst,
+  resolveLiveCardVisibleLocationLine,
   resolveStudioCallToAction,
   resolveStudioRsvpMessage,
 } from "./studio-workspace-builders";
@@ -443,9 +443,10 @@ export function sanitizeInvitationData(
       buildDescription(fallbackDetails) ||
       "Celebrate together with a beautifully designed invitation.",
     scheduleLine: readString(value.scheduleLine) || buildDeterministicScheduleLine(fallbackDetails),
-    locationLine:
-      readString(value.locationLine) ||
-      pickFirst(fallbackDetails.venueName, fallbackDetails.location, "Location TBD"),
+    locationLine: resolveLiveCardVisibleLocationLine(
+      fallbackDetails,
+      readString(value.locationLine),
+    ),
     callToAction: resolveStudioCallToAction(
       fallbackDetails,
       readString(value.callToAction),

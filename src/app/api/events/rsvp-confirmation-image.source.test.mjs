@@ -22,3 +22,10 @@ test("RSVP route converts inline images to the thumbnail endpoint", () => {
   assert.match(source, /\/api\/events\/\$\{eventId\}\/thumbnail\?\$\{params\.toString\(\)\}/);
   assert.match(source, /buildPublicAssetUrl/);
 });
+
+test("RSVP route normalizes duplicate venue and location labels", () => {
+  assert.match(source, /function normalizePlaceLabelForComparison/);
+  assert.match(source, /replace\(\/&\/g, " and "\)/);
+  assert.match(source, /function isSamePlaceLabel/);
+  assert.match(source, /!isSamePlaceLabel\(venue, location\)/);
+});

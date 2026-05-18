@@ -47,8 +47,10 @@ test("studio live-card builders preserve local invitation data and default gener
   );
   assert.match(
     source,
-    /const locationLine = clean\(previous\?\.locationLine\) \|\| buildDeterministicLocationLine\(details\);/,
+    /const locationLine = resolveLiveCardVisibleLocationLine\(details, previous\?\.locationLine\);/,
   );
+  assert.match(source, /export function resolveLiveCardVisibleLocationLine\(/);
+  assert.match(source, /if \(looksLikeStreetAddress\(previous\)\) return venue;/);
   assert.match(
     source,
     /const heroTextMode =\s*previous\?\.heroTextMode === "overlay" \|\| previous\?\.heroTextMode === "image"/s,
