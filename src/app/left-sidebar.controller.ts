@@ -268,6 +268,23 @@ function pendingCreatedEventMatchesPath(
   );
 }
 
+function eventListItemMatchesPath(item: GroupedEventItem, currentPath: string | null): boolean {
+  const routePath = String(currentPath || "").trim();
+  if (!routePath) return false;
+  const itemPaths = [item.href, item.publicHref, item.ownerHref]
+    .map((href) => String(href || "").trim())
+    .filter(Boolean)
+    .map(readPathnameFromHref)
+    .filter(Boolean);
+
+  return (
+    itemPaths.includes(routePath) ||
+    routePath === `/event/${item.row.id}` ||
+    routePath === `/smart-signup-form/${item.row.id}` ||
+    routePath.endsWith(`-${item.row.id}`)
+  );
+}
+
 export function useLeftSidebarController({
   session,
   status,
@@ -315,9 +332,12 @@ export function useLeftSidebarController({
   const isEventPageWithEditSidebar = Boolean(
     pathname?.startsWith("/event/") && searchParams?.get("edit"),
   );
+  const normalizedPathname = (pathname || "").replace(/\/+$/, "") || "/";
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [sidebarPage, setSidebarPage] = useState<SidebarPage>("root");
+  const [sidebarPage, setSidebarPage] = useState<SidebarPage>(() =>
+    normalizedPathname === "/chat" ? "aiThreads" : "root",
+  );
   const [showPastMyEvents, setShowPastMyEvents] = useState(false);
   const [showPastInvitedEvents, setShowPastInvitedEvents] = useState(false);
   const [eventSidebarMode, setEventSidebarMode] = useState<EventSidebarMode>("owner");
@@ -347,6 +367,7 @@ export function useLeftSidebarController({
   const invitedNavigationPendingRef = useRef(false);
   const prevSidebarPageRef = useRef<SidebarPage>("root");
   const lastAdminRouteSyncPathRef = useRef<string | null>(null);
+  const lastChatRouteSyncPathRef = useRef<string | null>(null);
 
   const mirrorLocalCalendarDefault = useCallback((provider: CalendarProviderKey | null) => {
     if (typeof window === "undefined") return;
@@ -456,6 +477,18 @@ export function useLeftSidebarController({
       void refreshConnectedCalendars();
     }
   }, [refreshConnectedCalendars, status]);
+
+  useEffect(() => {
+    if (normalizedPathname !== "/chat") {
+      lastChatRouteSyncPathRef.current = null;
+      return;
+    }
+    if (lastChatRouteSyncPathRef.current === normalizedPathname) return;
+
+    lastChatRouteSyncPathRef.current = normalizedPathname;
+    clearEventContext();
+    setSidebarPage("aiThreads");
+  }, [clearEventContext, normalizedPathname]);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -1159,27 +1192,6 @@ export function useLeftSidebarController({
         return null;
       }
 
-      const matchesItem = (item: GroupedEventItem): boolean => {
-        const itemPaths = [item.href, item.publicHref, item.ownerHref]
-          .map((href) => String(href || "").trim())
-          .filter(Boolean)
-          .map((href) => {
-            try {
-              return new URL(href, "https://envitefy.local").pathname;
-            } catch {
-              return href.split("?")[0] || "";
-            }
-          })
-          .filter(Boolean);
-
-        return (
-          itemPaths.includes(routePath) ||
-          routePath === `/event/${item.row.id}` ||
-          routePath === `/smart-signup-form/${item.row.id}` ||
-          routePath.endsWith(`-${item.row.id}`)
-        );
-      };
-
       const findInSections = (
         source: EventListPage,
         bucket: "upcoming" | "past",
@@ -1187,7 +1199,7 @@ export function useLeftSidebarController({
       ): InferredEventListItem | null => {
         for (const section of sections) {
           for (const item of section.items) {
-            if (matchesItem(item)) return { source, item, bucket };
+            if (eventListItemMatchesPath(item, routePath)) return { source, item, bucket };
           }
         }
         return null;
@@ -1293,8 +1305,14 @@ export function useLeftSidebarController({
     if (!selectedEventId) return;
     const currentPath = String(pathname || "");
     if (!currentPath.startsWith("/event/")) return;
+    const selectedEventPaths = [selectedEventHref, selectedEventOwnerHref]
+      .map((href) => String(href || "").trim())
+      .filter(Boolean)
+      .map(readPathnameFromHref)
+      .filter(Boolean);
     if (
       currentPath !== `/event/${selectedEventId}` &&
+      !selectedEventPaths.includes(currentPath) &&
       !currentPath.endsWith(`-${selectedEventId}`)
     ) {
       return;
@@ -1334,6 +1352,8 @@ export function useLeftSidebarController({
     pathname,
     searchParams,
     selectedEventId,
+    selectedEventHref,
+    selectedEventOwnerHref,
     setActiveEventTab,
     setEventContextSourcePage,
   ]);
@@ -1551,6 +1571,8 @@ export function useLeftSidebarController({
     (rowId: string) => {
       if (!rowId) return false;
       if (selectedEventId === rowId) return true;
+      const inferred = findEventListItemFromPath(pathname);
+      if (inferred?.item.row.id === rowId) return true;
       const currentPath = String(pathname || "");
       if (!currentPath) return false;
       return (
@@ -1559,7 +1581,7 @@ export function useLeftSidebarController({
         currentPath.endsWith(`-${rowId}`)
       );
     },
-    [pathname, selectedEventId],
+    [findEventListItemFromPath, pathname, selectedEventId],
   );
 
   const handleEventTabChange = useCallback(

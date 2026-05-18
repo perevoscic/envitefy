@@ -4,6 +4,7 @@ import { CalendarDays, ExternalLink, Gift, MapPin, Menu, X } from "lucide-react"
 import type { ReactNode } from "react";
 import { useState } from "react";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
+import EventTrackedLink from "@/components/EventTrackedLink";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 
 type CalendarLinks = {
@@ -19,6 +20,15 @@ type RegistryLink = {
   helperText?: string | null;
 };
 
+type EventLocation = {
+  label?: string | null;
+  venue?: string | null;
+  location?: string | null;
+  address?: string | null;
+  timeText?: string | null;
+  description?: string | null;
+};
+
 type ConciergeEventWebsiteProps = {
   eventId: string;
   title: string;
@@ -30,6 +40,7 @@ type ConciergeEventWebsiteProps = {
   timeLabel?: string | null;
   venueName?: string | null;
   location?: string | null;
+  additionalLocations?: EventLocation[];
   imageUrl?: string | null;
   shareUrl?: string | null;
   calendarLinks?: CalendarLinks | null;
@@ -50,6 +61,10 @@ function clean(value: unknown): string {
 function uniqueLine(...values: Array<string | null | undefined>) {
   const parts = values.map(clean).filter(Boolean);
   return parts.filter((value, index) => parts.indexOf(value) === index).join(", ");
+}
+
+function locationLine(location: EventLocation) {
+  return uniqueLine(location.venue, location.location || location.address);
 }
 
 function NavLink(props: { href: string; children: ReactNode; onClick?: () => void }) {
@@ -75,6 +90,7 @@ export default function ConciergeEventWebsite({
   timeLabel,
   venueName,
   location,
+  additionalLocations = [],
   imageUrl,
   shareUrl,
   calendarLinks,
@@ -91,6 +107,12 @@ export default function ConciergeEventWebsite({
   const displayWhen =
     clean(whenLabel) || uniqueLine(dateLabel, timeLabel) || "Date to be announced";
   const displayLocation = uniqueLine(venueName, location) || "Location to be announced";
+  const visibleAdditionalLocations = additionalLocations
+    .map((item) => ({
+      ...item,
+      line: locationLine(item),
+    }))
+    .filter((item) => item.line);
   const heroImage = clean(imageUrl);
   const body =
     clean(description) ||
@@ -247,6 +269,23 @@ export default function ConciergeEventWebsite({
                 <p className="mt-1 text-base font-bold text-slate-950">{displayLocation}</p>
               </div>
             </div>
+            {visibleAdditionalLocations.length ? (
+              <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+                {visibleAdditionalLocations.map((item, index) => (
+                  <div key={`${item.label || "location"}-${item.line}-${index}`}>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                      {clean(item.label) || "Additional Location"}
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-slate-950">{item.line}</p>
+                    {item.timeText || item.description ? (
+                      <p className="mt-1 text-sm text-slate-500">
+                        {[clean(item.timeText), clean(item.description)].filter(Boolean).join(" - ")}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
@@ -283,9 +322,13 @@ export default function ConciergeEventWebsite({
           <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">Registry</p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {registryLinks.map((link) => (
-              <a
+              <EventTrackedLink
                 key={`${link.label}-${link.url}`}
                 href={attachAmazonAffiliateTag(link.url)}
+                eventId={eventId}
+                eventName="registry_click"
+                targetLabel={link.label || "Registry"}
+                sourceSurface="concierge_event_website"
                 target="_blank"
                 rel="noreferrer"
                 className="group flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200"
@@ -305,7 +348,7 @@ export default function ConciergeEventWebsite({
                   ) : null}
                 </span>
                 <ExternalLink className="mt-1 h-4 w-4 flex-shrink-0 text-slate-400 transition group-hover:text-violet-700" />
-              </a>
+              </EventTrackedLink>
             ))}
           </div>
         </section>

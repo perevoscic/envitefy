@@ -252,6 +252,15 @@ test("event route disconnects the retired legacy event page fallback", () => {
   );
 });
 
+test("event route shows deleted event copy for missing event rows", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+
+  assert.match(source, /function DeletedEventNotice\(\)/);
+  assert.match(source, /This event was deleted/);
+  assert.match(source, /if \(!row\) return <DeletedEventNotice \/>;/);
+  assert.doesNotMatch(source, /if \(!row\) return notFound\(\);/);
+});
+
 test("event route owner preview mode includes a dashboard return control", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
   const suppressorSource = readSource("src/components/OwnerPreviewMobileTopbarSuppressor.tsx");

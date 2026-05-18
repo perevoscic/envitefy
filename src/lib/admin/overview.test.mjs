@@ -41,10 +41,11 @@ test("admin analytics exposes disconnected GA4 state and tracking gaps", () => {
   assert.match(source, /registry_click/);
 });
 
-test("admin overview keeps v1 tracking placeholders explicit", () => {
+test("admin overview keeps first-party tracking readiness explicit", () => {
   const source = readSource("src/lib/admin/overview.ts");
 
   assert.match(source, /First-party funnel events are placeholders/);
+  assert.match(source, /First-party event tracking is active/);
   assert.match(source, /views, share clicks, registry clicks/i);
   assert.match(source, /getEmailCampaignSummary/);
   assert.match(source, /listMarketingRuns/);

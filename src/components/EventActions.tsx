@@ -7,6 +7,7 @@ import { extractFirstPhoneNumber } from "@/utils/phone";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { resolveNativeShareData } from "@/utils/native-share";
+import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { useSession } from "next-auth/react";
 
 try {
@@ -559,6 +560,15 @@ export default function EventActions({
       const url =
         absoluteUrl ||
         (typeof window !== "undefined" ? window.location.href : "");
+      if (historyId) {
+        trackEventInteraction({
+          eventId: historyId,
+          eventName: "share_link_click",
+          targetUrl: url,
+          targetLabel: shareTitle,
+          sourceSurface: "event_actions",
+        });
+      }
       const nativeShareData = resolveNativeShareData({ title: shareTitle, url });
       if (nativeShareData) {
         await navigator.share(nativeShareData);

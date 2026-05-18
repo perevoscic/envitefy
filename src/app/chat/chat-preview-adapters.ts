@@ -32,6 +32,22 @@ function timeTextFromIso(value: unknown): string {
   return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
+function normalizeAdditionalLocations(draft: ConciergeEventDraft | null) {
+  if (!Array.isArray(draft?.additionalLocations)) return [];
+  return draft.additionalLocations
+    .map((item) => ({
+      label: cleanString(item.label) || null,
+      venue: cleanString(item.venue) || null,
+      location: cleanString(item.location) || null,
+      address: cleanString(item.address) || null,
+      timeText: cleanString(item.timeText) || null,
+      description: cleanString(item.description) || null,
+      mapQuery: cleanString(item.mapQuery) || null,
+    }))
+    .filter((item) => item.venue || item.location || item.address)
+    .slice(0, 8);
+}
+
 function categoryLabel(draft: ConciergeEventDraft | null): string {
   if (!draft?.eventType || draft.eventType === "unknown") return "Custom Invite";
   if (draft.eventType === "baby_shower") return "Baby Shower";
@@ -79,6 +95,7 @@ export function buildChatShowcasePreview(args: {
   const category = categoryLabel(draft);
   const title = args.summary.headline || "Event preview";
   const rsvpEnabled = draft?.rsvpEnabled === true;
+  const additionalLocations = normalizeAdditionalLocations(draft);
   const registryLink = cleanString(
     (draft as { registryLink?: unknown; giftRegistryLink?: unknown } | null)?.registryLink ||
       (draft as { registryLink?: unknown; giftRegistryLink?: unknown } | null)?.giftRegistryLink,
@@ -108,11 +125,13 @@ export function buildChatShowcasePreview(args: {
       endTime: timeTextFromIso(draft?.endISO),
       venueName: cleanString(draft?.venue) || "",
       location: cleanString(draft?.location) || cleanString(draft?.venue) || "",
+      additionalLocations,
       detailsDescription: body,
       message: args.summary.subheadline,
       rsvpEnabled,
       rsvpMode: rsvpEnabled ? "envitefy" : "",
-      rsvpName: rsvpEnabled ? "Host" : "",
+      rsvpName: rsvpEnabled ? cleanString(draft?.rsvpName) || "Host" : "",
+      rsvpContact: rsvpEnabled ? cleanString(draft?.rsvpContact) || "" : "",
       rsvpUrl: rsvpEnabled && args.sharePath ? `${args.sharePath}#event-rsvp` : "",
       registryLink: registryLink || "",
     },

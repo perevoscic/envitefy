@@ -35,7 +35,7 @@ export type AdminNeedsAttentionItem = {
   title: string;
   detail: string;
   href: string;
-  tone: "warning" | "danger" | "neutral";
+  tone: "warning" | "danger" | "neutral" | "success";
 };
 
 export type AdminGrowthInsight = {
@@ -279,6 +279,13 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
       detail: "Views, share clicks, registry clicks, and attribution need explicit tracking.",
       href: "/admin/analytics",
       tone: "neutral",
+    });
+  } else {
+    needsAttention.push({
+      title: "First-party event tracking is active",
+      detail: "Views, share clicks, and registry clicks are recorded per event.",
+      href: "/admin/analytics",
+      tone: "success",
     });
   }
 

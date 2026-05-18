@@ -4,7 +4,11 @@ import {
   sanitizeConciergePublicEventData,
   sanitizeGuestTitle,
 } from "./public-copy.ts";
-import type { ConciergeEventDraft, ConciergeStudioInvite } from "./types.ts";
+import type {
+  ConciergeAdditionalLocation,
+  ConciergeEventDraft,
+  ConciergeStudioInvite,
+} from "./types.ts";
 
 const CATEGORY_LABELS: Record<ConciergeEventDraft["eventType"], string> = {
   unknown: "General Event",
@@ -84,6 +88,57 @@ function normalizeVenueLocation(venueValue: unknown, locationValue: unknown) {
   return splitCombinedVenueLocation(combined);
 }
 
+function normalizeLocationKey(value: string) {
+  return value
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function additionalLocationLine(location: ConciergeAdditionalLocation) {
+  return [location.venue, location.location || location.address]
+    .filter((value, index, values) => value && values.indexOf(value) === index)
+    .join(", ");
+}
+
+function normalizeAdditionalLocations(
+  values: ConciergeAdditionalLocation[] | null | undefined,
+  primary: { venue: string | null; location: string | null },
+) {
+  if (!Array.isArray(values)) return [];
+  const primaryKeys = [
+    primary.venue,
+    primary.location,
+    [primary.venue, primary.location].filter(Boolean).join(", "),
+  ]
+    .map((value) => (value ? normalizeLocationKey(value) : ""))
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const locations: ConciergeAdditionalLocation[] = [];
+
+  for (const item of values) {
+    if (!isRecord(item)) continue;
+    const normalized: ConciergeAdditionalLocation = {
+      label: cleanString(item.label) || null,
+      venue: cleanString(item.venue) || null,
+      location: cleanString(item.location) || null,
+      address: cleanString(item.address) || null,
+      timeText: cleanString(item.timeText) || null,
+      description: cleanString(item.description) || null,
+      mapQuery: cleanString(item.mapQuery) || null,
+    };
+    const line = additionalLocationLine(normalized);
+    const key = normalizeLocationKey(line || normalized.label || "");
+    if (!key || primaryKeys.includes(key) || seen.has(key)) continue;
+    seen.add(key);
+    locations.push(normalized);
+  }
+
+  return locations.slice(0, 8);
+}
+
 function isoDate(value: unknown): string {
   const raw = cleanString(value);
   if (!raw) return "";
@@ -129,6 +184,7 @@ export function buildConciergeHistoryPayload(
   const category = CATEGORY_LABELS[draft.eventType] || "General Event";
   const rsvpEnabled = rsvpTrackingEnabled(draft);
   const eventPlace = normalizeVenueLocation(draft.venue, draft.location);
+  const additionalLocations = normalizeAdditionalLocations(draft.additionalLocations, eventPlace);
   const safePreviewCopy = sanitizeConciergePreviewCopy(draft.previewCopy, {
     eventType: draft.eventType,
     title,
@@ -206,8 +262,12 @@ export function buildConciergeHistoryPayload(
     },
   };
   const liveCardInvitationData = isRecord(studioInviteData)
-    ? studioInviteData
+    ? { ...studioInviteData }
     : fallbackLiveCardInvitationData;
+  liveCardInvitationData.eventDetails = {
+    ...(isRecord(liveCardInvitationData.eventDetails) ? liveCardInvitationData.eventDetails : {}),
+    additionalLocations,
+  };
   const liveCardPositions = isRecord(studioInvitePositions) ? studioInvitePositions : null;
   const requestedOutputs = Array.from(new Set(draft.requestedOutputs.map(canonicalProductOutput)));
   const rawPrimaryOutput =
@@ -291,6 +351,7 @@ export function buildConciergeHistoryPayload(
       timezone: draft.timezone,
       location: eventPlace.location,
       venue: eventPlace.venue,
+      additionalLocations,
       locationLabel: locationLine,
       locationText: locationLine || eventPlace.location || eventPlace.venue,
       placeName: eventPlace.venue || eventPlace.location,
@@ -321,6 +382,7 @@ export function buildConciergeHistoryPayload(
       },
       conciergeDraft: {
         ...draft,
+        additionalLocations,
         previewCopy: safePreviewCopy,
         requestedOutputs,
         outputs: requestedOutputs,
@@ -334,6 +396,7 @@ export function buildConciergeHistoryPayload(
         body: description,
         scheduleLine,
         locationLine,
+        additionalLocations,
         rsvpEnabled,
         navigation: [
           { label: "Details", target: "#details" },
@@ -345,6 +408,10 @@ export function buildConciergeHistoryPayload(
           { label: "Overview", value: description },
           { label: "When", value: scheduleLine || "" },
           { label: "Where", value: locationLine || "" },
+          ...additionalLocations.map((location) => ({
+            label: location.label || "Additional location",
+            value: additionalLocationLine(location),
+          })),
           ...(registryLink ? [{ label: "Registry", value: registryLink }] : []),
           ...(giftNote ? [{ label: "Gift Note", value: giftNote }] : []),
         ],
@@ -364,6 +431,7 @@ export function buildConciergeHistoryPayload(
         body: description,
         scheduleLine,
         locationLine,
+        additionalLocations,
         cta: liveCardCta,
         registryLink,
         giftNote,

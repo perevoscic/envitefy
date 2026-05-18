@@ -75,7 +75,12 @@ test("concierge full birthday live-card conversation reaches generated card-read
   assert.equal(turn.draft.currentQuestion, null);
   assert.equal(turn.draft.rsvpEnabled, false);
   assert.match(turn.draft.tone || "", /rainbow space/);
-  assert.match(turn.assistantMessage, /I can generate the invite now/i);
+  assert.match(turn.assistantMessage, /Optional: do you have a gift list/i);
+
+  turn = reply("Skip gift link", turn.draft);
+  assert.equal(turn.canSave, true);
+  assert.equal(turn.draft.giftPromptDismissed, true);
+  assert.match(turn.assistantMessage, /Your live card is ready to generate/i);
 
   const payload = generatedPayload(turn.draft, "maya-live-card");
   assertGeneratedSurface(payload, "live_card", "card");
@@ -100,6 +105,11 @@ test("concierge full flyer/invitation conversation reaches generated flyer card 
   turn = reply("Use a playful rainbow space flyer invitation style.", turn.draft);
   assert.equal(turn.canSave, true);
   assert.deepEqual(turn.draft.requestedOutputs, ["digital_flyer"]);
+  assert.match(turn.assistantMessage, /Optional: do you have a gift list/i);
+
+  turn = reply("Skip gift link", turn.draft);
+  assert.equal(turn.canSave, true);
+  assert.equal(turn.draft.giftPromptDismissed, true);
   assert.match(turn.assistantMessage, /Flyer\/Invitation/);
 
   const payload = generatedPayload(turn.draft, "maya-flyer-invitation");

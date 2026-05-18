@@ -222,6 +222,16 @@ export type ConciergePreviewCopy = {
   cta: string;
 };
 
+export type ConciergeAdditionalLocation = {
+  label: string | null;
+  venue: string | null;
+  location: string | null;
+  address: string | null;
+  timeText?: string | null;
+  description?: string | null;
+  mapQuery?: string | null;
+};
+
 export type ConciergeWeatherContextStatus =
   | "available"
   | "missing_event_details"
@@ -262,6 +272,7 @@ export type ConciergeEventDraft = {
   timezone: string;
   location: string | null;
   venue: string | null;
+  additionalLocations: ConciergeAdditionalLocation[];
   rsvpEnabled: boolean | null;
   rsvpDeadline?: string | null;
   rsvpName?: string | null;

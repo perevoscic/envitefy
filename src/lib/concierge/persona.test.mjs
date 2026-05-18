@@ -164,6 +164,46 @@ test("persona uses deterministic fallback for date confirmation prompts", async 
   assert.equal(result.usedAi, false);
 });
 
+test("persona uses deterministic fallback when ready drafts include optional gift prompt", async () => {
+  const deltas = [];
+  let aiCalls = 0;
+  const fallbackMessage =
+    "Details are ready.\nProduct: Live card\nOptional: do you have a gift list, wishlist, or no-gifts note to include? Paste a link, create one on Amazon, or skip it for now.";
+  const result = await withEnv({ OPENAI_API_KEY: "test-key" }, () =>
+    streamConciergePersona(
+      {
+        message: "fun and colorful",
+        chatMessages: [],
+        draft: {
+          ...BASE_DRAFT,
+          draftStatus: "preview_ready",
+          currentQuestion: null,
+          missingFields: [],
+          dateText: "Saturday May 23",
+          timeText: "3:00 PM",
+          location: "Sky Zone",
+          rsvpEnabled: true,
+          numberOfGuests: 20,
+          tone: "fun and colorful",
+        },
+        fallbackMessage,
+        onDelta: (text) => deltas.push(text),
+      },
+      {
+        createOpenAiClient: () => {
+          aiCalls += 1;
+          return null;
+        },
+      },
+    ),
+  );
+
+  assert.equal(aiCalls, 0);
+  assert.deepEqual(deltas, [fallbackMessage]);
+  assert.equal(result.assistantMessage, fallbackMessage);
+  assert.equal(result.usedAi, false);
+});
+
 test("persona preserves streamed token spacing", async () => {
   async function* streamChunks() {
     yield { choices: [{ delta: { content: "Beautiful" } }] };

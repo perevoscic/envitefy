@@ -29,6 +29,7 @@ import {
 import type {
   ConciergeAction,
   ConciergeActiveContext,
+  ConciergeAdditionalLocation,
   ConciergeEventDraft,
   ConciergeEventType,
   ConciergeOcrContext,
@@ -90,19 +91,6 @@ function firstString(...values: unknown[]): string | null {
 
 function cleanUrlString(value: unknown): string | null {
   return cleanString(value)?.replace(/[),.;!?]+$/g, "") || null;
-}
-
-function firstPositiveNumber(...values: unknown[]) {
-  for (const value of values) {
-    const numeric =
-      typeof value === "number"
-        ? value
-        : typeof value === "string"
-          ? Number.parseInt(value, 10)
-          : Number.NaN;
-    if (Number.isFinite(numeric) && numeric > 0) return numeric;
-  }
-  return null;
 }
 
 const SPORT_EVENT_TYPES = new Set<ConciergeEventType>(["game_day", "football", "sport_event"]);
@@ -349,6 +337,11 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
       /\b(?:birthday|bday)(?:\s+(?:live\s*card|event\s+page|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite|party|product))*\s+(?:for|fro)\s+([a-z][a-zA-Z'-]{1,30})(?=\s*(?:,|\d{1,3}\b|\b(?:turning|turns|is turning|on|at|for|fro)\b|$))/i,
     );
     if (birthdayForName?.[1]) return titleCaseName(birthdayForName[1]);
+
+    const birthdayProductNameAge = text.match(
+      /\b(?:birthday|bday)(?:\s+(?:live\s*card|event\s+page|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite|product))+\s+([a-z][a-zA-Z'-]{1,30})\s*,?\s+\d{1,3}\b/i,
+    );
+    if (birthdayProductNameAge?.[1]) return titleCaseName(birthdayProductNameAge[1]);
   }
 
   if (previous?.eventType === "baby_shower" || /\b(?:baby\s+shower|sprinkle)\b/i.test(text)) {
@@ -528,6 +521,9 @@ function detectRsvpEnabled(
     if (
       /^(yes|yep|yeah|sure|please|yes please|include it|add it|turn it on|enable it|collect rsvps?|track rsvps?)$/i.test(
         cleaned,
+      ) ||
+      /^(?:yes|yep|yeah|sure|please|yes please)[,\s]+(?:for\s+)?\d{1,4}\s*(?:guests?|kids?|children|people|attendees|invitees|famil(?:y|ies))?$/i.test(
+        cleaned,
       )
     ) {
       return true;
@@ -563,6 +559,28 @@ function detectRsvpDeadline(text: string, previous?: ConciergeEventDraft | null)
   return deadline || previous?.rsvpDeadline || null;
 }
 
+function detectRsvpName(
+  text: string,
+  fieldsGuess: Record<string, unknown>,
+  previous?: ConciergeEventDraft | null,
+) {
+  const direct = firstString(fieldsGuess.rsvpName, fieldsGuess.hostName, fieldsGuess.host);
+  if (direct) return direct;
+  if (previous?.rsvpName && previous.currentQuestion !== "rsvpName") return previous.rsvpName;
+  if (previous?.currentQuestion === "rsvpName") {
+    const reply = cleanString(
+      text.replace(/^(?:hosted\s+by|host|organizer|rsvp\s+name)\s*:?\s*/i, ""),
+    );
+    if (reply && !/@/.test(reply) && !/\d{3}/.test(reply)) return reply;
+  }
+  const explicit =
+    text.match(
+      /\b(?:rsvp\s+name|rsvp\s+contact\s+name|hosted\s+by|host|organizer)\s*:?\s*([^.\n;]{2,80})/i,
+    ) ||
+    text.match(/\bhosted\s+by\s+([^.\n;]{2,80})/i);
+  return cleanString(explicit?.[1]?.replace(/[.!?]+$/g, "")) || previous?.rsvpName || null;
+}
+
 function detectRsvpContact(
   text: string,
   fieldsGuess: Record<string, unknown>,
@@ -570,13 +588,21 @@ function detectRsvpContact(
 ) {
   const direct = firstString(fieldsGuess.rsvpContact, fieldsGuess.rsvpEmail, fieldsGuess.rsvpPhone);
   if (direct) return direct;
+  const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
+  const phoneMatch = text.match(
+    /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}/,
+  )?.[0];
+  if (previous?.currentQuestion === "rsvpContact") {
+    const reply = cleanString(emailMatch || phoneMatch || text);
+    if (reply) return reply;
+  }
   const explicitEmail = text.match(
     /\brsvp\s+contact\s*:?\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i,
   );
   if (explicitEmail?.[1]) return explicitEmail[1];
   const explicit = text.match(/\brsvp\s+contact\s*:?\s*([^.\n;]{3,120})/i);
   const email = explicit?.[1]?.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
-  const contact = cleanString(email || explicit?.[1]?.replace(/[.!?]+$/g, ""));
+  const contact = cleanString(email || phoneMatch || explicit?.[1]?.replace(/[.!?]+$/g, ""));
   return contact || previous?.rsvpContact || null;
 }
 
@@ -610,7 +636,7 @@ function detectGiftPreferenceNote(text: string, fieldsGuess: Record<string, unkn
   );
   if (direct) return direct;
   const noGifts = text.match(
-    /\b(?:no gifts?|gifts?\s+(?:are\s+)?optional|your presence is (?:our|the) gift|gift cards? preferred)\b[^.!,;]*/i,
+    /\b(?:no gifts?|gifts?\s+(?:are\s+)?optional|your presence is (?:our|the) gift|gift cards?(?:\s+(?:are\s+)?(?:preferred|welcome|okay|ok|fine))?)\b[^.!,;]*/i,
   );
   return cleanString(noGifts?.[0] || "");
 }
@@ -643,9 +669,9 @@ function giftRegistryLabel(draft: ConciergeEventDraft) {
 function optionalGiftRegistryPrompt(draft: ConciergeEventDraft) {
   if (!shouldOfferGiftRegistryPrompt(draft)) return null;
   const noun = GIFT_LIST_EVENT_TYPES.has(draft.eventType)
-    ? "gift list, wishlist, or no-gifts note"
-    : "registry, gift list, wishlist, or no-gifts note";
-  return `Optional: do you have a ${noun} to include? Paste a link, create one on Amazon, or skip it for now.`;
+    ? "gift list, wishlist, gift-card preference, or no-gifts note"
+    : "registry, gift list, wishlist, gift-card preference, or no-gifts note";
+  return `Optional: do you have a ${noun} to include? Paste a link, mention gift cards, create one on Amazon, or skip it for now.`;
 }
 
 function isGiftPromptSkipReply(message: string) {
@@ -969,6 +995,7 @@ function buildEmptyConversationDraft(args: {
     timezone: DEFAULT_TIMEZONE,
     location: null,
     venue: null,
+    additionalLocations: [],
     rsvpEnabled: null,
     rsvpDeadline: null,
     rsvpName: null,
@@ -1086,6 +1113,9 @@ function stripLeadingTimeFromLocation(value: string | null) {
   const withoutTime = cleaned.replace(
     /^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+(?:at|@)\s+/i,
     "",
+  ).replace(
+    /^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+(?:on\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow)\s+(?:at|@)\s+/i,
+    "",
   );
   const withoutTrailingIntent = withoutTime
     .replace(
@@ -1133,6 +1163,97 @@ function detectVenueOrLocation(text: string, ocrContext?: ConciergeOcrContext | 
   }
 
   return null;
+}
+
+const MULTI_LOCATION_LABELS =
+  "ceremony|reception|cocktail\\s+hour|after[-\\s]?party|dinner|lunch|brunch|breakfast|pizza|meal|check[-\\s]?in|registration|pickup|drop[-\\s]?off|photos?";
+
+function titleCaseLocationLabel(value: string) {
+  return value
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizeLocationCompare(value: string) {
+  return value
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function cleanDetectedLocation(value: string | null) {
+  const withoutLeadingTime = stripLeadingTimeFromLocation(cleanString(value) || null);
+  return (
+    cleanString(withoutLeadingTime)
+      ?.replace(/\s+(?:and|then|next)\s*$/i, "")
+      .replace(/^[\s"'([]+|[\s"').,\]]+$/g, "")
+      .trim() || null
+  );
+}
+
+function detectAdditionalLocations(
+  text: string,
+  primaryLocation: string | null,
+  previous?: ConciergeEventDraft | null,
+): ConciergeAdditionalLocation[] {
+  const existing = Array.isArray(previous?.additionalLocations)
+    ? previous.additionalLocations
+    : [];
+  const primaryKey = primaryLocation ? normalizeLocationCompare(primaryLocation) : "";
+  const seen = new Set<string>();
+  const locations: ConciergeAdditionalLocation[] = [];
+
+  const add = (location: ConciergeAdditionalLocation) => {
+    const display = [location.venue, location.location || location.address]
+      .filter((value, index, values) => value && values.indexOf(value) === index)
+      .join(", ");
+    const key = normalizeLocationCompare(display || location.label || "");
+    if (!key || key === primaryKey || seen.has(key)) return;
+    seen.add(key);
+    locations.push(location);
+  };
+
+  for (const location of existing) add(location);
+
+  const pattern = new RegExp(
+    `\\b(${MULTI_LOCATION_LABELS})\\b[^.\\n;]{0,80}?\\b(?:at|@)\\s+([^.\\n;]+?)(?=\\s+(?:and|then|next)\\s+(?:the\\s+)?(?:${MULTI_LOCATION_LABELS})\\b[^.\\n;]{0,40}?\\b(?:at|@)|[.;\\n]|$)`,
+    "gi",
+  );
+  for (const match of text.matchAll(pattern)) {
+    const label = titleCaseLocationLabel(match[1] || "Location");
+    const location = cleanDetectedLocation(match[2] || "");
+    if (!location) continue;
+    add({
+      label,
+      venue: location,
+      location,
+      address: null,
+      timeText: null,
+      description: null,
+      mapQuery: location,
+    });
+  }
+
+  if (locations.length <= 1) return locations.slice(0, 8);
+  const primaryDetectedKey = locations[0]
+    ? normalizeLocationCompare(locations[0].location || locations[0].venue || "")
+    : "";
+  return locations
+    .filter((location, index) => {
+      if (index === 0 && primaryKey === primaryDetectedKey) return false;
+      return true;
+    })
+    .slice(0, 8);
+}
+
+function detectPrimaryLabeledLocation(text: string) {
+  const locations = detectAdditionalLocations(text, null, null);
+  if (locations.length < 2) return null;
+  return locations[0]?.location || locations[0]?.venue || null;
 }
 
 function detectLocationFollowUp(text: string, previous?: ConciergeEventDraft | null) {
@@ -1515,9 +1636,11 @@ function compactVerificationLines(
   if (date) lines.push(`Date: ${date}`);
   if (time) lines.push(`Time: ${time}`);
   if (location) lines.push(`Location: ${location}`);
-  if (draft.rsvpEnabled === true) lines.push("RSVP: Envitefy tracking");
-  if (draft.rsvpEnabled === false) lines.push("RSVP: Not needed");
+  if (draft.rsvpEnabled === true) lines.push("RSVPs: Yes");
+  if (draft.rsvpEnabled === false) lines.push("RSVPs: No");
   if (draft.numberOfGuests) lines.push(`RSVP guest count: ${draft.numberOfGuests}`);
+  if (draft.rsvpName) lines.push(`RSVP host: ${draft.rsvpName}`);
+  if (draft.rsvpContact) lines.push(`RSVP contact: ${draft.rsvpContact}`);
   if (draft.registryLink || draft.giftRegistryLink) {
     lines.push(`${giftRegistryLabel(draft)}: ${draft.registryLink || draft.giftRegistryLink}`);
   }
@@ -1538,14 +1661,12 @@ function readyVerificationMessage(draft: ConciergeEventDraft) {
   }
 
   const actionLabel = outputActionLabel(draft);
-  const optionalPrompt = optionalGiftRegistryPrompt(draft);
   return [
     "Details are ready.",
     ...compactVerificationLines(draft),
     actionLabel === "products"
       ? "I can generate the selected products now."
-      : `I can generate the ${actionLabel === "live card" ? "invite" : actionLabel} now.`,
-    ...(optionalPrompt ? [optionalPrompt] : []),
+      : `Your ${actionLabel} is ready to generate.`,
   ].join("\n");
 }
 
@@ -1554,12 +1675,9 @@ function detailConfirmationQuestion(
   question: string,
   options: { includeRsvp?: boolean } = {},
 ) {
-  const includeRsvp = options.includeRsvp !== false;
-  const lines = compactVerificationLines(draft).filter(
-    (line) => includeRsvp || !/^RSVP(?: guest count)?:/i.test(line),
-  );
-  if (lines.length < 2) return question;
-  return ["I have these details.", ...lines, question].join("\n");
+  void draft;
+  void options;
+  return question;
 }
 
 function categoryIntakeMessage(draft: ConciergeEventDraft): string | null {
@@ -1620,6 +1738,8 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
   }
   const firstMissing = draft.missingFields[0];
   if (!firstMissing) {
+    const optionalPrompt = optionalGiftRegistryPrompt(draft);
+    if (optionalPrompt) return optionalPrompt;
     return readyVerificationMessage(draft);
   }
   if (isReceivedInviteDraft(draft)) {
@@ -1654,6 +1774,11 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
   if (firstMissing === "numberOfGuests") {
     return detailConfirmationQuestion(draft, questionForMissingField(firstMissing, draft, plan), {
       includeRsvp: false,
+    });
+  }
+  if (firstMissing === "rsvpName" || firstMissing === "rsvpContact") {
+    return detailConfirmationQuestion(draft, questionForMissingField(firstMissing, draft, plan), {
+      includeRsvp: true,
     });
   }
   if (firstMissing === "tone") {
@@ -1826,11 +1951,13 @@ export function fallbackExtractConciergeDraft(args: {
   const fieldStartIso = isoFromField(fieldsGuess.start);
   const fieldEndIso = isoFromField(fieldsGuess.end);
   const location =
+    detectPrimaryLabeledLocation(text) ||
     detectVenueOrLocation(text, args.ocrContext) ||
     detectLocationFollowUp(message, previous) ||
     previous?.location ||
     previous?.venue ||
     null;
+  const additionalLocations = detectAdditionalLocations(text, location, previous);
   const theme = detectTheme(text, previous);
   const receivedInviteWithoutSource =
     sourceContext.detectedSourceIntent === "received_invite" && !sourceContext.hasUsableContext;
@@ -1887,6 +2014,7 @@ export function fallbackExtractConciergeDraft(args: {
   const numberOfGuests = detectGuestCount(message, previous);
   const rsvpEnabled = detectRsvpEnabled(message, previous, requestedOutputs, fieldsGuess);
   const rsvpDeadline = detectRsvpDeadline(text, previous);
+  const rsvpName = detectRsvpName(text, fieldsGuess, previous);
   const rsvpContact = detectRsvpContact(text, fieldsGuess, previous);
   const giftPromptSkip = Boolean(
     previous && shouldOfferGiftRegistryPrompt(previous) && isGiftPromptSkipReply(message),
@@ -1933,6 +2061,8 @@ export function fallbackExtractConciergeDraft(args: {
         ageOrMilestone,
         rsvpEnabled,
         numberOfGuests,
+        rsvpName,
+        rsvpContact,
         tone: toneForStatus,
       });
   const needsDateConfirmation = Boolean(chronoResult.needsConfirmation);
@@ -1965,9 +2095,10 @@ export function fallbackExtractConciergeDraft(args: {
     timezone: firstString(fieldsGuess.timezone) || previous?.timezone || DEFAULT_TIMEZONE,
     location,
     venue: location,
+    additionalLocations,
     rsvpEnabled,
     rsvpDeadline,
-    rsvpName: previous?.rsvpName || null,
+    rsvpName,
     rsvpContact,
     numberOfGuests,
     registryLink,

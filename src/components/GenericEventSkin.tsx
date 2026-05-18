@@ -22,6 +22,7 @@ type Palette = {
 } | null;
 
 type Props = {
+  eventId?: string | null;
   title: string;
   categoryLabel?: string | null;
   dateLabel?: string | null;

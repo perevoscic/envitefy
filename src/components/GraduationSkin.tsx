@@ -22,6 +22,7 @@ type Palette = {
 } | null;
 
 type Props = {
+  eventId?: string | null;
   title: string;
   dateLabel?: string | null;
   timeLabel?: string | null;
@@ -51,6 +52,7 @@ type Props = {
 };
 
 export default function GraduationSkin({
+  eventId,
   title,
   dateLabel,
   timeLabel,
@@ -90,6 +92,7 @@ export default function GraduationSkin({
 
   return (
     <ScannedInviteSkin
+      eventId={eventId}
       title={title}
       categoryLabel="🎓 Graduation Celebration"
       backgroundCategory="graduation"

@@ -371,6 +371,23 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
     0,
     STUDIO_OPEN_HOUSE_REALTOR_LOGO_URL_MAX,
   );
+  details.additionalLocations = Array.isArray(value.additionalLocations)
+    ? value.additionalLocations
+        .map((item) => {
+          if (!isRecord(item)) return null;
+          return {
+            label: readString(item.label) || null,
+            venue: readString(item.venue) || null,
+            location: readString(item.location) || null,
+            address: readString(item.address) || null,
+            timeText: readString(item.timeText) || null,
+            description: readString(item.description) || null,
+            mapQuery: readString(item.mapQuery) || null,
+          };
+        })
+        .filter((item) => item && (item.venue || item.location || item.address))
+        .slice(0, 8)
+    : [];
   if (details.sourceMediaMode === "flyer") {
     details.guestImageUrls = [];
     details.propertyImageUrls = [];

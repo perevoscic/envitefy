@@ -10,6 +10,7 @@ export default async function AdminHealthPage() {
       "users",
       "event_history",
       "event_shares",
+      "event_tracking_events",
       "rsvp_responses",
       "email_campaigns",
       "creation_sessions",

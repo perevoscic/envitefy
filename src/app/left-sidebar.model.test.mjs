@@ -292,7 +292,9 @@ test("left sidebar reopens My Events and selects newly created upload routes", (
   assert.match(controllerSource, /const CREATED_EVENT_CONTEXT_STORAGE_KEY = "envitefy:created-event-context:v1";/);
   assert.match(controllerSource, /function readPendingCreatedEventContext\(\)/);
   assert.match(controllerSource, /function pendingCreatedEventMatchesPath\(/);
+  assert.match(controllerSource, /function eventListItemMatchesPath\(/);
   assert.match(controllerSource, /const findEventListItemFromPath = useCallback/);
+  assert.match(controllerSource, /eventListItemMatchesPath\(item, routePath\)/);
   assert.match(controllerSource, /const createdHint = String\(searchParams\?\.get\("created"\) \|\| ""\)/);
   assert.match(controllerSource, /if \(createdHint !== "true" && createdHint !== "1"\) return;/);
   assert.match(controllerSource, /if \(inferred && inferred\.source === "myEvents"\) \{/);
@@ -306,4 +308,6 @@ test("left sidebar reopens My Events and selects newly created upload routes", (
   assert.match(controllerSource, /setActiveEventTab\("dashboard"\);/);
   assert.match(controllerSource, /setEventContextSourcePage\("myEvents"\);/);
   assert.match(controllerSource, /setSidebarPage\("myEvents"\);/);
+  assert.match(controllerSource, /const inferred = findEventListItemFromPath\(pathname\);/);
+  assert.match(controllerSource, /if \(inferred\?\.item\.row\.id === rowId\) return true;/);
 });

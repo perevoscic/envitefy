@@ -25,6 +25,7 @@ import {
   normalizeWeddingFlyerColors,
   parseWeddingCoupleNames,
 } from "@/lib/wedding-scan";
+import { trackEventInteraction } from "@/utils/event-tracking-client";
 
 type CalendarLinks = {
   google: string;
@@ -559,7 +560,18 @@ export default function ScannedWeddingInviteView({
                     target={previewMode ? undefined : "_blank"}
                     rel={previewMode ? undefined : "noopener noreferrer"}
                     onClick={(event) => {
-                      if (previewMode) event.preventDefault();
+                      if (previewMode) {
+                        event.preventDefault();
+                        return;
+                      }
+                      if (!eventId) return;
+                      trackEventInteraction({
+                        eventId,
+                        eventName: "registry_click",
+                        targetUrl: link.url,
+                        targetLabel: link.label,
+                        sourceSurface: "scanned_wedding_invite",
+                      });
                     }}
                     className="group flex items-start gap-4 rounded-[1.7rem] border border-black/5 bg-white px-4 py-4 shadow-[0_14px_40px_rgba(37,26,10,0.06)] transition hover:-translate-y-0.5"
                     style={{

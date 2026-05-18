@@ -43,6 +43,15 @@ export type EventDetails = {
   endTime: string;
   venueName: string;
   location: string;
+  additionalLocations?: Array<{
+    label?: string | null;
+    venue?: string | null;
+    location?: string | null;
+    address?: string | null;
+    timeText?: string | null;
+    description?: string | null;
+    mapQuery?: string | null;
+  }>;
   rsvpName: string;
   rsvpContact: string;
   rsvpDeadline: string;

@@ -58,7 +58,7 @@ test("left sidebar exposes signed-in AI Concierge entry", () => {
   assert.doesNotMatch(source, /Create with AI/);
   assert.match(
     source,
-    /const isChatActive = pathname === "\/chat" \|\| sidebarPage === "aiThreads";/,
+    /const isChatActive = \(pathname === "\/chat" \|\| sidebarPage === "aiThreads"\) && !isSnapUploadActive;/,
   );
   assert.match(source, /function AiThreadsPanel/);
   assert.match(
@@ -90,6 +90,19 @@ test("left sidebar exposes signed-in AI Concierge entry", () => {
   assert.match(controllerSource, /openAiThreadsPage: \(\) => void;/);
   assert.match(controllerSource, /openAiThread: \(threadId: string\) => void;/);
   assert.match(controllerSource, /startNewAiChat: \(\) => void;/);
+  assert.match(
+    controllerSource,
+    /const normalizedPathname = \(pathname \|\| ""\)\.replace\(\/\\\/\+\$\/, ""\) \|\| "\/";/,
+  );
+  assert.match(
+    controllerSource,
+    /const \[sidebarPage, setSidebarPage\] = useState<SidebarPage>\(\(\) =>\s*normalizedPathname === "\/chat" \? "aiThreads" : "root",\s*\);/s,
+  );
+  assert.match(controllerSource, /const lastChatRouteSyncPathRef = useRef<string \| null>\(null\);/);
+  assert.match(
+    controllerSource,
+    /if \(normalizedPathname !== "\/chat"\) \{[\s\S]*?lastChatRouteSyncPathRef\.current = null;[\s\S]*?return;[\s\S]*?\}[\s\S]*?if \(lastChatRouteSyncPathRef\.current === normalizedPathname\) return;[\s\S]*?lastChatRouteSyncPathRef\.current = normalizedPathname;[\s\S]*?clearEventContext\(\);[\s\S]*?setSidebarPage\("aiThreads"\);/s,
+  );
   assert.match(
     controllerSource,
     /const openAiThreadsPage = useCallback\(\(\) => \{[\s\S]*?setSidebarPage\("aiThreads"\)/,

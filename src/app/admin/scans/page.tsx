@@ -25,7 +25,7 @@ export default async function AdminScansPage() {
       <AdminPageHeader
         eyebrow="Acquisition"
         title="Scans & Traffic"
-        description="Saved OCR/upload/snap rows plus first-party share and RSVP flow. Page views and click tracking are placeholders until explicit events are added."
+        description="Saved OCR/upload/snap rows plus first-party share, RSVP, public view, and link-click flow."
       />
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -93,16 +93,16 @@ export default async function AdminScansPage() {
         </AdminPanel>
       </div>
 
-      <AdminPanel title="Explicit Tracking Still Needed">
+      <AdminPanel title="First-Party Tracking">
         <div className="grid gap-3 md:grid-cols-3">
           {["Public event views", "Share link clicks", "Registry clicks"].map((label) => (
             <div
               key={label}
-              className="rounded-lg border border-dashed border-amber-300 bg-amber-50 p-4"
+              className="rounded-lg border border-emerald-200 bg-emerald-50 p-4"
             >
-              <p className="text-sm font-semibold text-amber-900">{label}</p>
-              <p className="mt-1 text-sm text-amber-800">
-                Placeholder only. No broad analytics event table is added in v1.
+              <p className="text-sm font-semibold text-emerald-950">{label}</p>
+              <p className="mt-1 text-sm text-emerald-800">
+                Recorded in event_tracking_events and summarized on the Events and Analytics pages.
               </p>
             </div>
           ))}

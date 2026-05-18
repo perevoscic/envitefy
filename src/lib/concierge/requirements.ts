@@ -15,6 +15,8 @@ export type RequirementField =
   | "location"
   | "rsvpEnabled"
   | "numberOfGuests"
+  | "rsvpName"
+  | "rsvpContact"
   | "registryLink"
   | "giftPreferenceNote"
   | "tone";
@@ -202,6 +204,8 @@ const DEFAULT_FIELD_QUESTIONS: Partial<Record<RequirementField, string>> = {
   rsvpEnabled:
     "Should Envitefy collect RSVPs for this event? Guests can answer yes, no, or maybe from the invite.",
   numberOfGuests: "How many guests should the RSVP track?",
+  rsvpName: "Who should guests see as the host or RSVP contact?",
+  rsvpContact: "What phone number or email should guests use if they need to reach the host?",
   registryLink: "Should I include a registry, gift list, wishlist, or gift link?",
   giftPreferenceNote: "Any gift note to show, such as no gifts or gift cards preferred?",
   tone:
@@ -217,6 +221,8 @@ const DEFAULT_SUGGESTED_REPLIES: Partial<Record<RequirementField, string[]>> = {
   location: ["At home", "At Sky Zone"],
   rsvpEnabled: ["Yes, collect RSVPs", "No RSVP needed"],
   numberOfGuests: ["20 guests", "35 guests"],
+  rsvpName: ["Hosted by Mia", "The Johnson family"],
+  rsvpContact: ["555-123-4567", "host@example.com"],
   registryLink: ["Add a registry link", "No gift link"],
   giftPreferenceNote: ["No gifts please", "Gift cards preferred"],
   tone: ["Fun and colorful with balloons", "Elegant florals", "Playful arcade party"],
@@ -461,6 +467,8 @@ export function requirementFieldSatisfied(
     | "venue"
     | "rsvpEnabled"
     | "numberOfGuests"
+    | "rsvpName"
+    | "rsvpContact"
     | "tone"
   >,
 ): boolean {
@@ -480,6 +488,12 @@ export function requirementFieldSatisfied(
   if (field === "rsvpEnabled") return typeof draft.rsvpEnabled === "boolean";
   if (field === "numberOfGuests") {
     return typeof draft.numberOfGuests === "number" && draft.numberOfGuests > 0;
+  }
+  if (field === "rsvpName") {
+    return draft.rsvpEnabled !== true || Boolean(cleanString(draft.rsvpName));
+  }
+  if (field === "rsvpContact") {
+    return draft.rsvpEnabled !== true || Boolean(cleanString(draft.rsvpContact));
   }
   if (field === "tone") return Boolean(cleanString(draft.tone));
   return false;

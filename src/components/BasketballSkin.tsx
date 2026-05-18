@@ -22,6 +22,7 @@ type Palette = {
 } | null;
 
 type Props = {
+  eventId?: string | null;
   title: string;
   dateLabel?: string | null;
   timeLabel?: string | null;
@@ -157,6 +158,7 @@ function buildBasketballBackground(
 }
 
 export default function BasketballSkin({
+  eventId,
   title,
   dateLabel,
   timeLabel,
@@ -212,6 +214,7 @@ export default function BasketballSkin({
 
   return (
     <ScannedInviteSkin
+      eventId={eventId}
       title={title}
       categoryLabel={displayCategoryLabel}
       backgroundCategory="basketball"

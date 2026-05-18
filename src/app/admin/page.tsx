@@ -94,7 +94,7 @@ export default async function AdminDashboardPage() {
         <div className="min-w-0 space-y-5">
           <AdminPanel
             title="Platform Funnel"
-            description="Current first-party counts. View, share-click, registry-click, and attribution events are documented as missing tracking below."
+            description="Current first-party counts. Event views, share-clicks, registry-clicks, and attribution readiness are summarized below."
           >
             <div className="space-y-3">
               {overview.funnel.map((step) => {

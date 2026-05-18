@@ -307,7 +307,6 @@ export default function ChatProductPreview({
   publicHref,
   rsvpDashboardHref,
   hasDraftProduct,
-  skinLabel,
   isPublishing,
   onPublish,
   mobileView,
@@ -411,7 +410,7 @@ export default function ChatProductPreview({
               </div>
             ) : null}
             <p className="mt-3 max-w-full px-3 text-center text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#4f416a]">
-              {skinLabel ? `Skin: ${skinLabel}. ${previewProcessStatus}` : previewProcessStatus}
+              {previewProcessStatus}
             </p>
           </div>
         </div>

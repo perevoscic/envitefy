@@ -39,6 +39,9 @@ export type AdminAnalyticsSnapshot = {
     publicEvents: number;
     sharesLast30Days: number;
     rsvpsLast30Days: number;
+    publicEventViews30Days: number;
+    linkClicks30Days: number;
+    registryClicks30Days: number;
   };
   trackingGaps: AdminTrackingGap[];
 };
@@ -75,19 +78,19 @@ export function getAdminTrackingGaps(): AdminTrackingGap[] {
   return [
     {
       eventName: "public_event_view",
-      status: "missing",
+      status: "available",
       owner: "public event renderer",
       description: "Track anonymous and signed-in views by event id, category, and owner id.",
     },
     {
       eventName: "share_link_click",
-      status: "missing",
+      status: "available",
       owner: "share surfaces",
       description: "Capture share channel, event id, invite code, and source surface.",
     },
     {
       eventName: "registry_click",
-      status: "missing",
+      status: "available",
       owner: "public event renderer",
       description: "Track outbound registry clicks with destination domain and event category.",
     },
@@ -111,8 +114,10 @@ export async function getAdminAnalyticsOverviewSnapshot(): Promise<AdminAnalytic
 
 export async function getAdminAnalyticsSnapshot(): Promise<AdminAnalyticsSnapshot> {
   const rsvpsExist = await tableExists("rsvp_responses");
+  const trackingEventsExist = await tableExists("event_tracking_events");
   const since30 = daysAgo(30);
-  const [events, publicEvents, shares, rsvps, ga4Report] = await Promise.all([
+  const [events, publicEvents, shares, rsvps, publicEventViews, linkClicks, registryClicks, ga4Report] =
+    await Promise.all([
     query<{ n: string }>(
       `select count(*)::text as n from event_history where created_at >= $1::timestamptz`,
       [since30],
@@ -132,6 +137,33 @@ export async function getAdminAnalyticsSnapshot(): Promise<AdminAnalyticsSnapsho
           [since30],
         )
       : Promise.resolve({ rows: [{ n: "0" }] } as Awaited<ReturnType<typeof query<{ n: string }>>>),
+    trackingEventsExist
+      ? query<{ n: string }>(
+          `select count(*)::text as n
+           from event_tracking_events
+           where event_name = 'public_event_view'
+             and occurred_at >= $1::timestamptz`,
+          [since30],
+        )
+      : Promise.resolve({ rows: [{ n: "0" }] } as Awaited<ReturnType<typeof query<{ n: string }>>>),
+    trackingEventsExist
+      ? query<{ n: string }>(
+          `select count(*)::text as n
+           from event_tracking_events
+           where event_name in ('share_link_click', 'registry_click', 'event_link_click')
+             and occurred_at >= $1::timestamptz`,
+          [since30],
+        )
+      : Promise.resolve({ rows: [{ n: "0" }] } as Awaited<ReturnType<typeof query<{ n: string }>>>),
+    trackingEventsExist
+      ? query<{ n: string }>(
+          `select count(*)::text as n
+           from event_tracking_events
+           where event_name = 'registry_click'
+             and occurred_at >= $1::timestamptz`,
+          [since30],
+        )
+      : Promise.resolve({ rows: [{ n: "0" }] } as Awaited<ReturnType<typeof query<{ n: string }>>>),
     getGa4DashboardSnapshot(),
   ]);
 
@@ -143,6 +175,9 @@ export async function getAdminAnalyticsSnapshot(): Promise<AdminAnalyticsSnapsho
       publicEvents: toNumber(publicEvents.rows[0]?.n),
       sharesLast30Days: toNumber(shares.rows[0]?.n),
       rsvpsLast30Days: toNumber(rsvps.rows[0]?.n),
+      publicEventViews30Days: toNumber(publicEventViews.rows[0]?.n),
+      linkClicks30Days: toNumber(linkClicks.rows[0]?.n),
+      registryClicks30Days: toNumber(registryClicks.rows[0]?.n),
     },
     trackingGaps: getAdminTrackingGaps(),
   };

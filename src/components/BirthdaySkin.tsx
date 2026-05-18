@@ -39,6 +39,7 @@ import {
   normalizeScannedInvitePalette,
 } from "@/lib/scanned-invite-palette";
 import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
+import { trackEventInteraction } from "@/utils/event-tracking-client";
 
 type CalendarLinks = {
   google: string;
@@ -57,6 +58,7 @@ type Palette = {
 } | null;
 
 type Props = {
+  eventId?: string | null;
   title: string;
   honoreeName?: string | null;
   dateLabel?: string | null;
@@ -195,6 +197,7 @@ function extractVenueFromPlanCopy(planCopy: string): string {
 }
 
 export default function BirthdaySkin({
+  eventId,
   title,
   honoreeName,
   dateLabel,
@@ -673,6 +676,16 @@ export default function BirthdaySkin({
                   href={displayRegistryUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => {
+                    if (!eventId) return;
+                    trackEventInteraction({
+                      eventId,
+                      eventName: "registry_click",
+                      targetUrl: displayRegistryUrl,
+                      targetLabel: resolvedRegistryActionLabel,
+                      sourceSurface: "birthday_skin",
+                    });
+                  }}
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.48 }}

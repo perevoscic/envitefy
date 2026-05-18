@@ -32,12 +32,6 @@ export type StreamConciergePersonaResult = {
   usedAi: boolean;
 };
 
-function cleanString(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const cleaned = value.replace(/\s+/g, " ").trim();
-  return cleaned || null;
-}
-
 const OUTPUT_LABELS: Record<RequestedOutput, string> = {
   event_page: "Event page",
   live_card: "Live card",
@@ -142,7 +136,12 @@ function conversationMessages(messages: CreationChatMessageSnapshot[]) {
 }
 
 function streamFallback(fallbackMessage: string, onDelta: (text: string) => void) {
-  const fallback = cleanString(fallbackMessage) || "What should we add next?";
+  const fallback =
+    fallbackMessage
+      .replace(/[ \t]+/g, " ")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim() || "What should we add next?";
   onDelta(fallback);
   return {
     assistantMessage: fallback,
@@ -150,7 +149,11 @@ function streamFallback(fallbackMessage: string, onDelta: (text: string) => void
   };
 }
 
-function shouldUseDeterministicFallback(draft: ConciergeEventDraft) {
+function fallbackIncludesOptionalGiftPrompt(fallbackMessage: string) {
+  return /\bOptional:\s+do you have a (?:registry|gift list)/i.test(fallbackMessage);
+}
+
+function shouldUseDeterministicFallback(draft: ConciergeEventDraft, fallbackMessage: string) {
   return (
     draft.sourceContext.boundary === "envitefy_question" ||
     draft.sourceContext.boundary === "non_creation" ||
@@ -158,7 +161,8 @@ function shouldUseDeterministicFallback(draft: ConciergeEventDraft) {
     draft.sourceContext.boundary === "secret_detected" ||
     draft.sourceContext.boundary === "unsafe_guest_data" ||
     draft.sourceContext.boundary === "ambiguous_edit" ||
-    draft.currentQuestion === "date_confirmation"
+    draft.currentQuestion === "date_confirmation" ||
+    fallbackIncludesOptionalGiftPrompt(fallbackMessage)
   );
 }
 
@@ -166,7 +170,7 @@ export async function streamConciergePersona(
   params: StreamConciergePersonaParams,
   deps: PersonaDeps = {},
 ): Promise<StreamConciergePersonaResult> {
-  if (shouldUseDeterministicFallback(params.draft)) {
+  if (shouldUseDeterministicFallback(params.draft, params.fallbackMessage)) {
     return streamFallback(params.fallbackMessage, params.onDelta);
   }
 

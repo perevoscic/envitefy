@@ -24,6 +24,7 @@ import {
 } from "./openai-config.ts";
 import { sanitizeConciergePreviewCopy } from "./public-copy.ts";
 import type {
+  ConciergeAdditionalLocation,
   ConciergeEventDraft,
   ConciergeMessageRequest,
   ConciergeSource,
@@ -111,6 +112,61 @@ function normalizeSource(value: unknown, fallback: ConciergeSource): ConciergeSo
   return fallback;
 }
 
+function normalizeLocationKey(value: string) {
+  return value
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function locationDisplayLine(location: ConciergeAdditionalLocation) {
+  return [location.venue, location.location || location.address]
+    .filter((value, index, values) => value && values.indexOf(value) === index)
+    .join(", ");
+}
+
+function normalizeAdditionalLocations(
+  values: unknown[],
+  primary: { venue: string | null; location: string | null },
+): ConciergeAdditionalLocation[] {
+  const primaryKeys = [primary.venue, primary.location, [primary.venue, primary.location].filter(Boolean).join(", ")]
+    .map((value) => (value ? normalizeLocationKey(value) : ""))
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const locations: ConciergeAdditionalLocation[] = [];
+
+  for (const value of values) {
+    const items = Array.isArray(value) ? value : value ? [value] : [];
+    for (const item of items) {
+      const record = asRecord(item);
+      const rawString = typeof item === "string" ? item : "";
+      const label = firstDraftString(record.label, record.name, record.title) || null;
+      const venue = firstDraftString(record.venue, record.venueName, record.placeName) || null;
+      const location =
+        firstDraftString(record.location, record.address, record.mapQuery, rawString) || null;
+      const address = firstDraftString(record.address) || null;
+      const normalized: ConciergeAdditionalLocation = {
+        label,
+        venue,
+        location,
+        address,
+        timeText: firstDraftString(record.timeText, record.time) || null,
+        description: firstDraftString(record.description, record.note) || null,
+        mapQuery: firstDraftString(record.mapQuery, record.directionsQuery) || null,
+      };
+      const display = locationDisplayLine(normalized);
+      const key = normalizeLocationKey(display || normalized.label || "");
+      if (!key || primaryKeys.includes(key) || seen.has(key)) continue;
+      seen.add(key);
+      locations.push(normalized);
+    }
+  }
+
+  return locations.slice(0, 8);
+}
+
 function validIsoOrNull(value: unknown): string | null {
   const raw = cleanString(value);
   if (!raw) return null;
@@ -169,7 +225,12 @@ function reconciledMissingFields(
     | "startISO"
     | "location"
     | "venue"
+    | "rsvpEnabled"
+    | "requestedOutputs"
     | "numberOfGuests"
+    | "rsvpName"
+    | "rsvpContact"
+    | "theme"
     | "tone"
   >,
 ) {
@@ -186,7 +247,11 @@ function reconciledMissingFields(
   if (typeof draft.rsvpEnabled === "boolean") missing.delete("rsvpEnabled");
   if (!rsvpTrackingEnabled(draft)) missing.delete("numberOfGuests");
   if (draft.numberOfGuests) missing.delete("numberOfGuests");
-  if (draft.tone) missing.delete("tone");
+  if (!rsvpTrackingEnabled(draft)) missing.delete("rsvpName");
+  if (draft.rsvpName) missing.delete("rsvpName");
+  if (!rsvpTrackingEnabled(draft)) missing.delete("rsvpContact");
+  if (draft.rsvpContact) missing.delete("rsvpContact");
+  if (draft.tone || draft.theme) missing.delete("tone");
   return Array.from(missing);
 }
 
@@ -273,6 +338,18 @@ export function normalizeConciergeDraft(
   const venue = firstDraftString(record.venue, eventData.venue, eventData.placeName);
   const resolvedLocation = location || fallback.location || venue || fallback.venue;
   const resolvedVenue = venue || fallback.venue || location || fallback.location;
+  const additionalLocations = normalizeAdditionalLocations(
+    [
+      record.additionalLocations,
+      record.locations,
+      record.eventLocations,
+      eventData.additionalLocations,
+      eventData.locations,
+      eventData.eventLocations,
+      fallback.additionalLocations,
+    ],
+    { venue: resolvedVenue || null, location: resolvedLocation || null },
+  );
   const honoreeName =
     firstDraftString(record.honoreeName, eventData.honoreeName, eventData.birthdayName) ||
     fallback.honoreeName;
@@ -366,6 +443,7 @@ export function normalizeConciergeDraft(
     typeof record.giftPromptDismissed === "boolean"
       ? record.giftPromptDismissed
       : fallback.giftPromptDismissed || null;
+  const visualDirection = tone || theme;
   const status = deriveCreationStatus({
     sourceContext,
     eventPurpose,
@@ -380,7 +458,9 @@ export function normalizeConciergeDraft(
     ageOrMilestone,
     rsvpEnabled,
     numberOfGuests,
-    tone,
+    rsvpName,
+    rsvpContact,
+    tone: visualDirection,
     draftStatus: record.draftStatus,
   });
   const draft: ConciergeEventDraft = {
@@ -417,6 +497,7 @@ export function normalizeConciergeDraft(
       firstDraftString(record.timezone, eventData.timezone, eventData.tz) || fallback.timezone,
     location: resolvedLocation || null,
     venue: resolvedVenue || null,
+    additionalLocations,
     rsvpEnabled,
     rsvpDeadline,
     rsvpName,
@@ -505,7 +586,8 @@ async function extractWithOpenAi(
               "You are Envitefy's event creation concierge.",
               "Only handle event, flyer invitation, RSVP, and event asset creation or editing.",
               "Return one JSON object matching the draft shape. Do not include markdown.",
-              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, honoreeName, ageOrMilestone, rsvpEnabled, rsvpDeadline, rsvpName, rsvpContact, numberOfGuests, registryLink, giftNote, giftPreferenceNote, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
+              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, additionalLocations, honoreeName, ageOrMilestone, rsvpEnabled, rsvpDeadline, rsvpName, rsvpContact, numberOfGuests, registryLink, giftNote, giftPreferenceNote, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
+              "When RSVP is enabled for an owned event, collect the host or organizer display name in rsvpName and a phone number or email for RSVP follow-up in rsvpContact. Do not invent either value.",
               "If you include nested eventData for convenience, duplicate the same extracted fields at the top level.",
               "Separate requested output from event details: live cards, flyer invitations, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",
               "Never copy the user's whole creation request into title, eventPurpose, headline, theme, or tone; distill guest-facing names like matchups, honorees, couples, venues, or concise event labels.",
@@ -518,6 +600,7 @@ async function extractWithOpenAi(
               "Prioritize eventPurpose/title before strict event type. Do not ask for date/time before event purpose/source.",
               "When the previous draft is asking for a specific missing field, treat a short user reply as the answer to that field unless it clearly changes topics.",
               "Treat venue as satisfying the location requirement; if only one of venue or location is known, return it in both fields.",
+              "If the user gives multiple event places, preserve the primary place in venue/location and put every other place in additionalLocations as objects with label, venue, location/address, optional timeText, and optional description. Examples include ceremony and reception venues, dinner then after-party, check-in then main event, or pickup/dropoff places. Do not drop secondary locations from event pages, live cards, or final products.",
               "If the previous draft asks whether Envitefy should collect RSVPs, set rsvpEnabled true for yes/include/collect/track replies and false for no/skip/not needed replies.",
               "If the previous draft asks for RSVP guest count or RSVP choice, a numeric or yes/no reply must not satisfy theme or tone. Visual products still need a later vibe/image direction question unless the user already supplied concrete visual direction.",
               "Do not mark drafts ready when event purpose/source is missing. Do not classify uploads as invited based only on event category.",

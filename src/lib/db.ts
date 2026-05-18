@@ -1,4 +1,10 @@
-import { scrypt as nodeScrypt, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import {
+  createHash,
+  scrypt as nodeScrypt,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from "node:crypto";
 import { promisify } from "node:util";
 import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
 import { ADMIN_USER_METRICS_CTE_SQL } from "@/lib/admin-user-metrics-sql";
@@ -257,6 +263,132 @@ async function ensureOnce(key: string, work: () => Promise<void>): Promise<void>
   });
   ensureInflight.set(key, promise);
   await promise;
+}
+
+export type EventTrackingEventName =
+  | "public_event_view"
+  | "share_link_click"
+  | "registry_click"
+  | "event_link_click";
+
+export type EventTrackingInsert = {
+  eventId: string;
+  eventName: EventTrackingEventName;
+  targetUrl?: string | null;
+  targetDomain?: string | null;
+  targetLabel?: string | null;
+  sourceSurface?: string | null;
+  viewerUserId?: string | null;
+  visitorId?: string | null;
+  path?: string | null;
+  referrer?: string | null;
+  userAgent?: string | null;
+  metadata?: Record<string, string | number | boolean | null> | null;
+};
+
+const EVENT_TRACKING_EVENT_NAMES = new Set<EventTrackingEventName>([
+  "public_event_view",
+  "share_link_click",
+  "registry_click",
+  "event_link_click",
+]);
+
+function trimNullableText(value: string | null | undefined, maxLength: number): string | null {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return null;
+  return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+function hashEventVisitorId(value: string | null | undefined): string | null {
+  const trimmed = trimNullableText(value, 256);
+  if (!trimmed) return null;
+  return createHash("sha256").update(trimmed).digest("hex");
+}
+
+async function ensureEventTrackingEventsSchema(): Promise<void> {
+  await ensureOnce("event_tracking_events_schema", async () => {
+    await query(`
+      create table if not exists event_tracking_events (
+        id uuid primary key default gen_random_uuid(),
+        event_id uuid not null references event_history(id) on delete cascade,
+        event_name text not null,
+        target_url text,
+        target_domain text,
+        target_label text,
+        source_surface text,
+        viewer_user_id uuid references users(id),
+        visitor_id_hash text,
+        path text,
+        referrer text,
+        user_agent text,
+        metadata jsonb not null default '{}'::jsonb,
+        occurred_at timestamptz(6) default now()
+      )
+    `);
+    await query(`
+      create index if not exists idx_event_tracking_events_event_name_time
+      on event_tracking_events(event_id, event_name, occurred_at desc)
+    `);
+    await query(`
+      create index if not exists idx_event_tracking_events_occurred_at
+      on event_tracking_events(occurred_at desc)
+    `);
+    await query(`
+      create index if not exists idx_event_tracking_events_target_domain
+      on event_tracking_events(target_domain)
+    `);
+  });
+}
+
+export async function insertEventTrackingEvent(params: EventTrackingInsert): Promise<void> {
+  if (!EVENT_TRACKING_EVENT_NAMES.has(params.eventName)) {
+    throw new Error("Unsupported event tracking event name");
+  }
+
+  await ensureEventTrackingEventsSchema();
+  const targetUrl = trimNullableText(params.targetUrl, 2048);
+  const targetDomain =
+    trimNullableText(params.targetDomain, 255) ||
+    (() => {
+      if (!targetUrl) return null;
+      try {
+        return new URL(targetUrl).hostname.toLowerCase().replace(/^www\./, "");
+      } catch {
+        return null;
+      }
+    })();
+
+  await query(
+    `insert into event_tracking_events (
+       event_id,
+       event_name,
+       target_url,
+       target_domain,
+       target_label,
+       source_surface,
+       viewer_user_id,
+       visitor_id_hash,
+       path,
+       referrer,
+       user_agent,
+       metadata
+     )
+     values ($1::uuid, $2, $3, $4, $5, $6, $7::uuid, $8, $9, $10, $11, $12::jsonb)`,
+    [
+      params.eventId,
+      params.eventName,
+      targetUrl,
+      targetDomain,
+      trimNullableText(params.targetLabel, 160),
+      trimNullableText(params.sourceSurface, 80),
+      trimNullableText(params.viewerUserId, 64),
+      hashEventVisitorId(params.visitorId),
+      trimNullableText(params.path, 2048),
+      trimNullableText(params.referrer, 2048),
+      trimNullableText(params.userAgent, 512),
+      JSON.stringify(params.metadata || {}),
+    ],
+  );
 }
 
 const USER_SELECT_COLUMNS = `

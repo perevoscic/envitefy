@@ -136,7 +136,7 @@ export function AdminBarList({
   rows,
   valueLabel = "count",
 }: {
-  rows: Array<{ label: string; value: number; detail?: string }>;
+  rows: Array<{ key?: string; label: string; value: number; detail?: string }>;
   valueLabel?: string;
 }) {
   const max = Math.max(1, ...rows.map((row) => row.value));
@@ -148,10 +148,10 @@ export function AdminBarList({
 
   return (
     <div className="space-y-3">
-      {rows.map((row) => {
+      {rows.map((row, index) => {
         const width = `${Math.max(4, Math.round((row.value / max) * 100))}%`;
         return (
-          <div key={row.label} className="min-w-0 space-y-1">
+          <div key={row.key || `${row.label}-${index}`} className="min-w-0 space-y-1">
             <div className="flex items-center justify-between gap-3 text-sm">
               <span className="min-w-0 truncate font-medium text-slate-800">{row.label}</span>
               <span className="shrink-0 font-semibold text-slate-950">

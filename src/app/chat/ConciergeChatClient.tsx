@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
   Cake,
-  Camera,
   FileImage,
   Gift,
   Globe,
@@ -12,7 +11,6 @@ import {
   Loader2,
   MessageCircle,
   Mic,
-  Paperclip,
   Sparkles,
   Trophy,
   Upload,
@@ -59,10 +57,7 @@ import type {
   CreationSessionResumeResponse,
   RequestedOutput,
 } from "@/lib/concierge/types";
-import {
-  skinLabelForCategoryName,
-  skinLabelForConciergeDraft,
-} from "@/lib/concierge/skins";
+import { skinLabelForCategoryName, skinLabelForConciergeDraft } from "@/lib/concierge/skins";
 import { runSnapOcrUpload, type SnapOcrUploadResult } from "@/lib/snap-upload-pipeline";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
 import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
@@ -400,6 +395,12 @@ function sanitizeAssistantBubbleText(text: string, detailsDraft?: ConciergeEvent
     .replace(/\n{3,}/g, "\n\n");
 }
 
+function optionalGiftQuestionText(text: string) {
+  const match = text.match(/\bOptional:\s*(do you have [^?\n]+\?)/i);
+  if (!match?.[1]) return null;
+  return `${match[1][0]?.toUpperCase() || ""}${match[1].slice(1)}`;
+}
+
 const DETAIL_CONFIRMATION_LINE =
   /^(Selected products?|Products?|Captured details?|Event|Title|Names|Couple|Honoree|Date|Time|Location|Venue|Theme|Vibe|RSVP(?: guest count| by| deadline| line)?|Guest count):\s*(.+)$/i;
 
@@ -450,7 +451,8 @@ function renderHighlightedAssistantLine(
 }
 
 function formatAssistantBubbleText(text: string, detailsDraft?: ConciergeEventDraft | null) {
-  const lines = sanitizeAssistantBubbleText(text, detailsDraft).split(/\n/);
+  const sanitized = sanitizeAssistantBubbleText(text, detailsDraft);
+  const lines = (optionalGiftQuestionText(sanitized) || sanitized).split(/\n/);
   return lines.map((line, index) => {
     if (!line.trim()) return <br key={`break-${index}`} />;
     const detail = line.match(DETAIL_CONFIRMATION_LINE);
@@ -950,6 +952,31 @@ function uniqueDisplayLine(...values: unknown[]) {
   return parts.filter((value, index) => parts.indexOf(value) === index).join(", ") || null;
 }
 
+function additionalLocationLine(location: ConciergeEventDraft["additionalLocations"][number]) {
+  return uniqueDisplayLine(location.venue, location.location || location.address);
+}
+
+function additionalLocationNarrative(draft: ConciergeEventDraft) {
+  const lines = (draft.additionalLocations || [])
+    .map((location) => {
+      const place = additionalLocationLine(location);
+      if (!place) return null;
+      const label = stringValue(location.label);
+      const timeText = stringValue(location.timeText);
+      const description = stringValue(location.description);
+      return [
+        label ? `${label}: ${place}` : place,
+        timeText ? `at ${timeText}` : null,
+        description,
+      ]
+        .filter(Boolean)
+        .join(" ");
+    })
+    .filter((value): value is string => Boolean(value));
+  if (!lines.length) return null;
+  return `Additional event stop${lines.length === 1 ? "" : "s"}: ${lines.join("; ")}.`;
+}
+
 function outputLabelsFromUnknown(value: unknown, fallback: string[]) {
   const raw = Array.isArray(value) ? value : [];
   const labels = raw
@@ -1022,6 +1049,7 @@ function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
     stringValue(draft.previewCopy.body) ||
     stringValue(draft.eventPurpose) ||
     `Join us for ${headline}.`;
+  const locationNarrative = additionalLocationNarrative(draft);
   const venueName = stringValue(draft.venue) || "";
   const location = stringValue(draft.location) || venueName;
   const honoreeName = stringValue(draft.honoreeName) || "";
@@ -1045,10 +1073,14 @@ function buildStudioDetailsFromDraft(draft: ConciergeEventDraft): EventDetails {
     endTime: timeInputFromDraft(draft.endISO),
     venueName,
     location,
-    detailsDescription: body,
+    additionalLocations: draft.additionalLocations || [],
+    detailsDescription: [body, locationNarrative].filter(Boolean).join(" "),
     message: draftSubheadline(draft),
     specialInstructions: [
       skinInstruction,
+      locationNarrative
+        ? `Preserve the full event flow in the generated live card and guest-facing details. ${locationNarrative}`
+        : null,
       isEventPageProduct
         ? "Generate website hero/background artwork for the event page. Do not bake large title text, date/time, address, faux buttons, phone chrome, or website UI into the image because the event page renders real navigation, headings, schedule, location, RSVP form, calendar actions, and registry links in HTML."
         : null,
@@ -1212,7 +1244,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const initialAssistantPrompt = buildInitialAssistantPrompt();
   const userAvatarInitials = normalizeUserInitials(userInitials);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const chatPaneRef = useRef<HTMLDivElement | null>(null);
   const composerCardRef = useRef<HTMLDivElement | null>(null);
@@ -1322,8 +1353,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const currentLiveCardSummary =
     liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
   const previewTitle = liveCardTitle || currentLiveCardSummary.headline;
-  const canGenerateProduct =
-    isReadyProductDraft(draft) && !isBusy && !liveCardEventId && !hasGeneratedDraftProduct;
+  const hasReadyDraftProduct =
+    isReadyProductDraft(draft) && !liveCardEventId && !hasGeneratedDraftProduct;
+  const canGenerateProduct = hasReadyDraftProduct && !isBusy;
   const shouldShowGiftRegistryPrompt = shouldOfferGiftRegistryForDraft(draft);
   const giftRegistryNoun = giftRegistryNounForDraft(draft);
   const giftRegistryPrefix = giftRegistryComposerPrefix(draft);
@@ -1366,7 +1398,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     rsvpResponseNames.length ||
     rsvpPreview.filled;
   const shouldShowReadyActions =
-    (canGenerateProduct || isGeneratingCard) && (!isReadyChatComposerOpen || isGeneratingCard);
+    ((hasReadyDraftProduct && !shouldShowGiftRegistryPrompt) || isGeneratingCard) &&
+    (!isReadyChatComposerOpen || isGeneratingCard);
+  const shouldShowGiftRegistryActions = shouldShowGiftRegistryPrompt && !isReadyChatComposerOpen;
   function selectProductOutputForDraft(nextDraft: ConciergeEventDraft) {
     const restoredOutput = nextDraft.requestedOutputs
       .map(visibleProductOutput)
@@ -1421,6 +1455,22 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       window.open(giftRegistryCreateUrl, "_blank", "noopener,noreferrer");
     }
     openGiftRegistryComposer();
+  }
+
+  async function handleSkipGiftRegistry() {
+    if (isBusy || !draft) return;
+    const draftBeforeSkip = draft;
+    setDraft((current) =>
+      current?.creationSessionId === draftBeforeSkip.creationSessionId
+        ? { ...current, giftPromptDismissed: true }
+        : current,
+    );
+    setIsReadyChatComposerOpen(false);
+    await sendToConcierge({
+      message: "Skip gift link",
+      action: "chip",
+      echo: "Skip gift link",
+    });
   }
 
   function refocusComposerAfterResponse() {
@@ -1945,7 +1995,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         ...baseActiveContext,
         selectedCategory: baseActiveContext.selectedCategory ?? contextCategory,
         selectedProduct:
-          baseActiveContext.selectedProduct ?? params.requestedOutputs?.[0] ?? selectedProductOutput,
+          baseActiveContext.selectedProduct ??
+          params.requestedOutputs?.[0] ??
+          selectedProductOutput,
         inputMethod:
           baseActiveContext.inputMethod ?? (params.ocrContext ? "upload" : message ? "text" : null),
         selectedSkin: baseActiveContext.selectedSkin ?? contextSkin,
@@ -2355,7 +2407,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         current === "error" || current === "success" ? current : "idle",
       );
       if (fileInputRef.current) fileInputRef.current.value = "";
-      if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
   }
 
@@ -2368,18 +2419,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     } catch (err) {
       console.error("Failed to open file picker:", err);
       setError("Unable to open the file picker. Please try again.");
-    }
-  }
-
-  function openSnapCameraPicker() {
-    if (isBusy) return;
-    setError(null);
-    setFailedSnapUpload(null);
-    try {
-      cameraInputRef.current?.click();
-    } catch (err) {
-      console.error("Failed to open camera picker:", err);
-      setError("Unable to open the camera. Please try again.");
     }
   }
 
@@ -2648,17 +2687,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               event.currentTarget.value = "";
             }}
           />
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept={getUploadAcceptAttribute("header")}
-            capture="environment"
-            className="hidden"
-            onChange={(event) => {
-              void routeSelectedSnapFile(event.currentTarget.files?.[0], "camera");
-              event.currentTarget.value = "";
-            }}
-          />
           <PromptInput
             value={input}
             onValueChange={handleComposerValueChange}
@@ -2696,40 +2724,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                 )}
               />
               <PromptInputActions className="shrink-0 justify-end gap-2">
-                <PromptInputAction tooltip="Upload file">
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={openSnapUploadPicker}
-                    className={cn(
-                      "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:cursor-not-allowed disabled:opacity-50",
-                      isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
-                    )}
-                    aria-label="Upload file"
-                  >
-                    <Paperclip
-                      className={cn("size-6", isCompactEmptyComposer && "max-md:size-5")}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </PromptInputAction>
-                <PromptInputAction tooltip="Use camera">
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={openSnapCameraPicker}
-                    className={cn(
-                      "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:cursor-not-allowed disabled:opacity-50",
-                      isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
-                    )}
-                    aria-label="Use camera"
-                  >
-                    <Camera
-                      className={cn("size-6", isCompactEmptyComposer && "max-md:size-5")}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </PromptInputAction>
                 <PromptInputAction
                   tooltip={
                     isBusy
@@ -2803,11 +2797,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               <Gift className="size-4 shrink-0 text-[#5c5be5]" aria-hidden="true" />
               <span>Optional {giftRegistryNoun}</span>
             </div>
-            <p className="mt-1 text-sm leading-5 text-[#625178]">
-              Add a {giftRegistryNoun}, wishlist, or no-gifts note. Generate now still works without
-              it.
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
               <button
                 type="button"
                 onClick={openGiftRegistryComposer}
@@ -2822,43 +2812,50 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               >
                 <span className="truncate">Create on Amazon</span>
               </button>
+              <button
+                type="button"
+                onClick={() => void handleSkipGiftRegistry()}
+                disabled={isBusy}
+                className="inline-flex h-10 min-w-0 items-center justify-center rounded-2xl border border-[#ded2f5] bg-white px-3 text-sm font-bold text-[#4f3a73] transition hover:border-[#c7b4ee] hover:bg-[#f5f0ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55"
+              >
+                <span className="truncate">Skip for now</span>
+              </button>
             </div>
-            <p className="mt-2 text-[0.68rem] font-medium leading-4 text-[#7d6e93]">
-              As an Amazon Associate, Envitefy may earn from qualifying purchases.
-            </p>
           </div>
         ) : null}
-        <div className="grid grid-cols-2 gap-2 rounded-[1.35rem] border border-[#d8caff] bg-[#fbf9ff]/96 p-2 shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur">
-          <button
-            type="button"
-            onClick={() => setIsReadyChatComposerOpen(true)}
-            disabled={isGeneratingCard}
-            className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#ded2f5] bg-white px-3 text-sm font-bold text-[#4f3a73] transition hover:border-[#c7b4ee] hover:bg-[#f5f0ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55"
-          >
-            <MessageCircle className="size-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">Keep editing</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (draft) void generateProductForDraft(draft);
-            }}
-            className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#5c5be5] px-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,91,229,0.24)] transition hover:bg-[#4f4ed2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isGeneratingCard || !canGenerateProduct}
-            aria-label={
-              isGeneratingCard
-                ? `Generating ${effectiveSelectedProductLabel.toLowerCase()}`
-                : `Generate now: ${effectiveSelectedProductLabel.toLowerCase()}`
-            }
-          >
-            {isGeneratingCard ? (
-              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
-            ) : (
-              <Sparkles className="size-4 shrink-0" aria-hidden="true" />
-            )}
-            <span className="truncate">{isGeneratingCard ? "Generating" : "Generate now"}</span>
-          </button>
-        </div>
+        {!shouldShowGiftRegistryPrompt ? (
+          <div className="grid grid-cols-2 gap-2 rounded-[1.35rem] border border-[#d8caff] bg-[#fbf9ff]/96 p-2 shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur">
+            <button
+              type="button"
+              onClick={() => setIsReadyChatComposerOpen(true)}
+              disabled={isGeneratingCard}
+              className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#ded2f5] bg-white px-3 text-sm font-bold text-[#4f3a73] transition hover:border-[#c7b4ee] hover:bg-[#f5f0ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55"
+            >
+              <MessageCircle className="size-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">Keep editing</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (draft) void generateProductForDraft(draft);
+              }}
+              className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#5c5be5] px-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,91,229,0.24)] transition hover:bg-[#4f4ed2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isGeneratingCard || !canGenerateProduct}
+              aria-label={
+                isGeneratingCard
+                  ? `Generating ${effectiveSelectedProductLabel.toLowerCase()}`
+                  : `Generate now: ${effectiveSelectedProductLabel.toLowerCase()}`
+              }
+            >
+              {isGeneratingCard ? (
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+              ) : (
+                <Sparkles className="size-4 shrink-0" aria-hidden="true" />
+              )}
+              <span className="truncate">{isGeneratingCard ? "Generating" : "Generate now"}</span>
+            </button>
+          </div>
+        ) : null}
         {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
       </div>
     </div>
@@ -3024,7 +3021,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                     chatThread
                   )}
                 </div>
-                {shouldShowReadyActions ? readyActions : composer}
+                {shouldShowGiftRegistryActions || shouldShowReadyActions ? readyActions : composer}
               </div>
               {shouldShowProductPanel ? productPanel : null}
             </div>

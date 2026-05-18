@@ -68,7 +68,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /selectedSkinLabel/);
   assert.match(skins, /function skinLabelForCategoryName/);
   assert.match(client, /Use the \$\{skinLabel\} Envitefy template family/);
-  assert.match(preview, /Skin: \$\{skinLabel\}/);
+  assert.doesNotMatch(preview, /Skin:/);
   assert.match(sidebar, /Snap \/ Upload/);
   assert.match(sidebar, /isSnapUploadStartActive/);
   assert.match(sidebarController, /router\.push\("\/snap"\)/);
@@ -392,6 +392,8 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /function buildGeneratedDraftImageEditPrompt/);
   assert.match(client, /localized correction to the current generated card/);
   assert.match(client, /modify only those characters inside the existing label/);
+  assert.match(client, /function additionalLocationNarrative/);
+  assert.match(client, /Preserve the full event flow in the generated live card/);
   assert.match(client, /if \(draftStudioInvite && !liveCardEventId\)/);
   assert.match(client, /function isGenerateConfirmationMessage/);
   assert.match(
@@ -411,13 +413,32 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(preview, /Generate invite/);
   assert.match(
     client,
-    /const shouldShowReadyActions =[\s\S]{0,140}\(canGenerateProduct \|\| isGeneratingCard\)[\s\S]{0,120}!isReadyChatComposerOpen \|\| isGeneratingCard/,
+    /const hasReadyDraftProduct =[\s\S]{0,100}isReadyProductDraft\(draft\)[\s\S]{0,120}!liveCardEventId[\s\S]{0,120}!hasGeneratedDraftProduct/,
   );
+  assert.match(client, /const canGenerateProduct =\s*hasReadyDraftProduct && !isBusy;/);
+  assert.match(
+    client,
+    /const shouldShowReadyActions =[\s\S]{0,180}hasReadyDraftProduct && !shouldShowGiftRegistryPrompt[\s\S]{0,160}!isReadyChatComposerOpen \|\| isGeneratingCard/,
+  );
+  assert.match(client, /const shouldShowGiftRegistryActions = shouldShowGiftRegistryPrompt/);
+  assert.match(
+    client,
+    /setDraft\(\(current\) =>[\s\S]{0,180}\? \{ \.\.\.current, giftPromptDismissed: true \}/,
+  );
+  assert.match(client, /function optionalGiftQuestionText/);
+  assert.match(client, /Optional:\\s\*\(do you have \[\^\?\\n\]\+\\\?\)/);
+  assert.match(client, /Skip for now/);
+  assert.doesNotMatch(client, /As an Amazon Associate/);
+  assert.doesNotMatch(client, /Generate now still works without/);
+  assert.match(client, /!\s*shouldShowGiftRegistryPrompt \? \(/);
   assert.match(client, /Keep editing/);
   assert.match(client, /disabled=\{isGeneratingCard \|\| !canGenerateProduct\}/);
   assert.match(client, /<Loader2 className="size-4 shrink-0 animate-spin"/);
   assert.match(client, /isGeneratingCard \? "Generating" : "Generate now"/);
-  assert.match(client, /shouldShowReadyActions \? readyActions : composer/);
+  assert.match(
+    client,
+    /shouldShowGiftRegistryActions \|\| shouldShowReadyActions \? readyActions : composer/,
+  );
   assert.doesNotMatch(preview, /w-auto max-w-full/);
   assert.doesNotMatch(preview, /top-\[calc\(100%\+0\.5rem\)\]/);
   assert.match(preview, /pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\]/);
@@ -481,7 +502,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /stage: "scan-event-page-created"/);
   assert.match(snapLaunchCards, /accept=\{getUploadAcceptAttribute\("header"\)\}/);
   assert.match(client, /openSnapUploadPicker/);
-  assert.match(client, /openSnapCameraPicker/);
+  assert.doesNotMatch(client, /openSnapCameraPicker/);
   assert.doesNotMatch(client, /NEXT_PUBLIC_CONCIERGE_FAST_UPLOADS/);
   assert.doesNotMatch(client, /FAST_UPLOAD_OCR_URL/);
   assert.doesNotMatch(client, /DEFAULT_UPLOAD_OCR_URL/);
@@ -490,8 +511,8 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /aria-label="Snap invite photo"/);
   assert.match(snapLaunchCards, /Upload file/);
   assert.match(snapLaunchCards, /Snap flyer/);
-  assert.match(client, /tooltip="Upload file"/);
-  assert.match(client, /tooltip="Use camera"/);
+  assert.doesNotMatch(client, /tooltip="Upload file"/);
+  assert.doesNotMatch(client, /tooltip="Use camera"/);
   assert.match(client, /bg-\[#fbf9ff\]/);
   assert.match(client, /border-\[#d8caff\]/);
   assert.match(client, /!text-\[#25183a\]/);
@@ -505,7 +526,8 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(bottomNav, /aria-label=\{item\.label\}/);
   assert.doesNotMatch(client, /choiceClassName/);
   assert.doesNotMatch(client, /choiceIconClassName/);
-  assert.match(client, /<Paperclip/);
+  assert.doesNotMatch(client, /<Paperclip/);
+  assert.doesNotMatch(client, /<Camera/);
   assert.match(client, /Concierge is thinking\.\.\./);
   assert.match(client, /isThinking && "animate-pulse"/);
   assert.match(client, /isThinking \? null : \(/);
@@ -557,6 +579,8 @@ test("/chat live-card preview preserves RSVP and registry action metadata", () =
   assert.match(adapter, /eventId: args\.eventId \|\| ""/);
   assert.match(adapter, /rsvpEnabled,/);
   assert.match(adapter, /rsvpMode: rsvpEnabled \? "envitefy" : ""/);
+  assert.match(adapter, /function normalizeAdditionalLocations/);
+  assert.match(adapter, /additionalLocations,/);
   assert.match(
     adapter,
     /rsvpUrl: rsvpEnabled && args\.sharePath \? `\$\{args\.sharePath\}#event-rsvp` : ""/,

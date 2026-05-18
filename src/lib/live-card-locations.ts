@@ -6,6 +6,7 @@ export type LiveCardLocationInput = {
   venueName?: unknown;
   location?: unknown;
   detailsDescription?: unknown;
+  additionalLocations?: unknown;
 };
 
 export type LiveCardLocationAction = {
@@ -169,6 +170,31 @@ function extractSecondaryLocationActions(detailsDescription: string): LiveCardLo
   return actions;
 }
 
+function extractStructuredLocationActions(value: unknown): LiveCardLocationAction[] {
+  if (!Array.isArray(value)) return [];
+  const actions: LiveCardLocationAction[] = [];
+  for (const item of value) {
+    const record =
+      item && typeof item === "object" && !Array.isArray(item)
+        ? (item as Record<string, unknown>)
+        : {};
+    const raw = readString(item);
+    const label = readString(record.label) || readString(record.title) || readString(record.name);
+    const venue = readString(record.venue) || readString(record.venueName) || readString(record.placeName);
+    const location = readString(record.location) || readString(record.address) || raw;
+    const display = label || venue || location;
+    const mapQuery = readString(record.mapQuery) || combineVenueAndLocation(venue, location);
+    if (!display || !mapQuery) continue;
+    actions.push({
+      id: makeLocationId("details", display, actions.length),
+      label: display,
+      mapQuery,
+      source: "details",
+    });
+  }
+  return actions;
+}
+
 function isDuplicateLocationAction(
   action: LiveCardLocationAction,
   existingActions: LiveCardLocationAction[],
@@ -196,6 +222,12 @@ export function buildLiveCardLocationActions(
   const actions: LiveCardLocationAction[] = [];
   const primary = buildPrimaryLocationAction(details);
   if (primary) actions.push(primary);
+
+  for (const structured of extractStructuredLocationActions(details.additionalLocations)) {
+    if (!isDuplicateLocationAction(structured, actions)) {
+      actions.push(structured);
+    }
+  }
 
   for (const secondary of extractSecondaryLocationActions(readString(details.detailsDescription))) {
     if (!isDuplicateLocationAction(secondary, actions)) {

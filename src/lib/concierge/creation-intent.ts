@@ -833,6 +833,8 @@ export function deriveCreationStatus(args: {
   ageOrMilestone?: string | null;
   rsvpEnabled?: boolean | null;
   numberOfGuests?: number | null;
+  rsvpName?: string | null;
+  rsvpContact?: string | null;
   tone?: string | null;
   draftStatus?: unknown;
 }): {
@@ -920,6 +922,22 @@ export function deriveCreationStatus(args: {
     })
   ) {
     missingFields.push("numberOfGuests");
+  }
+  if (
+    !missingFields.length &&
+    rsvpTrackingEnabled(args) &&
+    args.sourceContext.detectedSourceIntent !== "received_invite" &&
+    !requirementFieldSatisfied("rsvpName", fieldDraft)
+  ) {
+    missingFields.push("rsvpName");
+  }
+  if (
+    !missingFields.length &&
+    rsvpTrackingEnabled(args) &&
+    args.sourceContext.detectedSourceIntent !== "received_invite" &&
+    !requirementFieldSatisfied("rsvpContact", fieldDraft)
+  ) {
+    missingFields.push("rsvpContact");
   }
   if (
     !missingFields.length &&

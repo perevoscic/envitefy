@@ -191,7 +191,7 @@ export default async function AdminAnalyticsPage() {
         </div>
       </AdminPanel>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
         <AdminMetricCard
           label="Events 30d"
           value={analytics.firstParty.eventsLast30Days.toLocaleString()}
@@ -207,6 +207,18 @@ export default async function AdminAnalyticsPage() {
         <AdminMetricCard
           label="RSVPs 30d"
           value={analytics.firstParty.rsvpsLast30Days.toLocaleString()}
+        />
+        <AdminMetricCard
+          label="Views 30d"
+          value={analytics.firstParty.publicEventViews30Days.toLocaleString()}
+        />
+        <AdminMetricCard
+          label="Clicks 30d"
+          value={analytics.firstParty.linkClicks30Days.toLocaleString()}
+        />
+        <AdminMetricCard
+          label="Registry 30d"
+          value={analytics.firstParty.registryClicks30Days.toLocaleString()}
         />
       </section>
 

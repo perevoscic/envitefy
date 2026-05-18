@@ -332,7 +332,7 @@ test("greeting short-circuits AI extraction and stays conversational", async () 
   assert.equal(result.usedAi, false);
   assert.equal(result.draft.intent, "unknown");
   assert.deepEqual(result.draft.requestedOutputs, []);
-  assert.match(result.assistantMessage, /start with an invite/i);
+  assert.match(result.assistantMessage, /What are we celebrating/i);
   assert.doesNotMatch(result.assistantMessage, /live card be for/i);
 });
 
@@ -491,7 +491,7 @@ test("RSVP guest-count phrasing fills number of guests", () => {
   });
 
   assert.equal(draft.numberOfGuests, 20);
-  assert.equal(draft.currentQuestion, "tone");
+  assert.equal(draft.currentQuestion, "rsvpName");
 });
 
 test("wedding invitation phrasing captures both partner names", () => {
@@ -506,7 +506,6 @@ test("wedding invitation phrasing captures both partner names", () => {
   assert.deepEqual(draft.requestedOutputs, ["digital_flyer"]);
   assert.equal(draft.rsvpEnabled, true);
   assert.equal(draft.currentQuestion, "numberOfGuests");
-  assert.match(assistant, /Names: Sara and Daniel/);
   assert.match(assistant, /How many guests should the RSVP track/i);
   assert.doesNotMatch(assistant, /whose names should be featured/i);
   assert.doesNotMatch(JSON.stringify(draft.requestedOutputs), /rsvp_page/);
@@ -585,6 +584,20 @@ test("fallback asks RSVP guest count before vibe and stores both replies", () =>
   draft = fallbackExtractConciergeDraft({ message: "23", draft });
 
   assert.equal(draft.numberOfGuests, 23);
+  assert.equal(draft.currentQuestion, "rsvpName");
+  assert.equal(draft.missingFields[0], "rsvpName");
+  assert.match(buildAssistantMessage(draft), /host or RSVP contact/i);
+
+  draft = fallbackExtractConciergeDraft({ message: "Ava's parents", draft });
+
+  assert.equal(draft.rsvpName, "Ava's parents");
+  assert.equal(draft.currentQuestion, "rsvpContact");
+  assert.equal(draft.missingFields[0], "rsvpContact");
+  assert.match(buildAssistantMessage(draft), /phone number or email/i);
+
+  draft = fallbackExtractConciergeDraft({ message: "ava-host@example.com", draft });
+
+  assert.equal(draft.rsvpContact, "ava-host@example.com");
   assert.equal(draft.currentQuestion, "tone");
   assert.equal(draft.missingFields[0], "tone");
   assert.match(buildAssistantMessage(draft), /vibe/i);
@@ -593,11 +606,18 @@ test("fallback asks RSVP guest count before vibe and stores both replies", () =>
 
   assert.equal(draft.tone, "fun and colorful");
   assert.doesNotMatch(draft.missingFields.join(","), /tone/);
+  assert.match(buildAssistantMessage(draft), /Optional: do you have a gift list/i);
+
+  draft = fallbackExtractConciergeDraft({ message: "Skip gift link", draft });
+
+  assert.equal(draft.giftPromptDismissed, true);
   assert.match(buildAssistantMessage(draft), /details are ready/i);
   assert.match(buildAssistantMessage(draft), /Product: Live card/);
   assert.match(buildAssistantMessage(draft), /Event: Ava is turning 7/);
   assert.match(buildAssistantMessage(draft), /Location: Sky Zone/);
   assert.match(buildAssistantMessage(draft), /RSVP guest count: 23/);
+  assert.match(buildAssistantMessage(draft), /RSVP host: Ava's parents/);
+  assert.match(buildAssistantMessage(draft), /RSVP contact: ava-host@example.com/);
   assert.doesNotMatch(buildAssistantMessage(draft), /\*\*\*/);
 });
 
@@ -644,11 +664,26 @@ test("RSVP intent replies are not stored as vibe answers", () => {
   assert.equal(draft.rsvpEnabled, true);
   assert.notEqual(draft.tone, "Yes collect RSVPs");
   assert.equal(draft.currentQuestion, "numberOfGuests");
+
+  draft = fallbackExtractConciergeDraft({ message: "25 guests", draft });
+
+  assert.equal(draft.numberOfGuests, 25);
+  assert.equal(draft.currentQuestion, "rsvpName");
+
+  draft = fallbackExtractConciergeDraft({ message: "Hosted by Coach Mia", draft });
+
+  assert.equal(draft.rsvpName, "Coach Mia");
+  assert.equal(draft.currentQuestion, "rsvpContact");
+
+  draft = fallbackExtractConciergeDraft({ message: "coach@example.com", draft });
+
+  assert.equal(draft.rsvpContact, "coach@example.com");
+  assert.notEqual(draft.currentQuestion, "rsvpContact");
 });
 
 test("game day event-page prompt becomes guest-facing matchup copy", () => {
   const prompt =
-    "Create a game day product for the Varsity Panthers football game against the Central City Tigers on Friday September 18 2026 at 7:00 PM at Panther Stadium, 800 Victory Lane, Austin, TX. Make this as a Event Page with blue and gold team energy and RSVPs for 25 guests. RSVP contact: qa-rsvp+matrix-9@example.com. RSVP deadline: June 1, 2026. Make this a complete Envitefy product with a clear headline, schedule, location, and guest-facing call to action and tone theme";
+    "Create a game day product for the Varsity Panthers football game against the Central City Tigers on Friday September 18 2026 at 7:00 PM at Panther Stadium, 800 Victory Lane, Austin, TX. Hosted by Coach Lee. Make this as a Event Page with blue and gold team energy and RSVPs for 25 guests. RSVP contact: qa-rsvp+matrix-9@example.com. RSVP deadline: June 1, 2026. Make this a complete Envitefy product with a clear headline, schedule, location, and guest-facing call to action and tone theme";
   const draft = fallbackExtractConciergeDraft({ message: prompt });
   const payload = buildConciergeHistoryPayload(draft);
 
@@ -662,6 +697,7 @@ test("game day event-page prompt becomes guest-facing matchup copy", () => {
   assert.equal(draft.tone, "blue and gold team energy");
   assert.equal(draft.rsvpEnabled, true);
   assert.equal(draft.numberOfGuests, 25);
+  assert.equal(draft.rsvpName, "Coach Lee");
   assert.equal(draft.rsvpContact, "qa-rsvp+matrix-9@example.com");
   assert.equal(draft.rsvpDeadline, "June 1, 2026");
   assert.equal(draft.currentQuestion, null);
@@ -704,8 +740,11 @@ test("gift-friendly ready drafts ask for registry details only as an optional st
 
   assert.equal(draft.eventType, "baby_shower");
   assert.equal(canSaveConciergeDraft(draft), true);
-  assert.match(message, /Details are ready/i);
-  assert.match(message, /Optional: do you have a registry, gift list, wishlist, or no-gifts note/i);
+  assert.doesNotMatch(message, /Details are ready/i);
+  assert.match(
+    message,
+    /Optional: do you have a registry, gift list, wishlist, gift-card preference, or no-gifts note/i,
+  );
   assert.deepEqual(buildSuggestedReplies(draft), [
     "Paste a link",
     "Create on Amazon",
@@ -716,13 +755,16 @@ test("gift-friendly ready drafts ask for registry details only as an optional st
 test("birthday ready drafts use gift-list language instead of pushing a registry", () => {
   const draft = fallbackExtractConciergeDraft({
     message:
-      "Create a live card for Ava's 7th birthday party on Saturday May 23 2026 at 3:00 PM at Sky Zone, 100 Main Street, Destin, FL. RSVPs for 20 guests. Theme and tone: fun and colorful.",
+      "Create a live card for Ava's 7th birthday party on Saturday May 23 2026 at 3:00 PM at Sky Zone, 100 Main Street, Destin, FL. Hosted by Ava's parents. RSVPs for 20 guests. RSVP contact: host@example.com. Theme and tone: fun and colorful.",
   });
   const message = buildAssistantMessage(draft);
 
   assert.equal(draft.eventType, "birthday");
   assert.equal(canSaveConciergeDraft(draft), true);
-  assert.match(message, /Optional: do you have a gift list, wishlist, or no-gifts note/i);
+  assert.match(
+    message,
+    /Optional: do you have a gift list, wishlist, gift-card preference, or no-gifts note/i,
+  );
   assert.doesNotMatch(message, /Optional: do you have a registry/i);
 });
 
@@ -735,7 +777,10 @@ test("bridal shower ready drafts use registry optional language", () => {
 
   assert.equal(draft.eventType, "bridal_shower");
   assert.equal(canSaveConciergeDraft(draft), true);
-  assert.match(message, /Optional: do you have a registry, gift list, wishlist, or no-gifts note/i);
+  assert.match(
+    message,
+    /Optional: do you have a registry, gift list, wishlist, gift-card preference, or no-gifts note/i,
+  );
 });
 
 test("registry optional prompt accepts a pasted URL-only reply", () => {
@@ -778,6 +823,20 @@ test("no-gifts replies become guest-facing gift notes", () => {
   assert.equal(noGifts.giftPreferenceNote, "No gifts please");
   assert.equal(canSaveConciergeDraft(noGifts), true);
   assert.match(message, /Gift note: No gifts please/);
+  assert.doesNotMatch(message, /Optional: do you have/i);
+});
+
+test("gift-card replies become guest-facing gift notes", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create a live card for Ava's 7th birthday party on Saturday May 23 2026 at 3:00 PM at Sky Zone, 100 Main Street, Destin, FL. Hosted by Ava's parents. RSVPs for 20 guests. RSVP contact: host@example.com. Theme and tone: fun and colorful.",
+  });
+  const giftCards = fallbackExtractConciergeDraft({ message: "Gift cards are welcome", draft });
+  const message = buildAssistantMessage(giftCards);
+
+  assert.equal(giftCards.giftPreferenceNote, "Gift cards are welcome");
+  assert.equal(canSaveConciergeDraft(giftCards), true);
+  assert.match(message, /Gift note: Gift cards are welcome/);
   assert.doesNotMatch(message, /Optional: do you have/i);
 });
 
@@ -1066,8 +1125,83 @@ test("birthday live-card prompt aggregates inline name age venue and interests",
   assert.equal(draft.theme, "Sheep detective, cats and plushes");
   assert.equal(draft.currentQuestion, "rsvpEnabled");
   assert.doesNotMatch(draft.missingFields.join(","), /honoreeName|ageOrMilestone|location/);
-  assert.match(message, /Lara is turning 7/);
   assert.match(message, /Should Envitefy collect RSVPs/i);
+});
+
+test("birthday live-card context uses activities and interests as image direction", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message:
+      "Birthday Live Card for Lara, 7. we will go to see Sheep Detective at 5PM Thursday at AMC Destin Commons 14, then we are going to have pizza at Pazzo Destin. She likes cats and plushes",
+  });
+
+  assert.equal(draft.theme, "Sheep Detective, cats and plushes");
+  assert.equal(draft.location, "AMC Destin Commons 14");
+  assert.ok(draft.additionalLocations.some((location) => location.location === "Pazzo Destin"));
+  assert.equal(draft.currentQuestion, "rsvpEnabled");
+  assert.doesNotMatch(buildAssistantMessage(draft), /Product: Live card/i);
+  assert.doesNotMatch(buildAssistantMessage(draft), /Event: Lara is turning 7/i);
+
+  draft = fallbackExtractConciergeDraft({ message: "yes, for 3 people", draft });
+
+  assert.equal(draft.rsvpEnabled, true);
+  assert.equal(draft.numberOfGuests, 3);
+  assert.equal(draft.currentQuestion, "rsvpName");
+  assert.deepEqual(draft.missingFields, ["rsvpName"]);
+
+  draft = fallbackExtractConciergeDraft({ message: "Lara's family", draft });
+
+  assert.equal(draft.rsvpName, "Lara's family");
+  assert.equal(draft.currentQuestion, "rsvpContact");
+
+  draft = fallbackExtractConciergeDraft({ message: "lara-host@example.com", draft });
+
+  assert.equal(draft.rsvpContact, "lara-host@example.com");
+  assert.equal(draft.currentQuestion, null);
+  assert.deepEqual(draft.missingFields, []);
+  assert.match(buildAssistantMessage(draft), /Optional: do you have a gift list/i);
+  assert.doesNotMatch(buildAssistantMessage(draft), /vibe and image direction/i);
+
+  draft = fallbackExtractConciergeDraft({ message: "Skip gift link", draft });
+
+  assert.match(buildAssistantMessage(draft), /Your live card is ready to generate/i);
+});
+
+test("birthday live-card prompt reads name after product label without for", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Birthday Live Card Lara, 7, we will go to see Sheep Detective at 5PM Thursday at AMC Destin Commons 14, then we are going to have pizza at Pazzo Destin. She likes cats and plushes",
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.equal(draft.honoreeName, "Lara");
+  assert.equal(draft.ageOrMilestone, "7");
+  assert.equal(draft.currentQuestion, "rsvpEnabled");
+  assert.doesNotMatch(message, /Who is the birthday for/i);
+  assert.match(message, /Should Envitefy collect RSVPs/i);
+});
+
+test("OpenAI normalization treats fallback theme as visual direction", () => {
+  const fallback = fallbackExtractConciergeDraft({
+    message:
+      "Birthday Live Card for Lara, 7. we will go to see Sheep Detective at 5PM Thursday at AMC Destin Commons 14. She likes cats and plushes",
+  });
+  const draft = normalizeConciergeDraft(
+    {
+      rsvpEnabled: true,
+      numberOfGuests: 3,
+      rsvpName: "Lara's family",
+      rsvpContact: "lara-host@example.com",
+      draftStatus: "preview_ready",
+      missingFields: [],
+    },
+    fallback,
+    { message: "yes, for 3 people" },
+  );
+
+  assert.equal(draft.theme, "Sheep Detective, cats and plushes");
+  assert.equal(draft.currentQuestion, null);
+  assert.deepEqual(draft.missingFields, []);
+  assert.doesNotMatch(buildAssistantMessage(draft), /vibe and image direction/i);
 });
 
 test("birthday live-card prompt tolerates a mistyped for before name and age", () => {
@@ -1096,6 +1230,8 @@ test("time-only edit keeps the existing event date", () => {
     ...first,
     rsvpEnabled: true,
     numberOfGuests: 10,
+    rsvpName: "Lara's family",
+    rsvpContact: "lara-host@example.com",
     currentQuestion: null,
     missingFields: [],
     draftStatus: "preview_ready",
@@ -1305,8 +1441,8 @@ test("OpenAI normalization cannot treat RSVP guest count as visual direction", (
 
   assert.equal(draft.numberOfGuests, 10);
   assert.equal(draft.tone, null);
-  assert.equal(draft.currentQuestion, "tone");
-  assert.match(buildAssistantMessage(draft), /vibe and image direction/i);
+  assert.equal(draft.currentQuestion, "rsvpName");
+  assert.match(buildAssistantMessage(draft), /host or RSVP contact/i);
 });
 
 test("conversation repair messages preserve draft details and bypass extraction", async () => {
@@ -1317,10 +1453,14 @@ test("conversation repair messages preserve draft details and bypass extraction"
   draft = fallbackExtractConciergeDraft({ message: "AMC Theater Destin", draft });
   draft = fallbackExtractConciergeDraft({ message: "yes", draft });
   draft = fallbackExtractConciergeDraft({ message: "10", draft });
+  draft = fallbackExtractConciergeDraft({ message: "Lara's family", draft });
+  draft = fallbackExtractConciergeDraft({ message: "lara-host@example.com", draft });
 
   assert.equal(draft.honoreeName, "Lara");
   assert.equal(draft.rsvpEnabled, true);
   assert.equal(draft.numberOfGuests, 10);
+  assert.equal(draft.rsvpName, "Lara's family");
+  assert.equal(draft.rsvpContact, "lara-host@example.com");
   assert.equal(draft.currentQuestion, "tone");
 
   const repaired = fallbackExtractConciergeDraft({
@@ -1332,9 +1472,10 @@ test("conversation repair messages preserve draft details and bypass extraction"
   assert.equal(repaired.ageOrMilestone, "7");
   assert.equal(repaired.rsvpEnabled, true);
   assert.equal(repaired.numberOfGuests, 10);
+  assert.equal(repaired.rsvpName, "Lara's family");
+  assert.equal(repaired.rsvpContact, "lara-host@example.com");
   assert.equal(repaired.currentQuestion, "tone");
   assert.match(buildAssistantMessage(repaired), /Envitefy's event concierge/i);
-  assert.match(buildAssistantMessage(repaired), /RSVP guest count: 10/i);
   assert.match(buildAssistantMessage(repaired), /vibe and image direction/i);
 
   let aiCalls = 0;
@@ -1373,6 +1514,8 @@ test("conversation repair messages preserve draft details and bypass extraction"
   assert.equal(result.draft.honoreeName, "Lara");
   assert.equal(result.draft.rsvpEnabled, true);
   assert.equal(result.draft.numberOfGuests, 10);
+  assert.equal(result.draft.rsvpName, "Lara's family");
+  assert.equal(result.draft.rsvpContact, "lara-host@example.com");
   assert.match(result.assistantMessage, /RSVP enabled with a guest count of 10/i);
 });
 
@@ -1449,8 +1592,8 @@ test("RSVP guest count accepts natural collect-for shorthand", () => {
 
   assert.equal(reply.rsvpEnabled, true);
   assert.equal(reply.numberOfGuests, 20);
-  assert.equal(reply.currentQuestion, "tone");
-  assert.match(buildAssistantMessage(reply), /vibe and image direction/i);
+  assert.equal(reply.currentQuestion, "rsvpName");
+  assert.match(buildAssistantMessage(reply), /host or RSVP contact/i);
 });
 
 test("tone reply preserves full creative direction without changing event type", () => {
@@ -1463,6 +1606,8 @@ test("tone reply preserves full creative direction without changing event type",
     draft,
   });
   draft = fallbackExtractConciergeDraft({ message: "20 guests", draft });
+  draft = fallbackExtractConciergeDraft({ message: "Nora's family", draft });
+  draft = fallbackExtractConciergeDraft({ message: "nora-host@example.com", draft });
 
   const reply = fallbackExtractConciergeDraft({
     message: "soft pastel gymnastics theme",
@@ -1472,7 +1617,11 @@ test("tone reply preserves full creative direction without changing event type",
   assert.equal(reply.eventType, "birthday");
   assert.equal(reply.tone, "soft pastel gymnastics theme");
   assert.equal(reply.currentQuestion, null);
-  assert.match(buildAssistantMessage(reply), /Vibe: soft pastel gymnastics theme/i);
+  assert.match(buildAssistantMessage(reply), /Optional: do you have a gift list/i);
+
+  const skippedGift = fallbackExtractConciergeDraft({ message: "Skip gift link", draft: reply });
+
+  assert.match(buildAssistantMessage(skippedGift), /Vibe: soft pastel gymnastics theme/i);
 });
 
 test("off-domain help requests stay bounded and do not become event drafts", async () => {
@@ -1818,6 +1967,26 @@ test("save payload splits combined venue and address for public live cards", () 
   assert.equal(payload.data.locationText, "Play Cafe, 123 Main St, Austin, TX");
   assert.equal(payload.data.locationLabel, "Play Cafe, 123 Main St, Austin, TX");
   assert.equal(payload.data.liveCard.locationLine, "Play Cafe, 123 Main St, Austin, TX");
+});
+
+test("chat concierge preserves secondary locations in saved products", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Create an event page for Sara and Daniel's wedding Saturday at 5. Ceremony at Grace Chapel and reception at The Pearl Ballroom. No RSVP.",
+    requestedOutputs: ["event_page"],
+  });
+  const payload = buildConciergeHistoryPayload(draft);
+
+  assert.equal(draft.additionalLocations.length, 1);
+  assert.equal(draft.additionalLocations[0].label, "Reception");
+  assert.equal(draft.additionalLocations[0].location, "The Pearl Ballroom");
+  assert.deepEqual(payload.data.additionalLocations, draft.additionalLocations);
+  assert.deepEqual(payload.data.publicEvent.additionalLocations, draft.additionalLocations);
+  assert.deepEqual(
+    payload.data.studioCard.invitationData.eventDetails.additionalLocations,
+    draft.additionalLocations,
+  );
+  assert.match(JSON.stringify(payload.data.publicEvent.sections), /The Pearl Ballroom/);
 });
 
 test("guest count phrasing is not swallowed into location", () => {

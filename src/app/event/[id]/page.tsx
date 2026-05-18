@@ -26,6 +26,8 @@ import EventDeleteModal from "@/components/EventDeleteModal";
 import EventMap from "@/components/EventMap";
 import EventRsvpDashboard from "@/components/EventRsvpDashboard";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
+import EventTrackedLink from "@/components/EventTrackedLink";
+import EventViewTracker from "@/components/EventViewTracker";
 import FootballSkin from "@/components/FootballSkin";
 import GenericEventSkin from "@/components/GenericEventSkin";
 import GraduationSkin from "@/components/GraduationSkin";
@@ -172,6 +174,39 @@ function OwnerPreviewReturnLink({ href }: { href: string }) {
         <span>Dashboard</span>
       </Link>
     </>
+  );
+}
+
+function DeletedEventNotice() {
+  return (
+    <main className="flex min-h-screen items-center justify-center px-5 py-16 text-[#2f2741]">
+      <section className="w-full max-w-xl text-center">
+        <p className="font-[var(--font-josefin-sans)] text-xs font-black uppercase tracking-[0.28em] text-[#7b70d8]">
+          Event unavailable
+        </p>
+        <h1 className="mt-4 font-serif text-4xl font-black tracking-tight text-[#32263c] sm:text-5xl">
+          This event was deleted
+        </h1>
+        <p className="mx-auto mt-4 max-w-md text-base leading-7 text-[#756b82]">
+          The link you opened no longer points to an active Envitefy event. It may have been
+          removed by the organizer.
+        </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/"
+            className="inline-flex h-11 items-center justify-center rounded-full border border-[#e5def5] bg-white px-5 text-sm font-bold text-[#5f55bb] shadow-[0_14px_34px_rgba(103,88,160,0.12)] transition hover:bg-[#fbf9ff]"
+          >
+            Go to my events
+          </Link>
+          <Link
+            href="/landing"
+            className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-bold text-[#857a9a] transition hover:bg-white/60 hover:text-[#5f55bb]"
+          >
+            Home
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 }
 
@@ -833,7 +868,7 @@ export default async function EventPage({
   const row = await timing.time("event_lookup", () =>
     getCachedEventHistoryBySlugOrId(awaitedParams.id, userId),
   );
-  if (!row) return notFound();
+  if (!row) return <DeletedEventNotice />;
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
   const ownerUserId = typeof row.user_id === "string" ? row.user_id : null;
   const ownerUser =
@@ -984,6 +1019,10 @@ export default async function EventPage({
         <EventCelebrationOverlay kind={guestCelebrationKind} />
       ) : null}
       {ownerPreviewReturnHref ? <OwnerPreviewReturnLink href={ownerPreviewReturnHref} /> : null}
+      <EventViewTracker
+        eventId={row.id}
+        category={typeof (data as any)?.category === "string" ? (data as any).category : null}
+      />
       {children}
     </EventPageBackgroundStyle>
   );
@@ -1618,6 +1657,27 @@ export default async function EventPage({
       data?.location,
       data?.venue,
     ) || null;
+  const publicAdditionalLocations = [
+    liveCardRecord.additionalLocations,
+    publicEventRecord.additionalLocations,
+    data?.additionalLocations,
+  ]
+    .find((value) => Array.isArray(value)) as unknown[] | undefined;
+  const additionalLocations = (publicAdditionalLocations || [])
+    .map((item) => {
+      const record = asPlainRecord(item);
+      const venue = firstDisplayString(record.venue, record.venueName, record.placeName);
+      const location = firstDisplayString(record.location, record.address);
+      return {
+        label: firstDisplayString(record.label, record.title, record.name),
+        venue,
+        location,
+        address: firstDisplayString(record.address),
+        timeText: firstDisplayString(record.timeText, record.time),
+        description: firstDisplayString(record.description, record.note),
+      };
+    })
+    .filter((item) => item.venue || item.location || item.address);
   const explicitRsvpDisabled =
     data?.rsvpEnabled === false || rsvpRecord?.isEnabled === false || rsvpRecord?.enabled === false;
   const directRsvpEnabled =
@@ -2049,7 +2109,7 @@ export default async function EventPage({
           shareUrl={shareUrl}
           event={data as any}
           calendarTitle={title}
-          historyId={!isReadOnly ? row.id : undefined}
+          historyId={row.id}
           className=""
           variant="compact"
           tone={"default" as any}
@@ -2071,6 +2131,7 @@ export default async function EventPage({
         timeLabel={formattedTimeAndDate.time || null}
         venueName={venueText || null}
         location={locationText || venueText || publicLocationLine || null}
+        additionalLocations={additionalLocations}
         imageUrl={headerImageUrl}
         shareUrl={shareUrl}
         calendarLinks={calendarLinks}
@@ -2112,6 +2173,7 @@ export default async function EventPage({
 
     return renderWithEventPageBackground(
       <BirthdaySkin
+        eventId={row.id}
         title={title}
         honoreeName={
           (typeof data?.birthdayName === "string" && data.birthdayName.trim()) ||
@@ -2173,7 +2235,7 @@ export default async function EventPage({
                 shareUrl={shareUrl}
                 event={data as any}
                 calendarTitle={title}
-                historyId={!isReadOnly ? row.id : undefined}
+                historyId={row.id}
                 className=""
                 variant="compact"
                 tone={"default" as any}
@@ -2270,7 +2332,7 @@ export default async function EventPage({
                 shareUrl={shareUrl}
                 event={data as any}
                 calendarTitle={title}
-                historyId={!isReadOnly ? row.id : undefined}
+                historyId={row.id}
                 className=""
                 variant="compact"
                 tone={"default" as any}
@@ -2318,7 +2380,7 @@ export default async function EventPage({
           shareUrl={shareUrl}
           event={data as any}
           calendarTitle={title}
-          historyId={!isReadOnly ? row.id : undefined}
+          historyId={row.id}
           className=""
           variant="compact"
           tone={"default" as any}
@@ -2409,7 +2471,7 @@ export default async function EventPage({
           shareUrl={shareUrl}
           event={data as any}
           calendarTitle={title}
-          historyId={!isReadOnly ? row.id : undefined}
+          historyId={row.id}
           className=""
           variant="compact"
           tone={"default" as any}
@@ -2421,6 +2483,7 @@ export default async function EventPage({
 
     return renderWithEventPageBackground(
       <PickleballSkin
+        eventId={row.id}
         title={title}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
@@ -2504,7 +2567,7 @@ export default async function EventPage({
           shareUrl={shareUrl}
           event={data as any}
           calendarTitle={title}
-          historyId={!isReadOnly ? row.id : undefined}
+          historyId={row.id}
           className=""
           variant="compact"
           tone={"default" as any}
@@ -2516,6 +2579,7 @@ export default async function EventPage({
 
     return renderWithEventPageBackground(
       <FootballSkin
+        eventId={row.id}
         title={title}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
@@ -2599,7 +2663,7 @@ export default async function EventPage({
           shareUrl={shareUrl}
           event={data as any}
           calendarTitle={title}
-          historyId={!isReadOnly ? row.id : undefined}
+          historyId={row.id}
           className=""
           variant="compact"
           tone={"default" as any}
@@ -2611,6 +2675,7 @@ export default async function EventPage({
 
     return renderWithEventPageBackground(
       <BasketballSkin
+        eventId={row.id}
         title={title}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
         timeLabel={formattedTimeAndDate.time || null}
@@ -2662,7 +2727,7 @@ export default async function EventPage({
           shareUrl={shareUrl}
           event={data as any}
           calendarTitle={title}
-          historyId={!isReadOnly ? row.id : undefined}
+          historyId={row.id}
           className=""
           variant="compact"
           tone={"default" as any}
@@ -2761,7 +2826,7 @@ export default async function EventPage({
           shareUrl={shareUrl}
           event={data as any}
           calendarTitle={title}
-          historyId={!isReadOnly ? row.id : undefined}
+          historyId={row.id}
           className=""
           variant="compact"
           tone={"default" as any}
@@ -2774,6 +2839,7 @@ export default async function EventPage({
     if (isBabyShowerCategory) {
       return renderWithEventPageBackground(
         <BabyShowerSkin
+          eventId={row.id}
           title={title}
           dateLabel={scannedInviteDateLabel || whenLabel || null}
           timeLabel={formattedTimeAndDate.time || null}
@@ -2807,6 +2873,7 @@ export default async function EventPage({
     if (isGraduationCategory) {
       return renderWithEventPageBackground(
         <GraduationSkin
+          eventId={row.id}
           title={title}
           dateLabel={scannedInviteDateLabel || whenLabel || null}
           timeLabel={formattedTimeAndDate.time || null}
@@ -2840,6 +2907,7 @@ export default async function EventPage({
     if (isBasketballInvite) {
       return renderWithEventPageBackground(
         <BasketballSkin
+          eventId={row.id}
           title={title}
           dateLabel={scannedInviteDateLabel || whenLabel || null}
           timeLabel={formattedTimeAndDate.time || null}
@@ -2873,6 +2941,7 @@ export default async function EventPage({
 
     return renderWithEventPageBackground(
       <GenericEventSkin
+        eventId={row.id}
         title={title}
         categoryLabel={categoryRaw || "General Event"}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
@@ -2910,6 +2979,7 @@ export default async function EventPage({
     });
     return renderWithEventPageBackground(
       <GenericEventSkin
+        eventId={row.id}
         title={title}
         categoryLabel={categoryRaw || "General Event"}
         dateLabel={scannedInviteDateLabel || whenLabel || null}
@@ -3189,7 +3259,7 @@ export default async function EventPage({
                 shareUrl={shareUrl}
                 event={data as any}
                 calendarTitle={title}
-                historyId={!isReadOnly ? row.id : undefined}
+                historyId={row.id}
                 className=""
                 variant="compact"
                 tone={"default" as any}
@@ -3479,9 +3549,17 @@ export default async function EventPage({
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {registryCards.map((link) => {
                   return (
-                    <a
+                    <EventTrackedLink
                       key={link.url}
                       href={link.url}
+                      eventId={row.id}
+                      eventName="registry_click"
+                      targetLabel={link.label}
+                      sourceSurface="event_registry_section"
+                      metadata={{
+                        host: link.host,
+                        category: categoryRaw || null,
+                      }}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="group flex items-start gap-3 rounded-xl border border-[#ddd4f8] bg-white/90 p-3 transition hover:border-[#cabcf0] hover:bg-[#f7f2ff]"
@@ -3522,7 +3600,7 @@ export default async function EventPage({
                           </span>
                         ) : null}
                       </span>
-                    </a>
+                    </EventTrackedLink>
                   );
                 })}
               </div>
@@ -3671,7 +3749,7 @@ export default async function EventPage({
                 shareUrl={shareUrl}
                 event={data as any}
                 calendarTitle={title}
-                historyId={!isReadOnly ? row.id : undefined}
+                historyId={row.id}
                 className="w-full justify-center"
                 variant="compact"
                 tone={"default" as any}
