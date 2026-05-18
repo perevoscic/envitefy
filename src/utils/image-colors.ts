@@ -23,7 +23,7 @@ export async function extractColorsFromImage(
   imageDataUrl: string
 ): Promise<ImageColors | null> {
   try {
-    const img = new Image();
+    const img = new window.Image();
     await new Promise<void>((resolve, reject) => {
       img.onload = () => resolve();
       img.onerror = reject;

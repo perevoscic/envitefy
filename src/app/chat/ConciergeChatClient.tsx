@@ -751,6 +751,18 @@ function isReadyProductDraft(draft: ConciergeEventDraft | null) {
   return isReadyCreationDraft(draft);
 }
 
+function isReceivedInviteDraft(draft: ConciergeEventDraft | null) {
+  return Boolean(
+    draft &&
+      (draft.ownership === "invited" ||
+        draft.sourceContext.detectedSourceIntent === "received_invite"),
+  );
+}
+
+function isReadyReceivedInviteDraft(draft: ConciergeEventDraft | null) {
+  return isReceivedInviteDraft(draft) && isReadyCreationDraft(draft);
+}
+
 function isGenerateConfirmationMessage(value: string) {
   return /^(yes|yep|yeah|sure|please|go ahead|generate|generate it|create it|make it|do it|let'?s go)$/i.test(
     value.trim(),
@@ -889,7 +901,7 @@ async function preloadGeneratedPreviewImage(imageUrl: string | null) {
   if (!url || typeof window === "undefined") return;
 
   await new Promise<void>((resolve) => {
-    const image = new Image();
+    const image = new window.Image();
     let settled = false;
     const finish = () => {
       if (settled) return;
@@ -1382,9 +1394,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const currentLiveCardSummary =
     liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
   const previewTitle = liveCardTitle || currentLiveCardSummary.headline;
+  const hasReadyReceivedInvite = isReadyReceivedInviteDraft(draft) && !liveCardEventId;
   const hasReadyDraftProduct =
-    isReadyProductDraft(draft) && !liveCardEventId && !hasGeneratedDraftProduct;
+    isReadyProductDraft(draft) &&
+    !isReceivedInviteDraft(draft) &&
+    !liveCardEventId &&
+    !hasGeneratedDraftProduct;
   const canGenerateProduct = hasReadyDraftProduct && !isBusy;
+  const canSaveReceivedInvite = hasReadyReceivedInvite && !isBusy;
   const shouldShowGiftRegistryPrompt = shouldOfferGiftRegistryForDraft(draft);
   const giftRegistryNoun = giftRegistryNounForDraft(draft);
   const giftRegistryPrefix = giftRegistryComposerPrefix(draft);
@@ -1416,6 +1433,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const shouldShowProductFormatTiles =
     !liveCardEventId &&
     Boolean(draft) &&
+    !isReceivedInviteDraft(draft) &&
     !draft?.requestedOutputs.length &&
     !isBusy &&
     !isEmptyState &&
@@ -1430,6 +1448,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const shouldShowReadyActions =
     ((hasReadyDraftProduct && !shouldShowGiftRegistryPrompt) || isGeneratingCard) &&
     (!isReadyChatComposerOpen || isGeneratingCard);
+  const shouldShowReceivedInviteActions = hasReadyReceivedInvite && !isReadyChatComposerOpen;
   const shouldShowGiftRegistryActions = shouldShowGiftRegistryPrompt && !isReadyChatComposerOpen;
   function selectProductOutputForDraft(nextDraft: ConciergeEventDraft) {
     const restoredOutput = nextDraft.requestedOutputs
@@ -2179,19 +2198,21 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     });
   }
 
-  async function saveOcrReadyDraftToEvent(params: {
+  async function saveReadyDraftToEvent(params: {
     draft: ConciergeEventDraft;
-    scanAttemptId: string;
-    statusMessageId: string;
+    statusMessageId?: string | null;
   }) {
+    setPhase("publishing_card");
     setChatUploadStage("creating_event");
-    setMessages((prev) =>
-      prev.map((message) =>
-        message.id === params.statusMessageId
-          ? { ...message, text: "Creating your event..." }
-          : message,
-      ),
-    );
+    if (params.statusMessageId) {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === params.statusMessageId
+            ? { ...message, text: "Saving invite..." }
+            : message,
+        ),
+      );
+    }
     const response = await fetch("/api/creation/intake", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2229,13 +2250,20 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setMobileView("preview");
     setChatUploadStage("success");
     setMessages((prev) => {
-      const withoutStatus = prev.filter((message) => message.id !== params.statusMessageId);
+      const withoutStatus = params.statusMessageId
+        ? prev.filter((message) => message.id !== params.statusMessageId)
+        : prev;
       const persisted = json.chatMessages?.length
         ? chatMessagesFromSnapshots(json.chatMessages)
         : withoutStatus;
       return [
         ...persisted,
-        newMessage("assistant", `I created ${draftHeadline(savedDraft)}. You can open it now.`),
+        newMessage(
+          "assistant",
+          isReceivedInviteDraft(savedDraft)
+            ? `Saved ${draftHeadline(savedDraft)} to Invited events. You can open it now.`
+            : `I created ${draftHeadline(savedDraft)}. You can open it now.`,
+        ),
       ];
     });
     notifyCreationThreadsChanged();
@@ -2248,12 +2276,30 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     await routeSelectedSnapFile(file, source);
   }
 
+  async function saveReceivedInviteDraft() {
+    if (!draft || !canSaveReceivedInvite) return;
+    setError(null);
+    try {
+      await saveReadyDraftToEvent({
+        draft: normalizeDraftProductOutputs(draft),
+      });
+    } catch (err) {
+      setPhase("ready_to_generate");
+      setChatUploadStage("error");
+      setError(err instanceof Error ? err.message : "Unable to save invite.");
+    }
+  }
+
   async function submitComposerInput() {
     if (isBusy) return;
     const value = input.trim();
     if (!value) return;
     setInput("");
     shouldRefocusComposerRef.current = true;
+    if (canSaveReceivedInvite && isGenerateConfirmationMessage(value)) {
+      await saveReceivedInviteDraft();
+      return;
+    }
     if (canGenerateProduct && draft && isGenerateConfirmationMessage(value)) {
       setIsReadyChatComposerOpen(false);
       await generateProductForDraft(draft);
@@ -2394,11 +2440,18 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       }
       const scannedDraft = normalizeDraftProductOutputs(intakeResult.draft);
       if (isReadyProductDraft(scannedDraft)) {
-        await saveOcrReadyDraftToEvent({
-          draft: scannedDraft,
-          scanAttemptId,
-          statusMessageId: statusMessage.id,
-        });
+        clearUploadStatus();
+        setChatUploadStage("success");
+        setMobileView("preview");
+        setMessages((prev) => [
+          ...prev,
+          newMessage(
+            "assistant",
+            isReceivedInviteDraft(scannedDraft)
+              ? "I read this as an invite you received. The extracted event details are locked to the upload; save it to Invited events when it looks right."
+              : `I read the upload and drafted ${draftHeadline(scannedDraft)}. Review it, keep editing, or generate a preview when you're ready.`,
+          ),
+        ]);
       } else {
         clearUploadStatus();
         setChatUploadStage("success");
@@ -2854,7 +2907,27 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             </div>
           </div>
         ) : null}
-        {!shouldShowGiftRegistryPrompt ? (
+        {shouldShowReceivedInviteActions ? (
+          <div className="rounded-[1.35rem] border border-[#d8caff] bg-[#fbf9ff]/96 p-3 shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur">
+            <p className="mb-3 text-sm font-semibold text-[#4f3a73]">
+              This is saved as a received invite. Event details stay locked to the upload.
+            </p>
+            <button
+              type="button"
+              onClick={() => void saveReceivedInviteDraft()}
+              className="inline-flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#5c5be5] px-3 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,91,229,0.24)] transition hover:bg-[#4f4ed2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={!canSaveReceivedInvite}
+            >
+              {isPublishingCard ? (
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+              ) : (
+                <IdCard className="size-4 shrink-0" aria-hidden="true" />
+              )}
+              <span className="truncate">{isPublishingCard ? "Saving" : "Save invite"}</span>
+            </button>
+          </div>
+        ) : null}
+        {!shouldShowGiftRegistryPrompt && !shouldShowReceivedInviteActions ? (
           <div className="grid grid-cols-2 gap-2 rounded-[1.35rem] border border-[#d8caff] bg-[#fbf9ff]/96 p-2 shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur">
             <button
               type="button"
@@ -2904,10 +2977,19 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       liveEventId={liveCardEventId}
       publicHref={liveCardPublicHref}
       rsvpDashboardHref={rsvpDashboardHref}
-      hasDraftProduct={hasGeneratedDraftProduct}
+      hasDraftProduct={hasGeneratedDraftProduct || hasReadyReceivedInvite}
+      isReceivedInviteDraft={isReceivedInviteDraft(draft)}
+      publishActionLabel={hasReadyReceivedInvite ? "Save invite" : "Save / Publish"}
+      publishBusyLabel={hasReadyReceivedInvite ? "Saving..." : "Publishing..."}
       skinLabel={selectedSkinLabel}
       isPublishing={isPublishingCard}
-      onPublish={() => void publishGeneratedDraft()}
+      onPublish={() => {
+        if (hasReadyReceivedInvite) {
+          void saveReceivedInviteDraft();
+          return;
+        }
+        void publishGeneratedDraft();
+      }}
       rsvp={{
         count: rsvpResponseCount,
         isLoading: rsvpPreview.isLoading,
@@ -3052,7 +3134,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                     chatThread
                   )}
                 </div>
-                {shouldShowGiftRegistryActions || shouldShowReadyActions ? readyActions : composer}
+                {shouldShowGiftRegistryActions ||
+                shouldShowReceivedInviteActions ||
+                shouldShowReadyActions
+                  ? readyActions
+                  : composer}
               </div>
               {shouldShowProductPanel ? productPanel : null}
             </div>

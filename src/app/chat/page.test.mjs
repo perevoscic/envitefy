@@ -433,14 +433,16 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /Skip for now/);
   assert.doesNotMatch(client, /As an Amazon Associate/);
   assert.doesNotMatch(client, /Generate now still works without/);
-  assert.match(client, /!\s*shouldShowGiftRegistryPrompt \? \(/);
+  assert.match(client, /shouldShowReceivedInviteActions \? \(/);
+  assert.match(client, /Event details stay locked to the upload/);
+  assert.match(client, /Save invite/);
   assert.match(client, /Keep editing/);
   assert.match(client, /disabled=\{isGeneratingCard \|\| !canGenerateProduct\}/);
   assert.match(client, /<Loader2 className="size-4 shrink-0 animate-spin"/);
   assert.match(client, /isGeneratingCard \? "Generating" : "Generate now"/);
   assert.match(
     client,
-    /shouldShowGiftRegistryActions \|\| shouldShowReadyActions \? readyActions : composer/,
+    /shouldShowGiftRegistryActions \|\|[\s\S]{0,80}shouldShowReceivedInviteActions \|\|[\s\S]{0,80}shouldShowReadyActions[\s\S]{0,80}\? readyActions[\s\S]{0,80}: composer/,
   );
   assert.doesNotMatch(preview, /w-auto max-w-full/);
   assert.doesNotMatch(preview, /top-\[calc\(100%\+0\.5rem\)\]/);

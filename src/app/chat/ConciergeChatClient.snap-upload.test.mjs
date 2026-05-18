@@ -12,7 +12,10 @@ test("chat snap upload scans in chat instead of routing through dashboard upload
 
   assert.match(source, /runSnapOcrUpload\(\{ file, scanAttemptId \}\)/);
   assert.match(source, /action: "ocr_result"/);
-  assert.match(source, /action: "save"/);
+  assert.match(source, /saveReadyDraftToEvent/);
+  assert.match(source, /The extracted event details are locked to the upload/);
+  assert.match(source, /Review it, keep editing, or generate a preview/);
+  assert.doesNotMatch(source, /await saveOcrReadyDraftToEvent/);
   assert.doesNotMatch(source, /savePendingSnapUpload/);
   assert.doesNotMatch(source, /router\.push\(`\/\?action=upload/);
 });

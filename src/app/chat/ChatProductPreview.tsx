@@ -35,6 +35,9 @@ type ChatProductPreviewProps = {
   publicHref: string | null;
   rsvpDashboardHref: string | null;
   hasDraftProduct: boolean;
+  isReceivedInviteDraft?: boolean;
+  publishActionLabel?: string;
+  publishBusyLabel?: string;
   skinLabel: string | null;
   isPublishing: boolean;
   onPublish: () => void;
@@ -87,12 +90,20 @@ function previewProcessStatusText({
   draft,
   hasDraftProduct,
   publicHref,
+  isReceivedInviteDraft,
 }: {
   draft: ConciergeEventDraft | null;
   hasDraftProduct: boolean;
   publicHref: string | null;
+  isReceivedInviteDraft?: boolean;
 }) {
+  if (publicHref && isReceivedInviteDraft) {
+    return "Saved invite: open the link to review it in Invited events.";
+  }
   if (publicHref) return "Published preview: open the link to review what guests will see.";
+  if (isReceivedInviteDraft && hasDraftProduct) {
+    return "Received invite review: details are locked to the upload. Save it to Invited events when it looks right.";
+  }
   if (hasDraftProduct) return "Generated draft: review it here, then save/publish when ready.";
   if (draft?.currentQuestion) return "Placeholder preview: not a final product yet.";
   return "Placeholder preview: generate when the details look ready.";
@@ -307,6 +318,9 @@ export default function ChatProductPreview({
   publicHref,
   rsvpDashboardHref,
   hasDraftProduct,
+  isReceivedInviteDraft = false,
+  publishActionLabel = "Save / Publish",
+  publishBusyLabel = "Publishing...",
   isPublishing,
   onPublish,
   mobileView,
@@ -325,6 +339,7 @@ export default function ChatProductPreview({
     draft,
     hasDraftProduct,
     publicHref,
+    isReceivedInviteDraft,
   });
   const shouldShowDraftActions = hasDraftProduct && !publicHref;
 
@@ -404,7 +419,7 @@ export default function ChatProductPreview({
                     <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
                   )}
                   <span className="truncate">
-                    {isPublishing ? "Publishing..." : "Save / Publish"}
+                    {isPublishing ? publishBusyLabel : publishActionLabel}
                   </span>
                 </button>
               </div>

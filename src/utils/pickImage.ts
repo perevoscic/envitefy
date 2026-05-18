@@ -46,7 +46,7 @@ export async function preparePickedImage(
     const url = URL.createObjectURL(blob);
     try {
       bitmap = await new Promise<HTMLImageElement>((res, rej) => {
-        const img = new Image();
+        const img = new window.Image();
         img.onload = () => res(img);
         img.onerror = () => rej(new Error("Image decode failed"));
         img.src = url;
