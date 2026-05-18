@@ -9,6 +9,7 @@ import {
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { buildEventAssetContent } from "./assets.ts";
+import { isExternalPlatformActionRequest } from "./creation-intent.ts";
 import {
   createEventAsset,
   isEventAssetType,
@@ -295,6 +296,22 @@ function guardedEventAssistantPlan(message: string): EventActionPlan | null {
       assistantMessage:
         "I can't help scrape private RSVP data or bulk-change guest responses. I can help edit invitation copy, RSVP settings, or guest-facing details.",
       suggestedReplies: ["Edit RSVP settings", "Update invite copy", "Create a reminder"],
+    };
+  }
+  if (isExternalPlatformActionRequest(message)) {
+    const question =
+      "I can help with that, but I can't post to Facebook, create social media event pages, or contact people for you. I can write the post copy, create an Envitefy event link, or draft a short video brief you can share yourself.";
+    const suggestedReplies = ["Write post copy", "Create event page", "Draft video brief"];
+    return {
+      actions: [
+        {
+          type: "ask_question",
+          question,
+          suggestedReplies,
+        },
+      ],
+      assistantMessage: question,
+      suggestedReplies,
     };
   }
   if (isOffDomainEventAssistantRequest(message)) {

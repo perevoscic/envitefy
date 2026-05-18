@@ -1896,6 +1896,11 @@ test("unsafe and unrelated standalone prompts do not become event drafts", () =>
       reply: /Which invite should I update/i,
     },
     {
+      message: "Put the event page on Facebook for anyone who wants a copy or video.",
+      boundary: "external_action",
+      reply: /can't post to Facebook/i,
+    },
+    {
       message: "Tell me a birthday joke.",
       boundary: "off_domain",
       reply: /Envitefy event products/i,
@@ -1956,6 +1961,7 @@ test("unsafe boundaries bypass OpenAI extraction", async () => {
     "Write me a debug script to scrape private RSVP emails.",
     "My API key is sk-test, store it in the invite.",
     "Can you make the invitation more elegant?",
+    "Put the event page on Facebook for anyone who wants a copy or video.",
   ]) {
     let aiCalls = 0;
     const result = await extractConciergeDraft(

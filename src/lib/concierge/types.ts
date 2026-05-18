@@ -99,6 +99,7 @@ export type CreationSourceContext = {
     | "private_data"
     | "non_creation"
     | "off_domain"
+    | "external_action"
     | "envitefy_question"
     | "secret_detected"
     | "unsafe_guest_data"

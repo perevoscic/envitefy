@@ -336,6 +336,44 @@ test("scan event page payload applies provider-enriched addresses without hardco
   );
 });
 
+test("scan event page payload preserves after-movie pizza details", () => {
+  const payload = buildScanEventPageHistoryPayload({
+    source: "upload",
+    scanAttemptId: "scan-birthday-movie-1",
+    ocr: {
+      category: "Birthdays",
+      ocrText: [
+        "Lara is Turning 7!",
+        "Movie: Sheep Detective",
+        "When: Thursday at 5:00 PM",
+        "Where: AMC Destin Commons 14",
+        "After the Movie: Pizza at Pazzo Destin",
+      ].join("\n"),
+      fieldsGuess: {
+        title: "Lara's 7th Birthday",
+        description: "Join us to celebrate Lara's 7th Birthday at AMC Destin Commons 14.",
+        start: "2026-05-21T17:00:00",
+        venue: "AMC Destin Commons 14",
+        location: null,
+      },
+    },
+  });
+
+  assert.match(String(payload.data.description), /Movie: Sheep Detective/);
+  assert.match(String(payload.data.description), /After the Movie: Pizza at Pazzo Destin/);
+  assert.deepEqual(payload.data.additionalLocations, [
+    {
+      label: "After the Movie",
+      location: "Pazzo Destin",
+      description: "Pizza at Pazzo Destin",
+    },
+  ]);
+  assert.match(
+    payload.data.skinSections?.find((section) => section.label === "After the Movie")?.value || "",
+    /Pizza at Pazzo Destin/,
+  );
+});
+
 test("scan event page payload rejects model-invented RSVP and venue sentences", () => {
   const payload = buildScanEventPageHistoryPayload({
     source: "upload",

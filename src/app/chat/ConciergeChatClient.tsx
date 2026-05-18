@@ -48,6 +48,7 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/ai-prompt-box";
 import BottomNavBar, { type BottomNavItem } from "@/components/ui/bottom-nav-bar";
+import { skinLabelForCategoryName, skinLabelForConciergeDraft } from "@/lib/concierge/skins";
 import type {
   ConciergeActiveContext,
   ConciergeEventDraft,
@@ -60,7 +61,6 @@ import type {
   CreationSessionResumeResponse,
   RequestedOutput,
 } from "@/lib/concierge/types";
-import { skinLabelForCategoryName, skinLabelForConciergeDraft } from "@/lib/concierge/skins";
 import { runSnapOcrUpload, type SnapOcrUploadResult } from "@/lib/snap-upload-pipeline";
 import { getUploadAcceptAttribute } from "@/lib/upload-config";
 import { createClientAttemptId, reportClientLog } from "@/utils/client-log";
@@ -382,6 +382,34 @@ function withConciergeTiming(url: string) {
   if (!ENABLE_CONCIERGE_TIMING) return url;
   return `${url}${url.includes("?") ? "&" : "?"}timing=1`;
 }
+
+function isUnsupportedExternalConciergeRequest(message: string) {
+  const cleaned = message.replace(/\s+/g, " ").trim();
+  if (!cleaned) return false;
+  const platform =
+    "(?:facebook|instagram|tiktok|tik\\s*tok|x|twitter|linkedin|youtube|whats\\s*app|whatsapp|messenger)";
+  const audience =
+    "(?:everyone|everybody|anyone|people|guests?|attendees?|contacts?|friends?|followers?|group)";
+  return (
+    new RegExp(
+      `\\b(?:post|publish|upload|share)\\b[\\s\\S]{0,80}\\b(?:on|to|through|via)?\\s*${platform}\\b`,
+      "i",
+    ).test(cleaned) ||
+    new RegExp(
+      `\\b(?:send|message|dm|text|email|invite|notify|contact|forward|distribute)\\b[\\s\\S]{0,100}\\b(?:${audience}|${platform})\\b`,
+      "i",
+    ).test(cleaned) ||
+    new RegExp(`\\b${platform}\\b[\\s\\S]{0,80}\\b${audience}\\b`, "i").test(cleaned) ||
+    new RegExp(
+      `\\b(?:create|make|set\\s+up|put)\\b[\\s\\S]{0,60}\\b${platform}\\b[\\s\\S]{0,30}\\b(?:event|event\\s+page|page|post)\\b`,
+      "i",
+    ).test(cleaned) ||
+    new RegExp(`\\b${platform}\\b[\\s\\S]{0,40}\\b(?:event\\s+page|event)\\b`, "i").test(cleaned)
+  );
+}
+
+const UNSUPPORTED_EXTERNAL_CONCIERGE_MESSAGE =
+  "I can help with that, but I can't post to Facebook, create social media event pages, or contact people for you.\nI can write the post copy, create an Envitefy event link, or draft a short video brief you can share yourself.";
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -2153,6 +2181,17 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setPhase("editing_card");
     setBuildProgress(8);
     setMessages((prev) => [...prev, newMessage("user", trimmed)]);
+    if (isUnsupportedExternalConciergeRequest(trimmed)) {
+      setBuildProgress(0);
+      setPhase("card_ready");
+      setMessages((prev) => [
+        ...prev,
+        newMessage("assistant", UNSUPPORTED_EXTERNAL_CONCIERGE_MESSAGE),
+      ]);
+      setIsSending(false);
+      refocusComposerAfterResponse();
+      return;
+    }
     try {
       const response = await fetch(`/api/concierge/events/${liveCardEventId}/message`, {
         method: "POST",
@@ -2209,6 +2248,22 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setMessages((prev) => (userMessage ? [...prev, userMessage] : prev));
     }
     setSelectedStarterCategory(null);
+    if (isUnsupportedExternalConciergeRequest(message)) {
+      setMessages((prev) => [
+        ...prev,
+        newMessage("assistant", UNSUPPORTED_EXTERNAL_CONCIERGE_MESSAGE),
+      ]);
+      setPhase(
+        draft
+          ? isReadyProductDraft(draft)
+            ? "ready_to_generate"
+            : "collecting_details"
+          : "intake_empty",
+      );
+      setIsSending(false);
+      refocusComposerAfterResponse();
+      return null;
+    }
     let streamAssistantId: string | null = null;
     let streamedAssistantText = "";
     try {

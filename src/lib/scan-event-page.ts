@@ -17,6 +17,13 @@ import {
 import { mergeOcrFacts, normalizeOcrFacts } from "./ocr/facts.ts";
 import type { PlaceAddressEnrichment } from "./ocr/place-enrichment.ts";
 import {
+  appendMovieTitleToDescription,
+  appendSecondaryLocationsToDescription,
+  extractOcrMovieTitle,
+  extractOcrSecondaryLocations,
+  type OcrSecondaryLocation,
+} from "./ocr/secondary-locations.ts";
+import {
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
   isPickleballOcrSkinCandidate,
@@ -208,6 +215,25 @@ function stringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.map((item) => cleanString(item)).filter((item): item is string => Boolean(item))
     : [];
+}
+
+function normalizeAdditionalLocations(value: unknown): OcrSecondaryLocation[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      const record = asRecord(item);
+      const location = firstString(record.location, record.address);
+      if (!location) return null;
+      return {
+        label: firstString(record.label, record.title, record.name),
+        venue: firstString(record.venue, record.venueName, record.placeName),
+        location,
+        address: firstString(record.address),
+        timeText: firstString(record.timeText, record.time),
+        description: firstString(record.description, record.note),
+      };
+    })
+    .filter((item): item is OcrSecondaryLocation => Boolean(item));
 }
 
 function splitOcrLines(...values: unknown[]): string[] {
@@ -747,11 +773,19 @@ export function buildScanEventPageHistoryPayload(params: {
       : fieldsGuess.dateText,
     formatScheduleLine(startISO, timeFound, timezone),
   );
-  const description =
+  const baseDescription =
     !isGenericDescription(fieldsGuess.description, title)
       ? firstString(fieldsGuess.description) ||
         buildScanDescription({ title, scheduleLine, locationLine, rsvpText })
       : buildScanDescription({ title, scheduleLine, locationLine, rsvpText });
+  const additionalLocations =
+    normalizeAdditionalLocations(fieldsGuess.additionalLocations).length > 0
+      ? normalizeAdditionalLocations(fieldsGuess.additionalLocations)
+      : extractOcrSecondaryLocations(rescueText, baseDescription);
+  const description = appendSecondaryLocationsToDescription(
+    appendMovieTitleToDescription(baseDescription, extractOcrMovieTitle(rescueText)),
+    additionalLocations,
+  );
   const skinRouting = resolveOcrCreatedVia({
     category: initialCategory,
     eventType,
@@ -791,6 +825,10 @@ export function buildScanEventPageHistoryPayload(params: {
     ...(hostName ? [{ label: "Host", value: hostName }] : []),
     ...(rsvpText || rsvpUrl ? [{ label: "RSVP", value: rsvpText || rsvpUrl }] : []),
     ...(registryUrl ? [{ label: "Registry", value: registryUrl }] : []),
+    ...additionalLocations.map((location) => ({
+      label: location.label || "Additional Stop",
+      value: location.description || location.location,
+    })),
   ];
 
   const data: Record<string, unknown> = {
@@ -838,6 +876,7 @@ export function buildScanEventPageHistoryPayload(params: {
     locationLabel: locationLine,
     locationText: locationLine,
     locationEnrichment: params.locationEnrichment || undefined,
+    additionalLocations: additionalLocations.length ? additionalLocations : undefined,
     placeName: venue || location || undefined,
     coverImageUrl: thumbnail,
     thumbnail,

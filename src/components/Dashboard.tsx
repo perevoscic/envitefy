@@ -82,6 +82,15 @@ type EventFields = {
   attire?: string | null;
   /** OCR extracted event flow/activity list. */
   activities?: string[] | null;
+  /** OCR extracted secondary event stops, such as dinner or pizza after the primary activity. */
+  additionalLocations?: Array<{
+    label?: string | null;
+    venue?: string | null;
+    location?: string | null;
+    address?: string | null;
+    timeText?: string | null;
+    description?: string | null;
+  }> | null;
   /** OCR extracted gift registry URL. */
   registryName?: string | null;
   /** OCR extracted gift registry provider. */
@@ -1145,6 +1154,59 @@ export default function Dashboard({
               .filter(Boolean)
               .slice(0, 8)
           : [];
+        const additionalLocationsFromScanRaw = (data?.fieldsGuess as {
+          additionalLocations?: unknown;
+        })?.additionalLocations;
+        const additionalLocationsFromScan = Array.isArray(additionalLocationsFromScanRaw)
+          ? additionalLocationsFromScanRaw
+              .map((item) => {
+                if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+                const record = item as Record<string, unknown>;
+                const location =
+                  typeof record.location === "string" && record.location.trim()
+                    ? record.location.trim()
+                    : typeof record.address === "string" && record.address.trim()
+                      ? record.address.trim()
+                      : null;
+                if (!location) return null;
+                return {
+                  label:
+                    typeof record.label === "string" && record.label.trim()
+                      ? record.label.trim()
+                      : null,
+                  venue:
+                    typeof record.venue === "string" && record.venue.trim()
+                      ? record.venue.trim()
+                      : null,
+                  location,
+                  address:
+                    typeof record.address === "string" && record.address.trim()
+                      ? record.address.trim()
+                      : null,
+                  timeText:
+                    typeof record.timeText === "string" && record.timeText.trim()
+                      ? record.timeText.trim()
+                      : null,
+                  description:
+                    typeof record.description === "string" && record.description.trim()
+                      ? record.description.trim()
+                      : null,
+                };
+              })
+              .filter(
+                (
+                  item,
+                ): item is {
+                  label: string | null;
+                  venue: string | null;
+                  location: string;
+                  address: string | null;
+                  timeText: string | null;
+                  description: string | null;
+                } => Boolean(item),
+              )
+              .slice(0, 4)
+          : [];
         const fieldsGuessForRegistry = data?.fieldsGuess as
           | {
               description?: unknown;
@@ -1217,6 +1279,9 @@ export default function Dashboard({
               thingsToDo: thingsToDoFromScan || undefined,
               attire: attireFromScan || undefined,
               activities: activitiesFromScan.length ? activitiesFromScan : undefined,
+              additionalLocations: additionalLocationsFromScan.length
+                ? additionalLocationsFromScan
+                : undefined,
               registryName: registryNameFromScan || undefined,
               registryProvider: registryProviderFromScan || undefined,
               registryUrl: registryUrlFromScan || undefined,
@@ -1687,6 +1752,10 @@ export default function Dashboard({
                 ? eventInput.attire.trim()
                 : undefined,
             activities: normalizedActivities.length ? normalizedActivities : undefined,
+            additionalLocations:
+              Array.isArray(eventInput.additionalLocations) && eventInput.additionalLocations.length
+                ? eventInput.additionalLocations
+                : undefined,
             ocrFacts:
               Array.isArray(eventInput.ocrFacts) && eventInput.ocrFacts.length
                 ? normalizeOcrFacts(eventInput.ocrFacts)

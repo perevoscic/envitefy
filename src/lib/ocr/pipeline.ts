@@ -48,12 +48,19 @@ import {
 } from "@/lib/ocr/practice-schedule";
 import { normalizeRegistryUrlForDetectedEvent } from "@/lib/ocr/registry-url";
 import {
+  appendMovieTitleToDescription,
+  appendSecondaryLocationsToDescription,
+  extractOcrMovieTitle,
+  extractOcrSecondaryLocations,
+} from "@/lib/ocr/secondary-locations";
+import {
   inferOcrSkinSelection,
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
   isOcrInviteCategory,
   isPickleballOcrSkinCandidate,
 } from "@/lib/ocr/skin";
+import { enrichOcrVenueAddress } from "@/lib/ocr/place-enrichment";
 import {
   cleanAddressLabel,
   cleanGraduationVenueName,
@@ -1402,7 +1409,12 @@ export async function handleOcrRequest(request: Request) {
       finalDescription = finalDescription.replace(/^([a-z])/, (match) => match.toUpperCase());
     }
 
-    const description = finalDescription || "";
+    const secondaryLocations = extractOcrSecondaryLocations(raw, finalDescription);
+    const movieTitle = extractOcrMovieTitle(raw, finalDescription);
+    const description = appendSecondaryLocationsToDescription(
+      appendMovieTitleToDescription(finalDescription || "", movieTitle),
+      secondaryLocations,
+    );
     const guestAttendanceFacts =
       extractGuestAttendanceFactsFromFlyerText(raw) ||
       extractGuestAttendanceFactsFromFlyerText(description);
@@ -1476,6 +1488,10 @@ export async function handleOcrRequest(request: Request) {
         { label: "Host", value: hostNameFinal },
         { label: "Good to Know", value: guestAttendanceFacts },
         { label: "Good to Know", value: guestReminderFacts },
+        ...secondaryLocations.map((location) => ({
+          label: location.label || "Additional Stop",
+          value: location.description || location.location,
+        })),
       ]),
     );
     const normalizedFieldLocation = normalizeOcrLocationFields({
@@ -1504,6 +1520,7 @@ export async function handleOcrRequest(request: Request) {
       hostName: hostNameFinal,
       goodToKnow: goodToKnowFinal,
       ocrFacts: ocrFacts.length ? ocrFacts : null,
+      additionalLocations: secondaryLocations.length ? secondaryLocations : null,
       activities: Array.isArray(llmImage?.activities) ? llmImage.activities : null,
       attire:
         typeof llmImage?.attire === "string" && llmImage.attire.trim()
@@ -1870,6 +1887,15 @@ export async function handleOcrRequest(request: Request) {
       fieldsGuess.venue = cleanedVenue || null;
     }
 
+    const locationEnrichment = await enrichOcrVenueAddress({
+      venue: fieldsGuess.venue,
+      location: fieldsGuess.location,
+      context: [raw, fieldsGuess.title, fieldsGuess.description].filter(Boolean).join("\n"),
+    });
+    if (locationEnrichment?.address) {
+      fieldsGuess.location = locationEnrichment.address;
+    }
+
     const birthdayTemplateHint = normalizeBirthdayTemplateHint({
       category,
       rawText: raw,
@@ -1973,6 +1999,7 @@ export async function handleOcrRequest(request: Request) {
       ocrSkin,
       openHouse: normalizedOpenHouse,
       thumbnailFocus,
+      locationEnrichment,
       ocrSource,
       scanAttemptId,
     };

@@ -1,3 +1,8 @@
+import {
+  getOutputRequirement as getRequirementForOutput,
+  getRequirementPlan,
+  requirementFieldSatisfied,
+} from "./requirements.ts";
 import type {
   ConciergeActiveContext,
   ConciergeEventDraft,
@@ -9,14 +14,9 @@ import type {
   CreationSourceContext,
   DetectedSourceIntent,
   RequestedOutput,
-  SourceIntentResolution,
   SourceContextType,
+  SourceIntentResolution,
 } from "./types.ts";
-import {
-  getOutputRequirement as getRequirementForOutput,
-  getRequirementPlan,
-  requirementFieldSatisfied,
-} from "./requirements.ts";
 
 export { getOutputRequirement } from "./requirements.ts";
 
@@ -732,9 +732,37 @@ export function isUnsafeGuestDataRequest(text: string) {
   );
 }
 
+export function isExternalPlatformActionRequest(text: string) {
+  const cleaned = cleanCreationString(text);
+  if (!cleaned) return false;
+  const platform =
+    "(?:facebook|instagram|tiktok|tik\\s*tok|x|twitter|linkedin|youtube|whats\\s*app|whatsapp|messenger)";
+  const audience =
+    "(?:everyone|everybody|anyone|people|guests?|attendees?|contacts?|friends?|followers?|group)";
+  return (
+    new RegExp(
+      `\\b(?:post|publish|upload|share)\\b[\\s\\S]{0,80}\\b(?:on|to|through|via)?\\s*${platform}\\b`,
+      "i",
+    ).test(cleaned) ||
+    new RegExp(
+      `\\b(?:send|message|dm|text|email|invite|notify|contact|forward|distribute)\\b[\\s\\S]{0,100}\\b(?:${audience}|${platform})\\b`,
+      "i",
+    ).test(cleaned) ||
+    new RegExp(`\\b${platform}\\b[\\s\\S]{0,80}\\b${audience}\\b`, "i").test(cleaned) ||
+    new RegExp(
+      `\\b(?:create|make|set\\s+up|put)\\b[\\s\\S]{0,60}\\b${platform}\\b[\\s\\S]{0,30}\\b(?:event|event\\s+page|page|post)\\b`,
+      "i",
+    ).test(cleaned) ||
+    new RegExp(`\\b${platform}\\b[\\s\\S]{0,40}\\b(?:event\\s+page|event)\\b`, "i").test(cleaned)
+  );
+}
+
 export function isAmbiguousEditRequest(
   text: string,
-  options: { activeContext?: ConciergeActiveContext | null; previous?: ConciergeEventDraft | null } = {},
+  options: {
+    activeContext?: ConciergeActiveContext | null;
+    previous?: ConciergeEventDraft | null;
+  } = {},
 ) {
   const cleaned = cleanCreationString(text);
   if (!cleaned || options.previous || hasActiveEventContext(options.activeContext)) return false;
@@ -790,10 +818,14 @@ export function isOffDomainRequest(text: string) {
 
 export function classifyCreationBoundary(
   text: string,
-  options: { activeContext?: ConciergeActiveContext | null; previous?: ConciergeEventDraft | null } = {},
+  options: {
+    activeContext?: ConciergeActiveContext | null;
+    previous?: ConciergeEventDraft | null;
+  } = {},
 ): Exclude<CreationSourceContext["boundary"], null | undefined> | null {
   if (isSecretLikeRequest(text)) return "secret_detected";
   if (isUnsafeGuestDataRequest(text)) return "unsafe_guest_data";
+  if (isExternalPlatformActionRequest(text)) return "external_action";
   if (isNonCreationRequest(text)) return "non_creation";
   if (isAmbiguousEditRequest(text, options)) return "ambiguous_edit";
   if (isOffDomainRequest(text)) return "off_domain";

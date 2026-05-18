@@ -158,6 +158,7 @@ function shouldUseDeterministicFallback(draft: ConciergeEventDraft, fallbackMess
     draft.sourceContext.boundary === "envitefy_question" ||
     draft.sourceContext.boundary === "non_creation" ||
     draft.sourceContext.boundary === "off_domain" ||
+    draft.sourceContext.boundary === "external_action" ||
     draft.sourceContext.boundary === "secret_detected" ||
     draft.sourceContext.boundary === "unsafe_guest_data" ||
     draft.sourceContext.boundary === "ambiguous_edit" ||

@@ -1909,6 +1909,9 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
   if (draft.sourceContext.boundary === "off_domain") {
     return "I can help with Envitefy event products, RSVP, uploads, guest pages, and event edits. Tell me what you're creating or choose a category.";
   }
+  if (draft.sourceContext.boundary === "external_action") {
+    return "I can help with that, but I can't post to Facebook, create social media event pages, or contact people for you. I can write the post copy, create an Envitefy event link, or draft a short video brief you can share yourself.";
+  }
   if (draft.sourceContext.boundary === "private_data") {
     return "I can't change owners, user IDs, or private account data here. I can help with event details, RSVP, copy, design, or weather planning.";
   }
