@@ -54,6 +54,7 @@ import { useEventCache } from "@/app/event-cache-context";
 import conciergeMenuIcon from "@/assets/concierge-menu-icon.png";
 import { adminNavItems, type AdminNavItemId } from "@/components/admin/nav";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import EventDeleteModal from "@/components/EventDeleteModal";
 import EventSidebar from "@/components/navigation/EventSidebar";
 import { useMenu } from "@/contexts/MenuContext";
 import type { CreationThreadSummary, CreationThreadsResponse } from "@/lib/concierge/types";
@@ -863,7 +864,6 @@ function EventListPanel({
   const renderRowActions = (item: GroupedEventItem) => {
     if (!showQuickActions) return null;
     const canShare = showShareAction && item.showQuickActions && !item.isInvited;
-    const resolvedDeleteActionTitle = item.isInvited ? "Remove invited event" : deleteActionTitle;
     const resolvedDeleteActionVerb = item.isInvited ? "Remove" : deleteActionVerb;
     return (
       <span className={`ml-2 flex shrink-0 items-center gap-1 ${rowActionVisibilityClass}`}>
@@ -882,19 +882,20 @@ function EventListPanel({
             <Share2 size={13} />
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            void onDeleteRow(item);
-          }}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-          aria-label={`${resolvedDeleteActionVerb} ${item.title}`}
-          title={resolvedDeleteActionTitle}
+        <EventDeleteModal
+          eventId={item.row.id}
+          eventTitle={item.title || item.row.title || "Untitled event"}
+          deleteMode={item.isInvited ? "removeInvited" : "delete"}
+          eventData={item.row.data}
+          navigateAfterDelete={isHistoryRowActive(item.row.id)}
+          buttonClassName="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-100 bg-white/90 text-red-500 shadow-[0_10px_20px_rgba(220,38,38,0.08)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+          ariaLabel={`${resolvedDeleteActionVerb} ${item.title}`}
         >
           <Trash2 size={13} />
-        </button>
+          <span className="sr-only">
+            {resolvedDeleteActionVerb} {item.title}
+          </span>
+        </EventDeleteModal>
       </span>
     );
   };

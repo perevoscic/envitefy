@@ -138,7 +138,7 @@ test("left sidebar gives My Events rows a hover delete affordance", () => {
 
   assert.match(
     source,
-    /const renderRowActions = \(item: GroupedEventItem\) => \{[\s\S]*?className="inline-flex h-8 w-8[\s\S]*?aria-label=\{`\$\{resolvedDeleteActionVerb\} \$\{item\.title\}`\}/s,
+    /const renderRowActions = \(item: GroupedEventItem\) => \{[\s\S]*?<EventDeleteModal[\s\S]*?buttonClassName="inline-flex h-8 w-8[\s\S]*?ariaLabel=\{`\$\{resolvedDeleteActionVerb\} \$\{item\.title\}`\}/s,
   );
   assert.match(
     source,

@@ -1539,10 +1539,7 @@ export function useLeftSidebarController({
     async (item: GroupedEventItem) => {
       const eventId = String(item?.row?.id || "").trim();
       if (!eventId) return;
-      const eventLabel = item?.title || item?.row?.title || "Untitled event";
       if (isInvitedSidebarItem(item)) {
-        const ok = window.confirm(`Remove this invited event from your list?\n\n${eventLabel}`);
-        if (!ok) return;
         await removeInvitedEventRequest(eventId, item?.row?.data);
         window.dispatchEvent(new CustomEvent("history:deleted", { detail: { id: eventId } }));
         if (selectedEventId === eventId) {
@@ -1551,8 +1548,6 @@ export function useLeftSidebarController({
         return;
       }
 
-      const ok = window.confirm(`Are you sure you want to delete this event?\n\n${eventLabel}`);
-      if (!ok) return;
       const response = await fetch(`/api/history/${eventId}`, { method: "DELETE" });
       if (!response.ok) {
         throw new Error("Failed to delete event");
@@ -1569,9 +1564,6 @@ export function useLeftSidebarController({
     async (item: GroupedEventItem) => {
       const eventId = String(item?.row?.id || "").trim();
       if (!eventId) return;
-      const eventLabel = item?.title || item?.row?.title || "Untitled event";
-      const ok = window.confirm(`Remove this invited event from your list?\n\n${eventLabel}`);
-      if (!ok) return;
       await removeInvitedEventRequest(eventId, item?.row?.data);
 
       window.dispatchEvent(new CustomEvent("history:deleted", { detail: { id: eventId } }));
