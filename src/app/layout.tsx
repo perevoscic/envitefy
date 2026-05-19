@@ -111,7 +111,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: themeColorPalette.brand,
+  themeColor: [
+    { media: "(max-width: 767px)", color: themeColorPalette.brand },
+    { color: "#FFFFFF" },
+  ],
 };
 
 export default async function RootLayout({
