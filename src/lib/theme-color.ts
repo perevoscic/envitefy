@@ -1,7 +1,9 @@
 const BRAND_THEME_COLOR = "#7F67D3";
 const BRAND_BACKGROUND_COLOR = "#F8F5FF";
 const GYMNASTICS_THEME_COLOR = "#7C5CDB";
-const EVENT_THEME_COLOR_FALLBACK = BRAND_THEME_COLOR;
+// Use the event-page background tint so mobile browser top chrome matches
+// the page surface instead of defaulting to dark/black UI bars.
+const EVENT_THEME_COLOR_FALLBACK = BRAND_BACKGROUND_COLOR;
 
 export type ThemeColorSource = "route" | "hero" | "event" | "default";
 
