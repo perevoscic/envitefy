@@ -87,16 +87,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    if (!cookieSignupSource) {
+    if (requestedSignupSource && cookieSignupSource && requestedSignupSource !== cookieSignupSource) {
       return NextResponse.json(
-        { error: "Create accounts only from /snap or /gymnastics." },
-        { status: 400 },
-      );
-    }
-
-    if (requestedSignupSource && requestedSignupSource !== cookieSignupSource) {
-      return NextResponse.json(
-        { error: "Signup source mismatch. Restart from /snap or /gymnastics." },
+        { error: "Signup source mismatch. Please refresh and try again." },
         { status: 400 },
       );
     }
@@ -119,12 +112,14 @@ export async function POST(req: Request) {
       });
     }
 
+    const effectiveSignupSource = cookieSignupSource ?? requestedSignupSource ?? "snap";
+
     await createUserWithEmailPassword({
       email,
       password,
       firstName,
       lastName,
-      signupSource: cookieSignupSource,
+      signupSource: effectiveSignupSource,
     });
     const response = NextResponse.json({ ok: true });
     response.cookies.set("envitefy_signup_source", "", {
