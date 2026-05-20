@@ -20,20 +20,6 @@
 :root {
   --mobile-chrome-top: #ffffff;
   --mobile-chrome-bottom: #8d7be9;
-  --mobile-safe-area-bottom: var(--mobile-chrome-bottom);
-  --mobile-chrome-bottom-backing-height: max(96px, env(safe-area-inset-bottom, 0px));
-  --mobile-chrome-bottom-backing: linear-gradient(
-    180deg,
-    rgba(141, 123, 233, 0) 0%,
-    rgba(141, 123, 233, 0.72) 38%,
-    var(--mobile-safe-area-bottom) 100%
-  );
-  --mobile-browser-surface-gradient: linear-gradient(
-    180deg,
-    var(--mobile-chrome-top) 0%,
-    #f8f5ff 40%,
-    var(--mobile-chrome-bottom) 100%
-  );
   --envitefy-project-background: radial-gradient(125% 125% at 50% 10%, #fff 40%, #6366f1 100%);
   --background: #f8f5ff;
   --surface: #fbf7f2;
@@ -639,9 +625,7 @@ html {
   /* Ensure fullscreen coverage including safe areas but allow scrolling */
   min-height: 100vh;
   min-height: 100dvh;
-  /* Extend background to cover status bar area on iOS */
-  background-color: var(--mobile-chrome-top);
-  background-image: var(--mobile-browser-surface-gradient);
+  background-color: var(--background);
   /* Ensure html extends edge-to-edge */
   margin: 0;
   padding: 0;
@@ -660,9 +644,7 @@ body.embedded-editor {
 }
 
 body {
-  background-color: var(--mobile-safe-area-bottom);
-  background-image: var(--mobile-browser-surface-gradient);
-  background-attachment: fixed;
+  background-color: var(--background);
   color: var(--foreground);
   font-family:
     var(--font-raleway), var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -716,25 +698,6 @@ body::before {
   /* Ensure it covers safe areas */
   margin: 0;
   padding: 0;
-}
-
-body::after {
-  content: "";
-  display: none;
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 0;
-  height: var(--mobile-chrome-bottom-backing-height);
-  background: var(--mobile-chrome-bottom-backing);
-  pointer-events: none;
-}
-
-@media (pointer: coarse), (hover: none) {
-  body::after {
-    display: block;
-  }
 }
 
 h1,

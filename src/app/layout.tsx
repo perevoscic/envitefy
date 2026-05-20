@@ -185,7 +185,7 @@ export default async function RootLayout({
       lang="en"
       data-theme={`${themeKey}-${htmlVariant}`}
       data-theme-key={themeKey}
-      style={{ ...htmlStyle, backgroundColor: themeColorPalette.navigationBar }}
+      style={{ ...htmlStyle, backgroundColor: themeColorPalette.background }}
       suppressHydrationWarning
     >
       <body className={`${fontVarsClass} antialiased`}>

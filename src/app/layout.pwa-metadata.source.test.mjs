@@ -8,6 +8,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..", "..");
 const layoutSource = readFileSync(join(__dirname, "layout.tsx"), "utf8");
 const globalsSource = readFileSync(join(__dirname, "globals.css"), "utf8");
+const themeColorSource = readFileSync(join(repoRoot, "src", "lib", "theme-color.ts"), "utf8");
+const themeColorSyncSource = readFileSync(
+  join(repoRoot, "src", "components", "ThemeColorSync.tsx"),
+  "utf8",
+);
 const manifest = JSON.parse(
   readFileSync(join(repoRoot, "public", "manifest.webmanifest"), "utf8"),
 );
@@ -37,10 +42,15 @@ test("web app manifest names the installed app Envitefy", () => {
   assert.equal(manifest.short_name, "Envitefy");
 });
 
-test("installed app top chrome is white while the page bottom safe area stays purple", () => {
+test("installed app top chrome is white without drawing fake native chrome in the page", () => {
   assert.equal(manifest.theme_color, "#FFFFFF");
+  assert.equal(manifest.background_color, "#F8F5FF");
   assert.match(layoutSource, /colorScheme:\s*"light"/);
   assert.match(
+    layoutSource,
+    /backgroundColor:\s*themeColorPalette\.background/,
+  );
+  assert.doesNotMatch(
     layoutSource,
     /backgroundColor:\s*themeColorPalette\.navigationBar/,
   );
@@ -54,14 +64,29 @@ test("installed app top chrome is white while the page bottom safe area stays pu
   );
   assert.match(
     globalsSource,
-    /--mobile-safe-area-bottom:\s*var\(--mobile-chrome-bottom\)/,
-  );
-  assert.match(
-    globalsSource,
     /--mobile-chrome-bottom:\s*#8d7be9/,
   );
-  assert.match(
+  assert.doesNotMatch(globalsSource, /--mobile-chrome-bottom-backing-height/);
+  assert.doesNotMatch(globalsSource, /--mobile-chrome-bottom-backing/);
+  assert.doesNotMatch(globalsSource, /body::after/);
+  assert.doesNotMatch(
     globalsSource,
-    /body::after[\s\S]*?height:\s*var\(--mobile-chrome-bottom-backing-height\)[\s\S]*?background:\s*var\(--mobile-chrome-bottom-backing\)/,
+    /background-image:\s*var\(--mobile-browser-surface-gradient\)/,
+  );
+  assert.match(
+    themeColorSource,
+    /const BRAND_THEME_COLOR = "#FFFFFF"/,
+  );
+  assert.match(
+    themeColorSource,
+    /const BRAND_NAVIGATION_BAR_COLOR = "#8D7BE9"/,
+  );
+  assert.match(
+    themeColorSource,
+    /navigationBar:\s*BRAND_NAVIGATION_BAR_COLOR/,
+  );
+  assert.doesNotMatch(
+    themeColorSyncSource,
+    /getPreferredThemeColor|HERO_THEME_COLOR_ATTRIBUTE|MutationObserver/,
   );
 });
