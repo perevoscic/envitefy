@@ -42,7 +42,15 @@ test("installed app top chrome is white while the page bottom safe area stays pu
   assert.match(layoutSource, /colorScheme:\s*"light"/);
   assert.match(
     layoutSource,
+    /backgroundColor:\s*themeColorPalette\.navigationBar/,
+  );
+  assert.match(
+    layoutSource,
     /themeColor:\s*\[[\s\S]*?color:\s*themeColorPalette\.brand[\s\S]*?\]/,
+  );
+  assert.match(
+    globalsSource,
+    /--mobile-chrome-top:\s*#ffffff/,
   );
   assert.match(
     globalsSource,
@@ -54,6 +62,6 @@ test("installed app top chrome is white while the page bottom safe area stays pu
   );
   assert.match(
     globalsSource,
-    /body::after[\s\S]*?height:\s*env\(safe-area-inset-bottom,\s*0px\)[\s\S]*?background:\s*var\(--mobile-safe-area-bottom\)/,
+    /body::after[\s\S]*?height:\s*var\(--mobile-chrome-bottom-backing-height\)[\s\S]*?background:\s*var\(--mobile-chrome-bottom-backing\)/,
   );
 });

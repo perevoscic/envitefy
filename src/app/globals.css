@@ -18,9 +18,16 @@
 }
 
 :root {
-  --mobile-chrome-top: #f7e4f7;
+  --mobile-chrome-top: #ffffff;
   --mobile-chrome-bottom: #8d7be9;
   --mobile-safe-area-bottom: var(--mobile-chrome-bottom);
+  --mobile-chrome-bottom-backing-height: max(96px, env(safe-area-inset-bottom, 0px));
+  --mobile-chrome-bottom-backing: linear-gradient(
+    180deg,
+    rgba(141, 123, 233, 0) 0%,
+    rgba(141, 123, 233, 0.72) 38%,
+    var(--mobile-safe-area-bottom) 100%
+  );
   --mobile-browser-surface-gradient: linear-gradient(
     180deg,
     var(--mobile-chrome-top) 0%,
@@ -711,17 +718,22 @@ body::before {
   padding: 0;
 }
 
-@supports (-webkit-touch-callout: none) {
+body::after {
+  content: "";
+  display: none;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  height: var(--mobile-chrome-bottom-backing-height);
+  background: var(--mobile-chrome-bottom-backing);
+  pointer-events: none;
+}
+
+@media (pointer: coarse), (hover: none) {
   body::after {
-    content: "";
-    position: fixed;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 0;
-    height: env(safe-area-inset-bottom, 0px);
-    background: var(--mobile-safe-area-bottom);
-    pointer-events: none;
+    display: block;
   }
 }
 
