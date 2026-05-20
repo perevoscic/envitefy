@@ -65,7 +65,8 @@ export async function POST(req: Request) {
     const password = (body.password as string) || "";
     const firstName = (body.firstName as string) || undefined;
     const lastName = (body.lastName as string) || undefined;
-    const recaptchaToken = (body.recaptchaToken as string) || "";
+    const recaptchaToken =
+      typeof body.recaptchaToken === "string" ? body.recaptchaToken.trim() : "";
     const requestedSignupSource =
       body.signupSource === "snap" || body.signupSource === "gymnastics"
         ? body.signupSource
@@ -94,8 +95,16 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verify reCAPTCHA if token provided and secret key is configured
-    if (recaptchaToken && process.env.RECAPTCHA_SECRET_KEY) {
+    const recaptchaSecretConfigured = !!process.env.RECAPTCHA_SECRET_KEY;
+    if (recaptchaSecretConfigured) {
+      if (!recaptchaToken) {
+        console.log("[signup] reCAPTCHA token missing while verification is configured");
+        return NextResponse.json(
+          { error: "Security verification failed. Please try again." },
+          { status: 400 }
+        );
+      }
+
       console.log("[signup] Verifying reCAPTCHA...");
       const isValid = await verifyRecaptcha(recaptchaToken);
       if (!isValid) {
@@ -108,7 +117,7 @@ export async function POST(req: Request) {
       console.log("[signup] reCAPTCHA verification PASSED");
     } else {
       console.log("[signup] Skipping reCAPTCHA verification", {
-        reason: !recaptchaToken ? "no token" : "no secret key"
+        reason: "no secret key"
       });
     }
 
@@ -134,5 +143,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
-
-
