@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="envitefy_status_bar">#FFFFFF</color>
+    <color name="envitefy_navigation_bar">#8D7BE9</color>
+    <color name="envitefy_icon_background">#F8F5FF</color>
+    <color name="envitefy_icon_foreground">#5D4EBB</color>
+</resources>

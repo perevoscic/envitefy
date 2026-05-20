@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@color/envitefy_icon_background"
+        android:pathData="M54,0a54,54 0,1 1,0 108a54,54 0,1 1,0 -108" />
+    <path
+        android:fillColor="@color/envitefy_icon_foreground"
+        android:pathData="M26,25h56a10,10 0,0 1,10 10v38a10,10 0,0 1,-10 10H26a10,10 0,0 1,-10 -10V35a10,10 0,0 1,10 -10z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M33,39h42v8H33zM33,51h32v8H33zM33,63h42v8H33z" />
+</vector>

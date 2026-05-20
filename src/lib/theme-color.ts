@@ -1,9 +1,8 @@
-const BRAND_THEME_COLOR = "#8D7BE9";
+const BRAND_THEME_COLOR = "#FFFFFF";
 const BRAND_BACKGROUND_COLOR = "#F8F5FF";
-const GYMNASTICS_THEME_COLOR = "#7C5CDB";
-// Use the event-page background tint so mobile browser top chrome matches
-// the page surface instead of defaulting to dark/black UI bars.
-const EVENT_THEME_COLOR_FALLBACK = BRAND_BACKGROUND_COLOR;
+const BRAND_NAVIGATION_BAR_COLOR = "#8D7BE9";
+const GYMNASTICS_THEME_COLOR = BRAND_THEME_COLOR;
+const EVENT_THEME_COLOR_FALLBACK = BRAND_THEME_COLOR;
 
 export type ThemeColorSource = "route" | "hero" | "event" | "default";
 
@@ -58,45 +57,8 @@ export function getThemeColorDefinitionForPath(
 }
 
 export function resolveEventThemeColor(input?: unknown): string {
-  if (!input || typeof input !== "object") return EVENT_THEME_COLOR_FALLBACK;
-  const data = input as Record<string, unknown>;
-  const theme = typeof data.theme === "object" && data.theme ? (data.theme as Record<string, unknown>) : null;
-  const event = typeof data.event === "object" && data.event ? (data.event as Record<string, unknown>) : null;
-  const imageColors =
-    typeof data.imageColors === "object" && data.imageColors
-      ? (data.imageColors as Record<string, unknown>)
-      : null;
-  const flyerColors =
-    typeof data.flyerColors === "object" && data.flyerColors
-      ? (data.flyerColors as Record<string, unknown>)
-      : null;
-
-  const candidateColors = [
-    data.themeColor,
-    theme?.color,
-    theme?.accentColor,
-    data.accentColor,
-    data.color,
-    event?.themeColor,
-    event?.accentColor,
-    event?.color,
-    imageColors?.headerDark,
-    imageColors?.headerLight,
-    flyerColors?.themeColor,
-    flyerColors?.accentColor,
-    flyerColors?.dominant,
-  ];
-
-  for (const candidate of candidateColors) {
-    const normalized = normalizeColor(
-      typeof candidate === "string"
-        ? extractSolidColor(candidate)
-        : null,
-    );
-    if (normalized) return normalized;
-  }
-
-  return EVENT_THEME_COLOR_FALLBACK;
+  void input;
+  return BRAND_THEME_COLOR;
 }
 
 export function resolveEventPageBackgroundColor(input?: unknown): string {
@@ -204,6 +166,7 @@ export function getPreferredThemeColor(pathname?: string | null): string {
 export const themeColorPalette = {
   brand: BRAND_THEME_COLOR,
   background: BRAND_BACKGROUND_COLOR,
+  navigationBar: BRAND_NAVIGATION_BAR_COLOR,
   gymnastics: GYMNASTICS_THEME_COLOR,
   eventFallback: EVENT_THEME_COLOR_FALLBACK,
 } as const;

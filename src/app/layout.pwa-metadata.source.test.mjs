@@ -37,8 +37,8 @@ test("web app manifest names the installed app Envitefy", () => {
   assert.equal(manifest.short_name, "Envitefy");
 });
 
-test("installed app chrome uses the mobile page purple", () => {
-  assert.equal(manifest.theme_color, "#8D7BE9");
+test("installed app top chrome is white while the page bottom safe area stays purple", () => {
+  assert.equal(manifest.theme_color, "#FFFFFF");
   assert.match(layoutSource, /colorScheme:\s*"light"/);
   assert.match(
     layoutSource,
@@ -47,6 +47,10 @@ test("installed app chrome uses the mobile page purple", () => {
   assert.match(
     globalsSource,
     /--mobile-safe-area-bottom:\s*var\(--mobile-chrome-bottom\)/,
+  );
+  assert.match(
+    globalsSource,
+    /--mobile-chrome-bottom:\s*#8d7be9/,
   );
   assert.match(
     globalsSource,
