@@ -20,6 +20,7 @@
 :root {
   --mobile-chrome-top: #f7e4f7;
   --mobile-chrome-bottom: #8d7be9;
+  --mobile-safe-area-bottom: var(--mobile-chrome-bottom);
   --mobile-browser-surface-gradient: linear-gradient(
     180deg,
     var(--mobile-chrome-top) 0%,
@@ -652,7 +653,7 @@ body.embedded-editor {
 }
 
 body {
-  background-color: transparent;
+  background-color: var(--mobile-safe-area-bottom);
   background-image: var(--mobile-browser-surface-gradient);
   background-attachment: fixed;
   color: var(--foreground);
@@ -708,6 +709,20 @@ body::before {
   /* Ensure it covers safe areas */
   margin: 0;
   padding: 0;
+}
+
+@supports (-webkit-touch-callout: none) {
+  body::after {
+    content: "";
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 0;
+    height: env(safe-area-inset-bottom, 0px);
+    background: var(--mobile-safe-area-bottom);
+    pointer-events: none;
+  }
 }
 
 h1,

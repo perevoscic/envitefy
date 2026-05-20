@@ -1,4 +1,4 @@
-const BRAND_THEME_COLOR = "#7F67D3";
+const BRAND_THEME_COLOR = "#8D7BE9";
 const BRAND_BACKGROUND_COLOR = "#F8F5FF";
 const GYMNASTICS_THEME_COLOR = "#7C5CDB";
 // Use the event-page background tint so mobile browser top chrome matches
