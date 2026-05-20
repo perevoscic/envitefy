@@ -1524,6 +1524,7 @@ export default function Dashboard({
           ocrMeta?.birthdayTemplateHint || ocrBirthdayTemplateHint;
         const normalizedOcrSkin =
           ocrMeta?.ocrSkin && typeof ocrMeta.ocrSkin === "object" ? ocrMeta.ocrSkin : null;
+        const hasNormalizedOcrSkin = Boolean(normalizedOcrSkin);
         const normalizedOpenHouse =
           ocrMeta?.openHouse && typeof ocrMeta.openHouse === "object" ? ocrMeta.openHouse : null;
         const normalizedThumbnailFocus = normalizeThumbnailFocus(ocrMeta?.thumbnailFocus);
@@ -1718,19 +1719,19 @@ export default function Dashboard({
             timezone,
             numberOfGuests: eventInput.numberOfGuests || 0,
             reminders: eventInput.reminders || undefined,
-            createdVia: isBirthdayOcrEvent
+            createdVia: isBirthdayOcrEvent && hasNormalizedOcrSkin
               ? "ocr-birthday-skin"
-              : isWeddingOcrEvent
+              : isWeddingOcrEvent && hasNormalizedOcrSkin
                 ? "ocr-wedding-renderer"
-                : isOpenHouseOcrEvent
+                : isOpenHouseOcrEvent && hasNormalizedOcrSkin
                   ? "ocr-open-house-skin"
-                  : isPickleballOcrEvent
+                  : isPickleballOcrEvent && hasNormalizedOcrSkin
                     ? "ocr-pickleball-skin"
-                    : isFootballOcrEvent
+                    : isFootballOcrEvent && hasNormalizedOcrSkin
                       ? "ocr-football-skin"
-                      : isBasketballOcrEvent
+                      : isBasketballOcrEvent && hasNormalizedOcrSkin
                         ? "ocr-basketball-skin"
-                        : isInviteOcrEvent
+                        : isInviteOcrEvent && hasNormalizedOcrSkin
                           ? "ocr-invite-skin"
                           : "ocr",
             thumbnail,

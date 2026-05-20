@@ -70,13 +70,14 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /<GraduationSkin/);
   assert.match(
     source,
-    /const isBirthdaySkinEvent = categoryNormalized === "birthdays" && isOcrEvent;/,
+    /const birthdayOcrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "birthday", undefined, \{/,
   );
-  assert.match(source, /if \(isBirthdaySkinEvent\) \{/);
   assert.match(
     source,
-    /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "birthday", undefined, \{/,
+    /const isBirthdaySkinEvent =\s*categoryNormalized === "birthdays" && isOcrEvent && Boolean\(birthdayOcrSkin\);/,
   );
+  assert.match(source, /if \(isBirthdaySkinEvent\) \{/);
+  assert.match(source, /const ocrSkin = birthdayOcrSkin;/);
   assert.match(source, /<BirthdaySkin/);
   assert.match(source, /calendarLinks=\{calendarLinks\}/);
   assert.match(source, /skinId=\{ocrSkin\?\.skinId \|\| null\}/);
@@ -133,12 +134,10 @@ test("event route branches football discovery/template events into the football 
     "ScannedWeddingInviteView should be dynamically imported",
   );
   assert.match(source, /const isScannedWeddingInviteEvent =/);
-  assert.match(source, /categoryNormalized === "weddings" && isScannedInviteEvent && isOcrEvent/);
+  assert.match(source, /const weddingOcrSkin = normalizeOcrSkinSelection/);
+  assert.match(source, /Boolean\(weddingOcrSkin\)/);
   assert.match(source, /if \(isScannedWeddingInviteEvent\) \{/);
-  assert.match(
-    source,
-    /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "wedding", undefined, \{/,
-  );
+  assert.match(source, /const ocrSkin = weddingOcrSkin;/);
   assert.match(source, /<ScannedWeddingInviteView/);
   assert.match(source, /eventId=\{row\.id\}/);
   assert.match(source, /flyerColors=\{ocrSkin\?\.palette \|\| flyerColors\}/);
@@ -159,6 +158,8 @@ test("event route branches football discovery/template events into the football 
     "scanned wedding branch should run before the generic scanned invite branch",
   );
   assert.match(source, /const isScannedPickleballInviteEvent =/);
+  assert.match(source, /const pickleballOcrSkin = normalizeOcrSkinSelection/);
+  assert.match(source, /Boolean\(pickleballOcrSkin\)/);
   assert.match(source, /isPickleballOcrSkinCandidate/);
   assert.match(
     source,
@@ -166,10 +167,7 @@ test("event route branches football discovery/template events into the football 
   );
   assert.match(source, /createdVia === "ocr-pickleball-skin"/);
   assert.match(source, /if \(isScannedPickleballInviteEvent\) \{/);
-  assert.match(
-    source,
-    /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "general", undefined, \{/,
-  );
+  assert.match(source, /const ocrSkin = pickleballOcrSkin;/);
   assert.match(source, /sportKind: "pickleball"/);
   assert.match(source, /<PickleballSkin/);
   assert.ok(
@@ -178,16 +176,15 @@ test("event route branches football discovery/template events into the football 
     "scanned pickleball branch should run before the scanned basketball branch",
   );
   assert.match(source, /const isScannedFootballInviteEvent =/);
+  assert.match(source, /const footballOcrSkin = normalizeOcrSkinSelection/);
+  assert.match(source, /Boolean\(footballOcrSkin\)/);
   assert.match(source, /isFootballOcrSkinCandidate/);
   assert.match(
     source,
     /String\(\(data as any\)\?\.ocrSkin\?\.category \|\| ""\)\.toLowerCase\(\) === "football"/,
   );
   assert.match(source, /if \(isScannedFootballInviteEvent\) \{/);
-  assert.match(
-    source,
-    /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "football", undefined, \{/,
-  );
+  assert.match(source, /const ocrSkin = footballOcrSkin;/);
   assert.match(source, /<FootballSkin/);
   assert.ok(
     source.indexOf("if (isScannedFootballInviteEvent)") <
@@ -195,16 +192,15 @@ test("event route branches football discovery/template events into the football 
     "scanned football branch should run before the scanned basketball branch",
   );
   assert.match(source, /const isScannedBasketballInviteEvent =/);
+  assert.match(source, /const basketballOcrSkin = normalizeOcrSkinSelection/);
+  assert.match(source, /Boolean\(basketballOcrSkin\)/);
   assert.match(source, /isBasketballOcrSkinCandidate/);
   assert.match(
     source,
     /String\(\(data as any\)\?\.ocrSkin\?\.category \|\| ""\)\.toLowerCase\(\) === "basketball"/,
   );
   assert.match(source, /if \(isScannedBasketballInviteEvent\) \{/);
-  assert.match(
-    source,
-    /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "basketball", undefined, \{/,
-  );
+  assert.match(source, /const ocrSkin = basketballOcrSkin;/);
   assert.match(source, /<BasketballSkin/);
   assert.ok(
     source.indexOf("if (isScannedBasketballInviteEvent)") <
@@ -212,14 +208,13 @@ test("event route branches football discovery/template events into the football 
     "scanned basketball branch should run before the generic scanned invite branch",
   );
   assert.match(source, /const isScannedOpenHouseInviteEvent =/);
+  assert.match(source, /const openHouseOcrSkin = normalizeOcrSkinSelection/);
+  assert.match(source, /Boolean\(openHouseOcrSkin\)/);
   assert.match(source, /createdVia === "ocr-open-house-skin"/);
   assert.match(source, /categoryNormalized === "open house"/);
   assert.match(source, /Boolean\(\(data as any\)\?\.openHouse\)/);
   assert.match(source, /if \(isScannedOpenHouseInviteEvent\) \{/);
-  assert.match(
-    source,
-    /const ocrSkin = normalizeOcrSkinSelection\(\(data as any\)\?\.ocrSkin, "open-house", undefined, \{/,
-  );
+  assert.match(source, /const ocrSkin = openHouseOcrSkin;/);
   assert.match(source, /<OpenHouseSkin/);
   assert.match(source, /openHouse=\{\(\(data as any\)\?\.openHouse as any\) \|\| null\}/);
   assert.ok(
@@ -228,8 +223,11 @@ test("event route branches football discovery/template events into the football 
     "scanned open house branch should run before the generic scanned invite branch",
   );
   assert.match(source, /const isGenericScannedInviteEvent =/);
+  assert.match(source, /const genericOcrSkin = normalizeOcrSkinSelection/);
   assert.match(source, /isOcrInviteCategory\(categoryRaw\)/);
+  assert.match(source, /Boolean\(genericOcrSkin\)/);
   assert.match(source, /if \(isGenericScannedInviteEvent\) \{/);
+  assert.match(source, /const ocrSkin = genericOcrSkin;/);
   assert.match(source, /<GenericEventSkin/);
   assert.match(source, /categoryLabel=\{categoryRaw \|\| "General Event"\}/);
   assert.match(source, /skinId=\{ocrSkin\?\.skinId \|\| null\}/);

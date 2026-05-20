@@ -1983,7 +1983,41 @@ export default async function EventPage({
     typeof (data as any)?.variationId === "string" ? (data as any).variationId : null;
   const createdVia =
     typeof (data as any)?.createdVia === "string" ? (data as any).createdVia : null;
-  const isBirthdaySkinEvent = categoryNormalized === "birthdays" && isOcrEvent;
+  const birthdayOcrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "birthday", undefined, {
+    title,
+  });
+  const weddingOcrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "wedding", undefined, {
+    title,
+  });
+  const pickleballOcrSkin = normalizeOcrSkinSelection(
+    (data as any)?.ocrSkin,
+    "general",
+    undefined,
+    { title, sportKind: "pickleball" },
+  );
+  const footballOcrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "football", undefined, {
+    title,
+  });
+  const basketballOcrSkin = normalizeOcrSkinSelection(
+    (data as any)?.ocrSkin,
+    "basketball",
+    undefined,
+    { title },
+  );
+  const openHouseOcrSkin = normalizeOcrSkinSelection(
+    (data as any)?.ocrSkin,
+    "open-house",
+    undefined,
+    { title },
+  );
+  const genericOcrSkin = normalizeOcrSkinSelection(
+    (data as any)?.ocrSkin,
+    categoryRaw,
+    undefined,
+    { title },
+  );
+  const isBirthdaySkinEvent =
+    categoryNormalized === "birthdays" && isOcrEvent && Boolean(birthdayOcrSkin);
   const isBirthdayTemplate =
     templateId &&
     variationId &&
@@ -1994,12 +2028,16 @@ export default async function EventPage({
     categoryNormalized === "birthdays" && createdVia === "birthday-renderer";
   const isWeddingTemplate = templateId && variationId && categoryNormalized === "weddings";
   const isScannedWeddingInviteEvent =
-    categoryNormalized === "weddings" && isScannedInviteEvent && isOcrEvent;
+    categoryNormalized === "weddings" &&
+    isScannedInviteEvent &&
+    isOcrEvent &&
+    Boolean(weddingOcrSkin);
   const isScannedPickleballInviteEvent =
     categoryNormalized !== "birthdays" &&
     categoryNormalized !== "weddings" &&
     isScannedInviteEvent &&
     isOcrEvent &&
+    Boolean(pickleballOcrSkin) &&
     (String((data as any)?.ocrSkin?.sportKind || "").toLowerCase() === "pickleball" ||
       createdVia === "ocr-pickleball-skin" ||
       ((categoryNormalized === "sport events" ||
@@ -2024,6 +2062,7 @@ export default async function EventPage({
     categoryNormalized !== "weddings" &&
     isScannedInviteEvent &&
     isOcrEvent &&
+    Boolean(footballOcrSkin) &&
     (String((data as any)?.ocrSkin?.category || "").toLowerCase() === "football" ||
       ((categoryNormalized === "sport events" ||
         categoryNormalized === "sport event" ||
@@ -2041,6 +2080,7 @@ export default async function EventPage({
     categoryNormalized !== "weddings" &&
     isScannedInviteEvent &&
     isOcrEvent &&
+    Boolean(basketballOcrSkin) &&
     (String((data as any)?.ocrSkin?.category || "").toLowerCase() === "basketball" ||
       ((categoryNormalized === "sport events" ||
         categoryNormalized === "sport event" ||
@@ -2053,6 +2093,7 @@ export default async function EventPage({
         })));
   const isScannedOpenHouseInviteEvent =
     isScannedInviteEvent &&
+    Boolean(openHouseOcrSkin) &&
     (createdVia === "ocr-open-house-skin" ||
       categoryNormalized === "open house" ||
       Boolean((data as any)?.openHouse));
@@ -2060,7 +2101,8 @@ export default async function EventPage({
     categoryNormalized !== "birthdays" &&
     categoryNormalized !== "weddings" &&
     isOcrEvent &&
-    isOcrInviteCategory(categoryRaw);
+    isOcrInviteCategory(categoryRaw) &&
+    Boolean(genericOcrSkin);
   const isDiscoverySimpleTemplate = isGymnasticsDiscoveryTemplate || isFootballDiscoveryTemplate;
   const isSimpleTemplate =
     (createdVia === "simple-template" || createdVia === "template" || isDiscoverySimpleTemplate) &&
@@ -2149,9 +2191,7 @@ export default async function EventPage({
   }
 
   if (isBirthdaySkinEvent) {
-    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "birthday", undefined, {
-      title,
-    });
+    const ocrSkin = birthdayOcrSkin;
     const scannedBirthdayImageUrl =
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
@@ -2367,9 +2407,7 @@ export default async function EventPage({
   }
 
   if (isScannedWeddingInviteEvent) {
-    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "wedding", undefined, {
-      title,
-    });
+    const ocrSkin = weddingOcrSkin;
     const scannedWeddingImageUrl =
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
@@ -2420,10 +2458,7 @@ export default async function EventPage({
   }
 
   if (isScannedPickleballInviteEvent) {
-    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "general", undefined, {
-      title,
-      sportKind: "pickleball",
-    });
+    const ocrSkin = pickleballOcrSkin;
     const scannedInviteImageUrl =
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
@@ -2517,9 +2552,7 @@ export default async function EventPage({
   }
 
   if (isScannedFootballInviteEvent) {
-    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "football", undefined, {
-      title,
-    });
+    const ocrSkin = footballOcrSkin;
     const scannedInviteImageUrl =
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
@@ -2613,9 +2646,7 @@ export default async function EventPage({
   }
 
   if (isScannedBasketballInviteEvent) {
-    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "basketball", undefined, {
-      title,
-    });
+    const ocrSkin = basketballOcrSkin;
     const scannedInviteImageUrl =
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
@@ -2709,9 +2740,7 @@ export default async function EventPage({
   }
 
   if (isScannedOpenHouseInviteEvent) {
-    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, "open-house", undefined, {
-      title,
-    });
+    const ocrSkin = openHouseOcrSkin;
     const scannedInviteImageUrl =
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl
@@ -2764,9 +2793,7 @@ export default async function EventPage({
   }
 
   if (isGenericScannedInviteEvent) {
-    const ocrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, categoryRaw, undefined, {
-      title,
-    });
+    const ocrSkin = genericOcrSkin;
     const scannedInviteImageUrl =
       attachmentInfo?.type?.startsWith?.("image/") && attachmentInfo?.dataUrl
         ? attachmentInfo.dataUrl

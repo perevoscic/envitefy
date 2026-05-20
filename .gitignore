@@ -28,6 +28,7 @@
 .DS_Store
 *.pem
 /qa-artifacts/
+/.clawpatch/
 
 # debug
 npm-debug.log*

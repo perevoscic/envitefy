@@ -18,6 +18,7 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   assert.match(source, /openHouse: openHouseFromScan,/);
   assert.match(source, /thumbnailFocus: normalizeThumbnailFocus\(data\?\.thumbnailFocus\),/);
   assert.match(source, /const normalizedOcrSkin =/);
+  assert.match(source, /const hasNormalizedOcrSkin = Boolean\(normalizedOcrSkin\);/);
   assert.match(source, /const normalizedOpenHouse =/);
   assert.match(source, /const isOpenHouseOcrEvent =/);
   assert.match(source, /normalizedOcrCategory = "Open House";/);
@@ -52,6 +53,9 @@ test("dashboard scan saves forward ocrSkin metadata for invite OCR persistence",
   assert.match(source, /"ocr-basketball-skin"/);
   assert.match(source, /"ocr-open-house-skin"/);
   assert.match(source, /"ocr-invite-skin"/);
+  assert.match(source, /createdVia: isBirthdayOcrEvent && hasNormalizedOcrSkin/);
+  assert.match(source, /: isWeddingOcrEvent && hasNormalizedOcrSkin/);
+  assert.match(source, /: isInviteOcrEvent && hasNormalizedOcrSkin/);
   assert.match(
     source,
     /openHouse:\s*isOpenHouseOcrEvent \? normalizedOpenHouse \|\| undefined : undefined/,
