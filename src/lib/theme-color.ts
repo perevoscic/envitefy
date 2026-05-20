@@ -141,15 +141,18 @@ export function setThemeColor(color: string) {
   const normalized = normalizeColor(extractSolidColor(color) || color);
   if (!normalized) return;
 
-  let meta = document.querySelector<HTMLMetaElement>(THEME_COLOR_SELECTOR);
-  if (!meta) {
-    meta = document.createElement("meta");
+  const metas = Array.from(document.querySelectorAll<HTMLMetaElement>(THEME_COLOR_SELECTOR));
+  if (metas.length === 0) {
+    const meta = document.createElement("meta");
     meta.setAttribute("name", THEME_COLOR_META_NAME);
     document.head.appendChild(meta);
+    metas.push(meta);
   }
 
-  if (meta.content !== normalized) {
-    meta.content = normalized;
+  for (const meta of metas) {
+    if (meta.content !== normalized) {
+      meta.content = normalized;
+    }
   }
 }
 

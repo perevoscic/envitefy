@@ -626,6 +626,7 @@ html {
   min-height: 100vh;
   min-height: 100dvh;
   background-color: var(--background);
+  color-scheme: light;
   /* Ensure html extends edge-to-edge */
   margin: 0;
   padding: 0;

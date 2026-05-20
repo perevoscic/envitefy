@@ -17,6 +17,7 @@ const styles = readFileSync(
   join(__dirname, "app", "src", "main", "res", "values", "styles.xml"),
   "utf8",
 );
+const readme = readFileSync(join(__dirname, "README.md"), "utf8");
 const buildGradle = readFileSync(join(__dirname, "app", "build.gradle"), "utf8");
 const strings = readFileSync(
   join(__dirname, "app", "src", "main", "res", "values", "strings.xml"),
@@ -34,4 +35,9 @@ test("android TWA sets white top status bar and purple bottom navigation bar", (
   assert.match(manifest, /android\.support\.customtabs\.trusted\.NAVIGATION_BAR_COLOR/);
   assert.match(styles, /android:windowLightStatusBar">true</);
   assert.match(styles, /android:windowLightNavigationBar">false</);
+});
+
+test("android README documents the pure web PWA navigation-bar limitation", () => {
+  assert.match(readme, /system navigation bar is outside normal PWA\s+CSS/);
+  assert.match(readme, /cannot reliably set the bottom multitasking\/home\/back bar/);
 });

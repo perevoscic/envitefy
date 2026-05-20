@@ -48,6 +48,16 @@ test("installed app top chrome is white without drawing fake native chrome in th
   assert.match(layoutSource, /colorScheme:\s*"light"/);
   assert.match(
     layoutSource,
+    /\{\s*media:\s*"\(prefers-color-scheme:\s*light\)",\s*color:\s*themeColorPalette\.brand\s*\}/,
+  );
+  assert.match(
+    layoutSource,
+    /\{\s*media:\s*"\(prefers-color-scheme:\s*dark\)",\s*color:\s*themeColorPalette\.brand\s*\}/,
+  );
+  assert.match(layoutSource, /\{\s*color:\s*themeColorPalette\.brand\s*\}/);
+  assert.match(globalsSource, /color-scheme:\s*light/);
+  assert.match(
+    layoutSource,
     /backgroundColor:\s*themeColorPalette\.background/,
   );
   assert.doesNotMatch(
@@ -84,6 +94,10 @@ test("installed app top chrome is white without drawing fake native chrome in th
   assert.match(
     themeColorSource,
     /navigationBar:\s*BRAND_NAVIGATION_BAR_COLOR/,
+  );
+  assert.match(
+    themeColorSource,
+    /querySelectorAll<HTMLMetaElement>\(THEME_COLOR_SELECTOR\)/,
   );
   assert.doesNotMatch(
     themeColorSyncSource,
