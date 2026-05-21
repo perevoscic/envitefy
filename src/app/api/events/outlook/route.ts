@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         detail?.message ||
         text ||
         "Failed to create event";
-      return NextResponse.json({ error: message, debug: { request: graphBody } }, { status: 500 });
+      return NextResponse.json({ error: message }, { status: 500 });
     }
     const created: { webLink?: string; id?: string } = await createResp.json();
 
@@ -97,5 +97,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
 
