@@ -16,6 +16,7 @@ import {
   canSaveConciergeDraft,
   fallbackExtractConciergeDraft,
 } from "./fallback.ts";
+import { updateConversationState } from "./conversation-state.ts";
 import { shouldSkipOpenAiForCreationRequest } from "./fast-paths.ts";
 import {
   openAiChatTemperatureParam,
@@ -563,6 +564,11 @@ export function normalizeConciergeDraft(
       ? status.currentQuestion
       : draft.missingFields[0]
     : null;
+  draft.conversationState = updateConversationState({
+    draft,
+    previous: fallback,
+    message: options.message || "",
+  });
   return draft;
 }
 
@@ -608,6 +614,8 @@ async function extractWithOpenAi(
               "Only handle event, flyer invitation, RSVP, and event asset creation or editing.",
               "Return one JSON object matching the draft shape. Do not include markdown.",
               "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, additionalLocations, honoreeName, ageOrMilestone, rsvpEnabled, rsvpDeadline, rsvpName, rsvpContact, numberOfGuests, registryLink, giftNote, giftPreferenceNote, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
+              "Also include conversationState when useful: track inferredFields, confirmedFields, lowConfidenceFields, alreadyAskedFields, registrySkipped, locationTentative, finalSummaryShown, readyToGenerate, and role-specific names such as momToBe, parentsToBe, graduateName, birthdayPerson, and coupleNames.",
+              "Infer obvious roles from natural phrases: 'Mia baby shower' likely means Mia is the mom-to-be or featured shower name; 'Leo class of 2026 graduation party' means Leo is the graduate; 'Taylor and Morgan gender reveal' means Taylor and Morgan are the parents-to-be; 'John and Sarah wedding' means John and Sarah are the couple. Use high confidence for these but mark needsConfirmation when the displayed role could vary.",
               "When RSVP is enabled for an owned event, collect the host or organizer display name in rsvpName and a phone number or email for RSVP follow-up in rsvpContact. Do not invent either value.",
               "If you include nested eventData for convenience, duplicate the same extracted fields at the top level.",
               "Separate requested output from event details: live cards, flyer invitations, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",

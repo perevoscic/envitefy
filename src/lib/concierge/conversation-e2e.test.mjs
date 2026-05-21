@@ -100,6 +100,16 @@ test("concierge full flyer/invitation conversation reaches generated flyer card 
   assert.equal(turn.canSave, false);
   assert.equal(turn.draft.rsvpEnabled, true);
   assert.equal(turn.draft.numberOfGuests, 24);
+  assert.equal(turn.draft.currentQuestion, "rsvpName");
+
+  turn = reply("Hosted by Priya", turn.draft);
+  assert.equal(turn.canSave, false);
+  assert.equal(turn.draft.rsvpName, "Priya");
+  assert.equal(turn.draft.currentQuestion, "rsvpContact");
+
+  turn = reply("priya@example.com", turn.draft);
+  assert.equal(turn.canSave, false);
+  assert.equal(turn.draft.rsvpContact, "priya@example.com");
   assert.equal(turn.draft.currentQuestion, "tone");
 
   turn = reply("Use a playful rainbow space flyer invitation style.", turn.draft);

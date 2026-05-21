@@ -321,6 +321,7 @@ export async function resolveCreationIntakeDraft(params: {
           activeContext: request.activeContext || null,
           requestedOutputs: request.requestedOutputs || null,
           action: request.action || "message",
+          starterCategory: request.starterCategory || null,
         }),
       ) ??
         extractConciergeDraft({
@@ -330,6 +331,7 @@ export async function resolveCreationIntakeDraft(params: {
           activeContext: request.activeContext || null,
           requestedOutputs: request.requestedOutputs || null,
           action: request.action || "message",
+          starterCategory: request.starterCategory || null,
         }));
 }
 

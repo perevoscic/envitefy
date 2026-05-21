@@ -35,6 +35,16 @@ test("conversation 2: birthday live card reaches a ready owned draft", () => {
 
   draft = fallbackExtractConciergeDraft({ message: "23", draft });
   assert.equal(draft.numberOfGuests, 23);
+  assert.equal(draft.currentQuestion, "rsvpName");
+  assert.match(buildAssistantMessage(draft), /host|RSVP contact/i);
+
+  draft = fallbackExtractConciergeDraft({ message: "Hosted by Mia", draft });
+  assert.equal(draft.rsvpName, "Mia");
+  assert.equal(draft.currentQuestion, "rsvpContact");
+  assert.match(buildAssistantMessage(draft), /phone number|email/i);
+
+  draft = fallbackExtractConciergeDraft({ message: "mia@example.com", draft });
+  assert.equal(draft.rsvpContact, "mia@example.com");
   assert.equal(draft.currentQuestion, "tone");
   assert.match(buildAssistantMessage(draft), /vibe/i);
 
@@ -44,6 +54,8 @@ test("conversation 2: birthday live card reaches a ready owned draft", () => {
   assert.equal(draft.honoreeName, "Ava");
   assert.equal(draft.ageOrMilestone, "7");
   assert.equal(draft.location, "Sky Zone");
+  assert.equal(draft.rsvpName, "Mia");
+  assert.equal(draft.rsvpContact, "mia@example.com");
   assert.equal(draft.tone, "fun and colorful");
   assert.equal(draft.draftStatus, "preview_ready");
   assert.equal(draft.canPersist, true);

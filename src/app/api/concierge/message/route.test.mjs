@@ -38,6 +38,7 @@ test("creation intake API owns session persistence and auth", () => {
   assert.match(intake, /upsertCreationSession/);
   assert.match(intake, /const shouldPersistSession =/);
   assert.match(intake, /draft\.canPersist \|\| draft\.requestedOutputs\.length > 0/);
+  assert.match(intake, /starterCategory: request\.starterCategory \|\| null/);
   assert.match(intake, /normalizeChatMessages/);
   assert.match(intake, /chatMessagesMetadata\(chatMessagesForUpsert\)/);
   assert.match(storage, /create table if not exists creation_sessions/);

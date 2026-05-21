@@ -223,6 +223,60 @@ export type ConciergePreviewCopy = {
   cta: string;
 };
 
+export type ConciergeHonoreeRole =
+  | "honoree"
+  | "momToBe"
+  | "parentsToBe"
+  | "babyName"
+  | "graduate"
+  | "birthdayPerson"
+  | "couple"
+  | "guestOfHonor"
+  | "host"
+  | "team"
+  | "organization";
+
+export type ConciergeExtractedField<T = string> = {
+  value: T;
+  sourceText?: string;
+  confidence: number;
+  inferred: boolean;
+  confirmed: boolean;
+  needsConfirmation: boolean;
+};
+
+export type ConciergeConversationState = {
+  eventType?: ConciergeEventType;
+  productType?: RequestedOutput | string;
+  title?: ConciergeExtractedField;
+  date?: ConciergeExtractedField;
+  time?: ConciergeExtractedField;
+  location?: ConciergeExtractedField;
+  locationTentative?: boolean;
+  honoree?: ConciergeExtractedField;
+  honoreeRole?: ConciergeHonoreeRole;
+  momToBe?: ConciergeExtractedField;
+  parentsToBe?: ConciergeExtractedField<string[]>;
+  babyName?: ConciergeExtractedField;
+  graduateName?: ConciergeExtractedField;
+  birthdayPerson?: ConciergeExtractedField;
+  coupleNames?: ConciergeExtractedField<string[]>;
+  registryLink?: ConciergeExtractedField;
+  registrySkipped?: boolean;
+  rsvpRequired?: boolean;
+  missingFields: string[];
+  confirmedFields: string[];
+  inferredFields: string[];
+  lowConfidenceFields: string[];
+  alreadyAskedFields: Record<string, number>;
+  lastUserMessageHash?: string;
+  lastAssistantMessageHash?: string;
+  lastCompletedAction?: string;
+  finalSummaryShown?: boolean;
+  readyToGenerate?: boolean;
+  currentStep?: string;
+};
+
 export type ConciergeAdditionalLocation = {
   label: string | null;
   venue: string | null;
@@ -284,6 +338,7 @@ export type ConciergeEventDraft = {
   giftNote?: string | null;
   giftPreferenceNote?: string | null;
   giftPromptDismissed?: boolean | null;
+  conversationState?: ConciergeConversationState | null;
   theme: string | null;
   tone: string | null;
   knowledgeAnswer?: string | null;

@@ -1682,6 +1682,15 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   async function handleSkipGiftRegistry() {
     if (isBusy || !draft) return;
+    if (draft.giftPromptDismissed || draft.conversationState?.registrySkipped) {
+      setIsReadyChatComposerOpen(false);
+      setMessages((prev) => [
+        ...prev,
+        newMessage("user", "Skip gift link"),
+        newMessage("assistant", "Already skipped — we’re good there."),
+      ]);
+      return;
+    }
     const draftBeforeSkip = draft;
     setDraft((current) =>
       current?.creationSessionId === draftBeforeSkip.creationSessionId

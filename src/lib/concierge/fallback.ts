@@ -19,6 +19,13 @@ import {
   looksLikeInternalCreativeDirection,
   sanitizeConciergePreviewCopy,
 } from "./public-copy.ts";
+import {
+  detectDuplicateAction,
+  detectDuplicateUserMessage,
+  handleSideComment,
+  hasAlreadyAsked,
+  updateConversationState,
+} from "./conversation-state.ts";
 import type { RequirementField } from "./requirements.ts";
 import {
   getEventTypeLabel,
@@ -359,8 +366,38 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
     const showerFor =
       text.match(
         /\b(?:baby\s+shower|sprinkle)(?:\s+(?:product|event\s+page|live\s*card|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite))?\s+for\s+(.{2,80}?)(?=\s+(?:on|at|with|make|this|theme|tone|no\s+rsvps?|without|include|gift|registry)\b|[.;]|$)/i,
-      ) || text.match(/\bfor\s+(.{2,80}?)\s+(?:baby\s+shower|sprinkle)\b/i);
+      ) ||
+      text.match(/\bfor\s+(.{2,80}?)\s+(?:baby\s+shower|sprinkle)\b/i) ||
+      text.match(/\b([A-Z][a-zA-Z' -]{1,60}?)\s+(?:baby\s+shower|sprinkle)\b/);
     const honoree = cleanHonoreePhrase(showerFor?.[1]);
+    if (honoree) return honoree;
+  }
+
+  if (previous?.eventType === "bridal_shower" || /\bbridal\s+shower\b/i.test(text)) {
+    const bridalFor =
+      text.match(/\bbridal\s+shower\s+for\s+(.{2,80}?)(?=\s+(?:on|at|with|make|this|theme|tone|no\s+rsvps?|without|include|gift|registry)\b|[.;]|$)/i) ||
+      text.match(/\bfor\s+(.{2,80}?)\s+bridal\s+shower\b/i) ||
+      text.match(/\b([A-Z][a-zA-Z' -]{1,60}?)\s+bridal\s+shower\b/);
+    const honoree = cleanHonoreePhrase(bridalFor?.[1]);
+    if (honoree) return honoree;
+  }
+
+  if (previous?.eventType === "gender_reveal" || /\bgender\s+reveal\b/i.test(text)) {
+    const revealFor =
+      text.match(/\bgender\s+reveal\s+for\s+(.{2,80}?)(?=\s+(?:on|at|with|make|this|theme|tone|no\s+rsvps?|without|include|gift|registry)\b|[.;]|$)/i) ||
+      text.match(/\bfor\s+(.{2,80}?)\s+gender\s+reveal\b/i) ||
+      text.match(/\b([A-Z][a-zA-Z'-]{1,30}\s+(?:and|&)\s+[A-Z][a-zA-Z'-]{1,30})\s+gender\s+reveal\b/) ||
+      text.match(/\b([A-Z][a-zA-Z' -]{1,60}?)\s+gender\s+reveal\b/);
+    const honoree = cleanHonoreePhrase(revealFor?.[1]);
+    if (honoree) return honoree;
+  }
+
+  if (previous?.eventType === "graduation" || /\b(?:graduation|graduate|class of)\b/i.test(text)) {
+    const graduationFor =
+      text.match(/\bgraduation(?:\s+(?:party|open\s+house|celebration))?\s+for\s+(.{2,80}?)(?=\s+(?:on|at|with|make|this|theme|tone|no\s+rsvps?|without|include|gift|registry)\b|[.;]|$)/i) ||
+      text.match(/\bfor\s+(.{2,80}?)\s+(?:class\s+of\s+\d{4}\s+)?graduation\b/i) ||
+      text.match(/\b([A-Z][a-zA-Z'-]{1,30})\s+(?:class\s+of\s+\d{4}\s+)?graduation\b/);
+    const honoree = cleanHonoreePhrase(graduationFor?.[1]);
     if (honoree) return honoree;
   }
 
@@ -391,6 +428,7 @@ function cleanHonoreePhrase(value: string | null | undefined) {
     value
       ?.replace(/[.!?]+$/g, "")
       .replace(/^(?:for|of)\s+/i, "")
+      .replace(/^(?:baby\s+shower|bridal\s+shower|gender\s+reveal|graduation)\s+/i, "")
       .replace(/^(?:QA\s+|test\s+)/i, ""),
   );
   if (!cleaned || cleaned.length > 80) return null;
@@ -414,6 +452,9 @@ function detectHonoreeFollowUp(text: string, previous?: ConciergeEventDraft | nu
   if (!expectsName) return null;
   const cleaned = cleanString(text?.replace(/[.!?]+$/g, ""));
   if (!cleaned || cleaned.length > 60) return null;
+  if (/\b(?:ignore|last|weird|request|keep going|continue|nevermind|never mind)\b/i.test(cleaned)) {
+    return null;
+  }
   if (
     /\b(at|@|venue|location|home|house|park|gym|school|restaurant|saturday|sunday|monday|tuesday|wednesday|thursday|friday|january|february|march|april|may|june|july|august|september|october|november|december|birthday|party|theme)\b/i.test(
       cleaned,
@@ -731,7 +772,11 @@ function detectRegistryLink(
   return cleanUrlString(url || "");
 }
 
-function detectGiftPreferenceNote(text: string, fieldsGuess: Record<string, unknown>) {
+function detectGiftPreferenceNote(
+  text: string,
+  fieldsGuess: Record<string, unknown>,
+  options: { allowBroadGiftNotes?: boolean } = {},
+) {
   const direct = firstString(
     fieldsGuess.giftPreferenceNote,
     fieldsGuess.giftNote,
@@ -742,7 +787,12 @@ function detectGiftPreferenceNote(text: string, fieldsGuess: Record<string, unkn
   const noGifts = text.match(
     /\b(?:no gifts?|gifts?\s+(?:are\s+)?optional|your presence is (?:our|the) gift|gift cards?(?:\s+(?:are\s+)?(?:preferred|welcome|okay|ok|fine))?)\b[^.!,;]*/i,
   );
-  return cleanString(noGifts?.[0] || "");
+  if (noGifts?.[0]) return cleanString(noGifts[0]);
+  if (!options.allowBroadGiftNotes) return null;
+  const giftNote = text.match(
+    /\b(?:books?|art supplies|diapers?|board books?|gift cards?|snacks?|side dish|bring yourself|bring a snack|supplies)\b[^.!,;]*/i,
+  );
+  return cleanString(giftNote?.[0] || "");
 }
 
 function hasGiftDetails(draft: ConciergeEventDraft | null | undefined) {
@@ -779,8 +829,9 @@ function optionalGiftRegistryPrompt(draft: ConciergeEventDraft) {
 }
 
 function isGiftPromptSkipReply(message: string) {
+  const normalized = message.trim().replace(/[.!?]+$/g, "");
   return /^(?:skip|skip it|skip gift link|skip registry|not now|no thanks|leave it off|no link|no registry|no gift link|no wishlist|none)$/i.test(
-    message.trim(),
+    normalized,
   );
 }
 
@@ -795,8 +846,91 @@ function isAmazonRegistryCreateReply(message: string) {
   );
 }
 
+function isVagueCreativeRefinement(message: string) {
+  const text = cleanString(message) || "";
+  return (
+    /\b(?:less generic|more premium|more polished|make it better|make it nicer|improve it|not so generic|look better)\b/i.test(
+      text,
+    ) ||
+    /^can you make it\b/i.test(text)
+  );
+}
+
+function isDraftLogisticsAside(message: string) {
+  const text = cleanString(message) || "";
+  return (
+    /\b(?:might|may|probably|maybe)\s+change\b[\s\S]{0,60}\b(?:location|date|time|venue|address)\b/i.test(
+      text,
+    ) ||
+    /\b(?:not sure|unsure)\b[\s\S]{0,60}\b(?:location|venue|address)\b/i.test(text) ||
+    /\b(?:location|venue|address)\s+(?:tbd|may be updated|might change|can change)\b/i.test(text)
+  );
+}
+
+function isIgnorePreviousRequestAside(message: string) {
+  const text = cleanString(message) || "";
+  return /\b(?:ignore|forget|drop)\b[\s\S]{0,60}\b(?:last|previous|weird)\b[\s\S]{0,60}\b(?:request|thing|message)?\b/i.test(
+    text,
+  );
+}
+
+function isReadyStatusQuestion(message: string) {
+  const text = cleanString(message) || "";
+  return /\b(?:anything else|what else|need anything else|all set|are we done|ready)\b/i.test(text);
+}
+
+function conversationStateFor(
+  draft: ConciergeEventDraft,
+  previous: ConciergeEventDraft | null | undefined,
+  message: string,
+) {
+  return updateConversationState({ draft, previous, message });
+}
+
+function withConversationState(
+  draft: ConciergeEventDraft,
+  previous: ConciergeEventDraft | null | undefined,
+  message: string,
+): ConciergeEventDraft {
+  return {
+    ...draft,
+    conversationState: conversationStateFor(draft, previous, message),
+  };
+}
+
+function missingDetailForUser(field: string | null | undefined) {
+  if (field === "rsvpEnabled") return "whether you want RSVPs";
+  if (field === "numberOfGuests") return "the RSVP guest count";
+  if (field === "rsvpName") return "the RSVP host name";
+  if (field === "rsvpContact") return "the RSVP contact";
+  if (field === "honoreeName") return "the name to feature";
+  if (field === "ageOrMilestone") return "the age or milestone";
+  if (field === "date") return "the date";
+  if (field === "time") return "the time";
+  if (field === "location") return "the location";
+  if (field === "tone") return "the vibe";
+  return field || "one detail";
+}
+
+function duplicateEventInputMessage(draft: ConciergeEventDraft) {
+  const missing = draft.currentQuestion || draft.missingFields[0];
+  if (missing) {
+    return `I already have those details saved — we’re just missing ${missingDetailForUser(missing)}.`;
+  }
+  return draft.canPersist
+    ? "I already have those details saved — everything still looks ready."
+    : "I already have that saved. We’re almost there.";
+}
+
 function detectTone(text: string, previous?: ConciergeEventDraft | null) {
   const expectsTone = firstMissingField(previous) === "tone";
+  if (
+    isVagueCreativeRefinement(text) ||
+    isDraftLogisticsAside(text) ||
+    isIgnorePreviousRequestAside(text)
+  ) {
+    return previous?.tone || null;
+  }
   if (
     expectsTone &&
     /\b(?:yes|no|yep|nope|collect|track|include|enable|skip|no\s+rsvps?|rsvps?)\b/i.test(text)
@@ -1204,6 +1338,14 @@ function questionForMissingField(
   draft: ConciergeEventDraft,
   plan: ReturnType<typeof getRequirementPlan>,
 ) {
+  if (hasAlreadyAsked(draft.conversationState, field)) {
+    if (field === "honoreeName" && draft.eventType === "baby_shower") {
+      return "Should I list the name already mentioned as the mom-to-be, or use the parents-to-be or baby’s name?";
+    }
+    if (field === "honoreeName" && draft.eventType === "graduation") {
+      return "What graduate name should I feature on the invite?";
+    }
+  }
   if (
     draft.assistantGuidance &&
     cleanString(field) ===
@@ -1702,7 +1844,19 @@ function buildTitle(args: {
     return `${args.honoreeName}'s gender reveal`;
   if (args.eventType === "graduation" && args.honoreeName)
     return `${args.honoreeName}'s graduation`;
-  if (previousTitle && previousTitle !== "Event draft" && previousTitle !== genericTitle) {
+  if (
+    args.eventPurpose &&
+    !looksLikeCreationPrompt(args.eventPurpose) &&
+    (!previousTitle || previousTitle === genericTitle || looksLikeCreationPrompt(previousTitle))
+  ) {
+    return args.eventPurpose;
+  }
+  if (
+    previousTitle &&
+    previousTitle !== "Event draft" &&
+    previousTitle !== genericTitle &&
+    !looksLikeCreationPrompt(previousTitle)
+  ) {
     return previousTitle;
   }
   if (args.eventPurpose && !looksLikeCreationPrompt(args.eventPurpose)) return args.eventPurpose;
@@ -1815,6 +1969,15 @@ function outputActionLabel(draft: ConciergeEventDraft) {
   return getOutputRequirement(output).label.toLowerCase();
 }
 
+function readyActionSentence(draft: ConciergeEventDraft) {
+  if (draft.requestedOutputs.length > 1) return "The selected products are ready to generate.";
+  const output = primaryOutput(draft);
+  if (output === "digital_flyer" || output === "invitation") {
+    return "Your Flyer/Invitation is ready to generate.";
+  }
+  return `Your ${outputActionLabel(draft)} is ready to generate.`;
+}
+
 function compactVerificationLines(
   draft: ConciergeEventDraft,
   options: { includeProducts?: boolean } = {},
@@ -1867,13 +2030,18 @@ function readyVerificationMessage(draft: ConciergeEventDraft) {
   }
 
   const actionLabel = outputActionLabel(draft);
-  return [
-    "Details are ready.",
-    ...compactVerificationLines(draft),
+  if (draft.conversationState?.finalSummaryShown && draft.conversationState.currentStep !== "ready_first") {
+    return "Still ready — no changes needed.";
+  }
+  const event = draft.title || draft.eventPurpose || draft.previewCopy.headline || "the event";
+  const details = [event, draft.dateText, draft.timeText, draft.venue || draft.location]
+    .filter(Boolean)
+    .join(", ");
+  const readyLine =
     actionLabel === "products"
-      ? "I can generate the selected products now."
-      : `Your ${actionLabel} is ready to generate.`,
-  ].join("\n");
+      ? "Want me to generate them?"
+      : `Want me to generate the ${actionLabel}?`;
+  return `Everything looks ready: ${details}. ${readyLine}`;
 }
 
 function detailConfirmationQuestion(
@@ -2070,6 +2238,31 @@ export function fallbackExtractConciergeDraft(args: {
     ? ("private_data" as const)
     : classifiedBoundary;
   const blocksCreation = Boolean(blockingBoundary);
+  const duplicateAction = previous
+    ? detectDuplicateAction(message, previous.conversationState || null)
+    : null;
+  if (previous && duplicateAction === "skip_gift_link" && !privateDataMutationRequest) {
+    const next = {
+      ...previous,
+      giftPromptDismissed: true,
+      knowledgeAnswer: null,
+      assistantGuidance: "Already skipped — we’re good there.",
+    };
+    return withConversationState(next, previous, message);
+  }
+  if (
+    previous &&
+    !privateDataMutationRequest &&
+    !blockingBoundary &&
+    detectDuplicateUserMessage(message, previous.conversationState || null)
+  ) {
+    const next = {
+      ...previous,
+      knowledgeAnswer: null,
+      assistantGuidance: duplicateEventInputMessage(previous),
+    };
+    return withConversationState(next, previous, message);
+  }
   const hasCreationSignal =
     Boolean(args.ocrContext) ||
     Boolean(previous) ||
@@ -2110,7 +2303,53 @@ export function fallbackExtractConciergeDraft(args: {
       knowledgeAnswer: buildStandaloneLostContextAnswer(message),
     });
   }
-  if (!privateDataMutationRequest && isStatePreservingConversationMessage(message, previous)) {
+  if (
+    previous &&
+    !privateDataMutationRequest &&
+    (!blockingBoundary || blockingBoundary === "ambiguous_edit") &&
+    (isVagueCreativeRefinement(message) ||
+      isDraftLogisticsAside(message) ||
+      isIgnorePreviousRequestAside(message))
+  ) {
+    const sideComment = handleSideComment(message, previous.conversationState || null);
+    const assistantGuidance = isVagueCreativeRefinement(message)
+      ? "Absolutely. Give me a concrete direction so I can make it feel more premium, for example: editorial and minimal, warm handmade, bold team energy, luxury florals, or playful kid-party."
+      : isDraftLogisticsAside(message)
+        ? sideComment?.acknowledgement ||
+          "No problem — I’ll keep the current details flexible for now."
+        : "Got it. I’ll ignore that and keep going with the current draft.";
+    const next = {
+      ...previous,
+      sourceContext: {
+        ...previous.sourceContext,
+        boundary: null,
+      },
+      knowledgeAnswer: null,
+      assistantGuidance,
+    };
+    return withConversationState(next, previous, message);
+  }
+  if (
+    previous?.canPersist &&
+    !previous.currentQuestion &&
+    !privateDataMutationRequest &&
+    !blockingBoundary &&
+    isReadyStatusQuestion(message)
+  ) {
+    const next = {
+      ...previous,
+      knowledgeAnswer: null,
+      assistantGuidance: previous.conversationState?.finalSummaryShown
+        ? "Still ready — no changes needed."
+        : `No, this is ready. ${readyActionSentence(previous)}`,
+    };
+    return withConversationState(next, previous, message);
+  }
+  if (
+    !blockingBoundary &&
+    !privateDataMutationRequest &&
+    isStatePreservingConversationMessage(message, previous)
+  ) {
     return {
       ...previous!,
       sourceContext: {
@@ -2121,7 +2360,7 @@ export function fallbackExtractConciergeDraft(args: {
       assistantGuidance: null,
     };
   }
-  if (!privateDataMutationRequest && asksEnvitefyKnowledgeQuestion(message)) {
+  if (!blockingBoundary && !privateDataMutationRequest && asksEnvitefyKnowledgeQuestion(message)) {
     const knowledgeAnswer = buildEnvitefyKnowledgeAnswer(message, previous);
     if (previous) {
       return {
@@ -2202,6 +2441,9 @@ export function fallbackExtractConciergeDraft(args: {
   );
   const extractedEventPurpose = firstString(fieldsGuess.eventPurpose, fieldsGuess.title);
   const sportEventPurpose = deriveSportEventTitle(text, eventType);
+  const previousEventPurpose = looksLikeCreationPrompt(previous?.eventPurpose || null)
+    ? null
+    : previous?.eventPurpose || null;
   const canUseRawMessageAsEventPurpose = hasCreationSignal || requestedOutputs.length > 0;
   const rawMessageEventPurpose =
     canUseRawMessageAsEventPurpose && isMeaningfulEventText(message, requestedOutputs)
@@ -2223,7 +2465,7 @@ export function fallbackExtractConciergeDraft(args: {
   const eventPurpose =
     blocksCreation || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
-      : extractedEventPurpose || sportEventPurpose || previous?.eventPurpose || messageEventPurpose;
+      : extractedEventPurpose || sportEventPurpose || messageEventPurpose || previousEventPurpose;
   const titleCandidate =
     firstString(fieldsGuess.title) ||
     buildTitle({
@@ -2250,6 +2492,15 @@ export function fallbackExtractConciergeDraft(args: {
   const giftPromptSkip = Boolean(
     previous && shouldOfferGiftRegistryPrompt(previous) && isGiftPromptSkipReply(message),
   );
+  const repeatedGiftPromptSkip = Boolean(
+    previous?.giftPromptDismissed && isGiftPromptSkipReply(message),
+  );
+  const irrelevantGiftPromptSkip = Boolean(
+    previous &&
+      !shouldOfferGiftRegistryPrompt(previous) &&
+      !previous.giftPromptDismissed &&
+      isGiftPromptSkipReply(message),
+  );
   const amazonRegistryCreate = Boolean(
     previous && shouldOfferGiftRegistryPrompt(previous) && isAmazonRegistryCreateReply(message),
   );
@@ -2259,12 +2510,18 @@ export function fallbackExtractConciergeDraft(args: {
     previous?.giftRegistryLink ||
     null;
   const giftPreferenceNote =
-    detectGiftPreferenceNote(text, fieldsGuess) ||
+    detectGiftPreferenceNote(text, fieldsGuess, {
+      allowBroadGiftNotes: Boolean(previous && shouldOfferGiftRegistryPrompt(previous)),
+    }) ||
     previous?.giftPreferenceNote ||
     previous?.giftNote ||
     null;
   const giftPromptDismissed = Boolean(
-    previous?.giftPromptDismissed || giftPromptSkip || amazonRegistryCreate,
+    previous?.giftPromptDismissed ||
+      giftPromptSkip ||
+      repeatedGiftPromptSkip ||
+      irrelevantGiftPromptSkip ||
+      amazonRegistryCreate,
   );
   const tone =
     detectTone(detailText, previous) ||
@@ -2370,14 +2627,43 @@ export function fallbackExtractConciergeDraft(args: {
       new Set([...(needsDateConfirmation ? ["date"] : []), ...status.missingFields]),
     ),
   };
-  return {
-    ...draft,
-    assistantGuidance: amazonRegistryCreate
+  const addedGiftPreferenceNote = Boolean(
+    previous &&
+      shouldOfferGiftRegistryPrompt(previous) &&
+      giftPreferenceNote &&
+      giftPreferenceNote !== previous.giftPreferenceNote &&
+      giftPreferenceNote !== previous.giftNote,
+  );
+  const addedRegistryLink = Boolean(
+    previous &&
+      registryLink &&
+      registryLink !== previous.registryLink &&
+      registryLink !== previous.giftRegistryLink,
+  );
+  const assistantGuidance =
+    amazonRegistryCreate
       ? "Create the list on Amazon, then paste the public or shareable link here and I’ll add it. You can also generate now and add the link later."
-      : buildUnresolvedFieldGuidance({
-          message,
-          draft,
-          previous,
-        }),
+      : giftPromptSkip || repeatedGiftPromptSkip || irrelevantGiftPromptSkip
+        ? repeatedGiftPromptSkip
+          ? "Already skipped — we’re good there."
+          : `Got it — no gift link added. ${readyActionSentence(draft)}`
+        : addedRegistryLink
+          ? `Got it — Registry: ${registryLink}. ${readyActionSentence(draft)}`
+        : addedGiftPreferenceNote
+          ? `Got it — Gift note: ${giftPreferenceNote}. ${readyActionSentence(draft)}`
+          : isVagueCreativeRefinement(message)
+            ? "Absolutely. Give me a concrete direction so I can make it feel more premium, for example: editorial and minimal, warm handmade, bold team energy, luxury florals, or playful kid-party."
+            : isDraftLogisticsAside(message)
+              ? handleSideComment(message, previous?.conversationState || null)?.acknowledgement ||
+                "No problem — I’ll keep the current details flexible for now."
+              : buildUnresolvedFieldGuidance({
+                  message,
+                  draft,
+                  previous,
+                });
+  const finalDraft = {
+    ...draft,
+    assistantGuidance: assistantGuidance || null,
   };
+  return withConversationState(finalDraft, previous, message);
 }

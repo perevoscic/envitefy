@@ -446,7 +446,8 @@ test("core product bundle expands only to visible primary products", () => {
 
   assert.deepEqual(draft.requestedOutputs, ["live_card", "digital_flyer", "event_page"]);
   assert.doesNotMatch(draft.requestedOutputs.join(","), /whatsapp|text_message|printable_flyer/);
-  assert.match(buildAssistantMessage(draft), /Products: Live card, Flyer\/Invitation, Event page/);
+  assert.match(buildAssistantMessage(draft), /Everything looks ready/i);
+  assert.match(buildAssistantMessage(draft), /generate them/i);
 });
 
 test("source flyer wording does not force a digital flyer product", () => {
@@ -611,13 +612,8 @@ test("fallback asks RSVP guest count before vibe and stores both replies", () =>
   draft = fallbackExtractConciergeDraft({ message: "Skip gift link", draft });
 
   assert.equal(draft.giftPromptDismissed, true);
-  assert.match(buildAssistantMessage(draft), /details are ready/i);
-  assert.match(buildAssistantMessage(draft), /Product: Live card/);
-  assert.match(buildAssistantMessage(draft), /Event: Ava is turning 7/);
-  assert.match(buildAssistantMessage(draft), /Location: Sky Zone/);
-  assert.match(buildAssistantMessage(draft), /RSVP guest count: 23/);
-  assert.match(buildAssistantMessage(draft), /RSVP host: Ava's parents/);
-  assert.match(buildAssistantMessage(draft), /RSVP contact: ava-host@example.com/);
+  assert.match(buildAssistantMessage(draft), /No gift link added/i);
+  assert.match(buildAssistantMessage(draft), /Your live card is ready to generate/i);
   assert.doesNotMatch(buildAssistantMessage(draft), /\*\*\*/);
 });
 
@@ -729,6 +725,111 @@ test("baby shower event-page product prompt stays no-RSVP and guest-facing", () 
   assert.equal(payload.data.liveCard.cta, "View details");
   assert.deepEqual(payload.data.publicEvent.forms, []);
   assert.doesNotMatch(JSON.stringify(payload.data.publicEvent.navigation), /RSVP/);
+});
+
+test("baby shower details capture honoree instead of repeating shower question", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "Create a Baby Shower Smart Sign-up Form.",
+    action: "starter_category",
+    starterCategory: "Baby Shower",
+  });
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Mia baby shower on Sunday August 9 2026 at 1 PM at Greenhouse Cafe, 410 Palm Ave, Dallas, TX.",
+    draft: first,
+    starterCategory: "Baby Shower",
+  });
+  const assistant = buildAssistantMessage(draft);
+
+  assert.equal(draft.eventType, "baby_shower");
+  assert.equal(draft.honoreeName, "Mia");
+  assert.equal(draft.title, "Mia's baby shower");
+  assert.equal(draft.currentQuestion, null);
+  assert.doesNotMatch(assistant, /Who are we celebrating/i);
+  assert.doesNotMatch(assistant, /Baby Shower Mia/i);
+});
+
+test("graduation details capture honoree after product-only start", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "I need a WhatsApp message for Leo class of 2026 graduation party.",
+  });
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Leo class of 2026 graduation party on Friday June 5 2026 at 6 PM at 812 Pine Ridge Dr, Round Rock, TX.",
+    draft: first,
+  });
+  const assistant = buildAssistantMessage(draft);
+
+  assert.equal(draft.eventType, "graduation");
+  assert.equal(draft.honoreeName, "Leo");
+  assert.equal(draft.title, "Leo's graduation");
+  assert.equal(draft.currentQuestion, null);
+  assert.doesNotMatch(assistant, /Who is graduating/i);
+});
+
+test("duplicate event input does not repeat the same missing question", () => {
+  const message =
+    "Leo class of 2026 graduation party on Friday June 5 2026 at 6 PM at 812 Pine Ridge Dr, Round Rock, TX.";
+  const draft = fallbackExtractConciergeDraft({
+    message,
+    requestedOutputs: ["event_page"],
+  });
+  const repeated = fallbackExtractConciergeDraft({
+    message,
+    draft,
+    requestedOutputs: ["event_page"],
+  });
+  const assistant = buildAssistantMessage(repeated);
+
+  assert.equal(repeated.honoreeName, "Leo");
+  assert.equal(repeated.currentQuestion, "rsvpEnabled");
+  assert.match(assistant, /already have those details saved/i);
+  assert.doesNotMatch(assistant, /Should Envitefy collect RSVPs/i);
+});
+
+test("tentative location comments preserve the address and mark location flexible", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message:
+      "Leo class of 2026 graduation party on Friday June 5 2026 at 6 PM at 812 Pine Ridge Dr, Round Rock, TX.",
+    requestedOutputs: ["event_page"],
+  });
+  const followUp = fallbackExtractConciergeDraft({
+    message: "I might change the location later.",
+    draft,
+  });
+  const assistant = buildAssistantMessage(followUp);
+
+  assert.equal(followUp.location, "812 Pine Ridge Dr");
+  assert.equal(followUp.conversationState?.locationTentative, true);
+  assert.match(assistant, /keep the location flexible/i);
+  assert.doesNotMatch(assistant, /Who is graduating/i);
+});
+
+test("skip gift link on non-gift products stays concise and dismissed", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message:
+      "Taylor and Morgan gender reveal on Saturday September 12 2026 at 2 PM at Cedar Park Pavilion, Austin, TX.",
+    requestedOutputs: ["signup_form"],
+  });
+
+  draft = fallbackExtractConciergeDraft({ message: "Skip gift link.", draft });
+  const firstSkip = buildAssistantMessage(draft);
+  const skippedAgain = fallbackExtractConciergeDraft({ message: "Skip gift link.", draft });
+  const secondSkip = buildAssistantMessage(skippedAgain);
+
+  assert.equal(draft.giftPromptDismissed, true);
+  assert.equal(skippedAgain.giftPromptDismissed, true);
+  assert.match(firstSkip, /No gift link added/i);
+  assert.match(firstSkip, /smart sign-up form is ready/i);
+  assert.match(secondSkip, /Already skipped/i);
+  assert.doesNotMatch(firstSkip, /Honoree:/i);
+  assert.doesNotMatch(secondSkip, /Honoree:/i);
+
+  const status = fallbackExtractConciergeDraft({ message: "Anything else needed?", draft });
+  const statusMessage = buildAssistantMessage(status);
+
+  assert.match(statusMessage, /Still ready/i);
+  assert.doesNotMatch(statusMessage, /Honoree:/i);
 });
 
 test("gift-friendly ready drafts ask for registry details only as an optional step", () => {
@@ -1836,7 +1937,9 @@ test("tone reply preserves full creative direction without changing event type",
 
   const skippedGift = fallbackExtractConciergeDraft({ message: "Skip gift link", draft: reply });
 
-  assert.match(buildAssistantMessage(skippedGift), /Vibe: soft pastel gymnastics theme/i);
+  assert.equal(skippedGift.tone, "soft pastel gymnastics theme");
+  assert.match(buildAssistantMessage(skippedGift), /No gift link added/i);
+  assert.match(buildAssistantMessage(skippedGift), /Your live card is ready to generate/i);
 });
 
 test("off-domain help requests stay bounded and do not become event drafts", async () => {
