@@ -695,7 +695,7 @@ function ChatSelectionPill({
   return (
     <span
       className={cn(
-        "inline-flex min-w-0 items-center gap-2 rounded-full border border-[#ded2f5] bg-white/78 px-3 py-1.5 text-sm font-semibold shadow-[0_8px_18px_rgba(93,63,155,0.08),inset_0_1px_0_rgba(255,255,255,0.92)]",
+        "inline-flex max-w-full min-w-0 items-center gap-2 rounded-full border border-[#ded2f5] bg-white/78 px-3 py-1.5 text-sm font-semibold shadow-[0_8px_18px_rgba(93,63,155,0.08),inset_0_1px_0_rgba(255,255,255,0.92)]",
         textClassName || "text-[#5c5be5]",
       )}
     >
@@ -1634,6 +1634,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const selectedProductOption = selectedProductOutput
     ? PRODUCT_OPTIONS.find((option) => option.output === selectedProductOutput) || null
     : null;
+  const selectedProductPillOption =
+    selectedProductOption && (isEmptyState || selectedStarterCategory) ? selectedProductOption : null;
   const hasComposerSelection = Boolean(selectedStarterCategory || selectedProductOutput);
   const canSubmitComposer = Boolean(input.trim() || hasComposerSelection);
   const selectedSkinLabel =
@@ -3078,11 +3080,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   );
 
   const selectionPills =
-    selectedStarterCategory || selectedProductOption ? (
+    selectedStarterCategory || selectedProductPillOption ? (
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex min-w-0 shrink-0 flex-wrap items-center gap-2"
+        className="flex min-w-0 max-w-full flex-wrap items-center gap-2"
         aria-label="Selected chat filters"
       >
         {selectedStarterCategory ? (
@@ -3094,12 +3096,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             textClassName={selectedStarterCategory.color}
           />
         ) : null}
-        {selectedProductOption ? (
+        {selectedProductPillOption ? (
           <ChatSelectionPill
-            label={selectedProductOption.label}
+            label={selectedProductPillOption.label}
             onRemove={removeSelectedProductOutput}
             disabled={isBusy}
-            ariaLabel={`Remove ${selectedProductOption.label} product`}
+            ariaLabel={`Remove ${selectedProductPillOption.label} product`}
             textClassName="text-[#5c5be5]"
           />
         ) : null}
@@ -3142,85 +3144,87 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           >
             <div
               className={cn(
-                "flex min-h-[52px] flex-wrap items-center gap-2",
+                "flex min-h-[52px] flex-col gap-2",
                 isCompactEmptyComposer && "max-md:min-h-[42px]",
               )}
             >
               {selectionPills}
-              <PromptInputTextarea
-                placeholder={
-                  liveCardEventId
-                    ? "Tell me what to change..."
-                    : isCompactEmptyComposer
-                      ? "Type instead..."
-                      : "Or just start typing and let's get going..."
-                }
-                aria-label={liveCardEventId ? "Refine invite" : "Start planning from scratch"}
-                onFocus={() => setIsComposerFocused(true)}
-                onBlur={() => setIsComposerFocused(false)}
-                className={cn(
-                  "min-h-[44px] min-w-[12rem] flex-1 px-3 py-2.5 text-base !text-[#25183a] caret-[#5c5be5] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base",
-                  isCompactEmptyComposer &&
-                    "max-md:min-h-[34px] max-md:px-2 max-md:py-1.5 max-md:text-sm max-md:[&::placeholder]:text-[0.78rem]",
-                )}
-              />
-              <PromptInputActions className="ml-auto shrink-0 justify-end gap-2">
-                <PromptInputAction
-                  tooltip={
-                    isBusy
-                      ? busyLabel
-                      : canSubmitComposer
-                        ? "Send message"
-                        : isListening
-                          ? "Listening"
-                          : "Voice message"
+              <div className="flex min-w-0 items-center gap-2">
+                <PromptInputTextarea
+                  placeholder={
+                    liveCardEventId
+                      ? "Tell me what to change..."
+                      : isCompactEmptyComposer
+                        ? "Type instead..."
+                        : "Or just start typing and let's get going..."
                   }
-                >
-                  <button
-                    type={canSubmitComposer ? "submit" : "button"}
-                    disabled={isBusy || (!canSubmitComposer && isListening)}
-                    onClick={(event) => {
-                      if (canSubmitComposer) return;
-                      event.preventDefault();
-                      void handleVoiceInput();
-                    }}
-                    className={cn(
-                      "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:pointer-events-none disabled:opacity-50",
-                      (canSubmitComposer || isListening) && "text-[#5c5be5]",
-                      isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
-                    )}
-                    aria-label={canSubmitComposer ? "Send" : "Use voice input"}
+                  aria-label={liveCardEventId ? "Refine invite" : "Start planning from scratch"}
+                  onFocus={() => setIsComposerFocused(true)}
+                  onBlur={() => setIsComposerFocused(false)}
+                  className={cn(
+                    "min-h-[44px] min-w-0 flex-1 px-3 py-2.5 text-base !text-[#25183a] caret-[#5c5be5] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:min-w-[12rem] sm:[&::placeholder]:text-base",
+                    isCompactEmptyComposer &&
+                      "max-md:min-h-[34px] max-md:px-2 max-md:py-1.5 max-md:text-sm max-md:[&::placeholder]:text-[0.78rem]",
+                  )}
+                />
+                <PromptInputActions className="ml-auto shrink-0 justify-end gap-2">
+                  <PromptInputAction
+                    tooltip={
+                      isBusy
+                        ? busyLabel
+                        : canSubmitComposer
+                          ? "Send message"
+                          : isListening
+                            ? "Listening"
+                            : "Voice message"
+                    }
                   >
-                    {isBusy ? (
-                      <Loader2
-                        className={cn(
-                          "size-5 animate-spin text-[#5c5be5]",
-                          isCompactEmptyComposer && "max-md:size-4",
-                        )}
-                        aria-hidden="true"
-                      />
-                    ) : canSubmitComposer ? (
-                      <ArrowUp
-                        className={cn(
-                          "size-6 text-current",
-                          isCompactEmptyComposer && "max-md:size-5",
-                        )}
-                        strokeWidth={2.5}
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <Mic
-                        className={cn(
-                          "size-6 text-current",
-                          isCompactEmptyComposer && "max-md:size-5",
-                        )}
-                        strokeWidth={2.4}
-                        aria-hidden="true"
-                      />
-                    )}
-                  </button>
-                </PromptInputAction>
-              </PromptInputActions>
+                    <button
+                      type={canSubmitComposer ? "submit" : "button"}
+                      disabled={isBusy || (!canSubmitComposer && isListening)}
+                      onClick={(event) => {
+                        if (canSubmitComposer) return;
+                        event.preventDefault();
+                        void handleVoiceInput();
+                      }}
+                      className={cn(
+                        "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:pointer-events-none disabled:opacity-50",
+                        (canSubmitComposer || isListening) && "text-[#5c5be5]",
+                        isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
+                      )}
+                      aria-label={canSubmitComposer ? "Send" : "Use voice input"}
+                    >
+                      {isBusy ? (
+                        <Loader2
+                          className={cn(
+                            "size-5 animate-spin text-[#5c5be5]",
+                            isCompactEmptyComposer && "max-md:size-4",
+                          )}
+                          aria-hidden="true"
+                        />
+                      ) : canSubmitComposer ? (
+                        <ArrowUp
+                          className={cn(
+                            "size-6 text-current",
+                            isCompactEmptyComposer && "max-md:size-5",
+                          )}
+                          strokeWidth={2.5}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Mic
+                          className={cn(
+                            "size-6 text-current",
+                            isCompactEmptyComposer && "max-md:size-5",
+                          )}
+                          strokeWidth={2.4}
+                          aria-hidden="true"
+                        />
+                      )}
+                    </button>
+                  </PromptInputAction>
+                </PromptInputActions>
+              </div>
             </div>
           </PromptInput>
         </form>

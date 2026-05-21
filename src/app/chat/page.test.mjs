@@ -193,8 +193,14 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /setInput\(\(current\) =>/);
   assert.match(client, /function handleComposerValueChange\(nextValue: string\)/);
   assert.match(client, /const hasComposerSelection = Boolean\(selectedStarterCategory \|\| selectedProductOutput\)/);
+  assert.match(client, /const selectedProductPillOption =/);
+  assert.match(client, /selectedProductOption && \(isEmptyState \|\| selectedStarterCategory\)/);
+  assert.match(client, /selectedStarterCategory \|\| selectedProductPillOption/);
   assert.match(client, /const canSubmitComposer = Boolean\(input\.trim\(\) \|\| hasComposerSelection\)/);
   assert.match(client, /onValueChange=\{handleComposerValueChange\}/);
+  assert.match(client, /"flex min-h-\[52px\] flex-col gap-2"/);
+  assert.match(client, /"flex min-w-0 items-center gap-2"/);
+  assert.match(client, /"min-h-\[44px\] min-w-0 flex-1/);
   assert.match(client, /focusComposerAtEnd/);
   assert.doesNotMatch(
     client,
