@@ -701,6 +701,18 @@ body::before {
   padding: 0;
 }
 
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: max(env(safe-area-inset-bottom, 0px), 0px);
+  background: var(--mobile-chrome-bottom);
+  pointer-events: none;
+  z-index: 2147483647;
+}
+
 h1,
 h2,
 h3,

@@ -13,7 +13,7 @@ interface SnapWindow extends Window {
 }
 
 const BRIDGE_EVENT_NAME = "envitefy:beforeinstallprompt";
-const APP_ICON_SRC = "/icons/icon-192.png?v=v8";
+const APP_ICON_SRC = "/icons/icon-192.png?v=v10";
 
 const shouldHideInstallUi = (): boolean => {
   if (typeof window === "undefined") return false;

@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     "OCR event capture",
     "Envitefy",
   ],
-  manifest: "/manifest.webmanifest?v=v9",
+  manifest: "/manifest.webmanifest?v=v10",
   other: {
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",
@@ -59,29 +59,29 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.png?v=v8", sizes: "any", type: "image/png" },
-      { url: "/icons/icon-192.png?v=v8", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png?v=v8", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.png?v=v10", sizes: "any", type: "image/png" },
+      { url: "/icons/icon-192.png?v=v10", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png?v=v10", sizes: "512x512", type: "image/png" },
       {
-        url: "/icons/maskable-icon-192.png?v=v8",
+        url: "/icons/maskable-icon-192.png?v=v10",
         sizes: "192x192",
         type: "image/png",
         rel: "mask-icon" as any,
       },
       {
-        url: "/icons/maskable-icon-512.png?v=v8",
+        url: "/icons/maskable-icon-512.png?v=v10",
         sizes: "512x512",
         type: "image/png",
         rel: "mask-icon" as any,
       },
     ],
     apple: [
-      { url: "/icons/apple-touch-icon-120.png?v=v8", sizes: "120x120" },
-      { url: "/icons/apple-touch-icon-152.png?v=v8", sizes: "152x152" },
-      { url: "/icons/apple-touch-icon-167.png?v=v8", sizes: "167x167" },
-      { url: "/icons/apple-touch-icon-180.png?v=v8", sizes: "180x180" },
+      { url: "/icons/apple-touch-icon-120.png?v=v10", sizes: "120x120" },
+      { url: "/icons/apple-touch-icon-152.png?v=v10", sizes: "152x152" },
+      { url: "/icons/apple-touch-icon-167.png?v=v10", sizes: "167x167" },
+      { url: "/icons/apple-touch-icon-180.png?v=v10", sizes: "180x180" },
     ],
-    shortcut: [{ url: "/favicon.png?v=v8" }],
+    shortcut: [{ url: "/favicon.png?v=v10" }],
   },
   appleWebApp: {
     capable: true,

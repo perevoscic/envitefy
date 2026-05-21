@@ -25,7 +25,7 @@ test("root layout leaves head metadata to Next", () => {
 
 test("root metadata declares Envitefy as the install app name", () => {
   assert.match(layoutSource, /applicationName:\s*"Envitefy"/);
-  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v9"/);
+  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v10"/);
   assert.match(layoutSource, /"apple-mobile-web-app-capable":\s*"yes"/);
   assert.match(
     layoutSource,
@@ -42,7 +42,7 @@ test("web app manifest names the installed app Envitefy", () => {
   assert.equal(manifest.short_name, "Envitefy");
 });
 
-test("installed app top chrome is white without drawing fake native chrome in the page", () => {
+test("installed app chrome uses white top color and purple bottom safe-area backing", () => {
   assert.equal(manifest.theme_color, "#FFFFFF");
   assert.equal(manifest.background_color, "#F8F5FF");
   assert.match(layoutSource, /colorScheme:\s*"light"/);
@@ -76,9 +76,8 @@ test("installed app top chrome is white without drawing fake native chrome in th
     globalsSource,
     /--mobile-chrome-bottom:\s*#8d7be9/,
   );
-  assert.doesNotMatch(globalsSource, /--mobile-chrome-bottom-backing-height/);
-  assert.doesNotMatch(globalsSource, /--mobile-chrome-bottom-backing/);
-  assert.doesNotMatch(globalsSource, /body::after/);
+  assert.match(globalsSource, /body::after\s*\{[\s\S]*?background:\s*var\(--mobile-chrome-bottom\)/);
+  assert.match(globalsSource, /height:\s*max\(env\(safe-area-inset-bottom,\s*0px\),\s*0px\)/);
   assert.doesNotMatch(
     globalsSource,
     /background-image:\s*var\(--mobile-browser-surface-gradient\)/,

@@ -301,7 +301,7 @@ const resolveInstallGuide = (win: Window): InstallGuide => {
 const BRIDGE_EVENT_NAME = "envitefy:beforeinstallprompt";
 const DEBUG_STORE_KEY = "__snapInstallDebugLog";
 const MAX_DEBUG_ENTRIES = 50;
-const APP_ICON_SRC = "/icons/icon-192.png?v=v8";
+const APP_ICON_SRC = "/icons/icon-192.png?v=v10";
 
 const shouldHideInstallUi = (): boolean => {
   if (typeof window === "undefined") return false;
