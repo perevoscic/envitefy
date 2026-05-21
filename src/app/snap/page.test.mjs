@@ -80,6 +80,7 @@ test("/snap includes the updated social-proof and CTA copy", () => {
 
 test("/snap keeps public auth CTAs but renders direct upload cards for authenticated users", () => {
   const page = readSource("src/app/snap/page.tsx");
+  const mainWrapper = readSource("src/components/MainContentWrapper.tsx");
   const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
   const snapSignupLanding = readSource("src/components/snap-landing/SnapSignupLanding.tsx");
 
@@ -87,8 +88,14 @@ test("/snap keeps public auth CTAs but renders direct upload cards for authentic
   assert.match(page, /AuthenticatedSnapUploadStart/);
   assert.match(page, /Snap \/ Upload/);
   assert.match(page, /Snap or upload your/);
+  assert.match(page, /min-h-\[100dvh\] bg-\[#eff1f8\]/);
+  assert.match(page, /isAuthenticated \? "min-h-\[100dvh\] bg-\[#eff1f8\]" : ""/);
   assert.match(page, /<Dashboard snapProcessingMode \/>/);
   assert.doesNotMatch(page, /uploadActionHref="\/snap\?action=upload"/);
+  assert.match(
+    mainWrapper,
+    /normalizedPath === "\/snap" && !isAuthenticated/,
+  );
   assert.match(snapLanding, /authenticatedPrimaryHref="\/"/);
   assert.match(snapLanding, /loginSuccessRedirectUrl="\/"/);
   assert.match(snapLanding, /primaryHref=\{isAuthenticated \? "\/" : undefined\}/);

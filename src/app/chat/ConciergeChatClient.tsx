@@ -679,6 +679,40 @@ function starterSelectionLabel(tile: CelebrationStarterTile | null | undefined) 
   return tile?.prompt || null;
 }
 
+function ChatSelectionPill({
+  label,
+  onRemove,
+  disabled,
+  ariaLabel,
+  textClassName,
+}: {
+  label: string;
+  onRemove: () => void;
+  disabled: boolean;
+  ariaLabel: string;
+  textClassName?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex min-w-0 items-center gap-2 rounded-full border border-[#ded2f5] bg-white/78 px-3 py-1.5 text-sm font-semibold shadow-[0_8px_18px_rgba(93,63,155,0.08),inset_0_1px_0_rgba(255,255,255,0.92)]",
+        textClassName || "text-[#5c5be5]",
+      )}
+    >
+      <span className="truncate">{label}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-current/70 transition hover:bg-[#f1ebff] hover:text-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:pointer-events-none disabled:opacity-50"
+      >
+        <X className="size-4" strokeWidth={2.4} aria-hidden="true" />
+      </button>
+    </span>
+  );
+}
+
 function newMessage(
   role: ChatMessage["role"],
   text: string,
@@ -1597,6 +1631,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     previewImageForDraft(draft);
   const selectedCategoryLabel =
     starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
+  const selectedProductOption = selectedProductOutput
+    ? PRODUCT_OPTIONS.find((option) => option.output === selectedProductOutput) || null
+    : null;
+  const hasComposerSelection = Boolean(selectedStarterCategory || selectedProductOutput);
+  const canSubmitComposer = Boolean(input.trim() || hasComposerSelection);
   const selectedSkinLabel =
     skinLabelForCategoryName(selectedCategoryLabel) || skinLabelForDraft(draft);
   const hasInitialEventContext =
@@ -1717,39 +1756,41 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       .join(" ");
   }
 
-  function updateComposerSelection(
-    nextCategoryLabel: string | null,
-    nextProductOutput: RequestedOutput | null,
-  ) {
+  function updateComposerSelection() {
     const previousPrefix = selectionPrefix(
       starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft),
       selectedProductOutput,
     );
-    const nextPrefix = selectionPrefix(nextCategoryLabel, nextProductOutput);
 
     setInput((current) => {
       const trimmed = current.trimStart();
       const previousMatches =
         previousPrefix && trimmed.toLowerCase().startsWith(previousPrefix.toLowerCase());
       const suffix = previousMatches ? trimmed.slice(previousPrefix.length).trimStart() : trimmed;
-      if (!nextPrefix) return suffix;
-      return [nextPrefix, suffix].filter(Boolean).join(" ");
+      return suffix;
     });
   }
 
   function handleComposerValueChange(nextValue: string) {
     setInput(nextValue);
-    if (nextValue.trim()) return;
-    setSelectedStarterCategory(null);
-    setSelectedProductOutput(null);
   }
 
   function handleProductChoice(option: ProductOption) {
     if (isBusy) return;
-    const nextCategoryLabel =
-      starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
     setSelectedProductOutput(option.output);
-    updateComposerSelection(nextCategoryLabel, option.output);
+    updateComposerSelection();
+  }
+
+  function removeSelectedStarterCategory() {
+    if (isBusy || !selectedStarterCategory) return;
+    updateComposerSelection();
+    setSelectedStarterCategory(null);
+  }
+
+  function removeSelectedProductOutput() {
+    if (isBusy || !selectedProductOutput) return;
+    updateComposerSelection();
+    setSelectedProductOutput(null);
   }
 
   useEffect(() => {
@@ -2544,7 +2585,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   async function submitComposerInput() {
     if (isBusy) return;
-    const value = input.trim();
+    const typedValue = input.trim();
+    const value = typedValue || selectionPrefix(selectedCategoryLabel, selectedProductOutput);
     if (!value) return;
     setInput("");
     shouldRefocusComposerRef.current = true;
@@ -2592,13 +2634,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setPendingChatUpload(null);
     const isSelected = selectedStarterCategory?.label === tile.label;
     setSelectedStarterCategory(isSelected ? null : tile);
-    updateComposerSelection(isSelected ? null : tile.prompt, selectedProductOutput);
+    updateComposerSelection();
   }
 
   function handleStarterProductChoice(option: ProductOption) {
     if (isBusy) return;
-    const nextCategoryLabel =
-      starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
     setSelectedProductOutput(option.output);
     if (pendingChatUpload) {
       const upload = pendingChatUpload;
@@ -2606,7 +2646,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       void routeSelectedSnapFile(upload.file, upload.source, option.output);
       return;
     }
-    updateComposerSelection(nextCategoryLabel, option.output);
+    updateComposerSelection();
   }
 
   function handleVoiceInput() {
@@ -3037,6 +3077,35 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     </motion.div>
   );
 
+  const selectionPills =
+    selectedStarterCategory || selectedProductOption ? (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex min-w-0 shrink-0 flex-wrap items-center gap-2"
+        aria-label="Selected chat filters"
+      >
+        {selectedStarterCategory ? (
+          <ChatSelectionPill
+            label={selectedStarterCategory.label}
+            onRemove={removeSelectedStarterCategory}
+            disabled={isBusy}
+            ariaLabel={`Remove ${selectedStarterCategory.label} category`}
+            textClassName={selectedStarterCategory.color}
+          />
+        ) : null}
+        {selectedProductOption ? (
+          <ChatSelectionPill
+            label={selectedProductOption.label}
+            onRemove={removeSelectedProductOutput}
+            disabled={isBusy}
+            ariaLabel={`Remove ${selectedProductOption.label} product`}
+            textClassName="text-[#5c5be5]"
+          />
+        ) : null}
+      </motion.div>
+    ) : null;
+
   const composer = (
     <div
       className={cn(
@@ -3073,10 +3142,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           >
             <div
               className={cn(
-                "flex min-h-[52px] items-center gap-2",
+                "flex min-h-[52px] flex-wrap items-center gap-2",
                 isCompactEmptyComposer && "max-md:min-h-[42px]",
               )}
             >
+              {selectionPills}
               <PromptInputTextarea
                 placeholder={
                   liveCardEventId
@@ -3089,17 +3159,17 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                 onFocus={() => setIsComposerFocused(true)}
                 onBlur={() => setIsComposerFocused(false)}
                 className={cn(
-                  "min-h-[44px] flex-1 px-3 py-2.5 text-base !text-[#25183a] caret-[#5c5be5] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base",
+                  "min-h-[44px] min-w-[12rem] flex-1 px-3 py-2.5 text-base !text-[#25183a] caret-[#5c5be5] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:[&::placeholder]:text-base",
                   isCompactEmptyComposer &&
                     "max-md:min-h-[34px] max-md:px-2 max-md:py-1.5 max-md:text-sm max-md:[&::placeholder]:text-[0.78rem]",
                 )}
               />
-              <PromptInputActions className="shrink-0 justify-end gap-2">
+              <PromptInputActions className="ml-auto shrink-0 justify-end gap-2">
                 <PromptInputAction
                   tooltip={
                     isBusy
                       ? busyLabel
-                      : input.trim()
+                      : canSubmitComposer
                         ? "Send message"
                         : isListening
                           ? "Listening"
@@ -3107,19 +3177,19 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                   }
                 >
                   <button
-                    type={input.trim() ? "submit" : "button"}
-                    disabled={isBusy || (!input.trim() && isListening)}
+                    type={canSubmitComposer ? "submit" : "button"}
+                    disabled={isBusy || (!canSubmitComposer && isListening)}
                     onClick={(event) => {
-                      if (input.trim()) return;
+                      if (canSubmitComposer) return;
                       event.preventDefault();
                       void handleVoiceInput();
                     }}
                     className={cn(
                       "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:pointer-events-none disabled:opacity-50",
-                      (input.trim() || isListening) && "text-[#5c5be5]",
+                      (canSubmitComposer || isListening) && "text-[#5c5be5]",
                       isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
                     )}
-                    aria-label={input.trim() ? "Send" : "Use voice input"}
+                    aria-label={canSubmitComposer ? "Send" : "Use voice input"}
                   >
                     {isBusy ? (
                       <Loader2
@@ -3129,7 +3199,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                         )}
                         aria-hidden="true"
                       />
-                    ) : input.trim() ? (
+                    ) : canSubmitComposer ? (
                       <ArrowUp
                         className={cn(
                           "size-6 text-current",

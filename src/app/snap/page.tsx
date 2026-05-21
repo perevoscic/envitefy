@@ -54,7 +54,7 @@ export const viewport: Viewport = {
 function AuthenticatedSnapUploadStart() {
   return (
     <main
-      className="min-h-screen bg-transparent px-4 py-10 sm:px-6 lg:px-10"
+      className="min-h-[100dvh] bg-[#eff1f8] px-4 py-10 sm:px-6 lg:px-10"
       data-theme-color={themeColorPalette.eventFallback}
     >
       <div className="mx-auto w-full max-w-5xl">
@@ -101,7 +101,11 @@ export default async function SnapPage() {
   };
 
   return (
-    <div className={`${outfit.variable} ${inter.variable} ${styles.snapPage}`}>
+    <div
+      className={`${outfit.variable} ${inter.variable} ${styles.snapPage} ${
+        isAuthenticated ? "min-h-[100dvh] bg-[#eff1f8]" : ""
+      }`}
+    >
       {isAuthenticated ? (
         <>
           <AuthenticatedSnapUploadStart />

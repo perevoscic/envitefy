@@ -30,7 +30,8 @@ export function MainContentWrapper({
   const isStudioCardShare = pathSegments.length === 2 && pathSegments[0] === "card";
   const isEventSharePage = pathSegments.length === 2 && pathSegments[0] === "event";
   const isChatRoute = normalizedPath === "/chat";
-  const usesOwnLandingBackground = normalizedPath === "/snap" || normalizedPath === "/gymnastics";
+  const usesOwnLandingBackground =
+    normalizedPath === "/gymnastics" || (normalizedPath === "/snap" && !isAuthenticated);
 
   useEffect(() => {
     const checkDesktop = () => {

@@ -192,16 +192,15 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /max-md:hidden/);
   assert.match(client, /setInput\(\(current\) =>/);
   assert.match(client, /function handleComposerValueChange\(nextValue: string\)/);
-  assert.match(client, /if \(nextValue\.trim\(\)\) return/);
-  assert.match(client, /setSelectedStarterCategory\(null\)/);
-  assert.match(client, /setSelectedProductOutput\(null\)/);
+  assert.match(client, /const hasComposerSelection = Boolean\(selectedStarterCategory \|\| selectedProductOutput\)/);
+  assert.match(client, /const canSubmitComposer = Boolean\(input\.trim\(\) \|\| hasComposerSelection\)/);
   assert.match(client, /onValueChange=\{handleComposerValueChange\}/);
   assert.match(client, /focusComposerAtEnd/);
   assert.doesNotMatch(
     client,
     /function updateComposerSelection[\s\S]{0,700}focusComposerAtEnd\(\)/,
   );
-  assert.match(client, /updateComposerSelection\(nextCategoryLabel, option\.output\)/);
+  assert.match(client, /updateComposerSelection\(\)/);
   assert.match(client, /const draftRequestedOutputs = draft\?\.requestedOutputs\?\.length/);
   assert.match(client, /const shouldPreserveDraftOutputs =/);
   assert.match(client, /shouldPreserveDraftOutputs\s*\?\s*draftRequestedOutputs/);
@@ -549,7 +548,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /!placeholder:text-\[#8b7ca6\]/);
   assert.match(client, /caret-\[#5c5be5\]/);
   assert.match(client, /inline-flex h-9 w-9/);
-  assert.match(client, /\(input\.trim\(\) \|\| isListening\) && "text-\[#5c5be5\]"/);
+  assert.match(client, /\(canSubmitComposer \|\| isListening\) && "text-\[#5c5be5\]"/);
   assert.match(client, /<Mic[\s\S]{0,120}"size-6 text-current"/);
   assert.match(client, /<ArrowUp[\s\S]{0,120}"size-6 text-current"/);
   assert.match(client, /isCompactEmptyComposer && "max-md:size-5"/);
