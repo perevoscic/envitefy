@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     "OCR event capture",
     "Envitefy",
   ],
-  manifest: "/manifest.webmanifest?v=v10",
+  manifest: "/manifest.webmanifest?v=v11",
   other: {
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",
@@ -112,7 +112,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  colorScheme: "light",
+  colorScheme: "only light",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: themeColorPalette.brand },
     { media: "(prefers-color-scheme: dark)", color: themeColorPalette.brand },

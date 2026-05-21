@@ -1,6 +1,6 @@
-const BRAND_THEME_COLOR = "#FFFFFF";
+const BRAND_THEME_COLOR = "#FBF6FF";
 const BRAND_BACKGROUND_COLOR = "#F8F5FF";
-const BRAND_NAVIGATION_BAR_COLOR = "#8D7BE9";
+const BRAND_NAVIGATION_BAR_COLOR = BRAND_THEME_COLOR;
 const GYMNASTICS_THEME_COLOR = BRAND_THEME_COLOR;
 const EVENT_THEME_COLOR_FALLBACK = BRAND_THEME_COLOR;
 
@@ -13,6 +13,8 @@ export type ThemeColorDefinition = {
 
 export const THEME_COLOR_META_NAME = "theme-color";
 export const THEME_COLOR_SELECTOR = 'meta[name="theme-color"]';
+export const COLOR_SCHEME_META_NAME = "color-scheme";
+export const COLOR_SCHEME_SELECTOR = 'meta[name="color-scheme"]';
 export const HERO_THEME_COLOR_ATTRIBUTE = "data-theme-color";
 
 const EVENT_ROUTE_PATTERN = /^\/event(?:\/|$)/;
@@ -152,6 +154,27 @@ export function setThemeColor(color: string) {
   for (const meta of metas) {
     if (meta.content !== normalized) {
       meta.content = normalized;
+    }
+  }
+
+  document.documentElement.style.setProperty("--mobile-chrome-top", normalized);
+  document.documentElement.style.setProperty("--mobile-chrome-bottom", normalized);
+}
+
+export function setLightColorSchemeMeta() {
+  if (typeof document === "undefined") return;
+
+  const metas = Array.from(document.querySelectorAll<HTMLMetaElement>(COLOR_SCHEME_SELECTOR));
+  if (metas.length === 0) {
+    const meta = document.createElement("meta");
+    meta.setAttribute("name", COLOR_SCHEME_META_NAME);
+    document.head.appendChild(meta);
+    metas.push(meta);
+  }
+
+  for (const meta of metas) {
+    if (meta.content !== "only light") {
+      meta.content = "only light";
     }
   }
 }

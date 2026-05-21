@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import Script from "next/script";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import { landingFaqItems } from "./faq-data";
@@ -40,10 +40,6 @@ export const metadata: Metadata = {
       "Create a shareable event hub with live cards, RSVP tracking, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, snap, flyer, invite, PDF, schedule, or design idea.",
     images: [siteOgImageUrl],
   },
-};
-
-export const viewport: Viewport = {
-  themeColor: "#fbf6ff",
 };
 
 export default async function LandingPage() {

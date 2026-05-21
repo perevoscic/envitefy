@@ -18,8 +18,8 @@
 }
 
 :root {
-  --mobile-chrome-top: #ffffff;
-  --mobile-chrome-bottom: #8d7be9;
+  --mobile-chrome-top: #fbf6ff;
+  --mobile-chrome-bottom: #fbf6ff;
   --envitefy-project-background: radial-gradient(125% 125% at 50% 10%, #fff 40%, #6366f1 100%);
   --background: #f8f5ff;
   --surface: #fbf7f2;
@@ -626,7 +626,7 @@ html {
   min-height: 100vh;
   min-height: 100dvh;
   background-color: var(--background);
-  color-scheme: light;
+  color-scheme: only light;
   /* Ensure html extends edge-to-edge */
   margin: 0;
   padding: 0;
@@ -645,6 +645,7 @@ body.embedded-editor {
 }
 
 body {
+  color-scheme: only light;
   background-color: var(--background);
   color: var(--foreground);
   font-family:

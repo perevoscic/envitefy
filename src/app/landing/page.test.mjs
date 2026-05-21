@@ -30,7 +30,7 @@ test("landing page is Concierge-led and outcome-focused", () => {
   assert.match(landingExperience, /#a84f79/);
   assert.match(landingExperience, /#241c2b/);
   assert.match(landingExperience, /#7457a6/);
-  assert.match(page, /themeColor: "#fbf6ff"/);
+  assert.doesNotMatch(page, /themeColor: "#fbf6ff"/);
   assert.match(landingExperience, /Public event pages/);
   assert.match(landingExperience, /RSVP tracking/);
   assert.match(landingExperience, /Upload \/ Snap imports/);

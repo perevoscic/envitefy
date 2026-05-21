@@ -25,7 +25,7 @@ test("root layout leaves head metadata to Next", () => {
 
 test("root metadata declares Envitefy as the install app name", () => {
   assert.match(layoutSource, /applicationName:\s*"Envitefy"/);
-  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v10"/);
+  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v11"/);
   assert.match(layoutSource, /"apple-mobile-web-app-capable":\s*"yes"/);
   assert.match(
     layoutSource,
@@ -42,10 +42,10 @@ test("web app manifest names the installed app Envitefy", () => {
   assert.equal(manifest.short_name, "Envitefy");
 });
 
-test("installed app chrome uses white top color and purple bottom safe-area backing", () => {
-  assert.equal(manifest.theme_color, "#FFFFFF");
+test("installed app chrome uses a consistent light browser surface", () => {
+  assert.equal(manifest.theme_color, "#FBF6FF");
   assert.equal(manifest.background_color, "#F8F5FF");
-  assert.match(layoutSource, /colorScheme:\s*"light"/);
+  assert.match(layoutSource, /colorScheme:\s*"only light"/);
   assert.match(
     layoutSource,
     /\{\s*media:\s*"\(prefers-color-scheme:\s*light\)",\s*color:\s*themeColorPalette\.brand\s*\}/,
@@ -55,7 +55,7 @@ test("installed app chrome uses white top color and purple bottom safe-area back
     /\{\s*media:\s*"\(prefers-color-scheme:\s*dark\)",\s*color:\s*themeColorPalette\.brand\s*\}/,
   );
   assert.match(layoutSource, /\{\s*color:\s*themeColorPalette\.brand\s*\}/);
-  assert.match(globalsSource, /color-scheme:\s*light/);
+  assert.match(globalsSource, /color-scheme:\s*only light/);
   assert.match(
     layoutSource,
     /backgroundColor:\s*themeColorPalette\.background/,
@@ -70,11 +70,11 @@ test("installed app chrome uses white top color and purple bottom safe-area back
   );
   assert.match(
     globalsSource,
-    /--mobile-chrome-top:\s*#ffffff/,
+    /--mobile-chrome-top:\s*#fbf6ff/,
   );
   assert.match(
     globalsSource,
-    /--mobile-chrome-bottom:\s*#8d7be9/,
+    /--mobile-chrome-bottom:\s*#fbf6ff/,
   );
   assert.match(globalsSource, /body::after\s*\{[\s\S]*?background:\s*var\(--mobile-chrome-bottom\)/);
   assert.match(globalsSource, /height:\s*max\(env\(safe-area-inset-bottom,\s*0px\),\s*0px\)/);
@@ -84,11 +84,11 @@ test("installed app chrome uses white top color and purple bottom safe-area back
   );
   assert.match(
     themeColorSource,
-    /const BRAND_THEME_COLOR = "#FFFFFF"/,
+    /const BRAND_THEME_COLOR = "#FBF6FF"/,
   );
   assert.match(
     themeColorSource,
-    /const BRAND_NAVIGATION_BAR_COLOR = "#8D7BE9"/,
+    /const BRAND_NAVIGATION_BAR_COLOR = BRAND_THEME_COLOR/,
   );
   assert.match(
     themeColorSource,
@@ -98,8 +98,9 @@ test("installed app chrome uses white top color and purple bottom safe-area back
     themeColorSource,
     /querySelectorAll<HTMLMetaElement>\(THEME_COLOR_SELECTOR\)/,
   );
-  assert.doesNotMatch(
-    themeColorSyncSource,
-    /getPreferredThemeColor|HERO_THEME_COLOR_ATTRIBUTE|MutationObserver/,
-  );
+  assert.match(themeColorSyncSource, /getPreferredThemeColor/);
+  assert.match(themeColorSyncSource, /HERO_THEME_COLOR_ATTRIBUTE/);
+  assert.match(themeColorSyncSource, /MutationObserver/);
+  assert.match(themeColorSource, /COLOR_SCHEME_SELECTOR/);
+  assert.match(themeColorSource, /setLightColorSchemeMeta/);
 });
