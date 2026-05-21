@@ -18,8 +18,8 @@
 }
 
 :root {
-  --mobile-chrome-top: #fbf6ff;
-  --mobile-chrome-bottom: #fbf6ff;
+  --mobile-chrome-top: #f3eeff;
+  --mobile-chrome-bottom: #f3eeff;
   --envitefy-project-background: radial-gradient(125% 125% at 50% 10%, #fff 40%, #6366f1 100%);
   --background: #f8f5ff;
   --surface: #fbf7f2;

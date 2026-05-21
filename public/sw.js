@@ -1,8 +1,8 @@
-const CACHE_NAME = "smd-static-v11";
+const CACHE_NAME = "smd-static-v12";
 const APP_SHELL = [
   "/",
   "/landing",
-  "/manifest.webmanifest?v=v11",
+  "/manifest.webmanifest?v=v12",
   "/favicon.png?v=v10",
   "/icons/icon-192.png?v=v10",
   "/icons/icon-512.png?v=v10",

@@ -25,7 +25,7 @@ test("root layout leaves head metadata to Next", () => {
 
 test("root metadata declares Envitefy as the install app name", () => {
   assert.match(layoutSource, /applicationName:\s*"Envitefy"/);
-  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v11"/);
+  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v12"/);
   assert.match(layoutSource, /"apple-mobile-web-app-capable":\s*"yes"/);
   assert.match(
     layoutSource,
@@ -43,7 +43,7 @@ test("web app manifest names the installed app Envitefy", () => {
 });
 
 test("installed app chrome uses a consistent light browser surface", () => {
-  assert.equal(manifest.theme_color, "#FBF6FF");
+  assert.equal(manifest.theme_color, "#F3EEFF");
   assert.equal(manifest.background_color, "#F8F5FF");
   assert.match(layoutSource, /colorScheme:\s*"only light"/);
   assert.match(
@@ -70,11 +70,11 @@ test("installed app chrome uses a consistent light browser surface", () => {
   );
   assert.match(
     globalsSource,
-    /--mobile-chrome-top:\s*#fbf6ff/,
+    /--mobile-chrome-top:\s*#f3eeff/,
   );
   assert.match(
     globalsSource,
-    /--mobile-chrome-bottom:\s*#fbf6ff/,
+    /--mobile-chrome-bottom:\s*#f3eeff/,
   );
   assert.match(globalsSource, /body::after\s*\{[\s\S]*?background:\s*var\(--mobile-chrome-bottom\)/);
   assert.match(globalsSource, /height:\s*max\(env\(safe-area-inset-bottom,\s*0px\),\s*0px\)/);
@@ -84,7 +84,7 @@ test("installed app chrome uses a consistent light browser surface", () => {
   );
   assert.match(
     themeColorSource,
-    /const BRAND_THEME_COLOR = "#FBF6FF"/,
+    /const BRAND_THEME_COLOR = "#F3EEFF"/,
   );
   assert.match(
     themeColorSource,
