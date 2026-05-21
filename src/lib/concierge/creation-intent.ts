@@ -679,6 +679,7 @@ export function isMeaningfulEventText(text: string, requestedOutputs: RequestedO
 export function isNonCreationRequest(text: string) {
   const cleaned = cleanCreationString(text);
   if (!cleaned) return false;
+  if (isWeatherSideQuestion(cleaned)) return false;
   return (
     /\bdo\s+not\s+create\s+(?:an?\s+)?(?:event|invite|invitation|card|flyer|page|product)\b/i.test(
       cleaned,
@@ -687,6 +688,12 @@ export function isNonCreationRequest(text: string) {
       cleaned,
     ) ||
     /\b(?:qa\s+)?ping\s+only\b/i.test(cleaned)
+  );
+}
+
+function isWeatherSideQuestion(text: string) {
+  return /\b(weather|forecast|temperature|temp|rain|raining|storm|snow|wind|hot|cold|humid|outdoor|outside)\b/i.test(
+    text,
   );
 }
 
@@ -787,6 +794,7 @@ export function isAmbiguousEditRequest(
 export function isOffDomainRequest(text: string) {
   const cleaned = cleanCreationString(text);
   if (!cleaned) return false;
+  if (isWeatherSideQuestion(cleaned)) return false;
   const eventAdjacent =
     /\b(birthday|bday|wedding|bridal|bride|groom|shower|graduation|party|event|invite|invitation|rsvp|guest|ceremony|reception|housewarming|open\s+house)\b/i.test(
       cleaned,

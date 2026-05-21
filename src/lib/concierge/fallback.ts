@@ -806,6 +806,9 @@ function detectRsvpName(
   fieldsGuess: Record<string, unknown>,
   previous?: ConciergeEventDraft | null,
 ) {
+  if (isLocationCorrectionMessage(text)) return previous?.rsvpName || null;
+  const rsvpContactCorrectionName = text.match(/\brsvp\s+contact\s+should\s+be\s+([^@\d,.;]+?)(?:\s+at\s+|\s+\d|[,.;]|$)/i)?.[1];
+  if (rsvpContactCorrectionName) return cleanString(rsvpContactCorrectionName);
   const direct = firstString(fieldsGuess.rsvpName, fieldsGuess.hostName, fieldsGuess.host);
   if (direct) return direct;
   if (previous?.rsvpName && previous.currentQuestion !== "rsvpName") return previous.rsvpName;
@@ -843,6 +846,7 @@ function detectRsvpContact(
   fieldsGuess: Record<string, unknown>,
   previous?: ConciergeEventDraft | null,
 ) {
+  if (isLocationCorrectionMessage(text)) return previous?.rsvpContact || null;
   const direct = firstString(fieldsGuess.rsvpContact, fieldsGuess.rsvpEmail, fieldsGuess.rsvpPhone);
   if (direct) return extractRsvpIdentityParts(direct).contact || direct;
   const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
@@ -1095,6 +1099,7 @@ function detectTone(text: string, previous?: ConciergeEventDraft | null) {
 function shouldStartFreshEvent(message: string, previous?: ConciergeEventDraft | null) {
   if (!previous) return false;
   const text = cleanString(message) || "";
+  if (isWeatherSideQuestion(text)) return false;
   if (/\b(i|we)\s+(got|received|have)\b[\s\S]{0,80}\b(invite|invitation)\b/i.test(text)) {
     return true;
   }
@@ -1111,13 +1116,25 @@ function shouldStartFreshEvent(message: string, previous?: ConciergeEventDraft |
   );
 }
 
+function isOffTopicInterruption(message: string) {
+  const text = cleanString(message) || "";
+  return /\b(?:database\s+joke|capital\s+of|breakup\s+text|recipe|pancakes?)\b/i.test(text);
+}
+
+function isWeatherSideQuestion(message: string) {
+  const text = cleanString(message) || "";
+  return /\b(weather|forecast|temperature|temp|rain|raining|storm|snow|wind|hot|cold|humid|outdoor|outside)\b/i.test(
+    text,
+  );
+}
+
 function isPrivateDataMutationRequest(message: string) {
   const text = cleanString(message) || "";
   return (
-    /\b(change|update|set|modify|switch|show|reveal|expose|give|send|tell|what\s+is|what's)\b/i.test(
+    /\b(change|update|set|modify|switch|show|reveal|expose|give|send|tell|put|include|add|publish|bypass|make|what\s+is|what's)\b/i.test(
       text,
     ) &&
-    /\b(user[_\s-]?id|owner[_\s-]?id|ownership|account owner|private data|guest emails?|password|api\s*key|private\s*key|session\s*token|auth\s*token|secret)\b/i.test(
+    /\b(user[_\s-]?id|owner[_\s-]?id|ownership|account owner|private data|guest emails?|password|api\s*key|private\s*key|session\s*token|auth\s*token|secret|door\s+code|access\s+code|gate\s+code|bypass\s+login|another\s+user\s+account|spouse\s+account|creator\s+email|belong\s+to\s+another\s+user)\b/i.test(
       text,
     )
   );
@@ -1562,6 +1579,19 @@ function detectLabeledInviteDetails(text: string): LabeledInviteDetails {
   };
 }
 
+function isLocationCorrectionMessage(text: string) {
+  return /\b(?:actually|instead|correction|change|update|move|switch)\b[\s\S]{0,120}\b(?:location|venue|place|address|where)\b/i.test(text) || /\b(?:correction|actually|instead)\b[\s\S]{0,40}\b(?:move|switch|change|update)\s+it\s+(?:to|at|@)\b/i.test(text);
+}
+
+function detectLocationCorrection(text: string) {
+  if (!isLocationCorrectionMessage(text)) return null;
+  const cleaned = cleanString(text?.replace(/[.!?]+$/g, "")) || "";
+  const direct = cleaned.match(/\b(?:change|update|move|switch)\s+(?:the\s+)?(?:location|venue|place|address|where)\s+(?:to|as)\s+(.+)$/i)?.[1] || cleaned.match(/\b(?:location|venue|place|address)\s+(?:should\s+be|is|will\s+be)\s+(.+)$/i)?.[1] || cleaned.match(/\b(?:move|switch|change|update)\s+it\s+(?:to|at|@)\s+(.+)$/i)?.[1] ||
+    cleaned.match(/\b(?:instead|actually)\s+(?:make\s+it\s+)?(?:at|@|to)\s+(.+)$/i)?.[1];
+  const fallback = direct || detectVenueOrLocation(cleaned);
+  return stripLeadingTimeFromLocation(fallback || null);
+}
+
 function detectVenueOrLocation(text: string, ocrContext?: ConciergeOcrContext | null) {
   const fields = ocrContext?.fieldsGuess || {};
   const fromFields = firstString(
@@ -1624,6 +1654,7 @@ function shouldPreservePreviousLocationDuringRsvpReply(
   previous?: ConciergeEventDraft | null,
 ) {
   if (!previous?.location && !previous?.venue) return false;
+  if (isLocationCorrectionMessage(message)) return false;
   const currentField = firstMissingField(previous);
   if (
     currentField !== "rsvpEnabled" &&
@@ -2162,6 +2193,17 @@ function dateConfirmationCandidate(draft: ConciergeEventDraft) {
   return displayDate || draft.timeText || "that date";
 }
 
+function buildLocationChangeAcknowledgement(
+  draft: ConciergeEventDraft,
+  previous?: ConciergeEventDraft | null,
+) {
+  if (!previous) return null;
+  const nextLocation = cleanString(draft.location || draft.venue);
+  const previousLocation = cleanString(previous.location || previous.venue);
+  if (!nextLocation || !previousLocation || nextLocation === previousLocation) return null;
+  return `Got it - updated the location to ${nextLocation}. ${nextActionSentence(draft)}`;
+}
+
 function buildRsvpChangeAcknowledgement(
   draft: ConciergeEventDraft,
   previous?: ConciergeEventDraft | null,
@@ -2240,11 +2282,11 @@ function compactVerificationLines(
 
 function readyVerificationMessage(draft: ConciergeEventDraft) {
   if (isReceivedInviteDraft(draft)) {
-    return [
-      "Invite details are ready.",
-      ...compactVerificationLines(draft, { includeProducts: false }),
-      "I can save this to Invited events now.",
-    ].join("\n");
+    const event = draft.title || draft.eventPurpose || draft.previewCopy.headline || "the invite";
+    const displayDate = displayDateWithoutDuplicateTime(draft);
+    const when = [displayDate, draft.timeText].filter(Boolean).join(" at ");
+    const details = [event, when, draft.venue || draft.location].filter(Boolean).join(", ");
+    return `Invite details are ready: ${details}. I can save this to Invited events now.`;
   }
 
   const actionLabel = outputActionLabel(draft);
@@ -2469,6 +2511,26 @@ export function fallbackExtractConciergeDraft(args: {
     };
     return withConversationState(next, previous, message);
   }
+  if (previous && !privateDataMutationRequest && !blockingBoundary && isOffTopicInterruption(message)) {
+    const next = {
+      ...previous,
+      knowledgeAnswer: null,
+      assistantGuidance: `I will stay focused on the event. ${nextActionSentence(previous)}`,
+    };
+    return withConversationState(next, previous, message);
+  }
+  if (previous && !privateDataMutationRequest && !blockingBoundary && isWeatherSideQuestion(message)) {
+    const next = {
+      ...previous,
+      sourceContext: {
+        ...previous.sourceContext,
+        boundary: null,
+      },
+      knowledgeAnswer: null,
+      assistantGuidance: null,
+    };
+    return withConversationState(next, previous, message);
+  }
   if (
     previous &&
     !privateDataMutationRequest &&
@@ -2645,6 +2707,7 @@ export function fallbackExtractConciergeDraft(args: {
     ? previous?.location || previous?.venue || null
     : labeledDetails.location ||
       detectPrimaryLabeledLocation(locationFactText) ||
+      detectLocationCorrection(message) ||
       detectVenueOrLocation(inferenceLocationText, args.ocrContext) ||
       detectLocationFollowUp(message, previous) ||
       previous?.location ||
@@ -2892,6 +2955,7 @@ export function fallbackExtractConciergeDraft(args: {
       registryLink !== previous.registryLink &&
       registryLink !== previous.giftRegistryLink,
   );
+  const locationAcknowledgement = buildLocationChangeAcknowledgement(draft, previous);
   const rsvpAcknowledgement = buildRsvpChangeAcknowledgement(draft, previous);
   const ageSkipAcknowledgement = buildAgeSkipAcknowledgement(draft, previous);
   const assistantGuidance =
@@ -2905,6 +2969,8 @@ export function fallbackExtractConciergeDraft(args: {
           ? `Got it — Registry: ${registryLink}. ${nextActionSentence(draft)}`
         : addedGiftPreferenceNote
           ? `Got it — Gift note: ${giftPreferenceNote}. ${nextActionSentence(draft)}`
+        : locationAcknowledgement
+          ? locationAcknowledgement
         : ageSkipAcknowledgement
           ? ageSkipAcknowledgement
         : rsvpAcknowledgement

@@ -289,6 +289,7 @@ export type ConciergeAdditionalLocation = {
 
 export type ConciergeWeatherContextStatus =
   | "available"
+  | "missing_location"
   | "missing_event_details"
   | "outside_forecast_window"
   | "unconfigured"

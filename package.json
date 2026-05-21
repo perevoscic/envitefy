@@ -41,6 +41,8 @@
     "marketing:campaign": "node scripts/generate-marketing-campaign.mjs",
     "campaign": "node scripts/generate-marketing-campaign.mjs",
     "campaign:video": "node scripts/assemble-storyboard-video.mjs",
+    "concierge:persona-eval": "bun scripts/concierge-persona-eval.mjs",
+    "concierge:persona-eval:challenge": "bun scripts/concierge-persona-eval.mjs --challenge --max-turns=14",
     "creation:backfill-source-intent": "node scripts/backfill-creation-source-intent.mjs",
     "events:backfill-public-slugs": "node scripts/backfill-event-public-slugs.mjs"
   },

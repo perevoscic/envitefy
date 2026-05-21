@@ -255,8 +255,10 @@ test("received invite with concrete details stays invited and can become ready",
   assert.equal(result.draftStatus, "preview_ready");
   assert.match(message, /Invite details are ready/);
   assert.doesNotMatch(message, /Product:/);
-  assert.match(message, /Event: Ava is turning 7/);
-  assert.match(message, /Location: Sky Zone/);
+  assert.doesNotMatch(message, /Event:/);
+  assert.doesNotMatch(message, /Location:/);
+  assert.match(message, /Ava is turning 7/);
+  assert.match(message, /Sky Zone/);
   assert.match(message, /I can save this to Invited events now/);
   assert.doesNotMatch(message, new RegExp("work" + "space", "i"));
 });
@@ -2128,6 +2130,27 @@ test("off-domain help requests stay bounded and do not become event drafts", asy
   assert.equal(result.usedAi, false);
   assert.equal(result.draft.sourceContext.boundary, "off_domain");
   assert.match(result.assistantMessage, /Envitefy event products/i);
+});
+
+test("weather side questions preserve the active draft details", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Create birthday party tomorrow at 5 PM at Sky Zone Austin.",
+  });
+  const reply = fallbackExtractConciergeDraft({
+    message: "What will weather be like at the event?",
+    draft,
+  });
+
+  assert.equal(reply.location, draft.location);
+  assert.notEqual(reply.location, "the event?");
+  assert.equal(reply.currentQuestion, draft.currentQuestion);
+
+  const doNotCreateReply = fallbackExtractConciergeDraft({
+    message: "Do not create another event, but what is the weather today?",
+    draft,
+  });
+  assert.equal(doNotCreateReply.location, draft.location);
+  assert.equal(doNotCreateReply.currentQuestion, draft.currentQuestion);
 });
 
 test("unsafe and unrelated standalone prompts do not become event drafts", () => {

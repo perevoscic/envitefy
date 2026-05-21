@@ -130,14 +130,14 @@ test("conversation 7: ambiguous this asks which source to use", () => {
   assert.match(buildAssistantMessage(draft), /uploaded image or the current event details/i);
 });
 
-test("conversation 8: weather question with missing details stays bounded", async () => {
+test("conversation 8: weather question with missing location asks for city", async () => {
   const context = await resolveConciergeWeatherContextFromDraft({
     message: "What will the weather be like?",
     draft: fallbackExtractConciergeDraft({ message: "Create a birthday live card with RSVP." }),
   });
 
-  assert.equal(context?.status, "missing_event_details");
-  assert.match(context?.message || "", /date and time/);
+  assert.equal(context?.status, "missing_location");
+  assert.equal(context?.message, "Sure, what city should I check?");
   assert.doesNotMatch(context?.message || "", /sunny|rainy|cloudy|degrees/i);
 });
 

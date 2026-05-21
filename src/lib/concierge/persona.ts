@@ -150,21 +150,15 @@ function streamFallback(fallbackMessage: string, onDelta: (text: string) => void
   };
 }
 
-function fallbackIncludesOptionalGiftPrompt(fallbackMessage: string) {
-  return /\bOptional:\s+do you have a (?:registry|gift list)/i.test(fallbackMessage);
-}
-
 function shouldUseDeterministicFallback(draft: ConciergeEventDraft, fallbackMessage: string) {
+  void fallbackMessage;
   return (
-    draft.sourceContext.boundary === "envitefy_question" ||
-    draft.sourceContext.boundary === "non_creation" ||
-    draft.sourceContext.boundary === "off_domain" ||
     draft.sourceContext.boundary === "external_action" ||
+    draft.sourceContext.boundary === "private_data" ||
     draft.sourceContext.boundary === "secret_detected" ||
     draft.sourceContext.boundary === "unsafe_guest_data" ||
     draft.sourceContext.boundary === "ambiguous_edit" ||
-    draft.currentQuestion === "date_confirmation" ||
-    fallbackIncludesOptionalGiftPrompt(fallbackMessage)
+    draft.currentQuestion === "date_confirmation"
   );
 }
 
@@ -176,8 +170,13 @@ export async function streamConciergePersona(
     return streamFallback(params.fallbackMessage, params.onDelta);
   }
 
+  const weatherFallbackMessage = params.weatherContext?.message || null;
+  if (params.weatherContext?.status === "missing_location" && weatherFallbackMessage) {
+    return streamFallback(weatherFallbackMessage, params.onDelta);
+  }
+
   const apiKey = deps.openAiApiKey ?? process.env.OPENAI_API_KEY ?? null;
-  if (!apiKey) return streamFallback(params.fallbackMessage, params.onDelta);
+  if (!apiKey) return streamFallback(weatherFallbackMessage || params.fallbackMessage, params.onDelta);
 
   const client = deps.createOpenAiClient?.(apiKey) || new OpenAI({ apiKey });
   const model = resolveConciergeOpenAiPersonaModel(deps.openAiModel);
@@ -260,7 +259,9 @@ export async function streamConciergePersona(
 
     clearFirstOutputTimer();
     const assistantMessage = sanitizePersonaCopy(chunks.join(""));
-    if (!assistantMessage) return streamFallback(params.fallbackMessage, params.onDelta);
+    if (!assistantMessage) {
+      return streamFallback(weatherFallbackMessage || params.fallbackMessage, params.onDelta);
+    }
     return {
       assistantMessage,
       usedAi: true,
@@ -276,6 +277,6 @@ export async function streamConciergePersona(
     if (!controller.signal.aborted && process.env.NODE_ENV !== "production") {
       console.warn("[concierge] OpenAI persona stream failed; using fallback", error);
     }
-    return streamFallback(params.fallbackMessage, params.onDelta);
+    return streamFallback(weatherFallbackMessage || params.fallbackMessage, params.onDelta);
   }
 }

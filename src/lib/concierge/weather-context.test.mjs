@@ -38,9 +38,9 @@ test("weather intent only triggers for forecast-like questions", () => {
   assert.equal(shouldResolveConciergeWeatherContext("Make it elegant"), false);
 });
 
-test("draft weather context asks for missing event details without guessing", async () => {
+test("draft weather context asks for event timing for event-specific questions", async () => {
   const context = await resolveConciergeWeatherContextFromDraft({
-    message: "What will the weather be like?",
+    message: "What will the weather be like that day?",
     draft: draft({ location: "Sky Zone" }),
   });
 
@@ -48,6 +48,76 @@ test("draft weather context asks for missing event details without guessing", as
   assert.match(context?.message || "", /date and time/);
   assert.equal(context?.summary, null);
   assert.equal(context?.tempF, null);
+});
+
+test("draft weather context uses draft location for today questions", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestedUrl = null;
+  globalThis.fetch = async (url) => {
+    requestedUrl = String(url);
+    const target = new Date();
+    target.setHours(12, 0, 0, 0);
+    return {
+      ok: true,
+      json: async () => ({
+        forecast: {
+          forecastday: [
+            {
+              hour: [
+                {
+                  time_epoch: Math.round(target.getTime() / 1000),
+                  temp_f: 81,
+                  condition: { text: "Sunny" },
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    };
+  };
+
+  try {
+    await withEnv({ WEATHERAPI_KEY: "test-key" }, async () => {
+      const context = await resolveConciergeWeatherContextFromDraft({
+        message: "How will the weather be today?",
+        draft: draft({
+          startISO: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
+          location: "Austin, TX",
+        }),
+      });
+
+      assert.equal(context?.status, "available");
+      assert.equal(context?.location, "Austin, TX");
+      assert.equal(new URL(requestedUrl).searchParams.get("q"), "Austin, TX");
+      assert.doesNotMatch(context?.message || "", /what city/i);
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("draft weather context uses venue when location is missing", async () => {
+  const context = await withEnv({}, () =>
+    resolveConciergeWeatherContextFromDraft({
+      message: "What is the weather today?",
+      draft: draft({ venue: "Sky Zone" }),
+    }),
+  );
+
+  assert.equal(context?.status, "unconfigured");
+  assert.equal(context?.location, "Sky Zone");
+  assert.doesNotMatch(context?.message || "", /what city/i);
+});
+
+test("draft weather context asks exactly for a city when no location exists", async () => {
+  const context = await resolveConciergeWeatherContextFromDraft({
+    message: "What is the weather today?",
+    draft: draft(),
+  });
+
+  assert.equal(context?.status, "missing_location");
+  assert.equal(context?.message, "Sure, what city should I check?");
 });
 
 test("event weather context reports forecast window limits", async () => {

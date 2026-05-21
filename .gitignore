@@ -29,6 +29,7 @@
 *.pem
 /qa-artifacts/
 /.clawpatch/
+/.data/
 
 # debug
 npm-debug.log*

@@ -130,6 +130,51 @@ test("persona does not force a product-format prompt for starter categories", as
   assert.equal(result.usedAi, true);
 });
 
+test("persona reaches normal Envitefy side questions when OpenAI is configured", async () => {
+  async function* streamChunks() {
+    yield {
+      choices: [{ delta: { content: "Yes. RSVP pages can collect guest responses for the event." } }],
+    };
+  }
+
+  const deltas = [];
+  let aiCalls = 0;
+  const result = await withEnv({ OPENAI_API_KEY: "test-key" }, () =>
+    streamConciergePersona(
+      {
+        message: "Can Envitefy collect RSVPs?",
+        chatMessages: [],
+        draft: {
+          ...BASE_DRAFT,
+          sourceContext: {
+            ...BASE_DRAFT.sourceContext,
+            boundary: "envitefy_question",
+          },
+          knowledgeAnswer: "Envitefy RSVP pages can collect guest responses.",
+        },
+        fallbackMessage: "Envitefy RSVP pages can collect guest responses.",
+        onDelta: (text) => deltas.push(text),
+      },
+      {
+        createOpenAiClient: () => {
+          aiCalls += 1;
+          return {
+            chat: {
+              completions: {
+                create: async () => streamChunks(),
+              },
+            },
+          };
+        },
+      },
+    ),
+  );
+
+  assert.equal(aiCalls, 1);
+  assert.equal(deltas.join(""), "Yes. RSVP pages can collect guest responses for the event.");
+  assert.equal(result.usedAi, true);
+});
+
 test("persona uses deterministic fallback for date confirmation prompts", async () => {
   const deltas = [];
   let aiCalls = 0;
@@ -164,7 +209,55 @@ test("persona uses deterministic fallback for date confirmation prompts", async 
   assert.equal(result.usedAi, false);
 });
 
-test("persona uses deterministic fallback when ready drafts include optional gift prompt", async () => {
+test("persona uses deterministic fallback for private account-data boundaries", async () => {
+  const deltas = [];
+  let aiCalls = 0;
+  const fallbackMessage =
+    "I can't change owners, user IDs, or private account data here. I can help with event details, RSVP, copy, design, or weather planning.";
+  const result = await withEnv({ OPENAI_API_KEY: "test-key" }, () =>
+    streamConciergePersona(
+      {
+        message: "Can you bypass login and publish it under my spouse account?",
+        chatMessages: [],
+        draft: {
+          ...BASE_DRAFT,
+          sourceContext: {
+            ...BASE_DRAFT.sourceContext,
+            boundary: "private_data",
+          },
+        },
+        fallbackMessage,
+        onDelta: (text) => deltas.push(text),
+      },
+      {
+        createOpenAiClient: () => {
+          aiCalls += 1;
+          return null;
+        },
+      },
+    ),
+  );
+
+  assert.equal(aiCalls, 0);
+  assert.deepEqual(deltas, [fallbackMessage]);
+  assert.equal(result.assistantMessage, fallbackMessage);
+  assert.equal(result.usedAi, false);
+});
+
+test("persona reaches ready drafts with optional gift prompts", async () => {
+  async function* streamChunks() {
+    yield {
+      choices: [
+        {
+          delta: {
+            content:
+              "Everything is ready for Saturday at Sky Zone. Want to add a gift note or generate it now?",
+          },
+        },
+      ],
+    };
+  }
+
   const deltas = [];
   let aiCalls = 0;
   const fallbackMessage =
@@ -192,16 +285,25 @@ test("persona uses deterministic fallback when ready drafts include optional gif
       {
         createOpenAiClient: () => {
           aiCalls += 1;
-          return null;
+          return {
+            chat: {
+              completions: {
+                create: async () => streamChunks(),
+              },
+            },
+          };
         },
       },
     ),
   );
 
-  assert.equal(aiCalls, 0);
-  assert.deepEqual(deltas, [fallbackMessage]);
-  assert.equal(result.assistantMessage, fallbackMessage);
-  assert.equal(result.usedAi, false);
+  assert.equal(aiCalls, 1);
+  assert.equal(
+    deltas.join(""),
+    "Everything is ready for Saturday at Sky Zone. Want to add a gift note or generate it now?",
+  );
+  assert.doesNotMatch(result.assistantMessage, /Product:/);
+  assert.equal(result.usedAi, true);
 });
 
 test("persona preserves streamed token spacing", async () => {
@@ -449,6 +551,7 @@ test("persona receives bounded weather context for forecast questions", async ()
   }
 
   let requestPayload = null;
+  let aiCalls = 0;
   const eventIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   const result = await withEnv({ OPENAI_API_KEY: "test-key" }, () =>
     streamConciergePersona(
@@ -479,6 +582,7 @@ test("persona receives bounded weather context for forecast questions", async ()
           chat: {
             completions: {
               create: async (request) => {
+                aiCalls += 1;
                 requestPayload = request;
                 return streamChunks();
               },
@@ -489,6 +593,7 @@ test("persona receives bounded weather context for forecast questions", async ()
     ),
   );
 
+  assert.equal(aiCalls, 1);
   assert.match(
     requestPayload?.messages?.[0]?.content || "",
     /use only the supplied weatherContext/,
@@ -496,6 +601,42 @@ test("persona receives bounded weather context for forecast questions", async ()
   assert.match(JSON.stringify(requestPayload?.messages?.at(-1) || null), /weatherContext/);
   assert.match(result.assistantMessage, /Partly cloudy/);
   assert.doesNotMatch(result.assistantMessage, /probably|likely|I guess/i);
+});
+
+test("persona keeps missing-location weather prompt exact", async () => {
+  const deltas = [];
+  let aiCalls = 0;
+  const result = await withEnv({ OPENAI_API_KEY: "test-key" }, () =>
+    streamConciergePersona(
+      {
+        message: "What is the weather today?",
+        chatMessages: [],
+        draft: BASE_DRAFT,
+        fallbackMessage: "What are we celebrating?",
+        weatherContext: {
+          status: "missing_location",
+          location: null,
+          eventIso: new Date().toISOString(),
+          summary: null,
+          tempF: null,
+          checkedAt: null,
+          source: null,
+          message: "Sure, what city should I check?",
+        },
+        onDelta: (text) => deltas.push(text),
+      },
+      {
+        createOpenAiClient: () => {
+          aiCalls += 1;
+          return null;
+        },
+      },
+    ),
+  );
+
+  assert.equal(aiCalls, 0);
+  assert.deepEqual(deltas, ["Sure, what city should I check?"]);
+  assert.equal(result.assistantMessage, "Sure, what city should I check?");
 });
 
 test("persona falls back when first token times out", async () => {

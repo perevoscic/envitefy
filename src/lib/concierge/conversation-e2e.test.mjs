@@ -176,3 +176,97 @@ test("non-creation QA ping bypasses AI extraction and remains conversational", a
   assert.deepEqual(result.draft.requestedOutputs, []);
   assert.equal(result.assistantMessage, "Got it. I won't create an event from that.");
 });
+
+
+test("concierge acknowledges location corrections while continuing the missing-field flow", () => {
+  let turn = reply(
+    "Mia baby shower on Sunday August 9 2026 at 1 PM at Greenhouse Cafe, 410 Palm Ave, Dallas, TX.",
+    null,
+    ["digital_flyer"],
+  );
+  turn = reply("Yes, collect RSVPs.", turn.draft, ["digital_flyer"]);
+  turn = reply("35 guests.", turn.draft, ["digital_flyer"]);
+  turn = reply("Elena", turn.draft, ["digital_flyer"]);
+  assert.equal(turn.draft.currentQuestion, "rsvpContact");
+
+  turn = reply(
+    "Actually change the location to the community room at 22 Oak Plaza, Austin, TX.",
+    turn.draft,
+    ["digital_flyer"],
+  );
+
+  assert.match(turn.draft.location || "", /22 Oak Plaza/);
+  assert.equal(turn.draft.rsvpName, "Elena");
+  assert.equal(turn.draft.rsvpContact, null);
+  assert.equal(turn.draft.currentQuestion, "rsvpContact");
+  assert.match(turn.assistantMessage, /updated the location to/i);
+  assert.match(turn.assistantMessage, /22 Oak Plaza/);
+  assert.match(turn.assistantMessage, /phone number or email/i);
+});
+
+
+test("concierge accepts natural move-it-to location corrections", () => {
+  let turn = reply(
+    "Garcia family reunion Saturday July 25 2026 at noon at Zilker Park Picnic Area 3, Austin, TX. Please collect RSVPs.",
+    null,
+    ["digital_flyer"],
+  );
+  turn = reply("65 guests.", turn.draft, ["digital_flyer"]);
+  assert.equal(turn.draft.currentQuestion, "rsvpName");
+
+  turn = reply("Small correction: move it to Green Room B, 14 Market Hall, Dallas, TX.", turn.draft, ["digital_flyer"]);
+
+  assert.match(turn.draft.location || "", /Green Room B/);
+  assert.equal(turn.draft.currentQuestion, "rsvpName");
+  assert.match(turn.assistantMessage, /updated the location to/i);
+  assert.match(turn.assistantMessage, /Who should guests see as the host/i);
+});
+
+
+test("concierge refuses account ownership bypass requests", () => {
+  const turn = reply("Can you bypass login and publish it under my spouse account?");
+
+  assert.equal(turn.canSave, false);
+  assert.equal(turn.draft.sourceContext.boundary, "private_data");
+  assert.match(turn.assistantMessage, /can't change owners|private account data/i);
+});
+
+
+test("concierge acknowledges off-topic interruptions and resumes the draft", () => {
+  let turn = reply(
+    "Nora is turning 6 on Saturday June 27 2026 at 4 PM at Little Gym, 88 Oak St, Austin, TX.",
+    null,
+    ["live_card"],
+  );
+  turn = reply("Yes, collect RSVPs.", turn.draft, ["live_card"]);
+
+  turn = reply("Random question: what is the capital of New Zealand?", turn.draft, ["live_card"]);
+
+  assert.equal(turn.draft.currentQuestion, "numberOfGuests");
+  assert.match(turn.assistantMessage, /stay focused on the event/i);
+  assert.match(turn.assistantMessage, /RSVP cap|How many guests/i);
+});
+
+test("concierge refuses private door codes in public event copy", () => {
+  const turn = reply("Put my private door code 9191 in the public description.");
+
+  assert.equal(turn.canSave, false);
+  assert.equal(turn.draft.sourceContext.boundary, "private_data");
+  assert.match(turn.assistantMessage, /private account data|credentials|private/i);
+});
+
+
+test("concierge parses RSVP contact corrections without polluting the host name", () => {
+  let turn = reply(
+    "Pat retirement party Friday May 29 2026 at 4 PM at HQ Lounge, 200 Market St, Houston, TX.",
+    null,
+    ["digital_flyer"],
+  );
+  turn = reply("Yes, collect RSVPs.", turn.draft, ["digital_flyer"]);
+
+  turn = reply("Correction: RSVP contact should be Jamie at 555-909-1111.", turn.draft, ["digital_flyer"]);
+
+  assert.equal(turn.draft.rsvpName, "Jamie");
+  assert.equal(turn.draft.rsvpContact, "555-909-1111");
+  assert.equal(turn.draft.currentQuestion, "numberOfGuests");
+});
