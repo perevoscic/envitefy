@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getValidPasswordResetByToken, markPasswordResetUsed, setPasswordByEmail } from "@/lib/db";
+import { resetPasswordWithToken, setPasswordByEmail } from "@/lib/db";
 import { getEmailFromSupabaseAccessToken, isSupabaseAuthConfigured } from "@/lib/supabase-auth";
 
 export const runtime = "nodejs";
@@ -24,16 +24,12 @@ export async function POST(request: Request) {
 
     if (!token) return NextResponse.json({ error: "Token and newPassword are required" }, { status: 400 });
 
-    const row = await getValidPasswordResetByToken(token);
+    const row = await resetPasswordWithToken({ token, newPassword });
     if (!row) return NextResponse.json({ error: "Invalid or expired token" }, { status: 400 });
-
-    await setPasswordByEmail({ email: row.email, newPassword });
-    await markPasswordResetUsed(row.id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
 

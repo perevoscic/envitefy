@@ -4502,6 +4502,48 @@ export async function getValidPasswordResetByToken(
   return row;
 }
 
+export async function resetPasswordWithToken(params: {
+  token: string;
+  newPassword: string;
+}): Promise<PasswordResetRow | null> {
+  const newHash = await hashPassword(params.newPassword);
+  return withClient(async (client) => {
+    await client.query("begin");
+    try {
+      const resetRes = await client.query<PasswordResetRow>(
+        `update password_resets
+         set used_at = now()
+         where token = $1
+           and used_at is null
+           and expires_at > now()
+         returning id, email, token, expires_at, used_at, created_at`,
+        [params.token],
+      );
+      const reset = resetRes.rows[0] || null;
+      if (!reset) {
+        await client.query("commit");
+        return null;
+      }
+
+      const updateUserRes = await client.query<{ id: string }>(
+        `update users set password_hash = $2 where email = $1 returning id`,
+        [reset.email.toLowerCase(), newHash],
+      );
+      if ((updateUserRes.rowCount || 0) !== 1) {
+        throw new Error("No local account found for this email");
+      }
+
+      await client.query("commit");
+      return reset;
+    } catch (error) {
+      try {
+        await client.query("rollback");
+      } catch {}
+      throw error;
+    }
+  });
+}
+
 export async function markPasswordResetUsed(id: string): Promise<void> {
   await query(`update password_resets set used_at = now() where id = $1`, [id]);
 }
