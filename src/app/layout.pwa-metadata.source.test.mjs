@@ -25,7 +25,7 @@ test("root layout leaves head metadata to Next", () => {
 
 test("root metadata declares Envitefy as the install app name", () => {
   assert.match(layoutSource, /applicationName:\s*"Envitefy"/);
-  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v12"/);
+  assert.match(layoutSource, /manifest:\s*"\/manifest\.webmanifest\?v=v13"/);
   assert.match(layoutSource, /"apple-mobile-web-app-capable":\s*"yes"/);
   assert.match(
     layoutSource,
@@ -44,7 +44,7 @@ test("web app manifest names the installed app Envitefy", () => {
 
 test("installed app chrome uses a consistent light browser surface", () => {
   assert.equal(manifest.theme_color, "#F3EEFF");
-  assert.equal(manifest.background_color, "#F8F5FF");
+  assert.equal(manifest.background_color, "#F3EEFF");
   assert.match(layoutSource, /colorScheme:\s*"only light"/);
   assert.match(
     layoutSource,
