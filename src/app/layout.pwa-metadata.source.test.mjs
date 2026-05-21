@@ -77,6 +77,20 @@ test("installed app chrome uses a consistent light browser surface", () => {
     /--mobile-chrome-bottom:\s*#f3eeff/,
   );
   assert.match(globalsSource, /body::after\s*\{[\s\S]*?background:\s*var\(--mobile-chrome-bottom\)/);
+  assert.match(
+    globalsSource,
+    /--ios-browser-chrome-background:\s*#8d7be9/,
+  );
+  const iosBrowserBodyBlock =
+    globalsSource.match(/html\[data-ios-browser-chrome="true"\]\s+body\s*\{([^}]*)\}/)?.[1] ||
+    "";
+  assert.match(iosBrowserBodyBlock, /background-color:\s*var\(--ios-browser-chrome-background\)/);
+  assert.match(iosBrowserBodyBlock, /background-image:\s*none/);
+  assert.doesNotMatch(iosBrowserBodyBlock, /var\(--background\)/);
+  assert.match(
+    globalsSource,
+    /html\[data-ios-browser-chrome="true"\]\s+body::after\s*\{[\s\S]*?display:\s*none/,
+  );
   assert.match(globalsSource, /height:\s*max\(env\(safe-area-inset-bottom,\s*0px\),\s*0px\)/);
   assert.doesNotMatch(
     globalsSource,
@@ -99,8 +113,14 @@ test("installed app chrome uses a consistent light browser surface", () => {
     /querySelectorAll<HTMLMetaElement>\(THEME_COLOR_SELECTOR\)/,
   );
   assert.match(themeColorSyncSource, /getPreferredThemeColor/);
+  assert.match(themeColorSyncSource, /isIosBrowserChrome/);
+  assert.match(themeColorSyncSource, /setIosBrowserChromeColors/);
   assert.match(themeColorSyncSource, /HERO_THEME_COLOR_ATTRIBUTE/);
   assert.match(themeColorSyncSource, /MutationObserver/);
   assert.match(themeColorSource, /COLOR_SCHEME_SELECTOR/);
   assert.match(themeColorSource, /setLightColorSchemeMeta/);
+  assert.match(themeColorSource, /const IOS_BROWSER_CHROME_COLOR = "#8D7BE9"/);
+  assert.doesNotMatch(themeColorSource, /IOS_BROWSER_THEME_COLOR/);
+  assert.doesNotMatch(themeColorSource, /IOS_BROWSER_PAGE_BACKGROUND_COLOR/);
+  assert.doesNotMatch(themeColorSource, /IOS_BROWSER_NAVIGATION_BAR_COLOR/);
 });

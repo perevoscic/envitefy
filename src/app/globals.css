@@ -20,6 +20,7 @@
 :root {
   --mobile-chrome-top: #f3eeff;
   --mobile-chrome-bottom: #f3eeff;
+  --ios-browser-chrome-background: #8d7be9;
   --envitefy-project-background: radial-gradient(125% 125% at 50% 10%, #fff 40%, #6366f1 100%);
   --background: #f8f5ff;
   --surface: #fbf7f2;
@@ -712,6 +713,19 @@ body::after {
   background: var(--mobile-chrome-bottom);
   pointer-events: none;
   z-index: 2147483647;
+}
+
+html[data-ios-browser-chrome="true"] {
+  background-color: var(--ios-browser-chrome-background);
+}
+
+html[data-ios-browser-chrome="true"] body {
+  background-color: var(--ios-browser-chrome-background);
+  background-image: none;
+}
+
+html[data-ios-browser-chrome="true"] body::after {
+  display: none;
 }
 
 h1,

@@ -925,7 +925,7 @@ export default function HomeOverviewDashboard({
         );
         if (upcomingRest.length === 0) return null;
         return (
-          <section className="space-y-4">
+          <section className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-black tracking-tight text-slate-900">
                 Upcoming Events
@@ -935,7 +935,7 @@ export default function HomeOverviewDashboard({
                 {upcomingRest.length !== 1 ? "s" : ""}
               </span>
             </div>
-            <div className="space-y-6">
+            <div className="flex flex-col gap-6">
               {upcomingRest.map((ev) => {
                 const actions = buildInvitationActions(ev, onForceTravel);
                 return (

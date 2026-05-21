@@ -1,6 +1,7 @@
 const BRAND_THEME_COLOR = "#F3EEFF";
 const BRAND_BACKGROUND_COLOR = "#F3EEFF";
 const BRAND_NAVIGATION_BAR_COLOR = BRAND_THEME_COLOR;
+const IOS_BROWSER_CHROME_COLOR = "#8D7BE9";
 const GYMNASTICS_THEME_COLOR = BRAND_THEME_COLOR;
 const EVENT_THEME_COLOR_FALLBACK = BRAND_THEME_COLOR;
 
@@ -138,10 +139,10 @@ function extractSolidColor(value: string): string | null {
   return null;
 }
 
-export function setThemeColor(color: string) {
+function setThemeColorMeta(color: string): string | null {
   if (typeof document === "undefined") return;
   const normalized = normalizeColor(extractSolidColor(color) || color);
-  if (!normalized) return;
+  if (!normalized) return null;
 
   const metas = Array.from(document.querySelectorAll<HTMLMetaElement>(THEME_COLOR_SELECTOR));
   if (metas.length === 0) {
@@ -157,8 +158,47 @@ export function setThemeColor(color: string) {
     }
   }
 
+  return normalized;
+}
+
+export function setThemeColor(color: string) {
+  if (typeof document === "undefined") return;
+  const normalized = setThemeColorMeta(color);
+  if (!normalized) return;
+
   document.documentElement.style.setProperty("--mobile-chrome-top", normalized);
   document.documentElement.style.setProperty("--mobile-chrome-bottom", normalized);
+}
+
+export function isIosBrowserChrome() {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+  const userAgent = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  const isTouchMac = platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  const isIos = /iPad|iPhone|iPod/.test(userAgent) || isTouchMac;
+  if (!isIos) return false;
+
+  const isStandalone =
+    window.matchMedia?.("(display-mode: standalone)")?.matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  return !isStandalone;
+}
+
+export function setIosBrowserChromeColors() {
+  if (typeof document === "undefined") return;
+  setThemeColorMeta(IOS_BROWSER_CHROME_COLOR);
+  document.documentElement.dataset.iosBrowserChrome = "true";
+  document.documentElement.style.setProperty(
+    "--ios-browser-chrome-background",
+    IOS_BROWSER_CHROME_COLOR,
+  );
+  document.documentElement.style.setProperty("--mobile-chrome-top", IOS_BROWSER_CHROME_COLOR);
+  document.documentElement.style.setProperty("--mobile-chrome-bottom", IOS_BROWSER_CHROME_COLOR);
+}
+
+export function clearIosBrowserChromeColors() {
+  if (typeof document === "undefined") return;
+  delete document.documentElement.dataset.iosBrowserChrome;
 }
 
 export function setLightColorSchemeMeta() {
@@ -193,6 +233,7 @@ export const themeColorPalette = {
   brand: BRAND_THEME_COLOR,
   background: BRAND_BACKGROUND_COLOR,
   navigationBar: BRAND_NAVIGATION_BAR_COLOR,
+  iosBrowserChrome: IOS_BROWSER_CHROME_COLOR,
   gymnastics: GYMNASTICS_THEME_COLOR,
   eventFallback: EVENT_THEME_COLOR_FALLBACK,
 } as const;

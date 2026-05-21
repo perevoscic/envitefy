@@ -4,7 +4,10 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
   HERO_THEME_COLOR_ATTRIBUTE,
+  clearIosBrowserChromeColors,
   getPreferredThemeColor,
+  isIosBrowserChrome,
+  setIosBrowserChromeColors,
   setLightColorSchemeMeta,
   setThemeColor,
 } from "@/lib/theme-color";
@@ -17,6 +20,11 @@ export default function ThemeColorSync() {
     const syncChromeHints = () => {
       frameId = 0;
       setLightColorSchemeMeta();
+      if (isIosBrowserChrome()) {
+        setIosBrowserChromeColors();
+        return;
+      }
+      clearIosBrowserChromeColors();
       setThemeColor(getPreferredThemeColor(pathname));
     };
     const scheduleSyncChromeHints = () => {
