@@ -166,6 +166,17 @@ function cleanMessageEventPurpose(value: string | null, requestedOutputs: Reques
   return cleaned;
 }
 
+function cleanScheduledEventPurpose(value: string | null) {
+  const text = cleanString(value);
+  if (!text) return null;
+  const scheduled = text.match(
+    /^\s*(.{3,80}?)\s+\bon\s+(?:(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+)?(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}(?:st|nd|rd|th)?(?:,?\s+\d{4})?(?=\s+(?:at|from)\b|[.,;]|$)/i,
+  );
+  const cleaned = cleanString(scheduled?.[1]?.replace(/[.!?;:,]+$/g, ""));
+  if (!cleaned || cleaned.length < 3 || looksLikeCreationPrompt(cleaned)) return null;
+  return cleaned;
+}
+
 function isInstructionFragment(value: string | null) {
   const text = cleanString(value);
   if (!text) return true;
@@ -175,6 +186,47 @@ function isInstructionFragment(value: string | null) {
     return true;
   }
   return /\b(complete\s+envitefy|envitefy\s+product|clear\s+headline|guest-facing|call\s+to\s+action|rsvp\s+(?:contact|deadline)|rsvps?\s+for|make\s+this|create\s+this|schedule|location)\b/i.test(
+    text,
+  );
+}
+
+function isCommandOnlyDraftUpdate(value: string | null) {
+  const text = cleanString(value?.replace(/[.!?]+$/g, ""));
+  if (!text) return false;
+  return (
+    /^(?:actually\s+)?(?:make|change|set|move)\s+(?:it|the\s+time|time)?\s*(?:to|for)?\s*\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?$/i.test(
+      text,
+    ) ||
+    /^(?:make|use|switch\s+to|turn\s+it\s+into)\s+(?:it\s+)?(?:as\s+)?(?:a|an)?\s*(?:smart\s+sign[-\s]?up(?:\s+form)?|signup\s+form|sign[-\s]?up\s+form|rsvp\s+page|live\s*card|event\s+page|digital\s+flyer|flyer|invitation|invite)$/i.test(
+      text,
+    ) ||
+    /^(?:yes|yep|yeah|sure|please|yes please)(?:\s+(?:collect|track|include|enable|add)\s+(?:rsvps?|responses?))?(?:\s+for\s+\d{1,4})?$/i.test(
+      text,
+    ) ||
+    /^(?:yes\s+)?(?:collect|track|include|enable|add)\s+(?:rsvps?\s+)?(?:for\s+)?\d{1,4}$/i.test(
+      text,
+    ) ||
+    /^(?:no|nope|skip|skip it|not needed|no rsvps?(?:\s+needed)?|do not collect rsvps?|don't collect rsvps?|leave it off)$/i.test(
+      text,
+    ) ||
+    /^(?:no\s+gifts?(?:\s+please)?|gifts?\s+optional|no\s+gift\s+link)$/i.test(text) ||
+    isAgeOrMilestoneSkipReply(text) ||
+    isGiftPromptSkipReply(text) ||
+    /^https?:\/\/\S+$/i.test(text)
+  );
+}
+
+function isBirthdayClarificationOnly(value: string | null, previous?: ConciergeEventDraft | null) {
+  if (!previous) return false;
+  const text = cleanString(value?.replace(/[.!?]+$/g, ""));
+  if (!text) return false;
+  return /^(?:it|this|that)\s+(?:is|was|'s)\s+for\s+(?:her|his|their)\s+birthday$/i.test(text);
+}
+
+function isProductSwitchCommand(value: string | null) {
+  const text = cleanString(value?.replace(/[.!?]+$/g, ""));
+  if (!text) return false;
+  return /^(?:make|use|switch\s+to|turn\s+it\s+into)\s+(?:it\s+)?(?:as\s+)?(?:a|an)?\s*(?:smart\s+sign[-\s]?up(?:\s+form)?|signup\s+form|sign[-\s]?up\s+form|rsvp\s+page|live\s*card|event\s+page|digital\s+flyer|flyer|invitation|invite)$/i.test(
     text,
   );
 }
@@ -278,7 +330,12 @@ function detectEventType(text: string, previous?: ConciergeEventDraft | null): C
   }
   if (/\bgender\s+reveal\b/.test(haystack)) return "gender_reveal";
   if (/\b(graduation|graduate|commencement|class of)\b/.test(haystack)) return "graduation";
-  if (/\b(gymnastics|gym\s+meet|meet\s+schedule)\b/.test(haystack)) return "gym_meet";
+  if (
+    /\b(gymnastics|gym\s+meet|meet\s+schedule)\b/.test(haystack) ||
+    (/\bgym\b/.test(haystack) && /\b(?:invitational|classic|meet)\b/.test(haystack))
+  ) {
+    return "gym_meet";
+  }
   if (/\b(football|touchdown|tailgate)\b/.test(haystack)) return "football";
   if (/\b(game\s+day|gameday|watch\s+party)\b/.test(haystack)) return "game_day";
   if (
@@ -328,6 +385,23 @@ function detectAge(text: string, previous?: ConciergeEventDraft | null) {
   return previous?.ageOrMilestone || null;
 }
 
+function isAgeOrMilestoneSkipReply(message: string) {
+  const normalized = cleanString(message.replace(/[.!?]+$/g, "")) || "";
+  return /^(?:no|none|skip|skip it|not needed|leave it off|do not show it|don't show it|dont show it)$/i.test(
+    normalized,
+  )
+    ? false
+    : /^(?:no\s+(?:age|milestone)(?:\s+(?:shown|needed|please))?|skip\s+(?:age|milestone)|leave\s+(?:the\s+)?(?:age|milestone)\s+off|(?:age|milestone)\s+(?:not\s+needed|optional)|(?:do\s+not|don't|dont)\s+show\s+(?:the\s+)?(?:age|milestone))$/i.test(
+        normalized,
+      );
+}
+
+function detectAgeOrMilestoneSkipped(message: string, previous?: ConciergeEventDraft | null) {
+  if (!previous || previous.eventType !== "birthday") return false;
+  if (firstMissingField(previous) !== "ageOrMilestone") return false;
+  return isAgeOrMilestoneSkipReply(message);
+}
+
 function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) {
   if (
     previous?.eventType === "wedding" ||
@@ -351,6 +425,22 @@ function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) 
   if (named?.[1]) return named[1];
 
   if (previous?.eventType === "birthday" || /\b(?:birthday|bday)\b/i.test(text)) {
+    const directBirthdayName = text.match(
+      /\b([A-Z][a-zA-Z'-]{1,30})(?:\s+(?:and|&)\s+[A-Z][a-zA-Z'-]{1,30})?\s+(?:\d{1,3}(?:st|nd|rd|th)\s+)?(?:birthday|bday)\b/,
+    );
+    if (directBirthdayName?.[1] && !/\s+(?:and|&)\s+/i.test(directBirthdayName[0])) {
+      return directBirthdayName[1].replace(/['’]s$/i, "");
+    }
+
+    const birthdayFromPreviousSubject =
+      previous?.eventPurpose || previous?.title || previous?.previewCopy?.headline || null;
+    if (birthdayFromPreviousSubject && /\b(?:her|his|their)\s+birthday\b/i.test(text)) {
+      const previousSubject = birthdayFromPreviousSubject.match(
+        /^\s*([A-Z][a-zA-Z'-]{1,30})(?=\s+\b(?:pool|party|event|celebration|birthday|bday|book|club|potluck|breakfast)\b|\s*$)/,
+      );
+      if (previousSubject?.[1]) return previousSubject[1];
+    }
+
     const birthdayForName = text.match(
       /\b(?:birthday|bday)(?:\s+(?:live\s*card|event\s+page|flyer(?:\/invitation)?|flyer\s+invitation|invitation|invite|party|product))*\s+(?:for|fro)\s+([a-z][a-zA-Z'-]{1,30})(?=\s*(?:['’]s\b|,|\d{1,3}\b|\b(?:turning|turns|is turning|on|at|for|fro)\b|$))/i,
     );
@@ -432,8 +522,13 @@ function cleanHonoreePhrase(value: string | null | undefined) {
       .replace(/^(?:QA\s+|test\s+)/i, ""),
   );
   if (!cleaned || cleaned.length > 80) return null;
+  if (isCommandOnlyDraftUpdate(cleaned)) return null;
   if (looksLikeCreationPrompt(cleaned) || isInstructionFragment(cleaned)) return null;
-  if (/\b(?:date|time|location|venue|rsvp|registry|http|www|theme|tone)\b/i.test(cleaned)) {
+  if (
+    /\b(?:date|time|location|venue|rsvp|registry|http|www|theme|tone|gift|gifts?|link|collect|skip|yes|no)\b/i.test(
+      cleaned,
+    )
+  ) {
     return null;
   }
   return titleCaseName(cleaned)
@@ -452,11 +547,13 @@ function detectHonoreeFollowUp(text: string, previous?: ConciergeEventDraft | nu
   if (!expectsName) return null;
   const cleaned = cleanString(text?.replace(/[.!?]+$/g, ""));
   if (!cleaned || cleaned.length > 60) return null;
+  if (isCommandOnlyDraftUpdate(cleaned)) return null;
+  if (/^(?:yes|no|yep|yeah|nope|ok|okay|sure|please)$/i.test(cleaned)) return null;
   if (/\b(?:ignore|last|weird|request|keep going|continue|nevermind|never mind)\b/i.test(cleaned)) {
     return null;
   }
   if (
-    /\b(at|@|venue|location|home|house|park|gym|school|restaurant|saturday|sunday|monday|tuesday|wednesday|thursday|friday|january|february|march|april|may|june|july|august|september|october|november|december|birthday|party|theme)\b/i.test(
+    /\b(at|@|venue|location|home|house|park|gym|school|restaurant|saturday|sunday|monday|tuesday|wednesday|thursday|friday|january|february|march|april|may|june|july|august|september|october|november|december|birthday|party|theme|rsvp|registry|gift|gifts?|link|collect|guests?|family)\b/i.test(
       cleaned,
     )
   ) {
@@ -471,6 +568,20 @@ function detectHonoreeFollowUp(text: string, previous?: ConciergeEventDraft | nu
   }
   if (!/^[a-zA-Z][a-zA-Z' -]{0,58}$/.test(cleaned)) return null;
   return titleCaseName(cleaned);
+}
+
+function birthdayHonoreeCandidatesFromDraft(draft: ConciergeEventDraft) {
+  if (draft.eventType !== "birthday") return [];
+  const text = [draft.eventPurpose, draft.title, draft.previewCopy?.headline]
+    .map((value) => cleanString(value))
+    .filter(Boolean)
+    .join(" ");
+  const match = text.match(
+    /\b([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})\s+(?:\d{1,3}(?:st|nd|rd|th)\s+)?(?:birthday|bday)\b/,
+  );
+  const first = cleanString(match?.[1]);
+  const second = cleanString(match?.[2]);
+  return first && second ? [first, second] : [];
 }
 
 function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
@@ -558,7 +669,8 @@ function detectGuestCount(text: string, previous?: ConciergeEventDraft | null) {
     text.match(
       /\b(?:guest count|guest list|guests?|kids?|children|peoples?|attendees|invitees)\s*(?:is|should be|:)?\s*(\d{1,4})\b/i,
     ) ||
-    text.match(/\b(\d{1,4})\s*(?:guests?|kids?|children|peoples?|attendees|invitees)\b/i);
+    text.match(/\b(\d{1,4})\s*(?:guests?|kids?|children|peoples?|attendees|invitees)\b/i) ||
+    text.match(/\b(?:yes\s+)?(?:collect|track|include|enable|add)\s+(?:rsvps?\s+)?(?:for\s+)?(?:about\s+)?(\d{1,4})\b/i);
   const contextual = expectsGuestCount
     ? text.match(
         /\b(?:yes\s+)?(?:collect|track|include|cap|count)\s+(?:rsvps?\s+)?(?:for\s+)?(?:about\s+)?(\d{1,4})\b/i,
@@ -627,6 +739,9 @@ function detectRsvpEnabled(
 
   if (
     /\b(?:with|include|enable|collect|track|add)\s+(?:envitefy\s+)?rsvps?\b/i.test(text) ||
+    /\b(?:yes\s+)?(?:collect|track|include|enable|add)\s+(?:rsvps?\s+)?(?:for\s+)?\d{1,4}\b/i.test(
+      text,
+    ) ||
     /\brsvps?\s+for\s+\d{1,4}\b/i.test(text) ||
     /\brsvp\s+(?:page|tracking|collection|responses?)\b/i.test(text) ||
     /\brsvp\s+(?:contact|deadline)\b/i.test(text) ||
@@ -1229,6 +1344,7 @@ function buildEmptyConversationDraft(args: {
     honoreeName: null,
     relationship: null,
     ageOrMilestone: null,
+    ageOrMilestoneSkipped: null,
     dateText: null,
     timeText: null,
     startISO: null,
@@ -1338,6 +1454,12 @@ function questionForMissingField(
   draft: ConciergeEventDraft,
   plan: ReturnType<typeof getRequirementPlan>,
 ) {
+  if (field === "honoreeName" && draft.eventType === "birthday") {
+    const candidates = birthdayHonoreeCandidatesFromDraft(draft);
+    if (candidates.length === 2) {
+      return `Should I feature ${candidates[0]}, ${candidates[1]}, or both for the birthday?`;
+    }
+  }
   if (hasAlreadyAsked(draft.conversationState, field)) {
     if (field === "honoreeName" && draft.eventType === "baby_shower") {
       return "Should I list the name already mentioned as the mom-to-be, or use the parents-to-be or baby’s name?";
@@ -1810,6 +1932,31 @@ function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
   };
 }
 
+function isBeforeToday(iso: string | null | undefined) {
+  if (!iso) return false;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return false;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return date < today;
+}
+
+function shouldConfirmPastDate(args: {
+  startISO: string | null;
+  message: string;
+  previous?: ConciergeEventDraft | null;
+}) {
+  if (!isBeforeToday(args.startISO)) return false;
+  const cleaned = cleanString(args.message?.replace(/[.!?]+$/g, "")) || "";
+  if (
+    args.previous?.currentQuestion === "date_confirmation" &&
+    (isDateConfirmationAffirmation(cleaned) || isDateConfirmationRejection(cleaned))
+  ) {
+    return false;
+  }
+  return true;
+}
+
 function isoFromField(value: unknown) {
   const raw = cleanString(value);
   if (!raw) return null;
@@ -1978,6 +2125,77 @@ function readyActionSentence(draft: ConciergeEventDraft) {
   return `Your ${outputActionLabel(draft)} is ready to generate.`;
 }
 
+function nextActionSentence(draft: ConciergeEventDraft) {
+  if (draft.currentQuestion === "date_confirmation") {
+    const candidate = dateConfirmationCandidate(draft);
+    return `Just to confirm, did you mean ${candidate}, or another date?`;
+  }
+  const firstMissing = draft.missingFields[0];
+  if (!firstMissing && draft.canPersist && !draft.currentQuestion) return readyActionSentence(draft);
+  if (firstMissing) {
+    const plan = getRequirementPlan({
+      eventType: draft.eventType,
+      requestedOutputs: draft.requestedOutputs,
+      sourceContext: draft.sourceContext,
+    });
+    return questionForMissingField(firstMissing, draft, plan);
+  }
+  return readyActionSentence(draft);
+}
+
+function displayDateWithoutDuplicateTime(draft: ConciergeEventDraft) {
+  const dateTextHasTime = Boolean(
+    draft.dateText &&
+      /\b(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b/i.test(draft.dateText),
+  );
+  return dateTextHasTime && draft.timeText
+    ? draft.dateText?.replace(
+        /\s+(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b\s*$/i,
+        "",
+      )
+    : draft.dateText;
+}
+
+function dateConfirmationCandidate(draft: ConciergeEventDraft) {
+  const displayDate = displayDateWithoutDuplicateTime(draft);
+  if (displayDate && draft.timeText) return `${displayDate}, ${draft.timeText}`;
+  return displayDate || draft.timeText || "that date";
+}
+
+function buildRsvpChangeAcknowledgement(
+  draft: ConciergeEventDraft,
+  previous?: ConciergeEventDraft | null,
+) {
+  if (!previous) return null;
+  const rsvpChanged =
+    typeof draft.rsvpEnabled === "boolean" && draft.rsvpEnabled !== previous.rsvpEnabled;
+  const guestCountChanged =
+    typeof draft.numberOfGuests === "number" &&
+    draft.numberOfGuests > 0 &&
+    draft.numberOfGuests !== previous.numberOfGuests;
+  if (!rsvpChanged && !guestCountChanged) return null;
+  const detail =
+    draft.rsvpEnabled === false
+      ? "RSVPs are off"
+      : draft.rsvpEnabled === true && draft.numberOfGuests
+        ? `RSVPs are on for ${draft.numberOfGuests} guests`
+        : draft.rsvpEnabled === true
+          ? "RSVPs are on"
+          : draft.numberOfGuests
+            ? `RSVP guest count is ${draft.numberOfGuests}`
+            : null;
+  if (!detail) return null;
+  return `Got it - ${detail}. ${nextActionSentence(draft)}`;
+}
+
+function buildAgeSkipAcknowledgement(
+  draft: ConciergeEventDraft,
+  previous?: ConciergeEventDraft | null,
+) {
+  if (!previous || previous.ageOrMilestoneSkipped || !draft.ageOrMilestoneSkipped) return null;
+  return `Got it - I will not show an age or birthday milestone. ${nextActionSentence(draft)}`;
+}
+
 function compactVerificationLines(
   draft: ConciergeEventDraft,
   options: { includeProducts?: boolean } = {},
@@ -2034,7 +2252,8 @@ function readyVerificationMessage(draft: ConciergeEventDraft) {
     return "Still ready — no changes needed.";
   }
   const event = draft.title || draft.eventPurpose || draft.previewCopy.headline || "the event";
-  const details = [event, draft.dateText, draft.timeText, draft.venue || draft.location]
+  const displayDate = displayDateWithoutDuplicateTime(draft);
+  const details = [event, displayDate, draft.timeText, draft.venue || draft.location]
     .filter(Boolean)
     .join(", ");
   const readyLine =
@@ -2099,7 +2318,7 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
     return receivedInviteSourcePrompt(draft);
   }
   if (draft.currentQuestion === "date_confirmation") {
-    const candidate = draft.dateText || "that date";
+    const candidate = dateConfirmationCandidate(draft);
     return `Just to confirm, did you mean ${candidate}, or another date?`;
   }
   const intakeMessage = categoryIntakeMessage(draft);
@@ -2174,7 +2393,7 @@ export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
     sourceContext: draft.sourceContext,
   });
   if (draft.currentQuestion === "date_confirmation") {
-    const candidate = draft.dateText || "that date";
+    const candidate = dateConfirmationCandidate(draft);
     return [`Yes, ${candidate}`, "No, another date"];
   }
   if (draft.currentQuestion === "invite_source" || firstMissing === "sourceContext") {
@@ -2271,15 +2490,18 @@ export function fallbackExtractConciergeDraft(args: {
     hasClearCreationSignal(text);
   const hasExplicitOutputs =
     Array.isArray(args.requestedOutputs) && args.requestedOutputs.length > 0;
+  const replacesPreviousOutputs = Boolean(previous && isProductSwitchCommand(message));
   const requestedOutputs = blocksCreation
     ? []
     : normalizeRequestedOutputs(
         hasExplicitOutputs
           ? args.requestedOutputs
-          : previous?.requestedOutputs || previous?.outputs,
+          : replacesPreviousOutputs
+            ? null
+            : previous?.requestedOutputs || previous?.outputs,
         {
           text,
-          previous: hasExplicitOutputs ? null : previous,
+          previous: hasExplicitOutputs || replacesPreviousOutputs ? null : previous,
           defaultOutput:
             !previous && (isGreetingMessage(message) || (!hasCreationSignal && !hasExplicitOutputs))
               ? null
@@ -2407,6 +2629,9 @@ export function fallbackExtractConciergeDraft(args: {
     stringFromKnownValue(
       fieldsGuess.ageOrMilestone || fieldsGuess.age || birthdayTemplateHint.age,
     );
+  const ageOrMilestoneSkipped = ageOrMilestone
+    ? false
+    : Boolean(previous?.ageOrMilestoneSkipped || detectAgeOrMilestoneSkipped(message, previous));
   const chronoResult = parseChrono(labeledDetails.whenText || text, previous);
   const fieldStartIso = isoFromField(fieldsGuess.start);
   const fieldEndIso = isoFromField(fieldsGuess.end);
@@ -2444,7 +2669,21 @@ export function fallbackExtractConciergeDraft(args: {
   const previousEventPurpose = looksLikeCreationPrompt(previous?.eventPurpose || null)
     ? null
     : previous?.eventPurpose || null;
-  const canUseRawMessageAsEventPurpose = hasCreationSignal || requestedOutputs.length > 0;
+  const clarifiedBirthdayEventPurpose =
+    eventType === "birthday" &&
+    isBirthdayClarificationOnly(message, previous) &&
+    previousEventPurpose &&
+    !/\b(?:birthday|bday)\b/i.test(previousEventPurpose)
+      ? honoreeName &&
+        previousEventPurpose.toLowerCase().startsWith(`${honoreeName.toLowerCase()} `)
+        ? `${honoreeName} birthday ${previousEventPurpose.slice(honoreeName.length).trim()}`
+        : `${previousEventPurpose} birthday`
+      : null;
+  const commandOnlyDraftUpdate = Boolean(
+    previous && (isCommandOnlyDraftUpdate(message) || isBirthdayClarificationOnly(message, previous)),
+  );
+  const canUseRawMessageAsEventPurpose =
+    !commandOnlyDraftUpdate && (hasCreationSignal || requestedOutputs.length > 0);
   const rawMessageEventPurpose =
     canUseRawMessageAsEventPurpose && isMeaningfulEventText(message, requestedOutputs)
       ? cleanCreationString(message)
@@ -2460,12 +2699,16 @@ export function fallbackExtractConciergeDraft(args: {
       ? looksLikeCreationPrompt(rawMessageEventPurpose)
         ? cleanMessageEventPurpose(rawMessageEventPurpose, requestedOutputs) ||
           rawMessageEventPurpose
-        : rawMessageEventPurpose
+        : cleanScheduledEventPurpose(rawMessageEventPurpose) || rawMessageEventPurpose
       : null;
   const eventPurpose =
     blocksCreation || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
-      : extractedEventPurpose || sportEventPurpose || messageEventPurpose || previousEventPurpose;
+      : extractedEventPurpose ||
+        sportEventPurpose ||
+        messageEventPurpose ||
+        clarifiedBirthdayEventPurpose ||
+        previousEventPurpose;
   const titleCandidate =
     firstString(fieldsGuess.title) ||
     buildTitle({
@@ -2547,13 +2790,21 @@ export function fallbackExtractConciergeDraft(args: {
         location,
         honoreeName,
         ageOrMilestone,
+        ageOrMilestoneSkipped,
         rsvpEnabled,
         numberOfGuests,
         rsvpName,
         rsvpContact,
         tone: toneForStatus,
       });
-  const needsDateConfirmation = Boolean(chronoResult.needsConfirmation);
+  const needsDateConfirmation = Boolean(
+    chronoResult.needsConfirmation ||
+      shouldConfirmPastDate({
+        startISO,
+        message,
+        previous,
+      }),
+  );
   const base = {
     creationSessionId: createCreationSessionId(sessionDraft),
     intent: blocksCreation
@@ -2576,6 +2827,7 @@ export function fallbackExtractConciergeDraft(args: {
     honoreeName,
     relationship,
     ageOrMilestone,
+    ageOrMilestoneSkipped,
     dateText,
     timeText,
     startISO,
@@ -2640,17 +2892,23 @@ export function fallbackExtractConciergeDraft(args: {
       registryLink !== previous.registryLink &&
       registryLink !== previous.giftRegistryLink,
   );
+  const rsvpAcknowledgement = buildRsvpChangeAcknowledgement(draft, previous);
+  const ageSkipAcknowledgement = buildAgeSkipAcknowledgement(draft, previous);
   const assistantGuidance =
     amazonRegistryCreate
       ? "Create the list on Amazon, then paste the public or shareable link here and I’ll add it. You can also generate now and add the link later."
       : giftPromptSkip || repeatedGiftPromptSkip || irrelevantGiftPromptSkip
         ? repeatedGiftPromptSkip
           ? "Already skipped — we’re good there."
-          : `Got it — no gift link added. ${readyActionSentence(draft)}`
+          : `Got it — no gift link added. ${nextActionSentence(draft)}`
         : addedRegistryLink
-          ? `Got it — Registry: ${registryLink}. ${readyActionSentence(draft)}`
+          ? `Got it — Registry: ${registryLink}. ${nextActionSentence(draft)}`
         : addedGiftPreferenceNote
-          ? `Got it — Gift note: ${giftPreferenceNote}. ${readyActionSentence(draft)}`
+          ? `Got it — Gift note: ${giftPreferenceNote}. ${nextActionSentence(draft)}`
+        : ageSkipAcknowledgement
+          ? ageSkipAcknowledgement
+        : rsvpAcknowledgement
+          ? rsvpAcknowledgement
           : isVagueCreativeRefinement(message)
             ? "Absolutely. Give me a concrete direction so I can make it feel more premium, for example: editorial and minimal, warm handmade, bold team energy, luxury florals, or playful kid-party."
             : isDraftLogisticsAside(message)

@@ -837,7 +837,7 @@ export function hasClearCreationSignal(text: string) {
   if (!cleaned || isGreetingMessage(cleaned)) return false;
   if (hasReceivedInviteLanguage(cleaned)) return true;
   if (
-    /\b(birthday|bday|turning|turns|wedding|baby\s+shower|gender\s+reveal|bridal\s+shower|graduation|graduate|gymnastics|gym\s+meet|meet\s+schedule|game\s+day|gameday|football|sports?\s+event|field\s+trip|field\s+day|open\s+house|housewarming|appointment|consultation|workshop|class|seminar|training|party|celebration|ceremony|reception|fundraiser|dinner|brunch|luncheon|meeting|event)\b/i.test(
+    /\b(birthday|bday|turning|turns|wedding|baby\s+shower|gender\s+reveal|bridal\s+shower|graduation|graduate|gymnastics|gym\s+meet|meet\s+schedule|invitational|game\s+day|gameday|football|sports?\s+event|field\s+trip|field\s+day|open\s+house|housewarming|appointment|consultation|workshop|class|seminar|training|party|celebration|ceremony|reception|fundraiser|dinner|brunch|luncheon|breakfast|potluck|book\s+club|teacher\s+appreciation|meeting|event)\b/i.test(
       cleaned,
     )
   ) {
@@ -863,6 +863,7 @@ export function deriveCreationStatus(args: {
   location?: string | null;
   honoreeName?: string | null;
   ageOrMilestone?: string | null;
+  ageOrMilestoneSkipped?: boolean | null;
   rsvpEnabled?: boolean | null;
   numberOfGuests?: number | null;
   rsvpName?: string | null;
@@ -925,6 +926,18 @@ export function deriveCreationStatus(args: {
 
   const fieldDraft = {
     ...args,
+    honoreeName: args.honoreeName ?? null,
+    ageOrMilestone: args.ageOrMilestone ?? null,
+    ageOrMilestoneSkipped: args.ageOrMilestoneSkipped ?? null,
+    dateText: args.dateText ?? null,
+    timeText: args.timeText ?? null,
+    startISO: args.startISO ?? null,
+    location: args.location ?? null,
+    rsvpEnabled: args.rsvpEnabled ?? null,
+    numberOfGuests: args.numberOfGuests ?? null,
+    rsvpName: args.rsvpName ?? null,
+    rsvpContact: args.rsvpContact ?? null,
+    tone: args.tone ?? null,
     venue: null,
   };
   for (const field of plan.requiredFields) {

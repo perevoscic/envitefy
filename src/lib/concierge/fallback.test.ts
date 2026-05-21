@@ -482,7 +482,7 @@ test("RSVP guest-count phrasing fills number of guests", () => {
       ageOrMilestone: "7",
       dateText: "Saturday at 3",
       timeText: "3:00 PM",
-      startISO: "2026-05-09T20:00:00.000Z",
+      startISO: "2026-07-09T20:00:00.000Z",
       location: "Sky Zone",
       venue: "Sky Zone",
       rsvpEnabled: true,
@@ -1522,6 +1522,165 @@ test("fallback infers gym meet category from chat-first prompt", () => {
   assert.equal(draft.eventType, "gym_meet");
   assert.match(message, /team, gym, or meet name/i);
   assert.ok((message.match(/\?/g) || []).length <= 2);
+});
+
+test("birthday prompts infer the named child before asking follow-up fields", () => {
+  for (const message of [
+    "Lara birthday pool party on July 18 2026 at 3 PM at 22 Oak St.",
+    "Maya birthday party on March 2 2026 at 4 PM at Bounce House.",
+    "Ava birthday live card on May 23 2026 at 1 PM at AMC Theater Destin.",
+    "Instagram story for Lara birthday on July 18 2026 at 3 PM at 22 Oak St.",
+    "Emma birthday party on June 10 2026 at 2 PM at 33 Cedar St.",
+    "Nora birthday on May 23 2026 at 2 PM at AMC Theater Destin.",
+  ]) {
+    const draft = fallbackExtractConciergeDraft({ message });
+
+    assert.equal(draft.eventType, "birthday", message);
+    assert.ok(draft.honoreeName, message);
+    assert.doesNotMatch(draft.missingFields.join(","), /honoreeName/, message);
+    assert.doesNotMatch(buildAssistantMessage(draft), /Who is the birthday for/i, message);
+  }
+});
+
+test("command replies do not become birthday honoree names", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "Lara birthday pool party on July 18 2026 at 3 PM at 22 Oak St.",
+  });
+
+  for (const reply of ["No RSVP needed.", "Skip gift link.", "Yes.", "No gifts please."]) {
+    const draft = fallbackExtractConciergeDraft({ message: reply, draft: first });
+
+    assert.equal(draft.honoreeName, "Lara", reply);
+    assert.equal(draft.eventPurpose, first.eventPurpose, reply);
+    assert.notEqual(draft.honoreeName, reply.replace(/[.!?]+$/g, ""), reply);
+  }
+});
+
+test("birthday clarification can resolve pronoun back to prior event subject", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "Lara pool party on July 18 2026 at 3 PM at 22 Oak St.",
+  });
+  const draft = fallbackExtractConciergeDraft({
+    message: "It is for her birthday.",
+    draft: first,
+  });
+
+  assert.equal(draft.eventType, "birthday");
+  assert.equal(draft.honoreeName, "Lara");
+  assert.equal(draft.eventPurpose, "Lara birthday pool party");
+  assert.doesNotMatch(buildAssistantMessage(draft), /Who is the birthday for/i);
+});
+
+test("product and time corrections preserve the existing event title", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Book club on Tuesday May 12 2026 at 6 PM at Library Room B.",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "Actually make it 7 PM.", draft });
+
+  assert.equal(draft.eventPurpose, "Book club");
+  assert.equal(draft.title, "Book club");
+  assert.equal(draft.timeText, "7:00 PM");
+  assert.doesNotMatch(buildAssistantMessage(draft), /Actually make it 7 PM/);
+  assert.doesNotMatch(buildAssistantMessage(draft), /6 PM, Library Room B/);
+  assert.equal(draft.currentQuestion, "date_confirmation");
+  assert.match(buildAssistantMessage(draft), /did you mean/i);
+  assert.match(buildAssistantMessage(draft), /7:00 PM/);
+
+  let signup = fallbackExtractConciergeDraft({
+    message: "Neighborhood potluck on June 20 2026 at 5 PM at Community Center.",
+  });
+  signup = fallbackExtractConciergeDraft({ message: "Use a signup form.", draft: signup });
+
+  assert.equal(signup.eventPurpose, "Neighborhood potluck");
+  assert.deepEqual(signup.requestedOutputs, ["signup_form"]);
+  assert.doesNotMatch(signup.title || "", /Use a signup form/i);
+});
+
+test("RSVP side replies are acknowledged while birthday age is still missing", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "Lara birthday pool party on July 18 2026 at 3 PM at 22 Oak St.",
+  });
+  const noRsvp = fallbackExtractConciergeDraft({ message: "No RSVP needed.", draft: first });
+  const noRsvpMessage = buildAssistantMessage(noRsvp);
+
+  assert.equal(noRsvp.rsvpEnabled, false);
+  assert.match(noRsvpMessage, /RSVPs are off/i);
+  assert.match(noRsvpMessage, /What age or birthday milestone/i);
+
+  const withCount = fallbackExtractConciergeDraft({
+    message: "yes collect for 20",
+    draft: fallbackExtractConciergeDraft({
+      message: "Nora birthday on May 23 2026 at 2 PM at AMC Theater Destin.",
+    }),
+  });
+  const withCountMessage = buildAssistantMessage(withCount);
+
+  assert.equal(withCount.rsvpEnabled, true);
+  assert.equal(withCount.numberOfGuests, 20);
+  assert.match(withCountMessage, /RSVPs are on for 20 guests/i);
+  assert.match(withCountMessage, /What age or birthday milestone/i);
+});
+
+test("birthday age can be explicitly skipped without polluting display copy", () => {
+  let draft = fallbackExtractConciergeDraft({
+    message: "Maya birthday party on July 2 2026 at 4 PM at Bounce House.",
+  });
+  draft = fallbackExtractConciergeDraft({ message: "No age shown.", draft });
+
+  assert.equal(draft.ageOrMilestone, null);
+  assert.equal(draft.ageOrMilestoneSkipped, true);
+  assert.doesNotMatch(draft.missingFields.join(","), /ageOrMilestone/);
+  assert.doesNotMatch(draft.title || "", /none|No age/i);
+  assert.doesNotMatch(draft.previewCopy.body, /turning none|No age/i);
+});
+
+test("birthday clarification updates stale event purpose", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "Lara pool party on July 18 2026 at 3 PM at 22 Oak St.",
+  });
+  const draft = fallbackExtractConciergeDraft({
+    message: "It is for her birthday.",
+    draft: first,
+  });
+
+  assert.equal(draft.eventType, "birthday");
+  assert.equal(draft.honoreeName, "Lara");
+  assert.equal(draft.eventPurpose, "Lara birthday pool party");
+});
+
+test("past explicit dates require confirmation before ready state", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Book club on Tuesday May 12 2026 at 6 PM at Library Room B.",
+  });
+
+  assert.equal(draft.currentQuestion, "date_confirmation");
+  assert.equal(draft.missingFields[0], "date");
+  assert.match(buildAssistantMessage(draft), /did you mean/i);
+  assert.doesNotMatch(buildAssistantMessage(draft), /Everything looks ready/i);
+});
+
+test("registry link acknowledgement keeps asking for missing birthday details", () => {
+  const first = fallbackExtractConciergeDraft({
+    message: "Emma birthday party on June 10 2026 at 2 PM at 33 Cedar St.",
+  });
+  const draft = fallbackExtractConciergeDraft({
+    message: "https://amazon.com/registry/abc",
+    draft: first,
+  });
+
+  assert.equal(draft.honoreeName, "Emma");
+  assert.equal(draft.registryLink, "https://amazon.com/registry/abc");
+  assert.match(buildAssistantMessage(draft), /What age or birthday milestone/i);
+  assert.doesNotMatch(buildAssistantMessage(draft), /ready to generate/i);
+});
+
+test("gym invitational prompt is treated as a gym meet", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Star Gym Spring Invitational on March 9 2026 at 8 AM at Star Gym Arena.",
+  });
+
+  assert.equal(draft.eventType, "gym_meet");
+  assert.doesNotMatch(buildAssistantMessage(draft), /What are we celebrating/i);
 });
 
 test("upload OCR context can seed a draft", () => {

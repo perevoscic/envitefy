@@ -460,6 +460,7 @@ export function requirementFieldSatisfied(
     | "title"
     | "honoreeName"
     | "ageOrMilestone"
+    | "ageOrMilestoneSkipped"
     | "dateText"
     | "timeText"
     | "startISO"
@@ -481,7 +482,9 @@ export function requirementFieldSatisfied(
     );
   }
   if (field === "honoreeName") return Boolean(cleanString(draft.honoreeName));
-  if (field === "ageOrMilestone") return Boolean(cleanString(draft.ageOrMilestone));
+  if (field === "ageOrMilestone") {
+    return Boolean(cleanString(draft.ageOrMilestone) || draft.ageOrMilestoneSkipped === true);
+  }
   if (field === "date") return Boolean(cleanString(draft.dateText) || cleanString(draft.startISO));
   if (field === "time") return Boolean(cleanString(draft.timeText) || cleanString(draft.startISO));
   if (field === "location") return Boolean(cleanString(draft.location) || cleanString(draft.venue));

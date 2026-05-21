@@ -320,6 +320,7 @@ export type ConciergeEventDraft = {
   honoreeName: string | null;
   relationship: string | null;
   ageOrMilestone: string | null;
+  ageOrMilestoneSkipped?: boolean | null;
   dateText: string | null;
   timeText: string | null;
   startISO: string | null;

@@ -239,6 +239,7 @@ function reconciledMissingFields(
     | "title"
     | "honoreeName"
     | "ageOrMilestone"
+    | "ageOrMilestoneSkipped"
     | "dateText"
     | "timeText"
     | "startISO"
@@ -259,7 +260,7 @@ function reconciledMissingFields(
   }
   if (draft.sourceContext.hasUsableContext) missing.delete("sourceContext");
   if (draft.honoreeName) missing.delete("honoreeName");
-  if (draft.ageOrMilestone) missing.delete("ageOrMilestone");
+  if (draft.ageOrMilestone || draft.ageOrMilestoneSkipped) missing.delete("ageOrMilestone");
   if (draft.dateText || draft.startISO) missing.delete("date");
   if (draft.timeText || draft.startISO) missing.delete("time");
   if (draft.location || draft.venue) missing.delete("location");
@@ -375,6 +376,12 @@ export function normalizeConciergeDraft(
   const ageOrMilestone =
     firstDraftString(record.ageOrMilestone, eventData.ageOrMilestone, eventData.age) ||
     fallback.ageOrMilestone;
+  const ageOrMilestoneSkipped =
+    typeof record.ageOrMilestoneSkipped === "boolean"
+      ? record.ageOrMilestoneSkipped
+      : typeof eventData.ageOrMilestoneSkipped === "boolean"
+        ? eventData.ageOrMilestoneSkipped
+        : fallback.ageOrMilestoneSkipped || null;
   const message = cleanString(options.message) || "";
   const theme = mergeVisualDirection(
     firstDraftString(record.theme, eventData.theme),
@@ -478,6 +485,7 @@ export function normalizeConciergeDraft(
     location: resolvedLocation || resolvedVenue,
     honoreeName,
     ageOrMilestone,
+    ageOrMilestoneSkipped,
     rsvpEnabled,
     numberOfGuests,
     rsvpName,
@@ -511,6 +519,7 @@ export function normalizeConciergeDraft(
     relationship:
       firstDraftString(record.relationship, eventData.relationship) || fallback.relationship,
     ageOrMilestone,
+    ageOrMilestoneSkipped,
     dateText,
     timeText,
     startISO,
@@ -613,7 +622,7 @@ async function extractWithOpenAi(
               "You are Envitefy's event creation concierge.",
               "Only handle event, flyer invitation, RSVP, and event asset creation or editing.",
               "Return one JSON object matching the draft shape. Do not include markdown.",
-              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, additionalLocations, honoreeName, ageOrMilestone, rsvpEnabled, rsvpDeadline, rsvpName, rsvpContact, numberOfGuests, registryLink, giftNote, giftPreferenceNote, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
+              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, additionalLocations, honoreeName, ageOrMilestone, ageOrMilestoneSkipped, rsvpEnabled, rsvpDeadline, rsvpName, rsvpContact, numberOfGuests, registryLink, giftNote, giftPreferenceNote, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
               "Also include conversationState when useful: track inferredFields, confirmedFields, lowConfidenceFields, alreadyAskedFields, registrySkipped, locationTentative, finalSummaryShown, readyToGenerate, and role-specific names such as momToBe, parentsToBe, graduateName, birthdayPerson, and coupleNames.",
               "Infer obvious roles from natural phrases: 'Mia baby shower' likely means Mia is the mom-to-be or featured shower name; 'Leo class of 2026 graduation party' means Leo is the graduate; 'Taylor and Morgan gender reveal' means Taylor and Morgan are the parents-to-be; 'John and Sarah wedding' means John and Sarah are the couple. Use high confidence for these but mark needsConfirmation when the displayed role could vary.",
               "When RSVP is enabled for an owned event, collect the host or organizer display name in rsvpName and a phone number or email for RSVP follow-up in rsvpContact. Do not invent either value.",
