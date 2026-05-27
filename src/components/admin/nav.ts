@@ -6,6 +6,7 @@ export type AdminNavItemId =
   | "scans"
   | "emails"
   | "marketing-assets"
+  | "ad-studio"
   | "analytics"
   | "settings"
   | "health";
@@ -59,6 +60,12 @@ export const adminNavItems: AdminNavItem[] = [
     label: "Marketing Assets",
     href: "/admin/marketing-images",
     description: "Storyboard runs and generated media",
+  },
+  {
+    id: "ad-studio",
+    label: "Ad Studio",
+    href: "/admin/ad-studio",
+    description: "Short social ad builder",
   },
   {
     id: "analytics",

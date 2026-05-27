@@ -606,6 +606,7 @@ const adminSidebarIcons: Record<
   scans: Search,
   emails: Mail,
   "marketing-assets": ImageIcon,
+  "ad-studio": WandSparkles,
   analytics: BarChart3,
   settings: Settings,
   health: HeartPulse,

@@ -29,6 +29,7 @@ test("admin nav config has expected sections", () => {
     "Scans & Traffic",
     "Emails",
     "Marketing Assets",
+    "Ad Studio",
     "Analytics",
     "Settings",
     "Logs / Health",
@@ -38,6 +39,11 @@ test("admin nav config has expected sections", () => {
 
   assert.match(source, /href: "\/admin"/);
   assert.match(source, /href: "\/admin\/marketing-images"/);
+  assert.match(source, /href: "\/admin\/ad-studio"/);
+  assert.ok(
+    source.indexOf('label: "Marketing Assets"') < source.indexOf('label: "Ad Studio"'),
+    "Ad Studio should appear below Marketing Assets",
+  );
 });
 
 test("admin layout does not render the duplicate internal admin rail", () => {
