@@ -24,7 +24,7 @@ export const DEFAULT_MOOD = "focused, modern, warm, premium";
 export const DEFAULT_CONTINUITY_RULE =
   "This must look like the same ad campaign sequence as the previous frames, keeping the same character, same outfit, same allowed props, same environment, same lighting, same branding, and same premium commercial aesthetic.";
 export const DEFAULT_NEGATIVE_PROMPT =
-  "no character change, no hairstyle change, no bun, no updo, no wardrobe change, no different location, no different phone, no split image, no collage, no watermark, no floating text, no offline props for the delay, no extra tabletop planning props, no gym, no gymnastics, no sports venue, no dance studio, no studio lobby, no trophies, no medals, no athlete posters, no completed party scene, no children unless explicitly requested, no party setup unless explicitly requested, no party-decor clutter unless explicitly requested, no floating phone, no phone standing upright, no phone leaning unsupported, no propped-up phone, single frame only.";
+  "no character change, no hairstyle change, no bun, no updo, no wardrobe change, no different location, no different phone, no split image, no collage, no watermark, no floating text, no offline props for the delay, no extra tabletop planning props, no gym, no gymnastics, no sports venue, no dance studio, no studio lobby, no trophies, no medals, no athlete posters, no completed party scene, no children unless explicitly requested, no party setup unless explicitly requested, no party-decor clutter unless explicitly requested, no floating phone, no phone standing upright, no phone leaning unsupported, no propped-up phone, no monochrome lavender or purple room, no matching lavender outfit plus lavender phone case plus lavender curtains plus lavender mug plus lavender towels plus lavender pillows plus lavender notes, single frame only.";
 export const DEFAULT_CONTINUITY_CONTRACT = `You are generating a sequence of highly consistent images for a visual story.
 
 Your goal is to preserve continuity across all frames.
@@ -34,8 +34,9 @@ Global continuity rules:
 - Keep the same face, age, hairstyle, body type, and overall appearance unless a change is explicitly requested.
 - Keep the same outfit in every image unless a change is explicitly requested.
 - Keep the same environment and layout across all frames unless a change is explicitly requested.
-- Keep the same props and key objects consistent across all frames.
+- Keep the same necessary props and key objects consistent across all frames, but do not clone decorative accents, tabletop objects, or exact prop placement from one frame into every later frame.
 - Keep the same photographic style, color tone, lighting style, and mood across all frames.
+- Treat brand colors as small accents unless the user explicitly requests a monochrome palette; do not spread one brand color across wardrobe, phone case, curtains, mugs, towels, pillows, vases, notes, and every UI surface.
 - Keep the same framing style unless a change is explicitly requested.
 - Make each frame feel like part of the same short cinematic ad or photo sequence.
 - Preserve realism and visual continuity.
@@ -51,6 +52,27 @@ Now generate the requested frame using the following fixed continuity details an
 
 function clean(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeDisallowedPropRisk(value) {
+  const risk = clean(value);
+  if (!risk) return "";
+  const normalized = risk.toLowerCase().replace(/[.\s_-]+$/g, "").trim();
+  if (
+    [
+      "none",
+      "no",
+      "no risk",
+      "n/a",
+      "na",
+      "not applicable",
+      "no disallowed prop risk",
+      "no disallowed props",
+    ].includes(normalized)
+  ) {
+    return "";
+  }
+  return risk;
 }
 
 function cleanNullable(value) {
@@ -691,6 +713,7 @@ export function buildCanonicalFramePrompt(sceneSpec, frameDetails) {
     "Delay proof: show delay only as a modern digital signal such as a phone notification, email inbox, browser order-status page, or search result; do not stage a handoff scene.",
     "Surface discipline: keep counters and tables clean with only ordinary home objects; add extra tabletop props only when the user explicitly requests them.",
     "Frame variety: avoid repeating the same seated table pose with phone; each adjacent frame must change location within the home, body angle, prop focus, and action.",
+    "Brand color discipline: use purple/lavender only as one or two small accents unless explicitly requested as the whole palette; keep clothing, phone case, curtains, towels, mugs, pillows, vases, notes, and room decor mostly neutral.",
   ];
   const birthdaySafetyRules = birthdayCampaign
     ? [
@@ -887,7 +910,7 @@ export function normalizeFramePlan(sceneSpec, rawFrames) {
         BRANDING_PRESENCE_VALUES,
         defaultFrame.brandingPresence,
       ),
-      disallowedPropRisk: clean(candidate.disallowedPropRisk),
+      disallowedPropRisk: normalizeDisallowedPropRisk(candidate.disallowedPropRisk),
       prompt: buildCanonicalFramePrompt(sceneSpec, {
         frameNumber: index + 1,
         actionBeat: clean(candidate.actionBeat) || defaultFrame.actionBeat,
@@ -995,7 +1018,7 @@ export function createFramesManifest(runPaths, sceneSpec, frames, models) {
       shotFamily: clean(frame.shotFamily),
       phoneDominance: clean(frame.phoneDominance),
       brandingPresence: clean(frame.brandingPresence),
-      disallowedPropRisk: clean(frame.disallowedPropRisk),
+      disallowedPropRisk: normalizeDisallowedPropRisk(frame.disallowedPropRisk),
       imageFile:
         clean(frame.imageFile) || path.join("images", `frame-${String(frame.frameNumber).padStart(2, "0")}.png`),
       captionedImageFile:

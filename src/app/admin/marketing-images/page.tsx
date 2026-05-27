@@ -64,6 +64,13 @@ type Frame = {
   error: string | null;
 };
 
+type FramesManifest = {
+  frames: Frame[];
+  sceneSpec?: {
+    cameraFormat?: string;
+  };
+};
+
 type RunDetail = {
   runId: string;
   runDir: string;
@@ -76,7 +83,7 @@ type RunDetail = {
   framePlan: any;
   socialCopy: any;
   creativeQa: CreativeQa | null;
-  frames: { frames: Frame[] } | null;
+  frames: FramesManifest | null;
   videoUrl: string | null;
   captionsUrl: string | null;
 };
@@ -119,7 +126,7 @@ const INITIAL_FORM = {
   targetVertical: "",
   tone: "",
   callToAction: "",
-  frameCount: "",
+  frameCount: "5",
   notes: "",
   characterLock: "",
   outfitLock: "",
@@ -594,7 +601,7 @@ export default function MarketingCampaignsPage() {
       const frameCount =
         Number.isFinite(parsedFrameCount) && parsedFrameCount >= 1
           ? Math.min(24, parsedFrameCount)
-          : 10;
+          : 5;
       const payload = {
         criteria: form.criteria,
         productName: form.productName,
@@ -889,7 +896,7 @@ export default function MarketingCampaignsPage() {
                     max={24}
                     value={form.frameCount}
                     onChange={(event) => setForm((current) => ({ ...current, frameCount: event.target.value }))}
-                    placeholder="10"
+                    placeholder="5"
                   />
                 </div>
 
@@ -1412,12 +1419,12 @@ export default function MarketingCampaignsPage() {
                           ) : null}
 
                           <div className="grid gap-3">
-                            {[
+                            {([
                               ["Reasons", qaSummary.reasons],
                               ["Caption Issues", qaSummary.captionIssues],
                               ["Blocked Caption Patterns", qaSummary.blockedCaptionPatterns],
                               ["Required Shot Families", qaSummary.requiredShotFamilies],
-                            ].map(([label, items]) =>
+                            ] as Array<[string, string[]]>).map(([label, items]) =>
                               Array.isArray(items) && items.length > 0 ? (
                                 <div key={label} className="rounded-[20px] border border-[#efebf6] bg-[#fbfafc] p-4">
                                   <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8a7bc4]">

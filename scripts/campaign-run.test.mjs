@@ -179,7 +179,8 @@ test("campaign image generation uses real image references for consistency", asy
   assert.match(source, /import \{ toFile \} from "openai\/uploads";/);
   assert.match(source, /client\.images\.edit/);
   assert.match(source, /frame-01-character-reference\.png/);
-  assert.match(source, /do not copy its pose, camera angle, table setup, or prop layout/i);
+  assert.match(source, /do not copy its pose, camera angle, color palette, table setup, prop layout/i);
+  assert.match(source, /not a style board or prop board/i);
 });
 
 test("normalizeSocialCopyForFramePlan pads missing captions to match frame count", () => {
@@ -353,15 +354,45 @@ test("repairStoryboardSceneSpecForBudget removes unsellable paper and screen loc
   });
 
   assert.match(repaired.flyerLock.value, /digital delay evidence/i);
-  assert.match(repaired.screenProofRequirements.value, /product proof only twice/i);
+  assert.match(repaired.screenProofRequirements.value, /approved phone-proof frames/i);
   assert.match(repaired.disallowedProps.value, /no large readable fake printed words/i);
   assert.match(repaired.disallowedProps.value, /no gymnastics/i);
   assert.match(repaired.disallowedProps.value, /no completed party table/i);
   assert.match(repaired.disallowedProps.value, /no extra tabletop planning props/i);
   assert.match(repaired.disallowedProps.value, /no offline delay props/i);
-  assert.match(repaired.framingBaseline.value, /phone alert/i);
+  assert.match(repaired.framingBaseline.value, /planning pressure/i);
   assert.match(repaired.framingBaseline.value, /do not repeat static kitchen or seated table shots/i);
   assert.doesNotMatch(repaired.screenProofRequirements.value, /every frame/i);
+});
+
+test("repairStoryboardSceneSpecForBudget prevents inferred lavender takeover", () => {
+  const repaired = repairStoryboardSceneSpecForBudget({
+    outfitLock: { value: "same lavender sweater and lavender accessories", source: "inferred" },
+    phoneLock: { value: "same lavender phone case", source: "inferred" },
+    locationLock: { value: "lavender curtains, towels, pillows, mug, vase, and notes", source: "inferred" },
+    backgroundAnchors: { value: "lavender notes and fake corkboard text", source: "inferred" },
+    styleContinuityLock: { value: "all lavender premium palette", source: "inferred" },
+  });
+
+  assert.match(repaired.outfitLock.value, /neutral colors/i);
+  assert.match(repaired.outfitLock.value, /no lavender or purple sweater/i);
+  assert.match(repaired.phoneLock.value, /neutral black or dark/i);
+  assert.match(repaired.phoneLock.value, /not as a matching lavender phone case/i);
+  assert.match(repaired.locationLock.value, /mostly neutral decor/i);
+  assert.match(repaired.locationLock.value, /one or two small accents/i);
+  assert.match(repaired.backgroundAnchors.value, /no fake readable corkboard planning notes/i);
+  assert.match(repaired.backgroundAnchors.value, /no repeated matching lavender decor set/i);
+  assert.match(repaired.styleContinuityLock.value, /avoid a monochrome purple or lavender palette/i);
+});
+
+test("repairStoryboardSceneSpecForBudget preserves explicit user color locks", () => {
+  const repaired = repairStoryboardSceneSpecForBudget({
+    outfitLock: { value: "same lavender sweater requested by the founder", source: "user" },
+    phoneLock: { value: "same lavender phone case requested by the founder", source: "user" },
+  });
+
+  assert.equal(repaired.outfitLock.value, "same lavender sweater requested by the founder");
+  assert.equal(repaired.phoneLock.value, "same lavender phone case requested by the founder");
 });
 
 test("inferFramePhoneDominance catches phone-heavy text even when mislabeled", () => {
@@ -409,7 +440,7 @@ test("validateStoryboardFrameBudget fails inferred phone dominance and missing s
   });
 
   assert.equal(review.pass, false);
-  assert.match(review.reasons.join(" "), /Excessive phone-dominant frames: 5/);
+  assert.match(review.reasons.join(" "), /Excessive phone-dominant frames: 4/);
   assert.match(review.reasons.join(" "), /Missing social-proof frame/);
   assert.match(review.feedback.rewriteBrief, /replace Google-search/i);
   assert.match(review.feedback.rewriteBrief, /social-proof or trust-signal/i);
@@ -531,6 +562,271 @@ test("validateStoryboardFrameBudget passes a varied ten-frame plan", () => {
   });
 
   assert.equal(review.pass, true);
+});
+
+test("validateStoryboardFrameBudget passes a nine-frame non-demo plan with explicit no-risk strings", () => {
+  const framePlan = [
+    {
+      frameNumber: 1,
+      title: "Planning pressure",
+      actionBeat: "the mom organizes birthday details in a clean kitchen",
+      cameraShot: "wide observational room shot",
+      composition: "clean kitchen island, no phone foreground",
+      mood: "busy",
+      persuasionRole: "hook",
+      screenState: "no product proof yet",
+      propFocus: "person and clean room",
+      emotionalBeat: "pressure",
+      proofTarget: "show the planning problem",
+      mustDifferFromPrevious: "establish environment",
+      shotFamily: "wide-environment",
+      phoneDominance: "none",
+      brandingPresence: "none",
+      disallowedPropRisk: "none",
+    },
+    {
+      frameNumber: 2,
+      title: "Details gathered",
+      actionBeat: "she reviews details on a laptop at the counter",
+      cameraShot: "environment detail",
+      composition: "laptop interface is visible but the phone is absent",
+      mood: "focused",
+      persuasionRole: "pain-proof",
+      screenState: "event details still unresolved",
+      propFocus: "hands and counter",
+      emotionalBeat: "friction",
+      proofTarget: "make the task concrete",
+      mustDifferFromPrevious: "move to detail",
+      shotFamily: "environment-detail",
+      phoneDominance: "none",
+      brandingPresence: "none",
+      disallowedPropRisk: "none",
+    },
+    {
+      frameNumber: 3,
+      title: "Product entry",
+      actionBeat: "she opens Envitefy on a naturally held phone",
+      cameraShot: "hands action",
+      composition: "phone screen visible in two hands",
+      mood: "decisive",
+      persuasionRole: "product-entry",
+      screenState: "product entry begins",
+      propFocus: "phone action",
+      emotionalBeat: "decision",
+      proofTarget: "show product turn",
+      mustDifferFromPrevious: "change to phone action",
+      shotFamily: "hands-action",
+      phoneDominance: "dominant",
+      brandingPresence: "subtle",
+      disallowedPropRisk: "none",
+    },
+    {
+      frameNumber: 4,
+      title: "Momentum",
+      actionBeat: "she moves through the room with the task under control",
+      cameraShot: "over shoulder",
+      composition: "no device foreground",
+      mood: "calmer",
+      persuasionRole: "transition",
+      screenState: "product action underway",
+      propFocus: "person moving",
+      emotionalBeat: "relief begins",
+      proofTarget: "avoid another demo",
+      mustDifferFromPrevious: "change to room movement",
+      shotFamily: "over-shoulder",
+      phoneDominance: "none",
+      brandingPresence: "none",
+      disallowedPropRisk: "none",
+    },
+    {
+      frameNumber: 5,
+      title: "Live page proof",
+      actionBeat: "a polished Envitefy live event page appears on a phone lying flat",
+      cameraShot: "proof close-up",
+      composition: "phone screen close-up with full surface support",
+      mood: "polished",
+      persuasionRole: "product-proof",
+      screenState: "live page is underway",
+      propFocus: "Envitefy screen",
+      emotionalBeat: "control",
+      proofTarget: "prove creation",
+      mustDifferFromPrevious: "change to product proof",
+      shotFamily: "phone-proof",
+      phoneDominance: "dominant",
+      brandingPresence: "screen",
+      disallowedPropRisk: "none",
+    },
+    {
+      frameNumber: 6,
+      title: "Relief",
+      actionBeat: "she smiles with her child nearby",
+      cameraShot: "reaction",
+      composition: "same bright home, no phone visible",
+      mood: "relieved",
+      persuasionRole: "emotional-release",
+      screenState: "product reduced uncertainty",
+      propFocus: "faces and posture",
+      emotionalBeat: "relief",
+      proofTarget: "prove the emotional shift",
+      mustDifferFromPrevious: "change away from product proof",
+      shotFamily: "reaction",
+      phoneDominance: "none",
+      brandingPresence: "none",
+      disallowedPropRisk: "none",
+    },
+    {
+      frameNumber: 7,
+      title: "Send-ready proof",
+      actionBeat: "the send-ready live invite is visible on a supported phone",
+      cameraShot: "tight angled proof",
+      composition: "phone screen close-up, held naturally in two hands",
+      mood: "confident",
+      persuasionRole: "send-ready-proof",
+      screenState: "finished invite ready to share",
+      propFocus: "finished live-card proof",
+      emotionalBeat: "certainty",
+      proofTarget: "prove finished result",
+      mustDifferFromPrevious: "change to final product proof",
+      shotFamily: "phone-proof",
+      phoneDominance: "dominant",
+      brandingPresence: "screen",
+      disallowedPropRisk: "none",
+    },
+    {
+      frameNumber: 8,
+      title: "Social confidence",
+      actionBeat: "her child reacts happily in the room",
+      cameraShot: "candid social proof",
+      composition: "no phone foreground, no extra screens",
+      mood: "warm",
+      persuasionRole: "social-proof",
+      screenState: "confidence comes from the real reaction",
+      propFocus: "human response",
+      emotionalBeat: "confidence",
+      proofTarget: "show social approval without a phone demo",
+      mustDifferFromPrevious: "change to human validation",
+      shotFamily: "social-proof",
+      phoneDominance: "none",
+      brandingPresence: "none",
+      disallowedPropRisk: "none",
+    },
+    {
+      frameNumber: 9,
+      title: "Final payoff",
+      actionBeat: "the mom holds her phone naturally at her side while smiling in the clean kitchen",
+      cameraShot: "final in-scene hero",
+      composition: "no phone screen visible, no device foreground, no logo card",
+      mood: "proud",
+      persuasionRole: "final-payoff",
+      screenState: "single final emotional payoff",
+      propFocus: "host transformation",
+      emotionalBeat: "conversion",
+      proofTarget: "land the benefit",
+      mustDifferFromPrevious: "end on a human payoff",
+      shotFamily: "final-hero",
+      phoneDominance: "none",
+      brandingPresence: "none",
+      disallowedPropRisk: "none",
+    },
+  ];
+
+  const review = validateStoryboardFrameBudget({
+    requestPayload: { input: { frameCount: 9 } },
+    sceneSpec: { numberOfFrames: { value: 9 } },
+    framePlan,
+    brief: {},
+  });
+
+  assert.equal(review.pass, true);
+  assert.equal(inferFramePhoneDominance(framePlan[1]), "none");
+  assert.equal(inferFramePhoneDominance(framePlan[8]), "none");
+});
+
+test("repairStoryboardFrameBudget creates a compliant compact five-frame plan", () => {
+  const sceneSpec = normalizeSceneSpec(
+    {
+      rawPrompt: "birthday pool party live event page ad",
+      overrides: { numberOfFrames: 5 },
+      extraNotes: "",
+    },
+    {},
+  );
+  const badPlan = Array.from({ length: 5 }, (_value, index) => ({
+    frameNumber: index + 1,
+    title: `Bad ${index + 1}`,
+    actionBeat: "holding the phone toward camera with the app screen visible",
+    cameraShot: "phone demo",
+    composition: "phone screen fills the frame",
+    mood: "flat",
+    persuasionRole: index === 4 ? "final-payoff" : "proof",
+    screenState: "phone screen",
+    propFocus: "phone",
+    emotionalBeat: "demo",
+    proofTarget: "phone demo",
+    mustDifferFromPrevious: "screen changes",
+    shotFamily: index === 4 ? "phone-proof" : "phone-proof",
+    phoneDominance: "dominant",
+    brandingPresence: "screen",
+    disallowedPropRisk: "none",
+  }));
+
+  const repaired = repairStoryboardFrameBudget(sceneSpec, badPlan, { product: "Envitefy" });
+  const review = validateStoryboardFrameBudget({
+    requestPayload: { input: { frameCount: 5 } },
+    sceneSpec,
+    framePlan: repaired,
+    brief: {},
+  });
+
+  assert.equal(repaired.length, 5);
+  assert.equal(repaired[2].phoneDominance, "dominant");
+  assert.equal(repaired[4].shotFamily, "final-hero");
+  assert.equal(review.pass, true);
+});
+
+test("repairStoryboardFrameBudget preserves explicit child and event context in compact repair", () => {
+  const sceneSpec = normalizeSceneSpec(
+    {
+      rawPrompt: "busy mom creates a live event page for Caleb's birthday pool party",
+      overrides: { numberOfFrames: 5 },
+      extraNotes: "Use the same mom and child across all frames.",
+    },
+    {},
+  );
+  const badPlan = Array.from({ length: 5 }, (_value, index) => ({
+    frameNumber: index + 1,
+    title: `Bad ${index + 1}`,
+    actionBeat: "holding the phone toward camera with the app screen visible",
+    cameraShot: "phone demo",
+    composition: "phone screen fills the frame",
+    mood: "flat",
+    persuasionRole: index === 4 ? "final-payoff" : "proof",
+    screenState: "phone screen",
+    propFocus: "phone",
+    emotionalBeat: "demo",
+    proofTarget: "phone demo",
+    mustDifferFromPrevious: "screen changes",
+    shotFamily: "phone-proof",
+    phoneDominance: "dominant",
+    brandingPresence: "screen",
+    disallowedPropRisk: "none",
+  }));
+
+  const repaired = repairStoryboardFrameBudget(sceneSpec, badPlan, {
+    product: "Envitefy",
+    campaignInput: {
+      criteria: "Show a busy mom creating a live event page for Caleb's 7th birthday pool party.",
+      looseInput: { extraNotes: "Use the same mom and child across all frames." },
+    },
+  });
+  const serialized = JSON.stringify(repaired);
+
+  assert.match(repaired[0].actionBeat, /Caleb/);
+  assert.match(repaired[2].actionBeat, /Caleb's birthday pool-party live invite/);
+  assert.match(repaired[4].actionBeat, /host and Caleb relax together/i);
+  assert.match(repaired[4].composition, /no phone visible/i);
+  assert.match(serialized, /same neutral home/i);
+  assert.doesNotMatch(serialized, /soft branded color accents in the room/i);
 });
 
 test("normalizeCreativeQaForStoryboardBudget passes soft notes when hard budget passes", () => {

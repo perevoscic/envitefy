@@ -431,7 +431,8 @@ function buildReferencePrompt(prompt, referenceImages = []) {
     "REFERENCE IMAGES:",
     names,
     "Use the attached reference images as visual guidance for character appearance, environment, wardrobe, props, product UI, color, mood, or composition when relevant.",
-    "If a reference image is named frame-01-character-reference, use it only for the same person's face, hairstyle, wardrobe, body type, and home lighting; do not copy its pose, camera angle, table setup, or prop layout into later frames.",
+    "If a reference image is named frame-01-character-reference, use it only for the same person's face, hairstyle, body type, and home lighting; do not copy its pose, camera angle, color palette, table setup, prop layout, decor accents, curtains, mugs, towels, notes, phone-case color, or background accessory colors into later frames.",
+    "The frame-01 reference is not a style board or prop board. Preserve the frame-specific action, camera instructions, and brand-color discipline over the reference image.",
     "Do not copy unrelated artifacts from the references. Preserve the frame-specific action and camera instructions.",
   ].join("\n");
 }
@@ -847,12 +848,31 @@ function pickAllowedScreenBrandingFrames(frames) {
 function pickAllowedPhoneDominantFrames(frames) {
   const total = Array.isArray(frames) ? frames.length : 0;
   if (total >= 10) return [3, 5, 8];
-  if (total >= 8) return [Math.ceil(total / 2), Math.max(1, total - 2)];
+  if (total === 9) return [3, 5, 7];
+  if (total === 8) return [3, 5, 7];
+  if (total >= 6) return [3, 5];
+  if (total >= 4) return [3];
 
   return frames
     .filter((frame) => clean(frame.shotFamily) === "phone-proof")
     .map((frame) => frame.frameNumber)
     .slice(0, 2);
+}
+
+function hasDisallowedPropRisk(value) {
+  const risk = clean(value);
+  if (!risk) return false;
+  const normalized = risk.toLowerCase().replace(/[.\s_-]+$/g, "").trim();
+  return ![
+    "none",
+    "no",
+    "no risk",
+    "n/a",
+    "na",
+    "not applicable",
+    "no disallowed prop risk",
+    "no disallowed props",
+  ].includes(normalized);
 }
 
 function frameSearchText(frame) {
@@ -883,6 +903,11 @@ export function inferFramePhoneDominance(frame) {
   const phoneIsSecondary = /\b(phone|screen)\s+(?:is\s+)?secondary\b|\bsecondary\s+(?:phone|screen)\b|\bphone down\b|\bno phone\b|\bphone absent\b/.test(
     text,
   );
+  const phoneIsNonDominant =
+    phoneIsSecondary ||
+    /\bno phone screen visible\b|\bno device foreground\b|\bphone at (?:her|his|their|the) side\b|\bphone held low\b|\bphone not visible\b|\bphone tucked away\b/.test(
+      text,
+    );
   const dominantPatterns = [
     /\bgoogle search\b/,
     /\bsearch results?\b/,
@@ -892,22 +917,27 @@ export function inferFramePhoneDominance(frame) {
     /\bphone (?:close-?up|fills|dominates)\b/,
     /\bphone (?:in|as) (?:the )?foreground\b/,
     /\bapp screen\b/,
-    /\bui\b/,
-    /\binterface\b/,
+    /\bmobile (?:ui|interface)\b/,
+    /\bphone (?:ui|interface)\b/,
     /\btyping (?:on|into) (?:the )?phone\b/,
     /\btapping (?:on )?(?:the )?phone\b/,
     /\bscrolling (?:on )?(?:the )?phone\b/,
-    /\bholding (?:her |the )?phone\b/,
+    /\bheld-phone proof\b/,
+    /\bholding (?:her |his |their |the )?phone (?:up|toward|to) (?:the )?(?:camera|lens)\b/,
+    /\bphone (?:held|holding)[^.!?]{0,80}\b(?:screen visible|proof|foreground|toward camera)\b/,
   ];
 
   const dominantSignalCount = dominantPatterns.filter((pattern) => pattern.test(text)).length;
-  if (dominantSignalCount >= (phoneIsSecondary ? 2 : 1)) return "dominant";
+  if (dominantSignalCount >= (phoneIsNonDominant ? 2 : 1)) return "dominant";
   return declared === "none" ? "none" : "secondary";
 }
 
 export function finalFrameIsGraphicLogoPayoff(frame) {
   if (!frame) return false;
-  const text = frameSearchText(frame);
+  const text = frameSearchText(frame).replace(
+    /\b(?:no|not|without|must not (?:be|describe))[^.]{0,140}\b(?:graphic logo|logo shot|standalone logo|plain logo|end card|end-card|brand card|cta card|text-only|solid background|logo on)[^.]{0,140}/g,
+    "",
+  );
   return /\b(graphic logo|logo shot|standalone logo|plain logo|end card|end-card|brand card|cta card|text-only|solid background|logo on)\b/.test(
     text,
   );
@@ -926,10 +956,59 @@ function replaceInferredSceneSpecField(sceneSpec, key, value) {
   return sceneSpecStringField(value, "budget-repair");
 }
 
+function searchableCampaignText(value) {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.map((entry) => searchableCampaignText(entry)).filter(Boolean).join(" ");
+  if (value && typeof value === "object") {
+    return Object.values(value)
+      .map((entry) => searchableCampaignText(entry))
+      .filter(Boolean)
+      .join(" ");
+  }
+  if (value == null) return "";
+  return String(value);
+}
+
+function requestedChildLabel(brief = {}) {
+  const text = searchableCampaignText(brief);
+  if (/\bcaleb\b/i.test(text)) return "Caleb";
+  if (/\b(?:son|child|kid|boy|daughter|girl)\b/i.test(text)) return "her child";
+  return "";
+}
+
+function requestedInviteSubject(brief = {}) {
+  const text = searchableCampaignText(brief).toLowerCase();
+  if (/\bcaleb\b/.test(text) && /\bpool party\b/.test(text)) return "Caleb's birthday pool-party live invite";
+  if (/\bcaleb\b/.test(text) && /\bbirthday\b/.test(text)) return "Caleb's birthday live invite";
+  if (/\bpool party\b/.test(text)) return "the birthday pool-party live invite";
+  if (/\bbirthday\b/.test(text)) return "the birthday live invite";
+  return "the live invite";
+}
+
 export function repairStoryboardSceneSpecForBudget(sceneSpec) {
   if (!sceneSpec) return sceneSpec;
   return {
     ...sceneSpec,
+    outfitLock: replaceInferredSceneSpecField(
+      sceneSpec,
+      "outfitLock",
+      "same modern casual parent outfit in neutral colors such as warm white, soft blue, sage, gray, or denim; no lavender or purple sweater unless the user explicitly requested that exact wardrobe",
+    ),
+    phoneLock: replaceInferredSceneSpecField(
+      sceneSpec,
+      "phoneLock",
+      "the same neutral black or dark modern smartphone; brand color may appear on the product screen only, not as a matching lavender phone case unless the user explicitly requested it",
+    ),
+    locationLock: replaceInferredSceneSpecField(
+      sceneSpec,
+      "locationLock",
+      "same bright neutral family home kitchen and living room with warm daylight and mostly neutral decor; purple/lavender is limited to one or two small accents, not wardrobe plus curtains plus towels plus mug plus pillows plus vase plus notes",
+    ),
+    backgroundAnchors: replaceInferredSceneSpecField(
+      sceneSpec,
+      "backgroundAnchors",
+      "neutral home kitchen or living room, clean counter, window light, same phone, optional laptop only when needed for digital proof, no fake readable corkboard planning notes, no repeated matching lavender decor set",
+    ),
     flyerLock: replaceInferredSceneSpecField(
       sceneSpec,
       "flyerLock",
@@ -938,27 +1017,27 @@ export function repairStoryboardSceneSpecForBudget(sceneSpec) {
     screenLock: replaceInferredSceneSpecField(
       sceneSpec,
       "screenLock",
-      "the same Envitefy mobile live-card flow appears only in the two approved phone-proof frames: frame 5 shows quick birthday invite creation, frame 8 shows a polished send-ready live invite or share confirmation; all other frames keep screens absent or secondary",
+      "the same Envitefy mobile live-card flow appears only in the approved phone-proof frames from the shot budget; one frame shows quick event-page creation and one later frame shows the polished send-ready live invite or share confirmation; all other frames keep screens absent or secondary",
     ),
     propsKeyObjects: replaceInferredSceneSpecField(
       sceneSpec,
       "propsKeyObjects",
-      "same smartphone, optional laptop for email/search proof, and clean everyday home context; the product proof is the live digital invite, not offline delay props or party decoration handling",
+      "same smartphone, optional laptop only when it is explicitly used for digital planning proof, and clean everyday home context; the product proof is the live digital invite, not offline props or party decoration handling",
     ),
     propPriority: replaceInferredSceneSpecField(
       sceneSpec,
       "propPriority",
-      "prioritize the human problem, the clean Envitefy live-card result, and the host's relief; prove delay with digital UI; keep counters clear unless extra tabletop props are explicitly requested",
+      "prioritize the human problem, the clean Envitefy live-card result, and the host's relief; prove planning pressure with human action or limited digital proof; keep counters clear unless extra tabletop props are explicitly requested",
     ),
     disallowedProps: replaceInferredSceneSpecField(
       sceneSpec,
       "disallowedProps",
-      "no tablet, no extra screens beyond one phone and optional laptop for search/email proof, no children, no pets, no gym, no gymnastics, no sports venue, no dance studio, no trophies, no medals, no athlete posters, no completed party table, no party-decor clutter, no extra tabletop planning props, no offline delay props, no large readable fake printed words, no phone standing upright or leaning unsupported, and no graphic logo end card",
+      "no tablet, no extra screens beyond one phone and an optional laptop only when explicitly needed, no children unless the brief explicitly requested them, no pets, no gym, no gymnastics, no sports venue, no dance studio, no trophies, no medals, no athlete posters, no completed party table, no party-decor clutter, no extra tabletop planning props, no offline delay props, no large readable fake printed words, no phone standing upright or leaning unsupported, and no graphic logo end card",
     ),
     screenProofRequirements: replaceInferredSceneSpecField(
       sceneSpec,
       "screenProofRequirements",
-      "show product proof only twice: frame 5 quick invite creation on Envitefy, frame 8 polished live birthday invite ready to share; show search/order-status proof only in the early problem/decision beats; do not show repeated UI close-ups or phone screens in the final hero",
+      "show product proof only in the approved phone-proof frames: one quick event-page creation moment on Envitefy and one polished live invite ready to share; do not show repeated UI close-ups or phone screens in the final hero",
     ),
     visualArc: replaceInferredSceneSpecField(
       sceneSpec,
@@ -968,12 +1047,17 @@ export function repairStoryboardSceneSpecForBudget(sceneSpec) {
     propContinuityLock: replaceInferredSceneSpecField(
       sceneSpec,
       "propContinuityLock",
-      "same phone, optional laptop for search/email proof, and same clean home context; avoid extra tabletop planning props and offline delay props unless explicitly requested",
+      "same phone, optional laptop for search/email proof, and same clean neutral home context; keep brand color as one or two small accents, do not clone the same lavender decor prop set across every frame, and avoid extra tabletop planning props and offline delay props unless explicitly requested",
+    ),
+    styleContinuityLock: replaceInferredSceneSpecField(
+      sceneSpec,
+      "styleContinuityLock",
+      "realistic premium lifestyle ad photography with warm neutral daylight and subtle brand-color accents only; avoid a monochrome purple or lavender palette",
     ),
     framingBaseline: replaceInferredSceneSpecField(
       sceneSpec,
       "framingBaseline",
-      "varied candid framing with a saleable ad rhythm: environment, phone alert, laptop/email or order-status proof, search intent, product entry, two flat-phone or two-hands product-proof inserts, social validation, and a non-phone final hero; do not repeat static kitchen or seated table shots",
+      "varied candid framing with a saleable ad rhythm: environment, planning pressure, product entry, one or two flat-phone or two-hands product-proof inserts, social validation when there is room, and a non-phone final hero; do not repeat static kitchen or seated table shots",
     ),
   };
 }
@@ -1148,10 +1232,271 @@ function budgetRepairFrameTemplates(brief = {}) {
   }));
 }
 
+function compactBudgetRepairFrameTemplates(total, brief = {}) {
+  const product = clean(brief?.product) || "Envitefy";
+  const childLabel = requestedChildLabel(brief);
+  const inviteSubject = requestedInviteSubject(brief);
+  const childNearby = childLabel ? ` with ${childLabel} nearby` : "";
+  const childSocial = childLabel || "a family member or nearby helper";
+  const finalFrame = {
+    title: "Ready to share",
+    actionBeat: childLabel
+      ? `the host and ${childLabel} relax together in the real home setting after ${inviteSubject} has been shared, with no phone visible at all`
+      : "the host stands relaxed in the real home setting after the live event page has been shared, with no phone visible at all",
+    cameraShot: "final in-scene hero payoff",
+    composition: childLabel
+      ? `warm vertical hero view centered on the relieved host and ${childLabel} in the same clean neutral home, one subtle brand-color accent at most, no phone visible, no standalone graphic layout, and no text overlay`
+      : "warm vertical hero view centered on the relieved host in the same clean neutral home, one subtle brand-color accent at most, no phone visible, no standalone graphic layout, and no text overlay",
+    mood: "relieved, proud, ready",
+    persuasionRole: "final-payoff",
+    screenState: "single final emotional payoff after the digital invite is handled",
+    propFocus: childLabel ? `host transformation, ${childLabel}, and clean home context` : "host transformation and clean home context",
+    emotionalBeat: "conversion",
+    proofTarget: "land the benefit without another product demo",
+    mustDifferFromPrevious: "end on a human payoff instead of a screen",
+    shotFamily: "final-hero",
+    phoneDominance: "none",
+    brandingPresence: "none",
+  };
+
+  const slots = [
+    {
+      title: "Planning pressure",
+      actionBeat: `the host pauses in the clean home planning space${childNearby}, visibly juggling event details before the product appears`,
+      cameraShot: "wide observational room shot",
+      composition: childLabel
+        ? `wide candid view of the host and ${childLabel} in the kitchen or living room, ordinary clean neutral surfaces, natural daylight, no party setup and no device foreground`
+        : "wide candid view of the host in the kitchen or living room, ordinary clean neutral surfaces, natural daylight, no party setup and no device foreground",
+      mood: "busy, warm, realistic",
+      persuasionRole: "hook",
+      screenState: "no product proof yet",
+      propFocus: "host expression, room context, clean planning surface",
+      emotionalBeat: "pressure",
+      proofTarget: "show the human planning problem",
+      mustDifferFromPrevious: "establish the full environment and stakes",
+      shotFamily: "wide-environment",
+      phoneDominance: "none",
+      brandingPresence: "none",
+    },
+    {
+      title: "Details gathered",
+      actionBeat: `the host organizes the event details${childNearby} with hands in motion while keeping the setting bright, clean, and realistic`,
+      cameraShot: "environment-detail insert",
+      composition: "close environmental detail of hands, countertop, and simple planning cues, with no extra tabletop clutter and no product screen dominating the frame",
+      mood: "specific, focused",
+      persuasionRole: "pain-proof",
+      screenState: "event details are still unresolved",
+      propFocus: "hands, clean surface, ordinary home context",
+      emotionalBeat: "friction",
+      proofTarget: "make the task feel concrete without adding blocked props",
+      mustDifferFromPrevious: "move from wide environment to tactile detail",
+      shotFamily: "environment-detail",
+      phoneDominance: "none",
+      brandingPresence: "none",
+    },
+    {
+      title: "Product path starts",
+      actionBeat: `the host opens ${product} on a naturally held phone and starts turning the event details into ${inviteSubject}`,
+      cameraShot: "hands-in-action side angle",
+      composition: "side-angle hands and phone action with visible natural grip, screen visible enough to show product entry, clean home background, not held up to the lens",
+      mood: "decisive, practical",
+      persuasionRole: "product-entry",
+      screenState: "product entry begins on the phone",
+      propFocus: "two-handed phone action",
+      emotionalBeat: "decision",
+      proofTarget: "show the turn toward the product",
+      mustDifferFromPrevious: "change from environment detail to active product entry",
+      shotFamily: "hands-action",
+      phoneDominance: "dominant",
+      brandingPresence: "subtle",
+    },
+    {
+      title: "Human momentum",
+      actionBeat: `from a three-quarter rear angle, the host moves through the room${childNearby} with the event details now under control`,
+      cameraShot: "over-the-shoulder movement shot",
+      composition: "over-the-shoulder or side movement in the same home, body angle changed, no phone foreground and no product screen",
+      mood: "focused, calmer",
+      persuasionRole: "transition",
+      screenState: "the product action is underway but the frame stays human",
+      propFocus: "host movement and room continuity",
+      emotionalBeat: "relief begins",
+      proofTarget: "avoid making every middle beat a screen",
+      mustDifferFromPrevious: "change from hands and phone to room-level human movement",
+      shotFamily: "over-shoulder",
+      phoneDominance: "none",
+      brandingPresence: "none",
+    },
+    {
+      title: "Live page proof",
+      actionBeat: `${product} turns the event details into ${inviteSubject} on a phone lying flat screen-up or held naturally in two hands`,
+      cameraShot: "angled product-proof close-up",
+      composition: "supported phone proof from a shallow overhead or natural two-hand angle, screen visible, clean surface or hands, no upright or leaning phone",
+      mood: "clear, useful, polished",
+      persuasionRole: "product-proof",
+      screenState: `${inviteSubject} creation is visibly underway`,
+      propFocus: `${product} live-card proof`,
+      emotionalBeat: "control",
+      proofTarget: "prove the creation action",
+      mustDifferFromPrevious: "change to the first allowed product-proof close-up",
+      shotFamily: "phone-proof",
+      phoneDominance: "dominant",
+      brandingPresence: "screen",
+    },
+    {
+      title: "Pressure drops",
+      actionBeat: `the host visibly relaxes${childNearby} as the invite work starts feeling handled`,
+      cameraShot: "candid side-profile reaction",
+      composition: childLabel
+        ? `human reaction with ${childLabel} in the same neutral home, no device emphasis, changed camera distance and body angle`
+        : "human reaction in the same neutral home with no device emphasis, changed camera distance and body angle",
+      mood: "relieved, grounded",
+      persuasionRole: "emotional-release",
+      screenState: "the product has reduced uncertainty",
+      propFocus: "face, posture, room context",
+      emotionalBeat: "relief",
+      proofTarget: "prove the emotional shift",
+      mustDifferFromPrevious: "change from product proof to human reaction away from the device",
+      shotFamily: "reaction",
+      phoneDominance: "none",
+      brandingPresence: "none",
+    },
+    {
+      title: "Send-ready proof",
+      actionBeat: `${product} shows the polished send-ready ${inviteSubject} or share confirmation on a supported phone`,
+      cameraShot: "tight angled send-ready proof",
+      composition: "phone lies flat screen-up or is held in two hands with a believable grip, finished live invite visible, no direct presentation pose",
+      mood: "premium, finished, confident",
+      persuasionRole: "send-ready-proof",
+      screenState: `polished ${inviteSubject} is ready to share`,
+      propFocus: `finished ${product} live-card proof`,
+      emotionalBeat: "certainty",
+      proofTarget: "prove the finished result is polished",
+      mustDifferFromPrevious: "change to the final allowed product-proof close-up",
+      shotFamily: "phone-proof",
+      phoneDominance: "dominant",
+      brandingPresence: "screen",
+    },
+    {
+      title: "Confidence spreads",
+      actionBeat: `${childSocial} reacts positively in the real room, making the finished invite feel socially approved`,
+      cameraShot: "candid two-person social proof",
+      composition: `natural side-angle interaction with ${childSocial} in the same neutral home with no phone foreground, no extra screens, no party setup, and no staged phone demo`,
+      mood: "reassuring, credible",
+      persuasionRole: "social-proof",
+      screenState: "trust comes from another person reacting positively in the room",
+      propFocus: childLabel ? `${childLabel}'s response and room context` : "human response and room context",
+      emotionalBeat: "confidence",
+      proofTarget: "show trust and design confidence through social reaction",
+      mustDifferFromPrevious: "change from solo reaction or product proof to human validation",
+      shotFamily: "social-proof",
+      phoneDominance: "none",
+      brandingPresence: "subtle",
+    },
+    finalFrame,
+  ];
+
+  const indexesByTotal = {
+    5: [0, 1, 4, 5, 8],
+    6: [0, 1, 2, 5, 4, 8],
+    7: [0, 1, 2, 5, 4, 7, 8],
+    8: [0, 1, 2, 3, 4, 5, 6, 8],
+    9: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+  };
+  const indexes = indexesByTotal[Math.max(5, Math.min(9, total))] || indexesByTotal[5];
+
+  return indexes.map((sourceIndex, index) => ({
+    frameNumber: index + 1,
+    disallowedPropRisk: "",
+    ...slots[sourceIndex],
+  }));
+}
+
 export function repairStoryboardFrameBudget(sceneSpec, framePlan, brief = {}) {
   const frames = Array.isArray(framePlan) ? framePlan : [];
+  if (frames.length >= 5 && frames.length < 10) {
+    return normalizeFramePlan(sceneSpec, compactBudgetRepairFrameTemplates(frames.length, brief));
+  }
   if (frames.length < 10) return frames;
   return normalizeFramePlan(sceneSpec, budgetRepairFrameTemplates(brief).slice(0, frames.length));
+}
+
+function strictShotBudgetMapForFrameCount(total) {
+  if (total >= 10) {
+    return [
+      "1 wide-environment none",
+      "2 environment-detail none",
+      "3 hands-action dominant search-or-product-entry",
+      "4 over-shoulder none",
+      "5 phone-proof dominant",
+      "6 reaction none",
+      "7 social-proof none-or-secondary",
+      "8 phone-proof dominant",
+      "9 reaction none",
+      "10 final-hero none",
+    ];
+  }
+
+  if (total === 9) {
+    return [
+      "1 wide-environment none",
+      "2 environment-detail none",
+      "3 hands-action dominant product-entry",
+      "4 over-shoulder none",
+      "5 phone-proof dominant",
+      "6 reaction none",
+      "7 phone-proof dominant",
+      "8 social-proof none-or-secondary",
+      "9 final-hero none",
+    ];
+  }
+
+  if (total === 8) {
+    return [
+      "1 wide-environment none",
+      "2 environment-detail none",
+      "3 hands-action dominant product-entry",
+      "4 over-shoulder none",
+      "5 phone-proof dominant",
+      "6 reaction none",
+      "7 phone-proof dominant",
+      "8 final-hero none",
+    ];
+  }
+
+  if (total === 7) {
+    return [
+      "1 wide-environment none",
+      "2 environment-detail none",
+      "3 hands-action dominant product-entry",
+      "4 reaction none",
+      "5 phone-proof dominant",
+      "6 social-proof none-or-secondary",
+      "7 final-hero none",
+    ];
+  }
+
+  if (total === 6) {
+    return [
+      "1 wide-environment none",
+      "2 environment-detail none",
+      "3 hands-action dominant product-entry",
+      "4 reaction none",
+      "5 phone-proof dominant",
+      "6 final-hero none",
+    ];
+  }
+
+  if (total === 5) {
+    return [
+      "1 wide-environment none",
+      "2 environment-detail none",
+      "3 phone-proof dominant",
+      "4 reaction none-or-secondary",
+      "5 final-hero none",
+    ];
+  }
+
+  return [];
 }
 
 export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, framePlan, brief }) {
@@ -1181,7 +1526,7 @@ export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, frame
   const allowedPhoneDominantFrames = pickAllowedPhoneDominantFrames(frames);
   const maxPhoneDominantFrames = demoHeavy
     ? Math.max(3, Math.ceil(total / 2))
-    : total >= 10
+    : total >= 4
       ? allowedPhoneDominantFrames.length
       : 3;
   const dominantPhoneFrames = frames
@@ -1208,7 +1553,7 @@ export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, frame
     .filter((frame) => clean(frame.brandingPresence) === "hero")
     .map((frame) => frame.frameNumber);
   const disallowedPropFrames = frames
-    .filter((frame) => clean(frame.disallowedPropRisk))
+    .filter((frame) => hasDisallowedPropRisk(frame.disallowedPropRisk))
     .map((frame) => frame.frameNumber);
   const finalFrame = frames[frames.length - 1];
   const allowedScreenBrandingFrames = pickAllowedScreenBrandingFrames(frames);
@@ -1225,7 +1570,7 @@ export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, frame
     rewriteFrameNumbers.push(...disallowedDominantPhoneFrames);
   }
 
-  if (total >= 10 && !demoHeavy && disallowedDominantPhoneFrames.length > 0) {
+  if (total >= 4 && !demoHeavy && disallowedDominantPhoneFrames.length > 0) {
     reasons.push(
       `Phone-dominant frames outside approved proof slots: ${disallowedDominantPhoneFrames.join(", ")}. Only frames ${allowedPhoneDominantFrames.join(", ")} may be phone-dominant.`,
     );
@@ -1322,6 +1667,10 @@ export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, frame
 
   const framesToRewrite = dedupeNumbers(rewriteFrameNumbers);
   const uniqueRequiredShotFamilies = Array.from(new Set(requiredShotFamilies));
+  const strictShotBudgetMap = strictShotBudgetMapForFrameCount(total);
+  const strictShotBudgetText = strictShotBudgetMap.length
+    ? `use this ${total}-frame map: ${strictShotBudgetMap.join(", ")}, `
+    : "";
   return {
     pass: false,
     reasons,
@@ -1338,21 +1687,7 @@ export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, frame
       singleFinalPayoffFrame: total,
       maxPhoneDominantFrames,
       discardExistingFramePlan: true,
-      strictShotBudgetMap:
-        total >= 10
-          ? [
-              "1 wide-environment none",
-              "2 environment-detail none",
-              "3 hands-action dominant search-intent",
-              "4 over-shoulder none",
-              "5 phone-proof dominant",
-              "6 reaction none",
-              "7 social-proof none-or-secondary",
-              "8 phone-proof dominant",
-              "9 reaction none",
-              "10 final-hero none",
-            ]
-          : [],
+      strictShotBudgetMap,
       valueClarityScore: 3,
       visualVarietyScore: 1,
       productProofScore: 3,
@@ -1362,8 +1697,8 @@ export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, frame
         "at least two phone-secondary or no-phone action/reaction frames, no disallowed props, " +
         "replace Google-search or generic phone-search beats with candid environmental action unless the search is essential, " +
         "include one social-proof or trust-signal frame that is not another phone demo, " +
-        "for ten-frame ads use this map: 1 wide-environment none, 2 environment-detail none, 3 hands-action dominant search-intent, 4 over-shoulder none, 5 phone-proof dominant, 6 reaction none, 7 social-proof none or secondary, 8 phone-proof dominant, 9 reaction none, 10 final-hero none, " +
-        "frame 10 must show the character's emotional transformation in the real scene and must not be a graphic logo, standalone logo, CTA card, or text-only end card, " +
+        strictShotBudgetText +
+        `frame ${total} must show the character's emotional transformation in the real scene and must not be a graphic logo, standalone logo, CTA card, text-only end card, or phone screen, ` +
         `brandingPresence screen only on frames ${allowedScreenBrandingFrames.join(", ") || "none"}, ` +
         `brandingPresence hero only on frame ${allowedHeroBrandingFrame}, all other branding must be subtle or none, ` +
         "and a non-phone final-hero payoff frame.",
@@ -1479,7 +1814,12 @@ async function runStoryboardPlanningLoop({
       const budgetReason = budgetReview.reasons.join(" | ");
       setStageStatus(statusDoc, "coordinator", "warning", { error: budgetReason });
       pushWarning(statusDoc, `Storyboard budget rewrite: ${budgetReason}`);
-      const repairedFramePlan = repairStoryboardFrameBudget(workingSceneSpec, framePlan, brief);
+      const repairContext = {
+        ...brief,
+        campaignInput: requestPayload?.input,
+        looseInput: requestPayload?.input?.looseInput,
+      };
+      const repairedFramePlan = repairStoryboardFrameBudget(workingSceneSpec, framePlan, repairContext);
       const repairedBudgetReview = validateStoryboardFrameBudget({
         requestPayload,
         sceneSpec: workingSceneSpec,

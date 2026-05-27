@@ -57,5 +57,6 @@ pgssl.key
 
 /src/prisma/migrations
 .clawpatch
+public/DEBUG/
 
 client_secret_envitefy_835611267543-h29p0hgqs3od4g94ogqo34lbh0birvfd.apps.googleusercontent.com.json
