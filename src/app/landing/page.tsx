@@ -7,15 +7,15 @@ import LandingExperience from "./LandingExperience";
 const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 export const metadata: Metadata = {
-  title: "Envitefy | AI Concierge for Invites, RSVP & Event Pages",
+  title: "Envitefy | Beautiful Hosted Event Pages, RSVP & Invitations",
   description:
-    "Create a shareable event hub with live cards, RSVP tracking, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, snap, flyer, invite, PDF, schedule, or design idea.",
+    "Create a polished hosted event page with a live invitation, RSVP, maps, calendar saves, registry links, smart sign-ups, and guest updates from one shareable link.",
   keywords: [
-    "AI event concierge",
+    "hosted event page",
+    "event invitation page",
     "live card invitations",
-    "event page builder",
     "event RSVP page",
-    "hosted event hub",
+    "wedding event page",
     "registry links on invitation",
     "smart sign-up forms",
     "wedding weekend page",
@@ -25,9 +25,9 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Envitefy | AI Concierge for Invites, RSVP & Event Pages",
+    title: "Envitefy | Beautiful Hosted Event Pages, RSVP & Invitations",
     description:
-      "Create a shareable event hub with live cards, RSVP tracking, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, snap, flyer, invite, PDF, schedule, or design idea.",
+      "Create a polished hosted event page with a live invitation, RSVP, maps, calendar saves, registry links, smart sign-ups, and guest updates from one shareable link.",
     url: "https://envitefy.com/",
     siteName: "Envitefy",
     images: [buildSiteOgImage(siteOgImageUrl, "Envitefy event pages and invitations preview")],
@@ -35,9 +35,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Envitefy | AI Concierge for Invites, RSVP & Event Pages",
+    title: "Envitefy | Beautiful Hosted Event Pages, RSVP & Invitations",
     description:
-      "Create a shareable event hub with live cards, RSVP tracking, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, snap, flyer, invite, PDF, schedule, or design idea.",
+      "Create a polished hosted event page with a live invitation, RSVP, maps, calendar saves, registry links, smart sign-ups, and guest updates from one shareable link.",
     images: [siteOgImageUrl],
   },
 };
@@ -49,7 +49,7 @@ export default async function LandingPage() {
     name: "Envitefy",
     url: "https://envitefy.com/",
     description:
-      "Create a shareable event hub with live cards, RSVP tracking, calendar, maps, registry links, updates, and smart sign-ups from a message, upload, snap, flyer, invite, PDF, schedule, or design idea.",
+      "Create a polished hosted event page with a live invitation, RSVP, maps, calendar saves, registry links, smart sign-ups, and guest updates from one shareable link.",
   };
 
   const faqLd = {

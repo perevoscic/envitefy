@@ -7,59 +7,82 @@ const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("landing page is Concierge-led and outcome-focused", () => {
+test("landing page is hosted-event-led and premium", () => {
   const page = readSource("src/app/landing/page.tsx");
   const landingExperience = readSource("src/app/landing/LandingExperience.tsx");
   const landingFaqData = readSource("src/app/landing/faq-data.ts");
   const landingFaq = readSource("src/app/landing/sections/LandingFaq.tsx");
 
   assert.match(page, /<LandingExperience \/>/);
-  assert.match(page, /AI Concierge for Invites, RSVP & Event Pages/);
-  assert.match(page, /message, upload, snap, flyer, invite, PDF, schedule, or design idea/);
+  assert.match(page, /Beautiful Hosted Event Pages, RSVP & Invitations/);
+  assert.match(page, /polished hosted event page/);
+  assert.doesNotMatch(page, /message, upload, snap, flyer, invite, PDF, schedule, or design idea/);
 
   assert.match(landingExperience, /id="landing-hero"/);
-  assert.match(landingExperience, /Create the invite, RSVP, and event page in one place/);
-  assert.match(landingExperience, /Start with Concierge/);
-  assert.match(landingExperience, /Upload or snap an invite/);
-  assert.match(landingExperience, /id="platform"/);
-  assert.match(landingExperience, /Product stack/);
-  assert.match(landingExperience, /What Envitefy creates from one starting point/);
-  assert.match(landingExperience, /#fcf7fb/);
-  assert.match(landingExperience, /#fbf6ff/);
-  assert.match(landingExperience, /#fff1f7/);
-  assert.match(landingExperience, /#a84f79/);
-  assert.match(landingExperience, /#241c2b/);
-  assert.match(landingExperience, /#7457a6/);
-  assert.doesNotMatch(page, /themeColor: "#fbf6ff"/);
-  assert.match(landingExperience, /Public event pages/);
-  assert.match(landingExperience, /RSVP tracking/);
-  assert.match(landingExperience, /Upload \/ Snap imports/);
-  assert.match(landingExperience, /PhoneConciergePreview/);
-  assert.match(landingExperience, /variant="signup"/);
-  assert.match(landingExperience, /Spring carnival/);
-  assert.match(landingExperience, /Ask about sign-ups/);
+  assert.match(landingExperience, /Beautiful hosted events, from invite to RSVP/);
+  assert.match(landingExperience, /Create an event page/);
+  assert.match(landingExperience, /View live examples/);
+  assert.match(landingExperience, /PremiumLandingHero/);
+  assert.match(landingExperience, /GuestActionSuite/);
+  assert.match(landingExperience, /TemplateGallery/);
+  assert.match(landingExperience, /CreationPaths/);
+  assert.match(landingExperience, /TrustProof/);
+  assert.match(landingExperience, /FinalPremiumCta/);
+  assert.match(landingExperience, /landingLiveCardSnapshots/);
+  assert.match(landingExperience, /templates\/weddings\/index\.json/);
+  assert.match(landingExperience, /SIGNUP_TEMPLATES/);
+  assert.match(landingExperience, /Wedding template proof/);
+  assert.match(landingExperience, /heroProductSlides/);
+  assert.match(landingExperience, /HeroProductCarousel/);
+  assert.match(landingExperience, /AnimatePresence/);
+  assert.match(landingExperience, /desktopImage/);
+  assert.match(landingExperience, /\/images\/landing\/hero\/garden-brunch-desktop\.png/);
+  assert.match(landingExperience, /6600/);
+  assert.match(landingExperience, /min-h-\[100svh\]/);
+  assert.match(landingExperience, /fill/);
+  assert.match(landingExperience, /object-cover object-center/);
+  assert.match(landingExperience, /variant="glass-dark"/);
+  assert.match(landingExperience, /capacity-aware claims/);
+  assert.doesNotMatch(landingExperience, /PublicEventPagePanel/);
+  assert.doesNotMatch(landingExperience, /Hosted page/);
+  assert.doesNotMatch(landingExperience, /HeroPhonePreview/);
+  assert.doesNotMatch(landingExperience, /Registry moment/);
+  assert.doesNotMatch(landingExperience, /Sign-up slots/);
+  assert.match(landingExperience, /#fcfbf7/);
+  assert.match(landingExperience, /#201a23/);
+  assert.match(landingExperience, /#43273f/);
+  assert.match(landingExperience, /#d7c5a5/);
+  assert.match(landingExperience, /#7a8f76/);
   assert.match(landingExperience, /id="event-pages"/);
   assert.match(landingExperience, /id="rsvp-tracking"/);
   assert.match(landingExperience, /id="upload"/);
   assert.match(landingExperience, /id="concierge"/);
   assert.match(landingExperience, /id="examples"/);
-  assert.match(landingExperience, /id="workflow"/);
+  assert.match(landingExperience, /id="creation-paths"/);
   assert.match(landingExperience, /<LandingFaq/);
   assert.match(
     landingExperience,
     /id="cta"\s+className=\{`hash-anchor-below-fixed-nav \$\{landingSectionSpacingClass\}`\}/,
   );
 
-  assert.match(landingFaqData, /What does Envitefy Concierge create/);
-  assert.match(landingFaqData, /Can I upload a PDF, flyer, screenshot, or invite/);
+  assert.match(landingFaqData, /What does Envitefy create/);
+  assert.match(landingFaqData, /Can I start from an invite, flyer, schedule, or PDF/);
   assert.match(landingFaqData, /What happens when I upload someone else's invite/);
   assert.match(landingFaqData, /Can I track RSVPs/);
   assert.match(landingFaqData, /Can I create volunteer or supply sign-ups/);
-  assert.match(landingFaqData, /manual event creation and upload-based creation/);
+  assert.match(landingFaqData, /Are wedding templates part of the product/);
+  assert.match(landingFaqData, /templates, manual event creation, and upload-based creation/);
   assert.match(landingFaq, /RSVP tracking, smart sign-ups/);
   assert.match(landingFaq, /#fffafd/);
   assert.match(landingFaq, /#eadcf5/);
 
+  assert.doesNotMatch(landingExperience, /Product stack/);
+  assert.doesNotMatch(landingExperience, /Upload \/ Snap imports/);
+  assert.doesNotMatch(landingExperience, /Upload or snap an invite/);
+  assert.doesNotMatch(
+    landingExperience,
+    /message, upload, snap, flyer, invite, PDF, schedule, or design idea/,
+  );
   assert.doesNotMatch(landingExperience, /Create\. Snap/);
   assert.doesNotMatch(landingExperience, /Try Snap Upload/);
   assert.doesNotMatch(landingExperience, /Open Studio/);
@@ -82,7 +105,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   const conditionalFooter = readSource("src/components/ConditionalFooter.tsx");
 
   assert.match(landingExperience, /<HeroTopNav/);
-  assert.match(landingExperience, /primaryCtaLabel="Start with Concierge"/);
+  assert.match(landingExperience, /primaryCtaLabel="Create an event page"/);
   assert.match(landingExperience, /authenticatedPrimaryHref="\/chat"/);
   assert.match(landingExperience, /openAuth\("login"\)/);
   assert.match(landingExperience, /openAuth\("signup"\)/);
@@ -94,8 +117,9 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.doesNotMatch(landingExperience, /buildMarketingHeroNav/);
 
   assert.match(landingExperience, /<LandingLiveCardShowcase/);
-  assert.match(landingExperience, /eyebrow="Live card gallery"/);
-  assert.match(landingExperience, /Live cards guests actually want to open/);
+  assert.match(landingExperience, /eyebrow="Interactive proof"/);
+  assert.match(landingExperience, /Live cards connected to real event details/);
+  assert.match(landingExperience, /tone="luxury"/);
   assert.match(landingShowcase, /type LandingLiveCardShowcaseProps/);
   assert.match(landingShowcase, /id="showcase"/);
   assert.match(landingShowcase, /Open live card/);
@@ -123,11 +147,11 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(landingSnapshots, /\/images\/landing\/live-cards\//);
 
   assert.match(conditionalFooter, /pathname === "\/landing"/);
-  assert.match(conditionalFooter, /AI Concierge/);
+  assert.match(conditionalFooter, /Concierge/);
   assert.match(conditionalFooter, /Live cards/);
   assert.match(conditionalFooter, /RSVP pages/);
-  assert.match(conditionalFooter, /RSVP tracking/);
-  assert.match(conditionalFooter, /Upload or Snap/);
+  assert.match(conditionalFooter, /RSVP state/);
+  assert.match(conditionalFooter, /Templates/);
   assert.match(conditionalFooter, /Invites/);
   assert.match(conditionalFooter, /Sign-ups/);
   assert.match(conditionalFooter, /href="\/privacy"/);
@@ -135,4 +159,5 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(conditionalFooter, /href="\/contact"/);
   assert.doesNotMatch(conditionalFooter, /Start with Gymnastics/);
   assert.doesNotMatch(conditionalFooter, /Explore Snap/);
+  assert.doesNotMatch(conditionalFooter, /Upload or Snap/);
 });

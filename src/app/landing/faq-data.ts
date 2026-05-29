@@ -1,11 +1,11 @@
 export const landingFaqItems = [
   {
-    q: "What does Envitefy Concierge create?",
-    a: "Concierge helps turn loose event details into an invite, RSVP page, live card, event hub, registry link page, or smart sign-up. You can start from a message, an upload, a flyer, a PDF, a schedule, or a design idea.",
+    q: "What does Envitefy create?",
+    a: "Envitefy creates premium hosted event pages with live invitations, RSVP flows, maps, calendar saves, registry links, smart sign-ups, updates, and host-visible guest activity.",
   },
   {
-    q: "Can I upload a PDF, flyer, screenshot, or invite?",
-    a: "Yes. Upload and snap intake are first-class creation paths. Envitefy can use what you already have, then help you review the missing details before publishing.",
+    q: "Can I start from an invite, flyer, schedule, or PDF?",
+    a: "Yes. Upload is one creation path for hosts who already have source material. Envitefy can use the file or screenshot, then help you review the missing details before publishing.",
   },
   {
     q: "What happens when I upload someone else's invite?",
@@ -13,7 +13,7 @@ export const landingFaqItems = [
   },
   {
     q: "Do I have to use Concierge?",
-    a: "No. Concierge is the fastest starting point for many hosts, but manual event creation and upload-based creation stay available when you already know the structure you want.",
+    a: "No. Concierge is a fast starting point for many hosts, but templates, manual event creation, and upload-based creation stay available when you already know the structure you want.",
   },
   {
     q: "Can I edit details before publishing?",
@@ -21,7 +21,7 @@ export const landingFaqItems = [
   },
   {
     q: "Do guests need to install an app?",
-    a: "No. Shared event pages open in the browser on phones and desktops, so one link is enough.",
+    a: "No. Shared event pages open in the browser on phones and desktops, so one link is enough for invitations, RSVP, maps, calendar saves, registries, and sign-ups.",
   },
   {
     q: "How do RSVPs work?",
@@ -34,6 +34,10 @@ export const landingFaqItems = [
   {
     q: "Can I create volunteer or supply sign-ups?",
     a: "Yes. Smart sign-ups support volunteer roles, supply lists, food stations, capacity limits, waitlists, and guest updates from the shared event page.",
+  },
+  {
+    q: "Are wedding templates part of the product?",
+    a: "Yes. Envitefy includes wedding template configurations and live-card styles that can support schedules, RSVP, registry links, maps, and guest-facing details.",
   },
   {
     q: "What can guests do from an Envitefy event page?",

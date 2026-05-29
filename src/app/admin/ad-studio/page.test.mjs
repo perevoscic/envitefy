@@ -44,9 +44,15 @@ test("admin ad hub exposes the production dashboard and required controls", () =
   assert.match(preview, /Square/);
   assert.match(preview, /1:1/);
   assert.match(player, /backgroundFor/);
+  assert.match(player, /uniqueBackgrounds/);
+  assert.match(player, /transition-opacity/);
   assert.match(player, /campaign\.baseFrames/);
   assert.match(player, /PhoneHero/);
   assert.match(player, /InviteSourceCard/);
+  assert.match(player, /rounded-full/);
+  assert.match(player, /Download video/);
+  assert.match(player, /getDisplayMedia/);
+  assert.match(player, /MediaRecorder/);
 });
 
 test("ad hub is modular, provider-ready, and keeps server-side admin gates", () => {

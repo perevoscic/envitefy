@@ -81,9 +81,8 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
 
   if (isMarketingRoute) {
     return (
-      <footer className="relative z-[2] bg-transparent px-4 pt-8 pb-8 sm:px-6 lg:px-8">
-        <div className="isolate mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-[#eadcf5] bg-[#fffafd]/95 shadow-[0_30px_80px_rgba(116,87,166,0.10)] backdrop-blur-[12px] [backface-visibility:hidden] [transform:translateZ(0)] [will-change:transform]">
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.86),rgba(251,246,255,0.62)_48%,rgba(255,241,247,0.72)_100%)]" />
+      <footer className="relative z-[2] w-full bg-[#fcfbf7] pt-8">
+        <div className="isolate w-full overflow-hidden border-y border-[#d7c5a5] bg-[#fcfbf7]/96 shadow-[0_30px_80px_rgba(33,26,35,0.10)] backdrop-blur-[12px] [backface-visibility:hidden] [transform:translateZ(0)] [will-change:transform]">
           <div className="relative grid gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(0,1.05fr)_repeat(5,minmax(0,0.62fr))] lg:px-10">
             <div className="max-lg:col-span-full pr-4">
               <Link href="/" className="inline-flex items-center overflow-visible">
@@ -93,9 +92,9 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                   tone="gradient"
                 />
               </Link>
-              <p className="mt-4 max-w-sm text-sm leading-7 text-[#62586a]">
-                Create live cards, RSVP pages, event hubs, registry links, smart sign-ups, and guest
-                tracking from a message, upload, snap, flyer, PDF, or schedule.
+              <p className="mt-4 max-w-sm text-sm leading-7 text-[#665d68]">
+                Create polished hosted event pages with live invitations, RSVP, registries, calendar
+                saves, maps, sign-ups, and guest updates from one shareable link.
               </p>
             </div>
 
@@ -106,10 +105,10 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                 </h4>
                 <div className="mt-4 space-y-3 text-sm text-[#62586a]">
                   <Link href="/landing#concierge" className="block hover:text-[#2b1b16]">
-                    AI Concierge
+                    Concierge
                   </Link>
-                  <Link href="/landing#upload" className="block hover:text-[#2b1b16]">
-                    Upload or Snap
+                  <Link href="/landing#creation-paths" className="block hover:text-[#2b1b16]">
+                    Templates
                   </Link>
                   <Link href="/landing#showcase" className="block hover:text-[#2b1b16]">
                     Live cards
@@ -132,7 +131,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                     RSVP pages
                   </Link>
                   <Link href="/landing#rsvp-tracking" className="block hover:text-[#2b1b16]">
-                    RSVP tracking
+                    RSVP state
                   </Link>
                   <Link href="/landing#event-pages" className="block hover:text-[#2b1b16]">
                     Registry links
@@ -216,18 +215,18 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
               </div>
             </div>
           </div>
-          <div className="relative border-t border-[#eadcf5]">
-            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-6 text-sm text-[#62586a] sm:px-8 lg:px-10">
+          <div className="relative border-t border-[#d7c5a5]">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-6 text-sm text-[#665d68] sm:px-8 lg:px-10">
               <p>© {new Date().getFullYear()} Envitefy</p>
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                <Link href="/landing#platform" className="hover:text-[#2b1b16]">
+                <Link href="/landing#showcase" className="hover:text-[#2b1b16]">
                   Invites
                 </Link>
                 <Link href="/landing#event-pages" className="hover:text-[#2b1b16]">
                   RSVP
                 </Link>
                 <Link href="/landing#rsvp-tracking" className="hover:text-[#2b1b16]">
-                  RSVP Tracking
+                  RSVP State
                 </Link>
                 <Link href="/landing#event-pages" className="hover:text-[#2b1b16]">
                   Event Pages
