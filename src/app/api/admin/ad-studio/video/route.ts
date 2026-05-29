@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   AdminAdStudioGenerationError,
+  adStudioFailure,
   generateAdminAdStudioVideo,
   parseAdminAdStudioVideoRequest,
 } from "@/lib/admin/ad-studio";
@@ -62,7 +63,7 @@ export async function POST(request: Request): Promise<NextResponse<AdminAdStudio
       );
     }
     if (error instanceof AdminAdStudioGenerationError) {
-      return failureResponse(error.status, error.code, error.message, error.retryable);
+      return NextResponse.json(adStudioFailure(error), { status: error.status });
     }
     const message = error instanceof Error ? error.message : "Failed to render ad video.";
     return failureResponse(500, "internal_error", message, true);

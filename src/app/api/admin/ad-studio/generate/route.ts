@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   AdminAdStudioGenerationError,
+  adStudioFailure,
   generateAdminAdStudioConfig,
   parseAdminAdStudioGenerateRequest,
 } from "@/lib/admin/ad-studio";
@@ -48,10 +49,10 @@ export async function POST(request: Request): Promise<NextResponse<AdminAdStudio
     const result = await generateAdminAdStudioConfig(parsed.value);
     return NextResponse.json({
       ok: true,
-      provider: "gemini",
+      provider: result.campaign.providerModels.textProvider,
       model: result.model,
       runId: result.runId,
-      ad: result.ad,
+      campaign: result.campaign,
       warnings: result.warnings,
     });
   } catch (error) {
@@ -64,7 +65,7 @@ export async function POST(request: Request): Promise<NextResponse<AdminAdStudio
       );
     }
     if (error instanceof AdminAdStudioGenerationError) {
-      return failureResponse(error.status, error.code, error.message, error.retryable);
+      return NextResponse.json(adStudioFailure(error), { status: error.status });
     }
     const message = error instanceof Error ? error.message : "Failed to generate ad";
     return failureResponse(500, "internal_error", message, true);

@@ -26,6 +26,7 @@ type LandingLiveCardShowcaseProps = {
   eyebrow?: string;
   title?: string;
   description?: string;
+  tone?: "default" | "luxury";
 };
 
 const revealIn = {
@@ -49,7 +50,9 @@ export default function LandingLiveCardShowcase({
   eyebrow,
   title = "Live Card Showcase",
   description = "See how hosts use Envitefy Studio to create memorable event experiences.",
+  tone = "default",
 }: LandingLiveCardShowcaseProps = {}) {
+  const isLuxury = tone === "luxury";
   const [activeIndex, setActiveIndex] = useState(0);
   const [showcaseOverlayIndex, setShowcaseOverlayIndex] = useState<number | null>(null);
   const [fullscreenShowcaseIndex, setFullscreenShowcaseIndex] = useState<number | null>(null);
@@ -385,13 +388,27 @@ export default function LandingLiveCardShowcase({
           <div className="flex flex-col gap-6">
             <div>
               {eyebrow ? (
-                <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-[#3f7f72]">
+                <p
+                  className={cx(
+                    "mb-3 text-xs font-bold uppercase tracking-[0.24em]",
+                    isLuxury ? "text-[#a88b58]" : "text-[#3f7f72]",
+                  )}
+                >
                   {eyebrow}
                 </p>
               ) : null}
               <h2
-                className="text-5xl font-extrabold leading-[0.9] tracking-tight text-slate-900 sm:text-6xl lg:text-[5.25rem]"
-                style={{ fontFamily: '"Outfit", "Inter", ui-sans-serif, system-ui, sans-serif' }}
+                className={cx(
+                  "text-slate-900",
+                  isLuxury
+                    ? "text-4xl font-light leading-tight sm:text-5xl lg:text-6xl"
+                    : "text-5xl font-extrabold leading-[0.9] sm:text-6xl lg:text-[5.25rem]",
+                )}
+                style={{
+                  fontFamily: isLuxury
+                    ? "var(--font-playfair), Georgia, serif"
+                    : '"Outfit", "Inter", ui-sans-serif, system-ui, sans-serif',
+                }}
               >
                 {title}
               </h2>
@@ -410,7 +427,10 @@ export default function LandingLiveCardShowcase({
               onClick={() => scrollShowcase("left")}
               disabled={!canScrollLeft}
               className={cx(
-                "absolute left-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/92 text-slate-700 shadow-[0_16px_36px_rgba(15,23,42,0.14)] backdrop-blur-sm transition-all duration-500 hover:border-slate-300 hover:bg-white active:scale-95 md:inline-flex lg:left-8",
+                "absolute left-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border bg-white/92 shadow-[0_16px_36px_rgba(15,23,42,0.14)] backdrop-blur-sm transition-all duration-500 hover:bg-white active:scale-95 md:inline-flex lg:left-8",
+                isLuxury
+                  ? "border-[#c5a880]/35 text-[#a88b58] hover:border-[#a88b58]/55"
+                  : "border-slate-200/90 text-slate-700 hover:border-slate-300",
                 canScrollLeft
                   ? "opacity-0 group-hover/carousel:opacity-100"
                   : "pointer-events-none -translate-x-8 opacity-0",
@@ -424,7 +444,10 @@ export default function LandingLiveCardShowcase({
               onClick={() => scrollShowcase("right")}
               disabled={!canScrollRight}
               className={cx(
-                "absolute right-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/92 text-slate-700 shadow-[0_16px_36px_rgba(15,23,42,0.14)] backdrop-blur-sm transition-all duration-500 hover:border-slate-300 hover:bg-white active:scale-95 md:inline-flex lg:right-8",
+                "absolute right-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border bg-white/92 shadow-[0_16px_36px_rgba(15,23,42,0.14)] backdrop-blur-sm transition-all duration-500 hover:bg-white active:scale-95 md:inline-flex lg:right-8",
+                isLuxury
+                  ? "border-[#c5a880]/35 text-[#a88b58] hover:border-[#a88b58]/55"
+                  : "border-slate-200/90 text-slate-700 hover:border-slate-300",
                 canScrollRight
                   ? "opacity-0 group-hover/carousel:opacity-100"
                   : "pointer-events-none translate-x-8 opacity-0",
@@ -499,7 +522,9 @@ export default function LandingLiveCardShowcase({
                   onClick={() => scrollToShowcaseIndex(index)}
                   className={cx(
                     "rounded-full transition-all duration-500",
-                    activeIndex === index ? "h-1.5 w-8 bg-[#7c3aed]" : "h-1.5 w-1.5 bg-black/10",
+                    activeIndex === index
+                      ? cx("h-1.5 w-8", isLuxury ? "bg-[#a88b58]" : "bg-[#7c3aed]")
+                      : "h-1.5 w-1.5 bg-black/10",
                   )}
                 />
               ))}

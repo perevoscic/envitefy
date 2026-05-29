@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   AdminAdStudioGenerationError,
+  adStudioFailure,
   generateAdminAdStudioImages,
   parseAdminAdStudioImagesRequest,
 } from "@/lib/admin/ad-studio";
@@ -49,9 +50,9 @@ export async function POST(request: Request): Promise<NextResponse<AdminAdStudio
     return NextResponse.json({
       ok: true,
       runId: result.runId,
-      provider: "nano-banana",
+      provider: result.campaign.providerModels.imageProvider,
       model: result.model,
-      frames: result.frames,
+      campaign: result.campaign,
       warnings: result.warnings,
     });
   } catch (error) {
@@ -64,7 +65,7 @@ export async function POST(request: Request): Promise<NextResponse<AdminAdStudio
       );
     }
     if (error instanceof AdminAdStudioGenerationError) {
-      return failureResponse(error.status, error.code, error.message, error.retryable);
+      return NextResponse.json(adStudioFailure(error), { status: error.status });
     }
     const message = error instanceof Error ? error.message : "Failed to generate ad images.";
     return failureResponse(500, "internal_error", message, true);

@@ -7,17 +7,17 @@ export const dynamic = "force-dynamic";
 
 export default function AdminAdStudioPage() {
   const providerStatuses = getAdminAdStudioProviderStatuses();
-  const gemini = providerStatuses.find((provider) => provider.id === "geminiText");
+  const textProvider = providerStatuses.find((provider) => provider.id === "openaiText");
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        eyebrow="Creative"
-        title="Ad Studio"
-        description="Generate a 10-second Envitefy social ad from event or campaign details, then tune the live phone preview."
+        eyebrow="Creative Production"
+        title="Envitefy Ad Hub"
+        description="Generate short promo video campaigns from one instruction: strategy, script, deterministic assets, base frames, compositing, QA, Veo prompts, and export packages."
         action={
-          <AdminStatusBadge tone={gemini?.configured ? "success" : "warning"}>
-            {gemini?.configured ? "Gemini ready" : "Gemini key needed"}
+          <AdminStatusBadge tone={textProvider?.configured ? "success" : "warning"}>
+            {textProvider?.configured ? "OpenAI ready" : "OpenAI key needed"}
           </AdminStatusBadge>
         }
       />
