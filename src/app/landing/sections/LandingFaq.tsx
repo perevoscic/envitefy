@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
+import { useState } from "react";
 import { landingFaqItems } from "../faq-data";
 
 export default function LandingFaq() {

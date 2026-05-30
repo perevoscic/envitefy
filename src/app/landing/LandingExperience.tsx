@@ -1,8 +1,5 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
@@ -17,15 +14,17 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import { SIGNUP_TEMPLATES } from "@/assets/signup-templates";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
-import { landingLiveCardSnapshots } from "@/components/landing/landing-live-card-snapshots";
 import LandingLiveCardShowcase from "@/components/landing/LandingLiveCardShowcase";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
-import weddingTemplateCatalog from "../../../templates/weddings/index.json" with { type: "json" };
 import LandingFaq from "./sections/LandingFaq";
 
-const landingSectionSpacingClass = "px-4 py-14 sm:px-6 sm:py-16 lg:px-8 lg:py-20";
+const landingFlowSectionClass = "";
+const landingFlowContentClass = "mx-auto w-full max-w-7xl px-4 py-16 sm:px-8 lg:px-10 lg:py-20";
+const landingFlowInnerClass = "";
 
 const landingHeroNavLinks = [
   { label: "Examples", href: "#showcase" },
@@ -36,17 +35,6 @@ const landingHeroNavLinks = [
 ];
 
 const gardenBrunchLiveCardImage = "/images/landing/live-cards/madeline-s-garden-brunch.webp";
-
-type WeddingTemplateCatalogItem = {
-  id: string;
-  name: string;
-  category: string;
-  family: string;
-  thumbnail: string;
-  primaryColor: string;
-  secondaryColor: string;
-  headlineFont: string;
-};
 
 type ProofTile = {
   title: string;
@@ -66,85 +54,44 @@ type HeroProductSlide = {
   imagePosition?: string;
 };
 
-const weddingTemplates = weddingTemplateCatalog as WeddingTemplateCatalogItem[];
-
-const findLiveCardSnapshot = (slug: string) =>
-  landingLiveCardSnapshots.find((snapshot) => snapshot.slug === slug);
-
-const liveCardProofTiles: ProofTile[] = [
+const templateProofTiles: ProofTile[] = [
   {
-    slug: "garden-vows",
-    eyebrow: "Wedding",
-    note: "RSVP, schedule, registry, map, and guest notes stay connected.",
-  },
-  {
-    slug: "lara-s-7th-dino-quest",
     eyebrow: "Birthday",
-    note: "Parents get timing, gifts, directions, and RSVP from one link.",
+    title: "Nova's Space Safari",
+    image: "/images/landing/template-proof/nova-space-safari.webp",
+    note: "Parents get timing, gifts, directions, and RSVP from one bright party link.",
   },
   {
-    slug: "lincoln-memorial-discovery-day",
     eyebrow: "School",
-    note: "Families can use the schedule, reminders, and logistics on mobile.",
+    title: "BrightWorks Museum Day",
+    image: "/images/landing/template-proof/brightworks-museum-day.webp",
+    note: "Families can use the schedule, reminders, and logistics from any device.",
   },
   {
-    slug: "friday-night-lights-a",
-    eyebrow: "Team",
-    note: "Game-day details, venues, and updates are easy to reshare.",
-  },
-].flatMap(({ slug, eyebrow, note }) => {
-  const snapshot = findLiveCardSnapshot(slug);
-  if (!snapshot) return [];
-  return [
-    {
-      title: snapshot.title,
-      eyebrow,
-      image: snapshot.imageUrl,
-      note,
-    },
-  ];
-});
-
-const selectedWeddingTemplateIds = [
-  "gilded-wedding",
-  "ethereal-wedding",
-  "celestial-wedding",
-  "modern-editorial",
-] as const;
-
-const weddingTemplateProof = selectedWeddingTemplateIds.flatMap((id) => {
-  const template = weddingTemplates.find((item) => item.id === id);
-  return template ? [template] : [];
-});
-
-const findSignupTemplate = (category: string, name: string) =>
-  SIGNUP_TEMPLATES[category]?.find((template) => template.name === name);
-
-const signupTemplateProof: ProofTile[] = [
-  {
-    category: "Church & Community",
-    name: "Volunteer Sign-Up",
-    eyebrow: "Volunteer slots",
-    note: "Capacity-aware claims for helpers, supplies, shifts, and waitlists.",
+    eyebrow: "Open house",
+    title: "Maple Loft Open House",
+    image: "/images/landing/template-proof/maple-loft-open-house.webp",
+    note: "Address, timing, RSVP, and host updates stay ready for every guest.",
   },
   {
-    category: "Sports & Recreation",
-    name: "Soccer Game",
-    eyebrow: "Team weekend",
-    note: "Schedules and parent tasks stay attached to the event.",
+    title: "Mentor Toast Night",
+    eyebrow: "Appreciation",
+    image: "/images/landing/template-proof/mentor-toast-night.webp",
+    note: "Hosted gatherings can carry schedule, venue, and guest-list context.",
   },
-].flatMap(({ category, name, eyebrow, note }) => {
-  const template = findSignupTemplate(category, name);
-  if (!template) return [];
-  return [
-    {
-      title: template.name,
-      eyebrow,
-      image: template.path,
-      note,
-    },
-  ];
-});
+  {
+    title: "Rose Garden Bridal Brunch",
+    eyebrow: "Bridal shower",
+    image: "/images/landing/template-proof/rose-garden-bridal-brunch.webp",
+    note: "Gift links, RSVP, menu notes, and host details stay in one guest flow.",
+  },
+  {
+    title: "Sunny Sprout Baby Shower",
+    eyebrow: "Baby shower",
+    image: "/images/landing/template-proof/sunny-sprout-baby-shower.webp",
+    note: "Registry links, RSVP, schedule, and helper tasks stay attached.",
+  },
+];
 
 const heroProductSlides: HeroProductSlide[] = [
   {
@@ -152,18 +99,17 @@ const heroProductSlides: HeroProductSlide[] = [
     eyebrow: "Live invitation",
     title: "Beautiful hosted events, from invite to RSVP.",
     description: "One elegant link for the invitation, RSVP, registry, map, and updates.",
-    image: gardenBrunchLiveCardImage,
-    desktopImage: "/images/landing/hero/garden-brunch-desktop.png",
+    image: "/images/landing/hero/garden-brunch-mobile.webp",
+    desktopImage: "/images/landing/hero/garden-brunch-desktop.webp",
     imageAlt: "Garden brunch live invitation card",
-    imagePosition: "center 70%",
   },
   {
     id: "garden-vows",
     eyebrow: "Wedding weekend",
     title: "Wedding details, beautifully shared.",
     description: "Schedule, registry, RSVP, and travel notes in one polished page.",
-    image: findLiveCardSnapshot("garden-vows")?.imageUrl ?? gardenBrunchLiveCardImage,
-    desktopImage: "/images/landing/hero/garden-vows-desktop.png",
+    image: "/images/landing/hero/garden-vows-mobile.webp",
+    desktopImage: "/images/landing/hero/garden-vows-desktop.webp",
     imageAlt: "Wedding weekend event page preview",
   },
   {
@@ -171,9 +117,8 @@ const heroProductSlides: HeroProductSlide[] = [
     eyebrow: "School event",
     title: "Plans families can open again.",
     description: "Itinerary, map, reminders, and parent updates without the thread hunt.",
-    image:
-      findLiveCardSnapshot("lincoln-memorial-discovery-day")?.imageUrl ?? gardenBrunchLiveCardImage,
-    desktopImage: "/images/landing/hero/lincoln-discovery-desktop.png",
+    image: "/images/landing/hero/lincoln-discovery-mobile.webp",
+    desktopImage: "/images/landing/hero/lincoln-discovery-desktop.webp",
     imageAlt: "School field trip event page preview",
   },
   {
@@ -181,9 +126,36 @@ const heroProductSlides: HeroProductSlide[] = [
     eyebrow: "Team schedule",
     title: "Every game-day detail, current.",
     description: "Schedules, venues, reminders, and helper needs travel together.",
-    image: findLiveCardSnapshot("friday-night-lights-a")?.imageUrl ?? gardenBrunchLiveCardImage,
-    desktopImage: "/images/landing/hero/friday-night-lights-desktop.png",
+    image: "/images/landing/hero/friday-night-lights-mobile.webp",
+    desktopImage: "/images/landing/hero/friday-night-lights-desktop.webp",
     imageAlt: "Team schedule event page preview",
+  },
+  {
+    id: "birthday-party",
+    eyebrow: "Birthday",
+    title: "A party link guests can use.",
+    description: "RSVPs, gift notes, timing, and directions stay ready for every parent.",
+    image: "/images/landing/hero/birthday-dino-mobile.webp",
+    desktopImage: "/images/landing/hero/birthday-dino-desktop.webp",
+    imageAlt: "Birthday party event page preview",
+  },
+  {
+    id: "baby-shower",
+    eyebrow: "Baby shower",
+    title: "Sweet details, beautifully organized.",
+    description: "Registry links, RSVP, schedule, and host notes live beside the invitation.",
+    image: "/images/landing/hero/baby-shower-mobile.webp",
+    desktopImage: "/images/landing/hero/baby-shower-desktop.webp",
+    imageAlt: "Baby shower event page preview",
+  },
+  {
+    id: "open-house",
+    eyebrow: "Open house",
+    title: "A warm welcome in one link.",
+    description: "Share time, address, updates, and RSVP without another message chain.",
+    image: "/images/landing/hero/open-house-mobile.webp",
+    desktopImage: "/images/landing/hero/open-house-desktop.webp",
+    imageAlt: "Open house event page preview",
   },
 ] as const;
 
@@ -227,7 +199,7 @@ const trustProofItems = [
   "Guests can use shared event pages in the browser, with no app install required.",
   "Hosts can keep the shared link current after the first send.",
   "RSVP replies, pending guests, and sign-up claims stay visible in the host experience.",
-  "Wedding templates and live-card snapshots come from the product catalog, not placeholder copy.",
+  "The template proof grid uses unique event concepts and artwork instead of recycled examples.",
 ] as const;
 
 const creationPaths = [
@@ -378,7 +350,7 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
         <ChevronRight className="h-5 w-5" />
       </button>
 
-      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[1500px] flex-col justify-center px-5 pb-20 pt-32 sm:px-8 lg:px-16">
+      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-none flex-col justify-end px-5 pb-20 pt-32 sm:px-8 lg:px-16 lg:pb-24">
         <AnimatePresence mode="wait">
           <motion.div
             key={`${activeSlide.id}-content`}
@@ -392,7 +364,7 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
               {activeSlide.eyebrow}
             </p>
             <h1
-              className="mt-5 max-w-5xl text-5xl font-light leading-[0.98] text-white sm:text-7xl lg:text-[6.5rem]"
+              className="mt-5 max-w-5xl text-5xl font-light leading-[0.98] text-white sm:text-7xl lg:text-[5.8rem]"
               style={{ color: "#fff", fontFamily: "var(--font-playfair), Georgia, serif" }}
             >
               {activeSlide.title}
@@ -581,49 +553,54 @@ function GuestActionSuite() {
     guestActionTabs.find((action) => action.id === activeAction) || guestActionTabs[0];
 
   return (
-    <section id="event-pages" className="border-y border-[#ded2bd] bg-white">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[0.82fr_1.18fr] lg:px-10 lg:py-20">
-        <div>
-          <SectionHeader
-            eyebrow="Guest actions"
-            title="RSVPs, registries, maps, and sign-ups in one guest flow."
-            description="The hosted page is not a static announcement. It gives guests the next useful action and gives hosts one place to keep the response state current."
-          />
-          <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
-            {guestActionTabs.map((action) => {
-              const Icon = action.icon;
-              const isActive = action.id === activeAction;
-              return (
-                <button
-                  key={action.id}
-                  type="button"
-                  onClick={() => setActiveAction(action.id)}
-                  aria-pressed={isActive}
-                  className={cx(
-                    "flex items-center justify-center gap-2 rounded-md border px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] transition",
-                    isActive
-                      ? "border-[#43273f] bg-[#43273f] text-white"
-                      : "border-[#e1d6c2] bg-[#fcfbf7] text-[#403744] hover:border-[#b5965e]",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {action.label}
-                </button>
-              );
-            })}
+    <section
+      id="event-pages"
+      className={cx(landingFlowSectionClass, "border-y border-[#ded2bd] bg-white")}
+    >
+      <div className={landingFlowContentClass}>
+        <div className={cx(landingFlowInnerClass, "grid gap-10 lg:grid-cols-[0.82fr_1.18fr]")}>
+          <div>
+            <SectionHeader
+              eyebrow="Guest actions"
+              title="RSVPs, registries, maps, and sign-ups in one guest flow."
+              description="The hosted page is not a static announcement. It gives guests the next useful action and gives hosts one place to keep the response state current."
+            />
+            <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
+              {guestActionTabs.map((action) => {
+                const Icon = action.icon;
+                const isActive = action.id === activeAction;
+                return (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={() => setActiveAction(action.id)}
+                    aria-pressed={isActive}
+                    className={cx(
+                      "flex items-center justify-center gap-2 rounded-md border px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] transition",
+                      isActive
+                        ? "border-[#43273f] bg-[#43273f] text-white"
+                        : "border-[#e1d6c2] bg-[#fcfbf7] text-[#403744] hover:border-[#b5965e]",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {action.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div
+              id="rsvp-tracking"
+              className="mt-8 rounded-lg border border-[#d7c5a5] bg-[#fcfbf7] p-5"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9d7a3e]">
+                {currentAction.label} state
+              </p>
+              <h3 className="mt-2 text-xl font-semibold text-[#201a23]">{currentAction.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-[#665d68]">{currentAction.description}</p>
+            </div>
           </div>
-          <div
-            id="rsvp-tracking"
-            className="mt-8 rounded-lg border border-[#d7c5a5] bg-[#fcfbf7] p-5"
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9d7a3e]">
-              {currentAction.label} state
-            </p>
-            <h3 className="mt-2 text-xl font-semibold text-[#201a23]">{currentAction.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-[#665d68]">{currentAction.description}</p>
-          </div>
+          <GuestActionPreview activeAction={activeAction} />
         </div>
-        <GuestActionPreview activeAction={activeAction} />
       </div>
     </section>
   );
@@ -631,73 +608,40 @@ function GuestActionSuite() {
 
 function TemplateGallery() {
   return (
-    <section id="examples" className="border-b border-[#ded2bd] bg-[#fbf8f1]">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-8 lg:px-10 lg:py-20">
-        <SectionHeader
-          eyebrow="Templates and proof"
-          title="Premium enough for weddings. Practical enough for schools, teams, and community plans."
-          description="Use real wedding theme thumbnails, live-card snapshots, and smart sign-up templates as starting points for the event page guests will actually use."
-          center
-        />
+    <section
+      id="examples"
+      className={cx(landingFlowSectionClass, "border-b border-[#ded2bd] bg-[#fbf8f1]")}
+    >
+      <div className={landingFlowContentClass}>
+        <div className={landingFlowInnerClass}>
+          <SectionHeader
+            eyebrow="Templates and proof"
+            title="Premium enough for showers. Practical enough for schools, teams, and community plans."
+            description="Use fresh live-card and smart sign-up concepts as starting points for the event page guests will actually use."
+            center
+          />
 
-        <div className="mt-10">
-          <div className="flex items-end justify-between gap-4">
-            <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-[#403744]">
-              Wedding template proof
-            </h3>
-            <p className="text-xs text-[#665d68]">From templates/weddings/index.json</p>
-          </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {weddingTemplateProof.map((template) => (
+          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {templateProofTiles.map((tile) => (
               <article
-                key={template.id}
+                key={`${tile.eyebrow}-${tile.title}`}
                 className="overflow-hidden rounded-lg border border-[#d7c5a5] bg-white shadow-sm"
               >
                 <img
-                  src={template.thumbnail}
-                  alt={`${template.name} template thumbnail`}
-                  className="aspect-[4/5] w-full object-cover"
+                  src={tile.image}
+                  alt={`${tile.title} example`}
+                  className="h-56 w-full object-cover object-top"
                 />
                 <div className="p-4">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="h-3 w-3 rounded-full border border-[#d7c5a5]"
-                      style={{ backgroundColor: template.secondaryColor }}
-                    />
-                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9d7a3e]">
-                      {template.category}
-                    </p>
-                  </div>
-                  <h4 className="mt-2 text-base font-semibold text-[#201a23]">{template.name}</h4>
-                  <p className="mt-1 text-xs text-[#665d68]">
-                    {template.headlineFont} / {template.family}
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9d7a3e]">
+                    {tile.eyebrow}
                   </p>
+                  <h3 className="mt-2 text-lg font-semibold text-[#201a23]">{tile.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-[#665d68]">{tile.note}</p>
                 </div>
               </article>
             ))}
           </div>
-        </div>
-
-        <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[...liveCardProofTiles, ...signupTemplateProof].map((tile) => (
-            <article
-              key={`${tile.eyebrow}-${tile.title}`}
-              className="overflow-hidden rounded-lg border border-[#d7c5a5] bg-white shadow-sm"
-            >
-              <img
-                src={tile.image}
-                alt={`${tile.title} example`}
-                className="h-56 w-full object-cover object-top"
-              />
-              <div className="p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9d7a3e]">
-                  {tile.eyebrow}
-                </p>
-                <h3 className="mt-2 text-lg font-semibold text-[#201a23]">{tile.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[#665d68]">{tile.note}</p>
-              </div>
-            </article>
-          ))}
         </div>
       </div>
     </section>
@@ -706,61 +650,66 @@ function TemplateGallery() {
 
 function CreationPaths({ onPrimaryAction }: { onPrimaryAction: () => void }) {
   return (
-    <section id="creation-paths" className="border-b border-[#ded2bd] bg-white">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-8 lg:px-10 lg:py-20">
-        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
-          <SectionHeader
-            eyebrow="Creation paths"
-            title="Start from Concierge, a template, or the file you already have."
-            description="Hosting creates My events. Received birthday, wedding, gender reveal, and similar invite-card scans become Invited events."
-          />
-          <div id="concierge" className="grid gap-4 md:grid-cols-2">
-            {creationPaths.map((path) => {
-              const Icon = path.icon;
-              return (
-                <article
-                  key={path.title}
-                  className="rounded-lg border border-[#d7c5a5] bg-[#fcfbf7] p-5"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-md bg-white text-[#43273f] shadow-sm">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span className="rounded-md bg-[#edf4ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#315f52]">
-                      {path.badge}
-                    </span>
-                  </div>
-                  <h3 className="mt-5 text-xl font-semibold text-[#201a23]">{path.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-[#665d68]">{path.description}</p>
-                  <div className="mt-4 space-y-2">
-                    {path.points.map((point) => (
-                      <div key={point} className="flex gap-2 text-sm leading-6 text-[#403744]">
-                        <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[#7a8f76]" />
-                        <span>{point}</span>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              );
-            })}
+    <section
+      id="creation-paths"
+      className={cx(landingFlowSectionClass, "border-b border-[#ded2bd] bg-white")}
+    >
+      <div className={landingFlowContentClass}>
+        <div className={landingFlowInnerClass}>
+          <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+            <SectionHeader
+              eyebrow="Creation paths"
+              title="Start from Concierge, a template, or the file you already have."
+              description="Hosting creates My events. Received birthday, wedding, gender reveal, and similar invite-card scans become Invited events."
+            />
+            <div id="concierge" className="grid gap-4 md:grid-cols-2">
+              {creationPaths.map((path) => {
+                const Icon = path.icon;
+                return (
+                  <article
+                    key={path.title}
+                    className="rounded-lg border border-[#d7c5a5] bg-[#fcfbf7] p-5"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-md bg-white text-[#43273f] shadow-sm">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <span className="rounded-md bg-[#edf4ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#315f52]">
+                        {path.badge}
+                      </span>
+                    </div>
+                    <h3 className="mt-5 text-xl font-semibold text-[#201a23]">{path.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-[#665d68]">{path.description}</p>
+                    <div className="mt-4 space-y-2">
+                      {path.points.map((point) => (
+                        <div key={point} className="flex gap-2 text-sm leading-6 text-[#403744]">
+                          <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[#7a8f76]" />
+                          <span>{point}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
-        </div>
-        <div
-          id="upload"
-          className="mt-10 flex flex-col gap-3 rounded-lg border border-[#d7c5a5] bg-[#43273f] p-5 text-white sm:flex-row sm:items-center sm:justify-between"
-        >
-          <p className="max-w-2xl text-sm leading-6 text-white/82">
-            Bring what you already have as one creation path: an invite, flyer, PDF, screenshot,
-            schedule, or rough idea can become a hosted event page.
-          </p>
-          <button
-            type="button"
-            onClick={onPrimaryAction}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-5 text-sm font-semibold text-[#43273f] transition hover:-translate-y-0.5 hover:bg-[#fbf8f1]"
+          <div
+            id="upload"
+            className="mt-10 flex flex-col gap-3 rounded-lg border border-[#d7c5a5] bg-[#43273f] p-5 text-white sm:flex-row sm:items-center sm:justify-between"
           >
-            Start your event
-            <ArrowRight className="h-4 w-4" />
-          </button>
+            <p className="max-w-2xl text-sm leading-6 text-white/82">
+              Bring what you already have as one creation path: an invite, flyer, PDF, screenshot,
+              schedule, or rough idea can become a hosted event page.
+            </p>
+            <button
+              type="button"
+              onClick={onPrimaryAction}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-5 text-sm font-semibold text-[#43273f] transition hover:-translate-y-0.5 hover:bg-[#fbf8f1]"
+            >
+              Start your event
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -769,21 +718,23 @@ function CreationPaths({ onPrimaryAction }: { onPrimaryAction: () => void }) {
 
 function TrustProof() {
   return (
-    <section className="border-b border-[#ded2bd] bg-[#fcfbf7]">
-      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-8 lg:px-10">
-        <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
-          <SectionHeader
-            eyebrow="Trust"
-            title="A polished link guests can act on."
-            description="Keep the claims concrete: no fake customer metrics, no admin-tool promises, and no app-install burden for shared browser pages."
-          />
-          <div className="grid gap-3 sm:grid-cols-2">
-            {trustProofItems.map((item) => (
-              <div key={item} className="rounded-lg border border-[#d7c5a5] bg-white p-4">
-                <CheckCircle2 className="h-5 w-5 text-[#7a8f76]" />
-                <p className="mt-3 text-sm leading-6 text-[#403744]">{item}</p>
-              </div>
-            ))}
+    <section className={cx(landingFlowSectionClass, "border-b border-[#ded2bd] bg-[#fcfbf7]")}>
+      <div className={landingFlowContentClass}>
+        <div className={landingFlowInnerClass}>
+          <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
+            <SectionHeader
+              eyebrow="Trust"
+              title="A polished link guests can act on."
+              description="Keep the claims concrete: no fake customer metrics, no admin-tool promises, and no app-install burden for shared browser pages."
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              {trustProofItems.map((item) => (
+                <div key={item} className="rounded-lg border border-[#d7c5a5] bg-white p-4">
+                  <CheckCircle2 className="h-5 w-5 text-[#7a8f76]" />
+                  <p className="mt-3 text-sm leading-6 text-[#403744]">{item}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -793,38 +744,42 @@ function TrustProof() {
 
 function FinalPremiumCta({ onPrimaryAction }: { onPrimaryAction: () => void }) {
   return (
-    <section id="cta" className={`hash-anchor-below-fixed-nav ${landingSectionSpacingClass}`}>
-      <div className="mx-auto grid max-w-7xl gap-8 rounded-lg border border-[#d7c5a5] bg-[#201a23] px-5 py-12 text-white shadow-[0_30px_80px_rgba(33,26,35,0.2)] sm:px-8 lg:grid-cols-[1fr_auto] lg:items-center lg:px-10">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#e2c891]">
-            Create your hosted event page
-          </p>
-          <h2
-            className="mt-3 max-w-3xl text-3xl font-light leading-tight sm:text-4xl"
-            style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-          >
-            One elegant event page for every guest detail.
-          </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
-            Create from Concierge, choose a template, or start from the invite, flyer, schedule, or
-            PDF you already have.
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-          <button
-            type="button"
-            onClick={onPrimaryAction}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-5 text-sm font-semibold text-[#201a23] transition hover:-translate-y-0.5 hover:bg-[#fbf8f1]"
-          >
-            Create an event page
-            <ArrowRight className="h-4 w-4" />
-          </button>
-          <Link
-            href="/?action=upload"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/20 px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/10"
-          >
-            Start from an invite, flyer, or PDF
-          </Link>
+    <section id="cta" className={cx(landingFlowSectionClass, "bg-[#fcfbf7]")}>
+      <div className={landingFlowContentClass}>
+        <div className={landingFlowInnerClass}>
+          <div className="grid w-full gap-8 rounded-lg border border-[#d7c5a5] bg-[#201a23] px-5 py-12 text-white shadow-[0_30px_80px_rgba(33,26,35,0.2)] sm:px-8 lg:grid-cols-[1fr_auto] lg:items-center lg:px-10">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#e2c891]">
+                Create your hosted event page
+              </p>
+              <h2
+                className="mt-3 max-w-3xl text-3xl font-light leading-tight sm:text-4xl"
+                style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+              >
+                One elegant event page for every guest detail.
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
+                Create from Concierge, choose a template, or start from the invite, flyer, schedule,
+                or PDF you already have.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+              <button
+                type="button"
+                onClick={onPrimaryAction}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-5 text-sm font-semibold text-[#201a23] transition hover:-translate-y-0.5 hover:bg-[#fbf8f1]"
+              >
+                Create an event page
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <Link
+                href="/?action=upload"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/20 px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/10"
+              >
+                Start from an invite, flyer, or PDF
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -846,7 +801,7 @@ export default function LandingExperience() {
           navLinks={[...landingHeroNavLinks]}
           primaryCtaLabel="Create an event page"
           authenticatedPrimaryHref="/chat"
-          variant="glass-dark"
+          variant="transparent-dark"
           loginSuccessRedirectUrl="/"
           onGuestLoginAction={() => openAuth("login")}
           onGuestPrimaryAction={() => openAuth("signup")}

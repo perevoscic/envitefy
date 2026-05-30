@@ -3,8 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { type MouseEvent, useEffect, useRef, useState } from "react";
-import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
 import { type LiveCardActiveTab } from "@/components/studio/StudioLiveCardActionSurface";
+import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
 import {
   clampShowcaseIndex,
   getCenteredShowcaseScrollLeft,
@@ -45,6 +45,7 @@ const showcaseCards: ShowcaseCardItem[] = landingShowcasePreviews.map((preview) 
   title: preview.title,
   preview,
 }));
+const INITIAL_SHOWCASE_INDEX = 3;
 
 export default function LandingLiveCardShowcase({
   eyebrow,
@@ -53,11 +54,12 @@ export default function LandingLiveCardShowcase({
   tone = "default",
 }: LandingLiveCardShowcaseProps = {}) {
   const isLuxury = tone === "luxury";
-  const [activeIndex, setActiveIndex] = useState(0);
+  const initialShowcaseIndex = clampShowcaseIndex(INITIAL_SHOWCASE_INDEX, showcaseCards.length);
+  const [activeIndex, setActiveIndex] = useState(initialShowcaseIndex);
   const [showcaseOverlayIndex, setShowcaseOverlayIndex] = useState<number | null>(null);
   const [fullscreenShowcaseIndex, setFullscreenShowcaseIndex] = useState<number | null>(null);
   const [fullscreenActiveTab, setFullscreenActiveTab] = useState<LiveCardActiveTab>("none");
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(initialShowcaseIndex > 0);
   const [canScrollRight, setCanScrollRight] = useState(showcaseCards.length > 1);
   const showcaseScrollRef = useRef<HTMLDivElement | null>(null);
   const showcaseCardsRef = useRef<HTMLElement[]>([]);
@@ -90,8 +92,8 @@ export default function LandingLiveCardShowcase({
     const node = showcaseScrollRef.current;
     if (!node) return;
 
-    let activeIndexValue = 0;
-    let canScrollLeftValue = false;
+    let activeIndexValue = initialShowcaseIndex;
+    let canScrollLeftValue = initialShowcaseIndex > 0;
     let canScrollRightValue = showcaseCards.length > 1;
 
     const syncShowcaseMeasurements = () => {
@@ -143,6 +145,25 @@ export default function LandingLiveCardShowcase({
       }
     };
 
+    const centerInitialShowcaseCard = () => {
+      const cards = showcaseCardsRef.current;
+      if (cards.length === 0) return;
+
+      const nextIndex = clampShowcaseIndex(INITIAL_SHOWCASE_INDEX, cards.length);
+      const targetLeft = getCenteredShowcaseScrollLeft({
+        index: nextIndex,
+        cards,
+        clientWidth: node.clientWidth,
+        scrollWidth: node.scrollWidth,
+      });
+
+      activeIndexValue = nextIndex;
+      canScrollLeftValue = nextIndex > 0;
+      node.scrollLeft = targetLeft;
+      setActiveIndex(nextIndex);
+      setCanScrollLeft(nextIndex > 0);
+    };
+
     let frameId = 0;
     const handleScroll = () => {
       cancelAnimationFrame(frameId);
@@ -157,6 +178,7 @@ export default function LandingLiveCardShowcase({
     };
 
     syncShowcaseMeasurements();
+    centerInitialShowcaseCard();
     syncShowcaseState();
     node.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize);
@@ -166,7 +188,7 @@ export default function LandingLiveCardShowcase({
       node.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [initialShowcaseIndex]);
 
   useEffect(() => {
     setShowcaseOverlayIndex(null);
@@ -381,7 +403,7 @@ export default function LandingLiveCardShowcase({
     <>
       <motion.section
         id="showcase"
-        className="hash-anchor-below-fixed-nav overflow-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-20"
+        className="hash-anchor-below-fixed-nav overflow-x-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-20"
         {...revealIn}
       >
         <div className="mx-auto w-full max-w-7xl">

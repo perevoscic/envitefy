@@ -24,7 +24,7 @@ type HeroTopNavProps = {
   loginSuccessRedirectUrl?: string;
   onGuestLoginAction: () => void;
   onGuestPrimaryAction: () => void;
-  variant?: "default" | "glass-dark";
+  variant?: "default" | "glass-dark" | "transparent-dark";
 };
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -76,16 +76,39 @@ export default function HeroTopNav({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileLoginExpanded, setMobileLoginExpanded] = useState(false);
   const [mobileMenuPortalReady, setMobileMenuPortalReady] = useState(false);
+  const [hasScrolledPastHero, setHasScrolledPastHero] = useState(false);
   const mobileMenuCardRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuToggleRef = useRef<HTMLButtonElement | null>(null);
   const mobileMenuDragStartX = useRef<number | null>(null);
   const mobileMenuSwipeStartX = useRef<number | null>(null);
-  const isDarkGlass = variant === "glass-dark";
+  const isTransparentDark = variant === "transparent-dark";
+  const isDarkGlass = variant === "glass-dark" || isTransparentDark;
+  const isTransparentOverHero = isTransparentDark && !hasScrolledPastHero;
   const showMobileGuestActions = status !== "authenticated" && !mobileLoginExpanded;
 
   useEffect(() => {
     setMobileMenuPortalReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!isTransparentDark) {
+      setHasScrolledPastHero(false);
+      return;
+    }
+
+    const syncScrolledState = () => {
+      setHasScrolledPastHero(window.scrollY > Math.max(120, window.innerHeight * 0.82));
+    };
+
+    syncScrolledState();
+    window.addEventListener("scroll", syncScrolledState, { passive: true });
+    window.addEventListener("resize", syncScrolledState);
+
+    return () => {
+      window.removeEventListener("scroll", syncScrolledState);
+      window.removeEventListener("resize", syncScrolledState);
+    };
+  }, [isTransparentDark]);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -180,26 +203,43 @@ export default function HeroTopNav({
   }, [mobileLoginExpanded]);
 
   return (
-    <header
+    <motion.header
+      initial={isTransparentDark ? { y: -96, opacity: 0 } : false}
+      animate={isTransparentDark ? { y: 0, opacity: 1 } : undefined}
+      transition={isTransparentDark ? { duration: 0.8, ease: "easeOut" } : undefined}
+      data-scrolled-past-hero={hasScrolledPastHero ? "true" : "false"}
       className={cx(
         "fixed inset-x-0 top-0 z-50 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] sm:px-6 lg:px-8",
       )}
     >
-      <div className="relative mx-auto max-w-[1400px]">
+      <div
+        className={cx("relative mx-auto", isTransparentOverHero ? "max-w-none" : "max-w-[1400px]")}
+      >
         <div
           className={cx(
-            "nav-chrome-glass-header px-4 py-3 sm:px-6",
-            isDarkGlass
-              ? cx(
-                  "theme-glass-nav rounded-[2rem] border-white/14 shadow-[0_18px_40px_rgba(3,1,10,0.24)]",
-                )
-              : "hero-top-nav-shell-light rounded-[2rem]",
+            isTransparentOverHero
+              ? "px-1 py-2 text-white sm:px-3"
+              : cx(
+                  "nav-chrome-glass-header px-4 py-3 sm:px-6",
+                  isDarkGlass
+                    ? "theme-glass-nav rounded-[2rem] border-white/14 shadow-[0_18px_40px_rgba(3,1,10,0.24)]"
+                    : "hero-top-nav-shell-light rounded-[2rem]",
+                ),
           )}
         >
-          <div className="flex items-center justify-between gap-4">
+          <div
+            className={cx(
+              isTransparentOverHero
+                ? "flex items-center justify-between gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+                : "flex items-center justify-between gap-4",
+            )}
+          >
             <Link
               href={brandHref}
-              className="group flex min-w-0 flex-1 items-center overflow-hidden lg:flex-none"
+              className={cx(
+                "group flex min-w-0 items-center overflow-hidden",
+                isTransparentOverHero ? "justify-self-start" : "flex-1 lg:flex-none",
+              )}
               aria-label="Envitefy"
             >
               <EnvitefyWordmark
@@ -212,21 +252,37 @@ export default function HeroTopNav({
               />
             </Link>
 
-            <nav className="hidden items-center gap-1 lg:flex" aria-label="Hero navigation">
+            <nav
+              className={cx(
+                "hidden items-center lg:flex",
+                isTransparentOverHero ? "justify-self-center gap-6" : "gap-1",
+              )}
+              aria-label="Hero navigation"
+            >
               {navLinks.map((link) => (
                 <NavLinkItem
                   key={`${link.label}:${link.href}`}
                   href={link.href}
                   label={link.label}
                   className={cx(
-                    "nav-chrome-motion rounded-full px-4 py-2 text-sm font-semibold transition",
-                    isDarkGlass ? "text-white hover:bg-white/[0.12]" : lightNavPillClass,
+                    "nav-chrome-motion text-sm font-semibold transition",
+                    isTransparentOverHero
+                      ? "px-1 py-2 text-white/82 hover:text-white"
+                      : cx(
+                          "rounded-full px-4 py-2",
+                          isDarkGlass ? "text-white hover:bg-white/[0.12]" : lightNavPillClass,
+                        ),
                   )}
                 />
               ))}
             </nav>
 
-            <div className="hidden items-center gap-3 lg:flex">
+            <div
+              className={cx(
+                "hidden items-center gap-3 lg:flex",
+                isTransparentOverHero && "justify-self-end",
+              )}
+            >
               {status === "authenticated" ? (
                 <Link
                   href={dashboardHref}
@@ -288,6 +344,7 @@ export default function HeroTopNav({
                 isDarkGlass
                   ? "rounded-full border border-white/14 bg-white/[0.08] text-white"
                   : "nav-chrome-pill-secondary rounded-full text-[#31264f]",
+                isTransparentOverHero && "justify-self-end",
               )}
               onClick={() => setMobileMenuOpen((value) => !value)}
               aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
@@ -503,6 +560,6 @@ export default function HeroTopNav({
             )
           : null}
       </div>
-    </header>
+    </motion.header>
   );
 }
