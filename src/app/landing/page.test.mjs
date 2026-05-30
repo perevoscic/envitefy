@@ -10,47 +10,127 @@ const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativ
 test("landing page is hosted-event-led and premium", () => {
   const page = readSource("src/app/landing/page.tsx");
   const landingExperience = readSource("src/app/landing/LandingExperience.tsx");
-  const landingFaqData = readSource("src/app/landing/faq-data.ts");
-  const landingFaq = readSource("src/app/landing/sections/LandingFaq.tsx");
+  const designTestimonial = readSource("src/components/ui/design-testimonial.tsx");
 
   assert.match(page, /<LandingExperience \/>/);
   assert.match(page, /Beautiful Hosted Event Pages, RSVP & Invitations/);
   assert.match(page, /polished hosted event page/);
   assert.doesNotMatch(page, /message, upload, snap, flyer, invite, PDF, schedule, or design idea/);
+  assert.doesNotMatch(page, /ld-landing-faq/);
+  assert.doesNotMatch(page, /FAQPage/);
 
   assert.match(landingExperience, /id="landing-hero"/);
   assert.match(landingExperience, /Beautiful hosted events, from invite to RSVP/);
-  assert.match(landingExperience, /Create an event page/);
+  assert.match(landingExperience, /Let's create/);
   assert.match(landingExperience, /View live examples/);
   assert.match(landingExperience, /PremiumLandingHero/);
   assert.match(landingExperience, /GuestActionSuite/);
   assert.match(landingExperience, /TemplateGallery/);
   assert.match(landingExperience, /CreationPaths/);
-  assert.match(landingExperience, /TrustProof/);
-  assert.match(landingExperience, /FinalPremiumCta/);
+  assert.match(landingExperience, /TestimonialsProof/);
+  assert.match(landingExperience, /DesignTestimonial/);
+  assert.match(designTestimonial, /useMotionValue/);
+  assert.match(designTestimonial, /useSpring/);
+  assert.match(designTestimonial, /useTransform/);
+  assert.match(designTestimonial, /AnimatePresence/);
+  assert.match(designTestimonial, /ChevronLeft/);
+  assert.match(designTestimonial, /ChevronRight/);
+  assert.match(designTestimonial, /aria-label="Show previous testimonial"/);
+  assert.match(designTestimonial, /aria-label="Show next testimonial"/);
+  assert.doesNotMatch(designTestimonial, /<svg/);
+  assert.match(landingExperience, /guestTestimonials/);
+  assert.match(landingExperience, /hostTestimonials/);
+  assert.match(landingExperience, /landingTestimonials/);
+  assert.match(landingExperience, /function interleaveTestimonials/);
+  assert.match(landingExperience, /const landingTestimonials: TestimonialItem\[] = interleaveTestimonials\(/);
+  const testimonialSource = landingExperience.slice(
+    landingExperience.indexOf("const guestTestimonials"),
+    landingExperience.indexOf("const creationPaths"),
+  );
+  const guestTestimonialsSource = landingExperience.slice(
+    landingExperience.indexOf("const guestTestimonials"),
+    landingExperience.indexOf("const hostTestimonials"),
+  );
+  const hostTestimonialsSource = landingExperience.slice(
+    landingExperience.indexOf("const hostTestimonials"),
+    landingExperience.indexOf("function interleaveTestimonials"),
+  );
+  assert.equal((testimonialSource.match(/quote:/g) ?? []).length, 24);
+  assert.equal((guestTestimonialsSource.match(/quote:/g) ?? []).length, 12);
+  assert.equal((hostTestimonialsSource.match(/quote:/g) ?? []).length, 12);
+  assert.match(landingExperience, /What Guests and Hosts Are Saying/);
+  assert.doesNotMatch(landingExperience, /What Our Guests Are Saying/);
+  assert.doesNotMatch(landingExperience, /What Hosts Are Saying/);
+  assert.doesNotMatch(landingExperience, /direction="right"/);
+  assert.match(landingExperience, /id="testimonials"/);
+  assert.match(landingExperience, /label: "Testimonials", href: "#testimonials"/);
+  assert.match(
+    landingExperience,
+    /min-h-\[100svh\] scroll-mt-0 overflow-hidden border-b border-\[#ded2bd\] bg-\[#fcfbf7\]/,
+  );
+  assert.match(
+    landingExperience,
+    /flex min-h-\[100svh\] w-full flex-col justify-center pb-12 pt-\[calc\(8\.5rem\+env\(safe-area-inset-top\)\)\]/,
+  );
+  assert.doesNotMatch(landingExperience, /TrustProof/);
+  assert.doesNotMatch(landingExperience, /trustProofItems/);
+  assert.doesNotMatch(landingExperience, /eyebrow="Trust"/);
+  assert.doesNotMatch(landingExperience, /A polished link guests can act on/);
+  assert.doesNotMatch(landingExperience, /FinalPremiumCta/);
   assert.match(landingExperience, /templateProofTiles/);
   assert.match(landingExperience, /templateProofTiles\.map/);
+  assert.doesNotMatch(
+    landingExperience,
+    /Premium enough for showers\. Practical enough for schools, teams, and community plans\./,
+  );
+  assert.doesNotMatch(
+    landingExperience,
+    /Use fresh live-card and smart sign-up concepts as starting points for the event page guests will actually use\./,
+  );
   for (const proofTitle of [
-    "Nova's Space Safari",
-    "BrightWorks Museum Day",
-    "Maple Loft Open House",
-    "Mentor Toast Night",
-    "Rose Garden Bridal Brunch",
-    "Sunny Sprout Baby Shower",
+    "Wedding",
+    "Football Night",
+    "Field Trip",
+    "Graduation Party",
+    "Engagement Party",
+    "Gender Reveal",
+    "Housewarming",
+    "Retirement Party",
+    "Anniversary Party",
+    "Pool Party",
+    "Movie Night",
+    "Playdate",
+    "Kids Sleepover",
   ]) {
     assert.ok(landingExperience.includes(proofTitle));
   }
   for (const proofAsset of [
-    "/images/landing/template-proof/nova-space-safari.webp",
-    "/images/landing/template-proof/brightworks-museum-day.webp",
-    "/images/landing/template-proof/maple-loft-open-house.webp",
-    "/images/landing/template-proof/mentor-toast-night.webp",
-    "/images/landing/template-proof/rose-garden-bridal-brunch.webp",
-    "/images/landing/template-proof/sunny-sprout-baby-shower.webp",
+    "/images/landing/template-proof/generated/wedding.webp",
+    "/images/landing/template-proof/generated/football-night.webp",
+    "/images/landing/template-proof/generated/field-trip.webp",
+    "/images/landing/template-proof/generated/graduation-party.webp",
+    "/images/landing/template-proof/generated/engagement-party.webp",
+    "/images/landing/template-proof/generated/gender-reveal.webp",
+    "/images/landing/template-proof/generated/housewarming.webp",
+    "/images/landing/template-proof/generated/retirement-party.webp",
+    "/images/landing/template-proof/generated/anniversary-party.webp",
+    "/images/landing/template-proof/generated/pool-party.webp",
+    "/images/landing/template-proof/generated/movie-night.webp",
+    "/images/landing/template-proof/generated/playdate.webp",
+    "/images/landing/template-proof/generated/kids-sleepover.webp",
   ]) {
     assert.ok(landingExperience.includes(proofAsset));
     assert.ok(fs.existsSync(path.join(repoRoot, "public", proofAsset.slice(1))));
   }
+  for (const testimonialImage of [
+    "photo-1494790108377-be9c29b29330",
+    "photo-1519085360753-af0119f7cbe7",
+  ]) {
+    assert.ok(landingExperience.includes(testimonialImage));
+  }
+  assert.match(landingExperience, /min-h-\[100svh\]/);
+  assert.match(landingExperience, /pt-\[calc\(8rem\+env\(safe-area-inset-top\)\)\]/);
+  assert.match(landingExperience, /112rem/);
   assert.doesNotMatch(landingExperience, /landingLiveCardSnapshots/);
   assert.doesNotMatch(landingExperience, /SIGNUP_TEMPLATES/);
   assert.doesNotMatch(landingExperience, /templates\/weddings\/index\.json/);
@@ -98,6 +178,12 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /Turn every event page into the place guests actually act/);
   assert.match(landingExperience, /guestActionPreviewConfigs/);
   assert.match(landingExperience, /Guest action carousel/);
+  assert.match(landingExperience, /justify-start px-4 pb-16/);
+  assert.match(landingExperience, /aspect-\[9\/19\.5\]/);
+  assert.match(landingExperience, /max-w-\[21\.5rem\]/);
+  assert.match(landingExperience, /rounded-\[2\.15rem\]/);
+  assert.match(landingExperience, /data-guest-flow-panel="guest"/);
+  assert.match(landingExperience, /data-guest-flow-panel="host"/);
   assert.doesNotMatch(landingExperience, /Show previous guest action/);
   assert.doesNotMatch(landingExperience, /\{currentAction\.label\} state/);
   assert.match(landingExperience, /\/images\/landing\/guest-flow\/rsvp-table-placeholder\.webp/);
@@ -119,15 +205,27 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /#d7c5a5/);
   assert.match(landingExperience, /#7a8f76/);
   assert.match(landingExperience, /href: "#guest-flow"/);
+  assert.match(landingExperience, /label: "Start", href: "#creation-paths"/);
+  assert.match(
+    landingExperience,
+    /label: "Templates", href: "#examples"[\s\S]*label: "Start", href: "#creation-paths"/,
+  );
+  assert.doesNotMatch(landingExperience, /label: "FAQ", href: "#faq"/);
+  assert.doesNotMatch(landingExperience, /href: "#faq"/);
+  assert.match(landingExperience, /label: "Concierge", href: "#concierge"/);
   assert.match(landingExperience, /id="guest-flow"/);
+  assert.doesNotMatch(landingExperience, /id="faq"/);
   assert.doesNotMatch(landingExperience, /id="rsvp-tracking"/);
   assert.match(landingExperience, /id="upload"/);
-  assert.match(landingExperience, /id="concierge"/);
   assert.match(landingExperience, /id="examples"/);
   assert.match(landingExperience, /id="creation-paths"/);
-  assert.match(landingExperience, /<LandingFaq/);
+  assert.doesNotMatch(landingExperience, /Talk through a live card/);
+  assert.doesNotMatch(landingExperience, /ConciergeSimulation/);
+  assert.doesNotMatch(landingExperience, /Live card simulator/);
+  assert.doesNotMatch(landingExperience, /<LandingFaq/);
+  assert.doesNotMatch(landingExperience, /LandingFaq from/);
   assert.match(landingExperience, /landingFlowSectionClass/);
-  assert.match(landingExperience, /landingFlowContentClass/);
+  assert.doesNotMatch(landingExperience, /landingFlowContentClass/);
   assert.match(landingExperience, /landingFlowInnerClass/);
   assert.match(landingExperience, /const landingFlowSectionClass = ""/);
   assert.match(
@@ -142,31 +240,14 @@ test("landing page is hosted-event-led and premium", () => {
     landingExperience,
     /grid min-h-\[100svh\] w-full lg:grid-cols-\[minmax\(22rem,34vw\)_minmax\(0,1fr\)\]/,
   );
-  assert.match(landingExperience, /px-4 py-16 sm:px-8 lg:px-10 lg:py-20/);
+  assert.doesNotMatch(landingExperience, /px-4 py-16 sm:px-8 lg:px-10 lg:py-20/);
   assert.doesNotMatch(landingExperience, /min-h-full w-full max-w-7xl/);
   assert.doesNotMatch(landingExperience, /overflow-y-auto overscroll-contain/);
   assert.doesNotMatch(landingExperience, /landingFullViewportSectionClass/);
   assert.doesNotMatch(landingExperience, /landingFullViewportContentClass/);
   assert.doesNotMatch(landingExperience, /landingFullViewportInnerClass/);
-  assert.match(landingExperience, /id="cta"/);
+  assert.doesNotMatch(landingExperience, /id="cta"/);
   assert.doesNotMatch(landingExperience, /style=\{\{ scrollMarginTop: 0 \}\}/);
-
-  assert.match(landingFaqData, /What does Envitefy create/);
-  assert.match(landingFaqData, /Can I start from an invite, flyer, schedule, or PDF/);
-  assert.match(landingFaqData, /What happens when I upload someone else's invite/);
-  assert.match(landingFaqData, /Can I track RSVPs/);
-  assert.match(landingFaqData, /Can I create volunteer or supply sign-ups/);
-  assert.match(landingFaqData, /Are wedding templates part of the product/);
-  assert.match(landingFaqData, /templates, manual event creation, and upload-based creation/);
-  assert.match(landingFaq, /RSVP tracking, smart sign-ups/);
-  assert.match(landingFaq, /#fffafd/);
-  assert.match(landingFaq, /#eadcf5/);
-  assert.match(landingFaq, /hash-anchor-below-fixed-nav/);
-  assert.match(landingFaq, /mx-auto max-w-5xl/);
-  assert.doesNotMatch(landingFaq, /h-\[100svh\] min-h-\[100svh\] overflow-hidden/);
-  assert.doesNotMatch(landingFaq, /min-h-full w-full max-w-5xl/);
-  assert.doesNotMatch(landingFaq, /style=\{\{ scrollMarginTop: 0 \}\}/);
-  assert.doesNotMatch(landingFaq, /overflow-y-auto overscroll-contain/);
 
   assert.doesNotMatch(landingExperience, /Product stack/);
   assert.doesNotMatch(landingExperience, /Upload \/ Snap imports/);
@@ -198,11 +279,22 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   const conditionalFooter = readSource("src/components/ConditionalFooter.tsx");
 
   assert.match(landingExperience, /<HeroTopNav/);
-  assert.match(landingExperience, /primaryCtaLabel="Create an event page"/);
+  assert.match(landingExperience, /primaryCtaLabel="Let's create"/);
   assert.match(landingExperience, /authenticatedPrimaryHref="\/chat"/);
   assert.match(heroTopNav, /transparent-dark/);
   assert.match(heroTopNav, /isTransparentDark/);
   assert.match(heroTopNav, /hasScrolledPastHero/);
+  assert.match(heroTopNav, /activeNavHref/);
+  assert.match(heroTopNav, /syncActiveNavHref/);
+  assert.match(heroTopNav, /Math\.max\(160, window\.innerHeight \* 0\.5\)/);
+  assert.match(heroTopNav, /document\.getElementById\("landing-hero"\)/);
+  assert.match(heroTopNav, /return null/);
+  assert.match(heroTopNav, /let nextActiveHref: string \| null = null/);
+  assert.match(heroTopNav, /handleHashLinkClick/);
+  assert.match(heroTopNav, /window\.history\.pushState\(null, "", href\)/);
+  assert.match(heroTopNav, /window\.scrollTo\(\{/);
+  assert.match(heroTopNav, /aria-current/);
+  assert.match(heroTopNav, /nav-chrome-pill-active/);
   assert.match(heroTopNav, /isTransparentOverHero/);
   assert.match(heroTopNav, /data-scrolled-past-hero/);
   assert.match(heroTopNav, /Math\.max\(120, window\.innerHeight \* 0\.82\)/);

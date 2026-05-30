@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Amita:wght@400;700&family=Arizonia&family=Cookie&family=Courgette&family=Dancing+Script:wght@400;700&family=Euphoria+Script&family=Great+Vibes&family=Indie+Flower&family=Josefin+Slab:wght@100;200;300;400;500;600;700&family=Kalam:wght@400;700&family=Kaushan+Script&family=La+Belle+Aurore&family=MonteCarlo&family=Montserrat:wght@400;600;700&family=Outfit:wght@500;600;700;800&family=Pacifico&family=Parisienne&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;600;700&family=Redressed&family=Sacramento&family=Satisfy&family=Shadows+Into+Light&family=Sofia&family=Sonsie+One&family=Style+Script&family=Tangerine:wght@400;700&family=Yellowtail&display=swap");
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @font-face {
   font-family: "Josefin Sans";
@@ -18,11 +19,14 @@
 }
 
 :root {
+  --radius: 1rem;
   --mobile-chrome-top: #f3eeff;
   --mobile-chrome-bottom: #f3eeff;
   --ios-browser-chrome-background: #8d7be9;
   --envitefy-project-background: radial-gradient(125% 125% at 50% 10%, #fff 40%, #6366f1 100%);
   --background: #f8f5ff;
+  --card: #ffffff;
+  --card-foreground: #2b1b16;
   --surface: #fbf7f2;
   --surface-alt: #f0e2d7;
   --foreground: #2b1b16;
@@ -36,10 +40,18 @@
   --geist-foreground: #000;
   --geist-violet: #7928ca;
   --muted-foreground: #6a5549;
+  --muted: #f4edf8;
   --border: #d9c5b8;
+  --input: #d9c5b8;
+  --ring: #c98f6b;
   --primary: #c98f6b;
+  --primary-foreground: #ffffff;
   --secondary: #6b4c3f;
+  --secondary-foreground: #fffaf7;
   --accent: #e5c2a7;
+  --accent-foreground: #2b1b16;
+  --destructive: #c15f5a;
+  --destructive-foreground: #ffffff;
   --success: #3f8a7a;
   --info: #5f7cb5;
   --warning: #d17a45;
@@ -71,7 +83,11 @@
 }
 
 @theme inline {
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
   --color-background: var(--background);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
   --color-surface: var(--surface);
   --color-surface-alt: var(--surface-alt);
   --color-foreground: var(--foreground);
@@ -83,11 +99,19 @@
   --color-accents-2: var(--accents-2);
   --color-background-100: var(--ds-background-100);
   --color-geist-foreground: var(--geist-foreground);
+  --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-info: var(--info);
   --color-warning: var(--warning);
@@ -100,6 +124,24 @@
   --font-mono: var(--font-geist-mono);
   --font-pacifico: var(--font-pacifico);
   --font-montserrat: var(--font-montserrat);
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
 }
 
 .font-vars {

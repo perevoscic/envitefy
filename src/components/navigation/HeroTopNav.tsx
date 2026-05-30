@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEventHandler } from "react";
 import { createPortal } from "react-dom";
 import LoginForm from "@/components/auth/LoginForm";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
@@ -31,6 +31,16 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
+function getHashLinkId(href: string) {
+  if (!href.startsWith("#") || href.length <= 1) return null;
+
+  try {
+    return decodeURIComponent(href.slice(1));
+  } catch {
+    return href.slice(1);
+  }
+}
+
 const glassGhostLoginClass =
   "cta-shell nav-chrome-motion h-11 shrink-0 rounded-full border border-white/18 bg-white/[0.12] px-6 text-sm font-bold text-white transition-all hover:bg-white/[0.18]";
 const lightNavPillClass = "hero-top-nav-pill-light";
@@ -40,22 +50,36 @@ function NavLinkItem({
   label,
   className,
   onClick,
+  ariaCurrent,
 }: {
   href: string;
   label: string;
   className: string;
-  onClick?: () => void;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
+  ariaCurrent?: "location";
 }) {
   if (href.startsWith("#")) {
     return (
-      <a href={href} className={className} draggable={false} onClick={onClick}>
+      <a
+        href={href}
+        className={className}
+        draggable={false}
+        onClick={onClick}
+        aria-current={ariaCurrent}
+      >
         {label}
       </a>
     );
   }
 
   return (
-    <Link href={href} className={className} draggable={false} onClick={onClick}>
+    <Link
+      href={href}
+      className={className}
+      draggable={false}
+      onClick={onClick}
+      aria-current={ariaCurrent}
+    >
       {label}
     </Link>
   );
@@ -77,6 +101,7 @@ export default function HeroTopNav({
   const [mobileLoginExpanded, setMobileLoginExpanded] = useState(false);
   const [mobileMenuPortalReady, setMobileMenuPortalReady] = useState(false);
   const [hasScrolledPastHero, setHasScrolledPastHero] = useState(false);
+  const [activeNavHref, setActiveNavHref] = useState<string | null>(null);
   const mobileMenuCardRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuToggleRef = useRef<HTMLButtonElement | null>(null);
   const mobileMenuDragStartX = useRef<number | null>(null);
@@ -109,6 +134,76 @@ export default function HeroTopNav({
       window.removeEventListener("resize", syncScrolledState);
     };
   }, [isTransparentDark]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const hashHrefs = navLinks
+      .map((link) => link.href)
+      .filter((href) => href.startsWith("#") && href.length > 1);
+    if (hashHrefs.length === 0) {
+      setActiveNavHref(null);
+      return;
+    }
+
+    let frameId: number | null = null;
+
+    const getActiveHref = () => {
+      const markerY = Math.max(160, window.innerHeight * 0.5);
+      const heroSection = document.getElementById("landing-hero");
+      const heroRect = heroSection?.getBoundingClientRect();
+      if (heroRect && heroRect.top <= markerY && heroRect.bottom > markerY) {
+        return null;
+      }
+
+      let nextActiveHref: string | null = null;
+
+      for (const href of hashHrefs) {
+        const targetId = getHashLinkId(href);
+        if (!targetId) continue;
+
+        const target = document.getElementById(targetId);
+        if (!target) continue;
+
+        const rect = target.getBoundingClientRect();
+        if (rect.top <= markerY && rect.bottom > markerY) {
+          return href;
+        }
+        if (rect.top <= markerY) {
+          nextActiveHref = href;
+        }
+      }
+
+      return nextActiveHref;
+    };
+
+    const syncActiveNavHref = () => {
+      frameId = null;
+      const nextActiveHref = getActiveHref();
+      setActiveNavHref((currentHref) =>
+        currentHref === nextActiveHref ? currentHref : nextActiveHref,
+      );
+    };
+
+    const requestSyncActiveNavHref = () => {
+      if (frameId !== null) return;
+      frameId = window.requestAnimationFrame(syncActiveNavHref);
+    };
+
+    syncActiveNavHref();
+    window.addEventListener("scroll", requestSyncActiveNavHref, { passive: true });
+    window.addEventListener("resize", requestSyncActiveNavHref);
+    window.addEventListener("hashchange", requestSyncActiveNavHref);
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener("scroll", requestSyncActiveNavHref);
+      window.removeEventListener("resize", requestSyncActiveNavHref);
+      window.removeEventListener("hashchange", requestSyncActiveNavHref);
+    };
+  }, [navLinks]);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -202,6 +297,28 @@ export default function HeroTopNav({
     return () => window.cancelAnimationFrame(frame);
   }, [mobileLoginExpanded]);
 
+  const handleHashLinkClick =
+    (href: string, closeMobileMenu = false): MouseEventHandler<HTMLAnchorElement> =>
+    (event) => {
+      setActiveNavHref(href);
+      if (closeMobileMenu) {
+        setMobileMenuOpen(false);
+      }
+
+      const targetId = getHashLinkId(href);
+      if (!targetId || typeof window === "undefined") return;
+
+      const target = document.getElementById(targetId);
+      if (!target) return;
+
+      event.preventDefault();
+      window.history.pushState(null, "", href);
+      window.scrollTo({
+        top: target.getBoundingClientRect().top + window.scrollY,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+    };
+
   return (
     <motion.header
       initial={isTransparentDark ? { y: -96, opacity: 0 } : false}
@@ -259,22 +376,33 @@ export default function HeroTopNav({
               )}
               aria-label="Hero navigation"
             >
-              {navLinks.map((link) => (
-                <NavLinkItem
-                  key={`${link.label}:${link.href}`}
-                  href={link.href}
-                  label={link.label}
-                  className={cx(
-                    "nav-chrome-motion text-sm font-semibold transition",
-                    isTransparentOverHero
-                      ? "px-1 py-2 text-white/82 hover:text-white"
-                      : cx(
-                          "rounded-full px-4 py-2",
-                          isDarkGlass ? "text-white hover:bg-white/[0.12]" : lightNavPillClass,
-                        ),
-                  )}
-                />
-              ))}
+              {navLinks.map((link) => {
+                const isActive = activeNavHref === link.href;
+                return (
+                  <NavLinkItem
+                    key={`${link.label}:${link.href}`}
+                    href={link.href}
+                    label={link.label}
+                    ariaCurrent={isActive ? "location" : undefined}
+                    onClick={link.href.startsWith("#") ? handleHashLinkClick(link.href) : undefined}
+                    className={cx(
+                      "nav-chrome-motion text-sm font-semibold transition",
+                      isTransparentOverHero
+                        ? isActive
+                          ? "rounded-full bg-white/18 px-3 py-2 text-white shadow-[0_12px_24px_rgba(0,0,0,0.18)]"
+                          : "px-1 py-2 text-white/82 hover:text-white"
+                        : isActive
+                          ? isDarkGlass
+                            ? "rounded-full border border-white/22 bg-white/[0.18] px-4 py-2 text-white shadow-[0_14px_28px_rgba(0,0,0,0.18)]"
+                            : "nav-chrome-pill-active rounded-full px-4 py-2"
+                          : cx(
+                              "rounded-full px-4 py-2",
+                              isDarkGlass ? "text-white hover:bg-white/[0.12]" : lightNavPillClass,
+                            ),
+                    )}
+                  />
+                );
+              })}
             </nav>
 
             <div
@@ -448,18 +576,26 @@ export default function HeroTopNav({
                     className="mt-8 flex flex-1 flex-col items-end justify-start gap-1 pb-8 text-right"
                     aria-label="Hero navigation"
                   >
-                    {navLinks.map((link) => (
-                      <NavLinkItem
-                        key={`${link.label}:${link.href}:mobile`}
-                        href={link.href}
-                        label={link.label}
-                        className={cx(
-                          "nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-base font-semibold transition",
-                          lightNavPillClass,
-                        )}
-                        onClick={() => setMobileMenuOpen(false)}
-                      />
-                    ))}
+                    {navLinks.map((link) => {
+                      const isActive = activeNavHref === link.href;
+                      return (
+                        <NavLinkItem
+                          key={`${link.label}:${link.href}:mobile`}
+                          href={link.href}
+                          label={link.label}
+                          ariaCurrent={isActive ? "location" : undefined}
+                          className={cx(
+                            "nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-base font-semibold transition",
+                            isActive ? "nav-chrome-pill-active" : lightNavPillClass,
+                          )}
+                          onClick={
+                            link.href.startsWith("#")
+                              ? handleHashLinkClick(link.href, true)
+                              : () => setMobileMenuOpen(false)
+                          }
+                        />
+                      );
+                    })}
 
                     {status === "authenticated" ? (
                       <Link

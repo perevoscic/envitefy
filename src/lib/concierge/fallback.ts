@@ -2443,7 +2443,7 @@ export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
   }
   if (firstMissing === "eventPurpose") {
     if (!draft.requestedOutputs.length) {
-      return ["Create a live card", "Create a flyer invitation", "Create an event page"];
+      return ["Create a live card", "Create a flyer invitation", "Let's create"];
     }
     return ["A school fundraiser", "A birthday party", "Use an upload"];
   }

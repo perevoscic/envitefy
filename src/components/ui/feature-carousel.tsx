@@ -28,9 +28,9 @@ export type FeatureCarouselItem = {
 type FeatureCarouselProps = {
   features?: FeatureCarouselItem[];
   className?: string;
+  style?: CSSProperties;
   accentColor?: string;
   autoPlayIntervalMs?: number;
-  statusLabel?: string;
 };
 
 type FeatureCarouselStyle = CSSProperties & {
@@ -121,9 +121,9 @@ const wrap = (min: number, max: number, v: number) => {
 export function FeatureCarousel({
   features = FEATURES,
   className,
+  style,
   accentColor = "#62B2FE",
   autoPlayIntervalMs = AUTO_PLAY_INTERVAL,
-  statusLabel = "Live Session",
 }: FeatureCarouselProps) {
   const [step, setStep] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -167,12 +167,12 @@ export function FeatureCarousel({
 
   return (
     <div
-      className={cn("mx-auto w-full max-w-7xl md:p-8", className)}
+      className={cn("mx-auto w-full max-w-[112rem] md:p-6", className)}
       data-feature-carousel="true"
-      style={{ "--feature-carousel-accent": accentColor } as FeatureCarouselStyle}
+      style={{ ...style, "--feature-carousel-accent": accentColor } as FeatureCarouselStyle}
     >
-      <div className="relative flex min-h-[600px] flex-col overflow-hidden rounded-[2rem] border border-border/40 lg:aspect-video lg:flex-row lg:rounded-[3rem]">
-        <div className="relative z-30 flex min-h-[350px] w-full flex-col items-start justify-center overflow-hidden bg-[var(--feature-carousel-accent)] px-8 md:min-h-[450px] md:px-16 lg:h-full lg:w-[40%] lg:pl-16">
+      <div className="relative flex min-h-[600px] flex-col overflow-hidden rounded-[2rem] border border-border/40 lg:aspect-[2.24/1] lg:min-h-0 lg:flex-row lg:rounded-[3rem] xl:aspect-[2.4/1]">
+        <div className="relative z-30 flex min-h-[350px] w-full flex-col items-center justify-center overflow-hidden bg-[var(--feature-carousel-accent)] px-8 md:min-h-[450px] md:px-12 lg:h-full lg:w-[32%] lg:px-10">
           <div
             aria-hidden="true"
             className="absolute inset-x-0 top-0 z-40 h-12 md:h-20 lg:h-16"
@@ -189,7 +189,7 @@ export function FeatureCarousel({
                 "linear-gradient(to top, var(--feature-carousel-accent), color-mix(in oklab, var(--feature-carousel-accent) 80%, transparent), transparent)",
             }}
           />
-          <div className="relative z-20 flex h-full w-full items-center justify-center lg:justify-start">
+          <div className="relative z-20 flex h-full w-full items-center justify-center">
             {features.map((feature, index) => {
               const isActive = index === currentIndex;
               const distance = index - currentIndex;
@@ -252,8 +252,8 @@ export function FeatureCarousel({
           </div>
         </div>
 
-        <div className="relative flex min-h-[500px] flex-1 items-center justify-center overflow-hidden border-t border-border/20 bg-secondary/30 px-6 py-16 md:min-h-[600px] md:px-12 md:py-24 lg:h-full lg:border-l lg:border-t-0 lg:px-10 lg:py-16">
-          <div className="relative flex aspect-[4/5] w-full max-w-[420px] items-center justify-center">
+        <div className="relative flex min-h-[500px] flex-1 items-center justify-center overflow-hidden border-t border-border/20 bg-secondary/30 px-6 py-16 md:min-h-[600px] md:px-12 md:py-24 lg:h-full lg:border-l lg:border-t-0 lg:px-14 lg:py-14">
+          <div className="relative flex aspect-[5/4] w-full max-w-[680px] items-center justify-center">
             {features.map((feature, index) => {
               const status = getCardStatus(index);
               const isActive = status === "active";
@@ -307,17 +307,6 @@ export function FeatureCarousel({
                     )}
                   </AnimatePresence>
 
-                  <div
-                    className={cn(
-                      "absolute left-8 top-8 flex items-center gap-3 transition-opacity duration-300",
-                      isActive ? "opacity-100" : "opacity-0",
-                    )}
-                  >
-                    <div className="h-2 w-2 rounded-full bg-white shadow-[0_0_10px_white]" />
-                    <span className="font-mono text-[10px] font-normal uppercase tracking-[0.3em] text-white/80">
-                      {statusLabel}
-                    </span>
-                  </div>
                 </motion.div>
               );
             })}

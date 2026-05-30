@@ -1,5 +1,9 @@
-import BottomNavBar from "@/components/ui/bottom-nav-bar";
+import { Testimonial } from "@/components/ui/design-testimonial";
 
 export default function Demo() {
-  return <BottomNavBar />;
+  return (
+    <main className="flex min-h-screen w-full items-center justify-center bg-background">
+      <Testimonial />
+    </main>
+  );
 }

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
-import { landingFaqItems } from "./faq-data";
 import LandingExperience from "./LandingExperience";
 
 const siteOgImageUrl = getRandomSiteOgImageUrl();
@@ -52,27 +51,11 @@ export default async function LandingPage() {
       "Create a polished hosted event page with a live invitation, RSVP, maps, calendar saves, registry links, smart sign-ups, and guest updates from one shareable link.",
   };
 
-  const faqLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: landingFaqItems.map((item) => ({
-      "@type": "Question",
-      name: item.q,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: item.a,
-      },
-    })),
-  };
-
   return (
     <>
       <LandingExperience />
       <Script id="ld-landing-webpage" type="application/ld+json" strategy="afterInteractive">
         {JSON.stringify(webpageLd)}
-      </Script>
-      <Script id="ld-landing-faq" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify(faqLd)}
       </Script>
     </>
   );

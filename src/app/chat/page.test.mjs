@@ -102,10 +102,10 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /selectedStarterCategory \? "starter_category" : undefined/);
   assert.match(client, /aria-label="Choose celebration category"/);
   assert.match(client, /h-28 w-28/);
-  assert.match(client, /max-md:h-\[clamp\(6rem,17dvh,8rem\)\]/);
-  assert.match(client, /max-md:w-\[clamp\(6rem,17dvh,8rem\)\]/);
+  assert.match(client, /max-md:h-\[clamp\(5\.65rem,16dvh,7\.5rem\)\]/);
+  assert.match(client, /max-md:w-\[clamp\(5\.65rem,16dvh,7\.5rem\)\]/);
   assert.match(client, /sm:h-40 sm:w-40/);
-  assert.match(client, /max-md:gap-\[clamp\(0\.9rem,2\.2dvh,1\.4rem\)\]/);
+  assert.match(client, /max-md:gap-\[clamp\(0\.7rem,1\.8dvh,1\.1rem\)\]/);
   assert.match(client, /flex-1 grid-cols-2 content-center/);
   assert.doesNotMatch(client, /Upload invite or photo/);
   assert.doesNotMatch(client, /CHAT_STUDIO_GRID_COMPOSITION/);
@@ -114,7 +114,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /sm:auto-rows-\[130px\]/);
   assert.doesNotMatch(client, /md:auto-rows-\[155px\]/);
   assert.match(client, /max-w-\[90rem\]/);
-  assert.match(client, /max-md:h-full max-md:overflow-hidden/);
+  assert.match(client, /max-md:min-h-full max-md:overflow-visible/);
   assert.doesNotMatch(client, /Choose a category and product to start/);
   assert.doesNotMatch(client, /Upload Your Invite/);
   assert.match(client, /PRODUCT_OPTIONS/);
@@ -153,7 +153,9 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /shouldShowComposerProductOptions/);
   assert.match(client, /shouldShowProductFormatTiles/);
   assert.match(client, /hasInitialEventContext/);
+  assert.match(client, /isWaitingForEventPurpose/);
   assert.match(client, /!draft\?\.requestedOutputs\.length/);
+  assert.match(client, /!isWaitingForEventPurpose/);
   assert.doesNotMatch(
     client,
     /const shouldShowProductFormatTiles =[\s\S]{0,180}!selectedProductOutput/,
@@ -223,7 +225,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /\{isEmptyState \? emptyProductFormatSelector : null\}/);
   assert.match(
     client,
-    /pb-4 pt-\[calc\(max\(0\.35rem,env\(safe-area-inset-top\)\)\+2rem\)\] text-center/,
+    /pb-3 pt-\[calc\(max\(0\.35rem,env\(safe-area-inset-top\)\)\+1\.5rem\)\] text-center/,
   );
   assert.doesNotMatch(client, /pb-44/);
   assert.match(
@@ -233,7 +235,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /className="flex w-full justify-center sm:hidden"/);
   assert.match(
     client,
-    /className="w-\[calc\(\(clamp\(6rem,17dvh,8rem\)\*2\)\+clamp\(0\.9rem,2\.2dvh,1\.4rem\)\)\] !min-w-0 !max-w-full/,
+    /className="w-\[calc\(\(clamp\(5\.65rem,16dvh,7\.5rem\)\*2\)\+clamp\(0\.7rem,1\.8dvh,1\.1rem\)\)\] !min-w-0 !max-w-full/,
   );
   assert.match(
     client,
@@ -353,6 +355,9 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(appShell, /className=\{isChatPath \? "h-\[100dvh\] overflow-hidden" : ""\}/);
   assert.match(appShell, /\{isChatPath \? null : <ConditionalFooter \/>\}/);
   assert.match(client, /className="flex h-full min-h-0 w-full overflow-hidden/);
+  assert.match(client, /--envitefy-chat-viewport-height/);
+  assert.match(client, /window\.visualViewport\?\.height \|\| window\.innerHeight/);
+  assert.match(client, /style=\{\{ height: "var\(--envitefy-chat-viewport-height, 100dvh\)" \}\}/);
   assert.match(
     client,
     /className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"/,

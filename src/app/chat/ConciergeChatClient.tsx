@@ -297,7 +297,7 @@ const PRODUCT_OPTIONS: ProductOption[] = [
     label: "Event Page",
     output: "event_page",
     description: "A full live page with RSVP, location, registry, and sharing.",
-    prompt: "Create an event page",
+    prompt: "Let's create",
     icon: Globe,
   },
 ];
@@ -1322,7 +1322,7 @@ function buildGeneratedDraftImageEditPrompt(args: {
 }
 
 function isMetadataOnlyLocationEdit(message: string) {
-  const text = stringValue(message).toLowerCase();
+  const text = message.trim().toLowerCase();
   if (!text) return false;
   if (/\b(?:image|artwork|picture|poster|design|visible|printed|card text|invite text)\b/.test(text)) {
     return false;
@@ -1379,7 +1379,7 @@ function refreshGeneratedDraftInviteMetadata(
 }
 
 function isGeneratedDraftFullRedesignRequest(message: string): boolean {
-  const text = stringValue(message).toLowerCase();
+  const text = message.trim().toLowerCase();
   if (!text) return false;
   if (/\b(?:keep|preserve|reuse|use)\s+(?:the\s+)?same\s+image\b/.test(text)) return false;
 
@@ -1642,11 +1642,15 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     skinLabelForCategoryName(selectedCategoryLabel) || skinLabelForDraft(draft);
   const hasInitialEventContext =
     Boolean(draft) || visibleMessages.some((message) => message.role === "user");
+  const isWaitingForEventPurpose =
+    draft?.currentQuestion === "what_are_we_celebrating" ||
+    draft?.missingFields[0] === "eventPurpose";
   const shouldShowProductFormatTiles =
     !liveCardEventId &&
     Boolean(draft) &&
     !isReceivedInviteDraft(draft) &&
     !draft?.requestedOutputs.length &&
+    !isWaitingForEventPurpose &&
     !isBusy &&
     !isEmptyState &&
     hasInitialEventContext;
@@ -1808,6 +1812,28 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   useEffect(() => {
     if (isReadyChatComposerOpen) focusComposerAtEnd();
   }, [isReadyChatComposerOpen]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const updateChatViewportHeight = () => {
+      const height = window.visualViewport?.height || window.innerHeight;
+      if (height > 0) root.style.setProperty("--envitefy-chat-viewport-height", `${height}px`);
+    };
+
+    updateChatViewportHeight();
+    window.visualViewport?.addEventListener("resize", updateChatViewportHeight);
+    window.visualViewport?.addEventListener("scroll", updateChatViewportHeight);
+    window.addEventListener("resize", updateChatViewportHeight);
+    window.addEventListener("orientationchange", updateChatViewportHeight);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", updateChatViewportHeight);
+      window.visualViewport?.removeEventListener("scroll", updateChatViewportHeight);
+      window.removeEventListener("resize", updateChatViewportHeight);
+      window.removeEventListener("orientationchange", updateChatViewportHeight);
+      root.style.removeProperty("--envitefy-chat-viewport-height");
+    };
+  }, []);
 
   useEffect(() => {
     function handleNewChatSession() {
@@ -3017,7 +3043,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               ? `Choose product format for ${selectedStarterCategory.label}`
               : "Choose product format"
           }
-          className="w-[calc((clamp(6rem,17dvh,8rem)*2)+clamp(0.9rem,2.2dvh,1.4rem))] !min-w-0 !max-w-full bg-[#eff1f8]"
+          className="w-[calc((clamp(5.65rem,16dvh,7.5rem)*2)+clamp(0.7rem,1.8dvh,1.1rem))] !min-w-0 !max-w-full bg-[#eff1f8]"
           onValueChange={(value) => {
             const option = PRODUCT_OPTIONS.find((item) => item.output === value);
             if (option) handleStarterProductChoice(option);
@@ -3362,7 +3388,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   );
 
   return (
-    <div className="flex h-full min-h-0 w-full overflow-hidden bg-transparent text-[#161129]">
+    <div
+      className="flex h-full min-h-0 w-full overflow-hidden bg-transparent text-[#161129]"
+      style={{ height: "var(--envitefy-chat-viewport-height, 100dvh)" }}
+    >
       <main
         ref={mainRef}
         className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
@@ -3415,11 +3444,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                 <div
                   className={cn(
                     "min-h-0 flex-1 overflow-y-auto [overscroll-behavior-y:contain] [touch-action:pan-y] [-webkit-overflow-scrolling:touch]",
-                    isEmptyState && "max-md:overflow-hidden",
+                    isEmptyState && "max-md:overflow-y-auto",
                   )}
                 >
                   {isEmptyState ? (
-                    <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-start px-4 pb-4 pt-[calc(max(0.35rem,env(safe-area-inset-top))+2rem)] text-center sm:px-6 sm:pt-[calc(max(0.35rem,env(safe-area-inset-top))+2.75rem)] lg:pt-12 max-md:h-full max-md:overflow-hidden max-md:px-3 max-md:pb-1 max-md:pt-[calc(max(0.35rem,env(safe-area-inset-top))+1rem)] max-h-[700px]:max-md:pt-[calc(max(0.35rem,env(safe-area-inset-top))+0.6rem)]">
+                    <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-start px-4 pb-3 pt-[calc(max(0.35rem,env(safe-area-inset-top))+1.5rem)] text-center sm:px-6 sm:pt-[calc(max(0.35rem,env(safe-area-inset-top))+2.75rem)] lg:pt-12 max-md:min-h-full max-md:overflow-visible max-md:px-3 max-md:pb-1 max-md:pt-[calc(max(0.35rem,env(safe-area-inset-top))+0.7rem)] max-h-[700px]:max-md:pt-[calc(max(0.35rem,env(safe-area-inset-top))+0.45rem)]">
                       <motion.h1
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -3427,11 +3456,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                       >
                         What are we celebrating?
                       </motion.h1>
-                      <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6f608c] sm:text-base max-md:mt-2 max-md:text-xs max-md:leading-5 max-h-[620px]:max-md:hidden">
+                      <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-[#6f608c] sm:mt-3 sm:text-base max-md:mt-1.5 max-md:text-xs max-md:leading-5 max-h-[620px]:max-md:hidden">
                         Choose a category, pick a product, or describe the event in your own words.
                       </p>
                       <nav
-                        className="mx-auto mt-8 grid w-full max-w-[39rem] flex-1 grid-cols-2 content-center justify-items-center gap-8 text-center sm:gap-12 md:grid-cols-3 max-md:mt-3 max-md:gap-[clamp(0.9rem,2.2dvh,1.4rem)] max-h-[700px]:max-md:mt-2"
+                        className="mx-auto mt-6 grid w-full max-w-[39rem] flex-1 grid-cols-2 content-center justify-items-center gap-8 text-center sm:mt-8 sm:gap-12 md:grid-cols-3 max-md:mt-2.5 max-md:gap-[clamp(0.7rem,1.8dvh,1.1rem)] max-h-[700px]:max-md:mt-1.5"
                         aria-label="Choose celebration category"
                       >
                         {CELEBRATION_STARTER_TILES.map((tile) => {
@@ -3453,7 +3482,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                               }
                               aria-pressed={isSelected}
                               className={cn(
-                                "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl bg-[#eff1f8] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8b0bc] focus-visible:ring-offset-4 focus-visible:ring-offset-[#eff1f8] disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(6rem,17dvh,8rem)] max-md:w-[clamp(6rem,17dvh,8rem)]",
+                                "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl bg-[#eff1f8] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8b0bc] focus-visible:ring-offset-4 focus-visible:ring-offset-[#eff1f8] disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(5.65rem,16dvh,7.5rem)] max-md:w-[clamp(5.65rem,16dvh,7.5rem)]",
                                 isSelected &&
                                   cn(
                                     "scale-95 shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff]",
