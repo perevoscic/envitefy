@@ -94,7 +94,20 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /fill/);
   assert.match(landingExperience, /object-cover object-center/);
   assert.match(landingExperience, /variant="transparent-dark"/);
-  assert.match(landingExperience, /capacity-aware claims/);
+  assert.match(landingExperience, /capacity state/);
+  assert.match(landingExperience, /Turn every event page into the place guests actually act/);
+  assert.match(landingExperience, /guestActionPreviewConfigs/);
+  assert.match(landingExperience, /Guest action carousel/);
+  assert.doesNotMatch(landingExperience, /Show previous guest action/);
+  assert.doesNotMatch(landingExperience, /\{currentAction\.label\} state/);
+  assert.match(landingExperience, /\/images\/landing\/guest-flow\/rsvp-table-placeholder\.webp/);
+  assert.ok(
+    fs.existsSync(
+      path.join(repoRoot, "public/images/landing/guest-flow/rsvp-table-placeholder.webp"),
+    ),
+  );
+  assert.match(landingExperience, /Sunny Sprout Baby Shower/);
+  assert.match(landingExperience, /7200/);
   assert.doesNotMatch(landingExperience, /PublicEventPagePanel/);
   assert.doesNotMatch(landingExperience, /Hosted page/);
   assert.doesNotMatch(landingExperience, /HeroPhonePreview/);
@@ -105,8 +118,9 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /#43273f/);
   assert.match(landingExperience, /#d7c5a5/);
   assert.match(landingExperience, /#7a8f76/);
-  assert.match(landingExperience, /id="event-pages"/);
-  assert.match(landingExperience, /id="rsvp-tracking"/);
+  assert.match(landingExperience, /href: "#guest-flow"/);
+  assert.match(landingExperience, /id="guest-flow"/);
+  assert.doesNotMatch(landingExperience, /id="rsvp-tracking"/);
   assert.match(landingExperience, /id="upload"/);
   assert.match(landingExperience, /id="concierge"/);
   assert.match(landingExperience, /id="examples"/);
@@ -122,7 +136,11 @@ test("landing page is hosted-event-led and premium", () => {
   );
   assert.match(
     landingExperience,
-    /id="event-pages"\s+className=\{cx\(landingViewportSectionClass, "border-y border-\[#ded2bd\] bg-white"\)\}/,
+    /"scroll-mt-0 overflow-hidden border-y border-\[#2e2432\] bg-\[#201a23\] text-white"/,
+  );
+  assert.match(
+    landingExperience,
+    /grid min-h-\[100svh\] w-full lg:grid-cols-\[minmax\(22rem,34vw\)_minmax\(0,1fr\)\]/,
   );
   assert.match(landingExperience, /px-4 py-16 sm:px-8 lg:px-10 lg:py-20/);
   assert.doesNotMatch(landingExperience, /min-h-full w-full max-w-7xl/);
@@ -210,11 +228,14 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(landingShowcase, /node\.scrollLeft = targetLeft/);
   assert.match(
     landingShowcase,
-    /id="showcase"\s+className="hash-anchor-below-fixed-nav flex min-h-\[100svh\] flex-col justify-center overflow-x-clip/,
+    /id="showcase"\s+className="flex min-h-\[100svh\] flex-col justify-center overflow-x-clip pb-16 pt-32 lg:pb-20 lg:pt-32"/,
   );
-  assert.match(landingShowcase, /left-1\/2 mt-12 w-screen -translate-x-1\/2 px-4 py-4/);
+  assert.match(landingShowcase, /left-1\/2 mt-12 w-screen -translate-x-1\/2 py-4/);
   assert.match(landingShowcase, /revealIn/);
   assert.doesNotMatch(landingShowcase, /h-\[100svh\] min-h-\[100svh\] overflow-hidden/);
+  assert.doesNotMatch(landingShowcase, /hash-anchor-below-fixed-nav/);
+  assert.doesNotMatch(landingShowcase, /px-4 py-16 sm:px-6 lg:px-8/);
+  assert.doesNotMatch(landingShowcase, /px-4 py-4 sm:px-6 lg:px-8/);
   assert.doesNotMatch(landingShowcase, /overflow-x-hidden/);
   assert.doesNotMatch(landingShowcase, /overflow-y-auto overscroll-contain/);
   assert.doesNotMatch(landingShowcase, /style=\{\{ scrollMarginTop: 0 \}\}/);

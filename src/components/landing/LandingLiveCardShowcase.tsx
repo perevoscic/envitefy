@@ -403,7 +403,7 @@ export default function LandingLiveCardShowcase({
     <>
       <motion.section
         id="showcase"
-        className="hash-anchor-below-fixed-nav flex min-h-[100svh] flex-col justify-center overflow-x-clip px-4 py-16 sm:px-6 lg:px-8 lg:py-20"
+        className="flex min-h-[100svh] flex-col justify-center overflow-x-clip pb-16 pt-32 lg:pb-20 lg:pt-32"
         {...revealIn}
       >
         <div className="mx-auto w-full max-w-7xl">
@@ -441,7 +441,7 @@ export default function LandingLiveCardShowcase({
           </div>
         </div>
 
-        <div className="relative left-1/2 mt-12 w-screen -translate-x-1/2 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="relative left-1/2 mt-12 w-screen -translate-x-1/2 py-4">
           <div className="group/carousel relative">
             <button
               type="button"
