@@ -25,6 +25,7 @@ import LandingFaq from "./sections/LandingFaq";
 const landingFlowSectionClass = "";
 const landingFlowContentClass = "mx-auto w-full max-w-7xl px-4 py-16 sm:px-8 lg:px-10 lg:py-20";
 const landingFlowInnerClass = "";
+const landingViewportSectionClass = "flex min-h-[100svh] flex-col justify-center";
 
 const landingHeroNavLinks = [
   { label: "Examples", href: "#showcase" },
@@ -555,7 +556,7 @@ function GuestActionSuite() {
   return (
     <section
       id="event-pages"
-      className={cx(landingFlowSectionClass, "border-y border-[#ded2bd] bg-white")}
+      className={cx(landingViewportSectionClass, "border-y border-[#ded2bd] bg-white")}
     >
       <div className={landingFlowContentClass}>
         <div className={cx(landingFlowInnerClass, "grid gap-10 lg:grid-cols-[0.82fr_1.18fr]")}>

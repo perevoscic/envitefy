@@ -116,6 +116,14 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /landingFlowContentClass/);
   assert.match(landingExperience, /landingFlowInnerClass/);
   assert.match(landingExperience, /const landingFlowSectionClass = ""/);
+  assert.match(
+    landingExperience,
+    /const landingViewportSectionClass = "flex min-h-\[100svh\] flex-col justify-center"/,
+  );
+  assert.match(
+    landingExperience,
+    /id="event-pages"\s+className=\{cx\(landingViewportSectionClass, "border-y border-\[#ded2bd\] bg-white"\)\}/,
+  );
   assert.match(landingExperience, /px-4 py-16 sm:px-8 lg:px-10 lg:py-20/);
   assert.doesNotMatch(landingExperience, /min-h-full w-full max-w-7xl/);
   assert.doesNotMatch(landingExperience, /overflow-y-auto overscroll-contain/);
@@ -200,10 +208,15 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(landingShowcase, /const INITIAL_SHOWCASE_INDEX = 3/);
   assert.match(landingShowcase, /centerInitialShowcaseCard/);
   assert.match(landingShowcase, /node\.scrollLeft = targetLeft/);
-  assert.match(landingShowcase, /id="showcase"\s+className="hash-anchor-below-fixed-nav overflow-x-hidden/);
+  assert.match(
+    landingShowcase,
+    /id="showcase"\s+className="hash-anchor-below-fixed-nav flex min-h-\[100svh\] flex-col justify-center overflow-x-clip/,
+  );
   assert.match(landingShowcase, /left-1\/2 mt-12 w-screen -translate-x-1\/2 px-4 py-4/);
   assert.match(landingShowcase, /revealIn/);
   assert.doesNotMatch(landingShowcase, /h-\[100svh\] min-h-\[100svh\] overflow-hidden/);
+  assert.doesNotMatch(landingShowcase, /overflow-x-hidden/);
+  assert.doesNotMatch(landingShowcase, /overflow-y-auto overscroll-contain/);
   assert.doesNotMatch(landingShowcase, /style=\{\{ scrollMarginTop: 0 \}\}/);
   assert.doesNotMatch(landingShowcase, /fullPanelRevealIn/);
   assert.match(landingShowcase, /Open live card/);

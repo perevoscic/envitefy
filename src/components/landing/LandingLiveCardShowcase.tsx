@@ -403,7 +403,7 @@ export default function LandingLiveCardShowcase({
     <>
       <motion.section
         id="showcase"
-        className="hash-anchor-below-fixed-nav overflow-x-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-20"
+        className="hash-anchor-below-fixed-nav flex min-h-[100svh] flex-col justify-center overflow-x-clip px-4 py-16 sm:px-6 lg:px-8 lg:py-20"
         {...revealIn}
       >
         <div className="mx-auto w-full max-w-7xl">

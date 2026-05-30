@@ -300,11 +300,11 @@ export default function HeroTopNav({
                   className={cx(
                     isDarkGlass
                       ? glassGhostLoginClass
-                      : "nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
+                      : "cta-shell nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
                     !isDarkGlass && lightNavPillClass,
                   )}
                 >
-                  Login
+                  <AnimatedButtonLabel label="Login" />
                 </button>
               )}
 
@@ -481,11 +481,11 @@ export default function HeroTopNav({
                             aria-controls="hero-top-nav-mobile-login"
                             onClick={() => setMobileLoginExpanded((value) => !value)}
                             className={cx(
-                              "mt-1.5 self-end nav-chrome-motion rounded-2xl px-6 py-3 text-center text-base font-semibold transition",
+                              "cta-shell mt-1.5 self-end nav-chrome-motion rounded-2xl px-6 py-3 text-center text-base font-semibold transition",
                               lightNavPillClass,
                             )}
                           >
-                            Login
+                            <AnimatedButtonLabel label="Login" />
                           </button>
                         ) : null}
 
