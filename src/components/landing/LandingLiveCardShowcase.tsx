@@ -406,7 +406,7 @@ export default function LandingLiveCardShowcase({
         className="flex min-h-[100svh] flex-col justify-center overflow-x-clip pb-16 pt-32 lg:pb-20 lg:pt-32"
         {...revealIn}
       >
-        <div className="mx-auto w-full max-w-7xl">
+        <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
           <div className="flex flex-col gap-6">
             <div>
               {eyebrow ? (

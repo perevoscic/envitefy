@@ -31,6 +31,7 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
     source,
     /const showMobileGuestActions =\s*status !== "authenticated" && !mobileLoginExpanded;/,
   );
+  assert.match(source, /const useDarkMobileMenu = isDarkGlass;/);
   assert.match(source, /setMobileMenuPortalReady\(true\);/);
   assert.match(source, /document\.addEventListener\("pointerdown", handlePointerDown\);/);
   assert.match(source, /if \(mobileMenuCardRef\.current\?\.contains\(target\)\) return;/);
@@ -76,12 +77,13 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
   assert.match(source, /\[-webkit-overflow-scrolling:touch\]/);
   assert.match(source, /will-change-transform/);
   assert.match(source, /mobileMenuOpen \? "pointer-events-auto" : "pointer-events-none"/);
+  assert.match(source, /theme-glass-menu bg-\[#150c29\] text-white/);
   assert.match(
     source,
     /"bg-\[linear-gradient\(180deg,#faf7ff_0%,#f4efff_100%\)\] text-\[#31264f\]/,
   );
-  assert.match(source, /tone="gradient"/);
-  assert.match(source, /"hero-top-nav-brand-light"/);
+  assert.match(source, /tone=\{useDarkMobileMenu \? "light" : "gradient"\}/);
+  assert.match(source, /!useDarkMobileMenu && "hero-top-nav-brand-light"/);
   assert.match(source, /"nav-chrome-pill-secondary text-\[#31264f\]"/);
   assert.match(source, /"mt-8 flex flex-1 flex-col items-end justify-start/);
   assert.match(source, /role="dialog"/);
@@ -89,10 +91,10 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
   assert.match(source, /id="hero-top-nav-mobile-login"/);
   assert.match(source, /ref=\{mobileMenuToggleRef\}/);
   assert.match(source, /ref=\{mobileMenuCardRef\}/);
-  assert.match(source, /"rounded-\[1\.35rem\] px-4 py-4"/);
+  assert.match(source, /"rounded-\[2rem\] px-4 py-4"/);
   assert.match(source, /<LoginForm\s+variant="inline"/);
   assert.match(source, /onInlineCancel=\{\(\) => setMobileLoginExpanded\(false\)\}/);
-  assert.match(source, /inlineTone="light"/);
+  assert.match(source, /inlineTone=\{useDarkMobileMenu \? "dark" : "light"\}/);
   assert.match(source, /successRedirectUrl=\{loginSuccessRedirectUrl\}/);
   assert.match(
     source,

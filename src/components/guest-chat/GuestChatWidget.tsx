@@ -207,22 +207,22 @@ export default function GuestChatWidget() {
       {open ? (
         <section
           aria-label="Envitefy guest help chat"
-          className="w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-[#d7c5a5] bg-[#fcfbf7] text-[#201a23] shadow-[0_30px_90px_rgba(20,15,24,0.28)] sm:w-[24rem]"
+          className="w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-[#d8c495]/80 bg-[#fffaf2] text-[#211821] shadow-[0_28px_80px_rgba(20,15,24,0.3),0_1px_0_rgba(255,255,255,0.8)_inset] sm:w-[24rem]"
         >
-          <header className="flex items-center justify-between gap-3 border-b border-[#eadfce] bg-[#201a23] px-4 py-3 text-white">
+          <header className="flex items-center justify-between gap-3 border-b border-[#d7b46a]/28 bg-[linear-gradient(135deg,#171019_0%,#241927_58%,#3a2735_100%)] px-4 py-3 text-[#fff8e9] shadow-[0_1px_0_rgba(255,255,255,0.08)_inset]">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#f0d58f]/28 bg-[#f0d58f]/10 text-[#f0d58f]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#e8c77b]/38 bg-[#f1d28b]/12 text-[#f5d88f] shadow-[0_8px_20px_rgba(0,0,0,0.22),0_1px_0_rgba(255,255,255,0.12)_inset]">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <h2 className="truncate text-sm font-semibold">Envitefy help</h2>
-                <p className="truncate text-xs text-white/62">Guest questions</p>
+                <h2 className="truncate text-sm font-semibold !text-[#fff9ef]">Envitefy help</h2>
+                <p className="truncate text-xs text-[#d8c8aa]">Guest questions</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-white/76 transition hover:bg-white/10 hover:text-white"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-[#f4ead5]/78 transition hover:bg-white/10 hover:text-white"
               aria-label="Close guest help chat"
               title="Close"
             >
@@ -232,7 +232,7 @@ export default function GuestChatWidget() {
 
           <div
             ref={scrollRef}
-            className="max-h-[min(58vh,30rem)] overflow-y-auto px-4 py-4"
+            className="max-h-[min(58vh,30rem)] overflow-y-auto bg-[linear-gradient(180deg,#fffaf2_0%,#f8efe3_100%)] px-4 py-4"
             aria-live="polite"
           >
             <div className="space-y-3">
@@ -242,10 +242,10 @@ export default function GuestChatWidget() {
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[84%] whitespace-pre-wrap rounded-lg px-3.5 py-2.5 text-sm leading-6 ${
+                    className={`max-w-[84%] whitespace-pre-wrap rounded-lg px-3.5 py-2.5 text-sm leading-6 shadow-sm ${
                       message.role === "user"
-                        ? "bg-[#201a23] text-white"
-                        : "border border-[#eadfce] bg-white text-[#3c3540]"
+                        ? "bg-[linear-gradient(135deg,#201622_0%,#352539_100%)] text-[#fff9ef] shadow-[0_12px_24px_rgba(32,22,34,0.22)]"
+                        : "border border-[#ead9bd] bg-white/92 text-[#3b3138]"
                     }`}
                   >
                     {message.text}
@@ -260,7 +260,7 @@ export default function GuestChatWidget() {
                       key={question}
                       type="button"
                       onClick={() => sendMessage(question)}
-                      className="rounded-md border border-[#dfd2bb] bg-white px-3 py-2 text-left text-xs font-semibold leading-5 text-[#4b414f] transition hover:border-[#b99f70] hover:bg-[#fffaf0]"
+                      className="rounded-md border border-[#dccaa9] bg-white/86 px-3 py-2 text-left text-xs font-semibold leading-5 text-[#463a46] shadow-[0_1px_0_rgba(255,255,255,0.76)_inset] transition hover:border-[#b9975c] hover:bg-[#fff7e8] hover:text-[#211821]"
                     >
                       {question}
                     </button>
@@ -270,8 +270,8 @@ export default function GuestChatWidget() {
 
               {isSending ? (
                 <div className="flex justify-start">
-                  <div className="flex items-center gap-2 rounded-lg border border-[#eadfce] bg-white px-3.5 py-2.5 text-sm text-[#665d68]">
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  <div className="flex items-center gap-2 rounded-lg border border-[#ead9bd] bg-white/92 px-3.5 py-2.5 text-sm text-[#665d68] shadow-sm">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#a58042]" aria-hidden="true" />
                     Answering...
                   </div>
                 </div>
@@ -279,12 +279,12 @@ export default function GuestChatWidget() {
             </div>
 
             {handoffSuggested || showContactForm ? (
-              <div className="mt-4 rounded-lg border border-[#eadfce] bg-white p-3">
+              <div className="mt-4 rounded-lg border border-[#ead9bd] bg-white/90 p-3 shadow-sm">
                 {!showContactForm ? (
                   <button
                     type="button"
                     onClick={() => setShowContactForm(true)}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#201a23] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#352a39]"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[linear-gradient(135deg,#201622_0%,#3a293d_100%)] px-3 py-2 text-sm font-semibold text-[#fff9ef] shadow-[0_12px_26px_rgba(32,22,34,0.18)] transition hover:bg-[#352a39]"
                   >
                     <Mail className="h-4 w-4" aria-hidden="true" />
                     Contact support
@@ -295,14 +295,14 @@ export default function GuestChatWidget() {
                       <input
                         value={contactName}
                         onChange={(event) => setContactName(event.target.value)}
-                        className="h-10 rounded-md border border-[#dfd2bb] bg-[#fcfbf7] px-3 text-sm outline-none focus:border-[#9d7a3e]"
+                        className="h-10 rounded-md border border-[#dccaa9] bg-[#fffaf2] px-3 text-sm text-[#211821] outline-none transition placeholder:text-[#8d817f] focus:border-[#ad8748] focus:bg-white"
                         placeholder="Name"
                         autoComplete="name"
                       />
                       <input
                         value={contactEmail}
                         onChange={(event) => setContactEmail(event.target.value)}
-                        className="h-10 rounded-md border border-[#dfd2bb] bg-[#fcfbf7] px-3 text-sm outline-none focus:border-[#9d7a3e]"
+                        className="h-10 rounded-md border border-[#dccaa9] bg-[#fffaf2] px-3 text-sm text-[#211821] outline-none transition placeholder:text-[#8d817f] focus:border-[#ad8748] focus:bg-white"
                         placeholder="Email"
                         type="email"
                         autoComplete="email"
@@ -312,7 +312,7 @@ export default function GuestChatWidget() {
                     <textarea
                       value={contactNote}
                       onChange={(event) => setContactNote(event.target.value)}
-                      className="min-h-20 w-full resize-none rounded-md border border-[#dfd2bb] bg-[#fcfbf7] px-3 py-2 text-sm leading-5 outline-none focus:border-[#9d7a3e]"
+                      className="min-h-20 w-full resize-none rounded-md border border-[#dccaa9] bg-[#fffaf2] px-3 py-2 text-sm leading-5 text-[#211821] outline-none transition placeholder:text-[#8d817f] focus:border-[#ad8748] focus:bg-white"
                       placeholder="What should we follow up on?"
                       required
                     />
@@ -320,14 +320,14 @@ export default function GuestChatWidget() {
                       <button
                         type="button"
                         onClick={() => setShowContactForm(false)}
-                        className="text-xs font-semibold text-[#665d68] hover:text-[#201a23]"
+                        className="text-xs font-semibold text-[#665d68] transition hover:text-[#201a23]"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={contactState.status === "sending"}
-                        className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-[#201a23] px-3 text-xs font-semibold text-white transition hover:bg-[#352a39] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-[linear-gradient(135deg,#201622_0%,#3a293d_100%)] px-3 text-xs font-semibold text-[#fff9ef] transition hover:bg-[#352a39] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {contactState.status === "sending" ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
@@ -353,7 +353,7 @@ export default function GuestChatWidget() {
           </div>
 
           <form
-            className="flex items-end gap-2 border-t border-[#eadfce] bg-white p-3"
+            className="flex items-end gap-2 border-t border-[#e4d4bb] bg-[#fffdf8] p-3"
             onSubmit={handleSubmit}
           >
             <textarea
@@ -367,14 +367,14 @@ export default function GuestChatWidget() {
               }}
               rows={1}
               maxLength={1000}
-              className="max-h-28 min-h-10 flex-1 resize-none rounded-md border border-[#dfd2bb] bg-[#fcfbf7] px-3 py-2 text-sm leading-5 outline-none focus:border-[#9d7a3e]"
+              className="max-h-28 min-h-10 flex-1 resize-none rounded-md border border-[#d8c7a7] bg-[#fffaf2] px-3 py-2 text-sm leading-5 text-[#211821] outline-none transition placeholder:text-[#8d817f] focus:border-[#ad8748] focus:bg-white"
               placeholder="Ask about Envitefy..."
               disabled={isSending}
             />
             <button
               type="submit"
               disabled={isSending || !input.trim()}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#201a23] text-white transition hover:bg-[#352a39] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#d8b972]/42 bg-[linear-gradient(135deg,#201622_0%,#3a293d_100%)] text-[#fff9ef] shadow-[0_10px_22px_rgba(32,22,34,0.2)] transition hover:-translate-y-0.5 hover:bg-[#352a39] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
               aria-label="Send guest chat message"
               title="Send"
             >
@@ -391,14 +391,14 @@ export default function GuestChatWidget() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex h-14 w-14 items-center justify-center rounded-full border border-[#f0d58f]/55 bg-[#201a23] text-white shadow-[0_18px_48px_rgba(20,15,24,0.32)] transition hover:-translate-y-0.5 hover:bg-[#352a39] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f] focus-visible:ring-offset-2"
+        className="flex h-14 w-14 items-center justify-center rounded-full border border-[#e4c678]/70 bg-[linear-gradient(135deg,#171019_0%,#302133_100%)] text-[#fff9ef] shadow-[0_18px_48px_rgba(20,15,24,0.34),0_1px_0_rgba(255,255,255,0.12)_inset] transition hover:-translate-y-0.5 hover:border-[#f1d28b] hover:bg-[#352a39] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f0d58f] focus-visible:ring-offset-2"
         aria-label={open ? "Close Envitefy guest help" : "Open Envitefy guest help"}
         title={open ? "Close help" : "Envitefy help"}
       >
         {open ? (
           <X className="h-6 w-6" aria-hidden="true" />
         ) : (
-          <MessageCircle className="h-6 w-6" aria-hidden="true" />
+          <MessageCircle className="h-6 w-6 -scale-x-100" aria-hidden="true" />
         )}
       </button>
     </div>

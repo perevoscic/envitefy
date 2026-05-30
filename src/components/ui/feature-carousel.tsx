@@ -12,7 +12,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { type CSSProperties, useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export type FeatureCarouselItem = {
@@ -172,7 +172,7 @@ export function FeatureCarousel({
       style={{ ...style, "--feature-carousel-accent": accentColor } as FeatureCarouselStyle}
     >
       <div className="relative flex min-h-[600px] flex-col overflow-hidden rounded-[2rem] border border-border/40 lg:aspect-[2.24/1] lg:min-h-0 lg:flex-row lg:rounded-[3rem] xl:aspect-[2.4/1]">
-        <div className="relative z-30 flex min-h-[350px] w-full flex-col items-center justify-center overflow-hidden bg-[var(--feature-carousel-accent)] px-8 md:min-h-[450px] md:px-12 lg:h-full lg:w-[32%] lg:px-10">
+        <div className="relative z-30 flex min-h-[270px] w-full flex-col items-center justify-center overflow-hidden bg-[var(--feature-carousel-accent)] px-6 sm:min-h-[330px] md:min-h-[450px] md:px-12 lg:h-full lg:w-[32%] lg:px-10">
           <div
             aria-hidden="true"
             className="absolute inset-x-0 top-0 z-40 h-12 md:h-20 lg:h-16"
@@ -221,7 +221,7 @@ export function FeatureCarousel({
                     onMouseEnter={() => setIsPaused(true)}
                     onMouseLeave={() => setIsPaused(false)}
                     className={cn(
-                      "group relative flex items-center gap-4 rounded-full border px-6 py-3.5 text-left transition-all duration-700 md:px-10 md:py-5 lg:px-8 lg:py-4",
+                      "group relative flex max-w-[min(15rem,calc(100vw-5rem))] items-center gap-2 rounded-full border px-4 py-2.5 text-left transition-all duration-700 md:max-w-none md:gap-4 md:px-10 md:py-5 lg:px-8 lg:py-4",
                       isActive
                         ? "z-10 border-white bg-white"
                         : "border-white/20 bg-transparent text-white/60 hover:border-white/40 hover:text-white",
@@ -242,7 +242,7 @@ export function FeatureCarousel({
                       />
                     </div>
 
-                    <span className="whitespace-nowrap text-sm font-normal uppercase tracking-normal md:text-[15px]">
+                    <span className="whitespace-nowrap text-[11px] font-normal uppercase tracking-normal md:text-[15px]">
                       {feature.label}
                     </span>
                   </button>
@@ -252,8 +252,8 @@ export function FeatureCarousel({
           </div>
         </div>
 
-        <div className="relative flex min-h-[500px] flex-1 items-center justify-center overflow-hidden border-t border-border/20 bg-secondary/30 px-6 py-16 md:min-h-[600px] md:px-12 md:py-24 lg:h-full lg:border-l lg:border-t-0 lg:px-14 lg:py-14">
-          <div className="relative flex aspect-[5/4] w-full max-w-[680px] items-center justify-center">
+        <div className="relative flex min-h-[520px] flex-1 items-center justify-center overflow-hidden border-t border-border/20 bg-secondary/30 px-4 py-8 md:min-h-[600px] md:px-12 md:py-24 lg:h-full lg:border-l lg:border-t-0 lg:px-14 lg:py-14">
+          <div className="relative flex aspect-[4/5] w-full max-w-[23rem] items-center justify-center md:aspect-[5/4] md:max-w-[680px]">
             {features.map((feature, index) => {
               const status = getCardStatus(index);
               const isActive = status === "active";
@@ -295,18 +295,17 @@ export function FeatureCarousel({
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/40 to-transparent p-10 pt-32"
+                        className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pt-24 sm:p-10 sm:pt-32"
                       >
-                        <div className="mb-3 w-fit rounded-full border border-border/50 bg-background px-4 py-1.5 text-[11px] font-normal uppercase tracking-[0.2em] text-foreground shadow-lg">
+                        <div className="mb-2 w-fit rounded-full border border-border/50 bg-background px-3 py-1 text-[9px] font-normal uppercase tracking-[0.16em] text-foreground shadow-lg sm:mb-3 sm:px-4 sm:py-1.5 sm:text-[11px] sm:tracking-[0.2em]">
                           {index + 1} - {feature.badge ?? feature.label}
                         </div>
-                        <p className="text-xl font-normal leading-tight tracking-normal text-white drop-shadow-md md:text-2xl">
+                        <p className="text-base font-normal leading-snug tracking-normal text-white drop-shadow-md sm:text-xl md:text-2xl">
                           {feature.description}
                         </p>
                       </motion.div>
                     )}
                   </AnimatePresence>
-
                 </motion.div>
               );
             })}

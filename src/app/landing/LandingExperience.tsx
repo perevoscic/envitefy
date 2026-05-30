@@ -1315,7 +1315,7 @@ function GuestActionSuite({ onPrimaryAction }: { onPrimaryAction: () => void }) 
           <button
             type="button"
             onClick={onPrimaryAction}
-            className="mt-6 inline-flex h-12 w-fit self-start items-center justify-center gap-2 rounded-md border border-[#f0d58f]/44 bg-[#f0d58f] px-6 text-sm font-semibold text-[#201a23] shadow-[0_18px_44px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0d58f]"
+            className="mt-6 inline-flex h-12 w-fit self-end items-center justify-center gap-2 rounded-md border border-[#f0d58f]/44 bg-[#f0d58f] px-6 text-sm font-semibold text-[#201a23] shadow-[0_18px_44px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0d58f]"
           >
             Let's Envitefy
             <ArrowRight className="h-4 w-4" />
