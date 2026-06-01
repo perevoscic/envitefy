@@ -106,6 +106,7 @@ export default function HeroTopNav({
   const mobileMenuToggleRef = useRef<HTMLButtonElement | null>(null);
   const mobileMenuDragStartX = useRef<number | null>(null);
   const mobileMenuSwipeStartX = useRef<number | null>(null);
+  const pendingHashScrollTopRef = useRef<number | null>(null);
   const isTransparentDark = variant === "transparent-dark";
   const isDarkGlass = variant === "glass-dark" || isTransparentDark;
   const isTransparentOverHero = isTransparentDark && !hasScrolledPastHero;
@@ -269,7 +270,13 @@ export default function HeroTopNav({
       body.style.left = previousBodyLeft;
       body.style.right = previousBodyRight;
       body.style.width = previousBodyWidth;
-      window.scrollTo(0, scrollY);
+      const pendingHashScrollTop = pendingHashScrollTopRef.current;
+      if (pendingHashScrollTop === null) {
+        window.scrollTo(0, scrollY);
+      } else {
+        pendingHashScrollTopRef.current = null;
+        window.scrollTo(0, pendingHashScrollTop);
+      }
     };
   }, [mobileMenuOpen]);
 
@@ -301,11 +308,6 @@ export default function HeroTopNav({
   const handleHashLinkClick =
     (href: string, closeMobileMenu = false): MouseEventHandler<HTMLAnchorElement> =>
     (event) => {
-      setActiveNavHref(href);
-      if (closeMobileMenu) {
-        setMobileMenuOpen(false);
-      }
-
       const targetId = getHashLinkId(href);
       if (!targetId || typeof window === "undefined") return;
 
@@ -313,9 +315,18 @@ export default function HeroTopNav({
       if (!target) return;
 
       event.preventDefault();
+      const targetTop = target.getBoundingClientRect().top + window.scrollY;
       window.history.pushState(null, "", href);
+
+      if (closeMobileMenu) {
+        pendingHashScrollTopRef.current = targetTop;
+        setMobileMenuOpen(false);
+        return;
+      }
+
+      setActiveNavHref(href);
       window.scrollTo({
-        top: target.getBoundingClientRect().top + window.scrollY,
+        top: targetTop,
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       });
     };
@@ -582,22 +593,17 @@ export default function HeroTopNav({
                     aria-label="Hero navigation"
                   >
                     {navLinks.map((link) => {
-                      const isActive = activeNavHref === link.href;
                       return (
                         <NavLinkItem
                           key={`${link.label}:${link.href}:mobile`}
                           href={link.href}
                           label={link.label}
-                          ariaCurrent={isActive ? "location" : undefined}
+                          ariaCurrent={undefined}
                           className={cx(
                             "nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-base font-semibold transition",
                             useDarkMobileMenu
-                              ? isActive
-                                ? "border border-white/22 bg-white/[0.16] text-white shadow-[0_14px_28px_rgba(0,0,0,0.18)]"
-                                : "text-white/74 hover:bg-white/[0.08] hover:text-white"
-                              : isActive
-                                ? "nav-chrome-pill-active"
-                                : lightNavPillClass,
+                              ? "text-white/74 hover:bg-white/[0.08] hover:text-white"
+                              : lightNavPillClass,
                           )}
                           onClick={
                             link.href.startsWith("#")
