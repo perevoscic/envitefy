@@ -23,6 +23,9 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /Beautiful hosted events, from invite to RSVP/);
   assert.match(landingExperience, /Let's create/);
   assert.match(landingExperience, /View live examples/);
+  assert.match(landingExperience, /mobilePrimaryCtaLabel: "Create invite"/);
+  assert.match(landingExperience, /mobilePrimaryCtaLabel: "Create wedding"/);
+  assert.match(landingExperience, /View examples/);
   assert.match(landingExperience, /PremiumLandingHero/);
   assert.match(landingExperience, /GuestActionSuite/);
   assert.match(landingExperience, /TemplateGallery/);
@@ -42,7 +45,10 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /hostTestimonials/);
   assert.match(landingExperience, /landingTestimonials/);
   assert.match(landingExperience, /function interleaveTestimonials/);
-  assert.match(landingExperience, /const landingTestimonials: TestimonialItem\[] = interleaveTestimonials\(/);
+  assert.match(
+    landingExperience,
+    /const landingTestimonials: TestimonialItem\[] = interleaveTestimonials\(/,
+  );
   const testimonialSource = landingExperience.slice(
     landingExperience.indexOf("const guestTestimonials"),
     landingExperience.indexOf("const creationPaths"),

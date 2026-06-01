@@ -59,6 +59,7 @@ type HeroProductSlide = {
   desktopImage: string;
   imageAlt: string;
   imagePosition?: string;
+  mobilePrimaryCtaLabel?: string;
 };
 
 const templateProofTiles: ProofTile[] = [
@@ -163,6 +164,7 @@ const heroProductSlides: HeroProductSlide[] = [
     image: "/images/landing/hero/garden-brunch-mobile.webp",
     desktopImage: "/images/landing/hero/garden-brunch-desktop.webp",
     imageAlt: "Garden brunch live invitation card",
+    mobilePrimaryCtaLabel: "Create invite",
   },
   {
     id: "garden-vows",
@@ -172,6 +174,7 @@ const heroProductSlides: HeroProductSlide[] = [
     image: "/images/landing/hero/garden-vows-mobile.webp",
     desktopImage: "/images/landing/hero/garden-vows-desktop.webp",
     imageAlt: "Wedding weekend event page preview",
+    mobilePrimaryCtaLabel: "Create wedding",
   },
   {
     id: "school-trip",
@@ -181,6 +184,7 @@ const heroProductSlides: HeroProductSlide[] = [
     image: "/images/landing/hero/lincoln-discovery-mobile.webp",
     desktopImage: "/images/landing/hero/lincoln-discovery-desktop.webp",
     imageAlt: "School field trip event page preview",
+    mobilePrimaryCtaLabel: "Create trip",
   },
   {
     id: "team-weekend",
@@ -190,6 +194,7 @@ const heroProductSlides: HeroProductSlide[] = [
     image: "/images/landing/hero/friday-night-lights-mobile.webp",
     desktopImage: "/images/landing/hero/friday-night-lights-desktop.webp",
     imageAlt: "Team schedule event page preview",
+    mobilePrimaryCtaLabel: "Create schedule",
   },
   {
     id: "birthday-party",
@@ -199,6 +204,7 @@ const heroProductSlides: HeroProductSlide[] = [
     image: "/images/landing/hero/birthday-dino-mobile.webp",
     desktopImage: "/images/landing/hero/birthday-dino-desktop.webp",
     imageAlt: "Birthday party event page preview",
+    mobilePrimaryCtaLabel: "Create party",
   },
   {
     id: "baby-shower",
@@ -208,6 +214,7 @@ const heroProductSlides: HeroProductSlide[] = [
     image: "/images/landing/hero/baby-shower-mobile.webp",
     desktopImage: "/images/landing/hero/baby-shower-desktop.webp",
     imageAlt: "Baby shower event page preview",
+    mobilePrimaryCtaLabel: "Create shower",
   },
   {
     id: "open-house",
@@ -217,6 +224,7 @@ const heroProductSlides: HeroProductSlide[] = [
     image: "/images/landing/hero/open-house-mobile.webp",
     desktopImage: "/images/landing/hero/open-house-desktop.webp",
     imageAlt: "Open house event page preview",
+    mobilePrimaryCtaLabel: "Let's create",
   },
 ] as const;
 
@@ -926,20 +934,24 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
             >
               {activeSlide.description}
             </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-9 flex flex-row gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={onPrimaryAction}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-white/18 bg-white/14 px-6 text-sm font-semibold text-white shadow-[0_18px_44px_rgba(0,0,0,0.24)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/22"
+                className="inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-white/18 bg-white/14 px-3 text-[13px] font-semibold text-white shadow-[0_18px_44px_rgba(0,0,0,0.24)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/22 sm:flex-none sm:gap-2 sm:px-6 sm:text-sm"
               >
-                Let's create
-                <ArrowRight className="h-4 w-4" />
+                <span className="truncate sm:hidden">
+                  {activeSlide.mobilePrimaryCtaLabel ?? "Let's create"}
+                </span>
+                <span className="hidden sm:inline">Let's create</span>
+                <ArrowRight className="h-4 w-4 shrink-0" />
               </button>
               <Link
                 href="#showcase"
-                className="inline-flex h-12 items-center justify-center rounded-md border border-white/18 bg-black/18 px-6 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/14"
+                className="inline-flex h-12 min-w-0 flex-1 items-center justify-center rounded-md border border-white/18 bg-black/18 px-3 text-[13px] font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/14 sm:flex-none sm:px-6 sm:text-sm"
               >
-                View live examples
+                <span className="truncate sm:hidden">View examples</span>
+                <span className="hidden sm:inline">View live examples</span>
               </Link>
             </div>
           </motion.div>
