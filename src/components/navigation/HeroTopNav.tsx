@@ -106,7 +106,7 @@ export default function HeroTopNav({
   const mobileMenuToggleRef = useRef<HTMLButtonElement | null>(null);
   const mobileMenuDragStartX = useRef<number | null>(null);
   const mobileMenuSwipeStartX = useRef<number | null>(null);
-  const pendingHashScrollTopRef = useRef<number | null>(null);
+  const pendingMobileHashHrefRef = useRef<string | null>(null);
   const isTransparentDark = variant === "transparent-dark";
   const isDarkGlass = variant === "glass-dark" || isTransparentDark;
   const isTransparentOverHero = isTransparentDark && !hasScrolledPastHero;
@@ -270,13 +270,29 @@ export default function HeroTopNav({
       body.style.left = previousBodyLeft;
       body.style.right = previousBodyRight;
       body.style.width = previousBodyWidth;
-      const pendingHashScrollTop = pendingHashScrollTopRef.current;
-      if (pendingHashScrollTop === null) {
+      const pendingMobileHashHref = pendingMobileHashHrefRef.current;
+      pendingMobileHashHrefRef.current = null;
+
+      if (pendingMobileHashHref === null) {
         window.scrollTo(0, scrollY);
-      } else {
-        pendingHashScrollTopRef.current = null;
-        window.scrollTo(0, pendingHashScrollTop);
+        return;
       }
+
+      window.scrollTo(0, scrollY);
+      window.requestAnimationFrame(() => {
+        const pendingTargetId = getHashLinkId(pendingMobileHashHref);
+        const pendingTarget = pendingTargetId ? document.getElementById(pendingTargetId) : null;
+
+        if (!pendingTarget) return;
+
+        setActiveNavHref(pendingMobileHashHref);
+        window.scrollTo({
+          top: pendingTarget.getBoundingClientRect().top + window.scrollY,
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+        });
+      });
     };
   }, [mobileMenuOpen]);
 
@@ -315,18 +331,17 @@ export default function HeroTopNav({
       if (!target) return;
 
       event.preventDefault();
-      const targetTop = target.getBoundingClientRect().top + window.scrollY;
       window.history.pushState(null, "", href);
 
       if (closeMobileMenu) {
-        pendingHashScrollTopRef.current = targetTop;
+        pendingMobileHashHrefRef.current = href;
         setMobileMenuOpen(false);
         return;
       }
 
       setActiveNavHref(href);
       window.scrollTo({
-        top: targetTop,
+        top: target.getBoundingClientRect().top + window.scrollY,
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       });
     };
