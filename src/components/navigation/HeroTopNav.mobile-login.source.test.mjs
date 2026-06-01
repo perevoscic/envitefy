@@ -103,3 +103,25 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
   assert.match(source, /\) : showMobileGuestActions \? \(\s*<button/s);
   assert.match(source, /onClick=\{onGuestLoginAction\}/);
 });
+
+test("HeroTopNav mobile hash links close without active styling or scroll restoration", () => {
+  const source = readSource("src/components/navigation/HeroTopNav.tsx");
+
+  assert.match(source, /const pendingHashScrollTopRef = useRef<number \| null>\(null\);/);
+  assert.match(source, /const pendingHashScrollTop = pendingHashScrollTopRef\.current;/);
+  assert.match(source, /pendingHashScrollTopRef\.current = targetTop;/);
+  assert.match(
+    source,
+    /if \(closeMobileMenu\) \{\s*pendingHashScrollTopRef\.current = targetTop;\s*setMobileMenuOpen\(false\);\s*return;\s*\}/s,
+  );
+
+  const mobileNavStart = source.lastIndexOf('aria-label="Hero navigation"');
+  const mobileNavBlock = source.slice(
+    mobileNavStart,
+    source.indexOf('{status === "authenticated" ? (', mobileNavStart),
+  );
+
+  assert.match(mobileNavBlock, /ariaCurrent=\{undefined\}/);
+  assert.doesNotMatch(mobileNavBlock, /activeNavHref === link\.href/);
+  assert.doesNotMatch(mobileNavBlock, /nav-chrome-pill-active/);
+});
