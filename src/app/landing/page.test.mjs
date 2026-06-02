@@ -28,6 +28,12 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /View examples/);
   assert.match(landingExperience, /PremiumLandingHero/);
   assert.match(landingExperience, /GuestActionSuite/);
+  assert.match(landingExperience, /<AnimatePresence initial=\{false\} mode="sync">/);
+  assert.match(landingExperience, /const preloadedImage = new window\.Image\(\)/);
+  assert.match(landingExperience, /transition=\{\{ duration: 0\.32, ease: "easeOut" \}\}/);
+  assert.match(landingExperience, /unoptimized/);
+  assert.match(landingExperience, /className="pointer-events-none absolute inset-0 z-0"/);
+  assert.match(landingExperience, /absolute inset-0 z-\[1\] bg-\[linear-gradient/);
   assert.match(landingExperience, /TemplateGallery/);
   assert.match(landingExperience, /CreationPaths/);
   assert.match(landingExperience, /TestimonialsProof/);

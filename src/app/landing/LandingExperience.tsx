@@ -836,6 +836,22 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    const imageSources = new Set<string>();
+    for (const slide of heroProductSlides) {
+      imageSources.add(slide.desktopImage);
+      imageSources.add(slide.image);
+    }
+
+    for (const src of imageSources) {
+      const preloadedImage = new window.Image();
+      preloadedImage.decoding = "async";
+      preloadedImage.src = src;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const interval = window.setInterval(() => {
@@ -860,20 +876,21 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
       id="landing-hero"
       className="relative isolate min-h-[100svh] overflow-hidden bg-[#120f14] text-white"
     >
-      <AnimatePresence initial={false} mode="wait">
+      <AnimatePresence initial={false} mode="sync">
         <motion.div
           key={activeSlide.id}
           initial={{ opacity: 0, scale: 1.02 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.01 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-          className="absolute inset-0"
+          exit={{ opacity: 0, scale: 1.005 }}
+          transition={{ duration: 0.32, ease: "easeOut" }}
+          className="pointer-events-none absolute inset-0 z-0"
         >
           <Image
             src={activeSlide.desktopImage}
             alt={activeSlide.imageAlt}
             fill
             priority={activeSlideIndex === 0}
+            unoptimized
             sizes="100vw"
             className="hidden object-cover object-center md:block"
           />
@@ -882,6 +899,7 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
             alt={activeSlide.imageAlt}
             fill
             priority={activeSlideIndex === 0}
+            unoptimized
             sizes="100vw"
             className="object-cover md:hidden"
             style={{ objectPosition: activeSlide.imagePosition ?? "center" }}
@@ -889,8 +907,8 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
         </motion.div>
       </AnimatePresence>
 
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(18,15,20,0.82)_0%,rgba(18,15,20,0.58)_40%,rgba(18,15,20,0.28)_100%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(18,15,20,0.64)_0%,rgba(18,15,20,0.08)_44%,rgba(18,15,20,0.35)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(90deg,rgba(18,15,20,0.66)_0%,rgba(18,15,20,0.42)_40%,rgba(18,15,20,0.18)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(0deg,rgba(18,15,20,0.46)_0%,rgba(18,15,20,0.04)_44%,rgba(18,15,20,0.22)_100%)]" />
 
       <button
         type="button"
