@@ -30,6 +30,16 @@ test("admin email generation requests require a prompt and normalize audience mo
     prompt: "Generate a launch email for parents.",
     audienceMode: "broadcast",
     currentSubject: " Existing subject ",
+    currentImageAssets: [
+      {
+        role: "hero",
+        url: "https://envitefy.com/api/blob/event-media/admin-email/demo/header/display.webp",
+        altText: " Existing hero ",
+        prompt: " Existing image prompt ",
+        model: "gpt-image-2",
+      },
+      { role: "hero", url: "javascript:alert('bad')" },
+    ],
   });
 
   assert.equal(parsed.ok, true);
@@ -37,6 +47,15 @@ test("admin email generation requests require a prompt and normalize audience mo
     assert.equal(parsed.value.prompt, "Generate a launch email for parents.");
     assert.equal(parsed.value.audienceMode, "broadcast");
     assert.equal(parsed.value.currentSubject, "Existing subject");
+    assert.deepEqual(parsed.value.currentImageAssets, [
+      {
+        role: "hero",
+        url: "https://envitefy.com/api/blob/event-media/admin-email/demo/header/display.webp",
+        altText: "Existing hero",
+        prompt: "Existing image prompt",
+        model: "gpt-image-2",
+      },
+    ]);
   }
 });
 

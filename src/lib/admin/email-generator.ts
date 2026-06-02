@@ -9,6 +9,7 @@ export type AdminEmailAudienceMode = "individual" | "broadcast";
 export type AdminEmailGenerationRequest = {
   prompt: string;
   audienceMode: AdminEmailAudienceMode;
+  currentImageAssets: AdminEmailImageAsset[];
   currentSubject?: string | null;
   currentBodyHtml?: string | null;
 };
@@ -83,6 +84,25 @@ function sanitizeImageTags(html: string): string {
   });
 }
 
+function parseCurrentImageAssets(value: unknown): AdminEmailImageAsset[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item): AdminEmailImageAsset | null => {
+      if (!isRecord(item)) return null;
+      const url = cleanString(item.url, 1000);
+      if (!isHttpUrl(url)) return null;
+      return {
+        role: "hero",
+        url,
+        altText: cleanString(item.altText, 200) || "Envitefy event planning preview",
+        prompt: cleanString(item.prompt, 2000),
+        model: cleanString(item.model, 120),
+      };
+    })
+    .filter((item): item is AdminEmailImageAsset => Boolean(item))
+    .slice(0, 3);
+}
+
 export function parseAdminEmailGenerationRequest(
   value: unknown,
 ): { ok: true; value: AdminEmailGenerationRequest } | { ok: false; error: string } {
@@ -104,6 +124,7 @@ export function parseAdminEmailGenerationRequest(
     value: {
       prompt,
       audienceMode,
+      currentImageAssets: parseCurrentImageAssets(value.currentImageAssets),
       currentSubject: cleanString(value.currentSubject, 160) || null,
       currentBodyHtml: cleanMultilineString(value.currentBodyHtml, 8000) || null,
     },
@@ -209,6 +230,7 @@ function buildSystemPrompt(): string {
     "Never invent image URLs, never use local files, and never use base64 or data URLs.",
     "Images must use email-safe <img> tags with width, alt text, border:0, display:block, max-width:100%, and height:auto inline styles.",
     "Use clear conversion copy, short paragraphs, and a practical CTA.",
+    "When currentDraft.bodyHtml is present, treat the user's prompt as an edit request and preserve what is not being changed.",
     "Only use {{greeting}}, {{firstName}}, and {{lastName}} personalization tokens.",
     "Do not invent pricing, launch dates, offers, guarantees, legal claims, or user data that the prompt did not supply.",
     "Envitefy helps people create and share public event pages, live cards, invitations, RSVP flows, smart sign-up forms, registry links, and multi-vertical events.",
@@ -220,6 +242,7 @@ function buildUserPrompt(
   generatedImageAssets: AdminEmailImageAsset[],
 ): string {
   return JSON.stringify({
+    mode: input.currentBodyHtml ? "revise_existing_draft" : "create_new_draft",
     prompt: input.prompt,
     audienceMode: input.audienceMode,
     generatedImageAssets,
@@ -234,6 +257,8 @@ function buildUserPrompt(
       buttonText: "Empty string if no CTA button is appropriate.",
       buttonUrl: "Only include a real http(s) URL from the prompt, otherwise empty string.",
       notes: "Short private note for the admin explaining assumptions.",
+      revision:
+        "For revise_existing_draft, apply the requested change while preserving the existing structure, generated image URLs, and CTA unless the prompt asks to change them.",
     },
   });
 }
@@ -348,6 +373,13 @@ async function generateEmailImageAssets(
   return [asset];
 }
 
+function shouldRegenerateImage(input: AdminEmailGenerationRequest): boolean {
+  if (!input.currentImageAssets.length) return true;
+  return /\b(?:new|different|replace|regenerate|change|update|refresh)\s+(?:hero\s+)?(?:image|visual|picture|photo|art|graphic)\b/i.test(
+    input.prompt,
+  );
+}
+
 export function buildGeneratedEmailImageBlock(asset: AdminEmailImageAsset): string {
   return `<div style="margin:0 0 24px 0; border-radius:16px; overflow:hidden; background:#F5F2FF;">
   <img src="${asset.url}" width="544" alt="${asset.altText}" style="display:block; width:100%; max-width:544px; height:auto; border:0; outline:none; text-decoration:none;" />
@@ -388,12 +420,14 @@ export async function generateAdminEmailDraft(
   const model = resolveAdminEmailGeneratorModel(deps.openAiModel);
   const imageModel = resolveAdminEmailImageModel(deps.openAiImageModel);
   const client = deps.createOpenAiClient?.(apiKey) || new OpenAI({ apiKey });
-  const imageAssets = await generateEmailImageAssets(input, {
-    client,
-    imageModel,
-    generateImage: deps.generateImage,
-    uploadImage: deps.uploadImage,
-  });
+  const imageAssets = shouldRegenerateImage(input)
+    ? await generateEmailImageAssets(input, {
+        client,
+        imageModel,
+        generateImage: deps.generateImage,
+        uploadImage: deps.uploadImage,
+      })
+    : input.currentImageAssets;
   const completion = await client.chat.completions.create({
     model,
     response_format: {

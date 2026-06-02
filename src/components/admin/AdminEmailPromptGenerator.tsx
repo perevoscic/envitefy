@@ -90,7 +90,13 @@ export default function AdminEmailPromptGenerator() {
       const res = await fetch("/api/admin/emails/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: trimmed, audienceMode }),
+        body: JSON.stringify({
+          prompt: trimmed,
+          audienceMode,
+          currentSubject: draft?.subject || undefined,
+          currentBodyHtml: draft?.bodyHtml || undefined,
+          currentImageAssets: draft?.imageAssets || [],
+        }),
       });
       const data = (await res.json()) as GenerateEmailResponse;
       if (!res.ok) {
@@ -104,7 +110,10 @@ export default function AdminEmailPromptGenerator() {
 
       setDraft(data.draft);
       setModel(data.model);
-      setMessage({ tone: "success", text: "Generated draft ready." });
+      setMessage({
+        tone: "success",
+        text: draft ? "Updated draft ready." : "Generated draft ready.",
+      });
     } catch (error) {
       setMessage({
         tone: "error",
@@ -171,9 +180,19 @@ export default function AdminEmailPromptGenerator() {
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
               rows={7}
-              placeholder="Launch a campaign for parents planning birthday parties. Mention live cards, RSVP, registry links, and a CTA to create an event."
+              placeholder={
+                draft
+                  ? "Change the tone to be more premium, shorten the intro, or use a different CTA..."
+                  : "Launch a campaign for parents planning birthday parties. Mention live cards, RSVP, registry links, and a CTA to create an event."
+              }
               className="mt-2 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
             />
+            {draft ? (
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                After a draft exists, this prompt edits the current email. Ask for a new image only
+                when you want the visual regenerated.
+              </p>
+            ) : null}
           </div>
 
           <div>
@@ -217,7 +236,13 @@ export default function AdminEmailPromptGenerator() {
               className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-violet-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Wand2 className="h-4 w-4" strokeWidth={1.9} />
-              {busy ? "Generating..." : "Generate HTML Email"}
+              {busy
+                ? draft
+                  ? "Updating..."
+                  : "Generating..."
+                : draft
+                  ? "Update Draft"
+                  : "Generate HTML Email"}
             </button>
             <button
               type="button"
