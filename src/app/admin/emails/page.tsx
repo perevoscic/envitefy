@@ -1,6 +1,7 @@
 import { CheckCircle2, Code2, KeyRound, Mail, Newspaper, Send, Share2 } from "lucide-react";
 import Link from "next/link";
 import { AdminPageHeader, AdminPanel, AdminStatusBadge } from "@/components/admin/AdminPrimitives";
+import AdminEmailPromptGenerator from "@/components/admin/AdminEmailPromptGenerator";
 import EmailCampaignsClient from "@/components/admin/EmailCampaignsClient";
 
 export const runtime = "nodejs";
@@ -59,9 +60,11 @@ export default async function EmailAdminPage({ searchParams }: EmailAdminPagePro
   const params = searchParams ? await searchParams : {};
   const rawTab = params.tab;
   const tab = Array.isArray(rawTab) ? rawTab[0] : rawTab;
+  const rawCompose = params.compose;
+  const compose = Array.isArray(rawCompose) ? rawCompose[0] : rawCompose;
 
   if (tab === "campaigns") {
-    return <EmailCampaignsClient />;
+    return <EmailCampaignsClient initialShowComposer={compose === "1"} />;
   }
 
   return (
@@ -69,8 +72,10 @@ export default async function EmailAdminPage({ searchParams }: EmailAdminPagePro
       <AdminPageHeader
         eyebrow="Messaging"
         title="Emails"
-        description="Campaign workflows and transactional email previews live here instead of the executive dashboard."
+        description="Prompt-generated campaign drafts, send workflows, and transactional email previews live here instead of the executive dashboard."
       />
+
+      <AdminEmailPromptGenerator />
 
       <AdminPanel title="Email Workflows">
         <div className="grid gap-3 md:grid-cols-2">

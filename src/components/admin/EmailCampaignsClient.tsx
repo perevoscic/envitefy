@@ -3,6 +3,10 @@
 import { useSession } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import {
+  ADMIN_EMAIL_CAMPAIGN_DRAFT_KEY,
+  type AdminEmailCampaignDraft,
+} from "@/lib/admin/email-campaign-draft";
 import { resolvePublicAssetOrigin } from "@/lib/public-asset-url";
 
 interface Campaign {
@@ -30,11 +34,15 @@ function isFullHtmlDocument(value: string): boolean {
   return html.startsWith("<!doctype html") || html.includes("<html") || html.includes("<body");
 }
 
-export default function CampaignsPage() {
+export default function CampaignsPage({
+  initialShowComposer = false,
+}: {
+  initialShowComposer?: boolean;
+}) {
   const { data: session, status } = useSession();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showComposer, setShowComposer] = useState(false);
+  const [showComposer, setShowComposer] = useState(initialShowComposer);
   const [campaignReloadKey, setCampaignReloadKey] = useState(0);
 
   // Form state
@@ -49,6 +57,24 @@ export default function CampaignsPage() {
   const [htmlMode, setHtmlMode] = useState(false);
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const isAdmin = Boolean((session?.user as any)?.isAdmin);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const raw = sessionStorage.getItem(ADMIN_EMAIL_CAMPAIGN_DRAFT_KEY);
+      if (!raw) return;
+
+      const handoff = JSON.parse(raw) as Partial<AdminEmailCampaignDraft>;
+      if (typeof handoff.subject === "string") setSubject(handoff.subject);
+      if (typeof handoff.bodyHtml === "string") setBody(handoff.bodyHtml);
+      if (typeof handoff.buttonText === "string") setButtonText(handoff.buttonText);
+      if (typeof handoff.buttonUrl === "string") setButtonUrl(handoff.buttonUrl);
+      setHtmlMode(true);
+      setShowComposer(true);
+      sessionStorage.removeItem(ADMIN_EMAIL_CAMPAIGN_DRAFT_KEY);
+    } catch {}
+  }, []);
 
   // Rich text editor functions
   const insertFormatting = (before: string, after: string = "") => {
@@ -254,8 +280,8 @@ export default function CampaignsPage() {
   // Generate email preview HTML (client-side version of createEmailTemplate)
   const generatePreviewHtml = () => {
     const greeting = "Hi, ";
-    const firstName = "Taylor";
-    const lastName = "Smith";
+    const firstName = "Preview";
+    const lastName = "Recipient";
     const previewBody = body
       .replace(/\{\{greeting\}\}/g, greeting)
       .replace(/\{\{firstName\}\}/g, firstName)
