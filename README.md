@@ -1,6 +1,6 @@
 ## Envitefy
 
-OCR images/flyers, parse events, and add them to Google Calendar or Microsoft Outlook. Includes ICS generation and OAuth flows. See `AGENTS.md` for a concise catalog of API agents.
+Create hosted event pages from uploads, snaps, event packets, flyers, schedules, and from-scratch event details. Envitefy supports public sharing, RSVPs, smart sign-up flows, registry/resource links, maps, calendar saves, ICS generation, and OAuth calendar connections. See `AGENTS.md` for a concise catalog of API agents.
 
 ### Tech
 
@@ -56,7 +56,6 @@ OPENAI_CONCIERGE_CHAT_MODEL=gpt-5.4-mini
 OPENAI_CONCIERGE_MODEL=gpt-5.4
 OPENAI_CONCIERGE_PREMIUM_MODEL=gpt-5.5
 OPENAI_OCR_MODEL=gpt-5.5
-STUDIO_OPENAI_TEXT_MODEL=gpt-5.5
 
 # Postgres (users + token store)
 DATABASE_URL=postgresql://appuser:pass@host:5432/envitefy
@@ -207,7 +206,7 @@ See `AGENTS.md` for full details. Highlights:
 - Vision: prefer `GOOGLE_APPLICATION_CREDENTIALS_BASE64` (or `GOOGLE_APPLICATION_CREDENTIALS_JSON`).
 - OpenAI (optional): `OPENAI_API_KEY`, `LLM_MODEL`, `OPENAI_CONCIERGE_CHAT_MODEL`,
   `OPENAI_CONCIERGE_MODEL`, `OPENAI_CONCIERGE_PREMIUM_MODEL`, `OPENAI_OCR_MODEL`,
-  `STUDIO_OPENAI_TEXT_MODEL`. Deployment env vars override code defaults.
+  and deployment env vars that override code defaults.
 - Postgres: `DATABASE_URL` with optional `PGSSL_DISABLE_VERIFY` or `PGSSL_CA_BASE64`.
 
 ---

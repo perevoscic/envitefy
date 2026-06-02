@@ -39,6 +39,7 @@ const landingHeroNavLinks = [
   { label: "Templates", href: "#examples" },
   { label: "Start", href: "#creation-paths" },
   { label: "Testimonials", href: "#testimonials" },
+  { label: "About us", href: "/about" },
 ];
 
 const gardenBrunchLiveCardImage = "/images/landing/live-cards/madeline-s-garden-brunch.webp";

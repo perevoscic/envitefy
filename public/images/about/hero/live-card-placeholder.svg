@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1280" viewBox="0 0 960 1280" role="img" aria-labelledby="title desc">
+  <title id="title">Placeholder live card mockup</title>
+  <desc id="desc">A fictional live event card layout used as placeholder artwork.</desc>
+  <defs>
+    <linearGradient id="bg" x1="80" y1="40" x2="920" y2="1240" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#21182f"/>
+      <stop offset="0.42" stop-color="#583f86"/>
+      <stop offset="0.7" stop-color="#f6a17b"/>
+      <stop offset="1" stop-color="#fff0cf"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="160" y1="160" x2="760" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffdf8" stop-opacity="0.95"/>
+      <stop offset="0.54" stop-color="#f6ecff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#fff6e6" stop-opacity="0.94"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="220" y1="210" x2="760" y2="920" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8e71ff"/>
+      <stop offset="0.54" stop-color="#f7849b"/>
+      <stop offset="1" stop-color="#f3bd68"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="34" stdDeviation="34" flood-color="#171022" flood-opacity="0.42"/>
+    </filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+  <rect width="960" height="1280" fill="#120e1b"/>
+  <rect x="-120" y="-70" width="1200" height="1440" fill="url(#bg)"/>
+  <circle cx="150" cy="160" r="170" fill="#ffffff" opacity="0.15" filter="url(#soft)"/>
+  <circle cx="845" cy="980" r="220" fill="#80f0d4" opacity="0.2" filter="url(#soft)"/>
+  <circle cx="720" cy="115" r="95" fill="#ffcf75" opacity="0.18" filter="url(#soft)"/>
+  <g filter="url(#shadow)">
+    <rect x="108" y="82" width="744" height="1116" rx="80" fill="#ffffff" opacity="0.18"/>
+    <rect x="132" y="106" width="696" height="1068" rx="68" fill="url(#glass)"/>
+    <rect x="156" y="130" width="648" height="1020" rx="52" fill="none" stroke="#ffffff" stroke-opacity="0.68" stroke-width="2"/>
+  </g>
+  <g transform="translate(176 168)">
+    <rect width="608" height="428" rx="44" fill="url(#accent)"/>
+    <path d="M0 290 C110 215 198 280 304 214 C442 128 522 164 608 88 V428 H0 Z" fill="#fff4d8" opacity="0.82"/>
+    <path d="M48 332 C155 268 210 336 302 278 C414 207 495 244 560 204" fill="none" stroke="#385f58" stroke-opacity="0.34" stroke-width="18" stroke-linecap="round"/>
+    <g opacity="0.86">
+      <circle cx="490" cy="96" r="42" fill="#fff8df"/>
+      <circle cx="530" cy="118" r="22" fill="#f57688"/>
+      <circle cx="455" cy="128" r="24" fill="#83d8b9"/>
+      <circle cx="514" cy="166" r="18" fill="#8d72ff"/>
+    </g>
+    <rect x="30" y="30" width="152" height="44" rx="22" fill="#ffffff" opacity="0.82"/>
+    <text x="54" y="58" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="800" fill="#6349c8">Preview</text>
+  </g>
+  <g transform="translate(190 648)">
+    <text x="0" y="0" font-family="Montserrat, Inter, Arial, sans-serif" font-size="76" font-weight="800" letter-spacing="-3" fill="#201633">Live card</text>
+    <text x="2" y="56" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700" fill="#725f8d">Placeholder event design</text>
+    <rect x="0" y="94" width="246" height="56" rx="28" fill="#201633"/>
+    <text x="31" y="127" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#ffffff">RSVP</text>
+    <circle cx="178" cy="108" r="10" fill="#77ddb4"/>
+    <text x="0" y="210" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700" fill="#352a47">Garden brunch</text>
+    <text x="0" y="252" font-family="Inter, Arial, sans-serif" font-size="22" fill="#695f76">Saturday 10:30 AM - 2:30 PM</text>
+  </g>
+  <g transform="translate(190 912)">
+    <rect width="186" height="76" rx="28" fill="#f2eaff" stroke="#ddcfff"/>
+    <text x="43" y="47" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#6548ce">Map</text>
+    <rect x="210" width="228" height="76" rx="28" fill="#fff4dd" stroke="#ffe0aa"/>
+    <text x="256" y="47" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#9d6725">Calendar</text>
+    <rect x="462" width="146" height="76" rx="28" fill="#e9fbf4" stroke="#c6eddc"/>
+    <text x="498" y="47" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#28795f">Details</text>
+  </g>
+  <g transform="translate(190 104)">
+    <rect width="580" height="96" rx="42" fill="#ffffff" opacity="0.72"/>
+    <rect x="34" y="32" width="92" height="92" rx="26" fill="#6f56d9"/>
+    <rect x="150" y="36" width="318" height="20" rx="10" fill="#201633" opacity="0.16"/>
+    <rect x="150" y="70" width="210" height="16" rx="8" fill="#201633" opacity="0.1"/>
+    <rect x="488" y="34" width="58" height="58" rx="18" fill="#201633" opacity="0.08"/>
+  </g>
+</svg>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import CompanyPageShell from "@/components/company/CompanyPageShell";
 import FAQs, { type FAQItem } from "@/components/ui/faqs-component";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 
@@ -91,6 +92,12 @@ const faqItems: FaqPageItem[] = [
 
 const faqPairs = faqItems.map((item) => [item.question, item.answer] as const);
 
+const faqHighlights = [
+  { value: "No app", label: "Guest-friendly links" },
+  { value: "Uploads", label: "PDF, flyer, image" },
+  { value: "Live pages", label: "RSVP, maps, calendar" },
+] as const;
+
 export default function FaqPage() {
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -121,13 +128,24 @@ export default function FaqPage() {
   };
 
   return (
-    <main className="min-h-screen w-full bg-[linear-gradient(180deg,#fffaf7_0%,#f7f4ff_100%)] text-foreground">
+    <CompanyPageShell
+      eyebrow="FAQ"
+      title="Clear answers for hosts and guests."
+      description="Find quick answers about hosted event pages, Snap uploads, RSVP, registries, smart signups, calendar saves, guest links, and account access."
+      primaryLabel="Start creating"
+      primaryHref="/"
+      secondaryLabel="Contact us"
+      secondaryHref="/contact"
+      highlights={faqHighlights}
+    >
       <FAQs
         items={faqItems}
         title="Frequently asked questions"
         description="Answers about Snap, Gymnastics, calendars, hosted event pages, RSVP, registry links, and existing accounts."
-        headingLevel="h1"
-        className="pt-12 md:pt-16"
+        headingLevel="h2"
+        showHeader={false}
+        className="border-t border-[#d9ded3] bg-white/72 px-4 py-16 sm:px-6 lg:py-24"
+        accordionClassName="rounded-lg border-[#d9ded3] bg-white px-4 py-2 shadow-[0_24px_64px_rgba(32,49,55,0.08)] sm:px-6"
       />
       <Script id="ld-breadcrumb-faq" type="application/ld+json" strategy="afterInteractive">
         {JSON.stringify(breadcrumbLd)}
@@ -135,6 +153,6 @@ export default function FaqPage() {
       <Script id="ld-faq" type="application/ld+json" strategy="afterInteractive">
         {JSON.stringify(faqLd)}
       </Script>
-    </main>
+    </CompanyPageShell>
   );
 }

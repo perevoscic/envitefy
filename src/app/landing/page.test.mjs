@@ -76,6 +76,7 @@ test("landing page is hosted-event-led and premium", () => {
   assert.doesNotMatch(landingExperience, /direction="right"/);
   assert.match(landingExperience, /id="testimonials"/);
   assert.match(landingExperience, /label: "Testimonials", href: "#testimonials"/);
+  assert.match(landingExperience, /label: "About us", href: "\/about"/);
   assert.match(
     landingExperience,
     /min-h-\[100svh\] scroll-mt-0 overflow-hidden border-b border-\[#ded2bd\] bg-\[#fcfbf7\]/,
@@ -368,17 +369,26 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.doesNotMatch(landingSnapshots, /\/api\/blob\/event-media\//);
   assert.match(landingSnapshots, /\/images\/landing\/live-cards\//);
 
-  assert.match(conditionalFooter, /pathname === "\/landing"/);
+  assert.match(conditionalFooter, /MARKETING_FOOTER_GROUPS/);
+  assert.match(conditionalFooter, /"\/landing"/);
   assert.match(conditionalFooter, /Concierge/);
   assert.match(conditionalFooter, /Live cards/);
-  assert.match(conditionalFooter, /RSVP pages/);
-  assert.match(conditionalFooter, /RSVP state/);
+  assert.match(conditionalFooter, /RSVP event pages/);
+  assert.match(conditionalFooter, /Guest action flow/);
   assert.match(conditionalFooter, /Templates/);
   assert.match(conditionalFooter, /Invites/);
   assert.match(conditionalFooter, /Sign-ups/);
-  assert.match(conditionalFooter, /href="\/privacy"/);
-  assert.match(conditionalFooter, /href="\/terms"/);
-  assert.match(conditionalFooter, /href="\/contact"/);
+  assert.match(conditionalFooter, /Share without an app/);
+  assert.match(conditionalFooter, /href: "\/privacy"/);
+  assert.match(conditionalFooter, /href: "\/terms"/);
+  assert.match(conditionalFooter, /href: "\/contact"/);
+  assert.match(conditionalFooter, /href: "\/snap"/);
+  assert.match(conditionalFooter, /href: "\/showcase"/);
+  assert.match(conditionalFooter, /href: "\/guides\/rsvp-event-page"/);
+  assert.match(conditionalFooter, /href: "\/guides\/share-event-page-without-app"/);
+  assert.doesNotMatch(conditionalFooter, /\/landing#event-pages/);
+  assert.doesNotMatch(conditionalFooter, /\/landing#rsvp-tracking/);
+  assert.doesNotMatch(conditionalFooter, /RSVP state/);
   assert.doesNotMatch(conditionalFooter, /Start with Gymnastics/);
   assert.doesNotMatch(conditionalFooter, /Explore Snap/);
   assert.doesNotMatch(conditionalFooter, /Upload or Snap/);

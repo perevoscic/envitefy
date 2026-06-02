@@ -101,9 +101,13 @@ test("AI hub routes stay public and are linked from the public footer", () => {
   assert.match(middleware, /"\/guides"/);
   assert.match(middleware, /normalized\.startsWith\("\/guides\/"\)/);
   assert.match(middleware, /pathname === "\/llms\.txt"/);
-  assert.match(footer, /pathname === "\/guides"/);
-  assert.match(footer, /pathname\?\.startsWith\("\/guides\/"\)/);
-  assert.match(footer, /href="\/guides"/);
-  assert.match(footer, /href="\/guides\/pdf-to-event-page"/);
-  assert.match(footer, /href="\/guides\/gymnastics-meet-page"/);
+  assert.match(footer, /MARKETING_ROUTE_PATHS/);
+  assert.match(footer, /"\/guides"/);
+  assert.match(footer, /normalizedPathname\?\.startsWith\("\/guides\/"\)/);
+  assert.match(footer, /href: "\/guides"/);
+  assert.match(footer, /href: "\/guides\/pdf-to-event-page"/);
+  assert.match(footer, /href: "\/guides\/gymnastics-meet-page"/);
+  assert.match(footer, /href: "\/guides\/share-event-page-without-app"/);
+  assert.doesNotMatch(footer, /\/landing#event-pages/);
+  assert.doesNotMatch(footer, /\/landing#rsvp-tracking/);
 });

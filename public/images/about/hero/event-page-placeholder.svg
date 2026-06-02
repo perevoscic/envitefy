@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1080" viewBox="0 0 1440 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Placeholder hosted event page mockup</title>
+  <desc id="desc">A fictional hosted event page layout used as placeholder artwork.</desc>
+  <defs>
+    <linearGradient id="backdrop" x1="0" y1="0" x2="1440" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#120d1d"/>
+      <stop offset="0.44" stop-color="#302052"/>
+      <stop offset="0.72" stop-color="#263f5f"/>
+      <stop offset="1" stop-color="#0d101b"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="170" y1="150" x2="960" y2="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8c75ff"/>
+      <stop offset="0.45" stop-color="#f3819d"/>
+      <stop offset="1" stop-color="#ffe0a3"/>
+    </linearGradient>
+    <linearGradient id="phone" x1="1020" y1="300" x2="1260" y2="920" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset="1" stop-color="#eef7ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="32" stdDeviation="34" flood-color="#05030c" flood-opacity="0.5"/>
+    </filter>
+    <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+  </defs>
+  <rect width="1440" height="1080" fill="url(#backdrop)"/>
+  <circle cx="168" cy="120" r="180" fill="#ffcf78" opacity="0.12" filter="url(#blur)"/>
+  <circle cx="1248" cy="870" r="220" fill="#78f0d2" opacity="0.12" filter="url(#blur)"/>
+  <g filter="url(#shadow)">
+    <rect x="104" y="92" width="1016" height="746" rx="46" fill="#f8f6ff"/>
+    <rect x="104" y="92" width="1016" height="76" rx="46" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="2"/>
+    <rect x="104" y="92" width="1016" height="78" rx="46" fill="#ffffff"/>
+    <circle cx="154" cy="130" r="10" fill="#ff7a91"/>
+    <circle cx="190" cy="130" r="10" fill="#ffc868"/>
+    <circle cx="226" cy="130" r="10" fill="#55d6aa"/>
+    <rect x="282" y="116" width="444" height="20" rx="10" fill="#21182f" opacity="0.1"/>
+    <rect x="154" y="212" width="606" height="292" rx="34" fill="url(#hero)"/>
+    <path d="M154 442 C284 364 408 432 530 354 C666 266 736 314 760 292 V504 H154 Z" fill="#fff8de" opacity="0.78"/>
+    <rect x="810" y="212" width="236" height="292" rx="32" fill="#ffffff"/>
+    <text x="844" y="264" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="900" fill="#21182f">RSVP</text>
+    <rect x="844" y="294" width="154" height="42" rx="21" fill="#6d56d8"/>
+    <text x="878" y="321" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800" fill="#ffffff">Going</text>
+    <rect x="844" y="362" width="142" height="14" rx="7" fill="#21182f" opacity="0.12"/>
+    <rect x="844" y="392" width="118" height="14" rx="7" fill="#21182f" opacity="0.08"/>
+    <text x="154" y="580" font-family="Montserrat, Inter, Arial, sans-serif" font-size="56" font-weight="900" letter-spacing="-2" fill="#21182f">Event page</text>
+    <text x="156" y="628" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700" fill="#6a6178">Placeholder guest experience layout</text>
+    <g transform="translate(154 680)">
+      <rect width="174" height="78" rx="26" fill="#ffffff"/>
+      <text x="44" y="48" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="900" fill="#6d56d8">Map</text>
+      <rect x="198" width="224" height="78" rx="26" fill="#fff4de"/>
+      <text x="242" y="48" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="900" fill="#a3652d">Calendar</text>
+      <rect x="446" width="202" height="78" rx="26" fill="#eafbf4"/>
+      <text x="486" y="48" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="900" fill="#29795f">Registry</text>
+    </g>
+    <g transform="translate(810 536)">
+      <rect width="236" height="90" rx="26" fill="#f0ecff"/>
+      <text x="30" y="40" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="900" fill="#21182f">Updates</text>
+      <rect x="30" y="56" width="150" height="12" rx="6" fill="#21182f" opacity="0.12"/>
+    </g>
+    <g transform="translate(810 654)">
+      <rect width="236" height="116" rx="26" fill="#ffffff"/>
+      <text x="30" y="44" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="900" fill="#21182f">Schedule</text>
+      <rect x="30" y="64" width="176" height="12" rx="6" fill="#21182f" opacity="0.12"/>
+      <rect x="30" y="90" width="128" height="12" rx="6" fill="#21182f" opacity="0.08"/>
+    </g>
+  </g>
+  <g transform="translate(994 326)" filter="url(#shadow)">
+    <rect width="302" height="584" rx="54" fill="#181526"/>
+    <rect x="18" y="18" width="266" height="548" rx="40" fill="url(#phone)"/>
+    <rect x="48" y="54" width="206" height="172" rx="30" fill="url(#hero)"/>
+    <text x="48" y="260" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="900" fill="#201633">Mobile page</text>
+    <rect x="48" y="302" width="104" height="38" rx="19" fill="#6d56d8"/>
+    <text x="76" y="326" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" fill="#ffffff">RSVP</text>
+    <rect x="48" y="368" width="206" height="54" rx="18" fill="#f1edff"/>
+    <rect x="48" y="438" width="206" height="54" rx="18" fill="#fff2dd"/>
+    <rect x="48" y="508" width="206" height="28" rx="18" fill="#e8fbf4"/>
+  </g>
+  <text x="104" y="914" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#ffffff" opacity="0.72">Fictional placeholder product art</text>
+</svg>

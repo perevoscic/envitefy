@@ -37,10 +37,100 @@ type ConditionalFooterProps = {
   serverSession?: any;
 };
 
+type FooterLink = {
+  label: string;
+  href: string;
+};
+
+type FooterGroup = {
+  title: string;
+  links: FooterLink[];
+};
+
+const MARKETING_ROUTE_PATHS = new Set([
+  "/about",
+  "/contact",
+  "/faq",
+  "/guides",
+  "/gymnastics",
+  "/how-it-works",
+  "/landing",
+  "/privacy",
+  "/showcase",
+  "/snap",
+  "/terms",
+  "/who-its-for",
+]);
+
+const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
+  {
+    title: "Create",
+    links: [
+      { label: "Concierge", href: "/landing#concierge" },
+      { label: "Templates", href: "/landing#examples" },
+      { label: "Live cards", href: "/showcase" },
+      { label: "Snap uploads", href: "/snap" },
+      { label: "Start your event", href: "/landing#creation-paths" },
+    ],
+  },
+  {
+    title: "Event Pages",
+    links: [
+      { label: "Public event pages", href: "/landing#guest-flow" },
+      { label: "RSVP event pages", href: "/guides/rsvp-event-page" },
+      { label: "Live card invitations", href: "/guides/live-card-invitations" },
+      { label: "Guest action flow", href: "/landing#guest-flow" },
+      { label: "Share without an app", href: "/guides/share-event-page-without-app" },
+    ],
+  },
+  {
+    title: "Use Cases",
+    links: [
+      { label: "Birthdays", href: "/landing#examples" },
+      { label: "Weddings", href: "/landing#examples" },
+      { label: "Baby showers", href: "/landing#examples" },
+      { label: "School events", href: "/landing#examples" },
+      { label: "Sports teams", href: "/landing#examples" },
+      { label: "Gymnastics meets", href: "/gymnastics" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { label: "Guides hub", href: "/guides" },
+      { label: "PDF to event page", href: "/guides/pdf-to-event-page" },
+      { label: "Flyer to event page", href: "/guides/flyer-to-event-page" },
+      { label: "RSVP event page", href: "/guides/rsvp-event-page" },
+      { label: "Live card invitations", href: "/guides/live-card-invitations" },
+      { label: "Gymnastics meet page", href: "/guides/gymnastics-meet-page" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { label: "About", href: "/about" },
+      { label: "Contact", href: "/contact" },
+      { label: "FAQ", href: "/faq" },
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
+    ],
+  },
+];
+
+const MARKETING_FOOTER_UTILITY_LINKS: FooterLink[] = [
+  { label: "Invites", href: "/guides/live-card-invitations" },
+  { label: "RSVP", href: "/guides/rsvp-event-page" },
+  { label: "Event Pages", href: "/landing#guest-flow" },
+  { label: "Sign-ups", href: "/landing#guest-flow" },
+  { label: "Upload", href: "/snap" },
+  { label: "Guides", href: "/guides" },
+];
+
 export default function ConditionalFooter({ serverSession }: ConditionalFooterProps = {}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { status } = useSession();
+  const normalizedPathname = pathname && pathname !== "/" ? pathname.replace(/\/+$/, "") : pathname;
 
   const isEventShare = pathname && isEventSharePath(pathname);
   const isStudioCardShare = pathname && isStudioCardSharePath(pathname);
@@ -70,14 +160,11 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
     return null;
   }
 
-  const isMarketingRoot = pathname === "/" && hasNoSession;
+  const isMarketingRoot = normalizedPathname === "/" && hasNoSession;
   const isMarketingRoute =
     isMarketingRoot ||
-    pathname === "/landing" ||
-    pathname === "/snap" ||
-    pathname === "/gymnastics" ||
-    pathname === "/guides" ||
-    (pathname?.startsWith("/guides/") ?? false);
+    (normalizedPathname ? MARKETING_ROUTE_PATHS.has(normalizedPathname) : false) ||
+    (normalizedPathname?.startsWith("/guides/") ?? false);
 
   if (isMarketingRoute) {
     return (
@@ -99,144 +186,42 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
             </div>
 
             <div className="col-span-full grid grid-cols-2 gap-x-6 gap-y-8 lg:contents">
-              <div>
-                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
-                  Create
-                </h4>
-                <div className="mt-4 space-y-3 text-sm text-[#62586a]">
-                  <Link href="/landing#concierge" className="block hover:text-[#2b1b16]">
-                    Concierge
-                  </Link>
-                  <Link href="/landing#creation-paths" className="block hover:text-[#2b1b16]">
-                    Templates
-                  </Link>
-                  <Link href="/landing#showcase" className="block hover:text-[#2b1b16]">
-                    Live cards
-                  </Link>
-                  <Link href="/landing#event-pages" className="block hover:text-[#2b1b16]">
-                    Smart sign-ups
-                  </Link>
+              {MARKETING_FOOTER_GROUPS.map((group) => (
+                <div
+                  key={group.title}
+                  className={group.title === "Company" ? "col-span-2 lg:col-span-1" : ""}
+                >
+                  <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
+                    {group.title}
+                  </h4>
+                  <div className="mt-4 space-y-3 text-sm text-[#62586a]">
+                    {group.links.map((link) => (
+                      <Link
+                        key={`${group.title}-${link.href}-${link.label}`}
+                        href={link.href}
+                        className="block hover:text-[#2b1b16]"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
-                  Event Pages
-                </h4>
-                <div className="mt-4 space-y-3 text-sm text-[#62586a]">
-                  <Link href="/landing#event-pages" className="block hover:text-[#2b1b16]">
-                    Public event pages
-                  </Link>
-                  <Link href="/landing#event-pages" className="block hover:text-[#2b1b16]">
-                    RSVP pages
-                  </Link>
-                  <Link href="/landing#rsvp-tracking" className="block hover:text-[#2b1b16]">
-                    RSVP state
-                  </Link>
-                  <Link href="/landing#event-pages" className="block hover:text-[#2b1b16]">
-                    Registry links
-                  </Link>
-                  <Link href="/landing#event-pages" className="block hover:text-[#2b1b16]">
-                    Calendar and maps
-                  </Link>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
-                  Use Cases
-                </h4>
-                <div className="mt-4 space-y-3 text-sm text-[#62586a]">
-                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
-                    Birthdays
-                  </Link>
-                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
-                    Weddings
-                  </Link>
-                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
-                    Baby showers
-                  </Link>
-                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
-                    School events
-                  </Link>
-                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
-                    Sports teams
-                  </Link>
-                  <Link href="/landing#examples" className="block hover:text-[#2b1b16]">
-                    Community events
-                  </Link>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
-                  Resources
-                </h4>
-                <div className="mt-4 space-y-3 text-sm text-[#62586a]">
-                  <Link href="/guides" className="block hover:text-[#2b1b16]">
-                    Guides hub
-                  </Link>
-                  <Link href="/guides/pdf-to-event-page" className="block hover:text-[#2b1b16]">
-                    PDF to event page
-                  </Link>
-                  <Link href="/guides/flyer-to-event-page" className="block hover:text-[#2b1b16]">
-                    Flyer to event page
-                  </Link>
-                  <Link href="/guides/rsvp-event-page" className="block hover:text-[#2b1b16]">
-                    RSVP event page
-                  </Link>
-                  <Link href="/guides/live-card-invitations" className="block hover:text-[#2b1b16]">
-                    Live card invitations
-                  </Link>
-                </div>
-              </div>
-
-              <div className="col-span-2 lg:col-span-1">
-                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#241c2b]">
-                  Company
-                </h4>
-                <div className="mt-4 space-y-3 text-sm text-[#62586a]">
-                  <Link href="/about" className="block hover:text-[#2b1b16]">
-                    About
-                  </Link>
-                  <Link href="/contact" className="block hover:text-[#2b1b16]">
-                    Contact
-                  </Link>
-                  <Link href="/faq" className="block hover:text-[#2b1b16]">
-                    FAQ
-                  </Link>
-                  <Link href="/privacy" className="block hover:text-[#2b1b16]">
-                    Privacy
-                  </Link>
-                  <Link href="/terms" className="block hover:text-[#2b1b16]">
-                    Terms
-                  </Link>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
           <div className="relative border-t border-[#d7c5a5]">
             <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-6 text-sm text-[#665d68] sm:px-8 lg:px-10">
               <p>© {new Date().getFullYear()} Envitefy</p>
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                <Link href="/landing#showcase" className="hover:text-[#2b1b16]">
-                  Invites
-                </Link>
-                <Link href="/landing#event-pages" className="hover:text-[#2b1b16]">
-                  RSVP
-                </Link>
-                <Link href="/landing#rsvp-tracking" className="hover:text-[#2b1b16]">
-                  RSVP State
-                </Link>
-                <Link href="/landing#event-pages" className="hover:text-[#2b1b16]">
-                  Event Pages
-                </Link>
-                <Link href="/landing#event-pages" className="hover:text-[#2b1b16]">
-                  Sign-ups
-                </Link>
-                <Link href="/landing#upload" className="hover:text-[#2b1b16]">
-                  Upload
-                </Link>
+                {MARKETING_FOOTER_UTILITY_LINKS.map((link) => (
+                  <Link
+                    key={`utility-${link.href}-${link.label}`}
+                    href={link.href}
+                    className="hover:text-[#2b1b16]"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
               </div>
             </div>
           </div>

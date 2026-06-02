@@ -28,7 +28,7 @@ Avoid making the product feel like a large dashboard, admin hub, or complex menu
 
 Reduce menus. Guide the user through one simple event-creation conversation.
 
-The strongest current direction is `src/app/studio/workspace/StudioCategoryStep.tsx`, especially the "What are we celebrating?" entry point.
+The strongest current direction is a guided "What are we celebrating?" entry point that lets users choose whether they are creating from scratch, snapping/uploading an invite or flyer, or building a vertical-specific event page.
 
 Future creation flows should follow this sequence:
 
@@ -42,20 +42,19 @@ Authenticated dashboards, sidebars, and admin tools are secondary surfaces. They
 ## 4. Main User Flows
 
 - Create from scratch:
-  - Primary direction should be `/studio` with `StudioCategoryStep` and `StudioFormStep`.
+  - Primary direction should be a guided creation flow that starts with event intent and keeps the first screen simple.
   - `src/components/EventCreateForm.tsx` is useful but too dense for the main user journey.
-  - `src/app/event/new/page.tsx` currently redirects to gymnastics, which is confusing for generic event creation.
+  - `src/app/event/new/page.tsx` currently redirects to a vertical-specific route, which is confusing for generic event creation.
 - Upload or snap an invite:
   - `/event` and `src/app/event/SnapLaunchCards.tsx` provide a clear snap/upload choice.
   - Dashboard OCR upload lives in `src/components/Dashboard.tsx`.
   - Uploads should distinguish between "I received an invite" and "I am creating my own event."
 - Generate a live card:
-  - `src/components/studio/StudioShowcaseLiveCard.tsx`
-  - `src/components/studio/StudioLiveCardActionSurface.tsx`
+  - Treat live card rendering as part of the event-page experience, not as a separately featured product surface.
   - Public rendering flows through `src/app/event/[id]/page.tsx`.
 - Edit and preview:
-  - Studio flows support edit/preview behavior.
-  - Vertical customize pages exist for birthday, wedding, gymnastics, football, and other categories.
+  - Guided creation and customize flows should support edit/preview behavior.
+  - Vertical customize pages exist for birthday, wedding, football, and other categories.
   - Keep preview visible when possible, especially on desktop.
 - Share / RSVP / open map:
   - Existing behavior is split across `EventActions`, `EventRsvpPrompt`, `GuestRsvpModal`, `EventMap`, and public event renderers.
@@ -156,7 +155,7 @@ Don't:
 - `src/components/MainContentWrapper.tsx` and `src/components/ui/gradient-backgrounds.tsx`
   - Fixed purple radial background can make the app feel more like a dashboard than a warm event-card creator.
 - `src/app/event/new/page.tsx`
-  - Redirects to `/event/gymnastics`, which is unexpected for generic "new event."
+  - Redirects to a vertical-specific route, which is unexpected for generic "new event."
 - `src/components/EventCreateForm.tsx`
   - Dense manual form with many fields. Better as an advanced path than the main creation flow.
 - `src/components/home/*Hero.tsx`
@@ -166,7 +165,7 @@ Don't:
   - Trust names should be verified before being treated as customer proof.
 - `src/components/marketing/ScenicBackground.tsx`
   - Fixed remote image and animated background effects are risky for mobile performance.
-- `src/components/EventActions.tsx`, `EventRsvpPrompt.tsx`, `GuestRsvpModal.tsx`, and `StudioLiveCardActionSurface.tsx`
+- `src/components/EventActions.tsx`, `EventRsvpPrompt.tsx`, `GuestRsvpModal.tsx`, and live-card action surfaces
   - RSVP, calendar, share, and directions patterns overlap and should be unified.
 - `src/components/AccessCodeGate.tsx`
   - Copy references a coach, which is too specific for all passcoded events.
@@ -178,7 +177,7 @@ Don't:
 
 ## 10. Implementation Notes
 
-- Make `/studio` or a similar guided flow the default creation path.
+- Make the guided creation flow the default creation path.
 - Route generic "new event" actions to the guided creation flow, not a vertical-specific route.
 - Create shared design tokens for color, radius, shadow, field, card, modal, and button styles.
 - Separate visual rules by surface:

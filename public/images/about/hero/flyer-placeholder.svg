@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1280" viewBox="0 0 960 1280" role="img" aria-labelledby="title desc">
+  <title id="title">Placeholder event flyer mockup</title>
+  <desc id="desc">A fictional event flyer layout used as placeholder artwork.</desc>
+  <defs>
+    <linearGradient id="desk" x1="0" y1="0" x2="960" y2="1280" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0e1726"/>
+      <stop offset="0.5" stop-color="#173f58"/>
+      <stop offset="1" stop-color="#0f1020"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="150" y1="130" x2="840" y2="1140" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffaf0"/>
+      <stop offset="0.6" stop-color="#eefbff"/>
+      <stop offset="1" stop-color="#fff3d8"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="188" y1="202" x2="746" y2="660" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1d62e8"/>
+      <stop offset="0.55" stop-color="#16a8a5"/>
+      <stop offset="1" stop-color="#ff976b"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="34" stdDeviation="34" flood-color="#020712" flood-opacity="0.52"/>
+    </filter>
+    <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+  </defs>
+  <rect width="960" height="1280" fill="url(#desk)"/>
+  <circle cx="90" cy="210" r="140" fill="#74e0c1" opacity="0.16" filter="url(#blur)"/>
+  <circle cx="840" cy="102" r="180" fill="#ff9a75" opacity="0.16" filter="url(#blur)"/>
+  <g transform="translate(102 84) rotate(-3 378 548)" filter="url(#shadow)">
+    <rect x="0" y="0" width="756" height="1096" rx="56" fill="url(#paper)"/>
+    <rect x="28" y="28" width="700" height="1040" rx="38" fill="none" stroke="#ffffff" stroke-opacity="0.8" stroke-width="2"/>
+    <path d="M0 0 H756 V348 C608 398 500 260 378 336 C260 410 150 354 0 424 Z" fill="url(#ribbon)"/>
+    <circle cx="590" cy="126" r="86" fill="#fff4cf" opacity="0.82"/>
+    <circle cx="652" cy="204" r="54" fill="#ffffff" opacity="0.28"/>
+  </g>
+  <g transform="translate(170 178) rotate(-3 310 520)">
+    <rect x="36" y="36" width="170" height="50" rx="25" fill="#ffffff" opacity="0.86"/>
+    <text x="66" y="69" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#1458d1">Preview</text>
+    <text x="36" y="258" font-family="Montserrat, Inter, Arial, sans-serif" font-size="84" font-weight="900" letter-spacing="-4" fill="#ffffff">Event</text>
+    <text x="36" y="338" font-family="Montserrat, Inter, Arial, sans-serif" font-size="84" font-weight="900" letter-spacing="-4" fill="#ffffff">flyer</text>
+    <text x="40" y="398" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="700" fill="#e7fbff">Placeholder schedule and RSVP layout</text>
+    <g transform="translate(38 484)">
+      <rect width="544" height="108" rx="30" fill="#ffffff" opacity="0.9"/>
+      <rect x="34" y="30" width="86" height="48" rx="20" fill="#185fe3"/>
+      <text x="153" y="48" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#102034">Schedule</text>
+      <rect x="153" y="65" width="260" height="18" rx="9" fill="#102034" opacity="0.12"/>
+    </g>
+    <g transform="translate(38 626)">
+      <rect width="544" height="108" rx="30" fill="#ffffff" opacity="0.9"/>
+      <rect x="34" y="30" width="86" height="48" rx="20" fill="#12a89f"/>
+      <text x="153" y="48" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#102034">RSVP</text>
+      <rect x="153" y="65" width="306" height="18" rx="9" fill="#102034" opacity="0.12"/>
+    </g>
+    <g transform="translate(38 774)">
+      <rect width="544" height="126" rx="34" fill="#102034"/>
+      <text x="38" y="47" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#ffffff">Save date</text>
+      <rect x="376" y="23" width="96" height="96" rx="14" fill="#ffffff" opacity="0.14"/>
+      <rect x="396" y="43" width="56" height="56" rx="10" fill="#ffffff" opacity="0.4"/>
+    </g>
+    <g transform="translate(38 926)">
+      <rect width="160" height="70" rx="24" fill="#e8f8f5" stroke="#c8ede6"/>
+      <text x="50" y="44" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#16776f">Map</text>
+      <rect x="184" width="194" height="70" rx="24" fill="#fff0db" stroke="#ffd5a8"/>
+      <text x="224" y="44" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#9a5c29">Details</text>
+    </g>
+  </g>
+</svg>

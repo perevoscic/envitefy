@@ -21,10 +21,11 @@ type HeroTopNavProps = {
   authenticatedPrimaryHref: string;
   brandHref?: string;
   dashboardHref?: string;
+  guestPrimaryHref?: string;
   loginSuccessRedirectUrl?: string;
   onGuestLoginAction: () => void;
   onGuestPrimaryAction: () => void;
-  variant?: "default" | "glass-dark" | "transparent-dark";
+  variant?: "default" | "glass-dark" | "transparent-dark" | "transparent-light";
 };
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -91,6 +92,7 @@ export default function HeroTopNav({
   authenticatedPrimaryHref,
   brandHref = "/landing",
   dashboardHref = "/",
+  guestPrimaryHref,
   loginSuccessRedirectUrl = dashboardHref,
   onGuestLoginAction,
   onGuestPrimaryAction,
@@ -108,8 +110,10 @@ export default function HeroTopNav({
   const mobileMenuSwipeStartX = useRef<number | null>(null);
   const pendingMobileHashHrefRef = useRef<string | null>(null);
   const isTransparentDark = variant === "transparent-dark";
+  const isTransparentLight = variant === "transparent-light";
+  const isTransparentVariant = isTransparentDark || isTransparentLight;
   const isDarkGlass = variant === "glass-dark" || isTransparentDark;
-  const isTransparentOverHero = isTransparentDark && !hasScrolledPastHero;
+  const isTransparentOverHero = isTransparentVariant && !hasScrolledPastHero;
   const useDarkMobileMenu = isDarkGlass;
   const showMobileGuestActions = status !== "authenticated" && !mobileLoginExpanded;
 
@@ -118,7 +122,7 @@ export default function HeroTopNav({
   }, []);
 
   useEffect(() => {
-    if (!isTransparentDark) {
+    if (!isTransparentVariant) {
       setHasScrolledPastHero(false);
       return;
     }
@@ -135,7 +139,7 @@ export default function HeroTopNav({
       window.removeEventListener("scroll", syncScrolledState);
       window.removeEventListener("resize", syncScrolledState);
     };
-  }, [isTransparentDark]);
+  }, [isTransparentVariant]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -348,9 +352,9 @@ export default function HeroTopNav({
 
   return (
     <motion.header
-      initial={isTransparentDark ? { y: -96, opacity: 0 } : false}
-      animate={isTransparentDark ? { y: 0, opacity: 1 } : undefined}
-      transition={isTransparentDark ? { duration: 0.8, ease: "easeOut" } : undefined}
+      initial={isTransparentVariant ? { y: -96, opacity: 0 } : false}
+      animate={isTransparentVariant ? { y: 0, opacity: 1 } : undefined}
+      transition={isTransparentVariant ? { duration: 0.8, ease: "easeOut" } : undefined}
       data-scrolled-past-hero={hasScrolledPastHero ? "true" : "false"}
       className={cx(
         "fixed inset-x-0 top-0 z-50 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] sm:px-6 lg:px-8",
@@ -362,7 +366,10 @@ export default function HeroTopNav({
         <div
           className={cx(
             isTransparentOverHero
-              ? "px-1 py-2 text-white sm:px-3"
+              ? cx(
+                  "px-1 py-2 sm:px-3",
+                  isTransparentLight ? "text-[#25172d]" : "text-white",
+                )
               : cx(
                   "nav-chrome-glass-header px-4 py-3 sm:px-6",
                   isDarkGlass
@@ -416,8 +423,12 @@ export default function HeroTopNav({
                       "nav-chrome-motion text-sm font-semibold transition",
                       isTransparentOverHero
                         ? isActive
-                          ? "rounded-full bg-white/18 px-3 py-2 text-white shadow-[0_12px_24px_rgba(0,0,0,0.18)]"
-                          : "px-1 py-2 text-white/82 hover:text-white"
+                          ? isTransparentLight
+                            ? "rounded-full bg-[#25172d]/8 px-3 py-2 text-[#1d1224] shadow-[0_12px_24px_rgba(70,46,82,0.12)]"
+                            : "rounded-full bg-white/18 px-3 py-2 text-white shadow-[0_12px_24px_rgba(0,0,0,0.18)]"
+                          : isTransparentLight
+                            ? "px-1 py-2 text-[#2c2035]/78 hover:text-[#171019]"
+                            : "px-1 py-2 text-white/82 hover:text-white"
                         : isActive
                           ? isDarkGlass
                             ? "rounded-full border border-white/22 bg-white/[0.18] px-4 py-2 text-white shadow-[0_14px_28px_rgba(0,0,0,0.18)]"
@@ -443,7 +454,13 @@ export default function HeroTopNav({
                   href={dashboardHref}
                   className={cx(
                     "nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
-                    isDarkGlass ? "text-white" : lightNavPillClass,
+                    isTransparentOverHero
+                      ? isTransparentLight
+                        ? "text-[#25172d]"
+                        : "text-white"
+                      : isDarkGlass
+                        ? "text-white"
+                        : lightNavPillClass,
                   )}
                 >
                   Dashboard
@@ -453,10 +470,12 @@ export default function HeroTopNav({
                   type="button"
                   onClick={onGuestLoginAction}
                   className={cx(
-                    isDarkGlass
-                      ? glassGhostLoginClass
-                      : "cta-shell nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
-                    !isDarkGlass && lightNavPillClass,
+                    isTransparentOverHero && isTransparentLight
+                      ? "cta-shell nav-chrome-motion h-11 shrink-0 rounded-full border border-[#25172d]/10 bg-[#25172d]/8 px-6 text-sm font-bold text-[#25172d] transition-all hover:bg-[#25172d]/12"
+                      : isDarkGlass
+                        ? glassGhostLoginClass
+                        : "cta-shell nav-chrome-motion rounded-full px-3 py-2 text-sm font-semibold transition",
+                    !isTransparentOverHero && !isDarkGlass && lightNavPillClass,
                   )}
                 >
                   <AnimatedButtonLabel label="Login" />
@@ -475,13 +494,25 @@ export default function HeroTopNav({
                 >
                   <AnimatedButtonLabel label={primaryCtaLabel} />
                 </Link>
+              ) : guestPrimaryHref ? (
+                <Link
+                  href={guestPrimaryHref}
+                  className={cx(
+                    "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
+                    isDarkGlass || isTransparentOverHero
+                      ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
+                      : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
+                  )}
+                >
+                  <AnimatedButtonLabel label={primaryCtaLabel} />
+                </Link>
               ) : (
                 <button
                   type="button"
                   onClick={onGuestPrimaryAction}
                   className={cx(
                     "cta-shell nav-chrome-motion h-11 rounded-full px-6 text-sm font-semibold transition hover:-translate-y-0.5",
-                    isDarkGlass
+                    isDarkGlass || isTransparentOverHero
                       ? "bg-white text-[#140a27] shadow-[0_14px_34px_rgba(0,0,0,0.24)] hover:bg-[#f3ecff]"
                       : "nav-chrome-pill-primary text-white hover:shadow-[0_22px_44px_rgba(123,77,255,0.28)]",
                   )}
@@ -496,9 +527,11 @@ export default function HeroTopNav({
               type="button"
               className={cx(
                 "nav-chrome-motion inline-flex h-11 w-11 items-center justify-center shadow-sm lg:hidden",
-                isDarkGlass
-                  ? "rounded-full border border-white/14 bg-white/[0.08] text-white"
-                  : "nav-chrome-pill-secondary rounded-full text-[#31264f]",
+                isTransparentOverHero && isTransparentLight
+                  ? "rounded-full border border-[#25172d]/10 bg-[#25172d]/8 text-[#25172d]"
+                  : isDarkGlass
+                    ? "rounded-full border border-white/14 bg-white/[0.08] text-white"
+                    : "nav-chrome-pill-secondary rounded-full text-[#31264f]",
                 isTransparentOverHero && "justify-self-end",
               )}
               onClick={() => setMobileMenuOpen((value) => !value)}
@@ -714,22 +747,40 @@ export default function HeroTopNav({
                         <AnimatedButtonLabel label={primaryCtaLabel} />
                       </Link>
                     ) : showMobileGuestActions ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          setMobileLoginExpanded(false);
-                          onGuestPrimaryAction();
-                        }}
-                        className={cx(
-                          "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
-                          useDarkMobileMenu
-                            ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
-                            : "nav-chrome-pill-primary text-white",
-                        )}
-                      >
-                        <AnimatedButtonLabel label={primaryCtaLabel} />
-                      </button>
+                      guestPrimaryHref ? (
+                        <Link
+                          href={guestPrimaryHref}
+                          className={cx(
+                            "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+                            useDarkMobileMenu
+                              ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
+                              : "nav-chrome-pill-primary text-white",
+                          )}
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            setMobileLoginExpanded(false);
+                          }}
+                        >
+                          <AnimatedButtonLabel label={primaryCtaLabel} />
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            setMobileLoginExpanded(false);
+                            onGuestPrimaryAction();
+                          }}
+                          className={cx(
+                            "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+                            useDarkMobileMenu
+                              ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
+                              : "nav-chrome-pill-primary text-white",
+                          )}
+                        >
+                          <AnimatedButtonLabel label={primaryCtaLabel} />
+                        </button>
+                      )
                     ) : null}
                   </nav>
                 </div>
