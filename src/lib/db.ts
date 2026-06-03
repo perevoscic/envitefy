@@ -1453,6 +1453,11 @@ export type EventHistoryPublicRow = EventHistoryRow & {
   media: EventHistoryInlineMedia;
 };
 
+export type EventHistorySitemapRow = Pick<
+  EventHistoryRow,
+  "id" | "title" | "data" | "public_slug" | "created_at"
+>;
+
 export type EventHistoryInputBlobRow = {
   event_id: string;
   mime_type: string;
@@ -3271,6 +3276,61 @@ export async function getEventHistoryPublicRenderBySlugOrId(params: {
   const identity = await resolveEventHistoryIdentityBySlugOrId(params);
   if (!identity) return null;
   return await getEventHistoryPublicRenderById(identity.id);
+}
+
+export async function listPublicEventSitemapRows(
+  limit: number = 500,
+): Promise<EventHistorySitemapRow[]> {
+  await ensureEventPublicSlugSchema();
+  const safeLimit = Math.max(1, Math.min(2000, Math.floor(limit || 500)));
+  const dataSql = "coalesce(data, '{}'::jsonb)";
+  const sitemapDataSql = `jsonb_strip_nulls(jsonb_build_object(
+    'primaryOutput', ${dataSql}->'primaryOutput',
+    'productType', ${dataSql}->'productType',
+    'publicRenderer', ${dataSql}->'publicRenderer',
+    'ownerDefaultSurface', ${dataSql}->'ownerDefaultSurface',
+    'requestedOutputs', ${dataSql}->'requestedOutputs',
+    'outputs', ${dataSql}->'outputs',
+    'publicEvent', case
+      when jsonb_typeof(${dataSql}->'publicEvent') = 'object' then
+        jsonb_strip_nulls(jsonb_build_object(
+          'primaryOutput', ${dataSql}#>'{publicEvent,primaryOutput}',
+          'renderer', ${dataSql}#>'{publicEvent,renderer}',
+          'ownerDefaultSurface', ${dataSql}#>'{publicEvent,ownerDefaultSurface}'
+        ))
+      else null
+    end,
+    'conciergeDraft', case
+      when jsonb_typeof(${dataSql}->'conciergeDraft') = 'object' then
+        jsonb_strip_nulls(jsonb_build_object(
+          'primaryOutput', ${dataSql}#>'{conciergeDraft,primaryOutput}',
+          'productType', ${dataSql}#>'{conciergeDraft,productType}',
+          'requestedOutputs', ${dataSql}#>'{conciergeDraft,requestedOutputs}',
+          'outputs', ${dataSql}#>'{conciergeDraft,outputs}'
+        ))
+      else null
+    end
+  ))`;
+  const res = await query<EventHistorySitemapRow>(
+    `select
+       id,
+       title,
+       ${sitemapDataSql} as data,
+       public_slug,
+       created_at
+     from event_history
+     where public_slug is not null
+       and public_slug <> ''
+       and lower(coalesce(${dataSql}->>'status', '')) = 'published'
+       and not (
+         coalesce(${dataSql}#>>'{accessControl,requirePasscode}', '') in ('true', '1')
+         and nullif(${dataSql}#>>'{accessControl,passcodeHash}', '') is not null
+       )
+     order by created_at desc nulls last, id desc
+     limit $1`,
+    [safeLimit],
+  );
+  return res.rows;
 }
 
 export type EventHistoryMediaVariant =
