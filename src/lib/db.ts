@@ -3300,6 +3300,32 @@ export async function listPublicEventSitemapRows(
         ))
       else null
     end,
+    'signupForm', case
+      when jsonb_typeof(${dataSql}->'signupForm') = 'object' then
+        jsonb_strip_nulls(jsonb_build_object(
+          'enabled', ${dataSql}#>'{signupForm,enabled}',
+          'visibility', ${dataSql}#>'{signupForm,visibility}',
+          'publicVisibility', ${dataSql}#>'{signupForm,publicVisibility}',
+          'publicPage', ${dataSql}#>'{signupForm,publicPage}',
+          'isPublic', ${dataSql}#>'{signupForm,isPublic}',
+          'public', ${dataSql}#>'{signupForm,public}',
+          'publicIndex', ${dataSql}#>'{signupForm,publicIndex}',
+          'indexable', ${dataSql}#>'{signupForm,indexable}',
+          'noindex', ${dataSql}#>'{signupForm,noindex}'
+        ))
+      else null
+    end,
+    'signupVisibility', ${dataSql}->'signupVisibility',
+    'publicVisibility', ${dataSql}->'publicVisibility',
+    'visibility', ${dataSql}->'visibility',
+    'publicSignup', ${dataSql}->'publicSignup',
+    'signupPublic', ${dataSql}->'signupPublic',
+    'smartSignupPublic', ${dataSql}->'smartSignupPublic',
+    'signupIndexable', ${dataSql}->'signupIndexable',
+    'noindex', ${dataSql}->'noindex',
+    'signupNoindex', ${dataSql}->'signupNoindex',
+    'indexable', ${dataSql}->'indexable',
+    'publicIndex', ${dataSql}->'publicIndex',
     'conciergeDraft', case
       when jsonb_typeof(${dataSql}->'conciergeDraft') = 'object' then
         jsonb_strip_nulls(jsonb_build_object(

@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { landingLiveCardSnapshots } from "@/components/landing/landing-live-card-snapshots";
 import { listPublicEventSitemapRows } from "@/lib/db";
 import { buildLandingShowcasePath } from "@/lib/landing-showcase";
+import { isIndexablePublicSmartSignupData } from "@/lib/smart-signup-indexing";
 import { buildEventProductPath } from "@/utils/event-product-route";
 
 export const runtime = "nodejs";
@@ -37,6 +38,10 @@ const staticEntries: StaticEntry[] = [
   { path: "/guides/rsvp-event-page", priority: 0.75, changeFrequency: "monthly" },
   { path: "/guides/gymnastics-meet-page", priority: 0.75, changeFrequency: "monthly" },
   { path: "/guides/share-event-page-without-app", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/guides/smart-signup-forms", priority: 0.75, changeFrequency: "monthly" },
+  { path: "/guides/wedding-event-page", priority: 0.75, changeFrequency: "monthly" },
+  { path: "/guides/birthday-rsvp-invitation", priority: 0.75, changeFrequency: "monthly" },
+  { path: "/guides/registry-invitation-page", priority: 0.75, changeFrequency: "monthly" },
   { path: "/how-it-works", priority: 0.7, changeFrequency: "monthly" },
   { path: "/who-its-for", priority: 0.6, changeFrequency: "monthly" },
   { path: "/faq", priority: 0.6, changeFrequency: "monthly" },
@@ -59,14 +64,16 @@ async function buildPublicEventUrls(): Promise<SitemapEntry[]> {
   try {
     const rows = await listPublicEventSitemapRows(limit);
     return rows
-      .map((row) => {
+      .map<SitemapEntry | null>((row) => {
         const path = buildEventProductPath({
           eventId: row.id,
           title: row.title,
           data: row.data,
           publicSlug: row.public_slug,
         });
-        if (path.startsWith("/smart-signup-form/")) return null;
+        if (path.startsWith("/smart-signup-form/") && !isIndexablePublicSmartSignupData(row.data)) {
+          return null;
+        }
 
         return {
           url: `${baseUrl}${path}`,

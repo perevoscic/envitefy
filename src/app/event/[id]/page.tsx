@@ -5,6 +5,7 @@ import nextDynamic from "next/dynamic";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import Script from "next/script";
 import { getServerSession } from "next-auth";
 import type { CSSProperties, ReactNode } from "react";
 import { cache } from "react";
@@ -261,6 +262,159 @@ function sanitizeScannedOcrDisplayTitle(value: string, data: Record<string, unkn
   return kept.join(" — ") || value;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function readPublicEventText(
+  data: Record<string, unknown>,
+  keys: string[],
+  maxLength = 220,
+): string | null {
+  for (const key of keys) {
+    const value = data[key];
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim().replace(/\s+/g, " ");
+    if (!trimmed || trimmed.startsWith("data:")) continue;
+    return trimmed.length > maxLength ? trimmed.slice(0, maxLength).trim() : trimmed;
+  }
+  return null;
+}
+
+function readPublicEventDate(data: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = data[key];
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    const parsed = new Date(trimmed);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed) || !Number.isNaN(parsed.getTime())) {
+      return trimmed;
+    }
+  }
+  return null;
+}
+
+function publicEventRequiresPasscode(data: Record<string, unknown>): boolean {
+  const accessControl = isRecord(data.accessControl) ? data.accessControl : null;
+  return Boolean(
+    accessControl?.requirePasscode &&
+      typeof accessControl.passcodeHash === "string" &&
+      accessControl.passcodeHash.trim(),
+  );
+}
+
+function isPublicEventIndexable(data: Record<string, unknown>): boolean {
+  const visibility = readPublicEventText(data, ["visibility", "privacy", "publicVisibility"], 80)
+    ?.toLowerCase()
+    .replace(/[\s_]+/g, "-");
+  if (publicEventRequiresPasscode(data)) return false;
+  if (data.noindex === true || data.indexable === false || data.publicIndex === false) return false;
+  if (data.searchIndex === false || data.publicSearch === false) return false;
+  if (visibility === "private" || visibility === "restricted" || visibility === "invite-only") {
+    return false;
+  }
+  return true;
+}
+
+function buildPublicEventMetaDescription(
+  title: string,
+  data: Record<string, unknown>,
+  indexable: boolean,
+): string {
+  if (!indexable) return "View this private Envitefy event page.";
+  const category = readPublicEventText(data, ["category", "eventType", "type"], 80);
+  const venue = readPublicEventText(data, ["venue", "venueName"], 100);
+  const location = readPublicEventText(data, ["location", "address"], 120);
+  const place = combineVenueAndLocation(venue, location) || venue || location;
+  const context = [category, place].filter(Boolean).join(" at ");
+  return context
+    ? `View ${title}, ${context}, on Envitefy with event details, schedule, RSVP, calendar saves, and guest links.`
+    : `View ${title} on Envitefy with event details, schedule, RSVP, calendar saves, and guest links.`;
+}
+
+function compactJsonLd(record: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(record).filter(([, value]) => {
+      if (value === null || typeof value === "undefined") return false;
+      if (Array.isArray(value)) return value.length > 0;
+      return true;
+    }),
+  );
+}
+
+function resolvePublicEventSchemaStatus(data: Record<string, unknown>): string {
+  const status = readPublicEventText(data, ["status"], 80)?.toLowerCase() || "";
+  if (status.includes("cancel")) return "https://schema.org/EventCancelled";
+  if (status.includes("postpone")) return "https://schema.org/EventPostponed";
+  if (status.includes("resched")) return "https://schema.org/EventRescheduled";
+  return "https://schema.org/EventScheduled";
+}
+
+function buildPublicEventJsonLd(params: {
+  title: string;
+  data: Record<string, unknown>;
+  url: string;
+  imageUrl: string;
+  createdAt?: string | null;
+}): Record<string, unknown> | null {
+  if (!isPublicEventIndexable(params.data)) return null;
+
+  const startDate = readPublicEventDate(params.data, ["startAt", "startISO", "start", "date"]);
+  const endDate = readPublicEventDate(params.data, ["endAt", "endISO", "end"]);
+  const category = readPublicEventText(params.data, ["category", "eventType", "type"], 80);
+  const venue = readPublicEventText(params.data, ["venue", "venueName"], 100);
+  const location = readPublicEventText(params.data, ["location", "address"], 140);
+  const description = buildPublicEventMetaDescription(params.title, params.data, true);
+  const place =
+    venue || location
+      ? compactJsonLd({
+          "@type": "Place",
+          name: venue || location,
+          address: location,
+        })
+      : null;
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      compactJsonLd({
+        "@type": "WebPage",
+        "@id": `${params.url}#webpage`,
+        url: params.url,
+        name: `${params.title} — Envitefy`,
+        description,
+        datePublished: params.createdAt || undefined,
+        isPartOf: {
+          "@type": "WebSite",
+          name: "Envitefy",
+          url: "https://envitefy.com",
+        },
+        mainEntity: { "@id": `${params.url}#event` },
+      }),
+      compactJsonLd({
+        "@type": "Event",
+        "@id": `${params.url}#event`,
+        name: params.title,
+        url: params.url,
+        description,
+        image: [params.imageUrl],
+        startDate,
+        endDate,
+        eventStatus: resolvePublicEventSchemaStatus(params.data),
+        eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+        location: place || undefined,
+        keywords: category ? [category, "event page", "RSVP", "Envitefy"] : ["event page", "RSVP", "Envitefy"],
+        organizer: {
+          "@type": "Organization",
+          name: "Envitefy",
+          url: "https://envitefy.com",
+        },
+      }),
+    ],
+  };
+}
+
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
@@ -276,9 +430,8 @@ export async function generateMetadata(props: {
     (typeof row?.public_slug === "string" && row.public_slug) ||
     (typeof data?.publicSlug === "string" && data.publicSlug) ||
     null;
-
-  // Only expose a generic description publicly to avoid leaking private details
-  const description = "View the event details, schedule, and RSVP right here.";
+  const indexable = Boolean(row && isPublicEventIndexable(data));
+  const description = buildPublicEventMetaDescription(title, data, indexable);
 
   // Generate OG image URL from the canonical public slug so link previews stay stable.
   const ogImageSegment = row
@@ -306,6 +459,7 @@ export async function generateMetadata(props: {
   return {
     title: `${title} — Envitefy`,
     description,
+    ...(!indexable ? { robots: { index: false, follow: false } } : {}),
     openGraph: {
       title: `${title} — Envitefy`,
       description,
@@ -1010,11 +1164,17 @@ export default async function EventPage({
   const eventPageBackgroundColor = resolveEventPageBackgroundColor(data);
   const celebrationKind = resolveEventCelebrationKind(data as any, title);
   const guestCelebrationKind = sessionEmail ? null : celebrationKind;
+  let publicEventStructuredData: Record<string, unknown> | null = null;
   const renderWithEventPageBackground = (
     children: ReactNode,
     options?: { suppressCelebration?: boolean },
   ) => (
     <EventPageBackgroundStyle color={eventPageBackgroundColor}>
+      {publicEventStructuredData ? (
+        <Script id="ld-public-event" type="application/ld+json">
+          {JSON.stringify(publicEventStructuredData)}
+        </Script>
+      ) : null}
       {!options?.suppressCelebration && guestCelebrationKind ? (
         <EventCelebrationOverlay kind={guestCelebrationKind} />
       ) : null}
@@ -1536,6 +1696,16 @@ export default async function EventPage({
     );
     redirect(next);
   }
+  const publicEventOgImageUrl = await absoluteUrl(
+    `/event/${canonicalSegment}/opengraph-image?v=${EVENT_OG_IMAGE_VERSION}`,
+  );
+  publicEventStructuredData = buildPublicEventJsonLd({
+    title,
+    data,
+    url: shareUrl,
+    imageUrl: publicEventOgImageUrl,
+    createdAt: row.created_at,
+  });
 
   // Detect RSVP phone and build SMS/Call links
   // Prefer structured wedding RSVP data, then fall back to the legacy flat string field.

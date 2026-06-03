@@ -14,6 +14,10 @@ const guideRoutes = [
   "/guides/rsvp-event-page",
   "/guides/gymnastics-meet-page",
   "/guides/share-event-page-without-app",
+  "/guides/smart-signup-forms",
+  "/guides/wedding-event-page",
+  "/guides/birthday-rsvp-invitation",
+  "/guides/registry-invitation-page",
 ];
 
 test("AI content hub exposes llms.txt and all guide URLs", () => {
@@ -78,6 +82,10 @@ test("guide pages provide crawlable H1s, JSON-LD, and related product links", ()
   assert.match(content, /How do I make an RSVP event page\?/);
   assert.match(content, /How do I create a gymnastics meet page\?/);
   assert.match(content, /Can I share an event page without guests installing an app\?/);
+  assert.match(content, /How do I make a smart sign-up form for an event\?/);
+  assert.match(content, /How do I make a wedding event page\?/);
+  assert.match(content, /How do I make a birthday invitation with RSVP\?/);
+  assert.match(content, /How do I add registry links to an invitation page\?/);
   assert.match(content, /"@type": "WebPage"/);
   assert.match(content, /"@type": "FAQPage"/);
   assert.match(content, /"@type": "BreadcrumbList"/);

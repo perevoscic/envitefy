@@ -75,6 +75,30 @@ const guideVisuals = {
     icon: MapPinned,
     route: "Guest sharing",
   },
+  "smart-signup-forms": {
+    accent: "bg-[#eefbfc] text-[#236c73]",
+    bestFor: "Volunteer slots, supplies, shifts, class parties",
+    icon: ClipboardList,
+    route: "Smart sign-up",
+  },
+  "wedding-event-page": {
+    accent: "bg-[#fff2f8] text-[#9b4d76]",
+    bestFor: "Weddings, weekend details, RSVP, registry links",
+    icon: CheckCircle2,
+    route: "Wedding page",
+  },
+  "birthday-rsvp-invitation": {
+    accent: "bg-[#fff4ec] text-[#b55a2a]",
+    bestFor: "Birthday invites, parent notes, guest responses",
+    icon: Sparkles,
+    route: "Birthday RSVP",
+  },
+  "registry-invitation-page": {
+    accent: "bg-[#f6fbef] text-[#466c2c]",
+    bestFor: "Wedding, baby shower, birthday, and gift links",
+    icon: ArrowRight,
+    route: "Registry links",
+  },
 } as const;
 
 const startingPoints = [

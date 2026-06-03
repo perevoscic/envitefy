@@ -1,19 +1,267 @@
 import { notFound, redirect } from "next/navigation";
+import type { Metadata } from "next";
+import Script from "next/script";
 import { getServerSession } from "next-auth";
+import { cache } from "react";
 import EventActions from "@/components/EventActions";
 import SignupViewer from "@/components/smart-signup-form/SignupViewer";
+import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
 import {
   getEventHistoryPublicRenderBySlugOrId,
   getUserIdByEmail,
   isEventSharedWithUser,
+  type EventHistoryPublicRow,
 } from "@/lib/db";
+import { isIndexablePublicSmartSignupData } from "@/lib/smart-signup-indexing";
 import { combineVenueAndLocation } from "@/lib/mappers";
 import type { SignupForm } from "@/types/signup";
 import { buildEventSlugSegment } from "@/utils/event-url";
 import { sanitizeSignupForm } from "@/utils/signup";
 
 export const dynamic = "force-dynamic";
+
+const getCachedSignupEventBySlugOrId = cache(async (value: string, userId?: string | null) =>
+  getEventHistoryPublicRenderBySlugOrId({
+    value,
+    userId: userId || undefined,
+  }),
+);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function readText(value: unknown, maxLength = 220): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim().replace(/\s+/g, " ");
+  if (!trimmed || trimmed.startsWith("data:")) return null;
+  return trimmed.length > maxLength ? trimmed.slice(0, maxLength).trim() : trimmed;
+}
+
+function readFirstText(values: unknown[], maxLength = 220): string | null {
+  for (const value of values) {
+    const text = readText(value, maxLength);
+    if (text) return text;
+  }
+  return null;
+}
+
+function readDate(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = new Date(trimmed);
+  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) || !Number.isNaN(parsed.getTime())
+    ? trimmed
+    : null;
+}
+
+function resolveSignupForm(row: EventHistoryPublicRow): SignupForm | null {
+  const data = isRecord(row.data) ? row.data : {};
+  const rawForm = isRecord(data.signupForm) ? data.signupForm : null;
+  if (!rawForm) return null;
+  return sanitizeSignupForm({
+    ...(rawForm as SignupForm),
+    enabled: true,
+  });
+}
+
+function resolveSignupTitle(row: EventHistoryPublicRow, signupForm: SignupForm): string {
+  return readFirstText([signupForm.title, row.title], 120) || "Smart sign-up";
+}
+
+function resolveSignupDescription(
+  row: EventHistoryPublicRow,
+  signupForm: SignupForm,
+  indexable: boolean,
+): string {
+  if (!indexable) return "View this private Envitefy smart sign-up form.";
+  const data = isRecord(row.data) ? row.data : {};
+  const title = resolveSignupTitle(row, signupForm);
+  const sectionCount = signupForm.sections.length;
+  const slotCount = signupForm.sections.reduce((sum, section) => sum + section.slots.length, 0);
+  const venue = readFirstText([signupForm.venue, data.venue], 100);
+  const location = readFirstText([signupForm.location, data.location], 140);
+  const place = combineVenueAndLocation(venue, location) || venue || location;
+  const slotCopy =
+    slotCount > 0
+      ? `${slotCount} sign-up ${slotCount === 1 ? "slot" : "slots"}`
+      : `${sectionCount || 1} sign-up ${sectionCount === 1 ? "section" : "sections"}`;
+  return place
+    ? `View ${title}, an Envitefy smart sign-up form at ${place} with ${slotCopy}, event details, and guest actions.`
+    : `View ${title}, an Envitefy smart sign-up form with ${slotCopy}, event details, and guest actions.`;
+}
+
+async function resolveSignupHeaderImageUrl(
+  row: EventHistoryPublicRow,
+  signupForm: SignupForm,
+): Promise<string | null> {
+  const image = signupForm.header?.backgroundImage;
+  if (!image?.dataUrl) return null;
+  if (row.media.signupHeaderInline) {
+    const params = new URLSearchParams();
+    params.set("variant", "signup-header");
+    if (row.media.signupHeaderSig) params.set("v", row.media.signupHeaderSig);
+    return absoluteUrl(`/api/events/${row.id}/thumbnail?${params.toString()}`);
+  }
+  if (/^https?:\/\//i.test(image.dataUrl) || image.dataUrl.startsWith("/")) {
+    return absoluteUrl(image.dataUrl);
+  }
+  return null;
+}
+
+function compactJsonLd(record: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(record).filter(([, value]) => {
+      if (value === null || typeof value === "undefined") return false;
+      if (Array.isArray(value)) return value.length > 0;
+      return true;
+    }),
+  );
+}
+
+function buildSmartSignupJsonLd(params: {
+  row: EventHistoryPublicRow;
+  signupForm: SignupForm;
+  url: string;
+  imageUrl?: string | null;
+}): Record<string, unknown> | null {
+  if (!isIndexablePublicSmartSignupData(params.row.data) || !params.signupForm.enabled) {
+    return null;
+  }
+  const data = isRecord(params.row.data) ? params.row.data : {};
+  const title = resolveSignupTitle(params.row, params.signupForm);
+  const description = resolveSignupDescription(params.row, params.signupForm, true);
+  const venue = readFirstText([params.signupForm.venue, data.venue], 100);
+  const location = readFirstText([params.signupForm.location, data.location], 140);
+  const startDate =
+    readDate(data.startISO) ||
+    readDate(data.startAt) ||
+    readDate(data.start) ||
+    readDate(params.signupForm.start);
+  const endDate =
+    readDate(data.endISO) || readDate(data.endAt) || readDate(data.end) || readDate(params.signupForm.end);
+  const itemListElement = params.signupForm.sections.map((section, index) =>
+    compactJsonLd({
+      "@type": "ListItem",
+      position: index + 1,
+      name: section.title,
+      description: section.description || undefined,
+      item: {
+        "@type": "ItemList",
+        name: section.title,
+        numberOfItems: section.slots.length,
+      },
+    }),
+  );
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      compactJsonLd({
+        "@type": "WebPage",
+        "@id": `${params.url}#webpage`,
+        url: params.url,
+        name: `${title} — Envitefy`,
+        description,
+        image: params.imageUrl || undefined,
+        isPartOf: {
+          "@type": "WebSite",
+          name: "Envitefy",
+          url: "https://envitefy.com",
+        },
+        mainEntity: { "@id": `${params.url}#event` },
+      }),
+      compactJsonLd({
+        "@type": "Event",
+        "@id": `${params.url}#event`,
+        name: title,
+        url: params.url,
+        description,
+        image: params.imageUrl ? [params.imageUrl] : undefined,
+        startDate,
+        endDate,
+        eventStatus: "https://schema.org/EventScheduled",
+        eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+        location:
+          venue || location
+            ? compactJsonLd({
+                "@type": "Place",
+                name: venue || location,
+                address: location,
+              })
+            : undefined,
+        potentialAction: {
+          "@type": "RegisterAction",
+          target: params.url,
+          name: "View smart sign-up form",
+        },
+      }),
+      compactJsonLd({
+        "@type": "ItemList",
+        "@id": `${params.url}#signup-sections`,
+        name: `${title} sign-up sections`,
+        itemListElement,
+      }),
+    ],
+  };
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const awaitedParams = await params;
+  const row = await getCachedSignupEventBySlugOrId(awaitedParams.id, null);
+  if (!row) {
+    return {
+      title: "Smart sign-up — Envitefy",
+      description: "View an Envitefy smart sign-up form.",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const signupForm = resolveSignupForm(row);
+  if (!signupForm) {
+    return {
+      title: `${row.title || "Smart sign-up"} — Envitefy`,
+      description: "View an Envitefy smart sign-up form.",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const canonicalSegment = buildEventSlugSegment(row.id, row.title, row.public_slug);
+  const url = await absoluteUrl(`/smart-signup-form/${canonicalSegment}`);
+  const indexable = isIndexablePublicSmartSignupData(row.data) && signupForm.enabled;
+  const title = resolveSignupTitle(row, signupForm);
+  const description = resolveSignupDescription(row, signupForm, indexable);
+  const imageUrl = await resolveSignupHeaderImageUrl(row, signupForm);
+
+  return {
+    title: `${title} — Envitefy`,
+    description,
+    ...(!indexable ? { robots: { index: false, follow: false } } : {}),
+    alternates: {
+      canonical: url,
+    },
+    openGraph: {
+      title: `${title} — Envitefy`,
+      description,
+      url,
+      siteName: "Envitefy",
+      images: imageUrl ? [{ url: imageUrl, alt: `${title} smart sign-up form` }] : undefined,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} — Envitefy`,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+  };
+}
 
 export default async function SignupPage({
   params,
@@ -26,21 +274,23 @@ export default async function SignupPage({
   const session: any = await getServerSession(authOptions as any);
   const sessionEmail = (session?.user?.email as string | undefined) || null;
   const userId = sessionEmail ? await getUserIdByEmail(sessionEmail) : null;
-  const row = await getEventHistoryPublicRenderBySlugOrId({
-    value: awaitedParams.id,
-    userId,
-  });
+  const row = await getCachedSignupEventBySlugOrId(awaitedParams.id, userId);
   if (!row) return notFound();
   const canonicalSegment = buildEventSlugSegment(row.id, row.title, row.public_slug);
   if (awaitedParams.id !== canonicalSegment) {
     redirect(`/smart-signup-form/${canonicalSegment}`);
   }
   const data = (row.data as any) || {};
-  const rawForm = data?.signupForm;
-  if (!rawForm || typeof rawForm !== "object") return notFound();
-  const signupForm: SignupForm = sanitizeSignupForm({
-    ...(rawForm as SignupForm),
-    enabled: true,
+  const signupForm = resolveSignupForm(row);
+  if (!signupForm) return notFound();
+  const isPublicSignupPage = isIndexablePublicSmartSignupData(data) && signupForm.enabled;
+  const canonicalUrl = await absoluteUrl(`/smart-signup-form/${canonicalSegment}`);
+  const signupHeaderImageUrl = await resolveSignupHeaderImageUrl(row, signupForm);
+  const smartSignupStructuredData = buildSmartSignupJsonLd({
+    row,
+    signupForm,
+    url: canonicalUrl,
+    imageUrl: signupHeaderImageUrl,
   });
   const signupHeaderSig = row.media.signupHeaderSig || null;
   if (
@@ -59,7 +309,11 @@ export default async function SignupPage({
 
   const isOwner = Boolean(userId && row.user_id && userId === row.user_id);
   const recipientAccepted = userId ? (await isEventSharedWithUser(row.id, userId)) === true : false;
-  const viewerKind: "owner" | "guest" = isOwner ? "owner" : "guest";
+  const viewerKind: "owner" | "guest" | "readonly" = isOwner
+    ? "owner"
+    : sessionEmail && recipientAccepted
+      ? "guest"
+      : "readonly";
 
   const header = signupForm.header || null;
   const combinedLocation = combineVenueAndLocation(
@@ -126,7 +380,7 @@ export default async function SignupPage({
     `/smart-signup-form/${row.id}`,
   )}`;
 
-  if (!sessionEmail) {
+  if (!sessionEmail && !isPublicSignupPage) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
         <main className="mx-auto w-full max-w-2xl px-5 py-14 space-y-4">
@@ -148,7 +402,7 @@ export default async function SignupPage({
     );
   }
 
-  if (!isOwner && !recipientAccepted) {
+  if (!isOwner && !recipientAccepted && !isPublicSignupPage) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
         <main className="mx-auto w-full max-w-2xl px-5 py-14 space-y-4">
@@ -166,6 +420,11 @@ export default async function SignupPage({
 
   return (
     <div className="min-h-screen" style={pageBgStyle}>
+      {smartSignupStructuredData ? (
+        <Script id="ld-smart-signup-form" type="application/ld+json">
+          {JSON.stringify(smartSignupStructuredData)}
+        </Script>
+      ) : null}
       <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-4">
         <section
           className="rounded-xl overflow-hidden border"

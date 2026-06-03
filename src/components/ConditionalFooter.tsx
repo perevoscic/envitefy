@@ -87,7 +87,7 @@ const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
     title: "Use Cases",
     links: [
       { label: "Birthdays", href: "/landing#examples" },
-      { label: "Weddings", href: "/landing#examples" },
+      { label: "Weddings", href: "/guides/wedding-event-page" },
       { label: "Baby showers", href: "/landing#examples" },
       { label: "School events", href: "/landing#examples" },
       { label: "Sports teams", href: "/landing#examples" },
@@ -101,6 +101,7 @@ const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
       { label: "PDF to event page", href: "/guides/pdf-to-event-page" },
       { label: "Flyer to event page", href: "/guides/flyer-to-event-page" },
       { label: "RSVP event page", href: "/guides/rsvp-event-page" },
+      { label: "Smart sign-up forms", href: "/guides/smart-signup-forms" },
       { label: "Live card invitations", href: "/guides/live-card-invitations" },
       { label: "Gymnastics meet page", href: "/guides/gymnastics-meet-page" },
     ],
@@ -121,7 +122,7 @@ const MARKETING_FOOTER_UTILITY_LINKS: FooterLink[] = [
   { label: "Invites", href: "/guides/live-card-invitations" },
   { label: "RSVP", href: "/guides/rsvp-event-page" },
   { label: "Event Pages", href: "/landing#guest-flow" },
-  { label: "Sign-ups", href: "/landing#guest-flow" },
+  { label: "Sign-ups", href: "/guides/smart-signup-forms" },
   { label: "Upload", href: "/snap" },
   { label: "Guides", href: "/guides" },
 ];

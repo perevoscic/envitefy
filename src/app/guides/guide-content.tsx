@@ -29,7 +29,11 @@ export type GuideSlug =
   | "live-card-invitations"
   | "rsvp-event-page"
   | "gymnastics-meet-page"
-  | "share-event-page-without-app";
+  | "share-event-page-without-app"
+  | "smart-signup-forms"
+  | "wedding-event-page"
+  | "birthday-rsvp-invitation"
+  | "registry-invitation-page";
 
 type FaqPair = {
   question: string;
@@ -142,6 +146,34 @@ const guideVisuals: Record<
     badge: "border-[#d6df9d] bg-[#fbfee8] text-[#53621f]",
     iconWrap: "bg-[#f0f6c7] text-[#5b6d27]",
     button: "bg-[#53621f] text-white hover:bg-[#414d18]",
+  },
+  "smart-signup-forms": {
+    icon: ClipboardCheck,
+    accent: "text-[#236c73]",
+    badge: "border-[#a9dce1] bg-[#eefbfc] text-[#1f6269]",
+    iconWrap: "bg-[#d8f4f6] text-[#236c73]",
+    button: "bg-[#1f6269] text-white hover:bg-[#174e55]",
+  },
+  "wedding-event-page": {
+    icon: CalendarCheck,
+    accent: "text-[#9b4d76]",
+    badge: "border-[#edb9d4] bg-[#fff2f8] text-[#854067]",
+    iconWrap: "bg-[#ffe0ef] text-[#9b4d76]",
+    button: "bg-[#854067] text-white hover:bg-[#6e3354]",
+  },
+  "birthday-rsvp-invitation": {
+    icon: CheckCircle2,
+    accent: "text-[#b55a2a]",
+    badge: "border-[#efc1a5] bg-[#fff4ec] text-[#9a4d24]",
+    iconWrap: "bg-[#ffe3d1] text-[#b55a2a]",
+    button: "bg-[#9a4d24] text-white hover:bg-[#7e3d1c]",
+  },
+  "registry-invitation-page": {
+    icon: ExternalLink,
+    accent: "text-[#466c2c]",
+    badge: "border-[#c8ddaa] bg-[#f6fbef] text-[#3d5f25]",
+    iconWrap: "bg-[#e9f5d8] text-[#466c2c]",
+    button: "bg-[#3d5f25] text-white hover:bg-[#304d1d]",
   },
 };
 
@@ -785,6 +817,442 @@ export const guidePages: GuidePage[] = [
         question: "Can guests use RSVP and calendar links from the browser?",
         answer:
           "Yes. Guest actions are designed to work from the hosted event page when those options are available for the event.",
+      },
+    ],
+  },
+  {
+    slug: "smart-signup-forms",
+    title: "Smart sign-up forms for events | Envitefy Guides",
+    description:
+      "Create a smart sign-up form for volunteers, supplies, time slots, class parties, team needs, and event helpers with one guest-ready Envitefy link.",
+    h1: "How do I make a smart sign-up form for an event?",
+    eyebrow: "Smart sign-up guide",
+    routeLabel: "Smart sign-up",
+    productSurface: "Envitefy smart sign-ups",
+    heroImage: "/images/landing/guest-flow/rsvp-table-placeholder.webp",
+    heroImageAlt: "A guest-ready event signup view with organized response rows",
+    heroImagePosition: "center",
+    intro:
+      "Use a smart sign-up when guests need to claim slots, bring items, volunteer, or coordinate around an event instead of only sending an RSVP.",
+    directAnswer:
+      "Envitefy smart sign-ups organize event needs into sections and slots, connect them to event details, and give guests one link for the sign-up, calendar, map, and updates.",
+    stats: [
+      { value: "Slots", label: "Claimable needs" },
+      { value: "Guest link", label: "Shared output" },
+      { value: "Read-only", label: "Public preview option" },
+    ],
+    sections: [
+      {
+        heading: "When a sign-up is better than an RSVP",
+        body: "Use a sign-up when you need people to choose what they will bring, pick a shift, volunteer for a task, or reserve a limited spot.",
+      },
+      {
+        heading: "What the form can include",
+        body: "Hosts can add sections, slot labels, capacities, notes, custom questions, event timing, location details, and guest-facing instructions.",
+      },
+      {
+        heading: "How Envitefy keeps it tied to the event",
+        body: "The sign-up lives with the event page, so guests can move between details, maps, calendar saves, and the sign-up without hunting for separate links.",
+      },
+    ],
+    steps: [
+      {
+        label: "Plan",
+        title: "List the needs",
+        body: "Group supplies, volunteer jobs, shifts, or activity choices into clear sections.",
+      },
+      {
+        label: "Set",
+        title: "Add slots and limits",
+        body: "Use capacities when only a certain number of people can claim a slot.",
+      },
+      {
+        label: "Publish",
+        title: "Share the sign-up link",
+        body: "Send the hosted page so guests can see the form beside the event details.",
+      },
+      {
+        label: "Update",
+        title: "Keep details current",
+        body: "Adjust instructions, timing, or slots as planning changes.",
+      },
+    ],
+    checklist: [
+      {
+        title: "Slot labels",
+        body: "Make each slot specific enough that guests know exactly what they are claiming.",
+      },
+      {
+        title: "Capacity",
+        body: "Use limits for shifts, stations, supplies, and anything that should not be overfilled.",
+      },
+      {
+        title: "Guest instructions",
+        body: "Add arrival notes, drop-off details, safety notes, or supply instructions where needed.",
+      },
+      {
+        title: "Visibility",
+        body: "Keep invite-only forms restricted; only mark a sign-up public when it is meant to be discoverable.",
+      },
+    ],
+    useCases: [
+      "Class party supplies",
+      "Volunteer shifts",
+      "Team snack schedules",
+      "Church and community events",
+      "Parent helper coordination",
+      "Club and group sign-ups",
+    ],
+    guestValue: [
+      "See what is still needed",
+      "Claim one slot from the browser",
+      "Find event details in the same place",
+      "Return to the current form after updates",
+    ],
+    cta: { label: "Start with an event page", href: "/snap" },
+    secondaryCta: { label: "See RSVP guide", href: "/guides/rsvp-event-page" },
+    relatedLinks: [
+      { label: "RSVP event pages", href: "/guides/rsvp-event-page" },
+      { label: "Share without an app", href: "/guides/share-event-page-without-app" },
+      { label: "Start with Snap", href: "/snap" },
+    ],
+    faq: [
+      {
+        question: "What is a smart sign-up form?",
+        answer:
+          "A smart sign-up form lets guests claim slots, bring items, answer questions, or volunteer around a specific event.",
+      },
+      {
+        question: "Should every smart sign-up be public?",
+        answer:
+          "No. Many sign-ups are invite-only. Use public indexing only for forms meant to be visible beyond the invited group.",
+      },
+    ],
+  },
+  {
+    slug: "wedding-event-page",
+    title: "Wedding event pages with RSVPs, registry links, and schedules | Envitefy Guides",
+    description:
+      "Create a wedding event page with live invitation design, RSVP actions, registry links, maps, calendar saves, weekend details, and guest updates.",
+    h1: "How do I make a wedding event page?",
+    eyebrow: "Wedding guide",
+    routeLabel: "Wedding event page",
+    productSurface: "Envitefy Studio",
+    heroImage: "/images/landing/hero/garden-vows-desktop.webp",
+    heroImageAlt: "A garden wedding live card preview used as a hosted event page",
+    heroImagePosition: "center",
+    intro:
+      "A wedding event page gives guests one current place for the invitation, schedule, registry links, travel details, RSVP actions, maps, and updates.",
+    directAnswer:
+      "Use Envitefy to create a hosted wedding page from Studio or from an uploaded invite. Add the visible card, event timing, venue, registry links, RSVP details, and any weekend notes guests need.",
+    stats: [
+      { value: "1 link", label: "Guest hub" },
+      { value: "RSVP", label: "Guest action" },
+      { value: "Registry", label: "Linked details" },
+    ],
+    sections: [
+      {
+        heading: "What belongs on a wedding event page",
+        body: "Include the couple or event title, date, ceremony or reception timing, venue, map-friendly address, RSVP details, registry links, dress notes, travel information, and update notes.",
+      },
+      {
+        heading: "Why a live page helps",
+        body: "A live page can change after the invitation is shared, so guests can return to the same link for updated schedule, map, hotel, or registry details.",
+      },
+      {
+        heading: "How to start",
+        body: "Use Studio when you want a designed live card first. Use Snap when you already have a wedding invite, PDF, or schedule packet.",
+      },
+    ],
+    steps: [
+      {
+        label: "Design",
+        title: "Create or upload the invitation",
+        body: "Start with a Studio card or upload an existing invite as the source.",
+      },
+      {
+        label: "Details",
+        title: "Add the event facts",
+        body: "Confirm the couple or event title, date, venue, address, and any schedule notes.",
+      },
+      {
+        label: "Links",
+        title: "Add RSVP and registry actions",
+        body: "Connect guests to RSVP details, registry links, maps, and calendar saves.",
+      },
+      {
+        label: "Share",
+        title: "Send one live link",
+        body: "Use the hosted page as the current source of truth after the invite is sent.",
+      },
+    ],
+    checklist: [
+      {
+        title: "Venue name and address",
+        body: "Keep the venue name guest-facing and include the address for map and calendar metadata.",
+      },
+      {
+        title: "Registry links",
+        body: "Make registry links easy to find without crowding the invitation copy.",
+      },
+      {
+        title: "Schedule",
+        body: "Add ceremony, reception, travel, or weekend timing when guests need more than one date or location.",
+      },
+      {
+        title: "Updates",
+        body: "Use the live page for final notes, parking details, weather changes, or hotel reminders.",
+      },
+    ],
+    useCases: [
+      "Wedding invitations",
+      "Wedding weekend pages",
+      "Reception-only events",
+      "Bridal brunches",
+      "Engagement parties",
+      "Registry-linked invites",
+    ],
+    guestValue: [
+      "Open the invite from any browser",
+      "Find maps and calendar saves",
+      "Use registry and RSVP links from one place",
+      "Return to updated wedding details",
+    ],
+    cta: { label: "Design in Studio", href: "/studio" },
+    secondaryCta: { label: "Upload an invite", href: "/snap" },
+    relatedLinks: [
+      { label: "Live card invitations", href: "/guides/live-card-invitations" },
+      { label: "Registry invitation pages", href: "/guides/registry-invitation-page" },
+      { label: "See examples", href: "/showcase" },
+    ],
+    faq: [
+      {
+        question: "Can a wedding event page include registry links?",
+        answer:
+          "Yes. Envitefy pages can include registry links alongside RSVP, calendar, map, and event details.",
+      },
+      {
+        question: "Can I update the wedding page after sharing it?",
+        answer:
+          "Yes. A hosted page gives guests the current details when they return to the same link.",
+      },
+    ],
+  },
+  {
+    slug: "birthday-rsvp-invitation",
+    title: "Birthday RSVP invitations with hosted event pages | Envitefy Guides",
+    description:
+      "Create a birthday invitation with a live card, RSVP actions, maps, calendar saves, gift or registry links, and one easy guest link.",
+    h1: "How do I make a birthday invitation with RSVP?",
+    eyebrow: "Birthday RSVP guide",
+    routeLabel: "Birthday RSVP",
+    productSurface: "Envitefy Studio",
+    heroImage: "/images/landing/hero/birthday-dino-desktop.webp",
+    heroImageAlt: "A birthday live card invitation connected to a hosted event page",
+    heroImagePosition: "center",
+    intro:
+      "A birthday RSVP invitation combines the designed invite with guest actions, so parents and guests can respond, save the date, find the map, and return to updates.",
+    directAnswer:
+      "Use Envitefy Studio to create the birthday live card, add party details, then publish a hosted event page with RSVP, calendar, map, and optional gift or registry links.",
+    stats: [
+      { value: "Card", label: "Invitation" },
+      { value: "RSVP", label: "Response action" },
+      { value: "Map", label: "Guest detail" },
+    ],
+    sections: [
+      {
+        heading: "What to include",
+        body: "Add the birthday child or honoree, age or milestone, party theme, date, start time, venue, address, RSVP notes, and any parent instructions.",
+      },
+      {
+        heading: "Why use a hosted page",
+        body: "Guests can open one link from text or email and still get calendar saves, maps, RSVP details, and updates after the invitation image is shared.",
+      },
+      {
+        heading: "Where Snap fits",
+        body: "If you already have a birthday invite image or screenshot, upload it with Snap and turn it into a live page guests can use.",
+      },
+    ],
+    steps: [
+      {
+        label: "Choose",
+        title: "Pick the birthday style",
+        body: "Start from Studio or upload an existing birthday invite.",
+      },
+      {
+        label: "Add",
+        title: "Enter party details",
+        body: "Confirm name, age, date, time, venue, address, RSVP notes, and theme details.",
+      },
+      {
+        label: "Publish",
+        title: "Create the live page",
+        body: "Connect the invite to guest actions like RSVP, map, calendar, and links.",
+      },
+      {
+        label: "Send",
+        title: "Share the link",
+        body: "Text or email the hosted page so guests can respond from their browser.",
+      },
+    ],
+    checklist: [
+      {
+        title: "RSVP deadline",
+        body: "Tell guests when you need responses for food, space, or activity planning.",
+      },
+      {
+        title: "Drop-off details",
+        body: "Include parent notes, parking, pickup time, or allergy reminders when relevant.",
+      },
+      {
+        title: "Gift links",
+        body: "Use optional links for wish lists or registries when guests need them.",
+      },
+      {
+        title: "Theme clarity",
+        body: "Keep party theme, age, and honoree details visible without hiding the practical event facts.",
+      },
+    ],
+    useCases: [
+      "Kids birthday parties",
+      "Milestone birthdays",
+      "Sleepovers",
+      "Pool parties",
+      "Movie nights",
+      "Family celebrations",
+    ],
+    guestValue: [
+      "RSVP from the browser",
+      "Find parent notes quickly",
+      "Save the party to a calendar",
+      "Use maps and links from one page",
+    ],
+    cta: { label: "Create in Studio", href: "/studio" },
+    secondaryCta: { label: "Upload an invite", href: "/snap" },
+    relatedLinks: [
+      { label: "RSVP event pages", href: "/guides/rsvp-event-page" },
+      { label: "Live card invitations", href: "/guides/live-card-invitations" },
+      { label: "Share without an app", href: "/guides/share-event-page-without-app" },
+    ],
+    faq: [
+      {
+        question: "Can birthday guests RSVP from an Envitefy page?",
+        answer:
+          "Yes. Birthday pages can include RSVP-oriented guest actions when the host adds those details.",
+      },
+      {
+        question: "Can I start from an existing birthday invite?",
+        answer:
+          "Yes. Snap can turn an uploaded invite image, screenshot, flyer, or PDF into an editable hosted event page.",
+      },
+    ],
+  },
+  {
+    slug: "registry-invitation-page",
+    title: "Invitation pages with registry links | Envitefy Guides",
+    description:
+      "Add registry links to hosted invitations for weddings, baby showers, birthdays, housewarmings, graduations, and other events.",
+    h1: "How do I add registry links to an invitation page?",
+    eyebrow: "Registry guide",
+    routeLabel: "Registry links",
+    productSurface: "Envitefy event pages",
+    heroImage: "/images/landing/live-cards/elena-s-baby-shower.webp",
+    heroImageAlt: "A hosted invitation card with event actions and registry-ready details",
+    heroImagePosition: "center",
+    intro:
+      "Registry links work best when they live beside the event details instead of being buried in a text thread or printed as tiny copy on an invite.",
+    directAnswer:
+      "Create or upload the invitation in Envitefy, add registry URLs as guest actions, then publish one hosted page with the invite, RSVP, calendar, map, and registry links.",
+    stats: [
+      { value: "Links", label: "Registry actions" },
+      { value: "Page", label: "Hosted invite" },
+      { value: "Guests", label: "Browser access" },
+    ],
+    sections: [
+      {
+        heading: "Where registry links belong",
+        body: "Place registry links in the event page actions so they are easy to find without making the invitation artwork crowded or hard to read.",
+      },
+      {
+        heading: "Events that commonly use registry links",
+        body: "Registry links are useful for weddings, baby showers, bridal showers, birthdays, graduations, housewarmings, and community gift drives.",
+      },
+      {
+        heading: "Why a live page helps",
+        body: "If registry details change, the host can update the page and keep the same guest link instead of resending a new image.",
+      },
+    ],
+    steps: [
+      {
+        label: "Create",
+        title: "Build or upload the invitation",
+        body: "Use Studio for a new live card or Snap for an existing invite, flyer, screenshot, or PDF.",
+      },
+      {
+        label: "Add",
+        title: "Paste registry links",
+        body: "Add gift registry, wish list, donation, or shopping links as guest actions.",
+      },
+      {
+        label: "Review",
+        title: "Check the page actions",
+        body: "Make sure registry, RSVP, map, and calendar actions are clear on mobile.",
+      },
+      {
+        label: "Share",
+        title: "Send one page link",
+        body: "Give guests one current link instead of separate invite and registry messages.",
+      },
+    ],
+    checklist: [
+      {
+        title: "Clean labels",
+        body: "Use simple labels like Registry, Baby Registry, Wish List, or Gift Ideas.",
+      },
+      {
+        title: "Mobile links",
+        body: "Open each registry URL on a phone before sharing the event page.",
+      },
+      {
+        title: "RSVP placement",
+        body: "Keep RSVP and registry actions separate so guests know which action to take first.",
+      },
+      {
+        title: "Update path",
+        body: "Use the live page when registry links change after the invitation goes out.",
+      },
+    ],
+    useCases: [
+      "Wedding registries",
+      "Baby shower registries",
+      "Birthday wish lists",
+      "Housewarming gift lists",
+      "Graduation gifts",
+      "Community drives",
+    ],
+    guestValue: [
+      "Find registry links without searching messages",
+      "Use RSVP and registry actions from one page",
+      "Open the invitation from any browser",
+      "Return to current links after updates",
+    ],
+    cta: { label: "Design in Studio", href: "/studio" },
+    secondaryCta: { label: "Upload with Snap", href: "/snap" },
+    relatedLinks: [
+      { label: "Wedding event pages", href: "/guides/wedding-event-page" },
+      { label: "Live card invitations", href: "/guides/live-card-invitations" },
+      { label: "RSVP event pages", href: "/guides/rsvp-event-page" },
+    ],
+    faq: [
+      {
+        question: "Can Envitefy invitation pages include registry links?",
+        answer:
+          "Yes. Hosts can add registry URLs as guest actions on hosted invitation and event pages.",
+      },
+      {
+        question: "Is a registry link better on the page or in the invite image?",
+        answer:
+          "A page action is usually easier for guests to tap, update, and find again after the invitation is shared.",
       },
     ],
   },

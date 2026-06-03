@@ -17,11 +17,15 @@ test("sitemap appends published public event pages without indexing restricted s
   assert.match(sitemap, /export default async function sitemap/);
   assert.match(sitemap, /buildEventProductPath/);
   assert.match(sitemap, /path\.startsWith\("\/smart-signup-form\/"\)/);
+  assert.match(sitemap, /isIndexablePublicSmartSignupData\(row\.data\)/);
   assert.match(sitemap, /dedupeSitemapEntries/);
 
   assert.match(db, /export async function listPublicEventSitemapRows/);
   assert.match(db, /lower\(coalesce\(\$\{dataSql\}->>'status', ''\)\) = 'published'/);
   assert.match(db, /accessControl,requirePasscode/);
   assert.match(db, /accessControl,passcodeHash/);
+  assert.match(db, /'signupForm', case/);
+  assert.match(db, /publicPage/);
+  assert.match(db, /signupIndexable/);
   assert.match(db, /jsonb_strip_nulls\(jsonb_build_object/);
 });
