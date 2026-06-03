@@ -129,17 +129,24 @@ export default function CampaignsPage({
     }, 0);
   };
 
-  const insertFullName = () => {
+  const insertPersonalizationToken = (token: string) => {
     const textarea = bodyTextareaRef.current;
     if (!textarea) return;
+
     const start = textarea.selectionStart;
-    const newText = `${body.substring(0, start)}{{firstName}} {{lastName}}${body.substring(start)}`;
+    const end = textarea.selectionEnd;
+    const newText = `${body.substring(0, start)}${token}${body.substring(end)}`;
     setBody(newText);
+
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(start + 27, start + 27);
+      const cursorPosition = start + token.length;
+      textarea.setSelectionRange(cursorPosition, cursorPosition);
     }, 0);
   };
+
+  const insertFirstName = () => insertPersonalizationToken("{{firstName}}");
+  const insertFullName = () => insertPersonalizationToken("{{firstName}} {{lastName}}");
 
   const toggleHtmlMode = () => {
     setHtmlMode(!htmlMode);
@@ -279,7 +286,7 @@ export default function CampaignsPage({
 
   // Generate email preview HTML (client-side version of createEmailTemplate)
   const generatePreviewHtml = () => {
-    const greeting = "Hi, ";
+    const greeting = "Hi Preview";
     const firstName = "Preview";
     const lastName = "Recipient";
     const previewBody = body
@@ -347,16 +354,7 @@ export default function CampaignsPage({
           <!-- Logo on beige background -->
           <div style="padding: 0 0 24px 0; background-color: #FFFBF7 !important; text-align: center;" bgcolor="#FFFBF7">
             <a href="${baseUrl}" target="_blank" style="display:inline-block; background-color: #FFFBF7 !important; text-decoration: none;" bgcolor="#FFFBF7">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
-                <tr>
-                  <td style="vertical-align: middle; padding-right: 8px;">
-                    <img src="${baseUrl}/favicon.png" width="40" height="40" alt="Envitefy emblem" style="display:block; max-width: 100%;" />
-                  </td>
-                  <td style="vertical-align: middle;">
-                    <span style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 28px; font-weight: 400; color: #8A78F8; letter-spacing: 0.02em;">nvitefy</span>
-                  </td>
-                </tr>
-              </table>
+              <img src="${baseUrl}/email/envitefy-wordmark-email.png" width="164" height="53" alt="Envitefy" style="display:block; width:164px; height:auto; max-width: 100%;" />
             </a>
           </div>
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; background-color: #FFFFFF !important; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" bgcolor="#FFFFFF">
@@ -513,9 +511,13 @@ ${socialIconsHtml}
                 </code>{" "}
                 for personalized greeting,{" "}
                 <code className="bg-[#f2edff] px-1 py-0.5 rounded text-[#5f49bb]">
-                  {"{{firstName}} {{lastName}}"}
+                  {"{{firstName}}"}
                 </code>{" "}
-                for full name
+                for first name, and{" "}
+                <code className="bg-[#f2edff] px-1 py-0.5 rounded text-[#5f49bb]">
+                  {"{{lastName}}"}
+                </code>{" "}
+                for last name
               </p>
 
               {/* Formatting Toolbar */}
@@ -597,11 +599,19 @@ ${socialIconsHtml}
                 <div className="w-px h-6 bg-[#ddd5f6] my-auto mx-1" />
                 <button
                   type="button"
+                  onClick={insertFirstName}
+                  className="px-3 py-1.5 text-sm rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
+                  title="Insert first name ({{firstName}})"
+                >
+                  First
+                </button>
+                <button
+                  type="button"
                   onClick={insertFullName}
                   className="px-3 py-1.5 text-sm rounded hover:bg-[#eee7ff] transition-colors border border-[#ddd5f6]"
                   title="Insert full name ({{firstName}} {{lastName}})"
                 >
-                  👤 Name
+                  Name
                 </button>
                 <div className="w-px h-6 bg-[#ddd5f6] my-auto mx-1" />
                 <button

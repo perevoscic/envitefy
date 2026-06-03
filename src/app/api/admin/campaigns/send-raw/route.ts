@@ -6,9 +6,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUserByEmail, query } from "@/lib/db";
 import {
+  buildIndividualCampaignRecipients,
   buildStoredCampaignAudienceFilter,
   type CampaignAudienceFilter,
+  type CampaignEmailRecipient,
+  type CampaignRecipientNameRow,
   isIndividualCampaignAudience,
+  parseIndividualCampaignEmails,
 } from "@/lib/admin/email-campaigns";
 import { sendBulkEmail } from "@/lib/resend";
 
@@ -59,30 +63,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let recipients: Array<{
-      email: string;
-      firstName: string | null;
-      lastName: string | null;
-    }>;
+    let recipients: CampaignEmailRecipient[];
 
     if (audienceFilter?.testEmail) {
-      const emails = audienceFilter.testEmail
-        .split(",")
-        .map((e) => e.trim())
-        .filter((e) => e.includes("@"));
+      const emails = parseIndividualCampaignEmails(audienceFilter.testEmail);
 
-      recipients = emails.map((email) => ({
-        email,
-        firstName: null,
-        lastName: null,
-      }));
-
-      if (recipients.length === 0) {
+      if (emails.length === 0) {
         return NextResponse.json(
           { error: "No valid email addresses provided" },
           { status: 400 },
         );
       }
+
+      const usersResult = await query<CampaignRecipientNameRow>(
+        `
+        SELECT email, first_name, last_name
+        FROM users
+        WHERE lower(email) = ANY($1::text[])
+      `,
+        [emails.map((email) => email.toLowerCase())],
+      );
+
+      recipients = buildIndividualCampaignRecipients(emails, usersResult.rows);
     } else {
       const whereConditions: string[] = ["email IS NOT NULL"];
       const queryParams: any[] = [];

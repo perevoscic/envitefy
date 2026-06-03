@@ -26,7 +26,7 @@ export function createEmailTemplate(params: {
   footerText?: string;
 }): string {
   const baseUrl = resolvePublicAssetOrigin();
-  const _logoUrl = `${baseUrl}/Logo_stacked.png`;
+  const wordmarkUrl = `${baseUrl}/email/envitefy-wordmark-email.png`;
   const currentYear = new Date().getFullYear();
   const socialIcons = [
     {
@@ -109,16 +109,7 @@ export function createEmailTemplate(params: {
             <tr>
               <td align="center" style="padding: 0 0 24px 0; background-color: #FFFBF7 !important;" bgcolor="#FFFBF7">
                 <a href="${escapeHtml(baseUrl)}" target="_blank" style="display:inline-block; background-color: #FFFBF7 !important; text-decoration: none;" bgcolor="#FFFBF7">
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
-                    <tr>
-                      <td style="vertical-align: middle; padding-right: 8px;">
-                        <img src="${baseUrl}/favicon.png" width="40" height="40" alt="Envitefy emblem" style="display:block; max-width: 100%;" />
-                      </td>
-                      <td style="vertical-align: middle;">
-                        <span style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 28px; font-weight: 400; color: #8A78F8; letter-spacing: 0.02em;">nvitefy</span>
-                      </td>
-                    </tr>
-                  </table>
+                  <img src="${wordmarkUrl}" width="164" height="53" alt="Envitefy" style="display:block; width:164px; height:auto; max-width: 100%;" />
                 </a>
               </td>
             </tr>
