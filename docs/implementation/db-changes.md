@@ -44,6 +44,10 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 
 - Includes `claimed_quantity integer not null default 0` for atomic capacity checks. The runtime guard also adds it if an earlier local table already exists without the column.
 
+`message_deliveries`:
+
+- Includes `metadata_json jsonb not null default '{}'::jsonb` for providerless dry-run previews and future provider payload metadata. The runtime guard also adds it if an earlier local table already exists without the column.
+
 ## Indexes Added
 
 - Workspace owner/type, program workspace/status, series program, occurrence program/start, occurrence owner/start.
@@ -52,7 +56,7 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 - Smart form, form field, and form response indexes, including unique `form_fields(form_id, field_key)` keys for idempotent field inserts.
 - Volunteer board/slot/claim indexes including unique active email claim per slot.
 - Payment request/program and payment status indexes.
-- Reminder program/schedule/status indexes.
+- Reminder program/schedule/status indexes, plus `message_deliveries(reminder_id, created_at desc)`.
 - Message campaign/delivery indexes.
 - Source document and extracted item indexes.
 - Checklist, calendar feed, integration, sync job, and audit log indexes.
@@ -63,8 +67,10 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 
 - `src/lib/concierge-v2/storage.ts` creates the subset of canonical tables needed by the current slice if the migration has not run locally.
 - `src/lib/concierge-v2/operations.ts` checks event-page ownership before returning private operations data or updating payment status.
+- `src/lib/concierge-v2/reminders.ts` checks event-page ownership before returning queue details, previews, dry-run records, or reminder status updates.
 - Volunteer claims use both a unique active email claim index and an atomic `volunteer_slots.claimed_quantity` update to prevent over-claiming.
 - Smart Form submissions validate required fields against stored `form_fields` before inserting `form_responses`.
+- Reminder dry runs insert `message_deliveries` rows with `status = 'dry_run'`, `provider = 'stub'`, and `metadata_json.providerCalled = false`.
 - `src/app/api/events/[id]/rsvp/route.ts` lazily ensures the new RSVP answer columns before reading or writing RSVP data.
 
 ## Backfill Plan

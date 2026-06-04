@@ -371,12 +371,19 @@ CREATE TABLE IF NOT EXISTS message_deliveries (
   sent_at timestamptz(6),
   delivered_at timestamptz(6),
   opened_at timestamptz(6),
+  metadata_json jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz(6) DEFAULT now(),
   updated_at timestamptz(6) DEFAULT now()
 );
 
+ALTER TABLE message_deliveries
+  ADD COLUMN IF NOT EXISTS metadata_json jsonb NOT NULL DEFAULT '{}'::jsonb;
+
 CREATE INDEX IF NOT EXISTS idx_message_deliveries_status
   ON message_deliveries(status);
+
+CREATE INDEX IF NOT EXISTS idx_message_deliveries_reminder
+  ON message_deliveries(reminder_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS source_documents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

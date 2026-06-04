@@ -346,6 +346,22 @@ export async function ensureConciergeV2Tables(): Promise<void> {
       `);
       await query(`create index if not exists idx_payments_status on payments(status)`);
       await query(`
+        create table if not exists message_templates (
+          id uuid primary key default gen_random_uuid(),
+          workspace_id uuid references workspaces(id) on delete set null,
+          mode text,
+          event_type text,
+          trigger_key text not null,
+          channel text not null default 'email',
+          subject text,
+          body text not null,
+          variables_json jsonb not null default '[]'::jsonb,
+          is_system boolean not null default false,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`
         create table if not exists reminders (
           id uuid primary key default gen_random_uuid(),
           workspace_id uuid references workspaces(id) on delete set null,
@@ -364,6 +380,50 @@ export async function ensureConciergeV2Tables(): Promise<void> {
           updated_at timestamptz(6) default now()
         )
       `);
+      await query(`
+        create table if not exists message_campaigns (
+          id uuid primary key default gen_random_uuid(),
+          workspace_id uuid references workspaces(id) on delete set null,
+          name text not null,
+          scope_type text,
+          scope_id text,
+          audience_filter_json jsonb not null default '{}'::jsonb,
+          channels_json jsonb not null default '[]'::jsonb,
+          subject text,
+          body text not null,
+          status text not null default 'draft',
+          scheduled_for timestamptz(6),
+          sent_at timestamptz(6),
+          created_by_user_id uuid references users(id) on delete set null,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`
+        create table if not exists message_deliveries (
+          id uuid primary key default gen_random_uuid(),
+          campaign_id uuid references message_campaigns(id) on delete set null,
+          reminder_id uuid references reminders(id) on delete set null,
+          recipient_user_id uuid references users(id) on delete set null,
+          guest_name text,
+          channel text not null default 'email',
+          to_address text,
+          status text not null default 'queued',
+          provider text,
+          provider_message_id text,
+          error_message text,
+          sent_at timestamptz(6),
+          delivered_at timestamptz(6),
+          opened_at timestamptz(6),
+          metadata_json jsonb not null default '{}'::jsonb,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`alter table message_deliveries add column if not exists metadata_json jsonb not null default '{}'::jsonb`);
+      await query(`create index if not exists idx_reminders_status_scheduled on reminders(status, scheduled_for)`);
+      await query(`create index if not exists idx_message_deliveries_status on message_deliveries(status)`);
+      await query(`create index if not exists idx_message_deliveries_reminder on message_deliveries(reminder_id, created_at desc)`);
       await query(`
         create table if not exists checklist_items (
           id uuid primary key default gen_random_uuid(),
