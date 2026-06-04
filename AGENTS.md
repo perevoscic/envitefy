@@ -82,7 +82,7 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 - Good default validation sequence after edits:
   - `npm run lint -- <paths>` if the change is broad enough to justify it.
   - `node --test <targeted-tests>`
-  - `node "/Users/michaelisom/.cursor/extensions/airizom.chat-to-cli-0.410.4/scripts/vscode-lint.js" <touched files>`
+  - `npm run lint:vscode -- <touched files>`; this wrapper resolves the installed Chat to CLI extension and provider bridge instead of relying on a versioned extension path.
 
 ## Docs Drift
 
