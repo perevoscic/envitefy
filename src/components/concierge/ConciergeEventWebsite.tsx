@@ -1,11 +1,33 @@
 "use client";
 
-import { CalendarDays, ExternalLink, Gift, MapPin, Menu, X } from "lucide-react";
+import {
+  CalendarDays,
+  ExternalLink,
+  Gift,
+  MapPin,
+  Menu,
+  X,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import EventRsvpPrompt from "@/components/EventRsvpPrompt";
 import EventTrackedLink from "@/components/EventTrackedLink";
+import {
+  ConciergeChecklistSection,
+  ConciergePaymentTrackerSection,
+  ConciergeReminderTimelineSection,
+  ConciergeSmartFormsSection,
+  ConciergeVolunteerSignupSection,
+} from "@/components/concierge/ConciergePublicOperations";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
+import type {
+  ConciergeV2ChecklistItem,
+  ConciergeV2FormSummary,
+  ConciergeV2PaymentItem,
+  ConciergeV2ReminderItem,
+  ConciergeV2ScheduleItem,
+  ConciergeV2VolunteerSlot,
+} from "@/lib/concierge-v2/public-event";
 
 type CalendarLinks = {
   google: string;
@@ -51,6 +73,12 @@ type ConciergeEventWebsiteProps = {
   rsvpEmail?: string | null;
   rsvpUrl?: string | null;
   registryLinks?: RegistryLink[];
+  scheduleItems?: ConciergeV2ScheduleItem[];
+  checklistItems?: ConciergeV2ChecklistItem[];
+  forms?: ConciergeV2FormSummary[];
+  volunteerSlots?: ConciergeV2VolunteerSlot[];
+  paymentItems?: ConciergeV2PaymentItem[];
+  reminders?: ConciergeV2ReminderItem[];
   actions?: ReactNode;
 };
 
@@ -65,6 +93,20 @@ function uniqueLine(...values: Array<string | null | undefined>) {
 
 function locationLine(location: EventLocation) {
   return uniqueLine(location.venue, location.location || location.address);
+}
+
+function formatDateTime(value: string | null | undefined) {
+  const raw = clean(value);
+  if (!raw) return "";
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+  return date.toLocaleString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function NavLink(props: { href: string; children: ReactNode; onClick?: () => void }) {
@@ -101,6 +143,12 @@ export default function ConciergeEventWebsite({
   rsvpEmail,
   rsvpUrl,
   registryLinks = [],
+  scheduleItems = [],
+  checklistItems = [],
+  forms = [],
+  volunteerSlots = [],
+  paymentItems = [],
+  reminders = [],
   actions,
 }: ConciergeEventWebsiteProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -119,10 +167,21 @@ export default function ConciergeEventWebsite({
     clean(subheadline) ||
     "Join us for this event. The host has shared the key details below.";
   const hasRegistry = registryLinks.length > 0;
+  const visibleScheduleItems = scheduleItems.filter((item) => clean(item.title));
+  const visibleForms = forms.filter((item) => clean(item.title));
+  const visibleVolunteerSlots = volunteerSlots.filter((item) => clean(item.title));
+  const visiblePaymentItems = paymentItems.filter((item) => clean(item.title));
+  const visibleReminders = reminders.filter((item) => clean(item.title));
+  const visibleChecklistItems = checklistItems.filter((item) => clean(item.title));
   const navItems = [
     { href: "#details", label: "Details" },
     { href: "#schedule", label: "Schedule" },
     ...(showRsvp ? [{ href: "#event-rsvp", label: "RSVP" }] : []),
+    ...(visibleForms.length ? [{ href: "#forms", label: "Forms" }] : []),
+    ...(visibleVolunteerSlots.length ? [{ href: "#volunteer-signup", label: "Signup" }] : []),
+    ...(visiblePaymentItems.length ? [{ href: "#payments", label: "Payments" }] : []),
+    ...(visibleChecklistItems.length ? [{ href: "#checklist", label: "Checklist" }] : []),
+    ...(visibleReminders.length ? [{ href: "#reminders", label: "Reminders" }] : []),
     ...(hasRegistry ? [{ href: "#registry", label: "Registry" }] : []),
   ];
 
@@ -256,6 +315,35 @@ export default function ConciergeEventWebsite({
                 </a>
               </div>
             ) : null}
+            {visibleScheduleItems.length ? (
+              <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
+                {visibleScheduleItems.slice(0, 8).map((item, index) => (
+                  <div
+                    key={item.id || `${item.title}-${index}`}
+                    className="rounded-lg border border-slate-100 bg-slate-50 p-3"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black text-slate-950">{item.title}</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-500">
+                          {formatDateTime(item.startAt) || displayWhen}
+                        </p>
+                      </div>
+                      {item.type ? (
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-violet-700">
+                          {item.type.replace(/_/g, " ")}
+                        </span>
+                      ) : null}
+                    </div>
+                    {item.locationText || item.notes ? (
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        {[clean(item.locationText), clean(item.notes)].filter(Boolean).join(" - ")}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-3">
@@ -316,6 +404,12 @@ export default function ConciergeEventWebsite({
           </div>
         </section>
       ) : null}
+
+      <ConciergeSmartFormsSection eventId={eventId} forms={visibleForms} />
+      <ConciergeVolunteerSignupSection eventId={eventId} slots={visibleVolunteerSlots} />
+      <ConciergePaymentTrackerSection items={visiblePaymentItems} />
+      <ConciergeChecklistSection items={visibleChecklistItems} />
+      <ConciergeReminderTimelineSection reminders={visibleReminders} />
 
       {hasRegistry ? (
         <section id="registry" className="mx-auto max-w-6xl px-4 py-12 sm:px-6">

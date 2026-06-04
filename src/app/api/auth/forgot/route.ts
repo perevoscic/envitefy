@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createPasswordResetToken, getUserByEmail } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { absoluteUrl } from "@/lib/absolute-url";
+import { buildPublicPasswordResetUrl } from "@/lib/auth-reset-url";
 import { createSupabaseRecoveryLink, isSupabaseAuthConfigured } from "@/lib/supabase-auth";
 
 export const runtime = "nodejs";
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
     const user = await getUserByEmail(email).catch(() => null);
     if (user) {
       const fallbackReset = await createPasswordResetToken(email, 30);
-      const fallbackResetUrl = new URL(await absoluteUrl("/reset"));
+      const fallbackResetUrl = new URL(buildPublicPasswordResetUrl(await absoluteUrl("/reset")));
       fallbackResetUrl.searchParams.set("token", fallbackReset.token);
       let resetUrl = fallbackResetUrl.toString();
       if (isSupabaseAuthConfigured()) {

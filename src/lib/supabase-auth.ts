@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { buildSupabasePasswordResetRedirectUrl } from "./auth-reset-url";
 
 type SupabaseAdminClient = ReturnType<typeof createClient>;
 
@@ -22,19 +23,13 @@ function getSupabaseAdminClient(): SupabaseAdminClient {
   });
 }
 
-function buildResetRedirectUrl(baseResetUrl: string): string {
-  const url = new URL(baseResetUrl);
-  url.searchParams.set("provider", "supabase");
-  return url.toString();
-}
-
 export async function createSupabaseRecoveryLink(params: {
   email: string;
   baseResetUrl: string;
 }): Promise<string> {
   const email = params.email.trim().toLowerCase();
   const supabase = getSupabaseAdminClient();
-  const redirectTo = buildResetRedirectUrl(params.baseResetUrl);
+  const redirectTo = buildSupabasePasswordResetRedirectUrl(params.baseResetUrl);
 
   const tryGenerate = async (): Promise<string> => {
     const { data, error } = await supabase.auth.admin.generateLink({

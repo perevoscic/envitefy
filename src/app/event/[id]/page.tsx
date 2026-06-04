@@ -1,4 +1,13 @@
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  ClipboardCheck,
+  FileSearch,
+  LinkIcon,
+  ShieldCheck,
+  Users,
+  Warehouse,
+} from "lucide-react";
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import nextDynamic from "next/dynamic";
@@ -41,6 +50,7 @@ import SponsoredSupplies from "@/components/SponsoredSupplies";
 import ThumbnailModal from "@/components/ThumbnailModal";
 import { absoluteUrl, sanitizePersistedMediaUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
+import { extractConciergeV2PublicSections } from "@/lib/concierge-v2/public-event";
 import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { isScannedInviteCreatedVia, normalizeDashboardEventOwnership } from "@/lib/dashboard-data";
@@ -1849,6 +1859,7 @@ export default async function EventPage({
       };
     })
     .filter((item) => item.venue || item.location || item.address);
+  const conciergeV2Sections = extractConciergeV2PublicSections(data as Record<string, any>);
   const explicitRsvpDisabled =
     data?.rsvpEnabled === false || rsvpRecord?.isEnabled === false || rsvpRecord?.enabled === false;
   const directRsvpEnabled =
@@ -2317,6 +2328,69 @@ export default async function EventPage({
             <span className="hidden sm:inline">Edit</span>
           </Link>
         )}
+        <Link
+          href={`/concierge-v2/events/${encodeURIComponent(row.id)}/hub`}
+          className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+          title="Manage team and class hub"
+        >
+          <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden sm:inline">Hub</span>
+          <span className="sm:hidden">Hub</span>
+        </Link>
+        <Link
+          href={`/concierge-v2/events/${encodeURIComponent(row.id)}/imports`}
+          className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+          title="Import source material"
+        >
+          <FileSearch className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden sm:inline">Imports</span>
+          <span className="sm:hidden">Import</span>
+        </Link>
+        <Link
+          href={`/concierge-v2/events/${encodeURIComponent(row.id)}/resources`}
+          className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+          title="Manage resources and day-of check-in"
+        >
+          <Warehouse className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden sm:inline">Resources</span>
+          <span className="sm:hidden">Res</span>
+        </Link>
+        <Link
+          href={`/concierge-v2/events/${encodeURIComponent(row.id)}/rsvp`}
+          className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+          title="Manage RSVPs"
+        >
+          <Users className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden sm:inline">RSVP Board</span>
+          <span className="sm:hidden">RSVP</span>
+        </Link>
+        <Link
+          href={`/concierge-v2/events/${encodeURIComponent(row.id)}/ops`}
+          className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+          title="Manage operations"
+        >
+          <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden sm:inline">Ops</span>
+          <span className="sm:hidden">Ops</span>
+        </Link>
+        <Link
+          href={`/concierge-v2/events/${encodeURIComponent(row.id)}/schedule`}
+          className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+          title="Manage schedule"
+        >
+          <CalendarDays className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden sm:inline">Schedule</span>
+          <span className="sm:hidden">Schedule</span>
+        </Link>
+        <Link
+          href={`/concierge-v2/events/${encodeURIComponent(row.id)}/calendar`}
+          className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+          title="Manage calendar feed"
+        >
+          <LinkIcon className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden sm:inline">Calendar</span>
+          <span className="sm:hidden">Cal</span>
+        </Link>
         <EventDeleteModal eventId={row.id} eventTitle={title} />
         <EventActions
           shareUrl={shareUrl}
@@ -2355,6 +2429,12 @@ export default async function EventPage({
         rsvpEmail={rsvpEmail}
         rsvpUrl={publicRsvpUrl}
         registryLinks={registryCards}
+        scheduleItems={conciergeV2Sections.scheduleItems}
+        checklistItems={conciergeV2Sections.checklistItems}
+        forms={conciergeV2Sections.forms}
+        volunteerSlots={conciergeV2Sections.volunteerSlots}
+        paymentItems={conciergeV2Sections.paymentItems}
+        reminders={conciergeV2Sections.reminders}
         actions={conciergeEventActions}
       />,
     );

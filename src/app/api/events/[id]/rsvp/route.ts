@@ -28,6 +28,13 @@ type RsvpMutationBody = {
   email?: unknown;
   firstName?: unknown;
   lastName?: unknown;
+  phone?: unknown;
+  message?: unknown;
+  answers?: unknown;
+  answersJson?: unknown;
+  adultCount?: unknown;
+  kidCount?: unknown;
+  allergyNotes?: unknown;
   target?: unknown;
 };
 
@@ -45,6 +52,7 @@ type EventDetailsRow = {
 
 let rsvpTableReady: boolean | null = null;
 let rsvpTableCheckInflight: Promise<boolean> | null = null;
+let rsvpV2ColumnsReady: Promise<void> | null = null;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object") return null;
@@ -55,6 +63,31 @@ function asTrimmedString(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed || null;
+}
+
+function optionalInteger(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return Math.max(0, Math.min(999, Math.floor(parsed)));
+}
+
+function sanitizeAnswers(value: unknown): Record<string, string | number | boolean | null> {
+  const record = asRecord(value);
+  if (!record) return {};
+  const out: Record<string, string | number | boolean | null> = {};
+  for (const [key, rawValue] of Object.entries(record).slice(0, 40)) {
+    const cleanKey = key.replace(/[^a-zA-Z0-9_-]+/g, "_").slice(0, 80);
+    if (!cleanKey) continue;
+    if (typeof rawValue === "string") {
+      out[cleanKey] = rawValue.replace(/\s+/g, " ").trim().slice(0, 1000) || null;
+    } else if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+      out[cleanKey] = rawValue;
+    } else if (typeof rawValue === "boolean" || rawValue === null) {
+      out[cleanKey] = rawValue;
+    }
+  }
+  return out;
 }
 
 function errorMessage(err: unknown, fallback: string): string {
@@ -323,6 +356,23 @@ async function ensureRsvpTableReady() {
   return rsvpTableCheckInflight;
 }
 
+async function ensureRsvpV2ColumnsReady() {
+  if (!rsvpV2ColumnsReady) {
+    rsvpV2ColumnsReady = (async () => {
+      await query(
+        `alter table rsvp_responses add column if not exists answers_json jsonb not null default '{}'::jsonb`,
+      );
+      await query(`alter table rsvp_responses add column if not exists adult_count integer`);
+      await query(`alter table rsvp_responses add column if not exists kid_count integer`);
+      await query(`alter table rsvp_responses add column if not exists allergy_notes text`);
+    })().catch((error) => {
+      rsvpV2ColumnsReady = null;
+      throw error;
+    });
+  }
+  await rsvpV2ColumnsReady;
+}
+
 function jsonWithTiming(
   timing: ServerTimingTracker,
   payload: Record<string, unknown>,
@@ -344,6 +394,7 @@ async function assertRsvpBackendReady(timing: ServerTimingTracker) {
   if (!ready) {
     return jsonWithTiming(timing, { error: "RSVP backend is not initialized" }, { status: 503 });
   }
+  await timing.time("v2_columns", () => ensureRsvpV2ColumnsReady());
   return null;
 }
 
@@ -386,6 +437,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const email = asTrimmedString(body.email);
     const firstName = asTrimmedString(body.firstName);
     const lastName = asTrimmedString(body.lastName);
+    const phone = asTrimmedString(body.phone);
+    const message = asTrimmedString(body.message);
+    const answersJson = sanitizeAnswers(body.answersJson || body.answers);
+    const adultCount = optionalInteger(body.adultCount ?? answersJson.adult_count);
+    const kidCount = optionalInteger(body.kidCount ?? answersJson.kid_count);
+    const allergyNotes =
+      asTrimmedString(body.allergyNotes) ||
+      asTrimmedString(answersJson.allergies) ||
+      asTrimmedString(answersJson.allergy_notes);
 
     const finalName =
       firstName && lastName ? `${firstName.trim()} ${lastName.trim()}` : name || null;
@@ -410,28 +470,65 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       await timing.time("upsert_user", () =>
         query(
           `
-        INSERT INTO rsvp_responses (event_id, user_id, email, name, first_name, last_name, phone, message, response, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
+        INSERT INTO rsvp_responses (
+          event_id, user_id, email, name, first_name, last_name, phone, message,
+          response, answers_json, adult_count, kid_count, allergy_notes, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13, now())
         ON CONFLICT (event_id, user_id) WHERE user_id IS NOT NULL
         DO UPDATE SET response = EXCLUDED.response, email = EXCLUDED.email, name = EXCLUDED.name,
         first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, phone = EXCLUDED.phone,
-        message = EXCLUDED.message, updated_at = now()
+        message = EXCLUDED.message, answers_json = EXCLUDED.answers_json,
+        adult_count = EXCLUDED.adult_count, kid_count = EXCLUDED.kid_count,
+        allergy_notes = EXCLUDED.allergy_notes, updated_at = now()
       `,
-          [eventId, userId, rsvpEmail, rsvpName, firstName, lastName, null, null, responseValue],
+          [
+            eventId,
+            userId,
+            rsvpEmail,
+            rsvpName,
+            firstName,
+            lastName,
+            phone,
+            message,
+            responseValue,
+            JSON.stringify(answersJson),
+            adultCount,
+            kidCount,
+            allergyNotes,
+          ],
         ),
       );
     } else {
       await timing.time("upsert_email", () =>
         query(
           `
-        INSERT INTO rsvp_responses (event_id, email, name, first_name, last_name, phone, message, response, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
+        INSERT INTO rsvp_responses (
+          event_id, email, name, first_name, last_name, phone, message,
+          response, answers_json, adult_count, kid_count, allergy_notes, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12, now())
         ON CONFLICT (event_id, email) WHERE email IS NOT NULL
         DO UPDATE SET response = EXCLUDED.response, name = EXCLUDED.name,
         first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, phone = EXCLUDED.phone,
-        message = EXCLUDED.message, updated_at = now()
+        message = EXCLUDED.message, answers_json = EXCLUDED.answers_json,
+        adult_count = EXCLUDED.adult_count, kid_count = EXCLUDED.kid_count,
+        allergy_notes = EXCLUDED.allergy_notes, updated_at = now()
       `,
-          [eventId, rsvpEmail, rsvpName, firstName, lastName, null, null, responseValue],
+          [
+            eventId,
+            rsvpEmail,
+            rsvpName,
+            firstName,
+            lastName,
+            phone,
+            message,
+            responseValue,
+            JSON.stringify(answersJson),
+            adultCount,
+            kidCount,
+            allergyNotes,
+          ],
         ),
       );
     }
@@ -549,7 +646,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const responsesRes = await timing.time("responses_query", () =>
       query(
         `
-      SELECT name, first_name as "firstName", last_name as "lastName", phone, message, email, response, created_at, updated_at
+      SELECT name, first_name as "firstName", last_name as "lastName", phone, message, email,
+        response, answers_json as "answersJson", adult_count as "adultCount",
+        kid_count as "kidCount", allergy_notes as "allergyNotes", created_at, updated_at
       FROM rsvp_responses WHERE event_id = $1 ORDER BY created_at DESC
     `,
         [eventId],

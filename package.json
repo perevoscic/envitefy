@@ -11,6 +11,7 @@
     "start:standalone": "node .next/standalone/server.js",
     "clean": "node -e \"const fs=require('fs');for(const d of ['.next','.next-dev']){try{fs.rmSync(d,{recursive:true,force:true});console.log('removed '+d)}catch(e){console.error(e);process.exit(1)}}\"",
     "lint": "biome lint .",
+    "lint:vscode": "node scripts/vscode-lint.mjs",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
     "check": "biome check .",

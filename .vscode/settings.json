@@ -5,5 +5,8 @@
     "chatToCli.modelReasoningEffort": "high",
     "chatToCli.sandbox": "danger-full-access",
     "chatToCli.approvalPolicy": "never",
-    "chatToCli.enableFileOpenerTool": true
+    "chatToCli.enableFileOpenerTool": true,
+    "cSpell.words": [
+        "Envitefy"
+    ]
 }
