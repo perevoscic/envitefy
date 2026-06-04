@@ -184,6 +184,13 @@ export default function ConciergeV2ImportCenterClient({
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
+              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/hub`}
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
+            >
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              Hub
+            </Link>
+            <Link
               href={`/concierge-v2/events/${encodeURIComponent(eventId)}/schedule`}
               className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
             >

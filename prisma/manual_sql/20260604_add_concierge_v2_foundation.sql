@@ -8,12 +8,107 @@ CREATE TABLE IF NOT EXISTS workspaces (
   name text NOT NULL,
   slug text UNIQUE,
   workspace_type text NOT NULL DEFAULT 'personal',
+  default_mode text,
+  timezone text,
+  default_visibility text NOT NULL DEFAULT 'public',
+  settings_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz(6) DEFAULT now(),
   updated_at timestamptz(6) DEFAULT now()
 );
 
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS default_mode text;
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS timezone text;
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS default_visibility text NOT NULL DEFAULT 'public';
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS settings_json jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS created_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL;
+
 CREATE INDEX IF NOT EXISTS idx_workspaces_owner_type
   ON workspaces(owner_user_id, workspace_type);
+
+CREATE TABLE IF NOT EXISTS memberships (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id uuid NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  invited_email text,
+  role text NOT NULL DEFAULT 'guest',
+  permissions_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status text NOT NULL DEFAULT 'active',
+  invited_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  accepted_at timestamptz(6),
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_memberships_workspace_user
+  ON memberships(workspace_id, user_id)
+  WHERE user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_memberships_workspace_role
+  ON memberships(workspace_id, role);
+
+CREATE INDEX IF NOT EXISTS idx_memberships_invited_email
+  ON memberships(invited_email);
+
+CREATE TABLE IF NOT EXISTS families (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  primary_guardian_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  timezone text,
+  notes text,
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_families_workspace
+  ON families(workspace_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS family_guardians (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  family_id uuid NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  relationship text,
+  permissions_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  is_primary boolean NOT NULL DEFAULT false,
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_family_guardians_family
+  ON family_guardians(family_id);
+
+CREATE INDEX IF NOT EXISTS idx_family_guardians_user
+  ON family_guardians(user_id);
+
+CREATE TABLE IF NOT EXISTS participants (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  family_id uuid REFERENCES families(id) ON DELETE SET NULL,
+  user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  first_name text NOT NULL,
+  last_name text,
+  display_name text,
+  birthdate date,
+  grade text,
+  school_name text,
+  allergies text,
+  emergency_contact_name text,
+  emergency_contact_phone text,
+  medical_notes text,
+  profile_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_participants_workspace
+  ON participants(workspace_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_participants_family
+  ON participants(family_id);
+
+CREATE INDEX IF NOT EXISTS idx_participants_user
+  ON participants(user_id);
 
 CREATE TABLE IF NOT EXISTS programs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -32,6 +127,27 @@ CREATE INDEX IF NOT EXISTS idx_programs_workspace_status
 
 CREATE INDEX IF NOT EXISTS idx_programs_owner_updated
   ON programs(owner_user_id, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS program_participants (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  program_id uuid NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+  participant_id uuid NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+  role text NOT NULL DEFAULT 'participant',
+  roster_status text NOT NULL DEFAULT 'active',
+  jersey_number text,
+  group_name text,
+  notes text,
+  metadata_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_program_participants_program_participant
+  ON program_participants(program_id, participant_id);
+
+CREATE INDEX IF NOT EXISTS idx_program_participants_program_role
+  ON program_participants(program_id, role, roster_status);
 
 CREATE TABLE IF NOT EXISTS event_series (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

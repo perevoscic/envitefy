@@ -6,7 +6,7 @@ Date: 2026-06-04
 
 - Repo discovery: confirmed Next.js app router, NextAuth, raw Postgres through `src/lib/db.ts`, partial Prisma only, manual SQL migrations, and Biome/targeted Node tests as the useful validation path.
 - Feature flags: added `src/config/concierge-v2-flags.ts` with production-safe defaults and local/dev defaults for the first vertical slice.
-- Canonical graph foundation: added additive SQL migration for workspaces, programs, event series, event occurrences, event pages, concierge sessions/drafts, forms, volunteer signup, payments, reminders, imports, calendar feeds, integrations, and audit logs.
+- Canonical graph foundation: added additive SQL migration for workspaces, memberships, families, participants, programs, event series, event occurrences, event pages, concierge sessions/drafts, forms, volunteer signup, payments, reminders, imports, calendar feeds, integrations, and audit logs.
 - Concierge parser: added deterministic fallback parser for social, school, gymnastics, team, class, family, community, business, and planner language.
 - Apply draft flow: added storage service that creates program/series/occurrences, writes the public `event_history` row, links an `event_pages` row, and persists forms, volunteer slots, payment requests, reminders, and checklist items.
 - API routes: added authenticated Concierge V2 parse/session/apply endpoints.
@@ -22,6 +22,7 @@ Date: 2026-06-04
 - Schedule Hub: added owner-only agenda/list/conflicts route backed by `event_occurrences`, one-off item creation, inline move/edit/status actions, conflict detection, and public schedule republishing.
 - Calendar Center: added owner-only `/concierge-v2/events/[id]/calendar`, active `calendar_feeds` runtime support, tokenized public ICS feed endpoint, copy/download/Google subscribe controls, and feed token regeneration.
 - Source Import Center: added owner-only `/concierge-v2/events/[id]/imports`, pasted-text extraction through the deterministic parser, `source_documents`/`extracted_items` runtime support, accept/reject review cards, and apply-to-schedule/forms/reminders/checklist/payments.
+- Team/Class Hub: added owner/member-aware `/concierge-v2/events/[id]/hub`, workspace memberships/roles, families, participants, program roster rows, invite-by-email role assignment, participant creation, mode-aware dashboard cards, and links from owner surfaces.
 - Tests: added `src/lib/concierge-v2/core.test.mjs` for parser, recurrence, exceptions, conflicts, forms, volunteer capacity, payment status, and ICS output.
 - Tests: added `src/lib/concierge-v2/operations-shape.test.mjs` to guard persisted operation IDs, live public endpoints, and volunteer capacity logic.
 - Tests: added `src/lib/concierge-v2/reminders-shape.test.mjs` to guard providerless dry-run behavior and owner reminder APIs.
@@ -29,6 +30,7 @@ Date: 2026-06-04
 - Tests: added `src/lib/concierge-v2/rsvp-board-shape.test.mjs` to guard owner RSVP Board APIs, export, and host UI actions.
 - Tests: added `src/lib/concierge-v2/calendar-shape.test.mjs` to guard Calendar Center APIs, feed table guard, public ICS output, and host UI actions.
 - Tests: added `src/lib/concierge-v2/source-imports-shape.test.mjs` to guard source import tables, owner APIs, review/apply wiring, and no fake upload controls.
+- Tests: added `src/lib/concierge-v2/team-class-hub-shape.test.mjs` to guard membership/participant tables, Team/Class Hub APIs, UI actions, and owner navigation links.
 
 ## Deferred
 
@@ -38,6 +40,7 @@ Date: 2026-06-04
 - Payment provider integration. Manual payment requests are stored and can be marked by hosts; no Stripe/Venmo/Zelle provider is implemented.
 - Volunteer unclaim/edit/export/reminder actions. Claiming works, but the richer management loop is still a follow-up.
 - Smart Form response editing/export and file-upload fields. Basic responses work; storage-backed uploads are still documented/stubbed.
+- Workspace member invitation email delivery and acceptance flow. Roles can be stored and existing users are activated by email lookup, but no invite email provider is called.
 - Canonical graph backfill for legacy `event_history` rows. The migration is additive and non-destructive; no data backfill was run.
 - Rich schedule board rendering and formal blackout exception rows remain follow-up work. The current Schedule Hub edits persisted occurrences directly, and Calendar Center now publishes an ICS feed rather than a full visual calendar grid.
 
@@ -50,6 +53,7 @@ Date: 2026-06-04
 - `node --test src/lib/concierge-v2/rsvp-board-shape.test.mjs`: passing.
 - `node --test src/lib/concierge-v2/calendar-shape.test.mjs`: passing.
 - `node --test src/lib/concierge-v2/source-imports-shape.test.mjs`: passing.
+- `node --test src/lib/concierge-v2/team-class-hub-shape.test.mjs`: passing.
 - `node --check src/lib/concierge-v2/core.mjs`: passing.
 - Scoped Biome lint on touched files: passing.
 - `npm run lint -- <touched files>`: failing on unrelated repo-wide issues because the script expands to `biome lint .` before supplied paths.
@@ -58,7 +62,7 @@ Date: 2026-06-04
 
 ## Recommended Next Slice
 
-1. Add Team/Class Hub and role-aware host/member views on top of the canonical program graph.
+1. Add Resource Planning and day-of operations foundation: venues, rooms, staff/coaches, equipment, buses, resource assignments, and simple double-booking checks.
 2. Add storage-backed image/PDF upload and OCR provider extraction to the Source Import Center.
 3. Add volunteer unclaim/edit, Smart Form exports, and payment exports.
 4. Add richer schedule board views, blackout exception rows, and recurring-series edit controls.

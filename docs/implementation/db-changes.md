@@ -5,7 +5,12 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 ## Tables Added
 
 - `workspaces`: personal/team workspace container.
+- `memberships`: workspace role assignments for users or invited email addresses.
+- `families`: family/household records scoped to a workspace.
+- `family_guardians`: guardian/user links for family records.
+- `participants`: children, athletes, students, attendees, and roster people.
 - `programs`: high-level program or event plan, such as a season, spirit week, class party, or social event.
+- `program_participants`: roster join between programs and participants.
 - `event_series`: recurring rules and series-level metadata.
 - `event_occurrences`: materialized schedule events, deadlines, practices, meets, parties, and one-offs.
 - `event_pages`: public/live page records linked to canonical graph rows and legacy `event_history`.
@@ -56,9 +61,13 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 
 - Store pasted/imported source text and proposed extracted schedule, form, reminder, checklist, and payment items. The runtime guard now creates both tables and the document/status indexes for local/dev use if the manual migration has not run.
 
+`memberships`, `families`, `family_guardians`, `participants`, and `program_participants`:
+
+- Store the Phase 7 workspace RBAC and roster model. The runtime guard now creates these tables and indexes for local/dev use if the manual migration has not run.
+
 ## Indexes Added
 
-- Workspace owner/type, program workspace/status, series program, occurrence program/start, occurrence owner/start.
+- Workspace owner/type, membership workspace/role/invited email, family workspace, participant workspace/family/user, program participant program/role/status, program workspace/status, series program, occurrence program/start, occurrence owner/start.
 - Event page lookup by legacy `event_history`, owner/status, share token, and program.
 - Concierge session user/update indexes and draft session/type indexes.
 - Smart form, form field, and form response indexes, including unique `form_fields(form_id, field_key)` keys for idempotent field inserts.
@@ -78,6 +87,7 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 - `src/lib/concierge-v2/rsvp-board.ts` reads and updates `rsvp_responses` through event-page owner checks, normalizes `answers_json` into host board fields, and produces owner-only CSV exports.
 - `src/lib/concierge-v2/calendar.ts` creates/regenerates active `calendar_feeds` rows through event-page owner checks and builds public tokenized ICS feeds from active `event_occurrences`.
 - `src/lib/concierge-v2/source-imports.ts` checks event-page ownership before creating pasted-text `source_documents`, inserting proposed `extracted_items`, reviewing item status, or applying accepted items into occurrences, forms, reminders, checklist rows, and manual payment requests.
+- `src/lib/concierge-v2/team-class-hub.ts` checks workspace membership roles before returning hub data, inviting members, or creating participants linked through `program_participants`.
 - `src/lib/concierge-v2/operations.ts` checks event-page ownership before returning private operations data or updating payment status.
 - `src/lib/concierge-v2/reminders.ts` checks event-page ownership before returning queue details, previews, dry-run records, or reminder status updates.
 - Volunteer claims use both a unique active email claim index and an atomic `volunteer_slots.claimed_quantity` update to prevent over-claiming.
@@ -92,7 +102,8 @@ No legacy `event_history` backfill was run. The migration does include an idempo
 Recommended production backfill after migration:
 
 1. Create a personal `workspaces` row for each `event_history.user_id` that does not already have one.
-2. For complex existing events only, create a `program` and one or more `event_occurrences`.
-3. Create an `event_pages` row for each public `event_history` row and set `legacy_event_history_id`.
-4. Preserve existing public slugs, aliases, RSVP rows, shares, and tracking records.
-5. Verify `/event/[slug-or-id]` before switching any dashboards to canonical graph reads.
+2. Create active `memberships` rows for each workspace owner with role `program_manager`.
+3. For complex existing events only, create a `program` and one or more `event_occurrences`.
+4. Create an `event_pages` row for each public `event_history` row and set `legacy_event_history_id`.
+5. Preserve existing public slugs, aliases, RSVP rows, shares, and tracking records.
+6. Verify `/event/[slug-or-id]` before switching any dashboards to canonical graph reads.

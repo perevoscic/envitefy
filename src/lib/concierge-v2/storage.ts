@@ -86,13 +86,94 @@ export async function ensureConciergeV2Tables(): Promise<void> {
           name text not null,
           slug text unique,
           workspace_type text not null default 'personal',
+          default_mode text,
+          timezone text,
+          default_visibility text not null default 'public',
+          settings_json jsonb not null default '{}'::jsonb,
+          created_by_user_id uuid references users(id) on delete set null,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`alter table workspaces add column if not exists default_mode text`);
+      await query(`alter table workspaces add column if not exists timezone text`);
+      await query(`alter table workspaces add column if not exists default_visibility text not null default 'public'`);
+      await query(`alter table workspaces add column if not exists settings_json jsonb not null default '{}'::jsonb`);
+      await query(`alter table workspaces add column if not exists created_by_user_id uuid references users(id) on delete set null`);
+      await query(
+        `create index if not exists idx_workspaces_owner_type on workspaces(owner_user_id, workspace_type)`,
+      );
+      await query(`
+        create table if not exists memberships (
+          id uuid primary key default gen_random_uuid(),
+          workspace_id uuid not null references workspaces(id) on delete cascade,
+          user_id uuid references users(id) on delete cascade,
+          invited_email text,
+          role text not null default 'guest',
+          permissions_json jsonb not null default '{}'::jsonb,
+          status text not null default 'active',
+          invited_by_user_id uuid references users(id) on delete set null,
+          accepted_at timestamptz(6),
           created_at timestamptz(6) default now(),
           updated_at timestamptz(6) default now()
         )
       `);
       await query(
-        `create index if not exists idx_workspaces_owner_type on workspaces(owner_user_id, workspace_type)`,
+        `create unique index if not exists uniq_memberships_workspace_user on memberships(workspace_id, user_id) where user_id is not null`,
       );
+      await query(`create index if not exists idx_memberships_workspace_role on memberships(workspace_id, role)`);
+      await query(`create index if not exists idx_memberships_invited_email on memberships(invited_email)`);
+      await query(`
+        create table if not exists families (
+          id uuid primary key default gen_random_uuid(),
+          workspace_id uuid references workspaces(id) on delete cascade,
+          name text not null,
+          primary_guardian_user_id uuid references users(id) on delete set null,
+          timezone text,
+          notes text,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`create index if not exists idx_families_workspace on families(workspace_id, created_at desc)`);
+      await query(`
+        create table if not exists family_guardians (
+          id uuid primary key default gen_random_uuid(),
+          family_id uuid not null references families(id) on delete cascade,
+          user_id uuid references users(id) on delete cascade,
+          relationship text,
+          permissions_json jsonb not null default '{}'::jsonb,
+          is_primary boolean not null default false,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`create index if not exists idx_family_guardians_family on family_guardians(family_id)`);
+      await query(`create index if not exists idx_family_guardians_user on family_guardians(user_id)`);
+      await query(`
+        create table if not exists participants (
+          id uuid primary key default gen_random_uuid(),
+          workspace_id uuid references workspaces(id) on delete cascade,
+          family_id uuid references families(id) on delete set null,
+          user_id uuid references users(id) on delete set null,
+          first_name text not null,
+          last_name text,
+          display_name text,
+          birthdate date,
+          grade text,
+          school_name text,
+          allergies text,
+          emergency_contact_name text,
+          emergency_contact_phone text,
+          medical_notes text,
+          profile_json jsonb not null default '{}'::jsonb,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`create index if not exists idx_participants_workspace on participants(workspace_id, created_at desc)`);
+      await query(`create index if not exists idx_participants_family on participants(family_id)`);
+      await query(`create index if not exists idx_participants_user on participants(user_id)`);
       await query(`
         create table if not exists programs (
           id uuid primary key default gen_random_uuid(),
@@ -106,6 +187,28 @@ export async function ensureConciergeV2Tables(): Promise<void> {
           updated_at timestamptz(6) default now()
         )
       `);
+      await query(`
+        create table if not exists program_participants (
+          id uuid primary key default gen_random_uuid(),
+          workspace_id uuid references workspaces(id) on delete cascade,
+          program_id uuid not null references programs(id) on delete cascade,
+          participant_id uuid not null references participants(id) on delete cascade,
+          role text not null default 'participant',
+          roster_status text not null default 'active',
+          jersey_number text,
+          group_name text,
+          notes text,
+          metadata_json jsonb not null default '{}'::jsonb,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(
+        `create unique index if not exists uniq_program_participants_program_participant on program_participants(program_id, participant_id)`,
+      );
+      await query(
+        `create index if not exists idx_program_participants_program_role on program_participants(program_id, role, roster_status)`,
+      );
       await query(`
         create table if not exists event_series (
           id uuid primary key default gen_random_uuid(),
