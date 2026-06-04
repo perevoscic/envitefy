@@ -4,7 +4,7 @@ Date: 2026-06-04
 
 ## Executive Summary
 
-Implemented the first coherent Concierge V2 vertical slice plus the next operational slices: feature flags, additive canonical graph migration, deterministic natural-language parser, authenticated Concierge V2 APIs, apply-draft persistence, mobile-first `/concierge-v2` builder UI, public event page v2 sections, RSVP answer storage, guest Smart Form responses, guest Volunteer Signup claims, owner manual payment status updates, owner reminder queue preview/dry-run/cancel controls, owner operations UI, tests, and handoff docs.
+Implemented the first coherent Concierge V2 vertical slice plus the next operational slices: feature flags, additive canonical graph migration, deterministic natural-language parser, authenticated Concierge V2 APIs, apply-draft persistence, mobile-first `/concierge-v2` builder UI, public event page v2 sections, owner Schedule Hub, RSVP answer storage, guest Smart Form responses, guest Volunteer Signup claims, owner manual payment status updates, owner reminder queue preview/dry-run/cancel controls, owner operations UI, tests, and handoff docs.
 
 Feature-flagged by `ENABLE_CONCIERGE_V2` plus capability flags for schedule hub, smart forms, volunteer signup, manual payments, OCR imports, team/class hub, resource planning, and reminder engine.
 
@@ -15,6 +15,7 @@ Stubbed/provider-dependent: AI provider selection for V2, OCR import review, rea
 - `node --test src/lib/concierge-v2/core.test.mjs`: pass.
 - `node --test src/lib/concierge-v2/operations-shape.test.mjs`: pass.
 - `node --test src/lib/concierge-v2/reminders-shape.test.mjs`: pass.
+- `node --test src/lib/concierge-v2/schedule-shape.test.mjs`: pass.
 - `node --check src/lib/concierge-v2/core.mjs`: pass.
 - `node_modules\\.bin\\biome.cmd lint <touched files>`: pass.
 - `node_modules\\.bin\\tsc.cmd --noEmit`: fail on existing repo-wide TypeScript errors. Representative first errors:
@@ -54,6 +55,9 @@ Owner still needs to run the migration against each target database.
 - `POST /api/concierge/events/[id]/forms/[formId]/responses`: public/optional-session Smart Form response submission with required-field validation.
 - `POST /api/concierge/events/[id]/volunteer-slots/[slotId]/claim`: public/optional-session volunteer slot claim with capacity and duplicate-email guards.
 - `PATCH /api/concierge/events/[id]/payment-requests/[paymentRequestId]/status`: authenticated owner-only manual payment status update.
+- `GET /api/concierge/events/[id]/schedule`: authenticated owner-only Schedule Hub summary with series, occurrences, counts, and conflicts.
+- `POST /api/concierge/events/[id]/schedule`: authenticated owner-only one-off schedule item creation.
+- `PATCH /api/concierge/events/[id]/schedule/occurrences/[occurrenceId]`: authenticated owner-only occurrence move/edit/cancel/restore/status update.
 - `GET /api/concierge/events/[id]/reminders`: authenticated owner-only reminder queue summary with audience counts and recent dry-run records.
 - `GET /api/concierge/events/[id]/reminders/[reminderId]/preview`: authenticated owner-only reminder preview.
 - `POST /api/concierge/events/[id]/reminders/[reminderId]/dry-run`: authenticated owner-only dry-run delivery recording; no provider call.
@@ -65,6 +69,8 @@ Owner still needs to run the migration against each target database.
 
 - `src/app/concierge-v2/page.tsx`: feature-flagged entry page for Concierge V2.
 - `src/app/concierge-v2/ConciergeV2Client.tsx`: premium mobile-first builder with examples, detected mode, draft sections, edit fields, loading/error states, and publish result link.
+- `src/app/concierge-v2/events/[id]/schedule/page.tsx`: owner-only Schedule Hub route backed by canonical `event_occurrences`.
+- `src/app/concierge-v2/events/[id]/schedule/ConciergeV2ScheduleHubClient.tsx`: premium mobile-first agenda/list/conflicts UI with add, edit, move, cancel, and restore controls.
 - `src/app/concierge-v2/events/[id]/ops/page.tsx`: owner-only operations route for generated forms, volunteer claims, and manual payments.
 - `src/app/concierge-v2/events/[id]/ops/ConciergeV2OpsClient.tsx`: premium mobile-first host operations surface with summary cards, payment status actions, and reminder queue controls.
 - `src/components/concierge/ConciergePublicOperations.tsx`: public Smart Form, Volunteer Signup, Payment Tracker, Checklist, and Reminder Timeline interaction sections.
@@ -77,7 +83,7 @@ Owner still needs to run the migration against each target database.
 - Pages updated: `/concierge-v2` and the existing `/event/[id]` concierge public renderer.
 - Mobile improvements: stacked builder sections, sticky publish bar, large tap targets, responsive public section grids.
 - Accessibility improvements: semantic buttons/sections, aria labels on icon-only controls inherited from existing renderer, clear loading/error states.
-- Remaining design issues: public reminder timeline is display-only, while owner ops supports preview/dry-run/cancel; payment collection remains manual/providerless.
+- Remaining design issues: public reminder timeline is display-only, while owner ops supports preview/dry-run/cancel; payment collection remains manual/providerless; Schedule Hub has agenda/list/conflict views but not a full calendar grid yet.
 - Screens needing manual review: signed-in `/concierge-v2` builder, published v2 public event page, owner ops page, owner RSVP responses with v2 answers, mobile public page sections.
 
 ## Environment Variables Needed
@@ -103,6 +109,7 @@ Owner still needs to run the migration against each target database.
 - Create a birthday prompt in `/concierge-v2`, publish, and open the public event page.
 - Create the gymnastics season example, verify recurring practice materialization and meet/team dinner sections.
 - Create the spirit week example and verify five daily schedule cards.
+- Open `/concierge-v2/events/[eventHistoryId]/schedule`, add a one-off item, edit a generated occurrence, cancel/restore it, and confirm the public event schedule updates.
 - Submit RSVP as a guest and confirm owner RSVP response includes `answersJson`, `adultCount`, `kidCount`, and `allergyNotes` when provided.
 - Submit a generated Smart Form and confirm it appears on `/concierge-v2/events/[eventHistoryId]/ops`.
 - Claim a generated volunteer slot as a guest and confirm capacity/claimed counts update in ops.
@@ -118,6 +125,7 @@ Owner still needs to run the migration against each target database.
 - Smart Form response editing/export and Volunteer Signup unclaim/reminder actions remain to be built.
 - Manual payment provider processing is not implemented; host status tracking is manual only.
 - Reminder preview/dry-run/cancel exists, plus a providerless due-reminder dispatcher foundation. Real scheduler jobs and email/SMS delivery are not wired.
+- Schedule Hub supports direct occurrence edits and conflict detection, but recurring-series editing, formal blackout exception rows, and full calendar/board views remain future work.
 - OCR import and source document review UI remain to be built.
 - Legacy event backfill into canonical graph rows is documented but not run.
 - Source/OCR ingestion, richer host dashboard exports/actions, schedule hub views, real reminder provider adapters, and legacy backfill are the next practical slices.
