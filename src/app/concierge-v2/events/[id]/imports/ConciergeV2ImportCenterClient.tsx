@@ -13,8 +13,15 @@ import {
   Warehouse,
   XCircle,
 } from "lucide-react";
-import Link from "next/link";
 import { useMemo, useState } from "react";
+import {
+  EmptyState,
+  FriendlyError,
+  PageHeader,
+  PremiumCard,
+  SectionHeader,
+  StepCard,
+} from "@/components/ui/premium-shell";
 
 type ImportRecord = Record<string, any>;
 
@@ -204,80 +211,55 @@ export default function ConciergeV2ImportCenterClient({
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f8fb] text-slate-950">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">Source Import</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-              {clean(imports.event?.title) || "Import event details"}
-            </h1>
-            <p className="mt-1 text-sm font-bold text-slate-500">Paste messy details, review the extraction, then apply accepted items.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/hub`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-              Hub
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/schedule`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <CalendarDays className="h-4 w-4" aria-hidden="true" />
-              Schedule
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/resources`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <Warehouse className="h-4 w-4" aria-hidden="true" />
-              Resources
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/ops`}
-              className="inline-flex h-11 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              Ops
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                void reloadImports().catch((err) =>
-                  setError(err instanceof Error ? err.message : "Unable to refresh imports."),
-                );
-              }}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-violet-700 px-4 text-sm font-black text-white transition hover:bg-violet-800"
-            >
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              Refresh
-            </button>
-          </div>
-        </div>
-      </header>
+    <main className="min-h-screen bg-[#fbf9ff] text-slate-950">
+      <PageHeader
+        eyebrow="Imports"
+        title={clean(imports.event?.title) || "Review imported flyer or file"}
+        subtitle="Upload or paste event details, review what Envitefy found, then add the accepted details to your schedule, forms, reminders, and checklist."
+        actions={[
+          { label: "Hub", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/hub`, icon: ShieldCheck },
+          { label: "Schedule", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/schedule`, icon: CalendarDays },
+          { label: "Setup", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/resources`, icon: Warehouse },
+          { label: "Reminders", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/ops` },
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            primary: true,
+            onClick: () => {
+              void reloadImports().catch((err) =>
+                setError(err instanceof Error ? err.message : "Unable to refresh imports."),
+              );
+            },
+          },
+        ]}
+      />
 
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6">
         {error ? (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800">
-            {error}
-          </div>
+          <FriendlyError message={error} />
         ) : null}
         {notice ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
             {notice}
           </div>
         ) : null}
 
+        <section className="grid gap-3 md:grid-cols-5">
+          <StepCard step="1" title="Add" description="Paste text or upload a flyer, schedule, packet, or screenshot." done={Boolean(selectedDocument)} />
+          <StepCard step="2" title="Read" description="Envitefy reads the file and turns details into review cards." done={items.length > 0} />
+          <StepCard step="3" title="Review" description="Check the found details before they touch your event." done={acceptedCount > 0} />
+          <StepCard step="4" title="Accept" description="Accept what belongs and reject anything that should stay out." done={acceptedCount > 0} />
+          <StepCard step="5" title="Add to event" description="Apply accepted details to the schedule and planning tools." done={appliedCount > 0} />
+        </section>
+
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <PremiumCard>
             <div className="flex items-start gap-3">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-violet-700">
                 <FileSearch className="h-5 w-5" aria-hidden="true" />
               </span>
               <div>
-                <h2 className="text-xl font-black text-slate-950">Paste source details</h2>
+                <h2 className="text-xl font-black text-slate-950">Paste or upload event details</h2>
                 <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
                   Works for emails, school notes, meet details, team calendars, birthday logistics, and copied group chat messages.
                 </p>
@@ -285,11 +267,11 @@ export default function ConciergeV2ImportCenterClient({
             </div>
             <div className="mt-5 grid gap-3">
               <label className="grid gap-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-                Source type
+                Uploaded flyer or text type
                 <select
                   value={sourceKind}
                   onChange={(event) => setSourceKind(event.target.value)}
-                  className="h-11 rounded-lg border border-slate-200 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                  className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold normal-case tracking-normal text-slate-950 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
                 >
                   <option value="pasted_text">Pasted text</option>
                   <option value="email">Email</option>
@@ -301,13 +283,13 @@ export default function ConciergeV2ImportCenterClient({
                 </select>
               </label>
               <label className="grid gap-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-                Details
+                Details to review
                 <textarea
                   rows={9}
                   value={text}
                   onChange={(event) => setText(event.target.value)}
                   placeholder="Paste dates, times, locations, fees, permission notes, bring items, RSVP details, or travel notes here."
-                  className="rounded-lg border border-slate-200 px-3 py-3 text-sm font-semibold normal-case leading-6 tracking-normal text-slate-950 outline-none placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                  className="rounded-xl border border-slate-200 px-3 py-3 text-sm font-semibold normal-case leading-6 tracking-normal text-slate-950 outline-none placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
                 />
               </label>
               <button
@@ -317,23 +299,23 @@ export default function ConciergeV2ImportCenterClient({
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-violet-700 px-5 text-sm font-black text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
-                Extract details
+                Review found details
               </button>
               <div className="mt-3 border-t border-slate-100 pt-4">
                 <label className="grid gap-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-                  Upload source file
+                  Upload flyer or file
                   <input
                     type="file"
                     accept=".pdf,.txt,.md,.csv,image/png,image/jpeg,image/webp"
                     onChange={(event) => setFile(event.target.files?.[0] || null)}
-                    className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold normal-case tracking-normal text-slate-950 file:mr-3 file:rounded-full file:border-0 file:bg-violet-50 file:px-3 file:py-2 file:text-xs file:font-black file:uppercase file:tracking-[0.12em] file:text-violet-700"
+                    className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold normal-case tracking-normal text-slate-950 file:mr-3 file:rounded-full file:border-0 file:bg-violet-50 file:px-3 file:py-2 file:text-xs file:font-black file:uppercase file:tracking-[0.12em] file:text-violet-700"
                   />
                 </label>
                 <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
                   <select
                     value={fileSourceKind}
                     onChange={(event) => setFileSourceKind(event.target.value)}
-                    className="h-11 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                    className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
                   >
                     <option value="pdf_schedule">PDF schedule</option>
                     <option value="screenshot">Screenshot</option>
@@ -348,7 +330,7 @@ export default function ConciergeV2ImportCenterClient({
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
                     <Upload className="h-4 w-4" aria-hidden="true" />
-                    {pending === "upload" ? "Uploading..." : "Upload"}
+                    {pending === "upload" ? "Uploading..." : "Upload and review"}
                   </button>
                 </div>
                 {!uploadReady ? (
@@ -358,26 +340,26 @@ export default function ConciergeV2ImportCenterClient({
                 ) : null}
               </div>
             </div>
-          </div>
+          </PremiumCard>
 
-          <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">Provider status</p>
+          <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(31,41,55,0.07)]">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">Import readiness</p>
             <div className="mt-4 grid gap-3">
-              <div className="rounded-lg bg-emerald-50 p-4">
+              <div className="rounded-2xl bg-emerald-50 p-4">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-700" aria-hidden="true" />
                   <p className="text-sm font-black text-emerald-950">
-                    Pasted text {providerStatus.pastedText || "ready"}
+                    Pasted text is {providerStatus.pastedText || "ready"}
                   </p>
                 </div>
                 <p className="mt-1 text-sm font-semibold leading-6 text-emerald-900">
                   AI parser: {providerStatus.aiParsing || "fallback"}.
                 </p>
               </div>
-              <div className="rounded-lg bg-slate-50 p-4">
+              <div className="rounded-2xl bg-slate-50 p-4">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-slate-600" aria-hidden="true" />
-                  <p className="text-sm font-black text-slate-950">Storage {providerStatus.storage || "not configured"}</p>
+                  <p className="text-sm font-black text-slate-950">File uploads are {providerStatus.storage || "not configured"}</p>
                 </div>
                 <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
                   PDF extraction: {providerStatus.pdfOcr || "provider_setup_required"}. Image OCR:{" "}
@@ -389,9 +371,9 @@ export default function ConciergeV2ImportCenterClient({
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-          <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_18px_55px_rgba(31,41,55,0.07)]">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-black uppercase tracking-[0.14em] text-slate-500">Imports</h2>
+              <h2 className="text-sm font-black uppercase tracking-[0.14em] text-slate-500">Uploaded files and text</h2>
               <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-black text-violet-700">
                 {documents.length}
               </span>
@@ -403,7 +385,7 @@ export default function ConciergeV2ImportCenterClient({
                     key={document.id}
                     type="button"
                     onClick={() => setSelectedDocumentId(document.id)}
-                    className={`rounded-lg border p-3 text-left transition ${
+                    className={`rounded-2xl border p-3 text-left transition focus:outline-none focus:ring-4 focus:ring-violet-100 ${
                       selectedDocument?.id === document.id
                         ? "border-violet-300 bg-violet-50"
                         : "border-slate-200 bg-white hover:border-violet-200"
@@ -411,7 +393,7 @@ export default function ConciergeV2ImportCenterClient({
                   >
                     <p className="text-sm font-black text-slate-950">{typeLabel(document.sourceKind)}</p>
                     <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-slate-500">
-                      {clean(document.textPreview) || "Source import"}
+                      {clean(document.textPreview) || "Uploaded flyer or file"}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1">
                       <StatusPill status={clean(document.parseStatus)} />
@@ -419,24 +401,25 @@ export default function ConciergeV2ImportCenterClient({
                   </button>
                 ))
               ) : (
-                <p className="rounded-lg border border-dashed border-slate-300 p-4 text-sm font-semibold leading-6 text-slate-500">
-                  No source imports yet.
-                </p>
+                <EmptyState
+                  icon={FileSearch}
+                  title="No imports yet"
+                  description="Paste text or upload a flyer, schedule, packet, or screenshot to start reviewing found details."
+                  className="p-4"
+                />
               )}
             </div>
           </aside>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <PremiumCard>
             {selectedDocument ? (
               <>
                 <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">Review extraction</p>
-                    <h2 className="mt-2 text-2xl font-black text-slate-950">{typeLabel(selectedDocument.sourceKind)}</h2>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">
-                      {proposedCount} proposed, {acceptedCount} accepted, {appliedCount} applied
-                    </p>
-                  </div>
+                  <SectionHeader
+                    eyebrow="Review found details"
+                    title={typeLabel(selectedDocument.sourceKind)}
+                    subtitle={`${proposedCount} to review, ${acceptedCount} accepted, ${appliedCount} added to this event.`}
+                  />
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -454,7 +437,7 @@ export default function ConciergeV2ImportCenterClient({
                       className="inline-flex h-10 items-center gap-2 rounded-full bg-violet-700 px-4 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                     >
                       <Send className="h-4 w-4" aria-hidden="true" />
-                      Apply accepted
+                      Add accepted
                     </button>
                   </div>
                 </div>
@@ -468,7 +451,7 @@ export default function ConciergeV2ImportCenterClient({
                             <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                               {typeLabel(item.itemType)} - {Math.round(Number(item.confidence || 0) * 100)}%
                             </p>
-                            <h3 className="mt-2 text-lg font-black text-slate-950">{clean(item.title) || "Extracted item"}</h3>
+                            <h3 className="mt-2 text-lg font-black text-slate-950">{clean(item.title) || "Found detail"}</h3>
                             <p className="mt-1 text-sm font-semibold text-slate-500">
                               {formatDateTime(item.startAt)}
                               {clean(item.data?.locationText) ? ` at ${clean(item.data.locationText)}` : ""}
@@ -504,26 +487,22 @@ export default function ConciergeV2ImportCenterClient({
                       </article>
                     ))
                   ) : (
-                    <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center">
-                      <ClipboardList className="mx-auto h-8 w-8 text-violet-700" aria-hidden="true" />
-                      <p className="mt-3 text-lg font-black text-slate-950">No extracted items.</p>
-                      <p className="mt-2 text-sm font-semibold text-slate-500">
-                        Try a source with dates, tasks, fees, forms, or reminders.
-                      </p>
-                    </div>
+                    <EmptyState
+                      icon={ClipboardList}
+                      title="No found details yet"
+                      description="Try a flyer, packet, email, or note that includes dates, tasks, fees, forms, reminders, or bring-list items."
+                    />
                   )}
                 </div>
               </>
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center">
-                <FileSearch className="mx-auto h-8 w-8 text-violet-700" aria-hidden="true" />
-                <p className="mt-3 text-lg font-black text-slate-950">Paste source details to begin.</p>
-                <p className="mt-2 text-sm font-semibold text-slate-500">
-                  Extracted schedule, form, reminder, checklist, and payment items will appear here for review.
-                </p>
-              </div>
+              <EmptyState
+                icon={FileSearch}
+                title="Paste or upload details to begin"
+                description="Found schedule items, forms, reminders, checklist tasks, and payment notes will appear here as editable review cards."
+              />
             )}
-          </div>
+          </PremiumCard>
         </section>
       </div>
     </main>

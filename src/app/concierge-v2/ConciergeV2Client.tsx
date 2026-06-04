@@ -317,7 +317,7 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
               className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 text-sm font-black uppercase tracking-[0.14em] text-white shadow-[0_18px_40px_rgba(15,23,42,0.22)] transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isParsing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <WandSparkles className="h-4 w-4" aria-hidden="true" />}
-              Build draft
+              Review event draft
             </button>
           </div>
         </div>
@@ -373,12 +373,12 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
                 ) : (
                   <div className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">
                     <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                    Ready to create a draft page.
+                    Ready to create the event page.
                   </div>
                 )}
               </div>
             ) : (
-              <EmptyLine>Build a draft to see the detected event mode and missing details.</EmptyLine>
+              <EmptyLine>Describe the event to see the detected mode, draft details, and what still needs confirmation.</EmptyLine>
             )}
           </SectionCard>
 
@@ -469,7 +469,7 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
                   href={`/concierge-v2/events/${encodeURIComponent(result.eventHistoryId)}/resources`}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-5 text-sm font-black uppercase tracking-[0.14em] text-emerald-800 transition hover:bg-emerald-100"
                 >
-                  Resources
+                  Setup
                   <Warehouse className="h-4 w-4" aria-hidden="true" />
                 </Link>
                 <Link
@@ -550,7 +550,7 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
                 ))}
               </div>
             ) : (
-              <EmptyLine>No dated schedule items yet. You can still save the draft and fill them in later.</EmptyLine>
+              <EmptyLine>No dated schedule items yet. You can still create the event page and fill them in later.</EmptyLine>
             )}
           </SectionCard>
 
@@ -654,7 +654,7 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-violet-700 px-5 text-sm font-black uppercase tracking-[0.14em] text-white shadow-[0_18px_40px_rgba(109,40,217,0.24)] transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
             >
               {isApplying ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
-              Ready to publish
+              Create event page
             </button>
           </div>
         </div>

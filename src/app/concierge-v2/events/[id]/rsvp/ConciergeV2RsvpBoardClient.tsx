@@ -21,6 +21,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import {
+  EmptyState,
+  FriendlyError,
+  PageHeader,
+  PremiumCard,
+  SectionHeader,
+  SummaryMetricCard,
+} from "@/components/ui/premium-shell";
 
 type BoardRecord = Record<string, any>;
 type FilterMode = "all" | "yes" | "maybe" | "no" | "allergies";
@@ -74,36 +82,6 @@ function StatusPill({ status }: { status: string }) {
     <span className={`rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.12em] ${responseClass(status)}`}>
       {responseLabel(status)}
     </span>
-  );
-}
-
-function SummaryCard({
-  icon: Icon,
-  label,
-  value,
-  tone = "violet",
-}: {
-  icon: any;
-  label: string;
-  value: number;
-  tone?: "violet" | "emerald" | "amber" | "rose";
-}) {
-  const toneClass =
-    tone === "emerald"
-      ? "text-emerald-700 bg-emerald-50"
-      : tone === "amber"
-        ? "text-amber-700 bg-amber-50"
-        : tone === "rose"
-          ? "text-rose-700 bg-rose-50"
-          : "text-violet-700 bg-violet-50";
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <span className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${toneClass}`}>
-        <Icon className="h-5 w-5" aria-hidden="true" />
-      </span>
-      <p className="mt-4 text-3xl font-black text-slate-950">{value}</p>
-      <p className="text-sm font-bold text-slate-500">{label}</p>
-    </div>
   );
 }
 
@@ -212,125 +190,84 @@ export default function ConciergeV2RsvpBoardClient({
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f8fb] text-slate-950">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">RSVP Board</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-              {clean(board.event?.title) || "Event RSVPs"}
-            </h1>
-            <p className="mt-1 text-sm font-bold text-slate-500">
-              {clean(board.event?.mode) || "event"} response tracking
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/event/${encodeURIComponent(eventId)}`}
-              className="inline-flex h-11 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              Guest page
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/hub`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-              Hub
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/resources`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <Warehouse className="h-4 w-4" aria-hidden="true" />
-              Resources
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/schedule`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <CalendarDays className="h-4 w-4" aria-hidden="true" />
-              Schedule
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/imports`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <FileSearch className="h-4 w-4" aria-hidden="true" />
-              Imports
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/calendar`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <LinkIcon className="h-4 w-4" aria-hidden="true" />
-              Calendar
-            </Link>
-            <Link
-              href={`/api/concierge/events/${encodeURIComponent(eventId)}/rsvps/export`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <Download className="h-4 w-4" aria-hidden="true" />
-              Export
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                void reloadBoard().catch((err) =>
-                  setError(err instanceof Error ? err.message : "Unable to refresh RSVP board."),
-                );
-              }}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-violet-700 px-4 text-sm font-black text-white transition hover:bg-violet-800"
-            >
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              Refresh
-            </button>
-          </div>
-        </div>
-      </header>
+    <main className="min-h-screen bg-[#fbf9ff] text-slate-950">
+      <PageHeader
+        eyebrow="RSVP Board"
+        title={clean(board.event?.title) || "Event RSVPs"}
+        subtitle="See who is coming, what guests answered, and which responses need a follow-up."
+        actions={[
+          { label: "Guest page", href: `/event/${encodeURIComponent(eventId)}` },
+          { label: "Hub", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/hub`, icon: ShieldCheck },
+          { label: "Setup", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/resources`, icon: Warehouse },
+          { label: "Schedule", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/schedule`, icon: CalendarDays },
+          { label: "Imports", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/imports`, icon: FileSearch },
+          { label: "Calendar", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/calendar`, icon: LinkIcon },
+          { label: "Export", href: `/api/concierge/events/${encodeURIComponent(eventId)}/rsvps/export`, icon: Download },
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            primary: true,
+            onClick: () => {
+              void reloadBoard().catch((err) =>
+                setError(err instanceof Error ? err.message : "Unable to refresh RSVP board."),
+              );
+            },
+          },
+        ]}
+      />
 
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6">
         {error ? (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800">
-            {error}
-          </div>
+          <FriendlyError message={error} />
         ) : null}
         {notice ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
             {notice}
           </div>
         ) : null}
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryCard icon={UserCheck} label="Attending" value={Number(summary.yes || 0)} tone="emerald" />
-          <SummaryCard icon={HelpCircle} label="Maybe" value={Number(summary.maybe || 0)} tone="amber" />
-          <SummaryCard icon={UserX} label="Not attending" value={Number(summary.no || 0)} tone="rose" />
-          <SummaryCard icon={Mail} label="Pending" value={Number(summary.pending || 0)} />
-          <SummaryCard icon={Baby} label="Kids" value={Number(summary.kids || 0)} />
-          <SummaryCard icon={Users} label="Adults" value={Number(summary.adults || 0)} />
-          <SummaryCard icon={AlertTriangle} label="Allergy notes" value={Number(summary.allergies || 0)} tone="rose" />
-          <SummaryCard icon={MessageSquare} label="Responses" value={Number(summary.filled || 0)} />
+          <SummaryMetricCard icon={UserCheck} label="Yes" value={Number(summary.yes || 0)} tone="emerald" />
+          <SummaryMetricCard icon={HelpCircle} label="Maybe" value={Number(summary.maybe || 0)} tone="amber" />
+          <SummaryMetricCard icon={UserX} label="No" value={Number(summary.no || 0)} tone="rose" />
+          <SummaryMetricCard
+            icon={Mail}
+            label="Pending"
+            value={Number(summary.pending || 0)}
+            detail={Number(summary.pending || 0) ? "Follow up with these guests." : "No pending responses."}
+          />
+          <SummaryMetricCard icon={Baby} label="Kids" value={Number(summary.kids || 0)} />
+          <SummaryMetricCard icon={Users} label="Adults" value={Number(summary.adults || 0)} />
+          <SummaryMetricCard icon={AlertTriangle} label="Allergy notes" value={Number(summary.allergies || 0)} tone="rose" />
+          <SummaryMetricCard icon={MessageSquare} label="Responses" value={Number(summary.filled || 0)} />
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div className="grid gap-4">
-            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <PremiumCard className="p-4 sm:p-4">
+              <SectionHeader
+                title="Guest responses"
+                subtitle="Filter by RSVP status, allergies, meals, or custom answers."
+                action={
+                  <Link
+                    href={`/concierge-v2/events/${encodeURIComponent(eventId)}/ops#reminders`}
+                    className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700 focus:outline-none focus:ring-4 focus:ring-violet-100"
+                  >
+                    Open reminders
+                  </Link>
+                }
+              />
               <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-                <label className="relative block">
+                <label className="relative mt-4 block">
+                  <span className="sr-only">Search RSVPs</span>
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search guests, notes, allergies, meals"
-                    className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
                   />
                 </label>
-                <Link
-                  href={`/concierge-v2/events/${encodeURIComponent(eventId)}/ops#reminders`}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-                >
-                  Open reminders
-                </Link>
               </div>
               <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
                 {[
@@ -354,25 +291,24 @@ export default function ConciergeV2RsvpBoardClient({
                   </button>
                 ))}
               </div>
-            </div>
+            </PremiumCard>
 
             <div className="grid gap-3">
               {filter === "all" || filter === "allergies" || filter === "yes" || filter === "maybe" || filter === "no" ? (
                 filtered.length ? (
                   filtered.map((response) => <GuestCard key={response.id} response={response} />)
                 ) : (
-                  <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
-                    <p className="text-lg font-black text-slate-950">No matching RSVPs yet.</p>
-                    <p className="mt-2 text-sm font-semibold text-slate-500">
-                      Share the guest page or use reminders once guest contacts are available.
-                    </p>
-                  </div>
+                  <EmptyState
+                    icon={Mail}
+                    title="No matching RSVPs yet"
+                    description="Share the guest page or send a reminder when guest contacts are available. Matching responses will appear here."
+                  />
                 )
               ) : null}
             </div>
           </div>
 
-          <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-5 lg:self-start">
+          <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(31,41,55,0.07)] lg:sticky lg:top-5 lg:self-start">
             {selected ? (
               <div>
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -461,10 +397,11 @@ export default function ConciergeV2RsvpBoardClient({
                 ) : null}
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center">
-                <p className="text-lg font-black text-slate-950">No RSVP selected.</p>
-                <p className="mt-2 text-sm font-semibold text-slate-500">Responses will appear here as guests reply.</p>
-              </div>
+              <EmptyState
+                icon={Users}
+                title="No RSVP selected"
+                description="Choose a guest response to see contact details, party count, allergies, food notes, and custom answers."
+              />
             )}
           </aside>
         </section>

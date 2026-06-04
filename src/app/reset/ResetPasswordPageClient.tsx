@@ -20,7 +20,6 @@ export default function ResetPasswordPageClient() {
     const t = params.get("token") || "";
     const p = (params.get("provider") || "").trim().toLowerCase();
     setToken(t);
-    setProvider(p);
 
     if (typeof window !== "undefined") {
       const hash = window.location.hash.startsWith("#")
@@ -28,7 +27,10 @@ export default function ResetPasswordPageClient() {
         : window.location.hash;
       const hashParams = new URLSearchParams(hash);
       const at = hashParams.get("access_token") || "";
-      if (at) setSupabaseAccessToken(at);
+      setSupabaseAccessToken(at);
+      setProvider(p || (at ? "supabase" : ""));
+    } else {
+      setProvider(p);
     }
   }, [params]);
 

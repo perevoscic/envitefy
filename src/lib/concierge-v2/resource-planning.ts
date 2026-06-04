@@ -2,7 +2,37 @@ import { query } from "@/lib/db";
 import { ConciergeV2OperationError } from "./operations";
 import { ensureConciergeV2Tables } from "./storage";
 
-const RESOURCE_TYPES = ["room", "coach", "teacher", "equipment", "apparatus", "bus", "volunteer", "other"] as const;
+const RESOURCE_TYPES = [
+  "room",
+  "coach",
+  "teacher",
+  "equipment",
+  "apparatus",
+  "bus",
+  "volunteer",
+  "food",
+  "decoration",
+  "seating",
+  "helper",
+  "location",
+  "parking",
+  "pool_access",
+  "setup_item",
+  "snack",
+  "supply",
+  "chaperone",
+  "classroom",
+  "form",
+  "warmup_area",
+  "hotel",
+  "venue",
+  "speaker",
+  "materials",
+  "check_in",
+  "catering",
+  "follow_up",
+  "other",
+] as const;
 const ATTENDANCE_STATUSES = ["expected", "present", "absent", "late", "excused"] as const;
 
 type EventPageRow = {
@@ -248,15 +278,29 @@ async function loadVenues(workspaceId: string) {
   }));
 }
 
-async function loadResources(workspaceId: string) {
+async function loadResources(params: {
+  workspaceId: string;
+  programId: string;
+  eventHistoryId: string;
+}) {
   const res = await query<ResourceRow>(
     `select r.id, r.venue_id, v.name as venue_name, r.resource_type,
        r.name, r.capacity, r.status, r.attributes_json
      from resources r
      left join venues v on v.id = r.venue_id
      where r.workspace_id = $1
+       and (
+         r.attributes_json->>'eventHistoryId' = $3::text
+         or r.attributes_json->>'programId' = $2::text
+         or exists (
+           select 1
+           from resource_assignments ra
+           join event_occurrences eo on eo.id = ra.occurrence_id
+           where ra.resource_id = r.id and eo.program_id = $2::uuid
+         )
+       )
      order by r.resource_type asc, r.name asc`,
-    [workspaceId],
+    [params.workspaceId, params.programId, params.eventHistoryId],
   );
   return res.rows.map((row) => ({
     id: row.id,
@@ -447,7 +491,7 @@ export async function getConciergeV2ResourcePlanningCenter(params: {
   const programId = access.page.program_id as string;
   const [venues, resources, requirements, occurrences, assignments, participants, attendance] = await Promise.all([
     loadVenues(workspaceId),
-    loadResources(workspaceId),
+    loadResources({ workspaceId, programId, eventHistoryId: params.eventHistoryId }),
     loadRequirements(programId),
     loadOccurrences(programId),
     loadAssignments(programId),
@@ -529,7 +573,11 @@ export async function createConciergeV2Resource(params: {
       normalizeResourceType(params.resourceType),
       name,
       numberOrNull(params.capacity),
-      JSON.stringify({ notes: cleanString(params.notes, 500) || null }),
+      JSON.stringify({
+        notes: cleanString(params.notes, 500) || null,
+        eventHistoryId: params.eventHistoryId,
+        programId: access.page.program_id || null,
+      }),
     ],
   );
   return { id: inserted.rows[0]?.id || null };

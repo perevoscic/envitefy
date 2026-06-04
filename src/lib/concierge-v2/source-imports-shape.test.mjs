@@ -45,11 +45,11 @@ test("Concierge V2 import UI supports pasted-text review and storage-backed uplo
     new URL("../../app/concierge-v2/events/[id]/imports/ConciergeV2ImportCenterClient.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(component, /Source Import/);
-  assert.match(component, /Extract details/);
+  assert.match(component, /Review imported flyer or file/);
+  assert.match(component, /Review found details/);
   assert.match(component, /Accept all/);
-  assert.match(component, /Apply accepted/);
-  assert.match(component, /Upload source file/);
+  assert.match(component, /Add accepted/);
+  assert.match(component, /Upload flyer or file/);
   assert.match(component, /type="file"/);
   assert.match(component, /provider_setup_required/i);
   assert.match(component, /\/api\/concierge\/events\/\$\{encodeURIComponent\(eventId\)\}\/imports/);

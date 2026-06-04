@@ -69,10 +69,12 @@ test("Concierge V2 Resources UI exposes real planning and day-of check-in contro
   );
   assert.match(page, /ENABLE_RESOURCE_PLANNING/);
   assert.match(page, /getConciergeV2ResourcePlanningCenter/);
-  assert.match(component, /Resource board/);
-  assert.match(component, /Save resource/);
-  assert.match(component, /Assign resource/);
-  assert.match(component, /Day-of check-in/);
+  assert.match(component, /getResourceModeCopy/);
+  assert.match(component, /resolveConciergeEventMode/);
+  assert.match(component, /modeCopy\.boardTitle/);
+  assert.match(component, /modeCopy\.addButton/);
+  assert.match(component, /modeCopy\.assignButton/);
+  assert.match(component, /modeCopy\.attendanceTitle/);
   assert.match(component, /Double-bookings to resolve/);
   assert.match(component, /Present/);
   assert.match(component, /Late/);

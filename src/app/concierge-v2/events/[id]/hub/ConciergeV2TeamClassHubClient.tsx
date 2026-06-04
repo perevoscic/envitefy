@@ -16,6 +16,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import {
+  EmptyState,
+  FriendlyError,
+  ModeBadge,
+  PageHeader,
+  SummaryMetricCard,
+} from "@/components/ui/premium-shell";
 
 type HubRecord = Record<string, any>;
 
@@ -82,36 +89,6 @@ function formatDateTime(value: any) {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function CountCard({
-  icon: Icon,
-  label,
-  value,
-  tone = "violet",
-}: {
-  icon: any;
-  label: string;
-  value: any;
-  tone?: "violet" | "emerald" | "amber" | "slate";
-}) {
-  const toneClass =
-    tone === "emerald"
-      ? "bg-emerald-50 text-emerald-700"
-      : tone === "amber"
-        ? "bg-amber-50 text-amber-700"
-        : tone === "slate"
-          ? "bg-slate-100 text-slate-700"
-          : "bg-violet-50 text-violet-700";
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <span className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${toneClass}`}>
-        <Icon className="h-5 w-5" aria-hidden="true" />
-      </span>
-      <p className="mt-4 text-3xl font-black text-slate-950">{Number(value || 0)}</p>
-      <p className="mt-1 text-sm font-bold text-slate-500">{label}</p>
-    </div>
-  );
 }
 
 export default function ConciergeV2TeamClassHubClient({
@@ -211,71 +188,44 @@ export default function ConciergeV2TeamClassHubClient({
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f8fb] text-slate-950">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">{copy.label}</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-              {clean(hub.event?.title) || "Team and class hub"}
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm font-bold leading-6 text-slate-500">{copy.title}</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/schedule`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <CalendarDays className="h-4 w-4" aria-hidden="true" />
-              Schedule
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/imports`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <FileSearch className="h-4 w-4" aria-hidden="true" />
-              Imports
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/resources`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <Warehouse className="h-4 w-4" aria-hidden="true" />
-              Resources
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                void refreshHub().catch((err) =>
-                  setError(err instanceof Error ? err.message : "Unable to refresh hub."),
-                );
-              }}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-violet-700 px-4 text-sm font-black text-white transition hover:bg-violet-800"
-            >
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              Refresh
-            </button>
-          </div>
-        </div>
-      </header>
+    <main className="min-h-screen bg-[#fbf9ff] text-slate-950">
+      <PageHeader
+        eyebrow={copy.label}
+        title={clean(hub.event?.title) || "Team and class hub"}
+        subtitle={copy.title}
+        badge={<ModeBadge label={mode === "team" ? "Team" : mode === "class" ? "Class" : "Parent"} />}
+        actions={[
+          { label: "Schedule", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/schedule`, icon: CalendarDays },
+          { label: "Imports", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/imports`, icon: FileSearch },
+          { label: "Setup", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/resources`, icon: Warehouse },
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            primary: true,
+            onClick: () => {
+              void refreshHub().catch((err) =>
+                setError(err instanceof Error ? err.message : "Unable to refresh hub."),
+              );
+            },
+          },
+        ]}
+      />
 
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6">
         {error ? (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800">
-            {error}
-          </div>
+          <FriendlyError message={error} />
         ) : null}
         {notice ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
             {notice}
           </div>
         ) : null}
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <CountCard icon={Users} label="Workspace members" value={summary.memberCount} />
-          <CountCard icon={GraduationCap} label={copy.participantLabel} value={summary.participantCount} tone="emerald" />
-          <CountCard icon={ClipboardCheck} label="Open deadlines" value={summary.deadlineCount} tone="amber" />
-          <CountCard icon={HeartHandshake} label="Signup claims" value={summary.claimCount} tone="slate" />
+          <SummaryMetricCard icon={Users} label="Helpers and roles" value={Number(summary.memberCount || 0)} />
+          <SummaryMetricCard icon={GraduationCap} label={copy.participantLabel} value={Number(summary.participantCount || 0)} tone="emerald" />
+          <SummaryMetricCard icon={ClipboardCheck} label="Open deadlines" value={Number(summary.deadlineCount || 0)} tone="amber" />
+          <SummaryMetricCard icon={HeartHandshake} label="Signup claims" value={Number(summary.claimCount || 0)} tone="slate" />
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
@@ -315,9 +265,11 @@ export default function ConciergeV2TeamClassHubClient({
                   </article>
                 ))}
                 {!participants.length ? (
-                  <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500">
-                    No participants have been added yet.
-                  </p>
+                  <EmptyState
+                    icon={GraduationCap}
+                    title={`No ${copy.participantLabel.toLowerCase()} added yet`}
+                    description="Add the people connected to this event so RSVP, check-in, reminders, and planning tools have the right context."
+                  />
                 ) : null}
               </div>
             </section>
@@ -342,9 +294,11 @@ export default function ConciergeV2TeamClassHubClient({
                   </article>
                 ))}
                 {!upcoming.length ? (
-                  <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500">
-                    No active schedule items are connected yet.
-                  </p>
+                  <EmptyState
+                    icon={CalendarDays}
+                    title="No upcoming schedule yet"
+                    description="Add practices, class activities, deadlines, trips, parties, or event-day moments in the Schedule Hub."
+                  />
                 ) : null}
               </div>
             </section>

@@ -159,6 +159,14 @@ export async function middleware(req: NextRequest) {
     return ok();
   }
 
+  if (pathname.startsWith("/%23access_token=")) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/reset";
+    url.search = "";
+    url.hash = pathname.slice("/%23".length);
+    return redirectWithMarker(url, 302);
+  }
+
   const queryAuthMode = req.nextUrl.searchParams.get("auth");
 
   if (

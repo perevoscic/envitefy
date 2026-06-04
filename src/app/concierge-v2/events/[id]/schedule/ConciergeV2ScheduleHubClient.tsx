@@ -15,8 +15,16 @@ import {
   Users,
   Warehouse,
 } from "lucide-react";
-import Link from "next/link";
 import { useMemo, useState } from "react";
+import {
+  EmptyState,
+  FriendlyError,
+  PageHeader,
+  PremiumCard,
+  ResponsiveTabs,
+  SectionHeader,
+  SummaryMetricCard,
+} from "@/components/ui/premium-shell";
 
 type RecordValue = Record<string, any>;
 type ViewMode = "agenda" | "list" | "conflicts";
@@ -362,120 +370,61 @@ export default function ConciergeV2ScheduleHubClient({
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f8fb] text-slate-950">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">Schedule Hub</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-              {clean(schedule.event?.title) || "Event schedule"}
-            </h1>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/event/${encodeURIComponent(eventId)}`}
-              className="inline-flex h-11 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              Guest page
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/hub`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-              Hub
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/resources`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <Warehouse className="h-4 w-4" aria-hidden="true" />
-              Resources
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/rsvp`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <Users className="h-4 w-4" aria-hidden="true" />
-              RSVP
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/imports`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <FileSearch className="h-4 w-4" aria-hidden="true" />
-              Imports
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/calendar`}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              <LinkIcon className="h-4 w-4" aria-hidden="true" />
-              Calendar
-            </Link>
-            <Link
-              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/ops`}
-              className="inline-flex h-11 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
-            >
-              Ops
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                void reloadSchedule().catch((err) =>
-                  setError(err instanceof Error ? err.message : "Unable to refresh schedule."),
-                );
-              }}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-violet-700 px-4 text-sm font-black text-white transition hover:bg-violet-800"
-            >
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              Refresh
-            </button>
-          </div>
-        </div>
-      </header>
+    <main className="min-h-screen bg-[#fbf9ff] text-slate-950">
+      <PageHeader
+        eyebrow="Schedule Hub"
+        title={clean(schedule.event?.title) || "Event schedule"}
+        subtitle="Build the agenda, review deadlines, and spot anything that needs attention before guests or families see it."
+        actions={[
+          { label: "Guest page", href: `/event/${encodeURIComponent(eventId)}` },
+          { label: "Hub", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/hub`, icon: ShieldCheck },
+          { label: "Setup", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/resources`, icon: Warehouse },
+          { label: "RSVPs", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/rsvp`, icon: Users },
+          { label: "Imports", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/imports`, icon: FileSearch },
+          { label: "Calendar", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/calendar`, icon: LinkIcon },
+          { label: "Reminders", href: `/concierge-v2/events/${encodeURIComponent(eventId)}/ops` },
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            primary: true,
+            onClick: () => {
+              void reloadSchedule().catch((err) =>
+                setError(err instanceof Error ? err.message : "Unable to refresh schedule."),
+              );
+            },
+          },
+        ]}
+      />
 
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6">
         {error ? (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800">
-            {error}
-          </div>
+          <FriendlyError message={error} />
         ) : null}
         {notice ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
             {notice}
           </div>
         ) : null}
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <CalendarDays className="h-5 w-5 text-violet-700" aria-hidden="true" />
-            <p className="mt-4 text-3xl font-black">{Number(counts.active || 0)}</p>
-            <p className="text-sm font-bold text-slate-500">Active items</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <Clock className="h-5 w-5 text-violet-700" aria-hidden="true" />
-            <p className="mt-4 text-3xl font-black">{series.length}</p>
-            <p className="text-sm font-bold text-slate-500">Recurring series</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <ListChecks className="h-5 w-5 text-violet-700" aria-hidden="true" />
-            <p className="mt-4 text-3xl font-black">{Number(counts.deadlines || 0)}</p>
-            <p className="text-sm font-bold text-slate-500">Deadlines</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <AlertTriangle className="h-5 w-5 text-violet-700" aria-hidden="true" />
-            <p className="mt-4 text-3xl font-black">{conflicts.length}</p>
-            <p className="text-sm font-bold text-slate-500">Conflicts</p>
-          </div>
+          <SummaryMetricCard icon={CalendarDays} label="Active items" value={Number(counts.active || 0)} />
+          <SummaryMetricCard icon={Clock} label="Recurring series" value={series.length} />
+          <SummaryMetricCard icon={ListChecks} label="Deadlines" value={Number(counts.deadlines || 0)} />
+          <SummaryMetricCard
+            icon={AlertTriangle}
+            label="Needs attention"
+            value={conflicts.length}
+            tone={conflicts.length ? "rose" : "emerald"}
+            detail={conflicts.length ? "Review overlaps before sharing." : "No conflicts detected."}
+          />
         </section>
 
         {series.length ? (
-          <section className="rounded-lg border border-violet-100 bg-white p-5 shadow-sm">
-            <h2 className="text-xl font-black text-slate-950">Recurring schedule</h2>
+          <PremiumCard>
+            <SectionHeader title="Recurring schedule" subtitle="Repeated practices, classes, sessions, or reminders that Envitefy keeps together." />
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {series.map((item) => (
-                <div key={item.id} className="rounded-lg bg-violet-50/70 p-4">
+                <div key={item.id} className="rounded-2xl bg-violet-50/70 p-4">
                   <p className="font-black text-slate-950">{clean(item.title) || "Recurring series"}</p>
                   <p className="mt-1 text-sm font-semibold text-violet-700">
                     {clean(item.recurrenceRule) || "Rule to confirm"}
@@ -487,86 +436,97 @@ export default function ConciergeV2ScheduleHubClient({
                 </div>
               ))}
             </div>
-          </section>
+          </PremiumCard>
         ) : null}
 
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <PremiumCard>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-black text-slate-950">Add schedule item</h2>
-              <p className="mt-1 text-sm font-semibold text-slate-500">Add a one-off event, deadline, practice, or team note.</p>
-            </div>
+            <SectionHeader
+              title="Add schedule item"
+              subtitle="Add a one-off event, deadline, practice, travel block, meal, or parent reminder."
+            />
             <button
               type="button"
               disabled={pendingId === "new"}
               onClick={() => void addOccurrence()}
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-violet-700 px-4 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-violet-700 px-4 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-violet-800 focus:outline-none focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-              Add
+              Add schedule item
             </button>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <input
-              value={draft.title}
-              onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
-              placeholder="Title"
-              className="h-11 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-            />
-            <select
-              value={draft.occurrenceType}
-              onChange={(event) => setDraft((current) => ({ ...current, occurrenceType: event.target.value }))}
-              className="h-11 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-            >
-              <option value="event">Event</option>
-              <option value="practice">Practice</option>
-              <option value="meet">Meet</option>
-              <option value="deadline">Deadline</option>
-              <option value="team_dinner">Team dinner</option>
-            </select>
-            <input
-              type="datetime-local"
-              value={draft.startAt}
-              onChange={(event) => setDraft((current) => ({ ...current, startAt: event.target.value }))}
-              className="h-11 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-            />
-            <input
-              type="datetime-local"
-              value={draft.endAt}
-              onChange={(event) => setDraft((current) => ({ ...current, endAt: event.target.value }))}
-              className="h-11 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-            />
-            <input
-              value={draft.locationText}
-              onChange={(event) => setDraft((current) => ({ ...current, locationText: event.target.value }))}
-              placeholder="Location"
-              className="h-11 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-            />
-            <input
-              value={draft.notes}
-              onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))}
-              placeholder="Notes"
-              className="h-11 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-            />
-          </div>
-        </section>
-
-        <section className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
-          <div className="grid grid-cols-3 gap-1">
-            {(["agenda", "list", "conflicts"] as ViewMode[]).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setView(mode)}
-                className={`h-10 rounded-md text-xs font-black uppercase tracking-[0.12em] transition ${
-                  view === mode ? "bg-violet-700 text-white" : "text-slate-600 hover:bg-violet-50 hover:text-violet-700"
-                }`}
+            <label className="grid gap-2 text-sm font-black text-slate-700">
+              Title
+              <input
+                value={draft.title}
+                onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
+                placeholder="Practice, party setup, field trip bus, RSVP deadline"
+                className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-black text-slate-700">
+              Type
+              <select
+                value={draft.occurrenceType}
+                onChange={(event) => setDraft((current) => ({ ...current, occurrenceType: event.target.value }))}
+                className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
               >
-                {mode}
-              </button>
-            ))}
+                <option value="event">Event</option>
+                <option value="practice">Practice</option>
+                <option value="meet">Meet</option>
+                <option value="deadline">Deadline</option>
+                <option value="team_dinner">Team dinner</option>
+              </select>
+            </label>
+            <label className="grid gap-2 text-sm font-black text-slate-700">
+              Starts
+              <input
+                type="datetime-local"
+                value={draft.startAt}
+                onChange={(event) => setDraft((current) => ({ ...current, startAt: event.target.value }))}
+                className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-black text-slate-700">
+              Ends
+              <input
+                type="datetime-local"
+                value={draft.endAt}
+                onChange={(event) => setDraft((current) => ({ ...current, endAt: event.target.value }))}
+                className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-black text-slate-700">
+              Location
+              <input
+                value={draft.locationText}
+                onChange={(event) => setDraft((current) => ({ ...current, locationText: event.target.value }))}
+                placeholder="Gym, classroom, pool, field, venue"
+                className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-black text-slate-700">
+              Notes
+              <input
+                value={draft.notes}
+                onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))}
+                placeholder="What families, guests, or helpers should know"
+                className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+              />
+            </label>
           </div>
-        </section>
+        </PremiumCard>
+
+        <ResponsiveTabs
+          active={view}
+          onSelect={(id) => setView(id as ViewMode)}
+          tabs={[
+            { id: "agenda", label: "Agenda", icon: CalendarDays },
+            { id: "list", label: "List", icon: ListChecks },
+            { id: "conflicts", label: "Needs attention", icon: AlertTriangle },
+          ]}
+        />
 
         {view === "agenda" ? (
           <section className="grid gap-5">
@@ -580,10 +540,11 @@ export default function ConciergeV2ScheduleHubClient({
                 </div>
               </div>
             )) : (
-              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
-                <CalendarDays className="mx-auto h-8 w-8 text-violet-700" aria-hidden="true" />
-                <p className="mt-3 text-sm font-bold text-slate-500">No schedule items yet.</p>
-              </div>
+              <EmptyState
+                icon={CalendarDays}
+                title="No schedule items yet"
+                description="Add the first practice, party block, deadline, trip detail, or event-day moment so the plan has a clear agenda."
+              />
             )}
           </section>
         ) : null}
@@ -611,9 +572,11 @@ export default function ConciergeV2ScheduleHubClient({
                 </div>
               </div>
             )) : (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-8 text-center">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center">
                 <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-700" aria-hidden="true" />
-                <p className="mt-3 text-sm font-bold text-emerald-800">No conflicts detected.</p>
+                <p className="mt-3 text-sm font-bold text-emerald-800">
+                  No conflicts detected. Your schedule is ready for the next review.
+                </p>
               </div>
             )}
           </section>
