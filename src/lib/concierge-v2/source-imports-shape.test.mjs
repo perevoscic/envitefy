@@ -27,14 +27,20 @@ test("Concierge V2 import APIs expose list, create, review, and apply routes beh
     new URL("../../app/api/concierge/events/[id]/imports/[documentId]/apply/route.ts", import.meta.url),
     "utf8",
   );
+  const uploadRoute = await readFile(
+    new URL("../../app/api/concierge/events/[id]/imports/upload/route.ts", import.meta.url),
+    "utf8",
+  );
   assert.match(route, /ENABLE_OCR_IMPORTS/);
   assert.match(route, /createConciergeV2SourceImport/);
+  assert.match(uploadRoute, /createConciergeV2SourceImportFromFile/);
+  assert.match(uploadRoute, /formData/);
   assert.match(itemRoute, /updateConciergeV2ExtractedItemStatus/);
   assert.match(applyRoute, /applyConciergeV2AcceptedImportItems/);
   assert.match(applyRoute, /resolveSessionUserId/);
 });
 
-test("Concierge V2 import UI supports pasted-text review without fake upload controls", async () => {
+test("Concierge V2 import UI supports pasted-text review and storage-backed uploads", async () => {
   const component = await readFile(
     new URL("../../app/concierge-v2/events/[id]/imports/ConciergeV2ImportCenterClient.tsx", import.meta.url),
     "utf8",
@@ -43,7 +49,10 @@ test("Concierge V2 import UI supports pasted-text review without fake upload con
   assert.match(component, /Extract details/);
   assert.match(component, /Accept all/);
   assert.match(component, /Apply accepted/);
-  assert.match(component, /provider setup required/i);
+  assert.match(component, /Upload source file/);
+  assert.match(component, /type="file"/);
+  assert.match(component, /provider_setup_required/i);
   assert.match(component, /\/api\/concierge\/events\/\$\{encodeURIComponent\(eventId\)\}\/imports/);
-  assert.doesNotMatch(component, /type="file"|Coming soon|\/api\/fake/);
+  assert.match(component, /\/api\/concierge\/events\/\$\{encodeURIComponent\(eventId\)\}\/imports\/upload/);
+  assert.doesNotMatch(component, /Coming soon|\/api\/fake/);
 });

@@ -1,5 +1,7 @@
+import { createHash, randomBytes } from "node:crypto";
 import { query } from "@/lib/db";
 import { ConciergeV2OperationError } from "./operations";
+import { sendConciergeV2Email } from "./providers";
 import { ensureConciergeV2Tables } from "./storage";
 
 export const CONCIERGE_V2_WORKSPACE_ROLES = [
@@ -36,6 +38,23 @@ type MembershipRow = {
   status: string;
   accepted_at: string | null;
   created_at: string;
+};
+
+type MembershipInvitationRow = {
+  id: string;
+  membership_id: string;
+  workspace_id: string;
+  invited_email: string;
+  status: string;
+  expires_at: string;
+  metadata_json: Record<string, any>;
+};
+
+type InviteEmailDelivery = {
+  provider: string;
+  status: "sent" | "blocked" | "failed";
+  providerReference?: string | null;
+  errorMessage?: string | null;
 };
 
 type ParticipantRow = {
@@ -76,6 +95,18 @@ function cleanString(value: any, maxLength = 500): string {
 
 function cleanEmail(value: any): string {
   return cleanString(value, 320).toLowerCase();
+}
+
+function tokenHash(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function appBaseUrl() {
+  return (
+    cleanString(process.env.NEXT_PUBLIC_APP_URL, 500) ||
+    cleanString(process.env.NEXTAUTH_URL, 500) ||
+    "http://localhost:3000"
+  ).replace(/\/+$/, "");
 }
 
 function countValue(value: any): number {
@@ -242,6 +273,78 @@ async function loadParticipants(programId: string) {
     notes: row.notes,
     createdAt: row.created_at,
   }));
+}
+
+async function createMembershipInvitation(params: {
+  membership: MembershipRow;
+  workspaceId: string;
+  invitedEmail: string;
+  invitedByUserId: string;
+  eventHistoryId: string;
+  eventTitle: string;
+}) {
+  const token = randomBytes(32).toString("base64url");
+  const acceptUrl = `${appBaseUrl()}/concierge-v2/invitations/${encodeURIComponent(token)}`;
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const invitation = await query<MembershipInvitationRow>(
+    `insert into membership_invitations (
+       membership_id, workspace_id, invited_email, token_hash, status, expires_at,
+       metadata_json, invited_by_user_id
+     )
+     values ($1, $2, $3, $4, 'pending', $5::timestamptz, $6::jsonb, $7)
+     returning id, membership_id, workspace_id, invited_email, status, expires_at, metadata_json`,
+    [
+      params.membership.id,
+      params.workspaceId,
+      params.invitedEmail,
+      tokenHash(token),
+      expiresAt,
+      JSON.stringify({
+        eventHistoryId: params.eventHistoryId,
+        eventTitle: params.eventTitle,
+        acceptUrl,
+      }),
+      params.invitedByUserId,
+    ],
+  );
+  let delivery: InviteEmailDelivery;
+  try {
+    delivery = await sendConciergeV2Email({
+      to: params.invitedEmail,
+      subject: `You're invited to ${params.eventTitle} on Envitefy`,
+      text: `Open this link to accept your Envitefy workspace invite for ${params.eventTitle}: ${acceptUrl}`,
+      html: `<p>Open this link to accept your Envitefy workspace invite for <strong>${params.eventTitle}</strong>:</p><p><a href="${acceptUrl}">Accept invitation</a></p>`,
+    });
+  } catch (error: any) {
+    delivery = {
+      provider: "resend",
+      status: "failed",
+      errorMessage: String(error?.message || "Unable to send invitation email."),
+    };
+  }
+  await query(
+    `update membership_invitations
+     set metadata_json = metadata_json || $2::jsonb, updated_at = now()
+     where id = $1`,
+    [
+      invitation.rows[0]?.id,
+      JSON.stringify({
+        emailDelivery: {
+          provider: delivery.provider,
+          status: delivery.status,
+          providerReference: delivery.providerReference || null,
+          errorMessage: delivery.errorMessage || null,
+        },
+      }),
+    ],
+  );
+  return {
+    id: invitation.rows[0]?.id || null,
+    status: invitation.rows[0]?.status || "pending",
+    expiresAt,
+    emailDelivery: delivery.status,
+    invitationUrl: delivery.status !== "sent" || process.env.NODE_ENV !== "production" ? acceptUrl : null,
+  };
 }
 
 async function loadUpcoming(programId: string) {
@@ -447,7 +550,20 @@ export async function inviteConciergeV2HubMember(params: {
         existingUserId,
       ],
     );
-    return updated.rows[0];
+    const member = updated.rows[0];
+    if (!member) throw new ConciergeV2OperationError("Unable to update member invitation.", 500);
+    const invitation =
+      member && !existingUserId
+        ? await createMembershipInvitation({
+            membership: member,
+            workspaceId,
+            invitedEmail: email,
+            invitedByUserId: params.userId,
+            eventHistoryId: params.eventHistoryId,
+            eventTitle: access.page.event_title,
+          })
+        : null;
+    return { ...member, invitation };
   }
   const inserted = await query<MembershipRow>(
     `insert into memberships (
@@ -457,7 +573,107 @@ export async function inviteConciergeV2HubMember(params: {
      returning id, user_id, invited_email, role, status, accepted_at, created_at`,
     [workspaceId, existingUserId, email, role, existingUserId ? "active" : "invited", params.userId],
   );
-  return inserted.rows[0];
+  const member = inserted.rows[0];
+  if (!member) throw new ConciergeV2OperationError("Unable to create member invitation.", 500);
+  const invitation =
+    member && !existingUserId
+      ? await createMembershipInvitation({
+          membership: member,
+          workspaceId,
+          invitedEmail: email,
+          invitedByUserId: params.userId,
+          eventHistoryId: params.eventHistoryId,
+          eventTitle: access.page.event_title,
+        })
+      : null;
+  return { ...member, invitation };
+}
+
+export async function acceptConciergeV2HubInvitation(params: {
+  token: string;
+  userId: string;
+  email?: string | null;
+}) {
+  await ensureConciergeV2Tables();
+  const token = cleanString(params.token, 500);
+  if (!token) throw new ConciergeV2OperationError("Invitation token is required.", 400);
+  const invitationRes = await query<
+    MembershipInvitationRow & {
+      role: string;
+      membership_status: string;
+      member_user_id: string | null;
+      event_history_id: string | null;
+      event_title: string | null;
+    }
+  >(
+    `select mi.id, mi.membership_id, mi.workspace_id, mi.invited_email, mi.status, mi.expires_at,
+       mi.metadata_json, m.role, m.status as membership_status, m.user_id as member_user_id,
+       mi.metadata_json->>'eventHistoryId' as event_history_id,
+       mi.metadata_json->>'eventTitle' as event_title
+     from membership_invitations mi
+     join memberships m on m.id = mi.membership_id
+     where mi.token_hash = $1 and mi.status = 'pending'
+     limit 1`,
+    [tokenHash(token)],
+  );
+  const invitation = invitationRes.rows[0];
+  if (!invitation) throw new ConciergeV2OperationError("Invitation was not found or has already been used.", 404);
+  if (new Date(invitation.expires_at).getTime() < Date.now()) {
+    await query(`update membership_invitations set status = 'expired', updated_at = now() where id = $1`, [
+      invitation.id,
+    ]);
+    throw new ConciergeV2OperationError("Invitation has expired.", 410);
+  }
+  const sessionEmail = cleanEmail(params.email);
+  if (sessionEmail && sessionEmail !== cleanEmail(invitation.invited_email)) {
+    throw new ConciergeV2OperationError("Sign in with the invited email address to accept this invitation.", 403);
+  }
+  const existing = await query<MembershipRow>(
+    `select id, user_id, invited_email, role, status, accepted_at, created_at
+     from memberships
+     where workspace_id = $1 and user_id = $2 and status = 'active'
+     limit 1`,
+    [invitation.workspace_id, params.userId],
+  );
+  if (existing.rows[0] && existing.rows[0].id !== invitation.membership_id) {
+    await query(`update memberships set status = 'removed', updated_at = now() where id = $1`, [
+      invitation.membership_id,
+    ]);
+    await query(
+      `update membership_invitations
+       set status = 'accepted', accepted_at = now(), updated_at = now(),
+         metadata_json = metadata_json || $2::jsonb
+       where id = $1`,
+      [invitation.id, JSON.stringify({ acceptedExistingMembershipId: existing.rows[0].id })],
+    );
+    return {
+      accepted: true,
+      workspaceId: invitation.workspace_id,
+      role: existing.rows[0].role,
+      eventHistoryId: invitation.event_history_id,
+      eventTitle: invitation.event_title,
+    };
+  }
+  const updated = await query<MembershipRow>(
+    `update memberships
+     set user_id = $2, status = 'active', accepted_at = now(), updated_at = now()
+     where id = $1
+     returning id, user_id, invited_email, role, status, accepted_at, created_at`,
+    [invitation.membership_id, params.userId],
+  );
+  await query(
+    `update membership_invitations
+     set status = 'accepted', accepted_at = now(), updated_at = now()
+     where id = $1`,
+    [invitation.id],
+  );
+  return {
+    accepted: true,
+    workspaceId: invitation.workspace_id,
+    role: updated.rows[0]?.role || invitation.role,
+    eventHistoryId: invitation.event_history_id,
+    eventTitle: invitation.event_title,
+  };
 }
 
 export async function createConciergeV2HubParticipant(params: {

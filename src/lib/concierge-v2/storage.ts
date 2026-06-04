@@ -2,7 +2,8 @@ import { randomBytes } from "node:crypto";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { insertEventHistory, query, updateEventHistoryData } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
-import { generateOccurrences, parseConciergeInput } from "./core.mjs";
+import { generateOccurrences } from "./core.mjs";
+import { parseConciergeInputWithProvider } from "./providers";
 import {
   buildConciergeV2EventHistoryPayload,
   type ConciergeV2ChecklistItem,
@@ -124,6 +125,28 @@ export async function ensureConciergeV2Tables(): Promise<void> {
       );
       await query(`create index if not exists idx_memberships_workspace_role on memberships(workspace_id, role)`);
       await query(`create index if not exists idx_memberships_invited_email on memberships(invited_email)`);
+      await query(`
+        create table if not exists membership_invitations (
+          id uuid primary key default gen_random_uuid(),
+          membership_id uuid not null references memberships(id) on delete cascade,
+          workspace_id uuid not null references workspaces(id) on delete cascade,
+          invited_email text not null,
+          token_hash text not null unique,
+          status text not null default 'pending',
+          expires_at timestamptz(6) not null,
+          accepted_at timestamptz(6),
+          metadata_json jsonb not null default '{}'::jsonb,
+          invited_by_user_id uuid references users(id) on delete set null,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(
+        `create index if not exists idx_membership_invitations_membership on membership_invitations(membership_id, status)`,
+      );
+      await query(
+        `create index if not exists idx_membership_invitations_email on membership_invitations(invited_email, status)`,
+      );
       await query(`
         create table if not exists families (
           id uuid primary key default gen_random_uuid(),
@@ -832,12 +855,20 @@ export async function createConciergeV2Session(params: {
 }): Promise<ConciergeV2SessionRow> {
   await ensureConciergeV2Tables();
   const inputText = cleanString(params.inputText, 12000);
-  const draft =
-    params.draft ||
-    parseConciergeInput(inputText, {
+  const providerResult = params.draft
+    ? {
+        draft: params.draft,
+        provider: "client",
+        model: "provided",
+        raw: { providedByClient: true },
+        fallbackUsed: false,
+        errorMessage: null,
+      }
+    : await parseConciergeInputWithProvider(inputText, {
       sourceKind: params.sourceKind || "text",
       referenceDate: params.referenceDate || undefined,
     });
+  const draft = providerResult.draft;
   const workspaceId = await getOrCreatePersonalWorkspace(params.userId);
   const res = await query(
     `insert into concierge_sessions (
@@ -853,7 +884,7 @@ export async function createConciergeV2Session(params: {
        normalized_output_json,
        missing_fields_json
      )
-     values ($1, $2, $3, $4, $5, 'parsed', 'deterministic', 'fallback-v2', $6::jsonb, $7::jsonb, $8::jsonb)
+     values ($1, $2, $3, $4, $5, 'parsed', $6, $7, $8::jsonb, $9::jsonb, $10::jsonb)
      returning id, workspace_id, user_id, mode, source_kind, input_text, status, model_provider, model_name,
        raw_output_json, normalized_output_json, missing_fields_json, error_message, created_at, updated_at`,
     [
@@ -862,7 +893,14 @@ export async function createConciergeV2Session(params: {
       cleanString(draft.mode, 80) || null,
       params.sourceKind || "text",
       inputText,
-      JSON.stringify({ inputText }),
+      providerResult.provider,
+      providerResult.model,
+      JSON.stringify({
+        ...providerResult.raw,
+        inputText,
+        fallbackUsed: providerResult.fallbackUsed,
+        providerError: providerResult.errorMessage || null,
+      }),
       JSON.stringify(draft),
       JSON.stringify(asArray(draft.missingFields)),
     ],

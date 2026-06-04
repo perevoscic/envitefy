@@ -2,10 +2,13 @@
 
 import {
   AlertTriangle,
+  Archive,
   CalendarDays,
   CheckCircle2,
   ClipboardCheck,
+  Download,
   FileSearch,
+  LogOut,
   MapPin,
   RefreshCw,
   ShieldCheck,
@@ -223,6 +226,48 @@ export default function ConciergeV2ResourcesClient({
     }
   }
 
+  async function checkOutAttendance(participantId: string) {
+    if (!selectedOccurrence) return;
+    setPending(`${selectedOccurrence.id}:${participantId}:checkout`);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/concierge/events/${encodeURIComponent(eventId)}/resources/attendance/checkout`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ occurrenceId: selectedOccurrence.id, participantId }),
+      });
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Unable to check out participant.");
+      setResources(json.resources);
+      setNotice("Participant checked out.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to check out participant.");
+    } finally {
+      setPending(null);
+    }
+  }
+
+  async function archiveResource(resourceId: string) {
+    setPending(`archive:${resourceId}`);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch(
+        `/api/concierge/events/${encodeURIComponent(eventId)}/resources/${encodeURIComponent(resourceId)}`,
+        { method: "DELETE" },
+      );
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Unable to archive resource.");
+      setResources(json.resources);
+      setNotice("Resource archived.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to archive resource.");
+    } finally {
+      setPending(null);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#f7f8fb] text-slate-950">
       <header className="border-b border-slate-200 bg-white">
@@ -333,6 +378,17 @@ export default function ConciergeV2ResourcesClient({
                     ) : null}
                     {resource.capacity ? (
                       <p className="mt-2 text-sm font-semibold text-slate-500">Capacity {Number(resource.capacity)}</p>
+                    ) : null}
+                    {canManageResources && clean(resource.status) !== "archived" ? (
+                      <button
+                        type="button"
+                        onClick={() => void archiveResource(resource.id)}
+                        disabled={pending === `archive:${resource.id}`}
+                        className="mt-4 inline-flex h-9 items-center gap-2 rounded-full bg-white px-3 text-xs font-black uppercase tracking-[0.12em] text-slate-700 transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Archive className="h-4 w-4" aria-hidden="true" />
+                        Archive
+                      </button>
                     ) : null}
                   </article>
                 ))}
@@ -484,7 +540,18 @@ export default function ConciergeV2ResourcesClient({
             ) : null}
 
             <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-xl font-black text-slate-950">Day-of check-in</h2>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-xl font-black text-slate-950">Day-of check-in</h2>
+                <a
+                  href={`/api/concierge/events/${encodeURIComponent(eventId)}/resources/attendance/export${
+                    selectedOccurrence?.id ? `?occurrenceId=${encodeURIComponent(selectedOccurrence.id)}` : ""
+                  }`}
+                  className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-black text-violet-700 ring-1 ring-slate-200 transition hover:ring-violet-200"
+                >
+                  <Download className="h-4 w-4" aria-hidden="true" />
+                  Export CSV
+                </a>
+              </div>
               <div className="mt-5 grid gap-3">
                 <select
                   value={selectedOccurrence?.id || ""}
@@ -522,6 +589,17 @@ export default function ConciergeV2ResourcesClient({
                               {label}
                             </button>
                           ))}
+                          {row && !row.checkedOutAt ? (
+                            <button
+                              type="button"
+                              onClick={() => void checkOutAttendance(participant.id)}
+                              disabled={pending === `${selectedOccurrence?.id}:${participant.id}:checkout`}
+                              className="rounded-full bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <LogOut className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
+                              Check out
+                            </button>
+                          ) : null}
                         </div>
                       ) : null}
                     </div>

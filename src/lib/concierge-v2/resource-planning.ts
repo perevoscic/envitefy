@@ -43,6 +43,16 @@ type ResourceRow = {
   attributes_json: Record<string, any>;
 };
 
+type RequirementRow = {
+  id: string;
+  occurrence_id: string;
+  occurrence_title: string;
+  resource_type: string;
+  quantity: number;
+  required_attributes_json: Record<string, any>;
+  notes: string | null;
+};
+
 type AssignmentRow = {
   id: string;
   occurrence_id: string;
@@ -260,6 +270,27 @@ async function loadResources(workspaceId: string) {
   }));
 }
 
+async function loadRequirements(programId: string) {
+  const res = await query<RequirementRow>(
+    `select rr.id, rr.occurrence_id, eo.title as occurrence_title, rr.resource_type,
+       rr.quantity, rr.required_attributes_json, rr.notes
+     from resource_requirements rr
+     join event_occurrences eo on eo.id = rr.occurrence_id
+     where eo.program_id = $1
+     order by eo.start_at asc nulls last, rr.resource_type asc`,
+    [programId],
+  );
+  return res.rows.map((row) => ({
+    id: row.id,
+    occurrenceId: row.occurrence_id,
+    occurrenceTitle: row.occurrence_title,
+    resourceType: row.resource_type,
+    quantity: Number(row.quantity || 1),
+    requiredAttributes: asRecord(row.required_attributes_json),
+    notes: row.notes,
+  }));
+}
+
 async function loadAssignments(programId: string): Promise<ResourceAssignment[]> {
   const res = await query<AssignmentRow>(
     `select ra.id, ra.occurrence_id, eo.title as occurrence_title,
@@ -414,9 +445,10 @@ export async function getConciergeV2ResourcePlanningCenter(params: {
   const access = await requireResourceAccess(params);
   const workspaceId = access.page.workspace_id as string;
   const programId = access.page.program_id as string;
-  const [venues, resources, occurrences, assignments, participants, attendance] = await Promise.all([
+  const [venues, resources, requirements, occurrences, assignments, participants, attendance] = await Promise.all([
     loadVenues(workspaceId),
     loadResources(workspaceId),
+    loadRequirements(programId),
     loadOccurrences(programId),
     loadAssignments(programId),
     loadParticipants(programId),
@@ -443,6 +475,7 @@ export async function getConciergeV2ResourcePlanningCenter(params: {
     },
     venues,
     resources,
+    requirements,
     occurrences,
     assignments: assignments.map((assignment) => ({
       ...assignment,
@@ -454,6 +487,7 @@ export async function getConciergeV2ResourcePlanningCenter(params: {
     counts: {
       venues: venues.length,
       resources: resources.length,
+      requirements: requirements.length,
       assignments: assignments.length,
       conflicts: conflicts.length,
       participants: participants.length,
@@ -496,6 +530,103 @@ export async function createConciergeV2Resource(params: {
       name,
       numberOrNull(params.capacity),
       JSON.stringify({ notes: cleanString(params.notes, 500) || null }),
+    ],
+  );
+  return { id: inserted.rows[0]?.id || null };
+}
+
+export async function updateConciergeV2Resource(params: {
+  eventHistoryId: string;
+  userId: string;
+  resourceId: string;
+  name?: string | null;
+  resourceType?: string | null;
+  venueName?: string | null;
+  capacity?: number | string | null;
+  notes?: string | null;
+  status?: string | null;
+}) {
+  const access = await requireResourceAccess(params);
+  if (!access.canManageResources) {
+    throw new ConciergeV2OperationError("You need scheduler or coach/teacher access to manage resources.", 403);
+  }
+  const workspaceId = access.page.workspace_id as string;
+  const existing = await query<ResourceRow>(
+    `select id, venue_id, null as venue_name, resource_type, name, capacity, status, attributes_json
+     from resources
+     where id = $1 and workspace_id = $2
+     limit 1`,
+    [params.resourceId, workspaceId],
+  );
+  const current = existing.rows[0];
+  if (!current) throw new ConciergeV2OperationError("Resource not found.", 404);
+  const venueId = params.venueName !== undefined
+    ? await getOrCreateVenue({ workspaceId, venueName: params.venueName, timezone: "America/Chicago" })
+    : current.venue_id;
+  const status = cleanString(params.status, 40).toLowerCase();
+  const nextStatus = ["active", "inactive", "archived"].includes(status) ? status : current.status;
+  const updated = await query<{ id: string }>(
+    `update resources
+     set venue_id = $3,
+       resource_type = $4,
+       name = $5,
+       capacity = $6,
+       attributes_json = attributes_json || $7::jsonb,
+       status = $8,
+       updated_at = now()
+     where id = $1 and workspace_id = $2
+     returning id`,
+    [
+      params.resourceId,
+      workspaceId,
+      venueId,
+      params.resourceType ? normalizeResourceType(params.resourceType) : current.resource_type,
+      cleanString(params.name, 220) || current.name,
+      params.capacity === undefined ? current.capacity : numberOrNull(params.capacity),
+      JSON.stringify({ notes: params.notes === undefined ? asRecord(current.attributes_json).notes || null : cleanString(params.notes, 500) || null }),
+      nextStatus,
+    ],
+  );
+  return { id: updated.rows[0]?.id || params.resourceId };
+}
+
+export async function archiveConciergeV2Resource(params: {
+  eventHistoryId: string;
+  userId: string;
+  resourceId: string;
+}) {
+  return updateConciergeV2Resource({ ...params, status: "archived" });
+}
+
+export async function createConciergeV2ResourceRequirement(params: {
+  eventHistoryId: string;
+  userId: string;
+  occurrenceId: string;
+  resourceType: string;
+  quantity?: number | string | null;
+  notes?: string | null;
+  requiredAttributes?: any;
+}) {
+  const access = await requireResourceAccess(params);
+  if (!access.canManageResources) {
+    throw new ConciergeV2OperationError("You need scheduler or coach/teacher access to manage resource requirements.", 403);
+  }
+  const programId = access.page.program_id as string;
+  const occurrence = await getOccurrenceForProgram(programId, params.occurrenceId);
+  if (!occurrence) throw new ConciergeV2OperationError("Schedule item not found.", 404);
+  const quantity = Math.max(1, Math.min(50, Number(params.quantity || 1) || 1));
+  const inserted = await query<{ id: string }>(
+    `insert into resource_requirements (
+       occurrence_id, resource_type, quantity, required_attributes_json, notes
+     )
+     values ($1, $2, $3, $4::jsonb, $5)
+     returning id`,
+    [
+      occurrence.id,
+      normalizeResourceType(params.resourceType),
+      quantity,
+      JSON.stringify(asRecord(params.requiredAttributes)),
+      cleanString(params.notes, 500) || null,
     ],
   );
   return { id: inserted.rows[0]?.id || null };
@@ -593,4 +724,104 @@ export async function updateConciergeV2Attendance(params: {
     ],
   );
   return updated.rows[0] || null;
+}
+
+export async function checkOutConciergeV2Attendance(params: {
+  eventHistoryId: string;
+  userId: string;
+  occurrenceId: string;
+  participantId: string;
+  notes?: string | null;
+}) {
+  const access = await requireResourceAccess(params);
+  if (!access.canMarkAttendance) {
+    throw new ConciergeV2OperationError("You need check-in access to check out participants.", 403);
+  }
+  const programId = access.page.program_id as string;
+  const occurrence = await getOccurrenceForProgram(programId, params.occurrenceId);
+  if (!occurrence) throw new ConciergeV2OperationError("Schedule item not found.", 404);
+  const updated = await query(
+    `update attendance_records ar
+     set checked_out_at = now(),
+       marked_by_user_id = $4,
+       notes = coalesce($5, notes),
+       updated_at = now()
+     from program_participants pp
+     where ar.occurrence_id = $1
+       and ar.participant_id = $2
+       and pp.participant_id = ar.participant_id
+       and pp.program_id = $3
+     returning ar.id, ar.status, ar.checked_in_at, ar.checked_out_at`,
+    [
+      occurrence.id,
+      params.participantId,
+      programId,
+      params.userId,
+      cleanString(params.notes, 500) || null,
+    ],
+  );
+  if (!updated.rows[0]) {
+    throw new ConciergeV2OperationError("Check this participant in before checking them out.", 409);
+  }
+  return updated.rows[0];
+}
+
+function csvCell(value: any) {
+  const text = cleanString(value, 2000);
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+export async function exportConciergeV2AttendanceCsv(params: {
+  eventHistoryId: string;
+  userId: string;
+  occurrenceId?: string | null;
+}) {
+  const access = await requireResourceAccess(params);
+  if (!access.canMarkAttendance && !access.canManageResources) {
+    throw new ConciergeV2OperationError("You need check-in access to export attendance.", 403);
+  }
+  const programId = access.page.program_id as string;
+  const rows = await query<{
+    occurrence_title: string;
+    occurrence_start_at: string | null;
+    participant_name: string;
+    group_name: string | null;
+    status: string | null;
+    checked_in_at: string | null;
+    checked_out_at: string | null;
+    notes: string | null;
+  }>(
+    `select eo.title as occurrence_title, eo.start_at as occurrence_start_at,
+       coalesce(p.display_name, concat_ws(' ', p.first_name, p.last_name)) as participant_name,
+       pp.group_name, ar.status, ar.checked_in_at, ar.checked_out_at, ar.notes
+     from program_participants pp
+     join participants p on p.id = pp.participant_id
+     join event_occurrences eo on eo.program_id = pp.program_id
+     left join attendance_records ar on ar.occurrence_id = eo.id and ar.participant_id = p.id
+     where pp.program_id = $1
+       and pp.roster_status = 'active'
+       and ($2::uuid is null or eo.id = $2::uuid)
+     order by eo.start_at asc nulls last, participant_name asc`,
+    [programId, cleanString(params.occurrenceId, 80) || null],
+  );
+  const lines = [
+    ["Occurrence", "Starts At", "Participant", "Group", "Status", "Checked In", "Checked Out", "Notes"].join(","),
+    ...rows.rows.map((row) =>
+      [
+        row.occurrence_title,
+        row.occurrence_start_at,
+        row.participant_name,
+        row.group_name,
+        row.status || "expected",
+        row.checked_in_at,
+        row.checked_out_at,
+        row.notes,
+      ].map(csvCell).join(","),
+    ),
+  ];
+  return {
+    filename: `envitefy-attendance-${params.eventHistoryId}.csv`,
+    contentType: "text/csv; charset=utf-8",
+    csv: `${lines.join("\n")}\n`,
+  };
 }

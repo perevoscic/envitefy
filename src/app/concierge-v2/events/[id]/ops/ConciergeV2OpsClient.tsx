@@ -119,6 +119,35 @@ export default function ConciergeV2OpsClient({
     }
   }
 
+  async function startCheckout(paymentId: string) {
+    setPendingPaymentId(paymentId);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch(
+        `/api/concierge/events/${encodeURIComponent(eventId)}/payment-requests/${encodeURIComponent(paymentId)}/checkout`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Unable to create checkout session.");
+      const checkoutUrl = clean(json.checkout?.checkoutUrl);
+      if (!checkoutUrl) {
+        throw new Error(json.checkout?.errorMessage || "Payment provider is not configured.");
+      }
+      window.open(checkoutUrl, "_blank", "noopener,noreferrer");
+      setNotice("Stripe Checkout opened.");
+      await reloadSummary();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to create checkout session.");
+    } finally {
+      setPendingPaymentId(null);
+    }
+  }
+
   async function previewReminder(reminderId: string) {
     setPendingReminderId(reminderId);
     setError(null);
@@ -153,6 +182,28 @@ export default function ConciergeV2OpsClient({
       await reloadReminderQueue();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to dry-run reminder.");
+    } finally {
+      setPendingReminderId(null);
+    }
+  }
+
+  async function sendReminder(reminderId: string) {
+    setPendingReminderId(reminderId);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch(
+        `/api/concierge/events/${encodeURIComponent(eventId)}/reminders/${encodeURIComponent(reminderId)}/send`,
+        { method: "POST" },
+      );
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Unable to send reminder.");
+      setPreviewByReminder((current) => ({ ...current, [reminderId]: json.delivery.preview }));
+      setNotice(`Reminder ${clean(json.delivery.status) || "processed"} for ${Number(json.delivery.deliveryCount || 0)} recipient record(s).`);
+      await reloadReminderQueue();
+      await reloadSummary();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to send reminder.");
     } finally {
       setPendingReminderId(null);
     }
@@ -381,6 +432,15 @@ export default function ConciergeV2OpsClient({
                       {status}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    disabled={pendingPaymentId === payment.id}
+                    onClick={() => void startCheckout(payment.id)}
+                    className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <WalletCards className="h-3.5 w-3.5" aria-hidden="true" />
+                    Checkout
+                  </button>
                 </div>
               </div>
             )) : (
@@ -448,6 +508,15 @@ export default function ConciergeV2OpsClient({
                     >
                       <Send className="h-3.5 w-3.5" aria-hidden="true" />
                       Dry run
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pendingReminderId === reminder.id || clean(reminder.status) === "canceled"}
+                      onClick={() => void sendReminder(reminder.id)}
+                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      <Send className="h-3.5 w-3.5" aria-hidden="true" />
+                      Send now
                     </button>
                     <button
                       type="button"

@@ -1,4 +1,5 @@
 import { query } from "@/lib/db";
+import { createStripeCheckoutSession } from "./providers";
 import { ensureConciergeV2Tables } from "./storage";
 
 export class ConciergeV2OperationError extends Error {
@@ -13,6 +14,8 @@ export class ConciergeV2OperationError extends Error {
 
 type EventPageRow = {
   event_page_id: string;
+  workspace_id: string | null;
+  program_id: string | null;
   owner_user_id: string | null;
   event_title: string;
 };
@@ -137,7 +140,7 @@ function sanitizeAnswers(value: any): Record<string, string | number | boolean |
 
 async function getEventPage(eventHistoryId: string): Promise<EventPageRow | null> {
   const res = await query<EventPageRow>(
-    `select ep.id as event_page_id, ep.owner_user_id, eh.title as event_title
+    `select ep.id as event_page_id, ep.workspace_id, ep.program_id, ep.owner_user_id, eh.title as event_title
      from event_pages ep
      join event_history eh on eh.id = ep.legacy_event_history_id
      where ep.legacy_event_history_id = $1
@@ -503,4 +506,137 @@ export async function updateConciergeV2PaymentStatus(params: {
     currency: payment.currency || "USD",
     status: payment.status,
   };
+}
+
+function baseUrl(origin?: string | null) {
+  return (
+    cleanString(origin, 500) ||
+    cleanString(process.env.NEXT_PUBLIC_APP_URL, 500) ||
+    cleanString(process.env.NEXTAUTH_URL, 500) ||
+    "http://localhost:3000"
+  ).replace(/\/+$/, "");
+}
+
+export async function createConciergeV2PaymentCheckout(params: {
+  eventHistoryId: string;
+  paymentRequestId: string;
+  origin?: string | null;
+  guestName?: string | null;
+  userId?: string | null;
+}) {
+  await ensureConciergeV2Tables();
+  const page = await getEventPage(params.eventHistoryId);
+  if (!page) throw new ConciergeV2OperationError("Concierge event page not found.", 404);
+  const paymentRes = await query<PaymentRequestRow>(
+    `select id, title, description, amount_cents, currency, due_at, status,
+       external_payment_url, external_payment_note
+     from payment_requests
+     where id = $1 and event_page_id = $2 and status not in ('paid', 'waived', 'refunded', 'canceled')
+     limit 1`,
+    [params.paymentRequestId, page.event_page_id],
+  );
+  const payment = paymentRes.rows[0];
+  if (!payment) throw new ConciergeV2OperationError("Payment request not found.", 404);
+  const amountCents = Number(payment.amount_cents || 0);
+  if (!Number.isFinite(amountCents) || amountCents < 50) {
+    throw new ConciergeV2OperationError("Payment request amount must be at least 50 cents.", 400);
+  }
+  const root = baseUrl(params.origin);
+  const checkout = await createStripeCheckoutSession({
+    paymentRequestId: payment.id,
+    eventHistoryId: params.eventHistoryId,
+    title: payment.title,
+    amountCents,
+    currency: payment.currency || "USD",
+    successUrl: `${root}/event/${encodeURIComponent(params.eventHistoryId)}?payment=success`,
+    cancelUrl: `${root}/event/${encodeURIComponent(params.eventHistoryId)}?payment=cancelled`,
+  });
+  await query(
+    `insert into payments (
+       payment_request_id, user_id, guest_name, amount_cents, currency, status, provider,
+       provider_reference, provider_payload_json, notes
+     )
+     values ($1, $2, $3, $4, $5, $6, 'stripe', $7, $8::jsonb, $9)`,
+    [
+      payment.id,
+      params.userId || null,
+      cleanString(params.guestName, 180) || null,
+      amountCents,
+      payment.currency || "USD",
+      checkout.status === "created" ? "pending" : checkout.status,
+      checkout.providerReference || null,
+      JSON.stringify(checkout.providerPayload || {}),
+      checkout.errorMessage || null,
+    ],
+  );
+  if (checkout.status === "created" && checkout.url) {
+    await query(
+      `update payment_requests
+       set status = 'pending', external_payment_url = $2,
+         external_payment_note = 'Stripe Checkout session created.', updated_at = now()
+       where id = $1`,
+      [payment.id, checkout.url],
+    );
+  }
+  return {
+    paymentRequestId: payment.id,
+    status: checkout.status,
+    provider: checkout.provider,
+    checkoutUrl: checkout.url || null,
+    providerReference: checkout.providerReference || null,
+    errorMessage: checkout.errorMessage || null,
+  };
+}
+
+export async function reconcileConciergeV2StripeCheckout(params: { payload: Record<string, any> }) {
+  await ensureConciergeV2Tables();
+  const payload = asRecord(params.payload);
+  const type = cleanString(payload.type, 120);
+  const session = asRecord(asRecord(payload.data).object);
+  const metadata = asRecord(session.metadata);
+  const paymentRequestId = cleanString(metadata.paymentRequestId, 80);
+  const sessionId = cleanString(session.id, 240);
+  if (!sessionId || !paymentRequestId) {
+    return { handled: false, reason: "missing_checkout_metadata", type };
+  }
+
+  const nextStatus =
+    type === "checkout.session.completed"
+      ? "paid"
+      : type === "checkout.session.expired"
+        ? "canceled"
+        : type === "checkout.session.async_payment_failed"
+          ? "failed"
+          : "";
+  if (!nextStatus) return { handled: false, reason: "ignored_event_type", type };
+
+  const amountCents = Number(session.amount_total || 0);
+  const currency = cleanString(session.currency, 12).toUpperCase() || "USD";
+  const updated = await query<{ id: string }>(
+    `update payments
+     set status = $2,
+       amount_cents = case when $3 > 0 then $3 else amount_cents end,
+       currency = $4,
+       provider_payload_json = $5::jsonb,
+       paid_at = case when $2 = 'paid' then coalesce(paid_at, now()) else paid_at end,
+       updated_at = now()
+     where provider = 'stripe' and provider_reference = $1
+     returning id`,
+    [sessionId, nextStatus, amountCents, currency, JSON.stringify(payload)],
+  );
+  if (!updated.rows[0]) {
+    await query(
+      `insert into payments (
+         payment_request_id, amount_cents, currency, status, provider, provider_reference,
+         provider_payload_json, paid_at
+       )
+       values ($1, $2, $3, $4, 'stripe', $5, $6::jsonb, case when $4 = 'paid' then now() else null end)`,
+      [paymentRequestId, amountCents, currency, nextStatus, sessionId, JSON.stringify(payload)],
+    );
+  }
+  await query(`update payment_requests set status = $2, updated_at = now() where id = $1`, [
+    paymentRequestId,
+    nextStatus,
+  ]);
+  return { handled: true, type, paymentRequestId, providerReference: sessionId, status: nextStatus };
 }

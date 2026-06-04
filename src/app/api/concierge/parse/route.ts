@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { assertConciergeV2Enabled } from "@/config/concierge-v2-flags";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
-import { parseConciergeInput } from "@/lib/concierge-v2/core.mjs";
+import { parseConciergeInputWithProvider } from "@/lib/concierge-v2/providers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,12 +26,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Tell Envitefy what is happening." }, { status: 400 });
     }
 
-    const draft = parseConciergeInput(inputText, {
+    const parsed = await parseConciergeInputWithProvider(inputText, {
       sourceKind: cleanString(body?.sourceKind, 80) || "text",
       referenceDate: cleanString(body?.referenceDate, 80) || undefined,
       timezone: cleanString(body?.timezone, 80) || undefined,
     });
-    return NextResponse.json({ ok: true, draft });
+    return NextResponse.json({
+      ok: true,
+      draft: parsed.draft,
+      provider: {
+        provider: parsed.provider,
+        model: parsed.model,
+        fallbackUsed: parsed.fallbackUsed,
+        errorMessage: parsed.errorMessage || null,
+      },
+    });
   } catch (error: any) {
     const status = /disabled/i.test(String(error?.message || "")) ? 404 : 500;
     return NextResponse.json(

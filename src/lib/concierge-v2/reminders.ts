@@ -1,5 +1,6 @@
 import { query } from "@/lib/db";
 import { ConciergeV2OperationError } from "./operations";
+import { getConciergeV2ProviderStatus, sendConciergeV2Email, sendConciergeV2Sms } from "./providers";
 import { ensureConciergeV2Tables } from "./storage";
 
 type EventPageRow = {
@@ -42,6 +43,7 @@ type DeliveryRow = {
 type ReminderRecipient = {
   guestName: string | null;
   email: string;
+  phone: string;
   source: "rsvp" | "form" | "volunteer";
 };
 
@@ -61,6 +63,19 @@ function reminderTitle(row: ReminderRow): string {
 function normalizeEmail(value: any): string {
   const email = cleanString(value, 240).toLowerCase();
   return email.includes("@") ? email : "";
+}
+
+function normalizePhone(value: any): string {
+  const phone = cleanString(value, 80).replace(/[^\d+]/g, "");
+  return phone.length >= 10 ? phone : "";
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function requireOwner(page: EventPageRow, userId: string | null | undefined) {
@@ -110,16 +125,16 @@ async function loadReminderAudience(params: {
   eventPageId: string;
 }): Promise<{ recipients: ReminderRecipient[]; missingContactCount: number }> {
   const [rsvps, forms, volunteers] = await Promise.all([
-    query<{ guest_name: string | null; email: string | null }>(
-      `select name as guest_name, email
+    query<{ guest_name: string | null; email: string | null; phone: string | null }>(
+      `select name as guest_name, email, phone
        from rsvp_responses
-       where event_id = $1 and email is not null
+       where event_id = $1 and (email is not null or phone is not null)
        order by updated_at desc nulls last, created_at desc nulls last
        limit 250`,
       [params.eventHistoryId],
     ).catch(() => ({ rows: [] })),
-    query<{ guest_name: string | null; email: string | null }>(
-      `select fr.guest_name, fr.guest_email as email
+    query<{ guest_name: string | null; email: string | null; phone: string | null }>(
+      `select fr.guest_name, fr.guest_email as email, null::text as phone
        from form_responses fr
        join smart_forms sf on sf.id = fr.form_id
        where sf.event_page_id = $1 and fr.guest_email is not null
@@ -127,8 +142,8 @@ async function loadReminderAudience(params: {
        limit 250`,
       [params.eventPageId],
     ),
-    query<{ guest_name: string | null; email: string | null }>(
-      `select vc.guest_name, vc.guest_email as email
+    query<{ guest_name: string | null; email: string | null; phone: string | null }>(
+      `select vc.guest_name, vc.guest_email as email, null::text as phone
        from volunteer_claims vc
        join volunteer_slots vs on vs.id = vc.slot_id
        join volunteer_boards vb on vb.id = vs.board_id
@@ -142,19 +157,22 @@ async function loadReminderAudience(params: {
   const recipients = new Map<string, ReminderRecipient>();
   let missingContactCount = 0;
   const addRows = (
-    rows: Array<{ guest_name: string | null; email: string | null }>,
+    rows: Array<{ guest_name: string | null; email: string | null; phone?: string | null }>,
     source: ReminderRecipient["source"],
   ) => {
     for (const row of rows) {
       const email = normalizeEmail(row.email);
-      if (!email) {
+      const phone = normalizePhone(row.phone);
+      if (!email && !phone) {
         missingContactCount += 1;
         continue;
       }
-      if (!recipients.has(email)) {
-        recipients.set(email, {
+      const key = email || phone;
+      if (!recipients.has(key)) {
+        recipients.set(key, {
           guestName: cleanString(row.guest_name, 180) || null,
           email,
+          phone,
           source,
         });
       }
@@ -202,7 +220,10 @@ function buildReminderPreview(params: {
         : `${params.recipientCount} reachable guests`,
     recipientCount: params.recipientCount,
     missingContactCount: params.missingContactCount,
-    providerStatus: "stub",
+    providerStatus:
+      cleanString(params.reminder.channel, 40) === "sms"
+        ? getConciergeV2ProviderStatus().sms
+        : getConciergeV2ProviderStatus().email,
   };
 }
 
@@ -331,7 +352,7 @@ export async function dryRunConciergeV2Reminder(params: {
   });
   const recipients = audience.recipients.length
     ? audience.recipients
-    : [{ guestName: null, email: "", source: "rsvp" as const }];
+    : [{ guestName: null, email: "", phone: "", source: "rsvp" as const }];
   const created: DeliveryRow[] = [];
   for (const recipient of recipients.slice(0, 250)) {
     const delivery = await query<DeliveryRow>(
@@ -345,8 +366,14 @@ export async function dryRunConciergeV2Reminder(params: {
         reminder.id,
         recipient.guestName,
         preview.channel,
-        recipient.email || null,
-        recipient.email ? null : "No reachable recipients matched this reminder.",
+        preview.channel === "sms" ? recipient.phone || null : recipient.email || null,
+        preview.channel === "sms"
+          ? recipient.phone
+            ? null
+            : "No reachable phone recipients matched this reminder."
+          : recipient.email
+            ? null
+            : "No reachable email recipients matched this reminder.",
         JSON.stringify({
           preview,
           recipientSource: recipient.source,
@@ -365,6 +392,136 @@ export async function dryRunConciergeV2Reminder(params: {
       toAddress: delivery.to_address,
       status: delivery.status,
       provider: delivery.provider,
+      createdAt: delivery.created_at,
+    })),
+  };
+}
+
+export async function sendConciergeV2ReminderNow(params: {
+  eventHistoryId: string;
+  reminderId: string;
+  userId: string;
+}) {
+  const { page, reminder } = await getOwnedReminder(params);
+  const audience = await loadReminderAudience({
+    eventHistoryId: params.eventHistoryId,
+    eventPageId: page.event_page_id,
+  });
+  const preview = buildReminderPreview({
+    eventHistoryId: params.eventHistoryId,
+    page,
+    reminder,
+    recipientCount: audience.recipients.length,
+    missingContactCount: audience.missingContactCount,
+  });
+  const recipients = audience.recipients.length
+    ? audience.recipients
+    : [{ guestName: null, email: "", phone: "", source: "rsvp" as const }];
+  const deliveries: DeliveryRow[] = [];
+  for (const recipient of recipients.slice(0, 250)) {
+    const channel = preview.channel === "sms" ? "sms" : "email";
+    const toAddress = channel === "sms" ? recipient.phone : recipient.email;
+    if (!toAddress) {
+      const inserted = await query<DeliveryRow>(
+        `insert into message_deliveries (
+           reminder_id, guest_name, channel, to_address, status, provider, error_message, metadata_json
+         )
+         values ($1, $2, $3, null, 'blocked', $4, $5, $6::jsonb)
+         returning id, reminder_id, guest_name, channel, to_address, status, provider,
+           error_message, metadata_json, created_at`,
+        [
+          reminder.id,
+          recipient.guestName,
+          channel,
+          channel === "sms" ? "twilio" : "resend",
+          channel === "sms"
+            ? "No reachable phone recipients matched this reminder."
+            : "No reachable email recipients matched this reminder.",
+          JSON.stringify({ preview, recipientSource: recipient.source, providerCalled: false }),
+        ],
+      );
+      if (inserted.rows[0]) deliveries.push(inserted.rows[0]);
+      continue;
+    }
+    if (channel === "sms") {
+      const result = await sendConciergeV2Sms({
+        to: toAddress,
+        body: preview.body,
+      });
+      const inserted = await query<DeliveryRow>(
+        `insert into message_deliveries (
+           reminder_id, guest_name, channel, to_address, status, provider, provider_message_id,
+           error_message, sent_at, metadata_json
+         )
+         values ($1, $2, 'sms', $3, $4, $5, $6, $7, case when $4 = 'sent' then now() else null end, $8::jsonb)
+         returning id, reminder_id, guest_name, channel, to_address, status, provider,
+           error_message, metadata_json, created_at`,
+        [
+          reminder.id,
+          recipient.guestName,
+          toAddress,
+          result.status,
+          result.provider,
+          result.providerReference || null,
+          result.errorMessage || null,
+          JSON.stringify({
+            preview,
+            recipientSource: recipient.source,
+            providerCalled: result.status !== "blocked",
+            providerPayload: result.providerPayload || null,
+          }),
+        ],
+      );
+      if (inserted.rows[0]) deliveries.push(inserted.rows[0]);
+      continue;
+    }
+    const result = await sendConciergeV2Email({
+      to: toAddress,
+      subject: preview.subject,
+      text: preview.body,
+      html: `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">${escapeHtml(preview.body).replace(/\n/g, "<br />")}</div>`,
+    });
+    const inserted = await query<DeliveryRow>(
+      `insert into message_deliveries (
+         reminder_id, guest_name, channel, to_address, status, provider, provider_message_id,
+         error_message, sent_at, metadata_json
+       )
+       values ($1, $2, 'email', $3, $4, $5, $6, $7, case when $4 = 'sent' then now() else null end, $8::jsonb)
+       returning id, reminder_id, guest_name, channel, to_address, status, provider,
+         error_message, metadata_json, created_at`,
+      [
+        reminder.id,
+        recipient.guestName,
+        toAddress,
+        result.status,
+        result.provider,
+        result.providerReference || null,
+        result.errorMessage || null,
+        JSON.stringify({
+          preview,
+          recipientSource: recipient.source,
+          providerCalled: result.status !== "blocked",
+          providerPayload: result.providerPayload || null,
+        }),
+      ],
+    );
+    if (inserted.rows[0]) deliveries.push(inserted.rows[0]);
+  }
+  const sentCount = deliveries.filter((delivery) => delivery.status === "sent").length;
+  const nextStatus = sentCount > 0 ? "sent" : "blocked";
+  await query(`update reminders set status = $2, updated_at = now() where id = $1`, [reminder.id, nextStatus]);
+  return {
+    preview,
+    status: nextStatus,
+    deliveryCount: deliveries.length,
+    sentCount,
+    deliveries: deliveries.map((delivery) => ({
+      id: delivery.id,
+      guestName: delivery.guest_name,
+      toAddress: delivery.to_address,
+      status: delivery.status,
+      provider: delivery.provider,
+      errorMessage: delivery.error_message,
       createdAt: delivery.created_at,
     })),
   };
@@ -441,22 +598,126 @@ export async function dispatchDueConciergeV2Reminders(params: {
       recipientCount: audience.recipients.length,
       missingContactCount: audience.missingContactCount,
     });
-    await query(
-      `insert into message_deliveries (
-         reminder_id, channel, status, provider, error_message, metadata_json
-       )
-       values ($1, $2, $3, 'stub', $4, $5::jsonb)`,
-      [
-        reminder.id,
-        preview.channel,
-        params.dryRun === false ? "blocked" : "dry_run",
-        params.dryRun === false
-          ? "Reminder provider is not configured; no message was sent."
-          : "Dry run only; no provider was called.",
-        JSON.stringify({ preview, providerCalled: false }),
-      ],
-    );
-    processed.push({ reminderId: reminder.id, title: preview.title, status: params.dryRun === false ? "blocked" : "dry_run" });
+    const recipients = audience.recipients.length
+      ? audience.recipients
+      : [{ guestName: null, email: "", phone: "", source: "rsvp" as const }];
+    const deliveries: Array<{ status: string; provider: string | null }> = [];
+    for (const recipient of recipients.slice(0, 250)) {
+      const channel = preview.channel === "sms" ? "sms" : "email";
+      const toAddress = channel === "sms" ? recipient.phone : recipient.email;
+      if (params.dryRun !== false) {
+        await query(
+          `insert into message_deliveries (
+             reminder_id, guest_name, channel, to_address, status, provider, error_message, metadata_json
+           )
+           values ($1, $2, $3, $4, 'dry_run', 'stub', $5, $6::jsonb)`,
+          [
+            reminder.id,
+            recipient.guestName,
+            channel,
+            toAddress || null,
+            toAddress ? "Dry run only; no provider was called." : "No reachable recipients matched this reminder.",
+            JSON.stringify({ preview, recipientSource: recipient.source, providerCalled: false }),
+          ],
+        );
+        deliveries.push({ status: "dry_run", provider: "stub" });
+        continue;
+      }
+
+      if (!toAddress) {
+        await query(
+          `insert into message_deliveries (
+             reminder_id, guest_name, channel, to_address, status, provider, error_message, metadata_json
+           )
+           values ($1, $2, $3, null, 'blocked', $4, $5, $6::jsonb)`,
+          [
+            reminder.id,
+            recipient.guestName,
+            channel,
+            channel === "sms" ? "twilio" : "resend",
+            channel === "sms"
+              ? "No reachable phone recipients matched this reminder."
+              : "No reachable email recipients matched this reminder.",
+            JSON.stringify({ preview, recipientSource: recipient.source, providerCalled: false }),
+          ],
+        );
+        deliveries.push({ status: "blocked", provider: channel === "sms" ? "twilio" : "resend" });
+        continue;
+      }
+
+      if (channel === "sms") {
+        const result = await sendConciergeV2Sms({
+          to: toAddress,
+          body: preview.body,
+        });
+        await query(
+          `insert into message_deliveries (
+             reminder_id, guest_name, channel, to_address, status, provider, provider_message_id,
+             error_message, sent_at, metadata_json
+           )
+           values ($1, $2, 'sms', $3, $4, $5, $6, $7, case when $4 = 'sent' then now() else null end, $8::jsonb)`,
+          [
+            reminder.id,
+            recipient.guestName,
+            toAddress,
+            result.status,
+            result.provider,
+            result.providerReference || null,
+            result.errorMessage || null,
+            JSON.stringify({
+              preview,
+              recipientSource: recipient.source,
+              providerCalled: result.status !== "blocked",
+              providerPayload: result.providerPayload || null,
+            }),
+          ],
+        );
+        deliveries.push({ status: result.status, provider: result.provider });
+        continue;
+      }
+
+      const result = await sendConciergeV2Email({
+        to: toAddress,
+        subject: preview.subject,
+        text: preview.body,
+        html: `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">${escapeHtml(preview.body).replace(/\n/g, "<br />")}</div>`,
+      });
+      await query(
+        `insert into message_deliveries (
+           reminder_id, guest_name, channel, to_address, status, provider, provider_message_id,
+           error_message, sent_at, metadata_json
+         )
+         values ($1, $2, 'email', $3, $4, $5, $6, $7, case when $4 = 'sent' then now() else null end, $8::jsonb)`,
+        [
+          reminder.id,
+          recipient.guestName,
+          toAddress,
+          result.status,
+          result.provider,
+          result.providerReference || null,
+          result.errorMessage || null,
+          JSON.stringify({
+            preview,
+            recipientSource: recipient.source,
+            providerCalled: result.status !== "blocked",
+            providerPayload: result.providerPayload || null,
+          }),
+        ],
+      );
+      deliveries.push({ status: result.status, provider: result.provider });
+    }
+
+    if (params.dryRun === false) {
+      const sentCount = deliveries.filter((delivery) => delivery.status === "sent").length;
+      const nextStatus = sentCount > 0 ? "sent" : "blocked";
+      await query(`update reminders set status = $2, updated_at = now() where id = $1`, [reminder.id, nextStatus]);
+    }
+    processed.push({
+      reminderId: reminder.id,
+      title: preview.title,
+      status: params.dryRun === false ? (deliveries.some((delivery) => delivery.status === "sent") ? "sent" : "blocked") : "dry_run",
+      deliveryCount: deliveries.length,
+    });
   }
   return { processedCount: processed.length, processed };
 }

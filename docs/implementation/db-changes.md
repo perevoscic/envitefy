@@ -1,11 +1,15 @@
 # Concierge V2 Database Changes
 
-Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
+Migration files:
+
+- `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
+- `prisma/manual_sql/20260604_add_concierge_v2_provider_integrations.sql`
 
 ## Tables Added
 
 - `workspaces`: personal/team workspace container.
 - `memberships`: workspace role assignments for users or invited email addresses.
+- `membership_invitations`: tokenized invite acceptance records with hashed tokens, expiry, delivery metadata, and acceptance status.
 - `families`: family/household records scoped to a workspace.
 - `family_guardians`: guardian/user links for family records.
 - `participants`: children, athletes, students, attendees, and roster people.
@@ -57,7 +61,13 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 
 `message_deliveries`:
 
-- Includes `metadata_json jsonb not null default '{}'::jsonb` for providerless dry-run previews and future provider payload metadata. The runtime guard also adds it if an earlier local table already exists without the column.
+- Includes `metadata_json jsonb not null default '{}'::jsonb` for dry-run previews, provider payload metadata, Resend/Twilio delivery status, and blocked/failure reasons. The runtime guard also adds it if an earlier local table already exists without the column.
+
+`membership_invitations`:
+
+- Added by the provider integration migration and runtime guard.
+- Stores `token_hash`, `expires_at`, `accepted_at`, `metadata_json.emailDelivery`, and `invited_by_user_id`.
+- Raw invite tokens are not stored; acceptance hashes the URL token and compares against `token_hash`.
 
 `calendar_feeds`:
 
@@ -101,20 +111,27 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 - `src/lib/concierge-v2/schedule.ts` edits canonical `event_occurrences` rows and republishes the schedule arrays into `event_history.data.scheduleHub`, `event_history.data.publicEvent.scheduleItems`, and `event_history.data.scheduleItems`.
 - `src/lib/concierge-v2/rsvp-board.ts` reads and updates `rsvp_responses` through event-page owner checks, normalizes `answers_json` into host board fields, and produces owner-only CSV exports.
 - `src/lib/concierge-v2/calendar.ts` creates/regenerates active `calendar_feeds` rows through event-page owner checks and builds public tokenized ICS feeds from active `event_occurrences`.
-- `src/lib/concierge-v2/source-imports.ts` checks event-page ownership before creating pasted-text `source_documents`, inserting proposed `extracted_items`, reviewing item status, or applying accepted items into occurrences, forms, reminders, checklist rows, and manual payment requests.
-- `src/lib/concierge-v2/team-class-hub.ts` checks workspace membership roles before returning hub data, inviting members, or creating participants linked through `program_participants`.
-- `src/lib/concierge-v2/resource-planning.ts` checks workspace membership roles before returning resources, creating resources/venues, assigning resources to occurrences, or marking participant attendance.
+- `src/lib/concierge-v2/source-imports.ts` checks event-page ownership before creating pasted-text or storage-backed file `source_documents`, inserting proposed `extracted_items`, reviewing item status, or applying accepted items into occurrences, forms, reminders, checklist rows, and payment requests.
+- `src/lib/concierge-v2/team-class-hub.ts` checks workspace membership roles before returning hub data, inviting members, creating tokenized invitation rows, accepting invitation links, or creating participants linked through `program_participants`.
+- `src/lib/concierge-v2/resource-planning.ts` checks workspace membership roles before returning resources, creating/editing/archiving resources/venues, creating requirements, assigning resources to occurrences, marking participant attendance, checking out participants, or exporting attendance CSVs.
 - `src/lib/concierge-v2/system-templates.ts` defines the built-in system templates seeded by the storage runtime guard.
-- `src/lib/concierge-v2/operations.ts` checks event-page ownership before returning private operations data or updating payment status.
-- `src/lib/concierge-v2/reminders.ts` checks event-page ownership before returning queue details, previews, dry-run records, or reminder status updates.
+- `src/lib/concierge-v2/operations.ts` checks event-page ownership before returning private operations data or updating manual payment status, and reconciles Stripe Checkout/webhook status into `payments` and `payment_requests`.
+- `src/lib/concierge-v2/reminders.ts` checks event-page ownership before returning queue details, previews, dry-run records, send-now delivery, or reminder status updates. Due reminder dispatch is guarded by `CONCIERGE_V2_CRON_SECRET` in production.
+- `src/lib/concierge-v2/providers.ts` centralizes provider status and adapters for OpenAI parsing, Vercel Blob storage, PDF.js extraction, Google Vision OCR, Resend email, Twilio SMS, Stripe Checkout, and Stripe webhook signature verification.
 - Volunteer claims use both a unique active email claim index and an atomic `volunteer_slots.claimed_quantity` update to prevent over-claiming.
 - Smart Form submissions validate required fields against stored `form_fields` before inserting `form_responses`.
-- Reminder dry runs insert `message_deliveries` rows with `status = 'dry_run'`, `provider = 'stub'`, and `metadata_json.providerCalled = false`.
+- Reminder dry runs insert `message_deliveries` rows with `status = 'dry_run'`, `provider = 'stub'`, and `metadata_json.providerCalled = false`. Live sends insert `sent`, `blocked`, or `failed` rows with provider references and payload/error metadata.
 - `src/app/api/events/[id]/rsvp/route.ts` lazily ensures the new RSVP answer columns before reading or writing RSVP data.
 
 ## Backfill Plan
 
 No legacy `event_history` backfill was run. The migration does include an idempotent `volunteer_slots.claimed_quantity` sync from existing active claims.
+
+Backfill utility added: `scripts/concierge-v2-backfill-dry-run.mjs`.
+
+- Default mode is dry-run and prints candidate rows.
+- Write mode requires `--write --confirm=concierge-v2-backfill`.
+- Creates personal workspaces, owner memberships, programs, optional first occurrences, and `event_pages` links for legacy `event_history` rows not already linked.
 
 Recommended production backfill after migration:
 

@@ -9,6 +9,7 @@ import {
   Send,
   ShieldCheck,
   Sparkles,
+  Upload,
   Warehouse,
   XCircle,
 } from "lucide-react";
@@ -68,7 +69,9 @@ export default function ConciergeV2ImportCenterClient({
 }) {
   const [imports, setImports] = useState(initialImports);
   const [sourceKind, setSourceKind] = useState("pasted_text");
+  const [fileSourceKind, setFileSourceKind] = useState("pdf_schedule");
   const [text, setText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(list(initialImports.documents)[0]?.id || null);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +86,8 @@ export default function ConciergeV2ImportCenterClient({
   const proposedCount = items.filter((item) => clean(item.status) === "proposed").length;
   const acceptedCount = items.filter((item) => clean(item.status) === "accepted").length;
   const appliedCount = items.filter((item) => clean(item.status) === "applied").length;
+  const providerStatus = imports.providerStatus || {};
+  const uploadReady = clean(providerStatus.storage) === "ready";
 
   async function reloadImports() {
     setError(null);
@@ -113,6 +118,32 @@ export default function ConciergeV2ImportCenterClient({
       setText("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to import source material.");
+    } finally {
+      setPending(null);
+    }
+  }
+
+  async function uploadImportFile() {
+    if (!file) return;
+    setPending("upload");
+    setError(null);
+    setNotice(null);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      form.set("sourceKind", fileSourceKind);
+      const response = await fetch(`/api/concierge/events/${encodeURIComponent(eventId)}/imports/upload`, {
+        method: "POST",
+        body: form,
+      });
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Unable to upload source material.");
+      setImports(json.imports);
+      setSelectedDocumentId(json.document.id);
+      setNotice(`Uploaded and extracted ${Number(json.document.itemCounts?.total || 0)} proposed item(s).`);
+      setFile(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to upload source material.");
     } finally {
       setPending(null);
     }
@@ -288,6 +319,44 @@ export default function ConciergeV2ImportCenterClient({
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
                 Extract details
               </button>
+              <div className="mt-3 border-t border-slate-100 pt-4">
+                <label className="grid gap-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                  Upload source file
+                  <input
+                    type="file"
+                    accept=".pdf,.txt,.md,.csv,image/png,image/jpeg,image/webp"
+                    onChange={(event) => setFile(event.target.files?.[0] || null)}
+                    className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold normal-case tracking-normal text-slate-950 file:mr-3 file:rounded-full file:border-0 file:bg-violet-50 file:px-3 file:py-2 file:text-xs file:font-black file:uppercase file:tracking-[0.12em] file:text-violet-700"
+                  />
+                </label>
+                <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
+                  <select
+                    value={fileSourceKind}
+                    onChange={(event) => setFileSourceKind(event.target.value)}
+                    className="h-11 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                  >
+                    <option value="pdf_schedule">PDF schedule</option>
+                    <option value="screenshot">Screenshot</option>
+                    <option value="school_flyer">School flyer</option>
+                    <option value="gymnastics_packet">Gymnastics packet</option>
+                    <option value="sports_calendar">Sports calendar</option>
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!file || pending === "upload" || !uploadReady}
+                    onClick={() => void uploadImportFile()}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    <Upload className="h-4 w-4" aria-hidden="true" />
+                    {pending === "upload" ? "Uploading..." : "Upload"}
+                  </button>
+                </div>
+                {!uploadReady ? (
+                  <p className="mt-2 text-xs font-bold leading-5 text-amber-700">
+                    Blob storage is required before source files can be uploaded.
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
 
@@ -297,17 +366,22 @@ export default function ConciergeV2ImportCenterClient({
               <div className="rounded-lg bg-emerald-50 p-4">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-700" aria-hidden="true" />
-                  <p className="text-sm font-black text-emerald-950">Pasted text ready</p>
+                  <p className="text-sm font-black text-emerald-950">
+                    Pasted text {providerStatus.pastedText || "ready"}
+                  </p>
                 </div>
-                <p className="mt-1 text-sm font-semibold leading-6 text-emerald-900">Text extraction runs now with the local Concierge parser.</p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-emerald-900">
+                  AI parser: {providerStatus.aiParsing || "fallback"}.
+                </p>
               </div>
               <div className="rounded-lg bg-slate-50 p-4">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-slate-600" aria-hidden="true" />
-                  <p className="text-sm font-black text-slate-950">Image and PDF OCR provider setup required</p>
+                  <p className="text-sm font-black text-slate-950">Storage {providerStatus.storage || "not configured"}</p>
                 </div>
                 <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
-                  Storage-backed upload and OCR provider setup are documented follow-ups; no upload control is shown until a provider is configured.
+                  PDF extraction: {providerStatus.pdfOcr || "provider_setup_required"}. Image OCR:{" "}
+                  {providerStatus.imageOcr || "provider_setup_required"}.
                 </p>
               </div>
             </div>

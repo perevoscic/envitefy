@@ -1,8 +1,14 @@
 import { query } from "@/lib/db";
-import { generateOccurrences, parseConciergeInput } from "./core.mjs";
+import { generateOccurrences } from "./core.mjs";
 import { createConciergeV2Occurrence } from "./schedule";
 import { ensureConciergeV2Tables } from "./storage";
 import { ConciergeV2OperationError } from "./operations";
+import {
+  extractTextFromConciergeV2SourceFile,
+  getConciergeV2ProviderStatus,
+  parseConciergeInputWithProvider,
+  uploadConciergeV2SourceFile,
+} from "./providers";
 
 type EventPageRow = {
   event_page_id: string;
@@ -132,6 +138,7 @@ function normalizeDocument(row: SourceDocumentRow, items: ExtractedItemRow[] = [
   return {
     id: row.id,
     sourceKind: row.source_kind,
+    fileUrl: row.file_url,
     fileName: row.file_name,
     fileType: row.file_type,
     parseStatus: row.parse_status,
@@ -340,6 +347,7 @@ export async function getConciergeV2ImportCenter(params: {
 }) {
   const page = await getOwnedImportPage(params);
   const documents = await loadDocuments({ eventHistoryId: params.eventHistoryId });
+  const providers = getConciergeV2ProviderStatus();
   return {
     event: {
       id: params.eventHistoryId,
@@ -354,11 +362,21 @@ export async function getConciergeV2ImportCenter(params: {
       "class_newsletter",
       "sports_calendar",
       "group_chat",
+      "pdf_schedule",
+      "screenshot",
     ],
     providerStatus: {
       pastedText: "ready",
-      imageOcr: "provider_setup_required",
-      pdfOcr: "provider_setup_required",
+      aiParsing: providers.aiParsing,
+      storage: providers.blobStorage,
+      imageOcr:
+        providers.blobStorage === "ready" && providers.imageOcr === "ready"
+          ? "ready"
+          : "provider_setup_required",
+      pdfOcr:
+        providers.blobStorage === "ready" && providers.pdfTextExtraction === "ready"
+          ? "ready"
+          : "provider_setup_required",
     },
     documents,
   };
@@ -374,14 +392,11 @@ export async function createConciergeV2SourceImport(params: {
   const text = cleanString(params.text, 20_000);
   if (text.length < 10) throw new ConciergeV2OperationError("Paste at least a few details to import.", 400);
   const sourceKind = supportedSourceKind(params.sourceKind);
-  const draft = parseConciergeInput(
-    { text, sourceKind },
-    {
-      sourceKind,
-      title: page.event_title,
-      timezone: "America/Chicago",
-    },
-  );
+  const parsed = await parseConciergeInputWithProvider(text, {
+    sourceKind,
+    timezone: "America/Chicago",
+  });
+  const draft = parsed.draft;
   const proposedItems = buildProposedItems(draft);
   const docRes = await query<SourceDocumentRow>(
     `insert into source_documents (
@@ -404,11 +419,183 @@ export async function createConciergeV2SourceImport(params: {
         eventPageId: page.event_page_id,
         programId: page.program_id,
         extractedItemCount: proposedItems.length,
+        provider: {
+          provider: parsed.provider,
+          model: parsed.model,
+          fallbackUsed: parsed.fallbackUsed,
+          errorMessage: parsed.errorMessage || null,
+        },
       }),
     ],
   );
   const document = docRes.rows[0];
   if (!document) throw new ConciergeV2OperationError("Unable to create import.", 500);
+  const items = await insertExtractedItems(document.id, proposedItems);
+  return normalizeDocument(document, items);
+}
+
+function sourceKindForFile(fileName: string, fileType: string, override?: string | null) {
+  const requested = cleanString(override, 80);
+  if (requested) return supportedSourceKind(requested);
+  const type = cleanString(fileType, 120).toLowerCase();
+  const name = cleanString(fileName, 240).toLowerCase();
+  if (type === "application/pdf" || name.endsWith(".pdf")) return "pdf_schedule";
+  if (type.startsWith("image/") || /\.(png|jpe?g|webp|gif)$/i.test(name)) return "screenshot";
+  return "pasted_text";
+}
+
+async function insertFailedFileImport(params: {
+  page: EventPageRow;
+  eventHistoryId: string;
+  userId: string;
+  sourceKind: string;
+  fileName: string;
+  fileType: string;
+  fileUrl: string | null;
+  extractedText?: string | null;
+  errorMessage: string;
+}) {
+  const docRes = await query<SourceDocumentRow>(
+    `insert into source_documents (
+       workspace_id, uploaded_by_user_id, source_kind, file_url, file_name, file_type,
+       extracted_text, parse_status, parsed_json, error_message
+     )
+     values ($1, $2, $3, $4, $5, $6, $7, 'failed', $8::jsonb, $9)
+     returning id, workspace_id, uploaded_by_user_id, source_kind, file_url, file_name,
+       file_type, text_content, extracted_text, parse_status, parsed_json, error_message,
+       created_at, updated_at`,
+    [
+      params.page.workspace_id,
+      params.userId,
+      params.sourceKind,
+      params.fileUrl,
+      params.fileName,
+      params.fileType,
+      params.extractedText || null,
+      JSON.stringify({
+        eventHistoryId: params.eventHistoryId,
+        eventPageId: params.page.event_page_id,
+        programId: params.page.program_id,
+        providerStatus: getConciergeV2ProviderStatus(),
+      }),
+      params.errorMessage,
+    ],
+  );
+  return normalizeDocument(docRes.rows[0], []);
+}
+
+export async function createConciergeV2SourceImportFromFile(params: {
+  eventHistoryId: string;
+  userId: string;
+  fileName: string;
+  fileType: string;
+  buffer: Buffer;
+  sourceKind?: string | null;
+}) {
+  const page = await getOwnedImportPage(params);
+  const fileName = cleanString(params.fileName, 240) || "source";
+  const fileType = cleanString(params.fileType, 120) || "application/octet-stream";
+  const sourceKind = sourceKindForFile(fileName, fileType, params.sourceKind);
+  const maxBytes = 12 * 1024 * 1024;
+  if (!params.buffer?.length) throw new ConciergeV2OperationError("Choose a file to import.", 400);
+  if (params.buffer.length > maxBytes) {
+    throw new ConciergeV2OperationError("Import files must be 12 MB or smaller.", 413);
+  }
+
+  const providerStatus = getConciergeV2ProviderStatus();
+  if (providerStatus.blobStorage !== "ready") {
+    throw new ConciergeV2OperationError("Blob storage is not configured for source uploads.", 503);
+  }
+  if (sourceKind === "screenshot" && providerStatus.imageOcr !== "ready") {
+    throw new ConciergeV2OperationError("Image OCR is not configured.", 503);
+  }
+
+  const uploaded = await uploadConciergeV2SourceFile({
+    buffer: params.buffer,
+    fileName,
+    contentType: fileType,
+    eventHistoryId: params.eventHistoryId,
+    userId: params.userId,
+  });
+
+  let extracted: { text: string; provider: string };
+  try {
+    extracted = await extractTextFromConciergeV2SourceFile({
+      buffer: params.buffer,
+      contentType: fileType,
+      fileName,
+    });
+  } catch (error: any) {
+    await insertFailedFileImport({
+      page,
+      eventHistoryId: params.eventHistoryId,
+      userId: params.userId,
+      sourceKind,
+      fileName,
+      fileType,
+      fileUrl: uploaded.url,
+      errorMessage: String(error?.message || "Unable to extract text from this file."),
+    });
+    throw new ConciergeV2OperationError(String(error?.message || "Unable to extract text from this file."), 503);
+  }
+
+  const text = cleanString(extracted.text, 30_000);
+  if (text.length < 10) {
+    await insertFailedFileImport({
+      page,
+      eventHistoryId: params.eventHistoryId,
+      userId: params.userId,
+      sourceKind,
+      fileName,
+      fileType,
+      fileUrl: uploaded.url,
+      extractedText: text,
+      errorMessage: "No readable event text was found in this file.",
+    });
+    throw new ConciergeV2OperationError("No readable event text was found in this file.", 422);
+  }
+
+  const parsed = await parseConciergeInputWithProvider(text, {
+    sourceKind,
+    timezone: "America/Chicago",
+  });
+  const proposedItems = buildProposedItems(parsed.draft);
+  const docRes = await query<SourceDocumentRow>(
+    `insert into source_documents (
+       workspace_id, uploaded_by_user_id, source_kind, file_url, file_name, file_type,
+       text_content, extracted_text, parse_status, parsed_json
+     )
+     values ($1, $2, $3, $4, $5, $6, null, $7, 'review', $8::jsonb)
+     returning id, workspace_id, uploaded_by_user_id, source_kind, file_url, file_name,
+       file_type, text_content, extracted_text, parse_status, parsed_json, error_message,
+       created_at, updated_at`,
+    [
+      page.workspace_id,
+      params.userId,
+      sourceKind,
+      uploaded.url,
+      fileName,
+      fileType,
+      text,
+      JSON.stringify({
+        ...parsed.draft,
+        eventHistoryId: params.eventHistoryId,
+        eventPageId: page.event_page_id,
+        programId: page.program_id,
+        extractedItemCount: proposedItems.length,
+        storage: uploaded,
+        extractionProvider: extracted.provider,
+        provider: {
+          provider: parsed.provider,
+          model: parsed.model,
+          fallbackUsed: parsed.fallbackUsed,
+          errorMessage: parsed.errorMessage || null,
+        },
+      }),
+    ],
+  );
+  const document = docRes.rows[0];
+  if (!document) throw new ConciergeV2OperationError("Unable to create file import.", 500);
   const items = await insertExtractedItems(document.id, proposedItems);
   return normalizeDocument(document, items);
 }
