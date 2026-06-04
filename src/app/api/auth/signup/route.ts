@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { createUserWithEmailPassword } from "@/lib/db";
 
-function getSignupSourceFromCookieHeader(cookieHeader: string | null): "snap" | "gymnastics" | null {
+function getSignupSourceFromCookieHeader(
+  cookieHeader: string | null,
+): "snap" | "gymnastics" | null {
   if (!cookieHeader) return null;
   const pairs = cookieHeader.split(";");
   for (const pair of pairs) {
@@ -28,15 +30,15 @@ async function verifyRecaptcha(token: string): Promise<boolean> {
     });
 
     const data = await response.json();
-    
+
     console.log("[signup] reCAPTCHA Google API response:", JSON.stringify(data, null, 2));
-    
+
     if (!data.success) {
       console.error("[signup] reCAPTCHA verification failed:", {
         success: data.success,
-        errorCodes: data['error-codes'],
+        errorCodes: data["error-codes"],
         hostname: data.hostname,
-        fullResponse: data
+        fullResponse: data,
       });
       return false;
     }
@@ -47,9 +49,9 @@ async function verifyRecaptcha(token: string): Promise<boolean> {
       return false;
     }
 
-    console.log("[signup] reCAPTCHA verified successfully", { 
-      score: data.score, 
-      action: data.action 
+    console.log("[signup] reCAPTCHA verified successfully", {
+      score: data.score,
+      action: data.action,
     });
     return true;
   } catch (err) {
@@ -68,15 +70,11 @@ export async function POST(req: Request) {
     const recaptchaToken =
       typeof body.recaptchaToken === "string" ? body.recaptchaToken.trim() : "";
     const requestedSignupSource =
-      body.signupSource === "snap" || body.signupSource === "gymnastics"
-        ? body.signupSource
-        : null;
-    const cookieSignupSource = getSignupSourceFromCookieHeader(
-      req.headers.get("cookie"),
-    );
+      body.signupSource === "snap" || body.signupSource === "gymnastics" ? body.signupSource : null;
+    const cookieSignupSource = getSignupSourceFromCookieHeader(req.headers.get("cookie"));
 
-    console.log("[signup] Request received", { 
-      email, 
+    console.log("[signup] Request received", {
+      email,
       hasToken: !!recaptchaToken,
       tokenLength: recaptchaToken?.length || 0,
       hasSecretKey: !!process.env.RECAPTCHA_SECRET_KEY,
@@ -88,7 +86,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    if (requestedSignupSource && cookieSignupSource && requestedSignupSource !== cookieSignupSource) {
+    if (
+      requestedSignupSource &&
+      cookieSignupSource &&
+      requestedSignupSource !== cookieSignupSource
+    ) {
       return NextResponse.json(
         { error: "Signup source mismatch. Please refresh and try again." },
         { status: 400 },
@@ -96,12 +98,16 @@ export async function POST(req: Request) {
     }
 
     const recaptchaSecretConfigured = !!process.env.RECAPTCHA_SECRET_KEY;
-    if (recaptchaSecretConfigured) {
+    const recaptchaRequired =
+      recaptchaSecretConfigured &&
+      (process.env.NODE_ENV === "production" ||
+        process.env.NEXT_PUBLIC_RECAPTCHA_ENABLE_IN_DEV === "true");
+    if (recaptchaRequired) {
       if (!recaptchaToken) {
         console.log("[signup] reCAPTCHA token missing while verification is configured");
         return NextResponse.json(
           { error: "Security verification failed. Please try again." },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -111,13 +117,13 @@ export async function POST(req: Request) {
         console.log("[signup] reCAPTCHA verification FAILED");
         return NextResponse.json(
           { error: "Security verification failed. Please try again." },
-          { status: 400 }
+          { status: 400 },
         );
       }
       console.log("[signup] reCAPTCHA verification PASSED");
     } else {
       console.log("[signup] Skipping reCAPTCHA verification", {
-        reason: "no secret key"
+        reason: recaptchaSecretConfigured ? "development" : "no secret key",
       });
     }
 

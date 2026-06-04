@@ -28,8 +28,16 @@ export async function verifyRecaptchaToken(
   options: VerifyRecaptchaOptions = {},
 ): Promise<RecaptchaVerificationResult> {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+  const verificationEnabled =
+    process.env.NODE_ENV === "production" ||
+    process.env.NEXT_PUBLIC_RECAPTCHA_ENABLE_IN_DEV === "true";
   const logPrefix = options.logPrefix || "recaptcha";
   const minimumScore = options.minimumScore ?? 0.5;
+
+  if (!verificationEnabled) {
+    console.warn(`[${logPrefix}] Skipping reCAPTCHA verification in development`);
+    return { ok: true, skipped: true };
+  }
 
   if (!secretKey) {
     console.warn(`[${logPrefix}] RECAPTCHA_SECRET_KEY not configured, skipping verification`);

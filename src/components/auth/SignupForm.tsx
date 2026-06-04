@@ -1,19 +1,9 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 import { hideAuthTransition, showAuthTransition } from "@/utils/authTransition";
-
-declare global {
-  interface GrecaptchaClient {
-    execute: (siteKey: string, options: { action: string }) => Promise<string>;
-    ready?: (cb: () => void) => void;
-  }
-
-  interface Window {
-    grecaptcha?: GrecaptchaClient;
-  }
-}
 
 export type SignupFormProps = {
   onSuccess?: () => void;
@@ -41,44 +31,8 @@ export default function SignupForm({
   const [toastText, setToastText] = useState("");
   const toastTimerRef = useRef<number | undefined>(undefined);
   const [agreeTerms, setAgreeTerms] = useState(true);
-  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
-
-  // Load reCAPTCHA script
-  useEffect(() => {
-    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-
-    console.log("[SignupForm] reCAPTCHA setup", {
-      hasSiteKey: !!siteKey,
-      siteKey: `${siteKey?.substring(0, 10)}...`,
-      hasGrecaptcha: typeof window !== "undefined" && !!window.grecaptcha,
-    });
-
-    if (!siteKey) {
-      console.warn("[SignupForm] No NEXT_PUBLIC_RECAPTCHA_SITE_KEY in env, skipping reCAPTCHA");
-      setRecaptchaLoaded(true); // Skip if no key configured
-      return;
-    }
-
-    if (typeof window !== "undefined" && !window.grecaptcha) {
-      console.log("[SignupForm] Loading reCAPTCHA script...");
-      const script = document.createElement("script");
-      script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        console.log("[SignupForm] reCAPTCHA script loaded successfully");
-        setRecaptchaLoaded(true);
-      };
-      script.onerror = () => {
-        console.error("[SignupForm] Failed to load reCAPTCHA script");
-        setRecaptchaLoaded(true); // Continue anyway
-      };
-      document.head.appendChild(script);
-    } else {
-      console.log("[SignupForm] reCAPTCHA already loaded");
-      setRecaptchaLoaded(true);
-    }
-  }, []);
+  const { executeRecaptcha, recaptchaConfigured, recaptchaReady } = useRecaptcha();
+  const recaptchaLoading = recaptchaConfigured && !recaptchaReady;
 
   const ensureSignupSourceCookie = async () => {
     if (!signupSource) return;
@@ -116,40 +70,22 @@ export default function SignupForm({
         return;
       }
 
-      // Get reCAPTCHA token
-      let recaptchaToken = null;
-      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+      let recaptchaToken: string | null = null;
 
-      console.log("[SignupForm] Getting reCAPTCHA token", {
-        hasSiteKey: !!siteKey,
-        hasGrecaptcha: typeof window !== "undefined" && !!window.grecaptcha,
-        grecaptchaReady: typeof window !== "undefined" && window.grecaptcha?.ready,
-      });
-
-      if (siteKey && typeof window !== "undefined" && window.grecaptcha) {
-        try {
-          console.log("[SignupForm] Executing reCAPTCHA...");
-          recaptchaToken = await window.grecaptcha.execute(siteKey, {
-            action: "signup",
-          });
-          console.log("[SignupForm] reCAPTCHA token obtained", {
-            tokenLength: recaptchaToken?.length,
-          });
-        } catch (err) {
-          console.error("[SignupForm] reCAPTCHA error:", err);
-          const errMsg = "Security verification failed. Please try again.";
-          setMessage(errMsg);
-          setToastText(errMsg);
-          setToastOpen(true);
-          if (toastTimerRef.current !== undefined) window.clearTimeout(toastTimerRef.current);
-          toastTimerRef.current = window.setTimeout(() => {
-            setToastOpen(false);
-            toastTimerRef.current = undefined;
-          }, 2800);
-          return;
-        }
-      } else {
-        console.warn("[SignupForm] reCAPTCHA not available, continuing without it");
+      try {
+        recaptchaToken = await executeRecaptcha("signup");
+      } catch (err) {
+        console.error("[SignupForm] reCAPTCHA error:", err);
+        const errMsg = "Security verification failed. Please try again.";
+        setMessage(errMsg);
+        setToastText(errMsg);
+        setToastOpen(true);
+        if (toastTimerRef.current !== undefined) window.clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = window.setTimeout(() => {
+          setToastOpen(false);
+          toastTimerRef.current = undefined;
+        }, 2800);
+        return;
       }
 
       const res = await fetch("/api/auth/signup", {
@@ -425,10 +361,10 @@ export default function SignupForm({
         </label>
         <button
           type="submit"
-          disabled={submitting || !recaptchaLoaded}
+          disabled={submitting || recaptchaLoading}
           className="btn btn-primary w-full justify-center"
         >
-          {submitting ? "Creating..." : !recaptchaLoaded ? "Loading..." : "Create account"}
+          {submitting ? "Creating..." : recaptchaLoading ? "Loading..." : "Create account"}
         </button>
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
