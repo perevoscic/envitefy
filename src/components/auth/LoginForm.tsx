@@ -30,6 +30,7 @@ export default function LoginForm({
 }: LoginFormProps) {
   const isInline = variant === "inline";
   const isInlineLight = isInline && inlineTone === "light";
+  const isInlineDark = isInline && inlineTone === "dark";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -93,7 +94,11 @@ export default function LoginForm({
             type="button"
             onClick={onGoogleSignIn}
             disabled={submitting}
-            className="btn btn-outline w-full justify-center gap-3"
+            className={cx(
+              "btn btn-outline w-full justify-center gap-3",
+              isInlineDark &&
+                "!border-white/12 !bg-white/[0.06] !text-white !shadow-[0_12px_28px_rgba(0,0,0,0.2)] hover:!bg-white/[0.1]",
+            )}
           >
             <svg
               width="18"
@@ -123,9 +128,11 @@ export default function LoginForm({
           </button>
 
           <div className="relative my-4 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border"></div>
-            <span className="text-sm text-muted-foreground">or</span>
-            <div className="h-px flex-1 bg-border"></div>
+            <div className={cx("h-px flex-1 bg-border", isInlineDark && "!bg-white/14")} />
+            <span className={cx("text-sm text-muted-foreground", isInlineDark && "!text-white/62")}>
+              or
+            </span>
+            <div className={cx("h-px flex-1 bg-border", isInlineDark && "!bg-white/14")} />
           </div>
         </>
       ) : null}
@@ -137,7 +144,10 @@ export default function LoginForm({
         autoComplete="username"
         className={cx(
           "w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-sm text-foreground/90 shadow-inner transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]",
-          isInline && "border-white/16 bg-white/92 shadow-[inset_0_1px_2px_rgba(15,8,29,0.06)]",
+          isInlineLight &&
+            "border-white/16 bg-white/92 shadow-[inset_0_1px_2px_rgba(15,8,29,0.06)]",
+          isInlineDark &&
+            "!border-white/12 !bg-[#211338] !text-white !shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)] placeholder:!text-white/62 focus-visible:!ring-[#f0d58f]",
         )}
         placeholder="Email"
         value={email}
@@ -153,7 +163,10 @@ export default function LoginForm({
           data-form-type="login"
           className={cx(
             "w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]",
-            isInline && "border-white/16 bg-white/92 shadow-[inset_0_1px_2px_rgba(15,8,29,0.06)]",
+            isInlineLight &&
+              "border-white/16 bg-white/92 shadow-[inset_0_1px_2px_rgba(15,8,29,0.06)]",
+            isInlineDark &&
+              "!border-white/12 !bg-[#211338] !text-white !shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)] placeholder:!text-white/62 focus-visible:!ring-[#f0d58f]",
             message && "input-error",
             shake && "input-shake",
           )}
@@ -170,7 +183,11 @@ export default function LoginForm({
           type="button"
           aria-label={showPassword ? "Hide password" : "Show password"}
           aria-pressed={showPassword}
-          className="absolute inset-y-0 right-3 my-auto flex h-9 w-9 items-center justify-center wedding-icon-button text-muted-foreground/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-secondary)] z-10"
+          className={cx(
+            "absolute inset-y-0 right-3 z-10 my-auto flex h-9 w-9 items-center justify-center wedding-icon-button text-muted-foreground/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-secondary)]",
+            isInlineDark &&
+              "!border-white/12 !bg-white/[0.08] !text-white/66 hover:!bg-white/[0.12] hover:!text-white",
+          )}
           onClick={() => setShowPassword((v) => !v)}
         >
           <svg
@@ -207,7 +224,7 @@ export default function LoginForm({
             isInline &&
               (isInlineLight
                 ? "text-[11px] leading-4 tracking-tight whitespace-nowrap text-[#7c6aa8]"
-                : "text-[11px] leading-4 tracking-tight whitespace-nowrap text-white/76"),
+                : "text-[11px] leading-4 tracking-tight whitespace-nowrap text-white/68"),
           )}
         >
           Having trouble signing in?{" "}
@@ -215,7 +232,7 @@ export default function LoginForm({
             href="/forgot"
             className={cx(
               "text-secondary hover:underline",
-              isInline && (isInlineLight ? "text-[#6a57eb]" : "text-white"),
+              isInline && (isInlineLight ? "text-[#6a57eb]" : "text-[#f0d58f]"),
             )}
           >
             Reset password
@@ -228,7 +245,7 @@ export default function LoginForm({
               isInline &&
                 (isInlineLight
                   ? "text-[11px] leading-4 tracking-tight text-[#7c6aa8]"
-                  : "text-[11px] leading-4 tracking-tight text-white/76"),
+                  : "text-[11px] leading-4 tracking-tight text-white/68"),
             )}
           >
             Don&apos;t have an account?{" "}
@@ -237,7 +254,7 @@ export default function LoginForm({
               onClick={() => onSwitchMode("signup")}
               className={cx(
                 "font-semibold text-secondary hover:underline",
-                isInline && (isInlineLight ? "text-[#6a57eb]" : "text-white"),
+                isInline && (isInlineLight ? "text-[#6a57eb]" : "text-[#f0d58f]"),
               )}
             >
               Sign up
@@ -268,7 +285,12 @@ export default function LoginForm({
           <button
             type="submit"
             disabled={submitting}
-            className="cta-shell nav-chrome-motion h-11 rounded-full bg-white px-5 text-sm font-semibold text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
+            className={cx(
+              "cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+              isInlineDark
+                ? "bg-[#f0d58f] text-[#150c29] shadow-[0_14px_30px_rgba(0,0,0,0.26)]"
+                : "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]",
+            )}
           >
             {submitting ? "Signing in..." : "Sign in"}
           </button>
@@ -279,8 +301,10 @@ export default function LoginForm({
           disabled={submitting}
           className={cx(
             "w-full justify-center",
-            isInline
-              ? "cta-shell nav-chrome-motion h-11 rounded-full bg-white px-5 text-sm font-semibold text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
+            isInlineDark
+              ? "cta-shell nav-chrome-motion h-11 rounded-full bg-[#f0d58f] px-5 text-sm font-semibold text-[#150c29] shadow-[0_14px_30px_rgba(0,0,0,0.26)]"
+              : isInline
+                ? "cta-shell nav-chrome-motion h-11 rounded-full bg-white px-5 text-sm font-semibold text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
               : "btn btn-primary",
           )}
         >

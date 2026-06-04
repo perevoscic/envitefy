@@ -18,9 +18,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
-import GuestChatWidget from "@/components/guest-chat/GuestChatWidget";
 import LandingLiveCardShowcase from "@/components/landing/LandingLiveCardShowcase";
+import ConciergeSheet from "@/components/navigation/ConciergeSheet";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
+import MenuBottomSheet from "@/components/navigation/MenuBottomSheet";
+import MobileBrandHeader from "@/components/navigation/MobileBrandHeader";
+import ScrollAwareBottomNav from "@/components/navigation/ScrollAwareBottomNav";
+import { signedOutMobileMenuLinks } from "@/config/navigation";
 import {
   Testimonial as DesignTestimonial,
   type TestimonialItem,
@@ -953,21 +957,18 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
             >
               {activeSlide.description}
             </p>
-            <div className="mt-9 flex flex-row gap-2 sm:gap-3">
+            <div className="mt-9 grid grid-cols-2 gap-3 sm:flex sm:flex-row">
               <button
                 type="button"
                 onClick={onPrimaryAction}
-                className="inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-white/18 bg-white/14 px-3 text-[13px] font-semibold text-white shadow-[0_18px_44px_rgba(0,0,0,0.24)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/22 sm:flex-none sm:gap-2 sm:px-6 sm:text-sm"
+                className="inline-flex h-12 w-full min-w-0 items-center justify-center gap-1.5 rounded-md border border-white/18 bg-white/14 px-3 text-[12px] font-semibold text-white shadow-[0_18px_44px_rgba(0,0,0,0.24)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/22 sm:w-auto sm:gap-2 sm:px-6 sm:text-sm"
               >
-                <span className="truncate sm:hidden">
-                  {activeSlide.mobilePrimaryCtaLabel ?? "Let's create"}
-                </span>
-                <span className="hidden sm:inline">Let's create</span>
+                <span className="whitespace-nowrap">Try the AI Concierge</span>
                 <ArrowRight className="h-4 w-4 shrink-0" />
               </button>
               <Link
                 href="#showcase"
-                className="inline-flex h-12 min-w-0 flex-1 items-center justify-center rounded-md border border-white/18 bg-black/18 px-3 text-[13px] font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/14 sm:flex-none sm:px-6 sm:text-sm"
+                className="inline-flex h-12 w-full min-w-0 items-center justify-center rounded-md border border-white/18 bg-black/18 px-3 text-[12px] font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/14 sm:w-auto sm:px-6 sm:text-sm"
               >
                 <span className="truncate sm:hidden">View examples</span>
                 <span className="hidden sm:inline">View live examples</span>
@@ -1370,7 +1371,7 @@ function TemplateGallery() {
         "flex min-h-[100svh] scroll-mt-0 flex-col border-b border-[#ded2bd] bg-[#fbf8f1] lg:h-[100svh] lg:overflow-hidden",
       )}
     >
-      <div className="mx-auto flex min-h-[100svh] w-full max-w-none flex-1 flex-col justify-center px-4 pb-8 pt-[calc(7rem+env(safe-area-inset-top))] sm:px-6 sm:pb-10 sm:pt-[calc(7.5rem+env(safe-area-inset-top))] lg:h-full lg:min-h-0 lg:px-8 lg:pb-12 lg:pt-[calc(8rem+env(safe-area-inset-top))]">
+      <div className="mx-auto flex min-h-[100svh] w-full max-w-none flex-1 flex-col justify-start px-4 pb-8 pt-[calc(2.25rem+env(safe-area-inset-top))] sm:px-6 sm:pb-10 sm:pt-[calc(3rem+env(safe-area-inset-top))] lg:h-full lg:min-h-0 lg:justify-center lg:px-8 lg:pb-12 lg:pt-[calc(8rem+env(safe-area-inset-top))]">
         <div className="w-full">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9d7a3e]">
@@ -1518,27 +1519,41 @@ function TestimonialsProof() {
 export default function LandingExperience() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [bottomNavVisible, setBottomNavVisible] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
   };
-
+  const openConciergeDemo = () => setAssistantOpen(true);
   return (
     <>
-      <main className="min-h-screen bg-[#fcfbf7] text-[#201a23] selection:bg-[#e2c891]/45 selection:text-[#201a23]">
-        <HeroTopNav
-          navLinks={[...landingHeroNavLinks]}
-          primaryCtaLabel="Let's create"
-          authenticatedPrimaryHref="/chat"
-          variant="transparent-dark"
-          loginSuccessRedirectUrl="/"
-          onGuestLoginAction={() => openAuth("login")}
-          onGuestPrimaryAction={() => openAuth("signup")}
-        />
+      <main
+        className={cx(
+          "min-h-screen bg-[#fcfbf7] text-[#201a23] selection:bg-[#e2c891]/45 selection:text-[#201a23]",
+          bottomNavVisible && "pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-0",
+        )}
+      >
+        <div className="hidden md:block">
+          <HeroTopNav
+            navLinks={[...landingHeroNavLinks]}
+            mobileNavLinks={[...signedOutMobileMenuLinks]}
+            primaryCtaLabel="Let's create"
+            authenticatedPrimaryHref="/chat"
+            brandHref="/"
+            variant="transparent-dark"
+            loginSuccessRedirectUrl="/"
+            showMobileMenuAuthActions={false}
+            onGuestLoginAction={() => openAuth("login")}
+            onGuestPrimaryAction={() => openAuth("signup")}
+          />
+        </div>
+        <MobileBrandHeader onMenuClick={() => setMobileMenuOpen(true)} />
 
-        <PremiumLandingHero onPrimaryAction={() => openAuth("signup")} />
+        <PremiumLandingHero onPrimaryAction={openConciergeDemo} />
 
-        <AIConciergeSection onPrimaryAction={() => openAuth("signup")} />
+        <AIConciergeSection />
 
         <section className="border-b border-[#ded2bd] bg-[#f8f3ea]">
           <LandingLiveCardShowcase
@@ -1554,7 +1569,21 @@ export default function LandingExperience() {
         <CreationPaths onPrimaryAction={() => openAuth("signup")} />
         <TestimonialsProof />
       </main>
-      <GuestChatWidget />
+      <ScrollAwareBottomNav
+        onConciergeSelect={openConciergeDemo}
+        onMenuSelect={() => setMobileMenuOpen(true)}
+        onVisibilityChange={setBottomNavVisible}
+      />
+      <MenuBottomSheet
+        open={mobileMenuOpen}
+        onOpenChange={setMobileMenuOpen}
+        successRedirectUrl="/"
+      />
+      <ConciergeSheet
+        open={assistantOpen}
+        onOpenChange={setAssistantOpen}
+        onSignupSelect={() => openAuth("signup")}
+      />
 
       <AuthModal
         open={authModalOpen}

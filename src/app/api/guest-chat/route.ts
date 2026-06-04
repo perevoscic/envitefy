@@ -12,9 +12,11 @@ import {
   rankGuestChatKnowledge,
 } from "@/lib/guest-chat/knowledge";
 import {
+  appendGuestSignupPrompt,
   buildDeterministicGuestChatAnswer,
   formatGuestChatHistoryForPrompt,
   normalizeGuestChatHistory,
+  shouldSuggestGuestSignup,
 } from "@/lib/guest-chat/respond";
 
 export const runtime = "nodejs";
@@ -196,11 +198,21 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const signupSuggested =
+    deterministic.signupSuggested ||
+    shouldSuggestGuestSignup(message, history, {
+      handoffSuggested: deterministic.handoffSuggested,
+    });
+  if (signupSuggested) {
+    answer = appendGuestSignupPrompt(answer);
+  }
+
   return NextResponse.json({
     ok: true,
     answer,
     usedAi,
     handoffSuggested: deterministic.handoffSuggested,
+    signupSuggested,
     matchedKnowledgeIds: deterministic.matchedKnowledgeIds,
     suggestions: guestChatStarterQuestions,
   });
