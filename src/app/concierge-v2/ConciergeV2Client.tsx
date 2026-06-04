@@ -455,6 +455,13 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
                   <ExternalLink className="h-4 w-4" aria-hidden="true" />
                 </Link>
                 <Link
+                  href={`/concierge-v2/events/${encodeURIComponent(result.eventHistoryId)}/rsvp`}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-5 text-sm font-black uppercase tracking-[0.14em] text-emerald-800 transition hover:bg-emerald-100"
+                >
+                  RSVP Board
+                  <Users className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <Link
                   href={`/concierge-v2/events/${encodeURIComponent(result.eventHistoryId)}/ops`}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-5 text-sm font-black uppercase tracking-[0.14em] text-emerald-800 transition hover:bg-emerald-100"
                 >

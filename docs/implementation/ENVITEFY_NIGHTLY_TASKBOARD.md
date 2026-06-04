@@ -13,6 +13,7 @@ Date: 2026-06-04
 - UI: added mobile-first `/concierge-v2` builder with prompt examples, detected mode, structured draft cards, editable core fields, publish action, and result link.
 - Public event page: extended the existing concierge public event renderer to show v2 schedule, forms, volunteer signup, manual payments, checklist, and reminder sections.
 - RSVP Board 2.0 storage: extended RSVP submissions with `answers_json`, adult count, kid count, and allergy notes.
+- RSVP Board 2.0 host UI: added owner-only `/concierge-v2/events/[id]/rsvp` with summary cards, filters, guest detail panel, status updates, reminder handoff, and CSV export.
 - Smart Forms: added public response submission endpoint, required-field validation, persisted `form_responses`, and an owner operations view for responses.
 - Volunteer Signup: added public claim endpoint with capacity and duplicate-email guards, persisted `volunteer_claims`, and owner operations visibility.
 - Manual Payments: added owner-only status updates for stored payment requests and a premium operations UI to mark unpaid, paid, waived, or refunded.
@@ -23,6 +24,7 @@ Date: 2026-06-04
 - Tests: added `src/lib/concierge-v2/operations-shape.test.mjs` to guard persisted operation IDs, live public endpoints, and volunteer capacity logic.
 - Tests: added `src/lib/concierge-v2/reminders-shape.test.mjs` to guard providerless dry-run behavior and owner reminder APIs.
 - Tests: added `src/lib/concierge-v2/schedule-shape.test.mjs` to guard canonical schedule APIs, conflict detection, and public event sync.
+- Tests: added `src/lib/concierge-v2/rsvp-board-shape.test.mjs` to guard owner RSVP Board APIs, export, and host UI actions.
 
 ## Deferred
 
@@ -42,6 +44,7 @@ Date: 2026-06-04
 - `node --test src/lib/concierge-v2/operations-shape.test.mjs`: passing.
 - `node --test src/lib/concierge-v2/reminders-shape.test.mjs`: passing.
 - `node --test src/lib/concierge-v2/schedule-shape.test.mjs`: passing.
+- `node --test src/lib/concierge-v2/rsvp-board-shape.test.mjs`: passing.
 - `node --check src/lib/concierge-v2/core.mjs`: passing.
 - Scoped Biome lint on touched files: passing.
 - `npm run lint -- <touched files>`: failing on unrelated repo-wide issues because the script expands to `biome lint .` before supplied paths.
@@ -51,7 +54,7 @@ Date: 2026-06-04
 ## Recommended Next Slice
 
 1. Add source document ingestion for pasted text, upload, OCR review cards, and approval-to-schedule.
-2. Add richer host dashboard cards for RSVP Board 2.0, response export, volunteer unclaim/edit, and payment exports.
+2. Add volunteer unclaim/edit, Smart Form exports, and payment exports.
 3. Add richer schedule calendar/board views, blackout exception rows, and recurring-series edit controls.
 4. Add real reminder provider adapters and a safe scheduled job after email/SMS provider setup is decided.
 5. Backfill canonical `event_pages` links for existing public `event_history` rows after production schema is migrated.

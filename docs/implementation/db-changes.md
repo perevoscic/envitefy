@@ -67,6 +67,7 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 
 - `src/lib/concierge-v2/storage.ts` creates the subset of canonical tables needed by the current slice if the migration has not run locally.
 - `src/lib/concierge-v2/schedule.ts` edits canonical `event_occurrences` rows and republishes the schedule arrays into `event_history.data.scheduleHub`, `event_history.data.publicEvent.scheduleItems`, and `event_history.data.scheduleItems`.
+- `src/lib/concierge-v2/rsvp-board.ts` reads and updates `rsvp_responses` through event-page owner checks, normalizes `answers_json` into host board fields, and produces owner-only CSV exports.
 - `src/lib/concierge-v2/operations.ts` checks event-page ownership before returning private operations data or updating payment status.
 - `src/lib/concierge-v2/reminders.ts` checks event-page ownership before returning queue details, previews, dry-run records, or reminder status updates.
 - Volunteer claims use both a unique active email claim index and an atomic `volunteer_slots.claimed_quantity` update to prevent over-claiming.

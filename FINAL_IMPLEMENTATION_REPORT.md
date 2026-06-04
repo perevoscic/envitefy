@@ -4,7 +4,7 @@ Date: 2026-06-04
 
 ## Executive Summary
 
-Implemented the first coherent Concierge V2 vertical slice plus the next operational slices: feature flags, additive canonical graph migration, deterministic natural-language parser, authenticated Concierge V2 APIs, apply-draft persistence, mobile-first `/concierge-v2` builder UI, public event page v2 sections, owner Schedule Hub, RSVP answer storage, guest Smart Form responses, guest Volunteer Signup claims, owner manual payment status updates, owner reminder queue preview/dry-run/cancel controls, owner operations UI, tests, and handoff docs.
+Implemented the first coherent Concierge V2 vertical slice plus the next operational slices: feature flags, additive canonical graph migration, deterministic natural-language parser, authenticated Concierge V2 APIs, apply-draft persistence, mobile-first `/concierge-v2` builder UI, public event page v2 sections, owner Schedule Hub, owner RSVP Board 2.0 with CSV export, RSVP answer storage, guest Smart Form responses, guest Volunteer Signup claims, owner manual payment status updates, owner reminder queue preview/dry-run/cancel controls, owner operations UI, tests, and handoff docs.
 
 Feature-flagged by `ENABLE_CONCIERGE_V2` plus capability flags for schedule hub, smart forms, volunteer signup, manual payments, OCR imports, team/class hub, resource planning, and reminder engine.
 
@@ -16,19 +16,20 @@ Stubbed/provider-dependent: AI provider selection for V2, OCR import review, rea
 - `node --test src/lib/concierge-v2/operations-shape.test.mjs`: pass.
 - `node --test src/lib/concierge-v2/reminders-shape.test.mjs`: pass.
 - `node --test src/lib/concierge-v2/schedule-shape.test.mjs`: pass.
+- `node --test src/lib/concierge-v2/rsvp-board-shape.test.mjs`: pass.
 - `node --check src/lib/concierge-v2/core.mjs`: pass.
 - `node_modules\\.bin\\biome.cmd lint <touched files>`: pass.
 - `node_modules\\.bin\\tsc.cmd --noEmit`: fail on existing repo-wide TypeScript errors. Representative first errors:
   - `.next/types/app/api/creation/threads/[id]/route.ts(244,7): Type ... does not satisfy the constraint 'ParamCheck<RouteContext>'.`
   - `ai-studio-code-samples/ethereal-invitations/vite.config.ts(1,25): Cannot find module '@tailwindcss/vite'.`
   - `src/app/api/admin/marketing-campaigns/[runId]/captions/regenerate/route.ts(15,60): Property 'runDir' is missing.`
-  - `src/app/event/[id]/page.tsx(3348,15): Type 'string | null' is not assignable to type 'string'.`
+  - `src/app/event/[id]/page.tsx(3366,15): Type 'string | null' is not assignable to type 'string'.`
   - `src/lib/meet-discovery/core.ts(858,11): Cannot find name 'ScheduleColorTarget'.`
 - `npm run lint -- <touched files>`: fail because the script runs `biome lint .` before the supplied paths; failures are unrelated existing sample-app/repo issues such as `ai-studio-code-samples/ethereal-invitations/src/components/FormalSkin.tsx` comment text and unused imports.
 - VS Code diagnostics linter:
   - Old documented path failed with `Cannot find module '...airizom.chat-to-cli-0.499.1\\scripts\\vscode-lint.js'`.
   - Current extension path failed with `Bridge provider context is missing. Set CLI_PROVIDER_ID (provider id) or CLI_BRIDGE_INFO_FILE (explicit bridge info path).`
-- In-app browser smoke: opened `http://localhost:3000/concierge-v2`; current unauthenticated browser session redirected to `http://localhost:3000/` and rendered the existing signed-out landing page. Builder UI still needs a signed-in manual smoke test.
+- In-app browser smoke: opened unauthenticated owner routes including `http://localhost:3000/concierge-v2/events/smoke-test/schedule` and `http://localhost:3000/concierge-v2/events/smoke-test/rsvp`; both redirected to `http://localhost:3000/` as expected without an owner session. Signed-in owner UI still needs manual smoke testing.
 
 ## Database Changes
 
@@ -55,6 +56,9 @@ Owner still needs to run the migration against each target database.
 - `POST /api/concierge/events/[id]/forms/[formId]/responses`: public/optional-session Smart Form response submission with required-field validation.
 - `POST /api/concierge/events/[id]/volunteer-slots/[slotId]/claim`: public/optional-session volunteer slot claim with capacity and duplicate-email guards.
 - `PATCH /api/concierge/events/[id]/payment-requests/[paymentRequestId]/status`: authenticated owner-only manual payment status update.
+- `GET /api/concierge/events/[id]/rsvps`: authenticated owner-only RSVP Board 2.0 summary with counts, answers, and guest detail rows.
+- `GET /api/concierge/events/[id]/rsvps/export`: authenticated owner-only RSVP CSV export.
+- `PATCH /api/concierge/events/[id]/rsvps/[rsvpId]`: authenticated owner-only RSVP status update by response row id.
 - `GET /api/concierge/events/[id]/schedule`: authenticated owner-only Schedule Hub summary with series, occurrences, counts, and conflicts.
 - `POST /api/concierge/events/[id]/schedule`: authenticated owner-only one-off schedule item creation.
 - `PATCH /api/concierge/events/[id]/schedule/occurrences/[occurrenceId]`: authenticated owner-only occurrence move/edit/cancel/restore/status update.
@@ -71,6 +75,8 @@ Owner still needs to run the migration against each target database.
 - `src/app/concierge-v2/ConciergeV2Client.tsx`: premium mobile-first builder with examples, detected mode, draft sections, edit fields, loading/error states, and publish result link.
 - `src/app/concierge-v2/events/[id]/schedule/page.tsx`: owner-only Schedule Hub route backed by canonical `event_occurrences`.
 - `src/app/concierge-v2/events/[id]/schedule/ConciergeV2ScheduleHubClient.tsx`: premium mobile-first agenda/list/conflicts UI with add, edit, move, cancel, and restore controls.
+- `src/app/concierge-v2/events/[id]/rsvp/page.tsx`: owner-only RSVP Board 2.0 route backed by `rsvp_responses`.
+- `src/app/concierge-v2/events/[id]/rsvp/ConciergeV2RsvpBoardClient.tsx`: premium mobile-first host board with summary cards, filters, guest detail panel, status updates, reminder handoff, and CSV export.
 - `src/app/concierge-v2/events/[id]/ops/page.tsx`: owner-only operations route for generated forms, volunteer claims, and manual payments.
 - `src/app/concierge-v2/events/[id]/ops/ConciergeV2OpsClient.tsx`: premium mobile-first host operations surface with summary cards, payment status actions, and reminder queue controls.
 - `src/components/concierge/ConciergePublicOperations.tsx`: public Smart Form, Volunteer Signup, Payment Tracker, Checklist, and Reminder Timeline interaction sections.
@@ -84,7 +90,7 @@ Owner still needs to run the migration against each target database.
 - Mobile improvements: stacked builder sections, sticky publish bar, large tap targets, responsive public section grids.
 - Accessibility improvements: semantic buttons/sections, aria labels on icon-only controls inherited from existing renderer, clear loading/error states.
 - Remaining design issues: public reminder timeline is display-only, while owner ops supports preview/dry-run/cancel; payment collection remains manual/providerless; Schedule Hub has agenda/list/conflict views but not a full calendar grid yet.
-- Screens needing manual review: signed-in `/concierge-v2` builder, published v2 public event page, owner ops page, owner RSVP responses with v2 answers, mobile public page sections.
+- Screens needing manual review: signed-in `/concierge-v2` builder, published v2 public event page, owner RSVP Board, owner ops page, owner RSVP responses with v2 answers, mobile public page sections.
 
 ## Environment Variables Needed
 
@@ -110,6 +116,7 @@ Owner still needs to run the migration against each target database.
 - Create the gymnastics season example, verify recurring practice materialization and meet/team dinner sections.
 - Create the spirit week example and verify five daily schedule cards.
 - Open `/concierge-v2/events/[eventHistoryId]/schedule`, add a one-off item, edit a generated occurrence, cancel/restore it, and confirm the public event schedule updates.
+- Open `/concierge-v2/events/[eventHistoryId]/rsvp`, filter RSVP responses, update one response status, export CSV, and use the reminder handoff link.
 - Submit RSVP as a guest and confirm owner RSVP response includes `answersJson`, `adultCount`, `kidCount`, and `allergyNotes` when provided.
 - Submit a generated Smart Form and confirm it appears on `/concierge-v2/events/[eventHistoryId]/ops`.
 - Claim a generated volunteer slot as a guest and confirm capacity/claimed counts update in ops.

@@ -8,6 +8,7 @@ import {
   HeartHandshake,
   RefreshCw,
   Send,
+  Users,
   WalletCards,
   XCircle,
 } from "lucide-react";
@@ -209,6 +210,13 @@ export default function ConciergeV2OpsClient({
             Refresh
           </button>
           <Link
+            href={`/concierge-v2/events/${encodeURIComponent(eventId)}/rsvp`}
+            className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
+          >
+            <Users className="h-4 w-4" aria-hidden="true" />
+            RSVP
+          </Link>
+          <Link
             href={`/concierge-v2/events/${encodeURIComponent(eventId)}/schedule`}
             className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
           >
@@ -255,7 +263,7 @@ export default function ConciergeV2OpsClient({
           </div>
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <section id="reminders" className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-xl font-black text-slate-950">Form responses</h2>
           <div className="mt-5 grid gap-4">
             {forms.length ? forms.map((form) => (
