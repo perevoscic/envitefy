@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock,
+  LinkIcon,
   ListChecks,
   Plus,
   RefreshCw,
@@ -380,6 +381,13 @@ export default function ConciergeV2ScheduleHubClient({
             >
               <Users className="h-4 w-4" aria-hidden="true" />
               RSVP
+            </Link>
+            <Link
+              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/calendar`}
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
+            >
+              <LinkIcon className="h-4 w-4" aria-hidden="true" />
+              Calendar
             </Link>
             <Link
               href={`/concierge-v2/events/${encodeURIComponent(eventId)}/ops`}

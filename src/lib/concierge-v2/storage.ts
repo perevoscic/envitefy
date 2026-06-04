@@ -442,6 +442,22 @@ export async function ensureConciergeV2Tables(): Promise<void> {
         )
       `);
       await query(`
+        create table if not exists calendar_feeds (
+          id uuid primary key default gen_random_uuid(),
+          workspace_id uuid references workspaces(id) on delete set null,
+          user_id uuid references users(id) on delete set null,
+          program_id uuid references programs(id) on delete cascade,
+          name text not null,
+          token text unique not null,
+          scope_json jsonb not null default '{}'::jsonb,
+          timezone text,
+          is_active boolean not null default true,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`create index if not exists idx_calendar_feeds_token on calendar_feeds(token)`);
+      await query(`
         create table if not exists audit_logs (
           id uuid primary key default gen_random_uuid(),
           workspace_id uuid references workspaces(id) on delete set null,
