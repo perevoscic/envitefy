@@ -30,7 +30,7 @@ type FloatingSignal = {
 };
 
 type AIConciergeSectionProps = {
-  onPrimaryAction: () => void;
+  onPrimaryAction?: () => void;
 };
 
 const chatMessages: ChatMessage[] = [
@@ -322,16 +322,18 @@ export default function AIConciergeSection({ onPrimaryAction }: AIConciergeSecti
             tracking.
           </p>
 
-          <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:justify-start">
-            <button
-              type="button"
-              onClick={onPrimaryAction}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#241b35] px-6 text-sm font-semibold text-white shadow-[0_18px_44px_rgba(56,44,84,0.24)] ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#5d4ebb] focus:outline-none focus:ring-2 focus:ring-[#8b7be8] focus:ring-offset-2"
-            >
-              Try the AI Concierge
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
+          {onPrimaryAction ? (
+            <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:justify-start">
+              <button
+                type="button"
+                onClick={onPrimaryAction}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#241b35] px-6 text-sm font-semibold text-white shadow-[0_18px_44px_rgba(56,44,84,0.24)] ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#5d4ebb] focus:outline-none focus:ring-2 focus:ring-[#8b7be8] focus:ring-offset-2"
+              >
+                Try the AI Concierge
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
         </motion.div>
 
         <div className="order-2 lg:col-start-1 lg:row-start-2">

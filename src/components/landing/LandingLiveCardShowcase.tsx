@@ -403,7 +403,7 @@ export default function LandingLiveCardShowcase({
     <>
       <motion.section
         id="showcase"
-        className="flex min-h-[100svh] flex-col justify-center overflow-x-clip pb-16 pt-32 lg:pb-20 lg:pt-32"
+        className="flex min-h-[100svh] flex-col justify-start overflow-x-clip pb-16 pt-[calc(2.25rem+env(safe-area-inset-top))] sm:pt-[calc(3rem+env(safe-area-inset-top))] lg:justify-center lg:pb-20 lg:pt-32"
         {...revealIn}
       >
         <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">

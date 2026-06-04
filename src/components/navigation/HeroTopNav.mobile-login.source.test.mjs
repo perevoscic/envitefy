@@ -14,6 +14,8 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
   assert.match(source, /import \{ motion \} from "framer-motion";/);
   assert.match(source, /import \{ createPortal \} from "react-dom";/);
   assert.match(source, /loginSuccessRedirectUrl\?: string;/);
+  assert.match(source, /mobileNavLinks\?: HeroTopNavLink\[];/);
+  assert.match(source, /showMobileMenuAuthActions\?: boolean;/);
   assert.match(source, /draggable=\{false\}/);
   assert.match(
     source,
@@ -31,6 +33,7 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
     source,
     /const showMobileGuestActions =\s*status !== "authenticated" && !mobileLoginExpanded;/,
   );
+  assert.match(source, /const resolvedMobileNavLinks = mobileNavLinks \?\? navLinks;/);
   assert.match(source, /const useDarkMobileMenu = isDarkGlass;/);
   assert.match(source, /setMobileMenuPortalReady\(true\);/);
   assert.match(source, /document\.addEventListener\("pointerdown", handlePointerDown\);/);
@@ -100,7 +103,8 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
     source,
     /onClick=\{\(\) => {\s*setMobileMenuOpen\(false\);\s*setMobileLoginExpanded\(false\);\s*onGuestPrimaryAction\(\);/s,
   );
-  assert.match(source, /\) : showMobileGuestActions \? \(\s*<button/s);
+  assert.match(source, /\{showMobileMenuAuthActions \? \(/);
+  assert.match(source, /showMobileMenuAuthActions = true/);
   assert.match(source, /onClick=\{onGuestLoginAction\}/);
 });
 

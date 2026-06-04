@@ -17,14 +17,17 @@ export type HeroTopNavLink = {
 
 type HeroTopNavProps = {
   navLinks: HeroTopNavLink[];
+  mobileNavLinks?: HeroTopNavLink[];
   primaryCtaLabel?: string;
   authenticatedPrimaryHref: string;
   brandHref?: string;
   dashboardHref?: string;
   guestPrimaryHref?: string;
   loginSuccessRedirectUrl?: string;
+  mobileLogoOnly?: boolean;
   onGuestLoginAction: () => void;
   onGuestPrimaryAction: () => void;
+  showMobileMenuAuthActions?: boolean;
   variant?: "default" | "glass-dark" | "transparent-dark" | "transparent-light";
 };
 
@@ -88,14 +91,17 @@ function NavLinkItem({
 
 export default function HeroTopNav({
   navLinks,
+  mobileNavLinks,
   primaryCtaLabel = "Get Started",
   authenticatedPrimaryHref,
   brandHref = "/landing",
   dashboardHref = "/",
   guestPrimaryHref,
   loginSuccessRedirectUrl = dashboardHref,
+  mobileLogoOnly = false,
   onGuestLoginAction,
   onGuestPrimaryAction,
+  showMobileMenuAuthActions = true,
   variant = "default",
 }: HeroTopNavProps) {
   const { status } = useSession();
@@ -116,6 +122,7 @@ export default function HeroTopNav({
   const isTransparentOverHero = isTransparentVariant && !hasScrolledPastHero;
   const useDarkMobileMenu = isDarkGlass;
   const showMobileGuestActions = status !== "authenticated" && !mobileLoginExpanded;
+  const resolvedMobileNavLinks = mobileNavLinks ?? navLinks;
 
   useEffect(() => {
     setMobileMenuPortalReady(true);
@@ -313,6 +320,12 @@ export default function HeroTopNav({
   }, [status]);
 
   useEffect(() => {
+    if (!mobileLogoOnly) return;
+    setMobileMenuOpen(false);
+    setMobileLoginExpanded(false);
+  }, [mobileLogoOnly]);
+
+  useEffect(() => {
     if (!mobileLoginExpanded || typeof window === "undefined") return;
 
     const frame = window.requestAnimationFrame(() => {
@@ -365,17 +378,16 @@ export default function HeroTopNav({
       >
         <div
           className={cx(
-            isTransparentOverHero
-              ? cx(
-                  "px-1 py-2 sm:px-3",
-                  isTransparentLight ? "text-[#25172d]" : "text-white",
-                )
-              : cx(
-                  "nav-chrome-glass-header px-4 py-3 sm:px-6",
-                  isDarkGlass
-                    ? "theme-glass-nav rounded-[2rem] border-white/14 shadow-[0_18px_40px_rgba(3,1,10,0.24)]"
-                    : "hero-top-nav-shell-light rounded-[2rem]",
-                ),
+            mobileLogoOnly
+              ? cx("px-1 py-2", isTransparentLight ? "text-[#25172d]" : "text-white")
+              : isTransparentOverHero
+                ? cx("px-1 py-2", isTransparentLight ? "text-[#25172d]" : "text-white")
+                : cx(
+                    "nav-chrome-glass-header px-4 py-3 sm:px-6",
+                    isDarkGlass
+                      ? "theme-glass-nav rounded-[2rem] border-white/14 shadow-[0_18px_40px_rgba(3,1,10,0.24)]"
+                      : "hero-top-nav-shell-light rounded-[2rem]",
+                  ),
           )}
         >
           <div
@@ -395,10 +407,10 @@ export default function HeroTopNav({
             >
               <EnvitefyWordmark
                 scaled={false}
-                tone={isDarkGlass ? "light" : "gradient"}
+                tone={mobileLogoOnly || !isDarkGlass ? "gradient" : "light"}
                 className={cx(
                   "max-w-full text-[2.05rem] leading-none transition-transform duration-300 group-hover:scale-[1.02] sm:text-[2.28rem] md:text-[2.52rem]",
-                  !isDarkGlass && "hero-top-nav-brand-light",
+                  (mobileLogoOnly || !isDarkGlass) && "hero-top-nav-brand-light",
                 )}
               />
             </Link>
@@ -526,7 +538,8 @@ export default function HeroTopNav({
               ref={mobileMenuToggleRef}
               type="button"
               className={cx(
-                "nav-chrome-motion inline-flex h-11 w-11 items-center justify-center shadow-sm lg:hidden",
+                mobileLogoOnly ? "hidden" : "inline-flex",
+                "nav-chrome-motion h-11 w-11 items-center justify-center shadow-sm lg:hidden",
                 isTransparentOverHero && isTransparentLight
                   ? "rounded-full border border-[#25172d]/10 bg-[#25172d]/8 text-[#25172d]"
                   : isDarkGlass
@@ -640,7 +653,7 @@ export default function HeroTopNav({
                     className="mt-8 flex flex-1 flex-col items-end justify-start gap-1 pb-8 text-right"
                     aria-label="Hero navigation"
                   >
-                    {navLinks.map((link) => {
+                    {resolvedMobileNavLinks.map((link) => {
                       return (
                         <NavLinkItem
                           key={`${link.label}:${link.href}:mobile`}
@@ -662,125 +675,129 @@ export default function HeroTopNav({
                       );
                     })}
 
-                    {status === "authenticated" ? (
-                      <Link
-                        href={dashboardHref}
-                        className={cx(
-                          "nav-chrome-motion mt-1.5 w-full rounded-2xl px-4 py-3 text-right text-base font-semibold transition",
-                          useDarkMobileMenu
-                            ? "text-white/74 hover:bg-white/[0.08] hover:text-white"
-                            : lightNavPillClass,
-                        )}
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Dashboard
-                      </Link>
-                    ) : (
+                    {showMobileMenuAuthActions ? (
                       <>
-                        {showMobileGuestActions ? (
-                          <button
-                            type="button"
-                            aria-expanded={mobileLoginExpanded}
-                            aria-controls="hero-top-nav-mobile-login"
-                            onClick={() => setMobileLoginExpanded((value) => !value)}
+                        {status === "authenticated" ? (
+                          <Link
+                            href={dashboardHref}
                             className={cx(
-                              "cta-shell mt-1.5 self-end nav-chrome-motion rounded-2xl px-6 py-3 text-center text-base font-semibold transition",
+                              "nav-chrome-motion mt-1.5 w-full rounded-2xl px-4 py-3 text-right text-base font-semibold transition",
                               useDarkMobileMenu
-                                ? "border border-white/16 bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-white/[0.12]"
+                                ? "text-white/74 hover:bg-white/[0.08] hover:text-white"
                                 : lightNavPillClass,
                             )}
+                            onClick={() => setMobileMenuOpen(false)}
                           >
-                            <AnimatedButtonLabel label="Login" />
-                          </button>
-                        ) : null}
+                            Dashboard
+                          </Link>
+                        ) : (
+                          <>
+                            {showMobileGuestActions ? (
+                              <button
+                                type="button"
+                                aria-expanded={mobileLoginExpanded}
+                                aria-controls="hero-top-nav-mobile-login"
+                                onClick={() => setMobileLoginExpanded((value) => !value)}
+                                className={cx(
+                                  "cta-shell mt-1.5 self-end nav-chrome-motion rounded-2xl px-6 py-3 text-center text-base font-semibold transition",
+                                  useDarkMobileMenu
+                                    ? "border border-white/16 bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-white/[0.12]"
+                                    : lightNavPillClass,
+                                )}
+                              >
+                                <AnimatedButtonLabel label="Login" />
+                              </button>
+                            ) : null}
 
-                        <div
-                          id="hero-top-nav-mobile-login"
-                          className={cx(
-                            "grid w-full transition-[grid-template-rows,opacity,margin] duration-300 ease-out",
-                            mobileLoginExpanded
-                              ? "mt-3 grid-rows-[1fr] opacity-100"
-                              : "mt-0 grid-rows-[0fr] opacity-0",
-                          )}
-                        >
-                          <div className="overflow-hidden">
                             <div
+                              id="hero-top-nav-mobile-login"
                               className={cx(
-                                "rounded-[2rem] px-4 py-4",
-                                useDarkMobileMenu
-                                  ? "border border-white/16 bg-white/[0.08] shadow-[0_18px_44px_rgba(4,1,14,0.28)]"
-                                  : "border border-[#e7dcff] bg-white/92 shadow-[0_18px_44px_rgba(89,70,171,0.12)]",
+                                "grid w-full transition-[grid-template-rows,opacity,margin] duration-300 ease-out",
+                                mobileLoginExpanded
+                                  ? "mt-3 grid-rows-[1fr] opacity-100"
+                                  : "mt-0 grid-rows-[0fr] opacity-0",
                               )}
                             >
-                              <LoginForm
-                                variant="inline"
-                                inlineTone={useDarkMobileMenu ? "dark" : "light"}
-                                successRedirectUrl={loginSuccessRedirectUrl}
-                                onInlineCancel={() => setMobileLoginExpanded(false)}
-                                onSwitchMode={() => {
-                                  setMobileLoginExpanded(false);
-                                  setMobileMenuOpen(false);
-                                  onGuestPrimaryAction();
-                                }}
-                                onSuccess={() => {
-                                  setMobileLoginExpanded(false);
-                                  setMobileMenuOpen(false);
-                                }}
-                              />
+                              <div className="overflow-hidden">
+                                <div
+                                  className={cx(
+                                    "rounded-[2rem] px-4 py-4",
+                                    useDarkMobileMenu
+                                      ? "border border-white/16 bg-white/[0.08] shadow-[0_18px_44px_rgba(4,1,14,0.28)]"
+                                      : "border border-[#e7dcff] bg-white/92 shadow-[0_18px_44px_rgba(89,70,171,0.12)]",
+                                  )}
+                                >
+                                  <LoginForm
+                                    variant="inline"
+                                    inlineTone={useDarkMobileMenu ? "dark" : "light"}
+                                    successRedirectUrl={loginSuccessRedirectUrl}
+                                    onInlineCancel={() => setMobileLoginExpanded(false)}
+                                    onSwitchMode={() => {
+                                      setMobileLoginExpanded(false);
+                                      setMobileMenuOpen(false);
+                                      onGuestPrimaryAction();
+                                    }}
+                                    onSuccess={() => {
+                                      setMobileLoginExpanded(false);
+                                      setMobileMenuOpen(false);
+                                    }}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {status === "authenticated" ? (
-                      <Link
-                        href={authenticatedPrimaryHref}
-                        className={cx(
-                          "mt-1.5 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
-                          useDarkMobileMenu
-                            ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
-                            : "nav-chrome-pill-primary text-white",
+                          </>
                         )}
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <AnimatedButtonLabel label={primaryCtaLabel} />
-                      </Link>
-                    ) : showMobileGuestActions ? (
-                      guestPrimaryHref ? (
-                        <Link
-                          href={guestPrimaryHref}
-                          className={cx(
-                            "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
-                            useDarkMobileMenu
-                              ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
-                              : "nav-chrome-pill-primary text-white",
-                          )}
-                          onClick={() => {
-                            setMobileMenuOpen(false);
-                            setMobileLoginExpanded(false);
-                          }}
-                        >
-                          <AnimatedButtonLabel label={primaryCtaLabel} />
-                        </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMobileMenuOpen(false);
-                            setMobileLoginExpanded(false);
-                            onGuestPrimaryAction();
-                          }}
-                          className={cx(
-                            "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
-                            useDarkMobileMenu
-                              ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
-                              : "nav-chrome-pill-primary text-white",
-                          )}
-                        >
-                          <AnimatedButtonLabel label={primaryCtaLabel} />
-                        </button>
-                      )
+
+                        {status === "authenticated" ? (
+                          <Link
+                            href={authenticatedPrimaryHref}
+                            className={cx(
+                              "mt-1.5 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+                              useDarkMobileMenu
+                                ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
+                                : "nav-chrome-pill-primary text-white",
+                            )}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <AnimatedButtonLabel label={primaryCtaLabel} />
+                          </Link>
+                        ) : showMobileGuestActions ? (
+                          guestPrimaryHref ? (
+                            <Link
+                              href={guestPrimaryHref}
+                              className={cx(
+                                "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+                                useDarkMobileMenu
+                                  ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
+                                  : "nav-chrome-pill-primary text-white",
+                              )}
+                              onClick={() => {
+                                setMobileMenuOpen(false);
+                                setMobileLoginExpanded(false);
+                              }}
+                            >
+                              <AnimatedButtonLabel label={primaryCtaLabel} />
+                            </Link>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMobileMenuOpen(false);
+                                setMobileLoginExpanded(false);
+                                onGuestPrimaryAction();
+                              }}
+                              className={cx(
+                                "mt-2 cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
+                                useDarkMobileMenu
+                                  ? "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
+                                  : "nav-chrome-pill-primary text-white",
+                              )}
+                            >
+                              <AnimatedButtonLabel label={primaryCtaLabel} />
+                            </button>
+                          )
+                        ) : null}
+                      </>
                     ) : null}
                   </nav>
                 </div>

@@ -231,6 +231,10 @@ test("landing page is hosted-event-led and premium", () => {
   assert.doesNotMatch(landingExperience, /id="rsvp-tracking"/);
   assert.match(landingExperience, /id="upload"/);
   assert.match(landingExperience, /id="examples"/);
+  assert.match(
+    landingExperience,
+    /justify-start px-4 pb-8 pt-\[calc\(2\.25rem\+env\(safe-area-inset-top\)\)\][\s\S]*lg:justify-center/,
+  );
   assert.match(landingExperience, /id="creation-paths"/);
   assert.doesNotMatch(landingExperience, /Talk through a live card/);
   assert.doesNotMatch(landingExperience, /ConciergeSimulation/);
@@ -333,7 +337,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(landingShowcase, /node\.scrollLeft = targetLeft/);
   assert.match(
     landingShowcase,
-    /id="showcase"\s+className="flex min-h-\[100svh\] flex-col justify-center overflow-x-clip pb-16 pt-32 lg:pb-20 lg:pt-32"/,
+    /id="showcase"\s+className="flex min-h-\[100svh\] flex-col justify-start overflow-x-clip pb-16 pt-\[calc\(2\.25rem\+env\(safe-area-inset-top\)\)\][\s\S]*lg:justify-center lg:pb-20 lg:pt-32"/,
   );
   assert.match(landingShowcase, /left-1\/2 mt-12 w-screen -translate-x-1\/2 py-4/);
   assert.match(landingShowcase, /revealIn/);
@@ -392,4 +396,184 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.doesNotMatch(conditionalFooter, /Start with Gymnastics/);
   assert.doesNotMatch(conditionalFooter, /Explore Snap/);
   assert.doesNotMatch(conditionalFooter, /Upload or Snap/);
+});
+
+test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
+  const landingExperience = readSource("src/app/landing/LandingExperience.tsx");
+  const scrollAwareBottomNav = readSource("src/components/navigation/ScrollAwareBottomNav.tsx");
+  const bottomNav = readSource("src/components/navigation/BottomNav.tsx");
+  const createActionSheet = readSource("src/components/navigation/CreateActionSheet.tsx");
+  const menuBottomSheet = readSource("src/components/navigation/MenuBottomSheet.tsx");
+  const conciergeSheet = readSource("src/components/navigation/ConciergeSheet.tsx");
+  const signedOutPageChrome = readSource("src/components/navigation/SignedOutPageChrome.tsx");
+  const showcasePage = readSource("src/app/showcase/page.tsx");
+  const mobileBrandHeader = readSource("src/components/navigation/MobileBrandHeader.tsx");
+  const signedOutNav = readSource("src/components/navigation/signed-out-nav.ts");
+  const signedOutNavConfig = readSource("src/config/navigation.ts");
+  const officialLogoPng = path.join(repoRoot, "public/brand/envitefy-wordmark.png");
+  const heroTopNav = readSource("src/components/navigation/HeroTopNav.tsx");
+  const aiConciergeSection = readSource("src/app/landing/sections/AIConciergeSection.tsx");
+
+  assert.match(signedOutNav, /from "@\/config\/navigation"/);
+  assert.match(signedOutNavConfig, /export const signedOutBottomNav/);
+  for (const label of ["Templates", "Examples", "Concierge", "Create", "Menu"]) {
+    assert.match(signedOutNavConfig, new RegExp(`label: "${label}"`));
+  }
+  assert.match(signedOutNavConfig, /href: "#examples"/);
+  assert.match(signedOutNavConfig, /href: "#showcase"/);
+  assert.match(signedOutNavConfig, /href: "#concierge"/);
+  assert.match(signedOutNavConfig, /href: "#creation-paths"/);
+  assert.match(signedOutNavConfig, /href: "#menu"/);
+  assert.match(signedOutNavConfig, /action: "menu"/);
+  assert.match(signedOutNavConfig, /featured: true/);
+  assert.doesNotMatch(signedOutNavConfig, /label: "Sign In"/);
+  assert.match(signedOutNavConfig, /export const signedOutMobileMenuLinks/);
+  for (const label of ["Pricing", "About", "Contact", "Help", "Privacy", "Terms"]) {
+    assert.match(signedOutNavConfig, new RegExp(`label: "${label}"`));
+  }
+
+  assert.match(scrollAwareBottomNav, /document\.querySelector\("#hero, #landing-hero"\)/);
+  assert.match(scrollAwareBottomNav, /new IntersectionObserver/);
+  assert.match(scrollAwareBottomNav, /!entry\.isIntersecting/);
+  assert.match(scrollAwareBottomNav, /threshold: \[0\]/);
+  assert.match(scrollAwareBottomNav, /translate-y-full opacity-0 pointer-events-none/);
+  assert.match(scrollAwareBottomNav, /translate-y-0 opacity-100 pointer-events-auto/);
+  assert.match(scrollAwareBottomNav, /duration-300 ease-out/);
+  assert.match(scrollAwareBottomNav, /<BottomNav/);
+
+  assert.match(bottomNav, /aria-label="Signed-out mobile navigation"/);
+  assert.match(bottomNav, /initialActiveLabel\?: string/);
+  assert.match(bottomNav, /onHashSelect\?: \(href: string\) => void/);
+  assert.match(bottomNav, /handleHashSelect\(item\.href\)/);
+  assert.match(bottomNav, /bg-white\/95/);
+  assert.match(bottomNav, /backdrop-blur-xl/);
+  assert.match(bottomNav, /env\(safe-area-inset-bottom\)/);
+  assert.match(bottomNav, /initialActiveLabel = "Concierge"/);
+  assert.match(bottomNav, /const \[activeLabel, setActiveLabel\] = useState\(initialActiveLabel\)/);
+  assert.match(bottomNav, /onHashSelect\?: \(href: string\) => void/);
+  assert.match(bottomNav, /const handleHashSelect = \(href: string\) => \{/);
+  assert.match(bottomNav, /onMenuSelect\?\.\(\)/);
+  assert.match(bottomNav, /drop-shadow-\[0_0_3px_rgba\(139,92,246,0\.5\)\]/);
+  assert.match(bottomNav, /shadow-\[0_0_6px_rgba\(139,92,246,1\)\]/);
+  assert.match(bottomNav, /bg-gradient-to-tr from-pink-500 via-violet-600 to-indigo-500/);
+  assert.match(bottomNav, /logo-colored\.png/);
+  assert.match(bottomNav, /bg-white drop-shadow-\[0_0_8px_rgba\(255,255,255,0\.52\)\]/);
+  assert.match(bottomNav, /<CreateActionSheet/);
+  assert.doesNotMatch(bottomNav, /<MenuBottomSheet/);
+  assert.doesNotMatch(bottomNav, /action === "signin"/);
+  assert.match(signedOutPageChrome, /<HeroTopNav/);
+  assert.match(signedOutPageChrome, /<BottomNav/);
+  assert.match(signedOutPageChrome, /<MenuBottomSheet/);
+  assert.match(signedOutPageChrome, /<ConciergeSheet/);
+  assert.match(signedOutPageChrome, /<AuthModal/);
+  assert.match(signedOutPageChrome, /router\.push\(href\.startsWith\("#"\) \? `\/landing\$\{href\}` : href\)/);
+  assert.match(showcasePage, /<SignedOutPageChrome activeBottomNavLabel="Examples" \/>/);
+  assert.match(createActionSheet, /Create with AI Concierge/);
+  assert.match(createActionSheet, /Start from Template/);
+  assert.match(createActionSheet, /href: "#examples"/);
+  assert.doesNotMatch(createActionSheet, /href: "\/templates"/);
+  assert.doesNotMatch(createActionSheet, /onTemplateSelect/);
+  assert.match(createActionSheet, /Upload Flyer \/ Scan Invite/);
+  assert.match(createActionSheet, /Create Manually/);
+  assert.match(menuBottomSheet, /bg-\[#150c29\]/);
+  assert.match(menuBottomSheet, /bottom-0/);
+  assert.match(menuBottomSheet, /height: authActive \? "88vh" : "76vh"/);
+  assert.match(menuBottomSheet, /maxHeight: authActive \? "88vh" : "76vh"/);
+  assert.match(menuBottomSheet, /rounded-t-\[1\.75rem\]/);
+  assert.match(menuBottomSheet, /initial=\{\{ y: "100%", opacity: 0 \}\}/);
+  assert.match(menuBottomSheet, /\/brand\/envitefy-wordmark\.png/);
+  assert.match(menuBottomSheet, /brightness-0 invert/);
+  assert.doesNotMatch(menuBottomSheet, /envitefy-wordmark-white\.svg/);
+  assert.match(menuBottomSheet, /signedOutMobileMenuLinks\.map/);
+  assert.match(menuBottomSheet, /aria-label="Signed-out mobile menu"/);
+  assert.match(menuBottomSheet, /Start Creating/);
+  assert.match(menuBottomSheet, /Sign In/);
+  assert.match(menuBottomSheet, /import LoginForm from "@\/components\/auth\/LoginForm";/);
+  assert.match(menuBottomSheet, /import SignupForm from "@\/components\/auth\/SignupForm";/);
+  assert.match(menuBottomSheet, /type AuthMode = "login" \| "signup";/);
+  assert.match(menuBottomSheet, /const \[authMode, setAuthMode\] = useState<AuthMode \| null>\(null\);/);
+  assert.match(menuBottomSheet, /onClick=\{\(\) => setAuthMode\("signup"\)\}/);
+  assert.match(menuBottomSheet, /onClick=\{\(\) => setAuthMode\("login"\)\}/);
+  assert.match(menuBottomSheet, /initial=\{\{ x: "105%", opacity: 0 \}\}/);
+  assert.match(menuBottomSheet, /exit=\{\{ x: "-105%", opacity: 0 \}\}/);
+  assert.match(menuBottomSheet, /<LoginForm/);
+  assert.match(menuBottomSheet, /<SignupForm/);
+  assert.doesNotMatch(menuBottomSheet, /onStartCreatingSelect/);
+  assert.doesNotMatch(menuBottomSheet, /onSignInSelect/);
+  assert.match(signedOutNavConfig, /label: "Pricing"/);
+  assert.doesNotMatch(menuBottomSheet, /Secondary/);
+  assert.doesNotMatch(menuBottomSheet, /Legal/);
+  assert.match(mobileBrandHeader, /const \[isHeroVisible, setIsHeroVisible\] = useState\(true\)/);
+  assert.match(mobileBrandHeader, /document\.querySelector\("#landing-hero, #hero"\)/);
+  assert.match(mobileBrandHeader, /new IntersectionObserver/);
+  assert.match(mobileBrandHeader, /entry\.isIntersecting/);
+  assert.match(mobileBrandHeader, /border-none bg-transparent/);
+  assert.match(mobileBrandHeader, /shadow-none backdrop-blur-0/);
+  assert.match(mobileBrandHeader, /pt-\[calc\(env\(safe-area-inset-top\)\+1rem\)\]/);
+  assert.match(mobileBrandHeader, /translate-y-0 opacity-100 pointer-events-auto/);
+  assert.match(mobileBrandHeader, /-translate-y-4 opacity-0 pointer-events-none/);
+  assert.match(mobileBrandHeader, /data-hero-visible=/);
+  assert.match(mobileBrandHeader, /\/brand\/envitefy-wordmark\.png/);
+  assert.match(mobileBrandHeader, /h-auto w-\[120px\] brightness-0 invert/);
+  assert.match(mobileBrandHeader, /brightness-0 invert/);
+  assert.doesNotMatch(mobileBrandHeader, /envitefy-wordmark-white\.svg/);
+  assert.match(mobileBrandHeader, /bg-black\/10 text-white shadow-none/);
+  assert.doesNotMatch(mobileBrandHeader, /from-\[#7a6f8f\]/);
+  assert.doesNotMatch(mobileBrandHeader, /rounded-full px-7/);
+  assert.ok(fs.existsSync(officialLogoPng));
+
+  assert.match(landingExperience, /<ScrollAwareBottomNav/);
+  assert.match(landingExperience, /<MobileBrandHeader/);
+  assert.doesNotMatch(landingExperience, /mode=\{bottomNavVisible \? "compact" : "hero"\}/);
+  assert.match(landingExperience, /onMenuClick=\{\(\) => setMobileMenuOpen\(true\)\}/);
+  assert.match(landingExperience, /<MenuBottomSheet/);
+  assert.match(landingExperience, /<MenuBottomSheet[\s\S]*successRedirectUrl="\/"/);
+  assert.doesNotMatch(landingExperience, /onStartCreatingSelect/);
+  assert.doesNotMatch(landingExperience, /onSignInSelect/);
+  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*successRedirectUrl="\/"/);
+  assert.match(landingExperience, /onMenuSelect=\{\(\) => setMobileMenuOpen\(true\)\}/);
+  assert.match(landingExperience, /onVisibilityChange=\{setBottomNavVisible\}/);
+  assert.match(landingExperience, /pb-\[calc\(96px\+env\(safe-area-inset-bottom\)\)\] md:pb-0/);
+  assert.match(landingExperience, /const \[assistantOpen, setAssistantOpen\] = useState\(false\)/);
+  assert.match(landingExperience, /const openConciergeDemo = \(\) => setAssistantOpen\(true\)/);
+  assert.match(landingExperience, /<ConciergeSheet/);
+  assert.match(landingExperience, /onSignupSelect=\{\(\) => openAuth\("signup"\)\}/);
+  assert.doesNotMatch(landingExperience, /mobileLogoOnly=\{bottomNavVisible\}/);
+  assert.doesNotMatch(landingExperience, /GuestChatWidget/);
+  assert.match(landingExperience, /mobileNavLinks=\{\[...signedOutMobileMenuLinks\]\}/);
+  assert.match(landingExperience, /showMobileMenuAuthActions=\{false\}/);
+  assert.match(landingExperience, /brandHref="\/"/);
+  assert.match(landingExperience, /Try the AI Concierge/);
+  assert.match(landingExperience, /openConciergeDemo/);
+  assert.match(landingExperience, /<AIConciergeSection \/>/);
+  assert.match(aiConciergeSection, /onPrimaryAction\?: \(\) => void/);
+  assert.match(conciergeSheet, /Envitefy Concierge/);
+  assert.match(conciergeSheet, /Event ideas, RSVP, gifts & setup/);
+  assert.match(conciergeSheet, /logo-colored\.png/);
+  assert.match(conciergeSheet, /bg-\[#f6d477\]/);
+  assert.match(conciergeSheet, /style=\{\{ color: "#f9df94" \}\}/);
+  assert.doesNotMatch(conciergeSheet, /<Sparkles/);
+  assert.match(conciergeSheet, /Tell me what you’re planning/);
+  for (const prompt of [
+    "Plan my event with AI",
+    "Upload an invite or flyer",
+    "See what guests will see",
+    "How do RSVPs work?",
+    "Add gifts, registry, or notes",
+  ]) {
+    assert.match(conciergeSheet, new RegExp(prompt.replace(/[?]/g, "\\?")));
+  }
+  assert.match(conciergeSheet, /signupSuggested/);
+  assert.match(conciergeSheet, /Create account/);
+  assert.match(conciergeSheet, /h-\[82vh\] max-h-\[85vh\] min-h-\[70vh\]/);
+  assert.match(conciergeSheet, /rounded-t-\[1\.75rem\]/);
+  assert.match(conciergeSheet, /bg-\[#120b1d\]\/48 backdrop-blur-\[3px\]/);
+  assert.match(conciergeSheet, /initial=\{\{ y: "100%", opacity: 0 \}\}/);
+  assert.match(conciergeSheet, /pb-\[calc\(0\.85rem\+env\(safe-area-inset-bottom\)\)\]/);
+  assert.doesNotMatch(conciergeSheet, /Open Envitefy guest help/);
+  assert.match(heroTopNav, /mobileNavLinks\?: HeroTopNavLink\[]/);
+  assert.match(heroTopNav, /mobileLogoOnly\?: boolean/);
+  assert.match(heroTopNav, /mobileLogoOnly \? "hidden" : "inline-flex"/);
+  assert.match(heroTopNav, /showMobileMenuAuthActions\?: boolean/);
+  assert.match(heroTopNav, /resolvedMobileNavLinks\.map/);
 });

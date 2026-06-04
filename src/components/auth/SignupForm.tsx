@@ -5,11 +5,17 @@ import { FormEvent, useRef, useState } from "react";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
 import { hideAuthTransition, showAuthTransition } from "@/utils/authTransition";
 
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
+
 export type SignupFormProps = {
   onSuccess?: () => void;
   onSwitchMode?: (mode: "login" | "signup") => void;
   successRedirectUrl?: string;
   signupSource?: "snap" | "gymnastics";
+  variant?: "default" | "inline";
+  inlineTone?: "dark" | "light";
 };
 
 export default function SignupForm({
@@ -17,7 +23,11 @@ export default function SignupForm({
   onSwitchMode,
   successRedirectUrl = "/",
   signupSource,
+  variant = "default",
+  inlineTone = "dark",
 }: SignupFormProps) {
+  const isInline = variant === "inline";
+  const isInlineDark = isInline && inlineTone === "dark";
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -33,6 +43,23 @@ export default function SignupForm({
   const [agreeTerms, setAgreeTerms] = useState(true);
   const { executeRecaptcha, recaptchaConfigured, recaptchaReady } = useRecaptcha();
   const recaptchaLoading = recaptchaConfigured && !recaptchaReady;
+  const textInputClass = cx(
+    "w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 text-sm text-foreground/90 shadow-inner transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]",
+    isInlineDark &&
+      "!border-white/12 !bg-[#211338] !text-white !shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)] placeholder:!text-white/62 focus-visible:!ring-[#f0d58f]",
+  );
+  const getPasswordInputClass = (hasError: boolean) =>
+    cx(
+      "w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition",
+      isInlineDark &&
+        "!border-white/12 !bg-[#211338] !text-white !shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)] placeholder:!text-white/62 focus-visible:!ring-[#f0d58f]",
+      hasError && "input-error",
+    );
+  const toggleButtonClass = cx(
+    "absolute inset-y-0 right-3 z-10 my-auto flex h-9 w-9 items-center justify-center wedding-icon-button text-muted-foreground/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-secondary)]",
+    isInlineDark &&
+      "!border-white/12 !bg-white/[0.08] !text-white/66 hover:!bg-white/[0.12] hover:!text-white",
+  );
 
   const ensureSignupSourceCookie = async () => {
     if (!signupSource) return;
@@ -166,7 +193,11 @@ export default function SignupForm({
           type="button"
           onClick={onGoogleSignUp}
           disabled={submitting}
-          className="btn btn-outline w-full justify-center gap-3"
+          className={cx(
+            "btn btn-outline w-full justify-center gap-3",
+            isInlineDark &&
+              "!border-white/12 !bg-white/[0.06] !text-white !shadow-[0_12px_28px_rgba(0,0,0,0.2)] hover:!bg-white/[0.1]",
+          )}
         >
           <svg
             width="18"
@@ -195,10 +226,12 @@ export default function SignupForm({
           Sign up with Google
         </button>
 
-        <div className="relative flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-border"></div>
-          <span className="text-sm text-muted-foreground">or</span>
-          <div className="flex-1 h-px bg-border"></div>
+        <div className="relative my-4 flex items-center gap-3">
+          <div className={cx("h-px flex-1 bg-border", isInlineDark && "!bg-white/14")} />
+          <span className={cx("text-sm text-muted-foreground", isInlineDark && "!text-white/62")}>
+            or
+          </span>
+          <div className={cx("h-px flex-1 bg-border", isInlineDark && "!bg-white/14")} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -206,7 +239,7 @@ export default function SignupForm({
             name="firstName"
             type="text"
             autoComplete="given-name"
-            className="w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
+            className={textInputClass}
             placeholder="First name"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
@@ -216,7 +249,7 @@ export default function SignupForm({
             name="lastName"
             type="text"
             autoComplete="family-name"
-            className="w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
+            className={textInputClass}
             placeholder="Last name"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
@@ -227,7 +260,7 @@ export default function SignupForm({
           name="email"
           type="email"
           autoComplete="username"
-          className="w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
+          className={textInputClass}
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -239,9 +272,7 @@ export default function SignupForm({
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
             data-form-type="signup"
-            className={`w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition ${
-              message === "Passwords do not match." ? "input-error" : ""
-            }`}
+            className={getPasswordInputClass(message === "Passwords do not match.")}
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -251,7 +282,7 @@ export default function SignupForm({
             type="button"
             aria-label={showPassword ? "Hide password" : "Show password"}
             aria-pressed={showPassword}
-            className="absolute inset-y-0 right-3 my-auto flex h-9 w-9 items-center justify-center wedding-icon-button text-muted-foreground/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-secondary)] z-10"
+            className={toggleButtonClass}
             onClick={() => setShowPassword((v) => !v)}
           >
             <svg
@@ -292,9 +323,7 @@ export default function SignupForm({
             type={showConfirmPassword ? "text" : "password"}
             autoComplete="new-password"
             data-form-type="signup"
-            className={`w-full rounded-xl border border-border/80 bg-white/85 px-4 py-3 pr-12 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition ${
-              message === "Passwords do not match." ? "input-error" : ""
-            }`}
+            className={getPasswordInputClass(message === "Passwords do not match.")}
             placeholder="Confirm password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -304,7 +333,7 @@ export default function SignupForm({
             type="button"
             aria-label={showConfirmPassword ? "Hide password" : "Show password"}
             aria-pressed={showConfirmPassword}
-            className="absolute inset-y-0 right-3 my-auto flex h-9 w-9 items-center justify-center wedding-icon-button text-muted-foreground/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-secondary)] z-10"
+            className={toggleButtonClass}
             onClick={() => setShowConfirmPassword((v) => !v)}
           >
             <svg
@@ -339,7 +368,12 @@ export default function SignupForm({
             </svg>
           </button>
         </div>
-        <label className="flex items-start gap-2 text-sm text-foreground/80 select-none">
+        <label
+          className={cx(
+            "flex select-none items-start gap-2 text-sm text-foreground/80",
+            isInlineDark && "!text-white/72",
+          )}
+        >
           <input
             type="checkbox"
             className="mt-0.5 h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
@@ -352,7 +386,7 @@ export default function SignupForm({
               href="/terms"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-secondary hover:underline"
+              className={cx("text-secondary hover:underline", isInlineDark && "!text-[#f0d58f]")}
             >
               Terms of Use
             </a>
@@ -362,21 +396,29 @@ export default function SignupForm({
         <button
           type="submit"
           disabled={submitting || recaptchaLoading}
-          className="btn btn-primary w-full justify-center"
+          className={cx(
+            "btn btn-primary w-full justify-center",
+            isInlineDark &&
+              "!border-[#f0d58f]/40 !bg-[#f0d58f] !text-[#150c29] !shadow-[0_14px_30px_rgba(0,0,0,0.26)] hover:!bg-[#f5dda3]",
+          )}
         >
           {submitting ? "Creating..." : recaptchaLoading ? "Loading..." : "Create account"}
         </button>
-        <p className="text-center text-sm text-muted-foreground">
+        <p className={cx("text-center text-sm text-muted-foreground", isInlineDark && "!text-white/68")}>
           Already have an account?{" "}
           <button
             type="button"
             onClick={() => onSwitchMode?.("login")}
-            className="text-secondary hover:underline"
+            className={cx("text-secondary hover:underline", isInlineDark && "!text-[#f0d58f]")}
           >
             Log in
           </button>
         </p>
-        {message && <p className="text-sm text-muted-foreground">{message}</p>}
+        {message && (
+          <p className={cx("text-sm text-muted-foreground", isInlineDark && "!text-white/72")}>
+            {message}
+          </p>
+        )}
       </form>
 
       {toastOpen && toastText && (
