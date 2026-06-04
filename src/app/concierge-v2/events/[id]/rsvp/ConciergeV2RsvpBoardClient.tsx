@@ -5,6 +5,7 @@ import {
   Baby,
   CalendarDays,
   Download,
+  FileSearch,
   HelpCircle,
   LinkIcon,
   Mail,
@@ -234,6 +235,13 @@ export default function ConciergeV2RsvpBoardClient({
             >
               <CalendarDays className="h-4 w-4" aria-hidden="true" />
               Schedule
+            </Link>
+            <Link
+              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/imports`}
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
+            >
+              <FileSearch className="h-4 w-4" aria-hidden="true" />
+              Imports
             </Link>
             <Link
               href={`/concierge-v2/events/${encodeURIComponent(eventId)}/calendar`}

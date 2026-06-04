@@ -4,11 +4,11 @@ Date: 2026-06-04
 
 ## Executive Summary
 
-Implemented the first coherent Concierge V2 vertical slice plus the next operational slices: feature flags, additive canonical graph migration, deterministic natural-language parser, authenticated Concierge V2 APIs, apply-draft persistence, mobile-first `/concierge-v2` builder UI, public event page v2 sections, owner Schedule Hub, owner RSVP Board 2.0 with CSV export, owner Calendar Center with tokenized ICS feed, RSVP answer storage, guest Smart Form responses, guest Volunteer Signup claims, owner manual payment status updates, owner reminder queue preview/dry-run/cancel controls, owner operations UI, tests, and handoff docs.
+Implemented the first coherent Concierge V2 vertical slice plus the next operational slices: feature flags, additive canonical graph migration, deterministic natural-language parser, authenticated Concierge V2 APIs, apply-draft persistence, mobile-first `/concierge-v2` builder UI, public event page v2 sections, owner Schedule Hub, owner RSVP Board 2.0 with CSV export, owner Calendar Center with tokenized ICS feed, owner Source Import Center with pasted-text extraction/review/apply, RSVP answer storage, guest Smart Form responses, guest Volunteer Signup claims, owner manual payment status updates, owner reminder queue preview/dry-run/cancel controls, owner operations UI, tests, and handoff docs.
 
 Feature-flagged by `ENABLE_CONCIERGE_V2` plus capability flags for schedule hub, smart forms, volunteer signup, manual payments, OCR imports, team/class hub, resource planning, and reminder engine.
 
-Stubbed/provider-dependent: AI provider selection for V2, OCR import review, real reminder delivery, volunteer unclaim/reminder actions, and payment provider processing. Reminder dry runs record `message_deliveries` rows with provider `stub`; no email/SMS provider is called. The current payment tracker is manual-only, but owners can mark manual payment requests as unpaid, paid, waived, or refunded.
+Stubbed/provider-dependent: AI provider selection for V2, storage-backed image/PDF OCR uploads, real reminder delivery, volunteer unclaim/reminder actions, and payment provider processing. Reminder dry runs record `message_deliveries` rows with provider `stub`; no email/SMS provider is called. The current payment tracker is manual-only, but owners can mark manual payment requests as unpaid, paid, waived, or refunded.
 
 ## Commands Run
 
@@ -18,19 +18,20 @@ Stubbed/provider-dependent: AI provider selection for V2, OCR import review, rea
 - `node --test src/lib/concierge-v2/schedule-shape.test.mjs`: pass.
 - `node --test src/lib/concierge-v2/rsvp-board-shape.test.mjs`: pass.
 - `node --test src/lib/concierge-v2/calendar-shape.test.mjs`: pass.
+- `node --test src/lib/concierge-v2/source-imports-shape.test.mjs`: pass.
 - `node --check src/lib/concierge-v2/core.mjs`: pass.
 - `node_modules\\.bin\\biome.cmd lint <touched files>`: pass.
 - `node_modules\\.bin\\tsc.cmd --noEmit`: fail on existing repo-wide TypeScript errors. Representative first errors:
   - `.next/types/app/api/creation/threads/[id]/route.ts(244,7): Type ... does not satisfy the constraint 'ParamCheck<RouteContext>'.`
   - `ai-studio-code-samples/ethereal-invitations/vite.config.ts(1,25): Cannot find module '@tailwindcss/vite'.`
   - `src/app/api/admin/marketing-campaigns/[runId]/captions/regenerate/route.ts(15,60): Property 'runDir' is missing.`
-  - `src/app/event/[id]/page.tsx(3375,15): Type 'string | null' is not assignable to type 'string'.`
+  - `src/app/event/[id]/page.tsx(3384,15): Type 'string | null' is not assignable to type 'string'.`
   - `src/lib/meet-discovery/core.ts(858,11): Cannot find name 'ScheduleColorTarget'.`
 - `npm run lint -- <touched files>`: fail because the script runs `biome lint .` before the supplied paths; failures are unrelated existing sample-app/repo issues such as `ai-studio-code-samples/ethereal-invitations/src/components/FormalSkin.tsx` comment text and unused imports.
 - VS Code diagnostics linter:
   - Old documented path failed with `Cannot find module '...airizom.chat-to-cli-0.499.1\\scripts\\vscode-lint.js'`.
   - Current extension path failed with `Bridge provider context is missing. Set CLI_PROVIDER_ID (provider id) or CLI_BRIDGE_INFO_FILE (explicit bridge info path).`
-- In-app browser smoke: opened unauthenticated owner routes including `http://localhost:3000/concierge-v2/events/smoke-test/schedule`, `http://localhost:3000/concierge-v2/events/smoke-test/rsvp`, and `http://localhost:3000/concierge-v2/events/smoke-test/calendar`; all redirected to `http://localhost:3000/` as expected without an owner session. Signed-in owner UI still needs manual smoke testing.
+- In-app browser smoke: opened unauthenticated owner routes including `http://localhost:3000/concierge-v2/events/smoke-test/schedule`, `http://localhost:3000/concierge-v2/events/smoke-test/rsvp`, `http://localhost:3000/concierge-v2/events/smoke-test/calendar`, and `http://localhost:3000/concierge-v2/events/smoke-test/imports`; all redirected to `http://localhost:3000/` as expected without an owner session. Signed-in owner UI still needs manual smoke testing.
 
 ## Database Changes
 
@@ -45,6 +46,8 @@ Indexes added: canonical lookup indexes for workspaces/programs/series/occurrenc
 Backfill performed: no legacy event graph backfill. The migration includes an idempotent `volunteer_slots.claimed_quantity` sync from existing active `volunteer_claims`.
 
 Owner still needs to run the migration against each target database.
+
+Runtime guard update: `src/lib/concierge-v2/storage.ts` now creates `source_documents` and `extracted_items` plus local/dev indexes when the manual migration has not run.
 
 ## API Routes And Server Actions
 
@@ -63,6 +66,10 @@ Owner still needs to run the migration against each target database.
 - `GET /api/concierge/events/[id]/calendar`: authenticated owner-only Calendar Center summary and active feed URL.
 - `POST /api/concierge/events/[id]/calendar`: authenticated owner-only calendar feed token regeneration.
 - `GET /api/concierge/calendar/[token]`: public tokenized `text/calendar` ICS feed for active schedule items.
+- `GET /api/concierge/events/[id]/imports`: authenticated owner-only Source Import Center summary with source documents and extracted items.
+- `POST /api/concierge/events/[id]/imports`: authenticated owner-only pasted-text import that stores a source document and proposed extracted items.
+- `PATCH /api/concierge/events/[id]/imports/[documentId]/items/[itemId]`: authenticated owner-only extracted item review status update.
+- `POST /api/concierge/events/[id]/imports/[documentId]/apply`: authenticated owner-only apply action for accepted extracted items.
 - `GET /api/concierge/events/[id]/schedule`: authenticated owner-only Schedule Hub summary with series, occurrences, counts, and conflicts.
 - `POST /api/concierge/events/[id]/schedule`: authenticated owner-only one-off schedule item creation.
 - `PATCH /api/concierge/events/[id]/schedule/occurrences/[occurrenceId]`: authenticated owner-only occurrence move/edit/cancel/restore/status update.
@@ -83,6 +90,8 @@ Owner still needs to run the migration against each target database.
 - `src/app/concierge-v2/events/[id]/rsvp/ConciergeV2RsvpBoardClient.tsx`: premium mobile-first host board with summary cards, filters, guest detail panel, status updates, reminder handoff, and CSV export.
 - `src/app/concierge-v2/events/[id]/calendar/page.tsx`: owner-only Calendar Center route backed by `calendar_feeds`.
 - `src/app/concierge-v2/events/[id]/calendar/ConciergeV2CalendarCenterClient.tsx`: premium mobile-first feed management UI with copy, download, Google subscribe, regenerate, safety notes, and schedule preview.
+- `src/app/concierge-v2/events/[id]/imports/page.tsx`: owner-only Source Import Center route backed by `source_documents` and `extracted_items`.
+- `src/app/concierge-v2/events/[id]/imports/ConciergeV2ImportCenterClient.tsx`: premium mobile-first pasted-text import UI with source-type selection, extraction cards, accept/reject controls, and apply action.
 - `src/app/concierge-v2/events/[id]/ops/page.tsx`: owner-only operations route for generated forms, volunteer claims, and manual payments.
 - `src/app/concierge-v2/events/[id]/ops/ConciergeV2OpsClient.tsx`: premium mobile-first host operations surface with summary cards, payment status actions, and reminder queue controls.
 - `src/components/concierge/ConciergePublicOperations.tsx`: public Smart Form, Volunteer Signup, Payment Tracker, Checklist, and Reminder Timeline interaction sections.
@@ -95,8 +104,8 @@ Owner still needs to run the migration against each target database.
 - Pages updated: `/concierge-v2` and the existing `/event/[id]` concierge public renderer.
 - Mobile improvements: stacked builder sections, sticky publish bar, large tap targets, responsive public section grids.
 - Accessibility improvements: semantic buttons/sections, aria labels on icon-only controls inherited from existing renderer, clear loading/error states.
-- Remaining design issues: public reminder timeline is display-only, while owner ops supports preview/dry-run/cancel; payment collection remains manual/providerless; Schedule Hub has agenda/list/conflict views but not a full visual calendar grid yet.
-- Screens needing manual review: signed-in `/concierge-v2` builder, published v2 public event page, owner RSVP Board, owner Calendar Center, owner ops page, owner RSVP responses with v2 answers, mobile public page sections.
+- Remaining design issues: public reminder timeline is display-only, while owner ops supports preview/dry-run/cancel; payment collection remains manual/providerless; Schedule Hub has agenda/list/conflict views but not a full visual calendar grid yet; Source Import Center supports pasted text but not file upload/OCR yet.
+- Screens needing manual review: signed-in `/concierge-v2` builder, published v2 public event page, owner Schedule Hub, owner RSVP Board, owner Calendar Center, owner Source Import Center, owner ops page, owner RSVP responses with v2 answers, mobile public page sections.
 
 ## Environment Variables Needed
 
@@ -110,7 +119,7 @@ Owner still needs to run the migration against each target database.
 
 - DB migration: run the new manual SQL migration in `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`.
 - AI provider: no new V2 provider key is required for the fallback parser; configure `OPENAI_API_KEY` before replacing fallback parsing with model-backed extraction.
-- Storage/OCR: no new storage bucket was added in this slice.
+- Storage/OCR: no new storage bucket was added in this slice. Pasted-text imports need no external provider; image/PDF OCR still needs storage and provider setup.
 - Email/SMS: reminder records are stored but delivery is not enabled; configure email/SMS providers before dispatch work.
 - Payments: no Stripe/payment provider was implemented; manual tracking only.
 - Cron/jobs/webhooks: no new cron or webhook was enabled.
@@ -124,6 +133,7 @@ Owner still needs to run the migration against each target database.
 - Open `/concierge-v2/events/[eventHistoryId]/schedule`, add a one-off item, edit a generated occurrence, cancel/restore it, and confirm the public event schedule updates.
 - Open `/concierge-v2/events/[eventHistoryId]/rsvp`, filter RSVP responses, update one response status, export CSV, and use the reminder handoff link.
 - Open `/concierge-v2/events/[eventHistoryId]/calendar`, copy the feed URL, download the ICS, open the Google subscribe URL, regenerate the feed, and confirm the old token stops working.
+- Open `/concierge-v2/events/[eventHistoryId]/imports`, paste source details, extract proposed items, accept/reject at least one card, apply accepted items, then confirm schedule/ops rows were created.
 - Submit RSVP as a guest and confirm owner RSVP response includes `answersJson`, `adultCount`, `kidCount`, and `allergyNotes` when provided.
 - Submit a generated Smart Form and confirm it appears on `/concierge-v2/events/[eventHistoryId]/ops`.
 - Claim a generated volunteer slot as a guest and confirm capacity/claimed counts update in ops.
@@ -140,6 +150,6 @@ Owner still needs to run the migration against each target database.
 - Manual payment provider processing is not implemented; host status tracking is manual only.
 - Reminder preview/dry-run/cancel exists, plus a providerless due-reminder dispatcher foundation. Real scheduler jobs and email/SMS delivery are not wired.
 - Schedule Hub supports direct occurrence edits and conflict detection, and Calendar Center publishes active items as ICS. Recurring-series editing, formal blackout exception rows, and full visual calendar/board views remain future work.
-- OCR import and source document review UI remain to be built.
+- Pasted-text source import/review/apply exists. Storage-backed image/PDF OCR upload, provider extraction, and file lifecycle cleanup remain to be built.
 - Legacy event backfill into canonical graph rows is documented but not run.
-- Source/OCR ingestion, richer host dashboard exports/actions, schedule hub views, real reminder provider adapters, and legacy backfill are the next practical slices.
+- Team/Class Hub, file OCR ingestion, richer host dashboard exports/actions, schedule hub views, real reminder provider adapters, and legacy backfill are the next practical slices.

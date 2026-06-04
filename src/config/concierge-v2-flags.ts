@@ -33,7 +33,7 @@ function envFlagValue(value: string | undefined): boolean | null {
 
 function defaultFlagValue(name: ConciergeV2FlagName): boolean {
   if (process.env.NODE_ENV !== "production") {
-    return name !== "ENABLE_OCR_IMPORTS" && name !== "ENABLE_RESOURCE_PLANNING";
+    return name !== "ENABLE_RESOURCE_PLANNING";
   }
   return false;
 }

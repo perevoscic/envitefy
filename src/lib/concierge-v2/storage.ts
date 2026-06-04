@@ -425,6 +425,44 @@ export async function ensureConciergeV2Tables(): Promise<void> {
       await query(`create index if not exists idx_message_deliveries_status on message_deliveries(status)`);
       await query(`create index if not exists idx_message_deliveries_reminder on message_deliveries(reminder_id, created_at desc)`);
       await query(`
+        create table if not exists source_documents (
+          id uuid primary key default gen_random_uuid(),
+          workspace_id uuid references workspaces(id) on delete set null,
+          uploaded_by_user_id uuid references users(id) on delete set null,
+          source_kind text not null default 'text',
+          file_url text,
+          file_name text,
+          file_type text,
+          text_content text,
+          extracted_text text,
+          parse_status text not null default 'pending',
+          parsed_json jsonb not null default '{}'::jsonb,
+          error_message text,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`create index if not exists idx_source_documents_workspace_created on source_documents(workspace_id, created_at desc)`);
+      await query(`
+        create table if not exists extracted_items (
+          id uuid primary key default gen_random_uuid(),
+          source_document_id uuid not null references source_documents(id) on delete cascade,
+          item_type text not null,
+          title text,
+          description text,
+          start_at timestamptz(6),
+          end_at timestamptz(6),
+          confidence numeric,
+          data_json jsonb not null default '{}'::jsonb,
+          status text not null default 'proposed',
+          applied_entity_type text,
+          applied_entity_id text,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`create index if not exists idx_extracted_items_document_status on extracted_items(source_document_id, status)`);
+      await query(`
         create table if not exists checklist_items (
           id uuid primary key default gen_random_uuid(),
           workspace_id uuid references workspaces(id) on delete set null,

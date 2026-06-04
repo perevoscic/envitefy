@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, ClipboardCheck, LinkIcon, Users } from "lucide-react";
+import { ArrowLeft, CalendarDays, ClipboardCheck, FileSearch, LinkIcon, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import nextDynamic from "next/dynamic";
@@ -2319,6 +2319,15 @@ export default async function EventPage({
             <span className="hidden sm:inline">Edit</span>
           </Link>
         )}
+        <Link
+          href={`/concierge-v2/events/${encodeURIComponent(row.id)}/imports`}
+          className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"
+          title="Import source material"
+        >
+          <FileSearch className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden sm:inline">Imports</span>
+          <span className="sm:hidden">Import</span>
+        </Link>
         <Link
           href={`/concierge-v2/events/${encodeURIComponent(row.id)}/rsvp`}
           className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-neutral-800/80 transition-colors hover:bg-black/5 hover:text-neutral-900"

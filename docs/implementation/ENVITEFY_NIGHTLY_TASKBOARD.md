@@ -21,23 +21,24 @@ Date: 2026-06-04
 - Reminder Engine: added owner-only reminder queue, preview, dry-run delivery recording, cancel/restore status actions, and providerless due-reminder dispatcher foundation.
 - Schedule Hub: added owner-only agenda/list/conflicts route backed by `event_occurrences`, one-off item creation, inline move/edit/status actions, conflict detection, and public schedule republishing.
 - Calendar Center: added owner-only `/concierge-v2/events/[id]/calendar`, active `calendar_feeds` runtime support, tokenized public ICS feed endpoint, copy/download/Google subscribe controls, and feed token regeneration.
+- Source Import Center: added owner-only `/concierge-v2/events/[id]/imports`, pasted-text extraction through the deterministic parser, `source_documents`/`extracted_items` runtime support, accept/reject review cards, and apply-to-schedule/forms/reminders/checklist/payments.
 - Tests: added `src/lib/concierge-v2/core.test.mjs` for parser, recurrence, exceptions, conflicts, forms, volunteer capacity, payment status, and ICS output.
 - Tests: added `src/lib/concierge-v2/operations-shape.test.mjs` to guard persisted operation IDs, live public endpoints, and volunteer capacity logic.
 - Tests: added `src/lib/concierge-v2/reminders-shape.test.mjs` to guard providerless dry-run behavior and owner reminder APIs.
 - Tests: added `src/lib/concierge-v2/schedule-shape.test.mjs` to guard canonical schedule APIs, conflict detection, and public event sync.
 - Tests: added `src/lib/concierge-v2/rsvp-board-shape.test.mjs` to guard owner RSVP Board APIs, export, and host UI actions.
 - Tests: added `src/lib/concierge-v2/calendar-shape.test.mjs` to guard Calendar Center APIs, feed table guard, public ICS output, and host UI actions.
+- Tests: added `src/lib/concierge-v2/source-imports-shape.test.mjs` to guard source import tables, owner APIs, review/apply wiring, and no fake upload controls.
 
 ## Deferred
 
 - Actual AI provider selection for Concierge V2. The first slice uses deterministic fallback parsing only.
-- OCR import UI and source document ingestion. The database foundation exists, but upload/import workflows remain future work.
+- Storage-backed image/PDF OCR uploads and provider adapters. Pasted-text source ingestion, review, and apply are implemented.
 - Real reminder delivery jobs. Reminder preview, dry-run records, cancel/restore, and providerless due-dispatch scaffolding exist; no email/SMS provider is called.
 - Payment provider integration. Manual payment requests are stored and can be marked by hosts; no Stripe/Venmo/Zelle provider is implemented.
 - Volunteer unclaim/edit/export/reminder actions. Claiming works, but the richer management loop is still a follow-up.
 - Smart Form response editing/export and file-upload fields. Basic responses work; storage-backed uploads are still documented/stubbed.
 - Canonical graph backfill for legacy `event_history` rows. The migration is additive and non-destructive; no data backfill was run.
-- OCR/source document UI remains a later phase.
 - Rich schedule board rendering and formal blackout exception rows remain follow-up work. The current Schedule Hub edits persisted occurrences directly, and Calendar Center now publishes an ICS feed rather than a full visual calendar grid.
 
 ## Current Validation Status
@@ -48,6 +49,7 @@ Date: 2026-06-04
 - `node --test src/lib/concierge-v2/schedule-shape.test.mjs`: passing.
 - `node --test src/lib/concierge-v2/rsvp-board-shape.test.mjs`: passing.
 - `node --test src/lib/concierge-v2/calendar-shape.test.mjs`: passing.
+- `node --test src/lib/concierge-v2/source-imports-shape.test.mjs`: passing.
 - `node --check src/lib/concierge-v2/core.mjs`: passing.
 - Scoped Biome lint on touched files: passing.
 - `npm run lint -- <touched files>`: failing on unrelated repo-wide issues because the script expands to `biome lint .` before supplied paths.
@@ -56,8 +58,9 @@ Date: 2026-06-04
 
 ## Recommended Next Slice
 
-1. Add source document ingestion for pasted text, upload, OCR review cards, and approval-to-schedule.
-2. Add volunteer unclaim/edit, Smart Form exports, and payment exports.
-3. Add richer schedule board views, blackout exception rows, and recurring-series edit controls.
-4. Add real reminder provider adapters and a safe scheduled job after email/SMS provider setup is decided.
-5. Backfill canonical `event_pages` links for existing public `event_history` rows after production schema is migrated.
+1. Add Team/Class Hub and role-aware host/member views on top of the canonical program graph.
+2. Add storage-backed image/PDF upload and OCR provider extraction to the Source Import Center.
+3. Add volunteer unclaim/edit, Smart Form exports, and payment exports.
+4. Add richer schedule board views, blackout exception rows, and recurring-series edit controls.
+5. Add real reminder provider adapters and a safe scheduled job after email/SMS provider setup is decided.
+6. Backfill canonical `event_pages` links for existing public `event_history` rows after production schema is migrated.

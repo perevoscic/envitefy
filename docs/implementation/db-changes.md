@@ -52,6 +52,10 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 
 - Stores owner-created calendar subscription feed tokens, scope metadata, timezone, and active/inactive state. The runtime guard now creates this table and token index for local/dev use if the manual migration has not run.
 
+`source_documents` and `extracted_items`:
+
+- Store pasted/imported source text and proposed extracted schedule, form, reminder, checklist, and payment items. The runtime guard now creates both tables and the document/status indexes for local/dev use if the manual migration has not run.
+
 ## Indexes Added
 
 - Workspace owner/type, program workspace/status, series program, occurrence program/start, occurrence owner/start.
@@ -73,6 +77,7 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 - `src/lib/concierge-v2/schedule.ts` edits canonical `event_occurrences` rows and republishes the schedule arrays into `event_history.data.scheduleHub`, `event_history.data.publicEvent.scheduleItems`, and `event_history.data.scheduleItems`.
 - `src/lib/concierge-v2/rsvp-board.ts` reads and updates `rsvp_responses` through event-page owner checks, normalizes `answers_json` into host board fields, and produces owner-only CSV exports.
 - `src/lib/concierge-v2/calendar.ts` creates/regenerates active `calendar_feeds` rows through event-page owner checks and builds public tokenized ICS feeds from active `event_occurrences`.
+- `src/lib/concierge-v2/source-imports.ts` checks event-page ownership before creating pasted-text `source_documents`, inserting proposed `extracted_items`, reviewing item status, or applying accepted items into occurrences, forms, reminders, checklist rows, and manual payment requests.
 - `src/lib/concierge-v2/operations.ts` checks event-page ownership before returning private operations data or updating payment status.
 - `src/lib/concierge-v2/reminders.ts` checks event-page ownership before returning queue details, previews, dry-run records, or reminder status updates.
 - Volunteer claims use both a unique active email claim index and an atomic `volunteer_slots.claimed_quantity` update to prevent over-claiming.
