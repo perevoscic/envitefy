@@ -93,7 +93,11 @@ export default function AppShell({
 
   if (isLightweightLanding) {
     return (
-      <MainContentWrapper isAuthenticated={true} reserveSidebarSpace={false}>
+      <MainContentWrapper
+        isAuthenticated={true}
+        reserveSidebarSpace={false}
+        enableProjectBackground={false}
+      >
         <div className="flex-1 min-w-0">{children}</div>
         <ConditionalFooter />
       </MainContentWrapper>
@@ -108,6 +112,7 @@ export default function AppShell({
           <LeftSidebar />
           <MainContentWrapper
             isAuthenticated={true}
+            enableProjectBackground={true}
             className={isChatPath ? "h-[100dvh] overflow-hidden" : ""}
           >
             <div className="min-h-0 flex-1 min-w-0">{children}</div>
@@ -116,6 +121,7 @@ export default function AppShell({
       ) : (
         <MainContentWrapper
           isAuthenticated={false}
+          enableProjectBackground={false}
           className={isChatPath ? "h-[100dvh] overflow-hidden" : ""}
         >
           {isRedirectingFromMarketing ? (

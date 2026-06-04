@@ -15,11 +15,13 @@ export function MainContentWrapper({
   children,
   isAuthenticated,
   reserveSidebarSpace = isAuthenticated,
+  enableProjectBackground = isAuthenticated,
   className = "",
 }: {
   children: React.ReactNode;
   isAuthenticated: boolean;
   reserveSidebarSpace?: boolean;
+  enableProjectBackground?: boolean;
   className?: string;
 }) {
   const pathname = usePathname();
@@ -55,13 +57,13 @@ export function MainContentWrapper({
       ? "0px"
       : isChatRoute
         ? "0px"
-      : !isDesktop && isAuthenticated
-        ? `var(--app-mobile-topbar-offset, ${MOBILE_TOPBAR_PT})`
-        : "max(0px, env(safe-area-inset-top))";
+        : !isDesktop && isAuthenticated
+          ? `var(--app-mobile-topbar-offset, ${MOBILE_TOPBAR_PT})`
+          : "max(0px, env(safe-area-inset-top))";
 
   const shellBgClass = isStudioCardShare ? "bg-neutral-950" : "bg-transparent";
 
-  const showProjectGradientBackground = !usesOwnLandingBackground;
+  const showProjectGradientBackground = enableProjectBackground && !usesOwnLandingBackground;
   const backgroundLeft = reserveSidebarSpace && isDesktop ? SIDEBAR_WIDTH_REM : "0px";
 
   return (

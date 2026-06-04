@@ -1115,13 +1115,7 @@ function additionalLocationNarrative(draft: ConciergeEventDraft) {
       const timeText = stringValue(location.timeText);
       const description = stringValue(location.description);
       const heading = label ? `${label} at ${place}` : place;
-      return [
-        heading,
-        timeText ? `at ${timeText}` : null,
-        description,
-      ]
-        .filter(Boolean)
-        .join(" ");
+      return [heading, timeText ? `at ${timeText}` : null, description].filter(Boolean).join(" ");
     })
     .filter((value): value is string => Boolean(value));
   if (!lines.length) return null;
@@ -1324,7 +1318,9 @@ function buildGeneratedDraftImageEditPrompt(args: {
 function isMetadataOnlyLocationEdit(message: string) {
   const text = message.trim().toLowerCase();
   if (!text) return false;
-  if (/\b(?:image|artwork|picture|poster|design|visible|printed|card text|invite text)\b/.test(text)) {
+  if (
+    /\b(?:image|artwork|picture|poster|design|visible|printed|card text|invite text)\b/.test(text)
+  ) {
     return false;
   }
   return /\b(?:address|map|directions?|location\s+(?:tab|tile)|hide\s+(?:the\s+)?address)\b/.test(
@@ -1349,7 +1345,10 @@ function shouldRegenerateGeneratedDraftImageForEdit(args: {
   const nextTitle = stringValue(args.nextDraft.title);
   if (previousTitle && nextTitle && previousTitle !== nextTitle) return true;
 
-  const previousTheme = [stringValue(args.previousDraft.theme), stringValue(args.previousDraft.tone)]
+  const previousTheme = [
+    stringValue(args.previousDraft.theme),
+    stringValue(args.previousDraft.tone),
+  ]
     .filter(Boolean)
     .join(" ");
   const nextTheme = [stringValue(args.nextDraft.theme), stringValue(args.nextDraft.tone)]
@@ -1635,7 +1634,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     ? PRODUCT_OPTIONS.find((option) => option.output === selectedProductOutput) || null
     : null;
   const selectedProductPillOption =
-    selectedProductOption && (isEmptyState || selectedStarterCategory) ? selectedProductOption : null;
+    selectedProductOption && (isEmptyState || selectedStarterCategory)
+      ? selectedProductOption
+      : null;
   const hasComposerSelection = Boolean(selectedStarterCategory || selectedProductOutput);
   const canSubmitComposer = Boolean(input.trim() || hasComposerSelection);
   const selectedSkinLabel =
@@ -2203,19 +2204,20 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           previousDraft: draft,
           nextDraft: updatedDraft,
         });
-      const studioInvite = canReuseCurrentImage && draftStudioInvite
-        ? refreshGeneratedDraftInviteMetadata(draftStudioInvite, updatedDraft)
-        : await generateStudioInviteForDraft(updatedDraft, {
-            editPrompt: fullRedesign
-              ? buildGeneratedDraftFullRedesignPrompt(trimmed)
-              : buildGeneratedDraftImageEditPrompt({
-                  userMessage: trimmed,
-                  previousDraft: draft,
-                  nextDraft: updatedDraft,
-                }),
-            sourceImageUrl: fullRedesign ? null : existingDraftImageUrl,
-            previousDraft: fullRedesign ? null : draft,
-          });
+      const studioInvite =
+        canReuseCurrentImage && draftStudioInvite
+          ? refreshGeneratedDraftInviteMetadata(draftStudioInvite, updatedDraft)
+          : await generateStudioInviteForDraft(updatedDraft, {
+              editPrompt: fullRedesign
+                ? buildGeneratedDraftFullRedesignPrompt(trimmed)
+                : buildGeneratedDraftImageEditPrompt({
+                    userMessage: trimmed,
+                    previousDraft: draft,
+                    nextDraft: updatedDraft,
+                  }),
+              sourceImageUrl: fullRedesign ? null : existingDraftImageUrl,
+              previousDraft: fullRedesign ? null : draft,
+            });
       if (!canReuseCurrentImage) {
         await preloadGeneratedPreviewImage(studioInvite.imageUrl);
       }
@@ -2752,11 +2754,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     const scanAttemptId = createClientAttemptId("scan");
     const uploadRequestedOutput = requestedOutputOverride || selectedProductOutput || "live_card";
     const statusMessage = newMessage("assistant", "Preparing upload...", "upload_status");
-    setMessages((prev) => [
-      ...prev,
-      newMessage("user", "Uploaded 1 file"),
-      statusMessage,
-    ]);
+    setMessages((prev) => [...prev, newMessage("user", "Uploaded 1 file"), statusMessage]);
     const updateUploadStatus = (text: string) => {
       setMessages((prev) =>
         prev.map((message) => (message.id === statusMessage.id ? { ...message, text } : message)),
@@ -2988,7 +2986,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             autoOpenIntervalMs={2000}
             autoOpenCycles={3}
             ariaLabel="Choose product format"
-            className="w-full !min-w-0 bg-[#eff1f8]"
+            className="w-full !min-w-0 !border !border-white/70 !bg-white/62 !shadow-[0_18px_46px_rgba(92,91,229,0.12)] !backdrop-blur-xl"
             onValueChange={(value) => {
               const option = PRODUCT_OPTIONS.find((item) => item.output === value);
               if (option) handleProductChoice(option);
@@ -3043,7 +3041,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               ? `Choose product format for ${selectedStarterCategory.label}`
               : "Choose product format"
           }
-          className="w-[calc((clamp(5.65rem,16dvh,7.5rem)*2)+clamp(0.7rem,1.8dvh,1.1rem))] !min-w-0 !max-w-full bg-[#eff1f8]"
+          className="w-[calc((clamp(5.65rem,16dvh,7.5rem)*2)+clamp(0.7rem,1.8dvh,1.1rem))] !min-w-0 !max-w-full !border !border-white/70 !bg-white/62 !shadow-[0_18px_46px_rgba(92,91,229,0.12)] !backdrop-blur-xl"
           onValueChange={(value) => {
             const option = PRODUCT_OPTIONS.find((item) => item.output === value);
             if (option) handleStarterProductChoice(option);
@@ -3051,7 +3049,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         />
       </div>
       <div
-        className="hidden max-w-full items-center justify-center gap-2 rounded-full bg-[#eff1f8] p-2 shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] sm:flex"
+        className="hidden max-w-full items-center justify-center gap-2 rounded-full border border-white/70 bg-white/62 p-2 shadow-[0_18px_46px_rgba(92,91,229,0.12)] backdrop-blur-xl sm:flex"
         aria-label={
           selectedStarterCategory
             ? `Choose product format for ${selectedStarterCategory.label}`
@@ -3076,7 +3074,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               className={cn(
                 "group relative inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55 sm:px-8 sm:py-4 sm:text-sm",
                 isSelected
-                  ? "text-[#5c5be5] shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff]"
+                  ? "bg-white/72 text-[#5c5be5] shadow-[0_10px_24px_rgba(92,91,229,0.1)]"
                   : "text-[#747684] hover:text-[#5d6070]",
               )}
             >
@@ -3435,7 +3433,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                 ref={chatPaneRef}
                 className={cn(
                   "min-h-0 w-full flex-col overflow-hidden",
-                  isEmptyState ? "bg-[#eff1f8]" : "bg-white/28 backdrop-blur-sm",
+                  isEmptyState ? "bg-transparent" : "bg-white/28 backdrop-blur-sm",
                   shouldShowProductPanel && "md:border-r md:border-[#e5dff0]",
                   mobileView === "chat" ? "flex" : "hidden md:flex",
                   !shouldShowProductPanel && "md:border-r-0",
@@ -3482,14 +3480,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                               }
                               aria-pressed={isSelected}
                               className={cn(
-                                "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl bg-[#eff1f8] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8b0bc] focus-visible:ring-offset-4 focus-visible:ring-offset-[#eff1f8] disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(5.65rem,16dvh,7.5rem)] max-md:w-[clamp(5.65rem,16dvh,7.5rem)]",
+                                "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl border border-white/70 bg-white/58 backdrop-blur-xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] focus-visible:ring-offset-4 focus-visible:ring-offset-transparent disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(5.65rem,16dvh,7.5rem)] max-md:w-[clamp(5.65rem,16dvh,7.5rem)]",
                                 isSelected &&
                                   cn(
-                                    "scale-95 shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff]",
+                                    "scale-95 shadow-[inset_0_0_0_999px_rgba(255,255,255,0.18),0_16px_38px_rgba(92,91,229,0.12)]",
                                     tile.color,
                                   ),
                                 !isSelected &&
-                                  "text-[#9a9daa] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] hover:text-[#7f8290] active:scale-95",
+                                  "text-[#807a96] shadow-[0_16px_38px_rgba(92,91,229,0.1)] hover:bg-white/72 hover:text-[#5c5be5] active:scale-95",
                               )}
                             >
                               {isSelected && !(isUploadTile && pendingChatUpload) ? (

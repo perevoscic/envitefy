@@ -23,7 +23,9 @@
   --mobile-chrome-top: #f3eeff;
   --mobile-chrome-bottom: #f3eeff;
   --ios-browser-chrome-background: #8d7be9;
-  --envitefy-project-background: radial-gradient(125% 125% at 50% 10%, #fff 40%, #6366f1 100%);
+  --brand: #c65de9;
+  --brand-glow: #08aeea;
+  --envitefy-project-background: var(--background);
   --background: #f8f5ff;
   --card: #ffffff;
   --card-foreground: #2b1b16;
@@ -124,6 +126,132 @@
   --font-mono: var(--font-geist-mono);
   --font-pacifico: var(--font-pacifico);
   --font-montserrat: var(--font-montserrat);
+}
+
+@utility bg-aurora {
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 20% 0%,
+      color-mix(in oklab, var(--brand) 35%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 80% 10%,
+      color-mix(in oklab, var(--brand-glow) 30%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 50% 90%,
+      color-mix(in oklab, var(--brand) 20%, transparent),
+      transparent 60%
+    ),
+    var(--background);
+}
+
+@utility bg-mesh {
+  background:
+    radial-gradient(
+      at 27% 37%,
+      color-mix(in oklab, var(--brand) 45%, transparent) 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 97% 21%,
+      color-mix(in oklab, var(--brand-glow) 40%, transparent) 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 52% 99%,
+      color-mix(in oklab, var(--brand) 35%, transparent) 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 10% 90%,
+      color-mix(in oklab, var(--brand-glow) 35%, transparent) 0px,
+      transparent 50%
+    ),
+    var(--background);
+}
+
+@utility bg-grid {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--foreground) 6%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 56px 56px;
+}
+
+@utility bg-noir {
+  background:
+    radial-gradient(
+      ellipse at top,
+      color-mix(in oklab, var(--brand) 14%, transparent),
+      transparent 55%
+    ),
+    linear-gradient(180deg, oklch(0.98 0.01 300), oklch(0.94 0.02 280));
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(20px, -30px) scale(1.05);
+  }
+}
+
+@keyframes float-slower {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-30px, 20px) scale(1.08);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 14s ease-in-out infinite;
+}
+
+.animate-float-slower {
+  animation: float-slower 18s ease-in-out infinite;
+}
+
+.app-background-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(72px);
+  opacity: 0.38;
+  will-change: transform;
+}
+
+.app-background-orb-primary {
+  top: 8%;
+  left: 6%;
+  width: min(28rem, 68vw);
+  height: min(28rem, 68vw);
+  background: color-mix(in oklab, var(--brand) 34%, transparent);
+}
+
+.app-background-orb-glow {
+  right: 4%;
+  bottom: 2%;
+  width: min(32rem, 76vw);
+  height: min(32rem, 76vw);
+  background: color-mix(in oklab, var(--brand-glow) 28%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-slow,
+  .animate-float-slower {
+    animation: none;
+  }
 }
 
 @keyframes accordion-down {
