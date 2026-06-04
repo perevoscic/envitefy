@@ -149,6 +149,47 @@ CREATE UNIQUE INDEX IF NOT EXISTS uniq_program_participants_program_participant
 CREATE INDEX IF NOT EXISTS idx_program_participants_program_role
   ON program_participants(program_id, role, roster_status);
 
+CREATE TABLE IF NOT EXISTS venues (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  address_line1 text,
+  address_line2 text,
+  city text,
+  region text,
+  postal_code text,
+  country text,
+  latitude numeric,
+  longitude numeric,
+  map_url text,
+  parking_notes text,
+  accessibility_notes text,
+  timezone text,
+  metadata_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_venues_workspace_name
+  ON venues(workspace_id, name);
+
+CREATE TABLE IF NOT EXISTS resources (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  venue_id uuid REFERENCES venues(id) ON DELETE SET NULL,
+  resource_type text NOT NULL DEFAULT 'other',
+  name text NOT NULL,
+  capacity integer,
+  availability_rule text,
+  attributes_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status text NOT NULL DEFAULT 'active',
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_resources_workspace_type
+  ON resources(workspace_id, resource_type, status);
+
 CREATE TABLE IF NOT EXISTS event_series (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id uuid REFERENCES workspaces(id) ON DELETE SET NULL,
@@ -193,6 +234,60 @@ CREATE INDEX IF NOT EXISTS idx_event_occurrences_program_start
 CREATE INDEX IF NOT EXISTS idx_event_occurrences_workspace_start
   ON event_occurrences(workspace_id, start_at);
 
+CREATE TABLE IF NOT EXISTS resource_requirements (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  occurrence_id uuid NOT NULL REFERENCES event_occurrences(id) ON DELETE CASCADE,
+  resource_type text NOT NULL,
+  quantity integer NOT NULL DEFAULT 1,
+  required_attributes_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  notes text,
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_resource_requirements_occurrence
+  ON resource_requirements(occurrence_id);
+
+CREATE TABLE IF NOT EXISTS resource_assignments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  occurrence_id uuid NOT NULL REFERENCES event_occurrences(id) ON DELETE CASCADE,
+  resource_id uuid NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+  assigned_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  starts_at timestamptz(6) NOT NULL,
+  ends_at timestamptz(6) NOT NULL,
+  status text NOT NULL DEFAULT 'assigned',
+  conflict_status text,
+  notes text,
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_resource_assignments_resource_time
+  ON resource_assignments(resource_id, starts_at, ends_at);
+
+CREATE INDEX IF NOT EXISTS idx_resource_assignments_occurrence
+  ON resource_assignments(occurrence_id);
+
+CREATE TABLE IF NOT EXISTS attendance_records (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  occurrence_id uuid NOT NULL REFERENCES event_occurrences(id) ON DELETE CASCADE,
+  participant_id uuid REFERENCES participants(id) ON DELETE SET NULL,
+  status text NOT NULL DEFAULT 'expected',
+  checked_in_at timestamptz(6),
+  checked_out_at timestamptz(6),
+  marked_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  notes text,
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_attendance_occurrence_participant
+  ON attendance_records(occurrence_id, participant_id)
+  WHERE participant_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_attendance_records_occurrence_participant
+  ON attendance_records(occurrence_id, participant_id);
+
 CREATE TABLE IF NOT EXISTS event_pages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id uuid REFERENCES workspaces(id) ON DELETE SET NULL,
@@ -216,6 +311,31 @@ CREATE INDEX IF NOT EXISTS idx_event_pages_program_status
 
 CREATE INDEX IF NOT EXISTS idx_event_pages_legacy_event
   ON event_pages(legacy_event_history_id);
+
+CREATE TABLE IF NOT EXISTS event_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  mode text NOT NULL,
+  event_type text NOT NULL,
+  name text NOT NULL,
+  description text,
+  title_template text,
+  default_form_schema_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  default_rsvp_schema_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  default_reminders_json jsonb NOT NULL DEFAULT '[]'::jsonb,
+  default_checklist_json jsonb NOT NULL DEFAULT '[]'::jsonb,
+  default_theme_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  is_system boolean NOT NULL DEFAULT true,
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  created_at timestamptz(6) DEFAULT now(),
+  updated_at timestamptz(6) DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_event_templates_system_type
+  ON event_templates(mode, event_type)
+  WHERE is_system = true AND workspace_id IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_event_templates_workspace_mode
+  ON event_templates(workspace_id, mode, event_type);
 
 CREATE TABLE IF NOT EXISTS concierge_sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

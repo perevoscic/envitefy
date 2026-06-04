@@ -32,6 +32,12 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 - `extracted_items`: proposed extracted schedule/form/payment/checklist items.
 - `checklist_items`: generated or user-maintained planning checklist rows.
 - `calendar_feeds`: shareable calendar feed metadata.
+- `venues`: reusable workspace locations, room groupings, and venue notes.
+- `resources`: workspace rooms, coaches, teachers, equipment, apparatus, buses, volunteers, and other assignable resources.
+- `resource_requirements`: per-occurrence resource needs for future matching workflows.
+- `resource_assignments`: assigned resources with start/end windows and conflict status.
+- `attendance_records`: participant check-in/check-out status per occurrence.
+- `event_templates`: system and workspace templates for common event/activity types.
 - `integration_connections`: external account/provider connection metadata.
 - `sync_jobs`: import/export/sync job status.
 - `audit_logs`: append-only audit entries for canonical actions.
@@ -65,6 +71,14 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 
 - Store the Phase 7 workspace RBAC and roster model. The runtime guard now creates these tables and indexes for local/dev use if the manual migration has not run.
 
+`venues`, `resources`, `resource_requirements`, `resource_assignments`, and `attendance_records`:
+
+- Store the Phase 8 resource planning and day-of attendance model. The runtime guard now creates these tables and indexes for local/dev use if the manual migration has not run.
+
+`event_templates`:
+
+- Stores system and workspace event templates. The runtime guard creates the table and upserts the built-in Concierge V2 system templates for the required social, school, gymnastics, team, and business event types.
+
 ## Indexes Added
 
 - Workspace owner/type, membership workspace/role/invited email, family workspace, participant workspace/family/user, program participant program/role/status, program workspace/status, series program, occurrence program/start, occurrence owner/start.
@@ -77,6 +91,7 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 - Message campaign/delivery indexes.
 - Source document and extracted item indexes.
 - Checklist, calendar feed, integration, sync job, and audit log indexes.
+- Venue/resource/resource assignment/attendance/template indexes, including resource time-window lookup and unique system template keys by mode/event type.
 - GIN index on `rsvp_responses.answers_json`.
 - Expression index on `event_history ((data->'conciergeV2'->>'programId'))`.
 
@@ -88,6 +103,8 @@ Migration file: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 - `src/lib/concierge-v2/calendar.ts` creates/regenerates active `calendar_feeds` rows through event-page owner checks and builds public tokenized ICS feeds from active `event_occurrences`.
 - `src/lib/concierge-v2/source-imports.ts` checks event-page ownership before creating pasted-text `source_documents`, inserting proposed `extracted_items`, reviewing item status, or applying accepted items into occurrences, forms, reminders, checklist rows, and manual payment requests.
 - `src/lib/concierge-v2/team-class-hub.ts` checks workspace membership roles before returning hub data, inviting members, or creating participants linked through `program_participants`.
+- `src/lib/concierge-v2/resource-planning.ts` checks workspace membership roles before returning resources, creating resources/venues, assigning resources to occurrences, or marking participant attendance.
+- `src/lib/concierge-v2/system-templates.ts` defines the built-in system templates seeded by the storage runtime guard.
 - `src/lib/concierge-v2/operations.ts` checks event-page ownership before returning private operations data or updating payment status.
 - `src/lib/concierge-v2/reminders.ts` checks event-page ownership before returning queue details, previews, dry-run records, or reminder status updates.
 - Volunteer claims use both a unique active email claim index and an atomic `volunteer_slots.claimed_quantity` update to prevent over-claiming.
@@ -104,6 +121,7 @@ Recommended production backfill after migration:
 1. Create a personal `workspaces` row for each `event_history.user_id` that does not already have one.
 2. Create active `memberships` rows for each workspace owner with role `program_manager`.
 3. For complex existing events only, create a `program` and one or more `event_occurrences`.
-4. Create an `event_pages` row for each public `event_history` row and set `legacy_event_history_id`.
-5. Preserve existing public slugs, aliases, RSVP rows, shares, and tracking records.
-6. Verify `/event/[slug-or-id]` before switching any dashboards to canonical graph reads.
+4. For complex team/class/gymnastics events, create starter `participants`, `program_participants`, resources, and resource assignments only when the source data is reliable enough to avoid false ownership or attendance records.
+5. Create an `event_pages` row for each public `event_history` row and set `legacy_event_history_id`.
+6. Preserve existing public slugs, aliases, RSVP rows, shares, and tracking records.
+7. Verify `/event/[slug-or-id]` before switching any dashboards to canonical graph reads.

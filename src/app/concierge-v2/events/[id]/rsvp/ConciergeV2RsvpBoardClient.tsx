@@ -17,6 +17,7 @@ import {
   Users,
   UserX,
   Utensils,
+  Warehouse,
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -236,6 +237,13 @@ export default function ConciergeV2RsvpBoardClient({
             >
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               Hub
+            </Link>
+            <Link
+              href={`/concierge-v2/events/${encodeURIComponent(eventId)}/resources`}
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-violet-200 hover:text-violet-700"
+            >
+              <Warehouse className="h-4 w-4" aria-hidden="true" />
+              Resources
             </Link>
             <Link
               href={`/concierge-v2/events/${encodeURIComponent(eventId)}/schedule`}

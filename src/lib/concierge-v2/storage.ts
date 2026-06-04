@@ -12,6 +12,7 @@ import {
   type ConciergeV2ScheduleItem,
   type ConciergeV2VolunteerSlot,
 } from "./public-event";
+import { CONCIERGE_V2_SYSTEM_TEMPLATES } from "./system-templates";
 
 export type ConciergeV2SessionRow = {
   id: string;
@@ -210,6 +211,45 @@ export async function ensureConciergeV2Tables(): Promise<void> {
         `create index if not exists idx_program_participants_program_role on program_participants(program_id, role, roster_status)`,
       );
       await query(`
+        create table if not exists venues (
+          id uuid primary key default gen_random_uuid(),
+          workspace_id uuid references workspaces(id) on delete cascade,
+          name text not null,
+          address_line1 text,
+          address_line2 text,
+          city text,
+          region text,
+          postal_code text,
+          country text,
+          latitude numeric,
+          longitude numeric,
+          map_url text,
+          parking_notes text,
+          accessibility_notes text,
+          timezone text,
+          metadata_json jsonb not null default '{}'::jsonb,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`create index if not exists idx_venues_workspace_name on venues(workspace_id, name)`);
+      await query(`
+        create table if not exists resources (
+          id uuid primary key default gen_random_uuid(),
+          workspace_id uuid references workspaces(id) on delete cascade,
+          venue_id uuid references venues(id) on delete set null,
+          resource_type text not null default 'other',
+          name text not null,
+          capacity integer,
+          availability_rule text,
+          attributes_json jsonb not null default '{}'::jsonb,
+          status text not null default 'active',
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`create index if not exists idx_resources_workspace_type on resources(workspace_id, resource_type, status)`);
+      await query(`
         create table if not exists event_series (
           id uuid primary key default gen_random_uuid(),
           workspace_id uuid references workspaces(id) on delete set null,
@@ -249,6 +289,61 @@ export async function ensureConciergeV2Tables(): Promise<void> {
       await query(
         `create index if not exists idx_event_occurrences_program_start on event_occurrences(program_id, start_at)`,
       );
+      await query(`create index if not exists idx_event_occurrences_workspace_start on event_occurrences(workspace_id, start_at)`);
+      await query(`
+        create table if not exists resource_requirements (
+          id uuid primary key default gen_random_uuid(),
+          occurrence_id uuid not null references event_occurrences(id) on delete cascade,
+          resource_type text not null,
+          quantity integer not null default 1,
+          required_attributes_json jsonb not null default '{}'::jsonb,
+          notes text,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(`create index if not exists idx_resource_requirements_occurrence on resource_requirements(occurrence_id)`);
+      await query(`
+        create table if not exists resource_assignments (
+          id uuid primary key default gen_random_uuid(),
+          occurrence_id uuid not null references event_occurrences(id) on delete cascade,
+          resource_id uuid not null references resources(id) on delete cascade,
+          assigned_by_user_id uuid references users(id) on delete set null,
+          starts_at timestamptz(6) not null,
+          ends_at timestamptz(6) not null,
+          status text not null default 'assigned',
+          conflict_status text,
+          notes text,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(
+        `create index if not exists idx_resource_assignments_resource_time on resource_assignments(resource_id, starts_at, ends_at)`,
+      );
+      await query(
+        `create index if not exists idx_resource_assignments_occurrence on resource_assignments(occurrence_id)`,
+      );
+      await query(`
+        create table if not exists attendance_records (
+          id uuid primary key default gen_random_uuid(),
+          occurrence_id uuid not null references event_occurrences(id) on delete cascade,
+          participant_id uuid references participants(id) on delete set null,
+          status text not null default 'expected',
+          checked_in_at timestamptz(6),
+          checked_out_at timestamptz(6),
+          marked_by_user_id uuid references users(id) on delete set null,
+          notes text,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(
+        `create unique index if not exists uniq_attendance_occurrence_participant on attendance_records(occurrence_id, participant_id) where participant_id is not null`,
+      );
+      await query(
+        `create index if not exists idx_attendance_records_occurrence_participant on attendance_records(occurrence_id, participant_id)`,
+      );
       await query(`
         create table if not exists event_pages (
           id uuid primary key default gen_random_uuid(),
@@ -268,6 +363,64 @@ export async function ensureConciergeV2Tables(): Promise<void> {
           updated_at timestamptz(6) default now()
         )
       `);
+      await query(`
+        create table if not exists event_templates (
+          id uuid primary key default gen_random_uuid(),
+          mode text not null,
+          event_type text not null,
+          name text not null,
+          description text,
+          title_template text,
+          default_form_schema_json jsonb not null default '{}'::jsonb,
+          default_rsvp_schema_json jsonb not null default '{}'::jsonb,
+          default_reminders_json jsonb not null default '[]'::jsonb,
+          default_checklist_json jsonb not null default '[]'::jsonb,
+          default_theme_json jsonb not null default '{}'::jsonb,
+          is_system boolean not null default true,
+          workspace_id uuid references workspaces(id) on delete cascade,
+          created_at timestamptz(6) default now(),
+          updated_at timestamptz(6) default now()
+        )
+      `);
+      await query(
+        `create unique index if not exists uniq_event_templates_system_type on event_templates(mode, event_type) where is_system = true and workspace_id is null`,
+      );
+      await query(
+        `create index if not exists idx_event_templates_workspace_mode on event_templates(workspace_id, mode, event_type)`,
+      );
+      for (const template of CONCIERGE_V2_SYSTEM_TEMPLATES) {
+        await query(
+          `insert into event_templates (
+             mode, event_type, name, description, title_template,
+             default_form_schema_json, default_rsvp_schema_json, default_reminders_json,
+             default_checklist_json, default_theme_json, is_system
+           )
+           values ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, true)
+           on conflict (mode, event_type) where is_system = true and workspace_id is null
+           do update set
+             name = excluded.name,
+             description = excluded.description,
+             title_template = excluded.title_template,
+             default_form_schema_json = excluded.default_form_schema_json,
+             default_rsvp_schema_json = excluded.default_rsvp_schema_json,
+             default_reminders_json = excluded.default_reminders_json,
+             default_checklist_json = excluded.default_checklist_json,
+             default_theme_json = excluded.default_theme_json,
+             updated_at = now()`,
+          [
+            template.mode,
+            template.eventType,
+            template.name,
+            template.description,
+            template.titleTemplate,
+            JSON.stringify(template.defaultFormSchema),
+            JSON.stringify(template.defaultRsvpSchema),
+            JSON.stringify(template.defaultReminders),
+            JSON.stringify(template.defaultChecklist),
+            JSON.stringify(template.defaultTheme),
+          ],
+        );
+      }
       await query(`
         create table if not exists concierge_sessions (
           id uuid primary key default gen_random_uuid(),

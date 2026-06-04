@@ -4,7 +4,7 @@ Date: 2026-06-04
 
 ## Executive Summary
 
-Implemented the first coherent Concierge V2 vertical slice plus the next operational slices: feature flags, additive canonical graph migration, deterministic natural-language parser, authenticated Concierge V2 APIs, apply-draft persistence, mobile-first `/concierge-v2` builder UI, public event page v2 sections, owner Schedule Hub, owner RSVP Board 2.0 with CSV export, owner Calendar Center with tokenized ICS feed, owner Source Import Center with pasted-text extraction/review/apply, Team/Class Hub with workspace roles and participant roster modeling, RSVP answer storage, guest Smart Form responses, guest Volunteer Signup claims, owner manual payment status updates, owner reminder queue preview/dry-run/cancel controls, owner operations UI, tests, and handoff docs.
+Implemented the full Concierge V2 master-prompt foundation: feature flags, additive canonical graph migration, deterministic natural-language parser, authenticated Concierge V2 APIs, apply-draft persistence, mobile-first `/concierge-v2` builder UI, public event page v2 sections, owner Schedule Hub, owner RSVP Board 2.0 with CSV export, owner Calendar Center with tokenized ICS feed, owner Source Import Center with pasted-text extraction/review/apply, Team/Class Hub with workspace roles and participant roster modeling, Resource Planning / Day-of Ops with resource assignments and attendance status, required seed system templates, RSVP answer storage, guest Smart Form responses, guest Volunteer Signup claims, owner manual payment status updates, owner reminder queue preview/dry-run/cancel controls, owner operations UI, tests, and handoff docs.
 
 Feature-flagged by `ENABLE_CONCIERGE_V2` plus capability flags for schedule hub, smart forms, volunteer signup, manual payments, OCR imports, team/class hub, resource planning, and reminder engine.
 
@@ -20,35 +20,37 @@ Stubbed/provider-dependent: AI provider selection for V2, storage-backed image/P
 - `node --test src/lib/concierge-v2/calendar-shape.test.mjs`: pass.
 - `node --test src/lib/concierge-v2/source-imports-shape.test.mjs`: pass.
 - `node --test src/lib/concierge-v2/team-class-hub-shape.test.mjs`: pass.
+- `node --test src/lib/concierge-v2/resource-planning-shape.test.mjs`: pass.
+- Full focused Concierge V2 suite with all files above: pass, 35 tests.
 - `node --check src/lib/concierge-v2/core.mjs`: pass.
 - `node_modules\\.bin\\biome.cmd lint <touched files>`: pass.
 - `node_modules\\.bin\\tsc.cmd --noEmit`: fail on existing repo-wide TypeScript errors. Representative first errors:
   - `.next/types/app/api/creation/threads/[id]/route.ts(244,7): Type ... does not satisfy the constraint 'ParamCheck<RouteContext>'.`
   - `ai-studio-code-samples/ethereal-invitations/vite.config.ts(1,25): Cannot find module '@tailwindcss/vite'.`
   - `src/app/api/admin/marketing-campaigns/[runId]/captions/regenerate/route.ts(15,60): Property 'runDir' is missing.`
-  - `src/app/event/[id]/page.tsx(3393,15): Type 'string | null' is not assignable to type 'string'.`
+  - `src/app/event/[id]/page.tsx(3411,15): Type 'string | null' is not assignable to type 'string'.`
   - `src/lib/meet-discovery/core.ts(858,11): Cannot find name 'ScheduleColorTarget'.`
 - `npm run lint -- <touched files>`: fail because the script runs `biome lint .` before the supplied paths; failures are unrelated existing sample-app/repo issues such as `ai-studio-code-samples/ethereal-invitations/src/components/FormalSkin.tsx` comment text and unused imports.
 - VS Code diagnostics linter:
   - Old documented path failed with `Cannot find module '...airizom.chat-to-cli-0.499.1\\scripts\\vscode-lint.js'`.
   - Current extension path failed with `Bridge provider context is missing. Set CLI_PROVIDER_ID (provider id) or CLI_BRIDGE_INFO_FILE (explicit bridge info path).`
-- In-app browser smoke: opened unauthenticated owner routes including `http://localhost:3000/concierge-v2/events/smoke-test/schedule`, `http://localhost:3000/concierge-v2/events/smoke-test/rsvp`, `http://localhost:3000/concierge-v2/events/smoke-test/calendar`, `http://localhost:3000/concierge-v2/events/smoke-test/imports`, and `http://localhost:3000/concierge-v2/events/smoke-test/hub`; all redirected to `http://localhost:3000/` as expected without an owner session. Signed-in owner UI still needs manual smoke testing.
+- In-app browser smoke: opened unauthenticated owner routes including `http://localhost:3000/concierge-v2/events/smoke-test/schedule`, `http://localhost:3000/concierge-v2/events/smoke-test/rsvp`, `http://localhost:3000/concierge-v2/events/smoke-test/calendar`, `http://localhost:3000/concierge-v2/events/smoke-test/imports`, `http://localhost:3000/concierge-v2/events/smoke-test/hub`, and `http://localhost:3000/concierge-v2/events/smoke-test/resources`; all redirected to `http://localhost:3000/` as expected without an owner session. Signed-in owner UI still needs manual smoke testing.
 
 ## Database Changes
 
 Migration created: `prisma/manual_sql/20260604_add_concierge_v2_foundation.sql`
 
-Tables added: `workspaces`, `memberships`, `families`, `family_guardians`, `participants`, `programs`, `program_participants`, `event_series`, `event_occurrences`, `event_pages`, `concierge_sessions`, `concierge_drafts`, `smart_forms`, `form_fields`, `form_responses`, `volunteer_boards`, `volunteer_slots` with atomic `claimed_quantity`, `volunteer_claims`, `payment_requests`, `payments`, `message_templates`, `reminders`, `message_campaigns`, `message_deliveries` with dry-run `metadata_json`, `source_documents`, `extracted_items`, `checklist_items`, `calendar_feeds`, `integration_connections`, `sync_jobs`, and `audit_logs`.
+Tables added: `workspaces`, `memberships`, `families`, `family_guardians`, `participants`, `programs`, `program_participants`, `event_series`, `event_occurrences`, `event_pages`, `concierge_sessions`, `concierge_drafts`, `smart_forms`, `form_fields`, `form_responses`, `volunteer_boards`, `volunteer_slots` with atomic `claimed_quantity`, `volunteer_claims`, `payment_requests`, `payments`, `message_templates`, `reminders`, `message_campaigns`, `message_deliveries` with dry-run `metadata_json`, `source_documents`, `extracted_items`, `checklist_items`, `calendar_feeds`, `venues`, `resources`, `resource_requirements`, `resource_assignments`, `attendance_records`, `event_templates`, `integration_connections`, `sync_jobs`, and `audit_logs`.
 
 Existing table changed: `rsvp_responses` now has `answers_json`, `adult_count`, `kid_count`, and `allergy_notes`.
 
-Indexes added: canonical lookup indexes for workspaces/memberships/families/participants/program rosters/programs/series/occurrences/pages, concierge sessions/drafts, forms/responses, volunteer boards/slots/claims, payments, reminders/messages, imports, checklist, feeds, integrations, sync jobs, audit logs, `rsvp_responses.answers_json` GIN, a unique `form_fields(form_id, field_key)` index, a unique active volunteer claim per slot/email index, and an `event_history` Concierge V2 program expression index.
+Indexes added: canonical lookup indexes for workspaces/memberships/families/participants/program rosters/programs/series/occurrences/pages, concierge sessions/drafts, forms/responses, volunteer boards/slots/claims, payments, reminders/messages, imports, checklist, feeds, venues/resources/resource assignments/attendance/templates, integrations, sync jobs, audit logs, `rsvp_responses.answers_json` GIN, a unique `form_fields(form_id, field_key)` index, a unique active volunteer claim per slot/email index, and an `event_history` Concierge V2 program expression index.
 
 Backfill performed: no legacy event graph backfill. The migration includes an idempotent `volunteer_slots.claimed_quantity` sync from existing active `volunteer_claims`.
 
 Owner still needs to run the migration against each target database.
 
-Runtime guard update: `src/lib/concierge-v2/storage.ts` now creates membership/family/participant/roster tables plus `source_documents` and `extracted_items` with local/dev indexes when the manual migration has not run.
+Runtime guard update: `src/lib/concierge-v2/storage.ts` now creates membership/family/participant/roster tables, source import tables, resource/attendance tables, calendar feeds, and system templates with local/dev indexes when the manual migration has not run.
 
 ## API Routes And Server Actions
 
@@ -74,6 +76,10 @@ Runtime guard update: `src/lib/concierge-v2/storage.ts` now creates membership/f
 - `GET /api/concierge/events/[id]/hub`: authenticated workspace-member Team/Class Hub summary with roles, participants, upcoming schedule, and operational counts.
 - `POST /api/concierge/events/[id]/hub/members`: authenticated role-manager workspace member invite/assignment by email.
 - `POST /api/concierge/events/[id]/hub/participants`: authenticated scheduler/coach/teacher participant creation linked to the active program roster.
+- `GET /api/concierge/events/[id]/resources`: authenticated workspace-member Resource Planning summary with resources, assignments, conflicts, participants, and attendance.
+- `POST /api/concierge/events/[id]/resources`: authenticated scheduler/coach/teacher resource creation with optional venue creation.
+- `POST /api/concierge/events/[id]/resources/assignments`: authenticated scheduler/coach/teacher resource assignment to a schedule occurrence.
+- `PATCH /api/concierge/events/[id]/resources/attendance`: authenticated check-in-capable attendance status update for a participant and occurrence.
 - `GET /api/concierge/events/[id]/schedule`: authenticated owner-only Schedule Hub summary with series, occurrences, counts, and conflicts.
 - `POST /api/concierge/events/[id]/schedule`: authenticated owner-only one-off schedule item creation.
 - `PATCH /api/concierge/events/[id]/schedule/occurrences/[occurrenceId]`: authenticated owner-only occurrence move/edit/cancel/restore/status update.
@@ -98,6 +104,8 @@ Runtime guard update: `src/lib/concierge-v2/storage.ts` now creates membership/f
 - `src/app/concierge-v2/events/[id]/imports/ConciergeV2ImportCenterClient.tsx`: premium mobile-first pasted-text import UI with source-type selection, extraction cards, accept/reject controls, and apply action.
 - `src/app/concierge-v2/events/[id]/hub/page.tsx`: workspace-member Team/Class Hub route backed by memberships, participants, roster rows, and program data.
 - `src/app/concierge-v2/events/[id]/hub/ConciergeV2TeamClassHubClient.tsx`: premium mobile-first team/class/parent hub with member roles, participant cards, upcoming coordination, invite-member form, and add-participant form.
+- `src/app/concierge-v2/events/[id]/resources/page.tsx`: workspace-member Resource Planning route backed by resources, assignments, conflicts, participants, and attendance.
+- `src/app/concierge-v2/events/[id]/resources/ConciergeV2ResourcesClient.tsx`: premium mobile-first resource board with add-resource, assign-resource, conflict list, and day-of check-in controls.
 - `src/app/concierge-v2/events/[id]/ops/page.tsx`: owner-only operations route for generated forms, volunteer claims, and manual payments.
 - `src/app/concierge-v2/events/[id]/ops/ConciergeV2OpsClient.tsx`: premium mobile-first host operations surface with summary cards, payment status actions, and reminder queue controls.
 - `src/components/concierge/ConciergePublicOperations.tsx`: public Smart Form, Volunteer Signup, Payment Tracker, Checklist, and Reminder Timeline interaction sections.
@@ -110,8 +118,8 @@ Runtime guard update: `src/lib/concierge-v2/storage.ts` now creates membership/f
 - Pages updated: `/concierge-v2` and the existing `/event/[id]` concierge public renderer.
 - Mobile improvements: stacked builder sections, sticky publish bar, large tap targets, responsive public section grids.
 - Accessibility improvements: semantic buttons/sections, aria labels on icon-only controls inherited from existing renderer, clear loading/error states.
-- Remaining design issues: public reminder timeline is display-only, while owner ops supports preview/dry-run/cancel; payment collection remains manual/providerless; Schedule Hub has agenda/list/conflict views but not a full visual calendar grid yet; Source Import Center supports pasted text but not file upload/OCR yet; Team/Class Hub stores invitations/roles but does not send invite emails yet.
-- Screens needing manual review: signed-in `/concierge-v2` builder, published v2 public event page, owner Schedule Hub, owner RSVP Board, owner Calendar Center, owner Source Import Center, owner Team/Class Hub, owner ops page, owner RSVP responses with v2 answers, mobile public page sections.
+- Remaining design issues: public reminder timeline is display-only, while owner ops supports preview/dry-run/cancel; payment collection remains manual/providerless; Schedule Hub has agenda/list/conflict views but not a full visual calendar grid yet; Source Import Center supports pasted text but not file upload/OCR yet; Team/Class Hub stores invitations/roles but does not send invite emails yet; Resource Planning supports basic conflict and attendance workflows but not scanner/check-out/export flows.
+- Screens needing manual review: signed-in `/concierge-v2` builder, published v2 public event page, owner Schedule Hub, owner RSVP Board, owner Calendar Center, owner Source Import Center, owner Team/Class Hub, owner Resource Planning page, owner ops page, owner RSVP responses with v2 answers, mobile public page sections.
 
 ## Environment Variables Needed
 
@@ -142,6 +150,8 @@ Runtime guard update: `src/lib/concierge-v2/storage.ts` now creates membership/f
 - Open `/concierge-v2/events/[eventHistoryId]/calendar`, copy the feed URL, download the ICS, open the Google subscribe URL, regenerate the feed, and confirm the old token stops working.
 - Open `/concierge-v2/events/[eventHistoryId]/imports`, paste source details, extract proposed items, accept/reject at least one card, apply accepted items, then confirm schedule/ops rows were created.
 - Open `/concierge-v2/events/[eventHistoryId]/hub`, add a member role by email, add a participant with family/group details, and confirm the roster, member count, and upcoming schedule cards update.
+- Open `/concierge-v2/events/[eventHistoryId]/resources`, create a room/coach/equipment resource, assign it to an occurrence, create an overlapping assignment for the same resource, and confirm the double-booking warning appears.
+- From the same Resource Planning page, mark roster participants present, late, absent, and excused for a selected occurrence.
 - Submit RSVP as a guest and confirm owner RSVP response includes `answersJson`, `adultCount`, `kidCount`, and `allergyNotes` when provided.
 - Submit a generated Smart Form and confirm it appears on `/concierge-v2/events/[eventHistoryId]/ops`.
 - Claim a generated volunteer slot as a guest and confirm capacity/claimed counts update in ops.
@@ -153,6 +163,7 @@ Runtime guard update: `src/lib/concierge-v2/storage.ts` now creates membership/f
 
 ## Known Limitations And Next Tasks
 
+- All planned master-prompt phases now have foundation implementation. Remaining work is production hardening, provider setup, backfill, richer edit/export/scanner UX, and signed-in QA.
 - V2 parser is deterministic fallback only and does not call OpenAI yet.
 - Smart Form response editing/export and Volunteer Signup unclaim/reminder actions remain to be built.
 - Manual payment provider processing is not implemented; host status tracking is manual only.
@@ -160,5 +171,6 @@ Runtime guard update: `src/lib/concierge-v2/storage.ts` now creates membership/f
 - Schedule Hub supports direct occurrence edits and conflict detection, and Calendar Center publishes active items as ICS. Recurring-series editing, formal blackout exception rows, and full visual calendar/board views remain future work.
 - Pasted-text source import/review/apply exists. Storage-backed image/PDF OCR upload, provider extraction, and file lifecycle cleanup remain to be built.
 - Team/Class Hub supports workspace roles, role-gated member/participant mutations, and program roster modeling. Invite email delivery, member self-acceptance, participant edit/remove, and cross-program family dashboards remain to be built.
+- Resource Planning supports resource creation, assignment, conflict detection, and attendance status marking. Resource edit/remove, resource requirement matching, check-out, scanner, and export/report flows remain to be built.
 - Legacy event backfill into canonical graph rows is documented but not run.
-- Resource planning/day-of operations, file OCR ingestion, richer host dashboard exports/actions, schedule hub views, real reminder provider adapters, and legacy backfill are the next practical slices.
+- File OCR ingestion, richer host dashboard exports/actions, schedule hub views, real reminder provider adapters, resource scanner/export flows, and legacy backfill are the next practical slices.
