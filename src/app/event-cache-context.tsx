@@ -151,7 +151,7 @@ function normalizeIdentityPart(value: unknown, lowercase = false): string | null
 }
 
 export function EventCacheProvider({ children }: { children: ReactNode }) {
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const sessionUser = (session?.user || null) as
     | { email?: string | null; id?: string | null }
     | null;
@@ -261,6 +261,15 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
           credentials: "include",
           headers: { Accept: "application/json" },
         });
+        if (res.status === 401) {
+          const latestSession = await updateSession().catch(() => null);
+          if (!latestSession?.user) {
+            resetCacheState();
+          } else if (!dashboardRef.current) {
+            setDashboardData(null);
+          }
+          return;
+        }
         if (!res.ok) {
           if (!dashboardRef.current) {
             setDashboardData(null);
@@ -298,7 +307,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       dashboardRefreshPromiseRef.current = null;
       dashboardRefreshInflight.delete(inflightKey);
     }
-  }, [sessionIdentityKey]);
+  }, [resetCacheState, sessionIdentityKey, updateSession]);
 
   const refreshAll = useCallback(
     async (opts?: EventCacheRefreshOptions) => {
