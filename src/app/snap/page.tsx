@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { getServerSession, type Session } from "next-auth";
-import { Inter, Outfit } from "next/font/google";
 import Script from "next/script";
 import SnapLaunchCards from "@/app/event/SnapLaunchCards";
 import Dashboard from "@/components/Dashboard";
@@ -11,18 +10,6 @@ import { themeColorPalette } from "@/lib/theme-color";
 import styles from "./page.module.css";
 
 const siteOgImageUrl = getRandomSiteOgImageUrl();
-
-const outfit = Outfit({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-snap-display",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-snap-sans",
-});
 
 export const metadata: Metadata = {
   title: "Envitefy Snap | Turn invites, flyers, and PDFs into event pages",
@@ -102,9 +89,7 @@ export default async function SnapPage() {
 
   return (
     <div
-      className={`${outfit.variable} ${inter.variable} ${styles.snapPage} ${
-        isAuthenticated ? "min-h-[100dvh] bg-transparent" : ""
-      }`}
+      className={`${styles.snapPage} ${isAuthenticated ? "min-h-[100dvh] bg-transparent" : ""}`}
     >
       {isAuthenticated ? (
         <>
