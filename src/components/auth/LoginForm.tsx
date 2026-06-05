@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { ArrowRight } from "lucide-react";
 import { FormEvent, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { hideAuthTransition, showAuthTransition } from "@/utils/authTransition";
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -282,34 +284,26 @@ export default function LoginForm({
           >
             {onInlineCancel ? "Cancel" : "Sign up"}
           </button>
-          <button
+          <Button
             type="submit"
+            size="lg"
             disabled={submitting}
-            className={cx(
-              "cta-shell nav-chrome-motion h-11 rounded-full px-5 text-sm font-semibold",
-              isInlineDark
-                ? "bg-[#f0d58f] text-[#150c29] shadow-[0_14px_30px_rgba(0,0,0,0.26)]"
-                : "bg-white text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]",
-            )}
+            className="group w-full !rounded-full bg-gradient-to-r from-brand to-brand-glow text-primary-foreground shadow-xl shadow-brand/30 hover:opacity-95"
           >
             {submitting ? "Signing in..." : "Sign in"}
-          </button>
+            <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Button>
         </div>
       ) : (
-        <button
+        <Button
           type="submit"
+          size="lg"
           disabled={submitting}
-          className={cx(
-            "w-full justify-center",
-            isInlineDark
-              ? "cta-shell nav-chrome-motion h-11 rounded-full bg-[#f0d58f] px-5 text-sm font-semibold text-[#150c29] shadow-[0_14px_30px_rgba(0,0,0,0.26)]"
-              : isInline
-                ? "cta-shell nav-chrome-motion h-11 rounded-full bg-white px-5 text-sm font-semibold text-[#140a27] shadow-[0_14px_30px_rgba(0,0,0,0.18)]"
-              : "btn btn-primary",
-          )}
+          className="group w-full !rounded-full bg-gradient-to-r from-brand to-brand-glow text-primary-foreground shadow-xl shadow-brand/30 hover:opacity-95"
         >
           {submitting ? "Signing in..." : "Sign in"}
-        </button>
+          <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        </Button>
       )}
       {message ? (
         <p className={cx("text-sm font-medium text-error", isInline && "text-[#ffd7d7]")}>
