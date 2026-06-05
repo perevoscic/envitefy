@@ -117,7 +117,7 @@ export default function MenuBottomSheet({
             aria-label={authActive ? (authMode === "signup" ? "Sign up" : "Sign in") : "Menu"}
             className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#150c29] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 text-white shadow-[0_-28px_90px_rgba(20,11,34,0.38)]"
             style={{
-              height: sheetHeight,
+              height: authActive ? "auto" : sheetHeight,
               maxHeight: sheetHeight,
             }}
             initial={{ y: "100%", opacity: 0 }}
@@ -166,7 +166,13 @@ export default function MenuBottomSheet({
               </button>
             </div>
 
-            <div className="relative mt-5 min-h-0 flex-1 overflow-hidden">
+            <div
+              className={
+                authActive
+                  ? "relative mt-5 overflow-visible pb-1"
+                  : "relative mt-5 min-h-0 flex-1 overflow-hidden"
+              }
+            >
               <AnimatePresence initial={false} mode="sync">
                 {!authActive ? (
                   <motion.nav
@@ -214,7 +220,7 @@ export default function MenuBottomSheet({
                 {authMode ? (
                   <motion.div
                     key={authMode}
-                    className="absolute inset-0 flex min-h-0 flex-col"
+                    className="relative flex min-h-0 flex-col overflow-y-auto pb-1"
                     initial={{ x: "105%", opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: "-105%", opacity: 0 }}
@@ -229,22 +235,16 @@ export default function MenuBottomSheet({
                         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                         Menu
                       </button>
-                      <p className="min-w-0 text-right text-sm font-semibold text-white/82">
-                        {authMode === "signup" ? "Create your account" : "Welcome back"}
-                      </p>
                     </div>
 
                     <div
-                      className="min-h-0 flex-1 overflow-hidden rounded-[1.5rem] border border-white/12 bg-[#1b1030]/96 px-4 py-4 text-white shadow-[0_18px_52px_rgba(3,1,12,0.34),inset_0_1px_0_rgba(255,255,255,0.08)]"
+                      className="min-h-0 shrink-0 overflow-hidden rounded-[1.5rem] border border-white/12 bg-[#1b1030]/96 px-4 py-4 text-white shadow-[0_18px_52px_rgba(3,1,12,0.34),inset_0_1px_0_rgba(255,255,255,0.08)]"
                       aria-live="polite"
                     >
                       <div className="mb-4 text-center">
                         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#f0d58f]">
-                          {authMode === "signup" ? "Start creating" : "Sign in"}
+                          {authMode === "signup" ? "Start creating" : "Welcome back"}
                         </p>
-                        <h2 className="mt-1 text-xl font-semibold leading-tight !text-white">
-                          {authMode === "signup" ? "Sign up for Envitefy" : "Sign in to Envitefy"}
-                        </h2>
                       </div>
 
                       {authMode === "login" ? (
