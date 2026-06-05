@@ -14,14 +14,11 @@ import {
   Upload,
   Users,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import AuthModal from "@/components/auth/AuthModal";
-import LandingLiveCardShowcase from "@/components/landing/LandingLiveCardShowcase";
-import ConciergeSheet from "@/components/navigation/ConciergeSheet";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
-import MenuBottomSheet from "@/components/navigation/MenuBottomSheet";
 import MobileBrandHeader from "@/components/navigation/MobileBrandHeader";
 import ScrollAwareBottomNav from "@/components/navigation/ScrollAwareBottomNav";
 import { signedOutMobileMenuLinks } from "@/config/navigation";
@@ -29,8 +26,32 @@ import {
   Testimonial as DesignTestimonial,
   type TestimonialItem,
 } from "@/components/ui/design-testimonial";
-import FeatureCarousel, { type FeatureCarouselItem } from "@/components/ui/feature-carousel";
+import type { FeatureCarouselItem } from "@/components/ui/feature-carousel";
 import AIConciergeSection from "./sections/AIConciergeSection";
+
+const AuthModal = dynamic(() => import("@/components/auth/AuthModal"), {
+  loading: () => null,
+  ssr: false,
+});
+const ConciergeSheet = dynamic(() => import("@/components/navigation/ConciergeSheet"), {
+  loading: () => null,
+  ssr: false,
+});
+const MenuBottomSheet = dynamic(() => import("@/components/navigation/MenuBottomSheet"), {
+  loading: () => null,
+  ssr: false,
+});
+const LandingLiveCardShowcase = dynamic(
+  () => import("@/components/landing/LandingLiveCardShowcase"),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const FeatureCarousel = dynamic(() => import("@/components/ui/feature-carousel"), {
+  loading: () => null,
+  ssr: false,
+});
 
 const landingFlowSectionClass = "";
 const landingFlowInnerClass = "";
@@ -842,17 +863,31 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const imageSources = new Set<string>();
-    for (const slide of heroProductSlides) {
-      imageSources.add(slide.desktopImage);
-      imageSources.add(slide.image);
+    const preloadRemainingSlides = () => {
+      const imageSources = new Set<string>();
+      for (const slide of heroProductSlides.slice(1)) {
+        imageSources.add(slide.desktopImage);
+        imageSources.add(slide.image);
+      }
+
+      for (const src of imageSources) {
+        const preloadedImage = new window.Image();
+        preloadedImage.decoding = "async";
+        preloadedImage.src = src;
+      }
+    };
+
+    const w = window as typeof window & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    if (typeof w.requestIdleCallback === "function") {
+      const idleHandle = w.requestIdleCallback(preloadRemainingSlides, { timeout: 2500 });
+      return () => w.cancelIdleCallback?.(idleHandle);
     }
 
-    for (const src of imageSources) {
-      const preloadedImage = new window.Image();
-      preloadedImage.decoding = "async";
-      preloadedImage.src = src;
-    }
+    const timeout = window.setTimeout(preloadRemainingSlides, 1200);
+    return () => window.clearTimeout(timeout);
   }, []);
 
   useEffect(() => {

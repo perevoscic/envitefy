@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { EventCacheProvider } from "@/app/event-cache-context";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import { MainContentWrapper } from "@/components/MainContentWrapper";
 import { MenuProvider } from "@/contexts/MenuContext";
@@ -30,16 +31,18 @@ function isStudioCardSharePath(pathname: string) {
 function AuthTransitionOverlay({ message = "Opening Envitefy..." }: { message?: string }) {
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-[#F8F5FF]/92 backdrop-blur-[8px]"
+      className="auth-transition-overlay fixed inset-0 z-[14000] flex cursor-progress touch-none select-none flex-col items-center justify-center gap-5 bg-[#f8f5ff]/90 px-6 backdrop-blur-xl"
       role="status"
       aria-live="polite"
       aria-label={message}
     >
       <div
-        className="h-10 w-10 rounded-full border-2 border-foreground/15 border-t-foreground/65 animate-spin"
+        className="auth-transition-mark relative flex h-24 w-56 items-center justify-center overflow-hidden rounded-[2rem]"
         aria-hidden
-      />
-      <p className="text-sm font-medium text-foreground/75">{message}</p>
+      >
+        <EnvitefyWordmark className="relative z-10 text-[4rem] leading-none" scaled={false} shine />
+      </div>
+      <p className="text-sm font-semibold text-[#51456d]">{message}</p>
     </div>
   );
 }
@@ -85,6 +88,18 @@ export default function AppShell({
       window.removeEventListener(AUTH_TRANSITION_CLEAR_EVENT, onClear);
     };
   }, []);
+
+  useEffect(() => {
+    if (!authTransitionMessage) {
+      document.documentElement.removeAttribute("data-auth-transition");
+      return;
+    }
+
+    document.documentElement.setAttribute("data-auth-transition", "true");
+    return () => {
+      document.documentElement.removeAttribute("data-auth-transition");
+    };
+  }, [authTransitionMessage]);
 
   useEffect(() => {
     if (!onMarketing || !isAuthenticated) return;

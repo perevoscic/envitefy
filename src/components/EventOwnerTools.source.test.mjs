@@ -130,11 +130,16 @@ test("owner workspace exposes Dashboard RSVPs Messages and Design tabs", () => {
   assert.match(source, /if \(!rsvpEnabled \|\| activeTab === "design"\)/);
   assert.doesNotMatch(source, /RsvpDisabledPanel/);
   assert.match(source, /function buildOwnerPreviewHref/);
+  assert.match(source, /function buildOwnerEmbeddedPreviewHref/);
   assert.match(source, /parsed\.searchParams\.set\("preview", "owner"\)/);
+  assert.match(source, /parsed\.searchParams\.set\("embed", "dashboard-preview"\)/);
   assert.match(source, /import \{ buildStudioCardPath \} from "@\/utils\/event-url";/);
+  assert.match(
+    source,
+    /import \{\s*getPrimaryEventProductOutput,\s*isCardFirstEventProduct,\s*\} from "@\/utils\/event-product-route";/s,
+  );
   assert.match(source, /function shouldOpenPreviewInStudioCard/);
-  assert.match(source, /ownerDefaultSurface === "card"/);
-  assert.match(source, /ownerDefaultSurface === "event" \|\| ownerDefaultSurface === "signup"/);
+  assert.match(source, /preview\.surface === "studio-card" && Boolean\(preview\.imageUrl\)/);
   assert.match(
     source,
     /return buildStudioCardPath\(\s*eventId,\s*currentEventTitle \|\| eventTitle,/,
@@ -163,12 +168,21 @@ test("owner workspace live product uses card fallback data instead of a blank na
 
   assert.match(source, /const PREVIEW_IMAGE_BY_CATEGORY: Record<string, string>/);
   assert.match(source, /function resolveProductPreviewImageUrl/);
+  assert.match(source, /function resolveProductPreviewSurface/);
+  assert.match(source, /ownerDefaultSurface === "card" && imageUrl/);
+  assert.match(source, /ownerDefaultSurface === "event" \|\| ownerDefaultSurface === "signup"/);
+  assert.match(source, /primaryOutput && !isCardFirstEventProduct\(primaryOutput\)/);
+  assert.match(source, /isCardFirstEventProduct\(getPrimaryEventProductOutput\(data\)\)/);
   assert.match(
     source,
     /PREVIEW_IMAGE_BY_CATEGORY\[category\] \|\| "\/studio\/custom-invite\.webp"/,
   );
   assert.match(source, /function buildFallbackInvitationData/);
   assert.match(source, /asRecord\(studioCard\?\.invitationData\) \|\| buildFallbackInvitationData/);
+  assert.match(source, /preview\.surface === "studio-card" && preview\.imageUrl/);
+  assert.match(source, /<iframe/);
+  assert.match(source, /src=\{embeddedPreviewUrl\}/);
+  assert.doesNotMatch(source, /pointer-events-none h-full w-full border-0 bg-white/);
   assert.doesNotMatch(source, />\s*Event preview\s*</);
 });
 

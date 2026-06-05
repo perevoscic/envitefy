@@ -30,6 +30,10 @@ import EventResponseDashboard from "@/components/EventResponseDashboard";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
 import { hasActionableRsvp } from "@/lib/dashboard-data";
+import {
+  getPrimaryEventProductOutput,
+  isCardFirstEventProduct,
+} from "@/utils/event-product-route";
 import { resolveArtworkEditHref, resolveEditHref } from "@/utils/event-edit-route";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
 import { buildStudioCardPath } from "@/utils/event-url";
@@ -48,6 +52,7 @@ type ProductPreviewModel = {
   imageUrl: string | null;
   invitationData: Record<string, unknown> | null;
   positions: Record<string, unknown> | null;
+  surface: "studio-card" | "event-page";
   dateLine: string;
   timeLine: string;
   locationLine: string;
@@ -265,17 +270,6 @@ function formatOwnerTimeChipValue(value: unknown): string {
   return "";
 }
 
-const CARD_FIRST_OUTPUTS = new Set([
-  "live_card",
-  "digital_flyer",
-  "printable_flyer",
-  "invitation",
-  "instagram_story",
-  "thank_you_card",
-  "menu",
-  "welcome_sign",
-]);
-
 const PREVIEW_IMAGE_BY_CATEGORY: Record<string, string> = {
   birthday: "/studio/birthday.webp",
   birthdays: "/studio/birthday.webp",
@@ -300,40 +294,9 @@ const PREVIEW_IMAGE_BY_CATEGORY: Record<string, string> = {
   anniversary: "/studio/anniversary.webp",
 };
 
-function normalizeProductOutput(value: unknown): string {
-  return readString(value)
-    .toLowerCase()
-    .replace(/\//g, "_")
-    .replace(/[\s-]+/g, "_");
-}
-
-function readOutputValues(data: Record<string, unknown> | null): string[] {
-  if (!data) return [];
-  return [
-    ...(Array.isArray(data.requestedOutputs) ? data.requestedOutputs : []),
-    ...(Array.isArray(data.outputs) ? data.outputs : []),
-  ]
-    .map(normalizeProductOutput)
-    .filter(Boolean);
-}
-
 function isCardFirstProduct(data: Record<string, unknown> | null): boolean {
   if (!data) return false;
-  const publicEvent = asRecord(data.publicEvent);
-  const primaryOutput = normalizeProductOutput(
-    firstString(
-      publicEvent?.primaryOutput,
-      publicEvent?.renderer,
-      data.primaryOutput,
-      data.productType,
-      data.publicRenderer,
-    ),
-  );
-  const outputs = readOutputValues(data);
-  return (
-    CARD_FIRST_OUTPUTS.has(primaryOutput) ||
-    outputs.some((output) => CARD_FIRST_OUTPUTS.has(output))
-  );
+  return isCardFirstEventProduct(getPrimaryEventProductOutput(data));
 }
 
 function resolveProductPreviewImageUrl(
@@ -353,6 +316,26 @@ function resolveProductPreviewImageUrl(
 
   const category = firstString(data?.eventType, data?.category).toLowerCase();
   return PREVIEW_IMAGE_BY_CATEGORY[category] || "/studio/custom-invite.webp";
+}
+
+function resolveProductPreviewSurface(
+  data: Record<string, unknown> | null,
+  imageUrl: string | null,
+): ProductPreviewModel["surface"] {
+  const publicEvent = asRecord(data?.publicEvent);
+  const ownerDefaultSurface = firstString(
+    publicEvent?.ownerDefaultSurface,
+    data?.ownerDefaultSurface,
+  ).toLowerCase();
+  if (ownerDefaultSurface === "card" && imageUrl) return "studio-card";
+  if (ownerDefaultSurface === "event" || ownerDefaultSurface === "signup") return "event-page";
+
+  const primaryOutput = getPrimaryEventProductOutput(data);
+  if (primaryOutput && !isCardFirstEventProduct(primaryOutput)) return "event-page";
+
+  return imageUrl && (asRecord(data?.studioCard) || isCardFirstProduct(data))
+    ? "studio-card"
+    : "event-page";
 }
 
 function buildFallbackInvitationData(
@@ -455,6 +438,7 @@ function buildProductPreviewModel(eventData: Record<string, unknown> | null): Pr
   const eventDetails = asRecord(studioCard?.eventDetails) || asRecord(invitationData?.eventDetails);
   const positions = asRecord(studioCard?.positions);
   const imageUrl = resolveProductPreviewImageUrl(eventData, studioCard);
+  const surface = resolveProductPreviewSurface(eventData, imageUrl);
   const eventYear = inferOwnerEventYear(
     eventData?.eventYear,
     eventData?.startAt,
@@ -492,6 +476,7 @@ function buildProductPreviewModel(eventData: Record<string, unknown> | null): Pr
     imageUrl,
     invitationData,
     positions,
+    surface,
     dateLine:
       formatOwnerDateChipValue(rawDateLine, eventYear) ||
       formatDateLine(eventData) ||
@@ -701,21 +686,18 @@ function buildOwnerPreviewHref(publicUrl: string, returnHref: string): string {
   }
 }
 
-function shouldOpenPreviewInStudioCard(
-  eventData: Record<string, unknown> | null,
-  preview: ProductPreviewModel,
-): boolean {
-  const publicEvent = asRecord(eventData?.publicEvent);
-  const ownerDefaultSurface = firstString(
-    publicEvent?.ownerDefaultSurface,
-    eventData?.ownerDefaultSurface,
-  ).toLowerCase();
-  if (ownerDefaultSurface === "card") return Boolean(preview.imageUrl);
-  if (ownerDefaultSurface === "event" || ownerDefaultSurface === "signup") return false;
+function buildOwnerEmbeddedPreviewHref(publicUrl: string, returnHref: string): string {
+  try {
+    const parsed = new URL(buildOwnerPreviewHref(publicUrl, returnHref), "https://envitefy.local");
+    parsed.searchParams.set("embed", "dashboard-preview");
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return buildOwnerPreviewHref(publicUrl, returnHref);
+  }
+}
 
-  return Boolean(
-    preview.imageUrl && (asRecord(eventData?.studioCard) || isCardFirstProduct(eventData)),
-  );
+function shouldOpenPreviewInStudioCard(preview: ProductPreviewModel): boolean {
+  return preview.surface === "studio-card" && Boolean(preview.imageUrl);
 }
 
 export default function EventOwnerTools({
@@ -760,7 +742,7 @@ export default function EventOwnerTools({
   const rsvpEnabled = hasActionableRsvp(eventData, numberOfGuests);
   const publicUrl = useMemo(() => {
     if (publicUrlOverride) return publicUrlOverride;
-    if (shouldOpenPreviewInStudioCard(eventData, effectivePreview)) {
+    if (shouldOpenPreviewInStudioCard(effectivePreview)) {
       return buildStudioCardPath(
         eventId,
         currentEventTitle || eventTitle,
@@ -794,6 +776,7 @@ export default function EventOwnerTools({
   );
   const ownerReturnHref = buildOwnerTabHref(ownerHref, eventId, activeOwnerTab);
   const previewHref = buildOwnerPreviewHref(publicUrl, ownerReturnHref);
+  const embeddedPreviewHref = buildOwnerEmbeddedPreviewHref(publicUrl, ownerReturnHref);
   const openMobilePreview = () => setIsMobilePreviewOpen(true);
   const closeMobilePreview = () => setIsMobilePreviewOpen(false);
 
@@ -922,6 +905,7 @@ export default function EventOwnerTools({
             eventTitle={currentEventTitle}
             preview={effectivePreview}
             publicUrl={publicUrl}
+            embeddedPreviewUrl={embeddedPreviewHref}
           />
         </aside>
       </div>
@@ -931,6 +915,7 @@ export default function EventOwnerTools({
         eventTitle={currentEventTitle}
         preview={effectivePreview}
         publicUrl={publicUrl}
+        embeddedPreviewUrl={embeddedPreviewHref}
         onClose={closeMobilePreview}
       />
       {isMobilePreviewOpen ? <OwnerPreviewMobileTopbarSuppressor /> : null}
@@ -1054,6 +1039,7 @@ function EventProductPreview({
   eventTitle,
   preview,
   publicUrl,
+  embeddedPreviewUrl,
   className = "",
   heightMode = "fixed",
 }: {
@@ -1061,6 +1047,7 @@ function EventProductPreview({
   eventTitle: string;
   preview: ProductPreviewModel;
   publicUrl: string;
+  embeddedPreviewUrl: string;
   className?: string;
   heightMode?: "fixed" | "auto";
 }) {
@@ -1082,7 +1069,7 @@ function EventProductPreview({
             : "flex h-full w-full items-center justify-center"
         }
       >
-        {preview.imageUrl ? (
+        {preview.surface === "studio-card" && preview.imageUrl ? (
           <SharedStudioCardFrame
             eventId={eventId}
             title={eventTitle}
@@ -1102,6 +1089,21 @@ function EventProductPreview({
             }
             style={autoHeight ? undefined : { width: "100%", height: "100%" }}
           />
+        ) : publicUrl ? (
+          <div
+            className={
+              autoHeight
+                ? "relative aspect-[9/17] w-full overflow-hidden rounded-[28px] bg-white shadow-2xl sm:aspect-[9/16]"
+                : "relative h-full w-auto max-w-full aspect-[9/16] overflow-hidden rounded-[28px] bg-white shadow-2xl"
+            }
+          >
+            <iframe
+              src={embeddedPreviewUrl}
+              title={`${eventTitle || "Event"} preview`}
+              className="h-full w-full border-0 bg-white"
+              loading="lazy"
+            />
+          </div>
         ) : (
           <div className="flex h-full w-auto max-w-full flex-col justify-between rounded-[28px] border border-slate-200 bg-gradient-to-b from-white via-violet-50 to-slate-100 p-5 text-slate-950 shadow-2xl">
             <div>
@@ -1471,6 +1473,7 @@ function MobileOwnerPreviewDrawer({
   eventTitle,
   preview,
   publicUrl,
+  embeddedPreviewUrl,
   onClose,
 }: {
   open: boolean;
@@ -1478,6 +1481,7 @@ function MobileOwnerPreviewDrawer({
   eventTitle: string;
   preview: ProductPreviewModel;
   publicUrl: string;
+  embeddedPreviewUrl: string;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -1532,6 +1536,7 @@ function MobileOwnerPreviewDrawer({
               eventTitle={eventTitle}
               preview={preview}
               publicUrl={publicUrl}
+              embeddedPreviewUrl={embeddedPreviewUrl}
               className="mx-auto w-full max-w-[430px]"
               heightMode="auto"
             />

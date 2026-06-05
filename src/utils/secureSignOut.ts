@@ -10,7 +10,8 @@ export async function secureSignOut(callbackUrl = "/") {
   try {
     clearAppBrowserState();
     emitEventCacheReset();
-    await signOut({ callbackUrl });
+    const result = await signOut({ callbackUrl, redirect: false });
+    window.location.replace(result.url || callbackUrl);
   } catch (err) {
     hideAuthTransition();
     throw err;
