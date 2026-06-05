@@ -1,7 +1,9 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { ArrowRight } from "lucide-react";
 import { FormEvent, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
 import { hideAuthTransition, showAuthTransition } from "@/utils/authTransition";
 
@@ -393,17 +395,15 @@ export default function SignupForm({
             .
           </span>
         </label>
-        <button
+        <Button
           type="submit"
+          size="lg"
           disabled={submitting || recaptchaLoading}
-          className={cx(
-            "btn btn-primary w-full justify-center",
-            isInlineDark &&
-              "!border-[#f0d58f]/40 !bg-[#f0d58f] !text-[#150c29] !shadow-[0_14px_30px_rgba(0,0,0,0.26)] hover:!bg-[#f5dda3]",
-          )}
+          className="group w-full !rounded-full bg-gradient-to-r from-brand to-brand-glow text-primary-foreground shadow-xl shadow-brand/30 hover:opacity-95"
         >
           {submitting ? "Creating..." : recaptchaLoading ? "Loading..." : "Create account"}
-        </button>
+          <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        </Button>
         <p className={cx("text-center text-sm text-muted-foreground", isInlineDark && "!text-white/68")}>
           Already have an account?{" "}
           <button

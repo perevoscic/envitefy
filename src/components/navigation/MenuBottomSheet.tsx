@@ -20,6 +20,7 @@ type MenuBottomSheetProps = {
 
 const closeDragOffset = 84;
 const closeDragVelocity = 650;
+const sheetHeight = "calc(100svh - 0.75rem)";
 
 export default function MenuBottomSheet({
   open,
@@ -34,6 +35,47 @@ export default function MenuBottomSheet({
     if (!open) {
       setAuthMode(null);
     }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || typeof document === "undefined" || typeof window === "undefined") {
+      return;
+    }
+
+    const scrollY = window.scrollY;
+    const { body, documentElement } = document;
+    const previousHtmlOverflow = documentElement.style.overflow;
+    const previousHtmlOverscrollBehavior = documentElement.style.overscrollBehavior;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
+    const previousBodyPosition = body.style.position;
+    const previousBodyTop = body.style.top;
+    const previousBodyLeft = body.style.left;
+    const previousBodyRight = body.style.right;
+    const previousBodyWidth = body.style.width;
+
+    documentElement.style.overflow = "hidden";
+    documentElement.style.overscrollBehavior = "none";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+
+    return () => {
+      documentElement.style.overflow = previousHtmlOverflow;
+      documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
+      body.style.overflow = previousBodyOverflow;
+      body.style.overscrollBehavior = previousBodyOverscrollBehavior;
+      body.style.position = previousBodyPosition;
+      body.style.top = previousBodyTop;
+      body.style.left = previousBodyLeft;
+      body.style.right = previousBodyRight;
+      body.style.width = previousBodyWidth;
+      window.scrollTo(0, scrollY);
+    };
   }, [open]);
 
   const closeSheet = () => {
@@ -75,8 +117,8 @@ export default function MenuBottomSheet({
             aria-label={authActive ? (authMode === "signup" ? "Sign up" : "Sign in") : "Menu"}
             className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#150c29] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 text-white shadow-[0_-28px_90px_rgba(20,11,34,0.38)]"
             style={{
-              height: authActive ? "88vh" : "76vh",
-              maxHeight: authActive ? "88vh" : "76vh",
+              height: sheetHeight,
+              maxHeight: sheetHeight,
             }}
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -129,7 +171,7 @@ export default function MenuBottomSheet({
                 {!authActive ? (
                   <motion.nav
                     key="menu"
-                    className="absolute inset-0 overflow-y-auto pb-1 text-right"
+                    className="absolute inset-0 overflow-hidden pb-1 text-right"
                     aria-label="Signed-out mobile menu"
                     initial={{ x: 0, opacity: 1 }}
                     animate={{ x: 0, opacity: 1 }}
@@ -193,7 +235,7 @@ export default function MenuBottomSheet({
                     </div>
 
                     <div
-                      className="min-h-0 flex-1 overflow-y-auto rounded-[1.5rem] border border-white/12 bg-[#1b1030]/96 px-4 py-4 text-white shadow-[0_18px_52px_rgba(3,1,12,0.34),inset_0_1px_0_rgba(255,255,255,0.08)]"
+                      className="min-h-0 flex-1 overflow-hidden rounded-[1.5rem] border border-white/12 bg-[#1b1030]/96 px-4 py-4 text-white shadow-[0_18px_52px_rgba(3,1,12,0.34),inset_0_1px_0_rgba(255,255,255,0.08)]"
                       aria-live="polite"
                     >
                       <div className="mb-4 text-center">

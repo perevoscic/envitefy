@@ -477,8 +477,12 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(createActionSheet, /Create Manually/);
   assert.match(menuBottomSheet, /bg-\[#150c29\]/);
   assert.match(menuBottomSheet, /bottom-0/);
-  assert.match(menuBottomSheet, /height: authActive \? "88vh" : "76vh"/);
-  assert.match(menuBottomSheet, /maxHeight: authActive \? "88vh" : "76vh"/);
+  assert.match(menuBottomSheet, /const sheetHeight = "calc\(100svh - 0\.75rem\)"/);
+  assert.match(menuBottomSheet, /height: sheetHeight/);
+  assert.match(menuBottomSheet, /maxHeight: sheetHeight/);
+  assert.match(menuBottomSheet, /body\.style\.position = "fixed"/);
+  assert.match(menuBottomSheet, /window\.scrollTo\(0, scrollY\)/);
+  assert.doesNotMatch(menuBottomSheet, /overflow-y-auto/);
   assert.match(menuBottomSheet, /rounded-t-\[1\.75rem\]/);
   assert.match(menuBottomSheet, /initial=\{\{ y: "100%", opacity: 0 \}\}/);
   assert.match(menuBottomSheet, /\/brand\/envitefy-wordmark\.png/);
