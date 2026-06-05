@@ -1166,8 +1166,12 @@ export default async function EventPage({
   const publicSlug =
     row.public_slug ||
     (typeof (data as any)?.publicSlug === "string" ? (data as any).publicSlug : null);
+  const ownerPreviewMode = readRouteSearchParam((awaitedSearchParams as any)?.preview) === "owner";
+  const ownerPreviewEmbedded =
+    ownerPreviewMode &&
+    readRouteSearchParam((awaitedSearchParams as any)?.embed) === "dashboard-preview";
   const ownerPreviewReturnHref =
-    readRouteSearchParam((awaitedSearchParams as any)?.preview) === "owner"
+    ownerPreviewMode && !ownerPreviewEmbedded
       ? sanitizeInternalReturnHref(readRouteSearchParam((awaitedSearchParams as any)?.returnTo)) ||
         `${buildEventPath(row.id, title, undefined, publicSlug)}?tab=dashboard`
       : "";
@@ -1188,6 +1192,7 @@ export default async function EventPage({
       {!options?.suppressCelebration && guestCelebrationKind ? (
         <EventCelebrationOverlay kind={guestCelebrationKind} />
       ) : null}
+      {ownerPreviewEmbedded ? <OwnerPreviewMobileTopbarSuppressor /> : null}
       {ownerPreviewReturnHref ? <OwnerPreviewReturnLink href={ownerPreviewReturnHref} /> : null}
       {!isOwner ? (
         <EventViewTracker

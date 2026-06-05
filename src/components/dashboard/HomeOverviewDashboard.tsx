@@ -721,13 +721,14 @@ export default function HomeOverviewDashboard({
   onForceTravel,
 }: HomeOverviewDashboardProps) {
   const [now, setNow] = useState(() => Date.now());
+  const nextEvent = data?.nextEvent ?? null;
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    if (!nextEvent) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [nextEvent]);
 
-  const nextEvent = data?.nextEvent ?? null;
   const viewerLabel = getViewerLabel(viewerName);
   const relationLabel = eventRelationLabel(nextEvent);
   const hasTravelMetrics =

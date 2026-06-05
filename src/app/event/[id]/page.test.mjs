@@ -269,7 +269,7 @@ test("event route owner preview mode includes a dashboard return control", () =>
   const suppressorSource = readSource("src/components/OwnerPreviewMobileTopbarSuppressor.tsx");
 
   assert.match(source, /function OwnerPreviewReturnLink\(\{ href \}: \{ href: string \}\)/);
-  assert.match(source, /import \{ ArrowLeft \} from "lucide-react";/);
+  assert.match(source, /ArrowLeft,\s*[\s\S]*?\} from "lucide-react";/);
   assert.match(
     source,
     /import OwnerPreviewMobileTopbarSuppressor from "@\/components\/OwnerPreviewMobileTopbarSuppressor";/,
@@ -292,6 +292,13 @@ test("event route owner preview mode includes a dashboard return control", () =>
     source,
     /readRouteSearchParam\(\(awaitedSearchParams as any\)\?\.preview\) === "owner"/,
   );
+  assert.match(source, /const ownerPreviewEmbedded =/);
+  assert.match(
+    source,
+    /readRouteSearchParam\(\(awaitedSearchParams as any\)\?\.embed\) === "dashboard-preview"/,
+  );
+  assert.match(source, /ownerPreviewMode && !ownerPreviewEmbedded/);
+  assert.match(source, /ownerPreviewEmbedded \? <OwnerPreviewMobileTopbarSuppressor \/> : null/);
   assert.match(source, /<OwnerPreviewReturnLink href=\{ownerPreviewReturnHref\} \/>/);
 });
 

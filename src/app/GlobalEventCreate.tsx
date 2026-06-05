@@ -1,7 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import EventCreateModal from "@/components/EventCreateModal";
+
+const EventCreateModal = dynamic(() => import("@/components/EventCreateModal"), {
+  loading: () => null,
+  ssr: false,
+});
 
 export default function GlobalEventCreate() {
   const [open, setOpen] = useState(false);
@@ -53,6 +58,8 @@ export default function GlobalEventCreate() {
       } catch {}
     };
   }, []);
+
+  if (!open) return null;
 
   return (
     <EventCreateModal

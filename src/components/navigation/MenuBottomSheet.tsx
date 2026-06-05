@@ -151,7 +151,6 @@ export default function MenuBottomSheet({
                   alt="Envitefy"
                   width={1103}
                   height={354}
-                  priority
                   className="h-auto w-[118px] brightness-0 invert transition-transform duration-300 group-hover:scale-[1.02]"
                 />
               </Link>

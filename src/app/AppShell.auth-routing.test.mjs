@@ -24,7 +24,10 @@ test("AppShell hides app chrome on marketing and full live-card routes", () => {
   );
   assert.match(appShell, /isRedirectingFromMarketing/);
   assert.match(appShell, /router\.replace\("\/"\)/);
-  assert.match(appShell, /animate-spin/);
+  assert.match(appShell, /z-\[14000\]/);
+  assert.match(appShell, /auth-transition-overlay/);
+  assert.match(appShell, /data-auth-transition/);
+  assert.match(appShell, /shine/);
   assert.match(appShell, /AUTH_TRANSITION_EVENT/);
   assert.match(appShell, /authTransitionMessage/);
 });
