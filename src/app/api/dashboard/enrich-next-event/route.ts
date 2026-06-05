@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { extractHomeOrigin } from "@/lib/dashboard-data";
 import {
@@ -35,12 +34,6 @@ type MetricsRow = {
   weather_temp: number | null;
   weather_updated_at: string | null;
 };
-type SessionLike = {
-  user?: {
-    email?: string | null;
-    id?: string | null;
-  } | null;
-} | null;
 type OriginPayload = {
   originLat?: unknown;
   originLng?: unknown;
@@ -376,22 +369,26 @@ function respondWithTiming(
 export async function POST(req: Request) {
   const timing = createServerTimingTracker(isTimingRequested(req));
   try {
-    const session = (await timing.time("session", () =>
-      getServerSession(authOptions))) as SessionLike;
-    const email = session?.user?.email || undefined;
-    if (!email) {
+    const authUser = await timing.time("session", () =>
+      getAuthenticatedRequestUser(req)
+    );
+    if (!authUser.ok) {
       const body = timing.enabled
-        ? { error: "Unauthorized", timings: timing.toObject() }
+        ? {
+            error: "Unauthorized",
+            reason: authUser.reason,
+            timings: timing.toObject({
+              auth: {
+                reason: authUser.reason,
+                hasSessionUser: Boolean(authUser.session?.user),
+                email: authUser.email,
+              },
+            }),
+          }
         : { error: "Unauthorized" };
       return respondWithTiming(timing, body, { status: 401 });
     }
-    const userId = await timing.time("user_lookup", () => resolveSessionUserId(session));
-    if (!userId) {
-      const body = timing.enabled
-        ? { error: "Unauthorized", timings: timing.toObject() }
-        : { error: "Unauthorized" };
-      return respondWithTiming(timing, body, { status: 401 });
-    }
+    const { userId } = authUser;
 
     const rawBody = await timing.time("body_parse", () => req.json().catch(() => ({})));
     const body = (asRecord(rawBody) || {}) as OriginPayload;

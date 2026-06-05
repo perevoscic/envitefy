@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthenticatedRequestUser } from "@/lib/auth";
 import {
   updateUserNamesByEmail,
   getUserByEmail,
   updatePreferredProviderByEmail,
 } from "@/lib/db";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+export async function GET(req: Request) {
+  const authUser = await getAuthenticatedRequestUser(req);
+  if (!authUser.ok) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
-  const email = session.user.email as string;
+  const { email, session } = authUser;
   const user = await getUserByEmail(email);
   return NextResponse.json({
     email: user?.email || email,
@@ -28,9 +27,11 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const email = session?.user?.email as string | undefined;
-    if (!email) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const authUser = await getAuthenticatedRequestUser(req);
+    if (!authUser.ok) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    const { email } = authUser;
 
     const body = await req.json().catch(() => ({} as any));
     // Only include keys that were actually present in the request body.

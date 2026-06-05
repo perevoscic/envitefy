@@ -1,6 +1,8 @@
 import type { NextAuthOptions } from "next-auth";
+import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
+import { getToken } from "next-auth/jwt";
 import { cookies } from "next/headers";
 import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken, getGoogleRefreshToken, getMicrosoftRefreshToken, getUserIdByEmail } from "@/lib/db";
 import {
@@ -20,9 +22,19 @@ function isTransientDbError(err: unknown): boolean {
   );
 }
 
+function resolveAuthSecret() {
+  return (
+    process.env.AUTH_SECRET ??
+    process.env.NEXTAUTH_SECRET ??
+    // Fallback to a dev-only secret to avoid hard crashes during local prod builds/start.
+    "dev-build-secret"
+  );
+}
+
 type SessionUserLike = {
   id?: string | null;
   email?: string | null;
+  name?: string | null;
 } | null | undefined;
 
 const USER_ID_CACHE_TTL_MS = 60_000;
@@ -37,9 +49,9 @@ const userAccessByEmailCache = new Map<
   }
 >();
 
-function readSignupSourceCookie(): "snap" | "gymnastics" | null {
+async function readSignupSourceCookie(): Promise<"snap" | "gymnastics" | null> {
   try {
-    const jar = cookies();
+    const jar = await cookies();
     const value = jar.get("envitefy_signup_source")?.value || null;
     return value === "snap" || value === "gymnastics" ? value : null;
   } catch {
@@ -113,11 +125,7 @@ export async function resolveSessionUserId(sessionLike: {
 
 export function getAuthOptions(): NextAuthOptions {
   const authDebugEnabled = process.env.AUTH_DEBUG === "1";
-  const secret =
-    process.env.AUTH_SECRET ??
-    process.env.NEXTAUTH_SECRET ??
-    // Fallback to a dev-only secret to avoid hard crashes during local prod builds/start.
-    "dev-build-secret";
+  const secret = resolveAuthSecret();
 
   if (
     process.env.NODE_ENV === "production" &&
@@ -220,7 +228,7 @@ export function getAuthOptions(): NextAuthOptions {
               return true;
             }
 
-            const signupSource = readSignupSourceCookie();
+            const signupSource = await readSignupSourceCookie();
             if (!signupSource) {
               console.warn("[auth] blocked Google signup without source", {
                 email: user.email,
@@ -438,3 +446,97 @@ export function getAuthOptions(): NextAuthOptions {
 }
 
 export const authOptions = getAuthOptions();
+
+type AuthenticatedRequestUser = {
+  ok: true;
+  session: {
+    user?: {
+      email?: string | null;
+      id?: string | null;
+      name?: string | null;
+    } | null;
+  };
+  email: string;
+  userId: string;
+};
+
+type UnauthenticatedRequestUser = {
+  ok: false;
+  session: {
+    user?: {
+      email?: string | null;
+      id?: string | null;
+      name?: string | null;
+    } | null;
+  } | null;
+  reason: "no-session-email" | "no-resolved-user";
+  email: string | null;
+};
+
+type RequestSessionUser = AuthenticatedRequestUser | UnauthenticatedRequestUser;
+
+function cleanSessionEmail(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim().toLowerCase();
+  return trimmed || null;
+}
+
+async function getTokenSessionFallback(req: Request) {
+  try {
+    const token = await getToken({
+      req: req as any,
+      secret: resolveAuthSecret(),
+      secureCookie: process.env.NODE_ENV === "production",
+    });
+    const email = cleanSessionEmail(token?.email);
+    if (!email) return null;
+    const userId =
+      typeof (token as any)?.userId === "string" &&
+      (token as any).userId.trim()
+        ? String((token as any).userId).trim()
+        : null;
+    return {
+      user: {
+        email,
+        id: userId,
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getAuthenticatedRequestUser(
+  req?: Request,
+): Promise<RequestSessionUser> {
+  const session =
+    ((await getServerSession(authOptions as any)) as AuthenticatedRequestUser["session"] | null) ??
+    (req ? await getTokenSessionFallback(req) : null);
+  const email = cleanSessionEmail(session?.user?.email);
+  if (!email) {
+    return {
+      ok: false,
+      session,
+      reason: "no-session-email",
+      email: null,
+    };
+  }
+
+  const resolvedSession = session ?? { user: { email } };
+  const userId = await resolveSessionUserId(resolvedSession);
+  if (!userId) {
+    return {
+      ok: false,
+      session,
+      reason: "no-resolved-user",
+      email,
+    };
+  }
+
+  return {
+    ok: true,
+    session: resolvedSession,
+    email,
+    userId,
+  };
+}

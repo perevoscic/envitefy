@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { query } from "@/lib/db";
 import {
   isDraftStatus,
@@ -66,13 +65,6 @@ type DashboardMetricsCache = {
 };
 
 type DashboardPayload = Record<string, unknown>;
-type SessionLike = {
-  user?: {
-    email?: string | null;
-    id?: string | null;
-  } | null;
-} | null;
-
 function summarizeDashboardEventsForLog(events: DashboardEvent[]) {
   return (events || []).slice(0, 8).map((event) => ({
     id: event.id,
@@ -513,29 +505,27 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const timing = createServerTimingTracker(isTimingRequested(url));
   try {
-    const session = (await timing.time("session", () =>
-      getServerSession(authOptions))) as SessionLike;
-    const email = session?.user?.email || undefined;
-    if (!email) {
+    const authUser = await timing.time("session", () =>
+      getAuthenticatedRequestUser(req)
+    );
+    if (!authUser.ok) {
       const body = timing.enabled
         ? {
             error: "Unauthorized",
-            timings: timing.toObject(),
+            reason: authUser.reason,
+            timings: timing.toObject({
+              auth: {
+                reason: authUser.reason,
+                hasSessionUser: Boolean(authUser.session?.user),
+                email: authUser.email,
+              },
+            }),
           }
         : { error: "Unauthorized" };
       return withTiming(timing, body, { status: 401 });
     }
 
-    const userId = await timing.time("user_lookup", () => resolveSessionUserId(session));
-    if (!userId) {
-      const body = timing.enabled
-        ? {
-            error: "Unauthorized",
-            timings: timing.toObject(),
-          }
-        : { error: "Unauthorized" };
-      return withTiming(timing, body, { status: 401 });
-    }
+    const { email, userId } = authUser;
 
     const refresh = url.searchParams.get("refresh") === "1";
     if (refresh) {

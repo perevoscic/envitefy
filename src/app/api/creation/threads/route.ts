@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions, resolveSessionUserId } from "@/lib/auth";
+import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";
 import { listCreationSessions } from "@/lib/concierge/event-storage";
 import type {
@@ -47,9 +46,8 @@ function toThreadSummary(session: CreationSession): CreationThreadSummary {
 
 export async function GET(req: Request) {
   try {
-    const session: any = await getServerSession(authOptions as any);
-    const userId = await resolveSessionUserId(session);
-    if (!userId) {
+    const authUser = await getAuthenticatedRequestUser(req);
+    if (!authUser.ok) {
       return NextResponse.json(
         {
           ok: false,
@@ -63,7 +61,7 @@ export async function GET(req: Request) {
     const rawLimit = Number(url.searchParams.get("limit") || 20);
     const includeSaved = url.searchParams.get("includeSaved") === "1";
     const threads = await listCreationSessions({
-      userId,
+      userId: authUser.userId,
       limit: Number.isFinite(rawLimit) ? rawLimit : 20,
       includeSaved,
     });

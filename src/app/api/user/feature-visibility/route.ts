@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import {
   normalizePersona,
   normalizePersonas,
@@ -7,7 +6,7 @@ import {
   resolveVisibility,
   TEMPLATE_KEYS,
 } from "@/config/feature-visibility";
-import { authOptions } from "@/lib/auth";
+import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { getFeatureVisibilityByEmail, updateFeatureVisibilityByEmail } from "@/lib/db";
 
 type FeatureVisibilityPayload = {
@@ -52,23 +51,23 @@ function buildResponse(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmai
   };
 }
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+export async function GET(req: Request) {
+  const authUser = await getAuthenticatedRequestUser(req);
+  if (!authUser.ok) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const row = await getFeatureVisibilityByEmail(String(session.user.email));
+  const row = await getFeatureVisibilityByEmail(authUser.email);
   return NextResponse.json(buildResponse(row));
 }
 
 export async function PUT(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  const authUser = await getAuthenticatedRequestUser(req);
+  if (!authUser.ok) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const email = String(session.user.email);
+  const email = authUser.email;
   const rawBody = await req.json().catch(() => ({}));
   const body: Record<string, unknown> =
     rawBody && typeof rawBody === "object" ? (rawBody as Record<string, unknown>) : {};
