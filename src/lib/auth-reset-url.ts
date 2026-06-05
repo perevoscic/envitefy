@@ -13,3 +13,15 @@ export function buildSupabasePasswordResetRedirectUrl(baseResetUrl: string): str
   url.searchParams.set("provider", "supabase");
   return url.toString();
 }
+
+export function rewriteSupabaseRecoveryActionLinkRedirect(
+  actionLink: string,
+  baseResetUrl: string,
+): string {
+  const url = new URL(actionLink);
+  url.searchParams.set(
+    "redirect_to",
+    buildSupabasePasswordResetRedirectUrl(baseResetUrl),
+  );
+  return url.toString();
+}

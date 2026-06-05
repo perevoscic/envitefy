@@ -14,6 +14,7 @@ test("forgot password flow avoids localhost Supabase recovery redirects", () => 
 
   assert.match(forgotRoute, /buildPublicPasswordResetUrl\(await absoluteUrl\("\/reset"\)\)/);
   assert.match(supabaseAuth, /buildSupabasePasswordResetRedirectUrl\(params\.baseResetUrl\)/);
+  assert.match(supabaseAuth, /rewriteSupabaseRecoveryActionLinkRedirect\(link, params\.baseResetUrl\)/);
 });
 
 test("reset flow accepts encoded Supabase recovery fragments", () => {

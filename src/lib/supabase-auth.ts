@@ -1,6 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
-import { buildSupabasePasswordResetRedirectUrl } from "./auth-reset-url";
+import {
+  buildSupabasePasswordResetRedirectUrl,
+  rewriteSupabaseRecoveryActionLinkRedirect,
+} from "./auth-reset-url";
 
 type SupabaseAdminClient = ReturnType<typeof createClient>;
 
@@ -40,7 +43,7 @@ export async function createSupabaseRecoveryLink(params: {
     if (error) throw error;
     const link = data?.properties?.action_link || "";
     if (!link) throw new Error("Supabase did not return a recovery link");
-    return link;
+    return rewriteSupabaseRecoveryActionLinkRedirect(link, params.baseResetUrl);
   };
 
   try {
