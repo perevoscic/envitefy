@@ -486,7 +486,7 @@ export function requirementFieldSatisfied(
     return Boolean(cleanString(draft.ageOrMilestone) || draft.ageOrMilestoneSkipped === true);
   }
   if (field === "date") return Boolean(cleanString(draft.dateText) || cleanString(draft.startISO));
-  if (field === "time") return Boolean(cleanString(draft.timeText) || cleanString(draft.startISO));
+  if (field === "time") return Boolean(cleanString(draft.timeText));
   if (field === "location") return Boolean(cleanString(draft.location) || cleanString(draft.venue));
   if (field === "rsvpEnabled") return typeof draft.rsvpEnabled === "boolean";
   if (field === "numberOfGuests") {

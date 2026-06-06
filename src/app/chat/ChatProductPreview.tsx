@@ -87,12 +87,10 @@ function publicActionLabelForOutput(selectedOutput: RequestedOutput) {
 }
 
 function previewProcessStatusText({
-  draft,
   hasDraftProduct,
   publicHref,
   isReceivedInviteDraft,
 }: {
-  draft: ConciergeEventDraft | null;
   hasDraftProduct: boolean;
   publicHref: string | null;
   isReceivedInviteDraft?: boolean;
@@ -104,9 +102,7 @@ function previewProcessStatusText({
   if (isReceivedInviteDraft && hasDraftProduct) {
     return "Received invite review: details are locked to the upload. Save it to Invited events when it looks right.";
   }
-  if (hasDraftProduct) return "Generated draft: review it here, then save/publish when ready.";
-  if (draft?.currentQuestion) return "Placeholder preview: not a final product yet.";
-  return "Placeholder preview: generate when the details look ready.";
+  return "Generated draft: review it here, then save/publish when ready.";
 }
 
 type OutputPreviewSurfaceProps = {
@@ -336,7 +332,6 @@ export default function ChatProductPreview({
   const hasGeneratedProduct = Boolean(liveEventId || hasDraftProduct);
   const publicActionLabel = publicActionLabelForOutput(selectedOutput);
   const previewProcessStatus = previewProcessStatusText({
-    draft,
     hasDraftProduct,
     publicHref,
     isReceivedInviteDraft,

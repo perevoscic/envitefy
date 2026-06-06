@@ -140,7 +140,7 @@ const activeButtons: ActionItem[] = [
 ];
 
 const studioMarketingHeroNavLinks = buildMarketingHeroNav("studio", [
-  { label: "Create in Studio", href: "#features" },
+  { label: "Features", href: "#features" },
   { label: "Built to be Clicked", href: "#actions" },
   { label: "Made for Real Events", href: "#use-cases" },
   { label: "How It Works", href: "#how-it-works" },

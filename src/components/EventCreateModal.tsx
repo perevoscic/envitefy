@@ -26,12 +26,6 @@ type Props = {
   defaultDate?: Date;
 };
 
-type ConnectedCalendars = {
-  google: boolean;
-  microsoft: boolean;
-  apple: boolean;
-};
-
 const createRegistryEntry = (): RegistryFormEntry => ({
   key: `registry-${Math.random().toString(36).slice(2, 10)}`,
   label: "",
@@ -141,13 +135,7 @@ export default function EventCreateModal({ open, onClose, defaultDate }: Props) 
   const flyerInputRef = useRef<HTMLInputElement | null>(null);
   // Smart sign-up configuration moved to its own modal
 
-  // Connected calendars state
-  const [_connectedCalendars, setConnectedCalendars] = useState<ConnectedCalendars>({
-    google: false,
-    microsoft: false,
-    apple: false,
-  });
-  const [selectedCalendars, setSelectedCalendars] = useState<{
+  const [selectedCalendars, _setSelectedCalendars] = useState<{
     google: boolean;
     microsoft: boolean;
     apple: boolean;
@@ -253,39 +241,6 @@ export default function EventCreateModal({ open, onClose, defaultDate }: Props) 
   const [repeatDays, setRepeatDays] = useState<string[]>([]);
 
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
-
-  // Fetch connected calendars when modal opens
-  useEffect(() => {
-    if (!open) return;
-
-    const fetchConnected = async () => {
-      try {
-        const res = await fetch("/api/calendars", { credentials: "include" });
-        const data = await res.json();
-        console.log("[EventCreateModal] Connected calendars:", data);
-        setConnectedCalendars({
-          google: Boolean(data?.google),
-          microsoft: Boolean(data?.microsoft),
-          apple: Boolean(data?.apple),
-        });
-        // Auto-select all connected calendars
-        setSelectedCalendars({
-          google: Boolean(data?.google),
-          microsoft: Boolean(data?.microsoft),
-          apple: Boolean(data?.apple),
-        });
-        console.log("[EventCreateModal] Set connected calendars:", {
-          google: Boolean(data?.google),
-          microsoft: Boolean(data?.microsoft),
-          apple: Boolean(data?.apple),
-        });
-      } catch (err) {
-        console.error("Failed to fetch connected calendars:", err);
-      }
-    };
-
-    fetchConnected();
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;

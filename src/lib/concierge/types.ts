@@ -287,6 +287,12 @@ export type ConciergeAdditionalLocation = {
   mapQuery?: string | null;
 };
 
+export type ConciergeSourceMaterial = {
+  ocrText?: string | null;
+  fieldsGuess?: Record<string, unknown> | null;
+  category?: string | null;
+};
+
 export type ConciergeWeatherContextStatus =
   | "available"
   | "missing_location"
@@ -311,6 +317,7 @@ export type ConciergeEventDraft = {
   creationSessionId: string;
   requestedOutputs: RequestedOutput[];
   sourceContext: CreationSourceContext;
+  sourceMaterial?: ConciergeSourceMaterial | null;
   eventPurpose: string | null;
   eventType: ConciergeEventType;
   title: string | null;

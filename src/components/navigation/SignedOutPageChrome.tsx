@@ -7,23 +7,22 @@ import BottomNav from "@/components/navigation/BottomNav";
 import ConciergeSheet from "@/components/navigation/ConciergeSheet";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import MenuBottomSheet from "@/components/navigation/MenuBottomSheet";
-import { signedOutMobileMenuLinks } from "@/config/navigation";
+import { publicUseCasePrimaryNavLinks, signedOutMobileMenuLinks } from "@/config/navigation";
 
 type SignedOutPageChromeProps = {
   activeBottomNavLabel?: string;
+  brandHref?: string;
+  topNavVariant?: "default" | "glass-dark" | "transparent-dark" | "transparent-light";
 };
 
 const signedOutPageNavLinks = [
-  { label: "Home", href: "/landing" },
-  { label: "Examples", href: "/showcase" },
-  { label: "Templates", href: "/templates" },
-  { label: "Studio", href: "/studio" },
-  { label: "Snap", href: "/snap" },
-  { label: "Contact", href: "/contact" },
+  ...publicUseCasePrimaryNavLinks,
 ];
 
 export default function SignedOutPageChrome({
   activeBottomNavLabel = "Concierge",
+  brandHref = "/landing",
+  topNavVariant = "default",
 }: SignedOutPageChromeProps) {
   const router = useRouter();
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -47,8 +46,8 @@ export default function SignedOutPageChrome({
         mobileNavLinks={[...signedOutMobileMenuLinks]}
         primaryCtaLabel="Let's create"
         authenticatedPrimaryHref="/chat"
-        brandHref="/landing"
-        variant="default"
+        brandHref={brandHref}
+        variant={topNavVariant}
         loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
@@ -67,6 +66,7 @@ export default function SignedOutPageChrome({
         open={mobileMenuOpen}
         onOpenChange={setMobileMenuOpen}
         successRedirectUrl="/"
+        signupSuccessRedirectUrl="/chat"
       />
       <ConciergeSheet
         open={assistantOpen}
@@ -79,7 +79,7 @@ export default function SignedOutPageChrome({
         mode={authMode}
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
-        successRedirectUrl="/"
+        successRedirectUrl={authMode === "signup" ? "/chat" : "/"}
       />
     </>
   );

@@ -10,6 +10,7 @@ const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativ
 test("landing page is hosted-event-led and premium", () => {
   const page = readSource("src/app/landing/page.tsx");
   const landingExperience = readSource("src/app/landing/LandingExperience.tsx");
+  const landingData = readSource("src/app/landing/landing-data.ts");
   const designTestimonial = readSource("src/components/ui/design-testimonial.tsx");
 
   assert.match(page, /<LandingExperience \/>/);
@@ -20,11 +21,11 @@ test("landing page is hosted-event-led and premium", () => {
   assert.doesNotMatch(page, /FAQPage/);
 
   assert.match(landingExperience, /id="landing-hero"/);
-  assert.match(landingExperience, /Beautiful hosted events, from invite to RSVP/);
+  assert.match(landingData, /Beautiful hosted events, from invite to RSVP/);
   assert.match(landingExperience, /Let's create/);
   assert.match(landingExperience, /View live examples/);
-  assert.match(landingExperience, /mobilePrimaryCtaLabel: "Create invite"/);
-  assert.match(landingExperience, /mobilePrimaryCtaLabel: "Create wedding"/);
+  assert.match(landingData, /mobilePrimaryCtaLabel: "Create invite"/);
+  assert.match(landingData, /mobilePrimaryCtaLabel: "Create wedding"/);
   assert.match(landingExperience, /View examples/);
   assert.match(landingExperience, /PremiumLandingHero/);
   assert.match(landingExperience, /GuestActionSuite/);
@@ -47,25 +48,25 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(designTestimonial, /aria-label="Show previous testimonial"/);
   assert.match(designTestimonial, /aria-label="Show next testimonial"/);
   assert.doesNotMatch(designTestimonial, /<svg/);
-  assert.match(landingExperience, /guestTestimonials/);
-  assert.match(landingExperience, /hostTestimonials/);
-  assert.match(landingExperience, /landingTestimonials/);
-  assert.match(landingExperience, /function interleaveTestimonials/);
+  assert.match(landingData, /guestTestimonials/);
+  assert.match(landingData, /hostTestimonials/);
+  assert.match(landingData, /landingTestimonials/);
+  assert.match(landingData, /function interleaveTestimonials/);
   assert.match(
-    landingExperience,
+    landingData,
     /const landingTestimonials: TestimonialItem\[] = interleaveTestimonials\(/,
   );
-  const testimonialSource = landingExperience.slice(
-    landingExperience.indexOf("const guestTestimonials"),
-    landingExperience.indexOf("const creationPaths"),
+  const testimonialSource = landingData.slice(
+    landingData.indexOf("const guestTestimonials"),
+    landingData.indexOf("export const creationPaths"),
   );
-  const guestTestimonialsSource = landingExperience.slice(
-    landingExperience.indexOf("const guestTestimonials"),
-    landingExperience.indexOf("const hostTestimonials"),
+  const guestTestimonialsSource = landingData.slice(
+    landingData.indexOf("const guestTestimonials"),
+    landingData.indexOf("const hostTestimonials"),
   );
-  const hostTestimonialsSource = landingExperience.slice(
-    landingExperience.indexOf("const hostTestimonials"),
-    landingExperience.indexOf("function interleaveTestimonials"),
+  const hostTestimonialsSource = landingData.slice(
+    landingData.indexOf("const hostTestimonials"),
+    landingData.indexOf("function interleaveTestimonials"),
   );
   assert.equal((testimonialSource.match(/quote:/g) ?? []).length, 24);
   assert.equal((guestTestimonialsSource.match(/quote:/g) ?? []).length, 12);
@@ -75,8 +76,13 @@ test("landing page is hosted-event-led and premium", () => {
   assert.doesNotMatch(landingExperience, /What Hosts Are Saying/);
   assert.doesNotMatch(landingExperience, /direction="right"/);
   assert.match(landingExperience, /id="testimonials"/);
-  assert.match(landingExperience, /label: "Testimonials", href: "#testimonials"/);
-  assert.match(landingExperience, /label: "About us", href: "\/about"/);
+  assert.match(landingData, /publicUseCasePrimaryNavLinks/);
+  assert.doesNotMatch(landingData, /href: "\/use-cases"/);
+  assert.match(landingData, /href: "\/weddings"/);
+  assert.match(landingData, /href: "\/baby-showers"/);
+  assert.match(landingData, /href: "\/birthdays"/);
+  assert.doesNotMatch(landingData, /label: "Testimonials", href: "#testimonials"/);
+  assert.doesNotMatch(landingData, /label: "About us", href: "\/about"/);
   assert.match(
     landingExperience,
     /min-h-\[100svh\] scroll-mt-0 overflow-hidden border-b border-\[#ded2bd\] bg-\[#fcfbf7\]/,
@@ -90,8 +96,8 @@ test("landing page is hosted-event-led and premium", () => {
   assert.doesNotMatch(landingExperience, /eyebrow="Trust"/);
   assert.doesNotMatch(landingExperience, /A polished link guests can act on/);
   assert.doesNotMatch(landingExperience, /FinalPremiumCta/);
-  assert.match(landingExperience, /templateProofTiles/);
-  assert.match(landingExperience, /templateProofTiles\.map/);
+  assert.match(landingData, /templateProofTiles/);
+  assert.match(landingData, /templateProofTiles\.map/);
   assert.doesNotMatch(
     landingExperience,
     /Premium enough for showers\. Practical enough for schools, teams, and community plans\./,
@@ -115,7 +121,7 @@ test("landing page is hosted-event-led and premium", () => {
     "Playdate",
     "Kids Sleepover",
   ]) {
-    assert.ok(landingExperience.includes(proofTitle));
+    assert.ok(landingData.includes(proofTitle));
   }
   for (const proofAsset of [
     "/images/landing/template-proof/generated/wedding.webp",
@@ -132,14 +138,14 @@ test("landing page is hosted-event-led and premium", () => {
     "/images/landing/template-proof/generated/playdate.webp",
     "/images/landing/template-proof/generated/kids-sleepover.webp",
   ]) {
-    assert.ok(landingExperience.includes(proofAsset));
+    assert.ok(landingData.includes(proofAsset));
     assert.ok(fs.existsSync(path.join(repoRoot, "public", proofAsset.slice(1))));
   }
   for (const testimonialImage of [
     "photo-1494790108377-be9c29b29330",
     "photo-1519085360753-af0119f7cbe7",
   ]) {
-    assert.ok(landingExperience.includes(testimonialImage));
+    assert.ok(landingData.includes(testimonialImage));
   }
   assert.match(landingExperience, /min-h-\[100svh\]/);
   assert.match(landingExperience, /pt-\[calc\(8rem\+env\(safe-area-inset-top\)\)\]/);
@@ -157,14 +163,15 @@ test("landing page is hosted-event-led and premium", () => {
   assert.doesNotMatch(landingExperience, /The Carter Housewarming/);
   assert.doesNotMatch(landingExperience, /Founder Appreciation Night/);
   assert.doesNotMatch(landingExperience, /template-proof\/[^"]+\.svg/);
+  assert.match(landingData, /heroProductSlides/);
   assert.match(landingExperience, /heroProductSlides/);
   assert.match(landingExperience, /HeroProductCarousel/);
   assert.match(landingExperience, /AnimatePresence/);
-  assert.match(landingExperience, /desktopImage/);
-  assert.match(landingExperience, /\/images\/landing\/hero\/garden-brunch-desktop\.webp/);
-  assert.match(landingExperience, /\/images\/landing\/hero\/birthday-dino-desktop\.webp/);
-  assert.match(landingExperience, /\/images\/landing\/hero\/baby-shower-desktop\.webp/);
-  assert.match(landingExperience, /\/images\/landing\/hero\/open-house-desktop\.webp/);
+  assert.match(landingData, /desktopImage/);
+  assert.match(landingData, /\/images\/landing\/hero\/garden-brunch-desktop\.webp/);
+  assert.match(landingData, /\/images\/landing\/hero\/birthday-dino-desktop\.webp/);
+  assert.match(landingData, /\/images\/landing\/hero\/baby-shower-desktop\.webp/);
+  assert.match(landingData, /\/images\/landing\/hero\/open-house-desktop\.webp/);
   for (const mobileHeroAsset of [
     "/images/landing/hero/garden-brunch-mobile.webp",
     "/images/landing/hero/garden-vows-mobile.webp",
@@ -174,21 +181,22 @@ test("landing page is hosted-event-led and premium", () => {
     "/images/landing/hero/baby-shower-mobile.webp",
     "/images/landing/hero/open-house-mobile.webp",
   ]) {
-    assert.ok(landingExperience.includes(mobileHeroAsset));
+    assert.ok(landingData.includes(mobileHeroAsset));
     assert.ok(fs.existsSync(path.join(repoRoot, "public", mobileHeroAsset.slice(1))));
   }
-  assert.match(landingExperience, /A party link guests can use/);
-  assert.match(landingExperience, /Sweet details, beautifully organized/);
-  assert.match(landingExperience, /A warm welcome in one link/);
-  assert.doesNotMatch(landingExperience, /\/images\/landing\/hero\/[^"]+\.png/);
+  assert.match(landingData, /A party link guests can use/);
+  assert.match(landingData, /Sweet details, beautifully organized/);
+  assert.match(landingData, /A warm welcome in one link/);
+  assert.doesNotMatch(landingData, /\/images\/landing\/hero\/[^"]+\.png/);
   assert.match(landingExperience, /6600/);
   assert.match(landingExperience, /min-h-\[100svh\]/);
   assert.match(landingExperience, /justify-end/);
   assert.match(landingExperience, /fill/);
   assert.match(landingExperience, /object-cover object-center/);
   assert.match(landingExperience, /variant="transparent-dark"/);
-  assert.match(landingExperience, /capacity state/);
+  assert.match(landingData, /capacity state/);
   assert.match(landingExperience, /Turn every event page into the place guests actually act/);
+  assert.match(landingData, /guestActionPreviewConfigs/);
   assert.match(landingExperience, /guestActionPreviewConfigs/);
   assert.match(landingExperience, /Guest action carousel/);
   assert.match(landingExperience, /justify-start px-4 pb-16/);
@@ -199,13 +207,13 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /data-guest-flow-panel="host"/);
   assert.doesNotMatch(landingExperience, /Show previous guest action/);
   assert.doesNotMatch(landingExperience, /\{currentAction\.label\} state/);
-  assert.match(landingExperience, /\/images\/landing\/guest-flow\/rsvp-table-placeholder\.webp/);
+  assert.match(landingData, /\/images\/landing\/guest-flow\/rsvp-table-placeholder\.webp/);
   assert.ok(
     fs.existsSync(
       path.join(repoRoot, "public/images/landing/guest-flow/rsvp-table-placeholder.webp"),
     ),
   );
-  assert.match(landingExperience, /Sunny Sprout Baby Shower/);
+  assert.match(landingData, /Sunny Sprout Baby Shower/);
   assert.match(landingExperience, /7200/);
   assert.doesNotMatch(landingExperience, /PublicEventPagePanel/);
   assert.doesNotMatch(landingExperience, /Hosted page/);
@@ -215,17 +223,17 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /#fcfbf7/);
   assert.match(landingExperience, /#201a23/);
   assert.match(landingExperience, /#43273f/);
-  assert.match(landingExperience, /#d7c5a5/);
+  assert.match(landingData, /#d7c5a5/);
   assert.match(landingExperience, /#7a8f76/);
-  assert.match(landingExperience, /href: "#guest-flow"/);
-  assert.match(landingExperience, /label: "Start", href: "#creation-paths"/);
-  assert.match(
-    landingExperience,
-    /label: "Templates", href: "#examples"[\s\S]*label: "Start", href: "#creation-paths"/,
-  );
+  assert.doesNotMatch(landingData, /href: "#guest-flow"/);
+  assert.match(landingData, /publicUseCasePrimaryNavLinks/);
+  assert.doesNotMatch(landingData, /label: "Use Cases", href: "\/use-cases"/);
+  assert.match(landingExperience, /href=\{activeSlide\.href \?\? "#showcase"\}/);
+  assert.doesNotMatch(landingData, /label: "Start", href: "#creation-paths"/);
+  assert.doesNotMatch(landingData, /label: "Templates", href: "#examples"/);
   assert.doesNotMatch(landingExperience, /label: "FAQ", href: "#faq"/);
   assert.doesNotMatch(landingExperience, /href: "#faq"/);
-  assert.match(landingExperience, /label: "Concierge", href: "#concierge"/);
+  assert.doesNotMatch(landingData, /label: "Concierge", href: "#concierge"/);
   assert.match(landingExperience, /id="guest-flow"/);
   assert.doesNotMatch(landingExperience, /id="faq"/);
   assert.doesNotMatch(landingExperience, /id="rsvp-tracking"/);
@@ -321,6 +329,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(landingExperience, /openAuth\("signup"\)/);
   assert.match(landingExperience, /mode=\{authMode\}/);
   assert.match(landingExperience, /onModeChange=\{setAuthMode\}/);
+  assert.match(landingExperience, /successRedirectUrl=\{authMode === "signup" \? "\/chat" : "\/"\}/);
   assert.match(landingExperience, /successRedirectUrl="\/"/);
   assert.doesNotMatch(landingExperience, /allowSignupSwitch=\{false\}/);
   assert.doesNotMatch(landingExperience, /signupSource=/);
@@ -379,7 +388,11 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(conditionalFooter, /Live cards/);
   assert.match(conditionalFooter, /RSVP event pages/);
   assert.match(conditionalFooter, /Guest action flow/);
-  assert.match(conditionalFooter, /Templates/);
+  assert.match(conditionalFooter, /Use Cases/);
+  assert.match(conditionalFooter, /href: "\/weddings"/);
+  assert.match(conditionalFooter, /href: "\/signup-forms"/);
+  assert.doesNotMatch(conditionalFooter, /href: "\/use-cases/);
+  assert.doesNotMatch(conditionalFooter, /Templates/);
   assert.match(conditionalFooter, /Invites/);
   assert.match(conditionalFooter, /Sign-ups/);
   assert.match(conditionalFooter, /Share without an app/);
@@ -428,9 +441,25 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(signedOutNavConfig, /featured: true/);
   assert.doesNotMatch(signedOutNavConfig, /label: "Sign In"/);
   assert.match(signedOutNavConfig, /export const signedOutMobileMenuLinks/);
-  for (const label of ["Pricing", "About", "Contact", "Help", "Privacy", "Terms"]) {
+  assert.match(signedOutNavConfig, /publicUseCaseNavLinks/);
+  for (const label of [
+    "Weddings",
+    "Bridal Showers",
+    "Baby Showers",
+    "Gymnastics",
+    "Signup Forms",
+    "Gender Reveals",
+    "Birthdays",
+    "Guides",
+    "Contact",
+    "Privacy",
+    "Terms",
+  ]) {
     assert.match(signedOutNavConfig, new RegExp(`label: "${label}"`));
   }
+  assert.doesNotMatch(signedOutNavConfig, /href: "\/use-cases/);
+  assert.doesNotMatch(signedOutNavConfig, /label: "Pricing"/);
+  assert.doesNotMatch(signedOutNavConfig, /label: "Help"/);
 
   assert.match(scrollAwareBottomNav, /document\.querySelector\("#hero, #landing-hero"\)/);
   assert.match(scrollAwareBottomNav, /new IntersectionObserver/);
@@ -466,6 +495,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(signedOutPageChrome, /<MenuBottomSheet/);
   assert.match(signedOutPageChrome, /<ConciergeSheet/);
   assert.match(signedOutPageChrome, /<AuthModal/);
+  assert.match(signedOutPageChrome, /successRedirectUrl=\{authMode === "signup" \? "\/chat" : "\/"\}/);
   assert.match(signedOutPageChrome, /router\.push\(href\.startsWith\("#"\) \? `\/landing\$\{href\}` : href\)/);
   assert.match(showcasePage, /<SignedOutPageChrome activeBottomNavLabel="Examples" \/>/);
   assert.match(createActionSheet, /Create with AI Concierge/);
@@ -478,11 +508,11 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(menuBottomSheet, /bg-\[#150c29\]/);
   assert.match(menuBottomSheet, /bottom-0/);
   assert.match(menuBottomSheet, /const sheetHeight = "calc\(100svh - 0\.75rem\)"/);
-  assert.match(menuBottomSheet, /height: sheetHeight/);
+  assert.match(menuBottomSheet, /height: authActive \? "auto" : sheetHeight/);
   assert.match(menuBottomSheet, /maxHeight: sheetHeight/);
   assert.match(menuBottomSheet, /body\.style\.position = "fixed"/);
   assert.match(menuBottomSheet, /window\.scrollTo\(0, scrollY\)/);
-  assert.doesNotMatch(menuBottomSheet, /overflow-y-auto/);
+  assert.match(menuBottomSheet, /overflow-y-auto/);
   assert.match(menuBottomSheet, /rounded-t-\[1\.75rem\]/);
   assert.match(menuBottomSheet, /initial=\{\{ y: "100%", opacity: 0 \}\}/);
   assert.match(menuBottomSheet, /\/brand\/envitefy-wordmark\.png/);
@@ -504,7 +534,8 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(menuBottomSheet, /<SignupForm/);
   assert.doesNotMatch(menuBottomSheet, /onStartCreatingSelect/);
   assert.doesNotMatch(menuBottomSheet, /onSignInSelect/);
-  assert.match(signedOutNavConfig, /label: "Pricing"/);
+  assert.match(signedOutNavConfig, /label: "Weddings"/);
+  assert.doesNotMatch(signedOutNavConfig, /label: "Use Cases"/);
   assert.doesNotMatch(menuBottomSheet, /Secondary/);
   assert.doesNotMatch(menuBottomSheet, /Legal/);
   assert.match(mobileBrandHeader, /const \[isHeroVisible, setIsHeroVisible\] = useState\(true\)/);
@@ -532,9 +563,11 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(landingExperience, /onMenuClick=\{\(\) => setMobileMenuOpen\(true\)\}/);
   assert.match(landingExperience, /<MenuBottomSheet/);
   assert.match(landingExperience, /<MenuBottomSheet[\s\S]*successRedirectUrl="\/"/);
+  assert.match(landingExperience, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl="\/chat"/);
   assert.doesNotMatch(landingExperience, /onStartCreatingSelect/);
   assert.doesNotMatch(landingExperience, /onSignInSelect/);
   assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*successRedirectUrl="\/"/);
+  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl="\/chat"/);
   assert.match(landingExperience, /onMenuSelect=\{\(\) => setMobileMenuOpen\(true\)\}/);
   assert.match(landingExperience, /onVisibilityChange=\{setBottomNavVisible\}/);
   assert.match(landingExperience, /pb-\[calc\(96px\+env\(safe-area-inset-bottom\)\)\] md:pb-0/);

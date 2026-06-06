@@ -81,6 +81,28 @@ function cleanIso(value: any): string | null {
   return Number.isNaN(parsed.getTime()) ? text : parsed.toISOString();
 }
 
+function formatScheduleLabel(value: unknown, timezone?: string | null) {
+  const text = cleanString(value, 100);
+  if (!text) return null;
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return text;
+  const options: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  };
+  const tz = cleanString(timezone, 80);
+  try {
+    return new Intl.DateTimeFormat("en-US", tz ? { ...options, timeZone: tz } : options).format(
+      parsed,
+    );
+  } catch {
+    return new Intl.DateTimeFormat("en-US", options).format(parsed);
+  }
+}
+
 function valuesFrom(...values: any[]): any[] {
   for (const value of values) {
     if (Array.isArray(value)) return value;
@@ -248,6 +270,10 @@ export function buildConciergeV2EventHistoryPayload(params: {
     firstOccurrence?.locationText ||
     cleanString(draft.locationText || draft.location || draft.venue, 180) ||
     "";
+  const firstScheduleLabel = formatScheduleLabel(
+    firstOccurrence?.startAt,
+    firstOccurrence?.timezone || draft.timezone,
+  );
   const description =
     cleanString(draft.summary, 420) ||
     "Envitefy Concierge built this event page, schedule, RSVP board, reminders, and planning checklist.";
@@ -280,8 +306,8 @@ export function buildConciergeV2EventHistoryPayload(params: {
       location: locationText,
       locationText,
       locationLabel: locationText,
-      scheduleLine: firstOccurrence?.startAt || null,
-      whenLabel: firstOccurrence?.startAt || null,
+      scheduleLine: firstScheduleLabel,
+      whenLabel: firstScheduleLabel,
       rsvpEnabled: true,
       rsvpMode: "envitefy",
       rsvp: {
@@ -330,7 +356,7 @@ export function buildConciergeV2EventHistoryPayload(params: {
         headline: title,
         subheadline: cleanString(draft.program?.title, 180) || "Built with Envitefy Concierge",
         body: description,
-        scheduleLine: firstOccurrence?.startAt || null,
+        scheduleLine: firstScheduleLabel,
         locationLine: locationText || null,
         scheduleItems: occurrences,
         checklistItems,
@@ -351,7 +377,7 @@ export function buildConciergeV2EventHistoryPayload(params: {
         headline: title,
         subheadline: cleanString(draft.program?.title, 180) || "Envitefy Concierge",
         body: description,
-        scheduleLine: firstOccurrence?.startAt || null,
+        scheduleLine: firstScheduleLabel,
         locationLine: locationText || null,
         cta: "RSVP",
       },

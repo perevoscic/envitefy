@@ -140,7 +140,7 @@ function isoAtLocalDate(date, timeLocal = "09:00") {
 function parseMonthDay(text, referenceDate) {
   const cleaned = cleanString(text);
   const match = cleaned.match(
-    /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b/i,
+    /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*[-–]\s*\d{1,2}(?:st|nd|rd|th)?)?(?:,?\s+(\d{4}))?\b/i,
   );
   if (!match) return null;
   const month = MONTHS[match[1].toLowerCase().replace(/\.$/, "")];
@@ -191,7 +191,7 @@ function weekdayCodesFromText(text) {
 function inferPersonName(text) {
   const cleaned = cleanString(text);
   const possessive = cleaned.match(/\b([A-Z][a-zA-Z'-]{1,30})(?:'s|’s)\b/);
-  if (possessive?.[1]) return possessive[1];
+  if (possessive?.[1] && !/^(?:men|women|boys|girls)$/i.test(possessive[1])) return possessive[1];
   const leading = cleaned.match(/^\s*([A-Z][a-zA-Z'-]{1,30})\s+(?:has|needs|is|turns|turning)\b/);
   if (leading?.[1]) return leading[1];
   const forName = cleaned.match(/\bfor\s+([A-Z][a-zA-Z'-]{1,30})\b/);
@@ -200,8 +200,31 @@ function inferPersonName(text) {
 
 function locationFromText(text) {
   const cleaned = cleanString(text);
+  const meetSite = cleaned.match(
+    /\bMEET SITE:\s+(.+?)(?=\s+MEET DIRECTOR:|\s+MEET CONTACT:|\s+EQUIPMENT:|\s+LEVELS:|$)/i,
+  );
+  if (meetSite?.[1]) return cleanString(meetSite[1]);
   const exact = cleaned.match(/\b(?:at|in)\s+([A-Z][a-zA-Z0-9' .-]{1,70}(?:,\s*[A-Z]{2})?)(?=\s+(?:with|and|plus|on|at|for|from|team|invite|need)\b|[.;]|$)/);
   return cleanString(exact?.[1]);
+}
+
+function titleFromGymnasticsPacket(text) {
+  const compact = cleanString(text);
+  const inline = compact.match(
+    /\b((?:\d+\s*(?:st|nd|rd|th)\s+)?(?:annual\s+)?[A-Z0-9'’ -]{3,80}?\b(?:classic|invitational|championships?|state|regional|national))\b/i,
+  );
+  if (inline?.[1]) {
+    return titleCase(inline[1].replace(/\b(\d+)\s+(st|nd|rd|th)\b/gi, "$1$2"));
+  }
+  const lines = String(text || "")
+    .split(/\n+/)
+    .map((line) => cleanString(line))
+    .filter(Boolean);
+  const candidate =
+    lines.find((line) => /\b(?:classic|invitational|championships?|state|regional|national)\b/i.test(line)) ||
+    "";
+  if (!candidate) return "";
+  return titleCase(candidate.replace(/\b(\d+)\s+(st|nd|rd|th)\b/gi, "$1$2"));
 }
 
 function detectEventType(text) {
@@ -270,7 +293,11 @@ function buildBaseDraft(text, context) {
             : eventType === "workshop_open_house"
               ? "Workshop or Open House"
               : "Event Plan";
-  const title = titleCase(cleanString(context?.title) || titleSeed);
+  const title = titleCase(
+    cleanString(context?.title) ||
+      (eventType === "gymnastics_meet" ? titleFromGymnasticsPacket(text) : "") ||
+      titleSeed,
+  );
   const timezone = cleanString(context?.timezone) || "America/Chicago";
   return {
     mode: modeResult.mode,
@@ -357,11 +384,18 @@ function applyDatedOccurrences(draft, text, referenceDate) {
           : eventType === "team_dinner"
             ? "Team Dinner"
             : titleCase(eventType.replace(/_/g, " "));
-  const startAt = isoAtLocalDate(date.date, time?.local || "09:00");
-  const endAt = isoAtLocalDate(date.date, addMinutesToLocalTime(time?.local || "09:00", eventType === "gymnastics_meet" ? 180 : 120));
+  const startAt = time ? isoAtLocalDate(date.date, time.local) : null;
+  const endAt = time
+    ? isoAtLocalDate(
+        date.date,
+        addMinutesToLocalTime(time.local, eventType === "gymnastics_meet" ? 180 : 120),
+      )
+    : null;
   draft.occurrences.push({
     title: occurrenceTitle,
     type: eventType === "gymnastics_meet" ? "meet" : "event",
+    date: toDateOnly(date.date),
+    dateText: date.sourceText,
     startAt,
     endAt,
     timezone: draft.timezone,

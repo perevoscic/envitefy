@@ -141,8 +141,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(preview, /selectedOutput=\{selectedOutput\}/);
   assert.match(preview, /publicActionLabelForOutput/);
   assert.match(preview, /selectedOutput === "event_page"\) return "Open Event Page"/);
-  assert.match(preview, /Placeholder preview: generate when the details look ready\./);
-  assert.match(preview, /Placeholder preview: not a final product yet\./);
+  assert.doesNotMatch(preview, /Placeholder preview/);
   assert.match(preview, /Generated draft: review it here, then save\/publish when ready\./);
   assert.match(preview, /Published preview: open the link to review what guests will see\./);
   assert.doesNotMatch(preview, /isCategoryMenuOpen/);
@@ -178,7 +177,10 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /labelWidth: Math\.max\(72, Math\.ceil\(option\.label\.length \* 7\)\)/);
   assert.match(client, /items=\{PRODUCT_OPTIONS\.map\(chatProductNavItem\)\}/);
   assert.match(client, /className="w-full max-w-full self-start"/);
-  assert.match(client, /className="w-full !min-w-0 bg-\[#eff1f8\]"/);
+  assert.match(
+    client,
+    /className="w-full !min-w-0 !border !border-white\/70 !bg-white\/62/,
+  );
   assert.match(client, /onValueChange=\{\(value\) =>/);
   assert.match(client, /function handleProductChoice\(option: ProductOption\)/);
   assert.match(client, /setSelectedProductOutput\(option\.output\)/);
@@ -220,7 +222,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.doesNotMatch(client, /effectiveSelectedProductOutput === option\.output/);
   assert.match(client, /chatProductActiveUnderline/);
   assert.match(client, /text-\[#5c5be5\]/);
-  assert.match(client, /shadow-\[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff\]/);
+  assert.match(client, /shadow-\[0_18px_46px_rgba\(92,91,229,0\.12\)\]/);
   assert.match(client, /const emptyProductFormatSelector =/);
   assert.match(client, /\{isEmptyState \? emptyProductFormatSelector : null\}/);
   assert.match(
@@ -241,7 +243,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
     client,
     /className="flex w-full justify-center sm:hidden"[\s\S]{0,900}autoOpenCycles=\{3\}/,
   );
-  assert.match(client, /hidden max-w-full items-center[\s\S]{0,180}bg-\[#eff1f8\]/);
+  assert.match(client, /hidden max-w-full items-center[\s\S]{0,180}bg-white\/62/);
   assert.match(client, /icon: IdCard/);
   assert.doesNotMatch(client, /icon: Mail/);
   assert.match(client, /icon: FileImage/);
@@ -302,8 +304,8 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(bottomNav, /setHasManualSelection\(true\)/);
   assert.match(bottomNav, /onValueChange\?:/);
   assert.match(bottomNav, /aria-pressed=\{isActive\}/);
-  assert.match(uiDemo, /import BottomNavBar from "@\/components\/ui\/bottom-nav-bar"/);
-  assert.match(uiDemo, /return <BottomNavBar \/>/);
+  assert.match(uiDemo, /import \{ Testimonial \} from "@\/components\/ui\/design-testimonial"/);
+  assert.match(uiDemo, /<Testimonial \/>/);
 
   assert.match(client, /window\.addEventListener\("envitefy:chat:new", handleNewChatSession\)/);
   assert.doesNotMatch(client, /CreationThreadSummary/);
@@ -355,16 +357,29 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(appShell, /className=\{isChatPath \? "h-\[100dvh\] overflow-hidden" : ""\}/);
   assert.match(appShell, /\{isChatPath \? null : <ConditionalFooter \/>\}/);
   assert.match(client, /className="flex h-full min-h-0 w-full overflow-hidden/);
-  assert.match(client, /--envitefy-chat-viewport-height/);
-  assert.match(client, /window\.visualViewport\?\.height \|\| window\.innerHeight/);
-  assert.match(client, /style=\{\{ height: "var\(--envitefy-chat-viewport-height, 100dvh\)" \}\}/);
+  assert.match(client, /--envitefy-chat-layout-height/);
+  assert.match(client, /--envitefy-chat-keyboard-inset/);
+  assert.match(client, /const layoutHeight = window\.innerHeight/);
+  assert.match(client, /const keyboardInset = Math\.max\(0, layoutHeight - visualHeight - visualTop\)/);
+  assert.doesNotMatch(client, /--envitefy-chat-viewport-height/);
+  assert.doesNotMatch(client, /window\.visualViewport\?\.height \|\| window\.innerHeight/);
+  assert.match(client, /style=\{\{ height: "var\(--envitefy-chat-layout-height, 100dvh\)" \}\}/);
+  assert.match(
+    client,
+    /pb-\[calc\(env\(safe-area-inset-bottom\)\+var\(--envitefy-chat-keyboard-inset,0px\)\+0\.75rem\)\]/,
+  );
   assert.match(
     client,
     /className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"/,
   );
   assert.doesNotMatch(client, /relative flex min-h-screen min-w-0 flex-1 flex-col overflow-y-auto/);
   assert.match(client, /shouldShowProductPanel/);
-  assert.match(client, /Boolean\(draft\)/);
+  assert.match(client, /hasGeneratedDraftProduct/);
+  assert.doesNotMatch(
+    client,
+    /const shouldShowProductPanel =[\s\S]{0,120}Boolean\(draft\)/,
+  );
+  assert.match(client, /isBusy && !isUploading && !isGeneratingCard && !isStreamingAssistant/);
   assert.match(client, /mobileView/);
   assert.match(client, /const isEmptyState =/);
   assert.match(client, /"min-h-0 flex-1 overflow-y-auto/);

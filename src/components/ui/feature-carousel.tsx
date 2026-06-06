@@ -12,6 +12,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
 import { type CSSProperties, useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ export type FeatureCarouselItem = {
   icon?: IconSvgElement;
   imageAlt?: string;
   badge?: string;
+  href?: string;
 };
 
 type FeatureCarouselProps = {
@@ -288,6 +290,16 @@ export function FeatureCarousel({
                       isActive ? "grayscale-0 blur-0" : "grayscale blur-[2px] brightness-75",
                     )}
                   />
+
+                  {feature.href ? (
+                    <Link
+                      href={feature.href}
+                      aria-label={`Open ${feature.label}`}
+                      className="absolute inset-0 z-30"
+                    >
+                      <span className="sr-only">Open {feature.label}</span>
+                    </Link>
+                  ) : null}
 
                   <AnimatePresence>
                     {isActive && (

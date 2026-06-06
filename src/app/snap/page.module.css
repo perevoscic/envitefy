@@ -1,4 +1,11 @@
 .snapPage {
+  --font-snap-sans: var(--font-geist-sans, ui-sans-serif), system-ui, sans-serif;
+  --font-snap-display: var(
+      --font-poppins,
+      var(--font-geist-sans, ui-sans-serif)
+    ),
+    system-ui, sans-serif;
+
   font-family: var(--font-snap-sans), ui-sans-serif, system-ui, sans-serif;
 }
 

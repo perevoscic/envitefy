@@ -1,6 +1,13 @@
 import { randomBytes } from "node:crypto";
+import { generateDeterministicEventBlueprint } from "@/features/event-pages/ai/generateEventBlueprint";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
-import { insertEventHistory, query, updateEventHistoryData } from "@/lib/db";
+import {
+  insertEventHistory,
+  publishEventPage,
+  query,
+  updateEventHistoryData,
+  upsertEventPageDraft,
+} from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { generateOccurrences } from "./core.mjs";
 import { parseConciergeInputWithProvider } from "./providers";
@@ -38,9 +45,11 @@ export type ConciergeV2ApplyResult = {
   workspaceId: string | null;
   programId: string;
   eventPageId: string;
+  dynamicEventPageId?: string | null;
   eventHistoryId: string;
   publicSlug: string | null;
   eventPath: string;
+  legacyEventPath?: string;
   occurrenceCount: number;
   seriesCount: number;
   formCount: number;
@@ -1480,7 +1489,7 @@ export async function applyConciergeV2Session(params: {
     reminders: storedReminders,
     checklistItems: storedChecklistItems,
   });
-  await updateEventHistoryData(eventHistory.id, storedPublicData);
+  const updatedEventHistory = (await updateEventHistoryData(eventHistory.id, storedPublicData)) || eventHistory;
 
   await query(
     `insert into audit_logs (workspace_id, actor_user_id, action, entity_type, entity_id, after_json)
@@ -1494,20 +1503,39 @@ export async function applyConciergeV2Session(params: {
   );
 
   const publicSlug =
-    typeof eventHistory.public_slug === "string" && eventHistory.public_slug.trim()
-      ? eventHistory.public_slug.trim()
-      : typeof eventHistory.data?.publicSlug === "string"
-        ? eventHistory.data.publicSlug.trim()
+    typeof updatedEventHistory.public_slug === "string" && updatedEventHistory.public_slug.trim()
+      ? updatedEventHistory.public_slug.trim()
+      : typeof updatedEventHistory.data?.publicSlug === "string"
+        ? updatedEventHistory.data.publicSlug.trim()
         : null;
-  const eventPath = `/event/${encodeURIComponent(publicSlug || eventHistory.id)}`;
+  const dynamicSlug = publicSlug || eventHistory.id;
+  const dynamicBlueprint = generateDeterministicEventBlueprint({
+    eventId: eventHistory.id,
+    title: publicPayload.title,
+    data: storedPublicData,
+    shareUrl: `/e/${dynamicSlug}`,
+  });
+  const dynamicEventPage = await upsertEventPageDraft({
+    eventId: eventHistory.id,
+    slug: dynamicSlug,
+    blueprint: dynamicBlueprint,
+    aiGenerationVersion: "concierge-v2-deterministic-v1",
+    sourceConversationId: session.id,
+    createdBy: params.userId,
+  });
+  const publishedDynamicPage = await publishEventPage(dynamicEventPage.id);
+  const eventPath = `/e/${encodeURIComponent(publishedDynamicPage?.slug || dynamicEventPage.slug)}`;
+  const legacyEventPath = `/event/${encodeURIComponent(publicSlug || eventHistory.id)}`;
   const applyResult: ConciergeV2ApplyResult = {
     sessionId: session.id,
     workspaceId,
     programId,
     eventPageId,
+    dynamicEventPageId: publishedDynamicPage?.id || dynamicEventPage.id,
     eventHistoryId: eventHistory.id,
     publicSlug,
     eventPath,
+    legacyEventPath,
     occurrenceCount: createdOccurrences.length,
     seriesCount: seriesItems.length,
     formCount: storedForms.length,

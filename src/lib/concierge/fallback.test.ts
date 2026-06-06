@@ -1188,6 +1188,33 @@ test("typo-like date replies are confirmed before moving to location", () => {
   assert.equal(confirmed.dateText, draft.dateText);
 });
 
+test("date confirmation renders ISO candidates as readable dates", () => {
+  const draft = {
+    ...fallbackExtractConciergeDraft({
+      message: "Book club on March 6 2026 at 6 AM at Library Room B.",
+    }),
+    currentQuestion: "date_confirmation" as const,
+    dateText: "2026-03-06T07:00:00-05:00",
+    timeText: "6:00 AM",
+    timezone: "America/New_York",
+  };
+  const message = buildAssistantMessage(draft);
+
+  assert.match(message, /did you mean March 6, 2026, 6:00 AM/i);
+  assert.doesNotMatch(message, /T07:00:00|2026-03-06T/i);
+});
+
+test("date-only drafts keep asking for time instead of treating startISO as explicit time", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Create an event page for book club on April 1 2027 at Local Library.",
+  });
+
+  assert.equal(draft.timeText, null);
+  assert.ok(draft.startISO);
+  assert.equal(draft.currentQuestion, "time");
+  assert.match(draft.missingFields.join(","), /time/);
+});
+
 test("output-only RSVP page prompt stays unsaved until an event/source exists", () => {
   const draft = fallbackExtractConciergeDraft({ message: "Create an RSVP page" });
 
@@ -2450,6 +2477,40 @@ test("save payload preserves event page as the primary product", () => {
   assert.equal(payload.data.publicEvent.primaryOutput, "event_page");
   assert.equal(payload.data.publicEvent.renderer, "event_page");
   assert.doesNotMatch(JSON.stringify(payload.data.requestedOutputs), /live_card/);
+});
+
+test("save payload preserves upload source details on event pages", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Create an event from this uploaded file.",
+    requestedOutputs: ["event_page"],
+    ocrContext: {
+      ocrText: [
+        "38th Gasparilla Classic",
+        "Dates: March 6-8, 2026",
+        "Location: Tampa Convention Center",
+        "Admission (Cash Only)",
+        "Adults $25 / day",
+        "Arrival Timelines",
+        "First session of the day: Arrive 1 hour before.",
+        "Rotation Sheets",
+        "No hard copies. Download online and refresh browser.",
+        "Registration: 2nd Floor near Guest Services.",
+      ].join("\n"),
+      fieldsGuess: {
+        title: "38th Gasparilla Classic",
+        location: "333 S Franklin St, Tampa, FL 33602",
+      },
+      category: "Sport Events",
+    },
+  });
+  const payload = buildConciergeHistoryPayload(draft);
+  const sourceText = JSON.stringify(payload.data.publicEvent.sourceSections);
+
+  assert.match(sourceText, /Admission/);
+  assert.match(sourceText, /Adults \$25 \/ day/);
+  assert.match(sourceText, /Arrival Timelines/);
+  assert.match(sourceText, /Rotation Sheets/);
+  assert.match(sourceText, /Registration/);
 });
 
 test("save payload preserves flyer invite as the primary product", () => {

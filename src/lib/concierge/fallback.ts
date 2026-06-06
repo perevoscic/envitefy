@@ -2174,7 +2174,34 @@ function nextActionSentence(draft: ConciergeEventDraft) {
   return readyActionSentence(draft);
 }
 
+function safeDateFromValue(value: unknown) {
+  const raw = cleanString(value);
+  if (!raw) return null;
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatDateOnlyForDisplay(value: unknown, timezone?: string | null) {
+  const parsed = safeDateFromValue(value);
+  if (!parsed) return null;
+  const options: Intl.DateTimeFormatOptions = {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  };
+  const tz = cleanString(timezone);
+  try {
+    return new Intl.DateTimeFormat("en-US", tz ? { ...options, timeZone: tz } : options).format(
+      parsed,
+    );
+  } catch {
+    return new Intl.DateTimeFormat("en-US", options).format(parsed);
+  }
+}
+
 function displayDateWithoutDuplicateTime(draft: ConciergeEventDraft) {
+  const isoDateText = formatDateOnlyForDisplay(draft.dateText, draft.timezone);
+  if (isoDateText) return isoDateText;
   const dateTextHasTime = Boolean(
     draft.dateText &&
       /\b(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b/i.test(draft.dateText),
@@ -2680,6 +2707,13 @@ export function fallbackExtractConciergeDraft(args: {
   const eventType = blocksCreation ? "unknown" : detectEventType(text, previous);
   const relationship = detectRelationship(text, previous);
   const fieldsGuess = args.ocrContext?.fieldsGuess || {};
+  const sourceMaterial = args.ocrContext
+    ? {
+        ocrText: args.ocrContext.ocrText || null,
+        fieldsGuess: args.ocrContext.fieldsGuess || null,
+        category: args.ocrContext.category || null,
+      }
+    : previous?.sourceMaterial || null;
   const birthdayTemplateHint = recordValue(args.ocrContext?.birthdayTemplateHint);
   const honoreeName =
     detectHonoreeName(text, previous) ||
@@ -2875,6 +2909,7 @@ export function fallbackExtractConciergeDraft(args: {
       : normalizeCreationIntent(previous?.intent, message, requestedOutputs),
     requestedOutputs,
     sourceContext,
+    sourceMaterial,
     eventPurpose,
     eventType,
     title,

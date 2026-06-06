@@ -262,7 +262,7 @@ function reconciledMissingFields(
   if (draft.honoreeName) missing.delete("honoreeName");
   if (draft.ageOrMilestone || draft.ageOrMilestoneSkipped) missing.delete("ageOrMilestone");
   if (draft.dateText || draft.startISO) missing.delete("date");
-  if (draft.timeText || draft.startISO) missing.delete("time");
+  if (draft.timeText) missing.delete("time");
   if (draft.location || draft.venue) missing.delete("location");
   if (typeof draft.rsvpEnabled === "boolean") missing.delete("rsvpEnabled");
   if (!rsvpTrackingEnabled(draft)) missing.delete("numberOfGuests");
@@ -318,8 +318,16 @@ export function normalizeConciergeDraft(
     hasUsableContext:
       typeof sourceRecord.hasUsableContext === "boolean"
         ? sourceRecord.hasUsableContext
-        : fallback.sourceContext.hasUsableContext,
+      : fallback.sourceContext.hasUsableContext,
   };
+  const sourceMaterialRecord = asRecord(record.sourceMaterial);
+  const sourceMaterial = sourceMaterialRecord
+    ? {
+        ocrText: cleanString(sourceMaterialRecord.ocrText) || null,
+        fieldsGuess: asRecord(sourceMaterialRecord.fieldsGuess),
+        category: cleanString(sourceMaterialRecord.category) || null,
+      }
+    : fallback.sourceMaterial || null;
   const eventPurpose =
     firstDraftString(record.eventPurpose, eventData.eventPurpose, eventData.purpose) ||
     fallback.eventPurpose;
@@ -498,6 +506,7 @@ export function normalizeConciergeDraft(
     intent: normalizeCreationIntent(record.intent ?? fallback.intent, "", requestedOutputs),
     requestedOutputs,
     sourceContext,
+    sourceMaterial,
     eventPurpose,
     eventType,
     title,

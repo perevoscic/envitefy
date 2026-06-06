@@ -346,6 +346,7 @@ test("event route renders concierge live cards with public details and direct RS
   assert.match(source, /publicEventRecord\.subheadline/);
   assert.match(source, /liveCardRecord\.scheduleLine/);
   assert.match(source, /publicEventRecord\.scheduleLine/);
+  assert.match(source, /const publicSourceSections = Array\.isArray\(publicEventRecord\.sourceSections\)/);
   assert.match(source, /data\?\.whenLabel/);
   assert.match(source, /const directRsvpEnabled =/);
   assert.match(source, /Boolean\(rsvpRecord\?\.isEnabled\)/);
@@ -391,10 +392,13 @@ test("event route renders concierge event pages as full website products", () =>
   assert.match(source, /registryLinks=\{registryCards\}/);
   assert.match(source, /calendarLinks=\{calendarLinks\}/);
   assert.match(source, /imageUrl=\{headerImageUrl\}/);
+  assert.match(source, /sourceSections=\{publicSourceSections\}/);
 
   const websiteSource = readSource("src/components/concierge/ConciergeEventWebsite.tsx");
   assert.match(websiteSource, /aria-label="Event sections"/);
   assert.match(websiteSource, /Toggle menu/);
+  assert.match(websiteSource, /#source-details/);
+  assert.match(websiteSource, /Pulled from the upload/);
   assert.match(websiteSource, /#event-rsvp/);
   assert.match(websiteSource, /<EventRsvpPrompt/);
   assert.match(websiteSource, /#registry/);

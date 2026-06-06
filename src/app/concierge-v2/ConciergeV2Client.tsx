@@ -36,6 +36,8 @@ type SessionRecord = {
 
 type ApplyResult = {
   eventPath: string;
+  legacyEventPath?: string;
+  dynamicEventPageId?: string | null;
   eventHistoryId: string;
   occurrenceCount: number;
   formCount: number;
@@ -441,7 +443,7 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
                     Ready to share
                   </p>
-                  <h2 className="mt-1 text-xl font-black text-emerald-950">Public event page created.</h2>
+                  <h2 className="mt-1 text-xl font-black text-emerald-950">Dynamic event page created.</h2>
                   <p className="mt-2 text-sm leading-6 text-emerald-900">
                     Created {result.occurrenceCount} schedule items, {result.formCount} form set,
                     {result.volunteerSlotCount} signup slots, {result.paymentRequestCount} payment
@@ -458,6 +460,15 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
                   View guest page
                   <ExternalLink className="h-4 w-4" aria-hidden="true" />
                 </Link>
+                {result.legacyEventPath ? (
+                  <Link
+                    href={result.legacyEventPath}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-5 text-sm font-black uppercase tracking-[0.14em] text-emerald-800 transition hover:bg-emerald-100"
+                  >
+                    Legacy page
+                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                ) : null}
                 <Link
                   href={`/concierge-v2/events/${encodeURIComponent(result.eventHistoryId)}/hub`}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-5 text-sm font-black uppercase tracking-[0.14em] text-emerald-800 transition hover:bg-emerald-100"

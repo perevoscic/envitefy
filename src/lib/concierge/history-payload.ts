@@ -54,6 +54,118 @@ function cleanString(value: unknown): string | null {
   return trimmed || null;
 }
 
+function cleanSourceLine(value: unknown): string | null {
+  const cleaned = cleanString(value);
+  if (!cleaned) return null;
+  if (cleaned.length < 3) return null;
+  if (/^(https?:\/\/\S+|www\.\S+)$/i.test(cleaned)) return cleaned;
+  return cleaned.slice(0, 220);
+}
+
+function sourceLinesFromText(value: unknown) {
+  if (typeof value !== "string") return [];
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  for (const rawLine of value.split(/\r?\n+/)) {
+    const line = cleanSourceLine(rawLine);
+    if (!line) continue;
+    const key = line.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    lines.push(line);
+    if (lines.length >= 80) break;
+  }
+  return lines;
+}
+
+function lineMatches(line: string, pattern: RegExp) {
+  return pattern.test(line);
+}
+
+function pickSourceFacts(lines: string[], pattern: RegExp, limit = 8) {
+  const facts: string[] = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (!lineMatches(line, pattern)) continue;
+    facts.push(line);
+    const next = lines[index + 1];
+    if (
+      next &&
+      facts.length < limit &&
+      !/^(dashboard|arrival|venue guide|inside the venue|overview)$/i.test(next)
+    ) {
+      facts.push(next);
+    }
+    if (facts.length >= limit) break;
+  }
+  return Array.from(new Set(facts)).slice(0, limit);
+}
+
+function buildSourceFactSections(draft: ConciergeEventDraft) {
+  const lines = sourceLinesFromText(draft.sourceMaterial?.ocrText);
+  if (!lines.length) return [];
+
+  const sections = [
+    {
+      title: "Meet Basics",
+      items: pickSourceFacts(
+        lines,
+        /\b(date|dates|location|venue|convention|center|doors?\s+open|session|daily)\b/i,
+      ),
+    },
+    {
+      title: "Admission",
+      items: pickSourceFacts(lines, /\b(admission|cash|adult|children|\$\s*\d|fee|pass)\b/i),
+    },
+    {
+      title: "Arrival And Parking",
+      items: pickSourceFacts(
+        lines,
+        /\b(arriv|parking|traffic|drop[-\s]?off|rideshare|garage|buffer|disney|daylight)\b/i,
+      ),
+    },
+    {
+      title: "Scoring And Schedules",
+      items: pickSourceFacts(
+        lines,
+        /\b(rotation|sheet|schedule|scoring|score|result|pdf|download|refresh)\b/i,
+      ),
+    },
+    {
+      title: "Inside The Venue",
+      items: pickSourceFacts(
+        lines,
+        /\b(registration|entrance|gym|hall|map|food|drink|water|prohibited|pets|service dogs?|amenit)\b/i,
+      ),
+    },
+  ]
+    .map((section) => ({
+      title: section.title,
+      items: section.items.filter(Boolean).slice(0, 8),
+    }))
+    .filter((section) => section.items.length);
+
+  const usedLines = new Set(
+    sections.flatMap((section) => section.items).map((line) => line.toLowerCase()),
+  );
+  const titleKey = (draft.title || "").toLowerCase();
+  const remainingLines = lines
+    .filter((line) => !usedLines.has(line.toLowerCase()))
+    .filter((line) => !titleKey || !line.toLowerCase().includes(titleKey))
+    .slice(0, 8);
+  if (remainingLines.length) {
+    sections.push({ title: "More From Upload", items: remainingLines });
+  }
+
+  if (sections.length) return sections.slice(0, 6);
+  return [
+    {
+      title: "Source Details",
+      items: lines.slice(0, 14),
+    },
+  ];
+}
+
 function splitCombinedVenueLocation(value: string | null) {
   const cleaned = cleanString(value);
   if (!cleaned) return { venue: null as string | null, location: null as string | null };
@@ -218,6 +330,7 @@ export function buildConciergeHistoryPayload(
   const registryLink =
     cleanString(draft.registryLink) || cleanString(draft.giftRegistryLink) || null;
   const giftNote = cleanString(draft.giftPreferenceNote) || cleanString(draft.giftNote) || null;
+  const sourceFactSections = buildSourceFactSections(draft);
   const rsvpName = cleanString(draft.rsvpName) || (rsvpEnabled ? "Host" : "");
   const rsvpContact = cleanString(draft.rsvpContact) || "";
   const rsvpDeadline = cleanString(draft.rsvpDeadline) || "";
@@ -366,6 +479,7 @@ export function buildConciergeHistoryPayload(
       registryLink,
       giftPreferenceNote: giftNote,
       registries: registryLinks,
+      sourceFactSections,
       outputs: requestedOutputs,
       previewCopy: safePreviewCopy,
       rsvpEnabled,
@@ -415,6 +529,7 @@ export function buildConciergeHistoryPayload(
           ...(registryLink ? [{ label: "Registry", value: registryLink }] : []),
           ...(giftNote ? [{ label: "Gift Note", value: giftNote }] : []),
         ],
+        sourceSections: sourceFactSections,
         forms: rsvpEnabled
           ? [
               {

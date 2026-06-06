@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
@@ -25,8 +26,8 @@ import ScenicBackground, {
   useActiveScene,
 } from "@/components/marketing/ScenicBackground";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
-import { buildMarketingHeroNav } from "@/components/navigation/marketing-hero-nav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
+import { publicUseCasePrimaryNavLinks, signedOutMobileMenuLinks } from "@/config/navigation";
 import styles from "./GymnasticsLanding.module.css";
 import GymnasticsLandingFaq from "./GymnasticsLandingFaq";
 
@@ -231,15 +232,6 @@ const whyStats = [
   { value: "0", label: "app installs required" },
 ] as const;
 
-const gymnasticsHeroNavLinks = buildMarketingHeroNav("gymnastics", [
-  { label: "Features", href: "#features" },
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Preview", href: "#preview" },
-  { label: "Use cases", href: "#use-cases" },
-  { label: "Why Envitefy", href: "#why-envitefy" },
-  { label: "FAQ", href: "#faq" },
-]);
-
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
@@ -313,12 +305,24 @@ function Card({ icon: Icon, title, body }: { icon: LucideIcon; title: string; bo
 }
 
 export default function GymnasticsLanding() {
+  const searchParams = useSearchParams();
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
   const activeScene = useActiveScene(GYMNASTICS_SCENE_ORDER, "hero");
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   const { ref: heroVisualRef, visible: heroVisualVisible } = useRevealOnce();
+
+  useEffect(() => {
+    if (isAuthenticated) return;
+
+    const auth = searchParams?.get("auth");
+    if (auth === "signup" || auth === "login") {
+      setAuthMode(auth);
+      setAuthModalOpen(true);
+    }
+  }, [isAuthenticated, searchParams]);
+
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
@@ -330,10 +334,12 @@ export default function GymnasticsLanding() {
     >
       <ScenicBackground scene={activeScene} scenes={GYMNASTICS_SCENES} />
       <HeroTopNav
-        navLinks={gymnasticsHeroNavLinks}
-        variant="glass-dark"
-        primaryCtaLabel="Start Your Meet Page"
-        authenticatedPrimaryHref="/"
+        navLinks={[...publicUseCasePrimaryNavLinks]}
+        mobileNavLinks={[...signedOutMobileMenuLinks]}
+        variant="transparent-dark"
+        primaryCtaLabel="Let's create"
+        authenticatedPrimaryHref="/chat"
+        brandHref="/"
         loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
@@ -370,7 +376,7 @@ export default function GymnasticsLanding() {
                 <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-start">
                   <CtaButton
                     label="Start Your Meet Page"
-                    href={isAuthenticated ? "/" : undefined}
+                    href={isAuthenticated ? "/event/gymnastics" : undefined}
                     onClick={isAuthenticated ? undefined : () => openAuth("signup")}
                   />
                   <CtaButton label="See How It Works" href="#how-it-works" light />
@@ -694,7 +700,7 @@ export default function GymnasticsLanding() {
             <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
               <CtaButton
                 label="Start Your Meet Page"
-                href={isAuthenticated ? "/" : undefined}
+                href={isAuthenticated ? "/event/gymnastics" : undefined}
                 onClick={isAuthenticated ? undefined : () => openAuth("signup")}
               />
               <CtaButton label="See Snap" href="/snap" light />
@@ -711,7 +717,7 @@ export default function GymnasticsLanding() {
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
         signupSource="gymnastics"
-        successRedirectUrl="/"
+        successRedirectUrl={authMode === "signup" ? "/event/gymnastics" : "/"}
       />
     </div>
   );

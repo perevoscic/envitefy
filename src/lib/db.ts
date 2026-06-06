@@ -17,6 +17,12 @@ import type {
   DiscoverySourceRecord,
   EventDiscoveryRow,
 } from "@/lib/discovery/types";
+import {
+  type EventPageBlueprint,
+  type EventPageStatus,
+  type EventTheme,
+  assertEventPageBlueprint,
+} from "@/features/event-pages/schemas/eventBlueprint.schema";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
 import { buildEventStartAtTsSql } from "@/lib/pg-event-start-ts";
@@ -1451,6 +1457,32 @@ export type EventHistoryInlineMedia = {
 
 export type EventHistoryPublicRow = EventHistoryRow & {
   media: EventHistoryInlineMedia;
+};
+
+export type EventPageRow = {
+  id: string;
+  event_id: string;
+  slug: string;
+  status: EventPageStatus;
+  page_blueprint_json: EventPageBlueprint;
+  theme_json: EventTheme;
+  generated_copy_json: Record<string, string>;
+  ai_generation_version?: string | null;
+  source_conversation_id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  published_at?: string | null;
+};
+
+export type EventPageVersionRow = {
+  id: string;
+  event_page_id: string;
+  version_number: number;
+  page_blueprint_json: EventPageBlueprint;
+  theme_json: EventTheme;
+  generated_copy_json: Record<string, string>;
+  created_by?: string | null;
+  created_at?: string | null;
 };
 
 export type EventHistorySitemapRow = Pick<
@@ -3276,6 +3308,276 @@ export async function getEventHistoryPublicRenderBySlugOrId(params: {
   const identity = await resolveEventHistoryIdentityBySlugOrId(params);
   if (!identity) return null;
   return await getEventHistoryPublicRenderById(identity.id);
+}
+
+async function ensureEventPagesSchema(): Promise<void> {
+  await ensureOnce("dynamic_event_pages_schema", async () => {
+    await query(`
+      create table if not exists dynamic_event_pages (
+        id uuid primary key default gen_random_uuid(),
+        event_id uuid not null references event_history(id) on delete cascade,
+        slug text not null,
+        status text not null default 'draft',
+        page_blueprint_json jsonb not null default '{}'::jsonb,
+        theme_json jsonb not null default '{}'::jsonb,
+        generated_copy_json jsonb not null default '{}'::jsonb,
+        ai_generation_version text,
+        source_conversation_id text,
+        created_at timestamptz(6) default now(),
+        updated_at timestamptz(6) default now(),
+        published_at timestamptz(6)
+      )
+    `);
+    await query(`
+      create unique index if not exists idx_dynamic_event_pages_slug_unique
+      on dynamic_event_pages (lower(slug))
+      where slug is not null and slug <> ''
+    `);
+    await query(`
+      create unique index if not exists idx_dynamic_event_pages_event_id_unique
+      on dynamic_event_pages (event_id)
+    `);
+    await query(`
+      create table if not exists dynamic_event_page_versions (
+        id uuid primary key default gen_random_uuid(),
+        event_page_id uuid not null references dynamic_event_pages(id) on delete cascade,
+        version_number integer not null,
+        page_blueprint_json jsonb not null,
+        theme_json jsonb not null,
+        generated_copy_json jsonb not null default '{}'::jsonb,
+        created_by text,
+        created_at timestamptz(6) default now(),
+        unique (event_page_id, version_number)
+      )
+    `);
+  });
+}
+
+function normalizeEventPageStatus(value: string): EventPageStatus {
+  if (value === "draft" || value === "preview" || value === "published" || value === "archived") {
+    return value;
+  }
+  return "draft";
+}
+
+function mapEventPageRow(row: any): EventPageRow {
+  const blueprint = assertEventPageBlueprint(row.page_blueprint_json);
+  return {
+    id: row.id,
+    event_id: row.event_id,
+    slug: makeEventPublicSlugRoutable(row.slug),
+    status: normalizeEventPageStatus(row.status),
+    page_blueprint_json: blueprint,
+    theme_json: (row.theme_json && typeof row.theme_json === "object"
+      ? row.theme_json
+      : blueprint.theme) as EventTheme,
+    generated_copy_json:
+      row.generated_copy_json && typeof row.generated_copy_json === "object"
+        ? row.generated_copy_json
+        : {},
+    ai_generation_version: row.ai_generation_version || null,
+    source_conversation_id: row.source_conversation_id || null,
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+    published_at: row.published_at || null,
+  };
+}
+
+async function insertEventPageVersion(params: {
+  eventPageId: string;
+  blueprint: EventPageBlueprint;
+  createdBy?: string | null;
+}): Promise<EventPageVersionRow> {
+  const versionRes = await query<{ n: number }>(
+    `select coalesce(max(version_number), 0) + 1 as n
+     from dynamic_event_page_versions
+     where event_page_id = $1`,
+    [params.eventPageId],
+  );
+  const versionNumber = Number(versionRes.rows[0]?.n || 1);
+  const res = await query<EventPageVersionRow>(
+    `insert into dynamic_event_page_versions (
+       event_page_id,
+       version_number,
+       page_blueprint_json,
+       theme_json,
+       generated_copy_json,
+       created_by
+     )
+     values ($1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6)
+     returning id, event_page_id, version_number, page_blueprint_json, theme_json, generated_copy_json, created_by, created_at`,
+    [
+      params.eventPageId,
+      versionNumber,
+      JSON.stringify(params.blueprint),
+      JSON.stringify(params.blueprint.theme),
+      JSON.stringify(params.blueprint.generatedCopy || {}),
+      params.createdBy || null,
+    ],
+  );
+  return res.rows[0];
+}
+
+export async function upsertEventPageDraft(params: {
+  eventId: string;
+  slug: string;
+  blueprint: EventPageBlueprint;
+  aiGenerationVersion?: string | null;
+  sourceConversationId?: string | null;
+  createdBy?: string | null;
+}): Promise<EventPageRow> {
+  await ensureEventPagesSchema();
+  const blueprint = assertEventPageBlueprint(params.blueprint);
+  const slug = makeEventPublicSlugRoutable(params.slug);
+  if (!slug || slug === "event") throw new Error("Event page slug is required.");
+  const res = await query<EventPageRow>(
+    `insert into dynamic_event_pages (
+       event_id,
+       slug,
+       status,
+       page_blueprint_json,
+       theme_json,
+       generated_copy_json,
+       ai_generation_version,
+       source_conversation_id,
+       updated_at
+     )
+     values ($1, $2, 'draft', $3::jsonb, $4::jsonb, $5::jsonb, $6, $7, now())
+     on conflict (event_id)
+     do update set
+       slug = excluded.slug,
+       status = case when dynamic_event_pages.status = 'published' then 'preview' else 'draft' end,
+       page_blueprint_json = excluded.page_blueprint_json,
+       theme_json = excluded.theme_json,
+       generated_copy_json = excluded.generated_copy_json,
+       ai_generation_version = excluded.ai_generation_version,
+       source_conversation_id = excluded.source_conversation_id,
+       updated_at = now()
+     returning id, event_id, slug, status, page_blueprint_json, theme_json, generated_copy_json,
+       ai_generation_version, source_conversation_id, created_at, updated_at, published_at`,
+    [
+      params.eventId,
+      slug,
+      JSON.stringify(blueprint),
+      JSON.stringify(blueprint.theme),
+      JSON.stringify(blueprint.generatedCopy || {}),
+      params.aiGenerationVersion || null,
+      params.sourceConversationId || null,
+    ],
+  );
+  const row = mapEventPageRow(res.rows[0]);
+  await insertEventPageVersion({
+    eventPageId: row.id,
+    blueprint: row.page_blueprint_json,
+    createdBy: params.createdBy || null,
+  });
+  return row;
+}
+
+export async function updateEventPageBlueprint(params: {
+  eventPageId: string;
+  blueprint: EventPageBlueprint;
+  status?: EventPageStatus;
+  createdBy?: string | null;
+}): Promise<EventPageRow | null> {
+  await ensureEventPagesSchema();
+  const blueprint = assertEventPageBlueprint(params.blueprint);
+  const status = params.status || "preview";
+  const res = await query<EventPageRow>(
+    `update dynamic_event_pages
+     set page_blueprint_json = $2::jsonb,
+         theme_json = $3::jsonb,
+         generated_copy_json = $4::jsonb,
+         status = $5,
+         updated_at = now()
+     where id = $1
+     returning id, event_id, slug, status, page_blueprint_json, theme_json, generated_copy_json,
+       ai_generation_version, source_conversation_id, created_at, updated_at, published_at`,
+    [
+      params.eventPageId,
+      JSON.stringify(blueprint),
+      JSON.stringify(blueprint.theme),
+      JSON.stringify(blueprint.generatedCopy || {}),
+      status,
+    ],
+  );
+  const row = res.rows[0] ? mapEventPageRow(res.rows[0]) : null;
+  if (row) {
+    await insertEventPageVersion({
+      eventPageId: row.id,
+      blueprint: row.page_blueprint_json,
+      createdBy: params.createdBy || null,
+    });
+  }
+  return row;
+}
+
+export async function publishEventPage(eventPageId: string): Promise<EventPageRow | null> {
+  await ensureEventPagesSchema();
+  const res = await query<EventPageRow>(
+    `update dynamic_event_pages
+     set status = 'published',
+         published_at = coalesce(published_at, now()),
+         updated_at = now()
+     where id = $1
+     returning id, event_id, slug, status, page_blueprint_json, theme_json, generated_copy_json,
+       ai_generation_version, source_conversation_id, created_at, updated_at, published_at`,
+    [eventPageId],
+  );
+  return res.rows[0] ? mapEventPageRow(res.rows[0]) : null;
+}
+
+export async function getEventPageBySlug(slug: string): Promise<EventPageRow | null> {
+  await ensureEventPagesSchema();
+  const normalized = makeEventPublicSlugRoutable(slug);
+  const res = await query<EventPageRow>(
+    `select id, event_id, slug, status, page_blueprint_json, theme_json, generated_copy_json,
+       ai_generation_version, source_conversation_id, created_at, updated_at, published_at
+     from dynamic_event_pages
+     where lower(slug) = lower($1)
+     limit 1`,
+    [normalized],
+  );
+  return res.rows[0] ? mapEventPageRow(res.rows[0]) : null;
+}
+
+export async function getEventPageByEventId(eventId: string): Promise<EventPageRow | null> {
+  await ensureEventPagesSchema();
+  const res = await query<EventPageRow>(
+    `select id, event_id, slug, status, page_blueprint_json, theme_json, generated_copy_json,
+       ai_generation_version, source_conversation_id, created_at, updated_at, published_at
+     from dynamic_event_pages
+     where event_id = $1
+     limit 1`,
+    [eventId],
+  );
+  return res.rows[0] ? mapEventPageRow(res.rows[0]) : null;
+}
+
+export async function getEventPageById(eventPageId: string): Promise<EventPageRow | null> {
+  await ensureEventPagesSchema();
+  const res = await query<EventPageRow>(
+    `select id, event_id, slug, status, page_blueprint_json, theme_json, generated_copy_json,
+       ai_generation_version, source_conversation_id, created_at, updated_at, published_at
+     from dynamic_event_pages
+     where id = $1
+     limit 1`,
+    [eventPageId],
+  );
+  return res.rows[0] ? mapEventPageRow(res.rows[0]) : null;
+}
+
+export async function listEventPageVersions(eventPageId: string): Promise<EventPageVersionRow[]> {
+  await ensureEventPagesSchema();
+  const res = await query<EventPageVersionRow>(
+    `select id, event_page_id, version_number, page_blueprint_json, theme_json,
+       generated_copy_json, created_by, created_at
+     from dynamic_event_page_versions
+     where event_page_id = $1
+     order by version_number desc`,
+    [eventPageId],
+  );
+  return res.rows;
 }
 
 export async function listPublicEventSitemapRows(
