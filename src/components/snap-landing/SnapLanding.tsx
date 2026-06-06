@@ -20,8 +20,8 @@ import ScenicBackground, {
   useActiveScene,
 } from "@/components/marketing/ScenicBackground";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
-import { buildMarketingHeroNav } from "@/components/navigation/marketing-hero-nav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
+import { publicUseCasePrimaryNavLinks, signedOutMobileMenuLinks } from "@/config/navigation";
 
 const SNAP_SCENE_ORDER = [
   "snap",
@@ -211,12 +211,6 @@ const glassPanelClass =
 
 const snapSectionSpacingClass = "px-4 py-6 sm:px-6 lg:px-8";
 const snapHashAnchorClass = "hash-anchor-below-fixed-nav";
-
-const snapHeroNavLinks = buildMarketingHeroNav("snap", [
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Use Cases", href: "#use-cases" },
-  { label: "FAQ", href: "#faq" },
-]);
 
 function CtaButton({
   label,
@@ -563,12 +557,12 @@ function CallToAction({
               invites into magical event pages.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <CtaButton
-                label="Get Started Free"
-                href={isAuthenticated ? "/event" : undefined}
-                onClick={isAuthenticated ? undefined : onOpenSignup}
-                light
-              />
+                <CtaButton
+                  label="Get Started Free"
+                  href={isAuthenticated ? "/snap" : undefined}
+                  onClick={isAuthenticated ? undefined : onOpenSignup}
+                  light
+                />
               <p className="text-sm font-medium text-white/60">
                 No credit card required.
               </p>
@@ -659,17 +653,19 @@ export default function SnapLanding() {
       <ScenicBackground scene={activeScene} scenes={SNAP_SCENES} />
 
       <HeroTopNav
-        navLinks={snapHeroNavLinks}
-        variant="glass-dark"
-        primaryCtaLabel="Snap Your First Invite"
-        authenticatedPrimaryHref="/"
+        navLinks={[...publicUseCasePrimaryNavLinks]}
+        mobileNavLinks={[...signedOutMobileMenuLinks]}
+        variant="transparent-dark"
+        primaryCtaLabel="Let's create"
+        authenticatedPrimaryHref="/chat"
+        brandHref="/"
         loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
       />
 
       <Hero
-        primaryHref={isAuthenticated ? "/" : undefined}
+        primaryHref={isAuthenticated ? "/snap" : undefined}
         onPrimaryAction={() => openAuth("signup")}
       />
       <TrustBar />
@@ -688,7 +684,7 @@ export default function SnapLanding() {
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
         signupSource="snap"
-        successRedirectUrl="/"
+        successRedirectUrl={authMode === "signup" ? "/snap" : "/"}
       />
     </div>
   );

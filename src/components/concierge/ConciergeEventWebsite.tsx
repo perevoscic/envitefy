@@ -51,6 +51,11 @@ type EventLocation = {
   description?: string | null;
 };
 
+type SourceFactSection = {
+  title?: string | null;
+  items?: string[];
+};
+
 type ConciergeEventWebsiteProps = {
   eventId: string;
   title: string;
@@ -63,6 +68,7 @@ type ConciergeEventWebsiteProps = {
   venueName?: string | null;
   location?: string | null;
   additionalLocations?: EventLocation[];
+  sourceSections?: SourceFactSection[];
   imageUrl?: string | null;
   shareUrl?: string | null;
   calendarLinks?: CalendarLinks | null;
@@ -133,6 +139,7 @@ export default function ConciergeEventWebsite({
   venueName,
   location,
   additionalLocations = [],
+  sourceSections = [],
   imageUrl,
   shareUrl,
   calendarLinks,
@@ -173,9 +180,17 @@ export default function ConciergeEventWebsite({
   const visiblePaymentItems = paymentItems.filter((item) => clean(item.title));
   const visibleReminders = reminders.filter((item) => clean(item.title));
   const visibleChecklistItems = checklistItems.filter((item) => clean(item.title));
+  const visibleSourceSections = sourceSections
+    .map((section) => ({
+      title: clean(section.title) || "Source Details",
+      items: Array.isArray(section.items) ? section.items.map(clean).filter(Boolean).slice(0, 8) : [],
+    }))
+    .filter((section) => section.items.length)
+    .slice(0, 6);
   const navItems = [
     { href: "#details", label: "Details" },
     { href: "#schedule", label: "Schedule" },
+    ...(visibleSourceSections.length ? [{ href: "#source-details", label: "Source" }] : []),
     ...(showRsvp ? [{ href: "#event-rsvp", label: "RSVP" }] : []),
     ...(visibleForms.length ? [{ href: "#forms", label: "Forms" }] : []),
     ...(visibleVolunteerSlots.length ? [{ href: "#volunteer-signup", label: "Signup" }] : []),
@@ -205,7 +220,7 @@ export default function ConciergeEventWebsite({
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            {actions}
+            {actions ? <div key="event-owner-actions">{actions}</div> : null}
             <button
               type="button"
               onClick={() => setMenuOpen((value) => !value)}
@@ -377,6 +392,37 @@ export default function ConciergeEventWebsite({
           </div>
         </div>
       </section>
+
+      {visibleSourceSections.length ? (
+        <section id="source-details" className="border-y border-slate-200 bg-white">
+          <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">
+              Source Details
+            </p>
+            <h2 className="mt-3 text-3xl font-black text-slate-950 sm:text-4xl">
+              Pulled from the upload
+            </h2>
+            <div className="mt-7 grid gap-4 md:grid-cols-2">
+              {visibleSourceSections.map((section) => (
+                <article
+                  key={`${section.title}-${section.items[0]}`}
+                  className="rounded-lg border border-slate-200 bg-slate-50 p-5 shadow-sm"
+                >
+                  <h3 className="text-base font-black text-slate-950">{section.title}</h3>
+                  <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-700">
+                    {section.items.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-600" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {showRsvp ? (
         <section id="event-rsvp" className="border-y border-slate-200 bg-white">

@@ -46,7 +46,7 @@ function safeJson(value: string): Record<string, any> | null {
 function mergeProviderDraft(providerDraft: Record<string, any>, fallback: Record<string, any>) {
   const nestedDraft = asRecord(providerDraft.draft);
   const draft = Object.keys(nestedDraft).length ? nestedDraft : providerDraft;
-  return {
+  const merged = {
     ...fallback,
     ...draft,
     program: { ...asRecord(fallback.program), ...asRecord(draft.program) },
@@ -59,6 +59,27 @@ function mergeProviderDraft(providerDraft: Record<string, any>, fallback: Record
     checklistItems: Array.isArray(draft.checklistItems) ? draft.checklistItems : fallback.checklistItems,
     missingFields: Array.isArray(draft.missingFields) ? draft.missingFields : fallback.missingFields,
   };
+  if (
+    fallback.eventType === "gymnastics_meet" &&
+    Array.isArray(fallback.occurrences) &&
+    fallback.missingFields?.some((field: any) => /time/i.test(cleanString(field, 120)))
+  ) {
+    merged.occurrences = (Array.isArray(merged.occurrences) ? merged.occurrences : []).map(
+      (occurrence: any, index: number) => {
+        const fallbackOccurrence = asRecord(fallback.occurrences[index]);
+        if (!fallbackOccurrence.date || fallbackOccurrence.startAt) return occurrence;
+        return {
+          ...occurrence,
+          date: fallbackOccurrence.date,
+          dateText: fallbackOccurrence.dateText || occurrence?.dateText || null,
+          startAt: null,
+          endAt: null,
+          timezone: cleanString(occurrence?.timezone, 80) || fallbackOccurrence.timezone || fallback.timezone,
+        };
+      },
+    );
+  }
+  return merged;
 }
 
 export function getConciergeV2ProviderStatus() {

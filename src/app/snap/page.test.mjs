@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import { buildMarketingHeroNav } from "../../components/navigation/marketing-hero-nav.mjs";
 
 const repoRoot = process.cwd();
 
@@ -12,25 +11,21 @@ const readSource = (relativePath) =>
 test("/snap renders the new landing component with key sections", () => {
   const page = readSource("src/app/snap/page.tsx");
   const snapLanding = readSource("src/components/snap-landing/SnapLanding.tsx");
-  const navLabels = buildMarketingHeroNav("snap", [
-    { label: "How It Works", href: "#how-it-works" },
-    { label: "Use Cases", href: "#use-cases" },
-    { label: "FAQ", href: "#faq" },
-  ]).map((link) => link.label);
 
   assert.match(page, /<SnapLanding \/>/);
   assert.match(page, /getServerSession\(authOptions as any\)/);
   assert.match(page, /AuthenticatedSnapUploadStart/);
   assert.match(page, /<SnapLaunchCards processInPage \/>/);
-  assert.match(snapLanding, /buildMarketingHeroNav\("snap", \[/);
-  assert.deepEqual(navLabels, [
-    "Home",
-    "Studio",
-    "Gymnastics",
-    "How It Works",
-    "Use Cases",
-    "FAQ",
-  ]);
+  assert.match(snapLanding, /publicUseCasePrimaryNavLinks/);
+  assert.match(snapLanding, /signedOutMobileMenuLinks/);
+  assert.match(snapLanding, /navLinks=\{\[...publicUseCasePrimaryNavLinks\]\}/);
+  assert.match(snapLanding, /mobileNavLinks=\{\[...signedOutMobileMenuLinks\]\}/);
+  assert.match(snapLanding, /variant="transparent-dark"/);
+  assert.match(snapLanding, /primaryCtaLabel="Let's create"/);
+  assert.match(snapLanding, /brandHref="\/"/);
+  assert.doesNotMatch(snapLanding, /buildMarketingHeroNav/);
+  assert.doesNotMatch(snapLanding, /variant="glass-dark"/);
+  assert.doesNotMatch(snapLanding, /primaryCtaLabel="Snap Your First Invite"/);
   assert.match(snapLanding, /Stop sharing screenshots\./);
   assert.match(snapLanding, /Start sharing events\./);
   assert.match(snapLanding, /id="snap"/);
@@ -88,18 +83,19 @@ test("/snap keeps public auth CTAs but renders direct upload cards for authentic
   assert.match(page, /AuthenticatedSnapUploadStart/);
   assert.match(page, /Snap \/ Upload/);
   assert.match(page, /Snap or upload your/);
-  assert.match(page, /min-h-\[100dvh\] bg-\[#eff1f8\]/);
-  assert.match(page, /isAuthenticated \? "min-h-\[100dvh\] bg-\[#eff1f8\]" : ""/);
+  assert.match(page, /min-h-\[100dvh\] bg-transparent/);
+  assert.match(page, /isAuthenticated \? "min-h-\[100dvh\] bg-transparent" : ""/);
   assert.match(page, /<Dashboard snapProcessingMode \/>/);
   assert.doesNotMatch(page, /uploadActionHref="\/snap\?action=upload"/);
   assert.match(
     mainWrapper,
     /normalizedPath === "\/snap" && !isAuthenticated/,
   );
-  assert.match(snapLanding, /authenticatedPrimaryHref="\/"/);
+  assert.match(snapLanding, /authenticatedPrimaryHref="\/chat"/);
   assert.match(snapLanding, /loginSuccessRedirectUrl="\/"/);
-  assert.match(snapLanding, /primaryHref=\{isAuthenticated \? "\/" : undefined\}/);
-  assert.match(snapLanding, /successRedirectUrl="\/"/);
+  assert.match(snapLanding, /primaryHref=\{isAuthenticated \? "\/snap" : undefined\}/);
+  assert.match(snapLanding, /href=\{isAuthenticated \? "\/snap" : undefined\}/);
+  assert.match(snapLanding, /successRedirectUrl=\{authMode === "signup" \? "\/snap" : "\/"\}/);
 
   assert.match(snapSignupLanding, /authenticatedPrimaryHref="\/"/);
   assert.match(snapSignupLanding, /loginSuccessRedirectUrl="\/"/);

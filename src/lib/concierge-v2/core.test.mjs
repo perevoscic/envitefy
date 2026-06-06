@@ -12,6 +12,7 @@ import {
   parseConciergeInput,
   validateFormSchema,
 } from "./core.mjs";
+import { buildConciergeV2EventHistoryPayload } from "./public-event.ts";
 
 test("detectEventMode identifies gymnastics meet prompts", () => {
   const result = detectEventMode(
@@ -33,6 +34,50 @@ test("parseConciergeInput creates a structured gymnastics draft with recurrence 
   assert.ok(draft.occurrences.some((item) => item.type === "meet"));
   assert.ok(draft.occurrences.some((item) => item.type === "team_dinner"));
   assert.ok(draft.checklistItems.some((item) => /grips/i.test(item.title)));
+});
+
+test("parseConciergeInput grounds gymnastics packet ranges and leaves missing time explicit", () => {
+  const draft = parseConciergeInput(
+    [
+      "38 th ANNUAL GASPARILLA CLASSIC",
+      "February 20-22, 2026",
+      "Men's Meet Information",
+      "MEET SITE: World Equestrian Center - Expo Center 1 1284 NW 87 th Ct. Rd, Ocala, FL",
+      "MEET DIRECTOR: Tim Keckler - lcgymnasts@aol.com",
+      "USA Gymnastics Competition",
+    ].join("\n"),
+    { referenceDate: "2026-06-06T12:00:00.000Z", sourceKind: "pdf_schedule" },
+  );
+
+  assert.equal(draft.title, "38th Annual Gasparilla Classic");
+  assert.equal(draft.occurrences[0].date, "2026-02-20");
+  assert.equal(draft.occurrences[0].startAt, null);
+  assert.match(draft.occurrences[0].locationText, /World Equestrian Center/i);
+  assert.ok(draft.missingFields.includes("gymnastics meet time"));
+  assert.doesNotMatch(draft.missingFields.join(","), /location/);
+});
+
+test("Concierge V2 public event payload formats schedule labels instead of exposing raw ISO", () => {
+  const payload = buildConciergeV2EventHistoryPayload({
+    draft: {
+      title: "38th Annual Gasparilla Classic",
+      mode: "gymnastics",
+      eventType: "gymnastics_meet",
+      timezone: "America/New_York",
+      occurrences: [
+        {
+          title: "Gymnastics Meet",
+          startAt: "2026-03-06T12:00:00.000Z",
+          endAt: "2026-03-06T15:00:00.000Z",
+          timezone: "America/New_York",
+        },
+      ],
+    },
+  });
+
+  assert.equal(payload.data.scheduleLine, "Mar 6, 2026, 7:00 AM");
+  assert.equal(payload.data.whenLabel, "Mar 6, 2026, 7:00 AM");
+  assert.doesNotMatch(payload.data.publicEvent.scheduleLine, /T12:00:00/);
 });
 
 test("parseConciergeInput expands school spirit week daily items", () => {

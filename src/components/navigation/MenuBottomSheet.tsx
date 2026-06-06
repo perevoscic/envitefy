@@ -16,6 +16,7 @@ type MenuBottomSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   successRedirectUrl?: string;
+  signupSuccessRedirectUrl?: string;
 };
 
 const closeDragOffset = 84;
@@ -26,6 +27,7 @@ export default function MenuBottomSheet({
   open,
   onOpenChange,
   successRedirectUrl = "/",
+  signupSuccessRedirectUrl = successRedirectUrl,
 }: MenuBottomSheetProps) {
   const dragControls = useDragControls();
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
@@ -259,7 +261,7 @@ export default function MenuBottomSheet({
                         <SignupForm
                           variant="inline"
                           inlineTone="dark"
-                          successRedirectUrl={successRedirectUrl}
+                          successRedirectUrl={signupSuccessRedirectUrl}
                           onSwitchMode={setAuthMode}
                           onSuccess={closeSheet}
                         />

@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import { buildMarketingHeroNav } from "../../components/navigation/marketing-hero-nav.mjs";
 
 const repoRoot = process.cwd();
 
@@ -12,38 +11,20 @@ test("/gymnastics renders the shared hero nav without duplicating the current pa
   const page = readSource("src/app/gymnastics/page.tsx");
   const gymnasticsLanding = readSource("src/components/gymnastics-landing/GymnasticsLanding.tsx");
   const gymnasticsFaq = readSource("src/components/gymnastics-landing/GymnasticsLandingFaq.tsx");
-  const navLabels = buildMarketingHeroNav("gymnastics", [
-    { label: "Features", href: "#features" },
-    { label: "How it works", href: "#how-it-works" },
-    { label: "Preview", href: "#preview" },
-    { label: "Use cases", href: "#use-cases" },
-    { label: "Why Envitefy", href: "#why-envitefy" },
-    { label: "FAQ", href: "#faq" },
-  ]).map((link) => link.label);
 
   assert.match(page, /<GymnasticsLanding \/>/);
   assert.match(gymnasticsLanding, /<ScenicBackground/);
   assert.match(gymnasticsLanding, /useActiveScene\(GYMNASTICS_SCENE_ORDER, "hero"\)/);
   assert.match(gymnasticsLanding, /<HeroTopNav/);
-  assert.match(gymnasticsLanding, /buildMarketingHeroNav\("gymnastics", \[/);
-  assert.deepEqual(navLabels, [
-    "Home",
-    "Studio",
-    "Snap",
-    "Features",
-    "How it works",
-    "Preview",
-    "Use cases",
-    "Why Envitefy",
-    "FAQ",
-  ]);
-  assert.match(gymnasticsLanding, /variant="glass-dark"/);
-  assert.match(gymnasticsLanding, /label: "Features", href: "#features"/);
-  assert.match(gymnasticsLanding, /label: "How it works", href: "#how-it-works"/);
-  assert.match(gymnasticsLanding, /label: "Preview", href: "#preview"/);
-  assert.match(gymnasticsLanding, /label: "Use cases", href: "#use-cases"/);
-  assert.match(gymnasticsLanding, /label: "Why Envitefy", href: "#why-envitefy"/);
-  assert.match(gymnasticsLanding, /label: "FAQ", href: "#faq"/);
+  assert.match(gymnasticsLanding, /publicUseCasePrimaryNavLinks/);
+  assert.match(gymnasticsLanding, /signedOutMobileMenuLinks/);
+  assert.match(gymnasticsLanding, /navLinks=\{\[...publicUseCasePrimaryNavLinks\]\}/);
+  assert.match(gymnasticsLanding, /mobileNavLinks=\{\[...signedOutMobileMenuLinks\]\}/);
+  assert.match(gymnasticsLanding, /variant="transparent-dark"/);
+  assert.match(gymnasticsLanding, /primaryCtaLabel="Let's create"/);
+  assert.match(gymnasticsLanding, /brandHref="\/"/);
+  assert.doesNotMatch(gymnasticsLanding, /buildMarketingHeroNav/);
+  assert.doesNotMatch(gymnasticsLanding, /variant="glass-dark"/);
   assert.match(gymnasticsLanding, /id="hero"/);
   assert.match(gymnasticsLanding, /id="features"/);
   assert.match(gymnasticsLanding, /id="how-it-works"/);
@@ -69,13 +50,19 @@ test("/gymnastics keeps gymnastics signup and launch wiring", () => {
 
   assert.match(gymnasticsLanding, /onGuestLoginAction=\{\(\) => openAuth\("login"\)\}/);
   assert.match(gymnasticsLanding, /onGuestPrimaryAction=\{\(\) => openAuth\("signup"\)\}/);
+  assert.match(gymnasticsLanding, /const searchParams = useSearchParams\(\)/);
+  assert.match(gymnasticsLanding, /const auth = searchParams\?\.get\("auth"\)/);
+  assert.match(gymnasticsLanding, /auth === "signup" \|\| auth === "login"/);
   assert.match(gymnasticsLanding, /signupSource="gymnastics"/);
-  assert.match(gymnasticsLanding, /successRedirectUrl="\/"/);
+  assert.match(
+    gymnasticsLanding,
+    /successRedirectUrl=\{authMode === "signup" \? "\/event\/gymnastics" : "\/"\}/,
+  );
   assert.doesNotMatch(gymnasticsLanding, /allowSignupSwitch=\{false\}/);
-  assert.match(gymnasticsLanding, /href=\{isAuthenticated \? "\/" : undefined\}/);
+  assert.match(gymnasticsLanding, /href=\{isAuthenticated \? "\/event\/gymnastics" : undefined\}/);
   assert.match(
     gymnasticsLanding,
     /onClick=\{isAuthenticated \? undefined : \(\) => openAuth\("signup"\)\}/,
   );
-  assert.match(gymnasticsLanding, /Start Your Meet Page/);
+  assert.match(gymnasticsLanding, /Let's create/);
 });

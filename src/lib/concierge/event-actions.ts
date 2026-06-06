@@ -79,6 +79,9 @@ const ALLOWED_EVENT_PATCH_FIELDS = new Set([
   "age",
   "outputs",
   "liveCard",
+  "eventPageBlueprint",
+  "eventPageTheme",
+  "eventPageMode",
   "uploads",
 ]);
 
@@ -579,6 +582,7 @@ async function planWithOpenAi(params: {
               "Allowed action types: update_event, create_asset, update_asset, ask_question.",
               "Never choose or accept user_id. Never modify ownership.",
               "Only patch event fields relevant to event details, RSVP, copy, status, and design tone.",
+              "For event pages, think in structured Event Page Blueprint JSON and theme intent. Do not generate raw React, HTML, scripts, or arbitrary CSS. If the user asks for an event page, prefer create_asset with assetType event_page or patch eventPageBlueprint with supported sections and safe theme tokens.",
               "Use concise, warm, professional language. Never use markdown, bullets, numbered lists, star separators, or raw snake_case identifiers. Ask at most two short questions. Do not use slang, emojis, excessive exclamation, or over-familiar compliments.",
               "Do not claim an action was completed unless it is represented in the returned actions.",
               "Do not execute destructive guest response changes; ask the host to use RSVP tools or clarify a supported event setting.",

@@ -12,7 +12,7 @@ test("studio marketing page uses the shared guest hero nav ordering", () => {
   const studioMarketingPage = readSource("src/app/studio/StudioMarketingPage.tsx");
   const showcaseLiveCard = readSource("src/components/studio/StudioShowcaseLiveCard.tsx");
   const navLabels = buildMarketingHeroNav("studio", [
-    { label: "Create in Studio", href: "#features" },
+    { label: "Features", href: "#features" },
     { label: "Built to be Clicked", href: "#actions" },
     { label: "Made for Real Events", href: "#use-cases" },
     { label: "How It Works", href: "#how-it-works" },
@@ -23,9 +23,14 @@ test("studio marketing page uses the shared guest hero nav ordering", () => {
   assert.match(studioMarketingPage, /<HeroTopNav/);
   assert.deepEqual(navLabels, [
     "Home",
-    "Snap",
+    "Weddings",
+    "Bridal Showers",
+    "Baby Showers",
     "Gymnastics",
-    "Create in Studio",
+    "Signup Forms",
+    "Gender Reveals",
+    "Birthdays",
+    "Features",
     "Built to be Clicked",
     "Made for Real Events",
     "How It Works",

@@ -23,6 +23,20 @@ export type SignedOutMobileMenuLink = {
   href: string;
 };
 
+export const publicUseCaseNavLinks: SignedOutMobileMenuLink[] = [
+  { label: "Weddings", href: "/weddings" },
+  { label: "Bridal Showers", href: "/bridal-showers" },
+  { label: "Baby Showers", href: "/baby-showers" },
+  { label: "Gymnastics", href: "/gymnastics" },
+  { label: "Signup Forms", href: "/signup-forms" },
+  { label: "Gender Reveals", href: "/gender-reveal" },
+  { label: "Birthdays", href: "/birthdays" },
+];
+
+export const publicUseCasePrimaryNavLinks: SignedOutMobileMenuLink[] = [
+  ...publicUseCaseNavLinks,
+];
+
 export const signedOutBottomNav: SignedOutBottomNavItem[] = [
   {
     label: "Templates",
@@ -62,11 +76,8 @@ export const signedOutBottomNav: SignedOutBottomNavItem[] = [
 ];
 
 export const signedOutMobileMenuLinks: SignedOutMobileMenuLink[] = [
-  // TODO: Switch to /pricing when public pricing has a dedicated route.
-  { label: "Pricing", href: "/contact" },
-  { label: "About", href: "/about" },
-  // TODO: Switch to /help if a help center route is added.
-  { label: "Help", href: "/faq" },
+  ...publicUseCaseNavLinks,
+  { label: "Guides", href: "/guides" },
   { label: "Contact", href: "/contact" },
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },

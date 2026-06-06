@@ -1610,9 +1610,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     ? getAmazonRegistryCreateUrlForCategory(draft?.eventType)
     : null;
   const shouldShowProductPanel =
-    Boolean(draft) ||
-    phase === "ready_to_generate" ||
-    phase === "generating_card" ||
+    hasGeneratedDraftProduct ||
     phase === "card_ready" ||
     phase === "editing_card" ||
     Boolean(liveCardEventId);
@@ -1816,23 +1814,40 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   useEffect(() => {
     const root = document.documentElement;
-    const updateChatViewportHeight = () => {
-      const height = window.visualViewport?.height || window.innerHeight;
-      if (height > 0) root.style.setProperty("--envitefy-chat-viewport-height", `${height}px`);
+    const body = document.body;
+    const previousRootOverflow = root.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+
+    const updateChatViewportMetrics = () => {
+      const visualViewport = window.visualViewport;
+      const layoutHeight = window.innerHeight;
+      const visualHeight = visualViewport?.height ?? layoutHeight;
+      const visualTop = visualViewport?.offsetTop ?? 0;
+      const keyboardInset = Math.max(0, layoutHeight - visualHeight - visualTop);
+
+      if (layoutHeight > 0) {
+        root.style.setProperty("--envitefy-chat-layout-height", `${layoutHeight}px`);
+      }
+      root.style.setProperty("--envitefy-chat-keyboard-inset", `${Math.round(keyboardInset)}px`);
     };
 
-    updateChatViewportHeight();
-    window.visualViewport?.addEventListener("resize", updateChatViewportHeight);
-    window.visualViewport?.addEventListener("scroll", updateChatViewportHeight);
-    window.addEventListener("resize", updateChatViewportHeight);
-    window.addEventListener("orientationchange", updateChatViewportHeight);
+    root.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    updateChatViewportMetrics();
+    window.visualViewport?.addEventListener("resize", updateChatViewportMetrics);
+    window.visualViewport?.addEventListener("scroll", updateChatViewportMetrics);
+    window.addEventListener("resize", updateChatViewportMetrics);
+    window.addEventListener("orientationchange", updateChatViewportMetrics);
 
     return () => {
-      window.visualViewport?.removeEventListener("resize", updateChatViewportHeight);
-      window.visualViewport?.removeEventListener("scroll", updateChatViewportHeight);
-      window.removeEventListener("resize", updateChatViewportHeight);
-      window.removeEventListener("orientationchange", updateChatViewportHeight);
-      root.style.removeProperty("--envitefy-chat-viewport-height");
+      window.visualViewport?.removeEventListener("resize", updateChatViewportMetrics);
+      window.visualViewport?.removeEventListener("scroll", updateChatViewportMetrics);
+      window.removeEventListener("resize", updateChatViewportMetrics);
+      window.removeEventListener("orientationchange", updateChatViewportMetrics);
+      root.style.overflow = previousRootOverflow;
+      body.style.overflow = previousBodyOverflow;
+      root.style.removeProperty("--envitefy-chat-layout-height");
+      root.style.removeProperty("--envitefy-chat-keyboard-inset");
     };
   }, []);
 
@@ -2780,7 +2795,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       });
       const ocrResult = await runSnapOcrUpload({ file, scanAttemptId });
       setChatUploadStage("ocr_ready");
-      updateUploadStatus("Reading event details...");
+      updateUploadStatus("Reading upload...");
       const intakeResult = await sendToConcierge({
         message: "Create an event from this uploaded file.",
         action: "ocr_result",
@@ -2995,7 +3010,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         </motion.div>
       ) : null}
 
-      {isBusy && !isGeneratingCard && !isStreamingAssistant ? (
+      {isBusy && !isUploading && !isGeneratingCard && !isStreamingAssistant ? (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -3135,9 +3150,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const composer = (
     <div
       className={cn(
-        "pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-4 sm:px-6 sm:pb-8",
+        "pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.75rem)] pt-4 sm:px-6 sm:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+2rem)]",
         isEmptyState &&
-          "max-md:px-3 max-md:pb-[calc(env(safe-area-inset-bottom)+0.45rem)] max-md:pt-2 max-h-[700px]:max-md:pb-[calc(env(safe-area-inset-bottom)+0.3rem)] max-h-[700px]:max-md:pt-1",
+          "max-md:px-3 max-md:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.45rem)] max-md:pt-2 max-h-[700px]:max-md:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.3rem)] max-h-[700px]:max-md:pt-1",
       )}
     >
       <div ref={composerCardRef} className="pointer-events-auto w-full">
@@ -3258,7 +3273,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   );
 
   const readyActions = (
-    <div className="pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-4 sm:px-6 sm:pb-8">
+    <div className="pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.75rem)] pt-4 sm:px-6 sm:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+2rem)]">
       <div className="pointer-events-auto w-full">
         {shouldShowGiftRegistryPrompt ? (
           <div className="mb-2 rounded-[1.35rem] border border-[#ded2f5] bg-white/96 p-3 text-[#4f3a73] shadow-[0_14px_34px_rgba(93,63,155,0.12)] ring-1 ring-white/80 backdrop-blur">
@@ -3388,7 +3403,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   return (
     <div
       className="flex h-full min-h-0 w-full overflow-hidden bg-transparent text-[#161129]"
-      style={{ height: "var(--envitefy-chat-viewport-height, 100dvh)" }}
+      style={{ height: "var(--envitefy-chat-layout-height, 100dvh)" }}
     >
       <main
         ref={mainRef}

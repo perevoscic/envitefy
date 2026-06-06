@@ -225,11 +225,15 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
                 <ArrowRight className="h-4 w-4 shrink-0" />
               </button>
               <Link
-                href="#showcase"
+                href={activeSlide.href ?? "#showcase"}
                 className="inline-flex h-12 w-full min-w-0 items-center justify-center rounded-md border border-white/18 bg-black/18 px-3 text-[12px] font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/14 sm:w-auto sm:px-6 sm:text-sm"
               >
-                <span className="truncate sm:hidden">View examples</span>
-                <span className="hidden sm:inline">View live examples</span>
+                <span className="truncate sm:hidden">
+                  {activeSlide.secondaryCtaLabel ?? "View examples"}
+                </span>
+                <span className="hidden sm:inline">
+                  {activeSlide.secondaryCtaLabel ?? "View live examples"}
+                </span>
               </Link>
             </div>
           </motion.div>
@@ -836,6 +840,7 @@ export default function LandingExperience() {
         open={mobileMenuOpen}
         onOpenChange={setMobileMenuOpen}
         successRedirectUrl="/"
+        signupSuccessRedirectUrl="/chat"
       />
       <ConciergeSheet
         open={assistantOpen}
@@ -848,7 +853,7 @@ export default function LandingExperience() {
         mode={authMode}
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
-        successRedirectUrl="/"
+        successRedirectUrl={authMode === "signup" ? "/chat" : "/"}
       />
     </>
   );

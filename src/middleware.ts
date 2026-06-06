@@ -23,7 +23,23 @@ const PUBLIC_UNAUTH_PATHS = new Set([
   "/reset",
   "/snap",
   "/showcase",
+  "/weddings",
+  "/bridal-showers",
+  "/baby-showers",
+  "/signup-forms",
+  "/gender-reveal",
+  "/birthdays",
   "/guides",
+]);
+
+const LEGACY_USE_CASE_REDIRECTS = new Map<string, string>([
+  ["/use-cases/wedding-rsvp-tracker", "/weddings"],
+  ["/use-cases/bridal-shower-rsvp-tracker", "/bridal-showers"],
+  ["/use-cases/baby-shower-rsvp-tracker", "/baby-showers"],
+  ["/use-cases/gymnastics-meet-schedule", "/gymnastics"],
+  ["/use-cases/online-signup-forms", "/signup-forms"],
+  ["/use-cases/gender-reveal-party-rsvp", "/gender-reveal"],
+  ["/use-cases/birthday-party-rsvp", "/birthdays"],
 ]);
 
 const RESERVED_EVENT_PATHS = new Set([
@@ -68,6 +84,11 @@ const isStudioCardSharePath = (pathname: string) => {
   return /^\/card\/[^/]+$/.test(normalized);
 };
 
+const isDynamicEventPagePath = (pathname: string) => {
+  const normalized = stripTrailingSlash(pathname);
+  return /^\/e\/[^/]+$/.test(normalized);
+};
+
 const isLandingShowcasePath = (pathname: string) => {
   const normalized = stripTrailingSlash(pathname);
   return /^\/showcase\/[^/]+$/.test(normalized);
@@ -80,9 +101,20 @@ const isAllowedForUnauth = (pathname: string) => {
   if (isEventShareMetadataImagePath(normalized)) return true;
   if (isSmartSignupSharePath(normalized)) return true;
   if (isStudioCardSharePath(normalized)) return true;
+  if (isDynamicEventPagePath(normalized)) return true;
   if (isLandingShowcasePath(normalized)) return true;
   if (normalized.startsWith("/guides/")) return true;
   return false;
+};
+
+const getLegacyUseCaseRedirectTarget = (pathname: string) => {
+  const normalized = stripTrailingSlash(pathname);
+  if (normalized === "/use-cases") return "/";
+  if (LEGACY_USE_CASE_REDIRECTS.has(normalized)) {
+    return LEGACY_USE_CASE_REDIRECTS.get(normalized);
+  }
+  if (normalized.startsWith("/use-cases/")) return "/";
+  return null;
 };
 
 const matchesPathPrefix = (pathname: string, prefix: string) =>
@@ -165,6 +197,14 @@ export async function middleware(req: NextRequest) {
     url.search = "";
     url.hash = pathname.slice("/%23".length);
     return redirectWithMarker(url, 302);
+  }
+
+  const legacyUseCaseRedirectTarget = getLegacyUseCaseRedirectTarget(pathname);
+  if (legacyUseCaseRedirectTarget) {
+    const url = req.nextUrl.clone();
+    url.pathname = legacyUseCaseRedirectTarget;
+    url.search = "";
+    return redirectWithMarker(url, 308);
   }
 
   const queryAuthMode = req.nextUrl.searchParams.get("auth");

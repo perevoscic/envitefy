@@ -59,6 +59,12 @@ const MARKETING_ROUTE_PATHS = new Set([
   "/showcase",
   "/snap",
   "/terms",
+  "/weddings",
+  "/bridal-showers",
+  "/baby-showers",
+  "/signup-forms",
+  "/gender-reveal",
+  "/birthdays",
   "/who-its-for",
 ]);
 
@@ -67,7 +73,7 @@ const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
     title: "Create",
     links: [
       { label: "Concierge", href: "/landing#concierge" },
-      { label: "Templates", href: "/landing#examples" },
+      { label: "Weddings", href: "/weddings" },
       { label: "Live cards", href: "/showcase" },
       { label: "Snap uploads", href: "/snap" },
       { label: "Start your event", href: "/landing#creation-paths" },
@@ -86,12 +92,13 @@ const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
   {
     title: "Use Cases",
     links: [
-      { label: "Birthdays", href: "/landing#examples" },
-      { label: "Weddings", href: "/guides/wedding-event-page" },
-      { label: "Baby showers", href: "/landing#examples" },
-      { label: "School events", href: "/landing#examples" },
-      { label: "Sports teams", href: "/landing#examples" },
+      { label: "Weddings", href: "/weddings" },
+      { label: "Bridal showers", href: "/bridal-showers" },
+      { label: "Baby showers", href: "/baby-showers" },
       { label: "Gymnastics meets", href: "/gymnastics" },
+      { label: "Signup forms", href: "/signup-forms" },
+      { label: "Gender reveals", href: "/gender-reveal" },
+      { label: "Birthdays", href: "/birthdays" },
     ],
   },
   {
@@ -121,8 +128,8 @@ const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
 const MARKETING_FOOTER_UTILITY_LINKS: FooterLink[] = [
   { label: "Invites", href: "/guides/live-card-invitations" },
   { label: "RSVP", href: "/guides/rsvp-event-page" },
-  { label: "Event Pages", href: "/landing#guest-flow" },
-  { label: "Sign-ups", href: "/guides/smart-signup-forms" },
+  { label: "Weddings", href: "/weddings" },
+  { label: "Sign-ups", href: "/signup-forms" },
   { label: "Upload", href: "/snap" },
   { label: "Guides", href: "/guides" },
 ];

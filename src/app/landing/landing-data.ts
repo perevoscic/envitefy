@@ -1,5 +1,6 @@
 import type { TestimonialItem } from "@/components/ui/design-testimonial";
 import type { FeatureCarouselItem } from "@/components/ui/feature-carousel";
+import { publicUseCasePrimaryNavLinks } from "@/config/navigation";
 
 export type LandingIconId =
   | "clipboardList"
@@ -10,15 +11,7 @@ export type LandingIconId =
   | "upload"
   | "users";
 
-export const landingHeroNavLinks = [
-  { label: "Concierge", href: "#concierge" },
-  { label: "Examples", href: "#showcase" },
-  { label: "Guest Flow", href: "#guest-flow" },
-  { label: "Templates", href: "#examples" },
-  { label: "Start", href: "#creation-paths" },
-  { label: "Testimonials", href: "#testimonials" },
-  { label: "About us", href: "/about" },
-];
+export const landingHeroNavLinks = [...publicUseCasePrimaryNavLinks];
 
 const gardenBrunchLiveCardImage = "/images/landing/live-cards/madeline-s-garden-brunch.webp";
 
@@ -27,6 +20,7 @@ export type ProofTile = {
   eyebrow: string;
   image: string;
   note: string;
+  href?: string;
 };
 
 export type HeroProductSlide = {
@@ -38,6 +32,8 @@ export type HeroProductSlide = {
   desktopImage: string;
   imageAlt: string;
   imagePosition?: string;
+  href?: string;
+  secondaryCtaLabel?: string;
   mobilePrimaryCtaLabel?: string;
 };
 
@@ -47,6 +43,7 @@ export const templateProofTiles: ProofTile[] = [
     title: "Willow Garden Wedding",
     image: "/images/landing/template-proof/generated/wedding.webp",
     note: "A polished wedding page keeps RSVP, registry, schedule, and venue notes together.",
+    href: "/weddings",
   },
   {
     eyebrow: "Football Night",
@@ -77,6 +74,7 @@ export const templateProofTiles: ProofTile[] = [
     title: "Little Spark Reveal",
     image: "/images/landing/template-proof/generated/gender-reveal.webp",
     note: "Keep reveal timing, host notes, gift guidance, and attendance replies easy to find.",
+    href: "/gender-reveal",
   },
   {
     eyebrow: "Housewarming",
@@ -101,6 +99,7 @@ export const templateProofTiles: ProofTile[] = [
     title: "Blue Splash Pool Party",
     image: "/images/landing/template-proof/generated/pool-party.webp",
     note: "Share swim timing, what to bring, supervision notes, snacks, and RSVP from one link.",
+    href: "/birthdays",
   },
   {
     eyebrow: "Movie Night",
@@ -132,6 +131,7 @@ export const templateCarouselFeatures: FeatureCarouselItem[] = templateProofTile
   imageAlt: `${tile.title} example`,
   badge: tile.title,
   description: tile.note,
+  href: tile.href,
 }));
 
 export const heroProductSlides: HeroProductSlide[] = [
@@ -143,6 +143,8 @@ export const heroProductSlides: HeroProductSlide[] = [
     image: "/images/landing/hero/garden-brunch-mobile.webp",
     desktopImage: "/images/landing/hero/garden-brunch-desktop.webp",
     imageAlt: "Garden brunch live invitation card",
+    href: "/weddings",
+    secondaryCtaLabel: "View wedding pages",
     mobilePrimaryCtaLabel: "Create invite",
   },
   {
@@ -153,6 +155,8 @@ export const heroProductSlides: HeroProductSlide[] = [
     image: "/images/landing/hero/garden-vows-mobile.webp",
     desktopImage: "/images/landing/hero/garden-vows-desktop.webp",
     imageAlt: "Wedding weekend event page preview",
+    href: "/weddings",
+    secondaryCtaLabel: "View wedding pages",
     mobilePrimaryCtaLabel: "Create wedding",
   },
   {
@@ -183,6 +187,8 @@ export const heroProductSlides: HeroProductSlide[] = [
     image: "/images/landing/hero/birthday-dino-mobile.webp",
     desktopImage: "/images/landing/hero/birthday-dino-desktop.webp",
     imageAlt: "Birthday party event page preview",
+    href: "/birthdays",
+    secondaryCtaLabel: "View birthday pages",
     mobilePrimaryCtaLabel: "Create party",
   },
   {
@@ -193,6 +199,8 @@ export const heroProductSlides: HeroProductSlide[] = [
     image: "/images/landing/hero/baby-shower-mobile.webp",
     desktopImage: "/images/landing/hero/baby-shower-desktop.webp",
     imageAlt: "Baby shower event page preview",
+    href: "/baby-showers",
+    secondaryCtaLabel: "View baby shower pages",
     mobilePrimaryCtaLabel: "Create shower",
   },
   {
