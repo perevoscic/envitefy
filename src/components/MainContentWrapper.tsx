@@ -31,7 +31,7 @@ export function MainContentWrapper({
   const pathSegments = normalizedPath.split("/").filter(Boolean);
   const isStudioCardShare = pathSegments.length === 2 && pathSegments[0] === "card";
   const isEventSharePage = pathSegments.length === 2 && pathSegments[0] === "event";
-  const isChatRoute = normalizedPath === "/chat";
+  const isChatRoute = normalizedPath === "/chat" || normalizedPath === "/concierge-v2";
   const usesOwnLandingBackground =
     normalizedPath === "/gymnastics" || (normalizedPath === "/snap" && !isAuthenticated);
 

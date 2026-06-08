@@ -657,7 +657,7 @@ export default function SnapLanding() {
         mobileNavLinks={[...signedOutMobileMenuLinks]}
         variant="transparent-dark"
         primaryCtaLabel="Let's create"
-        authenticatedPrimaryHref="/chat"
+        authenticatedPrimaryHref="/concierge-v2"
         brandHref="/"
         loginSuccessRedirectUrl="/"
         onGuestLoginAction={() => openAuth("login")}

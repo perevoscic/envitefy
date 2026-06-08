@@ -145,7 +145,16 @@ export async function POST(req: Request) {
     });
     return response;
   } catch (err: any) {
-    const message = typeof err?.message === "string" ? err.message : "Failed to create account";
+    console.error("[signup] failed to create account", {
+      message: err?.message || String(err),
+      code: err?.code,
+      detail: err?.detail,
+      stack: err?.stack,
+    });
+    const message =
+      typeof err?.message === "string" && err.message.trim()
+        ? err.message
+        : "Failed to create account";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

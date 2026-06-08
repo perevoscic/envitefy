@@ -20,6 +20,8 @@ Status: in progress. Concierge v2 now creates the existing operational event pag
 - Corrected dynamic storage to `dynamic_event_pages` / `dynamic_event_page_versions` so it does not collide with existing Concierge v2 `event_pages`.
 - Added blueprint presets for the main legacy migration verticals.
 - Wired Concierge v2 apply to publish a dynamic blueprint page and return `/e/[slug]` as the guest-facing event path, while preserving `legacyEventPath` for compatibility.
+- Added owner controls in Concierge v2 for dynamic page preview, bounded hero-intro revision, section copy revision, theme mood/palette revision, publish, version listing, and version restore.
+- Added vertical parity scenarios for the required migration set.
 
 ## Files Added
 
@@ -71,9 +73,9 @@ Apply `prisma/manual_sql/20260606_add_dynamic_event_pages.sql` in environments t
 
 - API authorization and slug collision behavior.
 - Visual QA for gymnastics meet, wedding weekend, shower with registry, football schedule, school event, open house, birthday, and custom event pages.
-- Concierge revision UI before publish and version restore UI.
+- Manual mobile/desktop release QA for the codified parity scenarios.
 - Migration parity for legacy public pages.
 
 ## Recommended Next Phase
 
-Add Concierge v2 revision controls that call `PUT /api/event-pages/[id]` before publish and expose version restore from `dynamic_event_page_versions`.
+Run the codified parity scenarios manually in browser QA, then start replacing legacy route branches with compatibility wrappers one vertical at a time.

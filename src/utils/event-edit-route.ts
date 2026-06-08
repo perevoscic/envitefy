@@ -21,7 +21,7 @@ function resolveConciergeEditHref(eventData: unknown): string | null {
   const isConciergeCreatedEvent = /concierge|chat/.test(createdVia) || Boolean(conciergeDraft);
 
   if (!isConciergeCreatedEvent || !threadId) return null;
-  return `/chat?thread=${encodeURIComponent(threadId)}`;
+  return "/concierge-v2";
 }
 
 function normalizedOutputValues(...values: unknown[]): string[] {

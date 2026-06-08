@@ -137,11 +137,14 @@ function inferTheme(mode: EventPageMode): EventTheme {
 }
 
 function normalizeSchedule(data: Record<string, unknown>) {
+  const publicEvent = isRecord(data.publicEvent) ? data.publicEvent : {};
   const raw = Array.isArray(data.schedule)
     ? data.schedule
     : Array.isArray(data.scheduleItems)
       ? data.scheduleItems
-      : [];
+      : Array.isArray(publicEvent.scheduleItems)
+        ? publicEvent.scheduleItems
+        : [];
   return raw
     .filter(isRecord)
     .map((item, index) => ({
@@ -174,6 +177,75 @@ function registryItems(data: Record<string, unknown>) {
     .slice(0, 8);
 }
 
+function checklistItems(data: Record<string, unknown>) {
+  const publicEvent = isRecord(data.publicEvent) ? data.publicEvent : {};
+  const raw = Array.isArray(data.checklistItems)
+    ? data.checklistItems
+    : Array.isArray(publicEvent.checklistItems)
+      ? publicEvent.checklistItems
+      : [];
+  return raw
+    .filter(isRecord)
+    .map((item, index) => ({
+      label: firstText(item, ["category", "group"], "Task"),
+      value: firstText(item, ["title", "label", "name"], `Checklist item ${index + 1}`),
+      status: firstText(item, ["status"], "open"),
+    }))
+    .filter((item) => item.value)
+    .slice(0, 12);
+}
+
+function formItems(data: Record<string, unknown>) {
+  const publicEvent = isRecord(data.publicEvent) ? data.publicEvent : {};
+  const smartForms = isRecord(data.smartForms) ? data.smartForms : {};
+  const raw = Array.isArray(data.forms)
+    ? data.forms
+    : Array.isArray(publicEvent.forms)
+      ? publicEvent.forms
+      : Array.isArray(smartForms.forms)
+        ? smartForms.forms
+        : [];
+  return raw
+    .filter(isRecord)
+    .map((item, index) => ({
+      label: firstText(item, ["title", "name"], `Form ${index + 1}`),
+      value: firstText(item, ["description", "body"], "Collect guest responses."),
+      href: normalizeUrl(item.url || item.href),
+    }))
+    .filter((item) => item.label)
+    .slice(0, 8);
+}
+
+function volunteerItems(data: Record<string, unknown>) {
+  const publicEvent = isRecord(data.publicEvent) ? data.publicEvent : {};
+  const volunteerSignup = isRecord(data.volunteerSignup) ? data.volunteerSignup : {};
+  const raw = Array.isArray(data.volunteerSlots)
+    ? data.volunteerSlots
+    : Array.isArray(publicEvent.volunteerSlots)
+      ? publicEvent.volunteerSlots
+      : Array.isArray(volunteerSignup.slots)
+        ? volunteerSignup.slots
+        : [];
+  return raw
+    .filter(isRecord)
+    .map((item, index) => ({
+      label: firstText(item, ["group", "category"], "Volunteer"),
+      value: firstText(item, ["title", "name", "label"], `Volunteer role ${index + 1}`),
+      quantity: Number(item.quantityNeeded || item.quantity || 1) || 1,
+    }))
+    .filter((item) => item.value)
+    .slice(0, 12);
+}
+
+function travelItems(data: Record<string, unknown>) {
+  const notes = firstText(data, ["travelNotes", "hotelBlock", "hotelBlockNotes", "lodgingNotes"], "");
+  const hotelUrl = normalizeUrl(data.hotelBlockUrl || data.hotelUrl || data.travelUrl);
+  const items: Array<Record<string, string | boolean | number | null>> = [];
+  if (notes) items.push({ label: "Travel", value: notes, href: hotelUrl });
+  if (!notes && hotelUrl) items.push({ label: "Hotel block", value: "Hotel block details", href: hotelUrl });
+  return items;
+}
+
 function action(id: string, type: EventAction["type"], label: string, href: string | null, priority: EventAction["priority"]): EventAction {
   return { id, type, label, href, priority, target: href && /^https?:\/\//i.test(href) ? "_blank" : "_self" };
 }
@@ -187,9 +259,9 @@ export function buildFallbackEventPageBlueprint(params: {
   const { data } = params;
   const mode = inferMode(data);
   const title = firstText(data, ["headlineTitle", "title", "eventName"], params.title || "Event");
-  const date = firstText(data, ["dateText", "date", "startAt", "startISO", "start"], "Date to be announced");
+  const date = firstText(data, ["dateText", "date", "startAt", "startISO", "start"], "Date coming soon");
   const time = firstText(data, ["timeText", "time"], "");
-  const location = firstText(data, ["venue", "location", "address"], "Location to be announced");
+  const location = firstText(data, ["venue", "location", "address"], "Location coming soon");
   const description = firstText(
     data,
     ["description", "subheadline", "details", "goodToKnow"],
@@ -198,7 +270,11 @@ export function buildFallbackEventPageBlueprint(params: {
   const schedule = normalizeSchedule(data);
   const rsvpUrl = normalizeUrl(data.rsvpUrl);
   const registry = registryItems(data);
-  const directionsHref = location && location !== "Location to be announced"
+  const travel = travelItems(data);
+  const checklist = checklistItems(data);
+  const forms = formItems(data);
+  const volunteers = volunteerItems(data);
+  const directionsHref = location && location !== "Location coming soon"
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`
     : null;
   const actions = [
@@ -232,7 +308,7 @@ export function buildFallbackEventPageBlueprint(params: {
       body: "The essentials guests should see first.",
       items: [
         { label: "Date", value: date },
-        { label: "Time", value: time || "Time to be announced" },
+        { label: "Time", value: time || "Time coming soon" },
         { label: "Location", value: location },
         { label: "Audience", value: mode === "gymnastics_meet" ? "Parents, athletes, and coaches" : "Guests" },
       ],
@@ -252,6 +328,24 @@ export function buildFallbackEventPageBlueprint(params: {
       schedule,
       items: [],
       actions: [],
+      media: [],
+      metadata: {},
+    });
+  }
+
+  if (travel.length) {
+    sections.push({
+      id: "travel",
+      type: "travel",
+      title: "Travel",
+      body: "Travel and lodging notes from the host.",
+      items: travel,
+      actions: travel
+        .filter((item) => typeof item.href === "string" && item.href)
+        .map((item, index) =>
+          action(`travel-${index}`, "open_registry", String(item.label || "Open travel link"), String(item.href), "secondary"),
+        ),
+      schedule: [],
       media: [],
       metadata: {},
     });
@@ -279,6 +373,52 @@ export function buildFallbackEventPageBlueprint(params: {
       actions: registry
         .filter((item) => typeof item.href === "string" && item.href)
         .map((item, index) => action(`registry-${index}`, "open_registry", item.label, String(item.href), "secondary")),
+      schedule: [],
+      media: [],
+      metadata: {},
+    });
+  }
+
+  if (volunteers.length) {
+    sections.push({
+      id: "team-notes",
+      type: "team_notes",
+      title: mode === "sports_team_event" ? "Volunteer Coverage" : "Team Notes",
+      body: "Roles and coordination notes for families and helpers.",
+      items: volunteers,
+      actions: [],
+      schedule: [],
+      media: [],
+      metadata: {},
+    });
+  }
+
+  if (checklist.length) {
+    sections.push({
+      id: "checklist",
+      type: "checklist",
+      title: "Checklist",
+      body: "Planning items the host is tracking before the event.",
+      items: checklist,
+      actions: [],
+      schedule: [],
+      media: [],
+      metadata: {},
+    });
+  }
+
+  if (forms.length) {
+    sections.push({
+      id: "forms",
+      type: "forms",
+      title: "Forms",
+      body: "Response forms connected to this event.",
+      items: forms,
+      actions: forms
+        .filter((item) => typeof item.href === "string" && item.href)
+        .map((item, index) =>
+          action(`form-${index}`, "open_form", String(item.label || "Open form"), String(item.href), "secondary"),
+        ),
       schedule: [],
       media: [],
       metadata: {},

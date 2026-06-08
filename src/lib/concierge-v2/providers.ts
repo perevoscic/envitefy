@@ -35,6 +35,20 @@ function asRecord(value: any): Record<string, any> {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
+function firstNonEmptyString(...values: any[]): string {
+  for (const value of values) {
+    const cleaned = cleanString(value, 1000);
+    if (cleaned) return cleaned;
+  }
+  return "";
+}
+
+function providerArrayOrFallback(providerValue: any, fallbackValue: any) {
+  const providerArray = Array.isArray(providerValue) ? providerValue : [];
+  const fallbackArray = Array.isArray(fallbackValue) ? fallbackValue : [];
+  return providerArray.length ? providerArray : fallbackArray;
+}
+
 function safeJson(value: string): Record<string, any> | null {
   try {
     return asRecord(JSON.parse(value));
@@ -46,18 +60,49 @@ function safeJson(value: string): Record<string, any> | null {
 function mergeProviderDraft(providerDraft: Record<string, any>, fallback: Record<string, any>) {
   const nestedDraft = asRecord(providerDraft.draft);
   const draft = Object.keys(nestedDraft).length ? nestedDraft : providerDraft;
+  const program = { ...asRecord(fallback.program), ...asRecord(draft.program) };
+  const providerOccurrences = Array.isArray(draft.occurrences) ? draft.occurrences : [];
+  const fallbackOccurrences = Array.isArray(fallback.occurrences) ? fallback.occurrences : [];
+  const occurrenceCount = Math.max(providerOccurrences.length, fallbackOccurrences.length);
   const merged = {
     ...fallback,
     ...draft,
-    program: { ...asRecord(fallback.program), ...asRecord(draft.program) },
-    series: Array.isArray(draft.series) ? draft.series : fallback.series,
-    occurrences: Array.isArray(draft.occurrences) ? draft.occurrences : fallback.occurrences,
-    forms: Array.isArray(draft.forms) ? draft.forms : fallback.forms,
-    volunteerSlots: Array.isArray(draft.volunteerSlots) ? draft.volunteerSlots : fallback.volunteerSlots,
-    paymentItems: Array.isArray(draft.paymentItems) ? draft.paymentItems : fallback.paymentItems,
-    reminders: Array.isArray(draft.reminders) ? draft.reminders : fallback.reminders,
-    checklistItems: Array.isArray(draft.checklistItems) ? draft.checklistItems : fallback.checklistItems,
-    missingFields: Array.isArray(draft.missingFields) ? draft.missingFields : fallback.missingFields,
+    mode: firstNonEmptyString(draft.mode, fallback.mode) || "social",
+    eventType: firstNonEmptyString(draft.eventType, fallback.eventType) || "general_event",
+    title: firstNonEmptyString(draft.title, draft.pageTitle, draft.eventTitle, program.title, fallback.title),
+    summary: firstNonEmptyString(draft.summary, draft.description, fallback.summary),
+    timezone: firstNonEmptyString(draft.timezone, draft.tz, fallback.timezone) || "America/Chicago",
+    originalText: firstNonEmptyString(draft.originalText, fallback.originalText),
+    program,
+    series: providerArrayOrFallback(draft.series, fallback.series),
+    occurrences: Array.from({ length: occurrenceCount }).map((_, index) => {
+        const occurrence = providerOccurrences[index] || fallbackOccurrences[index];
+        const fallbackOccurrence = asRecord(fallbackOccurrences[index]);
+        return {
+          ...fallbackOccurrence,
+          ...asRecord(occurrence),
+          title: firstNonEmptyString(occurrence?.title, occurrence?.name, fallbackOccurrence.title),
+          timezone: firstNonEmptyString(occurrence?.timezone, occurrence?.tz, fallbackOccurrence.timezone, fallback.timezone),
+          locationText: firstNonEmptyString(
+            occurrence?.locationText,
+            occurrence?.location,
+            occurrence?.venue,
+            fallbackOccurrence.locationText,
+            fallbackOccurrence.location,
+          ),
+        };
+      }),
+    forms: providerArrayOrFallback(draft.forms, fallback.forms),
+    volunteerSlots: providerArrayOrFallback(draft.volunteerSlots, fallback.volunteerSlots),
+    paymentItems: providerArrayOrFallback(draft.paymentItems, fallback.paymentItems),
+    reminders: providerArrayOrFallback(draft.reminders, fallback.reminders),
+    checklistItems: providerArrayOrFallback(draft.checklistItems, fallback.checklistItems),
+    missingFields: providerArrayOrFallback(draft.missingFields, fallback.missingFields),
+  };
+  merged.program = {
+    ...merged.program,
+    title: firstNonEmptyString(merged.program.title, merged.title, fallback.program?.title),
+    mode: firstNonEmptyString(merged.program.mode, merged.mode, fallback.program?.mode),
   };
   if (
     fallback.eventType === "gymnastics_meet" &&

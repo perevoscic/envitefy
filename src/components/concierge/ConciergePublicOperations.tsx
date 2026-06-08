@@ -63,6 +63,22 @@ function FieldControl({
     );
   }
 
+  if (type === "yes_no_maybe") {
+    return (
+      <label className="block">
+        <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+          {label}
+        </span>
+        <select name={key} required={field.required} className={baseClass}>
+          <option value="">Choose</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+          <option value="maybe">Maybe</option>
+        </select>
+      </label>
+    );
+  }
+
   if (type === "yes_no" || type === "boolean") {
     return (
       <label className="block">

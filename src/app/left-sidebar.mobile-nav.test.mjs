@@ -30,7 +30,7 @@ test("chat route compact nav button opens the sidebar directly", () => {
   const wrapperSource = readSource("src/components/MainContentWrapper.tsx");
   const chatSource = readSource("src/app/chat/ConciergeChatClient.tsx");
 
-  assert.match(sidebarSource, /const isChatPath = \(pathname \|\| ""\)\.replace\(\/\\\/\+\$\/, ""\) === "\/chat";/);
+  assert.match(sidebarSource, /const isChatPath = normalizedPathname === "\/chat" \|\| normalizedPathname === "\/concierge-v2";/);
   assert.match(
     sidebarSource,
     /const showFullMobileTopBar = viewModel\.showMobileTopBar && !isChatPath;/,
@@ -50,11 +50,11 @@ test("chat route compact nav button opens the sidebar directly", () => {
   assert.doesNotMatch(sidebarSource, /setIsChatTopBarRevealed/);
   assert.doesNotMatch(sidebarSource, /chatTopBarRef/);
 
-  assert.match(wrapperSource, /const isChatRoute = normalizedPath === "\/chat";/);
+  assert.match(wrapperSource, /const isChatRoute = normalizedPath === "\/chat" \|\| normalizedPath === "\/concierge-v2";/);
   assert.match(wrapperSource, /: isChatRoute\s*\?\s*"0px"/s);
   assert.match(
     chatSource,
-    /pb-2 pl-14 pr-3 pt-\[max\(0\.35rem,env\(safe-area-inset-top\)\)\]/,
+    /pt-\[calc\(max\(0\.35rem,env\(safe-area-inset-top\)\)\+1\.5rem\)\]/,
   );
 });
 

@@ -186,12 +186,12 @@ test("owner workspace live product uses card fallback data instead of a blank na
   assert.doesNotMatch(source, />\s*Event preview\s*</);
 });
 
-test("concierge-created products edit through their original chat thread", () => {
+test("concierge-created products edit through the V2 concierge workspace", () => {
   const source = readSource("src/utils/event-edit-route.ts");
 
   assert.match(source, /function resolveConciergeEditHref\(eventData: unknown\): string \| null/);
   assert.match(source, /cleanString\(conciergeDraft\?\.creationSessionId\)/);
-  assert.match(source, /\/chat\?thread=\$\{encodeURIComponent\(threadId\)\}/);
+  assert.match(source, /return "\/concierge-v2"/);
   assert.match(source, /const conciergeEditHref = resolveConciergeEditHref\(eventData\);/);
   assert.match(source, /if \(conciergeEditHref\) return conciergeEditHref;/);
 });

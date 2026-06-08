@@ -7,8 +7,15 @@ const renderer = readFileSync("src/features/event-pages/renderer/SectionRenderer
 const route = readFileSync("src/app/e/[slug]/page.tsx", "utf8");
 const db = readFileSync("src/lib/db.ts", "utf8");
 const prompt = readFileSync("src/features/event-pages/ai/generateEventBlueprint.ts", "utf8");
+const normalizeEventIntent = readFileSync("src/features/event-pages/ai/normalizeEventIntent.ts", "utf8");
 const conciergeV2Storage = readFileSync("src/lib/concierge-v2/storage.ts", "utf8");
 const presets = readFileSync("src/features/event-pages/ai/blueprintPresets.ts", "utf8");
+const eventPageApi = readFileSync("src/app/api/event-pages/[id]/route.ts", "utf8");
+const conciergeV2Client = readFileSync("src/app/concierge-v2/ConciergeV2Client.tsx", "utf8");
+const parityScenarios = readFileSync(
+  "src/features/event-pages/ai/verticalParityScenarios.ts",
+  "utf8",
+);
 
 test("dynamic event page schema includes required section and action registries", () => {
   for (const section of [
@@ -84,4 +91,56 @@ test("legacy verticals migrate through blueprint presets instead of React templa
   }
   assert.match(presets, /defaultSections/);
   assert.doesNotMatch(presets, /tsx|React\.createElement|dangerouslySetInnerHTML/);
+});
+
+test("deterministic fallback blueprint preserves V2 operational sections", () => {
+  for (const helper of ["checklistItems", "formItems", "volunteerItems", "travelItems"]) {
+    assert.match(normalizeEventIntent, new RegExp(`function ${helper}`));
+  }
+  for (const section of ['type: "travel"', 'type: "team_notes"', 'type: "checklist"', 'type: "forms"']) {
+    assert.match(normalizeEventIntent, new RegExp(section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(normalizeEventIntent, /publicEvent\.scheduleItems/);
+  assert.match(normalizeEventIntent, /publicEvent\.forms/);
+  assert.match(normalizeEventIntent, /publicEvent\.volunteerSlots/);
+  assert.match(normalizeEventIntent, /publicEvent\.checklistItems/);
+});
+
+test("dynamic event page API exposes owner controls for versions, revise, publish, and restore", () => {
+  assert.match(eventPageApi, /export async function GET/);
+  assert.match(eventPageApi, /listEventPageVersions/);
+  assert.match(eventPageApi, /action === "revise"/);
+  assert.match(eventPageApi, /sectionUpdates/);
+  assert.match(eventPageApi, /themePatch/);
+  assert.match(eventPageApi, /action === "publish"/);
+  assert.match(eventPageApi, /action === "restore_version"/);
+});
+
+test("Concierge V2 UI exposes dynamic page preview, revise, publish, and restore controls", () => {
+  assert.match(conciergeV2Client, /Dynamic page controls/);
+  assert.match(conciergeV2Client, /Revise hero intro/);
+  assert.match(conciergeV2Client, /Section id or type/);
+  assert.match(conciergeV2Client, /Theme mood/);
+  assert.match(conciergeV2Client, /Theme palette/);
+  assert.match(conciergeV2Client, /Save revision/);
+  assert.match(conciergeV2Client, /Publish current/);
+  assert.match(conciergeV2Client, /Restore/);
+  assert.match(conciergeV2Client, /loadDynamicEventPageVersions/);
+});
+
+test("vertical parity scenarios cover required migration order and checks", () => {
+  for (const id of [
+    "gymnastics-meet",
+    "wedding-weekend",
+    "shower-registry",
+    "birthday-party",
+    "football-team-schedule",
+  ]) {
+    assert.match(parityScenarios, new RegExp(`id: "${id}"`));
+  }
+  for (const check of ["desktop_screenshot", "mobile_screenshot", "rsvp_action"]) {
+    assert.match(parityScenarios, new RegExp(`"${check}"`));
+  }
+  assert.match(parityScenarios, /legacyRoutes/);
+  assert.match(parityScenarios, /requiredSections/);
 });

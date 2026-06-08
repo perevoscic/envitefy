@@ -110,6 +110,15 @@ function valuesFrom(...values: any[]): any[] {
   return [];
 }
 
+function requestedOutputsForDraft(draft: Record<string, any>) {
+  const text = [draft.originalText, draft.source?.originalText, draft.prompt, draft.userPrompt]
+    .map((value) => cleanString(value, 1200).toLowerCase())
+    .filter(Boolean)
+    .join(" ");
+  if (/\blive[\s_-]*card\b/.test(text)) return ["live_card", "event_page"];
+  return ["event_page"];
+}
+
 function present<T>(value: T | null | undefined): value is T {
   return value != null;
 }
@@ -266,6 +275,17 @@ export function buildConciergeV2EventHistoryPayload(params: {
   const paymentItems = valuesFrom(draft.paymentItems).map(normalizePaymentItem).filter(present);
   const reminders = valuesFrom(draft.reminders).map(normalizeReminder).filter(present);
   const checklistItems = valuesFrom(draft.checklistItems).map(normalizeChecklistItem).filter(present);
+  const registryLinks = valuesFrom(draft.registryLinks, draft.registries)
+    .map((item) => ({
+      label: cleanString(item?.label || item?.title || "Registry", 120) || "Registry",
+      url: cleanString(item?.url || item?.href || "#", 500) || "#",
+      host: cleanString(item?.host, 120) || null,
+      helperText: cleanString(item?.helperText || item?.description, 260) || null,
+    }))
+    .filter((item) => item.label || item.url)
+    .slice(0, 6);
+  const requestedOutputs = requestedOutputsForDraft(draft);
+  const primaryOutput = requestedOutputs[0] || "event_page";
   const locationText =
     firstOccurrence?.locationText ||
     cleanString(draft.locationText || draft.location || draft.venue, 180) ||
@@ -291,8 +311,6 @@ export function buildConciergeV2EventHistoryPayload(params: {
       ownership: "owned",
       createdVia: "concierge",
       conciergeVersion: "v2",
-      primaryOutput: "event_page",
-      productType: "event_page",
       publicRenderer: "event_page",
       ownerDefaultSurface: "event",
       startAt: firstOccurrence?.startAt || null,
@@ -317,8 +335,11 @@ export function buildConciergeV2EventHistoryPayload(params: {
         direct: true,
         cta: "RSVP",
       },
-      requestedOutputs: ["event_page"],
-      outputs: ["event_page"],
+      requestedOutputs,
+      outputs: requestedOutputs,
+      primaryOutput,
+      productType: primaryOutput,
+      registries: registryLinks,
       conciergeV2: {
         programId: params.programId || null,
         draft,
@@ -351,7 +372,7 @@ export function buildConciergeV2EventHistoryPayload(params: {
       checklistItems,
       publicEvent: {
         renderer: "event_page",
-        primaryOutput: "event_page",
+        primaryOutput,
         ownerDefaultSurface: "event",
         headline: title,
         subheadline: cleanString(draft.program?.title, 180) || "Built with Envitefy Concierge",
@@ -361,6 +382,7 @@ export function buildConciergeV2EventHistoryPayload(params: {
         scheduleItems: occurrences,
         checklistItems,
         forms,
+        registryLinks,
         volunteerSlots,
         paymentItems,
         reminders,

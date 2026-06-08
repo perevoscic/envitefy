@@ -1963,6 +1963,75 @@ function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
   };
 }
 
+function normalizeTimeText(value: string | null) {
+  if (!value) return null;
+  const cleaned = cleanString(value.replace(/\./g, "").replace(/\s+/g, " "));
+  const match = cleaned?.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  if (!match) return cleaned;
+  const hour = Number.parseInt(match[1] || "", 10);
+  if (hour < 1 || hour > 12) return cleaned;
+  const minutes = match[2] || "00";
+  const meridiem = (match[3] || "").toUpperCase();
+  return `${hour}:${minutes.padStart(2, "0")} ${meridiem}`;
+}
+
+function explicitTimeFromUploadText(text: string) {
+  const doorsOpen = text.match(
+    /\bdoors?\s+open\s*:?\s*(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?))/i,
+  );
+  const labeledTime =
+    doorsOpen ||
+    text.match(/\b(?:start(?:s)?|begins?|event\s+time|time)\s*:?\s*(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?))/i);
+  return normalizeTimeText(labeledTime?.[1] || null);
+}
+
+function explicitDateRangeFromUploadText(text: string) {
+  const labeled = text.match(
+    /\bdates?\s*:?\s*((?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}\s*[-–—]\s*\d{1,2},?\s+(?:19|20)\d{2})\b/i,
+  );
+  return cleanString(labeled?.[1]?.replace(/\s*[-–—]\s*/g, "-")) || null;
+}
+
+function parseMonthDayYearStart(value: string | null) {
+  if (!value) return null;
+  const match = value.match(
+    /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:\s*[-–—]\s*\d{1,2})?,?\s+((?:19|20)\d{2})\b/i,
+  );
+  if (!match) return null;
+  const monthIndex = MONTH_NAMES.findIndex((month) =>
+    month.toLowerCase().startsWith((match[1] || "").toLowerCase().replace(".", "")),
+  );
+  const day = Number.parseInt(match[2] || "", 10);
+  const year = Number.parseInt(match[3] || "", 10);
+  if (monthIndex < 0 || day < 1 || day > 31) return null;
+  return { year, monthIndex, day };
+}
+
+function isoFromUploadDateAndTime(dateText: string | null, timeText: string | null) {
+  const date = parseMonthDayYearStart(dateText);
+  const time = normalizeTimeText(timeText);
+  const timeMatch = time?.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (!date || !timeMatch) return null;
+  let hour = Number.parseInt(timeMatch[1] || "", 10);
+  const minute = Number.parseInt(timeMatch[2] || "", 10);
+  if (hour < 1 || hour > 12 || minute < 0 || minute > 59) return null;
+  const meridiem = timeMatch[3];
+  if (meridiem === "PM" && hour < 12) hour += 12;
+  if (meridiem === "AM" && hour === 12) hour = 0;
+  return new Date(date.year, date.monthIndex, date.day, hour, minute, 0, 0).toISOString();
+}
+
+function uploadFieldTime(fieldsGuess: Record<string, unknown>, ocrText: string) {
+  return (
+    normalizeTimeText(firstString(fieldsGuess.time, fieldsGuess.timeText, fieldsGuess.startTime)) ||
+    explicitTimeFromUploadText(ocrText)
+  );
+}
+
+function uploadFieldDate(fieldsGuess: Record<string, unknown>, ocrText: string) {
+  return firstString(fieldsGuess.date, fieldsGuess.dateText) || explicitDateRangeFromUploadText(ocrText);
+}
+
 function isBeforeToday(iso: string | null | undefined) {
   if (!iso) return false;
   const date = new Date(iso);
@@ -2199,7 +2268,17 @@ function formatDateOnlyForDisplay(value: unknown, timezone?: string | null) {
   }
 }
 
+function looksLikeMonthDateRange(value: string | null) {
+  return Boolean(
+    value &&
+      /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}\s*[-–—]\s*\d{1,2},?\s+(?:19|20)\d{2}\b/i.test(
+        value,
+      ),
+  );
+}
+
 function displayDateWithoutDuplicateTime(draft: ConciergeEventDraft) {
+  if (looksLikeMonthDateRange(draft.dateText)) return draft.dateText;
   const isoDateText = formatDateOnlyForDisplay(draft.dateText, draft.timezone);
   if (isoDateText) return isoDateText;
   const dateTextHasTime = Boolean(
@@ -2729,6 +2808,10 @@ export function fallbackExtractConciergeDraft(args: {
     ? false
     : Boolean(previous?.ageOrMilestoneSkipped || detectAgeOrMilestoneSkipped(message, previous));
   const chronoResult = parseChrono(labeledDetails.whenText || text, previous);
+  const uploadOcrText = args.ocrContext?.ocrText || "";
+  const uploadDateText = args.ocrContext ? uploadFieldDate(fieldsGuess, uploadOcrText) : null;
+  const uploadTimeText = args.ocrContext ? uploadFieldTime(fieldsGuess, uploadOcrText) : null;
+  const uploadStartIso = isoFromUploadDateAndTime(uploadDateText, uploadTimeText);
   const fieldStartIso = isoFromField(fieldsGuess.start);
   const fieldEndIso = isoFromField(fieldsGuess.end);
   const shouldKeepPreviousLocation = shouldPreservePreviousLocationDuringRsvpReply(
@@ -2820,9 +2903,9 @@ export function fallbackExtractConciergeDraft(args: {
     blocksCreation || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
       : titleCandidate;
-  const dateText = chronoResult.dateText || firstString(fieldsGuess.date);
-  const timeText = chronoResult.timeText || firstString(fieldsGuess.time);
-  const startISO = fieldStartIso || chronoResult.startISO;
+  const dateText = uploadDateText || chronoResult.dateText || firstString(fieldsGuess.date);
+  const timeText = uploadTimeText || chronoResult.timeText || firstString(fieldsGuess.time);
+  const startISO = uploadStartIso || fieldStartIso || chronoResult.startISO;
   const endISO = fieldEndIso || chronoResult.endISO;
   const numberOfGuests = detectGuestCount(message, previous);
   const rsvpEnabled = detectRsvpEnabled(message, previous, requestedOutputs, fieldsGuess);
@@ -2896,11 +2979,12 @@ export function fallbackExtractConciergeDraft(args: {
       });
   const needsDateConfirmation = Boolean(
     chronoResult.needsConfirmation ||
-      shouldConfirmPastDate({
-        startISO,
-        message,
-        previous,
-      }),
+      (!args.ocrContext &&
+        shouldConfirmPastDate({
+          startISO,
+          message,
+          previous,
+        })),
   );
   const base = {
     creationSessionId: createCreationSessionId(sessionDraft),

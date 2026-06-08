@@ -69,8 +69,9 @@ export default function AppShell({
     (status === "loading" && wasAuthenticated.current);
   const onMarketing = isMarketingPath(pathname);
   const isStudioCardShare = isStudioCardSharePath(pathname);
-  const isChatPath = pathname.replace(/\/+$/, "") === "/chat";
-  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare;
+  const normalizedPath = pathname.replace(/\/+$/, "");
+  const isChatPath = normalizedPath === "/chat" || normalizedPath === "/concierge-v2";
+  const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isChatPath;
   const isRedirectingFromMarketing = onMarketing && isAuthenticated;
   const isLightweightLanding = pathname === "/event" && !isAuthenticated;
 
@@ -135,7 +136,7 @@ export default function AppShell({
         </MenuProvider>
       ) : (
         <MainContentWrapper
-          isAuthenticated={false}
+          isAuthenticated={isAuthenticated}
           enableProjectBackground={false}
           className={isChatPath ? "h-[100dvh] overflow-hidden" : ""}
         >

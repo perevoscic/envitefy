@@ -45,7 +45,7 @@ export default function SignedOutPageChrome({
         navLinks={[...signedOutPageNavLinks]}
         mobileNavLinks={[...signedOutMobileMenuLinks]}
         primaryCtaLabel="Let's create"
-        authenticatedPrimaryHref="/chat"
+        authenticatedPrimaryHref="/concierge-v2"
         brandHref={brandHref}
         variant={topNavVariant}
         loginSuccessRedirectUrl="/"
@@ -66,7 +66,7 @@ export default function SignedOutPageChrome({
         open={mobileMenuOpen}
         onOpenChange={setMobileMenuOpen}
         successRedirectUrl="/"
-        signupSuccessRedirectUrl="/chat"
+        signupSuccessRedirectUrl="/concierge-v2"
       />
       <ConciergeSheet
         open={assistantOpen}
@@ -79,7 +79,7 @@ export default function SignedOutPageChrome({
         mode={authMode}
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
-        successRedirectUrl={authMode === "signup" ? "/chat" : "/"}
+        successRedirectUrl={authMode === "signup" ? "/concierge-v2" : "/"}
       />
     </>
   );

@@ -58,7 +58,7 @@ test("left sidebar exposes signed-in AI Concierge entry", () => {
   assert.doesNotMatch(source, /Create with AI/);
   assert.match(
     source,
-    /const isChatActive = \(pathname === "\/chat" \|\| sidebarPage === "aiThreads"\) && !isSnapUploadActive;/,
+    /pathname === "\/chat" \|\| pathname === "\/concierge-v2" \|\| sidebarPage === "aiThreads"/,
   );
   assert.match(source, /function AiThreadsPanel/);
   assert.match(
@@ -69,9 +69,9 @@ test("left sidebar exposes signed-in AI Concierge entry", () => {
   assert.match(source, /method: "DELETE"/);
   assert.match(source, /text-red-500/);
   assert.match(source, /envitefy:creation-threads-changed/);
-  assert.match(source, /href="\/chat"[\s\S]*?onClick=\{onNewChat\}[\s\S]*?New chat/s);
+  assert.match(source, /href="\/concierge-v2"[\s\S]*?onClick=\{onNewChat\}[\s\S]*?New event plan/s);
   assert.doesNotMatch(source, /href="\/chat"[\s\S]{0,160}onClick=\{onOpenThread\}/);
-  assert.match(source, /href=\{`\/chat\?thread=\$\{encodeURIComponent\(thread\.id\)\}`\}/);
+  assert.match(source, /href="\/concierge-v2"[\s\S]{0,220}onClick=\{\(event\) =>/);
   const aiThreadsPanelSource =
     source.match(/function AiThreadsPanel[\s\S]*?function FooterProfileMenu/)?.[0] ?? "";
   assert.doesNotMatch(aiThreadsPanelSource, /<ConciergeLogoIcon/);
@@ -96,12 +96,12 @@ test("left sidebar exposes signed-in AI Concierge entry", () => {
   );
   assert.match(
     controllerSource,
-    /const \[sidebarPage, setSidebarPage\] = useState<SidebarPage>\(\(\) =>\s*normalizedPathname === "\/chat" \? "aiThreads" : "root",\s*\);/s,
+    /normalizedPathname === "\/chat" \|\| normalizedPathname === "\/concierge-v2" \? "aiThreads" : "root"/s,
   );
   assert.match(controllerSource, /const lastChatRouteSyncPathRef = useRef<string \| null>\(null\);/);
   assert.match(
     controllerSource,
-    /if \(normalizedPathname !== "\/chat"\) \{[\s\S]*?lastChatRouteSyncPathRef\.current = null;[\s\S]*?return;[\s\S]*?\}[\s\S]*?if \(lastChatRouteSyncPathRef\.current === normalizedPathname\) return;[\s\S]*?lastChatRouteSyncPathRef\.current = normalizedPathname;[\s\S]*?clearEventContext\(\);[\s\S]*?setSidebarPage\("aiThreads"\);/s,
+    /if \(normalizedPathname !== "\/chat" && normalizedPathname !== "\/concierge-v2"\) \{[\s\S]*?lastChatRouteSyncPathRef\.current = null;[\s\S]*?return;[\s\S]*?\}[\s\S]*?if \(lastChatRouteSyncPathRef\.current === normalizedPathname\) return;[\s\S]*?lastChatRouteSyncPathRef\.current = normalizedPathname;[\s\S]*?clearEventContext\(\);[\s\S]*?setSidebarPage\("aiThreads"\);/s,
   );
   assert.match(
     controllerSource,
@@ -114,7 +114,7 @@ test("left sidebar exposes signed-in AI Concierge entry", () => {
   );
   assert.match(
     controllerSource,
-    /const openAiThread = useCallback\([\s\S]*?const nextHref = `\/chat\?thread=\$\{encodeURIComponent\(cleanThreadId\)\}`;[\s\S]*?router\.push\(nextHref\);/s,
+    /const openAiThread = useCallback\([\s\S]*?router\.push\("\/concierge-v2"\);/s,
   );
   assert.match(
     controllerSource,
@@ -128,7 +128,7 @@ test("left sidebar exposes signed-in AI Concierge entry", () => {
   assert.match(controllerSource, /window\.dispatchEvent\(new CustomEvent\("envitefy:chat:new"\)\)/);
   assert.match(
     controllerSource,
-    /const openAiThreadsPage = useCallback\(\(\) => \{[\s\S]*?router\.push\("\/chat"\);[\s\S]*?if \(!isDesktop\) \{[\s\S]*?envitefy:chat:new/s,
+    /const openAiThreadsPage = useCallback\(\(\) => \{[\s\S]*?router\.push\("\/concierge-v2"\);[\s\S]*?if \(!isDesktop\) \{[\s\S]*?envitefy:chat:new/s,
   );
   assert.match(modelSource, /\|\s*"aiThreads"/);
 });

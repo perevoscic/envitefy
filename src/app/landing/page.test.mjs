@@ -305,7 +305,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
 
   assert.match(landingExperience, /<HeroTopNav/);
   assert.match(landingExperience, /primaryCtaLabel="Let's create"/);
-  assert.match(landingExperience, /authenticatedPrimaryHref="\/chat"/);
+  assert.match(landingExperience, /authenticatedPrimaryHref="\/concierge-v2"/);
   assert.match(heroTopNav, /transparent-dark/);
   assert.match(heroTopNav, /isTransparentDark/);
   assert.match(heroTopNav, /hasScrolledPastHero/);
@@ -329,7 +329,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(landingExperience, /openAuth\("signup"\)/);
   assert.match(landingExperience, /mode=\{authMode\}/);
   assert.match(landingExperience, /onModeChange=\{setAuthMode\}/);
-  assert.match(landingExperience, /successRedirectUrl=\{authMode === "signup" \? "\/chat" : "\/"\}/);
+  assert.match(landingExperience, /successRedirectUrl=\{authMode === "signup" \? "\/concierge-v2" : "\/"\}/);
   assert.match(landingExperience, /successRedirectUrl="\/"/);
   assert.doesNotMatch(landingExperience, /allowSignupSwitch=\{false\}/);
   assert.doesNotMatch(landingExperience, /signupSource=/);
@@ -495,7 +495,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(signedOutPageChrome, /<MenuBottomSheet/);
   assert.match(signedOutPageChrome, /<ConciergeSheet/);
   assert.match(signedOutPageChrome, /<AuthModal/);
-  assert.match(signedOutPageChrome, /successRedirectUrl=\{authMode === "signup" \? "\/chat" : "\/"\}/);
+  assert.match(signedOutPageChrome, /successRedirectUrl=\{authMode === "signup" \? "\/concierge-v2" : "\/"\}/);
   assert.match(signedOutPageChrome, /router\.push\(href\.startsWith\("#"\) \? `\/landing\$\{href\}` : href\)/);
   assert.match(showcasePage, /<SignedOutPageChrome activeBottomNavLabel="Examples" \/>/);
   assert.match(createActionSheet, /Create with AI Concierge/);
@@ -563,11 +563,11 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(landingExperience, /onMenuClick=\{\(\) => setMobileMenuOpen\(true\)\}/);
   assert.match(landingExperience, /<MenuBottomSheet/);
   assert.match(landingExperience, /<MenuBottomSheet[\s\S]*successRedirectUrl="\/"/);
-  assert.match(landingExperience, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl="\/chat"/);
+  assert.match(landingExperience, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl="\/concierge-v2"/);
   assert.doesNotMatch(landingExperience, /onStartCreatingSelect/);
   assert.doesNotMatch(landingExperience, /onSignInSelect/);
   assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*successRedirectUrl="\/"/);
-  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl="\/chat"/);
+  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl="\/concierge-v2"/);
   assert.match(landingExperience, /onMenuSelect=\{\(\) => setMobileMenuOpen\(true\)\}/);
   assert.match(landingExperience, /onVisibilityChange=\{setBottomNavVisible\}/);
   assert.match(landingExperience, /pb-\[calc\(96px\+env\(safe-area-inset-bottom\)\)\] md:pb-0/);

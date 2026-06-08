@@ -1215,6 +1215,36 @@ test("date-only drafts keep asking for time instead of treating startISO as expl
   assert.match(draft.missingFields.join(","), /time/);
 });
 
+test("uploaded gymnastics packet uses explicit doors-open time without date confirmation", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Create an event from this uploaded file.",
+    requestedOutputs: ["event_page"],
+    ocrContext: {
+      ocrText: [
+        "38th Gasparilla Classic",
+        "Dates: March 6-8, 2026",
+        "Location: Tampa Convention Center",
+        "Doors Open: 7:00am each day. Please plan to arrive one hour before if your session is the first of the day.",
+        "Plan to arrive 45 minutes before for all other sessions.",
+      ].join("\n"),
+      fieldsGuess: {
+        title: "38th Gasparilla Classic",
+        location: "333 S Franklin St, Tampa, FL 33602",
+      },
+      category: "Sport Events",
+    },
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.equal(draft.dateText, "March 6-8, 2026");
+  assert.equal(draft.timeText, "7:00 AM");
+  assert.notEqual(draft.currentQuestion, "date_confirmation");
+  assert.doesNotMatch(message, /Just to confirm/i);
+  assert.doesNotMatch(message, /6:00 AM/i);
+  assert.match(message, /March 6-8, 2026/);
+  assert.doesNotMatch(message, /2008/);
+});
+
 test("output-only RSVP page prompt stays unsaved until an event/source exists", () => {
   const draft = fallbackExtractConciergeDraft({ message: "Create an RSVP page" });
 

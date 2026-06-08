@@ -337,7 +337,7 @@ export function useLeftSidebarController({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>(() =>
-    normalizedPathname === "/chat" ? "aiThreads" : "root",
+    normalizedPathname === "/chat" || normalizedPathname === "/concierge-v2" ? "aiThreads" : "root",
   );
   const [showPastMyEvents, setShowPastMyEvents] = useState(false);
   const [showPastInvitedEvents, setShowPastInvitedEvents] = useState(false);
@@ -480,7 +480,7 @@ export function useLeftSidebarController({
   }, [refreshConnectedCalendars, status]);
 
   useEffect(() => {
-    if (normalizedPathname !== "/chat") {
+    if (normalizedPathname !== "/chat" && normalizedPathname !== "/concierge-v2") {
       lastChatRouteSyncPathRef.current = null;
       return;
     }
@@ -991,7 +991,7 @@ export function useLeftSidebarController({
 
   const openAiThreadsPage = useCallback(() => {
     clearEventContext();
-    router.push("/chat");
+    router.push("/concierge-v2");
     if (!isDesktop) {
       setSidebarPage("aiThreads");
       collapseSidebarOnTouch();
@@ -1029,8 +1029,7 @@ export function useLeftSidebarController({
       setSidebarPage("aiThreads");
       collapseSidebarOnTouch();
 
-      const nextHref = `/chat?thread=${encodeURIComponent(cleanThreadId)}`;
-      router.push(nextHref);
+      router.push("/concierge-v2");
     },
     [clearEventContext, collapseSidebarOnTouch, router],
   );

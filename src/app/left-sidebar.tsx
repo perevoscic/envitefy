@@ -172,6 +172,7 @@ function ConciergeLogoIcon({ size = 17, isActive = true }: { size?: number; isAc
       className={`block shrink-0 object-contain transition-opacity ${
         isActive ? "opacity-100" : "opacity-55 group-hover:opacity-80"
       }`}
+      style={{ width: size, height: size }}
       draggable={false}
     />
   );
@@ -388,7 +389,9 @@ function RootNavigationPanel({
   onAdmin: () => void;
 }) {
   const isHomeActive = pathname === "/" && sidebarPage === "root";
-  const isChatActive = (pathname === "/chat" || sidebarPage === "aiThreads") && !isSnapUploadActive;
+  const isChatActive =
+    (pathname === "/chat" || pathname === "/concierge-v2" || sidebarPage === "aiThreads") &&
+    !isSnapUploadActive;
   const isViewingEventFromListInRoot =
     sidebarPage === "root" &&
     Boolean(
@@ -1078,7 +1081,7 @@ function AiThreadsPanel({
 
       <div className="space-y-3">
         <Link
-          href="/chat"
+          href="/concierge-v2"
           onClick={onNewChat}
           className={`${SIDEBAR_SUBMENU_ROW_CLASS} ${SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS}`}
         >
@@ -1086,7 +1089,7 @@ function AiThreadsPanel({
             <Plus size={18} />
           </span>
           <span className={`${SIDEBAR_SUBMENU_LABEL_CLASS} ${SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS}`}>
-            New chat
+            New event plan
           </span>
         </Link>
 
@@ -1105,7 +1108,7 @@ function AiThreadsPanel({
               return (
                 <div key={thread.id} className="group flex items-center gap-2">
                   <Link
-                    href={`/chat?thread=${encodeURIComponent(thread.id)}`}
+                    href="/concierge-v2"
                     onClick={(event) => {
                       if (!isPlainPrimaryLinkClick(event)) return;
                       event.preventDefault();
@@ -1302,7 +1305,8 @@ export default function LeftSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isChatPath = (pathname || "").replace(/\/+$/, "") === "/chat";
+  const normalizedPathname = (pathname || "").replace(/\/+$/, "");
+  const isChatPath = normalizedPathname === "/chat" || normalizedPathname === "/concierge-v2";
   const activeAiThreadId = searchParams.get("thread")?.trim() || null;
   const isSnapUploadStartActive = (pathname || "").replace(/\/+$/, "") === "/snap";
   const [aiThreads, setAiThreads] = useState<CreationThreadSummary[]>([]);
@@ -1406,7 +1410,7 @@ export default function LeftSidebar() {
         return;
       }
       if (activeAiThreadId === thread.id) {
-        router.push("/chat");
+        router.push("/concierge-v2");
       }
       window.dispatchEvent(new CustomEvent("envitefy:creation-threads-changed"));
     } catch {

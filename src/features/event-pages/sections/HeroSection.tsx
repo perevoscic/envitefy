@@ -11,6 +11,7 @@ export function HeroSection({
 }) {
   const details = (section.items || []).slice(0, 4);
   const image = section.media?.[0];
+  const heroActions = section.actions?.length ? section.actions : actions;
   return (
     <section id="top" className="relative overflow-hidden bg-[var(--event-page-bg-soft)]">
       <div className="mx-auto grid min-h-[72vh] max-w-6xl gap-8 px-4 pb-10 pt-10 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
@@ -29,7 +30,7 @@ export function HeroSection({
             </p>
           ) : null}
           <div className="mt-7">
-            <ActionGroup actions={[...(section.actions || []), ...actions]} />
+            <ActionGroup actions={heroActions} />
           </div>
           {details.length ? (
             <dl className="mt-8 grid gap-3 sm:grid-cols-2">

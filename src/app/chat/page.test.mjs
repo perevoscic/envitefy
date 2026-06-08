@@ -6,7 +6,7 @@ import test from "node:test";
 const repoRoot = process.cwd();
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("/chat is the OpenAI-backed concierge creator", () => {
+test("/chat redirects to the V2 concierge creator while legacy chat modules stay compatibility-safe", () => {
   const appShell = readSource("src/app/AppShell.tsx");
   const page = readSource("src/app/chat/page.tsx");
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
@@ -23,11 +23,12 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   const extract = readSource("src/lib/concierge/extract.ts");
   const eventActions = readSource("src/lib/concierge/event-actions.ts");
 
-  assert.match(page, /ConciergeChatClient/);
-  assert.match(page, /getServerSession\(authOptions as any\)/);
-  assert.match(page, /getUserByEmail\(email\)/);
-  assert.match(page, /userInitials=\{userInitials\}/);
-  assert.match(page, /profileInitialsFrom/);
+  assert.match(page, /redirect\("\/concierge-v2"\)/);
+  assert.match(page, /canonical: "\/concierge-v2"/);
+  assert.doesNotMatch(page, /ConciergeChatClient/);
+  assert.doesNotMatch(page, /getServerSession\(authOptions as any\)/);
+  assert.doesNotMatch(page, /getUserByEmail\(email\)/);
+  assert.doesNotMatch(page, /profileInitialsFrom/);
   assert.doesNotMatch(page, /isAdmin/);
   assert.doesNotMatch(page, /notFound\(/);
 
@@ -55,7 +56,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /text-2xl/);
   assert.match(client, /sm:text-4xl/);
   assert.match(client, /lg:text-5xl/);
-  assert.match(client, /STUDIO_CATEGORY_TILES/);
+  assert.match(client, /PREVIEW_CATEGORY_BY_EVENT_TYPE/);
   assert.match(client, /CHAT_STARTER_PROMPTS/);
   assert.match(client, /CELEBRATION_STARTER_TILES/);
   assert.match(client, /I can't post to Facebook/);
@@ -353,7 +354,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /"ready_to_generate"/);
   assert.match(client, /"generating_card"/);
   assert.match(client, /"card_ready"/);
-  assert.match(appShell, /const isChatPath = pathname\.replace\(\/\\\/\+\$\/, ""\) === "\/chat"/);
+  assert.match(appShell, /normalizedPath === "\/chat" \|\| normalizedPath === "\/concierge-v2"/);
   assert.match(appShell, /className=\{isChatPath \? "h-\[100dvh\] overflow-hidden" : ""\}/);
   assert.match(appShell, /\{isChatPath \? null : <ConditionalFooter \/>\}/);
   assert.match(client, /className="flex h-full min-h-0 w-full overflow-hidden/);
@@ -373,18 +374,18 @@ test("/chat is the OpenAI-backed concierge creator", () => {
     /className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"/,
   );
   assert.doesNotMatch(client, /relative flex min-h-screen min-w-0 flex-1 flex-col overflow-y-auto/);
-  assert.match(client, /shouldShowProductPanel/);
+  assert.match(client, /shouldShowThreadProductActions/);
   assert.match(client, /hasGeneratedDraftProduct/);
   assert.doesNotMatch(
     client,
     /const shouldShowProductPanel =[\s\S]{0,120}Boolean\(draft\)/,
   );
   assert.match(client, /isBusy && !isUploading && !isGeneratingCard && !isStreamingAssistant/);
-  assert.match(client, /mobileView/);
+  assert.match(client, /const shouldShowDraftProductAction = hasGeneratedDraftProduct && !liveCardPublicHref;/);
   assert.match(client, /const isEmptyState =/);
   assert.match(client, /"min-h-0 flex-1 overflow-y-auto/);
-  assert.match(client, /setMobileView\("preview"\)/);
-  assert.match(chatSurface, /Preview/);
+  assert.doesNotMatch(client, /setMobileView\("preview"\)/);
+  assert.doesNotMatch(client, />\s*Preview\s*</);
   assert.doesNotMatch(chatSurface, /Chat builds the product here/);
   assert.doesNotMatch(preview, /statusLabel/);
   assert.doesNotMatch(preview, /statusClassName/);
@@ -400,12 +401,12 @@ test("/chat is the OpenAI-backed concierge creator", () => {
     /grid grid-cols-2[\s\S]{0,700}setPreviewTab\("rsvp"\)[\s\S]{0,250}>\s*RSVP\s*</,
   );
   assert.doesNotMatch(chatSurface, /Guest List/);
-  assert.match(client, /\/api\/events\/\$\{encodeURIComponent\(eventId\)\}\/rsvp/);
-  assert.match(client, /rsvpPreview\.stats\.yes/);
-  assert.match(client, /rsvpPreview\.responses\.map/);
+  assert.doesNotMatch(client, /\/api\/events\/\$\{encodeURIComponent\(eventId\)\}\/rsvp/);
+  assert.doesNotMatch(client, /rsvpPreview\.stats\.yes/);
+  assert.doesNotMatch(client, /rsvpPreview\.responses\.map/);
   assert.match(client, /function generatedProductHref/);
   assert.match(client, /async function preloadGeneratedPreviewImage/);
-  assert.match(client, /draftStudioInvite\?\.imageUrl \|\| generatedInviteImageUrl/);
+  assert.match(client, /shouldShowDraftProductAction \? \(/);
   assert.match(client, /buildEventProductPath\(\{ eventId, output: selectedOutput \}\)/);
   assert.match(client, /params\.set\("preview", "owner"\)/);
   assert.match(client, /params\.set\("returnTo", returnHref\)/);
@@ -492,7 +493,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /isGeneratingCard \? "Generating" : "Generate now"/);
   assert.match(
     client,
-    /shouldShowGiftRegistryActions \|\|[\s\S]{0,80}shouldShowReceivedInviteActions \|\|[\s\S]{0,80}shouldShowReadyActions[\s\S]{0,80}\? readyActions[\s\S]{0,80}: composer/,
+    /shouldShowGiftRegistryActions \|\| shouldShowReceivedInviteActions \? \([\s\S]{0,80}readyActions[\s\S]{0,160}\{shouldShowReadyActions \? readyActions : null\}[\s\S]{0,80}\{composer\}/,
   );
   assert.doesNotMatch(preview, /w-auto max-w-full/);
   assert.doesNotMatch(preview, /top-\[calc\(100%\+0\.5rem\)\]/);
@@ -651,9 +652,8 @@ test("/chat live-card preview preserves RSVP and registry action metadata", () =
   assert.match(preview, />Details</);
 });
 
-test("/chat preview updates reuse the preview progress overlay", () => {
+test("/chat draft updates reuse the chat-thread progress card", () => {
   const client = readSource("src/app/chat/ConciergeChatClient.tsx");
-  const preview = readSource("src/app/chat/ChatProductPreview.tsx");
 
   assert.match(client, /const PREVIEW_UPDATE_STEPS = \[/);
   assert.match(client, /const isUpdatingPreview = isEditingGeneratedCard && isSending;/);
@@ -662,9 +662,10 @@ test("/chat preview updates reuse the preview progress overlay", () => {
     /const activeBuildSteps = isUpdatingPreview \? PREVIEW_UPDATE_STEPS : BUILDING_STEPS;/,
   );
   assert.match(client, /if \(!isGeneratingCard && !isUpdatingPreview\) return;/);
-  assert.match(client, /isGenerating=\{isGeneratingCard \|\| isUpdatingPreview\}/);
-  assert.match(client, /currentBuildStep=\{activeBuildSteps\[currentBuildStep\]\}/);
-  assert.match(preview, /style=\{\{ width: `\$\{buildProgress\}%` \}\}/);
+  assert.match(client, /shouldShowThreadProductActions/);
+  assert.match(client, /activeBuildSteps\[currentBuildStep\]/);
+  assert.match(client, /style=\{\{ width: `\$\{buildProgress\}%` \}\}/);
+  assert.doesNotMatch(client, /isGenerating=\{isGeneratingCard \|\| isUpdatingPreview\}/);
 });
 
 test("/cht typo route is not present", () => {

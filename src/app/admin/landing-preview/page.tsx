@@ -223,7 +223,7 @@ const footerGroups = [
   {
     title: "Conversion paths",
     links: [
-      { label: "Start Planning with AI", href: "/chat" },
+      { label: "Start Planning with AI", href: "/concierge-v2" },
       { label: "Create from an Upload", href: "/?action=upload" },
       { label: "Live Examples", href: "#showcase" },
     ],
@@ -323,7 +323,7 @@ function LuxuryNav() {
         </div>
 
         <Link
-          href="/chat"
+          href="/concierge-v2"
           aria-label="Start planning with Envitefy AI"
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[#c5a880]/35 bg-slate-950 text-[#dfc39a] shadow-[0_15px_35px_rgba(15,23,42,0.22)] transition hover:-translate-y-0.5 hover:bg-slate-900"
         >
@@ -509,7 +509,7 @@ function ConciergeWorkspace() {
               </div>
 
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <PrimaryLink href="/chat">
+                <PrimaryLink href="/concierge-v2">
                   Start Planning with AI
                   <Sparkles className="h-4 w-4" />
                 </PrimaryLink>
@@ -751,7 +751,7 @@ export default async function AdminLandingPreviewPage() {
             </p>
 
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <PrimaryLink href="/chat">
+              <PrimaryLink href="/concierge-v2">
                 Start Planning with AI
                 <ArrowRight className="h-4 w-4" />
               </PrimaryLink>
@@ -1023,7 +1023,7 @@ export default async function AdminLandingPreviewPage() {
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-            <PrimaryLink href="/chat">
+            <PrimaryLink href="/concierge-v2">
               Create Your Event
               <ArrowRight className="h-4 w-4" />
             </PrimaryLink>

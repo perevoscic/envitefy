@@ -10,9 +10,11 @@ import {
   FileSearch,
   FileText,
   HeartHandshake,
+  History,
   LinkIcon,
   Loader2,
   MessageSquareText,
+  RotateCcw,
   ShieldCheck,
   Sparkles,
   Users,
@@ -23,7 +25,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { ConciergeV2Flags } from "@/config/concierge-v2-flags";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +47,12 @@ type ApplyResult = {
   paymentRequestCount: number;
   reminderCount: number;
   checklistCount: number;
+};
+
+type EventPageVersionSummary = {
+  id: string;
+  version_number: number;
+  created_at?: string | null;
 };
 
 const EXAMPLES = [
@@ -174,10 +182,20 @@ function EmptyLine({ children }: { children: ReactNode }) {
 
 export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }) {
   const [input, setInput] = useState(EXAMPLES[0].prompt);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [draft, setDraft] = useState<DraftRecord | null>(null);
   const [session, setSession] = useState<SessionRecord | null>(null);
   const [result, setResult] = useState<ApplyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [eventPageMessage, setEventPageMessage] = useState<string | null>(null);
+  const [eventPageVersions, setEventPageVersions] = useState<EventPageVersionSummary[]>([]);
+  const [isEventPageBusy, setIsEventPageBusy] = useState(false);
+  const [revisionText, setRevisionText] = useState("");
+  const [sectionEditId, setSectionEditId] = useState("hero");
+  const [sectionEditTitle, setSectionEditTitle] = useState("");
+  const [sectionEditBody, setSectionEditBody] = useState("");
+  const [themeMood, setThemeMood] = useState("");
+  const [themePalette, setThemePalette] = useState("");
   const [isParsing, setIsParsing] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
 
@@ -225,11 +243,12 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
   }
 
   async function createSession() {
-    const trimmed = input.trim();
+    const trimmed = (inputRef.current?.value ?? input).trim();
     if (!trimmed) {
       setError("Tell Envitefy what is happening first.");
       return;
     }
+    setInput(trimmed);
     setIsParsing(true);
     setError(null);
     setResult(null);
@@ -263,10 +282,65 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
       const json = await response.json();
       if (!response.ok || !json.ok) throw new Error(json.error || "Unable to publish draft.");
       setResult(json.result);
+      setRevisionText("");
+      setSectionEditTitle("");
+      setSectionEditBody("");
+      setThemeMood("");
+      setThemePalette("");
+      setEventPageMessage("Dynamic event page published.");
+      if (json.result?.dynamicEventPageId) void loadDynamicEventPageVersions(json.result.dynamicEventPageId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to publish draft.");
     } finally {
       setIsApplying(false);
+    }
+  }
+
+  async function loadDynamicEventPageVersions(eventPageId = result?.dynamicEventPageId) {
+    if (!eventPageId) return;
+    setIsEventPageBusy(true);
+    setEventPageMessage(null);
+    try {
+      const response = await fetch(`/api/event-pages/${encodeURIComponent(eventPageId)}`);
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Unable to load versions.");
+      setEventPageVersions(list(json.versions) as EventPageVersionSummary[]);
+    } catch (err) {
+      setEventPageMessage(err instanceof Error ? err.message : "Unable to load versions.");
+    } finally {
+      setIsEventPageBusy(false);
+    }
+  }
+
+  async function patchDynamicEventPage(action: string, body: DraftRecord = {}) {
+    if (!result?.dynamicEventPageId) return;
+    setIsEventPageBusy(true);
+    setEventPageMessage(null);
+    try {
+      const response = await fetch(`/api/event-pages/${encodeURIComponent(result.dynamicEventPageId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ...body }),
+      });
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Unable to update event page.");
+      if (action === "publish") setEventPageMessage("Dynamic page published.");
+      if (action === "revise") {
+        setEventPageMessage("Revision saved as a preview version.");
+        setRevisionText("");
+        setSectionEditTitle("");
+        setSectionEditBody("");
+        setThemeMood("");
+        setThemePalette("");
+      }
+      if (action === "restore_version") {
+        setEventPageMessage(`Version ${json.restoredVersionNumber || body.versionNumber} restored as preview.`);
+      }
+      await loadDynamicEventPageVersions(result.dynamicEventPageId);
+    } catch (err) {
+      setEventPageMessage(err instanceof Error ? err.message : "Unable to update event page.");
+    } finally {
+      setIsEventPageBusy(false);
     }
   }
 
@@ -293,6 +367,9 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
                 Event brief
               </span>
               <textarea
+                ref={inputRef}
+                suppressHydrationWarning
+                data-testid="concierge-v2-event-brief"
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 rows={6}
@@ -313,6 +390,7 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
               ))}
             </div>
             <button
+              data-testid="concierge-v2-review-draft"
               type="button"
               onClick={() => void createSession()}
               disabled={isParsing}
@@ -519,6 +597,153 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
                   <LinkIcon className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </div>
+              {result.dynamicEventPageId ? (
+                <div className="mt-5 rounded-2xl border border-emerald-200 bg-white/80 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">
+                        Dynamic page controls
+                      </p>
+                      <p className="mt-1 text-sm font-semibold leading-6 text-emerald-900">
+                        Preview, revise, publish, or restore blueprint versions without touching legacy templates.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void loadDynamicEventPageVersions()}
+                      disabled={isEventPageBusy}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-emerald-800 transition hover:bg-emerald-50 disabled:opacity-60"
+                    >
+                      {isEventPageBusy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <History className="h-4 w-4" aria-hidden="true" />}
+                      Versions
+                    </button>
+                  </div>
+                  <label className="mt-4 block">
+                    <span className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
+                      Revise hero intro
+                    </span>
+                    <textarea
+                      value={revisionText}
+                      onChange={(event) => setRevisionText(event.target.value)}
+                      rows={3}
+                      className="mt-2 w-full resize-none rounded-xl border border-emerald-200 bg-white p-3 text-sm font-semibold leading-6 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                      placeholder="Write the guest-facing intro you want on the dynamic page."
+                    />
+                  </label>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <TextInput
+                      label="Section id or type"
+                      value={sectionEditId}
+                      onChange={setSectionEditId}
+                    />
+                    <TextInput
+                      label="Section title"
+                      value={sectionEditTitle}
+                      onChange={setSectionEditTitle}
+                    />
+                  </div>
+                  <label className="mt-3 block">
+                    <span className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
+                      Section body
+                    </span>
+                    <textarea
+                      value={sectionEditBody}
+                      onChange={(event) => setSectionEditBody(event.target.value)}
+                      rows={3}
+                      className="mt-2 w-full resize-none rounded-xl border border-emerald-200 bg-white p-3 text-sm font-semibold leading-6 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                      placeholder="Update the selected section copy, such as schedule notes, registry guidance, or RSVP instructions."
+                    />
+                  </label>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <TextInput label="Theme mood" value={themeMood} onChange={setThemeMood} />
+                    <TextInput label="Theme palette" value={themePalette} onChange={setThemePalette} />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void patchDynamicEventPage("revise", {
+                          revisionText,
+                          sectionUpdates:
+                            sectionEditTitle.trim() || sectionEditBody.trim()
+                              ? [
+                                  {
+                                    sectionId: sectionEditId,
+                                    title: sectionEditTitle,
+                                    body: sectionEditBody,
+                                  },
+                                ]
+                              : [],
+                          themePatch: {
+                            mood: themeMood,
+                            palette: themePalette,
+                          },
+                        })
+                      }
+                      disabled={
+                        isEventPageBusy ||
+                        !(
+                          revisionText.trim() ||
+                          sectionEditTitle.trim() ||
+                          sectionEditBody.trim() ||
+                          themeMood.trim() ||
+                          themePalette.trim()
+                        )
+                      }
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-emerald-700 px-4 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      {isEventPageBusy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <WandSparkles className="h-4 w-4" aria-hidden="true" />}
+                      Save revision
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void patchDynamicEventPage("publish")}
+                      disabled={isEventPageBusy}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-4 text-xs font-black uppercase tracking-[0.12em] text-emerald-800 transition hover:bg-emerald-50 disabled:opacity-60"
+                    >
+                      <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                      Publish current
+                    </button>
+                  </div>
+                  {eventPageMessage ? (
+                    <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900">
+                      {eventPageMessage}
+                    </p>
+                  ) : null}
+                  {eventPageVersions.length ? (
+                    <div className="mt-4 grid gap-2">
+                      {eventPageVersions.slice(0, 5).map((version) => (
+                        <div
+                          key={version.id}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2"
+                        >
+                          <span className="text-sm font-black text-emerald-950">
+                            Version {version.version_number}
+                            {version.created_at ? (
+                              <span className="ml-2 font-semibold text-emerald-700">
+                                {formatDateTime(version.created_at)}
+                              </span>
+                            ) : null}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void patchDynamicEventPage("restore_version", {
+                                versionNumber: version.version_number,
+                              })
+                            }
+                            disabled={isEventPageBusy}
+                            className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-white px-3 text-xs font-black uppercase tracking-[0.12em] text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-60"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                            Restore
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </section>
           ) : null}
 
@@ -659,6 +884,7 @@ export default function ConciergeV2Client({ flags }: { flags: ConciergeV2Flags }
 
           <div className="sticky bottom-0 z-20 -mx-4 border-t border-violet-100 bg-[#f8f6ff]/92 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
             <button
+              data-testid="concierge-v2-create-event-page"
               type="button"
               onClick={() => void applyDraft()}
               disabled={!canApply}

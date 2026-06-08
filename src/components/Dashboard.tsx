@@ -1863,14 +1863,14 @@ export default function Dashboard({
           ocrMeta,
         });
         if (!saveResult.ok) {
-          if (uploadReturnToRef.current === "/chat") {
+          if (uploadReturnToRef.current === "/chat" || uploadReturnToRef.current === "/concierge-v2") {
             const qs = new URLSearchParams({
               scanStatus: "failed",
               scanError:
                 saveResult.error ||
                 "We couldn't save this event to your account. Please try again.",
             });
-            router.push(`/chat?${qs.toString()}`);
+            router.push(`/concierge-v2?${qs.toString()}`);
             return false;
           }
           setError(

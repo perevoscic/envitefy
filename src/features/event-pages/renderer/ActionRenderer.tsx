@@ -43,12 +43,24 @@ export function ActionRenderer({ action }: { action: EventAction }) {
 }
 
 export function ActionGroup({ actions }: { actions: EventAction[] }) {
-  const visible = actions.filter((action) => action.href || action.type === "rsvp").slice(0, 4);
+  const seen = new Set<string>();
+  const visible = actions
+    .filter((action) => action.href || action.type === "rsvp")
+    .filter((action) => {
+      const key =
+        action.type === "rsvp" || action.type === "share_page"
+          ? action.type
+          : [action.type, action.href || "", action.label || ""].join(":");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 4);
   if (!visible.length) return null;
   return (
     <div className="flex flex-wrap gap-2">
-      {visible.map((action) => (
-        <ActionRenderer key={action.id} action={action} />
+      {visible.map((action, index) => (
+        <ActionRenderer key={`${action.id}-${index}`} action={action} />
       ))}
     </div>
   );

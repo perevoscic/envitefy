@@ -57,6 +57,67 @@ test("parseConciergeInput grounds gymnastics packet ranges and leaves missing ti
   assert.doesNotMatch(draft.missingFields.join(","), /location/);
 });
 
+test("parseConciergeInput extracts gymnastics packet level sessions when times are present", () => {
+  const draft = parseConciergeInput(
+    [
+      "38th ANNUAL GASPARILLA CLASSIC",
+      "February 20-22, 2026",
+      "MEET SITE: World Equestrian Center - Expo Center 1 1284 NW 87th Ct. Rd, Ocala, FL",
+      "USA Gymnastics Competition",
+      "Level 7 Friday 8 AM",
+      "Level 8 Saturday 1 PM",
+    ].join("\n"),
+    { referenceDate: "2026-01-10T12:00:00.000Z", sourceKind: "pdf_schedule" },
+  );
+
+  assert.equal(draft.eventType, "gymnastics_meet");
+  assert.deepEqual(
+    draft.occurrences.map((item) => [item.title, item.type, item.date, item.startAt]),
+    [
+      ["Level 7 Session", "meet_session", "2026-02-20", "2026-02-20T08:00:00.000Z"],
+      ["Level 8 Session", "meet_session", "2026-02-21", "2026-02-21T13:00:00.000Z"],
+    ],
+  );
+  assert.doesNotMatch(draft.missingFields.join(","), /gymnastics meet time/);
+});
+
+test("parseConciergeInput builds wedding weekend timelines, registry, travel notes, and RSVP", () => {
+  const draft = parseConciergeInput(
+    "Plan Sara and Daniel wedding weekend February 20-22, 2026 in Austin. Welcome drinks Friday at 7 PM, ceremony Saturday at 4 PM, reception follows. Hotel block and registry https://registry.example/sara-daniel.",
+    { referenceDate: "2026-01-10T12:00:00.000Z" },
+  );
+
+  assert.equal(draft.mode, "social");
+  assert.equal(draft.eventType, "wedding_weekend");
+  assert.equal(draft.title, "Sara and Daniel Wedding Weekend");
+  assert.deepEqual(
+    draft.occurrences.map((item) => [item.type, item.date, item.startAt]),
+    [
+      ["welcome_drinks", "2026-02-20", "2026-02-20T19:00:00.000Z"],
+      ["ceremony", "2026-02-21", "2026-02-21T16:00:00.000Z"],
+      ["reception", "2026-02-21", "2026-02-21T17:00:00.000Z"],
+    ],
+  );
+  assert.equal(draft.registryLinks[0].url, "https://registry.example/sara-daniel");
+  assert.ok(draft.forms[0].fields.some((field) => field.key === "meal_choice"));
+  assert.ok(draft.checklistItems.some((item) => /hotel block/i.test(item.title)));
+});
+
+test("parseConciergeInput creates football volunteer and family response defaults", () => {
+  const draft = parseConciergeInput(
+    "Create Woodland Tigers football season schedule with game days, concessions volunteers, gate help, and family RSVP.",
+    { referenceDate: "2026-01-10T12:00:00.000Z" },
+  );
+
+  assert.equal(draft.mode, "sports");
+  assert.equal(draft.eventType, "football_game_day");
+  assert.equal(draft.title, "Woodland Tigers Team Schedule");
+  assert.ok(draft.volunteerSlots.some((slot) => slot.title === "Concessions"));
+  assert.ok(draft.forms[0].fields.some((field) => field.key === "player_name"));
+  assert.ok(draft.checklistItems.some((item) => /volunteer/i.test(item.title)));
+  assert.ok(draft.missingFields.includes("game dates"));
+});
+
 test("Concierge V2 public event payload formats schedule labels instead of exposing raw ISO", () => {
   const payload = buildConciergeV2EventHistoryPayload({
     draft: {
@@ -101,6 +162,56 @@ test("parseConciergeInput builds birthday draft without hallucinating missing lo
   assert.match(draft.title, /Pool Party/);
   assert.ok(draft.missingFields.includes("event date"));
   assert.ok(draft.missingFields.includes("event time"));
+});
+
+test("parseConciergeInput preserves explicit Live Card birthday details and output metadata", () => {
+  const draft = parseConciergeInput(
+    "Create a live card for Lara's 8th birthday movie night. It is at AMC Destin Commons on May 22 at 3 PM. Add RSVP, pizza after the movie, and a gift link placeholder.",
+    { referenceDate: "2026-01-10T12:00:00.000Z" },
+  );
+  const payload = buildConciergeV2EventHistoryPayload({ draft });
+
+  assert.equal(draft.eventType, "birthday_party");
+  assert.match(draft.title, /Lara/i);
+  assert.match(draft.occurrences[0].locationText, /AMC Destin Commons/i);
+  assert.ok(draft.occurrences.some((item) => /pizza/i.test(item.title)));
+  assert.ok(draft.registryLinks.some((link) => /gift/i.test(link.label)));
+  assert.deepEqual(payload.data.requestedOutputs, ["live_card", "event_page"]);
+  assert.equal(payload.data.productType, "live_card");
+});
+
+test("parseConciergeInput creates baby shower defaults with schedule and registry placeholder", () => {
+  const draft = parseConciergeInput(
+    "Create an event page for a baby shower for Judith and David in League City, Texas. Include RSVP, schedule, registry link placeholder, location, and a soft premium theme.",
+    { referenceDate: "2026-01-10T12:00:00.000Z" },
+  );
+
+  assert.equal(draft.eventType, "baby_shower");
+  assert.equal(draft.title, "Judith and David Baby Shower");
+  assert.match(draft.locationText, /League City/i);
+  assert.ok(draft.forms[0].fields.some((field) => field.key === "attending"));
+  assert.ok(draft.occurrences.some((item) => /Guest Arrival/i.test(item.title)));
+  assert.ok(draft.registryLinks.some((link) => /Registry/i.test(link.label)));
+});
+
+test("parseConciergeInput creates schedule-heavy gymnastics meet defaults without social templates", () => {
+  const draft = parseConciergeInput(
+    "Create a gymnastics meet event page for Livia's Spring Invitational. It is for parents, grandparents, teammates, and coaches. Include athlete check-in, warmups, march-in, two rotations, awards, team lunch, RSVP, directions, add-to-calendar, what to bring, and live updates.",
+    { referenceDate: "2026-01-10T12:00:00.000Z" },
+  );
+  const fieldKeys = draft.forms.flatMap((form) => form.fields.map((field) => field.key));
+
+  assert.equal(draft.mode, "gymnastics");
+  assert.equal(draft.eventType, "gymnastics_meet");
+  assert.equal(draft.title, "Livia's Spring Invitational");
+  assert.ok(draft.occurrences.some((item) => /Athlete Check-in/i.test(item.title)));
+  assert.ok(draft.occurrences.some((item) => /Rotation 2/i.test(item.title)));
+  assert.ok(fieldKeys.includes("attending"));
+  assert.ok(fieldKeys.includes("adult_count"));
+  assert.ok(fieldKeys.includes("child_count"));
+  assert.ok(fieldKeys.includes("athlete_name"));
+  assert.ok(fieldKeys.includes("note"));
+  assert.doesNotMatch(draft.title, /Birthday|Wedding|Baby Shower/i);
 });
 
 test("generateOccurrences materializes weekly Tue/Thu series and applies cancellation", () => {

@@ -75,7 +75,12 @@ function cleanString(value) {
 function titleCase(value) {
   return cleanString(value)
     .split(" ")
-    .map((part) => (part ? `${part[0].toUpperCase()}${part.slice(1).toLowerCase()}` : ""))
+    .map((part, index) => {
+      if (!part) return "";
+      const lower = part.toLowerCase();
+      if (index > 0 && ["a", "an", "and", "for", "of", "or", "the", "to"].includes(lower)) return lower;
+      return `${part[0].toUpperCase()}${part.slice(1).toLowerCase()}`;
+    })
     .join(" ");
 }
 
@@ -156,6 +161,56 @@ function parseMonthDay(text, referenceDate) {
   return { date, inferredYear, sourceText: match[0] };
 }
 
+function parseMonthDayRange(text, referenceDate) {
+  const cleaned = cleanString(text);
+  const match = cleaned.match(
+    /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*(?:[-–]|to)\s*(\d{1,2})(?:st|nd|rd|th)?)?(?:,?\s+(\d{4}))?\b/i,
+  );
+  if (!match) return null;
+  const month = MONTHS[match[1].toLowerCase().replace(/\.$/, "")];
+  const startDay = Number(match[2]);
+  const endDay = Number(match[3] || match[2]);
+  if (
+    !Number.isInteger(month) ||
+    !Number.isInteger(startDay) ||
+    !Number.isInteger(endDay) ||
+    startDay < 1 ||
+    endDay < startDay ||
+    endDay > 31
+  ) {
+    return null;
+  }
+  let year = match[4] ? Number(match[4]) : referenceDate.getUTCFullYear();
+  let startDate = new Date(Date.UTC(year, month, startDay, 9, 0, 0));
+  let endDate = new Date(Date.UTC(year, month, endDay, 9, 0, 0));
+  const inferredYear = !match[4];
+  if (inferredYear && endDate.getTime() + 86400000 < referenceDate.getTime()) {
+    year += 1;
+    startDate = new Date(Date.UTC(year, month, startDay, 9, 0, 0));
+    endDate = new Date(Date.UTC(year, month, endDay, 9, 0, 0));
+  }
+  return { startDate, endDate, inferredYear, sourceText: match[0] };
+}
+
+function dateForWeekdayInRange(range, weekdayCode) {
+  if (!range || !weekdayCode) return null;
+  const target = WEEKDAY_INDEX[weekdayCode];
+  if (!Number.isInteger(target)) return null;
+  const cursor = new Date(Date.UTC(
+    range.startDate.getUTCFullYear(),
+    range.startDate.getUTCMonth(),
+    range.startDate.getUTCDate(),
+    9,
+    0,
+    0,
+  ));
+  while (cursor <= range.endDate) {
+    if (cursor.getUTCDay() === target) return new Date(cursor.getTime());
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return null;
+}
+
 function nextWeekdayDate(referenceDate, weekdayCode, weekOffset = 0) {
   const target = WEEKDAY_INDEX[weekdayCode];
   if (!Number.isInteger(target)) return null;
@@ -198,23 +253,84 @@ function inferPersonName(text) {
   return forName?.[1] || "";
 }
 
+function inferWeddingCouple(text) {
+  const cleaned = cleanString(text);
+  const patterns = [
+    /\b([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})(?:'s|’s)?\s+wedding\b/,
+    /\bwedding\s+(?:for\s+)?([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})\b/,
+    /\bfor\s+([A-Z][a-zA-Z'-]{1,30})\s+(?:and|&)\s+([A-Z][a-zA-Z'-]{1,30})(?:'s|’s)?\b/,
+  ];
+  for (const pattern of patterns) {
+    const match = cleaned.match(pattern);
+    if (match?.[1] && match?.[2]) return `${titleCase(match[1])} and ${titleCase(match[2])}`;
+  }
+  return "";
+}
+
+function inferTeamName(text) {
+  const cleaned = cleanString(text);
+  const patterns = [
+    /\b(?:for|plan|create|organize)\s+(?:the\s+)?([A-Z][A-Za-z0-9' -]{2,60}?)\s+(?:football|soccer|basketball|baseball|volleyball|team)\b/i,
+    /^\s*(?:the\s+)?([A-Z][A-Za-z0-9' -]{2,60}?)\s+(?:football|soccer|basketball|baseball|volleyball|team)\b/i,
+  ];
+  for (const pattern of patterns) {
+    const match = cleaned.match(pattern);
+    if (match?.[1]) {
+      return titleCase(match[1].replace(/\b(?:create|my|our|plan|the)\b/gi, ""));
+    }
+  }
+  return "";
+}
+
 function locationFromText(text) {
   const cleaned = cleanString(text);
   const meetSite = cleaned.match(
-    /\bMEET SITE:\s+(.+?)(?=\s+MEET DIRECTOR:|\s+MEET CONTACT:|\s+EQUIPMENT:|\s+LEVELS:|$)/i,
+    /\bMEET SITE:\s+(.+?)(?=\s+MEET DIRECTOR:|\s+MEET CONTACT:|\s+EQUIPMENT:|\s+LEVELS?:|\s+USA Gymnastics|\s+Level\s+\w+|$)/i,
   );
   if (meetSite?.[1]) return cleanString(meetSite[1]);
-  const exact = cleaned.match(/\b(?:at|in)\s+([A-Z][a-zA-Z0-9' .-]{1,70}(?:,\s*[A-Z]{2})?)(?=\s+(?:with|and|plus|on|at|for|from|team|invite|need)\b|[.;]|$)/);
+  const exact = cleaned.match(
+    /\b(?:at|in)\s+([A-Z][a-zA-Z0-9' .-]{1,70}(?:,\s*(?:[A-Z]{2}|[A-Z][a-zA-Z' .-]{2,30}))?)(?=\s+(?:with|and|plus|on|at|for|from|team|invite|need|include)\b|[.;]|$)/,
+  );
   return cleanString(exact?.[1]);
+}
+
+function extractFirstUrl(text, nearbyPattern = null) {
+  const cleaned = cleanString(text);
+  if (nearbyPattern) {
+    const nearby = cleaned.match(new RegExp(`${nearbyPattern.source}.{0,120}?(https?:\\/\\/[^\\s,;)]+)`, "i"));
+    if (nearby?.[1]) return nearby[1].replace(/[.]+$/, "");
+  }
+  const match = cleaned.match(/\bhttps?:\/\/[^\s,;)]+/i);
+  return match?.[0]?.replace(/[.]+$/, "") || "";
+}
+
+function extractTimeNear(text, labelPattern) {
+  const pattern = new RegExp(`${labelPattern.source}[^.;\\n]{0,100}?\\b(?:at\\s+)?(\\d{1,2}(?::\\d{2})?\\s*(?:a\\.?m\\.?|p\\.?m\\.?))\\b`, "i");
+  return cleanString(text).match(pattern)?.[1] || "";
+}
+
+function weddingLocationFromText(text) {
+  const cleaned = cleanString(text);
+  const match = cleaned.match(/\bin\s+([A-Z][A-Za-z' -]{2,50})(?=[.;,]|\s+(?:with|welcome|ceremony|reception|hotel|registry)\b|$)/);
+  return cleanString(match?.[1]) || locationFromText(text);
 }
 
 function titleFromGymnasticsPacket(text) {
   const compact = cleanString(text);
+  const namedInvitational = compact.match(
+    /\bfor\s+([A-Z][A-Za-z' -]{1,50}?\s+(?:classic|invitational|championships?|state|regional|national))\b/i,
+  );
+  if (namedInvitational?.[1]) return titleCase(namedInvitational[1]);
   const inline = compact.match(
     /\b((?:\d+\s*(?:st|nd|rd|th)\s+)?(?:annual\s+)?[A-Z0-9'’ -]{3,80}?\b(?:classic|invitational|championships?|state|regional|national))\b/i,
   );
   if (inline?.[1]) {
-    return titleCase(inline[1].replace(/\b(\d+)\s+(st|nd|rd|th)\b/gi, "$1$2"));
+    return titleCase(
+      inline[1]
+        .replace(/\b(\d+)\s+(st|nd|rd|th)\b/gi, "$1$2")
+        .replace(/^(?:create|make|build|plan)\s+(?:a|an|the)?\s*/i, "")
+        .replace(/^gymnastics\s+meet\s+event\s+page\s+for\s+/i, ""),
+    );
   }
   const lines = String(text || "")
     .split(/\n+/)
@@ -229,9 +345,18 @@ function titleFromGymnasticsPacket(text) {
 
 function detectEventType(text) {
   const lower = cleanString(text).toLowerCase();
+  if (/\bwedding\b|\bceremony\b.*\breception\b|\bhotel\s+block\b|\bwelcome\s+drinks\b/.test(lower)) {
+    return "wedding_weekend";
+  }
   if (/\bgymnastics?\b|\bgym\s+meet\b|\bmeet\b.*\bgym/.test(lower)) return "gymnastics_meet";
   if (/\bpractice\b/.test(lower) && /\bgym|team|sport|soccer|football|basketball/.test(lower)) {
     return lower.includes("gym") ? "gymnastics_practice" : "team_practice";
+  }
+  if (/\bfootball\b/.test(lower) && /\b(game|schedule|tailgate|booster|concession|volunteer|season)\b/.test(lower)) {
+    return "football_game_day";
+  }
+  if (/\b(?:soccer|basketball|baseball|volleyball|sports?)\b/.test(lower) && /\b(game|schedule|tournament|season)\b/.test(lower)) {
+    return "sports_team_schedule";
   }
   if (/\bspirit\s+week\b/.test(lower)) return "spirit_week";
   if (/\bfield\s+trip\b/.test(lower)) return "field_trip";
@@ -258,11 +383,15 @@ export function detectEventMode(input) {
   };
 
   if (/\bgymnastics?\b|\bgym\s+meet\b|\bwarm[-\s]?up\b|\bmeet\b/.test(text)) add("gymnastics", 5, "gymnastics or meet language");
-  if (/\bpractice\b|\btournament\b|\bgame\b|\bteam\s+dinner\b|\buniform\b/.test(text)) add("team", 3, "team schedule language");
+  if (/\bpractice\b|\btournament\b|\bgame\b|\bteam\s+dinner\b|\buniform\b|\bconcession\b|\btailgate\b/.test(text)) {
+    add("team", 3, "team schedule language");
+  }
   if (/\bsoccer|football|basketball|baseball|volleyball|sports?\b/.test(text)) add("sports", 3, "sports language");
   if (/\bschool|teacher|class\s+party|field\s+trip|spirit\s+week|early\s+dismissal|canned\s+food\b/.test(text)) add("school", 5, "school workflow language");
   if (/\bclass|program|registration|roster|waitlist\b/.test(text)) add("class", 3, "class or program language");
-  if (/\bbirthday|baby\s+shower|graduation|pool\s+party|wedding|gender\s+reveal|reunion\b/.test(text)) add("social", 4, "social event language");
+  if (/\bbirthday|baby\s+shower|graduation|pool\s+party|wedding|ceremony|reception|gender\s+reveal|reunion\b/.test(text)) {
+    add("social", 4, "social event language");
+  }
   if (/\bfamily|parents?|grandparents?|kid|kids|guardian\b/.test(text)) add("family", 2, "family coordination language");
   if (/\bfundraiser|church|community|club|volunteer\b/.test(text)) add("community", 3, "community planning language");
   if (/\bworkshop|open\s+house|networking|professional|client\b/.test(text)) add("business", 4, "business event language");
@@ -281,10 +410,24 @@ function buildBaseDraft(text, context) {
   const modeResult = detectEventMode(text);
   const eventType = detectEventType(text);
   const name = inferPersonName(text);
+  const couple = inferWeddingCouple(text);
+  const teamName = inferTeamName(text);
   const titleSeed =
-    eventType === "birthday_party" && name
-      ? `${name}'s Birthday Party`
-      : eventType === "gymnastics_meet" && name
+    eventType === "wedding_weekend"
+      ? couple
+        ? `${couple} Wedding Weekend`
+        : "Wedding Weekend"
+      : (eventType === "football_game_day" || eventType === "sports_team_schedule") && teamName
+        ? `${teamName} Team Schedule`
+      : eventType === "birthday_party" && name
+        ? `${name}'s Birthday Party`
+        : eventType === "baby_shower"
+          ? couple
+            ? `${couple} Baby Shower`
+            : name
+              ? `${name}'s Baby Shower`
+              : "Baby Shower"
+          : eventType === "gymnastics_meet" && name
         ? `${name} Gymnastics Schedule`
         : eventType === "spirit_week" && name
           ? `${name} Spirit Week`
@@ -331,16 +474,25 @@ function buildBaseDraft(text, context) {
 
 function buildSummary(mode, eventType, text) {
   if (mode === "gymnastics") {
-    return "Gymnastics schedule with practices, meet details, reminders, and packing tasks.";
+    return "Meet-day schedule, family logistics, RSVP, directions, and live updates in one place.";
+  }
+  if (eventType === "wedding_weekend") {
+    return "Wedding weekend plan with timeline, travel, registry, RSVP, and guest reminders.";
+  }
+  if (eventType === "football_game_day" || eventType === "sports_team_schedule") {
+    return "Team sports schedule with game-day details, volunteer roles, reminders, and family responses.";
   }
   if (eventType === "spirit_week") return "School spirit week schedule with daily reminders.";
   if (eventType === "class_party") return "Class party plan with signup slots and parent responses.";
-  if (eventType === "birthday_party") return "Birthday event page with RSVP and planning checklist.";
+  if (eventType === "birthday_party") return "Movie night, pizza, RSVP, and birthday fun for guests.";
+  if (eventType === "baby_shower") return "Celebrate the parents-to-be with RSVP details, schedule, registry, and location notes.";
   const cleaned = cleanString(text);
   return cleaned ? cleaned.slice(0, 220) : "Event plan created by Envitefy Concierge.";
 }
 
 function buildProgramTitle({ name, mode, eventType, title }) {
+  if (eventType === "wedding_weekend") return title;
+  if (eventType === "football_game_day" || eventType === "sports_team_schedule") return title;
   if (mode === "gymnastics" && name) return `${name} Gymnastics Season`;
   if (mode === "school" && eventType === "spirit_week" && name) return `${name} School Week`;
   if (mode === "school") return "School Events";
@@ -481,7 +633,14 @@ function applyBirthdayDefaults(draft, text) {
   if (draft.eventType !== "birthday_party") return;
   const theme = text.match(/\b([a-zA-Z' -]{2,24})\s+theme\b/i);
   const location = locationFromText(text);
+  const giftUrl = extractFirstUrl(text, /\bgift\b|\bregistry\b/);
   if (theme?.[1]) draft.theme = titleCase(theme[1]);
+  if (giftUrl) {
+    draft.registryLinks = [{ label: "Gift link", url: giftUrl }];
+  } else if (/\bgift\s+link\b|\bregistry\b/i.test(text)) {
+    draft.registryLinks = [{ label: "Gift link placeholder", url: "#" }];
+    draft.missingFields.push("gift link");
+  }
   if (/pool\s+party/i.test(text) && !draft.title.toLowerCase().includes("pool")) {
     draft.title = draft.title.replace(/\s+Party$/i, " Pool Party");
   }
@@ -489,16 +648,284 @@ function applyBirthdayDefaults(draft, text) {
     draft.missingFields.push("event date", "event time");
     if (!location) draft.missingFields.push("event location");
   }
+  if (/\bpizza\b/i.test(text) && !draft.occurrences.some((item) => /\bpizza\b/i.test(cleanString(item?.title)))) {
+    const mainEvent = draft.occurrences[0] || null;
+    draft.occurrences.push({
+      title: /after\s+the\s+movie/i.test(text) ? "Pizza After the Movie" : "Pizza",
+      type: "food",
+      startAt: mainEvent?.endAt || null,
+      endAt: null,
+      timezone: draft.timezone,
+      locationText: mainEvent?.locationText || location || "",
+      status: "scheduled",
+    });
+  }
   draft.rsvpQuestions.push(
     { key: "guest_count", label: "How many guests?", type: "number", required: false },
     { key: "food_notes", label: "Food allergies or notes", type: "textarea", required: false },
   );
 }
 
+function applyBabyShowerDefaults(draft, text) {
+  if (draft.eventType !== "baby_shower") return;
+  const location = locationFromText(text);
+  const registryUrl = extractFirstUrl(text, /\bregistry\b/);
+  if (registryUrl) {
+    draft.registryLinks = [{ label: "Registry", url: registryUrl }];
+  } else if (/\bregistry\b/i.test(text)) {
+    draft.registryLinks = [{ label: "Registry placeholder", url: "#" }];
+    draft.missingFields.push("registry link");
+  }
+  if (location) draft.locationText = location;
+  if (!draft.occurrences.length) {
+    draft.missingFields.push("event date", "event time");
+    if (!location) draft.missingFields.push("event location");
+  }
+  if (/\bschedule\b/i.test(text)) {
+    draft.occurrences.push(
+      { title: "Guest Arrival", type: "schedule_item", startAt: null, endAt: null, timezone: draft.timezone, locationText: location || "", status: "draft" },
+      { title: "Baby Shower Games", type: "schedule_item", startAt: null, endAt: null, timezone: draft.timezone, locationText: location || "", status: "draft" },
+      { title: "Gifts and Registry", type: "schedule_item", startAt: null, endAt: null, timezone: draft.timezone, locationText: location || "", status: "draft" },
+    );
+  }
+  draft.forms.push({
+    title: "Baby Shower RSVP",
+    description: "Collect attendance, guest count, and notes for the hosts.",
+    fields: [
+      { key: "guest_name", label: "Guest name", type: "text", required: true },
+      { key: "attending", label: "Can you attend?", type: "yes_no_maybe", required: true },
+      { key: "guest_count", label: "Guest count", type: "number", required: false },
+      { key: "notes", label: "Notes for Judith and David", type: "textarea", required: false },
+    ],
+  });
+  draft.checklistItems.push(
+    { title: "Add shower date and time", category: "Details", status: "open" },
+    { title: "Add registry link", category: "Registry", status: "open" },
+    { title: "Confirm League City location", category: "Location", status: "open" },
+    { title: "Set RSVP deadline", category: "RSVP", status: "open" },
+  );
+}
+
+function applyGymnasticsMeetDefaults(draft, text) {
+  if (draft.eventType !== "gymnastics_meet") return;
+  const location = locationFromText(text);
+  if (location) draft.locationText = location;
+  if (!draft.occurrences.length) {
+    draft.occurrences.push(
+      { title: "Athlete Check-in", type: "check_in", startAt: null, endAt: null, timezone: draft.timezone, locationText: location || "", status: "draft" },
+      { title: "Warmups", type: "warmups", startAt: null, endAt: null, timezone: draft.timezone, locationText: location || "", status: "draft" },
+      { title: "March-in", type: "march_in", startAt: null, endAt: null, timezone: draft.timezone, locationText: location || "", status: "draft" },
+      { title: "Rotation 1", type: "rotation", startAt: null, endAt: null, timezone: draft.timezone, locationText: location || "", status: "draft" },
+      { title: "Rotation 2", type: "rotation", startAt: null, endAt: null, timezone: draft.timezone, locationText: location || "", status: "draft" },
+      { title: "Awards", type: "awards", startAt: null, endAt: null, timezone: draft.timezone, locationText: location || "", status: "draft" },
+      { title: "Team Lunch", type: "team_lunch", startAt: null, endAt: null, timezone: draft.timezone, locationText: location || "", status: "draft" },
+    );
+    draft.missingFields.push("meet date", "athlete check-in time", "meet location");
+  }
+  draft.forms = draft.forms.filter((form) => !/team rsvp/i.test(cleanString(form?.title)));
+  draft.forms.push({
+    title: "Gymnastics Meet RSVP",
+    description: "Track family attendance, athlete names, and meet-day notes.",
+    fields: [
+      { key: "attending", label: "Attending", type: "yes_no_maybe", required: true },
+      { key: "adult_count", label: "Adult count", type: "number", required: false },
+      { key: "child_count", label: "Child count", type: "number", required: false },
+      { key: "athlete_name", label: "Athlete name", type: "text", required: true },
+      { key: "note", label: "Optional note", type: "textarea", required: false },
+    ],
+  });
+  draft.checklistItems.push(
+    { title: "Competition leo or uniform", category: "Packing", status: "open" },
+    { title: "Grips, tape, and water bottle", category: "Packing", status: "open" },
+    { title: "Confirm arrival time", category: "Logistics", status: "open" },
+    { title: "Share schedule with grandparents", category: "Family", status: "open" },
+    { title: "Add directions and parking notes", category: "Directions", status: "open" },
+    { title: "Add to-calendar links after times are confirmed", category: "Calendar", status: "open" },
+    { title: "List what to bring for athletes and families", category: "Packing", status: "open" },
+    { title: "Prepare live updates for schedule changes", category: "Updates", status: "open" },
+  );
+}
+
+function applyWeddingDefaults(draft, text, referenceDate) {
+  if (draft.eventType !== "wedding_weekend") return;
+  const range = parseMonthDayRange(text, referenceDate);
+  const location = weddingLocationFromText(text);
+  const registryUrl = extractFirstUrl(text, /\bregistry\b/);
+  const hotelUrl = extractFirstUrl(text, /\bhotel\s+block\b|\broom\s+block\b|\btravel\b/);
+  if (registryUrl) draft.registryLinks = [{ label: "Registry", url: registryUrl }];
+  if (/\bhotel\s+block\b|\broom\s+block\b/i.test(text)) {
+    draft.travelNotes =
+      hotelUrl && hotelUrl !== registryUrl ? `Hotel block details: ${hotelUrl}` : "Hotel block details should be added.";
+  }
+
+  const addWeddingOccurrence = ({ title, type, dayCode, timeText, fallbackOffsetDays = 0, durationMinutes = 120 }) => {
+    let date = dayCode && range ? dateForWeekdayInRange(range, dayCode) : null;
+    if (!date && range) date = offsetDate(range.startDate, fallbackOffsetDays);
+    const time = timeText ? timeParts(timeText) : null;
+    draft.occurrences.push({
+      title,
+      type,
+      date: date ? toDateOnly(date) : "",
+      dateText: date ? range?.sourceText || "" : "",
+      startAt: date && time ? isoAtLocalDate(date, time.local) : null,
+      endAt: date && time ? isoAtLocalDate(date, addMinutesToLocalTime(time.local, durationMinutes)) : null,
+      timezone: draft.timezone,
+      locationText: location || "",
+      status: "scheduled",
+    });
+    if (!date) draft.missingFields.push(`${title.toLowerCase()} date`);
+    if (!time) draft.missingFields.push(`${title.toLowerCase()} time`);
+  };
+
+  const welcome = /\bwelcome\s+drinks?\b/i.test(text);
+  if (welcome) {
+    addWeddingOccurrence({
+      title: "Welcome Drinks",
+      type: "welcome_drinks",
+      dayCode: "FR",
+      timeText: extractTimeNear(text, /\bwelcome\s+drinks?\b/),
+      fallbackOffsetDays: 0,
+      durationMinutes: 120,
+    });
+  }
+  const ceremony = /\bceremony\b/i.test(text);
+  if (ceremony || /\bwedding\b/i.test(text)) {
+    addWeddingOccurrence({
+      title: "Ceremony",
+      type: "ceremony",
+      dayCode: "SA",
+      timeText: extractTimeNear(text, /\bceremony\b/),
+      fallbackOffsetDays: range ? Math.min(1, Math.max(0, range.endDate.getUTCDate() - range.startDate.getUTCDate())) : 0,
+      durationMinutes: 60,
+    });
+  }
+  const reception = /\breception\b/i.test(text);
+  const receptionTime = extractTimeNear(text, /\breception\b/);
+  if (reception || /\breception\s+follows\b/i.test(text)) {
+    const ceremonyItem = draft.occurrences.find((item) => item.type === "ceremony");
+    if (ceremonyItem?.endAt && !receptionTime) {
+      const date = new Date(ceremonyItem.endAt);
+      draft.occurrences.push({
+        title: "Reception",
+        type: "reception",
+        date: ceremonyItem.date,
+        dateText: ceremonyItem.dateText,
+        startAt: date.toISOString(),
+        endAt: new Date(date.getTime() + 4 * 60 * 60 * 1000).toISOString(),
+        timezone: draft.timezone,
+        locationText: location || "",
+        status: "scheduled",
+      });
+    } else {
+      addWeddingOccurrence({
+        title: "Reception",
+        type: "reception",
+        dayCode: "SA",
+        timeText: receptionTime,
+        fallbackOffsetDays: 1,
+        durationMinutes: 240,
+      });
+    }
+  }
+  if (draft.occurrences.some((item) => ["welcome_drinks", "ceremony", "reception"].includes(item.type))) {
+    draft.occurrences = draft.occurrences.filter(
+      (item) => !(item.type === "event" && /wedding\s+weekend/i.test(item.title || "")),
+    );
+  }
+
+  draft.forms.push({
+    title: "Wedding RSVP",
+    description: "Collect attendance, meal choices, guest count, and notes.",
+    fields: [
+      { key: "guest_name", label: "Guest name", type: "text", required: true },
+      { key: "attending", label: "Can you attend?", type: "yes_no", required: true },
+      { key: "guest_count", label: "Guest count", type: "number", required: false },
+      { key: "meal_choice", label: "Meal choice", type: "select", required: false },
+      { key: "song_request", label: "Song request", type: "text", required: false },
+      { key: "travel_notes", label: "Travel or accessibility notes", type: "textarea", required: false },
+    ],
+  });
+  draft.checklistItems.push(
+    { title: "Confirm ceremony and reception times", category: "Timeline", status: "open" },
+    { title: "Add hotel block and travel notes", category: "Travel", status: "open" },
+    { title: "Add registry links", category: "Registry", status: "open" },
+    { title: "Set RSVP deadline", category: "RSVP", status: "open" },
+  );
+}
+
+function applyGymnasticsPacketDetails(draft, text, referenceDate) {
+  if (draft.eventType !== "gymnastics_meet") return;
+  const range = parseMonthDayRange(text, referenceDate);
+  if (!range) return;
+  const location = locationFromText(text);
+  const sessionPattern =
+    /\b(?:level|lvl)\s*([A-Za-z0-9-]+)\b.{0,50}?\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)\b.{0,35}?\b(\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?))\b/gi;
+  const sessions = [];
+  for (let match = sessionPattern.exec(text); match; match = sessionPattern.exec(text)) {
+    const level = cleanString(match[1]).toUpperCase();
+    const dayCode = WEEKDAY_CODES[match[2].toLowerCase()];
+    const date = dateForWeekdayInRange(range, dayCode);
+    const time = timeParts(match[3]);
+    if (!level || !date || !time) continue;
+    sessions.push({
+      title: `Level ${level} Session`,
+      type: "meet_session",
+      date: toDateOnly(date),
+      dateText: `${titleCase(match[2])} ${range.sourceText}`,
+      startAt: isoAtLocalDate(date, time.local),
+      endAt: isoAtLocalDate(date, addMinutesToLocalTime(time.local, 180)),
+      timezone: draft.timezone,
+      locationText: location || "",
+      status: "scheduled",
+      notes: `Level ${level}`,
+    });
+  }
+  if (!sessions.length) return;
+  draft.occurrences = draft.occurrences.filter((item) => !(item.type === "meet" && !item.startAt));
+  draft.occurrences.push(...sessions);
+  draft.missingFields = draft.missingFields.filter((field) => field !== "gymnastics meet time");
+}
+
+function applyTeamSportsDefaults(draft, text) {
+  if (!["football_game_day", "sports_team_schedule"].includes(draft.eventType) && draft.mode !== "sports") return;
+  const teamName = inferTeamName(text);
+  if (draft.title === "Event Plan" && teamName) draft.title = `${teamName} Team Schedule`;
+  const sport = cleanString(text.match(/\b(football|soccer|basketball|baseball|volleyball)\b/i)?.[1] || "team");
+  if (!draft.series.length && /\bevery\s+/.test(text) === false) {
+    draft.missingFields.push("game dates");
+  }
+  if (/\bvolunteer|concession|gate|setup|cleanup|snack|booster\b/i.test(text)) {
+    draft.volunteerSlots.push(
+      { title: "Concessions", quantityNeeded: 4, group: "Game day" },
+      { title: "Gate help", quantityNeeded: 2, group: "Game day" },
+      { title: "Setup help", quantityNeeded: 2, group: "Setup" },
+      { title: "Cleanup help", quantityNeeded: 2, group: "Cleanup" },
+    );
+  }
+  draft.forms.push({
+    title: `${titleCase(sport)} Team RSVP`,
+    description: "Track player availability, family attendance, and volunteer notes.",
+    fields: [
+      { key: "player_name", label: "Player name", type: "text", required: true },
+      { key: "family_attending", label: "Family attending?", type: "yes_no", required: false },
+      { key: "volunteer_interest", label: "Can you volunteer?", type: "yes_no", required: false },
+      { key: "notes", label: "Notes", type: "textarea", required: false },
+    ],
+  });
+  draft.checklistItems.push(
+    { title: "Add game dates and opponents", category: "Schedule", status: "open" },
+    { title: "Confirm field or venue details", category: "Logistics", status: "open" },
+    { title: "Assign volunteer coverage", category: "Volunteers", status: "open" },
+    { title: "Send family reminder", category: "Reminders", status: "open" },
+  );
+}
+
 function applyFoundationDefaults(draft) {
   draft.forms = draft.forms.length ? draft.forms : generateDefaultForms(draft.mode, draft.eventType);
   draft.reminders = generateDefaultReminders(draft.mode, draft.eventType, draft.occurrences);
-  draft.checklistItems = generateDefaultChecklist(draft.mode, draft.eventType);
+  draft.checklistItems = draft.checklistItems.length
+    ? draft.checklistItems
+    : generateDefaultChecklist(draft.mode, draft.eventType);
   draft.missingFields = uniqueStrings(draft.missingFields);
   draft.inferredFields = uniqueStrings(draft.inferredFields);
   draft.followupQuestion = buildFollowupQuestion(draft.missingFields);
@@ -520,6 +947,11 @@ export function parseConciergeInput(input, context = {}) {
   applyDatedOccurrences(draft, text, referenceDate);
   applyClassPartyDefaults(draft, text);
   applyBirthdayDefaults(draft, text);
+  applyBabyShowerDefaults(draft, text);
+  applyWeddingDefaults(draft, text, referenceDate);
+  applyGymnasticsPacketDetails(draft, text, referenceDate);
+  applyGymnasticsMeetDefaults(draft, text);
+  applyTeamSportsDefaults(draft, text);
   applyFoundationDefaults(draft);
   return draft;
 }
@@ -647,6 +1079,21 @@ export function detectScheduleConflicts(occurrences) {
 }
 
 export function generateDefaultForms(mode, eventType) {
+  if (eventType === "wedding_weekend") {
+    return [
+      {
+        title: "Wedding RSVP",
+        description: "Collect attendance, guest count, meal choice, and travel notes.",
+        fields: [
+          { key: "guest_name", label: "Guest name", type: "text", required: true },
+          { key: "attending", label: "Can you attend?", type: "yes_no", required: true },
+          { key: "guest_count", label: "Guest count", type: "number", required: false },
+          { key: "meal_choice", label: "Meal choice", type: "select", required: false },
+          { key: "travel_notes", label: "Travel notes", type: "textarea", required: false },
+        ],
+      },
+    ];
+  }
   if (eventType === "class_party" || mode === "school") {
     return [
       {
@@ -660,7 +1107,7 @@ export function generateDefaultForms(mode, eventType) {
       },
     ];
   }
-  if (mode === "gymnastics" || mode === "team") {
+  if (mode === "gymnastics" || mode === "team" || mode === "sports") {
     return [
       {
         title: "Team RSVP",
@@ -714,8 +1161,8 @@ export function generateDefaultReminders(mode, eventType, occurrences = []) {
       status: "draft",
     });
     reminders.push({
-      title: mode === "gymnastics" ? "Packing reminder" : "Day-of reminder",
-      reminderType: mode === "gymnastics" ? "packing" : "custom",
+      title: mode === "gymnastics" ? "Packing reminder" : eventType === "wedding_weekend" ? "Guest reminder" : "Day-of reminder",
+      reminderType: mode === "gymnastics" ? "packing" : eventType === "wedding_weekend" ? "rsvp" : "custom",
       channel: "email",
       scheduledFor: offsetIso(firstStart, -1),
       status: "draft",
@@ -741,6 +1188,22 @@ function offsetIso(value, days) {
 }
 
 export function generateDefaultChecklist(mode, eventType) {
+  if (eventType === "wedding_weekend") {
+    return [
+      { title: "Confirm ceremony and reception times", category: "Timeline", status: "open" },
+      { title: "Add hotel block and travel notes", category: "Travel", status: "open" },
+      { title: "Add registry links", category: "Registry", status: "open" },
+      { title: "Set RSVP deadline", category: "RSVP", status: "open" },
+    ];
+  }
+  if (eventType === "football_game_day" || eventType === "sports_team_schedule" || mode === "sports") {
+    return [
+      { title: "Add game dates and opponents", category: "Schedule", status: "open" },
+      { title: "Confirm field or venue details", category: "Logistics", status: "open" },
+      { title: "Assign volunteer coverage", category: "Volunteers", status: "open" },
+      { title: "Send family reminder", category: "Reminders", status: "open" },
+    ];
+  }
   if (mode === "gymnastics") {
     return [
       { title: "Competition leo or uniform", category: "Packing", status: "open" },

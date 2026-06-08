@@ -32,10 +32,7 @@ function envFlagValue(value: string | undefined): boolean | null {
 }
 
 function defaultFlagValue(name: ConciergeV2FlagName): boolean {
-  if (process.env.NODE_ENV !== "production") {
-    return true;
-  }
-  return false;
+  return true;
 }
 
 export function getConciergeV2Flags(): ConciergeV2Flags {
