@@ -13,4 +13,6 @@ test("extractPdfTextWithPdfJs reads text and pages from the sample parent info P
   assert.ok(result.text.length > 1000);
   assert.ok(result.pages.length >= 4);
   assert.match(result.text, /Gasparilla Classic/i);
+  assert.match(result.text, /March 6-8, 2026/i);
+  assert.match(result.text, /Doors Open\s*:\s*7:00am each day/i);
 });

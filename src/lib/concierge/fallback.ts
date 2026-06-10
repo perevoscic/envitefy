@@ -2014,7 +2014,7 @@ function localDateTimeIso(year: number, month: number, day: number, hour: number
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
-function rescueOcrDateRangeAndDoorsOpen(ocrText: unknown) {
+export function rescueOcrDateRangeAndDoorsOpen(ocrText: unknown) {
   const text = cleanString(ocrText);
   if (!text) return null;
 
@@ -2280,8 +2280,10 @@ function displayDateWithoutDuplicateTime(draft: ConciergeEventDraft) {
 
 function dateConfirmationCandidate(draft: ConciergeEventDraft) {
   const displayDate = displayDateWithoutDuplicateTime(draft);
-  if (displayDate && draft.timeText) return `${displayDate}, ${draft.timeText}`;
-  return displayDate || draft.timeText || "that date";
+  const sourceSchedule = rescueOcrDateRangeAndDoorsOpen(draft.sourceMaterial?.ocrText);
+  const displayTime = sourceSchedule?.timeText || draft.timeText;
+  if (displayDate && displayTime) return `${displayDate}, ${displayTime}`;
+  return displayDate || displayTime || "that date";
 }
 
 function buildLocationChangeAcknowledgement(
@@ -2771,7 +2773,9 @@ export function fallbackExtractConciergeDraft(args: {
   const eventType = blocksCreation ? "unknown" : detectEventType(text, previous);
   const relationship = detectRelationship(text, previous);
   const fieldsGuess = args.ocrContext?.fieldsGuess || {};
-  const rescuedOcrSchedule = rescueOcrDateRangeAndDoorsOpen(args.ocrContext?.ocrText);
+  const rescuedOcrSchedule = rescueOcrDateRangeAndDoorsOpen(
+    args.ocrContext?.ocrText || previous?.sourceMaterial?.ocrText,
+  );
   const sourceMaterial = args.ocrContext
     ? {
         ocrText: args.ocrContext.ocrText || null,

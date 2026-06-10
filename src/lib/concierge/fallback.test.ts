@@ -1236,6 +1236,48 @@ test("OCR date ranges with doors-open times survive past-date confirmation", () 
   assert.doesNotMatch(message, /March 5|12:00 AM/i);
 });
 
+test("source OCR doors-open time wins over AI-normalized shifted time", () => {
+  const fallback = fallbackExtractConciergeDraft({
+    message: "Create an event from this uploaded file.",
+    action: "ocr_result",
+    requestedOutputs: ["event_page"],
+    ocrContext: {
+      ocrText: [
+        "2026 Women's Gasparilla Classic",
+        "March 6-8, 2026",
+        "Doors Open : 7:00am each day.",
+      ].join("\n"),
+      fieldsGuess: {
+        title: "2026 Women's Gasparilla Classic",
+        start: "2026-03-06T12:00:00.000Z",
+        timeText: "6:00 AM",
+        location: "Tampa Convention Center - 333 S Franklin St, Tampa, FL 33602",
+      },
+      category: "Gymnastics",
+    },
+  });
+  const draft = normalizeConciergeDraft(
+    {
+      title: "2026 Women's Gasparilla Classic",
+      eventType: "gym_meet",
+      dateText: "March 6-8, 2026",
+      timeText: "6:00 AM",
+      startISO: "2026-03-06T12:00:00.000Z",
+      endISO: "2026-03-08T12:00:00.000Z",
+      location: "Tampa Convention Center - 333 S Franklin St, Tampa, FL 33602",
+      venue: "Tampa Convention Center",
+      sourceMaterial: fallback.sourceMaterial,
+      requestedOutputs: ["event_page"],
+    },
+    fallback,
+    { message: "Create an event from this uploaded file." },
+  );
+
+  assert.equal(draft.timeText, "7:00 AM");
+  assert.match(buildAssistantMessage(draft), /7:00 AM/);
+  assert.doesNotMatch(buildAssistantMessage(draft), /6:00 AM/);
+});
+
 test("date-only drafts keep asking for time instead of treating startISO as explicit time", () => {
   const draft = fallbackExtractConciergeDraft({
     message: "Create an event page for book club on April 1 2027 at Local Library.",

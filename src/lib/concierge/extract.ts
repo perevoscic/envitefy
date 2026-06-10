@@ -15,6 +15,7 @@ import {
   buildSuggestedReplies,
   canSaveConciergeDraft,
   fallbackExtractConciergeDraft,
+  rescueOcrDateRangeAndDoorsOpen,
 } from "./fallback.ts";
 import { updateConversationState } from "./conversation-state.ts";
 import { shouldSkipOpenAiForCreationRequest } from "./fast-paths.ts";
@@ -328,6 +329,7 @@ export function normalizeConciergeDraft(
         category: cleanString(sourceMaterialRecord.category) || null,
       }
     : fallback.sourceMaterial || null;
+  const sourceGroundedSchedule = rescueOcrDateRangeAndDoorsOpen(sourceMaterial?.ocrText);
   const eventPurpose =
     firstDraftString(record.eventPurpose, eventData.eventPurpose, eventData.purpose) ||
     fallback.eventPurpose;
@@ -343,10 +345,15 @@ export function normalizeConciergeDraft(
     eventType = "unknown";
   }
   const dateText =
-    firstDraftString(record.dateText, eventData.dateText, eventData.date) || fallback.dateText;
+    sourceGroundedSchedule?.dateText ||
+    firstDraftString(record.dateText, eventData.dateText, eventData.date) ||
+    fallback.dateText;
   const timeText =
-    firstDraftString(record.timeText, eventData.timeText, eventData.time) || fallback.timeText;
+    sourceGroundedSchedule?.timeText ||
+    firstDraftString(record.timeText, eventData.timeText, eventData.time) ||
+    fallback.timeText;
   const startISO =
+    sourceGroundedSchedule?.startISO ||
     validIsoOrNull(record.startISO) ||
     validIsoOrNull(record.startAt) ||
     validIsoOrNull(record.start) ||
@@ -355,6 +362,7 @@ export function normalizeConciergeDraft(
     validIsoOrNull(eventData.start) ||
     fallback.startISO;
   const endISO =
+    sourceGroundedSchedule?.endISO ||
     validIsoOrNull(record.endISO) ||
     validIsoOrNull(record.endAt) ||
     validIsoOrNull(record.end) ||

@@ -545,6 +545,22 @@ function parseConciergeStreamEvent(rawEvent: string) {
   }
 }
 
+function conciergeClientErrorMessage(value: unknown, fallback: string): string {
+  if (value instanceof Error) return conciergeClientErrorMessage(value.message, fallback);
+  if (typeof value === "string") {
+    const cleaned = value.trim();
+    return cleaned && cleaned !== "[object Object]" ? cleaned : fallback;
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return conciergeClientErrorMessage(
+      record.error || record.message || record.detail || record.reason,
+      fallback,
+    );
+  }
+  return fallback;
+}
+
 async function readConciergeIntakeStream(
   response: Response,
   handlers: ConciergeStreamHandlers,
@@ -572,7 +588,7 @@ async function readConciergeIntakeStream(
       return;
     }
     if (parsed.event === "error") {
-      throw new Error(typeof data?.error === "string" ? data.error : "Concierge stream failed.");
+      throw new Error(conciergeClientErrorMessage(data?.error, "Concierge stream failed."));
     }
   };
 
@@ -1989,7 +2005,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         const payload = await response.json().catch(() => null);
         if (cancelled) return;
         if (!response.ok || !payload?.ok) {
-          throw new Error(payload?.error || "Unable to load RSVP responses.");
+          throw new Error(
+            conciergeClientErrorMessage(payload?.error || payload, "Unable to load RSVP responses."),
+          );
         }
         setRsvpPreview(normalizeRsvpPreview(payload));
       } catch (err) {
@@ -2151,7 +2169,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       });
       const json = (await response.json().catch(() => null)) as ConciergeMessageResponse | null;
       if (!response.ok || !json?.ok) {
-        throw new Error(json && !json.ok ? json.error : "Unable to publish invite.");
+        throw new Error(
+          conciergeClientErrorMessage(json && !json.ok ? json.error : json, "Unable to publish invite."),
+        );
       }
       const savedEventId = json.savedEventId;
       if (!savedEventId) throw new Error("Invite was published without an event id.");
@@ -2221,7 +2241,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       });
       const json = (await response.json().catch(() => null)) as ConciergeMessageResponse | null;
       if (!response.ok || !json?.ok) {
-        throw new Error(json && !json.ok ? json.error : "Draft update failed.");
+        throw new Error(
+          conciergeClientErrorMessage(json && !json.ok ? json.error : json, "Draft update failed."),
+        );
       }
 
       const updatedDraft = normalizeDraftProductOutputs(json.draft);
@@ -2313,7 +2335,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         .json()
         .catch(() => null)) as ConciergeEventMessageResponse | null;
       if (!response.ok || !json?.ok) {
-        throw new Error(json && !json.ok ? json.error : "Preview update failed.");
+        throw new Error(
+          conciergeClientErrorMessage(json && !json.ok ? json.error : json, "Preview update failed."),
+        );
       }
       const fallbackSummary =
         liveCardSummary || liveCardSummaryFromDraft(draft, effectiveSelectedProductOutput);
@@ -2436,8 +2460,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       const isExplicitProductChoice =
         Boolean(params.requestedOutputs?.length) &&
         (action === "chip" || action === "starter_category");
+      const isDateConfirmationReply = draft?.currentQuestion === "date_confirmation";
       const shouldStream =
         !params.ocrContext &&
+        !isDateConfirmationReply &&
         !isExplicitProductChoice &&
         (action === "message" || action === "chip" || action === "starter_category");
 
@@ -2453,7 +2479,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         });
         if (!response.ok) {
           const payload = await response.json().catch(() => null);
-          throw new Error(payload?.error || "Concierge request failed.");
+          throw new Error(conciergeClientErrorMessage(payload?.error || payload, "Concierge request failed."));
         }
         const finalState = await readConciergeIntakeStream(response, {
           onDelta: (text) => {
@@ -2502,7 +2528,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       });
       const json = (await response.json().catch(() => null)) as ConciergeMessageResponse | null;
       if (!response.ok || !json?.ok) {
-        throw new Error(json && !json.ok ? json.error : "Concierge request failed.");
+        throw new Error(
+          conciergeClientErrorMessage(json && !json.ok ? json.error : json, "Concierge request failed."),
+        );
       }
       setDraft(json.draft);
       selectProductOutputForDraft(json.draft);
@@ -2522,7 +2550,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       if (!json.chatMessages?.length) setMessages((prev) => [...prev, assistantMessage]);
       return json;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Concierge request failed.";
+      const errorMessage = conciergeClientErrorMessage(err, "Concierge request failed.");
       setPhase(draft ? "collecting_details" : "intake_empty");
       if (streamAssistantId) {
         setMessages((prev) => prev.filter((item) => item.id !== streamAssistantId));
@@ -2580,7 +2608,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     });
     const json = (await response.json().catch(() => null)) as ConciergeMessageResponse | null;
     if (!response.ok || !json?.ok) {
-      throw new Error(json && !json.ok ? json.error : "Unable to create event from upload.");
+      throw new Error(
+        conciergeClientErrorMessage(json && !json.ok ? json.error : json, "Unable to create event from upload."),
+      );
     }
     const savedEventId = json.savedEventId;
     if (!savedEventId) throw new Error("Event was created without an event id.");
@@ -2945,13 +2975,18 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
           >
             {message.type === "upload_status" ? (
-              <div
-                className="inline-flex items-center gap-2 rounded-full border border-[#eadfff] bg-white/86 px-4 py-2 text-sm text-[#5f5289] shadow-sm"
-                role="status"
-                aria-live="polite"
-              >
-                <Loader2 className="size-4 animate-spin text-[#5c5be5]" aria-hidden="true" />
-                {message.text}
+              <div className="flex max-w-[94%] items-start gap-2 sm:max-w-[88%]">
+                <ConciergeChatAvatar />
+                <div
+                  className="min-w-0 rounded-3xl rounded-tl-md border border-[#eadfff] bg-white/88 px-4 py-3 text-sm leading-6 text-[#24183e] shadow-sm"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin text-[#5c5be5]" aria-hidden="true" />
+                    {message.text}
+                  </span>
+                </div>
               </div>
             ) : message.role === "user" ? (
               <div className="flex max-w-[94%] items-start justify-end gap-2 sm:max-w-[88%]">

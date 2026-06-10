@@ -49,6 +49,28 @@ test("chat upload queues the picked file before product selection", () => {
   assert.doesNotMatch(source, /Uploaded \$\{uploadedFileLabel\(file\)\}/);
 });
 
+test("chat upload status renders as a concierge bubble", () => {
+  const source = readSource("src/app/chat/ConciergeChatClient.tsx");
+  const statusBranch = source.match(
+    /message\.type === "upload_status" \? \([\s\S]*?\) : message\.role === "user"/,
+  )?.[0];
+
+  assert.ok(statusBranch);
+  assert.match(statusBranch, /<ConciergeChatAvatar \/>/);
+  assert.match(statusBranch, /role="status"/);
+  assert.doesNotMatch(statusBranch, /inline-flex items-center gap-2 rounded-full/);
+});
+
+test("date confirmation replies bypass streaming and object errors are normalized", () => {
+  const source = readSource("src/app/chat/ConciergeChatClient.tsx");
+
+  assert.match(source, /function conciergeClientErrorMessage\(value: unknown, fallback: string\)/);
+  assert.match(source, /cleaned !== "\[object Object\]"/);
+  assert.match(source, /const isDateConfirmationReply = draft\?\.currentQuestion === "date_confirmation"/);
+  assert.match(source, /!isDateConfirmationReply &&/);
+  assert.doesNotMatch(source, /throw new Error\(payload\?\.error \|\| "Concierge request failed\."\)/);
+});
+
 test("chat live-card uploads can drive the preview image", () => {
   const source = readSource("src/app/chat/ConciergeChatClient.tsx");
 
