@@ -1996,6 +1996,68 @@ function isoFromField(value: unknown) {
   return date.toISOString();
 }
 
+const MONTH_INDEX_BY_NAME = new Map(
+  MONTH_NAMES.flatMap((name, index) => [
+    [name.toLowerCase(), index + 1],
+    [name.slice(0, 3).toLowerCase(), index + 1],
+  ]),
+);
+
+function formatClockTime(hour: number, minute: number) {
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${String(minute).padStart(2, "0")} ${suffix}`;
+}
+
+function localDateTimeIso(year: number, month: number, day: number, hour: number, minute: number) {
+  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function rescueOcrDateRangeAndDoorsOpen(ocrText: unknown) {
+  const text = cleanString(ocrText);
+  if (!text) return null;
+
+  const rangeMatch = text.match(
+    /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:\s*(?:-|–|—|to)\s*(\d{1,2}))?\s*,?\s*(20\d{2}|19\d{2})\b/i,
+  );
+  if (!rangeMatch) return null;
+
+  const month = MONTH_INDEX_BY_NAME.get(String(rangeMatch[1] || "").toLowerCase());
+  const startDay = Number.parseInt(rangeMatch[2] || "", 10);
+  const endDay = rangeMatch[3] ? Number.parseInt(rangeMatch[3], 10) : startDay;
+  const year = Number.parseInt(rangeMatch[4] || "", 10);
+  if (!month || !startDay || !endDay || !year || endDay < startDay) return null;
+
+  const timeMatch = text.match(
+    /\bdoors?\s+open\s*:?\s*(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)\b/i,
+  );
+  const rawHour = timeMatch ? Number.parseInt(timeMatch[1] || "", 10) : 0;
+  const minute = timeMatch?.[2] ? Number.parseInt(timeMatch[2], 10) : 0;
+  const meridiem = String(timeMatch?.[3] || "").toLowerCase();
+  const hour =
+    timeMatch && /p/.test(meridiem) && rawHour < 12
+      ? rawHour + 12
+      : timeMatch && /a/.test(meridiem) && rawHour === 12
+        ? 0
+        : rawHour;
+  const startISO = localDateTimeIso(year, month, startDay, hour, minute);
+  const endISO =
+    endDay > startDay
+      ? localDateTimeIso(year, month, endDay, timeMatch ? hour : 23, timeMatch ? minute : 59)
+      : null;
+  const monthName = MONTH_NAMES[month - 1];
+  const dateText =
+    endDay > startDay ? `${monthName} ${startDay}-${endDay}, ${year}` : `${monthName} ${startDay}, ${year}`;
+
+  return {
+    dateText,
+    timeText: timeMatch ? formatClockTime(hour, minute) : null,
+    startISO,
+    endISO,
+  };
+}
+
 function buildTitle(args: {
   eventType: ConciergeEventType;
   honoreeName: string | null;
@@ -2182,7 +2244,9 @@ function safeDateFromValue(value: unknown) {
 }
 
 function formatDateOnlyForDisplay(value: unknown, timezone?: string | null) {
-  const parsed = safeDateFromValue(value);
+  const raw = cleanString(value);
+  if (!raw || !/^\d{4}-\d{2}-\d{2}(?:T|\b)/.test(raw)) return null;
+  const parsed = safeDateFromValue(raw);
   if (!parsed) return null;
   const options: Intl.DateTimeFormatOptions = {
     month: "long",
@@ -2707,6 +2771,7 @@ export function fallbackExtractConciergeDraft(args: {
   const eventType = blocksCreation ? "unknown" : detectEventType(text, previous);
   const relationship = detectRelationship(text, previous);
   const fieldsGuess = args.ocrContext?.fieldsGuess || {};
+  const rescuedOcrSchedule = rescueOcrDateRangeAndDoorsOpen(args.ocrContext?.ocrText);
   const sourceMaterial = args.ocrContext
     ? {
         ocrText: args.ocrContext.ocrText || null,
@@ -2820,10 +2885,16 @@ export function fallbackExtractConciergeDraft(args: {
     blocksCreation || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
       : titleCandidate;
-  const dateText = chronoResult.dateText || firstString(fieldsGuess.date);
-  const timeText = chronoResult.timeText || firstString(fieldsGuess.time);
-  const startISO = fieldStartIso || chronoResult.startISO;
-  const endISO = fieldEndIso || chronoResult.endISO;
+  const dateText =
+    rescuedOcrSchedule?.dateText ||
+    chronoResult.dateText ||
+    firstString(fieldsGuess.dateText, fieldsGuess.date);
+  const timeText =
+    rescuedOcrSchedule?.timeText ||
+    chronoResult.timeText ||
+    firstString(fieldsGuess.timeText, fieldsGuess.time);
+  const startISO = rescuedOcrSchedule?.startISO || fieldStartIso || chronoResult.startISO;
+  const endISO = rescuedOcrSchedule?.endISO || fieldEndIso || chronoResult.endISO;
   const numberOfGuests = detectGuestCount(message, previous);
   const rsvpEnabled = detectRsvpEnabled(message, previous, requestedOutputs, fieldsGuess);
   const rsvpDeadline = detectRsvpDeadline(text, previous);

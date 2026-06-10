@@ -35,11 +35,15 @@ test("chat upload queues the picked file before product selection", () => {
   const source = readSource("src/app/chat/ConciergeChatClient.tsx");
 
   assert.match(source, /type PendingChatUpload/);
+  assert.match(source, /type PendingUploadComposerSubmission/);
+  assert.match(source, /isUploadStarterTile\(selectedStarterCategory\)/);
+  assert.match(source, /setPendingUploadSubmission\(\{/);
   assert.match(source, /setPendingChatUpload\(\{ file, source \}\)/);
   assert.match(source, /routeSelectedSnapFile\(upload\.file, upload\.source, option\.output\)/);
   assert.match(source, /openSnapUploadPicker\(\)/);
   assert.match(source, />\s*\+1\s*<\/span>/);
-  assert.match(source, /newMessage\("user", "Uploaded 1 file"\)/);
+  assert.match(source, /`\$\{userEchoOverride\.trim\(\)\} - Uploaded 1 file`/);
+  assert.match(source, /User note: \$\{uploadPrompt\.trim\(\)\}/);
   assert.doesNotMatch(source, /Choose what this upload should become\./);
   assert.doesNotMatch(source, /ariaLabel="Choose upload product format"/);
   assert.doesNotMatch(source, /Uploaded \$\{uploadedFileLabel\(file\)\}/);

@@ -115,6 +115,12 @@ type PendingChatUpload = {
   source: "camera" | "upload";
 };
 
+type PendingUploadComposerSubmission = {
+  prompt: string;
+  requestedOutput: RequestedOutput | null;
+  userEcho: string;
+};
+
 type LiveCardSummary = {
   headline: string;
   subheadline: string;
@@ -677,6 +683,12 @@ type CelebrationStarterTile = (typeof CELEBRATION_STARTER_TILES)[number];
 
 function starterSelectionLabel(tile: CelebrationStarterTile | null | undefined) {
   return tile?.prompt || null;
+}
+
+function isUploadStarterTile(
+  tile: CelebrationStarterTile | null | undefined,
+): tile is CelebrationStarterTile & { action: "upload" } {
+  return Boolean(tile && "action" in tile && tile.action === "upload");
 }
 
 function ChatSelectionPill({
@@ -1508,6 +1520,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [uploadedPreviewImageUrl, setUploadedPreviewImageUrl] = useState<string | null>(null);
   const [uploadedPreviewFileName, setUploadedPreviewFileName] = useState<string | null>(null);
   const [pendingChatUpload, setPendingChatUpload] = useState<PendingChatUpload | null>(null);
+  const [pendingUploadSubmission, setPendingUploadSubmission] =
+    useState<PendingUploadComposerSubmission | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [failedRequest, setFailedRequest] = useState<FailedConciergeRequest | null>(null);
   const [failedSnapUpload, setFailedSnapUpload] = useState<FailedSnapUploadRequest | null>(null);
@@ -1686,6 +1700,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setUploadedPreviewImageUrl(null);
     setUploadedPreviewFileName(null);
     setPendingChatUpload(null);
+    setPendingUploadSubmission(null);
     setBuildProgress(0);
     setRsvpPreview(EMPTY_RSVP_PREVIEW);
     setSelectedProductOutput(null);
@@ -2633,6 +2648,18 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     const typedValue = input.trim();
     const value = typedValue || selectionPrefix(selectedCategoryLabel, selectedProductOutput);
     if (!value) return;
+
+    if (isUploadStarterTile(selectedStarterCategory)) {
+      setError(null);
+      setPendingUploadSubmission({
+        prompt: typedValue,
+        requestedOutput: selectedProductOutput,
+        userEcho: value,
+      });
+      openSnapUploadPicker();
+      return;
+    }
+
     setInput("");
     shouldRefocusComposerRef.current = true;
     if (canSaveReceivedInvite && isGenerateConfirmationMessage(value)) {
@@ -2672,11 +2699,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     if (isBusy) return;
     setError(null);
     if ("action" in tile && tile.action === "upload") {
-      setSelectedStarterCategory(null);
-      openSnapUploadPicker();
+      setPendingChatUpload(null);
+      const isSelected = isUploadStarterTile(selectedStarterCategory);
+      setSelectedStarterCategory(isSelected ? null : tile);
+      updateComposerSelection();
       return;
     }
     setPendingChatUpload(null);
+    setPendingUploadSubmission(null);
     const isSelected = selectedStarterCategory?.label === tile.label;
     setSelectedStarterCategory(isSelected ? null : tile);
     updateComposerSelection();
@@ -2737,6 +2767,22 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setError(null);
     setFailedRequest(null);
     setFailedSnapUpload(null);
+    if (pendingUploadSubmission) {
+      const submission = pendingUploadSubmission;
+      setPendingUploadSubmission(null);
+      setPendingChatUpload(null);
+      setSelectedStarterCategory(null);
+      setInput("");
+      void routeSelectedSnapFile(
+        file,
+        source,
+        submission.requestedOutput || undefined,
+        submission.prompt,
+        submission.userEcho,
+      );
+      return;
+    }
+
     if (!selectedProductOutput && isEmptyState) {
       setPendingChatUpload({ file, source });
       return;
@@ -2750,6 +2796,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     file: File | null | undefined,
     source: "camera" | "upload",
     requestedOutputOverride?: RequestedOutput,
+    uploadPrompt = "",
+    userEchoOverride?: string,
   ) {
     if (!file || isBusy) return;
     const validationError = validateClientUploadFile(file, "attachment");
@@ -2769,7 +2817,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     const scanAttemptId = createClientAttemptId("scan");
     const uploadRequestedOutput = requestedOutputOverride || selectedProductOutput || "live_card";
     const statusMessage = newMessage("assistant", "Preparing upload...", "upload_status");
-    setMessages((prev) => [...prev, newMessage("user", "Uploaded 1 file"), statusMessage]);
+    const userEcho = userEchoOverride?.trim()
+      ? `${userEchoOverride.trim()} - Uploaded 1 file`
+      : "Uploaded 1 file";
+    setMessages((prev) => [...prev, newMessage("user", userEcho), statusMessage]);
     const updateUploadStatus = (text: string) => {
       setMessages((prev) =>
         prev.map((message) => (message.id === statusMessage.id ? { ...message, text } : message)),
@@ -2796,8 +2847,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       const ocrResult = await runSnapOcrUpload({ file, scanAttemptId });
       setChatUploadStage("ocr_ready");
       updateUploadStatus("Reading upload...");
+      const uploadInstruction = uploadPrompt.trim()
+        ? `Create an event from this uploaded file. User note: ${uploadPrompt.trim()}`
+        : "Create an event from this uploaded file.";
       const intakeResult = await sendToConcierge({
-        message: "Create an event from this uploaded file.",
+        message: uploadInstruction,
         action: "ocr_result",
         ocrContext: buildChatOcrContext(ocrResult, scanAttemptId),
         requestedOutputs: [uploadRequestedOutput],

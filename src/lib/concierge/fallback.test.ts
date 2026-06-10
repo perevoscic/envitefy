@@ -1204,6 +1204,38 @@ test("date confirmation renders ISO candidates as readable dates", () => {
   assert.doesNotMatch(message, /T07:00:00|2026-03-06T/i);
 });
 
+test("OCR date ranges with doors-open times survive past-date confirmation", () => {
+  const draft = fallbackExtractConciergeDraft({
+    message: "Create an event from this uploaded file.",
+    action: "ocr_result",
+    requestedOutputs: ["event_page"],
+    ocrContext: {
+      ocrText: [
+        "2026 Women's Gasparilla Classic",
+        "March 6-8, 2026",
+        "Doors Open: 7:00am each day.",
+        "Location: Tampa Convention Center - 333 S Franklin St, Tampa, FL 33602",
+      ].join("\n"),
+      fieldsGuess: {
+        title: "2026 Women's Gasparilla Classic",
+        start: "2026-03-05T00:00:00.000Z",
+        timeFound: false,
+        location: "Tampa Convention Center - 333 S Franklin St, Tampa, FL 33602",
+      },
+      category: "Gymnastics",
+    },
+  });
+  const message = buildAssistantMessage(draft);
+
+  assert.equal(draft.dateText, "March 6-8, 2026");
+  assert.equal(draft.timeText, "7:00 AM");
+  assert.match(draft.startISO || "", /^2026-03-06T/);
+  assert.match(draft.endISO || "", /^2026-03-08T/);
+  assert.equal(draft.currentQuestion, "date_confirmation");
+  assert.match(message, /did you mean March 6-8, 2026, 7:00 AM/i);
+  assert.doesNotMatch(message, /March 5|12:00 AM/i);
+});
+
 test("date-only drafts keep asking for time instead of treating startISO as explicit time", () => {
   const draft = fallbackExtractConciergeDraft({
     message: "Create an event page for book club on April 1 2027 at Local Library.",
