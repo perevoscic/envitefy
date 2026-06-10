@@ -3479,6 +3479,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         }
         void publishGeneratedDraft();
       }}
+      onEdit={() => {
+        setMobileView("chat");
+        setIsReadyChatComposerOpen(true);
+        focusComposerAtEnd();
+      }}
       rsvp={{
         count: rsvpResponseCount,
         isLoading: rsvpPreview.isLoading,

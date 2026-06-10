@@ -1,21 +1,26 @@
 "use client";
 
 import {
+  CalendarDays,
+  CheckCircle2,
+  CloudSun,
+  Copy,
   ExternalLink,
-  FileImage,
   Gift,
-  Globe2,
   LayoutDashboard,
   Loader2,
-  Menu,
+  MapPin,
+  Pencil,
+  Share2,
+  Users,
 } from "lucide-react";
-import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
+import { useState, type ReactNode } from "react";
 import type {
   ConciergeEventDraft,
   ConciergeWeatherContext,
   RequestedOutput,
 } from "@/lib/concierge/types";
-import { buildChatShowcasePreview, type ChatPreviewSummary } from "./chat-preview-adapters";
+import type { ChatPreviewSummary } from "./chat-preview-adapters";
 
 type RsvpPreviewBadge = {
   count: number;
@@ -41,6 +46,7 @@ type ChatProductPreviewProps = {
   skinLabel: string | null;
   isPublishing: boolean;
   onPublish: () => void;
+  onEdit: () => void;
   rsvp: RsvpPreviewBadge;
   weatherContext: ConciergeWeatherContext | null;
   mobileView: "chat" | "preview";
@@ -86,6 +92,17 @@ function publicActionLabelForOutput(selectedOutput: RequestedOutput) {
   return "Open Product";
 }
 
+function outputLabelForPanel(selectedOutput: RequestedOutput) {
+  if (selectedOutput === "live_card") return "Live card";
+  if (selectedOutput === "event_page") return "Event page";
+  if (selectedOutput === "signup_form") return "Smart sign-up";
+  if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {
+    return "Flyer/invitation";
+  }
+  if (selectedOutput === "invitation") return "Flyer/invitation";
+  return "Event product";
+}
+
 function previewProcessStatusText({
   hasDraftProduct,
   publicHref,
@@ -105,200 +122,52 @@ function previewProcessStatusText({
   return "Generated draft: review it here, then save/publish when ready.";
 }
 
-type OutputPreviewSurfaceProps = {
+function rsvpStatusText({
+  draft,
+  rsvp,
+}: {
   draft: ConciergeEventDraft | null;
-  summary: ChatPreviewSummary;
-  selectedOutput: RequestedOutput;
-  previewImageUrl: string;
-  preview: ReturnType<typeof buildChatShowcasePreview>;
-  hasGeneratedProduct: boolean;
+  rsvp: RsvpPreviewBadge;
+}) {
+  if (rsvp.isLoading) return "Checking responses";
+  if (rsvp.error) return "RSVP status unavailable";
+  if (rsvp.count > 0) return `${rsvp.count} response${rsvp.count === 1 ? "" : "s"}`;
+  if (draft?.rsvpEnabled === true) {
+    return draft.numberOfGuests ? `Tracking up to ${draft.numberOfGuests} guests` : "RSVP is on";
+  }
+  return "RSVP is off";
+}
+
+function weatherStatusText(weatherContext: ConciergeWeatherContext | null) {
+  if (!weatherContext) return "Forecast not checked";
+  if (weatherContext.status === "available") {
+    const temp = typeof weatherContext.tempF === "number" ? `${Math.round(weatherContext.tempF)}F` : "";
+    return [weatherContext.summary, temp].filter(Boolean).join(" - ") || "Forecast available";
+  }
+  return weatherContext.message || "Forecast unavailable";
+}
+
+type DetailRowProps = {
+  icon: ReactNode;
+  label: string;
+  value: string;
 };
 
-function ChatFlyerInvitePreview({
-  draft,
-  summary,
-  previewImageUrl,
-}: Pick<OutputPreviewSurfaceProps, "draft" | "summary" | "previewImageUrl">) {
-  const body = previewBodyText(draft, summary);
-  const category = previewCategoryText(draft);
-
+function DetailRow({ icon, label, value }: DetailRowProps) {
   return (
-    <div
-      role="img"
-      aria-label="Flyer/invitation preview"
-      className="relative h-full w-full overflow-hidden rounded-[2.2rem] border border-white/70 bg-[#fff9f0] shadow-[0_24px_70px_rgba(68,45,20,0.16)]"
-    >
-      <img
-        src={previewImageUrl}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover"
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(26,18,28,0.18),rgba(255,248,239,0.1)_34%,rgba(255,248,239,0.95)_66%,#fffaf2)]" />
-      <div className="absolute inset-x-5 top-5 flex items-center justify-between text-[0.56rem] font-black uppercase tracking-[0.2em] text-white drop-shadow">
-        <span>{category}</span>
-        <FileImage className="size-4" aria-hidden="true" />
-      </div>
-      <div className="absolute inset-x-5 bottom-5 rounded-[1.45rem] border border-white/74 bg-white/88 p-5 text-[#24183e] shadow-[0_18px_46px_rgba(64,40,18,0.16)] backdrop-blur-md">
-        <p className="text-[0.62rem] font-black uppercase tracking-[0.24em] text-[#c1655a]">
-          Flyer/Invitation
-        </p>
-        <h3 className="mt-2 line-clamp-3 font-serif text-3xl font-bold italic leading-[0.98] text-[#251724]">
-          {summary.headline}
-        </h3>
-        <p className="mt-3 line-clamp-3 text-sm leading-5 text-[#6f5b55]">{body}</p>
-        <div className="mt-4 grid grid-cols-1 gap-2 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-[#5f4b44]">
-          <span className="truncate rounded-xl bg-[#fff1df] px-3 py-2">{summary.scheduleLine}</span>
-          <span className="truncate rounded-xl bg-[#f2ecff] px-3 py-2">{summary.locationLine}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ChatEventPagePreview({
-  draft,
-  summary,
-  previewImageUrl,
-  hasGeneratedProduct,
-}: Pick<
-  OutputPreviewSurfaceProps,
-  "draft" | "summary" | "previewImageUrl" | "hasGeneratedProduct"
->) {
-  const body = previewBodyText(draft, summary);
-  const category = previewCategoryText(draft);
-  const hasRsvp = draft?.rsvpEnabled === true;
-  const hasRegistry = Boolean(draft?.registryLink || draft?.giftRegistryLink);
-
-  return (
-    <div
-      role="img"
-      aria-label="Event page preview"
-      className="relative h-full w-full overflow-hidden rounded-[2.2rem] border border-[#dfe5f2] bg-[#f8fbff] shadow-[0_24px_70px_rgba(21,36,68,0.16)]"
-    >
-      <div className="flex h-9 items-center gap-1.5 border-b border-[#e5ebf5] bg-white/90 px-4">
-        <span className="size-2 rounded-full bg-[#ff7a7a]" />
-        <span className="size-2 rounded-full bg-[#ffd36a]" />
-        <span className="size-2 rounded-full bg-[#69d18f]" />
-        <span className="ml-2 truncate text-[0.56rem] font-bold uppercase tracking-[0.14em] text-[#8a94aa]">
-          envitefy.com/event
+    <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-[#e6e1ee] bg-white/78 px-4 py-3 shadow-[0_10px_28px_rgba(35,24,72,0.06)]">
+      <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f3effb] text-[#5c4cd5]">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[0.64rem] font-black uppercase tracking-[0.16em] text-[#8a819b]">
+          {label}
         </span>
-      </div>
-      <div className="h-[calc(100%-2.25rem)] overflow-hidden">
-        <div className="flex h-10 items-center justify-between border-b border-[#e5ebf5] bg-white px-4">
-          <span className="truncate text-[0.58rem] font-black uppercase tracking-[0.18em] text-[#5d4b82]">
-            {category}
-          </span>
-          <div className="flex items-center gap-2 text-[0.56rem] font-black uppercase tracking-[0.12em] text-[#73809a]">
-            <span>Details</span>
-            {hasRsvp ? <span>RSVP</span> : null}
-            {hasRegistry ? <Gift className="size-3" aria-hidden="true" /> : null}
-            <Menu className="size-3.5" aria-hidden="true" />
-          </div>
-        </div>
-        <div className="relative h-40 overflow-hidden">
-          <img
-            src={previewImageUrl}
-            alt=""
-            aria-hidden="true"
-            className="h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(20,24,42,0.18),rgba(20,24,42,0.58))]" />
-          <div className="absolute inset-x-5 bottom-5 text-white">
-            <div className="mb-3 flex items-center justify-end">
-              <Globe2 className="size-4" aria-hidden="true" />
-            </div>
-            <h3 className="line-clamp-3 font-serif text-3xl font-bold italic leading-[0.96]">
-              {summary.headline}
-            </h3>
-          </div>
-        </div>
-        <div className="space-y-4 p-5 text-[#253049]">
-          <p className="line-clamp-4 text-sm leading-6 text-[#647087]">{body}</p>
-          <div className="grid grid-cols-1 gap-3">
-            <div className="rounded-2xl border border-[#e7edf6] bg-white p-4 shadow-sm">
-              <p className="text-[0.58rem] font-black uppercase tracking-[0.18em] text-[#8a94aa]">
-                When
-              </p>
-              <p className="mt-1 truncate text-sm font-bold">{summary.scheduleLine}</p>
-            </div>
-            <div className="rounded-2xl border border-[#e7edf6] bg-white p-4 shadow-sm">
-              <p className="text-[0.58rem] font-black uppercase tracking-[0.18em] text-[#8a94aa]">
-                Where
-              </p>
-              <p className="mt-1 truncate text-sm font-bold">{summary.locationLine}</p>
-            </div>
-          </div>
-          <div className="rounded-2xl bg-[#24183e] p-4 text-white">
-            <p className="text-[0.58rem] font-black uppercase tracking-[0.18em] text-white/64">
-              {hasGeneratedProduct ? "Guest actions" : "RSVP"}
-            </p>
-            {hasRsvp ? (
-              <div className="mt-3 grid grid-cols-3 gap-1.5">
-                {["Yes", "No", "Maybe"].map((choice) => (
-                  <span
-                    key={choice}
-                    className="rounded-lg bg-white/12 px-2 py-2 text-center text-[0.58rem] font-black uppercase tracking-[0.12em]"
-                  >
-                    {choice}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-2 text-sm font-bold">{draft?.previewCopy.cta || "View details"}</p>
-            )}
-            {hasRegistry ? (
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-[0.62rem] font-black uppercase tracking-[0.14em]">
-                <Gift className="size-3" aria-hidden="true" />
-                Registry
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
+        <span className="mt-1 block break-words text-sm font-bold leading-5 text-[#24183e]">
+          {value}
+        </span>
+      </span>
     </div>
-  );
-}
-
-function ChatOutputPreviewSurface({
-  draft,
-  summary,
-  selectedOutput,
-  previewImageUrl,
-  preview,
-  hasGeneratedProduct,
-}: OutputPreviewSurfaceProps) {
-  if (
-    selectedOutput === "digital_flyer" ||
-    selectedOutput === "printable_flyer" ||
-    selectedOutput === "invitation"
-  ) {
-    return (
-      <ChatFlyerInvitePreview draft={draft} summary={summary} previewImageUrl={previewImageUrl} />
-    );
-  }
-
-  if (selectedOutput === "event_page") {
-    return (
-      <ChatEventPagePreview
-        draft={draft}
-        summary={summary}
-        previewImageUrl={previewImageUrl}
-        hasGeneratedProduct={hasGeneratedProduct}
-      />
-    );
-  }
-
-  return (
-    <StudioShowcaseLiveCard
-      preview={preview}
-      compactChrome
-      buttonChromeSize="compact"
-      interactive={hasGeneratedProduct}
-      imageLoading="eager"
-      imageFetchPriority="high"
-      className="h-full w-full rounded-[2.2rem] !border-transparent"
-    />
   );
 }
 
@@ -320,108 +189,248 @@ export default function ChatProductPreview({
   isPublishing,
   onPublish,
   mobileView,
+  skinLabel,
+  rsvp,
+  weatherContext,
+  onEdit,
 }: ChatProductPreviewProps) {
-  const preview = buildChatShowcasePreview({
-    draft,
-    summary,
-    selectedOutput,
-    imageUrl: previewImageUrl,
-    sharePath: publicHref,
-    eventId: liveEventId,
-  });
+  const [shareState, setShareState] = useState<"idle" | "copied">("idle");
   const hasGeneratedProduct = Boolean(liveEventId || hasDraftProduct);
   const publicActionLabel = publicActionLabelForOutput(selectedOutput);
+  const panelOutputLabel = outputLabelForPanel(selectedOutput);
   const previewProcessStatus = previewProcessStatusText({
     hasDraftProduct,
     publicHref,
     isReceivedInviteDraft,
   });
   const shouldShowDraftActions = hasDraftProduct && !publicHref;
+  const hasShareAction = Boolean(publicHref);
+  const body = previewBodyText(draft, summary);
+  const category = previewCategoryText(draft);
+  const registryLink = cleanPreviewText(draft?.registryLink || draft?.giftRegistryLink);
+
+  async function handleShare() {
+    if (!publicHref || typeof window === "undefined") return;
+    const url = new URL(publicHref, window.location.origin).toString();
+    const sharePayload = {
+      title: summary.headline,
+      text: body,
+      url,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(sharePayload);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        window.prompt("Copy this link", url);
+      }
+      setShareState("copied");
+      window.setTimeout(() => setShareState("idle"), 1600);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setShareState("idle");
+    }
+  }
 
   return (
     <aside
-      className={`min-h-0 flex-col overflow-y-auto bg-white/48 backdrop-blur-sm md:border-l md:border-[#e5dff0] ${
-        mobileView === "preview" ? "flex" : "hidden md:flex"
+      className={`min-h-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl md:static md:border-l md:border-[#e5dff0] md:bg-white/58 ${
+        mobileView === "preview"
+          ? "fixed inset-x-0 bottom-0 top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 flex rounded-t-[1.75rem] shadow-[0_-24px_70px_rgba(35,24,72,0.18)] md:rounded-none md:shadow-none"
+          : "hidden md:flex"
       }`}
     >
-      <div className="flex h-full min-h-0 flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 sm:px-6 sm:pb-8">
-        <div className="flex min-h-0 flex-1 flex-col justify-center gap-4 overflow-visible pb-2 pt-20 sm:pb-4 sm:pt-24">
-          <section className="relative mx-auto flex w-full flex-none items-center justify-center">
-            <div className="relative aspect-[9/17] h-[min(34rem,calc(100dvh-12rem))] max-w-full w-auto sm:aspect-[9/16] sm:h-[min(36rem,calc(100dvh-12rem))]">
-              {isGenerating ? (
-                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 rounded-[2.2rem] bg-white/78 text-[#8b8298] backdrop-blur-[3px]">
-                  <Loader2 className="size-11 animate-spin text-[#5c5be5]" aria-hidden="true" />
-                  <div className="w-full max-w-[18rem] px-4 text-center">
-                    <p className="text-sm font-bold text-[#2d1b36]">{currentBuildStep}</p>
-                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eadfff]">
-                      <div
-                        className="h-full rounded-full bg-[#5c5be5] transition-[width] duration-300"
-                        style={{ width: `${buildProgress}%` }}
-                      />
-                    </div>
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-28 pt-4 sm:px-6 md:pb-7 md:pt-6">
+          <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-4">
+            <header className="rounded-[1.45rem] border border-white/80 bg-white/78 p-4 shadow-[0_18px_52px_rgba(35,24,72,0.08)] ring-1 ring-[#f2eefb]">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex h-7 items-center rounded-full bg-[#eaf8f2] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#167453]">
+                      Draft ready
+                    </span>
+                    <span className="inline-flex h-7 max-w-full items-center rounded-full bg-[#f0eefb] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#5c4cd5]">
+                      <span className="truncate">{panelOutputLabel}</span>
+                    </span>
                   </div>
+                  <h2 className="mt-3 text-xl font-black leading-tight tracking-normal text-[#1f1735] sm:text-2xl">
+                    {summary.headline}
+                  </h2>
                 </div>
-              ) : null}
-              <ChatOutputPreviewSurface
-                draft={draft}
-                summary={summary}
-                selectedOutput={selectedOutput}
-                previewImageUrl={previewImageUrl}
-                preview={preview}
-                hasGeneratedProduct={hasGeneratedProduct}
-              />
-            </div>
-          </section>
-
-          <div
-            className={`flex shrink-0 flex-col items-center pb-1 ${
-              publicHref || shouldShowDraftActions
-                ? "min-h-[5.5rem] justify-start sm:min-h-[5.75rem]"
-                : "min-h-[4.75rem] justify-end"
-            }`}
-          >
-            {publicHref ? (
-              <div className="flex w-full flex-wrap items-center justify-center gap-2">
-                <a
-                  href={publicHref}
-                  className="inline-flex h-12 max-w-full items-center justify-center gap-2 rounded-2xl bg-[#3b2468] px-5 text-sm font-bold text-[#f6efff] shadow-lg shadow-[#3b2468]/20 transition hover:bg-[#2f1a55]"
-                >
-                  <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
-                  <span className="truncate">{publicActionLabel}</span>
-                </a>
-                {rsvpDashboardHref ? (
-                  <a
-                    href={rsvpDashboardHref}
-                    className="inline-flex h-12 max-w-full items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-white/82 px-5 text-sm font-bold text-[#3b2468] shadow-sm shadow-[#3b2468]/10 transition hover:border-[#c2aef3] hover:bg-white"
-                  >
-                    <LayoutDashboard className="size-4 shrink-0" aria-hidden="true" />
-                    <span className="truncate">Open Dashboard</span>
-                  </a>
-                ) : null}
-              </div>
-            ) : null}
-            {shouldShowDraftActions ? (
-              <div className="flex w-full flex-wrap items-center justify-center gap-2">
                 <button
                   type="button"
-                  onClick={onPublish}
-                  disabled={isPublishing}
-                  className="inline-flex h-12 max-w-full items-center justify-center gap-2 rounded-2xl bg-[#3b2468] px-5 text-sm font-bold text-[#f6efff] shadow-lg shadow-[#3b2468]/20 transition hover:bg-[#2f1a55] disabled:cursor-wait disabled:opacity-70"
+                  onClick={onEdit}
+                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl border border-[#ded6ef] bg-white text-[#4f416a] shadow-sm transition hover:border-[#c9bbed] hover:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+                  aria-label="Edit in chat"
+                  title="Edit in chat"
                 >
-                  {isPublishing ? (
-                    <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
-                  )}
-                  <span className="truncate">
-                    {isPublishing ? publishBusyLabel : publishActionLabel}
-                  </span>
+                  <Pencil className="size-4" aria-hidden="true" />
                 </button>
               </div>
-            ) : null}
-            <p className="mt-3 max-w-full px-3 text-center text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#4f416a]">
+              <p className="mt-3 text-sm leading-6 text-[#675b7b]">{body}</p>
+              <div className="mt-4 flex flex-wrap gap-2 text-[0.68rem] font-black uppercase tracking-[0.13em] text-[#675b7b]">
+                <span className="rounded-full bg-[#f6f2ea] px-3 py-1.5 text-[#81622d]">
+                  {category}
+                </span>
+                {skinLabel ? (
+                  <span className="rounded-full bg-[#eef6ff] px-3 py-1.5 text-[#2f6690]">
+                    {skinLabel}
+                  </span>
+                ) : null}
+                {registryLink ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#fff0f5] px-3 py-1.5 text-[#9a4267]">
+                    <Gift className="size-3" aria-hidden="true" />
+                    Registry
+                  </span>
+                ) : null}
+              </div>
+            </header>
+
+            <section className="relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-white/78 p-3 shadow-[0_22px_60px_rgba(35,24,72,0.09)] ring-1 ring-[#edf0f7]">
+              <div className="grid gap-4 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:items-center">
+                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-[#eee8f6] shadow-[0_16px_36px_rgba(35,24,72,0.12)]">
+                  <img
+                    src={previewImageUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(20,15,35,0.08),rgba(20,15,35,0.48))]" />
+                  <div className="absolute inset-x-3 bottom-3">
+                    <p className="line-clamp-2 text-sm font-black leading-4 text-white drop-shadow">
+                      {summary.headline}
+                    </p>
+                  </div>
+                </div>
+                {isGenerating ? (
+                  <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-white/82 text-[#8b8298] backdrop-blur-[3px]">
+                    <Loader2 className="size-10 animate-spin text-[#5c5be5]" aria-hidden="true" />
+                    <div className="w-full max-w-[17rem] px-4 text-center">
+                      <p className="text-sm font-bold text-[#2d1b36]">{currentBuildStep}</p>
+                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eadfff]">
+                        <div
+                          className="h-full rounded-full bg-[#5c5be5] transition-[width] duration-300"
+                          style={{ width: `${buildProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    {hasGeneratedProduct ? (
+                      <CheckCircle2 className="size-5 text-[#18956f]" aria-hidden="true" />
+                    ) : null}
+                    <p className="text-[0.65rem] font-black uppercase tracking-[0.18em] text-[#8a819b]">
+                      Generated artwork
+                    </p>
+                  </div>
+                  <p className="mt-2 text-sm font-bold leading-6 text-[#24183e]">
+                    Visual is ready. Use the event details below as the source of truth before
+                    saving or sharing.
+                  </p>
+                  <p className="mt-3 text-xs font-semibold leading-5 text-[#7a708b]">
+                    Want different colors, layout, copy, or imagery? Tap Edit and tell the
+                    concierge what to change.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="grid gap-3">
+              <DetailRow
+                icon={<CalendarDays className="size-4" aria-hidden="true" />}
+                label="When"
+                value={summary.scheduleLine}
+              />
+              <DetailRow
+                icon={<MapPin className="size-4" aria-hidden="true" />}
+                label="Where"
+                value={summary.locationLine}
+              />
+              <DetailRow
+                icon={<Users className="size-4" aria-hidden="true" />}
+                label="Guests"
+                value={rsvpStatusText({ draft, rsvp })}
+              />
+              <DetailRow
+                icon={<CloudSun className="size-4" aria-hidden="true" />}
+                label="Weather"
+                value={weatherStatusText(weatherContext)}
+              />
+            </section>
+
+            <p className="px-2 text-center text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#5d5174]">
               {previewProcessStatus}
             </p>
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 z-40 border-t border-[#e6e1ee] bg-white/92 px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-3 shadow-[0_-16px_44px_rgba(35,24,72,0.1)] backdrop-blur-xl sm:px-6 md:static md:pb-5">
+          <div className="mx-auto grid w-full max-w-[34rem] grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-white px-4 text-sm font-black text-[#3b2468] shadow-sm transition hover:border-[#c2aef3] hover:bg-[#fbf9ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+            >
+              <Pencil className="size-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">Edit</span>
+            </button>
+            {publicHref ? (
+              <a
+                href={publicHref}
+                className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#24183e] px-4 text-sm font-black text-white shadow-lg shadow-[#24183e]/20 transition hover:bg-[#180f2d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+              >
+                <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">{publicActionLabel}</span>
+              </a>
+            ) : shouldShowDraftActions ? (
+              <button
+                type="button"
+                onClick={onPublish}
+                disabled={isPublishing}
+                className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#24183e] px-4 text-sm font-black text-white shadow-lg shadow-[#24183e]/20 transition hover:bg-[#180f2d] disabled:cursor-wait disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+              >
+                {isPublishing ? (
+                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+                ) : (
+                  <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
+                )}
+                <span className="truncate">
+                  {isPublishing ? publishBusyLabel : publishActionLabel}
+                </span>
+              </button>
+            ) : (
+              <span className="inline-flex h-12 min-w-0 items-center justify-center rounded-2xl border border-[#e4dff0] bg-[#f8f6fb] px-4 text-sm font-black text-[#8a819b]">
+                Reviewing
+              </span>
+            )}
+            {hasShareAction ? (
+              <button
+                type="button"
+                onClick={() => void handleShare()}
+                className="col-span-2 inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-[#fbf9ff] px-4 text-sm font-black text-[#3b2468] transition hover:border-[#c2aef3] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+              >
+                {shareState === "copied" ? (
+                  <Copy className="size-4 shrink-0" aria-hidden="true" />
+                ) : (
+                  <Share2 className="size-4 shrink-0" aria-hidden="true" />
+                )}
+                <span className="truncate">{shareState === "copied" ? "Link copied" : "Share"}</span>
+              </button>
+            ) : null}
+            {rsvpDashboardHref ? (
+              <a
+                href={rsvpDashboardHref}
+                className="col-span-2 inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-2xl border border-[#d8caff] bg-white px-4 text-sm font-black text-[#3b2468] transition hover:border-[#c2aef3] hover:bg-[#fbf9ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+              >
+                <LayoutDashboard className="size-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">Open Dashboard</span>
+              </a>
+            ) : null}
           </div>
         </div>
       </div>

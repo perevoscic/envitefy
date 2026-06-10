@@ -2558,18 +2558,8 @@ test("save payload preserves upload source details on event pages", () => {
     message: "Create an event from this uploaded file.",
     requestedOutputs: ["event_page"],
     ocrContext: {
-      ocrText: [
-        "38th Gasparilla Classic",
-        "Dates: March 6-8, 2026",
-        "Location: Tampa Convention Center",
-        "Admission (Cash Only)",
-        "Adults $25 / day",
-        "Arrival Timelines",
-        "First session of the day: Arrive 1 hour before.",
-        "Rotation Sheets",
-        "No hard copies. Download online and refresh browser.",
-        "Registration: 2nd Floor near Guest Services.",
-      ].join("\n"),
+      ocrText:
+        "2026 Women’s Gasparilla Classic March 6-8, 2026 Spectator Admission – Cash Adults $25 per day Children (5-17) $20 per day Updated February 23, 2026 Page 1 of 4 Welcome to the 38th Annual Gasparilla Classic. Location : Tampa Convention Center – 333 S Franklin St, Tampa, FL 33602 Parking : Parking is managed by the City of Tampa Parking Department. Location of Lots and Garages: https://www.arcgis.com/apps/dashboards/12288a4774a9436b91953388b6770ff7 Rates: https://www.tampa.gov/parking/info/parking-hourly-and-daily-rates Pay by Mobile App: https://www.tampa.gov/parking/programs/pay-by-phone-parking Please note that Disney on Ice has shows at Benchmark International Arena causing additional traffic and changes in parking rates. 3/6 3p-5p & 7p-9p 3/7 11a-1p & 7p-9p 3/8 11a-1p & 3p-5p Ride Share : There is a rideshare/Uber/Lyft/taxi drop-off spot just beyond the entrance to Front Drive at 333 S. Franklin St., across from Water Street. Water Bottles : We recommend sending your gymnasts with a water bottle. Food/Beverage: Outside food and beverages are not allowed in the building at Tampa Convention Center unless you have dietary restrictions/food allergies. Doors Open : 7:00am each day. Door Fees : Adults $25 per day, Children (5-17yrs) $20 per day Door fees are daily. There are no weekend passes. Event Merchandise : A large selection of event merchandise will be available. Rotation Sheets: There will be no hard copies of rotation sheets at the competition. We suggest printing/downloading a copy from our website. Additional Info: • Official results will be posted on our website www.lightningcity.com. Results will be posted the day of competition. Live scoring will be available on meetscoresonline.com. • Daylight Savings Time begins on Sunday, March 8. • Only service dogs with a certificate are allowed at the Tampa Convention Center. The Women’s Gasparilla competition will take place in the East, Central and West Halls of the Tampa Convention Center. The registration area will be on the 2nd Floor near the Guest Services booth. Entrance into the competition area will be by the West and Central Hall near the Coffee Bar. Admission tickets will be available for purchase right by the entrance to the competition area.",
       fieldsGuess: {
         title: "38th Gasparilla Classic",
         location: "333 S Franklin St, Tampa, FL 33602",
@@ -2581,10 +2571,16 @@ test("save payload preserves upload source details on event pages", () => {
   const sourceText = JSON.stringify(payload.data.publicEvent.sourceSections);
 
   assert.match(sourceText, /Admission/);
-  assert.match(sourceText, /Adults \$25 \/ day/);
-  assert.match(sourceText, /Arrival Timelines/);
+  assert.match(sourceText, /Adults \$25 per day/);
+  assert.match(sourceText, /Parking is managed by the City of Tampa Parking Department/);
+  assert.match(sourceText, /Ride Share/);
+  assert.match(sourceText, /Water Bottles/);
+  assert.match(sourceText, /Food\/Beverage/);
+  assert.match(sourceText, /Doors Open/);
   assert.match(sourceText, /Rotation Sheets/);
-  assert.match(sourceText, /Registration/);
+  assert.match(sourceText, /Official results/);
+  assert.match(sourceText, /service dogs/);
+  assert.match(sourceText, /registration area/);
 });
 
 test("save payload preserves flyer invite as the primary product", () => {

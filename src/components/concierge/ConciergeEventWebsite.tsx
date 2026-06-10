@@ -296,6 +296,34 @@ export default function ConciergeEventWebsite({
             Details for the day
           </h2>
           <p className="mt-5 text-lg leading-8 text-slate-600">{body}</p>
+          {visibleSourceSections.length ? (
+            <div className="mt-8 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-700">
+                From the upload
+              </p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {visibleSourceSections.slice(0, 4).map((section) => (
+                  <div key={`summary-${section.title}-${section.items[0]}`} className="min-w-0">
+                    <h3 className="text-sm font-black text-slate-950">{section.title}</h3>
+                    <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-600">
+                      {section.items.slice(0, 3).map((item) => (
+                        <li key={`summary-${item}`} className="flex gap-2">
+                          <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-600" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+              <a
+                href="#source-details"
+                className="mt-5 inline-flex text-sm font-black text-violet-700 hover:text-violet-900"
+              >
+                View all uploaded details
+              </a>
+            </div>
+          ) : null}
         </div>
         <div className="grid gap-4">
           <div id="schedule" className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">

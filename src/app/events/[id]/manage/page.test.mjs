@@ -38,7 +38,11 @@ test("saved concierge drafts stay in chat with a generated product preview", () 
   assert.match(client, /generateProductForDraft/);
   assert.match(client, /setLiveCardEventId\(savedEventId\)/);
   assert.doesNotMatch(chatSurface, /Event Workspace/);
-  assert.match(chatSurface, /Placeholder preview: generate when the details look ready\./);
+  assert.match(chatSurface, /Draft ready/);
+  assert.match(chatSurface, /Generated artwork/);
+  assert.doesNotMatch(chatSurface, /Guest preview/);
+  assert.match(chatSurface, /Edit in chat/);
+  assert.match(chatSurface, /Share/);
   assert.match(chatSurface, /Open Live Card/);
   assert.match(chatSurface, /Open Flyer/);
   assert.doesNotMatch(chatSurface, /Open manage/);

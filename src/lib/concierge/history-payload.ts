@@ -59,21 +59,38 @@ function cleanSourceLine(value: unknown): string | null {
   if (!cleaned) return null;
   if (cleaned.length < 3) return null;
   if (/^(https?:\/\/\S+|www\.\S+)$/i.test(cleaned)) return cleaned;
-  return cleaned.slice(0, 220);
+  return cleaned.slice(0, 320);
+}
+
+function splitCollapsedSourceText(value: string) {
+  return value
+    .replace(/[ \t]+/g, " ")
+    .replace(/\s*[•●]\s*/g, "\n")
+    .replace(
+      /\s+(Location|Parking|Location of Lots and Garages|Rates|Pay by Mobile App|Ride Share|Water Bottles|Food\/Beverage|Doors Open|Door Fees|Event Merchandise|Rotation Sheets|Additional Info|Host Hotel Information|Official results|Live scoring|Daylight Savings Time|The Tampa Bay Sports Commission|The Women’s Gasparilla competition|The registration area|Entrance into the competition area|Admission tickets)\s*:/gi,
+      "\n$1:",
+    )
+    .replace(
+      /\s+(Please note|There is also|Attendees must|Make sure|Please allow|Plan to allow|Official results|Results will|Live scoring will|Please keep|Only service dogs|The Women’s Gasparilla competition|The registration area|Entrance into the competition area|Admission tickets|Check our website|Be sure to tag|Thank you for joining)/g,
+      "\n$1",
+    )
+    .replace(/\s+(3\/6\s+\d)/g, "\n$1")
+    .split(/\r?\n+/);
 }
 
 function sourceLinesFromText(value: unknown) {
   if (typeof value !== "string") return [];
   const seen = new Set<string>();
   const lines: string[] = [];
-  for (const rawLine of value.split(/\r?\n+/)) {
+  const rawLines = value.split(/\r?\n+/).flatMap((line) => splitCollapsedSourceText(line));
+  for (const rawLine of rawLines) {
     const line = cleanSourceLine(rawLine);
     if (!line) continue;
     const key = line.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     lines.push(line);
-    if (lines.length >= 80) break;
+    if (lines.length >= 160) break;
   }
   return lines;
 }
@@ -82,7 +99,43 @@ function lineMatches(line: string, pattern: RegExp) {
   return pattern.test(line);
 }
 
-function pickSourceFacts(lines: string[], pattern: RegExp, limit = 8) {
+function extractSourceFactStartingAt(value: unknown, pattern: RegExp) {
+  const source = cleanString(value);
+  if (!source) return null;
+  const match = pattern.exec(source);
+  if (!match) return null;
+  const sourceSlice = source.slice(match.index);
+  const nextBreak = sourceSlice.slice(1).search(/\s*[•●]\s*/);
+  const fact = nextBreak >= 0 ? sourceSlice.slice(0, nextBreak + 1) : sourceSlice;
+  return cleanSourceLine(fact);
+}
+
+function mergePrioritySourceFacts(items: string[], priorityFacts: Array<string | null>, limit = 8) {
+  const merged = Array.from(new Set(items));
+  for (const fact of priorityFacts) {
+    if (!fact || merged.includes(fact)) continue;
+    if (merged.length >= limit) {
+      const replaceIndex = merged.findIndex((item) =>
+        /\bpage\s+\d+\s+of\b|^additional info:?$/i.test(item),
+      );
+      if (replaceIndex >= 0) {
+        merged.splice(replaceIndex, 1);
+      } else {
+        continue;
+      }
+    }
+    merged.push(fact);
+  }
+  return merged.slice(0, limit);
+}
+
+function pickSourceFacts(
+  lines: string[],
+  pattern: RegExp,
+  limit = 8,
+  options: { includeFollowing?: boolean } = {},
+) {
+  const includeFollowing = options.includeFollowing !== false;
   const facts: string[] = [];
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
@@ -90,6 +143,7 @@ function pickSourceFacts(lines: string[], pattern: RegExp, limit = 8) {
     facts.push(line);
     const next = lines[index + 1];
     if (
+      includeFollowing &&
       next &&
       facts.length < limit &&
       !/^(dashboard|arrival|venue guide|inside the venue|overview)$/i.test(next)
@@ -105,12 +159,18 @@ function buildSourceFactSections(draft: ConciergeEventDraft) {
   const lines = sourceLinesFromText(draft.sourceMaterial?.ocrText);
   if (!lines.length) return [];
 
+  const officialResultsFact = extractSourceFactStartingAt(
+    draft.sourceMaterial?.ocrText,
+    /Official\s+results/i,
+  );
   const sections = [
     {
       title: "Meet Basics",
       items: pickSourceFacts(
         lines,
-        /\b(date|dates|location|venue|convention|center|doors?\s+open|session|daily)\b/i,
+        /\b(date|dates|location|venue|convention|center|doors?\s+open|session|daily)\b|^\d\/\d\s+\d/i,
+        8,
+        { includeFollowing: false },
       ),
     },
     {
@@ -122,13 +182,18 @@ function buildSourceFactSections(draft: ConciergeEventDraft) {
       items: pickSourceFacts(
         lines,
         /\b(arriv|parking|traffic|drop[-\s]?off|rideshare|garage|buffer|disney|daylight)\b/i,
+        8,
+        { includeFollowing: false },
       ),
     },
     {
       title: "Scoring And Schedules",
-      items: pickSourceFacts(
-        lines,
-        /\b(rotation|sheet|schedule|scoring|score|result|pdf|download|refresh)\b/i,
+      items: mergePrioritySourceFacts(
+        pickSourceFacts(
+          lines,
+          /\b(rotation|sheet|schedule|scoring|score|result|additional info|pdf|download|refresh)\b/i,
+        ),
+        [officialResultsFact],
       ),
     },
     {
@@ -136,6 +201,17 @@ function buildSourceFactSections(draft: ConciergeEventDraft) {
       items: pickSourceFacts(
         lines,
         /\b(registration|entrance|gym|hall|map|food|drink|water|prohibited|pets|service dogs?|amenit)\b/i,
+        8,
+        { includeFollowing: false },
+      ),
+    },
+    {
+      title: "Venue Access",
+      items: pickSourceFacts(
+        lines,
+        /\b(east,?\s+central\s+and\s+west\s+halls?|registration area|guest services|entrance into|west and central hall|coffee bar|admission tickets)\b/i,
+        8,
+        { includeFollowing: false },
       ),
     },
   ]

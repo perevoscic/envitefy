@@ -398,6 +398,8 @@ test("event route renders concierge event pages as full website products", () =>
   assert.match(websiteSource, /aria-label="Event sections"/);
   assert.match(websiteSource, /Toggle menu/);
   assert.match(websiteSource, /#source-details/);
+  assert.match(websiteSource, /From the upload/);
+  assert.match(websiteSource, /View all uploaded details/);
   assert.match(websiteSource, /Pulled from the upload/);
   assert.match(websiteSource, /#event-rsvp/);
   assert.match(websiteSource, /<EventRsvpPrompt/);
