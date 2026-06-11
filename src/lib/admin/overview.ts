@@ -1,5 +1,6 @@
 import {
   getAdminAnalyticsOverviewSnapshot,
+  getAdminGa4Status,
   type AdminGa4DashboardSnapshot,
   type AdminGa4Status,
 } from "./analytics";
@@ -16,7 +17,7 @@ import { getAdminEventsData, type AdminEventCategorySummary } from "./events";
 import { listMarketingRuns } from "./marketing-campaigns";
 import { getAdminScanData } from "./scans";
 import { getAdminUsersSummary, type AdminUsersSummary } from "./users";
-import { query } from "@/lib/db";
+import { isDatabaseUnavailableError, query } from "@/lib/db";
 
 export type AdminFunnelStep = {
   label: string;
@@ -80,6 +81,89 @@ type EmailCampaignSummary = {
   total: number;
   failed: number;
 };
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error || "Unknown error");
+}
+
+function createDatabaseUnavailableOverview(error: unknown): AdminOverviewData {
+  const message = getErrorMessage(error);
+  const users: AdminUsersSummary = {
+    totalUsers: 0,
+    newUsers7Days: 0,
+  };
+  const ga4 = getAdminGa4Status();
+  const ga4Report: AdminGa4DashboardSnapshot = {
+    status: "error",
+    message: "Admin database metrics are unavailable because Postgres could not be reached.",
+    generatedAt: null,
+    totals: {
+      activeUsersNow: 0,
+      activeUsersToday: 0,
+      activeUsers30Days: 0,
+      sessions30Days: 0,
+      screenPageViews30Days: 0,
+      eventCount30Days: 0,
+    },
+    topPages: [],
+    topEvents: [],
+  };
+  const concierge: AdminConciergeData = {
+    available: false,
+    summary: {
+      sessions: 0,
+      active7Days: 0,
+      published: 0,
+      drafts: 0,
+      threads: 0,
+      messages: 0,
+    },
+    statuses: [],
+    recentSessions: [],
+  };
+
+  return {
+    generatedAt: new Date().toISOString(),
+    kpis: {
+      users: 0,
+      events: 0,
+      publicEvents: 0,
+      scans: 0,
+      shares: 0,
+      rsvps: 0,
+      emailCampaigns: 0,
+      marketingRuns: 0,
+      conciergeSessions: 0,
+    },
+    users,
+    funnel: [
+      { label: "Users", value: 0, href: "/admin/users" },
+      { label: "Events", value: 0, href: "/admin/events" },
+      { label: "Public events", value: 0, href: "/admin/events" },
+      { label: "Shares", value: 0, href: "/admin/scans" },
+      { label: "RSVPs", value: 0, href: "/admin/events" },
+    ],
+    ga4,
+    ga4Report,
+    categoryPerformance: [],
+    concierge,
+    needsAttention: [
+      {
+        title: "Admin database is unavailable",
+        detail: `Postgres could not be reached: ${message}`,
+        href: "/admin/health",
+        tone: "danger",
+      },
+    ],
+    recentActivity: [],
+    growthInsights: [
+      { label: "New users", current7Days: 0, previous7Days: 0, delta: 0 },
+      { label: "Events created", current7Days: 0, previous7Days: 0, delta: 0 },
+      { label: "Scans saved", current7Days: 0, previous7Days: 0, delta: 0 },
+      { label: "RSVP responses", current7Days: 0, previous7Days: 0, delta: 0 },
+    ],
+  };
+}
 
 async function getEmailCampaignSummary(): Promise<EmailCampaignSummary> {
   if (!(await tableExists("email_campaigns"))) return { total: 0, failed: 0 };
@@ -230,31 +314,47 @@ async function getGrowthInsights(): Promise<AdminGrowthInsight[]> {
 }
 
 export async function getAdminOverviewData(): Promise<AdminOverviewData> {
-  const [
-    users,
-    events,
-    scans,
-    analytics,
-    concierge,
-    emailCampaigns,
-    marketingRuns,
-    recentActivity,
-    growthInsights,
-  ] = await Promise.all([
-    getAdminUsersSummary(),
-    getAdminEventsData(8, { includeRecent: false }),
-    getAdminScanData(1, {
-      includeCategories: false,
-      includeRecent: false,
-      includeEngagementCounts: false,
-    }),
-    getAdminAnalyticsOverviewSnapshot(),
-    getAdminConciergeData({ includeRecent: false }),
-    getEmailCampaignSummary(),
-    getMarketingRunCount(),
-    getRecentActivity(),
-    getGrowthInsights(),
-  ]);
+  let users: AdminUsersSummary;
+  let events: Awaited<ReturnType<typeof getAdminEventsData>>;
+  let scans: Awaited<ReturnType<typeof getAdminScanData>>;
+  let analytics: Awaited<ReturnType<typeof getAdminAnalyticsOverviewSnapshot>>;
+  let concierge: AdminConciergeData;
+  let emailCampaigns: EmailCampaignSummary;
+  let marketingRuns: number;
+  let recentActivity: AdminRecentActivity[];
+  let growthInsights: AdminGrowthInsight[];
+
+  try {
+    [
+      users,
+      events,
+      scans,
+      analytics,
+      concierge,
+      emailCampaigns,
+      marketingRuns,
+      recentActivity,
+      growthInsights,
+    ] = await Promise.all([
+      getAdminUsersSummary(),
+      getAdminEventsData(8, { includeRecent: false }),
+      getAdminScanData(1, {
+        includeCategories: false,
+        includeRecent: false,
+        includeEngagementCounts: false,
+      }),
+      getAdminAnalyticsOverviewSnapshot(),
+      getAdminConciergeData({ includeRecent: false }),
+      getEmailCampaignSummary(),
+      getMarketingRunCount(),
+      getRecentActivity(),
+      getGrowthInsights(),
+    ]);
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) throw error;
+    console.warn("[admin] overview database unavailable", getErrorMessage(error));
+    return createDatabaseUnavailableOverview(error);
+  }
 
   const needsAttention: AdminNeedsAttentionItem[] = [];
   if (!analytics.ga4.connected) {

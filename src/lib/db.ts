@@ -100,6 +100,10 @@ function isTransientPgError(err: unknown): boolean {
   );
 }
 
+export function isDatabaseUnavailableError(err: unknown): boolean {
+  return isTransientPgError(err);
+}
+
 function getPool(): Pool {
   if (!global.__pgPool) {
     const databaseUrl = process.env.DATABASE_URL as string | undefined;

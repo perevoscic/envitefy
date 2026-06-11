@@ -1,4 +1,4 @@
-import { query } from "@/lib/db";
+import { isDatabaseUnavailableError, query } from "@/lib/db";
 
 export type CountRow = { n: string | number | null };
 
@@ -23,10 +23,18 @@ export function daysAgo(days: number): string {
 export async function tableExists(tableName: string): Promise<boolean> {
   const safeName = tableName.replace(/[^a-zA-Z0-9_]/g, "");
   if (!safeName) return false;
-  const result = await query<{ exists: string | null }>(`select to_regclass($1)::text as exists`, [
-    `public.${safeName}`,
-  ]);
-  return Boolean(result.rows[0]?.exists);
+  try {
+    const result = await query<{ exists: string | null }>(
+      `select to_regclass($1)::text as exists`,
+      [`public.${safeName}`],
+    );
+    return Boolean(result.rows[0]?.exists);
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) throw error;
+    const message = error instanceof Error ? error.message : String(error || "Unknown error");
+    console.warn("[admin] table existence lookup skipped: database unavailable", message);
+    return false;
+  }
 }
 
 export function normalizeCategory(value: string | null | undefined): string {
