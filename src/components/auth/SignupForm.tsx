@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { FormEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
+import type { SignupIntent } from "@/lib/signup-intent";
 import { hideAuthTransition, showAuthTransition } from "@/utils/authTransition";
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -16,6 +17,7 @@ export type SignupFormProps = {
   onSwitchMode?: (mode: "login" | "signup") => void;
   successRedirectUrl?: string;
   signupSource?: "snap" | "gymnastics";
+  signupIntent?: SignupIntent;
   variant?: "default" | "inline";
   inlineTone?: "dark" | "light";
 };
@@ -25,6 +27,7 @@ export default function SignupForm({
   onSwitchMode,
   successRedirectUrl = "/",
   signupSource,
+  signupIntent,
   variant = "default",
   inlineTone = "dark",
 }: SignupFormProps) {
@@ -64,12 +67,12 @@ export default function SignupForm({
   );
 
   const ensureSignupSourceCookie = async () => {
-    if (!signupSource) return;
+    if (!signupSource && !signupIntent) return;
 
     const response = await fetch("/api/auth/signup-source", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source: signupSource }),
+      body: JSON.stringify({ source: signupSource, intent: signupIntent }),
       credentials: "include",
     });
 
@@ -127,6 +130,7 @@ export default function SignupForm({
           password,
           recaptchaToken,
           signupSource,
+          signupIntent,
         }),
         credentials: "include",
       });

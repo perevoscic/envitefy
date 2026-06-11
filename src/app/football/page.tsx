@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function FootballPage() {
-  redirect("/gymnastics");
+  redirect("/sport-events?sport=football");
 }

@@ -28,6 +28,7 @@ export const publicUseCaseNavLinks: SignedOutMobileMenuLink[] = [
   { label: "Bridal Showers", href: "/bridal-showers" },
   { label: "Baby Showers", href: "/baby-showers" },
   { label: "Gymnastics", href: "/gymnastics" },
+  { label: "Sports", href: "/sport-events" },
   { label: "Signup Forms", href: "/signup-forms" },
   { label: "Gender Reveals", href: "/gender-reveal" },
   { label: "Birthdays", href: "/birthdays" },

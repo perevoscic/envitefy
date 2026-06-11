@@ -98,6 +98,7 @@ function SectionEyebrow({ children }: { children: string }) {
 
 export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
   const pageUrl = `https://envitefy.com${page.path}`;
+  const primaryHref = `${page.path}?auth=signup`;
   const cssVars = {
     "--use-case-accent": page.theme.accent,
     "--use-case-accent-dark": page.theme.accentDark,
@@ -166,7 +167,7 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
-                  href={page.primaryHref}
+                  href={primaryHref}
                   className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#17111e] shadow-[0_22px_54px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5"
                 >
                   {page.primaryCta}

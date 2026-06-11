@@ -13,6 +13,8 @@ test("AppShell hides app chrome on marketing and full live-card routes", () => {
   assert.match(appShell, /MARKETING_PATHS/);
   assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[^\]]*"\/snap"/s);
   assert.match(appShell, /"\/gymnastics"/);
+  assert.match(appShell, /"\/weddings"/);
+  assert.match(appShell, /"\/signup-forms"/);
   assert.match(appShell, /"\/landing"/);
   assert.match(appShell, /function isStudioCardSharePath\(pathname: string\)/);
   assert.match(appShell, /segments\.length === 2 && segments\[0\] === "card"/);
@@ -23,7 +25,8 @@ test("AppShell hides app chrome on marketing and full live-card routes", () => {
     /const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare;/,
   );
   assert.match(appShell, /isRedirectingFromMarketing/);
-  assert.match(appShell, /router\.replace\("\/"\)/);
+  assert.match(appShell, /getCreateActionForSignupIntent\(signupIntentForMarketingPath\(pathname\)\)/);
+  assert.match(appShell, /router\.replace\(pathname === "\/landing" \|\| !createAction \? "\/" : createAction\.href\)/);
   assert.match(appShell, /z-\[14000\]/);
   assert.match(appShell, /auth-transition-overlay/);
   assert.match(appShell, /data-auth-transition/);

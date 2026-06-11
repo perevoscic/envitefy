@@ -447,6 +447,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
     "Bridal Showers",
     "Baby Showers",
     "Gymnastics",
+    "Sports",
     "Signup Forms",
     "Gender Reveals",
     "Birthdays",
@@ -495,7 +496,13 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(signedOutPageChrome, /<MenuBottomSheet/);
   assert.match(signedOutPageChrome, /<ConciergeSheet/);
   assert.match(signedOutPageChrome, /<AuthModal/);
-  assert.match(signedOutPageChrome, /successRedirectUrl=\{authMode === "signup" \? "\/chat" : "\/"\}/);
+  assert.match(
+    signedOutPageChrome,
+    /const successRedirectUrl = authMode === "signup" \? signupSuccessRedirectUrl : loginSuccessRedirectUrl/,
+  );
+  assert.match(signedOutPageChrome, /const primaryCreateHref = createAction\?\.href \|\| "\/chat"/);
+  assert.match(signedOutPageChrome, /const loginSuccessRedirectUrl = createAction\?\.href \|\| "\/"/);
+  assert.match(signedOutPageChrome, /const signupSuccessRedirectUrl = createAction\?\.href \|\| "\/chat"/);
   assert.match(signedOutPageChrome, /router\.push\(href\.startsWith\("#"\) \? `\/landing\$\{href\}` : href\)/);
   assert.match(showcasePage, /<SignedOutPageChrome activeBottomNavLabel="Examples" \/>/);
   assert.match(createActionSheet, /Create with AI Concierge/);
@@ -566,8 +573,10 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(landingExperience, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl="\/chat"/);
   assert.doesNotMatch(landingExperience, /onStartCreatingSelect/);
   assert.doesNotMatch(landingExperience, /onSignInSelect/);
-  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*successRedirectUrl="\/"/);
-  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl="\/chat"/);
+  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*successRedirectUrl=\{loginSuccessRedirectUrl\}/);
+  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl=\{signupSuccessRedirectUrl\}/);
+  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*signupSource=\{signupSource\}/);
+  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*signupIntent=\{signupIntent \|\| undefined\}/);
   assert.match(landingExperience, /onMenuSelect=\{\(\) => setMobileMenuOpen\(true\)\}/);
   assert.match(landingExperience, /onVisibilityChange=\{setBottomNavVisible\}/);
   assert.match(landingExperience, /pb-\[calc\(96px\+env\(safe-area-inset-bottom\)\)\] md:pb-0/);

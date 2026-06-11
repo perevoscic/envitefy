@@ -361,6 +361,7 @@ function RootNavigationPanel({
   sidebarPage,
   eventContextSourcePage,
   hasCreateEventAccess,
+  createEntryLabel,
   isCreateEntryActive,
   isSnapUploadActive,
   isAdmin,
@@ -376,6 +377,7 @@ function RootNavigationPanel({
   sidebarPage: string;
   eventContextSourcePage: string;
   hasCreateEventAccess: boolean;
+  createEntryLabel: string;
   isCreateEntryActive: boolean;
   isSnapUploadActive: boolean;
   isAdmin: boolean;
@@ -518,7 +520,7 @@ function RootNavigationPanel({
                   : `${rootInactiveTextClass} ${rootHoverTextClass}`
               }`}
             >
-              Create Event
+              {createEntryLabel}
             </span>
           </button>
         ) : null}
@@ -1534,6 +1536,7 @@ export default function LeftSidebar() {
                       sidebarPage={viewModel.sidebarPage}
                       eventContextSourcePage={viewModel.eventContextSourcePage}
                       hasCreateEventAccess={viewModel.hasCreateEventAccess}
+                      createEntryLabel={viewModel.createEntryLabel}
                       isCreateEntryActive={viewModel.isCreateEntryActive}
                       isSnapUploadActive={isSnapUploadStartActive}
                       isAdmin={viewModel.isAdmin}

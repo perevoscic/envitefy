@@ -9,6 +9,7 @@ import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import { MainContentWrapper } from "@/components/MainContentWrapper";
 import { MenuProvider } from "@/contexts/MenuContext";
+import { getCreateActionForSignupIntent, signupIntentForMarketingPath } from "@/lib/signup-intent";
 import { AUTH_TRANSITION_CLEAR_EVENT, AUTH_TRANSITION_EVENT } from "@/utils/authTransition";
 
 const LeftSidebar = dynamic(() => import("./left-sidebar"), {
@@ -16,7 +17,18 @@ const LeftSidebar = dynamic(() => import("./left-sidebar"), {
 });
 
 /** Must stay aligned with middleware signed-in redirects for marketing URLs. */
-const MARKETING_PATHS = new Set(["/gymnastics", "/landing"]);
+const MARKETING_PATHS = new Set([
+  "/landing",
+  "/gymnastics",
+  "/sports",
+  "/sport-events",
+  "/weddings",
+  "/bridal-showers",
+  "/baby-showers",
+  "/signup-forms",
+  "/gender-reveal",
+  "/birthdays",
+]);
 
 function isMarketingPath(pathname: string) {
   return MARKETING_PATHS.has(pathname);
@@ -103,8 +115,9 @@ export default function AppShell({
 
   useEffect(() => {
     if (!onMarketing || !isAuthenticated) return;
-    router.replace("/");
-  }, [onMarketing, isAuthenticated, router]);
+    const createAction = getCreateActionForSignupIntent(signupIntentForMarketingPath(pathname));
+    router.replace(pathname === "/landing" || !createAction ? "/" : createAction.href);
+  }, [onMarketing, isAuthenticated, pathname, router]);
 
   if (isLightweightLanding) {
     return (

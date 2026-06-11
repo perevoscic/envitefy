@@ -34,6 +34,7 @@ export type VisibilityState = {
   visibleTemplateKeys: TemplateKey[];
   quickAccess: QuickAccessKey[];
   dashboardLayout: DashboardLayout;
+  defaultCreateIntent: string | null;
 };
 
 export type TemplateDef = {
@@ -47,7 +48,14 @@ export type TemplateDef = {
     | "appointments_general";
 };
 
-export const ENABLED_TEMPLATE_KEYS: TemplateKey[] = ["gymnastics"];
+export const ENABLED_TEMPLATE_KEYS: TemplateKey[] = [
+  "birthdays",
+  "weddings",
+  "baby_showers",
+  "gender_reveal",
+  "sport_events",
+  "gymnastics",
+];
 
 const ENABLED_TEMPLATE_KEY_SET = new Set<TemplateKey>(ENABLED_TEMPLATE_KEYS);
 
@@ -241,7 +249,7 @@ export const PERSONA_PRESETS: Record<UserPersona, TemplateKey[]> = {
   general: [...TEMPLATE_KEYS],
 };
 
-const SPORTS_KEYS: TemplateKey[] = ["gymnastics"];
+const SPORTS_KEYS: TemplateKey[] = ["gymnastics", "sport_events"];
 
 export function getTemplateDefByKey(key: TemplateKey): TemplateDef | null {
   return TEMPLATE_DEFINITIONS.find((d) => d.key === key) || null;
@@ -301,6 +309,7 @@ export function resolveVisibility(input: {
   persona?: unknown;
   personas?: unknown;
   visibleTemplateKeys?: unknown;
+  defaultCreateIntent?: unknown;
 }): VisibilityState {
   const normalizedPersonas = normalizePersonas(input.personas);
   const persona =
@@ -323,6 +332,10 @@ export function resolveVisibility(input: {
     visibleTemplateKeys,
     quickAccess: [...QUICK_ACCESS_DEFAULT],
     dashboardLayout: resolveDashboardLayout(persona),
+    defaultCreateIntent:
+      typeof input.defaultCreateIntent === "string" && input.defaultCreateIntent.trim()
+        ? input.defaultCreateIntent.trim()
+        : null,
   };
 }
 

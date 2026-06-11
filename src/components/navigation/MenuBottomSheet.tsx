@@ -9,6 +9,7 @@ import { type PointerEvent as ReactPointerEvent, useEffect, useState } from "rea
 import LoginForm from "@/components/auth/LoginForm";
 import SignupForm from "@/components/auth/SignupForm";
 import { signedOutMobileMenuLinks } from "@/config/navigation";
+import type { SignupIntent } from "@/lib/signup-intent";
 
 type AuthMode = "login" | "signup";
 
@@ -17,6 +18,8 @@ type MenuBottomSheetProps = {
   onOpenChange: (open: boolean) => void;
   successRedirectUrl?: string;
   signupSuccessRedirectUrl?: string;
+  signupSource?: "snap" | "gymnastics";
+  signupIntent?: SignupIntent;
 };
 
 const closeDragOffset = 84;
@@ -28,6 +31,8 @@ export default function MenuBottomSheet({
   onOpenChange,
   successRedirectUrl = "/",
   signupSuccessRedirectUrl = successRedirectUrl,
+  signupSource,
+  signupIntent,
 }: MenuBottomSheetProps) {
   const dragControls = useDragControls();
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
@@ -262,6 +267,8 @@ export default function MenuBottomSheet({
                           variant="inline"
                           inlineTone="dark"
                           successRedirectUrl={signupSuccessRedirectUrl}
+                          signupSource={signupSource}
+                          signupIntent={signupIntent}
                           onSwitchMode={setAuthMode}
                           onSuccess={closeSheet}
                         />

@@ -1,13 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import BottomNav from "@/components/navigation/BottomNav";
 import ConciergeSheet from "@/components/navigation/ConciergeSheet";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import MenuBottomSheet from "@/components/navigation/MenuBottomSheet";
 import { publicUseCasePrimaryNavLinks, signedOutMobileMenuLinks } from "@/config/navigation";
+import {
+  getCreateActionForSignupIntent,
+  signupIntentForMarketingPath,
+  signupSourceForIntent,
+} from "@/lib/signup-intent";
 
 type SignedOutPageChromeProps = {
   activeBottomNavLabel?: string;
@@ -25,15 +30,33 @@ export default function SignedOutPageChrome({
   topNavVariant = "default",
 }: SignedOutPageChromeProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const openAuth = (mode: "login" | "signup") => {
+  const openAuth = useCallback((mode: "login" | "signup") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
-  };
+  }, []);
+  const signupIntent = useMemo(
+    () => signupIntentForMarketingPath(pathname || ""),
+    [pathname],
+  );
+  const signupSource = signupIntent ? signupSourceForIntent(signupIntent) : undefined;
+  const createAction = getCreateActionForSignupIntent(signupIntent);
+  const primaryCreateHref = createAction?.href || "/chat";
+  const loginSuccessRedirectUrl = createAction?.href || "/";
+  const signupSuccessRedirectUrl = createAction?.href || "/chat";
+  const successRedirectUrl = authMode === "signup" ? signupSuccessRedirectUrl : loginSuccessRedirectUrl;
+
+  useEffect(() => {
+    const auth = searchParams?.get("auth");
+    if (auth !== "login" && auth !== "signup") return;
+    openAuth(auth);
+  }, [openAuth, searchParams]);
 
   const openLandingHash = (href: string) => {
     router.push(href.startsWith("#") ? `/landing${href}` : href);
@@ -45,10 +68,10 @@ export default function SignedOutPageChrome({
         navLinks={[...signedOutPageNavLinks]}
         mobileNavLinks={[...signedOutMobileMenuLinks]}
         primaryCtaLabel="Let's create"
-        authenticatedPrimaryHref="/chat"
+        authenticatedPrimaryHref={primaryCreateHref}
         brandHref={brandHref}
         variant={topNavVariant}
-        loginSuccessRedirectUrl="/"
+        loginSuccessRedirectUrl={loginSuccessRedirectUrl}
         onGuestLoginAction={() => openAuth("login")}
         onGuestPrimaryAction={() => openAuth("signup")}
       />
@@ -65,8 +88,10 @@ export default function SignedOutPageChrome({
       <MenuBottomSheet
         open={mobileMenuOpen}
         onOpenChange={setMobileMenuOpen}
-        successRedirectUrl="/"
-        signupSuccessRedirectUrl="/chat"
+        successRedirectUrl={loginSuccessRedirectUrl}
+        signupSuccessRedirectUrl={signupSuccessRedirectUrl}
+        signupSource={signupSource}
+        signupIntent={signupIntent || undefined}
       />
       <ConciergeSheet
         open={assistantOpen}
@@ -79,7 +104,9 @@ export default function SignedOutPageChrome({
         mode={authMode}
         onClose={() => setAuthModalOpen(false)}
         onModeChange={setAuthMode}
-        successRedirectUrl={authMode === "signup" ? "/chat" : "/"}
+        successRedirectUrl={successRedirectUrl}
+        signupSource={signupSource}
+        signupIntent={signupIntent || undefined}
       />
     </>
   );

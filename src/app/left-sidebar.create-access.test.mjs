@@ -34,7 +34,7 @@ test("left sidebar view still gates both root and compact create entries behind 
 
   assert.match(
     source,
-    /\{hasCreateEventAccess \? \(\s*<button\s+type="button"\s+onClick=\{onCreate\}[\s\S]*?Create Event\s*<\/span>/s,
+    /\{hasCreateEventAccess \? \(\s*<button\s+type="button"\s+onClick=\{onCreate\}[\s\S]*?\{createEntryLabel\}\s*<\/span>/s,
   );
   assert.doesNotMatch(source, /CompactRail/);
   assert.doesNotMatch(source, /Collapse navigation/);

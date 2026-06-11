@@ -8,11 +8,13 @@ import {
 } from "@/config/feature-visibility";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { getFeatureVisibilityByEmail, updateFeatureVisibilityByEmail } from "@/lib/db";
+import { normalizeSignupIntent } from "@/lib/signup-intent";
 
 type FeatureVisibilityPayload = {
   persona?: unknown;
   personas?: unknown;
   visibleTemplateKeys?: unknown;
+  defaultCreateIntent?: unknown;
 };
 
 function readMetadata(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmail>>) {
@@ -30,6 +32,7 @@ function buildResponse(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmai
       personas: [],
       visibleTemplateKeys: [...TEMPLATE_KEYS],
       dashboardLayout: "default" as const,
+      defaultCreateIntent: null,
     };
   }
 
@@ -38,6 +41,7 @@ function buildResponse(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmai
     persona: metadata.persona,
     personas: metadata.personas,
     visibleTemplateKeys: metadata.visibleTemplateKeys,
+    defaultCreateIntent: normalizeSignupIntent(metadata.defaultCreateIntent),
   });
 
   return {
@@ -48,6 +52,7 @@ function buildResponse(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmai
         ? visibility.visibleTemplateKeys
         : [...TEMPLATE_KEYS],
     dashboardLayout: visibility.dashboardLayout,
+    defaultCreateIntent: normalizeSignupIntent(metadata.defaultCreateIntent),
   };
 }
 
@@ -77,6 +82,7 @@ export async function PUT(req: Request) {
   const hasPersona = Object.hasOwn(body, "persona");
   const hasPersonas = Object.hasOwn(body, "personas");
   const hasVisibleTemplateKeys = Object.hasOwn(body, "visibleTemplateKeys");
+  const hasDefaultCreateIntent = Object.hasOwn(body, "defaultCreateIntent");
 
   const resolved = resolveVisibility({
     persona: hasPersona ? normalizePersona(body.persona) : existingMetadata?.persona,
@@ -84,6 +90,9 @@ export async function PUT(req: Request) {
     visibleTemplateKeys: hasVisibleTemplateKeys
       ? normalizeTemplateKeys(body.visibleTemplateKeys)
       : existingMetadata?.visibleTemplateKeys,
+    defaultCreateIntent: hasDefaultCreateIntent
+      ? normalizeSignupIntent(body.defaultCreateIntent)
+      : normalizeSignupIntent(existingMetadata?.defaultCreateIntent),
   });
 
   if (!resolved.visibleTemplateKeys.length) {
@@ -98,6 +107,7 @@ export async function PUT(req: Request) {
     persona: resolved.persona,
     personas: resolved.personas,
     visibleTemplateKeys: resolved.visibleTemplateKeys,
+    defaultCreateIntent: resolved.defaultCreateIntent,
   });
 
   const row = await getFeatureVisibilityByEmail(email);

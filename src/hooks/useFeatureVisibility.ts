@@ -14,6 +14,7 @@ type FeatureVisibilityState = {
   personas: UserPersona[];
   visibleTemplateKeys: TemplateKey[];
   dashboardLayout: DashboardLayout;
+  defaultCreateIntent: string | null;
 };
 
 const DEFAULT_STATE: FeatureVisibilityState = {
@@ -21,6 +22,7 @@ const DEFAULT_STATE: FeatureVisibilityState = {
   personas: [],
   visibleTemplateKeys: [...TEMPLATE_KEYS],
   dashboardLayout: "default",
+  defaultCreateIntent: null,
 };
 
 export function useFeatureVisibility() {
@@ -43,12 +45,14 @@ export function useFeatureVisibility() {
         persona: json?.persona,
         personas: json?.personas,
         visibleTemplateKeys: json?.visibleTemplateKeys,
+        defaultCreateIntent: json?.defaultCreateIntent,
       });
       setState({
         persona: resolved.persona,
         personas: resolved.personas,
         visibleTemplateKeys: resolved.visibleTemplateKeys,
         dashboardLayout: resolved.dashboardLayout,
+        defaultCreateIntent: resolved.defaultCreateIntent,
       });
     } catch {
       setState(DEFAULT_STATE);

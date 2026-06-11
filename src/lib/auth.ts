@@ -4,13 +4,15 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { getToken } from "next-auth/jwt";
 import { cookies } from "next/headers";
-import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken, getGoogleRefreshToken, getMicrosoftRefreshToken, getUserIdByEmail } from "@/lib/db";
+import { TEMPLATE_KEYS } from "@/config/feature-visibility";
+import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken, getGoogleRefreshToken, getMicrosoftRefreshToken, getUserIdByEmail, updateFeatureVisibilityByEmail } from "@/lib/db";
 import {
   normalizePrimarySignupSource,
   normalizeProductScopes,
   type PrimarySignupSource,
   type ProductScope,
 } from "@/lib/product-scopes";
+import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
 
 function isTransientDbError(err: unknown): boolean {
   const anyErr = err as any;
@@ -57,6 +59,26 @@ async function readSignupSourceCookie(): Promise<"snap" | "gymnastics" | null> {
   } catch {
     return null;
   }
+}
+
+async function readSignupIntentCookie(): Promise<SignupIntent | null> {
+  try {
+    const jar = await cookies();
+    return normalizeSignupIntent(jar.get("envitefy_signup_intent")?.value);
+  } catch {
+    return null;
+  }
+}
+
+async function applySignupIntentDefaults(email: string, intent: SignupIntent | null) {
+  if (!intent || intent === "snap") return;
+  await updateFeatureVisibilityByEmail({
+    email,
+    persona: null,
+    personas: [],
+    visibleTemplateKeys: [...TEMPLATE_KEYS],
+    defaultCreateIntent: intent,
+  });
 }
 
 async function resolveUserAccessMetadata(email: string): Promise<{
@@ -235,6 +257,7 @@ export function getAuthOptions(): NextAuthOptions {
               });
               return false;
             }
+            const signupIntent = await readSignupIntentCookie();
 
             const firstName = (profile as any)?.given_name || user.name?.split(" ")[0] || null;
             const lastName = (profile as any)?.family_name || user.name?.split(" ").slice(1).join(" ") || null;
@@ -246,6 +269,7 @@ export function getAuthOptions(): NextAuthOptions {
               provider: "google",
               signupSource,
             });
+            await applySignupIntentDefaults(user.email, signupIntent);
 
             return true;
           }

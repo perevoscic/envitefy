@@ -315,10 +315,64 @@ const MenuCard = ({
   </button>
 );
 
-function createSimpleCustomizePage(config: SimpleTemplateConfig) {
+function buildSportSpecificConfig(
+  baseConfig: SimpleTemplateConfig,
+  sportPreset: ReturnType<typeof getSportEventPreset>,
+  style: string | null,
+): SimpleTemplateConfig {
+  const styleThemeIds: Record<string, string[]> = {
+    stadium: sportPreset.themeIds,
+    club: ["victory_blue", "teal_tenacity", "forest_strong"],
+    tournament: ["championship_gold", "midnight_elite", "dynamic_orange"],
+  };
+  const preferredThemeIds = styleThemeIds[style || ""] || sportPreset.themeIds;
+  const themes = [
+    ...preferredThemeIds
+      .map((id) => baseConfig.themes.find((theme) => theme.id === id))
+      .filter(Boolean),
+    ...baseConfig.themes.filter((theme) => !preferredThemeIds.includes(theme.id)),
+  ];
+
+  return {
+    ...baseConfig,
+    slug: `sport-event-${sportPreset.key}`,
+    displayName: sportPreset.routeLabel,
+    category: "sport_event",
+    categoryLabel: sportPreset.routeLabel,
+    detailFields: baseConfig.detailFields.map((field) => {
+      if (field.key === "opponent") {
+        return { ...field, placeholder: sportPreset.opponentPlaceholder };
+      }
+      if (field.key === "league") {
+        return { ...field, placeholder: sportPreset.leaguePlaceholder };
+      }
+      return field;
+    }),
+    themes: themes.length ? (themes as ThemeSpec[]) : baseConfig.themes,
+    prefill: {
+      ...baseConfig.prefill,
+      title: sportPreset.defaultTitle,
+      venue: sportPreset.venuePlaceholder,
+      details: sportPreset.defaultDetails,
+      extra: {
+        ...baseConfig.prefill?.extra,
+        sport: sportPreset.key,
+        sportLabel: sportPreset.label,
+      },
+    },
+  };
+}
+
+function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
   return function SimpleCustomizePage() {
     const search = useSearchParams();
     const router = useRouter();
+    const sportPreset = getSportEventPreset(search?.get("sport"));
+    const style = search?.get("style");
+    const config = useMemo(
+      () => buildSportSpecificConfig(baseConfig, sportPreset, style),
+      [sportPreset, style],
+    );
     const editEventId = search?.get("edit") ?? undefined;
     const defaultDate = search?.get("d") ?? undefined;
     const initialDate = useMemo(() => {
@@ -1896,6 +1950,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 }
 
 import { config } from "@/components/event-templates/SportEventsTemplate";
+import { getSportEventPreset } from "@/lib/sport-event-presets";
 
 const Page = createSimpleCustomizePage(config);
 export default Page;

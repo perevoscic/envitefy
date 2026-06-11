@@ -8,13 +8,13 @@ const repoRoot = process.cwd();
 const readSource = (relativePath) =>
   fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("feature visibility is clamped to the gymnastics template", () => {
+test("feature visibility is clamped to launched template keys", () => {
   const source = readSource("src/config/feature-visibility.ts");
   const settingsPage = readSource("src/app/settings/page.tsx");
 
   assert.match(
     source,
-    /export const ENABLED_TEMPLATE_KEYS: TemplateKey\[] = \["gymnastics"\];/
+    /export const ENABLED_TEMPLATE_KEYS: TemplateKey\[] = \[\s*"birthdays",\s*"weddings",\s*"baby_showers",\s*"gender_reveal",\s*"sport_events",\s*"gymnastics",\s*\];/s
   );
   assert.match(
     source,
@@ -26,11 +26,13 @@ test("feature visibility is clamped to the gymnastics template", () => {
   );
   assert.match(
     source,
-    /const SPORTS_KEYS: TemplateKey\[] = \["gymnastics"\];/
+    /const SPORTS_KEYS: TemplateKey\[] = \["gymnastics", "sport_events"\];/
   );
+  assert.match(source, /defaultCreateIntent: string \| null;/);
   assert.match(
     source,
     /const visibleTemplateKeys = clampEnabledTemplateKeys\(\s*normalizedKeys\.length > 0 \? normalizedKeys : \[\.\.\.preset\]\s*\);/s
   );
   assert.match(settingsPage, /TEMPLATE_DEFINITIONS\.map\(\(template\) => \(/);
+  assert.match(settingsPage, /Reset personalization/);
 });

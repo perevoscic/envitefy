@@ -3,6 +3,7 @@
 import { ArrowRight, CalendarDays, FileUp, LayoutPanelTop, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import {
   buildSportEventCustomizeHref,
   getSportEventPreset,
@@ -13,7 +14,6 @@ const sportsBuilderSteps = [
   "Choose sport",
   "Choose look",
   "Upload info",
-  "Organize sections",
   "Preview & publish",
 ];
 
@@ -35,16 +35,18 @@ const styleOptions = [
   },
 ];
 
-export default function SportEventsPageClient() {
+export default function SportsLandingPage() {
   const search = useSearchParams();
   const selectedSport = getSportEventPreset(search?.get("sport"));
   const selectedStyle = search?.get("style") || "stadium";
-  const builderHref = buildSportEventCustomizeHref(selectedSport.key, selectedStyle);
+  const primaryHref = `${buildSportEventCustomizeHref(selectedSport.key, selectedStyle)}&auth=signup`;
 
   return (
-    <main className="min-h-screen bg-[#f8faf7] px-4 py-6 text-[#17111e] sm:px-6 lg:px-8">
-      <section className="mx-auto flex min-h-[calc(100svh-3rem)] w-full max-w-7xl flex-col">
-        <div className="mb-8 flex w-full items-center justify-between rounded-full border border-[#211a30]/20 bg-white px-3 py-2 shadow-[0_14px_44px_rgba(26,19,40,0.08)]">
+    <main className="min-h-screen bg-[#f8faf7] pb-24 text-[#17111e] md:pb-0">
+      <SignedOutPageChrome activeBottomNavLabel="Create" topNavVariant="default" />
+
+      <section className="mx-auto flex min-h-[calc(100svh-4rem)] w-full max-w-7xl flex-col px-4 pb-10 pt-24 sm:px-6 lg:px-8">
+        <div className="mx-auto mb-8 flex w-full max-w-4xl items-center justify-between rounded-full border border-[#211a30]/20 bg-white px-3 py-2 shadow-[0_14px_44px_rgba(26,19,40,0.08)]">
           {sportsBuilderSteps.map((step, index) => (
             <div key={step} className="flex min-w-0 items-center gap-2 text-xs font-semibold sm:text-sm">
               <span
@@ -56,7 +58,7 @@ export default function SportEventsPageClient() {
               >
                 {index + 1}
               </span>
-              <span className={index === 0 ? "hidden text-[#2921d7] md:inline" : "hidden md:inline"}>
+              <span className={index === 0 ? "hidden text-[#2921d7] sm:inline" : "hidden sm:inline"}>
                 {step}
               </span>
             </div>
@@ -66,27 +68,27 @@ export default function SportEventsPageClient() {
         <div className="grid flex-1 gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(26rem,0.68fr)] lg:items-center">
           <div>
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-[#5f55ff]">
-              Sports builder
+              Sports event pages
             </p>
             <h1 className="max-w-3xl text-4xl font-black leading-[0.96] tracking-normal text-[#17111e] sm:text-6xl">
-              Build one clean game-day page for any popular sport.
+              One workflow for game day, meets, tournaments, and team events.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-[#51495c] sm:text-lg">
-              Pick the sport, choose the visual direction, then add schedule details,
-              arrival notes, tickets, RSVP, and updates. Gymnastics stays separate
-              because it has meet-packet discovery.
+              Use the specialized Gymnastics flow for meet packets. For football, baseball,
+              basketball, soccer, volleyball, and other games, start from the shared sports
+              template and customize the sport details.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href={builderHref}
+                href={primaryHref}
                 className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#17111e] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_42px_rgba(23,17,30,0.2)] transition hover:-translate-y-0.5"
               >
-                Continue with {selectedSport.routeLabel}
+                Build {selectedSport.routeLabel}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link
-                href="/event/gymnastics"
+                href="/event/gymnastics?auth=signup"
                 className="inline-flex min-h-12 items-center rounded-full border border-[#d9d1e8] bg-white px-6 py-3 text-sm font-bold text-[#2b2140] transition hover:-translate-y-0.5"
               >
                 Gymnastics meet workflow
@@ -108,18 +110,18 @@ export default function SportEventsPageClient() {
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-white/10 p-3">
                   <LayoutPanelTop className="mb-3 h-5 w-5 text-[#b9c5ff]" aria-hidden="true" />
-                  <p className="text-sm font-bold">Look</p>
-                  <p className="mt-1 text-xs text-white/70">Game-day visual system.</p>
+                  <p className="text-sm font-bold">Looks</p>
+                  <p className="mt-1 text-xs text-white/70">Pick a game-day visual system.</p>
                 </div>
                 <div className="rounded-2xl bg-white/10 p-3">
                   <FileUp className="mb-3 h-5 w-5 text-[#b9c5ff]" aria-hidden="true" />
                   <p className="text-sm font-bold">Info</p>
-                  <p className="mt-1 text-xs text-white/70">Flyer, schedule, or manual details.</p>
+                  <p className="mt-1 text-xs text-white/70">Add flyer, schedule, or manual details.</p>
                 </div>
                 <div className="rounded-2xl bg-white/10 p-3">
                   <CalendarDays className="mb-3 h-5 w-5 text-[#b9c5ff]" aria-hidden="true" />
                   <p className="text-sm font-bold">Publish</p>
-                  <p className="mt-1 text-xs text-white/70">Share the live page.</p>
+                  <p className="mt-1 text-xs text-white/70">Share the live page with guests.</p>
                 </div>
               </div>
             </div>
@@ -130,7 +132,7 @@ export default function SportEventsPageClient() {
                 {SPORT_EVENT_PRESETS.map((sport) => (
                   <Link
                     key={sport.key}
-                    href={`/event/sport-events?sport=${sport.key}&style=${selectedStyle}`}
+                    href={`/sport-events?sport=${sport.key}&style=${selectedStyle}`}
                     className={
                       sport.key === selectedSport.key
                         ? "rounded-xl border border-[#5f55ff] bg-[#f0eeff] px-3 py-2 text-sm font-bold text-[#2921d7]"
@@ -149,7 +151,7 @@ export default function SportEventsPageClient() {
                 {styleOptions.map((style) => (
                   <Link
                     key={style.id}
-                    href={`/event/sport-events?sport=${selectedSport.key}&style=${style.id}`}
+                    href={`/sport-events?sport=${selectedSport.key}&style=${style.id}`}
                     className={
                       style.id === selectedStyle
                         ? "rounded-xl border border-[#17111e] bg-[#17111e] px-4 py-3 text-white"

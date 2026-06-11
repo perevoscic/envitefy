@@ -45,6 +45,7 @@ interface MenuContextValue {
   primarySignupSource: PrimarySignupSource;
   productScopes: string[];
   visibleTemplateKeys: TemplateKey[];
+  defaultCreateIntent: string | null;
   featureVisibility: ReturnType<typeof useFeatureVisibility>;
 }
 
@@ -56,6 +57,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const { categories, history } = useEventCategories();
   const featureVisibility = useFeatureVisibility();
   const { visibleTemplateKeys } = featureVisibility;
+  const defaultCreateIntent = featureVisibility.defaultCreateIntent;
   const primarySignupSource =
     normalizePrimarySignupSource((session?.user as any)?.primarySignupSource) ||
     "legacy";
@@ -127,6 +129,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       primarySignupSource,
       productScopes,
       visibleTemplateKeys,
+      defaultCreateIntent,
       featureVisibility,
     }),
     [
@@ -144,6 +147,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       primarySignupSource,
       productScopes,
       visibleTemplateKeys,
+      defaultCreateIntent,
       featureVisibility,
     ]
   );

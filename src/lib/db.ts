@@ -1043,6 +1043,7 @@ export async function updateFeatureVisibilityByEmail(params: {
   persona?: string | null;
   personas?: string[];
   visibleTemplateKeys: string[];
+  defaultCreateIntent?: string | null;
 }): Promise<void> {
   await ensureUsersHasFeatureVisibilityColumn();
   const lower = params.email.toLowerCase();
@@ -1055,6 +1056,7 @@ export async function updateFeatureVisibilityByEmail(params: {
         ? [params.persona]
         : [],
     visibleTemplateKeys: params.visibleTemplateKeys,
+    defaultCreateIntent: params.defaultCreateIntent || null,
   };
   await query(
     `update users

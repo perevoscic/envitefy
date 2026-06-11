@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useSidebar } from "@/app/sidebar-context";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import type { SignupIntent } from "@/lib/signup-intent";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 
@@ -13,6 +14,7 @@ export type AuthModalProps = {
   onModeChange?: (m: "login" | "signup") => void;
   successRedirectUrl?: string;
   signupSource?: "snap" | "gymnastics";
+  signupIntent?: SignupIntent;
   allowSignupSwitch?: boolean;
 };
 
@@ -23,6 +25,7 @@ export default function AuthModal({
   onModeChange,
   successRedirectUrl = "/",
   signupSource,
+  signupIntent,
   allowSignupSwitch = true,
 }: AuthModalProps) {
   const isLogin = mode === "login";
@@ -119,6 +122,7 @@ export default function AuthModal({
               onSwitchMode={onModeChange ? () => onModeChange("login") : undefined}
               successRedirectUrl={successRedirectUrl}
               signupSource={signupSource}
+              signupIntent={signupIntent}
             />
           )}
         </div>

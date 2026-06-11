@@ -2,6 +2,12 @@
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TEMPLATE_DEFINITIONS, TEMPLATE_KEYS, type TemplateKey } from "@/config/feature-visibility";
+import {
+  getCreateActionForSignupIntent,
+  normalizeSignupIntent,
+  SIGNUP_INTENTS,
+  type SignupIntent,
+} from "@/lib/signup-intent";
 
 type CalendarProvider = "google" | "microsoft" | "apple";
 type CalendarConnectionStatus = {
@@ -37,6 +43,7 @@ export default function SettingsPage() {
   const autoClearedProviderRef = useRef<CalendarProvider | null>(null);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
   const [visibleTemplateKeys, setVisibleTemplateKeys] = useState<TemplateKey[]>([...TEMPLATE_KEYS]);
+  const [defaultCreateIntent, setDefaultCreateIntent] = useState<SignupIntent | "">("");
   const [featureVisibilitySaving, setFeatureVisibilitySaving] = useState(false);
 
   // Password form state
@@ -201,6 +208,7 @@ export default function SettingsPage() {
             ? (json.visibleTemplateKeys as TemplateKey[])
             : [...TEMPLATE_KEYS],
         );
+        setDefaultCreateIntent(normalizeSignupIntent(json?.defaultCreateIntent) || "");
       } catch {
         // ignore
       }
@@ -329,9 +337,31 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           visibleTemplateKeys,
+          defaultCreateIntent: defaultCreateIntent || null,
         }),
       });
       if (!res.ok) throw new Error("Failed to update feature visibility");
+    } catch {
+      // keep silent in settings UI
+    } finally {
+      setFeatureVisibilitySaving(false);
+    }
+  }
+
+  async function resetPersonalization() {
+    setFeatureVisibilitySaving(true);
+    try {
+      const res = await fetch("/api/user/feature-visibility", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          visibleTemplateKeys: [...TEMPLATE_KEYS],
+          defaultCreateIntent: null,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to reset personalization");
+      setVisibleTemplateKeys([...TEMPLATE_KEYS]);
+      setDefaultCreateIntent("");
     } catch {
       // keep silent in settings UI
     } finally {
@@ -631,10 +661,40 @@ export default function SettingsPage() {
           </section>
 
           <section className="space-y-6 mt-8 border-t border-[#ece4ff] pt-6 rounded-2xl bg-gradient-to-br from-white via-[#fcfaff] to-[#f4efff] p-4 border border-[#e5dcff]">
-            <h2 className="text-base font-semibold">Feature Visibility</h2>
-            <p className="text-sm text-muted-foreground">
-              Choose which event types appear in your create menus.
-            </p>
+            <div>
+              <h2 className="text-base font-semibold">Create defaults</h2>
+              <p className="text-sm text-muted-foreground">
+                Choose the event type your main create button opens first.
+              </p>
+            </div>
+            <label className="block space-y-1">
+              <span className="text-sm font-medium text-[#2f1d47]">Default create type</span>
+              <select
+                value={defaultCreateIntent}
+                onChange={(event) =>
+                  setDefaultCreateIntent(normalizeSignupIntent(event.target.value) || "")
+                }
+                className="w-full rounded-md border border-[#d9cdfa] bg-white px-3 py-2 text-sm text-[#2f1d47]"
+              >
+                <option value="">Create Event</option>
+                {SIGNUP_INTENTS.filter((intent) => intent !== "snap").map((intent) => {
+                  const action = getCreateActionForSignupIntent(intent);
+                  if (!action) return null;
+                  return (
+                    <option key={intent} value={intent}>
+                      {action.label}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+
+            <div>
+              <h3 className="text-sm font-semibold text-[#2f1d47]">Create menu event types</h3>
+              <p className="text-sm text-muted-foreground">
+                Choose which event types appear in your create menus.
+              </p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {TEMPLATE_DEFINITIONS.map((template) => (
                 <label
@@ -659,14 +719,24 @@ export default function SettingsPage() {
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={saveFeatureVisibility}
-              disabled={visibleTemplateKeys.length === 0 || featureVisibilitySaving}
-              className="inline-flex items-center px-4 py-2 rounded-xl text-sm border border-[#cfc2ff] bg-[#7F8CFF] text-white hover:bg-[#6d7af5] disabled:opacity-60"
-            >
-              {featureVisibilitySaving ? "Saving..." : "Save feature settings"}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={saveFeatureVisibility}
+                disabled={visibleTemplateKeys.length === 0 || featureVisibilitySaving}
+                className="inline-flex items-center px-4 py-2 rounded-xl text-sm border border-[#cfc2ff] bg-[#7F8CFF] text-white hover:bg-[#6d7af5] disabled:opacity-60"
+              >
+                {featureVisibilitySaving ? "Saving..." : "Save create settings"}
+              </button>
+              <button
+                type="button"
+                onClick={resetPersonalization}
+                disabled={featureVisibilitySaving}
+                className="inline-flex items-center px-4 py-2 rounded-xl text-sm border border-[#d9cdfa] bg-white text-[#4f3f7a] hover:bg-[#f5eeff] disabled:opacity-60"
+              >
+                Reset personalization
+              </button>
+            </div>
           </section>
         </div>
       </section>

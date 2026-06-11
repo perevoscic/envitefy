@@ -16,6 +16,7 @@ import {
   getCreateEventSections,
   getTemplateLinks,
 } from "@/config/navigation-config";
+import { getCreateActionForSignupIntent } from "@/lib/signup-intent";
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
 
@@ -453,6 +454,7 @@ export default function TopNav() {
     initials,
     productScopes,
     visibleTemplateKeys,
+    defaultCreateIntent,
   } = useMenu();
 
   const [openRecent, setOpenRecent] = useState(false);
@@ -468,6 +470,8 @@ export default function TopNav() {
   const showMobileStickyBar = mobileScrolled;
   const showMobileFloatingMenu = !mobileScrolled;
   const createMenuTop = navIsScrolled ? 72 : 90;
+  const defaultCreateAction = getCreateActionForSignupIntent(defaultCreateIntent);
+  const createNavLabel = defaultCreateAction?.ctaLabel || "+ Create Event";
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const myEventsRef = useRef<HTMLDivElement | null>(null);
@@ -677,7 +681,7 @@ export default function TopNav() {
                         active ? "nav-chrome-pill-active" : "nav-chrome-pill"
                       }`}
                     >
-                      {link.label}
+                      {createNavLabel}
                       <svg
                         width="12"
                         height="12"

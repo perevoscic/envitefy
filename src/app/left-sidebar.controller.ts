@@ -17,6 +17,7 @@ import {
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import { normalizePrimarySignupSource } from "@/lib/product-scopes";
+import { getCreateActionForSignupIntent } from "@/lib/signup-intent";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
 import { buildEventPath } from "@/utils/event-url";
@@ -69,6 +70,7 @@ type LeftSidebarControllerArgs = {
     featureVisibility: { visibleTemplateKeys: TemplateKey[] };
     primarySignupSource: "snap" | "gymnastics" | "legacy" | null;
     productScopes: string[] | undefined;
+    defaultCreateIntent?: string | null;
   };
   historySidebarItems: HistoryRow[];
   sidebar: {
@@ -116,6 +118,7 @@ export type LeftSidebarControllerViewModel = {
   menuOpen: boolean;
   setMenuOpen: Dispatch<SetStateAction<boolean>>;
   hasCreateEventAccess: boolean;
+  createEntryLabel: string;
   useGymnasticsDirectCreate: boolean;
   createMenuOptionCount: number;
   createMenuItems: Array<{ label: string; href: string }>;
@@ -302,6 +305,7 @@ export function useLeftSidebarController({
     featureVisibility,
     primarySignupSource,
     productScopes,
+    defaultCreateIntent,
   } = menu;
   const {
     isCollapsed,
@@ -399,7 +403,10 @@ export function useLeftSidebarController({
   );
 
   const effectivePrimarySignupSource = profilePrimarySignupSource ?? primarySignupSource;
-  const useGymnasticsDirectCreate = effectivePrimarySignupSource === "gymnastics";
+  const defaultCreateAction = getCreateActionForSignupIntent(defaultCreateIntent);
+  const createEntryLabel = defaultCreateAction?.ctaLabel || "Create Event";
+  const useGymnasticsDirectCreate =
+    !defaultCreateAction && effectivePrimarySignupSource === "gymnastics";
   const isOpen = isDesktop ? true : !isCollapsed;
   const isCompact = false;
   const sidebarWidth = SIDEBAR_WIDTH_REM;
@@ -977,11 +984,19 @@ export function useLeftSidebarController({
       router.push("/event/gymnastics");
       return;
     }
+    if (defaultCreateAction) {
+      clearEventContext();
+      setSidebarPage("root");
+      collapseSidebarOnTouch();
+      router.push(defaultCreateAction.href);
+      return;
+    }
     setIsCollapsed(false);
     setSidebarPage("createEvent");
   }, [
     clearEventContext,
     collapseSidebarOnTouch,
+    defaultCreateAction,
     hasCreateEventAccess,
     router,
     setIsCollapsed,
@@ -1656,6 +1671,7 @@ export function useLeftSidebarController({
     menuOpen,
     setMenuOpen,
     hasCreateEventAccess,
+    createEntryLabel,
     useGymnasticsDirectCreate,
     createMenuOptionCount,
     createMenuItems,

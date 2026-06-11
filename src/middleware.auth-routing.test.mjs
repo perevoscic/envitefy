@@ -21,13 +21,16 @@ test("login form supports redirect targets passed by the caller", () => {
   assert.match(studioPage, /successRedirectUrl="\/studio"/);
 });
 
-test("middleware redirects signed-in landing and gymnastics marketing visits to root", () => {
+test("middleware redirects signed-in category marketing visits to their default create route", () => {
   const middleware = readSource("src/middleware.ts");
 
   assert.match(middleware, /normalizedPathname === "\/landing"/);
-  assert.match(middleware, /normalizedPathname === "\/gymnastics"/);
+  assert.match(middleware, /categorySignupIntent/);
+  assert.match(middleware, /getCreateActionForSignupIntent\(categorySignupIntent\)/);
   assert.match(middleware, /if \(authState\.hasSession\) \{/);
   assert.match(middleware, /url\.pathname = "\/"/);
+  assert.match(middleware, /url\.pathname = target\.pathname;/);
+  assert.match(middleware, /url\.search = target\.search;/);
   assert.match(middleware, /return redirectWithMarker\(url, 302\);/);
 });
 
@@ -38,7 +41,7 @@ test("middleware lets authenticated users open /snap for the app launch cards", 
   assert.match(middleware, /if \(normalizedPathname === "\/snap"\) \{/);
   assert.match(
     middleware,
-    /if \(!authState\.hasSession\) \{\s*return attachSignupSourceCookie\(ok\(\), "snap"\);\s*\}/s,
+    /if \(!authState\.hasSession\) \{\s*return attachSignupSourceCookie\(ok\(\), "snap", "snap"\);\s*\}/s,
   );
   assert.match(middleware, /return ok\(\);/);
   assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[^\]]*"\/snap"/s);

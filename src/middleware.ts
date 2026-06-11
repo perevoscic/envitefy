@@ -4,6 +4,13 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { DISABLED_EVENT_ROUTE_PREFIXES } from "@/config/feature-visibility";
 import { hasProductScope } from "@/lib/product-scopes";
+import {
+  getCreateActionForSignupIntent,
+  signupIntentForMarketingPath,
+  signupSourceForIntent,
+  type SignupIntent,
+  type SignupSource,
+} from "@/lib/signup-intent";
 
 const PUBLIC_UNAUTH_PATHS = new Set([
   "/",
@@ -23,6 +30,9 @@ const PUBLIC_UNAUTH_PATHS = new Set([
   "/reset",
   "/snap",
   "/showcase",
+  "/sports",
+  "/sport-events",
+  "/football",
   "/weddings",
   "/bridal-showers",
   "/baby-showers",
@@ -125,8 +135,19 @@ const getSessionCookie = (req: NextRequest) =>
   req.cookies.get("__Host-next-auth.session-token") ??
   req.cookies.get("next-auth.session-token");
 
-const attachSignupSourceCookie = (res: NextResponse, source: "snap" | "gymnastics") => {
+const attachSignupSourceCookie = (
+  res: NextResponse,
+  source: SignupSource,
+  intent: SignupIntent = source,
+) => {
   res.cookies.set("envitefy_signup_source", source, {
+    httpOnly: true,
+    maxAge: 60 * 10,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
+  res.cookies.set("envitefy_signup_intent", intent, {
     httpOnly: true,
     maxAge: 60 * 10,
     path: "/",
@@ -208,11 +229,13 @@ export async function middleware(req: NextRequest) {
   }
 
   const queryAuthMode = req.nextUrl.searchParams.get("auth");
+  const marketingSignupIntent = signupIntentForMarketingPath(normalizedPathname);
+  const categorySignupIntent = normalizedPathname === "/snap" ? null : marketingSignupIntent;
 
   if (
     queryAuthMode === "signup" &&
     normalizedPathname !== "/snap" &&
-    normalizedPathname !== "/gymnastics"
+    !categorySignupIntent
   ) {
     const url = req.nextUrl.clone();
     url.pathname = "/snap";
@@ -221,14 +244,13 @@ export async function middleware(req: NextRequest) {
   }
 
   if (
-    normalizedPathname === "/football" ||
     normalizedPathname === "/event/football" ||
     normalizedPathname.startsWith("/event/football/") ||
     normalizedPathname.startsWith("/event/football-season")
   ) {
     const url = req.nextUrl.clone();
-    url.pathname = "/gymnastics";
-    url.search = "";
+    url.pathname = "/event/sport-events/customize";
+    url.search = "?sport=football";
     return redirectWithMarker(url, 308);
   }
 
@@ -281,17 +303,28 @@ export async function middleware(req: NextRequest) {
     return { hasSession: Boolean(sessionCookie.value), token: null as any };
   };
 
-  if (normalizedPathname === "/landing" || normalizedPathname === "/gymnastics") {
+  if (normalizedPathname === "/landing" || categorySignupIntent) {
     const authState = await resolveAuthState();
     if (authState.hasSession) {
       const url = req.nextUrl.clone();
-      url.pathname = "/";
-      url.search = "";
+      const createAction = getCreateActionForSignupIntent(categorySignupIntent);
+      if (normalizedPathname === "/landing" || !createAction) {
+        url.pathname = "/";
+        url.search = "";
+      } else {
+        const target = new URL(createAction.href, req.nextUrl.origin);
+        url.pathname = target.pathname;
+        url.search = target.search;
+      }
       return redirectWithMarker(url, 302);
     }
-    if (normalizedPathname === "/gymnastics") {
+    if (categorySignupIntent) {
       const response = ok();
-      return attachSignupSourceCookie(response, "gymnastics");
+      return attachSignupSourceCookie(
+        response,
+        signupSourceForIntent(categorySignupIntent),
+        categorySignupIntent,
+      );
     }
     return ok();
   }
@@ -299,7 +332,7 @@ export async function middleware(req: NextRequest) {
   if (normalizedPathname === "/snap") {
     const authState = await resolveAuthState();
     if (!authState.hasSession) {
-      return attachSignupSourceCookie(ok(), "snap");
+      return attachSignupSourceCookie(ok(), "snap", "snap");
     }
     return ok();
   }

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { createUserWithEmailPassword } from "@/lib/db";
+import { TEMPLATE_KEYS } from "@/config/feature-visibility";
+import { createUserWithEmailPassword, updateFeatureVisibilityByEmail } from "@/lib/db";
+import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
 
 function getSignupSourceFromCookieHeader(
   cookieHeader: string | null,
@@ -11,6 +13,17 @@ function getSignupSourceFromCookieHeader(
     if (rawKey !== "envitefy_signup_source") continue;
     const value = rawValue.join("=");
     return value === "snap" || value === "gymnastics" ? value : null;
+  }
+  return null;
+}
+
+function getSignupIntentFromCookieHeader(cookieHeader: string | null): SignupIntent | null {
+  if (!cookieHeader) return null;
+  const pairs = cookieHeader.split(";");
+  for (const pair of pairs) {
+    const [rawKey, ...rawValue] = pair.trim().split("=");
+    if (rawKey !== "envitefy_signup_intent") continue;
+    return normalizeSignupIntent(rawValue.join("="));
   }
   return null;
 }
@@ -72,6 +85,8 @@ export async function POST(req: Request) {
     const requestedSignupSource =
       body.signupSource === "snap" || body.signupSource === "gymnastics" ? body.signupSource : null;
     const cookieSignupSource = getSignupSourceFromCookieHeader(req.headers.get("cookie"));
+    const requestedSignupIntent = normalizeSignupIntent(body.signupIntent ?? body.signupSource);
+    const cookieSignupIntent = getSignupIntentFromCookieHeader(req.headers.get("cookie"));
 
     console.log("[signup] Request received", {
       email,
@@ -80,6 +95,8 @@ export async function POST(req: Request) {
       hasSecretKey: !!process.env.RECAPTCHA_SECRET_KEY,
       requestedSignupSource,
       cookieSignupSource,
+      requestedSignupIntent,
+      cookieSignupIntent,
     });
 
     if (!email || !password) {
@@ -128,6 +145,7 @@ export async function POST(req: Request) {
     }
 
     const effectiveSignupSource = cookieSignupSource ?? requestedSignupSource ?? "snap";
+    const effectiveSignupIntent = cookieSignupIntent ?? requestedSignupIntent;
 
     await createUserWithEmailPassword({
       email,
@@ -136,8 +154,23 @@ export async function POST(req: Request) {
       lastName,
       signupSource: effectiveSignupSource,
     });
+    if (effectiveSignupIntent && effectiveSignupIntent !== "snap") {
+      await updateFeatureVisibilityByEmail({
+        email,
+        persona: null,
+        personas: [],
+        visibleTemplateKeys: [...TEMPLATE_KEYS],
+        defaultCreateIntent: effectiveSignupIntent,
+      });
+    }
     const response = NextResponse.json({ ok: true });
     response.cookies.set("envitefy_signup_source", "", {
+      expires: new Date(0),
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+    });
+    response.cookies.set("envitefy_signup_intent", "", {
       expires: new Date(0),
       httpOnly: true,
       path: "/",
