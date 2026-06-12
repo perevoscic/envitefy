@@ -873,8 +873,8 @@ export function useLeftSidebarController({
 
   const visibleTemplateKeys = featureVisibility.visibleTemplateKeys;
   const visibleTemplateLinks = useMemo(
-    () => getTemplateLinks(visibleTemplateKeys, productScopes),
-    [productScopes, visibleTemplateKeys],
+    () => (isAdmin ? getTemplateLinks(visibleTemplateKeys, productScopes) : []),
+    [isAdmin, productScopes, visibleTemplateKeys],
   );
 
   const templateHrefMap = useMemo(() => {
@@ -887,10 +887,12 @@ export function useLeftSidebarController({
 
   const createMenuItems = useMemo(
     () =>
-      getCreateEventSections(visibleTemplateKeys, productScopes).flatMap(
-        (section) => section.items,
-      ),
-    [productScopes, visibleTemplateKeys],
+      isAdmin
+        ? getCreateEventSections(visibleTemplateKeys, productScopes).flatMap(
+            (section) => section.items,
+          )
+        : [],
+    [isAdmin, productScopes, visibleTemplateKeys],
   );
   const otherCreateMenuItems = useMemo(() => [], []);
   const isCreateRouteActive = useMemo(() => isCreateEventRoute(pathname), [pathname]);
@@ -911,8 +913,8 @@ export function useLeftSidebarController({
   const isOtherEventsActive = sidebarPage === "createEventOther";
   const createMenuOptionCount = createMenuItems.length;
   const hasCreateEventAccess = useMemo(
-    () => useGymnasticsDirectCreate || createMenuOptionCount > 0,
-    [createMenuOptionCount, useGymnasticsDirectCreate],
+    () => isAdmin && (useGymnasticsDirectCreate || createMenuOptionCount > 0),
+    [createMenuOptionCount, isAdmin, useGymnasticsDirectCreate],
   );
 
   useEffect(() => {

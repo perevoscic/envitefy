@@ -165,11 +165,15 @@ export function CreateEventMenu({
   onSelect,
   visibleTemplateKeys,
   productScopes,
+  isAdmin = false,
 }: {
   onSelect?: () => void;
   visibleTemplateKeys?: Parameters<typeof getCreateEventSections>[0];
   productScopes?: string[];
+  isAdmin?: boolean;
 }) {
+  if (!isAdmin) return null;
+
   const sections = getCreateEventSections(visibleTemplateKeys, productScopes);
   return (
     <div className="flex min-w-[1260px] max-w-[1400px] flex-row flex-nowrap gap-10 overflow-x-auto px-2">
@@ -672,6 +676,7 @@ export default function TopNav() {
           </div>
           <nav className="flex items-center gap-3 text-sm font-semibold text-[#564d7a]">
             {NAV_LINKS.map((link) => {
+              if (link.label === "New Event" && !isAdmin) return null;
               const active = link.match(pathname || "");
               if (link.label === "New Event") {
                 return (
@@ -709,6 +714,7 @@ export default function TopNav() {
                           <CreateEventMenu
                             visibleTemplateKeys={visibleTemplateKeys}
                             productScopes={productScopes}
+                            isAdmin={isAdmin}
                           />
                         )}
                       </div>

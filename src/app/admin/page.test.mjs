@@ -80,6 +80,18 @@ test("main sidebar admin entry opens the admin chooser before loading a section"
   assert.doesNotMatch(sidebar, /href="\/admin"\s+onClick=\{onAdmin\}/);
 });
 
+test("create event navigation is admin-only", () => {
+  const controller = readSource("src/app/left-sidebar.controller.ts");
+  const topNav = readSource("src/components/navigation/TopNav.tsx");
+
+  assert.match(controller, /isAdmin \? getTemplateLinks\(visibleTemplateKeys, productScopes\) : \[\]/);
+  assert.match(controller, /isAdmin\s*\?\s*getCreateEventSections\(visibleTemplateKeys, productScopes\)/s);
+  assert.match(controller, /\(\) => isAdmin && \(useGymnasticsDirectCreate \|\| createMenuOptionCount > 0\)/);
+  assert.match(topNav, /if \(!isAdmin\) return null;/);
+  assert.match(topNav, /if \(link\.label === "New Event" && !isAdmin\) return null;/);
+  assert.match(topNav, /isAdmin=\{isAdmin\}/);
+});
+
 test("admin user table still shows last event date and debug URLs", () => {
   const source = readSource("src/app/admin/users/page.tsx");
 

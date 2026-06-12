@@ -130,6 +130,39 @@ const getLegacyUseCaseRedirectTarget = (pathname: string) => {
 const matchesPathPrefix = (pathname: string, prefix: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
+const ADMIN_ONLY_CREATE_EVENT_SEGMENTS = new Set([
+  "appointments",
+  "baby-showers",
+  "birthdays",
+  "cheerleading",
+  "dance-ballet",
+  "football",
+  "football-season",
+  "gender-reveal",
+  "general",
+  "gymnastics",
+  "new",
+  "soccer",
+  "special-events",
+  "sport-events",
+  "weddings",
+  "workshops",
+]);
+
+const isAdminToken = (token: { isAdmin?: unknown } | null | undefined) =>
+  token?.isAdmin === true;
+
+const isAdminOnlyCreateEventPath = (pathname: string) => {
+  const normalized = stripTrailingSlash(pathname);
+  if (normalized === "/event") return true;
+
+  const segments = normalized.split("/").filter(Boolean);
+  if (segments[0] !== "event" || !segments[1]) return false;
+  if (!ADMIN_ONLY_CREATE_EVENT_SEGMENTS.has(segments[1])) return false;
+  if (segments.length === 2) return true;
+  return segments[2] === "customize";
+};
+
 const getSessionCookie = (req: NextRequest) =>
   req.cookies.get("__Secure-next-auth.session-token") ??
   req.cookies.get("__Host-next-auth.session-token") ??
@@ -272,17 +305,6 @@ export async function middleware(req: NextRequest) {
     return redirectWithMarker(url, 308);
   }
 
-  // The snap landing itself does not expose private data, so the route only
-  // needs a session cookie presence check instead of full JWT parsing.
-  if (normalizedPathname === "/event") {
-    if (!getSessionCookie(req)?.value) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      return redirectWithMarker(url, 302);
-    }
-    return ok();
-  }
-
   const resolveAuthState = async () => {
     const sessionCookie = getSessionCookie(req);
     if (!sessionCookie?.value) return { hasSession: false, token: null as any };
@@ -303,12 +325,27 @@ export async function middleware(req: NextRequest) {
     return { hasSession: Boolean(sessionCookie.value), token: null as any };
   };
 
+  if (isAdminOnlyCreateEventPath(normalizedPathname)) {
+    const authState = await resolveAuthState();
+    if (!authState.hasSession || !isAdminToken(authState.token)) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      url.search = "";
+      return redirectWithMarker(url, 302);
+    }
+    return ok();
+  }
+
   if (normalizedPathname === "/landing" || categorySignupIntent) {
     const authState = await resolveAuthState();
     if (authState.hasSession) {
       const url = req.nextUrl.clone();
       const createAction = getCreateActionForSignupIntent(categorySignupIntent);
-      if (normalizedPathname === "/landing" || !createAction) {
+      if (
+        normalizedPathname === "/landing" ||
+        !createAction ||
+        !isAdminToken(authState.token)
+      ) {
         url.pathname = "/";
         url.search = "";
       } else {

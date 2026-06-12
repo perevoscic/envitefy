@@ -80,3 +80,22 @@ test("middleware redirects disabled event builders to gymnastics", () => {
   assert.match(featureVisibility, /href: "\/event\/weddings\/customize"/);
   assert.match(featureVisibility, /href: "\/event\/birthdays\/customize"/);
 });
+
+test("middleware gates event creation routes to admins", () => {
+  const middleware = readSource("src/middleware.ts");
+
+  assert.match(middleware, /const ADMIN_ONLY_CREATE_EVENT_SEGMENTS = new Set\(\[/);
+  assert.match(middleware, /"birthdays"/);
+  assert.match(middleware, /"weddings"/);
+  assert.match(middleware, /"baby-showers"/);
+  assert.match(middleware, /"gender-reveal"/);
+  assert.match(middleware, /"gymnastics"/);
+  assert.match(middleware, /"sport-events"/);
+  assert.match(middleware, /const isAdminOnlyCreateEventPath = \(pathname: string\) =>/);
+  assert.match(middleware, /if \(normalized === "\/event"\) return true;/);
+  assert.match(middleware, /return segments\[2\] === "customize";/);
+  assert.match(middleware, /if \(isAdminOnlyCreateEventPath\(normalizedPathname\)\) \{/);
+  assert.match(middleware, /!authState\.hasSession \|\| !isAdminToken\(authState\.token\)/);
+  assert.match(middleware, /url\.pathname = "\/";/);
+  assert.match(middleware, /!createAction \|\|\s*!isAdminToken\(authState\.token\)/s);
+});
