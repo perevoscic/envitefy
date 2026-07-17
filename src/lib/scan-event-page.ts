@@ -720,6 +720,7 @@ export function buildScanEventPageHistoryPayload(params: {
     location: firstSpecificString(fieldsGuess.location, fieldsGuess.address),
     fallbackLocation: rescuedLocation,
     enrichedLocation: params.locationEnrichment?.address,
+    hostName: firstSpecificString(fieldsGuess.hostName),
     context: rawContextText,
   });
   const venue = normalizedLocation.venue;

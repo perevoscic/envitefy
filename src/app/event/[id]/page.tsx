@@ -1438,6 +1438,7 @@ export default async function EventPage({
   const normalizedPublicLocation = normalizeOcrLocationFields({
     venue: typeof data?.venue === "string" ? data.venue : "",
     location: typeof data?.location === "string" ? data.location : "",
+    hostName: typeof data?.hostName === "string" ? data.hostName : "",
     context: [data?.ocrText, data?.description, data?.title, title].filter(Boolean).join("\n"),
   });
   const locationText = normalizedPublicLocation.location || "";

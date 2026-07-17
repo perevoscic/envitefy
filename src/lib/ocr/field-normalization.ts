@@ -1,3 +1,5 @@
+import { isVenueRedundantWithHost } from "./text.ts";
+
 export type NormalizedOcrLocationFields = {
   venue: string | null;
   location: string | null;
@@ -112,10 +114,12 @@ export function normalizeOcrLocationFields(args: {
   address?: unknown;
   fallbackLocation?: unknown;
   enrichedLocation?: unknown;
+  hostName?: unknown;
   context?: unknown;
 }): NormalizedOcrLocationFields {
+  const hostName = firstCleanString(args.hostName);
   const venueCandidate = firstCleanString(args.venue, args.venueName);
-  const venue =
+  let venue =
     venueCandidate &&
     !looksLikeMenuOrFlavorDetails(venueCandidate) &&
     !looksLikeDateOrTimeFragment(venueCandidate) &&
@@ -123,7 +127,7 @@ export function normalizeOcrLocationFields(args: {
       ? venueCandidate
       : inferVenueFromContext([venueCandidate, args.context].filter(Boolean).join("\n"));
   const locationCandidate = firstCleanString(args.location, args.address, args.fallbackLocation);
-  const normalizedLocation =
+  let normalizedLocation =
     locationCandidate &&
     !looksLikeMenuOrFlavorDetails(locationCandidate) &&
     !looksLikeDateOrTimeFragment(locationCandidate) &&
@@ -132,7 +136,38 @@ export function normalizeOcrLocationFields(args: {
       ? locationCandidate
       : null;
   const enrichedLocation = firstCleanString(args.enrichedLocation);
-  const location = normalizedLocation || enrichedLocation;
+
+  if (
+    venue &&
+    isVenueRedundantWithHost({
+      venue,
+      hostName,
+      location: normalizedLocation || enrichedLocation,
+    })
+  ) {
+    venue = null;
+  }
+  if (
+    normalizedLocation &&
+    isVenueRedundantWithHost({
+      venue: normalizedLocation,
+      hostName,
+      location: null,
+    })
+  ) {
+    normalizedLocation = null;
+  }
+
+  const location =
+    normalizedLocation ||
+    (enrichedLocation &&
+    !isVenueRedundantWithHost({
+      venue: enrichedLocation,
+      hostName,
+      location: null,
+    })
+      ? enrichedLocation
+      : null);
 
   return {
     venue,

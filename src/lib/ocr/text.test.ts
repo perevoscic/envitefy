@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { buildEventPublicSlugCandidate } from "../../utils/event-public-slug.ts";
+import { normalizeOcrLocationFields } from "./field-normalization.ts";
+import { isFootballOcrSkinCandidate } from "./skin-background.ts";
 import {
   appendVenueToVendorVisitTitle,
   cleanGraduationVenueName,
@@ -11,10 +14,11 @@ import {
   extractHostedByFromFlyerText,
   extractRsvpDetails,
   inferTimezoneFromAddress,
+  isVenueRedundantWithHost,
   pickTitle,
+  pickVenueLabelForSentence,
   splitVenueFromAddress,
 } from "./text.ts";
-import { isFootballOcrSkinCandidate } from "./skin-background.ts";
 
 test("pickTitle prefers event-like lines over dates", () => {
   const lines = ["Saturday", "Gemma's 7th Birthday Party", "April 12 at 2 PM"];
@@ -36,6 +40,99 @@ test("splitVenueFromAddress keeps venue separate from street address", () => {
   );
   assert.equal(split.venue, "US Gold Gymnastics");
   assert.equal(split.address, "123 Main St, Springfield, IL 62704");
+});
+
+test("pickVenueLabelForSentence prefers beach access over host gymnastics org", () => {
+  const raw = [
+    "U.S. GOLD GYMNASTICS",
+    "TEAM BEACH DAY",
+    "Join us at the Pompano Joe's beach access for a fun beach day with the team!",
+    "Pompano Joes Beach Access",
+  ].join("\n");
+  assert.equal(
+    pickVenueLabelForSentence(
+      "",
+      "Join us at the Pompano Joe's beach access for a fun beach day.",
+      raw,
+    ),
+    "Pompano Joe's beach access",
+  );
+  assert.equal(pickVenueLabelForSentence("", "", raw), "Pompano Joes Beach Access");
+});
+
+test("pickVenueLabelForSentence skips hosted-by org lines", () => {
+  assert.equal(
+    pickVenueLabelForSentence("", "", "Hosted by U.S. Gold Gymnastics\nCity Beach Pavilion"),
+    "City Beach Pavilion",
+  );
+});
+
+test("isVenueRedundantWithHost clears host-only venues without street address", () => {
+  assert.equal(
+    isVenueRedundantWithHost({
+      venue: "Hosted by U.S. Gold Gymnastics",
+      hostName: "U.S. Gold Gymnastics",
+      location: null,
+    }),
+    true,
+  );
+  assert.equal(
+    isVenueRedundantWithHost({
+      venue: "U.S. Gold Gymnastics",
+      hostName: "U.S. Gold Gymnastics",
+      location: null,
+    }),
+    true,
+  );
+  assert.equal(
+    isVenueRedundantWithHost({
+      venue: "U.S. Gold Gymnastics",
+      hostName: "U.S. Gold Gymnastics",
+      location: "123 Main St, Destin, FL",
+    }),
+    false,
+  );
+  assert.equal(
+    isVenueRedundantWithHost({
+      venue: "Pompano Joes Beach Access",
+      hostName: "U.S. Gold Gymnastics",
+      location: null,
+    }),
+    false,
+  );
+});
+
+test("normalizeOcrLocationFields drops host-only venue values", () => {
+  const normalized = normalizeOcrLocationFields({
+    venue: "U.S. Gold Gymnastics",
+    location: null,
+    hostName: "U.S. Gold Gymnastics",
+    context: "Team Beach Day\nPompano Joes Beach Access",
+  });
+  assert.equal(normalized.venue, null);
+});
+
+test("buildEventPublicSlugCandidate ignores hosted-by venue text", () => {
+  assert.equal(
+    buildEventPublicSlugCandidate({
+      title: "Team Beach Day",
+      data: {
+        venue: "Hosted by U.S. Gold Gymnastics",
+        hostName: "U.S. Gold Gymnastics",
+      },
+    }),
+    "team-beach-day",
+  );
+  assert.equal(
+    buildEventPublicSlugCandidate({
+      title: "Team Beach Day",
+      data: {
+        venue: "Pompano Joes Beach Access",
+        hostName: "U.S. Gold Gymnastics",
+      },
+    }),
+    "team-beach-day-at-pompano-joes-beach-access",
+  );
 });
 
 test("cleanGraduationVenueName removes graduation honoree suffixes from venue-like values", () => {
@@ -220,7 +317,10 @@ test("extractCommonOcrFactsFromFlyerText groups Kona menu prices and flavors", (
   );
 
   assert.match(facts.find((fact) => fact.label === "Menu Prices")?.value || "", /Klassic \$4/);
-  assert.match(facts.find((fact) => fact.label === "Menu Prices")?.value || "", /TopZ Sour Powder \$1/);
+  assert.match(
+    facts.find((fact) => fact.label === "Menu Prices")?.value || "",
+    /TopZ Sour Powder \$1/,
+  );
   assert.match(facts.find((fact) => fact.label === "Flavors")?.value || "", /Blue Raspberry/);
   assert.match(facts.find((fact) => fact.label === "Flavors")?.value || "", /Watermelon Wave/);
   assert.equal(facts.find((fact) => fact.label === "Phone")?.value, "850.555.1212");

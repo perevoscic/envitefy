@@ -126,11 +126,46 @@ function isNearDuplicateValue(value: string, renderedValue: string): boolean {
   );
 }
 
+function protectAbbreviationPeriods(text: string): string {
+  return text
+    .replace(/\b((?:[A-Z]\.){2,})/g, (match) => match.replace(/\./g, "\u2024"))
+    .replace(/\b(St|Mr|Mrs|Ms|Dr|Jr|Sr|Inc|Ltd|Co)\./gi, (match) => match.replace(/\./g, "\u2024"));
+}
+
+function restoreAbbreviationPeriods(text: string): string {
+  return text.replace(/\u2024/g, ".");
+}
+
 function splitFactValue(value: string): string[] {
-  return cleanText(value)
+  return protectAbbreviationPeriods(cleanText(value))
     .split(/\s*(?:[.;]\s+|\n+)\s*/)
-    .map(cleanText)
+    .map((part) => restoreAbbreviationPeriods(cleanText(part)))
     .filter((part) => part.length >= 3);
+}
+
+function looksLikeInitialsFragment(value: string): boolean {
+  return /^[A-Z](?:\.[A-Z])+\.?$/i.test(value.trim());
+}
+
+/** Rejoin "U.S" + "Gold Gymnastics" style splits for host/vendor labels. */
+export function coalesceFactValues(label: string, values: string[]): string[] {
+  const cleanedValues = values.map(cleanText).filter(Boolean);
+  if (cleanedValues.length < 2) return cleanedValues;
+  if (!/^(?:host|vendor|sponsor)$/i.test(cleanText(label))) return cleanedValues;
+
+  const coalesced: string[] = [];
+  for (let index = 0; index < cleanedValues.length; index += 1) {
+    const current = cleanedValues[index];
+    const next = cleanedValues[index + 1];
+    if (next && looksLikeInitialsFragment(current) && /^[A-Z]/.test(next)) {
+      const initials = /\.$/.test(current) ? current : `${current}.`;
+      coalesced.push(`${initials} ${next}`.replace(/\s+/g, " ").trim());
+      index += 1;
+      continue;
+    }
+    coalesced.push(current);
+  }
+  return coalesced;
 }
 
 export function normalizeOcrFacts(value: unknown): OcrFact[] {

@@ -73,6 +73,20 @@ function looksLikeStreetAddress(value: string): boolean {
   );
 }
 
+function looksLikeHostOrganizerSlugText(value: string): boolean {
+  return /\b(?:hosted|sponsored|presented)\s+by\b/i.test(value);
+}
+
+function normalizeLocationCompareKey(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/^\s*(?:hosted|sponsored|presented)\s+by\s+(?:the\s+)?/i, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function includesText(haystack: string, needle: string): boolean {
   const normalizedHaystack = normalizePublicSlug(haystack);
   const normalizedNeedle = normalizePublicSlug(needle);
@@ -130,7 +144,23 @@ export function buildEventPublicSlugCandidate(params: {
     invitationDetails?.location,
     publicEvent?.locationLine,
   );
-  const venueText = venue || (location && !looksLikeStreetAddress(location) ? location : "");
+  const hostName = firstString(
+    data?.hostName,
+    event?.hostName,
+    fieldsGuess?.hostName,
+    studioDetails?.hostName,
+    invitationDetails?.hostName,
+    publicEvent?.hostName,
+  );
+  let venueText = venue || (location && !looksLikeStreetAddress(location) ? location : "");
+  if (
+    venueText &&
+    (looksLikeHostOrganizerSlugText(venueText) ||
+      (hostName &&
+        normalizeLocationCompareKey(venueText) === normalizeLocationCompareKey(hostName)))
+  ) {
+    venueText = "";
+  }
 
   if (title && venueText && !includesText(title, venueText)) {
     return makeEventPublicSlugRoutable(`${title} at ${venueText}`);

@@ -23,11 +23,16 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Never reduce to a generic title (e.g., "Baby Shower") if a name is visible.
   
   DESCRIPTION (factual, concise):
-  • One short sentence (two at most) using only facts in the image: date, time, and place. Prefer venue/business names over street addresses; if both appear, use the venue and optionally city/state (omit the street). Do not copy the full title verbatim; you may briefly name the party theme if it is not already obvious from the title. Start the sentence with a capital letter. No RSVP/URLs/prices. No templated phrases like "Please join us" or "You're invited". Do not invent placeholders like "private residence" unless those exact words appear.
+  • One short sentence (two at most) using only facts in the image: date, time, and place. Prefer venue/business names over street addresses; if both appear, use the venue and optionally city/state (omit the street). Do not write "at <host/org>" unless that host is also the printed venue. Prefer omitting the place clause over guessing from the organizer. Do not copy the full title verbatim; you may briefly name the party theme if it is not already obvious from the title. Start the sentence with a capital letter. No RSVP/URLs/prices. No templated phrases like "Please join us" or "You're invited". Do not invent placeholders like "private residence" unless those exact words appear.
   
-  ADDRESS:
-  • If present, "Venue, Street, City, ST ZIP". Strip labels like "Address:" or "At:".
-  • If a venue/business/place name is printed separately from the street address, put that exact name in venueName. For example, "US Gold Gymnastics" goes in venueName and the street/city line goes in address.
+  ADDRESS / VENUE (strict host ≠ place):
+  • address: if present, street/city form like "Street, City, ST ZIP". Strip labels like "Address:" or "At:".
+  • venueName: where guests physically go (beach access, park, pavilion, restaurant, gym facility, school, church, etc.). Use the exact printed place name.
+  • hostName: organizer/sponsor/brand from "Hosted by …", "Sponsored by …", "Presented by …", or a header/logo org line at the top. Never copy host/org into venueName or address.
+  • Prefer place cues in this order: (1) dedicated location label/footer badge/oval ("Location", "Where", boxed place name), (2) body phrases like "Join us at …", "Meet at …", "at <place>", (3) street address lines.
+  • A top-of-flyer brand/org alone is NOT the venue. Example: header "U.S. Gold Gymnastics", body "Join us at Pompano Joe's beach access", footer "Pompano Joes Beach Access" → hostName "U.S. Gold Gymnastics", venueName "Pompano Joes Beach Access", address null.
+  • Only put an org in venueName when the flyer clearly says the event is AT that place (printed "at <org>", facility name as the location block, or a street address for that site). Example: venueName "US Gold Gymnastics" with address "123 Main St, City, ST ZIP" when that facility is the printed site.
+  • If only an organizer/brand is printed and no place/address appears, set venueName and address to null. Prefer null over guessing the host's facility.
   • Graduation flyers: graduate/honoree names belong in title only. venueName must be a real place name such as a school, auditorium, stadium, church, or campus venue. If the visible text is only an event title like "Graduation Ceremony — Lena De La Cruz" or "Class of 2026 Graduation", return venueName as null instead of copying that title.
   
   RSVP:
@@ -98,6 +103,7 @@ export function buildEventExtractionPrompt(todayIso: string) {
   Pay special attention to cursive/handwritten names; never reduce the title to a generic occasion if a name is visible.
   The description must NOT repeat the title; make it a standalone, single sentence that begins with a capital letter, and prefer venue names over street addresses.
   Keep RSVP details out of the description. Put RSVP wording in rsvp, RSVP links in rsvpUrl, RSVP-by dates in rsvpDeadline, and printed "Hosted by" names/groups in hostName without a leading "the".
+  Never put the organizer/header brand in venueName. Use body "at <place>" lines and footer location labels for venueName. Prefer null venue over guessing the host's facility.
   Classify nearby footer lines by role before filling RSVP fields: "Questions?", "Text", "Call", and "Contact" are instructions, while "Hosted by ..." is the host/organizer. Never use generic instruction text as the RSVP display name.
   For pickleball/sport flyers, keep category as "Sport Events"; route registration websites/phone numbers to rsvpUrl/rsvp, event format and perks to activities[], fees/equipment/eligibility to goodToKnow, and check-in/game-start/fee/perks details to ocrFacts without duplicating the fee.
   For football flyers, keep category as "Sport Events"; preserve kickoff/pregame timing, matchup/team names, tickets/prices, specials, team-color attire, senior-night honorees, and watch-party details in the existing output fields.

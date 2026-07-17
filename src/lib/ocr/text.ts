@@ -37,6 +37,7 @@ export function detectSpelledTime(
 export function cleanAddressLabel(input: string): string {
   let s = input.trim();
   s = s.replace(/^\s*(location|address|venue|where)\s*[:-]?\s*/i, "");
+  s = s.replace(/^\s*(?:hosted|sponsored|presented)\s+by\s+(?:the\s+)?/i, "");
   s = s.replace(/^\s*at\s+/i, "");
   s = s.replace(/[\r\n]+/g, ", ");
   s = s.replace(/\s*,\s*/g, ", ");
@@ -47,15 +48,64 @@ export function cleanAddressLabel(input: string): string {
   return s.trim();
 }
 
-function looksLikePersonName(value: string): boolean {
-  const compact = value
-    .replace(/[.,]+/g, " ")
+export function looksLikeHostOrganizerLine(value: string | null | undefined): boolean {
+  return /\b(?:hosted|sponsored|presented)\s+by\b/i.test(String(value || ""));
+}
+
+export function stripHostOrganizerPrefix(value: string | null | undefined): string {
+  return String(value || "")
+    .replace(/^\s*(?:hosted|sponsored|presented)\s+by\s+(?:the\s+)?/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+export function normalizeLocationCompareKey(value: string | null | undefined): string {
+  return stripHostOrganizerPrefix(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+export function hasStreetAddressLike(value: string | null | undefined): boolean {
+  const text = String(value || "");
+  return (
+    /\b\d{1,6}\s+[A-Za-z0-9]/.test(text) &&
+    /\b(st|street|ave|avenue|rd|road|dr|drive|ln|lane|ct|court|blvd|boulevard|way|place|pl|pkwy|parkway|hwy|highway)\b/i.test(
+      text,
+    )
+  );
+}
+
+/** True when venue is only the organizer/host and no real street address backs it. */
+export function isVenueRedundantWithHost(params: {
+  venue?: string | null;
+  hostName?: string | null;
+  location?: string | null;
+}): boolean {
+  const rawVenue = String(params.venue || "").trim();
+  if (!rawVenue) return false;
+  if (hasStreetAddressLike(params.location) || hasStreetAddressLike(rawVenue)) return false;
+
+  if (looksLikeHostOrganizerLine(rawVenue)) return true;
+
+  const venueKey = normalizeLocationCompareKey(rawVenue);
+  const hostKey = normalizeLocationCompareKey(params.hostName);
+  if (!venueKey || !hostKey) return false;
+  return venueKey === hostKey;
+}
+
+function looksLikePersonName(value: string): boolean {
+  const compact = value.replace(/[.,]+/g, " ").replace(/\s+/g, " ").trim();
   if (!compact) return false;
   const words = compact.split(/\s+/).filter(Boolean);
   if (words.length < 2 || words.length > 5) return false;
-  if (/\b(?:school|academy|college|university|center|centre|hall|church|chapel|campus|theater|theatre|stadium|arena|auditorium|park|room|gym|gymnasium|plaza|library)\b/i.test(compact)) {
+  if (
+    /\b(?:school|academy|college|university|center|centre|hall|church|chapel|campus|theater|theatre|stadium|arena|auditorium|park|room|gym|gymnasium|plaza|library)\b/i.test(
+      compact,
+    )
+  ) {
     return false;
   }
   return words.every((word) => /^[A-Z][A-Za-z'’.-]+$/.test(word));
@@ -99,7 +149,9 @@ export function pickVenueLabelForSentence(
 ): string {
   try {
     const venueKeywords =
-      /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom|Course|Playground|Aquatic|Aquarium|Zoo|Museum|Stadium|Field|Court|Theater|Theatre)\b/i;
+      /\b(Arena|Center|Hall|Gym|Gymnastics|Park|Room|Studio|Lanes|Bowl|Skate|Club|Cafe|Restaurant|Brewery|Church|School|Community|Auditorium|Ballroom|Course|Playground|Aquatic|Aquarium|Zoo|Museum|Stadium|Field|Court|Theater|Theatre|Pavilion|Pier|Boardwalk|Marina)\b/i;
+    const beachAccess = /\bbeach\s+access\b/i;
+    const looksLikeVenueLine = (line: string) => venueKeywords.test(line) || beachAccess.test(line);
     if (location) {
       const parts = cleanAddressLabel(String(location))
         .split(",")
@@ -107,33 +159,55 @@ export function pickVenueLabelForSentence(
         .filter(Boolean);
       if (parts.length) {
         const first = parts[0];
-        if (parts.length >= 2) {
+        if (first && looksLikeHostOrganizerLine(first)) {
+          // fall through to description/rawText
+        } else if (parts.length >= 2) {
           const second = parts[1];
-          const secondLooksVenue = second && !/\d/.test(second) && venueKeywords.test(second);
+          const secondLooksVenue = second && !/\d/.test(second) && looksLikeVenueLine(second);
           if (secondLooksVenue && first && !/\d/.test(first)) {
             return `${first}, ${second}`;
           }
         }
-        if (first && (!/\d/.test(first) || venueKeywords.test(first))) return first;
+        if (first && (!/\d/.test(first) || looksLikeVenueLine(first))) return first;
       }
     }
     const lineWithAt = (description || "")
       .split("\n")
       .map((l) => l.trim())
-      .find((l) => /\bat\s+[^\d].{2,}/i.test(l));
+      .find((l) => /\bat\s+[^\d].{2,}/i.test(l) && !looksLikeHostOrganizerLine(l));
     if (lineWithAt) {
-      const m = lineWithAt.match(/\bat\s+([^,.\n]+?)(?:\s*[,.]|$)/i);
+      const m = lineWithAt.match(
+        /\bat\s+(?:the\s+)?([^,.\n]+?)(?:\s+(?:for|with|on|to)\b|\s*[,.]|$)/i,
+      );
       const cand = (m?.[1] || "").replace(/\s{2,}/g, " ").trim();
-      if (cand && (!/\d/.test(cand) || venueKeywords.test(cand))) return cand;
+      if (
+        cand &&
+        !looksLikeHostOrganizerLine(cand) &&
+        (!/\d/.test(cand) || looksLikeVenueLine(cand))
+      ) {
+        return cand;
+      }
     }
     if (rawText) {
       const lines = rawText
         .split(/\r?\n/)
         .map((l) => l.trim())
         .filter(Boolean);
+      const preferred = lines.find((line) => {
+        if (line.length < 4 || line.length > 80) return false;
+        if (looksLikeHostOrganizerLine(line)) return false;
+        if (/^(?:location|venue|where)\b/i.test(line)) return true;
+        if (!beachAccess.test(line)) return false;
+        // Prefer a dedicated place label over a long "Join us at … beach access …" sentence.
+        return !/\b(?:join|meet|overflow|parking|bring|parents?)\b/i.test(line);
+      });
+      if (preferred) {
+        return cleanAddressLabel(preferred.replace(/\s{2,}/g, " "));
+      }
       for (const line of lines) {
         if (line.length < 4 || line.length > 80) continue;
-        if (!venueKeywords.test(line)) continue;
+        if (looksLikeHostOrganizerLine(line)) continue;
+        if (!looksLikeVenueLine(line)) continue;
         const alphaCount = line.replace(/[^A-Za-z\s]/g, "").length;
         if (alphaCount / line.length < 0.6) continue;
         return line.replace(/\s{2,}/g, " ");
@@ -625,7 +699,7 @@ export function extractRsvpDetails(rawText: string, fallbackText?: string): Extr
             .slice(relevantLineIndex, relevantLineIndex + (isContactInstructionWindow ? 2 : 3))
             .join(" ")
             .trim()
-      : text;
+        : text;
 
     const phoneMatch = relevantWindow.match(RSVP_PHONE_REGEX) || text.match(RSVP_PHONE_REGEX);
     const emailMatch = relevantWindow.match(RSVP_EMAIL_REGEX) || text.match(RSVP_EMAIL_REGEX);
@@ -829,7 +903,10 @@ function extractPrintedFlavors(lines: string[], compact: string): string[] {
   const addFlavor = (value: string) => {
     const cleaned = cleanFlyerFact(value);
     if (!cleaned || !/^[A-Za-z][A-Za-z' -]{2,34}$/.test(cleaned)) return;
-    const key = cleaned.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const key = cleaned
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
     if (!key || seen.has(key)) return;
     seen.add(key);
     flavors.push(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
@@ -892,7 +969,9 @@ export function extractCommonOcrFactsFromFlyerText(
     seenValues.add(valueKey);
     facts.push({
       label,
-      value: /^(?:email|website)$/i.test(label) ? cleaned : cleaned.charAt(0).toUpperCase() + cleaned.slice(1),
+      value: /^(?:email|website)$/i.test(label)
+        ? cleaned
+        : cleaned.charAt(0).toUpperCase() + cleaned.slice(1),
     });
   };
 
@@ -912,8 +991,7 @@ export function extractCommonOcrFactsFromFlyerText(
   const entryFeeMatch =
     compact.match(
       /\b(?:entry\s+fee|registration\s+fee|admission|entry)\s*[:-]?\s*(\$\s*\d+(?:\.\d{2})?\s*(?:per\s+(?:person|team)|entry|registration|admission)?)/i,
-    ) ||
-    compact.match(/(\$\s*\d+(?:\.\d{2})?\s*(?:per\s+(?:person|team)|entry|registration)?)/i);
+    ) || compact.match(/(\$\s*\d+(?:\.\d{2})?\s*(?:per\s+(?:person|team)|entry|registration)?)/i);
   const printedPerks = [
     { label: "Prizes", pattern: /\bprizes?\b/i },
     { label: "Music", pattern: /\bmusic\b/i },
@@ -929,7 +1007,9 @@ export function extractCommonOcrFactsFromFlyerText(
     ),
   ]
     .map((match) => `${cleanFlyerFact(match[1])} ${cleanFlyerFact(match[2])}`)
-    .filter((value) => !/\b(?:may|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(value))
+    .filter(
+      (value) => !/\b(?:may|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(value),
+    )
     .slice(0, 8);
 
   if (checkInMatch?.[1]) addFact("Check-in", `Check-in ${normalizePrintedTime(checkInMatch[1])}`);
@@ -940,7 +1020,9 @@ export function extractCommonOcrFactsFromFlyerText(
   if (printedPerks.length) addFact("Perks", printedPerks.join(", "));
   if (menuPriceMatches.length >= 2) addFact("Menu Prices", menuPriceMatches.join("; "));
   if (printedFlavors.length >= 2) addFact("Flavors", printedFlavors.join(", "));
-  const contactPhone = compact.match(/\b(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/)?.[0];
+  const contactPhone = compact.match(
+    /\b(?:\+?1[-.\s]?)?(?:\(\s*\d{3}\s*\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b/,
+  )?.[0];
   const contactEmail = compact.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
   const contactWebsite = compact.match(/\b(?:https?:\/\/|www\.)[^\s,;]+/i)?.[0];
   if (contactPhone) addFact("Phone", contactPhone);

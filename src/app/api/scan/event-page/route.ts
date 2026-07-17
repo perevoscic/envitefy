@@ -125,11 +125,13 @@ export async function POST(request: Request) {
       venueName: fieldsGuess.venueName,
       location: fieldsGuess.location,
       address: fieldsGuess.address,
+      hostName: fieldsGuess.hostName,
       context: locationContext,
     });
     const locationEnrichment = await enrichOcrVenueAddress({
       venue: normalizedLocation.venue,
       location: normalizedLocation.location,
+      hostName: fieldsGuess.hostName,
       context: locationContext,
     });
 

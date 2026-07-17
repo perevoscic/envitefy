@@ -28,6 +28,7 @@ import ScannedSkinBackground from "@/components/ScannedSkinBackground";
 import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
 import {
+  coalesceFactValues,
   filterRegistryOcrFacts,
   filterRenderedOcrFacts,
   filterRenderedTextValues,
@@ -41,8 +42,8 @@ import {
   mixHexColors,
   normalizeScannedInvitePalette,
 } from "@/lib/scanned-invite-palette";
-import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
 import { trackEventInteraction } from "@/utils/event-tracking-client";
+import { isRsvpMailtoHref, openRsvpMailtoHref } from "@/utils/rsvp-mailto";
 
 type CalendarLinks = {
   google: string;
@@ -210,7 +211,7 @@ function groupRepeatedOcrFacts(facts: OcrFact[]): OcrFact[] {
       const trimmed = item.trim();
       if (trimmed) values.add(trimmed);
     }
-    existing.value = Array.from(values).join("; ");
+    existing.value = coalesceFactValues(label, Array.from(values)).join("; ");
   }
   return groups;
 }
@@ -890,6 +891,8 @@ export default function ScannedInviteSkin({
                   textColor={detailCardTextColor}
                   mutedColor={detailCardMutedTextColor}
                   accentColor="var(--theme-secondary)"
+                  fullWidth
+                  tone="prose"
                 />
               ) : null}
 
@@ -901,6 +904,7 @@ export default function ScannedInviteSkin({
                   textColor="#111827"
                   mutedColor="rgba(0,0,0,0.35)"
                   accentColor="var(--theme-primary)"
+                  tone="compact"
                 />
               ) : null}
 
@@ -912,6 +916,7 @@ export default function ScannedInviteSkin({
                   textColor="#111827"
                   mutedColor="rgba(0,0,0,0.35)"
                   accentColor="var(--theme-primary)"
+                  tone="compact"
                 />
               ) : null}
 
@@ -1176,6 +1181,8 @@ function HubDetailCard({
   textColor,
   mutedColor,
   accentColor,
+  fullWidth = false,
+  tone = "display",
 }: {
   label: string;
   title: string;
@@ -1184,13 +1191,23 @@ function HubDetailCard({
   textColor: string;
   mutedColor: string;
   accentColor: string;
+  fullWidth?: boolean;
+  tone?: "display" | "prose" | "compact";
 }) {
+  const isProse = tone === "prose";
+  const isCompact = tone === "compact";
   return (
     <motion.section
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.4 }}
-      className="flex min-h-[10rem] items-center justify-between gap-6 rounded-[2rem] border border-white/60 p-7 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className={[
+        "flex justify-between gap-6 rounded-[2rem] border border-white/60 p-7 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
+        isProse || isCompact ? "items-start" : "min-h-[10rem] items-center",
+        fullWidth ? "md:col-span-2" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={{
         backgroundColor,
         color: textColor,
@@ -1203,7 +1220,17 @@ function HubDetailCard({
         >
           {label}
         </div>
-        <div className="break-words text-xl font-bold leading-tight md:text-2xl">{title}</div>
+        <div
+          className={
+            isProse
+              ? "break-words text-base font-semibold leading-relaxed md:text-lg"
+              : isCompact
+                ? "break-words text-lg font-bold leading-snug"
+                : "break-words text-xl font-bold leading-tight md:text-2xl"
+          }
+        >
+          {title}
+        </div>
       </div>
       {icon ? (
         <div

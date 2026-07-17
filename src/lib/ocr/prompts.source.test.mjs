@@ -36,6 +36,20 @@ test("event OCR prompt and pipeline preserve generic OCR facts", () => {
   assert.match(pipelineSource, /ocrFacts: ocrFacts\.length \? ocrFacts : null/);
 });
 
+test("event OCR prompt separates host/org from venue place", () => {
+  const promptSource = readFileSync(new URL("./prompts.ts", import.meta.url), "utf8");
+
+  assert.match(promptSource, /ADDRESS \/ VENUE \(strict host ≠ place\)/);
+  assert.match(promptSource, /A top-of-flyer brand\/org alone is NOT the venue/);
+  assert.match(promptSource, /Pompano Joes Beach Access/);
+  assert.match(promptSource, /Never put the organizer\/header brand in venueName/);
+  assert.match(promptSource, /Prefer null venue over guessing the host's facility/);
+  assert.doesNotMatch(
+    promptSource,
+    /For example, "US Gold Gymnastics" goes in venueName and the street\/city line goes in address/,
+  );
+});
+
 test("event OCR prompt keeps RSVP contact guidance generic", () => {
   const promptSource = readFileSync(new URL("./prompts.ts", import.meta.url), "utf8");
 

@@ -14,10 +14,7 @@ import {
   resolveOcrModel,
 } from "@/lib/ocr/constants";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
-import {
-  normalizeOcrLocationFields,
-  normalizeOcrRsvpFields,
-} from "@/lib/ocr/field-normalization";
+import { normalizeOcrLocationFields, normalizeOcrRsvpFields } from "@/lib/ocr/field-normalization";
 import {
   extractGymnasticsScheduleHeuristics,
   extractGymnasticsScheduleWithLlm,
@@ -28,13 +25,14 @@ import { normalizeOpenHousePayload, uploadOpenHouseVisualAssets } from "@/lib/oc
 import {
   llmEventToRawText,
   llmExtractEventFromImage,
-  llmExtractVisibleTextFromImage,
-  OpenAiOcrError,
   llmExtractPracticeScheduleFromImage,
+  llmExtractVisibleTextFromImage,
   llmRewriteBirthdayDescription,
   llmRewriteSmartDescription,
   llmRewriteWedding,
+  OpenAiOcrError,
 } from "@/lib/ocr/openai";
+import { enrichOcrVenueAddress } from "@/lib/ocr/place-enrichment";
 import {
   buildNextOccurrence,
   createEmptyPracticeSchedule,
@@ -61,14 +59,13 @@ import {
   isOcrInviteCategory,
   isPickleballOcrSkinCandidate,
 } from "@/lib/ocr/skin";
-import { enrichOcrVenueAddress } from "@/lib/ocr/place-enrichment";
 import {
+  appendVenueToVendorVisitTitle,
   cleanAddressLabel,
   cleanGraduationVenueName,
   combineGuestInfoFacts,
   detectCategory,
   detectSpelledTime,
-  appendVenueToVendorVisitTitle,
   extractCommonOcrFactsFromFlyerText,
   extractGuestAttendanceFactsFromFlyerText,
   extractGuestReminderFromFlyerText,
@@ -77,6 +74,8 @@ import {
   extractRsvpDetails,
   improveJoinUsFor,
   inferTimezoneFromAddress,
+  isVenueRedundantWithHost,
+  looksLikeHostOrganizerLine,
   pickTitle,
   pickVenueLabelForSentence,
   splitVenueFromAddress,
@@ -114,9 +113,10 @@ function hasExplicitTimeText(text: string): boolean {
 function hasUsableOcrResult(payload: unknown, rawText: string): boolean {
   const record = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
   const title = typeof record.title === "string" ? record.title.trim() : "";
-  const genericTitle = /^(?:event\s+from\s+flyer|scanned\s+event|general\s+event|uploaded\s+event|event)$/i.test(
-    title,
-  );
+  const genericTitle =
+    /^(?:event\s+from\s+flyer|scanned\s+event|general\s+event|uploaded\s+event|event)$/i.test(
+      title,
+    );
   const hasSpecificTitle = Boolean(title && !genericTitle);
   const hasDate = typeof record.start === "string" && record.start.trim();
   const hasPlace =
@@ -367,7 +367,9 @@ export async function handleOcrRequest(request: Request) {
     const includeTimings =
       url.searchParams.get("timing") === "1" || url.searchParams.get("debug") === "1";
     const rewritesRequested = url.searchParams.get("rewrite") === "1";
-    const skinParam = String(url.searchParams.get("skin") || "").trim().toLowerCase();
+    const skinParam = String(url.searchParams.get("skin") || "")
+      .trim()
+      .toLowerCase();
     const enableSkinInference = skinParam !== "0" && skinParam !== "false";
     const enableRewrites =
       rewritesRequested || !fastMode || process.env.OCR_ENABLE_REWRITES === "1";
@@ -817,6 +819,7 @@ export async function handleOcrRequest(request: Request) {
 
     const lineScores = lines.map((line, idx) => {
       let scoreValue = 0;
+      if (looksLikeHostOrganizerLine(line)) scoreValue -= 20;
       if (timeToken.test(line)) scoreValue -= 10;
       if (hasStreetNumber.test(line)) scoreValue += 5;
       if (venueOrSuffix.test(line)) scoreValue += 3;
@@ -859,13 +862,14 @@ export async function handleOcrRequest(request: Request) {
       if (
         prev &&
         !timeToken.test(prev) &&
+        !looksLikeHostOrganizerLine(prev) &&
         venueOrSuffix.test(prev) &&
         !hasStreetNumber.test(prev)
       ) {
         parts.push(prev);
       }
       const badSegment =
-        /(call|rsvp|tickets?|admission|instagram|facebook|twitter|www\.|\.com|\b(tel|phone)\b)/i;
+        /(call|rsvp|tickets?|admission|instagram|facebook|twitter|www\.|\.com|\b(tel|phone)\b|\b(?:hosted|sponsored|presented)\s+by\b)/i;
       const monthName =
         /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?)/i;
       const segments = line
@@ -1202,12 +1206,65 @@ export async function handleOcrRequest(request: Request) {
     } catch {}
 
     const addressWithVenue = finalAddress;
+    const hostNameEarly =
+      (typeof llmImage?.hostName === "string" && llmImage.hostName.trim()) ||
+      extractHostedByFromFlyerText(raw) ||
+      extractHostedByFromFlyerText(finalDescription) ||
+      null;
+    if (
+      finalAddress &&
+      isVenueRedundantWithHost({
+        venue: finalAddress,
+        hostName: hostNameEarly,
+        location: null,
+      })
+    ) {
+      finalAddress = "";
+    }
+    if (
+      finalVenue &&
+      isVenueRedundantWithHost({
+        venue: finalVenue,
+        hostName: hostNameEarly,
+        location: finalAddress,
+      })
+    ) {
+      finalVenue = "";
+    }
     const splitLocation = splitVenueFromAddress(finalAddress, finalDescription, raw);
     finalAddress = splitLocation.address;
-    if (splitLocation.venue) finalVenue = splitLocation.venue;
+    if (
+      finalAddress &&
+      isVenueRedundantWithHost({
+        venue: finalAddress,
+        hostName: hostNameEarly,
+        location: null,
+      })
+    ) {
+      finalAddress = "";
+    }
+    if (
+      splitLocation.venue &&
+      !isVenueRedundantWithHost({
+        venue: splitLocation.venue,
+        hostName: hostNameEarly,
+        location: finalAddress,
+      })
+    ) {
+      if (!finalVenue) finalVenue = splitLocation.venue;
+    }
     if (!finalVenue) {
       const fallbackVenue = pickVenueLabelForSentence(addressWithVenue, finalDescription, raw);
-      if (fallbackVenue) finalVenue = fallbackVenue;
+      if (
+        fallbackVenue &&
+        !isVenueRedundantWithHost({
+          venue: fallbackVenue,
+          hostName: hostNameEarly,
+          location: finalAddress,
+        })
+      ) {
+        finalVenue = fallbackVenue;
+      }
     }
     if (detectCategory(`${raw}\n${finalTitle}`) === "Graduations") {
       finalVenue = cleanGraduationVenueName(finalVenue);
@@ -1490,18 +1547,11 @@ export async function handleOcrRequest(request: Request) {
       (typeof llmImage?.hostName === "string" && llmImage.hostName.trim()) ||
       extractHostedByFromFlyerText(raw) ||
       extractHostedByFromFlyerText(description) ||
+      hostNameEarly ||
       null;
     const registryContext = {
       category: detectCategory(
-        [
-          raw,
-          llmImage?.category,
-          finalTitle,
-          description,
-          finalVenue,
-          finalAddress,
-          hostNameFinal,
-        ]
+        [raw, llmImage?.category, finalTitle, description, finalVenue, finalAddress, hostNameFinal]
           .filter(Boolean)
           .join("\n"),
       ),
@@ -1520,8 +1570,7 @@ export async function handleOcrRequest(request: Request) {
         description,
         rawText: raw,
         registryUrl: rawRegistryUrl,
-      }) ||
-      normalizeRegistryUrlForContext(rawRegistryUrl, registryContext);
+      }) || normalizeRegistryUrlForContext(rawRegistryUrl, registryContext);
     const registryProvider = registryUrl
       ? null
       : inferRegistryProviderFromTextForContext(raw, registryContext);
@@ -1542,6 +1591,7 @@ export async function handleOcrRequest(request: Request) {
     const normalizedFieldLocation = normalizeOcrLocationFields({
       venue: finalVenue,
       location: finalAddress,
+      hostName: hostNameFinal,
       context: [raw, description, finalTitle].filter(Boolean).join("\n"),
     });
     const normalizedFieldRsvp = normalizeOcrRsvpFields({
@@ -1935,6 +1985,7 @@ export async function handleOcrRequest(request: Request) {
     const locationEnrichment = await enrichOcrVenueAddress({
       venue: fieldsGuess.venue,
       location: fieldsGuess.location,
+      hostName: fieldsGuess.hostName,
       context: [raw, fieldsGuess.title, fieldsGuess.description].filter(Boolean).join("\n"),
     });
     if (locationEnrichment?.address) {

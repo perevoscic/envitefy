@@ -91,7 +91,9 @@ async function lookupGooglePlaceAddress(query: string): Promise<PlaceAddressEnri
   try {
     const response = await fetch(url, { signal: controller.signal });
     if (!response.ok) return null;
-    const payload = (await response.json().catch(() => null)) as GooglePlacesTextSearchResponse | null;
+    const payload = (await response
+      .json()
+      .catch(() => null)) as GooglePlacesTextSearchResponse | null;
     if (payload?.status !== "OK" || !Array.isArray(payload.results)) return null;
 
     const result = payload.results.find((candidate) => clean(candidate.formatted_address));
@@ -117,6 +119,7 @@ export async function enrichOcrVenueAddress(params: {
   location?: unknown;
   address?: unknown;
   fallbackLocation?: unknown;
+  hostName?: unknown;
   context?: unknown;
   lookupPlaceAddress?: (query: string) => Promise<PlaceAddressEnrichment | null>;
 }): Promise<PlaceAddressEnrichment | null> {
@@ -127,6 +130,7 @@ export async function enrichOcrVenueAddress(params: {
     location: params.location,
     address: params.address,
     fallbackLocation: params.fallbackLocation,
+    hostName: params.hostName,
     context,
   });
   const venue = clean(normalized.venue);
@@ -135,7 +139,10 @@ export async function enrichOcrVenueAddress(params: {
   const lookup = params.lookupPlaceAddress || lookupGooglePlaceAddress;
   for (const query of buildPlaceLookupQueries({ venue, context })) {
     const enrichment = await lookup(query);
-    if (enrichment && resultLooksLikeVenue(venue, { name: enrichment.placeName, place_id: enrichment.placeId })) {
+    if (
+      enrichment &&
+      resultLooksLikeVenue(venue, { name: enrichment.placeName, place_id: enrichment.placeId })
+    ) {
       return enrichment;
     }
   }

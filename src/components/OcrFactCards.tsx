@@ -1,6 +1,6 @@
 "use client";
 
-import type { OcrFact } from "@/lib/ocr/facts";
+import { coalesceFactValues, type OcrFact } from "@/lib/ocr/facts";
 
 type Props = {
   facts?: OcrFact[] | null;
@@ -25,10 +25,13 @@ export default function OcrFactCards({
   const groupedFacts = displayFacts.reduce<Array<{ label: string; values: string[] }>>(
     (groups, fact) => {
       const label = fact.label.trim();
-      const values = fact.value
-        .split(/\s*(?:;|\n)\s*/)
-        .map((value) => value.trim())
-        .filter(Boolean);
+      const values = coalesceFactValues(
+        label,
+        fact.value
+          .split(/\s*(?:;|\n)\s*/)
+          .map((value) => value.trim())
+          .filter(Boolean),
+      );
       const group = groups.find((item) => item.label.toLowerCase() === label.toLowerCase());
       if (group) {
         for (const value of values) {
@@ -36,6 +39,7 @@ export default function OcrFactCards({
             group.values.push(value);
           }
         }
+        group.values = coalesceFactValues(label, group.values);
       } else {
         groups.push({ label, values });
       }
@@ -64,7 +68,13 @@ export default function OcrFactCards({
           </div>
           <div className="text-sm font-bold leading-snug" style={{ color: valueColor }}>
             {fact.values.length > 1 ? (
-              <ul className="grid grid-cols-2 gap-x-4 gap-y-2">
+              <ul
+                className={
+                  fact.values.length >= 3 && fact.values.every((value) => value.length <= 28)
+                    ? "grid grid-cols-2 gap-x-4 gap-y-2"
+                    : "space-y-2"
+                }
+              >
                 {fact.values.map((value) => (
                   <li key={value}>{value}</li>
                 ))}

@@ -1,11 +1,36 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  coalesceFactValues,
   filterRegistryOcrFacts,
   filterRenderedOcrFacts,
   mergeOcrFacts,
   normalizeOcrFacts,
 } from "./facts.ts";
+
+test("normalizeOcrFacts keeps abbreviated host names intact", () => {
+  const facts = normalizeOcrFacts([
+    { label: "Host", value: "U.S. Gold Gymnastics" },
+    { label: "Details", value: "Bring sunscreen. Pack a lunch." },
+  ]);
+
+  assert.deepEqual(facts, [
+    { label: "Host", value: "U.S. Gold Gymnastics" },
+    { label: "Details", value: "Bring sunscreen" },
+    { label: "Details", value: "Pack a lunch." },
+  ]);
+});
+
+test("coalesceFactValues rejoins abbreviated host fragments", () => {
+  assert.deepEqual(coalesceFactValues("Host", ["U.S", "Gold Gymnastics"]), [
+    "U.S. Gold Gymnastics",
+  ]);
+  assert.deepEqual(coalesceFactValues("Perks", ["Prizes", "Music", "Refreshments"]), [
+    "Prizes",
+    "Music",
+    "Refreshments",
+  ]);
+});
 
 test("mergeOcrFacts dedupes repeated entry fees with label prefixes", () => {
   const facts = mergeOcrFacts(

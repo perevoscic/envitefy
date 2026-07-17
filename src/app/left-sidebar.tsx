@@ -931,7 +931,7 @@ function EventListPanel({
             {showPendingBadge || item.isInvited ? (
               <span className="flex items-center gap-2">
                 <span
-                  className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-none md:text-[1.02rem] ${
+                  className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
                     isHistoryRowActive(item.row.id)
                       ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
                       : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
@@ -947,7 +947,7 @@ function EventListPanel({
               </span>
             ) : (
               <span
-                className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-none md:text-[1.02rem] ${
+                className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
                   isHistoryRowActive(item.row.id)
                     ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
                     : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS

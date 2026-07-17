@@ -1115,6 +1115,7 @@ export default function Dashboard({
           venueName: (data?.fieldsGuess as { venueName?: unknown })?.venueName,
           location: (data?.fieldsGuess as { location?: unknown })?.location,
           address: (data?.fieldsGuess as { address?: unknown })?.address,
+          hostName: hostNameFromScan,
           context: [
             (data?.fieldsGuess as { title?: unknown })?.title,
             data?.ocrText,
