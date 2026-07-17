@@ -88,6 +88,7 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /rsvpEmail=\{rsvpEmail\}/);
   assert.match(source, /rsvpUrl=\{publicRsvpUrl\}/);
   assert.match(source, /normalizeOcrLocationFields/);
+  assert.match(source, /enrichOcrVenueAddress/);
   assert.match(source, /normalizeOcrRsvpFields/);
   assert.match(source, /const rsvpPhone = explicitRsvpDisabled \? "" : rawRsvpPhone;/);
   assert.match(source, /const rsvpEmail = explicitRsvpDisabled \? "" : rawRsvpEmail;/);

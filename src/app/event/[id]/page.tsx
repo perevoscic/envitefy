@@ -60,8 +60,13 @@ import { getEventAccessCookieName, verifyEventAccessCookieValue } from "@/lib/ev
 import { getEventTheme } from "@/lib/event-theme";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
-import { normalizeOcrLocationFields, normalizeOcrRsvpFields } from "@/lib/ocr/field-normalization";
+import {
+  flyerHasPrintedStreetAddress,
+  normalizeOcrLocationFields,
+  normalizeOcrRsvpFields,
+} from "@/lib/ocr/field-normalization";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
+import { enrichOcrVenueAddress } from "@/lib/ocr/place-enrichment";
 import {
   isBasketballOcrSkinCandidate,
   isFootballOcrSkinCandidate,
@@ -1441,9 +1446,34 @@ export default async function EventPage({
     hostName: typeof data?.hostName === "string" ? data.hostName : "",
     context: [data?.ocrText, data?.description, data?.title, title].filter(Boolean).join("\n"),
   });
-  const locationText = normalizedPublicLocation.location || "";
+  let locationText = normalizedPublicLocation.location || "";
   const rawVenueText = normalizedPublicLocation.venue || "";
   const venueText = isGraduationCategory ? cleanGraduationVenueName(rawVenueText) : rawVenueText;
+  // Fill Where from Places only when the flyer does not already print a street address.
+  if (
+    venueText &&
+    !locationText &&
+    !flyerHasPrintedStreetAddress({
+      location: typeof data?.location === "string" ? data.location : "",
+      address:
+        typeof (data as { address?: unknown })?.address === "string"
+          ? (data as { address?: string }).address
+          : "",
+      ocrText: typeof data?.ocrText === "string" ? data.ocrText : "",
+    })
+  ) {
+    const locationEnrichment = await enrichOcrVenueAddress({
+      venue: venueText,
+      location: typeof data?.location === "string" ? data.location : "",
+      hostName: typeof data?.hostName === "string" ? data.hostName : "",
+      context: [data?.ocrText, data?.description, data?.title, title, venueText]
+        .filter(Boolean)
+        .join("\n"),
+    });
+    if (locationEnrichment?.address) {
+      locationText = locationEnrichment.address;
+    }
+  }
   const hasMapLocation = Boolean(venueText?.trim() || locationText?.trim());
   const registryCopy = getRegistrySectionCopyForCategory(categoryRaw);
   const registriesAllowed = registryCopy.allowsLinks;

@@ -4,13 +4,17 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Calendar,
   CalendarPlus,
+  Car,
+  CircleDollarSign,
   Clock,
   Globe2,
+  Landmark,
   Mail,
   MapPin,
   MessageSquare,
   Navigation,
   Phone,
+  Shirt,
   Sparkles,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -35,6 +39,7 @@ import {
   normalizeOcrFacts,
   type OcrFact,
 } from "@/lib/ocr/facts";
+import { looksLikeParkingOrDirectionsNote } from "@/lib/ocr/field-normalization";
 import type { OcrSkinBackground } from "@/lib/ocr/skin-background";
 import {
   ensureReadableTextColor,
@@ -381,7 +386,11 @@ export default function ScannedInviteSkin({
   const displayDate = String(dateLabel || "").trim() || "Date TBD";
   const displayTime = String(timeLabel || "").trim();
   const displayVenueName = String(venueName || "").trim();
-  const displayLocation = String(location || "").trim();
+  const rawDisplayLocation = String(location || "").trim();
+  const parkingLocationNote = looksLikeParkingOrDirectionsNote(rawDisplayLocation)
+    ? rawDisplayLocation
+    : "";
+  const displayLocation = parkingLocationNote ? "" : rawDisplayLocation;
   const hasDisplayLocation = Boolean(
     displayLocation &&
       !/^location\s+tbd$/i.test(displayLocation) &&
@@ -392,6 +401,10 @@ export default function ScannedInviteSkin({
   const normalizedOcrFacts = normalizeOcrFacts(ocrFacts);
   const vendorFact = normalizedOcrFacts.find((fact) => /^vendor$/i.test(fact.label));
   const displayVendorName = String(vendorFact?.value || "").trim();
+  const parkingFact = normalizedOcrFacts.find((fact) => /^parking$/i.test(fact.label));
+  const displayParking = String(parkingFact?.value || parkingLocationNote || "")
+    .replace(/^\s*parking\s*[:-]?\s*/i, "")
+    .trim();
   const checkInFact = normalizedOcrFacts.find((fact) => /\bcheck[-\s]?in\b/i.test(fact.label));
   const gamesStartFact = normalizedOcrFacts.find((fact) =>
     /\bgames?\s+start(?:ing)?\b/i.test(fact.label),
@@ -504,6 +517,7 @@ export default function ScannedInviteSkin({
       (fact) =>
         !/\b(?:phone|email|website|site|contact)\b/i.test(fact.label) &&
         !/^vendor$/i.test(fact.label) &&
+        !(displayParking && /^parking$/i.test(fact.label)) &&
         !(
           isPickleballSkin &&
           (/\b(?:check[-\s]?in|games?\s+start(?:ing)?)\b/i.test(`${fact.label} ${fact.value}`) ||
@@ -518,6 +532,7 @@ export default function ScannedInviteSkin({
     displayTime,
     displayVenueName,
     hasDisplayLocation ? displayLocation : "",
+    displayParking,
     displayDetailCopy,
     displayEntryFee,
     displayAttire,
@@ -807,7 +822,7 @@ export default function ScannedInviteSkin({
 
                 {displayVenueName ? (
                   <InfoBlock
-                    icon={<MapPin className="h-7 w-7" />}
+                    icon={<Landmark className="h-7 w-7" />}
                     swatchColor={detailIconSwatchColor}
                     label="Venue"
                     title={displayVenueName}
@@ -896,10 +911,24 @@ export default function ScannedInviteSkin({
                 />
               ) : null}
 
+              {displayParking ? (
+                <HubDetailCard
+                  label="Parking"
+                  title={displayParking}
+                  icon={<Car className="h-5 w-5" />}
+                  backgroundColor="#ffffff"
+                  textColor="#111827"
+                  mutedColor="rgba(0,0,0,0.35)"
+                  accentColor="var(--theme-primary)"
+                  tone="prose"
+                />
+              ) : null}
+
               {displayEntryFee ? (
                 <HubDetailCard
                   label="Entry Fee"
                   title={displayEntryFee}
+                  icon={<CircleDollarSign className="h-5 w-5" />}
                   backgroundColor="#ffffff"
                   textColor="#111827"
                   mutedColor="rgba(0,0,0,0.35)"
@@ -912,6 +941,7 @@ export default function ScannedInviteSkin({
                 <HubDetailCard
                   label="Dress Code"
                   title={displayAttire}
+                  icon={<Shirt className="h-5 w-5" />}
                   backgroundColor="#ffffff"
                   textColor="#111827"
                   mutedColor="rgba(0,0,0,0.35)"
@@ -985,6 +1015,7 @@ export default function ScannedInviteSkin({
               <OcrFactCards
                 facts={[...leftColumnOcrFacts, ...rightColumnOcrFacts]}
                 cardClassName="rounded-[2rem] border border-white/60 bg-white p-7 shadow-sm"
+                accentColor="var(--theme-primary)"
               />
             </div>
           </div>
@@ -1183,6 +1214,7 @@ function HubDetailCard({
   accentColor,
   fullWidth = false,
   tone = "display",
+  action,
 }: {
   label: string;
   title: string;
@@ -1193,6 +1225,7 @@ function HubDetailCard({
   accentColor: string;
   fullWidth?: boolean;
   tone?: "display" | "prose" | "compact";
+  action?: ReactNode;
 }) {
   const isProse = tone === "prose";
   const isCompact = tone === "compact";
@@ -1231,6 +1264,7 @@ function HubDetailCard({
         >
           {title}
         </div>
+        {action}
       </div>
       {icon ? (
         <div

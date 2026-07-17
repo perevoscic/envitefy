@@ -44,6 +44,10 @@ test("event OCR prompt separates host/org from venue place", () => {
   assert.match(promptSource, /Pompano Joes Beach Access/);
   assert.match(promptSource, /Never put the organizer\/header brand in venueName/);
   assert.match(promptSource, /Prefer null venue over guessing the host's facility/);
+  assert.match(
+    promptSource,
+    /Never put parking notes, overflow parking, or driving directions in address/,
+  );
   assert.doesNotMatch(
     promptSource,
     /For example, "US Gold Gymnastics" goes in venueName and the street\/city line goes in address/,

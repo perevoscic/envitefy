@@ -33,6 +33,7 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • A top-of-flyer brand/org alone is NOT the venue. Example: header "U.S. Gold Gymnastics", body "Join us at Pompano Joe's beach access", footer "Pompano Joes Beach Access" → hostName "U.S. Gold Gymnastics", venueName "Pompano Joes Beach Access", address null.
   • Only put an org in venueName when the flyer clearly says the event is AT that place (printed "at <org>", facility name as the location block, or a street address for that site). Example: venueName "US Gold Gymnastics" with address "123 Main St, City, ST ZIP" when that facility is the printed site.
   • If only an organizer/brand is printed and no place/address appears, set venueName and address to null. Prefer null over guessing the host's facility.
+  • Never put parking notes, overflow parking, or driving directions in address. Those belong in ocrFacts with label "Parking". Leave address null when only parking text is printed so the venue can be place-enriched.
   • Graduation flyers: graduate/honoree names belong in title only. venueName must be a real place name such as a school, auditorium, stadium, church, or campus venue. If the visible text is only an event title like "Graduation Ceremony — Lena De La Cruz" or "Class of 2026 Graduation", return venueName as null instead of copying that title.
   
   RSVP:

@@ -107,6 +107,42 @@ export function looksLikeMenuOrFlavorDetails(value: unknown): boolean {
   return Boolean(flavorMatches && flavorMatches.length >= 2);
 }
 
+export function looksLikeParkingOrDirectionsNote(value: unknown): boolean {
+  const text = cleanOcrFieldValue(value);
+  if (!text) return false;
+  if (/^(?:parking|park(?:ing)?\s+notes?|overflow\s+parking)\b/i.test(text)) return true;
+  return (
+    /\b(?:overflow\s+parking|parking\s+(?:is|available|across|lot|garage)|park\s+(?:across|in|at|behind|near)|free\s+parking)\b/i.test(
+      text,
+    ) && !/\b\d{1,6}\s+[A-Za-z0-9]/.test(text)
+  );
+}
+
+const PRINTED_STREET_ADDRESS_PATTERN =
+  /\b\d{1,6}\s+[A-Za-z0-9 .'-]+\s+(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|ct|court|blvd|boulevard|way|place|pl|pkwy|parkway|hwy|highway)\b/i;
+
+/** True when the flyer already prints a real street address (not a parking note). */
+export function flyerHasPrintedStreetAddress(args: {
+  location?: unknown;
+  address?: unknown;
+  ocrText?: unknown;
+}): boolean {
+  const candidates = [args.location, args.address];
+  for (const candidate of candidates) {
+    const text = cleanOcrFieldValue(candidate);
+    if (!text || looksLikeParkingOrDirectionsNote(text)) continue;
+    if (PRINTED_STREET_ADDRESS_PATTERN.test(text)) return true;
+  }
+
+  const ocrText = typeof args.ocrText === "string" ? args.ocrText : "";
+  for (const line of ocrText.split(/\r?\n+/)) {
+    const text = cleanOcrFieldValue(line);
+    if (!text || looksLikeParkingOrDirectionsNote(text)) continue;
+    if (PRINTED_STREET_ADDRESS_PATTERN.test(text)) return true;
+  }
+  return false;
+}
+
 export function normalizeOcrLocationFields(args: {
   venue?: unknown;
   venueName?: unknown;
@@ -123,7 +159,8 @@ export function normalizeOcrLocationFields(args: {
     venueCandidate &&
     !looksLikeMenuOrFlavorDetails(venueCandidate) &&
     !looksLikeDateOrTimeFragment(venueCandidate) &&
-    !looksLikeVenueNarrative(venueCandidate)
+    !looksLikeVenueNarrative(venueCandidate) &&
+    !looksLikeParkingOrDirectionsNote(venueCandidate)
       ? venueCandidate
       : inferVenueFromContext([venueCandidate, args.context].filter(Boolean).join("\n"));
   const locationCandidate = firstCleanString(args.location, args.address, args.fallbackLocation);
@@ -132,6 +169,7 @@ export function normalizeOcrLocationFields(args: {
     !looksLikeMenuOrFlavorDetails(locationCandidate) &&
     !looksLikeDateOrTimeFragment(locationCandidate) &&
     !looksLikeVenueNarrative(locationCandidate) &&
+    !looksLikeParkingOrDirectionsNote(locationCandidate) &&
     (!venue || locationCandidate.toLowerCase() !== venue.toLowerCase())
       ? locationCandidate
       : null;
@@ -158,16 +196,19 @@ export function normalizeOcrLocationFields(args: {
     normalizedLocation = null;
   }
 
-  const location =
-    normalizedLocation ||
-    (enrichedLocation &&
+  const usableEnriched =
+    enrichedLocation &&
+    !looksLikeParkingOrDirectionsNote(enrichedLocation) &&
     !isVenueRedundantWithHost({
       venue: enrichedLocation,
       hostName,
       location: null,
     })
       ? enrichedLocation
-      : null);
+      : null;
+
+  // Prefer Places enrichment when we only had a parking/directions note (or no address).
+  const location = usableEnriched || normalizedLocation;
 
   return {
     venue,

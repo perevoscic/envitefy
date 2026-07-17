@@ -14,7 +14,11 @@ import {
   resolveOcrModel,
 } from "@/lib/ocr/constants";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
-import { normalizeOcrLocationFields, normalizeOcrRsvpFields } from "@/lib/ocr/field-normalization";
+import {
+  looksLikeParkingOrDirectionsNote,
+  normalizeOcrLocationFields,
+  normalizeOcrRsvpFields,
+} from "@/lib/ocr/field-normalization";
 import {
   extractGymnasticsScheduleHeuristics,
   extractGymnasticsScheduleWithLlm,
@@ -820,6 +824,7 @@ export async function handleOcrRequest(request: Request) {
     const lineScores = lines.map((line, idx) => {
       let scoreValue = 0;
       if (looksLikeHostOrganizerLine(line)) scoreValue -= 20;
+      if (looksLikeParkingOrDirectionsNote(line)) scoreValue -= 15;
       if (timeToken.test(line)) scoreValue -= 10;
       if (hasStreetNumber.test(line)) scoreValue += 5;
       if (venueOrSuffix.test(line)) scoreValue += 3;
@@ -869,7 +874,7 @@ export async function handleOcrRequest(request: Request) {
         parts.push(prev);
       }
       const badSegment =
-        /(call|rsvp|tickets?|admission|instagram|facebook|twitter|www\.|\.com|\b(tel|phone)\b|\b(?:hosted|sponsored|presented)\s+by\b)/i;
+        /(call|rsvp|tickets?|admission|instagram|facebook|twitter|www\.|\.com|\b(tel|phone)\b|\b(?:hosted|sponsored|presented)\s+by\b|\bparking\b|\boverflow\s+parking\b)/i;
       const monthName =
         /(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?)/i;
       const segments = line
@@ -911,6 +916,9 @@ export async function handleOcrRequest(request: Request) {
         if (withNum) addressOnly = withNum.trim();
       }
     }
+    if (looksLikeParkingOrDirectionsNote(addressOnly)) {
+      addressOnly = "";
+    }
 
     const cleanDescription = buildCleanDescription(lines, title, addressOnly, parsedText);
 
@@ -943,6 +951,9 @@ export async function handleOcrRequest(request: Request) {
         typeof llmImage.address === "string" && llmImage.address.trim()
           ? llmImage.address.trim()
           : addressOnly;
+      if (looksLikeParkingOrDirectionsNote(finalAddress)) {
+        finalAddress = "";
+      }
       finalVenue =
         typeof llmImage.venueName === "string" && llmImage.venueName.trim()
           ? llmImage.venueName.trim()
