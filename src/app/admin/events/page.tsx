@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   AdminBarList,
   AdminMetricCard,
@@ -5,7 +6,8 @@ import {
   AdminPageHeader,
   AdminPanel,
 } from "@/components/admin/AdminPrimitives";
-import { getAdminEventsData } from "@/lib/admin/events";
+import { getAdminEventsData, type AdminEventListItem } from "@/lib/admin/events";
+import { buildEventProductPath } from "@/utils/event-product-route";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +17,36 @@ function formatDate(value: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleDateString("en-US");
+}
+
+function adminPublicEventHref(event: Pick<AdminEventListItem, "id" | "title" | "publicSlug">) {
+  return buildEventProductPath({
+    eventId: event.id,
+    title: event.title,
+    publicSlug: event.publicSlug,
+  });
+}
+
+function AdminPublicEventLink({
+  event,
+  children,
+  className,
+}: {
+  event: Pick<AdminEventListItem, "id" | "title" | "publicSlug">;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <a
+      href={adminPublicEventHref(event)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+      title="Open public event page"
+    >
+      {children}
+    </a>
+  );
 }
 
 export default async function AdminEventsPage() {
@@ -45,12 +77,19 @@ export default async function AdminEventsPage() {
 
       <AdminPanel
         title="Recent Events"
-        description="Visitors are unique browsers or signed-in users that opened the public event URL. Views are total page loads."
+        description="Visitors are unique browsers or signed-in users that opened the public event URL. Views are total page loads. Click an event name or public slug to open the public page in a new tab."
       >
         <AdminMobileRecordList
           rows={events.recentEvents.map((event) => ({
             key: event.id,
-            title: event.title,
+            title: (
+              <AdminPublicEventLink
+                event={event}
+                className="text-violet-700 underline decoration-violet-200 underline-offset-2 hover:text-violet-900"
+              >
+                {event.title}
+              </AdminPublicEventLink>
+            ),
             subtitle: event.ownerEmail || "No owner email",
             fields: [
               { label: "Category", value: event.category },
@@ -62,7 +101,16 @@ export default async function AdminEventsPage() {
               { label: "Created", value: formatDate(event.createdAt) },
               {
                 label: "Public slug",
-                value: event.publicSlug || "-",
+                value: event.publicSlug ? (
+                  <AdminPublicEventLink
+                    event={event}
+                    className="font-mono text-xs text-violet-700 underline decoration-violet-200 underline-offset-2 hover:text-violet-900"
+                  >
+                    {event.publicSlug}
+                  </AdminPublicEventLink>
+                ) : (
+                  "-"
+                ),
                 className: "font-mono text-xs",
               },
             ],
@@ -91,7 +139,12 @@ export default async function AdminEventsPage() {
               {events.recentEvents.map((event) => (
                 <tr key={event.id}>
                   <td className="max-w-[240px] truncate py-3 pr-3 font-medium text-slate-900">
-                    {event.title}
+                    <AdminPublicEventLink
+                      event={event}
+                      className="text-violet-700 underline decoration-violet-200 underline-offset-2 hover:text-violet-900"
+                    >
+                      {event.title}
+                    </AdminPublicEventLink>
                   </td>
                   <td className="max-w-[220px] truncate px-3 py-3 text-slate-700">
                     {event.ownerEmail || "-"}
@@ -113,7 +166,16 @@ export default async function AdminEventsPage() {
                   </td>
                   <td className="px-3 py-3 text-slate-700">{formatDate(event.createdAt)}</td>
                   <td className="max-w-[180px] truncate py-3 pl-3 font-mono text-xs text-slate-600">
-                    {event.publicSlug || "-"}
+                    {event.publicSlug ? (
+                      <AdminPublicEventLink
+                        event={event}
+                        className="text-violet-700 underline decoration-violet-200 underline-offset-2 hover:text-violet-900"
+                      >
+                        {event.publicSlug}
+                      </AdminPublicEventLink>
+                    ) : (
+                      "-"
+                    )}
                   </td>
                 </tr>
               ))}
