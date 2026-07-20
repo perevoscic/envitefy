@@ -1,6 +1,17 @@
 import OpenAI from "openai";
-import { processBufferUpload } from "../media-upload.ts";
-import { buildPublicAssetUrl } from "../public-asset-url.ts";
+import { resolveEmailEmbedAssetUrl, uploadPublicBinaryAsset } from "../media-upload.ts";
+import {
+  ADMIN_EMAIL_PRODUCT_SCENARIOS,
+  resolveScenarioCtaUrl,
+  type AdminEmailScenarioId,
+} from "./email-scenarios.ts";
+import {
+  ADMIN_EMAIL_GENERATION_GUIDE,
+  bannedAdminEmailTextLinkPattern,
+  buildAdminEmailGuidePromptPayload,
+  buildAdminEmailSystemPromptFromGuide,
+} from "./email-generation-guide.ts";
+import { inspectAdminEmailImageProfessionalism, reasonsIndicateBrandLogo } from "./email-image-qa.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -14,12 +25,15 @@ export type AdminEmailGenerationRequest = {
   currentBodyHtml?: string | null;
 };
 
+export type AdminEmailImageRole = "demo" | "scenario" | "hero" | "feature" | "support";
+
 export type AdminEmailImageAsset = {
-  role: "hero";
+  role: AdminEmailImageRole;
   url: string;
   altText: string;
   prompt: string;
   model: string;
+  scenarioId?: AdminEmailScenarioId;
 };
 
 export type AdminEmailDraft = {
@@ -45,12 +59,35 @@ type GenerateAdminEmailDraftDeps = {
     prompt: string;
     model: string;
   }) => Promise<AdminEmailImageAsset>;
+  inspectImage?: (params: { imageBytes: Buffer }) => Promise<{
+    pass: boolean;
+    aiIshScore: number;
+    reasons: string[];
+  }>;
 };
 
-const DEFAULT_ADMIN_EMAIL_GENERATOR_MODEL = "gpt-5.5";
+const DEFAULT_ADMIN_EMAIL_GENERATOR_MODEL = "gpt-5.6-sol";
 const DEFAULT_ADMIN_EMAIL_IMAGE_MODEL = "gpt-image-2";
+const DEFAULT_ENVITEFY_CTA_URL = ADMIN_EMAIL_GENERATION_GUIDE.ctaDefaults.buttonUrl;
 const MAX_PROMPT_LENGTH = 5000;
 const MAX_BODY_HTML_LENGTH = 50000;
+const MAX_IMAGE_ASSETS = 8;
+const MAX_IMAGE_QA_ATTEMPTS = 3;
+const BANNED_TEXT_LINK_PATTERN = bannedAdminEmailTextLinkPattern();
+
+function parseImageRole(value: unknown): AdminEmailImageRole {
+  const role = cleanString(value, 40);
+  if (role === "demo" || role === "scenario" || role === "feature" || role === "support") {
+    return role;
+  }
+  return "hero";
+}
+
+function parseScenarioId(value: unknown): AdminEmailScenarioId | undefined {
+  const id = cleanString(value, 40);
+  if (id === "snap" || id === "concierge" || id === "teachers" || id === "share") return id;
+  return undefined;
+}
 
 function cleanString(value: unknown, maxLength = 2000): string {
   if (typeof value !== "string") return "";
@@ -76,11 +113,16 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
+function isGifAssetUrl(url: string): boolean {
+  return /\.gif(?:$|[?#])/i.test(url.trim());
+}
+
 function sanitizeImageTags(html: string): string {
   return html.replace(/<img\b[^>]*>/gi, (tag) => {
     const srcMatch = tag.match(/\s+src\s*=\s*(["'])(.*?)\1/i);
     const src = srcMatch?.[2]?.trim() || "";
-    return isHttpUrl(src) ? tag : "";
+    if (!isHttpUrl(src) || isGifAssetUrl(src)) return "";
+    return tag;
   });
 }
 
@@ -90,17 +132,32 @@ function parseCurrentImageAssets(value: unknown): AdminEmailImageAsset[] {
     .map((item): AdminEmailImageAsset | null => {
       if (!isRecord(item)) return null;
       const url = cleanString(item.url, 1000);
-      if (!isHttpUrl(url)) return null;
+      if (!isHttpUrl(url) || isGifAssetUrl(url)) return null;
+      const role = parseImageRole(item.role);
+      // Legacy GIF/demo assets are never reused.
+      if (role === "demo") return null;
+      const scenarioId = parseScenarioId(item.scenarioId);
+      if (!scenarioId) return null;
       return {
-        role: "hero",
+        role: "scenario",
         url,
         altText: cleanString(item.altText, 200) || "Envitefy event planning preview",
         prompt: cleanString(item.prompt, 2000),
         model: cleanString(item.model, 120),
+        scenarioId,
       };
     })
     .filter((item): item is AdminEmailImageAsset => Boolean(item))
-    .slice(0, 3);
+    .slice(0, MAX_IMAGE_ASSETS);
+}
+
+export function hasCompleteScenarioStillAssets(assets: AdminEmailImageAsset[]): boolean {
+  const byId = new Map(
+    assets
+      .filter((asset) => asset.scenarioId && !isGifAssetUrl(asset.url) && asset.role !== "demo")
+      .map((asset) => [asset.scenarioId as AdminEmailScenarioId, asset]),
+  );
+  return ADMIN_EMAIL_PRODUCT_SCENARIOS.every((scenario) => byId.has(scenario.id));
 }
 
 export function parseAdminEmailGenerationRequest(
@@ -219,22 +276,8 @@ function extractJsonObject(text: string): unknown | null {
   return null;
 }
 
-function buildSystemPrompt(): string {
-  return [
-    "You generate polished Envitefy admin marketing emails.",
-    "Return strict JSON only with subject, preheader, bodyHtml, buttonText, buttonUrl, and notes.",
-    "bodyHtml must be an email-client-safe HTML fragment that will be placed inside Envitefy's branded wrapper.",
-    "Do not return a full HTML document, <html>, <head>, <body>, <script>, forms, iframes, external CSS, or markdown.",
-    "Use inline styles on ordinary email-safe elements such as p, h1, h2, div, table, ul, li, strong, em, and a.",
-    "If generatedImageAssets are supplied, use at least one exact generatedImageAssets.url in bodyHtml unless the user's prompt explicitly asks for text only.",
-    "Never invent image URLs, never use local files, and never use base64 or data URLs.",
-    "Images must use email-safe <img> tags with width, alt text, border:0, display:block, max-width:100%, and height:auto inline styles.",
-    "Use clear conversion copy, short paragraphs, and a practical CTA.",
-    "When currentDraft.bodyHtml is present, treat the user's prompt as an edit request and preserve what is not being changed.",
-    "Only use {{greeting}}, {{firstName}}, and {{lastName}} personalization tokens.",
-    "Do not invent pricing, launch dates, offers, guarantees, legal claims, or user data that the prompt did not supply.",
-    "Envitefy helps people create and share public event pages, live cards, invitations, RSVP flows, smart sign-up forms, registry links, and multi-vertical events.",
-  ].join(" ");
+function buildSystemPrompt(audienceMode: AdminEmailAudienceMode): string {
+  return buildAdminEmailSystemPromptFromGuide(audienceMode);
 }
 
 function buildUserPrompt(
@@ -245,20 +288,13 @@ function buildUserPrompt(
     mode: input.currentBodyHtml ? "revise_existing_draft" : "create_new_draft",
     prompt: input.prompt,
     audienceMode: input.audienceMode,
-    generatedImageAssets,
+    ...buildAdminEmailGuidePromptPayload({
+      audienceMode: input.audienceMode,
+      generatedImageAssetsCount: generatedImageAssets.length,
+    }),
     currentDraft: {
       subject: input.currentSubject || "",
       bodyHtml: input.currentBodyHtml || "",
-    },
-    outputRules: {
-      subject: "Punchy but not spammy. 80 characters or fewer when possible.",
-      preheader: "Preview text under 140 characters.",
-      bodyHtml: "HTML fragment only. Inline styles. Include {{greeting}} near the top.",
-      buttonText: "Empty string if no CTA button is appropriate.",
-      buttonUrl: "Only include a real http(s) URL from the prompt, otherwise empty string.",
-      notes: "Short private note for the admin explaining assumptions.",
-      revision:
-        "For revise_existing_draft, apply the requested change while preserving the existing structure, generated image URLs, and CTA unless the prompt asks to change them.",
     },
   });
 }
@@ -273,20 +309,21 @@ function slugForPrompt(value: string): string {
   );
 }
 
-function buildGeneratedEmailImagePrompt(input: AdminEmailGenerationRequest): string {
+function buildStillImagePrompt(campaignPrompt: string, scene: string): string {
+  const visuals = ADMIN_EMAIL_GENERATION_GUIDE.imageVisuals;
   return [
-    "Create one premium email hero image for an Envitefy marketing email.",
-    "The image should support this campaign prompt:",
-    input.prompt,
-    "Make it polished, modern, warm, and conversion-focused.",
-    "Show the feeling of easy digital event creation: invitations, live event pages, RSVP, sign-up organization, registry links, and simple sharing.",
-    "Use realistic product-ad composition or tasteful abstract product staging, but do not render readable text, logos, watermarks, UI labels, QR codes, or fake URLs.",
-    "Leave generous clean space and avoid busy clutter so the email still works if the image is small.",
-    "No embedded typography. No text overlays.",
+    "Create one premium documentary stock photograph for an email campaign.",
+    "Campaign prompt:",
+    campaignPrompt,
+    "Scene direction:",
+    scene,
+    visuals.style,
+    ...visuals.generationPromptSuffix,
+    "Absolutely no logos or watermarks in the photograph.",
   ].join(" ");
 }
 
-async function generateEmailHeroImage(params: {
+async function generateOpenAiImageBytes(params: {
   client: OpenAI;
   prompt: string;
   model: string;
@@ -295,7 +332,7 @@ async function generateEmailHeroImage(params: {
     model: params.model,
     prompt: params.prompt,
     size: "1536x1024",
-    quality: "medium",
+    quality: "high",
     background: "opaque",
     output_format: "png",
     moderation: "auto",
@@ -307,31 +344,165 @@ async function generateEmailHeroImage(params: {
   return Buffer.from(imageData, "base64");
 }
 
-async function uploadEmailHeroImage(params: {
+async function uploadStillImageAsset(params: {
   bytes: Buffer;
   fileName: string;
   altText: string;
   prompt: string;
   model: string;
+  role: AdminEmailImageRole;
+  scenarioId?: AdminEmailScenarioId;
+  uploadImage?: GenerateAdminEmailDraftDeps["uploadImage"];
 }): Promise<AdminEmailImageAsset> {
-  const uploadToken = `admin-email-${Date.now()}-${slugForPrompt(params.fileName)}`;
-  const uploaded = await processBufferUpload({
+  if (params.uploadImage) {
+    const uploaded = await params.uploadImage({
+      bytes: params.bytes,
+      fileName: params.fileName,
+      altText: params.altText,
+      prompt: params.prompt,
+      model: params.model,
+    });
+    return {
+      ...uploaded,
+      role: params.role,
+      altText: uploaded.altText || params.altText,
+      ...(params.scenarioId ? { scenarioId: params.scenarioId } : {}),
+    };
+  }
+
+  const pathname = `event-media/admin-email-${Date.now()}-${slugForPrompt(params.fileName)}/header/${slugForPrompt(params.fileName)}.png`;
+  const uploaded = await uploadPublicBinaryAsset({
     bytes: params.bytes,
-    fileName: params.fileName,
-    mimeType: "image/png",
-    usage: "header",
-    uploadToken,
+    pathname,
+    contentType: "image/png",
   });
-  const url = buildPublicAssetUrl(uploaded.stored.display?.url || uploaded.stored.source?.url || "");
+  const url = resolveEmailEmbedAssetUrl({
+    url: uploaded.url,
+    rawBlobUrl: uploaded.rawBlobUrl,
+    access: uploaded.access,
+  });
   if (!url) throw new Error("Generated image upload did not return a public URL.");
 
   return {
-    role: "hero",
+    role: params.role,
     url,
     altText: params.altText,
     prompt: params.prompt,
     model: params.model,
+    ...(params.scenarioId ? { scenarioId: params.scenarioId } : {}),
   };
+}
+
+async function generateFreshImageBytes(params: {
+  prompt: string;
+  model: string;
+  client: OpenAI;
+  generateImage?: GenerateAdminEmailDraftDeps["generateImage"];
+}): Promise<Buffer> {
+  if (params.generateImage) {
+    return params.generateImage({ prompt: params.prompt, model: params.model });
+  }
+  return generateOpenAiImageBytes({
+    client: params.client,
+    prompt: params.prompt,
+    model: params.model,
+  });
+}
+
+async function generateQaApprovedStillBytes(params: {
+  prompt: string;
+  model: string;
+  client: OpenAI;
+  generateImage?: GenerateAdminEmailDraftDeps["generateImage"];
+  inspectImage?: GenerateAdminEmailDraftDeps["inspectImage"];
+}): Promise<Buffer> {
+  let bestBytes: Buffer | null = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (let attempt = 1; attempt <= MAX_IMAGE_QA_ATTEMPTS; attempt += 1) {
+    const retryHint =
+      attempt > 1
+        ? " Previous attempt failed. Make this one look like a real stock photograph with natural light, no surreal overlays, and absolutely no logos, watermarks, or brand badges anywhere in the frame. Phones and printed invites are fine."
+        : "";
+    const bytes = await generateFreshImageBytes({
+      prompt: `${params.prompt}${retryHint}`,
+      model: params.model,
+      client: params.client,
+      generateImage: params.generateImage,
+    });
+
+    const qa = params.inspectImage
+      ? await params.inspectImage({ imageBytes: bytes })
+      : await inspectAdminEmailImageProfessionalism({
+          client: params.client,
+          imageBytes: bytes,
+        });
+
+    if (qa.pass) return bytes;
+    // Never keep a logo/watermark image as the fallback ship candidate.
+    if (reasonsIndicateBrandLogo(qa.reasons)) continue;
+    if (qa.aiIshScore < bestScore) {
+      bestScore = qa.aiIshScore;
+      bestBytes = bytes;
+    }
+  }
+
+  // Prefer shipping a usable photo over blocking the whole marketing email.
+  if (bestBytes) return bestBytes;
+  throw new Error(`Failed to generate an email still after ${MAX_IMAGE_QA_ATTEMPTS} attempts.`);
+}
+
+function promptRequestsFreshImages(prompt: string): boolean {
+  return /\b(?:new|different|replace|regenerate|change|update|refresh)\s+(?:hero\s+)?(?:images?|visuals?|pictures?|photos?|demos?|scenarios?|art|graphics?)\b/i.test(
+    prompt,
+  );
+}
+
+async function generateScenarioStillAssets(
+  input: AdminEmailGenerationRequest,
+  params: {
+    client: OpenAI;
+    imageModel: string;
+    generateImage?: GenerateAdminEmailDraftDeps["generateImage"];
+    uploadImage?: GenerateAdminEmailDraftDeps["uploadImage"];
+    inspectImage?: GenerateAdminEmailDraftDeps["inspectImage"];
+  },
+): Promise<AdminEmailImageAsset[]> {
+  const existingById = new Map(
+    reusableStillAssets(input.currentImageAssets).map((asset) => [
+      asset.scenarioId as AdminEmailScenarioId,
+      asset,
+    ]),
+  );
+  // Only regenerate every scenario when the user explicitly asks; otherwise fill gaps
+  // (e.g. legacy GIF stripped from Snap while Concierge/teachers/share stills remain).
+  const forceAll = promptRequestsFreshImages(input.prompt);
+
+  return Promise.all(
+    ADMIN_EMAIL_PRODUCT_SCENARIOS.map(async (scenario) => {
+      const existing = existingById.get(scenario.id);
+      if (!forceAll && existing) return existing;
+
+      const prompt = buildStillImagePrompt(input.prompt, scenario.stillScene);
+      const bytes = await generateQaApprovedStillBytes({
+        prompt,
+        model: params.imageModel,
+        client: params.client,
+        generateImage: params.generateImage,
+        inspectImage: params.inspectImage,
+      });
+      return uploadStillImageAsset({
+        bytes,
+        fileName: `${slugForPrompt(input.prompt)}-${scenario.id}.png`,
+        altText: scenario.title,
+        prompt,
+        model: params.imageModel,
+        role: "scenario",
+        scenarioId: scenario.id,
+        uploadImage: params.uploadImage,
+      });
+    }),
+  );
 }
 
 async function generateEmailImageAssets(
@@ -341,71 +512,204 @@ async function generateEmailImageAssets(
     imageModel: string;
     generateImage?: GenerateAdminEmailDraftDeps["generateImage"];
     uploadImage?: GenerateAdminEmailDraftDeps["uploadImage"];
+    inspectImage?: GenerateAdminEmailDraftDeps["inspectImage"];
   },
 ): Promise<AdminEmailImageAsset[]> {
-  const prompt = buildGeneratedEmailImagePrompt(input);
-  const altText = "Envitefy event planning preview";
-  const bytes = params.generateImage
-    ? await params.generateImage({ prompt, model: params.imageModel })
-    : await generateEmailHeroImage({
-        client: params.client,
-        prompt,
-        model: params.imageModel,
-      });
-
-  const fileName = `${slugForPrompt(input.prompt)}-email-hero.png`;
-  const asset = params.uploadImage
-    ? await params.uploadImage({
-        bytes,
-        fileName,
-        altText,
-        prompt,
-        model: params.imageModel,
-      })
-    : await uploadEmailHeroImage({
-        bytes,
-        fileName,
-        altText,
-        prompt,
-        model: params.imageModel,
-      });
-
-  return [asset];
+  return generateScenarioStillAssets(input, params);
 }
 
 function shouldRegenerateImage(input: AdminEmailGenerationRequest): boolean {
-  if (!input.currentImageAssets.length) return true;
-  return /\b(?:new|different|replace|regenerate|change|update|refresh)\s+(?:hero\s+)?(?:image|visual|picture|photo|art|graphic)\b/i.test(
-    input.prompt,
-  );
+  // Always rebuild when legacy GIFs/demo assets were stripped or any scenario still is missing.
+  if (!hasCompleteScenarioStillAssets(input.currentImageAssets)) return true;
+  if (/\.gif(?:$|[?#])/i.test(input.currentBodyHtml || "")) return true;
+  return promptRequestsFreshImages(input.prompt);
 }
 
-export function buildGeneratedEmailImageBlock(asset: AdminEmailImageAsset): string {
-  return `<div style="margin:0 0 24px 0; border-radius:16px; overflow:hidden; background:#F5F2FF;">
-  <img src="${asset.url}" width="544" alt="${asset.altText}" style="display:block; width:100%; max-width:544px; height:auto; border:0; outline:none; text-decoration:none;" />
+export function buildCtaButtonHtml(params: {
+  href?: string;
+  label?: string;
+  margin?: string;
+}): string {
+  const href = params.href || DEFAULT_ENVITEFY_CTA_URL;
+  const label = params.label || "Open Envitefy";
+  const margin = params.margin || "28px 0 20px 0";
+  return `<div style="text-align:center; margin:${margin};">
+  <a href="${href}" target="_blank" style="background-color:#7F67D3; color:#FFFFFF; border-radius:12px; padding:14px 28px; font-weight:700; display:inline-block; text-decoration:none;">${label}</a>
 </div>`;
+}
+
+export function buildGeneratedEmailImageBlock(
+  asset: AdminEmailImageAsset,
+  href = DEFAULT_ENVITEFY_CTA_URL,
+): string {
+  if (isGifAssetUrl(asset.url)) return "";
+  return `<div style="margin:0 0 16px 0; border-radius:16px; overflow:hidden; background:#F5F2FF;">
+  <a href="${href}" target="_blank" style="display:block; text-decoration:none;">
+    <img src="${asset.url}" width="544" alt="${asset.altText}" style="display:block; width:100%; max-width:544px; height:auto; border:0; outline:none; text-decoration:none;" />
+  </a>
+</div>`;
+}
+
+export function buildScenarioRowHtml(params: {
+  title: string;
+  body: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  image?: AdminEmailImageAsset | null;
+}): string {
+  const imageBlock = params.image
+    ? buildGeneratedEmailImageBlock(params.image, params.ctaUrl)
+    : "";
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 28px 0;">
+  <tr>
+    <td style="padding:18px; border:1px solid #E8E1FF; border-radius:16px; background:#FBFAFF;">
+      ${imageBlock}
+      <h2 style="margin:0 0 8px 0;font-size:20px;line-height:26px;color:#172033;">${params.title}</h2>
+      <p style="margin:0 0 14px 0;font-size:15px;line-height:22px;color:#243047;">${params.body}</p>
+      ${buildCtaButtonHtml({ href: params.ctaUrl, label: params.ctaLabel, margin: "0" })}
+    </td>
+  </tr>
+</table>`;
+}
+
+function findScenarioImage(
+  imageAssets: AdminEmailImageAsset[],
+  scenarioId: AdminEmailScenarioId,
+): AdminEmailImageAsset | undefined {
+  return imageAssets.find((asset) => asset.scenarioId === scenarioId);
+}
+
+const DEFAULT_CAMPAIGN_INTRO = `<p style="margin:0 0 16px 0;font-size:16px;line-height:24px;color:#243047;">{{greeting}}</p>
+<h1 style="margin:0 0 12px 0;font-size:28px;line-height:34px;color:#172033;">Plan birthdays, class parties, and shares the easy way</h1>
+<p style="margin:0 0 24px 0;font-size:16px;line-height:24px;color:#243047;">Here are practical ways families and teachers use Envitefy.</p>`;
+
+export function polishAdminEmailBodyHtml(html: string): string {
+  let out = cleanMultilineString(html);
+  if (!out) return "";
+
+  // Never keep animated GIFs in email HTML.
+  out = out.replace(/<img\b[^>]*src\s*=\s*(["'])[^"']*\.gif(?:\?[^"']*)?\1[^>]*>/gi, "");
+  out = out.replace(/snap-demo\.gif/gi, "");
+
+  const banned = BANNED_TEXT_LINK_PATTERN;
+  // Remove filler text links under/near CTAs (never keep these).
+  out = out.replace(
+    new RegExp(
+      `<p[^>]*>\\s*<a\\b(?![^>]*background-color\\s*:\\s*#7F67D3)[^>]*>\\s*(?:${banned})[^<]*<\\/a>\\s*<\\/p>`,
+      "gi",
+    ),
+    "",
+  );
+  out = out.replace(
+    new RegExp(
+      `(<div[^>]*>\\s*<a[^>]*background-color\\s*:\\s*#7F67D3[\\s\\S]*?<\\/div>)\\s*<a\\b(?![^>]*background-color\\s*:\\s*#7F67D3)[^>]*>\\s*(?:${banned})[^<]*<\\/a>`,
+      "gi",
+    ),
+    "$1",
+  );
+  out = out.replace(
+    new RegExp(
+      `<a\\b(?![^>]*background-color\\s*:\\s*#7F67D3)[^>]*>\\s*(?:${banned})\\s*<\\/a>`,
+      "gi",
+    ),
+    "",
+  );
+
+  // Collapse consecutive duplicate purple CTA blocks.
+  out = out.replace(
+    /(<div[^>]*>\s*<a[^>]*background-color\s*:\s*#7F67D3[^>]*>[\s\S]*?<\/a>\s*<\/div>)(?:\s*\1)+/gi,
+    "$1",
+  );
+
+  return out.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+export function extractCampaignIntroHtml(bodyHtml: string): string {
+  let intro = polishAdminEmailBodyHtml(bodyHtml);
+  if (!intro) return DEFAULT_CAMPAIGN_INTRO;
+
+  intro = intro.replace(/<table\b[\s\S]*$/i, "");
+  intro = intro.replace(/<img\b[^>]*>/gi, "");
+
+  for (const scenario of ADMIN_EMAIL_PRODUCT_SCENARIOS) {
+    const titleIndex = intro.toLowerCase().indexOf(scenario.title.toLowerCase());
+    if (titleIndex >= 0) {
+      intro = intro.slice(0, titleIndex);
+    }
+  }
+
+  // Drop any leftover purple buttons from the intro — scenarios + wrapper own CTAs.
+  intro = intro.replace(/<div[^>]*>\s*<a[^>]*background-color\s*:\s*#7F67D3[\s\S]*?<\/div>/gi, "");
+  intro = polishAdminEmailBodyHtml(intro);
+
+  if (!/<p\b|<h1\b/i.test(intro)) return DEFAULT_CAMPAIGN_INTRO;
+  return intro;
+}
+
+export function buildStructuredScenarioEmail(
+  draft: AdminEmailDraft,
+  imageAssets: AdminEmailImageAsset[],
+): string {
+  const intro = extractCampaignIntroHtml(draft.bodyHtml);
+  const rows = ADMIN_EMAIL_PRODUCT_SCENARIOS.map((scenario) => {
+    const image = findScenarioImage(imageAssets, scenario.id);
+    return buildScenarioRowHtml({
+      title: scenario.title,
+      body: scenario.body,
+      ctaLabel: scenario.ctaLabel,
+      ctaUrl: resolveScenarioCtaUrl(scenario.ctaPath),
+      image: image || null,
+    });
+  }).join("\n");
+
+  // No final body CTA — createEmailTemplate adds one from buttonText/buttonUrl.
+  return polishAdminEmailBodyHtml(`${intro}\n${rows}`);
+}
+
+export function ensureDraftIncludesPrimaryCta(draft: AdminEmailDraft): AdminEmailDraft {
+  const hasScenarioCtas = /background-color\s*:\s*#7F67D3/i.test(draft.bodyHtml);
+  const buttonText = hasScenarioCtas
+    ? ""
+    : draft.buttonText.trim() || ADMIN_EMAIL_GENERATION_GUIDE.ctaDefaults.buttonText;
+  const buttonUrl = hasScenarioCtas
+    ? ""
+    : isHttpUrl(draft.buttonUrl)
+      ? draft.buttonUrl
+      : ADMIN_EMAIL_GENERATION_GUIDE.ctaDefaults.buttonUrl;
+  return {
+    ...draft,
+    buttonText,
+    buttonUrl,
+    bodyHtml: polishAdminEmailBodyHtml(draft.bodyHtml),
+  };
 }
 
 export function ensureDraftIncludesImageAssets(
   draft: AdminEmailDraft,
   imageAssets: AdminEmailImageAsset[],
 ): AdminEmailDraft {
-  if (!imageAssets.length) return { ...draft, imageAssets: [] };
-  const allowedUrls = new Set(imageAssets.map((asset) => asset.url));
-  const bodyHtml = draft.bodyHtml.replace(/<img\b[^>]*>/gi, (tag) => {
-    const srcMatch = tag.match(/\s+src\s*=\s*(["'])(.*?)\1/i);
-    const src = srcMatch?.[2]?.trim() || "";
-    return allowedUrls.has(src) ? tag : "";
-  });
-  const missingAssets = imageAssets.filter((asset) => !bodyHtml.includes(asset.url));
-  if (!missingAssets.length) return { ...draft, bodyHtml, imageAssets };
+  if (!imageAssets.length) {
+    return ensureDraftIncludesPrimaryCta({ ...draft, imageAssets: [] });
+  }
 
-  const imageBlocks = missingAssets.map(buildGeneratedEmailImageBlock).join("\n");
-  return {
+  const bodyHtml = buildStructuredScenarioEmail(draft, imageAssets);
+  // Scenario rows already include CTAs — suppress wrapper duplicate button.
+  return ensureDraftIncludesPrimaryCta({
     ...draft,
-    bodyHtml: `${imageBlocks}\n${bodyHtml}`.trim(),
+    bodyHtml,
     imageAssets,
-  };
+    buttonText: "",
+    buttonUrl: "",
+  });
+}
+
+function reusableStillAssets(assets: AdminEmailImageAsset[]): AdminEmailImageAsset[] {
+  return assets.filter(
+    (asset) =>
+      Boolean(asset.scenarioId) &&
+      asset.role === "scenario" &&
+      !isGifAssetUrl(asset.url),
+  );
 }
 
 export async function generateAdminEmailDraft(
@@ -420,14 +724,19 @@ export async function generateAdminEmailDraft(
   const model = resolveAdminEmailGeneratorModel(deps.openAiModel);
   const imageModel = resolveAdminEmailImageModel(deps.openAiImageModel);
   const client = deps.createOpenAiClient?.(apiKey) || new OpenAI({ apiKey });
-  const imageAssets = shouldRegenerateImage(input)
-    ? await generateEmailImageAssets(input, {
-        client,
-        imageModel,
-        generateImage: deps.generateImage,
-        uploadImage: deps.uploadImage,
-      })
-    : input.currentImageAssets;
+  const reusableAssets = reusableStillAssets(input.currentImageAssets);
+  const imageAssets = shouldRegenerateImage({ ...input, currentImageAssets: reusableAssets })
+    ? await generateEmailImageAssets(
+        { ...input, currentImageAssets: reusableAssets },
+        {
+          client,
+          imageModel,
+          generateImage: deps.generateImage,
+          uploadImage: deps.uploadImage,
+          inspectImage: deps.inspectImage,
+        },
+      )
+    : reusableAssets;
   const completion = await client.chat.completions.create({
     model,
     response_format: {
@@ -451,7 +760,7 @@ export async function generateAdminEmailDraft(
       },
     } as any,
     messages: [
-      { role: "system", content: buildSystemPrompt() },
+      { role: "system", content: buildSystemPrompt(input.audienceMode) },
       { role: "user", content: buildUserPrompt(input, imageAssets) },
     ],
   });

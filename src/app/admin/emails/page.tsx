@@ -2,6 +2,7 @@ import { CheckCircle2, Code2, KeyRound, Mail, Newspaper, Send, Share2 } from "lu
 import Link from "next/link";
 import { AdminPageHeader, AdminPanel, AdminStatusBadge } from "@/components/admin/AdminPrimitives";
 import AdminEmailPromptGenerator from "@/components/admin/AdminEmailPromptGenerator";
+import AdminEmailsSubnav, { type AdminEmailsTab } from "@/components/admin/AdminEmailsSubnav";
 import EmailCampaignsClient from "@/components/admin/EmailCampaignsClient";
 
 export const runtime = "nodejs";
@@ -56,71 +57,91 @@ type EmailAdminPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+function resolveTab(raw: string | string[] | undefined): AdminEmailsTab {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (value === "campaigns") return "campaigns";
+  if (value === "templates") return "templates";
+  return "generator";
+}
+
 export default async function EmailAdminPage({ searchParams }: EmailAdminPageProps) {
   const params = searchParams ? await searchParams : {};
-  const rawTab = params.tab;
-  const tab = Array.isArray(rawTab) ? rawTab[0] : rawTab;
+  const tab = resolveTab(params.tab);
   const rawCompose = params.compose;
   const compose = Array.isArray(rawCompose) ? rawCompose[0] : rawCompose;
 
-  if (tab === "campaigns") {
-    return <EmailCampaignsClient initialShowComposer={compose === "1"} />;
-  }
+  const descriptions: Record<AdminEmailsTab, string> = {
+    generator:
+      "Prompt for campaign copy, generate a branded HTML draft with hero image, then hand off to Campaigns.",
+    campaigns: "Compose, preview, send, and review bulk email campaigns backed by Resend.",
+    templates:
+      "Open the HTML editor or preview transactional and marketing templates without leaving Emails.",
+  };
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
         eyebrow="Messaging"
         title="Emails"
-        description="Prompt-generated campaign drafts, send workflows, and transactional email previews live here instead of the executive dashboard."
+        description={descriptions[tab]}
       />
 
-      <AdminEmailPromptGenerator />
+      <AdminEmailsSubnav active={tab} />
 
-      <AdminPanel title="Email Workflows">
-        <div className="grid gap-3 md:grid-cols-2">
-          {emailTools.map((tool) => {
-            const Icon = tool.icon;
-            return (
-              <Link
-                key={tool.href}
-                href={tool.href}
-                className="group rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-300 hover:shadow-md"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-violet-50 text-violet-700 ring-1 ring-violet-100">
-                    <Icon size={20} strokeWidth={1.8} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center justify-between gap-3">
-                      <span className="text-base font-semibold text-slate-950 group-hover:text-violet-800">
-                        {tool.title}
+      {tab === "campaigns" ? (
+        <EmailCampaignsClient initialShowComposer={compose === "1"} embedded />
+      ) : null}
+
+      {tab === "generator" ? <AdminEmailPromptGenerator /> : null}
+
+      {tab === "templates" ? (
+        <>
+          <AdminPanel title="Email Workflows">
+            <div className="grid gap-3 md:grid-cols-2">
+              {emailTools.map((tool) => {
+                const Icon = tool.icon;
+                return (
+                  <Link
+                    key={tool.href}
+                    href={tool.href}
+                    className="group rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-300 hover:shadow-md"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-violet-50 text-violet-700 ring-1 ring-violet-100">
+                        <Icon size={20} strokeWidth={1.8} />
                       </span>
-                      <AdminStatusBadge tone={tool.badge === "Workflow" ? "violet" : "neutral"}>
-                        {tool.badge}
-                      </AdminStatusBadge>
-                    </span>
-                    <span className="mt-1 block text-sm leading-5 text-slate-600">
-                      {tool.description}
-                    </span>
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </AdminPanel>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center justify-between gap-3">
+                          <span className="text-base font-semibold text-slate-950 group-hover:text-violet-800">
+                            {tool.title}
+                          </span>
+                          <AdminStatusBadge tone={tool.badge === "Workflow" ? "violet" : "neutral"}>
+                            {tool.badge}
+                          </AdminStatusBadge>
+                        </span>
+                        <span className="mt-1 block text-sm leading-5 text-slate-600">
+                          {tool.description}
+                        </span>
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </AdminPanel>
 
-      <AdminPanel title="Operational Note">
-        <div className="flex items-start gap-3 text-sm text-slate-700">
-          <Mail className="mt-0.5 shrink-0 text-violet-700" size={18} strokeWidth={1.8} />
-          <p>
-            Campaign history remains backed by{" "}
-            <code className="rounded bg-slate-100 px-1">email_campaigns</code>. Transactional
-            template pages are previews and do not send mail.
-          </p>
-        </div>
-      </AdminPanel>
+          <AdminPanel title="Operational Note">
+            <div className="flex items-start gap-3 text-sm text-slate-700">
+              <Mail className="mt-0.5 shrink-0 text-violet-700" size={18} strokeWidth={1.8} />
+              <p>
+                Campaign history remains backed by{" "}
+                <code className="rounded bg-slate-100 px-1">email_campaigns</code>. Transactional
+                template pages are previews and do not send mail.
+              </p>
+            </div>
+          </AdminPanel>
+        </>
+      ) : null}
     </div>
   );
 }

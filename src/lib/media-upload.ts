@@ -3,6 +3,7 @@ import { put } from "@vercel/blob";
 import sharp from "sharp";
 import { optimizePdfWithQpdf } from "./pdf-optimize.ts";
 import { rasterizePdfPageToPng } from "./pdf-raster.ts";
+import { buildPublicAssetUrl } from "./public-asset-url.ts";
 import {
   SHARP_UPLOAD_PRESETS,
   type UploadKind,
@@ -18,6 +19,8 @@ type BlobAsset = {
   pathname: string;
   sizeBytes: number;
   access: BlobAccess;
+  /** Raw Vercel Blob URL from put(); prefer for public email embeds. */
+  rawBlobUrl?: string;
 };
 
 type ValidatedUpload = {
@@ -150,7 +153,61 @@ async function uploadBlobAsset(params: UploadBlobParams): Promise<BlobAsset> {
     pathname: blob.pathname,
     sizeBytes: params.bytes.length,
     access: resolvedAccess,
+    rawBlobUrl: blob.url,
   };
+}
+
+/** Upload bytes as-is (e.g. animated GIF) without webp conversion. */
+export async function uploadPublicBinaryAsset(params: {
+  bytes: Buffer;
+  pathname: string;
+  contentType: string;
+}): Promise<{
+  url: string;
+  pathname: string;
+  sizeBytes: number;
+  access: BlobAccess;
+  rawBlobUrl?: string;
+}> {
+  const uploaded = await uploadBlobAsset({
+    pathname: params.pathname.replace(/^\/+/, ""),
+    bytes: params.bytes,
+    contentType: params.contentType,
+    access: "public",
+  });
+  return {
+    url: uploaded.url,
+    pathname: uploaded.pathname,
+    sizeBytes: uploaded.sizeBytes,
+    access: uploaded.access,
+    rawBlobUrl: uploaded.rawBlobUrl,
+  };
+}
+
+/**
+ * Resolve a URL safe for email clients and admin preview.
+ * Prefers public CDN URLs; for private proxy paths uses the app origin (not always envitefy.com).
+ */
+export function resolveEmailEmbedAssetUrl(params: {
+  url: string;
+  rawBlobUrl?: string | null;
+  access?: BlobAccess | null;
+}): string {
+  const raw = (params.rawBlobUrl || "").trim();
+  if (raw && /^https?:\/\//i.test(raw) && params.access !== "private") {
+    return raw;
+  }
+
+  const url = (params.url || "").trim();
+  if (!url) return "";
+
+  // Already an absolute non-proxy URL (e.g. public CDN).
+  if (/^https?:\/\//i.test(url) && !/\/api\/blob\//i.test(url)) {
+    return url;
+  }
+
+  // Private proxy path — keep host flexible via buildPublicAssetUrl env resolution.
+  return buildPublicAssetUrl(url.startsWith("/") || /^https?:\/\//i.test(url) ? url : `/${url}`);
 }
 
 async function uploadWebpAsset(params: {

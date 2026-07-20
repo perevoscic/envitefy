@@ -12,11 +12,12 @@ type AudienceMode = "individual" | "broadcast";
 type PreviewMode = "desktop" | "mobile";
 
 type GeneratedImageAsset = {
-  role: "hero";
+  role: "demo" | "scenario" | "hero" | "feature" | "support";
   url: string;
   altText: string;
   prompt: string;
   model: string;
+  scenarioId?: "snap" | "concierge" | "teachers" | "share";
 };
 
 type GeneratedDraft = {
@@ -49,14 +50,32 @@ function personalize(html: string): string {
     .replace(/\{\{lastName\}\}/g, "Recipient");
 }
 
+/** Private blob proxy URLs are rewritten to envitefy.com; remap to current origin for local preview. */
+function rewriteBlobUrlsForPreview(html: string): string {
+  if (typeof window === "undefined") return html;
+  const origin = window.location.origin.replace(/\/$/, "");
+  return html
+    .replace(
+      /https?:\/\/(?:www\.)?envitefy\.com(\/api\/blob\/[^"'\s>]+)/gi,
+      `${origin}$1`,
+    )
+    .replace(/(src=")(\/api\/blob\/[^"]+)/gi, `$1${origin}$2`);
+}
+
+function bodyHasPurpleCta(html: string): boolean {
+  return /background-color\s*:\s*#7F67D3/i.test(html);
+}
+
 function buildPreviewHtml(draft: GeneratedDraft | null): string {
   if (!draft) return "";
+  const body = rewriteBlobUrlsForPreview(personalize(draft.bodyHtml));
+  const suppressWrapperButton = bodyHasPurpleCta(body) || !draft.buttonText || !draft.buttonUrl;
   return createEmailTemplate({
     preheader: draft.preheader,
     title: draft.subject,
-    body: personalize(draft.bodyHtml),
-    buttonText: draft.buttonText || undefined,
-    buttonUrl: draft.buttonUrl || undefined,
+    body,
+    buttonText: suppressWrapperButton ? undefined : draft.buttonText,
+    buttonUrl: suppressWrapperButton ? undefined : draft.buttonUrl,
     footerText: "You're receiving this because you have an Envitefy account.",
   });
 }
@@ -94,8 +113,20 @@ export default function AdminEmailPromptGenerator() {
           prompt: trimmed,
           audienceMode,
           currentSubject: draft?.subject || undefined,
-          currentBodyHtml: draft?.bodyHtml || undefined,
-          currentImageAssets: draft?.imageAssets || [],
+          // Intro-only revise copy: strip prior HTML so legacy GIF scenario markup is not reused.
+          currentBodyHtml: draft
+            ? draft.bodyHtml
+                .replace(/<table\b[\s\S]*$/i, "")
+                .replace(/<img\b[^>]*>/gi, "")
+                .trim() || undefined
+            : undefined,
+          // Never reuse GIFs or incomplete legacy image sets.
+          currentImageAssets: (draft?.imageAssets || []).filter(
+            (asset) =>
+              asset.role === "scenario" &&
+              Boolean(asset.scenarioId) &&
+              !/\.gif(?:$|[?#])/i.test(asset.url),
+          ),
         }),
       });
       const data = (await res.json()) as GenerateEmailResponse;
@@ -140,8 +171,10 @@ export default function AdminEmailPromptGenerator() {
     const handoff: AdminEmailCampaignDraft = {
       subject: draft.subject,
       bodyHtml: draft.bodyHtml,
+      preheader: draft.preheader || undefined,
       buttonText: draft.buttonText || undefined,
       buttonUrl: draft.buttonUrl || undefined,
+      audienceMode,
     };
 
     try {
@@ -150,6 +183,24 @@ export default function AdminEmailPromptGenerator() {
 
     window.location.assign("/admin/emails?tab=campaigns&compose=1");
   }
+
+  const promptStarters = [
+    {
+      label: "Back to school",
+      prompt:
+        "Write a back-to-school email for parents and teachers. Cover snapping birthday flyers, asking Concierge about an upcoming birthday, class parties, and sharing one event link. Include clear CTAs.",
+    },
+    {
+      label: "Birthday parties",
+      prompt:
+        "Promote Envitefy for birthday parties: snap a flyer into a live card, use Concierge if details are still fuzzy, then share RSVP with families.",
+    },
+    {
+      label: "Teachers + share",
+      prompt:
+        "Email for teachers and room parents: turn class party flyers into live pages, collect helpers with smart sign-ups, and share one link with every family.",
+    },
+  ];
 
   return (
     <section className="overflow-hidden rounded-lg border border-violet-200 bg-white shadow-sm">
@@ -160,14 +211,23 @@ export default function AdminEmailPromptGenerator() {
             <h2 className="text-base font-semibold text-slate-950">AI Email Generator</h2>
           </div>
           <p className="mt-1 text-sm text-slate-600">
-            Prompt for campaign copy and generate a branded HTML email draft.
+            Prompt for campaign copy, generate a branded HTML draft, then open Campaigns to send.
           </p>
         </div>
-        {model ? (
-          <span className="inline-flex min-h-6 items-center rounded-full border border-violet-200 bg-white px-2.5 text-xs font-medium text-violet-700">
-            {model}
-          </span>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {model ? (
+            <span className="inline-flex min-h-6 items-center rounded-full border border-violet-200 bg-white px-2.5 text-xs font-medium text-violet-700">
+              {model}
+            </span>
+          ) : null}
+          <a
+            href="/admin/emails?tab=campaigns"
+            className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-800"
+          >
+            Campaigns
+            <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.9} />
+          </a>
+        </div>
       </div>
 
       <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
@@ -176,6 +236,20 @@ export default function AdminEmailPromptGenerator() {
             <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
               Prompt
             </label>
+            {!draft ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {promptStarters.map((starter) => (
+                  <button
+                    key={starter.label}
+                    type="button"
+                    onClick={() => setPrompt(starter.prompt)}
+                    className="inline-flex min-h-8 items-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-800"
+                  >
+                    {starter.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <textarea
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
@@ -224,7 +298,11 @@ export default function AdminEmailPromptGenerator() {
               </button>
             </div>
             <p className="mt-2 text-xs leading-5 text-slate-500">
-              A hero image is generated automatically and embedded into the email HTML.
+              {audienceMode === "broadcast"
+                ? "Newsletter tone for all users. Use In Campaign preselects All users."
+                : "1:1 tone for a test or short list. Use In Campaign preselects Individual."}{" "}
+              Each generate creates professional still photos (QA-checked to avoid AI-looking
+              art) for Snap, Concierge, teachers, and sharing—with CTAs to envitefy.com.
             </p>
           </div>
 
@@ -288,6 +366,14 @@ export default function AdminEmailPromptGenerator() {
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-950">{draft.subject}</p>
               </div>
+              {draft.preheader ? (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Preheader
+                  </p>
+                  <p className="mt-1 text-sm text-slate-700">{draft.preheader}</p>
+                </div>
+              ) : null}
               {draft.imageAssets?.length ? (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -359,7 +445,18 @@ export default function AdminEmailPromptGenerator() {
               <span className="text-xs text-slate-500">Personalization preview</span>
             </div>
           </div>
-          {draft ? (
+          {busy && !draft ? (
+            <div className="flex h-full min-h-[520px] flex-col items-center justify-center gap-3 px-6 text-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-200 border-t-violet-700" />
+              <p className="text-sm font-medium text-slate-700">
+                Generating professional scenario photos…
+              </p>
+              <p className="max-w-sm text-xs text-slate-500">
+                Creating QA-checked stills for Snap, Concierge, teachers, and share (no GIFs).
+                First run often takes 2–5 minutes — image gen + vision QA for each row.
+              </p>
+            </div>
+          ) : draft ? (
             <div className="flex h-[620px] justify-center overflow-auto bg-slate-100 p-3">
               <iframe
                 title="Generated email preview"

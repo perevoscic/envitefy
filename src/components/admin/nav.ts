@@ -53,7 +53,7 @@ export const adminNavItems: AdminNavItem[] = [
     id: "emails",
     label: "Emails",
     href: "/admin/emails",
-    description: "Campaigns and templates",
+    description: "AI drafts, campaigns, and templates",
   },
   {
     id: "marketing-assets",

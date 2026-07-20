@@ -7,7 +7,7 @@ import {
   ADMIN_EMAIL_CAMPAIGN_DRAFT_KEY,
   type AdminEmailCampaignDraft,
 } from "@/lib/admin/email-campaign-draft";
-import { resolvePublicAssetOrigin } from "@/lib/public-asset-url";
+import { createEmailTemplate } from "@/lib/email-template";
 
 interface Campaign {
   id: string;
@@ -36,8 +36,11 @@ function isFullHtmlDocument(value: string): boolean {
 
 export default function CampaignsPage({
   initialShowComposer = false,
+  embedded = false,
 }: {
   initialShowComposer?: boolean;
+  /** When true, omit the standalone page header (parent Emails shell provides nav). */
+  embedded?: boolean;
 }) {
   const { data: session, status } = useSession();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -70,6 +73,11 @@ export default function CampaignsPage({
       if (typeof handoff.bodyHtml === "string") setBody(handoff.bodyHtml);
       if (typeof handoff.buttonText === "string") setButtonText(handoff.buttonText);
       if (typeof handoff.buttonUrl === "string") setButtonUrl(handoff.buttonUrl);
+      if (handoff.audienceMode === "broadcast") {
+        setSelectedPlans(["all"]);
+      } else if (handoff.audienceMode === "individual") {
+        setSelectedPlans(["test"]);
+      }
       setHtmlMode(true);
       setShowComposer(true);
       sessionStorage.removeItem(ADMIN_EMAIL_CAMPAIGN_DRAFT_KEY);
@@ -284,7 +292,7 @@ export default function CampaignsPage({
     );
   };
 
-  // Generate email preview HTML (client-side version of createEmailTemplate)
+  // Generate email preview HTML using the same wrapper as real campaign sends.
   const generatePreviewHtml = () => {
     const greeting = "Hi Preview";
     const firstName = "Preview";
@@ -298,134 +306,13 @@ export default function CampaignsPage({
       return previewBody;
     }
 
-    const baseUrl = resolvePublicAssetOrigin(
-      typeof window !== "undefined" ? window.location.origin : undefined,
-    );
-    const socialIcons = [
-      {
-        href: "https://www.instagram.com/envitefy/",
-        title: "Instagram",
-        src: `${baseUrl}/email/social-instagram.png`,
-      },
-      {
-        href: "https://www.facebook.com/envitefy/",
-        title: "Facebook",
-        src: `${baseUrl}/email/social-facebook.png`,
-      },
-      {
-        href: "https://www.youtube.com/@envitefy",
-        title: "YouTube",
-        src: `${baseUrl}/email/social-youtube.png`,
-      },
-    ];
-    const socialIconsHtml = socialIcons
-      .map(
-        (link) => `
-                    <td style="padding: 0 12px;">
-                      <a href="${link.href}" target="_blank" title="${link.title}" style="display: inline-block;">
-                        <img src="${link.src}" width="36" height="36" alt="${link.title}" style="display: block;" />
-                      </a>
-                    </td>`,
-      )
-      .join("");
-    const currentYear = new Date().getFullYear();
-
-    return `
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="light only" />
-    <meta name="supported-color-schemes" content="light" />
-    <title>${subject || "Campaign Preview"}</title>
-    <style>
-      /* Prevent dark mode */
-      :root { color-scheme: light only !important; }
-      @media (prefers-color-scheme: dark) {
-        body, table, td, a { background-color: #FFFBF7 !important; }
-      }
-    </style>
-  </head>
-  <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #FFFBF7 !important; color-scheme: light !important;">
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #FFFBF7 !important; padding: 40px 20px; color-scheme: light !important;" bgcolor="#FFFBF7">
-      <tr>
-        <td align="center" style="background-color: #FFFBF7 !important;" bgcolor="#FFFBF7">
-          <!-- Logo on beige background -->
-          <div style="padding: 0 0 24px 0; background-color: #FFFBF7 !important; text-align: center;" bgcolor="#FFFBF7">
-            <a href="${baseUrl}" target="_blank" style="display:inline-block; background-color: #FFFBF7 !important; text-decoration: none;" bgcolor="#FFFBF7">
-              <img src="${baseUrl}/email/envitefy-wordmark-email.png" width="164" height="53" alt="Envitefy" style="display:block; width:164px; height:auto; max-width: 100%;" />
-            </a>
-          </div>
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; background-color: #FFFFFF !important; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" bgcolor="#FFFFFF">
-            <!-- Content -->
-            <tr>
-              <td style="padding: 32px 32px 24px 32px; background-color: #FFFFFF;" bgcolor="#FFFFFF">
-                <h1 style="margin: 0 0 24px 0; font-size: 24px; font-weight: 700; color: #2E2C2D; line-height: 1.3;">
-                  ${subject || "Subject Preview"}
-                </h1>
-                <div style="color: #4E4E50; font-size: 16px; line-height: 1.6;">
-                  ${previewBody || "<p>Your email body will appear here...</p>"}
-                </div>
-                ${
-                  buttonText && buttonUrl
-                    ? `
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 32px 0 0 0;">
-                  <tr>
-                    <td style="border-radius: 12px; background-color: #7F67D3 !important;" bgcolor="#7F67D3">
-                      <a href="${buttonUrl}" style="display: inline-block; padding: 14px 32px; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 16px; background-color: #7F67D3;">
-                        ${buttonText}
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-                `
-                    : ""
-                }
-              </td>
-            </tr>
-            <!-- Footer -->
-            <tr>
-              <td style="padding: 24px 32px 32px 32px; border-top: 1px solid #E5E5E5; background-color: #FFFFFF;" bgcolor="#FFFFFF">
-                <p style="margin: 0 0 8px 0; font-size: 14px; color: #737373; line-height: 1.5; font-style: italic;">
-                  Sincerely,<br>
-                  <strong style="color: #2E2C2D;">Envitefy Team</strong>
-                </p>
-                <p style="margin: 4px 0 0 0; font-size: 11px; letter-spacing: 1.6px; color: #9CA3AF; font-weight: 700; text-transform: uppercase;">
-                  CREATE | SHARE | ENJOY
-                </p>
-                <p style="margin: 16px 0 0 0; font-size: 12px; color: #A3A3A3; line-height: 1.5;">
-                  You're receiving this because you have a Envitefy account.
-                </p>
-              </td>
-            </tr>
-          </table>
-          <!-- Social Media Links -->
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 32px auto 16px auto; background-color: #FFFBF7;" bgcolor="#FFFBF7">
-            <tr>
-              <td style="text-align: center; padding-bottom: 16px; background-color: #FFFBF7;" bgcolor="#FFFBF7">
-                <p style="margin: 0; font-size: 14px; color: #737373;">Connect with us</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="text-align: center;">
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
-                  <tr>
-${socialIconsHtml}
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-          <p style="margin: 24px 0 0 0; font-size: 12px; color: #737373; text-align: center;">
-            &copy; ${currentYear} Envitefy. All rights reserved.
-          </p>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
-    `.trim();
+    return createEmailTemplate({
+      title: subject || "Campaign Preview",
+      body: previewBody || "<p>Your email body will appear here...</p>",
+      buttonText: buttonText || undefined,
+      buttonUrl: buttonUrl || undefined,
+      footerText: "You're receiving this because you have an Envitefy account.",
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -449,22 +336,39 @@ ${socialIconsHtml}
   };
 
   return (
-    <div className="min-h-[100dvh] text-slate-950" suppressHydrationWarning>
+    <div className={embedded ? "text-slate-950" : "min-h-[100dvh] text-slate-950"} suppressHydrationWarning>
       <div className="max-w-7xl" suppressHydrationWarning>
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
+        {!embedded ? (
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <Link
+                href="/admin/emails"
+                className="text-slate-500 hover:text-slate-950 transition-colors"
+              >
+                Emails
+              </Link>
+              <span className="text-slate-400">/</span>
+              <h1 className="text-2xl font-semibold text-slate-950">Email Campaigns</h1>
+            </div>
+            <p className="text-slate-600 text-sm">Send bulk emails to your users using Resend</p>
+          </div>
+        ) : (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">Campaign composer</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Preview and send drafts from the AI Generator or compose manually.
+              </p>
+            </div>
             <Link
               href="/admin/emails"
-              className="text-slate-500 hover:text-slate-950 transition-colors"
+              className="inline-flex min-h-9 items-center rounded-md border border-violet-200 bg-violet-50 px-3 text-xs font-semibold text-violet-800 transition hover:bg-violet-100"
             >
-              Emails
+              ← Back to AI Generator
             </Link>
-            <span className="text-slate-400">/</span>
-            <h1 className="text-2xl font-semibold text-slate-950">Email Campaigns</h1>
           </div>
-          <p className="text-slate-600 text-sm">Send bulk emails to your users using Resend</p>
-        </div>
+        )}
 
         {/* Composer Toggle */}
         <div className="mb-6">
