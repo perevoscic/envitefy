@@ -7,6 +7,7 @@ import {
   ADMIN_EMAIL_CAMPAIGN_DRAFT_KEY,
   type AdminEmailCampaignDraft,
 } from "@/lib/admin/email-campaign-draft";
+import { parseStoredCampaignAudienceFilter } from "@/lib/admin/email-campaigns";
 import { createEmailTemplate } from "@/lib/email-template";
 
 interface Campaign {
@@ -14,12 +15,13 @@ interface Campaign {
   subject: string;
   bodyHtml: string;
   fromEmail: string | null;
-  audienceFilter: any;
+  audienceFilter: unknown;
   recipientCount: number;
   sentCount: number;
   failedCount: number;
   status: string;
   errorMessage: string | null;
+  scheduledAt: string | null;
   sentAt: string | null;
   createdAt: string;
   creator: {
@@ -29,9 +31,31 @@ interface Campaign {
   };
 }
 
+type StatusFilter = "all" | "draft" | "queued" | "sent";
+
 function isFullHtmlDocument(value: string): boolean {
   const html = value.trim().toLowerCase();
   return html.startsWith("<!doctype html") || html.includes("<html") || html.includes("<body");
+}
+
+function toDatetimeLocalValue(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function formatCampaignTime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleString("en-US", {
+    month: "numeric",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 export default function CampaignsPage({
@@ -47,6 +71,8 @@ export default function CampaignsPage({
   const [loading, setLoading] = useState(true);
   const [showComposer, setShowComposer] = useState(initialShowComposer);
   const [campaignReloadKey, setCampaignReloadKey] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
 
   // Form state
   const [subject, setSubject] = useState("");
@@ -55,8 +81,11 @@ export default function CampaignsPage({
   const [buttonUrl, setButtonUrl] = useState("");
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [testEmail, setTestEmail] = useState("");
+  const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const [htmlMode, setHtmlMode] = useState(false);
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const isAdmin = Boolean((session?.user as any)?.isAdmin);
@@ -171,7 +200,10 @@ export default function CampaignsPage({
     const loadCampaigns = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/admin/campaigns");
+        const params = new URLSearchParams();
+        if (statusFilter !== "all") params.set("status", statusFilter);
+        params.set("processDue", "1");
+        const res = await fetch(`/api/admin/campaigns?${params.toString()}`);
         const data = await res.json();
         if (data.ok) {
           setCampaigns(data.campaigns);
@@ -184,7 +216,7 @@ export default function CampaignsPage({
     };
 
     void loadCampaigns();
-  }, [campaignReloadKey, isAdmin, status]);
+  }, [campaignReloadKey, isAdmin, status, statusFilter]);
 
   if (status === "loading") {
     return <div className="p-6">Loading…</div>;
@@ -208,25 +240,202 @@ export default function CampaignsPage({
     );
   }
 
+  const resetComposer = () => {
+    setEditingCampaignId(null);
+    setSubject("");
+    setBody("");
+    setButtonText("");
+    setButtonUrl("");
+    setSelectedPlans([]);
+    setTestEmail("");
+    setScheduledAtLocal("");
+    setHtmlMode(false);
+  };
+
+  const buildAudienceFilter = () => {
+    const isTest = selectedPlans.includes("test");
+    return {
+      testEmail: isTest ? testEmail : undefined,
+      minScans: undefined,
+      maxScans: undefined,
+      lastActiveAfter: undefined,
+      lastActiveBefore: undefined,
+    };
+  };
+
+  const validateComposer = (opts?: { requireAudience?: boolean }) => {
+    if (!subject || !body) {
+      alert("Subject and body are required");
+      return false;
+    }
+    if (opts?.requireAudience !== false && selectedPlans.length === 0) {
+      alert("Please select at least one audience");
+      return false;
+    }
+    if (selectedPlans.includes("test") && (!testEmail || !testEmail.trim())) {
+      alert("Please enter at least one recipient email address");
+      return false;
+    }
+    return true;
+  };
+
+  const loadCampaignIntoComposer = (campaign: Campaign, mode: "edit" | "reuse") => {
+    const parsed = parseStoredCampaignAudienceFilter(campaign.audienceFilter);
+    setSubject(campaign.subject);
+    setBody(campaign.bodyHtml);
+    setButtonText(parsed.buttonText);
+    setButtonUrl(parsed.buttonUrl);
+    setHtmlMode(true);
+    if (parsed.audienceFilter.testEmail) {
+      setSelectedPlans(["test"]);
+      setTestEmail(parsed.audienceFilter.testEmail);
+    } else if (parsed.audienceFilter.minScans || parsed.audienceFilter.maxScans) {
+      setSelectedPlans(["all"]);
+      setTestEmail("");
+    } else {
+      // Sent broadcast rows often only store audienceMode.
+      const modeValue =
+        campaign.audienceFilter &&
+        typeof campaign.audienceFilter === "object" &&
+        !Array.isArray(campaign.audienceFilter)
+          ? (campaign.audienceFilter as { audienceMode?: string }).audienceMode
+          : undefined;
+      if (modeValue === "individual") {
+        setSelectedPlans(["test"]);
+      } else {
+        setSelectedPlans(["all"]);
+      }
+      setTestEmail(parsed.audienceFilter.testEmail || "");
+    }
+    setScheduledAtLocal(toDatetimeLocalValue(campaign.scheduledAt));
+    setEditingCampaignId(mode === "edit" ? campaign.id : null);
+    setShowComposer(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSaveDraft = async () => {
+    if (!validateComposer()) return;
+    setSavingDraft(true);
+    try {
+      const res = await fetch(
+        editingCampaignId ? `/api/admin/campaigns/${editingCampaignId}` : "/api/admin/campaigns",
+        {
+          method: editingCampaignId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "save",
+            subject,
+            body,
+            buttonText: buttonText || undefined,
+            buttonUrl: buttonUrl || undefined,
+            audienceFilter: buildAudienceFilter(),
+          }),
+        },
+      );
+      const data = await res.json();
+      if (!data.ok) {
+        alert(`Error: ${data.error || "Failed to save draft"}`);
+        return;
+      }
+      setEditingCampaignId(data.campaignId);
+      alert("Draft saved. You can edit it later from Campaign History.");
+      setCampaignReloadKey((value) => value + 1);
+    } catch (error: unknown) {
+      alert(`Error: ${error instanceof Error ? error.message : "Failed to save draft"}`);
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const handleScheduleCampaign = async () => {
+    if (!validateComposer()) return;
+    if (!scheduledAtLocal) {
+      alert("Pick a date and time to schedule this campaign");
+      return;
+    }
+    const scheduledAt = new Date(scheduledAtLocal);
+    if (Number.isNaN(scheduledAt.getTime()) || scheduledAt.getTime() <= Date.now()) {
+      alert("Schedule time must be in the future");
+      return;
+    }
+
+    setScheduling(true);
+    try {
+      let campaignId = editingCampaignId;
+      if (!campaignId) {
+        const draftRes = await fetch("/api/admin/campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subject,
+            body,
+            buttonText: buttonText || undefined,
+            buttonUrl: buttonUrl || undefined,
+            audienceFilter: buildAudienceFilter(),
+          }),
+        });
+        const draftData = await draftRes.json();
+        if (!draftData.ok) {
+          alert(`Error: ${draftData.error || "Failed to save draft before scheduling"}`);
+          return;
+        }
+        campaignId = draftData.campaignId;
+        setEditingCampaignId(campaignId);
+      }
+
+      const res = await fetch(`/api/admin/campaigns/${campaignId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "schedule",
+          scheduledAt: scheduledAt.toISOString(),
+          subject,
+          body,
+          buttonText: buttonText || undefined,
+          buttonUrl: buttonUrl || undefined,
+          audienceFilter: buildAudienceFilter(),
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        alert(`Error: ${data.error || "Failed to schedule campaign"}`);
+        return;
+      }
+      alert(`Campaign scheduled for ${formatCampaignTime(data.scheduledAt)}`);
+      resetComposer();
+      setShowComposer(false);
+      setCampaignReloadKey((value) => value + 1);
+    } catch (error: unknown) {
+      alert(`Error: ${error instanceof Error ? error.message : "Failed to schedule campaign"}`);
+    } finally {
+      setScheduling(false);
+    }
+  };
+
+  const handleCancelCampaignRow = async (campaign: Campaign) => {
+    if (!confirm(`Cancel "${campaign.subject}"?`)) return;
+    try {
+      const res = await fetch(`/api/admin/campaigns/${campaign.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        alert(`Error: ${data.error || "Failed to cancel"}`);
+        return;
+      }
+      if (editingCampaignId === campaign.id) resetComposer();
+      setCampaignReloadKey((value) => value + 1);
+    } catch (error: unknown) {
+      alert(`Error: ${error instanceof Error ? error.message : "Failed to cancel"}`);
+    }
+  };
+
   const handleSendCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!subject || !body) {
-      alert("Subject and body are required");
-      return;
-    }
-
-    if (selectedPlans.length === 0) {
-      alert("Please select at least one audience");
-      return;
-    }
-
-    // Handle test and all modes
-    const isTest = selectedPlans.includes("test");
-    if (isTest && (!testEmail || !testEmail.trim())) {
-      alert("Please enter at least one recipient email address");
-      return;
-    }
+    if (!validateComposer()) return;
 
     setSending(true);
 
@@ -235,17 +444,12 @@ export default function CampaignsPage({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          campaignId: editingCampaignId || undefined,
           subject,
           body,
           buttonText: buttonText || undefined,
           buttonUrl: buttonUrl || undefined,
-          audienceFilter: {
-            testEmail: isTest ? testEmail : undefined,
-            minScans: undefined,
-            maxScans: undefined,
-            lastActiveAfter: undefined,
-            lastActiveBefore: undefined,
-          },
+          audienceFilter: buildAudienceFilter(),
         }),
       });
 
@@ -254,10 +458,9 @@ export default function CampaignsPage({
       if (data.ok) {
         let message = `Campaign sent!\n✅ Sent: ${data.sent}\n❌ Failed: ${data.failed}`;
 
-        // Show failed recipients
         if (data.errors && data.errors.length > 0) {
           message += `\n\n❌ Failed recipients:\n`;
-          data.errors.slice(0, 10).forEach((err: any) => {
+          data.errors.slice(0, 10).forEach((err: { email: string; error: string }) => {
             const shortError =
               err.error.length > 80 ? `${err.error.substring(0, 80)}...` : err.error;
             message += `• ${err.email}\n  ${shortError}\n`;
@@ -268,19 +471,14 @@ export default function CampaignsPage({
         }
 
         alert(message);
-        // Reset form
-        setSubject("");
-        setBody("");
-        setButtonText("");
-        setButtonUrl("");
-        setSelectedPlans([]);
+        resetComposer();
         setShowComposer(false);
         setCampaignReloadKey((value) => value + 1);
       } else {
         alert(`Error: ${data.error}`);
       }
-    } catch (error: any) {
-      alert(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`Error: ${error instanceof Error ? error.message : "Failed to send"}`);
     } finally {
       setSending(false);
     }
@@ -358,7 +556,7 @@ export default function CampaignsPage({
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Campaign composer</h2>
               <p className="mt-1 text-sm text-slate-600">
-                Preview and send drafts from the AI Generator or compose manually.
+                Save drafts, schedule sends, or send now. Drafts stay in history for reuse.
               </p>
             </div>
             <Link
@@ -373,7 +571,15 @@ export default function CampaignsPage({
         {/* Composer Toggle */}
         <div className="mb-6">
           <button
-            onClick={() => setShowComposer(!showComposer)}
+            onClick={() => {
+              if (showComposer) {
+                resetComposer();
+                setShowComposer(false);
+              } else {
+                resetComposer();
+                setShowComposer(true);
+              }
+            }}
             className="px-4 py-2 bg-[#7f67d3] text-white rounded-lg font-medium hover:bg-[#6f57c8] transition-all"
           >
             {showComposer ? "✕ Cancel" : "✉️ New Campaign"}
@@ -386,7 +592,9 @@ export default function CampaignsPage({
             onSubmit={handleSendCampaign}
             className="bg-white rounded-xl border border-[#ddd5f6] ring-1 ring-[#ede7ff] overflow-hidden shadow-sm p-6 mb-8"
           >
-            <h2 className="text-lg font-semibold text-[#43366f] mb-4">Compose Campaign</h2>
+            <h2 className="text-lg font-semibold text-[#43366f] mb-4">
+              {editingCampaignId ? "Edit Campaign" : "Compose Campaign"}
+            </h2>
 
             {/* Subject */}
             <div className="mb-4">
@@ -652,19 +860,55 @@ export default function CampaignsPage({
               )}
             </div>
 
+            {/* Schedule */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-[#43366f] mb-2">
+                Schedule send (optional)
+              </label>
+              <input
+                type="datetime-local"
+                value={scheduledAtLocal}
+                onChange={(e) => setScheduledAtLocal(e.target.value)}
+                className="w-full max-w-md px-4 py-2 bg-white border border-[#d8d0f3] rounded-lg text-[#483a74] focus:outline-none focus:ring-2 focus:ring-[#baa9ea]/55 focus:border-[#9b86df]"
+              />
+              <p className="text-xs text-[#8c80b6] mt-2">
+                Set a future time, then click Schedule. Due campaigns also send when you open this
+                tab or when cron hits process-due.
+              </p>
+            </div>
+
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={() => setShowPreview(true)}
                 disabled={!subject || !body || selectedPlans.length === 0}
                 className="px-6 py-2 bg-[#7f67d3] text-white rounded-lg font-medium hover:bg-[#6f57c8] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                👁️ Preview Email
+                Preview Email
               </button>
               <button
                 type="button"
-                onClick={() => setShowComposer(false)}
+                onClick={() => void handleSaveDraft()}
+                disabled={savingDraft || sending || scheduling || !subject || !body}
+                className="px-6 py-2 bg-white text-[#4b3f72] border border-[#d8d0f3] rounded-lg font-medium hover:bg-[#f6f2ff] transition-all disabled:opacity-50"
+              >
+                {savingDraft ? "Saving…" : "Save draft"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleScheduleCampaign()}
+                disabled={scheduling || sending || savingDraft || !subject || !body || !scheduledAtLocal}
+                className="px-6 py-2 bg-[#8c74df] text-white rounded-lg font-medium hover:bg-[#7b63d0] transition-all disabled:opacity-50"
+              >
+                {scheduling ? "Scheduling…" : "Schedule send"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  resetComposer();
+                  setShowComposer(false);
+                }}
                 className="px-6 py-2 bg-[#f3efff] text-[#4b3f72] rounded-lg font-medium hover:bg-[#eae2ff] transition-all"
               >
                 Cancel
@@ -749,7 +993,32 @@ export default function CampaignsPage({
         {/* Campaign History */}
         <div className="bg-white rounded-xl border border-[#ddd5f6] ring-1 ring-[#ede7ff] overflow-hidden shadow-sm">
           <div className="p-6 border-b border-[#e4def9] bg-[#faf8ff]">
-            <h2 className="text-lg font-semibold text-[#43366f]">Campaign History</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-[#43366f]">Campaign History</h2>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["all", "All"],
+                    ["draft", "Drafts"],
+                    ["queued", "Scheduled"],
+                    ["sent", "Sent"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setStatusFilter(value)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                      statusFilter === value
+                        ? "bg-[#7f67d3] text-white border-[#7f67d3]"
+                        : "bg-white text-[#4b3f72] border-[#d8d0f3] hover:bg-[#f6f2ff]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {loading ? (
@@ -787,52 +1056,46 @@ export default function CampaignsPage({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
                     <div className="text-xs text-[#8c80b6]">
-                      {campaign.sentAt
-                        ? `Sent ${new Date(campaign.sentAt).toLocaleString("en-US", {
-                            month: "numeric",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          })}`
-                        : `Created ${new Date(campaign.createdAt).toLocaleString("en-US", {
-                            month: "numeric",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          })}`}
+                      {campaign.status === "queued" && campaign.scheduledAt
+                        ? `Scheduled ${formatCampaignTime(campaign.scheduledAt)}`
+                        : campaign.sentAt
+                          ? `Sent ${formatCampaignTime(campaign.sentAt)}`
+                          : `Created ${formatCampaignTime(campaign.createdAt)}`}
                     </div>
-                    <button
-                      onClick={() => {
-                        // Copy campaign content to form
-                        setSubject(campaign.subject);
-                        setBody(campaign.bodyHtml);
-                        setShowComposer(true);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f6f2ff] hover:bg-[#eee7ff] border border-[#d8d0f3] transition-colors flex items-center gap-1.5 text-[#4b3f72]"
-                      title="Copy this campaign to create a new one"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                        />
-                      </svg>
-                      Copy & Reuse
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      {(campaign.status === "draft" ||
+                        campaign.status === "queued" ||
+                        campaign.status === "cancelled") && (
+                        <button
+                          type="button"
+                          onClick={() => loadCampaignIntoComposer(campaign, "edit")}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f6f2ff] hover:bg-[#eee7ff] border border-[#d8d0f3] transition-colors text-[#4b3f72]"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {(campaign.status === "draft" || campaign.status === "queued") && (
+                        <button
+                          type="button"
+                          onClick={() => void handleCancelCampaignRow(campaign)}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white hover:bg-[#fff1f5] border border-[#f0c2d4] transition-colors text-[#b44d73]"
+                        >
+                          {campaign.status === "queued" ? "Cancel schedule" : "Cancel"}
+                        </button>
+                      )}
+                      {(campaign.status === "sent" || campaign.status === "failed") && (
+                        <button
+                          type="button"
+                          onClick={() => loadCampaignIntoComposer(campaign, "reuse")}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#f6f2ff] hover:bg-[#eee7ff] border border-[#d8d0f3] transition-colors flex items-center gap-1.5 text-[#4b3f72]"
+                          title="Copy this campaign to create a new one"
+                        >
+                          Copy & Reuse
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

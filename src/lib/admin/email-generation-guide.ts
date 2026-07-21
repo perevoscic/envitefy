@@ -38,6 +38,7 @@ export const ADMIN_EMAIL_GENERATION_GUIDE = {
     "Always set buttonText and buttonUrl to empty strings when scenario rows are used (scenario CTAs are enough).",
     "Prefer buttonUrl https://envitefy.com only when a single final wrapper CTA is intentionally required.",
     "Only use {{greeting}}, {{firstName}}, and {{lastName}} personalization tokens.",
+    "Put the recipient name only in {{greeting}} (e.g. Hi {{firstName}} via greeting). Do not open the headline or body paragraph with {{firstName}} again.",
     "Prefer concrete product benefits (live cards, RSVP, snap, Concierge, smart sign-ups) over vague lifestyle claims.",
   ] as const,
 
@@ -50,6 +51,7 @@ export const ADMIN_EMAIL_GENERATION_GUIDE = {
     "Do not invent image URLs, local files, base64, or data URLs.",
     "Do not invent pricing, launch dates, offers, guarantees, legal claims, or user data the prompt did not supply.",
     "Do not duplicate the final Create an event / Open Envitefy button in bodyHtml.",
+    "Do not repeat the recipient name after {{greeting}} (avoid “{{firstName}}, …” right after Hi).",
   ] as const,
 
   bannedTextLinkLabels: [
@@ -74,13 +76,15 @@ export const ADMIN_EMAIL_GENERATION_GUIDE = {
     individual: [
       "Audience mode is individual (1:1 / small test send).",
       "Write warmer, more personal copy that can address one recipient.",
-      "Use {{greeting}} and {{firstName}} naturally; keep paragraphs short and conversational.",
+      "Use {{greeting}} once at the top. Do not also lead the next paragraph with {{firstName}}.",
+      "Keep paragraphs short and conversational.",
       "Stay brand-safe and conversion-focused.",
     ],
     broadcast: [
       "Audience mode is broadcast (newsletter / all-users campaign).",
       "Write inclusive second-person plural copy that works for a mixed list.",
       "Keep personalization light: {{greeting}} is fine, but avoid assuming one specific event or child.",
+      "Do not open body copy with {{firstName}} after {{greeting}}.",
       "Lead with a shared seasonal or product benefit.",
     ],
   },

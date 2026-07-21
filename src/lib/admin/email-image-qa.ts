@@ -39,12 +39,31 @@ function extractJsonObject(text: string): unknown | null {
   return null;
 }
 
-export function reasonsIndicateBrandLogo(reasons: string[]): boolean {
-  return reasons.some((reason) =>
-    /\b(?:logo|logos|wordmark|watermark|brand\s*mark|brand\s*badge|envitefy\s+(?:logo|mark|badge|wordmark))\b/i.test(
+const BRAND_LOGO_TERM_PATTERN =
+  /\b(?:logo|logos|wordmark|watermark|brand\s*mark|brand\s*badge|envitefy\s+(?:logo|mark|badge|wordmark))\b/i;
+
+/** True when the reason is saying logos/watermarks are absent, not present. */
+function reasonNegatesBrandLogo(reason: string): boolean {
+  return (
+    /\b(?:no|not|without|none|absent|lacks?|lacking|free\s+of|devoid\s+of|zero)\b[\s\S]{0,48}\b(?:logo|logos|wordmark|watermark|brand\s*mark|brand\s*badge)\b/i.test(
       reason,
-    ),
+    ) ||
+    /\b(?:logo|logos|wordmark|watermark|brand\s*mark|brand\s*badge)\b[\s\S]{0,48}\b(?:not\s+(?:visible|present|found|detected|shown)|absent|missing|unseen)\b/i.test(
+      reason,
+    )
   );
+}
+
+/**
+ * Detects affirmative logo/watermark findings in QA reasons.
+ * Negated phrases like "No visible logo or watermark" must not hard-fail.
+ */
+export function reasonsIndicateBrandLogo(reasons: string[]): boolean {
+  return reasons.some((reason) => {
+    if (!BRAND_LOGO_TERM_PATTERN.test(reason)) return false;
+    if (reasonNegatesBrandLogo(reason)) return false;
+    return true;
+  });
 }
 
 export function normalizeAdminEmailImageQaResult(value: unknown): AdminEmailImageQaResult | null {

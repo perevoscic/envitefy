@@ -73,6 +73,15 @@ export async function POST(request: Request): Promise<NextResponse<AdminEmailGen
     const message = error instanceof Error ? error.message : "Failed to generate email.";
     const openAiMissing = /OPENAI_API_KEY|OpenAI is not configured/i.test(message);
     const blobMissing = /BLOB_READ_WRITE_TOKEN|Vercel Blob|blob store/i.test(message);
+    console.error("[admin-email] generate route failed", {
+      message,
+      code: openAiMissing
+        ? "openai_not_configured"
+        : blobMissing
+          ? "blob_not_configured"
+          : "generation_failed",
+      name: error instanceof Error ? error.name : "Error",
+    });
     return failureResponse(
       openAiMissing || blobMissing ? 503 : 500,
       openAiMissing

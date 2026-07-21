@@ -19,8 +19,33 @@ export interface CampaignRecipientNameRow {
   last_name: string | null;
 }
 
+export type CampaignStatus =
+  | "draft"
+  | "queued"
+  | "sending"
+  | "sent"
+  | "failed"
+  | "cancelled";
+
+export interface StoredCampaignAudienceFilter {
+  audienceMode?: "individual" | "broadcast";
+  recipientCount?: number;
+  minScans?: number;
+  maxScans?: number;
+  lastActiveAfter?: string;
+  lastActiveBefore?: string;
+  testEmail?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+  rawHtml?: boolean;
+}
+
 interface StoredAudienceFilterOptions {
   rawHtml?: boolean;
+  buttonText?: string | null;
+  buttonUrl?: string | null;
+  /** Persist individual recipient emails so drafts/schedules can send later. */
+  persistTestEmail?: boolean;
 }
 
 function normalizeEmailKey(email: string): string {
@@ -30,6 +55,11 @@ function normalizeEmailKey(email: string): string {
 function cleanNullableString(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
+}
+
+function cleanOptionalString(value: string | null | undefined, maxLength = 500): string | null {
+  const cleaned = cleanNullableString(value);
+  return cleaned ? cleaned.slice(0, maxLength) : null;
 }
 
 export function isIndividualCampaignAudience(
@@ -79,8 +109,8 @@ export function buildStoredCampaignAudienceFilter(
   audienceFilter: CampaignAudienceFilter | null | undefined,
   recipientCount: number,
   options: StoredAudienceFilterOptions = {},
-) {
-  const stored: Record<string, string | number | boolean> = {
+): StoredCampaignAudienceFilter {
+  const stored: StoredCampaignAudienceFilter = {
     audienceMode: isIndividualCampaignAudience(audienceFilter)
       ? "individual"
       : "broadcast",
@@ -99,9 +129,58 @@ export function buildStoredCampaignAudienceFilter(
   if (audienceFilter?.lastActiveBefore) {
     stored.lastActiveBefore = audienceFilter.lastActiveBefore;
   }
+  if (options.persistTestEmail) {
+    const testEmail = cleanOptionalString(audienceFilter?.testEmail, 4000);
+    if (testEmail) stored.testEmail = testEmail;
+  }
   if (options.rawHtml) {
     stored.rawHtml = true;
   }
+  const buttonText = cleanOptionalString(options.buttonText, 120);
+  if (buttonText) stored.buttonText = buttonText;
+  const buttonUrl = cleanOptionalString(options.buttonUrl, 500);
+  if (buttonUrl) stored.buttonUrl = buttonUrl;
 
   return stored;
+}
+
+export function parseStoredCampaignAudienceFilter(
+  value: unknown,
+): {
+  audienceFilter: CampaignAudienceFilter;
+  buttonText: string;
+  buttonUrl: string;
+  rawHtml: boolean;
+} {
+  const record =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+
+  const asNumber = (input: unknown): number | null =>
+    typeof input === "number" && Number.isFinite(input) ? input : null;
+  const asString = (input: unknown): string | null =>
+    typeof input === "string" && input.trim() ? input.trim() : null;
+
+  return {
+    audienceFilter: {
+      minScans: asNumber(record.minScans),
+      maxScans: asNumber(record.maxScans),
+      lastActiveAfter: asString(record.lastActiveAfter),
+      lastActiveBefore: asString(record.lastActiveBefore),
+      testEmail: asString(record.testEmail),
+    },
+    buttonText: asString(record.buttonText) || "",
+    buttonUrl: asString(record.buttonUrl) || "",
+    rawHtml: record.rawHtml === true,
+  };
+}
+
+export function isFullHtmlDocument(value: string): boolean {
+  const html = value.trim().toLowerCase();
+  return (
+    html.startsWith("<!doctype html") ||
+    html.includes("<html") ||
+    html.includes("<body")
+  );
 }

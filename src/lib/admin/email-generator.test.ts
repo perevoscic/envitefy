@@ -5,16 +5,19 @@ import test from "node:test";
 
 import {
   buildScenarioRowHtml,
+  buildStillImageRetryHint,
   ensureDraftIncludesImageAssets,
   hasCompleteScenarioStillAssets,
   normalizeAdminEmailDraft,
   parseAdminEmailGenerationRequest,
   polishAdminEmailBodyHtml,
   sanitizeGeneratedEmailHtml,
+  stripRedundantNameAfterGreeting,
 } from "./email-generator.ts";
 import {
   buildAdminEmailImageQaPrompt,
   normalizeAdminEmailImageQaResult,
+  reasonsIndicateBrandLogo,
 } from "./email-image-qa.ts";
 import { ADMIN_EMAIL_GENERATION_GUIDE } from "./email-generation-guide.ts";
 
@@ -66,6 +69,54 @@ test("admin email generator builds QA-checked still scenario photos without GIFs
   assert.match(scenarios, /No logos/);
   assert.match(source, /Absolutely no logos or watermarks/);
   assert.match(source, /reasonsIndicateBrandLogo/);
+  assert.match(source, /buildStillImageRetryHint/);
+  assert.match(source, /\[admin-email\]/);
+  assert.match(source, /still_attempt_rejected/);
+  assert.match(source, /still_generation_exhausted/);
+  assert.match(source, /Last QA:/);
+});
+
+test("still image retry hints escalate with prior QA feedback", () => {
+  assert.equal(
+    buildStillImageRetryHint({ attempt: 1, previousReasons: [], logoRejected: false }),
+    "",
+  );
+
+  const logoRetry = buildStillImageRetryHint({
+    attempt: 2,
+    previousReasons: ["Envitefy logo watermark in the corner"],
+    logoRejected: true,
+  });
+  assert.match(logoRetry, /Envitefy logo watermark/i);
+  assert.match(logoRetry, /CRITICAL FIX/i);
+  assert.match(logoRetry, /blank phone lock screen|non-branded/i);
+  assert.doesNotMatch(logoRetry, /Final attempt/);
+
+  const finalLogoRetry = buildStillImageRetryHint({
+    attempt: 3,
+    previousReasons: ["Brand badge overlay"],
+    logoRejected: true,
+  });
+  assert.match(finalLogoRetry, /Final attempt/i);
+  assert.match(finalLogoRetry, /zero text/i);
+
+  const surrealRetry = buildStillImageRetryHint({
+    attempt: 2,
+    previousReasons: ["glowing UI bubbles and collage panels"],
+    logoRejected: false,
+  });
+  assert.match(surrealRetry, /glowing UI bubbles/i);
+  assert.match(surrealRetry, /documentary stock photograph/i);
+  assert.doesNotMatch(surrealRetry, /CRITICAL FIX/);
+
+  const generateErrorRetry = buildStillImageRetryHint({
+    attempt: 2,
+    previousReasons: ["image generation error: rate_limit_exceeded"],
+    logoRejected: false,
+  });
+  assert.match(generateErrorRetry, /rate_limit_exceeded/i);
+  assert.match(generateErrorRetry, /Simplify the scene/i);
+  assert.doesNotMatch(generateErrorRetry, /documentary stock photograph/i);
 });
 
 test("admin email generation requests require a prompt and normalize audience mode", () => {
@@ -272,6 +323,34 @@ test("polish removes flyer text links and duplicate purple buttons", () => {
   assert.equal((polished.match(/Create an event/g) || []).length, 1);
 });
 
+test("polish strips repeated firstName after greeting", () => {
+  const polished = polishAdminEmailBodyHtml(`
+    <p style="margin:0 0 16px 0;">{{greeting}}</p>
+    <h1>Make the birthday invite easy</h1>
+    <p>{{firstName}}, snap a party flyer into a live card, use Concierge while the details come together.</p>
+  `);
+
+  assert.match(polished, /\{\{greeting\}\}/);
+  assert.doesNotMatch(polished, /\{\{firstName\}\}/);
+  assert.match(polished, /Snap a party flyer into a live card/);
+
+  assert.equal(
+    stripRedundantNameAfterGreeting(
+      `<p>{{firstName}}, before greeting should stay.</p><p>{{greeting}}</p>`,
+    ),
+    `<p>{{firstName}}, before greeting should stay.</p><p>{{greeting}}</p>`,
+  );
+});
+
+test("generation guide forbids repeating the recipient name after greeting", () => {
+  const guideSource = fs.readFileSync(
+    path.join(repoRoot, "src/lib/admin/email-generation-guide.ts"),
+    "utf8",
+  );
+  assert.match(guideSource, /Do not repeat the recipient name after \{\{greeting\}\}/);
+  assert.match(guideSource, /Do not also lead the next paragraph with \{\{firstName\}\}/);
+});
+
 test("scenario row helper renders title body image and CTA", () => {
   const html = buildScenarioRowHtml({
     title: "Parents: snap a birthday flyer",
@@ -327,4 +406,33 @@ test("image QA rejects high AI-ish scores and keeps guide reject traits", () => 
   assert.match(prompt, /phones|printed invitation/i);
   assert.match(prompt, /HARD FAIL if any brand logo/i);
   assert.match(prompt, /Do NOT fail solely/i);
+});
+
+test("image QA does not treat negated logo reasons as brand overlays", () => {
+  assert.equal(
+    reasonsIndicateBrandLogo([
+      "Looks like a natural lifestyle photograph with realistic lighting and materials",
+      "Single-scene composition with a person using a phone and writing in a notebook",
+      "No visible logo, watermark, badge, or brand overlay",
+    ]),
+    false,
+  );
+  assert.equal(
+    reasonsIndicateBrandLogo(["Envitefy logo watermark in the corner"]),
+    true,
+  );
+  assert.equal(reasonsIndicateBrandLogo(["without logos or watermarks"]), false);
+
+  const passed = normalizeAdminEmailImageQaResult({
+    pass: true,
+    aiIshScore: 0.25,
+    hasBrandLogoOverlay: false,
+    reasons: [
+      "Looks like a natural lifestyle photograph with realistic lighting and materials",
+      "No visible logo, watermark, badge, or brand overlay",
+    ],
+  });
+  assert.ok(passed);
+  assert.equal(passed.pass, true);
+  assert.ok(passed.aiIshScore < 0.75);
 });

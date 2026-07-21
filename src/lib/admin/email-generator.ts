@@ -74,6 +74,28 @@ const MAX_BODY_HTML_LENGTH = 50000;
 const MAX_IMAGE_ASSETS = 8;
 const MAX_IMAGE_QA_ATTEMPTS = 3;
 const BANNED_TEXT_LINK_PATTERN = bannedAdminEmailTextLinkPattern();
+const ADMIN_EMAIL_LOG_PREFIX = "[admin-email]";
+
+function logAdminEmail(
+  level: "info" | "warn" | "error",
+  event: string,
+  details: Record<string, unknown> = {},
+): void {
+  const payload = { event, ...details };
+  if (level === "error") {
+    console.error(ADMIN_EMAIL_LOG_PREFIX, payload);
+    return;
+  }
+  if (level === "warn") {
+    console.warn(ADMIN_EMAIL_LOG_PREFIX, payload);
+    return;
+  }
+  console.log(ADMIN_EMAIL_LOG_PREFIX, payload);
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 function parseImageRole(value: unknown): AdminEmailImageRole {
   const role = cleanString(value, 40);
@@ -409,38 +431,173 @@ async function generateFreshImageBytes(params: {
   });
 }
 
+function summarizeQaFailureReasons(reasons: string[]): string {
+  const cleaned = reasons
+    .map((reason) => cleanString(reason, 160))
+    .filter(Boolean)
+    .slice(0, 3);
+  return cleaned.length ? cleaned.join("; ") : "unspecified visual QA failure";
+}
+
+/**
+ * Builds corrective image-prompt text from the prior QA reject so retries
+ * fix the specific failure (logos vs surreal AI look) instead of repeating
+ * the same generic hint.
+ */
+export function buildStillImageRetryHint(params: {
+  attempt: number;
+  previousReasons: string[];
+  logoRejected: boolean;
+}): string {
+  if (params.attempt <= 1) return "";
+
+  const feedback = summarizeQaFailureReasons(params.previousReasons);
+  const generationFailed = params.previousReasons.some((reason) =>
+    /image generation error|image QA error/i.test(reason),
+  );
+  const parts = [
+    generationFailed
+      ? ` Retry ${params.attempt - 1}: previous attempt failed (${feedback}).`
+      : ` Retry ${params.attempt - 1}: previous image failed visual QA (${feedback}).`,
+  ];
+
+  if (params.logoRejected) {
+    parts.push(
+      " CRITICAL FIX: remove every logo, watermark, wordmark, brand badge, corner stamp, app icon, sticker, and readable brand name from the entire frame.",
+      " Phone screens and printed invites must stay blank, heavily blurred, or generic non-branded paper only — never Envitefy or any other brand mark.",
+      " Do not add UI chrome, app store badges, or text overlays of any kind.",
+    );
+    if (params.attempt >= MAX_IMAGE_QA_ATTEMPTS) {
+      parts.push(
+        " Final attempt: plain unbranded props only. Prefer a soft-focus blank paper invite and a blank phone lock screen with zero text, icons, or marks.",
+      );
+    }
+  } else if (generationFailed) {
+    parts.push(
+      " Simplify the scene: one clear subject, natural indoor light, ordinary lifestyle photography, no complex props or text.",
+      " Keep phones and paper invites plain and unbranded.",
+    );
+    if (params.attempt >= MAX_IMAGE_QA_ATTEMPTS) {
+      parts.push(
+        " Final attempt: minimal composition only — parent hands, blank paper, blank phone screen, soft background.",
+      );
+    }
+  } else {
+    parts.push(
+      " Remake as a real documentary stock photograph: natural window light, authentic skin texture, shallow depth of field.",
+      " No surreal overlays, holograms, glowing UI bubbles, collage panels, neon lines, or floating icons.",
+      " Phones and printed invites are fine when they look physical and unbranded.",
+    );
+    if (params.attempt >= MAX_IMAGE_QA_ATTEMPTS) {
+      parts.push(
+        " Final attempt: simpler single-subject framing, softer background bokeh, photoreal lifestyle only — no concept-art styling.",
+      );
+    }
+  }
+
+  return parts.join(" ");
+}
+
 async function generateQaApprovedStillBytes(params: {
   prompt: string;
   model: string;
+  scenarioId: AdminEmailScenarioId;
   client: OpenAI;
   generateImage?: GenerateAdminEmailDraftDeps["generateImage"];
   inspectImage?: GenerateAdminEmailDraftDeps["inspectImage"];
 }): Promise<Buffer> {
   let bestBytes: Buffer | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
+  let previousReasons: string[] = [];
+  let previousLogoRejected = false;
+  const startedAt = Date.now();
 
   for (let attempt = 1; attempt <= MAX_IMAGE_QA_ATTEMPTS; attempt += 1) {
-    const retryHint =
-      attempt > 1
-        ? " Previous attempt failed. Make this one look like a real stock photograph with natural light, no surreal overlays, and absolutely no logos, watermarks, or brand badges anywhere in the frame. Phones and printed invites are fine."
-        : "";
-    const bytes = await generateFreshImageBytes({
-      prompt: `${params.prompt}${retryHint}`,
+    const retryHint = buildStillImageRetryHint({
+      attempt,
+      previousReasons,
+      logoRejected: previousLogoRejected,
+    });
+    const attemptStartedAt = Date.now();
+    logAdminEmail("info", "still_attempt_start", {
+      scenarioId: params.scenarioId,
+      attempt,
+      maxAttempts: MAX_IMAGE_QA_ATTEMPTS,
       model: params.model,
-      client: params.client,
-      generateImage: params.generateImage,
+      retryHintApplied: Boolean(retryHint),
+      previousLogoRejected,
+      previousReasons: previousReasons.slice(0, 3),
     });
 
-    const qa = params.inspectImage
-      ? await params.inspectImage({ imageBytes: bytes })
-      : await inspectAdminEmailImageProfessionalism({
-          client: params.client,
-          imageBytes: bytes,
-        });
+    let bytes: Buffer;
+    try {
+      bytes = await generateFreshImageBytes({
+        prompt: `${params.prompt}${retryHint}`,
+        model: params.model,
+        client: params.client,
+        generateImage: params.generateImage,
+      });
+    } catch (error) {
+      previousReasons = [`image generation error: ${errorMessage(error)}`];
+      previousLogoRejected = false;
+      logAdminEmail("warn", "still_image_generate_failed", {
+        scenarioId: params.scenarioId,
+        attempt,
+        model: params.model,
+        error: errorMessage(error),
+        elapsedMs: Date.now() - attemptStartedAt,
+      });
+      continue;
+    }
 
-    if (qa.pass) return bytes;
+    let qa: { pass: boolean; aiIshScore: number; reasons: string[] };
+    try {
+      qa = params.inspectImage
+        ? await params.inspectImage({ imageBytes: bytes })
+        : await inspectAdminEmailImageProfessionalism({
+            client: params.client,
+            imageBytes: bytes,
+          });
+    } catch (error) {
+      previousReasons = [`image QA error: ${errorMessage(error)}`];
+      previousLogoRejected = false;
+      logAdminEmail("warn", "still_image_qa_error", {
+        scenarioId: params.scenarioId,
+        attempt,
+        model: params.model,
+        error: errorMessage(error),
+        elapsedMs: Date.now() - attemptStartedAt,
+      });
+      continue;
+    }
+
+    if (qa.pass) {
+      logAdminEmail("info", "still_attempt_passed", {
+        scenarioId: params.scenarioId,
+        attempt,
+        aiIshScore: qa.aiIshScore,
+        elapsedMs: Date.now() - attemptStartedAt,
+        totalElapsedMs: Date.now() - startedAt,
+      });
+      return bytes;
+    }
+
+    previousReasons = qa.reasons;
+    previousLogoRejected = reasonsIndicateBrandLogo(qa.reasons);
+    const keptAsFallbackCandidate = !previousLogoRejected;
+
+    logAdminEmail("warn", "still_attempt_rejected", {
+      scenarioId: params.scenarioId,
+      attempt,
+      aiIshScore: qa.aiIshScore,
+      logoRejected: previousLogoRejected,
+      keptAsFallbackCandidate,
+      reasons: qa.reasons.slice(0, 6),
+      elapsedMs: Date.now() - attemptStartedAt,
+    });
+
     // Never keep a logo/watermark image as the fallback ship candidate.
-    if (reasonsIndicateBrandLogo(qa.reasons)) continue;
+    if (!keptAsFallbackCandidate) continue;
     if (qa.aiIshScore < bestScore) {
       bestScore = qa.aiIshScore;
       bestBytes = bytes;
@@ -448,8 +605,28 @@ async function generateQaApprovedStillBytes(params: {
   }
 
   // Prefer shipping a usable photo over blocking the whole marketing email.
-  if (bestBytes) return bestBytes;
-  throw new Error(`Failed to generate an email still after ${MAX_IMAGE_QA_ATTEMPTS} attempts.`);
+  if (bestBytes) {
+    logAdminEmail("warn", "still_shipping_best_fallback", {
+      scenarioId: params.scenarioId,
+      bestAiIshScore: bestScore,
+      attempts: MAX_IMAGE_QA_ATTEMPTS,
+      lastReasons: previousReasons.slice(0, 6),
+      totalElapsedMs: Date.now() - startedAt,
+    });
+    return bestBytes;
+  }
+
+  const lastQa = summarizeQaFailureReasons(previousReasons);
+  logAdminEmail("error", "still_generation_exhausted", {
+    scenarioId: params.scenarioId,
+    attempts: MAX_IMAGE_QA_ATTEMPTS,
+    lastLogoRejected: previousLogoRejected,
+    lastReasons: previousReasons.slice(0, 6),
+    totalElapsedMs: Date.now() - startedAt,
+  });
+  throw new Error(
+    `Failed to generate an email still for "${params.scenarioId}" after ${MAX_IMAGE_QA_ATTEMPTS} attempts. Last QA: ${lastQa}`,
+  );
 }
 
 function promptRequestsFreshImages(prompt: string): boolean {
@@ -477,21 +654,47 @@ async function generateScenarioStillAssets(
   // Only regenerate every scenario when the user explicitly asks; otherwise fill gaps
   // (e.g. legacy GIF stripped from Snap while Concierge/teachers/share stills remain).
   const forceAll = promptRequestsFreshImages(input.prompt);
+  const reuseIds = ADMIN_EMAIL_PRODUCT_SCENARIOS.filter(
+    (scenario) => !forceAll && existingById.has(scenario.id),
+  ).map((scenario) => scenario.id);
+  const regenerateIds = ADMIN_EMAIL_PRODUCT_SCENARIOS.filter(
+    (scenario) => forceAll || !existingById.has(scenario.id),
+  ).map((scenario) => scenario.id);
+
+  logAdminEmail("info", "scenario_still_plan", {
+    forceAll,
+    imageModel: params.imageModel,
+    reuseIds,
+    regenerateIds,
+  });
 
   return Promise.all(
     ADMIN_EMAIL_PRODUCT_SCENARIOS.map(async (scenario) => {
       const existing = existingById.get(scenario.id);
-      if (!forceAll && existing) return existing;
+      if (!forceAll && existing) {
+        logAdminEmail("info", "scenario_still_reused", {
+          scenarioId: scenario.id,
+          urlHost: safeUrlHost(existing.url),
+        });
+        return existing;
+      }
 
       const prompt = buildStillImagePrompt(input.prompt, scenario.stillScene);
+      const scenarioStartedAt = Date.now();
+      logAdminEmail("info", "scenario_still_generate_start", {
+        scenarioId: scenario.id,
+        imageModel: params.imageModel,
+        promptChars: prompt.length,
+      });
       const bytes = await generateQaApprovedStillBytes({
         prompt,
         model: params.imageModel,
+        scenarioId: scenario.id,
         client: params.client,
         generateImage: params.generateImage,
         inspectImage: params.inspectImage,
       });
-      return uploadStillImageAsset({
+      const uploaded = await uploadStillImageAsset({
         bytes,
         fileName: `${slugForPrompt(input.prompt)}-${scenario.id}.png`,
         altText: scenario.title,
@@ -501,8 +704,22 @@ async function generateScenarioStillAssets(
         scenarioId: scenario.id,
         uploadImage: params.uploadImage,
       });
+      logAdminEmail("info", "scenario_still_generate_complete", {
+        scenarioId: scenario.id,
+        urlHost: safeUrlHost(uploaded.url),
+        elapsedMs: Date.now() - scenarioStartedAt,
+      });
+      return uploaded;
     }),
   );
+}
+
+function safeUrlHost(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return "invalid-url";
+  }
 }
 
 async function generateEmailImageAssets(
@@ -583,6 +800,37 @@ const DEFAULT_CAMPAIGN_INTRO = `<p style="margin:0 0 16px 0;font-size:16px;line-
 <h1 style="margin:0 0 12px 0;font-size:28px;line-height:34px;color:#172033;">Plan birthdays, class parties, and shares the easy way</h1>
 <p style="margin:0 0 24px 0;font-size:16px;line-height:24px;color:#243047;">Here are practical ways families and teachers use Envitefy.</p>`;
 
+/**
+ * After {{greeting}} (already "Hi Name"), drop a redundant {{firstName}} lead-in
+ * on later paragraphs/headlines so we don't get "Hi Ruslan" then "Ruslan, …".
+ */
+export function stripRedundantNameAfterGreeting(html: string): string {
+  if (!/\{\{\s*greeting\s*\}\}/i.test(html)) return html;
+
+  let seenGreeting = false;
+  return html.replace(
+    /<(p|h1|h2)\b([^>]*)>([\s\S]*?)<\/\1>/gi,
+    (full, tag: string, attrs: string, inner: string) => {
+      if (/\{\{\s*greeting\s*\}\}/i.test(inner)) {
+        seenGreeting = true;
+        return full;
+      }
+      if (!seenGreeting) return full;
+
+      const stripped = inner.replace(
+        /^\s*\{\{\s*firstName\s*\}\}\s*(?:[,–—:\-]\s*|\s+)/i,
+        "",
+      );
+      if (stripped === inner) return full;
+
+      const capitalized = stripped.replace(/^(\s*)([a-z])/, (_m, ws: string, ch: string) => {
+        return `${ws}${ch.toUpperCase()}`;
+      });
+      return `<${tag}${attrs}>${capitalized}</${tag}>`;
+    },
+  );
+}
+
 export function polishAdminEmailBodyHtml(html: string): string {
   let out = cleanMultilineString(html);
   if (!out) return "";
@@ -590,6 +838,8 @@ export function polishAdminEmailBodyHtml(html: string): string {
   // Never keep animated GIFs in email HTML.
   out = out.replace(/<img\b[^>]*src\s*=\s*(["'])[^"']*\.gif(?:\?[^"']*)?\1[^>]*>/gi, "");
   out = out.replace(/snap-demo\.gif/gi, "");
+
+  out = stripRedundantNameAfterGreeting(out);
 
   const banned = BANNED_TEXT_LINK_PATTERN;
   // Remove filler text links under/near CTAs (never keep these).
@@ -716,6 +966,7 @@ export async function generateAdminEmailDraft(
   input: AdminEmailGenerationRequest,
   deps: GenerateAdminEmailDraftDeps = {},
 ): Promise<{ draft: AdminEmailDraft; model: string }> {
+  const startedAt = Date.now();
   const apiKey = deps.openAiApiKey ?? process.env.OPENAI_API_KEY ?? null;
   if (!apiKey) {
     throw new Error("OpenAI is not configured. Set OPENAI_API_KEY.");
@@ -725,51 +976,105 @@ export async function generateAdminEmailDraft(
   const imageModel = resolveAdminEmailImageModel(deps.openAiImageModel);
   const client = deps.createOpenAiClient?.(apiKey) || new OpenAI({ apiKey });
   const reusableAssets = reusableStillAssets(input.currentImageAssets);
-  const imageAssets = shouldRegenerateImage({ ...input, currentImageAssets: reusableAssets })
-    ? await generateEmailImageAssets(
-        { ...input, currentImageAssets: reusableAssets },
-        {
-          client,
-          imageModel,
-          generateImage: deps.generateImage,
-          uploadImage: deps.uploadImage,
-          inspectImage: deps.inspectImage,
-        },
-      )
-    : reusableAssets;
-  const completion = await client.chat.completions.create({
-    model,
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "admin_email_draft",
-        strict: true,
-        schema: {
-          type: "object",
-          additionalProperties: false,
-          required: ["subject", "preheader", "bodyHtml", "buttonText", "buttonUrl", "notes"],
-          properties: {
-            subject: { type: "string" },
-            preheader: { type: "string" },
-            bodyHtml: { type: "string" },
-            buttonText: { type: "string" },
-            buttonUrl: { type: "string" },
-            notes: { type: "string" },
-          },
-        },
-      },
-    } as any,
-    messages: [
-      { role: "system", content: buildSystemPrompt(input.audienceMode) },
-      { role: "user", content: buildUserPrompt(input, imageAssets) },
-    ],
+  const regenerateImages = shouldRegenerateImage({
+    ...input,
+    currentImageAssets: reusableAssets,
   });
 
-  const raw = completion.choices?.[0]?.message?.content || "";
-  const draft = normalizeAdminEmailDraft(extractJsonObject(raw));
+  logAdminEmail("info", "draft_generate_start", {
+    audienceMode: input.audienceMode,
+    model,
+    imageModel,
+    regenerateImages,
+    reusableAssetCount: reusableAssets.length,
+    promptChars: input.prompt.length,
+    hasCurrentBodyHtml: Boolean(input.currentBodyHtml),
+  });
+
+  let imageAssets: AdminEmailImageAsset[];
+  try {
+    imageAssets = regenerateImages
+      ? await generateEmailImageAssets(
+          { ...input, currentImageAssets: reusableAssets },
+          {
+            client,
+            imageModel,
+            generateImage: deps.generateImage,
+            uploadImage: deps.uploadImage,
+            inspectImage: deps.inspectImage,
+          },
+        )
+      : reusableAssets;
+  } catch (error) {
+    logAdminEmail("error", "draft_image_phase_failed", {
+      audienceMode: input.audienceMode,
+      imageModel,
+      error: errorMessage(error),
+      elapsedMs: Date.now() - startedAt,
+    });
+    throw error;
+  }
+
+  let draft: AdminEmailDraft | null;
+  try {
+    const completion = await client.chat.completions.create({
+      model,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "admin_email_draft",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            required: ["subject", "preheader", "bodyHtml", "buttonText", "buttonUrl", "notes"],
+            properties: {
+              subject: { type: "string" },
+              preheader: { type: "string" },
+              bodyHtml: { type: "string" },
+              buttonText: { type: "string" },
+              buttonUrl: { type: "string" },
+              notes: { type: "string" },
+            },
+          },
+        },
+      } as any,
+      messages: [
+        { role: "system", content: buildSystemPrompt(input.audienceMode) },
+        { role: "user", content: buildUserPrompt(input, imageAssets) },
+      ],
+    });
+
+    const raw = completion.choices?.[0]?.message?.content || "";
+    draft = normalizeAdminEmailDraft(extractJsonObject(raw));
+  } catch (error) {
+    logAdminEmail("error", "draft_copy_phase_failed", {
+      audienceMode: input.audienceMode,
+      model,
+      error: errorMessage(error),
+      elapsedMs: Date.now() - startedAt,
+    });
+    throw error;
+  }
+
   if (!draft) {
+    logAdminEmail("error", "draft_invalid_response", {
+      audienceMode: input.audienceMode,
+      model,
+      elapsedMs: Date.now() - startedAt,
+    });
     throw new Error("Email generator returned an invalid draft.");
   }
 
-  return { draft: ensureDraftIncludesImageAssets(draft, imageAssets), model };
+  const finalized = ensureDraftIncludesImageAssets(draft, imageAssets);
+  logAdminEmail("info", "draft_generate_complete", {
+    audienceMode: input.audienceMode,
+    model,
+    imageModel,
+    imageAssetCount: finalized.imageAssets.length,
+    subjectChars: finalized.subject.length,
+    bodyHtmlChars: finalized.bodyHtml.length,
+    elapsedMs: Date.now() - startedAt,
+  });
+  return { draft: finalized, model };
 }
