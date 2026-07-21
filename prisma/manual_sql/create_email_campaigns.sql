@@ -46,6 +46,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_email_campaigns_updated_at ON email_campaigns;
 CREATE TRIGGER trigger_email_campaigns_updated_at
   BEFORE UPDATE ON email_campaigns
   FOR EACH ROW
