@@ -1,5 +1,6 @@
 import { query } from "../db.ts";
 import { sendBulkEmail } from "../resend.ts";
+import { ensureEmailCampaignsSchema } from "./email-campaign-schema.ts";
 import {
   buildIndividualCampaignRecipients,
   buildStoredCampaignAudienceFilter,
@@ -142,6 +143,7 @@ export async function executeCampaignSend(params: {
   errors: Array<{ email: string; error: string }>;
   isTest: boolean;
 }> {
+  await ensureEmailCampaignsSchema();
   const logPrefix = params.logPrefix || "[campaigns]";
   const recipients = await resolveCampaignRecipients(params.audienceFilter);
   const isTest = isIndividualCampaignAudience(params.audienceFilter);
@@ -243,6 +245,7 @@ export async function createSendingCampaign(params: {
   buttonUrl?: string | null;
   rawHtml?: boolean;
 }): Promise<{ campaignId: string; recipients: CampaignEmailRecipient[]; isTest: boolean }> {
+  await ensureEmailCampaignsSchema();
   const recipients = await resolveCampaignRecipients(params.audienceFilter);
   const isTest = isIndividualCampaignAudience(params.audienceFilter);
   const rawHtml = params.rawHtml === true || isFullHtmlDocument(params.bodyHtml);
@@ -358,6 +361,7 @@ export async function upsertCampaignDraft(params: {
   rawHtml?: boolean;
   recipientCount?: number;
 }): Promise<{ id: string; status: "draft" }> {
+  await ensureEmailCampaignsSchema();
   const subject = cleanString(params.subject, 500);
   const bodyHtml = typeof params.bodyHtml === "string" ? params.bodyHtml.trim() : "";
   if (!subject || !bodyHtml) {
@@ -445,6 +449,7 @@ export async function scheduleCampaign(params: {
   buttonUrl?: string | null;
   rawHtml?: boolean;
 }): Promise<{ id: string; scheduledAt: string }> {
+  await ensureEmailCampaignsSchema();
   if (!(params.scheduledAt instanceof Date) || Number.isNaN(params.scheduledAt.getTime())) {
     throw new CampaignSendError(400, "A valid scheduledAt datetime is required");
   }
@@ -518,6 +523,7 @@ export async function scheduleCampaign(params: {
 }
 
 export async function cancelCampaign(campaignId: string): Promise<{ id: string; status: "cancelled" }> {
+  await ensureEmailCampaignsSchema();
   const updated = await query<{ id: string }>(
     `
     UPDATE email_campaigns
@@ -537,6 +543,7 @@ export async function cancelCampaign(campaignId: string): Promise<{ id: string; 
 }
 
 export async function getEditableCampaign(campaignId: string): Promise<CampaignRow | null> {
+  await ensureEmailCampaignsSchema();
   const result = await query<CampaignRow>(
     `
     SELECT id, subject, body_html, from_email, audience_filter, recipient_count, status, scheduled_at
@@ -564,6 +571,7 @@ export async function processDueCampaigns(params: {
   campaignIds: string[];
   errors: Array<{ campaignId: string; error: string }>;
 }> {
+  await ensureEmailCampaignsSchema();
   const limit = Math.min(Math.max(params.limit ?? 5, 1), 25);
   const now = params.now || new Date();
   const logPrefix = params.logPrefix || "[campaigns]";

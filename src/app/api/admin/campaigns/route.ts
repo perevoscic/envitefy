@@ -12,6 +12,7 @@ import {
   processDueCampaigns,
   upsertCampaignDraft,
 } from "@/lib/admin/email-campaign-send";
+import { ensureEmailCampaignsSchema } from "@/lib/admin/email-campaign-schema";
 
 /**
  * GET /api/admin/campaigns
@@ -28,6 +29,8 @@ export async function GET(req: NextRequest) {
     if (!user || !user.is_admin) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
+
+    await ensureEmailCampaignsSchema();
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
@@ -139,6 +142,8 @@ export async function POST(req: NextRequest) {
     if (!user || !user.is_admin) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
+
+    await ensureEmailCampaignsSchema();
 
     const body = await req.json();
     const {

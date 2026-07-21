@@ -134,6 +134,14 @@ test("campaign draft schedule and process-due source guards", () => {
   assert.match(sendLib, /processDueCampaigns/);
   assert.match(sendLib, /FOR UPDATE SKIP LOCKED/);
   assert.match(sendLib, /persistTestEmail/);
+  assert.match(sendLib, /ensureEmailCampaignsSchema/);
+
+  const schemaLib = fs.readFileSync(
+    path.join(repoRoot, "src/lib/admin/email-campaign-schema.ts"),
+    "utf8",
+  );
+  assert.match(schemaLib, /scheduled_at TIMESTAMPTZ/);
+  assert.match(schemaLib, /ADD COLUMN IF NOT EXISTS scheduled_at/);
 
   const processDueRoute = fs.readFileSync(
     path.join(repoRoot, "src/app/api/admin/campaigns/process-due/route.ts"),

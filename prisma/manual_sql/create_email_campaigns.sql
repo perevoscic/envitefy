@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
   
   -- Timestamps
   sent_at TIMESTAMPTZ,
+  scheduled_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
