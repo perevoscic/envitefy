@@ -1,4 +1,7 @@
-import { buildUseCaseCategoryMetadata, UseCaseCategoryPage } from "../category-pages/category-page";
+import { notFound } from "next/navigation";
+import { buildUseCaseCategoryMetadata } from "../category-pages/category-page";
+import { getUseCasePageByPath } from "../category-pages/category-page-data";
+import WeddingsLandingView from "./WeddingsLandingView";
 
 const CATEGORY_PATH = "/weddings";
 
@@ -7,5 +10,7 @@ export function generateMetadata() {
 }
 
 export default function WeddingsPage() {
-  return <UseCaseCategoryPage path={CATEGORY_PATH} />;
+  const page = getUseCasePageByPath(CATEGORY_PATH);
+  if (!page) notFound();
+  return <WeddingsLandingView page={page} />;
 }

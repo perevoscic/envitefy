@@ -143,7 +143,7 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
       />
 
       <main>
-        <section className="relative isolate flex min-h-[92svh] items-end overflow-hidden">
+        <section className="relative isolate flex min-h-[100svh] items-end overflow-hidden">
           <Image
             src={page.heroImage}
             alt={page.heroImageAlt}
@@ -153,16 +153,15 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
             className="object-cover"
             style={{ objectPosition: page.heroImagePosition ?? "center" }}
           />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,7,14,0.84)_0%,rgba(10,7,14,0.62)_44%,rgba(10,7,14,0.24)_100%)]" />
-          <div className="absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,transparent,var(--use-case-surface))]" />
-
           <div className="relative z-[1] mx-auto grid w-full max-w-7xl items-end gap-10 px-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-32 sm:px-8 md:pb-14 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,0.48fr)] lg:px-10">
             <div className="max-w-4xl text-white">
-              <p className="text-sm font-bold uppercase text-white/76">{page.eyebrow}</p>
+              <p className="text-sm font-bold uppercase text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]">
+                {page.eyebrow}
+              </p>
               <h1 className="mt-5 max-w-4xl text-[2.65rem] font-semibold leading-[1.03] !text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] sm:text-6xl lg:text-7xl">
                 {page.title}
               </h1>
-              <p className="mt-6 max-w-2xl text-base leading-7 text-white/82 sm:text-xl sm:leading-8">
+              <p className="mt-6 max-w-2xl text-base leading-7 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-xl sm:leading-8">
                 {page.description}
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">

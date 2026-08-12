@@ -1,4 +1,5 @@
-import { buildUseCaseCategoryMetadata, UseCaseCategoryPage } from "../category-pages/category-page";
+import { buildUseCaseCategoryMetadata } from "../category-pages/category-page";
+import BridalShowersLandingView from "./BridalShowersLandingView";
 
 const CATEGORY_PATH = "/bridal-showers";
 
@@ -7,5 +8,5 @@ export function generateMetadata() {
 }
 
 export default function BridalShowersPage() {
-  return <UseCaseCategoryPage path={CATEGORY_PATH} />;
+  return <BridalShowersLandingView />;
 }

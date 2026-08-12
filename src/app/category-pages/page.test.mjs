@@ -62,6 +62,8 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   assert.match(view, /HeroPreview/);
   assert.match(view, /brandHref="\/"/);
   assert.match(view, /topNavVariant="transparent-dark"/);
+  assert.doesNotMatch(view, /rgba\(10,7,14,0\.84\)/);
+  assert.doesNotMatch(landingExperience, /rgba\(18,15,20,0\.66\)/);
   assert.match(signedOutPageChrome, /topNavVariant = "default"/);
   assert.match(signedOutPageChrome, /variant=\{topNavVariant\}/);
 
@@ -104,7 +106,7 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   assert.match(featureCarousel, /href=\{feature\.href\}/);
 
   for (const phrase of [
-    "Wedding website, RSVPs, registry links",
+    "Haute Couture Digital Invitations for Your Forever After",
     "bridal shower page",
     "Baby shower invitations",
     "gymnastics meet flyers",
@@ -114,4 +116,14 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   ]) {
     assert.match(data, new RegExp(phrase));
   }
+
+  const weddingsPage = readSource("src/app/weddings/page.tsx");
+  const weddingsView = readSource("src/app/weddings/WeddingsLandingView.tsx");
+  assert.match(weddingsPage, /WeddingsLandingView/);
+  assert.match(weddingsView, /SignedOutPageChrome/);
+  assert.match(weddingsView, /topNavVariant="transparent-dark"/);
+  assert.match(weddingsView, /page\.heroImage/);
+  assert.match(weddingsView, /garden-vows-desktop\.webp|page\.heroImage/);
+  assert.doesNotMatch(weddingsView, /rgba\(18,12,10,0\.88\)/);
+  assert.match(weddingsView, /!text-white/);
 });

@@ -170,9 +170,6 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
         </motion.div>
       </AnimatePresence>
 
-      <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(90deg,rgba(18,15,20,0.66)_0%,rgba(18,15,20,0.42)_40%,rgba(18,15,20,0.18)_100%)]" />
-      <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(0deg,rgba(18,15,20,0.46)_0%,rgba(18,15,20,0.04)_44%,rgba(18,15,20,0.22)_100%)]" />
-
       <button
         type="button"
         onClick={showPreviousSlide}
@@ -200,18 +197,18 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
             transition={{ duration: 0.48, ease: "easeOut" }}
             className="max-w-4xl"
           >
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#f0d58f] sm:text-xs">
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#fff1c8] drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] sm:text-xs">
               {activeSlide.eyebrow}
             </p>
             <h1
-              className="mt-5 max-w-5xl text-5xl font-light leading-[0.98] text-white sm:text-7xl lg:text-[5.8rem]"
+              className="mt-5 max-w-5xl text-5xl font-light leading-[0.98] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.82)] sm:text-7xl lg:text-[5.8rem]"
               style={{ color: "#fff", fontFamily: "var(--font-playfair), Georgia, serif" }}
             >
               {activeSlide.title}
             </h1>
             <p
-              className="mt-6 max-w-2xl text-base leading-8 text-white/82 sm:text-lg"
-              style={{ color: "rgba(255,255,255,0.86)" }}
+              className="mt-6 max-w-2xl text-base leading-8 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-lg"
+              style={{ color: "#fff" }}
             >
               {activeSlide.description}
             </p>

@@ -1,0 +1,235 @@
+.page {
+  --baby-orange: #e66627;
+  --baby-orange-dark: #c84e16;
+  --baby-navy: #13233d;
+  --baby-blue: #245b87;
+  --baby-cream: #f8fafc;
+  min-height: 100vh;
+  overflow: clip;
+  background: var(--baby-cream);
+  color: #334155;
+  font-family: var(--font-poppins), var(--font-sans), system-ui, sans-serif;
+}
+
+.page ::selection {
+  background: #fed7aa;
+  color: var(--baby-navy);
+}
+
+.serif {
+  font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
+}
+
+.heroPattern {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.primaryCta,
+.secondaryCta {
+  display: inline-flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 999px;
+  padding: 0.85rem 1.55rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.primaryCta {
+  background: var(--baby-orange);
+  color: white;
+  box-shadow: 0 16px 32px rgba(230, 102, 39, 0.25);
+}
+
+.primaryCta:hover {
+  transform: translateY(-2px);
+  background: var(--baby-orange-dark);
+  box-shadow: 0 20px 38px rgba(230, 102, 39, 0.32);
+}
+
+.secondaryCta {
+  border: 1px solid #dce4eb;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--baby-navy);
+  box-shadow: 0 12px 26px rgba(15, 35, 57, 0.08);
+}
+
+.secondaryCta:hover {
+  transform: translateY(-2px);
+  background: white;
+  box-shadow: 0 16px 34px rgba(15, 35, 57, 0.12);
+}
+
+.heroVisual {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  overflow: hidden;
+  border: 5px solid white;
+  border-radius: 2rem;
+  background: white;
+  box-shadow: 0 32px 80px rgba(19, 35, 61, 0.22);
+}
+
+.invitationCard {
+  position: absolute;
+  top: 9%;
+  left: 50%;
+  width: min(72%, 18rem);
+  transform: translateX(-50%) rotate(-1.5deg);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 1.25rem;
+  background: rgba(255, 253, 249, 0.93);
+  padding: 1.5rem 1.2rem;
+  text-align: center;
+  box-shadow: 0 24px 56px rgba(19, 35, 61, 0.24);
+  backdrop-filter: blur(12px);
+}
+
+.floatingNote {
+  position: absolute;
+  top: -1.2rem;
+  left: -1.5rem;
+  display: none;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid #edf1f5;
+  border-radius: 1rem;
+  background: white;
+  padding: 0.9rem 1rem;
+  color: var(--baby-navy);
+  font-size: 0.68rem;
+  font-weight: 700;
+  box-shadow: 0 16px 36px rgba(19, 35, 61, 0.14);
+}
+
+.collectionCard {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e7edf2;
+  border-radius: 1.75rem;
+  background: white;
+  box-shadow: 0 14px 38px rgba(19, 35, 61, 0.06);
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.collectionCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 24px 54px rgba(19, 35, 61, 0.12);
+}
+
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  background: #eaf3fb;
+  padding: 0.8rem 1.25rem;
+  color: #245b87;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition:
+    gap 180ms ease,
+    background-color 180ms ease;
+}
+
+.textLink:hover {
+  gap: 0.75rem;
+  background: #dcecf8;
+}
+
+.registryPreview {
+  border: 1px solid #e1e8ee;
+  border-radius: 2rem;
+  background: white;
+  padding: 1.5rem;
+  box-shadow: 0 26px 70px rgba(19, 35, 61, 0.12);
+}
+
+.stepCard,
+.quoteCard {
+  border: 1px solid #e7edf2;
+  border-radius: 1.75rem;
+  background: white;
+  padding: 1.75rem;
+  box-shadow: 0 12px 34px rgba(19, 35, 61, 0.055);
+}
+
+.quoteCard {
+  display: flex;
+  min-height: 19rem;
+  flex-direction: column;
+}
+
+.faqCard {
+  position: relative;
+  border: 1px solid #e7edf2;
+  border-radius: 1.25rem;
+  background: #f8fafc;
+  padding: 1.25rem 1.35rem;
+}
+
+.faqCard summary::after {
+  position: absolute;
+  top: 1.1rem;
+  right: 1.25rem;
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff0e6;
+  color: #d75b20;
+  content: "+";
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.faqCard[open] summary::after {
+  content: "−";
+}
+
+.ctaPattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.16;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.9) 0.75px, transparent 0.75px),
+    radial-gradient(rgba(255, 154, 95, 0.9) 0.75px, transparent 0.75px);
+  background-position:
+    0 0,
+    15px 15px;
+  background-size: 30px 30px;
+}
+
+@media (min-width: 640px) {
+  .floatingNote {
+    display: flex;
+  }
+
+  .registryPreview {
+    padding: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryCta,
+  .secondaryCta,
+  .collectionCard,
+  .textLink {
+    transition: none;
+  }
+}

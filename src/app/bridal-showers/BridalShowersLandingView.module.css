@@ -1,0 +1,1233 @@
+.page {
+  --bridal-champagne: #fbf8f3;
+  --bridal-pearl: #fffdfa;
+  --bridal-ink: #241f1d;
+  --bridal-muted: #6c625d;
+  --bridal-gold: #9b7e55;
+  --bridal-gold-deep: #6e5638;
+  --bridal-gold-soft: #e8ded0;
+  --bridal-blush: #f3dedc;
+  --bridal-serif: "Cormorant Garamond", Georgia, serif;
+  --bridal-sans: "Montserrat", Arial, sans-serif;
+  --bridal-script: "Great Vibes", "Brush Script MT", cursive;
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--bridal-champagne);
+  color: var(--bridal-ink);
+  font-family: var(--bridal-sans);
+}
+
+.page * {
+  box-sizing: border-box;
+}
+
+.sectionShell,
+.heroContent {
+  width: min(1240px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  min-height: max(760px, 100svh);
+  align-items: flex-end;
+  isolation: isolate;
+  color: white;
+}
+
+.heroImage {
+  z-index: -1;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.84) contrast(1.04);
+}
+
+.heroContent {
+  padding: 150px 0 clamp(92px, 11vh, 132px);
+}
+
+.eyebrow {
+  margin: 0 0 20px;
+  color: var(--bridal-gold-deep);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.eyebrowLight {
+  color: #fff4df;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.86);
+}
+
+.heroTitle {
+  max-width: 800px;
+  margin: 0;
+  color: #fff;
+  font-family: var(--bridal-serif);
+  font-size: clamp(4.35rem, 7.7vw, 7.3rem);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 0.82;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.82);
+  text-wrap: balance;
+}
+
+.heroTitle span {
+  display: block;
+  margin-top: 19px;
+  color: #f5d9d8;
+  font-family: var(--bridal-script);
+  font-size: 0.72em;
+  letter-spacing: 0;
+  line-height: 1.07;
+}
+
+.heroCopy {
+  max-width: 670px;
+  margin: 30px 0 0;
+  color: #fff;
+  font-size: clamp(0.92rem, 1.25vw, 1.05rem);
+  font-weight: 300;
+  line-height: 1.85;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+}
+
+.heroActions,
+.finalActions {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-top: 34px;
+}
+
+.button {
+  display: inline-flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 0 27px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+}
+
+.buttonIvory {
+  border-color: white;
+  background: var(--bridal-pearl);
+  color: var(--bridal-ink);
+  box-shadow: 0 16px 40px rgba(16, 9, 9, 0.18);
+}
+
+.buttonDark {
+  border-color: #2c2522;
+  background: #2c2522;
+  color: white;
+}
+
+.heroTextLink,
+.finalTextLink {
+  padding: 12px 0 8px;
+  border-bottom: 1px solid currentColor;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.heroAssurance {
+  display: flex;
+  gap: 32px;
+  margin-top: 34px;
+  color: #fff;
+  font-size: 0.64rem;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 9px rgba(0, 0, 0, 0.9);
+}
+
+.heroAssurance span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heroAssurance svg {
+  width: 13px;
+  height: 13px;
+  color: #e1bb88;
+}
+
+.intro,
+.collections {
+  padding: clamp(105px, 12vw, 160px) 0;
+  text-align: center;
+}
+
+.ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 30px;
+  color: var(--bridal-gold);
+}
+
+.ornament span {
+  width: 56px;
+  height: 1px;
+  background: var(--bridal-gold-soft);
+}
+
+.ornament svg {
+  width: 14px;
+  height: 14px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--bridal-serif);
+  font-size: clamp(3rem, 5.4vw, 5rem);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.introCopy {
+  max-width: 740px;
+  margin: 27px auto 0;
+  color: var(--bridal-muted);
+  font-family: var(--bridal-serif);
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  line-height: 1.55;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 76px;
+  text-align: left;
+}
+
+.featureCard {
+  min-height: 382px;
+  padding: 34px 34px 38px;
+  border: 1px solid var(--bridal-gold-soft);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 25px 55px rgba(91, 70, 52, 0.05);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 30px 65px rgba(91, 70, 52, 0.11);
+}
+
+.featureTopline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--bridal-gold);
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+}
+
+.featureTopline i {
+  flex: 1;
+  height: 1px;
+  background: var(--bridal-gold-soft);
+}
+
+.featureIcon {
+  display: flex;
+  width: 66px;
+  height: 66px;
+  align-items: center;
+  justify-content: center;
+  margin: 50px 0 32px;
+  border: 1px solid var(--bridal-gold-soft);
+  border-radius: 50%;
+  color: var(--bridal-gold-deep);
+}
+
+.featureIcon svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.5;
+}
+
+.featureCard h3 {
+  margin: 0 0 14px;
+  font-family: var(--bridal-serif);
+  font-size: 2rem;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+.featureCard p,
+.splitHeading > p,
+.centerHeading > p:last-child,
+.guestFlowCopy {
+  color: var(--bridal-muted);
+  font-size: 0.78rem;
+  font-weight: 300;
+  line-height: 1.85;
+}
+
+.featureCard p {
+  margin: 0;
+}
+
+.studio {
+  padding: clamp(105px, 12vw, 150px) 0;
+  border-block: 1px solid #e5d9cd;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(237, 197, 196, 0.4), transparent 31%),
+    linear-gradient(180deg, #f8f2ec, #fdfaf6);
+}
+
+.splitHeading {
+  display: grid;
+  grid-template-columns: 1.15fr 0.7fr;
+  align-items: end;
+  gap: 70px;
+}
+
+.splitHeading > p {
+  max-width: 500px;
+  margin: 0 0 5px;
+}
+
+.studioGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(400px, 0.88fr);
+  align-items: center;
+  gap: clamp(34px, 6vw, 80px);
+  margin-top: 70px;
+}
+
+.studioForm {
+  padding: clamp(28px, 4vw, 50px);
+  border: 1px solid rgba(155, 126, 85, 0.3);
+  background: rgba(255, 253, 250, 0.9);
+  box-shadow: 0 30px 70px rgba(82, 59, 48, 0.08);
+}
+
+.formHeading,
+.formFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.formHeading {
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--bridal-gold-soft);
+  font-family: var(--bridal-serif);
+  font-size: 1.55rem;
+}
+
+.formHeading em {
+  color: var(--bridal-gold);
+  font-family: var(--bridal-sans);
+  font-size: 0.57rem;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.formHeading em::before {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #708a68;
+  content: "";
+}
+
+.studioForm label,
+.studioForm legend {
+  display: block;
+  margin-bottom: 23px;
+  color: #625752;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.studioForm input {
+  width: 100%;
+  height: 54px;
+  margin-top: 10px;
+  padding: 0 16px;
+  border: 1px solid #ddcfc2;
+  border-radius: 0;
+  outline: none;
+  background: #fffdfa;
+  color: var(--bridal-ink);
+  font-family: var(--bridal-sans);
+  font-size: 0.8rem;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.studioForm input:focus {
+  border-color: var(--bridal-gold);
+  box-shadow: 0 0 0 3px rgba(155, 126, 85, 0.1);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.studioForm fieldset {
+  min-width: 0;
+  margin: 3px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.themePicker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+
+.themePicker button {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border: 1px solid #e4d9cf;
+  background: #fffdfa;
+  color: #5a4f49;
+  font-family: var(--bridal-sans);
+  font-size: 0.55rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.themePicker button > span {
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+
+.themePicker .themeActive {
+  border-color: var(--bridal-gold-deep);
+  background: #faf5ef;
+}
+
+.formFooter {
+  margin-top: 30px;
+  padding-top: 27px;
+  border-top: 1px solid var(--bridal-gold-soft);
+}
+
+.formFooter p {
+  max-width: 190px;
+  margin: 0;
+  color: #877a72;
+  font-family: var(--bridal-serif);
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.formFooter .button {
+  min-height: 50px;
+  padding-inline: 20px;
+  border-radius: 0;
+  font-size: 0.56rem;
+}
+
+.previewStage {
+  position: relative;
+  display: flex;
+  min-height: 670px;
+  align-items: center;
+  justify-content: center;
+  padding: 46px;
+  background:
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.76), transparent 30%),
+    var(--bridal-preview-soft);
+  transition: background-color 300ms ease;
+}
+
+.previewStage::before,
+.previewStage::after {
+  position: absolute;
+  content: "";
+  border: 1px solid rgba(155, 126, 85, 0.22);
+}
+
+.previewStage::before {
+  inset: 17px;
+}
+
+.previewStage::after {
+  inset: 25px;
+}
+
+.invitationCard {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 390px);
+  min-height: 545px;
+  padding: 46px 36px 34px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--bridal-preview-accent) 42%, white);
+  background: #fffefb;
+  color: var(--bridal-preview-ink);
+  text-align: center;
+  box-shadow: 0 30px 60px rgba(65, 45, 35, 0.16);
+}
+
+.invitationCard::before,
+.invitationCard::after {
+  position: absolute;
+  width: 118px;
+  height: 118px;
+  content: "";
+  border: 1px solid color-mix(in srgb, var(--bridal-preview-accent) 30%, white);
+  border-radius: 50%;
+}
+
+.invitationCard::before {
+  top: -65px;
+  left: -65px;
+}
+
+.invitationCard::after {
+  right: -65px;
+  bottom: -65px;
+}
+
+.invitationEyebrow {
+  margin: 0 0 22px;
+  color: var(--bridal-preview-accent);
+  font-size: 0.53rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.monogram {
+  display: flex;
+  width: 54px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 23px;
+  border: 1px solid var(--bridal-preview-accent);
+  border-radius: 50%;
+  color: var(--bridal-preview-accent);
+  font-family: var(--bridal-serif);
+  font-size: 1.6rem;
+}
+
+.invitationIntro {
+  margin: 0 0 8px;
+  font-family: var(--bridal-serif);
+  font-size: 1rem;
+  font-style: italic;
+}
+
+.invitationCard h3 {
+  margin: 0;
+  font-family: var(--bridal-serif);
+  font-size: clamp(2.05rem, 4vw, 2.75rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 0.96;
+}
+
+.invitationScript {
+  margin: 13px 0 19px;
+  color: var(--bridal-preview-accent);
+  font-family: var(--bridal-script);
+  font-size: 1.65rem;
+}
+
+.invitationRule {
+  display: flex;
+  width: 76%;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto 20px;
+  color: var(--bridal-preview-accent);
+}
+
+.invitationRule span {
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--bridal-preview-accent) 42%, white);
+}
+
+.invitationRule b {
+  font-size: 0.7rem;
+}
+
+.invitationDetails {
+  min-height: 72px;
+  color: #645a54;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  line-height: 1.65;
+  text-transform: uppercase;
+}
+
+.invitationDetails p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 7px 0;
+}
+
+.invitationDetails svg {
+  width: 13px;
+  height: 13px;
+  color: var(--bridal-preview-accent);
+}
+
+.invitationActions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-top: 20px;
+}
+
+.invitationActions button {
+  min-height: 37px;
+  border: 1px solid color-mix(in srgb, var(--bridal-preview-accent) 45%, white);
+  background: transparent;
+  color: var(--bridal-preview-ink);
+  font-family: var(--bridal-sans);
+  font-size: 0.48rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.centerHeading {
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.centerHeading > p:last-child {
+  max-width: 620px;
+  margin: 23px auto 0;
+}
+
+.collectionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin-top: 70px;
+  text-align: left;
+}
+
+.collectionCard {
+  overflow: hidden;
+  border: 1px solid var(--bridal-gold-soft);
+  background: white;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.collectionCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 60px rgba(73, 51, 39, 0.12);
+}
+
+.collectionVisual {
+  position: relative;
+  display: flex;
+  min-height: 390px;
+  align-items: center;
+  justify-content: center;
+  padding: 50px;
+  overflow: hidden;
+}
+
+.collectiongold .collectionVisual {
+  background: linear-gradient(145deg, #e6d7c3, #f8f2e9 52%, #d8c2a3);
+}
+
+.collectionsage .collectionVisual {
+  background: linear-gradient(145deg, #d5dfd5, #f1f5ef 55%, #b7c9ba);
+}
+
+.collectionblush .collectionVisual {
+  background: linear-gradient(145deg, #edced3, #fff4f3 52%, #dba8b1);
+}
+
+.collectionPaper {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 230px;
+  height: 290px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(120, 92, 65, 0.28);
+  background: #fffefa;
+  color: #6d563e;
+  text-align: center;
+  box-shadow: 0 22px 50px rgba(75, 54, 42, 0.18);
+  transform: rotate(-2deg);
+}
+
+.collectionsage .collectionPaper {
+  color: #435b48;
+  transform: rotate(2deg);
+}
+
+.collectionblush .collectionPaper {
+  color: #75434b;
+}
+
+.collectionPaper::before {
+  position: absolute;
+  inset: 11px;
+  content: "";
+  border: 1px solid currentColor;
+  opacity: 0.22;
+}
+
+.collectionPaper span {
+  margin-bottom: 18px;
+  font-size: 0.47rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.collectionPaper b {
+  font-family: var(--bridal-script);
+  font-size: 2.75rem;
+  font-weight: 400;
+}
+
+.collectionPaper em {
+  margin-top: 16px;
+  font-family: var(--bridal-serif);
+  font-size: 0.74rem;
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
+
+.sprig {
+  position: absolute;
+  width: 100px;
+  height: 220px;
+  border-left: 2px solid #77907b;
+  border-radius: 50%;
+  opacity: 0.65;
+}
+
+.sprig::before,
+.sprig::after {
+  position: absolute;
+  width: 34px;
+  height: 72px;
+  content: "";
+  border: 1px solid #77907b;
+  border-radius: 100%;
+}
+
+.sprig::before {
+  top: 25px;
+  left: -13px;
+  transform: rotate(-35deg);
+}
+
+.sprig::after {
+  right: 42px;
+  bottom: 35px;
+  transform: rotate(35deg);
+}
+
+.sprigLeft {
+  bottom: -30px;
+  left: 15px;
+  transform: rotate(-22deg);
+}
+
+.sprigRight {
+  top: -25px;
+  right: -4px;
+  transform: rotate(160deg);
+}
+
+.collectionBody {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 26px 27px 29px;
+}
+
+.collectionBody p {
+  margin: 0 0 7px;
+  color: var(--bridal-gold);
+  font-size: 0.54rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.collectionBody h3 {
+  margin: 0;
+  font-family: var(--bridal-serif);
+  font-size: 1.65rem;
+  font-weight: 500;
+}
+
+.collectionBody button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 5px;
+  border: 0;
+  border-bottom: 1px solid #d4c2af;
+  background: transparent;
+  color: #554942;
+  font-family: var(--bridal-sans);
+  font-size: 0.52rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.collectionBody button svg {
+  width: 13px;
+  height: 13px;
+}
+
+.guestFlow {
+  padding: clamp(100px, 12vw, 150px) 0;
+  border-top: 1px solid var(--bridal-gold-soft);
+  background: #fffdfa;
+}
+
+.guestFlowGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(420px, 1fr);
+  align-items: center;
+  gap: clamp(50px, 8vw, 110px);
+}
+
+.guestFlowCopy {
+  max-width: 520px;
+  margin: 26px 0 34px;
+}
+
+.guestFlowList {
+  border-top: 1px solid var(--bridal-gold-soft);
+}
+
+.guestFlowList article {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 23px;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--bridal-gold-soft);
+}
+
+.guestFlowList article > svg {
+  width: 42px;
+  height: 42px;
+  padding: 10px;
+  border: 1px solid var(--bridal-gold-soft);
+  border-radius: 50%;
+  color: var(--bridal-gold-deep);
+  stroke-width: 1.5;
+}
+
+.guestFlowList span {
+  color: var(--bridal-gold);
+  font-size: 0.55rem;
+  letter-spacing: 0.13em;
+}
+
+.guestFlowList h3 {
+  margin: 6px 0 8px;
+  font-family: var(--bridal-serif);
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.guestFlowList p {
+  margin: 0;
+  color: var(--bridal-muted);
+  font-size: 0.74rem;
+  line-height: 1.75;
+}
+
+.testimonials {
+  padding: clamp(105px, 12vw, 150px) 0;
+  border-top: 1px solid var(--bridal-gold-soft);
+  background: #f4ece3;
+}
+
+.testimonialGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 70px;
+  border-block: 1px solid #d9c8b8;
+}
+
+.testimonialGrid figure {
+  position: relative;
+  min-height: 390px;
+  margin: 0;
+  padding: 42px 37px 35px;
+  border-right: 1px solid #d9c8b8;
+}
+
+.testimonialGrid figure:last-child {
+  border-right: 0;
+}
+
+.quoteMark {
+  color: var(--bridal-gold);
+  font-family: var(--bridal-serif);
+  font-size: 4rem;
+  line-height: 0.7;
+}
+
+.testimonialGrid blockquote {
+  margin: 32px 0 44px;
+  color: #4c413c;
+  font-family: var(--bridal-serif);
+  font-size: 1.35rem;
+  font-style: italic;
+  line-height: 1.55;
+}
+
+.testimonialGrid figcaption {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.testimonialGrid figcaption > span {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cdbba9;
+  border-radius: 50%;
+  color: var(--bridal-gold-deep);
+  font-family: var(--bridal-serif);
+}
+
+.testimonialGrid figcaption b,
+.testimonialGrid figcaption small {
+  display: block;
+}
+
+.testimonialGrid figcaption b {
+  margin-bottom: 3px;
+  font-family: var(--bridal-serif);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.testimonialGrid figcaption small {
+  color: #85776d;
+  font-size: 0.5rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.testimonialGrid figure > em {
+  position: absolute;
+  right: 25px;
+  bottom: 23px;
+  color: #bba894;
+  font-size: 0.53rem;
+  font-style: normal;
+  letter-spacing: 0.1em;
+}
+
+.finalCta {
+  position: relative;
+  padding: clamp(115px, 14vw, 185px) 0;
+  overflow: hidden;
+  background: #4b352e;
+  color: white;
+  text-align: center;
+}
+
+.finalCta::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0.15;
+  background-image: radial-gradient(#f6dfc7 0.7px, transparent 0.7px);
+  background-size: 18px 18px;
+}
+
+.finalGlow {
+  position: absolute;
+  top: -160px;
+  left: 50%;
+  width: 700px;
+  height: 430px;
+  border-radius: 50%;
+  background: rgba(202, 147, 113, 0.32);
+  filter: blur(100px);
+  transform: translateX(-50%);
+}
+
+.finalCta .sectionShell {
+  position: relative;
+  z-index: 1;
+}
+
+.finalCta h2 {
+  max-width: 860px;
+  margin-inline: auto;
+}
+
+.finalCta .sectionShell > p:not(.eyebrow) {
+  max-width: 610px;
+  margin: 27px auto 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.8rem;
+  font-weight: 300;
+  line-height: 1.9;
+}
+
+.finalActions {
+  justify-content: center;
+}
+
+.finalTextLink {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.page :focus-visible {
+  outline: 2px solid #c29d69;
+  outline-offset: 4px;
+}
+
+@media (max-width: 980px) {
+  .featureGrid,
+  .collectionGrid,
+  .testimonialGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .featureCard {
+    min-height: 0;
+  }
+
+  .featureIcon {
+    margin-top: 34px;
+  }
+
+  .splitHeading,
+  .studioGrid,
+  .guestFlowGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .splitHeading {
+    gap: 22px;
+  }
+
+  .studioGrid {
+    margin-top: 50px;
+  }
+
+  .previewStage {
+    min-height: 640px;
+  }
+
+  .collectionGrid {
+    max-width: 620px;
+    margin-inline: auto;
+    margin-top: 52px;
+  }
+
+  .testimonialGrid figure {
+    border-right: 0;
+    border-bottom: 1px solid #d9c8b8;
+  }
+
+  .testimonialGrid figure:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .sectionShell,
+  .heroContent {
+    width: min(100% - 30px, 1240px);
+  }
+
+  .hero {
+    min-height: 790px;
+  }
+
+  .heroImage {
+    object-position: 63% center;
+  }
+
+  .heroContent {
+    padding-bottom: 100px;
+  }
+
+  .heroTitle {
+    font-size: clamp(3.8rem, 18vw, 5.5rem);
+  }
+
+  .heroTitle span {
+    margin-top: 12px;
+    font-size: 0.76em;
+  }
+
+  .heroCopy {
+    max-width: 94%;
+    line-height: 1.7;
+  }
+
+  .heroActions,
+  .finalActions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  .heroAssurance {
+    flex-wrap: wrap;
+    gap: 12px 22px;
+  }
+
+  .intro,
+  .collections {
+    text-align: left;
+  }
+
+  .ornament {
+    justify-content: flex-start;
+  }
+
+  .introCopy {
+    margin-left: 0;
+  }
+
+  .featureGrid,
+  .testimonialGrid {
+    margin-top: 48px;
+  }
+
+  .formRow,
+  .themePicker {
+    grid-template-columns: 1fr;
+  }
+
+  .formFooter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .formFooter p {
+    max-width: none;
+  }
+
+  .previewStage {
+    min-height: 580px;
+    padding: 34px 25px;
+  }
+
+  .invitationCard {
+    min-height: 505px;
+    padding: 40px 24px 30px;
+  }
+
+  .collectionVisual {
+    min-height: 360px;
+  }
+
+  .collectionBody {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .centerHeading {
+    text-align: left;
+  }
+
+  .centerHeading > p:last-child {
+    margin-left: 0;
+  }
+
+  .finalCta .sectionShell > p:not(.eyebrow) {
+    margin-left: 0;
+    text-align: left;
+  }
+
+  .finalCta {
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .button {
+    width: 100%;
+  }
+
+  .heroTextLink,
+  .finalTextLink {
+    margin-top: 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page *,
+  .page *::before,
+  .page *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
