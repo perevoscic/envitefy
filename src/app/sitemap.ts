@@ -28,6 +28,7 @@ const buildTime = process.env.BUILD_TIME ? new Date(process.env.BUILD_TIME) : ne
 const staticEntries: StaticEntry[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/snap", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/chat", priority: 0.86, changeFrequency: "weekly" },
   { path: "/gymnastics", priority: 0.9, changeFrequency: "weekly" },
   { path: "/weddings", priority: 0.9, changeFrequency: "weekly" },
   { path: "/bridal-showers", priority: 0.82, changeFrequency: "weekly" },

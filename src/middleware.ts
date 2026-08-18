@@ -29,6 +29,7 @@ const PUBLIC_UNAUTH_PATHS = new Set([
   "/forgot",
   "/reset",
   "/snap",
+  "/chat",
   "/showcase",
   "/sports",
   "/sport-events",
@@ -268,6 +269,7 @@ export async function middleware(req: NextRequest) {
   if (
     queryAuthMode === "signup" &&
     normalizedPathname !== "/snap" &&
+    normalizedPathname !== "/chat" &&
     !categorySignupIntent
   ) {
     const url = req.nextUrl.clone();

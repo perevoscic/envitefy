@@ -7,6 +7,18 @@ import {
   shouldSuggestGuestSignup,
 } from "./respond.ts";
 
+test("guest chat explains SNAP and Envitefy Concierge", () => {
+  const snap = buildDeterministicGuestChatAnswer("What is SNAP?");
+  assert.equal(snap.matchedKnowledgeIds.includes("snap"), true);
+  assert.match(snap.answer, /SNAP/i);
+  assert.match(snap.answer, /upload/i);
+
+  const concierge = buildDeterministicGuestChatAnswer("What is Envitefy Concierge?");
+  assert.equal(concierge.matchedKnowledgeIds.includes("concierge"), true);
+  assert.match(concierge.answer, /Concierge/);
+  assert.match(concierge.answer, /chat/i);
+});
+
 test("guest chat answers account-free guest usage", () => {
   const result = buildDeterministicGuestChatAnswer("Do guests need to sign in?");
 

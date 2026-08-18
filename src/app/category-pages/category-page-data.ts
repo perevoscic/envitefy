@@ -784,7 +784,7 @@ export const useCasePages = [
     heroImageAlt: "Birthday party event page preview",
     heroImagePosition: "center",
     primaryCta: "Create a birthday invitation",
-    primaryHref: "/snap?auth=signup",
+    primaryHref: "/event/birthdays/customize",
     secondaryCta: "See how it works",
     secondaryHref: "#birthday-live-page",
     theme: {
@@ -837,7 +837,7 @@ export const useCasePages = [
     steps: [
       {
         title: "Build or upload",
-        body: "Start with a birthday invite image or build the party page from a theme.",
+        body: "Start with a prompt, a birthday invite image, or a conversation with Concierge.",
       },
       {
         title: "Collect household replies",

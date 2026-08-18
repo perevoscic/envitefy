@@ -17,7 +17,7 @@ export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
     id: "product-overview",
     question: "What does Envitefy create?",
     answer:
-      "Envitefy helps hosts create polished hosted event pages with live invitations, RSVP flows, maps, calendar saves, registry links, smart sign-ups, updates, and guest-facing details from one shareable link.",
+      "Envitefy helps hosts create polished hosted event pages with live invitations, RSVP flows, maps, calendar saves, registry links, smart sign-ups, updates, and guest-facing details from one shareable link. You can start with SNAP, Envitefy Concierge, Studio, or a template.",
     keywords: ["envitefy", "what", "create", "event", "page", "invitation", "hosted", "host"],
   },
   {
@@ -31,8 +31,33 @@ export const guestChatKnowledgeItems: GuestChatKnowledgeItem[] = [
     id: "uploads",
     question: "Can I start from an invite, flyer, schedule, or PDF?",
     answer:
-      "Yes. Upload is one creation path for hosts who already have source material. Envitefy can use an invite, flyer, screenshot, schedule, or PDF, then help review the details before publishing.",
-    keywords: ["upload", "snap", "invite", "flyer", "schedule", "pdf", "screenshot", "ocr"],
+      "Yes. SNAP is the upload path for hosts who already have source material. Photograph or upload an invite, flyer, screenshot, schedule, or PDF, then review the extracted details before publishing.",
+    keywords: [
+      "upload",
+      "snap",
+      "invite",
+      "flyer",
+      "schedule",
+      "pdf",
+      "screenshot",
+      "ocr",
+      "photo",
+      "camera",
+    ],
+  },
+  {
+    id: "snap",
+    question: "What is SNAP?",
+    answer:
+      "SNAP lets you photograph or upload an invite, flyer, screenshot, schedule, or PDF. Envitefy reads the title, date, time, and location, builds a reviewable draft, and turns it into a live event page you can share.",
+    keywords: ["snap", "upload", "ocr", "photo", "camera", "flyer", "screenshot", "pdf", "extract"],
+  },
+  {
+    id: "concierge",
+    question: "What is Envitefy Concierge?",
+    answer:
+      "Envitefy Concierge is the chat that creates an event from a message, upload, or screenshot. It asks for missing details, then drafts the live invitation, RSVP, and guest page for you to review before sharing.",
+    keywords: ["concierge", "chat", "ai", "message", "draft", "assistant", "envitefy concierge"],
   },
   {
     id: "my-events-vs-invited",

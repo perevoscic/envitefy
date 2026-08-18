@@ -394,6 +394,113 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
         </div>
       </section>
 
+      <section
+        id="reveal-start"
+        className="scroll-mt-20 bg-[#fffaf7] px-5 py-20 sm:px-8 sm:py-28 lg:px-10"
+      >
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-3xl">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#a25b78]">
+              Two ways to start
+            </p>
+            <h2 className="mt-5 font-serif text-4xl leading-tight text-[#241b29] sm:text-5xl">
+              SNAP the invite. Or tell Envitefy Concierge.
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-[#6b5d68]">
+              Photograph the card you already printed, or describe the reveal in a message.
+              Envitefy turns that into a live page with RSVPs, guesses, gifts, and the plan.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-5 lg:grid-cols-2">
+            <article className="rounded-[2rem] border border-[#eadbd7] bg-white p-6 sm:p-8">
+              <div className="flex items-center gap-3">
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-[#f8efe9] text-[#b56182]">
+                  <Camera className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a25b78]">
+                    SNAP
+                  </p>
+                  <h3 className="font-serif text-3xl text-[#241b29]">Upload the invitation</h3>
+                </div>
+              </div>
+              <p className="mt-4 leading-7 text-[#6b5d68]">
+                SNAP reads the date, time, place, and host notes from a photo, screenshot, or
+                flyer. You review the draft, then share one guest link instead of a blurry image.
+              </p>
+              <div className="mt-6 rounded-[1.5rem] bg-[#f8efe9] p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a25b78]">
+                  Extracted from the invite
+                </p>
+                <p className="mt-2 font-serif text-2xl text-[#241b29]">Little Spark Reveal</p>
+                <p className="mt-1 text-sm text-[#6b5d68]">Saturday · September 12 · 2:00 PM</p>
+                <div className="mt-4 grid gap-2 text-sm">
+                  {[
+                    ["Where", "Cedar Park Pavilion"],
+                    ["Next", "Review, then share"],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="flex items-center justify-between rounded-xl bg-white px-3 py-2"
+                    >
+                      <span className="text-[#8a7583]">{label}</span>
+                      <span className="font-semibold text-[#241b29]">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <Link
+                href="/snap?auth=signup"
+                className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#8a3d5d] underline decoration-[#d7a8b8] underline-offset-8"
+              >
+                Try SNAP
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </article>
+
+            <article className="rounded-[2rem] bg-[#251b2e] p-6 text-white sm:p-8">
+              <div className="flex items-center gap-3">
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-[#f3b6cf] text-[#251b2e]">
+                  <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#efb6ce]">
+                    Envitefy Concierge
+                  </p>
+                  <h3 className="font-serif text-3xl !text-white">Describe the reveal</h3>
+                </div>
+              </div>
+              <p className="mt-4 leading-7 text-white/68">
+                Tell Concierge who it is for, when, and where. It collects missing details, then
+                drafts the invitation, Team Pink or Team Blue, RSVP, and guest page.
+              </p>
+              <div className="mt-6 space-y-3">
+                <div className="ml-8 rounded-2xl rounded-tr-md bg-white px-4 py-3 text-sm leading-6 text-[#241b29]">
+                  Saturday reveal at Cedar Park, 2 PM. RSVP plus Team Pink or Team Blue, please.
+                </div>
+                <div className="mr-2 flex gap-2">
+                  <span className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f3b6cf] text-[#251b2e]">
+                    <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <div className="rounded-2xl rounded-tl-md bg-white/10 px-4 py-3 text-sm leading-6 text-white/88">
+                    I&apos;ll draft the reveal page with live RSVPs, guesses, gifts, and the plan.
+                    You can hide the tally until the moment.
+                  </div>
+                </div>
+              </div>
+              <Link
+                href="/chat"
+                className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#f3b6cf] underline decoration-[#f3b6cf]/40 underline-offset-8"
+              >
+                Ask Envitefy Concierge
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <section className="bg-[#f8efe9] px-5 py-20 sm:px-8 sm:py-24 lg:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1fr)]">
           <div>

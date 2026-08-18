@@ -130,15 +130,44 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
 
   const birthdaysPage = readSource("src/app/birthdays/page.tsx");
   const birthdaysView = readSource("src/app/birthdays/BirthdaysLandingView.tsx");
+  const birthdaysHero = readSource("src/app/birthdays/_components/BirthdayHero.tsx");
+  const birthdaysEditorial = readSource(
+    "src/app/birthdays/_components/BirthdayEditorialSections.tsx",
+  );
+  const birthdaysDemo = readSource("src/app/birthdays/_components/BirthdayInvitationDemo.tsx");
+  const birthdaysPrompt = readSource("src/app/birthdays/_components/BirthdayPromptStudio.tsx");
+  const birthdaysData = readSource("src/app/birthdays/birthday-landing-data.ts");
+  const birthdaysExperience = [
+    birthdaysView,
+    birthdaysHero,
+    birthdaysEditorial,
+    birthdaysDemo,
+    birthdaysPrompt,
+  ].join("\n");
   assert.match(birthdaysPage, /BirthdaysLandingView/);
   assert.match(birthdaysView, /SignedOutPageChrome/);
   assert.match(birthdaysView, /topNavVariant="transparent-dark"/);
-  assert.match(birthdaysView, /<LandingHeroMedia/);
-  assert.match(birthdaysView, /landingHeroGalleries\.birthdays/);
-  assert.match(birthdaysView, /!text-white/);
-  assert.match(birthdaysView, /Household RSVP/);
-  assert.match(birthdaysView, /Host bar/);
-  assert.doesNotMatch(birthdaysView, /landingHeroGalleries\.(weddings|gender-reveal)/);
+  assert.match(birthdaysHero, /<LandingHeroMedia/);
+  assert.match(birthdaysHero, /landingHeroGalleries\.birthdays/);
+  assert.match(birthdaysHero, /!text-white/);
+  assert.match(birthdaysExperience, /Household RSVP/);
+  assert.match(birthdaysExperience, /Host bar/);
+  assert.match(birthdaysExperience, /SNAP/);
+  assert.match(birthdaysExperience, /Envitefy Concierge/);
+  assert.match(birthdaysExperience, /href="\/snap\?auth=signup"/);
+  assert.match(birthdaysExperience, /href="\/chat"/);
+  assert.match(birthdaysExperience, /role="tablist"/);
+  assert.match(birthdaysExperience, /Birthday prompt/);
+  assert.match(birthdaysExperience, /Invitation created from the prompt/);
+  assert.match(birthdaysExperience, /Live Card prompt/);
+  assert.doesNotMatch(birthdaysData, /templateId/);
+  assert.doesNotMatch(birthdaysExperience, /landingHeroGalleries\.(weddings|gender-reveal)/);
+
+  const genderRevealView = readSource("src/app/category-pages/GenderRevealEditorialSections.tsx");
+  assert.match(genderRevealView, /SNAP the invite/);
+  assert.match(genderRevealView, /Envitefy Concierge/);
+  assert.match(genderRevealView, /href="\/snap\?auth=signup"/);
+  assert.match(genderRevealView, /href="\/chat"/);
 });
 
 test("each category landing hero rotates four full-bleed images every 7 seconds", () => {
@@ -152,9 +181,9 @@ test("each category landing hero rotates four full-bleed images every 7 seconds"
   assert.match(heroMedia, /LANDING_HERO_ROTATE_MS/);
   assert.match(heroMedia, /<HeroImageScrim/);
   assert.match(categoryView, /<LandingHeroMedia/);
-  const birthdaysLanding = readSource("src/app/birthdays/BirthdaysLandingView.tsx");
-  assert.match(birthdaysLanding, /landingHeroGalleries\.birthdays/);
-  assert.match(birthdaysLanding, /<LandingHeroMedia/);
+  const birthdaysHero = readSource("src/app/birthdays/_components/BirthdayHero.tsx");
+  assert.match(birthdaysHero, /landingHeroGalleries\.birthdays/);
+  assert.match(birthdaysHero, /<LandingHeroMedia/);
   assert.match(gymnasticsLanding, /landingHeroGalleries\.gymnastics/);
   assert.match(sportsLanding, /landingHeroGalleries\.sports/);
 
@@ -171,14 +200,35 @@ test("each category landing hero rotates four full-bleed images every 7 seconds"
 
   for (const key of galleryKeys) {
     const keyPattern = key.includes("-") ? `"${key}"` : key;
-    const blockMatch = galleries.match(
-      new RegExp(`${keyPattern}: \\[([\\s\\S]*?)\\],\\n`, "m"),
-    );
+    const blockMatch = galleries.match(new RegExp(`${keyPattern}: \\[([\\s\\S]*?)\\],\\n`, "m"));
     assert.ok(blockMatch, `missing gallery for ${key}`);
     const srcMatches = [...blockMatch[1].matchAll(/src: "([^"]+)"/g)].map((match) => match[1]);
     assert.equal(srcMatches.length, 4, `${key} should have 4 hero frames`);
     for (const src of srcMatches) {
       assert.equal(exists(`public${src}`), true, `missing hero asset ${src}`);
     }
+  }
+});
+
+test("birthday editorial imagery is unique and separate from its hero carousel", () => {
+  const birthdayData = readSource("src/app/birthdays/birthday-landing-data.ts");
+  const galleries = readSource("src/lib/landing-hero-galleries.ts");
+  const editorialImages = [
+    ...birthdayData.matchAll(/"(\/(?:images|phone-placeholders|themes)\/[^"]+)"/g),
+  ].map((match) => match[1]);
+  const birthdaysGallery = galleries.match(/birthdays: \[([\s\S]*?)\],\n/m);
+
+  assert.ok(birthdaysGallery, "missing birthdays hero gallery");
+  assert.ok(editorialImages.length >= 10, "birthday page should remain image-led");
+  assert.equal(
+    new Set(editorialImages).size,
+    editorialImages.length,
+    "birthday editorial images should not repeat",
+  );
+
+  const heroImages = [...birthdaysGallery[1].matchAll(/src: "([^"]+)"/g)].map((match) => match[1]);
+  for (const image of editorialImages) {
+    assert.equal(heroImages.includes(image), false, `${image} should not repeat a hero image`);
+    assert.equal(exists(`public${image}`), true, `missing birthday editorial asset ${image}`);
   }
 });

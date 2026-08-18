@@ -52,6 +52,7 @@ test("middleware keeps Studio public without treating it as a marketing redirect
   const appShell = readSource("src/app/AppShell.tsx");
 
   assert.match(middleware, /const PUBLIC_UNAUTH_PATHS = new Set\(\[[\s\S]*"\/studio"/s);
+  assert.match(middleware, /const PUBLIC_UNAUTH_PATHS = new Set\(\[[\s\S]*"\/chat"/s);
   assert.match(middleware, /const isStudioCardSharePath = \(pathname: string\) =>/);
   assert.match(middleware, /if \(isStudioCardSharePath\(normalized\)\) return true;/);
   assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[\s\S]*"\/studio"/s);
