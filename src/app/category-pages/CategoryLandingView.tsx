@@ -21,6 +21,12 @@ import LandingHeroMedia from "@/components/landing/LandingHeroMedia";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
 import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
 import type { UseCaseIconId, UseCasePage } from "./category-page-data";
+import GenderRevealEditorialSections, {
+  GenderRevealHeroContent,
+} from "./GenderRevealEditorialSections";
+import SignupFormsEditorialSections, {
+  SignupFormsHeroContent,
+} from "./SignupFormsEditorialSections";
 
 const iconComponents: Record<UseCaseIconId, LucideIcon> = {
   calendar: CalendarDays,
@@ -136,7 +142,10 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
   };
 
   return (
-    <div style={cssVars} className="min-h-screen bg-[var(--use-case-surface)] text-[var(--use-case-ink)]">
+    <div
+      style={cssVars}
+      className="min-h-screen bg-[var(--use-case-surface)] text-[var(--use-case-ink)]"
+    >
       <SignedOutPageChrome
         activeBottomNavLabel="Menu"
         brandHref="/"
@@ -158,166 +167,180 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
                   ]
             }
           />
-          <div className="relative z-[1] mx-auto grid w-full max-w-7xl items-end gap-10 px-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-32 sm:px-8 md:pb-14 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,0.48fr)] lg:px-10">
-            <div className="max-w-4xl text-white">
-              <p className="text-sm font-bold uppercase text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]">
-                {page.eyebrow}
-              </p>
-              <h1 className="mt-5 max-w-4xl text-[2.65rem] font-semibold leading-[1.03] !text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] sm:text-6xl lg:text-7xl">
-                {page.title}
-              </h1>
-              <p className="mt-6 max-w-2xl text-base leading-7 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-xl sm:leading-8">
-                {page.description}
-              </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link
-                  href={primaryHref}
-                  className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#17111e] shadow-[0_22px_54px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5"
-                >
-                  {page.primaryCta}
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
-                <Link
-                  href={page.secondaryHref}
-                  className="inline-flex min-h-12 items-center gap-2 rounded-full border border-white/28 bg-white/12 px-6 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/18"
-                >
-                  {page.secondaryCta}
-                </Link>
-              </div>
-              <div className="mt-8 hidden max-w-2xl grid-cols-3 gap-2 sm:grid sm:gap-3">
-                {page.stats.map((stat) => (
-                  <div
-                    key={`${page.slug}-hero-stat-${stat.label}`}
-                    className="rounded-lg border border-white/20 bg-white/12 px-3 py-3 backdrop-blur-md"
+          {page.slug === "gender-reveal" && <GenderRevealHeroContent page={page} />}
+          {page.slug === "signup-forms" && <SignupFormsHeroContent page={page} />}
+          {page.slug !== "gender-reveal" && page.slug !== "signup-forms" && (
+            <div className="relative z-[1] mx-auto grid w-full max-w-7xl items-end gap-10 px-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-32 sm:px-8 md:pb-14 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,0.48fr)] lg:px-10">
+              <div className="max-w-4xl text-white">
+                <p className="text-sm font-bold uppercase text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]">
+                  {page.eyebrow}
+                </p>
+                <h1 className="mt-5 max-w-4xl text-[2.65rem] font-semibold leading-[1.03] !text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] sm:text-6xl lg:text-7xl">
+                  {page.title}
+                </h1>
+                <p className="mt-6 max-w-2xl text-base leading-7 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-xl sm:leading-8">
+                  {page.description}
+                </p>
+                <div className="mt-8 flex flex-wrap items-center gap-3">
+                  <Link
+                    href={primaryHref}
+                    className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#17111e] shadow-[0_22px_54px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5"
                   >
-                    <p className="text-2xl font-semibold leading-none text-white">{stat.value}</p>
-                    <p className="mt-1 text-xs font-semibold uppercase text-white/68">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="hidden md:block">
-              <HeroPreview page={page} />
-            </div>
-          </div>
-        </section>
-
-        <section className="relative z-[1] px-5 py-10 sm:px-8 lg:px-10">
-          <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,0.84fr)_minmax(19rem,0.36fr)]">
-            <div>
-              <SectionEyebrow>Product fit</SectionEyebrow>
-              <h2 className="mt-3 max-w-4xl text-3xl font-semibold leading-tight sm:text-4xl">
-                {page.proofTitle}
-              </h2>
-              <p className="mt-4 max-w-3xl text-lg leading-8 text-[#5f5665]">{page.proofBody}</p>
-            </div>
-            <div className="grid content-start gap-2 rounded-lg border border-[#e2d7ca] bg-white/78 p-4 shadow-[0_20px_70px_rgba(35,25,46,0.08)]">
-              {page.audience.map((item) => (
-                <div
-                  key={`${page.slug}-audience-${item}`}
-                  className="flex items-center gap-3 rounded-lg bg-[var(--use-case-accent-soft)] px-3 py-2 text-sm font-semibold text-[var(--use-case-accent-dark)]"
-                >
-                  <Users className="h-4 w-4" aria-hidden="true" />
-                  {item}
+                    {page.primaryCta}
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                  <Link
+                    href={page.secondaryHref}
+                    className="inline-flex min-h-12 items-center gap-2 rounded-full border border-white/28 bg-white/12 px-6 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/18"
+                  >
+                    {page.secondaryCta}
+                  </Link>
                 </div>
-              ))}
+                <div className="mt-8 hidden max-w-2xl grid-cols-3 gap-2 sm:grid sm:gap-3">
+                  {page.stats.map((stat) => (
+                    <div
+                      key={`${page.slug}-hero-stat-${stat.label}`}
+                      className="rounded-lg border border-white/20 bg-white/12 px-3 py-3 backdrop-blur-md"
+                    >
+                      <p className="text-2xl font-semibold leading-none text-white">{stat.value}</p>
+                      <p className="mt-1 text-xs font-semibold uppercase text-white/68">
+                        {stat.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="hidden md:block">
+                <HeroPreview page={page} />
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
-        <section className="px-5 py-10 sm:px-8 lg:px-10">
-          <div className="mx-auto max-w-7xl">
-            <SectionEyebrow>What the page handles</SectionEyebrow>
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {page.features.map((feature) => (
-                <article
-                  key={`${page.slug}-feature-${feature.title}`}
-                  className="rounded-lg border border-[#e2d7ca] bg-white p-5 shadow-[0_18px_52px_rgba(35,25,46,0.07)]"
-                >
-                  <div
-                    className="grid h-11 w-11 place-items-center rounded-lg text-white"
-                    style={{ backgroundColor: page.theme.accent }}
-                  >
-                    <UseCaseIcon icon={feature.icon} />
-                  </div>
-                  <h3 className="mt-5 text-xl font-semibold leading-tight">{feature.title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-[#635967]">{feature.body}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
+        {page.slug === "gender-reveal" && <GenderRevealEditorialSections page={page} />}
+        {page.slug === "signup-forms" && <SignupFormsEditorialSections page={page} />}
+        {page.slug !== "gender-reveal" && page.slug !== "signup-forms" && (
+          <>
+            <section className="relative z-[1] px-5 py-10 sm:px-8 lg:px-10">
+              <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,0.84fr)_minmax(19rem,0.36fr)]">
+                <div>
+                  <SectionEyebrow>Product fit</SectionEyebrow>
+                  <h2 className="mt-3 max-w-4xl text-3xl font-semibold leading-tight sm:text-4xl">
+                    {page.proofTitle}
+                  </h2>
+                  <p className="mt-4 max-w-3xl text-lg leading-8 text-[#5f5665]">
+                    {page.proofBody}
+                  </p>
+                </div>
+                <div className="grid content-start gap-2 rounded-lg border border-[#e2d7ca] bg-white/78 p-4 shadow-[0_20px_70px_rgba(35,25,46,0.08)]">
+                  {page.audience.map((item) => (
+                    <div
+                      key={`${page.slug}-audience-${item}`}
+                      className="flex items-center gap-3 rounded-lg bg-[var(--use-case-accent-soft)] px-3 py-2 text-sm font-semibold text-[var(--use-case-accent-dark)]"
+                    >
+                      <Users className="h-4 w-4" aria-hidden="true" />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
 
-        <section className="bg-white px-5 py-14 sm:px-8 lg:px-10">
-          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)]">
-            <div>
-              <SectionEyebrow>Launch path</SectionEyebrow>
-              <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
-                From scattered details to one guest-ready link.
-              </h2>
-            </div>
-            <div className="grid gap-4">
-              {page.steps.map((step, index) => (
-                <article
-                  key={`${page.slug}-step-${step.title}`}
-                  className="grid gap-4 rounded-lg border border-[#e2d7ca] bg-[var(--use-case-surface)] p-5 sm:grid-cols-[4rem_minmax(0,1fr)]"
-                >
-                  <div className="grid h-12 w-12 place-items-center rounded-lg bg-[var(--use-case-accent-dark)] text-lg font-bold text-white">
-                    {index + 1}
-                  </div>
+            <section className="px-5 py-10 sm:px-8 lg:px-10">
+              <div className="mx-auto max-w-7xl">
+                <SectionEyebrow>What the page handles</SectionEyebrow>
+                <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {page.features.map((feature) => (
+                    <article
+                      key={`${page.slug}-feature-${feature.title}`}
+                      className="rounded-lg border border-[#e2d7ca] bg-white p-5 shadow-[0_18px_52px_rgba(35,25,46,0.07)]"
+                    >
+                      <div
+                        className="grid h-11 w-11 place-items-center rounded-lg text-white"
+                        style={{ backgroundColor: page.theme.accent }}
+                      >
+                        <UseCaseIcon icon={feature.icon} />
+                      </div>
+                      <h3 className="mt-5 text-xl font-semibold leading-tight">{feature.title}</h3>
+                      <p className="mt-3 text-sm leading-7 text-[#635967]">{feature.body}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-white px-5 py-14 sm:px-8 lg:px-10">
+              <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)]">
+                <div>
+                  <SectionEyebrow>Launch path</SectionEyebrow>
+                  <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
+                    From scattered details to one guest-ready link.
+                  </h2>
+                </div>
+                <div className="grid gap-4">
+                  {page.steps.map((step, index) => (
+                    <article
+                      key={`${page.slug}-step-${step.title}`}
+                      className="grid gap-4 rounded-lg border border-[#e2d7ca] bg-[var(--use-case-surface)] p-5 sm:grid-cols-[4rem_minmax(0,1fr)]"
+                    >
+                      <div className="grid h-12 w-12 place-items-center rounded-lg bg-[var(--use-case-accent-dark)] text-lg font-bold text-white">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold">{step.title}</h3>
+                        <p className="mt-2 text-sm leading-7 text-[#635967]">{step.body}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="px-5 py-14 sm:px-8 lg:px-10">
+              <div className="mx-auto max-w-7xl">
+                <div className="grid gap-8 lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)]">
                   <div>
-                    <h3 className="text-xl font-semibold">{step.title}</h3>
-                    <p className="mt-2 text-sm leading-7 text-[#635967]">{step.body}</p>
+                    <SectionEyebrow>Questions</SectionEyebrow>
+                    <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
+                      Details guests and organizers ask before sharing.
+                    </h2>
                   </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="px-5 py-14 sm:px-8 lg:px-10">
-          <div className="mx-auto max-w-7xl">
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)]">
-              <div>
-                <SectionEyebrow>Questions</SectionEyebrow>
-                <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
-                  Details guests and organizers ask before sharing.
-                </h2>
+                  <div className="grid gap-3">
+                    {page.faqs.map((faq) => (
+                      <article
+                        key={`${page.slug}-faq-${faq.question}`}
+                        className="rounded-lg border border-[#e2d7ca] bg-white p-5"
+                      >
+                        <h3 className="text-lg font-semibold">{faq.question}</h3>
+                        <p className="mt-2 text-sm leading-7 text-[#635967]">{faq.answer}</p>
+                      </article>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="grid gap-3">
-                {page.faqs.map((faq) => (
-                  <article
-                    key={`${page.slug}-faq-${faq.question}`}
-                    className="rounded-lg border border-[#e2d7ca] bg-white p-5"
+            </section>
+
+            <section className="px-5 pb-20 sm:px-8 lg:px-10">
+              <div className="mx-auto max-w-7xl overflow-hidden rounded-lg bg-[var(--use-case-accent-dark)] px-6 py-10 text-white shadow-[0_26px_80px_rgba(31,20,44,0.18)] sm:px-10">
+                <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+                  <div>
+                    <p className="text-sm font-bold uppercase text-white/64">{page.eyebrow}</p>
+                    <h2 className="mt-3 text-3xl font-semibold leading-tight">
+                      Give guests one page they can actually use.
+                    </h2>
+                  </div>
+                  <Link
+                    href={page.primaryHref}
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#17111e] transition hover:-translate-y-0.5"
                   >
-                    <h3 className="text-lg font-semibold">{faq.question}</h3>
-                    <p className="mt-2 text-sm leading-7 text-[#635967]">{faq.answer}</p>
-                  </article>
-                ))}
+                    {page.primaryCta}
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="px-5 pb-20 sm:px-8 lg:px-10">
-          <div className="mx-auto max-w-7xl overflow-hidden rounded-lg bg-[var(--use-case-accent-dark)] px-6 py-10 text-white shadow-[0_26px_80px_rgba(31,20,44,0.18)] sm:px-10">
-            <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
-              <div>
-                <p className="text-sm font-bold uppercase text-white/64">{page.eyebrow}</p>
-                <h2 className="mt-3 text-3xl font-semibold leading-tight">
-                  Give guests one page they can actually use.
-                </h2>
-              </div>
-              <Link
-                href={page.primaryHref}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#17111e] transition hover:-translate-y-0.5"
-              >
-                {page.primaryCta}
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            </div>
-          </div>
-        </section>
+            </section>
+          </>
+        )}
       </main>
 
       <Script id={`ld-use-case-webpage-${page.slug}`} type="application/ld+json">

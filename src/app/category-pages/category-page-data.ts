@@ -383,7 +383,12 @@ export const useCasePages = [
         body: "Send one link and keep guests current when plans change.",
       },
     ],
-    audience: ["baby shower hosts", "parents-to-be", "family organizers", "friends planning brunch"],
+    audience: [
+      "baby shower hosts",
+      "parents-to-be",
+      "family organizers",
+      "friends planning brunch",
+    ],
     faqs: [
       {
         question: "Can I add registry links to the RSVP page?",
@@ -516,11 +521,13 @@ export const useCasePages = [
       },
       {
         question: "Can meet details be updated after publishing?",
-        answer: "Yes. Change session notes, venue details, parking, and updates after the link is shared.",
+        answer:
+          "Yes. Change session notes, venue details, parking, and updates after the link is shared.",
       },
       {
         question: "Does this work for multi-session meets?",
-        answer: "Yes. The page can organize multiple sessions, levels, locations, and timing notes.",
+        answer:
+          "Yes. The page can organize multiple sessions, levels, locations, and timing notes.",
       },
     ],
   },
@@ -612,7 +619,8 @@ export const useCasePages = [
     faqs: [
       {
         question: "Can I create a signup form for free?",
-        answer: "Envitefy supports fast signup creation, with account options handled during setup.",
+        answer:
+          "Envitefy supports fast signup creation, with account options handled during setup.",
       },
       {
         question: "Can people sign up without creating an account?",
@@ -753,11 +761,11 @@ export const useCasePages = [
     slug: "birthdays",
     path: "/birthdays",
     navLabel: "Birthdays",
-    eyebrow: "Birthday party pages",
-    title: "Birthday party invitations with household RSVPs, gift notes, and live guest counts",
+    eyebrow: "Birthday party invitations",
+    title: "A birthday invitation as special as the person you’re celebrating",
     metadataTitle: "Birthday Party Invitation and RSVP Page | Envitefy",
     description:
-      "Create a birthday page where families RSVP with kids, adults, and allergy notes, then reopen one link for gifts, maps, pickup times, and calendar saves.",
+      "From dinosaur adventures to milestone dinners, create a beautiful birthday page with RSVPs, directions, gifts, schedules, and updates in one easy link.",
     keywords: [
       "birthday party RSVP",
       "birthday invitation tracker",
@@ -769,10 +777,10 @@ export const useCasePages = [
     heroImage: "/images/landing/hero/birthday-dino-desktop.webp",
     heroImageAlt: "Birthday party event page preview",
     heroImagePosition: "center",
-    primaryCta: "Create your birthday page",
+    primaryCta: "Create a birthday invitation",
     primaryHref: "/snap?auth=signup",
-    secondaryCta: "Read birthday guide",
-    secondaryHref: "/guides/birthday-rsvp-invitation",
+    secondaryCta: "See how it works",
+    secondaryHref: "#birthday-live-page",
     theme: {
       accent: "#e6953a",
       accentDark: "#3b2413",
@@ -781,22 +789,22 @@ export const useCasePages = [
       surface: "#fffaf2",
     },
     stats: [
-      { label: "kids", value: "18" },
-      { label: "adults", value: "22" },
-      { label: "pending", value: "7" },
+      { label: "beautiful link", value: "1" },
+      { label: "guest replies", value: "Live" },
+      { label: "for guests", value: "No app" },
     ],
     proofTitle: "A household logistics page, not a decorated flyer.",
     proofBody:
       "Envitefy keeps count of families, kids, adults, pending replies, allergy notes, gift links, maps, and calendar saves on one birthday page parents can reopen from a text.",
     preview: {
-      eventTitle: "Leo's Dino Birthday",
-      eventMeta: "7th birthday · household RSVP, gifts, map, pickup",
+      eventTitle: "Maya's Rainbow Party",
+      eventMeta: "Saturday · May 16 · Oak Pavilion",
       statusRows: [
-        { label: "Families attending", value: "16" },
-        { label: "Kids / adults", value: "18 / 22" },
-        { label: "No response", value: "7" },
+        { label: "Families joining", value: "16" },
+        { label: "Party headcount", value: "40" },
+        { label: "Allergy notes", value: "4" },
       ],
-      chips: ["Household RSVP", "Gift list", "Map"],
+      chips: ["RSVP open", "Directions", "Gift list"],
     },
     features: [
       {
@@ -847,7 +855,8 @@ export const useCasePages = [
       },
       {
         question: "Can guests leave allergy or food notes?",
-        answer: "Yes. Allergy notes sit with the RSVP so hosts can scan them without digging through a group text.",
+        answer:
+          "Yes. Allergy notes sit with the RSVP so hosts can scan them without digging through a group text.",
       },
       {
         question: "Can I upload an existing birthday invitation?",
@@ -863,7 +872,8 @@ export const useCasePages = [
       },
       {
         question: "Can I update drop-off or pickup after sending?",
-        answer: "Yes. Update the live page so guests always see the current timing, address, and host notes.",
+        answer:
+          "Yes. Update the live page so guests always see the current timing, address, and host notes.",
       },
     ],
   },

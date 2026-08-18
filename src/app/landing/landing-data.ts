@@ -45,7 +45,7 @@ export const landingCategoryCards: LandingCategoryCard[] = [
     id: "birthdays",
     href: "/birthdays",
     label: "Birthdays",
-    promise: "Household RSVP, kids and adults, gifts, and pickup notes in one link.",
+    promise: "Beautiful invitations, RSVPs, gifts, directions, and updates in one joyful link.",
     cta: "Explore birthdays",
     featured: true,
   },
