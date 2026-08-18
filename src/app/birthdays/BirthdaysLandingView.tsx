@@ -1,6 +1,7 @@
 import {
   ArrowRight,
   CalendarDays,
+  Camera,
   CheckCircle2,
   ChevronRight,
   Clock3,
@@ -50,7 +51,7 @@ const setupSteps = [
   {
     number: "01",
     label: "Choose the feeling",
-    body: "Start with a theme, a photo, or the invitation you already made.",
+    body: "Start with a theme, SNAP an invitation you already have, or tell Envitefy Concierge the plan.",
     image: "/images/marketing/birthday-step-theme.png",
   },
   {
@@ -248,6 +249,70 @@ function EventPageCard({ primaryHref }: { primaryHref: string }) {
         >
           Send our RSVP
         </Link>
+      </div>
+    </div>
+  );
+}
+
+function SnapPreview() {
+  return (
+    <div className="rounded-[1.6rem] border border-[#eadfd8] bg-[#fffaf6] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b65f36]">SNAP</p>
+        <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#806d62]">
+          Photo or upload
+        </span>
+      </div>
+      <div className="mt-4 rounded-2xl bg-[#2d211c] p-4 text-white">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
+          Extracted from the invite
+        </p>
+        <p className="mt-2 text-xl font-semibold tracking-[-0.03em]">Maya&apos;s Rainbow Party</p>
+        <p className="mt-1 text-sm text-white/70">Saturday · May 16 · Oak Pavilion</p>
+      </div>
+      <div className="mt-3 grid gap-2">
+        {[
+          ["When", "2–4 PM"],
+          ["Where", "East entrance"],
+          ["Next", "Review, then share"],
+        ].map(([label, value]) => (
+          <div
+            key={label}
+            className="flex items-center justify-between rounded-xl border border-[#eadfd8] bg-white px-3 py-2 text-sm"
+          >
+            <span className="text-[#806d62]">{label}</span>
+            <span className="font-semibold text-[#2d211c]">{value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ConciergePreview() {
+  return (
+    <div className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 text-white">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c9bbec]">
+          Envitefy Concierge
+        </p>
+        <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-bold text-white/70">
+          Chat create
+        </span>
+      </div>
+      <div className="mt-4 space-y-3">
+        <div className="ml-8 rounded-2xl rounded-tr-md bg-white px-3.5 py-3 text-sm leading-6 text-[#2d211c]">
+          Maya is turning 8 at Oak Pavilion, Saturday 2–4. Household RSVP and a gift list, please.
+        </div>
+        <div className="mr-4 flex gap-2">
+          <span className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#ffd66b] text-[#21372c]">
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div className="rounded-2xl rounded-tl-md bg-white/10 px-3.5 py-3 text-sm leading-6 text-white/88">
+            I&apos;ll draft the birthday page with kids/adults RSVP, the map, and gift notes. You
+            can review it before anyone gets the link.
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -541,7 +606,83 @@ export default function BirthdaysLandingView({ page }: { page: UseCasePage }) {
           </div>
         </section>
 
-        <section className="border-y border-[#eadfd8] bg-white px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
+        <section
+          id="birthday-start"
+          className="scroll-mt-20 border-y border-[#eadfd8] bg-[#fff3ea] px-5 py-20 sm:px-8 sm:py-28 lg:px-10"
+        >
+          <div className="mx-auto max-w-7xl">
+            <SectionIntro
+              eyebrow="Two ways to start"
+              title="SNAP the invite you already have. Or just tell Concierge."
+              body="You do not have to rebuild the party by hand. Photograph the card, drop in a screenshot, or describe the celebration in a message. Envitefy turns that into a live birthday page."
+            />
+            <div className="mt-12 grid gap-5 lg:grid-cols-2">
+              <article className="rounded-[2rem] border border-[#eadfd8] bg-white p-5 sm:p-7">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#fff3ea] text-[#b65f36]">
+                    <Camera className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b65f36]">
+                      SNAP
+                    </p>
+                    <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[#2d211c]">
+                      Already have the invitation?
+                    </h3>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm leading-7 text-[#75645b]">
+                  SNAP photographs or uploads the invite, flyer, or screenshot. Envitefy reads the
+                  title, date, time, and place, then lets you review the draft before guests ever
+                  see it.
+                </p>
+                <div className="mt-6">
+                  <SnapPreview />
+                </div>
+                <Link
+                  href="/snap?auth=signup"
+                  className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#9f4f2e] underline decoration-[#d9a48a] underline-offset-8 transition hover:text-[#71331d]"
+                >
+                  Try SNAP
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              </article>
+
+              <article className="rounded-[2rem] bg-[#2d2540] p-5 text-white sm:p-7">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#ffd66b] text-[#21372c]">
+                    <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c9bbec]">
+                      Envitefy Concierge
+                    </p>
+                    <h3 className="text-2xl font-semibold tracking-[-0.03em]">
+                      Describe the party in a message.
+                    </h3>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm leading-7 text-white/68">
+                  Tell Concierge who it is for, when, and where. It asks for anything missing, then
+                  drafts the live invitation, household RSVP, map, and gift notes for you to
+                  approve.
+                </p>
+                <div className="mt-6">
+                  <ConciergePreview />
+                </div>
+                <Link
+                  href="/chat?auth=signup"
+                  className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#ffd66b] underline decoration-[#ffd66b]/40 underline-offset-8 transition hover:text-white"
+                >
+                  Ask Envitefy Concierge
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-b border-[#eadfd8] bg-white px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
           <div className="mx-auto max-w-7xl">
             <SectionIntro
               eyebrow="From idea to invited"

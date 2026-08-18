@@ -741,7 +741,13 @@ export const useCasePages = [
       },
       {
         question: "Can I upload my existing gender reveal invite?",
-        answer: "Yes. Start from an upload or create a new event page manually.",
+        answer:
+          "Yes. SNAP photographs or uploads the invitation, flyer, or screenshot. Envitefy extracts the details so you can review them before sharing the live page.",
+      },
+      {
+        question: "What is Envitefy Concierge?",
+        answer:
+          "Envitefy Concierge is a chat that builds the reveal page from a message or upload. It asks for missing details, then drafts the invitation, RSVP, Team Pink or Team Blue, and guest page for you to review.",
       },
       {
         question: "Can guests RSVP with plus-ones?",
@@ -860,7 +866,13 @@ export const useCasePages = [
       },
       {
         question: "Can I upload an existing birthday invitation?",
-        answer: "Yes. Envitefy can start from an invitation upload or manual event details.",
+        answer:
+          "Yes. SNAP photographs or uploads the invitation, flyer, or screenshot. Envitefy extracts the title, date, time, and place so you can review the birthday page before sharing.",
+      },
+      {
+        question: "What is Envitefy Concierge?",
+        answer:
+          "Envitefy Concierge is a chat that builds the birthday page from a message or upload. It collects missing details, then drafts the invitation, household RSVP, map, and gift notes for you to approve.",
       },
       {
         question: "Can I add gift registry or wishlist links?",

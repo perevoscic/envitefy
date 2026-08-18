@@ -146,7 +146,7 @@ test("each category landing hero rotates four full-bleed images every 7 seconds"
   const heroMedia = readSource("src/components/landing/LandingHeroMedia.tsx");
   const categoryView = readSource("src/app/category-pages/CategoryLandingView.tsx");
   const gymnasticsLanding = readSource("src/components/gymnastics-landing/GymnasticsLanding.tsx");
-  const sportsLanding = readSource("src/app/sport-events/SportsLandingPage.tsx");
+  const sportsLanding = readSource("src/components/sports-landing/SportsLandingPage.tsx");
 
   assert.match(galleries, /export const LANDING_HERO_ROTATE_MS = 7000/);
   assert.match(heroMedia, /LANDING_HERO_ROTATE_MS/);

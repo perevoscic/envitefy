@@ -11,7 +11,7 @@ const readSource = (relativePath) =>
 test("sports workflow uses a shared popular-sports builder and keeps gymnastics specialized", () => {
   const presets = readSource("src/lib/sport-event-presets.ts");
   const signedInHub = readSource("src/app/event/sport-events/SportEventsPageClient.tsx");
-  const signedOutHub = readSource("src/app/sport-events/SportsLandingPage.tsx");
+  const signedOutHub = readSource("src/components/sports-landing/SportsLandingPage.tsx");
   const customize = readSource("src/app/event/sport-events/customize/page.tsx");
   const footballPage = readSource("src/app/football/page.tsx");
   const middleware = readSource("src/middleware.ts");

@@ -1,6 +1,7 @@
 import {
   ArrowRight,
   CalendarDays,
+  Camera,
   Check,
   ChevronDown,
   Gift,
