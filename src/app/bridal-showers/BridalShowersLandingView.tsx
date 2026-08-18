@@ -13,10 +13,11 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { type CSSProperties, useMemo, useState } from "react";
+import LandingHeroMedia from "@/components/landing/LandingHeroMedia";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
+import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
 import styles from "./BridalShowersLandingView.module.css";
 
 const features = [
@@ -158,14 +159,7 @@ export default function BridalShowersLandingView() {
 
       <main>
         <section id="landing-hero" className={styles.hero} aria-labelledby="bridal-hero-title">
-          <Image
-            src="/images/landing/hero/garden-brunch-desktop.webp"
-            alt="Garden brunch live invitation card"
-            fill
-            priority
-            sizes="100vw"
-            className={styles.heroImage}
-          />
+          <LandingHeroMedia images={landingHeroGalleries["bridal-showers"]} />
           <div className={styles.heroContent}>
             <p className={`${styles.eyebrow} ${styles.eyebrowLight}`}>
               Bridal shower invitations, beautifully hosted

@@ -21,6 +21,7 @@ import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
+import LandingHeroMedia from "@/components/landing/LandingHeroMedia";
 import ScenicBackground, {
   type ScenicScene,
   useActiveScene,
@@ -28,6 +29,7 @@ import ScenicBackground, {
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import AnimatedButtonLabel from "@/components/ui/AnimatedButtonLabel";
 import { publicUseCasePrimaryNavLinks, signedOutMobileMenuLinks } from "@/config/navigation";
+import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
 import styles from "./GymnasticsLanding.module.css";
 import GymnasticsLandingFaq from "./GymnasticsLandingFaq";
 
@@ -347,113 +349,105 @@ export default function GymnasticsLanding() {
 
       <section
         id="hero"
-        className="hash-anchor-below-fixed-nav px-4 pb-6 pt-32 sm:px-6 lg:px-8 lg:pt-40"
+        className="relative isolate flex min-h-[100svh] items-end overflow-hidden"
       >
-        <div className="mx-auto max-w-7xl">
-          <div
-            className={`${glassSectionClass} ${styles.sectionShell} px-7 py-8 md:px-10 md:py-12 lg:px-14 lg:py-16`}
-          >
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03)_40%,rgba(45,212,191,0.06)_100%)]" />
-            <div className="absolute -left-24 bottom-[-5rem] h-72 w-72 rounded-full bg-[#22D3EE]/16 blur-[140px]" />
-            <div className="absolute right-[-6rem] top-[-3rem] h-72 w-72 rounded-full bg-[#8B5CF6]/18 blur-[150px]" />
-            <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-center">
-              <div className="max-w-3xl">
-                <span className={sectionBubbleClass}>Gymnastics Meet Pages</span>
-                <h1
-                  className={`${styles.headline} mb-8 text-5xl font-light leading-[0.94] tracking-tight text-white sm:text-6xl lg:text-[6rem]`}
+        <LandingHeroMedia images={landingHeroGalleries.gymnastics} />
+        <div className="relative z-[1] mx-auto grid w-full max-w-7xl items-end gap-12 px-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-32 sm:px-8 md:pb-16 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:px-10">
+          <div className="max-w-3xl">
+            <span className={sectionBubbleClass}>Gymnastics Meet Pages</span>
+            <h1
+              className={`${styles.headline} mb-8 text-5xl font-light leading-[0.94] tracking-tight !text-white drop-shadow-[0_4px_22px_rgba(0,0,0,0.82)] sm:text-6xl lg:text-[6rem]`}
+            >
+              Turn a meet packet into a
+              <span className="mt-4 block font-serif text-4xl italic leading-tight text-white sm:text-5xl lg:text-[4.15rem]">
+                {" "}
+                polished page families can actually use
+              </span>
+            </h1>
+            <p className="max-w-2xl text-lg leading-relaxed text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] md:text-[1.28rem] md:leading-[1.55]">
+              Envitefy takes the schedules, venue notes, hotel blocks, parking guidance,
+              documents, and updates that usually live in separate files and turns them into one
+              mobile-ready meet hub.
+            </p>
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-start">
+              <CtaButton
+                label="Start Your Meet Page"
+                href={isAuthenticated ? "/event/gymnastics" : undefined}
+                onClick={isAuthenticated ? undefined : () => openAuth("signup")}
+              />
+              <CtaButton label="See How It Works" href="#how-it-works" light />
+            </div>
+            <div className="mt-8 grid gap-3 text-sm font-medium text-white sm:grid-cols-3">
+              {[
+                "Sessions, rotations, venue, hotels, and updates in one place",
+                "A polished mobile page instead of a stack of PDFs",
+                "One link for families, coaches, athletes, and spectators",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="rounded-2xl border border-white/18 bg-black/25 px-4 py-4 backdrop-blur-md drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]"
                 >
-                  Turn a meet packet into a
-                  <span className="mt-4 block font-serif text-4xl italic leading-tight text-white/92 sm:text-5xl lg:text-[4.15rem]">
-                    {" "}
-                    polished page families can actually use
-                  </span>
-                </h1>
-                <p className="max-w-2xl text-lg leading-relaxed text-white/82 md:text-[1.28rem] md:leading-[1.55]">
-                  Envitefy takes the schedules, venue notes, hotel blocks, parking guidance,
-                  documents, and updates that usually live in separate files and turns them into one
-                  mobile-ready meet hub.
-                </p>
-                <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-start">
-                  <CtaButton
-                    label="Start Your Meet Page"
-                    href={isAuthenticated ? "/event/gymnastics" : undefined}
-                    onClick={isAuthenticated ? undefined : () => openAuth("signup")}
-                  />
-                  <CtaButton label="See How It Works" href="#how-it-works" light />
+                  {item}
                 </div>
-                <div className="mt-8 grid gap-3 text-sm font-medium text-white/76 sm:grid-cols-3">
-                  {[
-                    "Sessions, rotations, venue, hotels, and updates in one place",
-                    "A polished mobile page instead of a stack of PDFs",
-                    "One link for families, coaches, athletes, and spectators",
-                  ].map((item) => (
-                    <div
-                      key={item}
-                      className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-4"
-                    >
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
+            </div>
+          </div>
 
+          <div
+            ref={heroVisualRef}
+            className="relative hidden items-start justify-center gap-4 md:flex sm:gap-6 lg:justify-end"
+          >
+            <div
+              className={cx(
+                styles.cardGroup,
+                styles.heroRevealReady,
+                heroVisualVisible && styles.heroRevealPrimary,
+              )}
+            >
+              <div className={`${cardBubbleClass} -top-5 text-[#0EA5E9]`}>Meet Packet</div>
               <div
-                ref={heroVisualRef}
-                className="relative flex items-start justify-center gap-4 sm:gap-6 lg:justify-end"
+                className={`${styles.heroSnapCard} w-[7.8rem] overflow-hidden rounded-[1.35rem] shadow-[0_26px_58px_rgba(3,0,12,0.3)] sm:w-52`}
               >
-                <div
-                  className={cx(
-                    styles.cardGroup,
-                    styles.heroRevealReady,
-                    heroVisualVisible && styles.heroRevealPrimary,
-                  )}
-                >
-                  <div className={`${cardBubbleClass} -top-5 text-[#0EA5E9]`}>Meet Packet</div>
-                  <div
-                    className={`${styles.heroSnapCard} w-[7.8rem] overflow-hidden rounded-[1.35rem] shadow-[0_26px_58px_rgba(3,0,12,0.3)] sm:w-52`}
-                  >
-                    <img
-                      src={IMAGES.flyer}
-                      alt="Gymnastics meet packet preview"
-                      className="block h-auto w-full scale-[1.08] rounded-[1.35rem]"
-                    />
-                  </div>
-                </div>
-                <div
-                  className={cx(
-                    "hidden flex-col items-center gap-2 sm:flex",
-                    styles.heroRevealReady,
-                    heroVisualVisible && styles.heroRevealCenter,
-                  )}
-                >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white shadow-inner">
-                    <WandSparkles className="h-4 w-4" />
-                  </div>
-                  <div className="h-14 w-px bg-gradient-to-b from-white/40 to-transparent" />
-                  <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-white">
-                    Organized by Envitefy
-                  </span>
-                </div>
-                <div
-                  className={cx(
-                    styles.cardGroup,
-                    styles.heroRevealReady,
-                    heroVisualVisible && styles.heroRevealSecondary,
-                  )}
-                >
-                  <div className={`${cardBubbleClass} -top-5 border-white/24 text-[#140a27]`}>
-                    Live Meet Page
-                  </div>
-                  <div
-                    className={`${styles.heroLiveCard} w-[8.8rem] overflow-hidden rounded-[1.75rem] shadow-[0_30px_64px_rgba(3,0,12,0.34)] sm:w-56 sm:rounded-[2.4rem]`}
-                  >
-                    <img
-                      src={IMAGES.event}
-                      alt="Gymnastics meet page preview"
-                      className="h-auto w-full rounded-[1.75rem] sm:rounded-[2.4rem]"
-                    />
-                  </div>
-                </div>
+                <img
+                  src={IMAGES.flyer}
+                  alt="Gymnastics meet packet preview"
+                  className="block h-auto w-full scale-[1.08] rounded-[1.35rem]"
+                />
+              </div>
+            </div>
+            <div
+              className={cx(
+                "hidden flex-col items-center gap-2 sm:flex",
+                styles.heroRevealReady,
+                heroVisualVisible && styles.heroRevealCenter,
+              )}
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white shadow-inner">
+                <WandSparkles className="h-4 w-4" />
+              </div>
+              <div className="h-14 w-px bg-gradient-to-b from-white/40 to-transparent" />
+              <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-white">
+                Organized by Envitefy
+              </span>
+            </div>
+            <div
+              className={cx(
+                styles.cardGroup,
+                styles.heroRevealReady,
+                heroVisualVisible && styles.heroRevealSecondary,
+              )}
+            >
+              <div className={`${cardBubbleClass} -top-5 border-white/24 text-[#140a27]`}>
+                Live Meet Page
+              </div>
+              <div
+                className={`${styles.heroLiveCard} w-[8.8rem] overflow-hidden rounded-[1.75rem] shadow-[0_30px_64px_rgba(3,0,12,0.34)] sm:w-56 sm:rounded-[2.4rem]`}
+              >
+                <img
+                  src={IMAGES.event}
+                  alt="Gymnastics meet page preview"
+                  className="h-auto w-full rounded-[1.75rem] sm:rounded-[2.4rem]"
+                />
               </div>
             </div>
           </div>

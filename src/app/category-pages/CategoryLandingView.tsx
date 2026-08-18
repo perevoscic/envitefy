@@ -14,11 +14,12 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import type { CSSProperties } from "react";
+import LandingHeroMedia from "@/components/landing/LandingHeroMedia";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
+import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
 import type { UseCaseIconId, UseCasePage } from "./category-page-data";
 
 const iconComponents: Record<UseCaseIconId, LucideIcon> = {
@@ -144,14 +145,18 @@ export default function UseCaseLandingView({ page }: { page: UseCasePage }) {
 
       <main>
         <section className="relative isolate flex min-h-[100svh] items-end overflow-hidden">
-          <Image
-            src={page.heroImage}
-            alt={page.heroImageAlt}
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover"
-            style={{ objectPosition: page.heroImagePosition ?? "center" }}
+          <LandingHeroMedia
+            images={
+              page.slug in landingHeroGalleries
+                ? landingHeroGalleries[page.slug as keyof typeof landingHeroGalleries]
+                : [
+                    {
+                      src: page.heroImage,
+                      alt: page.heroImageAlt,
+                      objectPosition: page.heroImagePosition,
+                    },
+                  ]
+            }
           />
           <div className="relative z-[1] mx-auto grid w-full max-w-7xl items-end gap-10 px-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-32 sm:px-8 md:pb-14 lg:grid-cols-[minmax(0,1fr)_minmax(21rem,0.48fr)] lg:px-10">
             <div className="max-w-4xl text-white">

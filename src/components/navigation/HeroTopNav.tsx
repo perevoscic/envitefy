@@ -3,8 +3,9 @@
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { type MouseEventHandler, useEffect, useRef, useState } from "react";
+import { type MouseEventHandler, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import LoginForm from "@/components/auth/LoginForm";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
@@ -45,6 +46,50 @@ function getHashLinkId(href: string) {
   }
 }
 
+function normalizeNavPath(path: string) {
+  const withoutQuery = path.split("?")[0]?.split("#")[0] ?? path;
+  if (withoutQuery.length > 1 && withoutQuery.endsWith("/")) {
+    return withoutQuery.slice(0, -1);
+  }
+  return withoutQuery || "/";
+}
+
+function getActivePathHref(pathname: string | null, links: HeroTopNavLink[]) {
+  if (!pathname) return null;
+
+  const current = normalizeNavPath(pathname);
+  const pathLinks = links.filter((link) => !link.href.startsWith("#"));
+  const exactMatch = pathLinks.find((link) => normalizeNavPath(link.href) === current);
+  if (exactMatch) return exactMatch.href;
+
+  let bestMatch: HeroTopNavLink | null = null;
+  for (const link of pathLinks) {
+    const href = normalizeNavPath(link.href);
+    if (href === "/") continue;
+    if (current === href || current.startsWith(`${href}/`)) {
+      if (!bestMatch || href.length > normalizeNavPath(bestMatch.href).length) {
+        bestMatch = link;
+      }
+    }
+  }
+
+  return bestMatch?.href ?? null;
+}
+
+function getActiveUnderlineClass(variant: {
+  isTransparentOverHero: boolean;
+  isTransparentLight: boolean;
+  isDarkGlass: boolean;
+}) {
+  if (variant.isTransparentOverHero && variant.isTransparentLight) {
+    return "bg-[#25172d] shadow-[0_0_10px_rgba(37,23,45,0.28)]";
+  }
+  if (variant.isTransparentOverHero || variant.isDarkGlass) {
+    return "bg-white shadow-[0_0_12px_rgba(255,255,255,0.72)]";
+  }
+  return "bg-[#6e59db] shadow-[0_0_10px_rgba(110,89,219,0.45)]";
+}
+
 const glassGhostLoginClass =
   "cta-shell nav-chrome-motion h-11 shrink-0 rounded-full border border-white/18 bg-white/[0.12] px-6 text-sm font-bold text-white transition-all hover:bg-white/[0.18]";
 const lightNavPillClass = "hero-top-nav-pill-light";
@@ -60,7 +105,7 @@ function NavLinkItem({
   label: string;
   className: string;
   onClick?: MouseEventHandler<HTMLAnchorElement>;
-  ariaCurrent?: "location";
+  ariaCurrent?: "location" | "page";
 }) {
   if (href.startsWith("#")) {
     return (
@@ -105,6 +150,7 @@ export default function HeroTopNav({
   variant = "default",
 }: HeroTopNavProps) {
   const { status } = useSession();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileLoginExpanded, setMobileLoginExpanded] = useState(false);
   const [mobileMenuPortalReady, setMobileMenuPortalReady] = useState(false);
@@ -123,6 +169,15 @@ export default function HeroTopNav({
   const useDarkMobileMenu = isDarkGlass;
   const showMobileGuestActions = status !== "authenticated" && !mobileLoginExpanded;
   const resolvedMobileNavLinks = mobileNavLinks ?? navLinks;
+  const pathActiveHref = useMemo(
+    () => getActivePathHref(pathname, navLinks),
+    [pathname, navLinks],
+  );
+  const mobilePathActiveHref = useMemo(
+    () => getActivePathHref(pathname, resolvedMobileNavLinks),
+    [pathname, resolvedMobileNavLinks],
+  );
+  const resolvedActiveHref = activeNavHref ?? pathActiveHref;
 
   useEffect(() => {
     setMobileMenuPortalReady(true);
@@ -374,7 +429,10 @@ export default function HeroTopNav({
       )}
     >
       <div
-        className={cx("relative mx-auto", isTransparentOverHero ? "max-w-none" : "max-w-[1400px]")}
+        className={cx(
+          "relative mx-auto w-full",
+          isTransparentOverHero ? "max-w-none" : "max-w-[1760px]",
+        )}
       >
         <div
           className={cx(
@@ -392,24 +450,23 @@ export default function HeroTopNav({
         >
           <div
             className={cx(
-              isTransparentOverHero
-                ? "flex items-center justify-between gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
-                : "flex items-center justify-between gap-4",
+              "flex items-center justify-between gap-4 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center",
+              isTransparentOverHero ? "lg:gap-8" : "lg:gap-6",
             )}
           >
             <Link
               href={brandHref}
-              className={cx(
-                "group flex min-w-0 items-center overflow-hidden",
-                isTransparentOverHero ? "justify-self-start" : "flex-1 lg:flex-none",
-              )}
+              className="group flex shrink-0 items-center overflow-hidden justify-self-start"
               aria-label="Envitefy"
             >
               <EnvitefyWordmark
                 scaled={false}
                 tone={mobileLogoOnly || !isDarkGlass ? "gradient" : "light"}
                 className={cx(
-                  "max-w-full text-[2.05rem] leading-none transition-transform duration-300 group-hover:scale-[1.02] sm:text-[2.28rem] md:text-[2.52rem]",
+                  "max-w-full leading-none transition-transform duration-300 group-hover:scale-[1.02]",
+                  isTransparentOverHero
+                    ? "text-[2.05rem] sm:text-[2.28rem] md:text-[2.52rem]"
+                    : "text-[1.85rem] sm:text-[2.05rem] md:text-[2.18rem]",
                   (mobileLogoOnly || !isDarkGlass) && "hero-top-nav-brand-light",
                 )}
               />
@@ -417,50 +474,69 @@ export default function HeroTopNav({
 
             <nav
               className={cx(
-                "hidden items-center lg:flex",
-                isTransparentOverHero ? "justify-self-center gap-6" : "gap-1",
+                "hidden min-w-0 flex-nowrap items-center justify-center lg:flex",
+                isTransparentOverHero ? "gap-5 xl:gap-7" : "gap-3 xl:gap-5",
               )}
               aria-label="Hero navigation"
             >
               {navLinks.map((link) => {
-                const isActive = activeNavHref === link.href;
+                const isActive = resolvedActiveHref === link.href;
                 return (
-                  <NavLinkItem
-                    key={`${link.label}:${link.href}`}
-                    href={link.href}
-                    label={link.label}
-                    ariaCurrent={isActive ? "location" : undefined}
-                    onClick={link.href.startsWith("#") ? handleHashLinkClick(link.href) : undefined}
-                    className={cx(
-                      "nav-chrome-motion text-sm font-semibold transition",
-                      isTransparentOverHero
-                        ? isActive
-                          ? isTransparentLight
-                            ? "rounded-full bg-[#25172d]/8 px-3 py-2 text-[#1d1224] shadow-[0_12px_24px_rgba(70,46,82,0.12)]"
-                            : "rounded-full bg-white/18 px-3 py-2 text-white shadow-[0_12px_24px_rgba(0,0,0,0.18)]"
-                          : isTransparentLight
-                            ? "px-1 py-2 text-[#2c2035]/78 hover:text-[#171019]"
-                            : "px-1 py-2 text-white/82 hover:text-white"
-                        : isActive
-                          ? isDarkGlass
-                            ? "rounded-full border border-white/22 bg-white/[0.18] px-4 py-2 text-white shadow-[0_14px_28px_rgba(0,0,0,0.18)]"
-                            : "nav-chrome-pill-active rounded-full px-4 py-2"
+                  <span key={`${link.label}:${link.href}`} className="relative inline-flex">
+                    <NavLinkItem
+                      href={link.href}
+                      label={link.label}
+                      ariaCurrent={
+                        isActive ? (link.href.startsWith("#") ? "location" : "page") : undefined
+                      }
+                      onClick={
+                        link.href.startsWith("#") ? handleHashLinkClick(link.href) : undefined
+                      }
+                      className={cx(
+                        "nav-chrome-motion relative whitespace-nowrap text-sm font-semibold transition",
+                        isTransparentOverHero
+                          ? cx(
+                              "px-1 py-2",
+                              isActive
+                                ? isTransparentLight
+                                  ? "text-[#1d1224]"
+                                  : "text-white"
+                                : isTransparentLight
+                                  ? "text-[#2c2035]/78 hover:text-[#171019]"
+                                  : "text-white/82 hover:text-white",
+                            )
                           : cx(
-                              "rounded-full px-4 py-2",
-                              isDarkGlass ? "text-white hover:bg-white/[0.12]" : lightNavPillClass,
+                              "rounded-full px-2.5 py-2 xl:px-3",
+                              isActive
+                                ? isDarkGlass
+                                  ? "text-white"
+                                  : "text-[#4f39dd]"
+                                : isDarkGlass
+                                  ? "text-white hover:bg-white/[0.12]"
+                                  : lightNavPillClass,
                             ),
-                    )}
-                  />
+                      )}
+                    />
+                    {isActive ? (
+                      <motion.span
+                        layoutId="hero-top-nav-active-underline"
+                        className={cx(
+                          "pointer-events-none absolute inset-x-0 -bottom-0.5 h-[2.5px] origin-center rounded-full",
+                          getActiveUnderlineClass({
+                            isTransparentOverHero,
+                            isTransparentLight,
+                            isDarkGlass,
+                          }),
+                        )}
+                        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                      />
+                    ) : null}
+                  </span>
                 );
               })}
             </nav>
 
-            <div
-              className={cx(
-                "hidden items-center gap-3 lg:flex",
-                isTransparentOverHero && "justify-self-end",
-              )}
-            >
+            <div className="hidden shrink-0 items-center gap-3 justify-self-end lg:flex">
               {status === "authenticated" ? (
                 <Link
                   href={dashboardHref}
@@ -654,24 +730,49 @@ export default function HeroTopNav({
                     aria-label="Hero navigation"
                   >
                     {resolvedMobileNavLinks.map((link) => {
+                      const isActive =
+                        (activeNavHref ?? mobilePathActiveHref) === link.href;
                       return (
-                        <NavLinkItem
+                        <span
                           key={`${link.label}:${link.href}:mobile`}
-                          href={link.href}
-                          label={link.label}
-                          ariaCurrent={undefined}
-                          className={cx(
-                            "nav-chrome-motion w-full rounded-2xl px-4 py-3 text-right text-base font-semibold transition",
-                            useDarkMobileMenu
-                              ? "text-white/74 hover:bg-white/[0.08] hover:text-white"
-                              : lightNavPillClass,
-                          )}
-                          onClick={
-                            link.href.startsWith("#")
-                              ? handleHashLinkClick(link.href, true)
-                              : () => setMobileMenuOpen(false)
-                          }
-                        />
+                          className="relative w-full"
+                        >
+                          <NavLinkItem
+                            href={link.href}
+                            label={link.label}
+                            ariaCurrent={
+                              isActive
+                                ? link.href.startsWith("#")
+                                  ? "location"
+                                  : "page"
+                                : undefined
+                            }
+                            className={cx(
+                              "nav-chrome-motion relative w-full rounded-2xl px-4 py-3 text-right text-base font-semibold transition",
+                              isActive
+                                ? useDarkMobileMenu
+                                  ? "text-white"
+                                  : "text-[#4f39dd]"
+                                : useDarkMobileMenu
+                                  ? "text-white/74 hover:bg-white/[0.08] hover:text-white"
+                                  : lightNavPillClass,
+                            )}
+                            onClick={
+                              link.href.startsWith("#")
+                                ? handleHashLinkClick(link.href, true)
+                                : () => setMobileMenuOpen(false)
+                            }
+                          />
+                          {isActive ? (
+                            <span
+                              className={cx(
+                                "pointer-events-none absolute right-4 bottom-1.5 h-[2px] w-12 rounded-full",
+                                useDarkMobileMenu ? "bg-white" : "bg-[#6e59db]",
+                              )}
+                              aria-hidden="true"
+                            />
+                          ) : null}
+                        </span>
                       );
                     })}
 

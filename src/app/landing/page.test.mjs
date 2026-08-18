@@ -10,6 +10,7 @@ const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativ
 test("landing page is hosted-event-led and premium", () => {
   const page = readSource("src/app/landing/page.tsx");
   const landingExperience = readSource("src/app/landing/LandingExperience.tsx");
+  const heroImageScrim = readSource("src/components/landing/HeroImageScrim.tsx");
   const landingData = readSource("src/app/landing/landing-data.ts");
   const designTestimonial = readSource("src/components/ui/design-testimonial.tsx");
 
@@ -34,7 +35,8 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /transition=\{\{ duration: 0\.32, ease: "easeOut" \}\}/);
   assert.match(landingExperience, /unoptimized/);
   assert.match(landingExperience, /className="pointer-events-none absolute inset-0 z-0"/);
-  assert.match(landingExperience, /absolute inset-0 z-\[1\] bg-\[linear-gradient/);
+  assert.match(landingExperience, /<HeroImageScrim/);
+  assert.match(heroImageScrim, /absolute inset-0 z-\[1\] bg-\[linear-gradient/);
   assert.match(landingExperience, /TemplateGallery/);
   assert.match(landingExperience, /CreationPaths/);
   assert.match(landingExperience, /TestimonialsProof/);
@@ -188,7 +190,7 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingData, /Sweet details, beautifully organized/);
   assert.match(landingData, /A warm welcome in one link/);
   assert.doesNotMatch(landingData, /\/images\/landing\/hero\/[^"]+\.png/);
-  assert.match(landingExperience, /6600/);
+  assert.match(landingExperience, /7000/);
   assert.match(landingExperience, /min-h-\[100svh\]/);
   assert.match(landingExperience, /justify-end/);
   assert.match(landingExperience, /fill/);
@@ -319,17 +321,24 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(heroTopNav, /window\.history\.pushState\(null, "", href\)/);
   assert.match(heroTopNav, /window\.scrollTo\(\{/);
   assert.match(heroTopNav, /aria-current/);
-  assert.match(heroTopNav, /nav-chrome-pill-active/);
+  assert.match(heroTopNav, /usePathname/);
+  assert.match(heroTopNav, /getActivePathHref/);
+  assert.match(heroTopNav, /layoutId="hero-top-nav-active-underline"/);
   assert.match(heroTopNav, /isTransparentOverHero/);
   assert.match(heroTopNav, /data-scrolled-past-hero/);
   assert.match(heroTopNav, /Math\.max\(120, window\.innerHeight \* 0\.82\)/);
   assert.match(heroTopNav, /max-w-none/);
-  assert.match(heroTopNav, /grid-cols-\[minmax\(0,1fr\)_auto_minmax\(0,1fr\)\]/);
+  assert.match(heroTopNav, /max-w-\[1760px\]/);
+  assert.match(heroTopNav, /grid-cols-\[auto_minmax\(0,1fr\)_auto\]/);
+  assert.match(heroTopNav, /whitespace-nowrap/);
   assert.match(landingExperience, /openAuth\("login"\)/);
   assert.match(landingExperience, /openAuth\("signup"\)/);
   assert.match(landingExperience, /mode=\{authMode\}/);
   assert.match(landingExperience, /onModeChange=\{setAuthMode\}/);
-  assert.match(landingExperience, /successRedirectUrl=\{authMode === "signup" \? "\/chat" : "\/"\}/);
+  assert.match(
+    landingExperience,
+    /successRedirectUrl=\{authMode === "signup" \? "\/chat" : "\/"\}/,
+  );
   assert.match(landingExperience, /successRedirectUrl="\/"/);
   assert.doesNotMatch(landingExperience, /allowSignupSwitch=\{false\}/);
   assert.doesNotMatch(landingExperience, /signupSource=/);
@@ -501,10 +510,21 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
     /const successRedirectUrl = authMode === "signup" \? signupSuccessRedirectUrl : loginSuccessRedirectUrl/,
   );
   assert.match(signedOutPageChrome, /const primaryCreateHref = createAction\?\.href \|\| "\/chat"/);
-  assert.match(signedOutPageChrome, /const loginSuccessRedirectUrl = createAction\?\.href \|\| "\/"/);
-  assert.match(signedOutPageChrome, /const signupSuccessRedirectUrl = createAction\?\.href \|\| "\/chat"/);
-  assert.match(signedOutPageChrome, /router\.push\(href\.startsWith\("#"\) \? `\/landing\$\{href\}` : href\)/);
-  assert.match(showcasePage, /<SignedOutPageChrome activeBottomNavLabel="Examples" \/>/);
+  assert.match(
+    signedOutPageChrome,
+    /const loginSuccessRedirectUrl = createAction\?\.href \|\| "\/"/,
+  );
+  assert.match(
+    signedOutPageChrome,
+    /const signupSuccessRedirectUrl = createAction\?\.href \|\| "\/chat"/,
+  );
+  assert.match(
+    signedOutPageChrome,
+    /router\.push\(href\.startsWith\("#"\) \? `\/landing\$\{href\}` : href\)/,
+  );
+  assert.match(showcasePage, /<SignedOutPageChrome/);
+  assert.match(showcasePage, /activeBottomNavLabel="Examples"/);
+  assert.match(showcasePage, /topNavVariant="transparent-light"/);
   assert.match(createActionSheet, /Create with AI Concierge/);
   assert.match(createActionSheet, /Start from Template/);
   assert.match(createActionSheet, /href: "#examples"/);
@@ -532,7 +552,10 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(menuBottomSheet, /import LoginForm from "@\/components\/auth\/LoginForm";/);
   assert.match(menuBottomSheet, /import SignupForm from "@\/components\/auth\/SignupForm";/);
   assert.match(menuBottomSheet, /type AuthMode = "login" \| "signup";/);
-  assert.match(menuBottomSheet, /const \[authMode, setAuthMode\] = useState<AuthMode \| null>\(null\);/);
+  assert.match(
+    menuBottomSheet,
+    /const \[authMode, setAuthMode\] = useState<AuthMode \| null>\(null\);/,
+  );
   assert.match(menuBottomSheet, /onClick=\{\(\) => setAuthMode\("signup"\)\}/);
   assert.match(menuBottomSheet, /onClick=\{\(\) => setAuthMode\("login"\)\}/);
   assert.match(menuBottomSheet, /initial=\{\{ x: "105%", opacity: 0 \}\}/);
@@ -573,10 +596,19 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(landingExperience, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl="\/chat"/);
   assert.doesNotMatch(landingExperience, /onStartCreatingSelect/);
   assert.doesNotMatch(landingExperience, /onSignInSelect/);
-  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*successRedirectUrl=\{loginSuccessRedirectUrl\}/);
-  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl=\{signupSuccessRedirectUrl\}/);
+  assert.match(
+    signedOutPageChrome,
+    /<MenuBottomSheet[\s\S]*successRedirectUrl=\{loginSuccessRedirectUrl\}/,
+  );
+  assert.match(
+    signedOutPageChrome,
+    /<MenuBottomSheet[\s\S]*signupSuccessRedirectUrl=\{signupSuccessRedirectUrl\}/,
+  );
   assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*signupSource=\{signupSource\}/);
-  assert.match(signedOutPageChrome, /<MenuBottomSheet[\s\S]*signupIntent=\{signupIntent \|\| undefined\}/);
+  assert.match(
+    signedOutPageChrome,
+    /<MenuBottomSheet[\s\S]*signupIntent=\{signupIntent \|\| undefined\}/,
+  );
   assert.match(landingExperience, /onMenuSelect=\{\(\) => setMobileMenuOpen\(true\)\}/);
   assert.match(landingExperience, /onVisibilityChange=\{setBottomNavVisible\}/);
   assert.match(landingExperience, /pb-\[calc\(96px\+env\(safe-area-inset-bottom\)\)\] md:pb-0/);
@@ -592,6 +624,8 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(landingExperience, /Try the AI Concierge/);
   assert.match(landingExperience, /openConciergeDemo/);
   assert.match(landingExperience, /<AIConciergeSection \/>/);
+  assert.match(landingExperience, /<CategoryDirectory \/>/);
+  assert.match(landingExperience, /<HeroCategoryStrip \/>/);
   assert.match(aiConciergeSection, /onPrimaryAction\?: \(\) => void/);
   assert.match(conciergeSheet, /Envitefy Concierge/);
   assert.match(conciergeSheet, /Event ideas, RSVP, gifts & setup/);
@@ -622,4 +656,37 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(heroTopNav, /mobileLogoOnly \? "hidden" : "inline-flex"/);
   assert.match(heroTopNav, /showMobileMenuAuthActions\?: boolean/);
   assert.match(heroTopNav, /resolvedMobileNavLinks\.map/);
+});
+
+test("landing homepage promotes each category with a CTA", () => {
+  const landingData = readSource("src/app/landing/landing-data.ts");
+  const categoryDirectory = readSource("src/app/landing/sections/CategoryDirectory.tsx");
+  const landingExperience = readSource("src/app/landing/LandingExperience.tsx");
+
+  assert.match(landingExperience, /<HeroCategoryStrip \/>/);
+  assert.match(landingExperience, /<CategoryDirectory \/>/);
+  assert.match(categoryDirectory, /id="categories"/);
+  assert.match(categoryDirectory, /aria-label="Event categories"/);
+  assert.match(categoryDirectory, /Browse event types/);
+  assert.match(landingData, /export const landingCategoryCards/);
+
+  for (const category of [
+    { href: "/weddings", cta: "Explore weddings", label: "Weddings" },
+    { href: "/birthdays", cta: "Explore birthdays", label: "Birthdays" },
+    { href: "/baby-showers", cta: "Explore baby showers", label: "Baby Showers" },
+    { href: "/bridal-showers", cta: "Explore bridal showers", label: "Bridal Showers" },
+    { href: "/gender-reveal", cta: "Explore gender reveals", label: "Gender Reveals" },
+    { href: "/signup-forms", cta: "Explore signup forms", label: "Signup Forms" },
+    { href: "/sport-events", cta: "Explore sports", label: "Sports" },
+    { href: "/gymnastics", cta: "Explore gymnastics", label: "Gymnastics" },
+  ]) {
+    assert.match(landingData, new RegExp(`href: "${category.href}"`));
+    assert.match(landingData, new RegExp(`cta: "${category.cta}"`));
+    assert.match(landingData, new RegExp(`label: "${category.label}"`));
+    assert.ok(categoryDirectory.includes("landingCategoryCards.map"));
+  }
+
+  assert.match(categoryDirectory, /data-category=\{card\.id\}/);
+  assert.match(categoryDirectory, /href=\{card\.href\}/);
+  assert.match(categoryDirectory, /\{card\.cta\}/);
 });

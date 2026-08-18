@@ -16,11 +16,12 @@ test("baby showers uses its dedicated invitation and registry landing experience
   assert.match(pageSource, /BabyShowersLandingView/);
   assert.doesNotMatch(pageSource, /<UseCaseCategoryPage/);
   assert.match(viewSource, /SignedOutPageChrome/);
+  assert.match(viewSource, /topNavVariant="transparent-dark"/);
+  assert.match(viewSource, /<LandingHeroMedia/);
+  assert.match(viewSource, /landingHeroGalleries\["baby-showers"\]/);
   assert.match(viewSource, /Invitations · RSVP · registries/);
   assert.match(viewSource, /Registry & wishlist links/);
   assert.match(viewSource, /No guest app needed/);
-  assert.match(viewSource, /\/images\/landing\/hero\/baby-shower-desktop\.webp/);
-  assert.match(viewSource, /\/images\/landing\/hero\/baby-shower-mobile\.webp/);
   assert.match(viewSource, /\/templates\/baby-showers\/terracotta-bloom\.webp/);
   assert.match(viewSource, /ld-baby-showers-faq/);
   assert.match(stylesSource, /--baby-orange/);

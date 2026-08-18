@@ -92,13 +92,14 @@ const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
   {
     title: "Use Cases",
     links: [
-      { label: "Weddings", href: "/weddings" },
-      { label: "Bridal showers", href: "/bridal-showers" },
-      { label: "Baby showers", href: "/baby-showers" },
-      { label: "Gymnastics meets", href: "/gymnastics" },
-      { label: "Signup forms", href: "/signup-forms" },
-      { label: "Gender reveals", href: "/gender-reveal" },
       { label: "Birthdays", href: "/birthdays" },
+      { label: "Weddings", href: "/weddings" },
+      { label: "Baby showers", href: "/baby-showers" },
+      { label: "Bridal showers", href: "/bridal-showers" },
+      { label: "Gender reveals", href: "/gender-reveal" },
+      { label: "Signup forms", href: "/signup-forms" },
+      { label: "Sports", href: "/sport-events" },
+      { label: "Gymnastics meets", href: "/gymnastics" },
     ],
   },
   {

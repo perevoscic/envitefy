@@ -44,6 +44,8 @@
 }
 
 .heroContent {
+  position: relative;
+  z-index: 2;
   padding: 150px 0 clamp(92px, 11vh, 132px);
 }
 

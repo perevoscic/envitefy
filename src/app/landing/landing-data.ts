@@ -13,6 +13,86 @@ export type LandingIconId =
 
 export const landingHeroNavLinks = [...publicUseCasePrimaryNavLinks];
 
+export type LandingCategoryId =
+  | "weddings"
+  | "birthdays"
+  | "baby-showers"
+  | "bridal-showers"
+  | "gender-reveal"
+  | "signup-forms"
+  | "sports"
+  | "gymnastics";
+
+export type LandingCategoryCard = {
+  id: LandingCategoryId;
+  href: string;
+  label: string;
+  promise: string;
+  cta: string;
+  featured?: boolean;
+};
+
+export const landingCategoryCards: LandingCategoryCard[] = [
+  {
+    id: "weddings",
+    href: "/weddings",
+    label: "Weddings",
+    promise: "Invitation, weekend plan, registry, and live RSVP in one elegant page.",
+    cta: "Explore weddings",
+    featured: true,
+  },
+  {
+    id: "birthdays",
+    href: "/birthdays",
+    label: "Birthdays",
+    promise: "Household RSVP, kids and adults, gifts, and pickup notes in one link.",
+    cta: "Explore birthdays",
+    featured: true,
+  },
+  {
+    id: "baby-showers",
+    href: "/baby-showers",
+    label: "Baby Showers",
+    promise: "Registry, plus-ones, and host notes beside a sweet invitation.",
+    cta: "Explore baby showers",
+  },
+  {
+    id: "bridal-showers",
+    href: "/bridal-showers",
+    label: "Bridal Showers",
+    promise: "Guest tracking, registry links, and host details on one shareable page.",
+    cta: "Explore bridal showers",
+  },
+  {
+    id: "gender-reveal",
+    href: "/gender-reveal",
+    label: "Gender Reveals",
+    promise: "RSVP, guesses, gift notes, and the reveal plan in one link.",
+    cta: "Explore gender reveals",
+  },
+  {
+    id: "signup-forms",
+    href: "/signup-forms",
+    label: "Signup Forms",
+    promise: "Volunteers, potlucks, and helper slots that stay organized after people reply.",
+    cta: "Explore signup forms",
+  },
+  {
+    id: "sports",
+    href: "/sport-events",
+    label: "Sports",
+    promise: "Kickoff times, venues, maps, and team updates families can reopen.",
+    cta: "Explore sports",
+  },
+  {
+    id: "gymnastics",
+    href: "/gymnastics",
+    label: "Gymnastics",
+    promise: "Meet schedules, parking, documents, and family updates on one page.",
+    cta: "Explore gymnastics",
+  },
+];
+
 const gardenBrunchLiveCardImage = "/images/landing/live-cards/madeline-s-garden-brunch.webp";
 
 export type ProofTile = {

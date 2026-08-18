@@ -17,7 +17,8 @@ test("bridal showers uses its dedicated luxury landing experience", () => {
   assert.doesNotMatch(pageSource, /<UseCaseCategoryPage/);
   assert.match(viewSource, /SignedOutPageChrome/);
   assert.match(viewSource, /topNavVariant="transparent-dark"/);
-  assert.match(viewSource, /\/images\/landing\/hero\/garden-brunch-desktop\.webp/);
+  assert.match(viewSource, /<LandingHeroMedia/);
+  assert.match(viewSource, /landingHeroGalleries\["bridal-showers"\]/);
   assert.match(viewSource, /A beautiful beginning/);
   assert.match(viewSource, /The bespoke studio/);
   assert.match(viewSource, /Curated design suites/);

@@ -241,6 +241,25 @@ test("event route branches football discovery/template events into the football 
   );
 });
 
+test("event route renders gender reveal templates as a guess scoreboard page", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+
+  assert.match(
+    source,
+    /const GenderRevealTemplateView = nextDynamic\(\s*\(\) => import\("@\/components\/GenderRevealTemplateView"\),/m,
+  );
+  assert.match(source, /const isGenderRevealCategory =/);
+  assert.match(source, /categoryNormalized === "gender reveal"/);
+  assert.match(source, /const isGenderRevealTemplate =/);
+  assert.match(source, /createdVia === "manual"/);
+  assert.match(source, /<GenderRevealTemplateView/);
+  assert.match(source, /!isGenderRevealCategory;/);
+  assert.ok(
+    source.indexOf("if (isGenderRevealTemplate)") < source.indexOf("if (isSimpleTemplate)"),
+    "gender reveal live page should run before SimpleTemplateView",
+  );
+});
+
 test("event route disconnects the retired legacy event page fallback", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
   const simpleTemplateBranch = source.indexOf("if (isSimpleTemplate)");

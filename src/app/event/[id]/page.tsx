@@ -128,6 +128,10 @@ const FootballDiscoveryContent = nextDynamic(
 const BabyShowerTemplateView = nextDynamic(() => import("@/components/BabyShowerTemplateView"), {
   loading: () => null,
 });
+const GenderRevealTemplateView = nextDynamic(
+  () => import("@/components/GenderRevealTemplateView"),
+  { loading: () => null },
+);
 const BirthdayRenderer = nextDynamic(() => import("@/components/birthdays/BirthdayRenderer"), {
   loading: () => null,
 });
@@ -1438,6 +1442,8 @@ export default async function EventPage({
   const categoryNormalized = categoryRaw.toLowerCase();
   const isBabyShowerCategory =
     categoryNormalized === "baby showers" || categoryNormalized === "baby shower";
+  const isGenderRevealCategory =
+    categoryNormalized === "gender reveal" || categoryNormalized === "gender reveals";
   const isGraduationCategory =
     categoryNormalized === "graduations" || categoryNormalized === "graduation";
   const normalizedPublicLocation = normalizeOcrLocationFields({
@@ -2328,7 +2334,8 @@ export default async function EventPage({
     (createdVia === "simple-template" || createdVia === "template" || isDiscoverySimpleTemplate) &&
     templateId &&
     !isBirthdayTemplate &&
-    !isWeddingTemplate;
+    !isWeddingTemplate &&
+    !isGenderRevealCategory;
   const scannedInviteOcrFacts = mergeOcrFacts(
     normalizeOcrFacts((data as any)?.ocrFacts),
     buildOcrFacts([
@@ -3242,6 +3249,13 @@ export default async function EventPage({
 
   const isBabyShowerTemplate =
     categoryNormalized === "baby showers" && templateId && createdVia === "template";
+  const isGenderRevealTemplate =
+    isGenderRevealCategory &&
+    (createdVia === "template" ||
+      createdVia === "simple-template" ||
+      createdVia === "manual" ||
+      Boolean(templateId) ||
+      Boolean((data as { createdManually?: unknown })?.createdManually));
 
   if (isBabyShowerTemplate) {
     return renderWithEventPageBackground(
@@ -3254,6 +3268,22 @@ export default async function EventPage({
         canEdit={canEditCreatedEvent}
         isReadOnly={isReadOnly}
         editHref={editHref}
+      />,
+    );
+  }
+
+  if (isGenderRevealTemplate) {
+    return renderWithEventPageBackground(
+      <GenderRevealTemplateView
+        eventId={row.id}
+        eventTitle={title}
+        eventData={clientSafeEventDataWithRegistryLinks}
+        shareUrl={shareUrl}
+        isOwner={isOwner}
+        canEdit={canEditCreatedEvent}
+        isReadOnly={isReadOnly}
+        editHref={editHref}
+        calendarLinks={calendarLinks}
       />,
     );
   }

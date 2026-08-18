@@ -3,6 +3,14 @@
 import { useState, FormEvent, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { buildLiveCardRsvpOutboundHref } from "@/lib/live-card-rsvp";
+import {
+  buildGenderRevealRsvpAnswers,
+  isGenderRevealCategory,
+  isGenderRevealGuessRequired,
+  parseGenderRevealConfig,
+  shouldCollectGenderRevealGuess,
+  type GenderRevealGuess,
+} from "@/lib/gender-reveal";
 import { openRsvpMailtoHref } from "@/utils/rsvp-mailto";
 
 export type RsvpResponse = "yes" | "no" | "maybe" | null;
@@ -23,6 +31,11 @@ interface GuestRsvpModalProps {
     primary: string;
     secondary: string;
   };
+  genderReveal?: {
+    guessesEnabled?: boolean;
+    tallyVisibility?: string;
+    revealed?: boolean;
+  } | null;
 }
 
 function formatDate(dateStr?: string) {
@@ -49,11 +62,14 @@ export default function GuestRsvpModal({
   rsvpEmail,
   shareUrl,
   themeColors,
+  genderReveal,
 }: GuestRsvpModalProps) {
   const { data: session } = useSession();
   const [response, setResponse] = useState<RsvpResponse>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [genderGuess, setGenderGuess] = useState<GenderRevealGuess | null>(null);
+  const [giftNote, setGiftNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -88,6 +104,8 @@ export default function GuestRsvpModal({
         setEmail(session.user.email.trim());
       }
       setResponse(initialResponse || null);
+      setGenderGuess(null);
+      setGiftNote("");
       setSuccess(false);
       setFollowUpHref("");
       setFollowUpKind(null);
@@ -107,6 +125,21 @@ export default function GuestRsvpModal({
   }, [closeModal, isOpen]);
 
   if (!isOpen) return null;
+
+  const revealConfig = parseGenderRevealConfig({
+    category: eventCategory,
+    genderReveal: genderReveal || { guessesEnabled: isGenderRevealCategory(eventCategory) },
+  });
+  const collectGuess = shouldCollectGenderRevealGuess({
+    config: revealConfig,
+    response,
+    deadline: rsvpDeadline,
+  });
+  const guessRequired = isGenderRevealGuessRequired({
+    config: revealConfig,
+    response,
+    deadline: rsvpDeadline,
+  });
 
   const responseLabel =
     response === "yes"
@@ -135,11 +168,21 @@ export default function GuestRsvpModal({
       setError("Please enter a valid email.");
       return;
     }
+    if (guessRequired && !genderGuess) {
+      setError("Team Pink or Team Blue?");
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
 
     try {
+      const answersJson = collectGuess
+        ? buildGenderRevealRsvpAnswers({
+            genderGuess,
+            giftNote,
+          })
+        : buildGenderRevealRsvpAnswers({ giftNote });
       const res = await fetch(`/api/events/${eventId}/rsvp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -147,6 +190,8 @@ export default function GuestRsvpModal({
           response,
           name: trimmedName,
           email: trimmedEmail,
+          message: giftNote.trim() || undefined,
+          answersJson,
         }),
       });
 
@@ -274,9 +319,11 @@ export default function GuestRsvpModal({
                     <select
                       required
                       value={response || ""}
-                      onChange={(event) =>
-                        setResponse((event.target.value as Exclude<RsvpResponse, null>) || null)
-                      }
+                      onChange={(event) => {
+                        const next = (event.target.value as Exclude<RsvpResponse, null>) || null;
+                        setResponse(next);
+                        if (next === "no") setGenderGuess(null);
+                      }}
                       className="w-full bg-transparent text-base font-semibold text-slate-900 outline-none"
                     >
                       <option value="">Select your response</option>
@@ -313,6 +360,58 @@ export default function GuestRsvpModal({
                   />
                 </div>
               </div>
+
+              {collectGuess ? (
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
+                    {guessRequired ? "Team Pink or Team Blue?" : "Want to guess? (optional)"}
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setGenderGuess("pink")}
+                      className={`rounded-[1.4rem] border px-4 py-4 text-left ${
+                        genderGuess === "pink"
+                          ? "border-pink-300 bg-pink-50"
+                          : "border-slate-200 bg-slate-50"
+                      }`}
+                    >
+                      <div className="text-sm font-black text-pink-600">Team Pink</div>
+                      <p className="mt-1 text-xs font-medium text-slate-500">She's on the way.</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGenderGuess("blue")}
+                      className={`rounded-[1.4rem] border px-4 py-4 text-left ${
+                        genderGuess === "blue"
+                          ? "border-sky-300 bg-sky-50"
+                          : "border-slate-200 bg-slate-50"
+                      }`}
+                    >
+                      <div className="text-sm font-black text-sky-700">Team Blue</div>
+                      <p className="mt-1 text-xs font-medium text-slate-500">He's on the way.</p>
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {response === "no" || collectGuess ? (
+                <div className="space-y-1.5">
+                  <label className="ml-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
+                    {response === "no" ? "Gift note (optional)" : "Gift note"}
+                  </label>
+                  <textarea
+                    value={giftNote}
+                    onChange={(event) => setGiftNote(event.target.value)}
+                    placeholder={
+                      response === "no"
+                        ? "Send a note even if you cannot make it."
+                        : "Optional gift note"
+                    }
+                    className={`${inputClassName} min-h-[88px]`}
+                  />
+                </div>
+              ) : null}
 
               {error && (
                 <div className="rounded-[1.15rem] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">

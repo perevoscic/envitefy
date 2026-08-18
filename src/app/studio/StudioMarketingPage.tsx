@@ -30,7 +30,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
-import { buildMarketingHeroNav } from "@/components/navigation/marketing-hero-nav";
+import { publicUseCasePrimaryNavLinks, signedOutMobileMenuLinks } from "@/config/navigation";
 import {
   type LiveCardActiveTab,
   type LiveCardInvitationData,
@@ -138,14 +138,6 @@ const activeButtons: ActionItem[] = [
     colorClassName: "bg-slate-100 text-slate-600",
   },
 ];
-
-const studioMarketingHeroNavLinks = buildMarketingHeroNav("studio", [
-  { label: "Features", href: "#features" },
-  { label: "Built to be Clicked", href: "#actions" },
-  { label: "Made for Real Events", href: "#use-cases" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Live Card Showcase", href: "#showcase" },
-]);
 
 function createMarketingInvitationData({
   title,
@@ -1152,8 +1144,10 @@ export default function StudioMarketingPage() {
     <>
       <div className="min-h-screen overflow-x-clip bg-transparent text-slate-900 selection:bg-[#ddd6fe] selection:text-[#4c1d95]">
         <HeroTopNav
-          navLinks={studioMarketingHeroNavLinks}
-          primaryCtaLabel="Start in Studio"
+          navLinks={[...publicUseCasePrimaryNavLinks]}
+          mobileNavLinks={[...signedOutMobileMenuLinks]}
+          variant="transparent-light"
+          primaryCtaLabel="Let's create"
           authenticatedPrimaryHref="/"
           brandHref="/"
           loginSuccessRedirectUrl="/studio"

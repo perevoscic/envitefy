@@ -10,11 +10,12 @@ import {
   UtensilsCrossed,
   Wine,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import type { CSSProperties } from "react";
+import LandingHeroMedia from "@/components/landing/LandingHeroMedia";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
+import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
 import type { UseCasePage } from "../category-pages/category-page-data";
 import WeddingStudioPreview from "./WeddingStudioPreview";
 
@@ -251,15 +252,7 @@ export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
 
       <main>
         <section className="relative isolate flex min-h-[100svh] items-end overflow-hidden">
-          <Image
-            src={page.heroImage}
-            alt={page.heroImageAlt}
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover"
-            style={{ objectPosition: page.heroImagePosition ?? "center" }}
-          />
+          <LandingHeroMedia images={landingHeroGalleries.weddings} />
           <div className="relative z-[1] mx-auto grid w-full max-w-7xl items-end gap-12 px-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-32 sm:px-8 md:pb-16 lg:grid-cols-12 lg:px-10">
             <div className="space-y-7 text-center lg:col-span-7 lg:text-left">
               <div className="inline-flex items-center gap-2.5 rounded-full border border-[#e5d7c3]/70 bg-white/90 px-5 py-2 text-xs font-medium uppercase tracking-widest text-[#523c2a] shadow-sm backdrop-blur-sm">

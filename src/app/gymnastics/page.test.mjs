@@ -25,6 +25,8 @@ test("/gymnastics renders the shared hero nav without duplicating the current pa
   assert.match(gymnasticsLanding, /brandHref="\/"/);
   assert.doesNotMatch(gymnasticsLanding, /buildMarketingHeroNav/);
   assert.doesNotMatch(gymnasticsLanding, /variant="glass-dark"/);
+  assert.match(gymnasticsLanding, /<LandingHeroMedia/);
+  assert.match(gymnasticsLanding, /landingHeroGalleries\.gymnastics/);
   assert.match(gymnasticsLanding, /id="hero"/);
   assert.match(gymnasticsLanding, /id="features"/);
   assert.match(gymnasticsLanding, /id="how-it-works"/);

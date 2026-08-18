@@ -62,7 +62,11 @@ export default async function ShowcaseIndexPage() {
 
   return (
     <>
-      <SignedOutPageChrome activeBottomNavLabel="Examples" />
+      <SignedOutPageChrome
+        activeBottomNavLabel="Examples"
+        brandHref="/"
+        topNavVariant="transparent-light"
+      />
       <Script
         id="ld-showcase-collection"
         type="application/ld+json"

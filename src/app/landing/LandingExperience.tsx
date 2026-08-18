@@ -18,14 +18,16 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import HeroImageScrim from "@/components/landing/HeroImageScrim";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import MobileBrandHeader from "@/components/navigation/MobileBrandHeader";
 import ScrollAwareBottomNav from "@/components/navigation/ScrollAwareBottomNav";
-import { signedOutMobileMenuLinks } from "@/config/navigation";
 import { Testimonial as DesignTestimonial } from "@/components/ui/design-testimonial";
-import AIConciergeSection from "./sections/AIConciergeSection";
+import { signedOutMobileMenuLinks } from "@/config/navigation";
 import {
   creationPaths,
+  type GuestActionId,
+  type GuestActionTone,
   guestActionPreviewConfigs,
   guestActionProofStats,
   guestActionSlides,
@@ -33,9 +35,9 @@ import {
   landingHeroNavLinks,
   landingTestimonials,
   templateCarouselFeatures,
-  type GuestActionId,
-  type GuestActionTone,
 } from "./landing-data";
+import AIConciergeSection from "./sections/AIConciergeSection";
+import CategoryDirectory, { HeroCategoryStrip } from "./sections/CategoryDirectory";
 
 const AuthModal = dynamic(() => import("@/components/auth/AuthModal"), {
   loading: () => null,
@@ -119,7 +121,7 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
 
     const interval = window.setInterval(() => {
       setActiveSlideIndex((currentIndex) => (currentIndex + 1) % heroProductSlides.length);
-    }, 6600);
+    }, 7000);
 
     return () => window.clearInterval(interval);
   }, []);
@@ -169,6 +171,7 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
           />
         </motion.div>
       </AnimatePresence>
+      <HeroImageScrim />
 
       <button
         type="button"
@@ -233,6 +236,7 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
                 </span>
               </Link>
             </div>
+            <HeroCategoryStrip />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -811,6 +815,7 @@ export default function LandingExperience() {
         <MobileBrandHeader onMenuClick={() => setMobileMenuOpen(true)} />
 
         <PremiumLandingHero onPrimaryAction={openConciergeDemo} />
+        <CategoryDirectory />
 
         <AIConciergeSection />
 

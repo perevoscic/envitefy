@@ -37,6 +37,10 @@ import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
+import {
+  parseGenderRevealConfig,
+  serializeGenderRevealConfig,
+} from "@/lib/gender-reveal";
 
 function getTemplateById(id?: string | null): GenderRevealTemplateDefinition {
   if (!id) return genderRevealTemplateCatalog[0];
@@ -270,6 +274,20 @@ const INITIAL_DATA = {
       date.setMonth(date.getMonth() + 1);
       return date.toISOString().split("T")[0];
     })(),
+    expectedGuests: "",
+  },
+  genderReveal: {
+    guessesEnabled: true,
+    tallyVisibility: "live",
+    revealed: false,
+    revealedResult: null,
+    revealedAt: null,
+    revealMethod: "",
+    dressCode: "Wear pink or blue if you like.",
+    parking: "",
+    virtualOption: "",
+    rainPlan: "",
+    spoilersNote: "Please don't spoil the reveal.",
   },
   gallery: [
     {
@@ -360,6 +378,7 @@ export default function GenderRevealTemplateCustomizePage() {
   const [data, setData] = useState(INITIAL_DATA);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
+  const [rsvpGuess, setRsvpGuess] = useState<"pink" | "blue" | null>(null);
   const {
     mobileMenuOpen,
     openMobileMenu,
@@ -465,6 +484,7 @@ export default function GenderRevealTemplateCustomizePage() {
           time: loadedTime || prev.time,
           city: existing.city || prev.city,
           state: existing.state || prev.state,
+          address: existing.address || prev.address,
           venue: existing.venue || existing.location || prev.venue,
           eventDetails: {
             ...prev.eventDetails,
@@ -500,6 +520,14 @@ export default function GenderRevealTemplateCustomizePage() {
                 ? existing.rsvp
                 : existing.rsvp?.deadline) ||
               prev.rsvp.deadline,
+            expectedGuests:
+              existing.numberOfGuests ||
+              existing.rsvp?.expectedGuests ||
+              prev.rsvp.expectedGuests,
+          },
+          genderReveal: {
+            ...prev.genderReveal,
+            ...parseGenderRevealConfig(existing),
           },
           gallery:
             Array.isArray(existing.gallery) && existing.gallery.length > 0
@@ -783,10 +811,21 @@ export default function GenderRevealTemplateCustomizePage() {
           location,
           description: data.eventDetails.notes || undefined,
           rsvp: data.rsvp.isEnabled
-            ? data.rsvp.deadline || undefined
+            ? {
+                isEnabled: true,
+                deadline: data.rsvp.deadline || undefined,
+              }
             : undefined,
-          numberOfGuests: 0,
+          rsvpEnabled: data.rsvp.isEnabled,
+          rsvpDeadline: data.rsvp.deadline || undefined,
+          numberOfGuests: Number(data.rsvp.expectedGuests) || 0,
           templateId: template.id,
+          date: data.date,
+          time: data.time,
+          address: data.address || undefined,
+          city: data.city || undefined,
+          state: data.state || undefined,
+          venue: data.venue || undefined,
           // Customization data
           eventTitle: data.eventTitle,
           parentsName: data.parentsName,
@@ -825,6 +864,17 @@ export default function GenderRevealTemplateCustomizePage() {
           images: {
             hero: heroImageToSave,
           },
+          gallery: Array.isArray(data.gallery) ? data.gallery : [],
+          genderReveal: serializeGenderRevealConfig({
+            ...parseGenderRevealConfig({ genderReveal: data.genderReveal }),
+            ...data.genderReveal,
+            revealMethod: data.genderReveal?.revealMethod || "",
+            dressCode: data.genderReveal?.dressCode || "",
+            parking: data.genderReveal?.parking || "",
+            virtualOption: data.genderReveal?.virtualOption || "",
+            rainPlan: data.genderReveal?.rainPlan || "",
+            spoilersNote: data.genderReveal?.spoilersNote || "",
+          }),
         },
       };
 
@@ -947,7 +997,7 @@ export default function GenderRevealTemplateCustomizePage() {
         <MenuCard
           title="RSVP"
           icon={<CheckSquare size={18} />}
-          desc="RSVP settings."
+          desc="RSVP, guesses, and the live tally."
           onClick={() => setActiveView("rsvp")}
         />
         <MenuCard
@@ -995,6 +1045,20 @@ export default function GenderRevealTemplateCustomizePage() {
           onChange={(v) => updateData("address", v)}
           placeholder="Street address (optional)"
         />
+        <div className="grid grid-cols-2 gap-4">
+          <InputGroup
+            label="City"
+            value={data.city}
+            onChange={(v) => updateData("city", v)}
+            placeholder="City"
+          />
+          <InputGroup
+            label="State"
+            value={data.state}
+            onChange={(v) => updateData("state", v)}
+            placeholder="IL"
+          />
+        </div>
       </div>
     </EditorLayout>
   );
@@ -1235,6 +1299,54 @@ export default function GenderRevealTemplateCustomizePage() {
             placeholder="Share any special details about the gender reveal event..."
           />
         </div>
+        <InputGroup
+          label="Reveal method"
+          value={data.genderReveal.revealMethod}
+          onChange={(v) =>
+            updateData("genderReveal", { ...data.genderReveal, revealMethod: v })
+          }
+          placeholder="Balloon pop, cake, smoke, etc."
+        />
+        <InputGroup
+          label="Dress (wear pink or blue)"
+          value={data.genderReveal.dressCode}
+          onChange={(v) =>
+            updateData("genderReveal", { ...data.genderReveal, dressCode: v })
+          }
+          placeholder="Wear pink or blue if you like"
+        />
+        <InputGroup
+          label="Parking"
+          value={data.genderReveal.parking}
+          onChange={(v) =>
+            updateData("genderReveal", { ...data.genderReveal, parking: v })
+          }
+          placeholder="Street parking, driveway, etc."
+        />
+        <InputGroup
+          label="Virtual option"
+          value={data.genderReveal.virtualOption}
+          onChange={(v) =>
+            updateData("genderReveal", { ...data.genderReveal, virtualOption: v })
+          }
+          placeholder="Zoom link or call-in details"
+        />
+        <InputGroup
+          label="Rain plan"
+          value={data.genderReveal.rainPlan}
+          onChange={(v) =>
+            updateData("genderReveal", { ...data.genderReveal, rainPlan: v })
+          }
+          placeholder="Move inside if it rains"
+        />
+        <InputGroup
+          label="Don't spoil it"
+          value={data.genderReveal.spoilersNote}
+          onChange={(v) =>
+            updateData("genderReveal", { ...data.genderReveal, spoilersNote: v })
+          }
+          placeholder="Please don't spoil the reveal"
+        />
       </div>
     </EditorLayout>
   );
@@ -1375,12 +1487,99 @@ export default function GenderRevealTemplateCustomizePage() {
         </div>
 
         {data.rsvp.isEnabled && (
-          <InputGroup
-            label="RSVP Deadline"
-            type="date"
-            value={data.rsvp.deadline}
-            onChange={(v) => updateData("rsvp", { ...data.rsvp, deadline: v })}
-          />
+          <>
+            <InputGroup
+              label="RSVP Deadline"
+              type="date"
+              value={data.rsvp.deadline}
+              onChange={(v) => updateData("rsvp", { ...data.rsvp, deadline: v })}
+            />
+            <InputGroup
+              label="Expected guests (for pending count)"
+              type="number"
+              value={data.rsvp.expectedGuests}
+              onChange={(v) =>
+                updateData("rsvp", { ...data.rsvp, expectedGuests: v })
+              }
+              placeholder="70"
+            />
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div>
+                <span className="font-medium text-slate-700 text-sm">
+                  Team Pink / Team Blue guesses
+                </span>
+                <p className="text-xs text-slate-500 mt-1">
+                  Yes requires a guess. Maybe is optional. No skips it.
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  updateData("genderReveal", {
+                    ...data.genderReveal,
+                    guessesEnabled: !data.genderReveal.guessesEnabled,
+                  })
+                }
+                className={`w-11 h-6 rounded-full transition-colors relative ${
+                  data.genderReveal.guessesEnabled ? "bg-pink-500" : "bg-slate-300"
+                }`}
+              >
+                <span
+                  className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${
+                    data.genderReveal.guessesEnabled
+                      ? "translate-x-5"
+                      : "translate-x-0"
+                  }`}
+                ></span>
+              </button>
+            </div>
+            {data.genderReveal.guessesEnabled && (
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">
+                  Guess tally
+                </label>
+                <div className="space-y-2">
+                  {[
+                    {
+                      id: "live",
+                      label: "Show running tally",
+                      desc: "Guests see Team Pink vs Team Blue as votes come in.",
+                    },
+                    {
+                      id: "hidden",
+                      label: "Hide until reveal",
+                      desc: "Collect guesses now, show the scoreboard after the moment.",
+                    },
+                    {
+                      id: "lock_at_deadline",
+                      label: "Lock guesses at the RSVP deadline",
+                      desc: "The poll freezes when RSVPs close.",
+                    },
+                  ].map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() =>
+                        updateData("genderReveal", {
+                          ...data.genderReveal,
+                          tallyVisibility: option.id,
+                        })
+                      }
+                      className={`w-full rounded-lg border p-3 text-left ${
+                        data.genderReveal.tallyVisibility === option.id
+                          ? "border-indigo-400 bg-indigo-50"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <div className="text-sm font-semibold text-slate-800">
+                        {option.label}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">{option.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         <div className="bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
@@ -1518,6 +1717,22 @@ export default function GenderRevealTemplateCustomizePage() {
                       </>
                     )}
                   </div>
+                  {data.rsvp.isEnabled ? (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold">
+                        54 coming
+                      </span>
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold">
+                        8 pending
+                      </span>
+                      {data.genderReveal.guessesEnabled &&
+                      data.genderReveal.tallyVisibility !== "hidden" ? (
+                        <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold">
+                          49 guesses
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -1784,6 +1999,45 @@ export default function GenderRevealTemplateCustomizePage() {
                             </label>
                           </div>
                         </div>
+                        {data.genderReveal.guessesEnabled && rsvpAttending === true ? (
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
+                              Team Pink or Team Blue?
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRsvpGuess("pink");
+                                }}
+                                className={`rounded-xl border-2 px-4 py-3 text-left ${
+                                  rsvpGuess === "pink"
+                                    ? "border-pink-400 bg-pink-50 text-pink-700"
+                                    : "border-white/20 bg-white/10"
+                                }`}
+                              >
+                                <div className="font-semibold">Team Pink</div>
+                                <p className="text-xs opacity-70">She's on the way.</p>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRsvpGuess("blue");
+                                }}
+                                className={`rounded-xl border-2 px-4 py-3 text-left ${
+                                  rsvpGuess === "blue"
+                                    ? "border-sky-400 bg-sky-50 text-sky-700"
+                                    : "border-white/20 bg-white/10"
+                                }`}
+                              >
+                                <div className="font-semibold">Team Blue</div>
+                                <p className="text-xs opacity-70">He's on the way.</p>
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

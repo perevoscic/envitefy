@@ -1,4 +1,7 @@
-import { buildUseCaseCategoryMetadata, UseCaseCategoryPage } from "../category-pages/category-page";
+import { notFound } from "next/navigation";
+import { buildUseCaseCategoryMetadata } from "../category-pages/category-page";
+import { getUseCasePageByPath } from "../category-pages/category-page-data";
+import BirthdaysLandingView from "./BirthdaysLandingView";
 
 const CATEGORY_PATH = "/birthdays";
 
@@ -7,5 +10,7 @@ export function generateMetadata() {
 }
 
 export default function BirthdaysPage() {
-  return <UseCaseCategoryPage path={CATEGORY_PATH} />;
+  const page = getUseCasePageByPath(CATEGORY_PATH);
+  if (!page) notFound();
+  return <BirthdaysLandingView page={page} />;
 }

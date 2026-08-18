@@ -62,6 +62,7 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   assert.match(view, /HeroPreview/);
   assert.match(view, /brandHref="\/"/);
   assert.match(view, /topNavVariant="transparent-dark"/);
+  assert.match(view, /<LandingHeroMedia/);
   assert.doesNotMatch(view, /rgba\(10,7,14,0\.84\)/);
   assert.doesNotMatch(landingExperience, /rgba\(18,15,20,0\.66\)/);
   assert.match(signedOutPageChrome, /topNavVariant = "default"/);
@@ -122,8 +123,62 @@ test("category landing pages use root URLs and keep old use-case paths redirect-
   assert.match(weddingsPage, /WeddingsLandingView/);
   assert.match(weddingsView, /SignedOutPageChrome/);
   assert.match(weddingsView, /topNavVariant="transparent-dark"/);
-  assert.match(weddingsView, /page\.heroImage/);
-  assert.match(weddingsView, /garden-vows-desktop\.webp|page\.heroImage/);
+  assert.match(weddingsView, /<LandingHeroMedia/);
+  assert.match(weddingsView, /landingHeroGalleries\.weddings/);
   assert.doesNotMatch(weddingsView, /rgba\(18,12,10,0\.88\)/);
   assert.match(weddingsView, /!text-white/);
+
+  const birthdaysPage = readSource("src/app/birthdays/page.tsx");
+  const birthdaysView = readSource("src/app/birthdays/BirthdaysLandingView.tsx");
+  assert.match(birthdaysPage, /BirthdaysLandingView/);
+  assert.match(birthdaysView, /SignedOutPageChrome/);
+  assert.match(birthdaysView, /topNavVariant="transparent-dark"/);
+  assert.match(birthdaysView, /<LandingHeroMedia/);
+  assert.match(birthdaysView, /landingHeroGalleries\.birthdays/);
+  assert.match(birthdaysView, /!text-white/);
+  assert.match(birthdaysView, /Household RSVP/);
+  assert.match(birthdaysView, /Host bar/);
+  assert.doesNotMatch(birthdaysView, /landingHeroGalleries\.(weddings|gender-reveal)/);
+});
+
+test("each category landing hero rotates four full-bleed images every 7 seconds", () => {
+  const galleries = readSource("src/lib/landing-hero-galleries.ts");
+  const heroMedia = readSource("src/components/landing/LandingHeroMedia.tsx");
+  const categoryView = readSource("src/app/category-pages/CategoryLandingView.tsx");
+  const gymnasticsLanding = readSource("src/components/gymnastics-landing/GymnasticsLanding.tsx");
+  const sportsLanding = readSource("src/app/sport-events/SportsLandingPage.tsx");
+
+  assert.match(galleries, /export const LANDING_HERO_ROTATE_MS = 7000/);
+  assert.match(heroMedia, /LANDING_HERO_ROTATE_MS/);
+  assert.match(heroMedia, /<HeroImageScrim/);
+  assert.match(categoryView, /<LandingHeroMedia/);
+  const birthdaysLanding = readSource("src/app/birthdays/BirthdaysLandingView.tsx");
+  assert.match(birthdaysLanding, /landingHeroGalleries\.birthdays/);
+  assert.match(birthdaysLanding, /<LandingHeroMedia/);
+  assert.match(gymnasticsLanding, /landingHeroGalleries\.gymnastics/);
+  assert.match(sportsLanding, /landingHeroGalleries\.sports/);
+
+  const galleryKeys = [
+    "weddings",
+    "bridal-showers",
+    "baby-showers",
+    "gymnastics",
+    "sports",
+    "signup-forms",
+    "gender-reveal",
+    "birthdays",
+  ];
+
+  for (const key of galleryKeys) {
+    const keyPattern = key.includes("-") ? `"${key}"` : key;
+    const blockMatch = galleries.match(
+      new RegExp(`${keyPattern}: \\[([\\s\\S]*?)\\],\\n`, "m"),
+    );
+    assert.ok(blockMatch, `missing gallery for ${key}`);
+    const srcMatches = [...blockMatch[1].matchAll(/src: "([^"]+)"/g)].map((match) => match[1]);
+    assert.equal(srcMatches.length, 4, `${key} should have 4 hero frames`);
+    for (const src of srcMatches) {
+      assert.equal(exists(`public${src}`), true, `missing hero asset ${src}`);
+    }
+  }
 });

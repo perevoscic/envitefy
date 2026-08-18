@@ -3,13 +3,14 @@
 /** @typedef {"landing" | "studio" | "snap" | "gymnastics"} MarketingHeroNavPageKey */
 
 const MARKETING_PRODUCT_LINKS = [
-  { page: "weddings", label: "Weddings", href: "/weddings" },
-  { page: "bridal-showers", label: "Bridal Showers", href: "/bridal-showers" },
-  { page: "baby-showers", label: "Baby Showers", href: "/baby-showers" },
-  { page: "gymnastics", label: "Gymnastics", href: "/gymnastics" },
-  { page: "signup-forms", label: "Signup Forms", href: "/signup-forms" },
-  { page: "gender-reveal", label: "Gender Reveals", href: "/gender-reveal" },
   { page: "birthdays", label: "Birthdays", href: "/birthdays" },
+  { page: "weddings", label: "Weddings", href: "/weddings" },
+  { page: "baby-showers", label: "Baby Showers", href: "/baby-showers" },
+  { page: "bridal-showers", label: "Bridal Showers", href: "/bridal-showers" },
+  { page: "gender-reveal", label: "Gender Reveals", href: "/gender-reveal" },
+  { page: "signup-forms", label: "Signup Forms", href: "/signup-forms" },
+  { page: "sports", label: "Sports", href: "/sport-events" },
+  { page: "gymnastics", label: "Gymnastics", href: "/gymnastics" },
 ];
 
 const MARKETING_HOME_LINK = { label: "Home", href: "/landing" };

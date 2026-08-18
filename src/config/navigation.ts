@@ -24,14 +24,14 @@ export type SignedOutMobileMenuLink = {
 };
 
 export const publicUseCaseNavLinks: SignedOutMobileMenuLink[] = [
-  { label: "Weddings", href: "/weddings" },
-  { label: "Bridal Showers", href: "/bridal-showers" },
-  { label: "Baby Showers", href: "/baby-showers" },
-  { label: "Gymnastics", href: "/gymnastics" },
-  { label: "Sports", href: "/sport-events" },
-  { label: "Signup Forms", href: "/signup-forms" },
-  { label: "Gender Reveals", href: "/gender-reveal" },
   { label: "Birthdays", href: "/birthdays" },
+  { label: "Weddings", href: "/weddings" },
+  { label: "Baby Showers", href: "/baby-showers" },
+  { label: "Bridal Showers", href: "/bridal-showers" },
+  { label: "Gender Reveals", href: "/gender-reveal" },
+  { label: "Signup Forms", href: "/signup-forms" },
+  { label: "Sports", href: "/sport-events" },
+  { label: "Gymnastics", href: "/gymnastics" },
 ];
 
 export const publicUseCasePrimaryNavLinks: SignedOutMobileMenuLink[] = [

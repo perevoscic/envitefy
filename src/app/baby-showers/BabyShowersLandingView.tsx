@@ -18,7 +18,9 @@ import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import type { CSSProperties } from "react";
+import LandingHeroMedia from "@/components/landing/LandingHeroMedia";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
+import { landingHeroGalleries } from "@/lib/landing-hero-galleries";
 import styles from "./BabyShowersLandingView.module.css";
 
 const createHref = "/baby-showers?auth=signup";
@@ -258,42 +260,31 @@ export default function BabyShowersLandingView() {
 
   return (
     <div className={styles.page}>
-      <SignedOutPageChrome activeBottomNavLabel="Menu" brandHref="/" />
+      <SignedOutPageChrome
+        activeBottomNavLabel="Menu"
+        brandHref="/"
+        topNavVariant="transparent-dark"
+      />
 
       <main className="pb-24 md:pb-0">
         <section className={styles.heroPattern}>
-          <Image
-            src="/images/landing/hero/baby-shower-desktop.webp"
-            alt="Teddy-bear baby shower celebration with cake, flowers, and gifts"
-            fill
-            priority
-            sizes="100vw"
-            className="hidden object-cover sm:block"
-          />
-          <Image
-            src="/images/landing/hero/baby-shower-mobile.webp"
-            alt="Teddy-bear baby shower celebration with cake, flowers, and gifts"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover sm:hidden"
-          />
+          <LandingHeroMedia images={landingHeroGalleries["baby-showers"]} />
           <div className="relative z-[1] mx-auto grid min-h-[760px] max-w-7xl items-center gap-14 px-5 pt-32 pb-20 sm:px-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.7fr)] lg:px-10 lg:pt-36 lg:pb-24">
             <div className="max-w-3xl text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#cfe1ee] bg-white/85 px-4 py-2 text-[0.66rem] font-bold uppercase tracking-[0.17em] text-[#245b87] shadow-sm backdrop-blur">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/90 px-4 py-2 text-[0.66rem] font-bold uppercase tracking-[0.17em] text-[#245b87] shadow-sm backdrop-blur">
                 <Baby className="h-3.5 w-3.5 text-[#e66627]" aria-hidden="true" />
                 Invitations · RSVP · registries
               </div>
               <h1
                 className={cx(
                   styles.serif,
-                  "mt-6 text-[2.8rem] font-bold leading-[1.03] tracking-[-0.035em] !text-[#13233d] drop-shadow-[0_2px_10px_rgba(255,255,255,0.96)] sm:text-6xl lg:text-[4.55rem]",
+                  "mt-6 text-[2.8rem] font-bold leading-[1.03] tracking-[-0.035em] !text-white drop-shadow-[0_4px_22px_rgba(0,0,0,0.82)] sm:text-6xl lg:text-[4.55rem]",
                 )}
               >
                 Gorgeous baby shower invitations,{" "}
-                <span className="text-[#e66627] italic">all in one beautiful link.</span>
+                <span className="italic text-[#ffb089]">all in one beautiful link.</span>
               </h1>
-              <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-8 text-[#13233d] drop-shadow-[0_2px_8px_rgba(255,255,255,0.98)] sm:text-lg lg:mx-0">
+              <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-8 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-lg lg:mx-0">
                 Set the perfect tone for welcoming your little one. Create a polished digital
                 invitation with RSVPs, registry links, directions, calendar saves, and every guest
                 detail together.
@@ -307,7 +298,7 @@ export default function BabyShowersLandingView() {
                   Browse invitation styles
                 </a>
               </div>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm font-semibold text-[#13233d] drop-shadow-[0_2px_7px_rgba(255,255,255,0.98)] lg:justify-start">
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm font-semibold text-white drop-shadow-[0_2px_9px_rgba(0,0,0,0.9)] lg:justify-start">
                 <span className="inline-flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#e66627]" aria-hidden="true" />
                   No guest app needed

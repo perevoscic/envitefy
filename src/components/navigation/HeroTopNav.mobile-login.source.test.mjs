@@ -10,6 +10,7 @@ const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativ
 test("HeroTopNav keeps desktop auth actions while using inline login inside the mobile menu", () => {
   const source = readSource("src/components/navigation/HeroTopNav.tsx");
 
+  assert.match(source, /import \{ usePathname \} from "next\/navigation";/);
   assert.match(source, /import LoginForm from "@\/components\/auth\/LoginForm";/);
   assert.match(source, /import \{ motion \} from "framer-motion";/);
   assert.match(source, /import \{ createPortal \} from "react-dom";/);
@@ -126,7 +127,8 @@ test("HeroTopNav mobile hash links close before resolving their target scroll", 
     source.indexOf('{status === "authenticated" ? (', mobileNavStart),
   );
 
-  assert.match(mobileNavBlock, /ariaCurrent=\{undefined\}/);
+  assert.match(mobileNavBlock, /mobilePathActiveHref/);
   assert.doesNotMatch(mobileNavBlock, /activeNavHref === link\.href/);
   assert.doesNotMatch(mobileNavBlock, /nav-chrome-pill-active/);
+  assert.doesNotMatch(mobileNavBlock, /layoutId="hero-top-nav-active-underline"/);
 });

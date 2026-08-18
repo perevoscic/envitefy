@@ -10,6 +10,7 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
+import { genderRevealGuessLabel, parseGenderRevealRsvpAnswers } from "@/lib/gender-reveal";
 
 type RsvpStats = {
   yes: number;
@@ -18,6 +19,11 @@ type RsvpStats = {
   filled: number;
   remaining: number;
   numberOfGuests: number;
+  guesses?: {
+    pink: number;
+    blue: number;
+    total: number;
+  } | null;
 };
 
 type RsvpResponse = {
@@ -28,6 +34,7 @@ type RsvpResponse = {
   email: string | null;
   message?: string | null;
   response: string;
+  answersJson?: Record<string, unknown> | null;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -143,6 +150,7 @@ export default function EventRsvpDashboard({
         filled: Number(data.filled || 0),
         remaining: Number(data.remaining ?? data.numberOfGuests ?? initialNumberOfGuests),
         numberOfGuests: Number(data.numberOfGuests || initialNumberOfGuests || 0),
+        guesses: data.guesses || null,
       });
       setResponses(Array.isArray(data.responses) ? data.responses : []);
     } catch {
@@ -173,6 +181,7 @@ export default function EventRsvpDashboard({
     filled: 0,
     remaining: initialNumberOfGuests,
     numberOfGuests: initialNumberOfGuests,
+    guesses: null,
   };
   const hasResponses = responses.length > 0;
   const hasRsvpSurface = Boolean(rsvpEnabled || displayStats.numberOfGuests > 0 || hasResponses);
@@ -267,6 +276,13 @@ export default function EventRsvpDashboard({
           <SummaryTile label="Pending" value={displayStats.remaining} tone="slate" />
           <SummaryTile label="Capacity" value={displayStats.numberOfGuests || "--"} tone="violet" />
         </div>
+        {displayStats.guesses ? (
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <SummaryTile label="Team Pink" value={displayStats.guesses.pink} tone="rose" />
+            <SummaryTile label="Team Blue" value={displayStats.guesses.blue} tone="violet" />
+            <SummaryTile label="Guesses" value={displayStats.guesses.total} tone="slate" />
+          </div>
+        ) : null}
       </header>
 
       <div className="border-b border-slate-200/80 p-4 sm:p-5">
@@ -323,6 +339,8 @@ export default function EventRsvpDashboard({
               const StatusIcon = status.icon;
               const rowKey = rowIdentity(row);
               const isUpdating = updatingKey === rowKey;
+              const guess = parseGenderRevealRsvpAnswers(row.answersJson).genderGuess;
+              const guessLabel = genderRevealGuessLabel(guess);
 
               return (
                 <article
@@ -340,6 +358,17 @@ export default function EventRsvpDashboard({
                         <StatusIcon size={13} />
                         {status.label}
                       </span>
+                      {guessLabel ? (
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-black ${
+                            guess === "pink"
+                              ? "border-pink-200 bg-pink-50 text-pink-700"
+                              : "border-sky-200 bg-sky-50 text-sky-700"
+                          }`}
+                        >
+                          {guessLabel}
+                        </span>
+                      ) : null}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-slate-500">
                       {row.email ? <span className="break-all">{row.email}</span> : null}

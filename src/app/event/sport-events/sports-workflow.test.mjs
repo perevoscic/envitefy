@@ -46,6 +46,10 @@ test("sports workflow uses a shared popular-sports builder and keeps gymnastics 
   assert.match(signedInHub, /href="\/event\/gymnastics"/);
 
   assert.match(signedOutHub, /<SignedOutPageChrome/);
+  assert.match(signedOutHub, /topNavVariant="transparent-dark"/);
+  assert.match(signedOutHub, /brandHref="\/"/);
+  assert.match(signedOutHub, /landingHeroGalleries\.sports/);
+  assert.match(signedOutHub, /<LandingHeroMedia/);
   assert.match(signedOutHub, /SPORT_EVENT_PRESETS\.map/);
   assert.match(signedOutHub, /buildSportEventCustomizeHref/);
   assert.match(signedOutHub, /\/event\/gymnastics\?auth=signup/);

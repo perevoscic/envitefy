@@ -723,11 +723,13 @@ export const useCasePages = [
     faqs: [
       {
         question: "Can guests vote Team Pink or Team Blue?",
-        answer: "Yes. You can include an optional reveal guess flow with RSVP details.",
+        answer:
+          "Yes. A yes RSVP asks Team Pink or Team Blue. Maybe can guess. No skips the guess and can still leave a gift note.",
       },
       {
         question: "Can I hide or show the guess tally?",
-        answer: "The page can be structured so the host controls how reveal guesses are presented.",
+        answer:
+          "Hosts can show the running tally, hide it until the reveal, or lock guesses at the RSVP deadline. After the moment, the same link becomes the result.",
       },
       {
         question: "Can I upload my existing gender reveal invite?",
@@ -752,16 +754,17 @@ export const useCasePages = [
     path: "/birthdays",
     navLabel: "Birthdays",
     eyebrow: "Birthday party pages",
-    title: "Birthday party invitations, RSVPs, gift notes, and updates without the group text chaos",
+    title: "Birthday party invitations with household RSVPs, gift notes, and live guest counts",
     metadataTitle: "Birthday Party Invitation and RSVP Page | Envitefy",
     description:
-      "Create a birthday invite page, collect RSVPs, track guests, add gift links, send reminders, and keep party details easy to find on any phone.",
+      "Create a birthday page where families RSVP with kids, adults, and allergy notes, then reopen one link for gifts, maps, pickup times, and calendar saves.",
     keywords: [
       "birthday party RSVP",
       "birthday invitation tracker",
       "kids birthday RSVP",
       "online birthday invitation",
       "birthday party guest list",
+      "kids and adults RSVP count",
     ],
     heroImage: "/images/landing/hero/birthday-dino-desktop.webp",
     heroImageAlt: "Birthday party event page preview",
@@ -782,53 +785,53 @@ export const useCasePages = [
       { label: "adults", value: "22" },
       { label: "pending", value: "7" },
     ],
-    proofTitle: "A party link parents can reopen when they need the details.",
+    proofTitle: "A household logistics page, not a decorated flyer.",
     proofBody:
-      "Envitefy replaces invite screenshots and group texts with one page for RSVPs, gift links, map details, calendar saves, and reminder-friendly guest tracking.",
+      "Envitefy keeps count of families, kids, adults, pending replies, allergy notes, gift links, maps, and calendar saves on one birthday page parents can reopen from a text.",
     preview: {
       eventTitle: "Leo's Dino Birthday",
-      eventMeta: "RSVP, gift note, map, allergy notes",
+      eventMeta: "7th birthday · household RSVP, gifts, map, pickup",
       statusRows: [
         { label: "Families attending", value: "16" },
+        { label: "Kids / adults", value: "18 / 22" },
         { label: "No response", value: "7" },
-        { label: "Gift links", value: "2" },
       ],
-      chips: ["RSVP", "Gift note", "Map"],
+      chips: ["Household RSVP", "Gift list", "Map"],
     },
     features: [
       {
-        icon: "ticket",
-        title: "A real party page",
-        body: "Share date, time, place, map, RSVP buttons, notes, gift links, and calendar actions.",
-      },
-      {
         icon: "users",
-        title: "Track every guest",
-        body: "See attending counts, household names, children, adults, pending guests, and response notes.",
+        title: "Household RSVP",
+        body: "Collect kids, adults, and allergy notes with each yes, maybe, or no — not just a name on a list.",
       },
       {
-        icon: "upload",
-        title: "Start from an invite",
-        body: "Upload an existing birthday invite or create the page from scratch.",
+        icon: "ticket",
+        title: "Live guest counts",
+        body: "See families coming, headcount, remaining capacity, and who still has not replied.",
       },
       {
-        icon: "message",
-        title: "Parent-friendly sharing",
-        body: "Text one link, remind guests, and update details after plans change.",
+        icon: "map",
+        title: "Party logistics",
+        body: "Keep drop-off, pickup, parking, cake time, and rain-plan notes beside the map.",
+      },
+      {
+        icon: "gift",
+        title: "Gifts, calendar, updates",
+        body: "Wishlist links, calendar saves, and plan changes stay on the same live link.",
       },
     ],
     steps: [
       {
         title: "Build or upload",
-        body: "Start with a birthday invite image or build the party page manually.",
+        body: "Start with a birthday invite image or build the party page from a theme.",
       },
       {
-        title: "Collect useful replies",
-        body: "Track kids, adults, allergies, notes, pending guests, and gift links.",
+        title: "Collect household replies",
+        body: "Track kids, adults, allergies, pending families, and gift-list clicks from one host bar.",
       },
       {
         title: "Send one live link",
-        body: "Guests can reopen the page for directions, timing, RSVP, and calendar saves.",
+        body: "Guests reopen the page for directions, pickup time, RSVP, gifts, and calendar saves.",
       },
     ],
     audience: ["parents", "party hosts", "family organizers", "venue planners"],
@@ -838,12 +841,17 @@ export const useCasePages = [
         answer: "Yes. Guests can RSVP from the public event page.",
       },
       {
-        question: "Can I upload an existing birthday invitation?",
-        answer: "Yes. Envitefy can start from an invitation upload or manual event details.",
+        question: "Can I count kids and adults separately?",
+        answer:
+          "Yes. Household RSVP is built to capture kids, adults, and pending families so pizza, party space, and activities are planned from real headcount.",
       },
       {
-        question: "Can I track who has not responded yet?",
-        answer: "Yes. The host view helps separate attending, declined, and pending guests.",
+        question: "Can guests leave allergy or food notes?",
+        answer: "Yes. Allergy notes sit with the RSVP so hosts can scan them without digging through a group text.",
+      },
+      {
+        question: "Can I upload an existing birthday invitation?",
+        answer: "Yes. Envitefy can start from an invitation upload or manual event details.",
       },
       {
         question: "Can I add gift registry or wishlist links?",
@@ -854,8 +862,8 @@ export const useCasePages = [
         answer: "Yes. Guests can save the party date from the event page.",
       },
       {
-        question: "Can I update the time or address after sending?",
-        answer: "Yes. Update the live page so guests always see the current details.",
+        question: "Can I update drop-off or pickup after sending?",
+        answer: "Yes. Update the live page so guests always see the current timing, address, and host notes.",
       },
     ],
   },

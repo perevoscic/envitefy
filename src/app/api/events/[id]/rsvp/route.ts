@@ -11,6 +11,16 @@ import {
   type ServerTimingTracker,
 } from "@/lib/server-timing";
 import { buildCalendarLinks, ensureEndIso } from "@/utils/calendar-links";
+import {
+  areGenderRevealGuessesLocked,
+  buildGenderRevealRsvpAnswers,
+  canGuestSeeGenderRevealTally,
+  emptyGenderRevealGuessCounts,
+  isGenderRevealEventData,
+  isGenderRevealGuessRequired,
+  parseGenderRevealConfig,
+  tallyGenderRevealGuesses,
+} from "@/lib/gender-reveal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -440,7 +450,43 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const phone = asTrimmedString(body.phone);
     const message = asTrimmedString(body.message);
     const answersJson = sanitizeAnswers(body.answersJson || body.answers);
-    const adultCount = optionalInteger(body.adultCount ?? answersJson.adult_count);
+    const eventData = asRecord(eventRow.data);
+    if (isGenderRevealEventData(eventData)) {
+      const revealConfig = parseGenderRevealConfig(eventData);
+      const rsvpRecord = nestedRecord(eventData, "rsvp");
+      const deadline =
+        asTrimmedString(eventData?.rsvpDeadline) ||
+        asTrimmedString(rsvpRecord?.deadline) ||
+        asTrimmedString(eventData?.rsvp);
+      const genderAnswers = buildGenderRevealRsvpAnswers({
+        genderGuess: answersJson.genderGuess ?? answersJson.gender_guess,
+        giftNote: answersJson.giftNote ?? answersJson.gift_note ?? message,
+        bringingGift: answersJson.bringingGift ?? answersJson.bringing_gift,
+        partySize: answersJson.partySize ?? answersJson.party_size ?? body.adultCount,
+      });
+      if (
+        isGenderRevealGuessRequired({
+          config: revealConfig,
+          response: responseValue,
+          deadline,
+        }) &&
+        !genderAnswers.genderGuess
+      ) {
+        return jsonWithTiming(timing, { error: "Team Pink or Team Blue?" }, { status: 400 });
+      }
+      if (
+        genderAnswers.genderGuess &&
+        areGenderRevealGuessesLocked(revealConfig, deadline)
+      ) {
+        return jsonWithTiming(
+          timing,
+          { error: "Guesses are locked for this reveal." },
+          { status: 400 },
+        );
+      }
+      Object.assign(answersJson, genderAnswers);
+    }
+    const adultCount = optionalInteger(body.adultCount ?? answersJson.adult_count ?? answersJson.partySize);
     const kidCount = optionalInteger(body.kidCount ?? answersJson.kid_count);
     const allergyNotes =
       asTrimmedString(body.allergyNotes) ||
@@ -611,6 +657,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     );
     const eventData = asRecord(eventRes.rows[0]?.data);
     const numberOfGuests = eventData ? Number(eventData.numberOfGuests) || 0 : 0;
+    const isRevealEvent = isGenderRevealEventData(eventData);
+    const revealConfig = parseGenderRevealConfig(eventData);
+    const guessCounts = isRevealEvent
+      ? tallyGenderRevealGuesses(
+          (
+            await timing.time("guess_query", () =>
+              query<{ answers_json: unknown }>(
+                `SELECT answers_json FROM rsvp_responses WHERE event_id = $1`,
+                [eventId],
+              ),
+            )
+          ).rows,
+        )
+      : emptyGenderRevealGuessCounts();
 
     const totalFilled = stats.yes + stats.maybe + stats.no;
     const remaining = Math.max(0, numberOfGuests - totalFilled);
@@ -640,6 +700,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       remaining,
       filled: totalFilled,
     };
+    if (isRevealEvent && (isOwner || canGuestSeeGenderRevealTally(revealConfig))) {
+      baseResponse.guesses = guessCounts;
+    }
 
     if (!isOwner) return jsonWithTiming(timing, baseResponse);
 
