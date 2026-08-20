@@ -2,6 +2,12 @@ function clean(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function openAiChatCompatibilityParams(model, temperature) {
+  if (/^gpt-5\.6-(?:terra|luna)(?:-|$)/i.test(model)) return { reasoning_effort: "none" };
+  if (/^gpt-5(?:[.-]|$)/i.test(model)) return {};
+  return { temperature };
+}
+
 const CANONICAL_BRAND_DOMAIN = "envitefy.com";
 const BRAND_DOMAIN_TYPO_REGEX = /\benvitefye\.com\b/gi;
 
@@ -50,7 +56,7 @@ async function runStructuredStage({
 }) {
   const completion = await client.chat.completions.create({
     model,
-    temperature,
+    ...openAiChatCompatibilityParams(model, temperature),
     response_format: responseFormat,
     messages: [
       { role: "system", content: systemPrompt },

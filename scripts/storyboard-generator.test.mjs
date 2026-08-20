@@ -323,7 +323,7 @@ test("createFramesManifest includes caption and captioned image placeholders", (
     rawPrompt: "review campaign frames",
   });
   const manifest = createFramesManifest(runPaths, spec, buildFallbackFramePlan(spec), {
-    textModel: "gpt-5.4-mini",
+    textModel: "gpt-5.6-luna",
     imageModel: "gpt-image-2",
   });
 

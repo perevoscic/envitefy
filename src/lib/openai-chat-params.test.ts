@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { openAiChatCompatibilityParams } from "./openai-chat-params";
+import { openAiChatCompatibilityParams } from "./openai-chat-params.ts";
 
 test("GPT-5.6 Terra and Luna preserve non-reasoning request behavior", () => {
   assert.deepEqual(openAiChatCompatibilityParams("gpt-5.6-terra", { temperature: 0.4 }), {

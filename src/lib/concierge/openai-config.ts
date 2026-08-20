@@ -1,4 +1,4 @@
-import { openAiChatCompatibilityParams } from "@/lib/openai-chat-params";
+import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 
 const DEFAULT_OPENAI_CONCIERGE_MODEL = "gpt-5.6-terra";
 const DEFAULT_OPENAI_CONCIERGE_CHAT_MODEL = "gpt-5.6-luna";

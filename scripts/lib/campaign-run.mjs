@@ -523,7 +523,7 @@ async function generateImageBuffer({ client, requestedModel, prompt, size, user,
 }
 
 export function resolveTextModel() {
-  return process.env.STORYBOARD_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-4.1-mini";
+  return process.env.STORYBOARD_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.6-luna";
 }
 
 export function resolveImageModel() {

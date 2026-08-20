@@ -1,4 +1,5 @@
 import { OPENAI_TIMEOUT_MS, resolveOcrModel } from "./constants";
+import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import {
   buildBirthdayRewritePrompt,
   buildEventExtractionPrompt,
@@ -147,10 +148,6 @@ function getOpenAiKey(): string | null {
   return process.env.OPENAI_API_KEY || null;
 }
 
-function supportsCustomTemperature(model: string): boolean {
-  return !/^gpt-5(?:[.-]|$)/i.test(model.trim());
-}
-
 function buildChatPayload({
   model,
   temperature,
@@ -164,7 +161,7 @@ function buildChatPayload({
 }) {
   return {
     model,
-    ...(supportsCustomTemperature(model) ? { temperature } : {}),
+    ...openAiChatCompatibilityParams(model, { temperature }),
     ...(responseFormat ? { response_format: responseFormat } : {}),
     messages,
   };
@@ -487,7 +484,7 @@ export async function llmRewriteBirthdayDescription(
 ): Promise<string | null> {
   const apiKey = getOpenAiKey();
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-5.4-mini";
+  const model = process.env.LLM_MODEL || "gpt-5.6-luna";
   const prompt = buildBirthdayRewritePrompt(title, location, description);
 
   try {
@@ -527,7 +524,7 @@ export async function llmRewriteWedding(
 ): Promise<{ title: string; description: string } | null> {
   const apiKey = getOpenAiKey();
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-5.4-mini";
+  const model = process.env.LLM_MODEL || "gpt-5.6-luna";
   const prompt = buildWeddingRewritePrompt(rawText, location);
 
   try {
@@ -581,7 +578,7 @@ export async function llmRewriteSmartDescription(
 ): Promise<string | null> {
   const apiKey = getOpenAiKey();
   if (!apiKey) return null;
-  const model = process.env.LLM_MODEL || "gpt-5.4-mini";
+  const model = process.env.LLM_MODEL || "gpt-5.6-luna";
   const prompt = buildSmartRewritePrompt(rawText, title, location, category, baseline);
 
   try {

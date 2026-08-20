@@ -64,7 +64,7 @@ export function resolveAdStudioTextModel(): string {
   return (
     safeString(process.env.ADMIN_AD_STUDIO_OPENAI_TEXT_MODEL) ||
     safeString(process.env.STUDIO_OPENAI_TEXT_MODEL) ||
-    "gpt-5.5"
+    "gpt-5.6-sol"
   );
 }
 

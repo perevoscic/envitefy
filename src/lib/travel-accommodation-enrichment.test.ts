@@ -239,7 +239,7 @@ Travel accommodations
       } as Response;
     }
     const body = JSON.parse(String(init?.body || "{}"));
-    assert.equal(body.model, process.env.OPENAI_TRAVEL_ACCOMMODATION_MODEL || process.env.OPENAI_DISCOVERY_PARSE_MODEL || "gpt-5.4-nano");
+    assert.equal(body.model, process.env.OPENAI_TRAVEL_ACCOMMODATION_MODEL || process.env.OPENAI_DISCOVERY_PARSE_MODEL || "gpt-5.6-luna");
     return {
       ok: true,
       async json() {

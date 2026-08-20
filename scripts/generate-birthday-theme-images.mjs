@@ -255,7 +255,7 @@ async function generateImage(prompt, size = "1792x1024", retries = 3) {
       if (provider === "google") {
         return await generateImageGoogle(prompt);
       } else {
-        return await generateImageOpenAI(prompt, size, false);
+        return await generateImageOpenAI(prompt, size);
       }
     } catch (error) {
       const isRateLimit =
@@ -363,51 +363,27 @@ async function generateImageGoogle(prompt) {
   return Buffer.from(b64, "base64");
 }
 
-async function generateImageOpenAI(prompt, size, useDallE2 = false) {
+async function generateImageOpenAI(prompt, size) {
   if (!openaiClient) {
     throw new Error("OpenAI client not initialized. Check OPENAI_API_KEY environment variable.");
   }
 
-  // Use dall-e-3 for better availability, fallback to dall-e-2 if needed
-  const model = useDallE2 ? "dall-e-2" : process.env.OPENAI_IMAGE_MODEL || "dall-e-3";
-
-  try {
-    // dall-e-3 supports: 1024x1024, 1792x1024 (landscape), 1024x1792 (portrait)
-    const imageSize = model === "dall-e-3" ? "1792x1024" : size;
-
-    const res = await openaiClient.images.generate({
-      model,
-      prompt,
-      size: imageSize,
-      quality: model === "dall-e-3" ? "hd" : undefined,
-      n: 1,
-      response_format: model === "dall-e-2" ? "b64_json" : "url",
-    });
-
-    if (!res.data || res.data.length === 0) {
-      throw new Error("No image data returned from OpenAI");
-    }
-
-    const imageData = res.data[0];
-    if (imageData.b64_json) {
-      return Buffer.from(imageData.b64_json, "base64");
-    } else if (imageData.url) {
-      const imageResponse = await fetch(imageData.url);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to fetch image from URL: ${imageResponse.statusText}`);
-      }
-      const arrayBuffer = await imageResponse.arrayBuffer();
-      return Buffer.from(arrayBuffer);
-    } else {
-      throw new Error("No image data (b64_json or url) in OpenAI response");
-    }
-  } catch (error) {
-    if (model === "dall-e-3" && !useDallE2 && !process.env.OPENAI_IMAGE_MODEL) {
-      console.log(`  Falling back to dall-e-2...`);
-      return generateImageOpenAI(prompt, size, true); // Retry with dall-e-2
-    }
-    throw error;
-  }
+  const model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2";
+  const imageSize =
+    size === "1792x1024" ? "1536x1024" : size === "1024x1792" ? "1024x1536" : size;
+  const res = await openaiClient.images.generate({
+    model,
+    prompt,
+    size: imageSize,
+    quality: "high",
+    background: "opaque",
+    output_format: "png",
+    moderation: "auto",
+    n: 1,
+  });
+  const imageData = res.data?.[0]?.b64_json;
+  if (!imageData) throw new Error("No image data returned from OpenAI");
+  return Buffer.from(imageData, "base64");
 }
 
 async function saveImage(buffer, filePath) {

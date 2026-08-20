@@ -143,7 +143,7 @@ function getOpenAiClient() {
 }
 
 function resolveTextModel() {
-  return process.env.STORYBOARD_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-4.1-mini";
+  return process.env.STORYBOARD_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.6-luna";
 }
 
 function resolveImageModel() {
@@ -171,6 +171,12 @@ function resolveJsonObject(text) {
   return null;
 }
 
+function openAiChatCompatibilityParams(model, temperature) {
+  if (/^gpt-5\.6-(?:terra|luna)(?:-|$)/i.test(model)) return { reasoning_effort: "none" };
+  if (/^gpt-5(?:[.-]|$)/i.test(model)) return {};
+  return { temperature };
+}
+
 async function writeJson(filePath, value) {
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
@@ -178,7 +184,7 @@ async function writeJson(filePath, value) {
 async function extractSceneSpec(client, model, looseInput) {
   const completion = await client.chat.completions.create({
     model,
-    temperature: 0.4,
+    ...openAiChatCompatibilityParams(model, 0.4),
     response_format: EXTRACTION_RESPONSE_FORMAT,
     messages: [
       {
@@ -230,7 +236,7 @@ async function buildFramePlan(client, model, sceneSpec) {
   const materialized = materializeSceneSpec(sceneSpec);
   const completion = await client.chat.completions.create({
     model,
-    temperature: 0.7,
+    ...openAiChatCompatibilityParams(model, 0.7),
     response_format: FRAME_PLAN_RESPONSE_FORMAT,
     messages: [
       {

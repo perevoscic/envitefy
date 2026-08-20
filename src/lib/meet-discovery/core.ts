@@ -18,6 +18,7 @@ import {
 } from "@/lib/discovery-budget";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
 import { getVisionClient } from "@/lib/gcp";
+import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import {
   createDiscoveryRequestCache,
   type DiscoveryRequestCache,
@@ -2917,16 +2918,16 @@ function resolveOpenAiMiniModel(): string {
     safeString(process.env.OPENAI_OCR_FAST_MODEL) ||
     safeString(process.env.OPENAI_OCR_MODEL) ||
     safeString(process.env.LLM_MODEL) ||
-    "gpt-5.4-mini"
+    "gpt-5.6-luna"
   );
 }
 
 function resolveDiscoveryParseModel(): string {
-  return safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) || "gpt-5.5";
+  return safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) || "gpt-5.6-sol";
 }
 
 function resolveDiscoveryVisionModel(): string {
-  return safeString(process.env.OPENAI_DISCOVERY_VISION_MODEL) || "gpt-4o-mini";
+  return safeString(process.env.OPENAI_DISCOVERY_VISION_MODEL) || "gpt-5.6-luna";
 }
 
 const DEFAULT_GEMINI_PARSE_MODEL = "gemini-3.6-flash";
@@ -3845,7 +3846,7 @@ async function openAiOcrTextFromImage(
       },
       body: JSON.stringify({
         model,
-        temperature: 0,
+        ...openAiChatCompatibilityParams(model, { temperature: 0 }),
         response_format: { type: "json_object" },
         messages: [
           {
@@ -3898,7 +3899,7 @@ async function openAiAnalyzeGymLayoutPage(
       },
       body: JSON.stringify({
         model,
-        temperature: 0,
+        ...openAiChatCompatibilityParams(model, { temperature: 0 }),
         response_format: { type: "json_object" },
         messages: [
           {
@@ -4386,7 +4387,7 @@ async function openAiExtractGymLayoutZones(
       },
       body: JSON.stringify({
         model,
-        temperature: 0,
+        ...openAiChatCompatibilityParams(model, { temperature: 0 }),
         response_format: { type: "json_object" },
         messages: [
           {
@@ -9784,7 +9785,7 @@ async function openAiExtractScheduleColorBindingsFromImage(
       },
       body: JSON.stringify({
         model,
-        temperature: 0,
+        ...openAiChatCompatibilityParams(model, { temperature: 0 }),
         response_format: { type: "json_object" },
         messages: [
           {
@@ -10264,7 +10265,7 @@ async function openAiExtractVisualSchedulePage(
       },
       body: JSON.stringify({
         model,
-        temperature: 0,
+        ...openAiChatCompatibilityParams(model, { temperature: 0 }),
         response_format: { type: "json_object" },
         messages: [
           {
@@ -10491,7 +10492,7 @@ async function openAiExtractScheduleAwardFlagsFromImage(
       },
       body: JSON.stringify({
         model,
-        temperature: 0,
+        ...openAiChatCompatibilityParams(model, { temperature: 0 }),
         response_format: { type: "json_object" },
         messages: [
           {

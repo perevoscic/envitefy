@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
 import type { DiscoveryPerformance } from "@/lib/meet-discovery";
+import { openAiChatCompatibilityParams } from "./openai-chat-params.ts";
 
 type ExtractionMeta = {
   textQuality?: "good" | "suspect" | "poor" | null;
@@ -178,7 +179,7 @@ function jsonObject(properties: Record<string, unknown>) {
 }
 
 function resolveDiscoveryParseModel(): string {
-  return safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) || "gpt-4.1-mini";
+  return safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) || "gpt-5.6-luna";
 }
 
 function normalizeTokenUsage(usage: any) {
@@ -698,9 +699,10 @@ async function callOpenAiFootballParse(
   const apiKey = process.env.OPENAI_API_KEY || "";
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
   const client = new OpenAI({ apiKey });
+  const model = resolveDiscoveryParseModel();
   const completion = await client.chat.completions.create({
-    model: resolveDiscoveryParseModel(),
-    temperature: 0,
+    model,
+    ...openAiChatCompatibilityParams(model, { temperature: 0 }),
     response_format: {
       type: "json_schema",
       json_schema: FOOTBALL_PARSE_JSON_SCHEMA,

@@ -21,5 +21,6 @@ export function openAiChatCompatibilityParams(
     return {};
   }
 
-  return Number.isFinite(options.temperature) ? { temperature: options.temperature as number } : {};
+  const temperature = options.temperature;
+  return typeof temperature === "number" && Number.isFinite(temperature) ? { temperature } : {};
 }

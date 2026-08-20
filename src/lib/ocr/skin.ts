@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import OpenAI from "openai";
+import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import {
   buildOcrSkinBackgroundPromptRules,
   normalizeOcrSkinBackground,
@@ -612,7 +613,7 @@ function buildPrompt(input: OcrSkinPromptInput): string {
 }
 
 function resolveOpenAiTextModel(): string {
-  return process.env.OCR_SKIN_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.5";
+  return process.env.OCR_SKIN_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.6-sol";
 }
 
 function resolveGeminiTextModel(): string {
@@ -654,9 +655,10 @@ async function inferWithOpenAi(input: OcrSkinPromptInput): Promise<RawOcrSkinPay
   if (!client) return null;
   const prompt = buildPrompt(input);
   try {
+    const model = resolveOpenAiTextModel();
     const completion = await client.chat.completions.create({
-      model: resolveOpenAiTextModel(),
-      temperature: 0.2,
+      model,
+      ...openAiChatCompatibilityParams(model, { temperature: 0.2 }),
       response_format: { type: "json_object" },
       messages: [
         {

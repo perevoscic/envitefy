@@ -50,12 +50,17 @@ GOOGLE_APPLICATION_CREDENTIALS_JSON=
 
 # Optional LLM fallback for OCR title/schedule
 OPENAI_API_KEY=
-LLM_MODEL=gpt-5.4-mini
+LLM_MODEL=gpt-5.6-luna
 # Optional GPT model routing for Envitefy Concierge and premium generation
-OPENAI_CONCIERGE_CHAT_MODEL=gpt-5.4-mini
-OPENAI_CONCIERGE_MODEL=gpt-5.4
-OPENAI_CONCIERGE_PREMIUM_MODEL=gpt-5.5
-OPENAI_OCR_MODEL=gpt-5.5
+OPENAI_CONCIERGE_CHAT_MODEL=gpt-5.6-luna
+OPENAI_CONCIERGE_MODEL=gpt-5.6-terra
+OPENAI_CONCIERGE_PREMIUM_MODEL=gpt-5.6-sol
+OPENAI_OCR_MODEL=gpt-5.6-terra
+OPENAI_OCR_FAST_MODEL=gpt-5.6-luna
+OPENAI_DISCOVERY_PARSE_MODEL=gpt-5.6-sol
+OPENAI_DISCOVERY_VISION_MODEL=gpt-5.6-luna
+STUDIO_OPENAI_TEXT_MODEL=gpt-5.6-sol
+STUDIO_OPENAI_IMAGE_MODEL=gpt-image-2
 
 # Postgres (users + token store)
 DATABASE_URL=postgresql://appuser:pass@host:5432/envitefy

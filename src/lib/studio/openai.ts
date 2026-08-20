@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
+import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import { STUDIO_LIVE_CARD_RESPONSE_SCHEMA } from "@/lib/studio/live-card-schema";
 import {
   resolveStudioSourceImage,
@@ -61,7 +62,7 @@ function getOpenAiApiKey(): string {
 }
 
 function resolveTextModel(): string {
-  return process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.5";
+  return process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.6-sol";
 }
 
 function resolveImageModel(): string {
@@ -159,7 +160,7 @@ async function postStructuredOpenAiContent(
     const client = getOpenAiClient();
     const completion = await client.chat.completions.create({
       model,
-      temperature: 0.6,
+      ...openAiChatCompatibilityParams(model, { temperature: 0.6 }),
       response_format: OPENAI_LIVE_CARD_RESPONSE_FORMAT as any,
       messages: [
         {

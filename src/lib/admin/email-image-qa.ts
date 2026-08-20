@@ -1,4 +1,5 @@
 import type OpenAI from "openai";
+import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import {
   ADMIN_EMAIL_GENERATION_GUIDE,
   type AdminEmailImageVisualRules,
@@ -134,12 +135,13 @@ export async function inspectAdminEmailImageProfessionalism(params: {
   const model =
     (typeof params.model === "string" && params.model.trim()) ||
     process.env.ADMIN_EMAIL_IMAGE_QA_MODEL ||
-    "gpt-5.4-mini";
+    "gpt-5.6-luna";
   const mimeType = params.mimeType || "image/png";
   const dataUrl = `data:${mimeType};base64,${params.imageBytes.toString("base64")}`;
 
   const completion = await params.client.chat.completions.create({
     model,
+    ...openAiChatCompatibilityParams(model),
     response_format: {
       type: "json_schema",
       json_schema: {

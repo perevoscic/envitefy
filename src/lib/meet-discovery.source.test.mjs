@@ -57,13 +57,18 @@ test("meet discovery classifier and schema only model the surviving attendee-fir
   );
 });
 
-test("meet discovery defaults staged structured parsing to GPT-5.5", () => {
+test("meet discovery routes staged parsing to Sol and vision extraction to Luna", () => {
   const source = readSource("src/lib/meet-discovery/core.ts");
 
   assert.match(
     source,
-    /return safeString\(process\.env\.OPENAI_DISCOVERY_PARSE_MODEL\) \|\| "gpt-5\.5";/,
+    /return safeString\(process\.env\.OPENAI_DISCOVERY_PARSE_MODEL\) \|\| "gpt-5\.6-sol";/,
   );
+  assert.match(
+    source,
+    /return safeString\(process\.env\.OPENAI_DISCOVERY_VISION_MODEL\) \|\| "gpt-5\.6-luna";/,
+  );
+  assert.match(source, /\.\.\.openAiChatCompatibilityParams\(model, \{ temperature: 0 \}\)/);
   assert.match(source, /callOpenAiClassification/);
   assert.match(source, /callOpenAiTargetedParse/);
 });

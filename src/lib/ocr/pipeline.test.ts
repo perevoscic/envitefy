@@ -18,7 +18,8 @@ test("pipeline sends preprocessed OCR images to vision as JPEG", async () => {
   const source = await readFile(new URL("./pipeline.ts", import.meta.url), "utf8");
   const constants = await readFile(new URL("./constants.ts", import.meta.url), "utf8");
 
-  assert.match(constants, /export const DEFAULT_OCR_MODEL = "gpt-5\.4-mini";/);
+  assert.match(constants, /export const DEFAULT_OCR_MODEL = "gpt-5\.6-terra";/);
+  assert.match(constants, /OPENAI_OCR_FAST_MODEL \|\| "gpt-5\.6-luna"/);
   assert.match(source, /rasterizePdfPageToPng\(inputBuffer, 0\)/);
   assert.match(source, /\.grayscale\(\)\s*\.normalize\(\)\s*\.jpeg\(\{ quality: 90 \}\)/);
   assert.match(source, /visionMime = "image\/jpeg";/);
@@ -88,17 +89,12 @@ test("pipeline keeps OCR skin inference optional and timeout bounded", async () 
   assert.match(source, /skinTimeoutMs,/);
 });
 
-test("OpenAI OCR omits unsupported custom temperature for GPT-5 models", async () => {
+test("OpenAI OCR preserves GPT-5.6 role reasoning and omits custom temperature", async () => {
   const openAiSource = await readFile(new URL("./openai.ts", import.meta.url), "utf8");
 
-  assert.match(openAiSource, /function supportsCustomTemperature\(model: string\): boolean/);
-  assert.match(openAiSource, /return !\/\^gpt-5\(\?:\[\.-\]\|\$\)\/i\.test\(model\.trim\(\)\);/);
   assert.match(openAiSource, /export class OpenAiOcrError extends Error/);
   assert.match(openAiSource, /controller\.abort\(timeoutError\)/);
   assert.match(openAiSource, /function buildChatPayload/);
-  assert.match(
-    openAiSource,
-    /\.\.\.\(supportsCustomTemperature\(model\) \? \{ temperature \} : \{\}\)/,
-  );
+  assert.match(openAiSource, /openAiChatCompatibilityParams\(model, \{ temperature \}\)/);
   assert.match(openAiSource, /buildChatPayload\(\{\s*model,\s*temperature: 0\.1,/);
 });

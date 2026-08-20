@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import { parseConciergeInput } from "./core.mjs";
 
 type ProviderDraftResult = {
@@ -86,7 +87,7 @@ export function getConciergeV2ProviderStatus() {
   return {
     aiParsing: process.env.OPENAI_API_KEY ? "ready" : "fallback",
     aiProvider: process.env.OPENAI_API_KEY ? "openai" : "deterministic",
-    aiModel: process.env.CONCIERGE_V2_OPENAI_MODEL || "gpt-4o-mini",
+    aiModel: process.env.CONCIERGE_V2_OPENAI_MODEL || "gpt-5.6-luna",
     blobStorage: process.env.BLOB_READ_WRITE_TOKEN ? "ready" : "not_configured",
     imageOcr:
       process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_CLOUD_PROJECT
@@ -124,12 +125,13 @@ export async function parseConciergeInputWithProvider(
       fallbackUsed: true,
     };
   }
-  const model = cleanString(process.env.CONCIERGE_V2_OPENAI_MODEL, 100) || "gpt-4o-mini";
+  const model = cleanString(process.env.CONCIERGE_V2_OPENAI_MODEL, 100) || "gpt-5.6-luna";
   try {
     const { default: OpenAI } = await import("openai");
     const client = new OpenAI({ apiKey });
     const response = await client.chat.completions.create({
       model,
+      ...openAiChatCompatibilityParams(model),
       response_format: { type: "json_object" },
       messages: [
         {

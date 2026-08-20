@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
+import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import {
   type StudioEventDetails,
   type StudioGenerateRequest,
@@ -9,7 +10,7 @@ import {
   type StudioThemeNormalizationRisk,
 } from "@/lib/studio/types";
 
-const DEFAULT_OPENAI_TEXT_MODEL = "gpt-5.4-mini";
+const DEFAULT_OPENAI_TEXT_MODEL = "gpt-5.6-luna";
 const DEFAULT_GEMINI_TEXT_MODEL = "gemini-3-flash-preview";
 const DEFAULT_REWRITE_NOTE =
   "We turned this into an original inspired theme for best results.";
@@ -435,9 +436,10 @@ async function normalizeThemeWithOpenAi(
 ): Promise<ProviderThemeNormalizationResult> {
   try {
     const client = getOpenAiClient();
+    const model = resolveOpenAiTextModel();
     const completion = await client.chat.completions.create({
-      model: resolveOpenAiTextModel(),
-      temperature: 0.4,
+      model,
+      ...openAiChatCompatibilityParams(model, { temperature: 0.4 }),
       response_format: {
         type: "json_schema",
         json_schema: {

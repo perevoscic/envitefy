@@ -167,10 +167,13 @@ async function generateImage(prompt, size = "1024x1024") {
 
   // Default: OpenAI
   const res = await openaiClient.images.generate({
-    model: "gpt-image-1",
+    model: "gpt-image-2",
     prompt,
     size,
     quality: "high",
+    background: "opaque",
+    output_format: "png",
+    moderation: "auto",
   });
   const b64 = res.data?.[0]?.b64_json;
   if (!b64) throw new Error("No image data returned");

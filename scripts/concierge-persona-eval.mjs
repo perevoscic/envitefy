@@ -1047,9 +1047,10 @@ function openAiClient() {
 
 async function runChatCompletion({ messages, json = false }) {
   const client = openAiClient();
-  const model = process.env.CONCIERGE_EVAL_MODEL || process.env.OPENAI_CONCIERGE_CHAT_MODEL || "gpt-5.4-mini";
+  const model = process.env.CONCIERGE_EVAL_MODEL || process.env.OPENAI_CONCIERGE_CHAT_MODEL || "gpt-5.6-luna";
   const completion = await client.chat.completions.create({
     model,
+    ...(/^gpt-5\.6-(?:terra|luna)(?:-|$)/i.test(model) ? { reasoning_effort: "none" } : {}),
     messages,
     ...(json ? { response_format: { type: "json_object" } } : {}),
   });
