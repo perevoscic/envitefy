@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { DISABLED_EVENT_ROUTE_PREFIXES } from "@/config/feature-visibility";
-import { hasProductScope } from "@/lib/product-scopes";
 import {
   getCreateActionForSignupIntent,
   signupIntentForMarketingPath,
@@ -400,18 +399,6 @@ export async function middleware(req: NextRequest) {
     const url = req.nextUrl.clone();
     url.pathname = "/";
     return redirectWithMarker(url, 302);
-  }
-
-  if (
-    normalizedPathname === "/event/gymnastics" ||
-    normalizedPathname.startsWith("/event/gymnastics/")
-  ) {
-    if (!hasProductScope(authState.token?.productScopes, "gymnastics")) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/event";
-      url.search = "";
-      return redirectWithMarker(url, 302);
-    }
   }
 
   return ok();

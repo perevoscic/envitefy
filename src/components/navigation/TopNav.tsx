@@ -16,6 +16,7 @@ import {
   getCreateEventSections,
   getTemplateLinks,
 } from "@/config/navigation-config";
+import type { SportPreferences } from "@/lib/sports-preferences";
 import { getCreateActionForSignupIntent } from "@/lib/signup-intent";
 
 type CalendarProviderKey = "google" | "microsoft" | "apple";
@@ -165,16 +166,22 @@ export function CreateEventMenu({
   onSelect,
   visibleTemplateKeys,
   productScopes,
+  sportPreferences,
   isAdmin = false,
 }: {
   onSelect?: () => void;
   visibleTemplateKeys?: Parameters<typeof getCreateEventSections>[0];
   productScopes?: string[];
+  sportPreferences?: SportPreferences;
   isAdmin?: boolean;
 }) {
   if (!isAdmin) return null;
 
-  const sections = getCreateEventSections(visibleTemplateKeys, productScopes);
+  const sections = getCreateEventSections(
+    visibleTemplateKeys,
+    productScopes,
+    sportPreferences,
+  );
   return (
     <div className="flex min-w-[1260px] max-w-[1400px] flex-row flex-nowrap gap-10 overflow-x-auto px-2">
       {sections.map((section) => (
@@ -458,6 +465,7 @@ export default function TopNav() {
     initials,
     productScopes,
     visibleTemplateKeys,
+    featureVisibility,
     defaultCreateIntent,
   } = useMenu();
 
@@ -714,6 +722,7 @@ export default function TopNav() {
                           <CreateEventMenu
                             visibleTemplateKeys={visibleTemplateKeys}
                             productScopes={productScopes}
+                            sportPreferences={featureVisibility.sportPreferences}
                             isAdmin={isAdmin}
                           />
                         )}

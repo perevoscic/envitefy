@@ -1,4 +1,8 @@
-import { getEventDiscoveryByEventId, updateEventDiscovery, updateEventHistoryDataMerge } from "@/lib/db";
+import {
+  getEventDiscoveryByEventId,
+  updateEventDiscovery,
+  updateEventHistoryDataMerge,
+} from "@/lib/db";
 import {
   beginDiscoveryPipelineCancellationScope,
   finishDiscoveryPipelineCancellationScope,
@@ -86,10 +90,7 @@ function assertActive(signal?: AbortSignal) {
   throwIfDiscoveryCancelled(signal);
 }
 
-export async function runDiscoveryPipeline(
-  eventId: string,
-  options?: { signal?: AbortSignal },
-) {
+export async function runDiscoveryPipeline(eventId: string, options?: { signal?: AbortSignal }) {
   const discovery = await getEventDiscoveryByEventId(eventId);
   if (!discovery) return null;
   const leased = await acquireDiscoveryLease(discovery);
@@ -167,9 +168,9 @@ export async function runDiscoveryPipeline(
       endISO: safeString(mapped.mappedData.endISO) || null,
       builderDraft: mapped.builderDraft,
       publicArtifacts:
-        current.workflow === "football"
-          ? buildEmptyDiscoveryPublicArtifacts(safeString(mapped.mappedData.title))
-          : buildEmptyGymPublicArtifacts(safeString(mapped.mappedData.title)),
+        current.workflow === "gymnastics"
+          ? buildEmptyGymPublicArtifacts(safeString(mapped.mappedData.title))
+          : buildEmptyDiscoveryPublicArtifacts(safeString(mapped.mappedData.title)),
       pipeline: mappedPipeline,
       discoveryId: current.id,
       templateId: safeString(mapped.mappedData.templateId),

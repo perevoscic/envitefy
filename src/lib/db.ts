@@ -34,6 +34,12 @@ import {
   productScopesForSignupSource,
 } from "@/lib/product-scopes";
 import {
+  inferSportFromRecentEvents,
+  normalizeSportPreferences,
+  type SportPreferenceSuggestion,
+  type SportPreferences,
+} from "@/lib/sports-preferences";
+import {
   buildEventPublicSlugCandidate,
   MAX_PUBLIC_SLUG_LENGTH,
   makeEventPublicSlugRoutable,
@@ -402,7 +408,7 @@ export async function insertEventTrackingEvent(params: EventTrackingInsert): Pro
 }
 
 const USER_SELECT_COLUMNS = `
-  id, email, first_name, last_name, preferred_provider,
+  id, email, first_name, last_name, avatar_url, preferred_provider,
   password_hash, created_at,
   primary_signup_source, product_scopes,
   is_admin,
@@ -418,6 +424,7 @@ export type AppUserRow = {
   email: string;
   first_name?: string | null;
   last_name?: string | null;
+  avatar_url?: string | null;
   preferred_provider?: string | null;
   password_hash: string | null;
   created_at?: string;
@@ -440,6 +447,7 @@ export type AppUserRow = {
 export async function getUserByEmail(email: string): Promise<AppUserRow | null> {
   await ensureUsersHasFeatureVisibilityColumn();
   await ensureUsersHasProductScopeColumns();
+  await ensureUsersHasAvatarUrlColumn();
   const lower = email.toLowerCase();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS}
@@ -463,6 +471,7 @@ export async function getUserByEmail(email: string): Promise<AppUserRow | null> 
 export async function getUserById(id: string): Promise<AppUserRow | null> {
   await ensureUsersHasFeatureVisibilityColumn();
   await ensureUsersHasProductScopeColumns();
+  await ensureUsersHasAvatarUrlColumn();
   const res = await query<AppUserRow>(
     `select ${USER_SELECT_COLUMNS} from users where id = $1 limit 1`,
     [id],
@@ -966,6 +975,14 @@ async function ensureUsersHasProductScopeColumns(): Promise<void> {
   });
 }
 
+async function ensureUsersHasAvatarUrlColumn(): Promise<void> {
+  await ensureOnce("users_avatar_url_column", async () => {
+    await query(`
+      alter table users add column if not exists avatar_url text;
+    `);
+  });
+}
+
 async function userHasGymnasticsHistory(userId: string): Promise<boolean> {
   const res = await query<{ has_match: boolean }>(
     `select exists(
@@ -1021,6 +1038,8 @@ async function backfillUserProductAccess(row: AppUserRow): Promise<AppUserRow> {
 
 type FeatureVisibilityRow = {
   feature_visibility: any;
+  id?: string;
+  primary_signup_source?: PrimarySignupSource | null;
 };
 
 export async function getFeatureVisibilityByEmail(
@@ -1029,7 +1048,7 @@ export async function getFeatureVisibilityByEmail(
   await ensureUsersHasFeatureVisibilityColumn();
   const lower = email.toLowerCase();
   const res = await query<FeatureVisibilityRow>(
-    `select feature_visibility
+    `select id, feature_visibility, primary_signup_source
        from users
       where email = $1
       limit 1`,
@@ -1044,11 +1063,12 @@ export async function updateFeatureVisibilityByEmail(params: {
   personas?: string[];
   visibleTemplateKeys: string[];
   defaultCreateIntent?: string | null;
+  sportPreferences?: SportPreferences;
 }): Promise<void> {
   await ensureUsersHasFeatureVisibilityColumn();
   const lower = params.email.toLowerCase();
-  const payload = {
-    v: 1,
+  const payload: Record<string, unknown> = {
+    v: 2,
     persona: params.persona || null,
     personas: Array.isArray(params.personas)
       ? params.personas
@@ -1058,12 +1078,36 @@ export async function updateFeatureVisibilityByEmail(params: {
     visibleTemplateKeys: params.visibleTemplateKeys,
     defaultCreateIntent: params.defaultCreateIntent || null,
   };
+  if (params.sportPreferences) {
+    payload.sportPreferences = normalizeSportPreferences(params.sportPreferences);
+  }
   await query(
     `update users
-        set feature_visibility = $2::jsonb
+        set feature_visibility = coalesce(feature_visibility, '{}'::jsonb) || $2::jsonb
       where email = $1`,
     [lower, JSON.stringify(payload)],
   );
+}
+
+export async function getSportPreferenceSuggestionByEmail(
+  email: string,
+  existingUser?: FeatureVisibilityRow | null,
+): Promise<SportPreferenceSuggestion | null> {
+  const user = existingUser || await getFeatureVisibilityByEmail(email);
+  if (!user?.id) return null;
+  const metadata =
+    user.feature_visibility && typeof user.feature_visibility === "object"
+      ? user.feature_visibility as Record<string, unknown>
+      : {};
+  if (
+    normalizePrimarySignupSource(user.primary_signup_source) === "gymnastics" ||
+    metadata.defaultCreateIntent === "gymnastics"
+  ) {
+    return { sport: "gymnastics", source: "signup" };
+  }
+
+  const sport = inferSportFromRecentEvents(await listEventHistoryByUser(user.id, 100));
+  return sport ? { sport, source: "history" } : null;
 }
 
 async function ensureUsersHasStudioLibraryColumn(): Promise<void> {
@@ -1123,6 +1167,7 @@ export async function createUserWithEmailPassword(params: {
   const { email, firstName, lastName, password, signupSource } = params;
   await ensureUsersHasFeatureVisibilityColumn();
   await ensureUsersHasProductScopeColumns();
+  await ensureUsersHasAvatarUrlColumn();
   const existing = await getUserByEmail(email);
   if (existing) throw new Error("Account already exists for this email");
   const password_hash = await hashPassword(password);
@@ -1186,6 +1231,7 @@ export async function createOrUpdateOAuthUser(params: {
 }): Promise<AppUserRow> {
   await ensureUsersHasFeatureVisibilityColumn();
   await ensureUsersHasProductScopeColumns();
+  await ensureUsersHasAvatarUrlColumn();
   const lower = params.email.toLowerCase();
   const existing = await getUserByEmail(lower);
 
@@ -1328,8 +1374,28 @@ export async function updateUserNamesByEmail(params: {
   }
 
   const sql = `update users set ${sets.join(", ")} where email = $1
-     returning id, email, first_name, last_name, preferred_provider, password_hash, created_at`;
+     returning ${USER_SELECT_COLUMNS}`;
   const res = await query<AppUserRow>(sql, values);
+  return res.rows[0];
+}
+
+export async function updateUserAvatarByEmail(params: {
+  email: string;
+  avatarUrl: string | null;
+}): Promise<AppUserRow> {
+  await ensureUsersHasAvatarUrlColumn();
+  const lower = params.email.toLowerCase();
+  const existing = await getUserByEmail(lower);
+  if (!existing) {
+    throw new Error("No local account found for this email");
+  }
+  const res = await query<AppUserRow>(
+    `update users
+     set avatar_url = $2
+     where email = $1
+     returning ${USER_SELECT_COLUMNS}`,
+    [lower, params.avatarUrl],
+  );
   return res.rows[0];
 }
 
@@ -1346,7 +1412,7 @@ export async function updatePreferredProviderByEmail(params: {
     `update users
      set preferred_provider = $2
      where email = $1
-     returning id, email, first_name, last_name, preferred_provider, password_hash, created_at`,
+     returning ${USER_SELECT_COLUMNS}`,
     [lower, params.preferredProvider],
   );
   return res.rows[0];
@@ -1511,7 +1577,7 @@ export type EventHistoryInputBlobRow = {
 type EventDiscoveryQueryRow = {
   id: string;
   eventId: string;
-  workflow: "gymnastics" | "football";
+  workflow: "gymnastics" | "football" | "sports";
   source: DiscoverySourceRecord;
   document: DiscoveryDocument | null;
   canonicalParse: CanonicalDiscoveryParse | null;
@@ -4328,7 +4394,7 @@ function mapEventDiscoveryRow(
 export async function insertEventDiscovery(params: {
   id?: string;
   eventId: string;
-  workflow: "gymnastics" | "football";
+  workflow: "gymnastics" | "football" | "sports";
   source: DiscoverySourceRecord;
   document?: DiscoveryDocument | null;
   canonicalParse?: CanonicalDiscoveryParse | null;
@@ -4411,15 +4477,21 @@ export async function getEventDiscoveryByEventId(
 
 export async function getEventDiscoveryStatusByEventId(
   eventId: string,
-): Promise<Pick<EventDiscoveryRow, "id" | "eventId" | "pipeline" | "debug"> | null> {
+): Promise<Pick<
+  EventDiscoveryRow,
+  "id" | "eventId" | "pipeline" | "debug" | "canonicalParse"
+> | null> {
   if (!eventId) return null;
   try {
     await ensureEventDiscoveriesTable();
-    const res = await query<Pick<EventDiscoveryQueryRow, "id" | "eventId" | "pipeline" | "debug">>(
+    const res = await query<
+      Pick<EventDiscoveryQueryRow, "id" | "eventId" | "pipeline" | "debug" | "canonicalParse">
+    >(
       `select
          id,
          event_id as "eventId",
          pipeline,
+         canonical_parse as "canonicalParse",
          case
            when debug ? 'failureSummary'
              then jsonb_build_object('failureSummary', debug->'failureSummary')

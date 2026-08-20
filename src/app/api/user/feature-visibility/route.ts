@@ -7,14 +7,25 @@ import {
   TEMPLATE_KEYS,
 } from "@/config/feature-visibility";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
-import { getFeatureVisibilityByEmail, updateFeatureVisibilityByEmail } from "@/lib/db";
+import {
+  getFeatureVisibilityByEmail,
+  getSportPreferenceSuggestionByEmail,
+  updateFeatureVisibilityByEmail,
+} from "@/lib/db";
 import { normalizeSignupIntent } from "@/lib/signup-intent";
+import {
+  EMPTY_SPORT_PREFERENCES,
+  normalizeSportPreferences,
+  type SportPreferenceInferenceSource,
+  type SportPreferenceSuggestion,
+} from "@/lib/sports-preferences";
 
 type FeatureVisibilityPayload = {
   persona?: unknown;
   personas?: unknown;
   visibleTemplateKeys?: unknown;
   defaultCreateIntent?: unknown;
+  sportPreferences?: unknown;
 };
 
 function readMetadata(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmail>>) {
@@ -24,7 +35,10 @@ function readMetadata(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmail
   return row.feature_visibility as FeatureVisibilityPayload;
 }
 
-function buildResponse(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmail>>) {
+function buildResponse(
+  row: Awaited<ReturnType<typeof getFeatureVisibilityByEmail>>,
+  sportPreferenceSuggestion: SportPreferenceSuggestion | null = null,
+) {
   const metadata = readMetadata(row);
   if (!metadata) {
     return {
@@ -33,10 +47,11 @@ function buildResponse(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmai
       visibleTemplateKeys: [...TEMPLATE_KEYS],
       dashboardLayout: "default" as const,
       defaultCreateIntent: null,
+      sportPreferences: { ...EMPTY_SPORT_PREFERENCES },
+      sportPreferenceSuggestion,
     };
   }
 
-  const normalizedVisibleTemplateKeys = normalizeTemplateKeys(metadata.visibleTemplateKeys);
   const visibility = resolveVisibility({
     persona: metadata.persona,
     personas: metadata.personas,
@@ -48,11 +63,13 @@ function buildResponse(row: Awaited<ReturnType<typeof getFeatureVisibilityByEmai
     persona: visibility.persona,
     personas: visibility.personas,
     visibleTemplateKeys:
-      normalizedVisibleTemplateKeys.length > 0
+      Array.isArray(metadata.visibleTemplateKeys)
         ? visibility.visibleTemplateKeys
         : [...TEMPLATE_KEYS],
     dashboardLayout: visibility.dashboardLayout,
     defaultCreateIntent: normalizeSignupIntent(metadata.defaultCreateIntent),
+    sportPreferences: normalizeSportPreferences(metadata.sportPreferences),
+    sportPreferenceSuggestion,
   };
 }
 
@@ -63,7 +80,12 @@ export async function GET(req: Request) {
   }
 
   const row = await getFeatureVisibilityByEmail(authUser.email);
-  return NextResponse.json(buildResponse(row));
+  const metadata = readMetadata(row);
+  const configured = normalizeSportPreferences(metadata?.sportPreferences).setupCompleted;
+  const suggestion = configured
+    ? null
+    : await getSportPreferenceSuggestionByEmail(authUser.email, row);
+  return NextResponse.json(buildResponse(row, suggestion));
 }
 
 export async function PUT(req: Request) {
@@ -83,6 +105,23 @@ export async function PUT(req: Request) {
   const hasPersonas = Object.hasOwn(body, "personas");
   const hasVisibleTemplateKeys = Object.hasOwn(body, "visibleTemplateKeys");
   const hasDefaultCreateIntent = Object.hasOwn(body, "defaultCreateIntent");
+  const hasSportPreferences = Object.hasOwn(body, "sportPreferences");
+  const existingSportPreferences = normalizeSportPreferences(existingMetadata?.sportPreferences);
+  const sportPreferences = hasSportPreferences
+    ? normalizeSportPreferences(body.sportPreferences)
+    : existingSportPreferences;
+  const requestedSetupCompleted =
+    hasSportPreferences &&
+    body.sportPreferences &&
+    typeof body.sportPreferences === "object" &&
+    (body.sportPreferences as Record<string, unknown>).setupCompleted === true;
+
+  if (requestedSetupCompleted && !sportPreferences.setupCompleted) {
+    return NextResponse.json(
+      { error: "Choose at least one valid sport and mark one as primary." },
+      { status: 400 },
+    );
+  }
 
   const resolved = resolveVisibility({
     persona: hasPersona ? normalizePersona(body.persona) : existingMetadata?.persona,
@@ -93,14 +132,8 @@ export async function PUT(req: Request) {
     defaultCreateIntent: hasDefaultCreateIntent
       ? normalizeSignupIntent(body.defaultCreateIntent)
       : normalizeSignupIntent(existingMetadata?.defaultCreateIntent),
+    sportPreferences,
   });
-
-  if (!resolved.visibleTemplateKeys.length) {
-    return NextResponse.json(
-      { error: "At least one visible feature is required" },
-      { status: 400 },
-    );
-  }
 
   await updateFeatureVisibilityByEmail({
     email,
@@ -108,7 +141,26 @@ export async function PUT(req: Request) {
     personas: resolved.personas,
     visibleTemplateKeys: resolved.visibleTemplateKeys,
     defaultCreateIntent: resolved.defaultCreateIntent,
+    sportPreferences: resolved.sportPreferences,
   });
+
+  if (
+    hasSportPreferences &&
+    JSON.stringify(existingSportPreferences) !== JSON.stringify(resolved.sportPreferences)
+  ) {
+    const rawSource = String(body.sportPreferenceSource || "");
+    const source: SportPreferenceInferenceSource | "manual" | "settings" =
+      rawSource === "url" || rawSource === "signup" || rawSource === "history"
+        ? rawSource
+        : rawSource === "manual"
+          ? "manual"
+          : "settings";
+    console.info("[sports-preferences] updated", {
+      inferenceSource: source,
+      primarySport: resolved.sportPreferences.primarySport,
+      enabledSportCount: resolved.sportPreferences.enabledSports.length,
+    });
+  }
 
   const row = await getFeatureVisibilityByEmail(email);
   return NextResponse.json({ ok: true, featureVisibility: buildResponse(row) });

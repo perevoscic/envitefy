@@ -1,3 +1,8 @@
+import {
+  normalizeSportPreferences,
+  type SportPreferences,
+} from "@/lib/sports-preferences";
+
 export type UserPersona =
   | "parents_moms"
   | "organizers"
@@ -35,6 +40,7 @@ export type VisibilityState = {
   quickAccess: QuickAccessKey[];
   dashboardLayout: DashboardLayout;
   defaultCreateIntent: string | null;
+  sportPreferences: SportPreferences;
 };
 
 export type TemplateDef = {
@@ -310,6 +316,7 @@ export function resolveVisibility(input: {
   personas?: unknown;
   visibleTemplateKeys?: unknown;
   defaultCreateIntent?: unknown;
+  sportPreferences?: unknown;
 }): VisibilityState {
   const normalizedPersonas = normalizePersonas(input.personas);
   const persona =
@@ -322,8 +329,9 @@ export function resolveVisibility(input: {
       : [];
   const normalizedKeys = normalizeTemplateKeys(input.visibleTemplateKeys);
   const preset = mergeTemplateKeysForPersonas(personas);
+  const hasExplicitTemplateKeys = Array.isArray(input.visibleTemplateKeys);
   const visibleTemplateKeys = clampEnabledTemplateKeys(
-    normalizedKeys.length > 0 ? normalizedKeys : [...preset]
+    hasExplicitTemplateKeys ? normalizedKeys : [...preset]
   );
 
   return {
@@ -336,6 +344,7 @@ export function resolveVisibility(input: {
       typeof input.defaultCreateIntent === "string" && input.defaultCreateIntent.trim()
         ? input.defaultCreateIntent.trim()
         : null,
+    sportPreferences: normalizeSportPreferences(input.sportPreferences),
   };
 }
 

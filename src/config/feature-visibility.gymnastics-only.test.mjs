@@ -29,10 +29,12 @@ test("feature visibility is clamped to launched template keys", () => {
     /const SPORTS_KEYS: TemplateKey\[] = \["gymnastics", "sport_events"\];/
   );
   assert.match(source, /defaultCreateIntent: string \| null;/);
+  assert.match(source, /sportPreferences: SportPreferences;/);
   assert.match(
     source,
-    /const visibleTemplateKeys = clampEnabledTemplateKeys\(\s*normalizedKeys\.length > 0 \? normalizedKeys : \[\.\.\.preset\]\s*\);/s
+    /hasExplicitTemplateKeys \? normalizedKeys : \[\.\.\.preset\]/,
   );
-  assert.match(settingsPage, /TEMPLATE_DEFINITIONS\.map\(\(template\) => \(/);
+  assert.match(settingsPage, /TEMPLATE_DEFINITIONS\.filter\(\(template\) => !isSportsKey\(template\.key\)\)/);
+  assert.match(settingsPage, /Your sports/);
   assert.match(settingsPage, /Reset personalization/);
 });

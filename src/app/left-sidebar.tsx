@@ -1172,6 +1172,7 @@ function FooterProfileMenu({
   buttonRef,
   menuRef,
   profileInitials,
+  profileAvatarUrl,
   userTitleLabel,
   userEmail,
   footerMenuItems,
@@ -1183,6 +1184,7 @@ function FooterProfileMenu({
   buttonRef: RefObject<HTMLButtonElement | null>;
   menuRef: RefObject<HTMLDivElement | null>;
   profileInitials: string;
+  profileAvatarUrl?: string | null;
   userTitleLabel: string;
   userEmail?: string;
   footerMenuItems: Array<{
@@ -1217,8 +1219,19 @@ function FooterProfileMenu({
           }`}
         >
           <div className="min-w-0 flex-1 inline-flex items-center gap-3.5">
-            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[linear-gradient(135deg,#7f67ff_0%,#6f7aff_100%)] text-[15px] font-bold text-white shadow-[0_12px_22px_rgba(102,93,219,0.22)]">
-              {profileInitials}
+            <span className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-[linear-gradient(135deg,#7f67ff_0%,#6f7aff_100%)] text-[15px] font-bold text-white shadow-[0_12px_22px_rgba(102,93,219,0.22)]">
+              {profileAvatarUrl ? (
+                <Image
+                  src={profileAvatarUrl}
+                  alt=""
+                  fill
+                  sizes="44px"
+                  unoptimized
+                  className="object-cover"
+                />
+              ) : (
+                profileInitials
+              )}
             </span>
             <div className="min-w-0 flex-1 text-left">
               <div className="truncate text-[13px] font-bold leading-tight text-[#5e54b7]">
@@ -1694,6 +1707,7 @@ export default function LeftSidebar() {
                 buttonRef={viewModel.buttonRef}
                 menuRef={viewModel.menuRef}
                 profileInitials={viewModel.profileInitials}
+                profileAvatarUrl={viewModel.profileAvatarUrl}
                 userTitleLabel={viewModel.userTitleLabel}
                 userEmail={viewModel.userEmail}
                 footerMenuItems={viewModel.footerMenuItems}

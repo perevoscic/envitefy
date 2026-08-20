@@ -11,6 +11,12 @@ type ExtractionMeta = {
 type FootballGameResult = "W" | "L" | "T" | null;
 type FootballTravelMode = "bus" | "parent_drive" | "carpool" | "other";
 
+type TeamSportParseContext = {
+  activityProfile?: string | null;
+  activityLabel?: string | null;
+  eventArchetype?: string | null;
+};
+
 export type FootballParseResult = {
   eventType: "football_game_packet" | "football_season_schedule" | "unknown";
   documentProfile:
@@ -66,13 +72,7 @@ export type FootballParseResult = {
       startTime: string | null;
       endTime: string | null;
       arrivalTime: string | null;
-      type:
-        | "full_pads"
-        | "shells"
-        | "helmets"
-        | "no_contact"
-        | "walk_through"
-        | null;
+      type: "full_pads" | "shells" | "helmets" | "no_contact" | "walk_through" | null;
       positionGroups: string[];
       focus: string | null;
       film: boolean | null;
@@ -184,12 +184,9 @@ function resolveDiscoveryParseModel(): string {
 
 function normalizeTokenUsage(usage: any) {
   if (!usage || typeof usage !== "object") return null;
-  const promptTokens =
-    Number(usage.prompt_tokens ?? usage.input_tokens ?? 0) || 0;
-  const completionTokens =
-    Number(usage.completion_tokens ?? usage.output_tokens ?? 0) || 0;
-  const totalTokens =
-    Number(usage.total_tokens ?? promptTokens + completionTokens) || 0;
+  const promptTokens = Number(usage.prompt_tokens ?? usage.input_tokens ?? 0) || 0;
+  const completionTokens = Number(usage.completion_tokens ?? usage.output_tokens ?? 0) || 0;
+  const totalTokens = Number(usage.total_tokens ?? promptTokens + completionTokens) || 0;
   if (!promptTokens && !completionTokens && !totalTokens) return null;
   return { promptTokens, completionTokens, totalTokens };
 }
@@ -202,8 +199,7 @@ function recordParseUsage(performance: DiscoveryPerformance | undefined, usage: 
   performance.tokenUsage = performance.tokenUsage || {};
   performance.tokenUsage.parse = {
     promptTokens: (existing?.promptTokens || 0) + normalized.promptTokens,
-    completionTokens:
-      (existing?.completionTokens || 0) + normalized.completionTokens,
+    completionTokens: (existing?.completionTokens || 0) + normalized.completionTokens,
     totalTokens: (existing?.totalTokens || 0) + normalized.totalTokens,
     cachedTokens: existing?.cachedTokens || 0,
   };
@@ -260,7 +256,7 @@ const FOOTBALL_PARSE_JSON_SCHEMA = {
         }),
         score: jsonNullable(JSON_STRING),
         notes: jsonNullable(JSON_STRING),
-      })
+      }),
     ),
     roster: jsonObject({
       players: jsonArray(
@@ -277,7 +273,7 @@ const FOOTBALL_PARSE_JSON_SCHEMA = {
             type: "string",
             enum: ["active", "injured", "ineligible", "pending"],
           }),
-        })
+        }),
       ),
     }),
     practice: jsonObject({
@@ -290,18 +286,12 @@ const FOOTBALL_PARSE_JSON_SCHEMA = {
           arrivalTime: jsonNullable(JSON_STRING),
           type: jsonNullable({
             type: "string",
-            enum: [
-              "full_pads",
-              "shells",
-              "helmets",
-              "no_contact",
-              "walk_through",
-            ],
+            enum: ["full_pads", "shells", "helmets", "no_contact", "walk_through"],
           }),
           positionGroups: jsonArray(JSON_STRING),
           focus: jsonNullable(JSON_STRING),
           film: jsonNullable(JSON_BOOLEAN),
-        })
+        }),
       ),
     }),
     logistics: jsonObject({
@@ -334,7 +324,7 @@ const FOOTBALL_PARSE_JSON_SCHEMA = {
           name: jsonNullable(JSON_STRING),
           filled: jsonNullable(JSON_BOOLEAN),
           gameDate: jsonNullable(JSON_STRING),
-        })
+        }),
       ),
     }),
     communications: jsonObject({
@@ -342,7 +332,7 @@ const FOOTBALL_PARSE_JSON_SCHEMA = {
         jsonObject({
           title: JSON_STRING,
           body: JSON_STRING,
-        })
+        }),
       ),
       passcode: jsonNullable(JSON_STRING),
     }),
@@ -350,14 +340,14 @@ const FOOTBALL_PARSE_JSON_SCHEMA = {
       jsonObject({
         label: JSON_STRING,
         url: JSON_STRING,
-      })
+      }),
     ),
     unmappedFacts: jsonArray(
       jsonObject({
         category: JSON_STRING,
         detail: JSON_STRING,
         confidence: { type: "string", enum: ["high", "medium", "low"] },
-      })
+      }),
     ),
   }),
 } as const;
@@ -484,8 +474,7 @@ function buildEmptyParseResult(): FootballParseResult {
 function normalizeParseResult(value: any): FootballParseResult | null {
   if (!value || typeof value !== "object") return null;
   const eventType =
-    value.eventType === "football_game_packet" ||
-    value.eventType === "football_season_schedule"
+    value.eventType === "football_game_packet" || value.eventType === "football_season_schedule"
       ? value.eventType
       : "unknown";
   const documentProfile =
@@ -516,20 +505,14 @@ function normalizeParseResult(value: any): FootballParseResult | null {
         opponent: safeString(item?.opponent),
         date: safeString(item?.date) || null,
         time: safeString(item?.time) || null,
-        homeAway:
-          item?.homeAway === "home" || item?.homeAway === "away"
-            ? item.homeAway
-            : null,
+        homeAway: item?.homeAway === "home" || item?.homeAway === "away" ? item.homeAway : null,
         venue: safeString(item?.venue) || null,
         address: safeString(item?.address) || null,
-        conference:
-          typeof item?.conference === "boolean" ? item.conference : null,
+        conference: typeof item?.conference === "boolean" ? item.conference : null,
         broadcast: safeString(item?.broadcast) || null,
         ticketsLink: normalizeUrl(item?.ticketsLink) || null,
         result:
-          item?.result === "W" || item?.result === "L" || item?.result === "T"
-            ? item.result
-            : null,
+          item?.result === "W" || item?.result === "L" || item?.result === "T" ? item.result : null,
         score: safeString(item?.score) || null,
         notes: safeString(item?.notes) || null,
       }))
@@ -607,7 +590,7 @@ function normalizeParseResult(value: any): FootballParseResult | null {
         pickArray(value.gear?.checklist)
           .map((item) => safeString(item))
           .filter(Boolean),
-        (item) => item
+        (item) => item,
       ),
     },
     volunteers: {
@@ -638,16 +621,14 @@ function normalizeParseResult(value: any): FootballParseResult | null {
           url: normalizeUrl(item?.url),
         }))
         .filter((item) => item.url),
-      (item) => item.url
+      (item) => item.url,
     ),
     unmappedFacts: pickArray(value.unmappedFacts)
       .map((item) => ({
         category: safeString(item?.category) || "general",
         detail: safeString(item?.detail),
         confidence:
-          item?.confidence === "high" ||
-          item?.confidence === "medium" ||
-          item?.confidence === "low"
+          item?.confidence === "high" || item?.confidence === "medium" || item?.confidence === "low"
             ? item.confidence
             : ("medium" as const),
       }))
@@ -655,26 +636,37 @@ function normalizeParseResult(value: any): FootballParseResult | null {
   };
 }
 
-function buildFootballParsePrompt(sourceText: string, followup?: string): string {
+function buildFootballParsePrompt(
+  sourceText: string,
+  followup?: string,
+  context?: TeamSportParseContext,
+): string {
   const boundedText = sourceText
     .replace(/\u0000/g, " ")
     .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, " ")
     .slice(0, 120000);
+  const activityLabel =
+    safeString(context?.activityLabel || context?.activityProfile) || "Football";
+  const isFootball = activityLabel.toLowerCase() === "football";
   return [
     FOOTBALL_SCHEMA_INSTRUCTIONS,
     "",
-    "You extract structured football team event data from uploaded packets, schedules, travel sheets, parent letters, and roster documents.",
+    `You extract structured ${activityLabel} event data from uploaded packets, schedules, travel sheets, parent letters, tournament pages, and roster documents.`,
+    !isFootball
+      ? "The JSON schema retains a few legacy football-oriented key names for compatibility. Interpret `games` as games or matches, `kickoff` as the activity's event start, and fill only facts supported by the source."
+      : "",
+    context?.eventArchetype ? `Expected event format: ${context.eventArchetype}.` : "",
     "",
     "Classify the document first:",
-    "- `football_game_packet`: one opponent/game packet, travel sheet, or game-day memo.",
-    "- `football_season_schedule`: full schedule or season slate.",
-    "- `unknown`: only when the document is not clearly football-related.",
+    `- \`football_game_packet\`: one ${activityLabel} game/match packet, tournament page, travel sheet, or event-day memo.`,
+    `- \`football_season_schedule\`: a full ${activityLabel} schedule, season slate, pool, or bracket.`,
+    `- \`unknown\`: only when the document is not clearly related to ${activityLabel}.`,
     "",
     "Field rules:",
     "- Never invent opponents, kickoff times, venues, addresses, or roster entries.",
     "- Keep season schedule rows in `games`.",
     "- Keep single-game logistics in `logistics` and announcements.",
-    "- `startAt` should represent the primary kickoff/event start when a single game is evident; otherwise null.",
+    "- `startAt` should represent the primary game, match, or event start when one is evident; otherwise null.",
     "- `dates` should preserve date ranges or the schedule label exactly when present.",
     "- Do not use update stamps or publish stamps as game dates.",
     "- `ticketsLink` and all `links[].url` values must be absolute http/https URLs when possible.",
@@ -694,7 +686,8 @@ function buildFootballParsePrompt(sourceText: string, followup?: string): string
 
 async function callOpenAiFootballParse(
   text: string,
-  performance?: DiscoveryPerformance
+  performance?: DiscoveryPerformance,
+  context?: TeamSportParseContext,
 ): Promise<{ result: FootballParseResult | null; raw: string; usage: any }> {
   const apiKey = process.env.OPENAI_API_KEY || "";
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
@@ -710,12 +703,11 @@ async function callOpenAiFootballParse(
     messages: [
       {
         role: "system",
-        content:
-          "You extract structured football event data from source text. Return only strict JSON.",
+        content: `You extract structured ${safeString(context?.activityLabel || context?.activityProfile) || "football"} event data from source text. Return only strict JSON.`,
       },
       {
         role: "user",
-        content: buildFootballParsePrompt(text),
+        content: buildFootballParsePrompt(text, undefined, context),
       },
     ],
   });
@@ -729,12 +721,13 @@ async function callOpenAiFootballParse(
 }
 
 async function callGeminiFootballParse(
-  text: string
+  text: string,
+  context?: TeamSportParseContext,
 ): Promise<{ result: FootballParseResult | null; raw: string }> {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
   if (!apiKey) throw new Error("Gemini API key is not configured");
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-    process.env.GEMINI_MODEL || "gemini-1.5-flash"
+    process.env.GEMINI_MODEL || "gemini-3.6-flash",
   )}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const response = await fetch(endpoint, {
     method: "POST",
@@ -747,7 +740,7 @@ async function callGeminiFootballParse(
       contents: [
         {
           role: "user",
-          parts: [{ text: buildFootballParsePrompt(text) }],
+          parts: [{ text: buildFootballParsePrompt(text, undefined, context) }],
         },
       ],
     }),
@@ -763,7 +756,7 @@ async function callGeminiFootballParse(
 export async function parseFootballFromExtractedText(
   extractedText: string,
   extractionMeta: ExtractionMeta,
-  options?: { performance?: DiscoveryPerformance }
+  options?: { performance?: DiscoveryPerformance } & TeamSportParseContext,
 ): Promise<{
   parseResult: FootballParseResult;
   modelUsed: "openai" | "gemini" | "quality-gate";
@@ -785,10 +778,7 @@ export async function parseFootballFromExtractedText(
   let openAiErrorMessage = "";
   try {
     const modelStartedAt = Date.now();
-    const first = await callOpenAiFootballParse(
-      extractedText,
-      options?.performance
-    );
+    const first = await callOpenAiFootballParse(extractedText, options?.performance, options);
     if (options?.performance) {
       options.performance.modelParseMs += Date.now() - modelStartedAt;
     }
@@ -806,17 +796,16 @@ export async function parseFootballFromExtractedText(
   }
 
   const hasGeminiKey = Boolean(
-    safeString(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY)
+    safeString(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY),
   );
   if (!hasGeminiKey) {
     throw new Error(
-      openAiErrorMessage ||
-        "OpenAI parsing failed and Gemini fallback is not configured."
+      openAiErrorMessage || "OpenAI parsing failed and Gemini fallback is not configured.",
     );
   }
 
   const geminiStartedAt = Date.now();
-  const gemini = await callGeminiFootballParse(extractedText);
+  const gemini = await callGeminiFootballParse(extractedText, options);
   if (options?.performance) {
     options.performance.modelParseMs += Date.now() - geminiStartedAt;
   }
@@ -884,7 +873,7 @@ export function buildDefaultFootballDiscoveryData() {
 
 export async function mapParseResultToFootballData(
   parseResult: FootballParseResult,
-  baseData: any = {}
+  baseData: any = {},
 ) {
   const { date, time } = splitDateTime(parseResult.startAt);
   const existingAdvanced = (baseData?.advancedSections as Record<string, any>) || {};
@@ -909,30 +898,22 @@ export async function mapParseResultToFootballData(
             notes: parseResult.summary,
           },
         ]
-    )
-      .map((game, idx) => ({
-        id: genId("game", idx),
-        opponent: game.opponent || "Opponent TBD",
-        date: game.date || "",
-        time: game.time || "",
-        homeAway: game.homeAway || "home",
-        venue: game.venue || parseResult.venue || "",
-        address: game.address || parseResult.address || "",
-        conference: Boolean(game.conference),
-        broadcast: game.broadcast || "",
-        ticketsLink: game.ticketsLink || "",
-        result: game.result,
-        score: game.score || "",
-      })),
+    ).map((game, idx) => ({
+      id: genId("game", idx),
+      opponent: game.opponent || "Opponent TBD",
+      date: game.date || "",
+      time: game.time || "",
+      homeAway: game.homeAway || "home",
+      venue: game.venue || parseResult.venue || "",
+      address: game.address || parseResult.address || "",
+      conference: Boolean(game.conference),
+      broadcast: game.broadcast || "",
+      ticketsLink: game.ticketsLink || "",
+      result: game.result,
+      score: game.score || "",
+    })),
     (item) =>
-      [
-        item.opponent,
-        item.date,
-        item.time,
-        item.venue,
-        item.address,
-        item.homeAway,
-      ].join("|")
+      [item.opponent, item.date, item.time, item.venue, item.address, item.homeAway].join("|"),
   );
 
   const mappedRoster = uniqueBy(
@@ -948,7 +929,7 @@ export async function mapParseResultToFootballData(
       medicalNotes: player.medicalNotes || "",
       status: player.status || "active",
     })),
-    (item) => [item.name, item.jerseyNumber, item.position].join("|")
+    (item) => [item.name, item.jerseyNumber, item.position].join("|"),
   );
 
   const mappedPractice = parseResult.practice.blocks.map((block, idx) => ({
@@ -971,7 +952,7 @@ export async function mapParseResultToFootballData(
       forGames: true,
       forPractice: true,
     })),
-    (item) => item.name
+    (item) => item.name,
   );
 
   const mappedVolunteerSlots = parseResult.volunteers.slots.map((slot, idx) => ({
@@ -985,9 +966,7 @@ export async function mapParseResultToFootballData(
   const generatedAnnouncements = uniqueBy(
     [
       ...parseResult.communications.announcements,
-      parseResult.summary
-        ? { title: "Summary", body: parseResult.summary }
-        : null,
+      parseResult.summary ? { title: "Summary", body: parseResult.summary } : null,
       parseResult.logistics.weatherPolicy
         ? { title: "Weather Policy", body: parseResult.logistics.weatherPolicy }
         : null,
@@ -1003,11 +982,8 @@ export async function mapParseResultToFootballData(
           title: item.category || "Additional details",
           body: item.detail,
         })),
-    ].filter(
-      (item): item is { title: string; body: string } =>
-        Boolean(item?.title || item?.body)
-    ),
-    (item) => `${safeString(item.title)}|${safeString(item.body)}`
+    ].filter((item): item is { title: string; body: string } => Boolean(item?.title || item?.body)),
+    (item) => `${safeString(item.title)}|${safeString(item.body)}`,
   );
 
   const mergedAnnouncements = uniqueBy(
@@ -1018,7 +994,7 @@ export async function mapParseResultToFootballData(
       })),
       ...existingAnnouncements,
     ],
-    (item) => safeString(item?.text || item?.body || item?.title)
+    (item) => safeString(item?.text || item?.body || item?.title),
   );
 
   const detailBlocks = uniqueBy(
@@ -1028,18 +1004,12 @@ export async function mapParseResultToFootballData(
       parseResult.logistics.weatherPolicy
         ? `Weather policy: ${parseResult.logistics.weatherPolicy}`
         : "",
-      parseResult.logistics.mealPlan
-        ? `Meal plan: ${parseResult.logistics.mealPlan}`
-        : "",
-      parseResult.logistics.parking
-        ? `Parking: ${parseResult.logistics.parking}`
-        : "",
-      parseResult.volunteers.notes
-        ? `Volunteer help: ${parseResult.volunteers.notes}`
-        : "",
+      parseResult.logistics.mealPlan ? `Meal plan: ${parseResult.logistics.mealPlan}` : "",
+      parseResult.logistics.parking ? `Parking: ${parseResult.logistics.parking}` : "",
+      parseResult.volunteers.notes ? `Volunteer help: ${parseResult.volunteers.notes}` : "",
       ...parseResult.logistics.notes,
     ].filter(Boolean),
-    (item) => item
+    (item) => item,
   );
 
   const nextAdvanced = {
@@ -1050,9 +1020,7 @@ export async function mapParseResultToFootballData(
     },
     practice: {
       ...(existingAdvanced.practice || {}),
-      blocks: mappedPractice.length
-        ? mappedPractice
-        : existingAdvanced?.practice?.blocks || [],
+      blocks: mappedPractice.length ? mappedPractice : existingAdvanced?.practice?.blocks || [],
     },
     roster: {
       ...(existingAdvanced.roster || {}),
@@ -1061,9 +1029,7 @@ export async function mapParseResultToFootballData(
     logistics: {
       ...(existingAdvanced.logistics || {}),
       travelMode:
-        parseResult.logistics.travelMode ||
-        existingAdvanced?.logistics?.travelMode ||
-        "bus",
+        parseResult.logistics.travelMode || existingAdvanced?.logistics?.travelMode || "bus",
       callTime: parseResult.logistics.callTime || "",
       departureTime: parseResult.logistics.departureTime || "",
       pickupWindow: parseResult.logistics.pickupWindow || "",
@@ -1101,13 +1067,10 @@ export async function mapParseResultToFootballData(
           requirePasscode: true,
           passcodePlain: parseResult.communications.passcode,
         },
-        baseData?.accessControl || null
+        baseData?.accessControl || null,
       )
     : baseData?.accessControl
-      ? await normalizeAccessControlPayload(
-          baseData.accessControl,
-          baseData.accessControl
-        )
+      ? await normalizeAccessControlPayload(baseData.accessControl, baseData.accessControl)
       : await normalizeAccessControlPayload({
           mode: "public",
           requirePasscode: false,
@@ -1116,10 +1079,9 @@ export async function mapParseResultToFootballData(
   return {
     ...baseData,
     title: parseResult.title || baseData?.title || "Football Event",
-    details: uniqueBy(
-      [baseData?.details, ...detailBlocks].filter(Boolean),
-      (item) => item
-    ).join("\n\n"),
+    details: uniqueBy([baseData?.details, ...detailBlocks].filter(Boolean), (item) => item).join(
+      "\n\n",
+    ),
     date: date || safeString(baseData?.date) || "",
     time: time || safeString(baseData?.time) || "",
     startISO: parseResult.startAt || null,
@@ -1133,11 +1095,9 @@ export async function mapParseResultToFootballData(
       ...(baseData?.customFields || {}),
       team: parseResult.homeTeam || baseData?.customFields?.team || "",
       season: parseResult.season || baseData?.customFields?.season || "",
-      headCoach:
-        parseResult.headCoach || baseData?.customFields?.headCoach || "",
+      headCoach: parseResult.headCoach || baseData?.customFields?.headCoach || "",
       stadium: parseResult.venue || baseData?.customFields?.stadium || "",
-      stadiumAddress:
-        parseResult.address || baseData?.customFields?.stadiumAddress || "",
+      stadiumAddress: parseResult.address || baseData?.customFields?.stadiumAddress || "",
       scheduleDateRangeLabel: parseResult.dates || "",
       advancedSections: nextAdvanced,
     },
@@ -1147,8 +1107,7 @@ export async function mapParseResultToFootballData(
       season: parseResult.season || baseData?.extra?.season || "",
       headCoach: parseResult.headCoach || baseData?.extra?.headCoach || "",
       stadium: parseResult.venue || baseData?.extra?.stadium || "",
-      stadiumAddress:
-        parseResult.address || baseData?.extra?.stadiumAddress || "",
+      stadiumAddress: parseResult.address || baseData?.extra?.stadiumAddress || "",
       scheduleDateRangeLabel: parseResult.dates || "",
     },
     links: uniqueBy(
@@ -1157,10 +1116,8 @@ export async function mapParseResultToFootballData(
         parseResult.logistics.ticketsLink
           ? { label: "Tickets", url: parseResult.logistics.ticketsLink }
           : null,
-      ].filter(
-        (item): item is { label: string; url: string } => Boolean(item?.url)
-      ),
-      (item) => item.url
+      ].filter((item): item is { label: string; url: string } => Boolean(item?.url)),
+      (item) => item.url,
     ),
     advancedSections: nextAdvanced,
     accessControl: nextAccessControl,
@@ -1192,9 +1149,7 @@ export function computeFootballBuilderStatuses(data: any) {
       ]),
       details: getStatusFromFlags([
         Boolean(safeString(data?.details)),
-        Boolean(
-          safeString(data?.customFields?.team || data?.extra?.team || "")
-        ),
+        Boolean(safeString(data?.customFields?.team || data?.extra?.team || "")),
       ]),
       design: data?.themeId ? ("ready" as Status) : ("not-started" as Status),
       images: data?.heroImage ? ("ready" as Status) : ("not-started" as Status),
@@ -1218,8 +1173,8 @@ export function computeFootballBuilderStatuses(data: any) {
             adv?.logistics?.callTime ||
               adv?.logistics?.departureTime ||
               adv?.logistics?.weatherPolicy ||
-              adv?.logistics?.mealPlan
-          )
+              adv?.logistics?.mealPlan,
+          ),
         ),
       ]),
       gear:
@@ -1250,7 +1205,7 @@ export function computeFootballBuilderStatuses(data: any) {
         Boolean(safeString(data?.date || data?.startISO)),
         Boolean(
           (Array.isArray(adv?.games?.games) && adv.games.games.length > 0) ||
-            (Array.isArray(adv?.roster?.players) && adv.roster.players.length > 0)
+            (Array.isArray(adv?.roster?.players) && adv.roster.players.length > 0),
         ),
       ]),
     },

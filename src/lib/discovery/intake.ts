@@ -4,6 +4,11 @@ import { createDiscoveryPipelineState } from "@/lib/discovery/shared";
 import type { DiscoverySourceRecord, DiscoveryWorkflow } from "@/lib/discovery/types";
 import { uploadDiscoveryInputToBlob } from "@/lib/discovery-input-storage";
 import { prepareDiscoverySourceFile } from "@/lib/media-upload";
+import {
+  getSportActivityProfile,
+  normalizeSportActivityKey,
+  normalizeSportEventArchetype,
+} from "@/lib/sports-discovery";
 
 function parseJsonRequestBody(request: Request) {
   return request.json().catch(() => ({}));
@@ -24,15 +29,22 @@ export async function intakeGymnasticsDiscovery(params: {
 }
 
 function defaultTitleForWorkflow(workflow: DiscoveryWorkflow) {
-  return workflow === "football" ? "Football Event" : "Gymnastics Meet";
+  if (workflow === "football") return "Football Event";
+  if (workflow === "sports") return "Sport Event";
+  return "Gymnastics Meet";
 }
 
 function suffixTitleForWorkflow(hostname: string, workflow: DiscoveryWorkflow) {
-  return `${hostname}${workflow === "football" ? " Football" : " Meet"}`;
+  if (workflow === "football") return `${hostname} Football`;
+  if (workflow === "sports") return `${hostname} Sport Event`;
+  return `${hostname} Meet`;
 }
 
 function normalizeWorkflow(value: unknown): DiscoveryWorkflow {
-  return safeString(value).toLowerCase() === "football" ? "football" : "gymnastics";
+  const normalized = safeString(value).toLowerCase();
+  if (normalized === "football") return "football";
+  if (normalized === "sports") return "sports";
+  return "gymnastics";
 }
 
 export async function intakeDiscovery(params: {
@@ -46,10 +58,14 @@ export async function intakeDiscovery(params: {
   let title = defaultTitleForWorkflow(workflow);
   let source: DiscoverySourceRecord | null = null;
   let fileBuffer: Buffer | null = null;
+  let activityProfile: string | null = null;
+  let eventArchetype: ReturnType<typeof normalizeSportEventArchetype> = null;
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await params.request.formData();
     workflow = normalizeWorkflow(formData.get("workflow") || workflow);
+    activityProfile = normalizeSportActivityKey(formData.get("activityProfile"));
+    eventArchetype = normalizeSportEventArchetype(formData.get("eventArchetype"));
     title = defaultTitleForWorkflow(workflow);
     const file = formData.get("file");
     if (!(file instanceof File)) {
@@ -67,6 +83,8 @@ export async function intakeDiscovery(params: {
       originalMimeType: prepared.originalMimeType,
       originalSizeBytes: prepared.originalSizeBytes,
       optimizedByQpdf: prepared.optimizedByQpdf ?? null,
+      activityProfile,
+      eventArchetype,
       createdAt: now,
       updatedAt: now,
     };
@@ -74,6 +92,8 @@ export async function intakeDiscovery(params: {
   } else {
     const body = await parseJsonRequestBody(params.request);
     workflow = normalizeWorkflow(body?.workflow || workflow);
+    activityProfile = normalizeSportActivityKey(body?.activityProfile);
+    eventArchetype = normalizeSportEventArchetype(body?.eventArchetype);
     title = defaultTitleForWorkflow(workflow);
     const rawUrl = safeString(body?.url);
     if (!rawUrl) {
@@ -92,6 +112,8 @@ export async function intakeDiscovery(params: {
     source = {
       type: "url",
       url: normalizedUrl,
+      activityProfile,
+      eventArchetype,
       createdAt: now,
       updatedAt: now,
     };
@@ -133,6 +155,9 @@ export async function intakeDiscovery(params: {
     eventId: created.eventId,
     discoveryId: created.discoveryId,
     workflow,
+    activityProfile,
+    activityLabel: getSportActivityProfile(activityProfile)?.label || null,
+    eventArchetype,
     processingStage: "ingested" as const,
   };
 }

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   email text UNIQUE NOT NULL,
   first_name varchar(255),
   last_name varchar(255),
+  avatar_url text,
   preferred_provider varchar(32),
   password_hash text NOT NULL,
   created_at timestamptz(6) DEFAULT now()
@@ -14,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Ensure column exists if table pre-existed without it
 ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_provider varchar(32);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url text;
 -- Studio workspace library (JSON); also ensured at runtime via db.ensureOnce
 ALTER TABLE users ADD COLUMN IF NOT EXISTS studio_library jsonb;
 -- Remove legacy scans_remaining column if present

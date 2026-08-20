@@ -5,6 +5,13 @@ import {
   type TemplateKey,
 } from "@/config/feature-visibility";
 import { hasProductScope } from "@/lib/product-scopes";
+import {
+  buildSportCreationHref,
+  getSportCreationLabel,
+  isSportsCreationEnabled,
+  normalizeSportPreferences,
+  type SportPreferences,
+} from "@/lib/sports-preferences";
 
 export type NavItem = {
   label: string;
@@ -64,31 +71,51 @@ function isTemplateAvailableForScopes(
   productScopes?: string[],
 ): boolean {
   if (!Array.isArray(productScopes)) return true;
-  if (key === "gymnastics") {
-    return hasProductScope(productScopes, "gymnastics");
-  }
   return hasProductScope(productScopes, "snap");
 }
 
 export function getTemplateLinks(
   visibleTemplateKeys?: TemplateKey[],
   productScopes?: string[],
+  sportPreferences?: SportPreferences,
 ): TemplateLink[] {
-  const visible = visibleTemplateKeys?.length
+  const visible = Array.isArray(visibleTemplateKeys)
     ? new Set(visibleTemplateKeys)
     : null;
 
-  return ALL_TEMPLATE_LINKS.filter((t) => {
+  const standardLinks = ALL_TEMPLATE_LINKS.filter((t) => {
+    if (t.key === "gymnastics" || t.key === "sport_events") return false;
     if (visible && !visible.has(t.key)) return false;
     return isTemplateAvailableForScopes(t.key, productScopes);
   });
+  const sportsEnabled = visible
+    ? isSportsCreationEnabled(Array.from(visible))
+    : true;
+  if (!sportsEnabled || !isTemplateAvailableForScopes("sport_events", productScopes)) {
+    return standardLinks;
+  }
+
+  const preferences = normalizeSportPreferences(sportPreferences);
+  const primary = preferences.setupCompleted ? preferences.primarySport : null;
+  const source = ALL_TEMPLATE_LINKS.find((link) =>
+    primary === "gymnastics" ? link.key === "gymnastics" : link.key === "sport_events",
+  );
+  standardLinks.push({
+    key: primary === "gymnastics" ? "gymnastics" : "sport_events",
+    label: primary ? getSportCreationLabel(primary) : "Sports",
+    href: primary ? buildSportCreationHref(primary) : "/event/sport-events",
+    icon: source?.icon || "🏅",
+    section: "sports",
+  });
+  return standardLinks;
 }
 
 export function getCreateEventSections(
   visibleTemplateKeys?: TemplateKey[],
   productScopes?: string[],
+  sportPreferences?: SportPreferences,
 ): CreateEventSection[] {
-  const links = getTemplateLinks(visibleTemplateKeys, productScopes);
+  const links = getTemplateLinks(visibleTemplateKeys, productScopes, sportPreferences);
   return CREATE_EVENT_SECTION_ORDER.map((section) => ({
     title: CREATE_EVENT_SECTION_TITLES[section],
     items: links

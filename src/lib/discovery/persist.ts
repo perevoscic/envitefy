@@ -28,6 +28,7 @@ import type {
   DiscoveryWorkflow,
 } from "@/lib/discovery/types";
 import { invalidateUserHistory } from "@/lib/history-cache";
+import { getSportEventPreset } from "@/lib/sport-event-presets";
 
 export function buildDiscoveryPipelineSummary(params: {
   discoveryId: string;
@@ -48,8 +49,12 @@ export function buildDiscoveryShellEventData(params: {
   title: string;
   discoveryId: string;
   pipeline: DiscoveryPipelineState;
+  activityProfile?: string | null;
+  eventArchetype?: string | null;
 }) {
   const isFootball = params.workflow === "football";
+  const isSports = params.workflow === "sports";
+  const sportPreset = isSports ? getSportEventPreset(params.activityProfile) : null;
   return {
     title: params.title,
     startISO: null,
@@ -57,20 +62,34 @@ export function buildDiscoveryShellEventData(params: {
     endISO: null,
     endAt: null,
     timezone: "America/Chicago",
-    category: isFootball ? "sport_football_season" : "gymnastics",
+    category: isFootball ? "sport_football_season" : isSports ? "sport_event" : "gymnastics",
     status: "processing",
-    createdVia: isFootball ? "football-discovery-v2" : "meet-discovery-v2",
-    templateId: isFootball ? "football-season" : "gymnastics-schedule",
-    templateKey: isFootball ? "football" : "gymnastics",
+    createdVia: isFootball
+      ? "football-discovery-v2"
+      : isSports
+        ? "sports-discovery-v1"
+        : "meet-discovery-v2",
+    primaryOutput: "event_page",
+    requestedOutputs: ["event_page"],
+    activityProfile: isSports ? sportPreset?.key || params.activityProfile || null : undefined,
+    eventArchetype: isSports ? params.eventArchetype || null : undefined,
+    templateId: isFootball
+      ? "football-season"
+      : isSports
+        ? `sport-event-${sportPreset?.key || "football"}`
+        : "gymnastics-schedule",
+    templateKey: isFootball ? "football" : isSports ? "sport-events" : "gymnastics",
     pageTemplateId: isFootball
       ? DEFAULT_GYM_MEET_TEMPLATE_ID
-      : DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
-    builderDraft: isFootball
-      ? buildEmptyDiscoveryBuilderDraft()
-      : buildEmptyGymBuilderDraft(),
-    publicArtifacts: isFootball
-      ? buildEmptyDiscoveryPublicArtifacts(params.title)
-      : buildEmptyGymPublicArtifacts(params.title),
+      : isSports
+        ? sportPreset?.themeIds?.[0] || "stadium_nights"
+        : DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
+    builderDraft:
+      isFootball || isSports ? buildEmptyDiscoveryBuilderDraft() : buildEmptyGymBuilderDraft(),
+    publicArtifacts:
+      isFootball || isSports
+        ? buildEmptyDiscoveryPublicArtifacts(params.title)
+        : buildEmptyGymPublicArtifacts(params.title),
     pipelineSummary: buildDiscoveryPipelineSummary({
       discoveryId: params.discoveryId,
       pipeline: params.pipeline,
@@ -94,6 +113,8 @@ export async function createDiscoveryShell(params: {
       title: params.title,
       discoveryId: "pending",
       pipeline: params.pipeline,
+      activityProfile: params.source.activityProfile,
+      eventArchetype: params.source.eventArchetype,
     }),
   });
   try {
@@ -112,6 +133,8 @@ export async function createDiscoveryShell(params: {
       title: params.title,
       discoveryId: discoveryRow.id,
       pipeline: params.pipeline,
+      activityProfile: params.source.activityProfile,
+      eventArchetype: params.source.eventArchetype,
     });
     await updateEventHistoryData(historyRow.id, shellData);
     return {
@@ -130,12 +153,16 @@ export function inferLegacyDiscoveryWorkflow(data: Record<string, any>): Discove
   const workflow = safeString(data?.discoverySource?.workflow).toLowerCase();
   if (workflow === "football") return "football";
   if (workflow === "gymnastics") return "gymnastics";
+  if (workflow === "sports") return "sports";
   const createdVia = safeString(data?.createdVia).toLowerCase();
   if (createdVia === "football-discovery" || createdVia === "football-discovery-v2") {
     return "football";
   }
   if (createdVia === "meet-discovery" || createdVia === "meet-discovery-v2") {
     return "gymnastics";
+  }
+  if (createdVia === "sports-discovery" || createdVia === "sports-discovery-v1") {
+    return "sports";
   }
   const category = safeString(data?.category).toLowerCase();
   if (category === "sport_football_season" || safeString(data?.templateId) === "football-season") {
@@ -147,6 +174,9 @@ export function inferLegacyDiscoveryWorkflow(data: Record<string, any>): Discove
     safeString(data?.templateId) === "gymnastics-schedule"
   ) {
     return "gymnastics";
+  }
+  if (category === "sport_event" || safeString(data?.templateId).startsWith("sport-event-")) {
+    return "sports";
   }
   return null;
 }
@@ -179,13 +209,18 @@ export async function ensureDiscoveryForExistingEvent(eventId: string) {
   });
   await updateEventHistoryData(eventId, {
     ...current,
-    createdVia: workflow === "football" ? "football-discovery-v2" : "meet-discovery-v2",
-    builderDraft:
+    createdVia:
       workflow === "football"
+        ? "football-discovery-v2"
+        : workflow === "sports"
+          ? "sports-discovery-v1"
+          : "meet-discovery-v2",
+    builderDraft:
+      workflow === "football" || workflow === "sports"
         ? buildEmptyDiscoveryBuilderDraft()
         : buildEmptyGymBuilderDraft(),
     publicArtifacts:
-      workflow === "football"
+      workflow === "football" || workflow === "sports"
         ? buildEmptyDiscoveryPublicArtifacts(row.title)
         : buildEmptyGymPublicArtifacts(row.title),
     pipelineSummary: buildDiscoveryPipelineSummary({
@@ -216,6 +251,7 @@ export async function persistDiscoveryEventSnapshot(params: {
   const row = await getEventHistoryById(params.eventId);
   if (!row) return null;
   const isFootball = params.workflow === "football";
+  const isSports = params.workflow === "sports";
   const current = (row.data || {}) as Record<string, any>;
   const builderEvent = (params.builderDraft.event || {}) as Record<string, any>;
   const builderVenue = (params.builderDraft.venue || {}) as Record<string, any>;
@@ -232,20 +268,40 @@ export async function persistDiscoveryEventSnapshot(params: {
       safeString(builderEvent.timezone) ||
       safeString(current.timezone) ||
       "America/Chicago",
-    category: isFootball ? "sport_football_season" : "gymnastics",
+    category: isFootball
+      ? "sport_football_season"
+      : isSports
+        ? safeString(builderEvent.category) || "sport_event"
+        : "gymnastics",
     status: params.status,
-    createdVia: isFootball ? "football-discovery-v2" : "meet-discovery-v2",
+    createdVia: isFootball
+      ? "football-discovery-v2"
+      : isSports
+        ? "sports-discovery-v1"
+        : "meet-discovery-v2",
+    primaryOutput: "event_page",
+    requestedOutputs: ["event_page"],
+    activityProfile: isSports
+      ? safeString(builderEvent.activityProfile) || safeString(current.activityProfile) || null
+      : current.activityProfile,
+    eventArchetype: isSports
+      ? safeString(builderEvent.eventArchetype) || safeString(current.eventArchetype) || null
+      : current.eventArchetype,
     templateId:
       safeString(params.templateId) ||
       safeString(builderEvent.templateId) ||
       safeString(current.templateId) ||
-      (isFootball ? "football-season" : "gymnastics-schedule"),
-    templateKey: isFootball ? "football" : "gymnastics",
+      (isFootball ? "football-season" : isSports ? "sport-event-football" : "gymnastics-schedule"),
+    templateKey: isFootball ? "football" : isSports ? "sport-events" : "gymnastics",
     pageTemplateId:
       safeString(params.pageTemplateId) ||
       safeString(builderEvent.pageTemplateId) ||
       safeString(current.pageTemplateId) ||
-      (isFootball ? DEFAULT_GYM_MEET_TEMPLATE_ID : DEFAULT_NEW_GYM_MEET_TEMPLATE_ID),
+      (isFootball
+        ? DEFAULT_GYM_MEET_TEMPLATE_ID
+        : isSports
+          ? "stadium_nights"
+          : DEFAULT_NEW_GYM_MEET_TEMPLATE_ID),
     builderDraft: params.builderDraft,
     publicArtifacts: params.publicArtifacts,
     pipelineSummary: buildDiscoveryPipelineSummary({
@@ -255,7 +311,30 @@ export async function persistDiscoveryEventSnapshot(params: {
     }),
     venue: safeString(builderVenue.venue) || safeString(current.venue) || "",
     address: safeString(builderVenue.address) || safeString(current.address) || "",
+    city:
+      safeString(builderVenue.city) || safeString(builderEvent.city) || safeString(current.city),
+    state:
+      safeString(builderVenue.state) || safeString(builderEvent.state) || safeString(current.state),
+    location:
+      safeString(builderVenue.location) ||
+      safeString(builderEvent.location) ||
+      safeString(current.location),
+    date: safeString(builderEvent.date) || safeString(current.date),
+    time: safeString(builderEvent.time) || safeString(current.time),
     details: safeString(builderEvent.details) || safeString(current.details) || "",
+    customFields:
+      builderEvent.customFields && typeof builderEvent.customFields === "object"
+        ? builderEvent.customFields
+        : current.customFields,
+    discoverySource:
+      builderEvent.discoverySource && typeof builderEvent.discoverySource === "object"
+        ? builderEvent.discoverySource
+        : current.discoverySource,
+    links: Array.isArray(builderEvent.links) ? builderEvent.links : current.links,
+    advancedSections:
+      builderEvent.advancedSections && typeof builderEvent.advancedSections === "object"
+        ? builderEvent.advancedSections
+        : current.advancedSections,
     hostGym: safeString(builderEvent.hostGym) || safeString(current.hostGym) || "",
     ...(params.eventDataPatch || {}),
   };

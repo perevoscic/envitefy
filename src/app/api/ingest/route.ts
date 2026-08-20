@@ -14,7 +14,6 @@ import { getVisionClient } from "@/lib/gcp";
 import { prepareDiscoverySourceFile, readAndValidateUploadFile } from "@/lib/media-upload";
 import { buildDefaultGymMeetData } from "@/lib/meet-discovery";
 import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
-import { hasProductScope, normalizeProductScopes } from "@/lib/product-scopes";
 
 export const runtime = "nodejs";
 const DISCOVERY_INGEST_LOG_PREFIX = "[discovery-ingest]";
@@ -32,7 +31,6 @@ async function handleDiscoveryIngest(
   },
 ) {
   const session: any = await getServerSession(authOptions);
-  const productScopes = normalizeProductScopes((session?.user as any)?.productScopes);
   const userId = await resolveSessionUserId(session);
   if (!userId) {
     return corsJson(request, { error: "Unauthorized" }, { status: 401 });
@@ -40,10 +38,6 @@ async function handleDiscoveryIngest(
   if (options.workflow === "football") {
     return corsJson(request, { error: "Football is not live yet." }, { status: 410 });
   }
-  if (!hasProductScope(productScopes, "gymnastics")) {
-    return corsJson(request, { error: "Gymnastics access required." }, { status: 403 });
-  }
-
   const formData = await request.formData();
   const file = formData.get("file");
   const rawUrl = String(formData.get("url") || "").trim();
@@ -175,9 +169,7 @@ async function handleDiscoveryIngest(
     try {
       const parsed = new URL(rawUrl);
       normalizedUrl = parsed.toString();
-      title =
-        parsed.hostname.replace(/^www\./i, "") +
-        (options.workflow === "football" ? " Football" : " Meet");
+      title = `${parsed.hostname.replace(/^www\./i, "")} Meet`;
     } catch {
       return corsJson(request, { error: "Invalid URL" }, { status: 400 });
     }

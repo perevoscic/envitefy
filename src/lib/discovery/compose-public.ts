@@ -1,6 +1,10 @@
 import { getEventHistoryById } from "@/lib/db";
-import { buildFootballBuilderDraft, buildGymBuilderDraft } from "@/lib/discovery/map";
 import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
+import {
+  buildFootballBuilderDraft,
+  buildGymBuilderDraft,
+  buildSportsBuilderDraft,
+} from "@/lib/discovery/map";
 import {
   buildEmptyDiscoveryPublicArtifacts,
   safeString,
@@ -18,6 +22,7 @@ import {
   buildGymDiscoveryPublicPageArtifacts,
   mapParseResultToGymData,
 } from "@/lib/meet-discovery";
+import { getDiscoveryAdapter, getSportActivityProfile } from "@/lib/sports-discovery";
 
 function mapSectionProvenance(section: Record<string, any>): PublicSectionProvenance {
   const body = safeString(section.body);
@@ -129,6 +134,69 @@ export async function runDiscoveryComposePublicStage(
     return {
       mappedData,
       builderDraft: buildFootballBuilderDraft({ mappedData, reviewFlags }),
+      publicArtifacts,
+    };
+  }
+  if (discovery.workflow === "sports") {
+    const activityProfile =
+      discovery.canonicalParse?.activityProfile || discovery.source.activityProfile;
+    const activity = getSportActivityProfile(activityProfile);
+    const adapter = getDiscoveryAdapter("sports");
+    const mappedData = await adapter.map({
+      parseResult: parseResult as Record<string, any>,
+      currentData,
+      extractionMeta: discovery.document?.extractionMeta as Record<string, any>,
+      activityProfile,
+      eventArchetype: discovery.canonicalParse?.eventArchetype || discovery.source.eventArchetype,
+      detectionConfidence: discovery.canonicalParse?.detection?.confidence,
+    });
+    throwIfDiscoveryCancelled(options?.signal);
+    const reviewReasons = uniqueStrings(
+      [
+        !safeString(mappedData.title) ? "Confirm the event title." : "",
+        !safeString(mappedData.startAt || mappedData.startISO || mappedData.start)
+          ? "Confirm the event date and time."
+          : "",
+        !safeString(mappedData.venue || mappedData.address) ? "Confirm the venue or address." : "",
+        discovery.canonicalParse?.detection?.needsConfirmation ? "Confirm the detected sport." : "",
+      ],
+      12,
+    );
+    const publicArtifacts: DiscoveryPublicArtifacts = {
+      ...buildEmptyDiscoveryPublicArtifacts(safeString(mappedData.title)),
+      pipelineVersion: "sports-public-v1",
+      publishAssessment: {
+        state: reviewReasons.length === 0 ? "auto_publish" : "needs_review",
+        reasons: reviewReasons,
+      },
+      hero: {
+        title: safeString(mappedData.title),
+        dateLabel:
+          safeString(mappedData?.customFields?.scheduleDateRangeLabel) ||
+          safeString(mappedData.date),
+        venue: safeString(mappedData.venue || mappedData.address),
+        badges: uniqueStrings(
+          [activity?.label, mappedData?.customFields?.team, mappedData?.customFields?.league],
+          4,
+        ),
+      },
+      quickAccess: Array.isArray(mappedData.links)
+        ? mappedData.links
+            .map((item: any) => ({
+              label: safeString(item?.label || item?.title || "Link"),
+              url: safeString(item?.url),
+            }))
+            .filter((item: { label: string; url: string }) => item.url)
+            .slice(0, 12)
+        : [],
+    };
+    const reviewFlags = uniqueStrings(
+      [...reviewReasons, ...(discovery.canonicalParse?.issues || []).map((item) => item.message)],
+      24,
+    );
+    return {
+      mappedData,
+      builderDraft: buildSportsBuilderDraft({ mappedData, reviewFlags }),
       publicArtifacts,
     };
   }

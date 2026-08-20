@@ -21,6 +21,9 @@ export async function POST(request: Request) {
       eventId: result.eventId,
       discoveryId: result.discoveryId,
       workflow: result.workflow,
+      activityProfile: result.activityProfile,
+      activityLabel: result.activityLabel,
+      eventArchetype: result.eventArchetype,
       processingStage: result.processingStage,
     });
   } catch (error) {

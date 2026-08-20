@@ -1,172 +1,73 @@
 "use client";
 
-import { ArrowRight, CalendarDays, FileUp, LayoutPanelTop, Trophy } from "lucide-react";
-import Link from "next/link";
+import { Sparkles, Trophy } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import {
-  buildSportEventCustomizeHref,
-  getSportEventPreset,
-  SPORT_EVENT_PRESETS,
-} from "@/lib/sport-event-presets";
-
-const sportsBuilderSteps = [
-  "Choose sport",
-  "Choose look",
-  "Upload info",
-  "Organize sections",
-  "Preview & publish",
-];
-
-const styleOptions = [
-  {
-    id: "stadium",
-    label: "Stadium",
-    description: "Dark lights, matchup energy, and big-game contrast.",
-  },
-  {
-    id: "club",
-    label: "Club",
-    description: "Clean team-page layout for leagues, clubs, and parents.",
-  },
-  {
-    id: "tournament",
-    label: "Tournament",
-    description: "Built for schedules, brackets, parking, and updates.",
-  },
-];
+import SportCreationGate from "@/components/event-create/SportCreationGate";
+import SportsDiscoveryLauncher from "@/components/event-create/SportsDiscoveryLauncher";
+import { getSportEventPreset } from "@/lib/sport-event-presets";
 
 export default function SportEventsPageClient() {
   const search = useSearchParams();
-  const selectedSport = getSportEventPreset(search?.get("sport"));
-  const selectedStyle = search?.get("style") || "stadium";
-  const builderHref = buildSportEventCustomizeHref(selectedSport.key, selectedStyle);
+  const requestedSport = search?.get("sport");
+  const unavailableSport = search?.get("unavailableSport");
 
   return (
-    <main className="min-h-screen bg-[#f8faf7] px-4 py-6 text-[#17111e] sm:px-6 lg:px-8">
-      <section className="mx-auto flex min-h-[calc(100svh-3rem)] w-full max-w-7xl flex-col">
-        <div className="mb-8 flex w-full items-center justify-between rounded-full border border-[#211a30]/20 bg-white px-3 py-2 shadow-[0_14px_44px_rgba(26,19,40,0.08)]">
-          {sportsBuilderSteps.map((step, index) => (
-            <div key={step} className="flex min-w-0 items-center gap-2 text-xs font-semibold sm:text-sm">
-              <span
-                className={
-                  index === 0
-                    ? "flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5f55ff] text-white"
-                    : "flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e6e1d6] text-[#625d54]"
-                }
-              >
-                {index + 1}
-              </span>
-              <span className={index === 0 ? "hidden text-[#2921d7] md:inline" : "hidden md:inline"}>
-                {step}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid flex-1 gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(26rem,0.68fr)] lg:items-center">
-          <div>
-            <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-[#5f55ff]">
-              Sports builder
-            </p>
-            <h1 className="max-w-3xl text-4xl font-black leading-[0.96] tracking-normal text-[#17111e] sm:text-6xl">
-              Build one clean game-day page for any popular sport.
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-[#51495c] sm:text-lg">
-              Pick the sport, choose the visual direction, then add schedule details,
-              arrival notes, tickets, RSVP, and updates. Gymnastics stays separate
-              because it has meet-packet discovery.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href={builderHref}
-                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#17111e] px-6 py-3 text-sm font-bold text-white shadow-[0_18px_42px_rgba(23,17,30,0.2)] transition hover:-translate-y-0.5"
-              >
-                Continue with {selectedSport.routeLabel}
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-              <Link
-                href="/event/gymnastics"
-                className="inline-flex min-h-12 items-center rounded-full border border-[#d9d1e8] bg-white px-6 py-3 text-sm font-bold text-[#2b2140] transition hover:-translate-y-0.5"
-              >
-                Gymnastics meet workflow
-              </Link>
-            </div>
-          </div>
-
-          <div className="rounded-[1.75rem] border border-[#e4ddf2] bg-white p-4 shadow-[0_24px_90px_rgba(38,29,55,0.12)]">
-            <div className="rounded-[1.25rem] bg-[#111827] p-4 text-white">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#f6d477]">
-                    Selected
-                  </p>
-                  <h2 className="text-2xl font-black">{selectedSport.routeLabel}</h2>
-                </div>
-                <Trophy className="h-8 w-8 text-[#f6d477]" aria-hidden="true" />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl bg-white/10 p-3">
-                  <LayoutPanelTop className="mb-3 h-5 w-5 text-[#b9c5ff]" aria-hidden="true" />
-                  <p className="text-sm font-bold">Look</p>
-                  <p className="mt-1 text-xs text-white/70">Game-day visual system.</p>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-3">
-                  <FileUp className="mb-3 h-5 w-5 text-[#b9c5ff]" aria-hidden="true" />
-                  <p className="text-sm font-bold">Info</p>
-                  <p className="mt-1 text-xs text-white/70">Flyer, schedule, or manual details.</p>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-3">
-                  <CalendarDays className="mb-3 h-5 w-5 text-[#b9c5ff]" aria-hidden="true" />
-                  <p className="text-sm font-bold">Publish</p>
-                  <p className="mt-1 text-xs text-white/70">Share the live page.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <h3 className="mb-3 text-sm font-bold text-[#2b2140]">Popular sports</h3>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {SPORT_EVENT_PRESETS.map((sport) => (
-                  <Link
-                    key={sport.key}
-                    href={`/event/sport-events?sport=${sport.key}&style=${selectedStyle}`}
-                    className={
-                      sport.key === selectedSport.key
-                        ? "rounded-xl border border-[#5f55ff] bg-[#f0eeff] px-3 py-2 text-sm font-bold text-[#2921d7]"
-                        : "rounded-xl border border-[#ebe6f5] bg-[#fbfafc] px-3 py-2 text-sm font-semibold text-[#433a4f] transition hover:border-[#cfc7ff] hover:bg-[#f5f2ff]"
-                    }
-                  >
-                    {sport.shortLabel}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <h3 className="mb-3 text-sm font-bold text-[#2b2140]">Look direction</h3>
-              <div className="grid gap-2">
-                {styleOptions.map((style) => (
-                  <Link
-                    key={style.id}
-                    href={`/event/sport-events?sport=${selectedSport.key}&style=${style.id}`}
-                    className={
-                      style.id === selectedStyle
-                        ? "rounded-xl border border-[#17111e] bg-[#17111e] px-4 py-3 text-white"
-                        : "rounded-xl border border-[#ebe6f5] bg-white px-4 py-3 text-[#433a4f] transition hover:border-[#cfc7ff]"
-                    }
-                  >
-                    <span className="block text-sm font-bold">{style.label}</span>
-                    <span className={style.id === selectedStyle ? "text-xs text-white/70" : "text-xs text-[#746b80]"}>
-                      {style.description}
+    <SportCreationGate
+      requestedSport={requestedSport}
+      surface="sports"
+      unavailableSport={unavailableSport}
+    >
+      {(activeSport) => {
+        const selectedSport = getSportEventPreset(activeSport);
+        return (
+          <main className="min-h-screen bg-[radial-gradient(circle_at_12%_12%,#eeeaff_0,transparent_30%),radial-gradient(circle_at_88%_8%,#e9f7ff_0,transparent_28%),#f8f8fb] px-4 py-7 text-[#17111e] sm:px-6 lg:px-8">
+            <section className="mx-auto w-full max-w-7xl">
+              <div className="flex flex-col gap-5 rounded-[2rem] border border-white/80 bg-white/75 p-5 shadow-[0_24px_90px_rgba(41,32,72,0.1)] backdrop-blur sm:p-7">
+                <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+                  <div>
+                    <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#5f55ff]">
+                      <Sparkles className="h-4 w-4" /> Smart {selectedSport.shortLabel} builder
+                    </p>
+                    <h1 className="mt-3 max-w-4xl text-4xl font-black leading-[0.98] sm:text-6xl">
+                      Turn your {selectedSport.shortLabel.toLowerCase()} packet into a useful event
+                      page.
+                    </h1>
+                    <p className="mt-4 max-w-3xl text-base leading-7 text-[#5f5869] sm:text-lg">
+                      Upload a file, sync a public page, or start manually. Envitefy organizes the
+                      dates, venue, schedule, admission, travel, and links into an editable page.
+                    </p>
+                  </div>
+                  <div className="flex min-w-64 items-center gap-3 rounded-2xl bg-[#17111e] p-4 text-white">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-[#f6d477]">
+                      <Trophy className="h-6 w-6" />
                     </span>
-                  </Link>
-                ))}
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
+                        Your sport
+                      </p>
+                      <p className="text-lg font-black">{selectedSport.label}</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="rounded-xl bg-[#f2f0ff] px-4 py-3 text-xs leading-5 text-[#5046b5]">
+                  We start with the recommended {selectedSport.shortLabel.toLowerCase()} theme. You
+                  can change the theme, colors, and sections inside the visual builder.
+                </p>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+
+              <div className="mt-6">
+                <div className="mb-4">
+                  <h2 className="text-lg font-black">Add your event information</h2>
+                  <p className="mt-1 text-sm text-[#6c6576]">
+                    Upload is fastest; live URL and manual creation are always available.
+                  </p>
+                </div>
+                <SportsDiscoveryLauncher sport={selectedSport.key} />
+              </div>
+            </section>
+          </main>
+        );
+      }}
+    </SportCreationGate>
   );
 }

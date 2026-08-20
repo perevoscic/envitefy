@@ -17,6 +17,7 @@ export async function GET(req: Request) {
     email: user?.email || email,
     firstName: user?.first_name || null,
     lastName: user?.last_name || null,
+    avatarUrl: user?.avatar_url || null,
     preferredProvider: user?.preferred_provider || null,
     name: session.user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || null,
     isAdmin: Boolean(user?.is_admin),
@@ -83,6 +84,7 @@ export async function PUT(req: Request) {
       email: updatedUser.email,
       firstName: updatedUser.first_name,
       lastName: updatedUser.last_name,
+      avatarUrl: updatedUser.avatar_url || null,
       preferredProvider: updatedUser.preferred_provider || null,
       primarySignupSource: updatedUser.primary_signup_source || "legacy",
       productScopes: Array.isArray(updatedUser.product_scopes)

@@ -17,6 +17,7 @@ import {
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import { normalizePrimarySignupSource } from "@/lib/product-scopes";
+import type { SportPreferences } from "@/lib/sports-preferences";
 import { getCreateActionForSignupIntent } from "@/lib/signup-intent";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
@@ -67,7 +68,10 @@ type LeftSidebarControllerArgs = {
   menu: {
     connectedCalendars: Record<string, boolean>;
     refreshConnectedCalendars: () => Promise<unknown> | unknown;
-    featureVisibility: { visibleTemplateKeys: TemplateKey[] };
+    featureVisibility: {
+      visibleTemplateKeys: TemplateKey[];
+      sportPreferences: SportPreferences;
+    };
     primarySignupSource: "snap" | "gymnastics" | "legacy" | null;
     productScopes: string[] | undefined;
     defaultCreateIntent?: string | null;
@@ -135,6 +139,7 @@ export type LeftSidebarControllerViewModel = {
   showPastInvitedEvents: boolean;
   setShowPastInvitedEvents: React.Dispatch<React.SetStateAction<boolean>>;
   profileInitials: string;
+  profileAvatarUrl?: string | null;
   userTitleLabel: string;
   userEmail?: string;
   footerMenuItems: Array<{
@@ -666,6 +671,42 @@ export function useLeftSidebarController({
 
   const displayName = (session?.user?.name as string) || (session?.user?.email as string) || "User";
   const userEmail = session?.user?.email as string | undefined;
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!userEmail) {
+      setProfileAvatarUrl(null);
+      return;
+    }
+    let cancelled = false;
+    const loadProfileAvatar = async () => {
+      try {
+        const response = await fetch("/api/user/profile", { cache: "no-store" });
+        if (!response.ok) return;
+        const profile = await response.json();
+        if (!cancelled) {
+          setProfileAvatarUrl(typeof profile.avatarUrl === "string" ? profile.avatarUrl : null);
+        }
+      } catch {
+        // Keep initials when the optional avatar cannot be loaded.
+      }
+    };
+    const onProfileChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ avatarUrl?: string | null }>).detail;
+      if (detail && Object.hasOwn(detail, "avatarUrl")) {
+        setProfileAvatarUrl(typeof detail.avatarUrl === "string" ? detail.avatarUrl : null);
+        return;
+      }
+      void loadProfileAvatar();
+    };
+    void loadProfileAvatar();
+    window.addEventListener("envitefy:profile-changed", onProfileChanged);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("envitefy:profile-changed", onProfileChanged);
+    };
+  }, [userEmail]);
+
   const profileInitials = useMemo(() => {
     const source = String(displayName || userEmail || "U").trim();
     if (!source) return "U";
@@ -872,9 +913,13 @@ export function useLeftSidebarController({
   }, [clearEventContext, collapseSidebarOnTouch, router, setSidebarPage]);
 
   const visibleTemplateKeys = featureVisibility.visibleTemplateKeys;
+  const sportPreferences = featureVisibility.sportPreferences;
   const visibleTemplateLinks = useMemo(
-    () => (isAdmin ? getTemplateLinks(visibleTemplateKeys, productScopes) : []),
-    [isAdmin, productScopes, visibleTemplateKeys],
+    () =>
+      isAdmin
+        ? getTemplateLinks(visibleTemplateKeys, productScopes, sportPreferences)
+        : [],
+    [isAdmin, productScopes, sportPreferences, visibleTemplateKeys],
   );
 
   const templateHrefMap = useMemo(() => {
@@ -888,11 +933,15 @@ export function useLeftSidebarController({
   const createMenuItems = useMemo(
     () =>
       isAdmin
-        ? getCreateEventSections(visibleTemplateKeys, productScopes).flatMap(
+        ? getCreateEventSections(
+            visibleTemplateKeys,
+            productScopes,
+            sportPreferences,
+          ).flatMap(
             (section) => section.items,
           )
         : [],
-    [isAdmin, productScopes, visibleTemplateKeys],
+    [isAdmin, productScopes, sportPreferences, visibleTemplateKeys],
   );
   const otherCreateMenuItems = useMemo(() => [], []);
   const isCreateRouteActive = useMemo(() => isCreateEventRoute(pathname), [pathname]);
@@ -1690,6 +1739,7 @@ export function useLeftSidebarController({
     showPastInvitedEvents,
     setShowPastInvitedEvents,
     profileInitials,
+    profileAvatarUrl,
     userTitleLabel,
     userEmail,
     footerMenuItems,

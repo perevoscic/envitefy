@@ -12,6 +12,9 @@ test("sports workflow uses a shared popular-sports builder and keeps gymnastics 
   const presets = readSource("src/lib/sport-event-presets.ts");
   const signedInHub = readSource("src/app/event/sport-events/SportEventsPageClient.tsx");
   const signedOutHub = readSource("src/components/sports-landing/SportsLandingPage.tsx");
+  const discoveryLauncher = readSource(
+    "src/components/event-create/SportsDiscoveryLauncher.tsx",
+  );
   const customize = readSource("src/app/event/sport-events/customize/page.tsx");
   const footballPage = readSource("src/app/football/page.tsx");
   const middleware = readSource("src/middleware.ts");
@@ -36,14 +39,18 @@ test("sports workflow uses a shared popular-sports builder and keeps gymnastics 
     assert.match(presets, new RegExp(`key: "${sport}"`));
   }
 
-  assert.match(signedInHub, /sportsBuilderSteps/);
-  assert.match(signedInHub, /"Choose sport"/);
-  assert.match(signedInHub, /"Upload info"/);
-  assert.match(signedInHub, /"Organize sections"/);
-  assert.match(signedInHub, /"Preview & publish"/);
-  assert.match(signedInHub, /SPORT_EVENT_PRESETS\.map/);
-  assert.match(signedInHub, /buildSportEventCustomizeHref/);
-  assert.match(signedInHub, /href="\/event\/gymnastics"/);
+  assert.match(signedInHub, /SportCreationGate/);
+  assert.match(signedInHub, /Smart \{selectedSport\.shortLabel\} builder/);
+  assert.match(signedInHub, /Add your event information/);
+  assert.match(signedInHub, /SportsDiscoveryLauncher/);
+  assert.doesNotMatch(signedInHub, /Choose a starting look/);
+  assert.doesNotMatch(signedInHub, /styleOptions/);
+  assert.doesNotMatch(discoveryLauncher, /style: string/);
+
+  assert.match(discoveryLauncher, /formData\.append\("workflow", "sports"\)/);
+  assert.match(discoveryLauncher, /formData\.append\("activityProfile", preset\.key\)/);
+  assert.match(discoveryLauncher, /draftReady/);
+  assert.match(discoveryLauncher, /\/event\/sport-events\/customize/);
 
   assert.match(signedOutHub, /<SignedOutPageChrome/);
   assert.match(signedOutHub, /topNavVariant="transparent-dark"/);
@@ -56,6 +63,7 @@ test("sports workflow uses a shared popular-sports builder and keeps gymnastics 
 
   assert.match(customize, /buildSportSpecificConfig/);
   assert.match(customize, /getSportEventPreset\(search\?\.get\("sport"\)\)/);
+  assert.match(customize, /search\?\.get\("style"\)/);
   assert.match(customize, /slug: `sport-event-\$\{sportPreset\.key\}`/);
   assert.match(customize, /sportLabel: sportPreset\.label/);
 

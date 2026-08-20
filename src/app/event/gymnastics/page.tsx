@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import GymnasticsLauncher from "@/components/event-create/GymnasticsLauncher";
+import GymnasticsCreationPageClient from "./GymnasticsCreationPageClient";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -32,5 +32,5 @@ export default async function GymnasticsPage({
     redirect(`/event/gymnastics/customize${qs ? `?${qs}` : ""}`);
   }
 
-  return <GymnasticsLauncher forwardQueryString={qs || undefined} />;
+  return <GymnasticsCreationPageClient forwardQueryString={qs || undefined} />;
 }

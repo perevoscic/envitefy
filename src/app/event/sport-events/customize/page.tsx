@@ -1,33 +1,27 @@
 // @ts-nocheck
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useRef,
-} from "react";
-import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ChevronLeft,
+  CheckSquare,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   Edit2,
   Image as ImageIcon,
+  MapPin,
   Menu,
   Palette,
-  Type,
-  CheckSquare,
-  ChevronRight,
   Share2,
-  MapPin,
+  Type,
 } from "lucide-react";
+import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
-import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 type FieldSpec = {
@@ -185,7 +179,7 @@ const SPORT_GOOGLE_FONT_FAMILIES = [
 ];
 
 const SPORT_GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?family=${SPORT_GOOGLE_FONT_FAMILIES.join(
-  "&family="
+  "&family=",
 )}&display=swap`;
 
 const FONT_SIZE_OPTIONS = [
@@ -414,27 +408,21 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
         config.detailFields.map((f) => [
           f.key,
           config.prefill?.extra?.[f.key] ?? (f.placeholder || ""),
-        ])
+        ]),
       ),
     }));
     const [advancedState, setAdvancedState] = useState(() => {
       const entries =
-        config.advancedSections?.map((section) => [
-          section.id,
-          section.initialState,
-        ]) || [];
+        config.advancedSections?.map((section) => [section.id, section.initialState]) || [];
       return Object.fromEntries(entries);
     });
-    const [themeId, setThemeId] = useState(
-      config.themes[0]?.id ?? "default-theme"
-    );
+    const [themeId, setThemeId] = useState(config.themes[0]?.id ?? "default-theme");
     const [activeView, setActiveView] = useState<string>("main");
+    const existingEventDataRef = useRef<Record<string, any>>({});
     const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
     const [rsvpAttending, setRsvpAttending] = useState("yes");
     const [submitting, setSubmitting] = useState(false);
-    const [themesExpanded, setThemesExpanded] = useState(
-      config.themesExpandedByDefault ?? false
-    );
+    const [themesExpanded, setThemesExpanded] = useState(config.themesExpandedByDefault ?? false);
     const [_loadingExisting, setLoadingExisting] = useState(false);
     const {
       mobileMenuOpen,
@@ -448,10 +436,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
 
     // Load shared sporty headline fonts for the general sports template
     useEffect(() => {
-      let link =
-        document.querySelector<HTMLLinkElement>(
-          'link[data-sport-fonts="true"]'
-        ) || null;
+      let link = document.querySelector<HTMLLinkElement>('link[data-sport-fonts="true"]') || null;
       let added = false;
 
       if (!link) {
@@ -496,9 +481,9 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
           }
           const json = await res.json();
           const existing = json?.data || {};
+          existingEventDataRef.current = existing;
 
-          const startIso =
-            existing.start || existing.startISO || existing.startIso;
+          const startIso = existing.start || existing.startISO || existing.startIso;
           let loadedDate: string | undefined;
           let loadedTime: string | undefined;
           if (startIso) {
@@ -520,18 +505,14 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
             details: existing.details || existing.description || prev.details,
             hero: existing.heroImage || existing.hero || prev.hero,
             rsvpEnabled:
-              typeof existing.rsvpEnabled === "boolean"
-                ? existing.rsvpEnabled
-                : prev.rsvpEnabled,
+              typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : prev.rsvpEnabled,
             rsvpDeadline: existing.rsvpDeadline || prev.rsvpDeadline,
             fontId:
-              existing.fontId &&
-              SPORT_FONTS.find((f) => f.id === existing.fontId)
+              existing.fontId && SPORT_FONTS.find((f) => f.id === existing.fontId)
                 ? existing.fontId
                 : prev.fontId,
             fontSize:
-              existing.fontSize &&
-              FONT_SIZE_OPTIONS.find((o) => o.id === existing.fontSize)
+              existing.fontSize && FONT_SIZE_OPTIONS.find((o) => o.id === existing.fontSize)
                 ? existing.fontSize
                 : prev.fontSize,
             extra: {
@@ -550,15 +531,9 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
             setAdvancedState((prev) => ({ ...prev, ...incomingAdvanced }));
           }
 
-          if (
-            existing.themeId &&
-            config.themes.find((t) => t.id === existing.themeId)
-          ) {
+          if (existing.themeId && config.themes.find((t) => t.id === existing.themeId)) {
             setThemeId(existing.themeId);
-          } else if (
-            existing.theme?.id &&
-            config.themes.find((t) => t.id === existing.theme.id)
-          ) {
+          } else if (existing.theme?.id && config.themes.find((t) => t.id === existing.theme.id)) {
             setThemeId(existing.theme.id);
           } else {
             setThemeId(config.themes[0]?.id ?? "default-theme");
@@ -586,14 +561,11 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       });
     }, []);
 
-    const currentTheme =
-      config.themes.find((t) => t.id === themeId) || config.themes[0];
+    const currentTheme = config.themes.find((t) => t.id === themeId) || config.themes[0];
 
-    const selectedFont =
-      SPORT_FONTS.find((f) => f.id === data.fontId) || SPORT_FONTS[0];
+    const selectedFont = SPORT_FONTS.find((f) => f.id === data.fontId) || SPORT_FONTS[0];
     const selectedSize =
-      FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) ||
-      FONT_SIZE_OPTIONS[1];
+      FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize) || FONT_SIZE_OPTIONS[1];
 
     const isDarkBackground = useMemo(() => {
       const bg = currentTheme?.bg?.toLowerCase() ?? "";
@@ -655,23 +627,12 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
     );
 
     const rawTextClass = currentTheme?.text || "";
-    const forceLightText =
-      isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
-    const textClass = forceLightText
-      ? "text-white"
-      : rawTextClass || "text-white";
-    const accentClass = forceLightText
-      ? "text-white"
-      : currentTheme?.accent || textClass;
-    const usesLightText = /text-(white|slate-50|neutral-50|gray-50)/.test(
-      textClass
-    );
-    const headingShadow = usesLightText
-      ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" }
-      : undefined;
-    const bodyShadow = usesLightText
-      ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" }
-      : undefined;
+    const forceLightText = isDarkBackground && !rawTextClass.toLowerCase().includes("text-white");
+    const textClass = forceLightText ? "text-white" : rawTextClass || "text-white";
+    const accentClass = forceLightText ? "text-white" : currentTheme?.accent || textClass;
+    const usesLightText = /text-(white|slate-50|neutral-50|gray-50)/.test(textClass);
+    const headingShadow = usesLightText ? { textShadow: "0 2px 6px rgba(0,0,0,0.55)" } : undefined;
+    const bodyShadow = usesLightText ? { textShadow: "0 1px 3px rgba(0,0,0,0.45)" } : undefined;
     // Title color for dark backgrounds - light gold/beige
     const titleColor = isDarkBackground
       ? { color: "#f5e6d3" } // Light beige/gold
@@ -681,12 +642,9 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       ...(headingShadow || {}),
       ...(titleColor || {}),
     };
-    const headingSizeClass =
-      selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
+    const headingSizeClass = selectedSize?.className || FONT_SIZE_OPTIONS[1].className;
 
-    const locationParts = [data.venue, data.city, data.state]
-      .filter(Boolean)
-      .join(", ");
+    const locationParts = [data.venue, data.city, data.state].filter(Boolean).join(", ");
     const addressLine = "";
 
     const navItems = useMemo(
@@ -695,12 +653,10 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
           { id: "details", label: "Details", enabled: true },
           { id: "rsvp", label: "RSVP", enabled: data.rsvpEnabled },
         ].filter((item) => item.enabled),
-      [data.rsvpEnabled]
+      [data.rsvpEnabled],
     );
 
-    const [activeSection, setActiveSection] = useState<string>(
-      navItems[0]?.id || "details"
-    );
+    const [activeSection, setActiveSection] = useState<string>(navItems[0]?.id || "details");
 
     useEffect(() => {
       if (!navItems.length) return;
@@ -727,10 +683,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
               const id = entry.target.id;
               if (id && navItems.some((i) => i.id === id)) {
                 setActiveSection(id);
-                if (
-                  typeof window !== "undefined" &&
-                  window.location.hash !== `#${id}`
-                ) {
+                if (typeof window !== "undefined" && window.location.hash !== `#${id}`) {
                   window.history.replaceState(null, "", `#${id}`);
                 }
               }
@@ -741,7 +694,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
           root: null,
           rootMargin: "-25% 0px -60% 0px",
           threshold: 0,
-        }
+        },
       );
 
       const targets = navItems
@@ -795,8 +748,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
           themeId && config.themes.find((t) => t.id === themeId)
             ? themeId
             : config.themes[0]?.id || "default-theme";
-        const themeToSave =
-          config.themes.find((t) => t.id === validThemeId) || config.themes[0];
+        const themeToSave = config.themes.find((t) => t.id === validThemeId) || config.themes[0];
         const validFontId =
           data.fontId && SPORT_FONTS.find((f) => f.id === data.fontId)
             ? data.fontId
@@ -805,18 +757,24 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
           data.fontSize && FONT_SIZE_OPTIONS.find((o) => o.id === data.fontSize)
             ? data.fontSize
             : "medium";
-        const currentSelectedFont =
-          SPORT_FONTS.find((f) => f.id === validFontId) || SPORT_FONTS[0];
+        const currentSelectedFont = SPORT_FONTS.find((f) => f.id === validFontId) || SPORT_FONTS[0];
         const currentSelectedSize =
-          FONT_SIZE_OPTIONS.find((o) => o.id === validFontSize) ||
-          FONT_SIZE_OPTIONS[1];
+          FONT_SIZE_OPTIONS.find((o) => o.id === validFontSize) || FONT_SIZE_OPTIONS[1];
 
         const payload: any = {
           title: data.title || config.displayName,
           data: {
             category: config.category,
-            createdVia: "simple-template",
-            createdManually: true,
+            createdVia:
+              existingEventDataRef.current.createdVia === "sports-discovery-v1"
+                ? "sports-discovery-v1"
+                : "simple-template",
+            createdManually: existingEventDataRef.current.createdVia !== "sports-discovery-v1",
+            primaryOutput: "event_page",
+            requestedOutputs: ["event_page"],
+            activityProfile: existingEventDataRef.current.activityProfile || sportPreset.key,
+            eventArchetype: existingEventDataRef.current.eventArchetype || undefined,
+            discoverySource: existingEventDataRef.current.discoverySource || undefined,
             startISO,
             endISO,
             location: locationParts || undefined,
@@ -864,14 +822,14 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
             window.dispatchEvent(
               new CustomEvent("history:updated", {
                 detail: { id: editEventId },
-              })
+              }),
             );
           }
           router.push(
             buildEventPath(editEventId, payload.title, {
               updated: true,
               t: Date.now(),
-            })
+            }),
           );
         } else {
           const res = await fetch("/api/history", {
@@ -892,7 +850,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                   created_at: (json as any)?.created_at || new Date().toISOString(),
                   data: payload.data,
                 },
-              })
+              }),
             );
           }
           router.push(buildEventPath(id, payload.title, { created: true }));
@@ -932,8 +890,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       toggleLabel: config.rsvpCopy?.toggleLabel || "Enable RSVP",
       deadlineLabel: config.rsvpCopy?.deadlineLabel || "RSVP Deadline",
       helperText:
-        config.rsvpCopy?.helperText ||
-        "The RSVP card in the preview updates with these settings.",
+        config.rsvpCopy?.helperText || "The RSVP card in the preview updates with these settings.",
     };
 
     const buildEventDetails = () => {
@@ -945,9 +902,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       }
       if (!start) start = new Date();
       const end = new Date(start.getTime() + 60 * 60 * 1000);
-      const location = [data.venue, data.city, data.state]
-        .filter(Boolean)
-        .join(", ");
+      const location = [data.venue, data.city, data.state].filter(Boolean).join(", ");
       const description = data.details || "";
       return { title, start, end, location, description };
     };
@@ -991,13 +946,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
 
     const handleShare = () => {
       const details = buildEventDetails();
-      const shareUrl =
-        typeof window !== "undefined" ? window.location.href : undefined;
-      if (
-        typeof navigator !== "undefined" &&
-        (navigator as any).share &&
-        shareUrl
-      ) {
+      const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
+      if (typeof navigator !== "undefined" && (navigator as any).share && shareUrl) {
         (navigator as any)
           .share({
             title: details.title,
@@ -1017,9 +967,9 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       const start = toGoogleDate(details.start);
       const end = toGoogleDate(details.end);
       const query = `action=TEMPLATE&text=${encodeURIComponent(
-        details.title
+        details.title,
       )}&dates=${start}/${end}&location=${encodeURIComponent(
-        details.location
+        details.location,
       )}&details=${encodeURIComponent(details.description || "")}`;
       const webUrl = `https://calendar.google.com/calendar/render?${query}`;
       const appUrl = `comgooglecalendar://?${query}`;
@@ -1029,22 +979,18 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
     const handleOutlookCalendar = () => {
       const details = buildEventDetails();
       const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
-        details.title
-      )}&body=${encodeURIComponent(
-        details.description || ""
-      )}&location=${encodeURIComponent(
-        details.location
+        details.title,
+      )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
+        details.location,
       )}&startdt=${encodeURIComponent(
-        details.start.toISOString()
+        details.start.toISOString(),
       )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
       const appUrl = `ms-outlook://events/new?subject=${encodeURIComponent(
-        details.title
-      )}&body=${encodeURIComponent(
-        details.description || ""
-      )}&location=${encodeURIComponent(
-        details.location
+        details.title,
+      )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
+        details.location,
       )}&startdt=${encodeURIComponent(
-        details.start.toISOString()
+        details.start.toISOString(),
       )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
       openWithAppFallback(appUrl, webUrl);
     };
@@ -1061,8 +1007,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
             Add your details
           </h2>
           <p className="text-slate-500 text-sm">
-            Customize every aspect of your {config.displayName.toLowerCase()}{" "}
-            site.
+            Customize every aspect of your {config.displayName.toLowerCase()} site.
           </p>
         </div>
 
@@ -1163,15 +1108,11 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
         updateData,
         handleBackToMain,
         config.displayName,
-      ]
+      ],
     );
 
     const renderImagesEditor = () => (
-      <EditorLayout
-        title="Images"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title="Images" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-4">
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Hero Image
@@ -1179,11 +1120,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
           <div className="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:bg-slate-50 transition-colors relative">
             {data.hero ? (
               <div className="relative w-full h-40 rounded-lg overflow-hidden">
-                <img
-                  src={data.hero}
-                  alt="Hero"
-                  className="w-full h-full object-cover"
-                />
+                <img src={data.hero} alt="Hero" className="w-full h-full object-cover" />
                 <button
                   onClick={() => setData((p) => ({ ...p, hero: "" }))}
                   className="absolute top-2 right-2 px-2 py-1 text-xs bg-white rounded-full shadow hover:bg-red-50 text-red-500"
@@ -1196,12 +1133,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                 <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
                   <ImageIcon size={20} />
                 </div>
-                <p className="text-sm text-slate-600 mb-1">
-                  Upload header photo
-                </p>
-                <p className="text-xs text-slate-400">
-                  Recommended: 1600x900px
-                </p>
+                <p className="text-sm text-slate-600 mb-1">Upload header photo</p>
+                <p className="text-xs text-slate-400">Recommended: 1600x900px</p>
               </>
             )}
             <input
@@ -1216,11 +1149,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
     );
 
     const renderDesignEditor = () => (
-      <EditorLayout
-        title="Design"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title="Design" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-3">
           <button
             onClick={() => setThemesExpanded(!themesExpanded)}
@@ -1229,11 +1158,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
             <div className="flex items-center gap-2">
               <Palette size={16} /> Theme ({config.themes.length})
             </div>
-            {themesExpanded ? (
-              <ChevronUp size={16} />
-            ) : (
-              <ChevronDown size={16} />
-            )}
+            {themesExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
           {themesExpanded && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-none overflow-visible pr-1">
@@ -1281,10 +1206,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                       : "border-slate-200 hover:border-indigo-300"
                   }`}
                 >
-                  <div
-                    className="text-base font-semibold"
-                    style={{ fontFamily: f.css }}
-                  >
+                  <div className="text-base font-semibold" style={{ fontFamily: f.css }}>
                     {f.name}
                   </div>
                 </button>
@@ -1317,11 +1239,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
     );
 
     const renderDetailsEditor = () => (
-      <EditorLayout
-        title="Details"
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title="Details" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-4">
           <InputGroup
             label="Description"
@@ -1355,20 +1273,12 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
     );
 
     const renderRsvpEditor = () => (
-      <EditorLayout
-        title={rsvpCopy.editorTitle}
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title={rsvpCopy.editorTitle} onBack={() => setActiveView("main")} showBack>
         <div className="space-y-6">
           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <span className="font-medium text-slate-700 text-sm">
-              {rsvpCopy.toggleLabel}
-            </span>
+            <span className="font-medium text-slate-700 text-sm">{rsvpCopy.toggleLabel}</span>
             <button
-              onClick={() =>
-                setData((p) => ({ ...p, rsvpEnabled: !p.rsvpEnabled }))
-              }
+              onClick={() => setData((p) => ({ ...p, rsvpEnabled: !p.rsvpEnabled }))}
               className={`w-11 h-6 rounded-full transition-colors relative ${
                 data.rsvpEnabled ? "bg-indigo-600" : "bg-slate-300"
               }`}
@@ -1397,15 +1307,10 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
     );
 
     const renderAdvancedEditor = (section: AdvancedSectionSpec) => (
-      <EditorLayout
-        title={section.menuTitle}
-        onBack={() => setActiveView("main")}
-        showBack
-      >
+      <EditorLayout title={section.menuTitle} onBack={() => setActiveView("main")} showBack>
         {section.renderEditor({
           state: advancedState?.[section.id],
-          setState: (updater: any) =>
-            setAdvancedSectionState(section.id, updater),
+          setState: (updater: any) => setAdvancedSectionState(section.id, updater),
           setActiveView,
           inputClass: baseInputClass,
           textareaClass: baseTextareaClass,
@@ -1451,9 +1356,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
               className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${textClass} transition-all duration-500 relative z-0`}
             >
               <div className="relative z-10">
-                <div
-                  className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}
-                >
+                <div className={`p-6 md:p-8 border-b border-white/10 ${textClass}`}>
                   <div>
                     <h1
                       className={`${headingSizeClass} font-serif mb-2 leading-tight ${textClass}`}
@@ -1488,11 +1391,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                                     block: "start",
                                   });
                                   setActiveSection(item.id);
-                                  window.history.replaceState(
-                                    null,
-                                    "",
-                                    `#${item.id}`
-                                  );
+                                  window.history.replaceState(null, "", `#${item.id}`);
                                 }
                               }}
                               className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold transition border ${
@@ -1512,11 +1411,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
 
                 <div className="relative w-full aspect-video">
                   {data.hero ? (
-                    <img
-                      src={data.hero}
-                      alt="Hero"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={data.hero} alt="Hero" className="w-full h-full object-cover" />
                   ) : (
                     <Image
                       src={config.defaultHero}
@@ -1528,14 +1423,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                   )}
                 </div>
 
-                <section
-                  id="details"
-                  className="py-10 border-t border-white/10 px-6 md:px-10"
-                >
-                  <h2
-                    className={`text-2xl mb-3 ${accentClass}`}
-                    style={headingFontStyle}
-                  >
+                <section id="details" className="py-10 border-t border-white/10 px-6 md:px-10">
+                  <h2 className={`text-2xl mb-3 ${accentClass}`} style={headingFontStyle}>
                     Details
                   </h2>
                   {data.details ? (
@@ -1546,10 +1435,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                       {data.details}
                     </p>
                   ) : (
-                    <p
-                      className={`text-sm opacity-70 ${textClass}`}
-                      style={bodyShadow}
-                    >
+                    <p className={`text-sm opacity-70 ${textClass}`} style={bodyShadow}>
                       Add a short description so guests know what to expect.
                     </p>
                   )}
@@ -1596,18 +1482,12 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                         headingFontStyle,
                       })}
                     </section>
-                  ) : null
+                  ) : null,
                 )}
 
                 {data.rsvpEnabled && (
-                  <section
-                    id="rsvp"
-                    className="max-w-2xl mx-auto text-center p-6 md:p-10"
-                  >
-                    <h2
-                      className={`text-2xl mb-6 ${accentClass}`}
-                      style={headingFontStyle}
-                    >
+                  <section id="rsvp" className="max-w-2xl mx-auto text-center p-6 md:p-10">
+                    <h2 className={`text-2xl mb-6 ${accentClass}`} style={headingFontStyle}>
                       {rsvpCopy.editorTitle}
                     </h2>
                     <div className="bg-white/5 border border-white/10 p-8 md:p-10 rounded-xl text-left">
@@ -1617,7 +1497,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                             <p className="opacity-80">
                               {data.rsvpDeadline
                                 ? `Kindly respond by ${new Date(
-                                    data.rsvpDeadline
+                                    data.rsvpDeadline,
                                   ).toLocaleDateString()}`
                                 : "Please RSVP"}
                             </p>
@@ -1654,12 +1534,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                                     </div>
                                   </div>
                                   <div className="text-left">
-                                    <div className="font-semibold">
-                                      Joyfully Accept
-                                    </div>
-                                    <p className="text-sm opacity-70">
-                                      We’ll be there.
-                                    </p>
+                                    <div className="font-semibold">Joyfully Accept</div>
+                                    <p className="text-sm opacity-70">We’ll be there.</p>
                                   </div>
                                 </div>
                               </label>
@@ -1681,12 +1557,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                                     </div>
                                   </div>
                                   <div className="text-left">
-                                    <div className="font-semibold">
-                                      Regretfully Decline
-                                    </div>
-                                    <p className="text-sm opacity-70">
-                                      Sending warm wishes.
-                                    </p>
+                                    <div className="font-semibold">Regretfully Decline</div>
+                                    <p className="text-sm opacity-70">Sending warm wishes.</p>
                                   </div>
                                 </div>
                               </label>
@@ -1706,9 +1578,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                       ) : (
                         <div className="text-center py-12">
                           <div className="text-4xl mb-4">🎉</div>
-                          <h3 className="text-2xl font-serif mb-2">
-                            Thank you!
-                          </h3>
+                          <h3 className="text-2xl font-serif mb-2">Thank you!</h3>
                           <p className="opacity-70">Your RSVP has been sent.</p>
                           <button
                             onClick={(e) => {
@@ -1774,9 +1644,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                   </section>
                 )}
 
-                <footer
-                  className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}
-                >
+                <footer className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}>
                   <a
                     href="https://envitefy.com"
                     target="_blank"
@@ -1881,9 +1749,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                 <ChevronLeft size={14} />
                 Back to preview
               </button>
-              <span className="text-sm font-semibold text-slate-700">
-                Customize
-              </span>
+              <span className="text-sm font-semibold text-slate-700">Customize</span>
             </div>
 
             <div className="p-6 pt-4 md:pt-6">
@@ -1895,10 +1761,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
               {activeView === "rsvp" && renderRsvpEditor()}
               {config.advancedSections?.map((section) =>
                 activeView === section.id ? (
-                  <React.Fragment key={section.id}>
-                    {renderAdvancedEditor(section)}
-                  </React.Fragment>
-                ) : null
+                  <React.Fragment key={section.id}>{renderAdvancedEditor(section)}</React.Fragment>
+                ) : null,
               )}
             </div>
           </ScrollHandoffContainer>
@@ -1925,8 +1789,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                     ? "Saving..."
                     : "Publishing..."
                   : editEventId
-                  ? "Save"
-                  : "Publish"}
+                    ? "Save"
+                    : "Publish"}
               </button>
             </div>
           </div>

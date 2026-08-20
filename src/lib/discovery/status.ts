@@ -6,7 +6,10 @@ import {
 import { DISCOVERY_REVIEW_READY_STAGES, safeString, uniqueStrings } from "./shared.ts";
 import type { DiscoveryStatusResponse, EventDiscoveryRow } from "./types.ts";
 
-type DiscoveryStatusSource = Pick<EventDiscoveryRow, "id" | "eventId" | "pipeline" | "debug">;
+type DiscoveryStatusSource = Pick<
+  EventDiscoveryRow,
+  "id" | "eventId" | "pipeline" | "debug" | "canonicalParse"
+>;
 
 const DISCOVERY_DRAFT_READY_STAGES = new Set([
   "enrich",
@@ -46,5 +49,9 @@ export function buildDiscoveryStatusResponse(
       : null,
     errorDetails: failedState ? toDiscoveryStatusErrorDetails(failureSummary) : null,
     reviewFlags,
+    activityProfile: discovery.canonicalParse?.activityProfile || null,
+    eventArchetype: discovery.canonicalParse?.eventArchetype || null,
+    detectionConfidence: discovery.canonicalParse?.detection?.confidence ?? null,
+    needsSportConfirmation: Boolean(discovery.canonicalParse?.detection?.needsConfirmation),
   };
 }

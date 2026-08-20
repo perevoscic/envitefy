@@ -6,14 +6,16 @@ import type {
   DiscoveryWorkflow,
   EventDiscoveryRow,
 } from "@/lib/discovery/types";
-import { parseFootballFromExtractedText } from "@/lib/football-discovery";
-import { parseMeetFromExtractedText } from "@/lib/meet-discovery";
+import type { SportDetectionResult } from "@/lib/sports-discovery";
+import { getDiscoveryAdapter } from "@/lib/sports-discovery";
 
 function buildCanonicalDiscoveryParse(params: {
   workflow: DiscoveryWorkflow;
   document: DiscoveryDocument;
   parseResult: Record<string, any>;
   evidence: Record<string, any> | null;
+  detection: SportDetectionResult;
+  parserAdapter: string;
 }): CanonicalDiscoveryParse {
   const parseResult = params.parseResult || {};
   const resourceDocuments = params.document.resources.map((resource) => ({
@@ -36,12 +38,21 @@ function buildCanonicalDiscoveryParse(params: {
   }));
   return {
     workflow: params.workflow,
+    activityProfile: params.detection.profile,
+    eventArchetype: params.detection.archetype,
+    parserAdapter: params.parserAdapter,
+    detection: params.detection,
     eventCore: {
       title: parseResult.title || "",
       startAt: parseResult.startAt || null,
       endAt: parseResult.endAt || null,
       timezone: parseResult.timezone || null,
-      category: params.workflow === "football" ? "football" : "gymnastics",
+      category:
+        params.workflow === "gymnastics"
+          ? "gymnastics"
+          : params.workflow === "football"
+            ? "football"
+            : "sport_event",
     },
     venue: {
       venue: parseResult.venue || "",
@@ -79,13 +90,14 @@ export async function runDiscoveryParseStage(
   const document = discovery.document;
   if (!document) throw new Error("Document extraction must complete before parse.");
   const extractedText = safeString((document.extractionMeta as any)?.extractedText);
-  const parsed =
-    discovery.workflow === "football"
-      ? await parseFootballFromExtractedText(extractedText, document.extractionMeta as any)
-      : await parseMeetFromExtractedText(extractedText, document.extractionMeta as any, {
-          traceId: discovery.eventId,
-          mode: "core",
-        });
+  const adapter = getDiscoveryAdapter(discovery.workflow);
+  const parsed = await adapter.parse({
+    extractedText,
+    extractionMeta: document.extractionMeta as Record<string, any>,
+    eventId: discovery.eventId,
+    activityHint: discovery.source.activityProfile,
+    archetypeHint: discovery.source.eventArchetype,
+  });
   throwIfDiscoveryCancelled(options?.signal);
   const parseResult = parsed.parseResult as any;
   return {
@@ -94,12 +106,16 @@ export async function runDiscoveryParseStage(
       document,
       parseResult,
       evidence: (parsed as any)?.evidence || null,
+      detection: parsed.detection,
+      parserAdapter: parsed.adapterId,
     }),
     debug: {
       coreParseResult: parseResult,
       coreEvidence: (parsed as any)?.evidence || null,
       coreRawModelOutput: (parsed as any)?.rawModelOutput || null,
       coreModelUsed: (parsed as any)?.modelUsed || null,
+      sportDetection: parsed.detection,
+      parserAdapter: parsed.adapterId,
     },
   };
 }

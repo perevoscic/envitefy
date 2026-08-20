@@ -9,7 +9,6 @@ import {
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { computeGymBuilderStatuses } from "@/lib/meet-discovery";
-import { hasProductScope, normalizeProductScopes } from "@/lib/product-scopes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,10 +24,7 @@ function estimateJsonBytes(value: unknown): number | null {
 
 async function getSessionAccess() {
   const session: any = await getServerSession(authOptions as any);
-  return {
-    userId: await resolveSessionUserId(session),
-    productScopes: normalizeProductScopes((session?.user as any)?.productScopes),
-  };
+  return await resolveSessionUserId(session);
 }
 
 function deepMerge(base: any, patch: any): any {
@@ -53,10 +49,8 @@ export async function GET(
     const row = await getEventHistoryById(eventId);
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const { userId: sessionUserId, productScopes } = await getSessionAccess();
-    if (!hasProductScope(productScopes, "gymnastics")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const sessionUserId = await getSessionAccess();
+    if (!sessionUserId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (row.user_id && row.user_id !== sessionUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -90,14 +84,10 @@ export async function PUT(
 ) {
   try {
     const { eventId } = await context.params;
-    const { userId: sessionUserId, productScopes } = await getSessionAccess();
+    const sessionUserId = await getSessionAccess();
     if (!sessionUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!hasProductScope(productScopes, "gymnastics")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const row = await getEventHistoryById(eventId);
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (row.user_id && row.user_id !== sessionUserId) {

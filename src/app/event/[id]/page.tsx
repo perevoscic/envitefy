@@ -41,8 +41,8 @@ import SponsoredSupplies from "@/components/SponsoredSupplies";
 import ThumbnailModal from "@/components/ThumbnailModal";
 import { absoluteUrl, sanitizePersistedMediaUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
-import { extractConciergeV2PublicSections } from "@/lib/concierge-v2/public-event";
 import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
+import { extractConciergeV2PublicSections } from "@/lib/concierge-v2/public-event";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { isScannedInviteCreatedVia, normalizeDashboardEventOwnership } from "@/lib/dashboard-data";
 import {
@@ -60,12 +60,12 @@ import { getEventAccessCookieName, verifyEventAccessCookieValue } from "@/lib/ev
 import { getEventTheme } from "@/lib/event-theme";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { combineVenueAndLocation } from "@/lib/mappers";
+import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
 import {
   flyerHasPrintedStreetAddress,
   normalizeOcrLocationFields,
   normalizeOcrRsvpFields,
 } from "@/lib/ocr/field-normalization";
-import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
 import { enrichOcrVenueAddress } from "@/lib/ocr/place-enrichment";
 import {
   isBasketballOcrSkinCandidate,
@@ -199,8 +199,8 @@ function DeletedEventNotice() {
           This event was deleted
         </h1>
         <p className="mx-auto mt-4 max-w-md text-base leading-7 text-[#756b82]">
-          The link you opened no longer points to an active Envitefy event. It may have been
-          removed by the organizer.
+          The link you opened no longer points to an active Envitefy event. It may have been removed
+          by the organizer.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -268,7 +268,9 @@ function sanitizeScannedOcrDisplayTitle(value: string, data: Record<string, unkn
     .map((part) => part.trim())
     .filter(Boolean);
   if (parts.length < 3) return value;
-  const kept = parts.filter((part, index) => index < 2 || !titleSegmentLooksLikeOcrVenueNarrative(part));
+  const kept = parts.filter(
+    (part, index) => index < 2 || !titleSegmentLooksLikeOcrVenueNarrative(part),
+  );
   return kept.join(" — ") || value;
 }
 
@@ -414,7 +416,9 @@ function buildPublicEventJsonLd(params: {
         eventStatus: resolvePublicEventSchemaStatus(params.data),
         eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
         location: place || undefined,
-        keywords: category ? [category, "event page", "RSVP", "Envitefy"] : ["event page", "RSVP", "Envitefy"],
+        keywords: category
+          ? [category, "event page", "RSVP", "Envitefy"]
+          : ["event page", "RSVP", "Envitefy"],
         organizer: {
           "@type": "Organization",
           name: "Envitefy",
@@ -1262,6 +1266,11 @@ export default async function EventPage({
     discoveryCategory === "sport_football_season" ||
     discoveryTemplateId === "football-season" ||
     discoveryTemplateId === "football";
+  const isSportsDiscoveryTemplate =
+    (discoveryCreatedVia === "sports-discovery" ||
+      discoveryCreatedVia === "sports-discovery-v1" ||
+      discoveryWorkflow === "sports") &&
+    (discoveryCategory === "sport_event" || discoveryTemplateId.startsWith("sport-event-"));
   const rawFootballPageTemplateId = (data as any)?.pageTemplateId;
   const footballPageTemplateId = isGymMeetTemplateId(rawFootballPageTemplateId)
     ? rawFootballPageTemplateId
@@ -1276,7 +1285,9 @@ export default async function EventPage({
     discoveryCreatedVia === "meet-discovery" ||
     discoveryCreatedVia === "meet-discovery-v2" ||
     discoveryCreatedVia === "football-discovery" ||
-    discoveryCreatedVia === "football-discovery-v2";
+    discoveryCreatedVia === "football-discovery-v2" ||
+    discoveryCreatedVia === "sports-discovery" ||
+    discoveryCreatedVia === "sports-discovery-v1";
   const showHostDashboard =
     canManageCreatedEvent && !hideHostDashboard && ownerRsvpDashboardEnabled;
   const showOwnerWorkspace = canManageCreatedEvent && !isScannedOrUploadedEventData(data);
@@ -1772,7 +1783,9 @@ export default async function EventPage({
     (typeof rsvpRecord?.email === "string" && rsvpRecord.email.trim()) ||
     "";
   const rawRsvpEmail =
-    findFirstEmail(rsvpField) ?? findFirstEmail(aggregateContactText) ?? findFirstEmail(explicitRsvpEmail);
+    findFirstEmail(rsvpField) ??
+    findFirstEmail(aggregateContactText) ??
+    findFirstEmail(explicitRsvpEmail);
   const rawRsvpUrl =
     structuredRsvpUrl ||
     normalizeUrlValue(findFirstUrl(rsvpField)) ||
@@ -1875,8 +1888,7 @@ export default async function EventPage({
     liveCardRecord.additionalLocations,
     publicEventRecord.additionalLocations,
     data?.additionalLocations,
-  ]
-    .find((value) => Array.isArray(value)) as unknown[] | undefined;
+  ].find((value) => Array.isArray(value)) as unknown[] | undefined;
   const additionalLocations = (publicAdditionalLocations || [])
     .map((item) => {
       const record = asPlainRecord(item);
@@ -1938,10 +1950,7 @@ export default async function EventPage({
       (rsvpPhone || rsvpEmail || publicRsvpUrl || directRsvpEnabled || publicRsvpField),
   );
   const rsvpContactSource =
-    storedRsvpName ||
-    publicRsvpField ||
-    rsvpEmail ||
-    (hasPublicRsvpAction ? hostName : "");
+    storedRsvpName || publicRsvpField || rsvpEmail || (hasPublicRsvpAction ? hostName : "");
   // Extract just the name from RSVP field (remove "RSVP:" prefix, phone number, and option text)
   const rsvpNameRaw = rsvpContactSource
     ? rsvpContactSource
@@ -2236,12 +2245,9 @@ export default async function EventPage({
     undefined,
     { title },
   );
-  const genericOcrSkin = normalizeOcrSkinSelection(
-    (data as any)?.ocrSkin,
-    categoryRaw,
-    undefined,
-    { title },
-  );
+  const genericOcrSkin = normalizeOcrSkinSelection((data as any)?.ocrSkin, categoryRaw, undefined, {
+    title,
+  });
   const isBirthdaySkinEvent =
     categoryNormalized === "birthdays" && isOcrEvent && Boolean(birthdayOcrSkin);
   const isBirthdayTemplate =
@@ -2329,7 +2335,8 @@ export default async function EventPage({
     isOcrEvent &&
     isOcrInviteCategory(categoryRaw) &&
     Boolean(genericOcrSkin);
-  const isDiscoverySimpleTemplate = isGymnasticsDiscoveryTemplate || isFootballDiscoveryTemplate;
+  const isDiscoverySimpleTemplate =
+    isGymnasticsDiscoveryTemplate || isFootballDiscoveryTemplate || isSportsDiscoveryTemplate;
   const isSimpleTemplate =
     (createdVia === "simple-template" || createdVia === "template" || isDiscoverySimpleTemplate) &&
     templateId &&

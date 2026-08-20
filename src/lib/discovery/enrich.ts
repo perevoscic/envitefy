@@ -18,7 +18,7 @@ export async function runDiscoveryEnrichStage(
   options?: { signal?: AbortSignal },
 ) {
   throwIfDiscoveryCancelled(options?.signal);
-  if (discovery.workflow === "football") {
+  if (discovery.workflow !== "gymnastics") {
     return {
       document: discovery.document,
       enrichment: {

@@ -10,8 +10,8 @@ import type {
   EventDiscoveryRow,
   GymBuilderDraft,
 } from "@/lib/discovery/types";
-import { mapParseResultToFootballData } from "@/lib/football-discovery";
-import { mapParseResultToGymData } from "@/lib/meet-discovery";
+import { getSportEventPreset } from "@/lib/sport-event-presets";
+import { getDiscoveryAdapter } from "@/lib/sports-discovery";
 
 export function buildGymBuilderDraft(params: {
   mappedData: Record<string, any>;
@@ -77,6 +77,42 @@ export function buildFootballBuilderDraft(params: {
   };
 }
 
+export function buildSportsBuilderDraft(params: {
+  mappedData: Record<string, any>;
+  reviewFlags?: string[];
+}): DiscoveryBuilderDraft {
+  const mappedData = params.mappedData || {};
+  const preset = getSportEventPreset(mappedData.activityProfile || mappedData?.customFields?.sport);
+  return {
+    event: {
+      ...mappedData,
+      templateId: safeString(mappedData.templateId) || `sport-event-${preset.key}`,
+      pageTemplateId: safeString(mappedData.pageTemplateId) || preset.themeIds[0],
+      createdVia: "sports-discovery-v1",
+      createdManually: false,
+      category: "sport_event",
+      primaryOutput: "event_page",
+      requestedOutputs: ["event_page"],
+      activityProfile: preset.key,
+    },
+    venue: {
+      venue: safeString(mappedData.venue),
+      address: safeString(mappedData.address),
+      city: safeString(mappedData.city),
+      state: safeString(mappedData.state),
+      location: safeString(mappedData.location),
+    },
+    advancedSections:
+      mappedData.advancedSections && typeof mappedData.advancedSections === "object"
+        ? mappedData.advancedSections
+        : {},
+    canonicalLinks: {
+      links: Array.isArray(mappedData.links) ? mappedData.links : [],
+    },
+    reviewFlags: uniqueStrings(params.reviewFlags || [], 24),
+  };
+}
+
 export async function runDiscoveryMapStage(
   discovery: EventDiscoveryRow,
   options?: { signal?: AbortSignal },
@@ -91,14 +127,15 @@ export async function runDiscoveryMapStage(
   if (!baseParseResult || typeof baseParseResult !== "object") {
     throw new Error("Core parse result missing");
   }
-  const mappedData =
-    discovery.workflow === "football"
-      ? await mapParseResultToFootballData(baseParseResult as any, currentData)
-      : await mapParseResultToGymData(
-          baseParseResult as any,
-          currentData,
-          discovery.document?.extractionMeta as any,
-        );
+  const adapter = getDiscoveryAdapter(discovery.workflow);
+  const mappedData = await adapter.map({
+    parseResult: baseParseResult as Record<string, any>,
+    currentData,
+    extractionMeta: discovery.document?.extractionMeta as Record<string, any>,
+    activityProfile: discovery.canonicalParse?.activityProfile || discovery.source.activityProfile,
+    eventArchetype: discovery.canonicalParse?.eventArchetype || discovery.source.eventArchetype,
+    detectionConfidence: discovery.canonicalParse?.detection?.confidence,
+  });
   throwIfDiscoveryCancelled(options?.signal);
   const reviewFlags = uniqueStrings(
     [
@@ -112,6 +149,8 @@ export async function runDiscoveryMapStage(
     builderDraft:
       discovery.workflow === "football"
         ? buildFootballBuilderDraft({ mappedData, reviewFlags })
-        : buildGymBuilderDraft({ mappedData, reviewFlags }),
+        : discovery.workflow === "sports"
+          ? buildSportsBuilderDraft({ mappedData, reviewFlags })
+          : buildGymBuilderDraft({ mappedData, reviewFlags }),
   };
 }

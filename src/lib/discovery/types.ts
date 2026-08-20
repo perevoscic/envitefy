@@ -1,4 +1,6 @@
-export type DiscoveryWorkflow = "gymnastics" | "football";
+import type { SportDetectionResult, SportEventArchetype } from "@/lib/sports-discovery";
+
+export type DiscoveryWorkflow = "gymnastics" | "football" | "sports";
 
 export type DiscoveryStage =
   | "ingested"
@@ -50,6 +52,8 @@ export type DiscoverySourceRecord = {
   originalSizeBytes?: number | null;
   optimizedByQpdf?: boolean | null;
   dataUrl?: string | null;
+  activityProfile?: string | null;
+  eventArchetype?: SportEventArchetype | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -123,6 +127,10 @@ export type CanonicalIssue = {
 
 export type CanonicalDiscoveryParse = {
   workflow: DiscoveryWorkflow;
+  activityProfile?: string | null;
+  eventArchetype?: SportEventArchetype | null;
+  parserAdapter?: string | null;
+  detection?: SportDetectionResult | null;
   eventCore: Record<string, unknown>;
   venue: Record<string, unknown>;
   spectatorInfo: Record<string, unknown>;
@@ -229,4 +237,8 @@ export type DiscoveryStatusResponse = {
   errorMessage: string | null;
   errorDetails: Record<string, unknown> | null;
   reviewFlags: string[];
+  activityProfile?: string | null;
+  eventArchetype?: SportEventArchetype | null;
+  detectionConfidence?: number | null;
+  needsSportConfirmation?: boolean;
 };

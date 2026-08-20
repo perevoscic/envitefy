@@ -326,7 +326,7 @@ type EventResourceMatch = {
   reason: string;
 };
 
-export type DiscoveryWorkflow = "gymnastics" | "football";
+export type DiscoveryWorkflow = "gymnastics" | "football" | "sports";
 export type DiscoveryMode = "core" | "enrich";
 
 type DiscoveryUsageStage = "parse" | "gymLayoutVision";

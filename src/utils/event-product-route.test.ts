@@ -26,6 +26,18 @@ describe("event product routing", () => {
     ).toBe("live_card");
   });
 
+  test("shared sports discovery always opens as an event page", () => {
+    const output = getPrimaryEventProductOutput({
+      title: "Central Invitational",
+      category: "sport_event",
+      createdVia: "sports-discovery-v1",
+      activityProfile: "basketball",
+    });
+
+    expect(output).toBe("event_page");
+    expect(isCardFirstEventProduct(output)).toBe(false);
+  });
+
   test("non-discovery invitation requests keep card-first inference", () => {
     expect(
       getPrimaryEventProductOutput({
