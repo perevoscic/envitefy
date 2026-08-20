@@ -2929,6 +2929,16 @@ function resolveDiscoveryVisionModel(): string {
   return safeString(process.env.OPENAI_DISCOVERY_VISION_MODEL) || "gpt-4o-mini";
 }
 
+const DEFAULT_GEMINI_PARSE_MODEL = "gemini-3.6-flash";
+
+function resolveGeminiParseModels(): string[] {
+  const configuredModel = safeString(process.env.GEMINI_MODEL);
+  return uniqueBy(
+    [configuredModel, DEFAULT_GEMINI_PARSE_MODEL].filter(Boolean),
+    (model) => model,
+  );
+}
+
 let openAiClient: OpenAI | null = null;
 function getOpenAiClient(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY || "";
@@ -10666,7 +10676,6 @@ async function _callOpenAiScheduleParse(
     });
     const completion = await client.chat.completions.create({
       model: resolveDiscoveryParseModel(),
-      temperature: 0,
       response_format: {
         type: "json_schema",
         json_schema: GYMNASTICS_SCHEDULE_JSON_SCHEMA,
@@ -11550,7 +11559,6 @@ async function _callOpenAiParse(
   });
   const completion = await client.chat.completions.create({
     model: resolveDiscoveryParseModel(),
-    temperature: 0,
     response_format: {
       type: "json_schema",
       json_schema: GYMNASTICS_PARSE_JSON_SCHEMA,
@@ -11594,7 +11602,6 @@ async function callOpenAiClassification(
   });
   const completion = await client.chat.completions.create({
     model: resolveDiscoveryParseModel(),
-    temperature: 0,
     response_format: {
       type: "json_schema",
       json_schema: GYMNASTICS_CLASSIFIER_JSON_SCHEMA,
@@ -11645,7 +11652,6 @@ async function callOpenAiTargetedParse(
   });
   const completion = await client.chat.completions.create({
     model: resolveDiscoveryParseModel(),
-    temperature: 0,
     response_format: {
       type: "json_schema",
       json_schema: GYMNASTICS_PARSE_JSON_SCHEMA,
@@ -11684,41 +11690,67 @@ async function callGeminiParse(
 ): Promise<{ result: ParseResult | null; raw: string }> {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
   if (!apiKey) throw new Error("Gemini API key is not configured");
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-    process.env.GEMINI_MODEL || "gemini-1.5-flash",
-  )}:generateContent?key=${encodeURIComponent(apiKey)}`;
-  const startedAt = Date.now();
-  logDiscoveryDebug("[meet-discovery] gemini parse request started", {
-    traceId: traceId || null,
-    model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
-  });
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      generationConfig: {
-        temperature: 0,
-        responseMimeType: "application/json",
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: buildProfessionalParsePrompt(evidence, text) }],
+  const models = resolveGeminiParseModels();
+  let lastFailure = "Gemini request failed";
+
+  for (const [index, model] of models.entries()) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+      model,
+    )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const startedAt = Date.now();
+    logDiscoveryDebug("[meet-discovery] gemini parse request started", {
+      traceId: traceId || null,
+      model,
+    });
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        generationConfig: {
+          temperature: 0,
+          responseMimeType: "application/json",
         },
-      ],
-    }),
-  });
-  if (!response.ok) {
-    throw new Error(`Gemini request failed (${response.status})`);
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: buildProfessionalParsePrompt(evidence, text) }],
+          },
+        ],
+      }),
+    });
+    if (!response.ok) {
+      const responseDetail = (await response.text().catch(() => ""))
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 500);
+      lastFailure = `Gemini request failed (${response.status}) for model ${model}${
+        responseDetail ? `: ${responseDetail}` : ""
+      }`;
+      const canRetrySupportedDefault = response.status === 404 && index < models.length - 1;
+      if (canRetrySupportedDefault) {
+        console.warn("[meet-discovery] configured Gemini model was not found; retrying fallback", {
+          traceId: traceId || null,
+          model,
+          fallbackModel: models[index + 1],
+        });
+        continue;
+      }
+      throw new Error(lastFailure);
+    }
+    const json = (await response.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    };
+    logDiscoveryDebug("[meet-discovery] gemini parse request finished", {
+      traceId: traceId || null,
+      model,
+      durationMs: Date.now() - startedAt,
+    });
+    const raw = safeString(json.candidates?.[0]?.content?.parts?.[0]?.text);
+    const parsed = normalizeParseResult(extractJsonObject(raw));
+    return { result: parsed, raw };
   }
-  const json = await response.json();
-  logDiscoveryDebug("[meet-discovery] gemini parse request finished", {
-    traceId: traceId || null,
-    durationMs: Date.now() - startedAt,
-  });
-  const raw = safeString(json?.candidates?.[0]?.content?.parts?.[0]?.text);
-  const parsed = normalizeParseResult(extractJsonObject(raw));
-  return { result: parsed, raw };
+
+  throw new Error(lastFailure);
 }
 
 export async function finalizeMeetParseResult(

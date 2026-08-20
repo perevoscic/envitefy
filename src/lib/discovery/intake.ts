@@ -102,8 +102,9 @@ export async function intakeDiscovery(params: {
   });
   const created = await createDiscoveryShell({
     workflow,
-    // Do not claim discovery drafts into the user's history until an explicit Save/Publish action.
-    userId: null,
+    // Authenticated intake must retain ownership so the generated builder can load and save it.
+    // Cancel still removes an unsaved `new=1` draft from the customize flow.
+    userId: params.userId,
     title,
     source,
     pipeline,

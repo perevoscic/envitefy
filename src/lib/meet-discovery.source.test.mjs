@@ -67,3 +67,16 @@ test("meet discovery defaults staged structured parsing to GPT-5.5", () => {
   assert.match(source, /callOpenAiClassification/);
   assert.match(source, /callOpenAiTargetedParse/);
 });
+
+test("meet discovery uses supported model parameters and recovers from retired Gemini models", () => {
+  const source = readSource("src/lib/meet-discovery/core.ts");
+
+  assert.match(source, /const DEFAULT_GEMINI_PARSE_MODEL = "gemini-3\.6-flash";/);
+  assert.doesNotMatch(
+    source,
+    /model: resolveDiscoveryParseModel\(\),\s*temperature: 0,/,
+  );
+  assert.match(source, /response\.status === 404 && index < models\.length - 1/);
+  assert.match(source, /configured Gemini model was not found; retrying fallback/);
+  assert.doesNotMatch(source, /gemini-1\.5-flash/);
+});

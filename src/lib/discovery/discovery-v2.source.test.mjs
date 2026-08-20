@@ -54,7 +54,7 @@ test("discovery v2 threads travelAccommodation through enrich, compose, and snap
   assert.match(runSource, /eventDataPatch: composed\.eventDataPatch/);
 });
 
-test("gymnastics discovery clients use the v2 intake run status flow", () => {
+test("gymnastics discovery clients use the owned v2 intake run status flow", () => {
   const launcherSource = readSource("src/components/event-create/GymnasticsLauncher.tsx");
   const customizeSource = readSource("src/app/event/gymnastics/customize/page.tsx");
   const intakeSource = readSource("src/lib/discovery/intake.ts");
@@ -66,7 +66,8 @@ test("gymnastics discovery clients use the v2 intake run status flow", () => {
   assert.match(customizeSource, /\/api\/discovery\/intake/);
   assert.match(customizeSource, /\/api\/discovery\/\$\{eventId\}\/run/);
   assert.match(customizeSource, /\/api\/discovery\/\$\{eventId\}\/status/);
-  assert.match(intakeSource, /userId: null/);
+  assert.match(intakeSource, /userId: params\.userId/);
+  assert.doesNotMatch(intakeSource, /userId: null/);
   assert.match(intakeSource, /workflow,/);
 });
 
