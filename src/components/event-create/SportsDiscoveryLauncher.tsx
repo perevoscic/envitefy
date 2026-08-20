@@ -218,14 +218,14 @@ export default function SportsDiscoveryLauncher({ sport }: SportsDiscoveryLaunch
 
   const manualHref = buildSportEventCustomizeHref(preset.key);
   const cardClass = (method: typeof activeMethod) =>
-    `flex min-h-[20rem] flex-col rounded-[1.6rem] border bg-white p-5 transition ${
+    `flex min-h-0 flex-col rounded-[1.35rem] border bg-white p-4 transition sm:rounded-[1.6rem] sm:p-5 lg:min-h-[20rem] ${
       activeMethod === method
         ? "border-[#675cf4] shadow-[0_18px_55px_rgba(95,85,255,0.15)] ring-1 ring-[#675cf4]"
         : "border-[#e5e1ee] hover:-translate-y-0.5 hover:border-[#bdb5f5]"
     }`;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-3">
       <section className={cardClass("upload")} onClick={() => setActiveMethod("upload")}>
         <div className="flex items-center justify-between">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f0eeff] text-[#5f55ff]">
@@ -233,14 +233,14 @@ export default function SportsDiscoveryLauncher({ sport }: SportsDiscoveryLaunch
           </span>
           {activeMethod === "upload" ? <CheckCircle2 className="h-5 w-5 text-[#5f55ff]" /> : null}
         </div>
-        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#8c86a0]">
+        <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8c86a0] sm:mt-5 sm:text-[11px]">
           Fastest setup
         </p>
-        <h2 className="mt-2 text-2xl font-black">Upload event file</h2>
+        <h2 className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">Upload event file</h2>
         <p className="mt-2 text-sm leading-6 text-[#625b70]">
           Use a PDF, schedule, flyer, or parent packet. We’ll fill the most important details.
         </p>
-        <div className="mt-auto pt-5">
+        <div className="mt-auto pt-4 sm:pt-5">
           {busyMethod === "upload" ? (
             <DiscoveryProgressPanel
               cancelLabel="Cancel upload"
@@ -252,7 +252,7 @@ export default function SportsDiscoveryLauncher({ sport }: SportsDiscoveryLaunch
           ) : (
             <button
               type="button"
-              className="w-full rounded-2xl border-2 border-dashed border-[#d9d4e8] bg-[#faf9fd] px-4 py-5 text-sm font-bold text-[#4a40c7] hover:border-[#675cf4]"
+              className="min-h-11 w-full rounded-2xl border-2 border-dashed border-[#d9d4e8] bg-[#faf9fd] px-4 py-3 text-sm font-bold text-[#4a40c7] hover:border-[#675cf4] sm:py-5"
               disabled={Boolean(busyMethod)}
               onClick={(event) => {
                 event.stopPropagation();
@@ -288,20 +288,20 @@ export default function SportsDiscoveryLauncher({ sport }: SportsDiscoveryLaunch
           </span>
           {activeMethod === "url" ? <CheckCircle2 className="h-5 w-5 text-[#5f55ff]" /> : null}
         </div>
-        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#8c86a0]">
+        <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8c86a0] sm:mt-5 sm:text-[11px]">
           Sync from web
         </p>
-        <h2 className="mt-2 text-2xl font-black">Paste a live URL</h2>
+        <h2 className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">Paste a live URL</h2>
         <p className="mt-2 text-sm leading-6 text-[#625b70]">
           Use a public team, tournament, schedule, or event page.
         </p>
-        <div className="mt-auto space-y-3 pt-5">
+        <div className="mt-auto space-y-3 pt-4 sm:pt-5">
           <input
             type="url"
             value={sourceUrl}
             onChange={(event) => setSourceUrl(event.target.value)}
             placeholder="https://team.org/schedule"
-            className="w-full rounded-2xl border border-[#d9d4e8] bg-white px-4 py-3 text-sm outline-none focus:border-[#675cf4]"
+            className="min-h-11 w-full rounded-2xl border border-[#d9d4e8] bg-white px-4 py-2.5 text-base outline-none focus:border-[#675cf4]"
           />
           {busyMethod === "url" ? (
             <DiscoveryProgressPanel
@@ -326,7 +326,7 @@ export default function SportsDiscoveryLauncher({ sport }: SportsDiscoveryLaunch
                 }
                 void run({ url }, "url");
               }}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#5f55ff] px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#5f55ff] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
             >
               Sync URL <ArrowRight className="h-4 w-4" />
             </button>
@@ -341,16 +341,16 @@ export default function SportsDiscoveryLauncher({ sport }: SportsDiscoveryLaunch
           </span>
           {activeMethod === "manual" ? <CheckCircle2 className="h-5 w-5 text-[#5f55ff]" /> : null}
         </div>
-        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#8c86a0]">
+        <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8c86a0] sm:mt-5 sm:text-[11px]">
           Full control
         </p>
-        <h2 className="mt-2 text-2xl font-black">Build it yourself</h2>
+        <h2 className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">Build it yourself</h2>
         <p className="mt-2 text-sm leading-6 text-[#625b70]">
           Start with a polished {preset.label.toLowerCase()} template and add only what you need.
         </p>
         <a
           href={manualHref}
-          className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#17111e] px-4 py-3 text-sm font-bold text-white"
+          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#17111e] px-4 py-2.5 text-sm font-bold text-white lg:mt-auto"
           onClick={(event) => event.stopPropagation()}
         >
           Open visual builder <ArrowRight className="h-4 w-4" />
@@ -360,7 +360,12 @@ export default function SportsDiscoveryLauncher({ sport }: SportsDiscoveryLaunch
       {error ? (
         <div className="flex items-start justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 lg:col-span-3">
           <span>{error}</span>
-          <button type="button" aria-label="Dismiss error" onClick={() => setError("")}>
+          <button
+            type="button"
+            className="grid size-11 shrink-0 place-items-center rounded-full"
+            aria-label="Dismiss error"
+            onClick={() => setError("")}
+          >
             <X className="h-4 w-4" />
           </button>
         </div>

@@ -4,7 +4,9 @@ import {
   Calendar,
   Camera,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   Clock,
   CloudSun,
   type LucideIcon,
@@ -721,6 +723,7 @@ export default function HomeOverviewDashboard({
   onForceTravel,
 }: HomeOverviewDashboardProps) {
   const [now, setNow] = useState(() => Date.now());
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
   const nextEvent = data?.nextEvent ?? null;
 
   useEffect(() => {
@@ -925,6 +928,7 @@ export default function HomeOverviewDashboard({
           (e) => e.id !== nextEvent?.id,
         );
         if (upcomingRest.length === 0) return null;
+        const visibleUpcoming = showAllUpcoming ? upcomingRest : upcomingRest.slice(0, 3);
         return (
           <section className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -937,7 +941,7 @@ export default function HomeOverviewDashboard({
               </span>
             </div>
             <div className="flex flex-col gap-6">
-              {upcomingRest.map((ev) => {
+              {visibleUpcoming.map((ev) => {
                 const actions = buildInvitationActions(ev, onForceTravel);
                 return (
                   <InvitationEventCard
@@ -957,6 +961,24 @@ export default function HomeOverviewDashboard({
                 );
               })}
             </div>
+            {upcomingRest.length > 3 ? (
+              <button
+                type="button"
+                aria-expanded={showAllUpcoming}
+                onClick={() => setShowAllUpcoming((current) => !current)}
+                className="mobile-touch-target mx-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                {showAllUpcoming ? (
+                  <>
+                    Show fewer events <ChevronUp className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    Show all {upcomingRest.length} events <ChevronDown className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            ) : null}
           </section>
         );
       })()}

@@ -919,6 +919,64 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+:root {
+  --mobile-page-gutter: clamp(1rem, 4.25vw, 1.5rem);
+  --envitefy-layout-height: 100dvh;
+  --envitefy-keyboard-inset: 0px;
+  --mobile-action-bar-height: 4.5rem;
+}
+
+@layer utilities {
+  .mobile-page-gutters {
+    padding-inline: max(var(--mobile-page-gutter), env(safe-area-inset-left));
+    padding-right: max(var(--mobile-page-gutter), env(safe-area-inset-right));
+  }
+
+  .mobile-safe-action-bar {
+    position: sticky;
+    z-index: 40;
+    bottom: 0;
+    display: flex;
+    min-height: var(--mobile-action-bar-height);
+    align-items: center;
+    gap: 0.75rem;
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+    background: color-mix(in srgb, var(--background) 94%, transparent);
+    padding: 0.75rem max(var(--mobile-page-gutter), env(safe-area-inset-right));
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom) + var(--envitefy-keyboard-inset));
+    padding-left: max(var(--mobile-page-gutter), env(safe-area-inset-left));
+    backdrop-filter: blur(18px);
+  }
+
+.mobile-touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+@media (max-width: 1023px) {
+  .sport-creation-notice + main {
+    padding-top: 1.25rem;
+  }
+}
+
+  @media (max-width: 767px) {
+    [data-mobile-form-surface] :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+      font-size: 16px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .mobile-safe-action-bar {
+      position: static;
+      min-height: 0;
+      border-top: 0;
+      background: transparent;
+      padding: 0;
+      backdrop-filter: none;
+    }
+  }
+}
+
 html.sidebar-mobile-open,
 body.sidebar-mobile-open {
   overflow: hidden;

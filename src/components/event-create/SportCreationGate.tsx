@@ -113,7 +113,7 @@ export default function SportCreationGate({
 
   if (visibility.loading && !optimisticPreferences) {
     return (
-      <main className="min-h-screen bg-[#f8f8fb] px-6 py-12">
+      <main className="min-h-screen bg-[#f8f8fb] px-4 pb-12 pt-24 sm:px-6 lg:pt-12">
         <div className="mx-auto h-72 max-w-5xl animate-pulse rounded-[2rem] bg-white/80" />
       </main>
     );
@@ -121,7 +121,7 @@ export default function SportCreationGate({
 
   if (!sportsEnabled) {
     return (
-      <main className="min-h-screen bg-[#f8f8fb] px-6 py-12 text-[#20172b]">
+      <main className="min-h-screen bg-[#f8f8fb] px-4 pb-12 pt-24 text-[#20172b] sm:px-6 lg:pt-12">
         <section className="mx-auto max-w-xl rounded-[2rem] border border-[#e4dff0] bg-white p-8 text-center shadow-[0_24px_80px_rgba(44,35,76,0.1)]">
           <Settings2 className="mx-auto h-9 w-9 text-[#6658ed]" />
           <h1 className="mt-4 text-3xl font-black">Sports creation is turned off</h1>
@@ -131,7 +131,7 @@ export default function SportCreationGate({
           </p>
           <Link
             href="/settings#your-sports"
-            className="mt-6 inline-flex rounded-xl bg-[#5f55ff] px-5 py-3 text-sm font-bold text-white"
+            className="mt-6 inline-flex min-h-11 items-center rounded-xl bg-[#5f55ff] px-5 py-3 text-sm font-bold text-white"
           >
             Open Profile Settings
           </Link>
@@ -142,8 +142,8 @@ export default function SportCreationGate({
 
   if (!preferences.setupCompleted) {
     return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_15%_10%,#eeeaff_0,transparent_34%),radial-gradient(circle_at_88%_12%,#e9f7ff_0,transparent_30%),#f8f8fb] px-4 py-9 text-[#1f1729] sm:px-6">
-        <section className="mx-auto max-w-5xl rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-[0_26px_90px_rgba(44,35,76,0.12)] sm:p-9">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_15%_10%,#eeeaff_0,transparent_34%),radial-gradient(circle_at_88%_12%,#e9f7ff_0,transparent_30%),#f8f8fb] px-3 pb-9 pt-24 text-[#1f1729] sm:px-6 lg:pt-9">
+        <section className="mx-auto max-w-5xl rounded-[1.5rem] border border-white/80 bg-white/90 p-4 shadow-[0_26px_90px_rgba(44,35,76,0.12)] sm:rounded-[2rem] sm:p-9">
           <div className="mx-auto max-w-2xl text-center">
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eeeaff] text-[#5f55ff]">
               <Trophy className="h-6 w-6" />
@@ -151,7 +151,7 @@ export default function SportCreationGate({
             <p className="mt-5 text-xs font-black uppercase tracking-[0.2em] text-[#6658ed]">
               Personalize your workspace
             </p>
-            <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
+            <h1 className="mt-2 text-[2rem] font-black tracking-tight sm:text-5xl">
               What sport do you manage?
             </h1>
             <p className="mt-4 text-base leading-7 text-[#6b6376]">
@@ -199,7 +199,7 @@ export default function SportCreationGate({
               type="button"
               disabled={!selection || saving}
               onClick={() => void confirmSetup()}
-              className="min-w-52 rounded-2xl bg-[#17111e] px-7 py-3.5 text-sm font-black text-white transition hover:bg-[#302639] disabled:cursor-not-allowed disabled:opacity-40"
+              className="min-h-11 w-full rounded-2xl bg-[#17111e] px-7 py-3.5 text-sm font-black text-white transition hover:bg-[#302639] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:min-w-52"
             >
               {saving ? "Saving…" : "Continue"}
             </button>
@@ -212,7 +212,7 @@ export default function SportCreationGate({
 
   if (!activeSport || (surface === "gymnastics") !== (activeSport === "gymnastics")) {
     return (
-      <main className="min-h-screen bg-[#f8f8fb] px-6 py-12">
+      <main className="min-h-screen bg-[#f8f8fb] px-4 pb-12 pt-24 sm:px-6 lg:pt-12">
         <div className="mx-auto h-32 max-w-5xl animate-pulse rounded-[2rem] bg-white/80" />
       </main>
     );
@@ -226,8 +226,8 @@ export default function SportCreationGate({
   return (
     <>
       {preferences.enabledSports.length > 1 || requestedWasDisabled ? (
-        <div className="border-b border-[#e7e2ef] bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+        <div className="sport-creation-notice border-b border-[#e7e2ef] bg-white/90 px-4 pb-3 pt-20 backdrop-blur sm:px-6 lg:py-3">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.17em] text-[#8a8294]">
                 Creating for
@@ -236,14 +236,14 @@ export default function SportCreationGate({
                 {getSportCreationLabel(activeSport)}
               </p>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
               {preferences.enabledSports.length > 1 ? (
-                <label className="flex items-center gap-2 text-xs font-bold text-[#665e70]">
+                <label className="flex min-w-0 items-center justify-between gap-2 text-xs font-bold text-[#665e70]">
                   Switch sport
                   <select
                     value={activeSport}
                     onChange={(event) => router.push(buildSportCreationHref(event.target.value))}
-                    className="rounded-xl border border-[#dcd5e7] bg-white px-3 py-2 text-sm font-bold text-[#30283a]"
+                    className="min-h-11 min-w-0 rounded-xl border border-[#dcd5e7] bg-white px-3 py-2 text-base font-bold text-[#30283a] sm:text-sm"
                   >
                     {preferences.enabledSports.map((sport) => (
                       <option key={sport} value={sport}>
@@ -254,7 +254,10 @@ export default function SportCreationGate({
                   </select>
                 </label>
               ) : null}
-              <Link href="/settings#your-sports" className="text-xs font-bold text-[#5548d8]">
+              <Link
+                href="/settings#your-sports"
+                className="inline-flex min-h-11 items-center text-xs font-bold text-[#5548d8]"
+              >
                 Manage sports
               </Link>
             </div>

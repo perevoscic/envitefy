@@ -8,6 +8,7 @@ import { EventCacheProvider } from "@/app/event-cache-context";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import { MainContentWrapper } from "@/components/MainContentWrapper";
+import MobileOverflowReporter from "@/components/MobileOverflowReporter";
 import { MenuProvider } from "@/contexts/MenuContext";
 import { getCreateActionForSignupIntent, signupIntentForMarketingPath } from "@/lib/signup-intent";
 import { AUTH_TRANSITION_CLEAR_EVENT, AUTH_TRANSITION_EVENT } from "@/utils/authTransition";
@@ -134,6 +135,7 @@ export default function AppShell({
 
   return (
     <EventCacheProvider>
+      {process.env.NODE_ENV === "development" ? <MobileOverflowReporter /> : null}
       {authTransitionMessage ? <AuthTransitionOverlay message={authTransitionMessage} /> : null}
       {showAppChrome ? (
         <MenuProvider>

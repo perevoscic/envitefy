@@ -1511,8 +1511,12 @@ export default function LeftSidebar() {
         aria-hidden="true"
       />
 
-      <aside
+      <div
         ref={viewModel.asideRef}
+        role={!viewModel.isDesktop && viewModel.isOpen ? "dialog" : undefined}
+        aria-modal={!viewModel.isDesktop && viewModel.isOpen ? true : undefined}
+        aria-hidden={!viewModel.isDesktop && !viewModel.isOpen ? true : undefined}
+        tabIndex={-1}
         className={`nav-chrome-sidebar-surface fixed left-0 top-0 z-[6000] flex h-full flex-col border-r border-[rgba(112,97,168,0.14)] ${viewModel.overflowClass} transition-[transform,opacity,width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${viewModel.pointerClass} lg:flex`}
         style={{
           width: viewModel.sidebarWidth,
@@ -1716,7 +1720,7 @@ export default function LeftSidebar() {
             </div>
           </div>
         </div>
-      </aside>
+      </div>
     </>
   );
 }

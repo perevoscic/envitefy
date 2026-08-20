@@ -20,15 +20,15 @@ export default function SportEventsPageClient() {
       {(activeSport) => {
         const selectedSport = getSportEventPreset(activeSport);
         return (
-          <main className="min-h-screen bg-[radial-gradient(circle_at_12%_12%,#eeeaff_0,transparent_30%),radial-gradient(circle_at_88%_8%,#e9f7ff_0,transparent_28%),#f8f8fb] px-4 py-7 text-[#17111e] sm:px-6 lg:px-8">
-            <section className="mx-auto w-full max-w-7xl">
-              <div className="flex flex-col gap-5 rounded-[2rem] border border-white/80 bg-white/75 p-5 shadow-[0_24px_90px_rgba(41,32,72,0.1)] backdrop-blur sm:p-7">
+          <main className="min-h-screen bg-[radial-gradient(circle_at_12%_12%,#eeeaff_0,transparent_30%),radial-gradient(circle_at_88%_8%,#e9f7ff_0,transparent_28%),#f8f8fb] px-3 pb-5 pt-24 text-[#17111e] sm:px-6 sm:pb-8 sm:pt-24 lg:px-8 lg:pt-8">
+            <section className="mx-auto w-full min-w-0 max-w-7xl">
+              <div className="flex min-w-0 flex-col gap-4 rounded-[1.5rem] border border-white/80 bg-white/75 p-4 shadow-[0_24px_90px_rgba(41,32,72,0.1)] backdrop-blur sm:gap-5 sm:rounded-[2rem] sm:p-7">
                 <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
                   <div>
                     <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#5f55ff]">
                       <Sparkles className="h-4 w-4" /> Smart {selectedSport.shortLabel} builder
                     </p>
-                    <h1 className="mt-3 max-w-4xl text-4xl font-black leading-[0.98] sm:text-6xl">
+                    <h1 className="mt-3 max-w-4xl text-[2rem] font-black leading-[1.02] sm:text-6xl sm:leading-[0.98]">
                       Turn your {selectedSport.shortLabel.toLowerCase()} packet into a useful event
                       page.
                     </h1>
@@ -37,7 +37,7 @@ export default function SportEventsPageClient() {
                       dates, venue, schedule, admission, travel, and links into an editable page.
                     </p>
                   </div>
-                  <div className="flex min-w-64 items-center gap-3 rounded-2xl bg-[#17111e] p-4 text-white">
+                  <div className="flex min-w-0 items-center gap-3 rounded-2xl bg-[#17111e] p-4 text-white lg:min-w-64">
                     <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-[#f6d477]">
                       <Trophy className="h-6 w-6" />
                     </span>
@@ -55,7 +55,7 @@ export default function SportEventsPageClient() {
                 </p>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-5 sm:mt-6">
                 <div className="mb-4">
                   <h2 className="text-lg font-black">Add your event information</h2>
                   <p className="mt-1 text-sm text-[#6c6576]">

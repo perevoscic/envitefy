@@ -5,11 +5,18 @@ import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import { ArrowRight, ChevronLeft, LogIn, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { type PointerEvent as ReactPointerEvent, useEffect, useState } from "react";
+import {
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import LoginForm from "@/components/auth/LoginForm";
 import SignupForm from "@/components/auth/SignupForm";
 import { signedOutMobileMenuLinks } from "@/config/navigation";
 import type { SignupIntent } from "@/lib/signup-intent";
+import { useModalDialog } from "@/hooks/useModalDialog";
 
 type AuthMode = "login" | "signup";
 
@@ -37,57 +44,19 @@ export default function MenuBottomSheet({
   const dragControls = useDragControls();
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
   const authActive = authMode !== null;
+  const dialogRef = useRef<HTMLElement | null>(null);
+
+  const closeSheet = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
+  useModalDialog({ dialogRef, onClose: closeSheet, open });
 
   useEffect(() => {
     if (!open) {
       setAuthMode(null);
     }
   }, [open]);
-
-  useEffect(() => {
-    if (!open || typeof document === "undefined" || typeof window === "undefined") {
-      return;
-    }
-
-    const scrollY = window.scrollY;
-    const { body, documentElement } = document;
-    const previousHtmlOverflow = documentElement.style.overflow;
-    const previousHtmlOverscrollBehavior = documentElement.style.overscrollBehavior;
-    const previousBodyOverflow = body.style.overflow;
-    const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
-    const previousBodyPosition = body.style.position;
-    const previousBodyTop = body.style.top;
-    const previousBodyLeft = body.style.left;
-    const previousBodyRight = body.style.right;
-    const previousBodyWidth = body.style.width;
-
-    documentElement.style.overflow = "hidden";
-    documentElement.style.overscrollBehavior = "none";
-    body.style.overflow = "hidden";
-    body.style.overscrollBehavior = "none";
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.left = "0";
-    body.style.right = "0";
-    body.style.width = "100%";
-
-    return () => {
-      documentElement.style.overflow = previousHtmlOverflow;
-      documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
-      body.style.overflow = previousBodyOverflow;
-      body.style.overscrollBehavior = previousBodyOverscrollBehavior;
-      body.style.position = previousBodyPosition;
-      body.style.top = previousBodyTop;
-      body.style.left = previousBodyLeft;
-      body.style.right = previousBodyRight;
-      body.style.width = previousBodyWidth;
-      window.scrollTo(0, scrollY);
-    };
-  }, [open]);
-
-  const closeSheet = () => {
-    onOpenChange(false);
-  };
 
   const startSheetDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (authActive) return;
@@ -119,8 +88,10 @@ export default function MenuBottomSheet({
           />
 
           <motion.section
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
+            tabIndex={-1}
             aria-label={authActive ? (authMode === "signup" ? "Sign up" : "Sign in") : "Menu"}
             className="absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-white/12 bg-[#150c29] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 text-white shadow-[0_-28px_90px_rgba(20,11,34,0.38)]"
             style={{

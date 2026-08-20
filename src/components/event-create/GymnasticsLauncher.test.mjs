@@ -38,3 +38,26 @@ test("gymnastics launcher clearly explains and prioritizes its three creation pa
   assert.match(source, /Nothing publishes automatically/);
   assert.match(source, /Every detail stays editable/);
 });
+
+test("gymnastics launcher uses compact, touch-safe mobile actions", () => {
+  const source = readSource("src/components/event-create/GymnasticsLauncher.tsx");
+
+  assert.match(source, /Upload packet/);
+  assert.match(source, /placeholder="Paste public meet URL"/);
+  assert.match(source, /Build from this link/);
+  assert.match(source, /LIGHT_RAISED_BUTTON_CLASS/);
+  assert.match(source, /lg:hidden/);
+  assert.match(source, /lg:min-h-\[28rem\]/);
+  assert.doesNotMatch(source, /selectedPath !== "url"/);
+});
+
+test("gymnastics launcher keeps actions content-sized and clears the mobile navigation", () => {
+  const source = readSource("src/components/event-create/GymnasticsLauncher.tsx");
+
+  assert.match(source, /w-fit max-w-full/);
+  assert.match(source, /rounded-full/);
+  assert.match(source, /pt-24/);
+  assert.match(source, /lg:pt-10/);
+  assert.match(source, /mt-1\.5 block text-\[#6d35f5\] sm:mt-0/);
+  assert.match(source, /space-y-3 text-center/);
+});

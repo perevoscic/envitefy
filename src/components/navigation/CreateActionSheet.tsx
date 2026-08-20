@@ -2,6 +2,8 @@
 
 import { LayoutTemplate, PencilLine, Sparkles, Upload, type LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { useCallback, useRef } from "react";
+import { useModalDialog } from "@/hooks/useModalDialog";
 
 type CreateAction = {
   label: string;
@@ -53,10 +55,14 @@ export default function CreateActionSheet({
   onConciergeSelect,
   onHashSelect,
 }: CreateActionSheetProps) {
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const closeSheet = useCallback(() => onOpenChange(false), [onOpenChange]);
+  useModalDialog({ dialogRef, onClose: closeSheet, open });
+
   if (!open) return null;
 
   const handleAction = (item: CreateAction) => {
-    onOpenChange(false);
+    closeSheet();
 
     if (item.action === "concierge") {
       onConciergeSelect?.();
@@ -74,12 +80,14 @@ export default function CreateActionSheet({
         type="button"
         className="absolute inset-0 cursor-default bg-[#1a1022]/28 backdrop-blur-[2px]"
         aria-label="Close create options"
-        onClick={() => onOpenChange(false)}
+        onClick={closeSheet}
       />
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="Create options"
+        tabIndex={-1}
         className="absolute inset-x-3 bottom-[calc(6.1rem+env(safe-area-inset-bottom))] mx-auto max-w-[27rem] overflow-hidden rounded-[1.5rem] border border-[#eadfff] bg-white/96 p-3 text-[#2b2037] shadow-[0_26px_80px_rgba(41,22,63,0.26)] backdrop-blur-xl"
       >
         <div className="px-2 pb-2 pt-1">

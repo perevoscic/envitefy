@@ -401,7 +401,7 @@ export default function EventManageClient({
 
   return (
     <main className="min-h-screen bg-transparent text-[#161129]">
-      <div className="mx-auto w-full max-w-7xl px-4 py-5 lg:px-6">
+      <div className="mx-auto w-full min-w-0 max-w-7xl px-3 py-4 sm:px-4 sm:py-5 lg:px-6">
         <header className="mb-5 flex flex-col gap-4 rounded-[1.4rem] border border-[#eadfff] bg-white/86 px-5 py-5 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8b7aaa]">
@@ -414,10 +414,10 @@ export default function EventManageClient({
               {[dateLine, timeLine].filter(Boolean).join(" at ")} - {locationLine}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <Link
               href={eventHref}
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-[#d8caff] bg-white px-4 text-sm font-semibold text-[#4b3c79] transition hover:bg-[#f7f3ff]"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#d8caff] bg-white px-4 text-sm font-semibold text-[#4b3c79] transition hover:bg-[#f7f3ff]"
             >
               <ExternalLink className="size-4" aria-hidden="true" />
               Public event
@@ -429,7 +429,7 @@ export default function EventManageClient({
                   new URL(eventHref, window.location.origin).toString(),
                 )
               }
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-[#2d1b36] px-4 text-sm font-semibold text-white transition hover:bg-[#3b2946]"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#2d1b36] px-4 text-sm font-semibold text-white transition hover:bg-[#3b2946]"
             >
               <Copy className="size-4" aria-hidden="true" />
               Share
@@ -438,11 +438,11 @@ export default function EventManageClient({
         </header>
 
         <div
-          className="mb-5 overflow-x-auto rounded-[1.2rem] border border-[#eadfff] bg-white/86 p-1 shadow-sm backdrop-blur"
+          className="mb-5 rounded-[1.2rem] border border-[#eadfff] bg-white/86 p-1 shadow-sm backdrop-blur"
           role="tablist"
           aria-label="Event tools sections"
         >
-          <div className="flex min-w-max gap-1">
+          <div className="grid grid-cols-2 gap-1 sm:flex">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -452,7 +452,7 @@ export default function EventManageClient({
                   role="tab"
                   aria-selected={activeTab === tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold transition ${
+                  className={`inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl px-3 text-sm font-bold transition sm:justify-start ${
                     activeTab === tab.key
                       ? "bg-[#2d1b36] text-white"
                       : "text-[#6f6286] hover:bg-[#f4efff] hover:text-[#2d1b36]"
@@ -467,14 +467,14 @@ export default function EventManageClient({
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem]">
-          <section className="min-h-[34rem] rounded-[1.4rem] border border-[#eadfff] bg-white/86 p-5 shadow-sm backdrop-blur">
+          <section className="min-h-[26rem] min-w-0 rounded-[1.4rem] border border-[#eadfff] bg-white/86 p-3 shadow-sm backdrop-blur sm:min-h-[34rem] sm:p-5">
             {activeTab === "live-card" ? (
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
                 <div className="overflow-hidden rounded-[1.35rem] border border-[#eadfff] bg-white shadow-[0_22px_65px_rgba(68,43,112,0.08)]">
-                  <div className="flex min-h-[34rem] items-center justify-center bg-[#f5f0ff] p-6 sm:p-10">
-                    <div className="flex aspect-[4/5] w-full max-w-md flex-col items-center justify-center border border-[#eadfff] bg-white px-8 py-10 text-center shadow-2xl shadow-[#3f275f]/10">
+                  <div className="flex min-h-[26rem] items-center justify-center bg-[#f5f0ff] p-3 sm:min-h-[34rem] sm:p-10">
+                    <div className="flex aspect-[4/5] w-full max-w-md flex-col items-center justify-center border border-[#eadfff] bg-white px-5 py-8 text-center shadow-2xl shadow-[#3f275f]/10 sm:px-8 sm:py-10">
                       <Sparkles className="mb-5 size-7 text-[#7c4dff]" aria-hidden="true" />
-                      <h2 className="text-4xl font-semibold tracking-normal text-[#2d1b36]">
+                      <h2 className="text-2xl font-semibold tracking-normal text-[#2d1b36] sm:text-4xl">
                         {headline}
                       </h2>
                       <p className="mt-3 text-lg italic text-[#6f5b86]">{subheadline}</p>
@@ -486,7 +486,7 @@ export default function EventManageClient({
                       <p className="mt-6 max-w-sm text-sm leading-6 text-[#6f6286]">{body}</p>
                       <Link
                         href={eventHref}
-                        className="mt-8 inline-flex h-10 items-center rounded-sm bg-[#2d1b36] px-6 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#3b2946]"
+                        className="mt-8 inline-flex min-h-11 items-center rounded-sm bg-[#2d1b36] px-6 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#3b2946]"
                       >
                         RSVP
                       </Link>
@@ -497,7 +497,7 @@ export default function EventManageClient({
                     <button
                       type="button"
                       onClick={() => void createAsset("invitation")}
-                      className="inline-flex items-center gap-2 text-sm font-bold text-[#7c4dff]"
+                      className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-bold text-[#7c4dff]"
                     >
                       {isSending ? (
                         <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -603,13 +603,46 @@ export default function EventManageClient({
                           "Add RSVP details and create a matching RSVP page.",
                         )
                       }
-                      className="inline-flex h-9 items-center gap-2 rounded-full bg-[#f4efff] px-3 text-sm font-bold text-[#7c4dff] transition hover:bg-[#eadfff]"
+                      className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#f4efff] px-4 text-sm font-bold text-[#7c4dff] transition hover:bg-[#eadfff]"
                     >
                       <Plus className="size-4" aria-hidden="true" />
                       Add RSVP
                     </button>
                   </div>
-                  <div className="overflow-x-auto">
+                  <div className="space-y-3 p-4 md:hidden" aria-live="polite">
+                    {rsvpSummary.responses.length ? (
+                      rsvpSummary.responses.map((item, index) => (
+                        <article
+                          key={`${item.email || item.name || "guest"}-mobile-${index}`}
+                          className="rounded-2xl border border-[#eadfff] bg-[#fbf9ff] p-4"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <h3 className="truncate text-sm font-bold text-[#2d1b36]">
+                                {cleanString(item.name) || "Guest"}
+                              </h3>
+                              <p className="mt-1 break-all text-sm text-[#6f6286]">
+                                {cleanString(item.email) || "No email provided"}
+                              </p>
+                            </div>
+                            <span
+                              className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${responseClassName(item.response)}`}
+                            >
+                              {formatResponse(item.response)}
+                            </span>
+                          </div>
+                          <p className="mt-3 text-xs text-[#8b7aaa]">
+                            Updated {relativeTime(item.updatedAt || item.createdAt) || "recently"}
+                          </p>
+                        </article>
+                      ))
+                    ) : (
+                      <p className="py-8 text-center text-sm text-[#7a6c99]">
+                        {isLoadingRsvp ? "Loading RSVPs..." : "No RSVP responses yet."}
+                      </p>
+                    )}
+                  </div>
+                  <div className="hidden md:block">
                     <table className="w-full min-w-[42rem] text-left">
                       <thead className="bg-[#fbf9ff]">
                         <tr>
@@ -706,7 +739,7 @@ export default function EventManageClient({
                           <button
                             type="button"
                             onClick={() => void deleteAsset(asset.id)}
-                            className="grid size-8 place-items-center rounded-full text-[#8b7aaa] transition hover:bg-rose-50 hover:text-rose-600"
+                            className="grid size-11 place-items-center rounded-full text-[#8b7aaa] transition hover:bg-rose-50 hover:text-rose-600"
                             aria-label="Delete asset"
                             title="Delete"
                           >
@@ -722,7 +755,7 @@ export default function EventManageClient({
                         <button
                           type="button"
                           onClick={() => void copyAssetText(asset)}
-                          className="mt-4 inline-flex h-9 items-center gap-2 rounded-full bg-[#f4efff] px-3 text-sm font-semibold text-[#5f5289]"
+                          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#f4efff] px-4 text-sm font-semibold text-[#5f5289]"
                         >
                           <Copy className="size-4" aria-hidden="true" />
                           Copy text
@@ -752,7 +785,7 @@ export default function EventManageClient({
                   <button
                     type="button"
                     onClick={() => void sendAssistantMessage("Fill in missing event details.")}
-                    className="inline-flex h-9 items-center gap-2 rounded-full bg-[#f4efff] px-3 text-sm font-bold text-[#7c4dff] transition hover:bg-[#eadfff]"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#f4efff] px-4 text-sm font-bold text-[#7c4dff] transition hover:bg-[#eadfff]"
                   >
                     <Plus className="size-4" aria-hidden="true" />
                     Add details

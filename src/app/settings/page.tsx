@@ -43,6 +43,7 @@ import {
 } from "@/lib/sports-preferences";
 import { notifyFeatureVisibilityChanged } from "@/hooks/useFeatureVisibility";
 import { PROFILE_AVATAR_ACCEPT, validateProfileAvatarMeta } from "@/lib/profile-avatar";
+import { MobileActionBar } from "@/components/ui/MobileActionBar";
 
 type CalendarProvider = "google" | "microsoft" | "apple";
 type SettingsSectionKey = "profile" | "calendars" | "security" | "creation";
@@ -605,13 +606,16 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen w-full bg-[radial-gradient(circle_at_12%_0%,rgba(235,228,255,0.9),transparent_31%),radial-gradient(circle_at_92%_6%,rgba(224,246,255,0.8),transparent_28%)] px-4 py-7 text-foreground sm:px-6 lg:px-8">
+    <main
+      data-mobile-form-surface
+      className="min-h-screen w-full bg-[radial-gradient(circle_at_12%_0%,rgba(235,228,255,0.9),transparent_31%),radial-gradient(circle_at_92%_6%,rgba(224,246,255,0.8),transparent_28%)] px-3 py-4 text-foreground sm:px-6 sm:py-7 lg:px-8"
+    >
       <section className="mx-auto w-full max-w-6xl">
-        <header className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-[linear-gradient(118deg,#251b36_0%,#48357a_58%,#315d73_100%)] p-6 text-white shadow-[0_26px_80px_rgba(47,33,76,0.2)] sm:p-8">
+        <header className="relative overflow-hidden rounded-[1.5rem] border border-white/80 bg-[linear-gradient(118deg,#251b36_0%,#48357a_58%,#315d73_100%)] p-4 text-white shadow-[0_26px_80px_rgba(47,33,76,0.2)] sm:rounded-[2rem] sm:p-8">
           <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[#8e7cff]/25 blur-3xl" />
           <div className="absolute -bottom-28 left-1/3 h-52 w-52 rounded-full bg-[#6cdbff]/20 blur-3xl" />
           <div className="relative flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
-            <div className="flex items-start gap-4">
+            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
               <span className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/12 text-lg font-black shadow-inner">
                 {displayedAvatarUrl ? (
                   <Image
@@ -626,7 +630,7 @@ export default function SettingsPage() {
                   settingsInitials
                 )}
               </span>
-              <div>
+              <div className="min-w-0">
                 <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-white/60">
                   <Settings2 className="h-3.5 w-3.5" /> Account workspace
                 </p>
@@ -670,11 +674,11 @@ export default function SettingsPage() {
           </div>
         </header>
 
-        <div className="mt-6 grid items-start gap-5 lg:grid-cols-[15.5rem_minmax(0,1fr)]">
-          <aside className="sticky top-4 z-10 rounded-2xl border border-[#e3dcf0] bg-white/90 p-2 shadow-[0_14px_45px_rgba(65,51,92,0.08)] backdrop-blur lg:p-3">
+        <div className="mt-4 grid min-w-0 items-start gap-4 sm:mt-6 sm:gap-5 lg:grid-cols-[15.5rem_minmax(0,1fr)]">
+          <aside className="z-10 min-w-0 rounded-2xl border border-[#e3dcf0] bg-white/90 p-2 shadow-[0_14px_45px_rgba(65,51,92,0.08)] backdrop-blur lg:sticky lg:top-4 lg:p-3">
             <nav
               aria-label="Settings sections"
-              className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-col"
+              className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:flex lg:flex-col"
             >
               {SETTINGS_SECTIONS.map((section) => {
                 const Icon = section.icon;
@@ -685,21 +689,21 @@ export default function SettingsPage() {
                     type="button"
                     aria-current={active ? "page" : undefined}
                     onClick={() => selectSettingsSection(section.id)}
-                    className={`group flex min-w-[9.5rem] items-center gap-3 rounded-xl px-3 py-3 text-left transition lg:min-w-0 ${
+                    className={`group flex min-h-[52px] min-w-0 items-center gap-2 rounded-xl px-2.5 py-2 text-left transition sm:gap-3 sm:px-3 lg:min-h-0 lg:py-3 ${
                       active
                         ? "bg-[#33264c] text-white shadow-[0_8px_24px_rgba(51,38,76,0.18)]"
                         : "text-[#50475d] hover:bg-[#f5f1fb] hover:text-[#2f2440]"
                     }`}
                   >
                     <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9 sm:rounded-xl ${
                         active ? "bg-white/12 text-[#dcd4ff]" : "bg-[#f2eef9] text-[#7663a5]"
                       }`}
                     >
                       <Icon className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-bold">{section.label}</span>
+                      <span className="block truncate text-xs font-bold sm:text-sm">{section.label}</span>
                       <span
                         className={`hidden truncate text-[11px] lg:block ${
                           active ? "text-white/55" : "text-[#90869b]"
@@ -739,7 +743,7 @@ export default function SettingsPage() {
                 Keep the name shown across your Envitefy workspace up to date.
               </p>
             </div>
-            <div className="flex flex-col gap-4 rounded-2xl border border-[#e2d9f2] bg-[linear-gradient(145deg,#fbf9ff,#fff)] p-4 sm:flex-row sm:items-center sm:p-5">
+            <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-[#e2d9f2] bg-[linear-gradient(145deg,#fbf9ff,#fff)] p-4 sm:flex-row sm:items-center sm:p-5">
               <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[1.6rem] border-4 border-white bg-[linear-gradient(135deg,#6f59b1,#527d98)] shadow-[0_12px_30px_rgba(70,52,111,0.18)]">
                 {displayedAvatarUrl ? (
                   <Image
@@ -770,12 +774,12 @@ export default function SettingsPage() {
                   className="sr-only"
                   aria-label="Choose profile image"
                 />
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <button
                     type="button"
                     onClick={() => avatarInputRef.current?.click()}
                     disabled={avatarState.loading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#33264c] px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#473460] disabled:cursor-wait disabled:opacity-60"
+                    className="mobile-touch-target inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#33264c] px-3.5 py-2 text-sm font-bold text-white transition hover:bg-[#473460] disabled:cursor-wait disabled:opacity-60 sm:w-auto sm:text-xs"
                   >
                     <Camera className="h-3.5 w-3.5" />
                     {avatarState.loading ? "Uploading…" : avatarUrl ? "Replace image" : "Upload image"}
@@ -785,7 +789,7 @@ export default function SettingsPage() {
                       type="button"
                       onClick={() => void removeAvatar()}
                       disabled={avatarState.loading}
-                      className="inline-flex items-center gap-2 rounded-xl border border-[#ddd4e8] bg-white px-3.5 py-2 text-xs font-semibold text-[#6c5f76] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-60"
+                      className="mobile-touch-target inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#ddd4e8] bg-white px-3.5 py-2 text-sm font-semibold text-[#6c5f76] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 sm:w-auto sm:text-xs"
                     >
                       <Trash2 className="h-3.5 w-3.5" /> Remove
                     </button>
@@ -842,7 +846,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={profileState.loading}
-                  className="inline-flex items-center justify-center rounded-xl bg-[#33264c] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(51,38,76,0.18)] transition hover:bg-[#473460] disabled:opacity-60"
+                  className="mobile-touch-target inline-flex w-full items-center justify-center rounded-xl bg-[#33264c] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(51,38,76,0.18)] transition hover:bg-[#473460] disabled:opacity-60 sm:w-auto"
                 >
                   {profileState.loading ? "Saving..." : "Save changes"}
                 </button>
@@ -1290,12 +1294,15 @@ export default function SettingsPage() {
               </p>
             ) : null}
 
-            <div className="sticky bottom-3 z-10 flex flex-wrap gap-2 rounded-2xl border border-[#e0d8ed] bg-white/90 p-3 shadow-[0_14px_35px_rgba(51,38,76,0.12)] backdrop-blur">
+            <MobileActionBar
+              label="Event creation settings actions"
+              className="flex-col rounded-2xl border border-[#e0d8ed] shadow-[0_14px_35px_rgba(51,38,76,0.12)] sm:flex-row"
+            >
               <button
                 type="button"
                 onClick={saveFeatureVisibility}
                 disabled={featureVisibilitySaving}
-                className="inline-flex items-center justify-center rounded-xl bg-[#33264c] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#473460] disabled:opacity-60"
+                className="mobile-touch-target inline-flex w-full items-center justify-center rounded-xl bg-[#33264c] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#473460] disabled:opacity-60 sm:w-auto"
               >
                 {featureVisibilitySaving ? "Saving..." : "Save create settings"}
               </button>
@@ -1303,11 +1310,11 @@ export default function SettingsPage() {
                 type="button"
                 onClick={resetPersonalization}
                 disabled={featureVisibilitySaving}
-                className="inline-flex items-center justify-center rounded-xl border border-[#d9cdfa] bg-white px-4 py-2.5 text-sm font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] disabled:opacity-60"
+                className="mobile-touch-target inline-flex w-full items-center justify-center rounded-xl border border-[#d9cdfa] bg-white px-4 py-2.5 text-sm font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] disabled:opacity-60 sm:w-auto"
               >
                 Reset personalization
               </button>
-            </div>
+            </MobileActionBar>
           </section>
         </div>
         </div>

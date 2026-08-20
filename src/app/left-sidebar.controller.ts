@@ -527,16 +527,48 @@ export function useLeftSidebarController({
       }
     };
 
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusableSelector =
+      "a[href], button:not([disabled]), input:not([disabled]):not([type='hidden']), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+    const focusFrame = window.requestAnimationFrame(() => {
+      if (!isPhoneHiddenViewport()) return;
+      const firstControl = asideRef.current?.querySelector<HTMLElement>(focusableSelector);
+      (firstControl || asideRef.current)?.focus({ preventScroll: true });
+    });
+
     const onKey = (event: KeyboardEvent) => {
       if (!isPhoneHiddenViewport()) return;
-      if (event.key === "Escape") setIsCollapsed(true);
+      if (event.key === "Escape") {
+        setIsCollapsed(true);
+        return;
+      }
+      if (event.key !== "Tab" || !asideRef.current) return;
+      const controls = [...asideRef.current.querySelectorAll<HTMLElement>(focusableSelector)].filter(
+        (control) => control.offsetParent !== null,
+      );
+      if (controls.length === 0) {
+        event.preventDefault();
+        asideRef.current.focus();
+        return;
+      }
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
 
     document.addEventListener("click", onClick);
     document.addEventListener("keydown", onKey);
     return () => {
+      window.cancelAnimationFrame(focusFrame);
       document.removeEventListener("click", onClick);
       document.removeEventListener("keydown", onKey);
+      (openBarButtonRef.current || previouslyFocused)?.focus({ preventScroll: true });
     };
   }, [isOpen, setIsCollapsed]);
 

@@ -121,8 +121,8 @@ export function BottomNavBar({
       role="navigation"
       aria-label={ariaLabel}
       className={cn(
-        "flex min-h-[48px] min-w-[320px] max-w-[95vw] items-center gap-1 rounded-full bg-[#eff1f8] p-1.5 shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] sm:min-h-[52px] sm:gap-2 sm:p-2",
-        spreadItems && "justify-between",
+        "flex min-h-14 w-fit min-w-0 max-w-[95vw] items-center gap-1 rounded-full bg-[#eff1f8] p-1.5 shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] sm:gap-2 sm:p-2",
+        spreadItems && "w-full justify-between",
         stickyBottom && "fixed inset-x-0 bottom-4 z-20 mx-auto w-fit",
         className,
       )}
@@ -138,7 +138,7 @@ export function BottomNavBar({
             key={`${item.value || item.label}-${idx}`}
             whileTap={{ scale: 0.97 }}
             className={cn(
-              "group relative flex h-9 max-h-[44px] min-h-9 min-w-[40px] items-center gap-0 rounded-full px-2.5 py-1.5 transition-all duration-300 sm:h-10 sm:min-h-[40px] sm:min-w-[44px] sm:px-3 sm:py-2",
+              "group relative flex h-11 min-h-11 min-w-11 items-center gap-0 rounded-full px-2.5 py-1.5 transition-all duration-300 sm:px-3 sm:py-2",
               isActive
                 ? "gap-2 text-[#5c5be5] shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff]"
                 : "bg-transparent text-[#747684] hover:text-[#5d6070]",

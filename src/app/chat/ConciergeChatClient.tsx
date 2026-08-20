@@ -48,6 +48,7 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/ai-prompt-box";
 import BottomNavBar, { type BottomNavItem } from "@/components/ui/bottom-nav-bar";
+import { useVisualViewportInsets } from "@/hooks/useVisualViewportInsets";
 import { skinLabelForCategoryName, skinLabelForConciergeDraft } from "@/lib/concierge/skins";
 import type {
   ConciergeActiveContext,
@@ -1843,44 +1844,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     if (isReadyChatComposerOpen) focusComposerAtEnd();
   }, [isReadyChatComposerOpen]);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-    const previousRootOverflow = root.style.overflow;
-    const previousBodyOverflow = body.style.overflow;
-
-    const updateChatViewportMetrics = () => {
-      const visualViewport = window.visualViewport;
-      const layoutHeight = window.innerHeight;
-      const visualHeight = visualViewport?.height ?? layoutHeight;
-      const visualTop = visualViewport?.offsetTop ?? 0;
-      const keyboardInset = Math.max(0, layoutHeight - visualHeight - visualTop);
-
-      if (layoutHeight > 0) {
-        root.style.setProperty("--envitefy-chat-layout-height", `${layoutHeight}px`);
-      }
-      root.style.setProperty("--envitefy-chat-keyboard-inset", `${Math.round(keyboardInset)}px`);
-    };
-
-    root.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-    updateChatViewportMetrics();
-    window.visualViewport?.addEventListener("resize", updateChatViewportMetrics);
-    window.visualViewport?.addEventListener("scroll", updateChatViewportMetrics);
-    window.addEventListener("resize", updateChatViewportMetrics);
-    window.addEventListener("orientationchange", updateChatViewportMetrics);
-
-    return () => {
-      window.visualViewport?.removeEventListener("resize", updateChatViewportMetrics);
-      window.visualViewport?.removeEventListener("scroll", updateChatViewportMetrics);
-      window.removeEventListener("resize", updateChatViewportMetrics);
-      window.removeEventListener("orientationchange", updateChatViewportMetrics);
-      root.style.overflow = previousRootOverflow;
-      body.style.overflow = previousBodyOverflow;
-      root.style.removeProperty("--envitefy-chat-layout-height");
-      root.style.removeProperty("--envitefy-chat-keyboard-inset");
-    };
-  }, []);
+  useVisualViewportInsets({
+    keyboardInsetVariable: "--envitefy-chat-keyboard-inset",
+    layoutHeightVariable: "--envitefy-chat-layout-height",
+    lockPageScroll: true,
+  });
 
   useEffect(() => {
     function handleNewChatSession() {
@@ -3292,7 +3260,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                   className={cn(
                     "min-h-[44px] min-w-0 flex-1 px-3 py-2.5 text-base !text-[#25183a] caret-[#5c5be5] selection:bg-[#d8caff] selection:text-[#25183a] !placeholder:text-[#8b7ca6] [&::placeholder]:text-[0.82rem] sm:min-w-[12rem] sm:[&::placeholder]:text-base",
                     isCompactEmptyComposer &&
-                      "max-md:min-h-[34px] max-md:px-2 max-md:py-1.5 max-md:text-sm max-md:[&::placeholder]:text-[0.78rem]",
+                      "max-md:min-h-11 max-md:px-2 max-md:py-2.5 max-md:text-base max-md:[&::placeholder]:text-[0.78rem]",
                   )}
                 />
                 <PromptInputActions className="ml-auto shrink-0 justify-end gap-2">
@@ -3316,9 +3284,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                         void handleVoiceInput();
                       }}
                       className={cn(
-                        "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:pointer-events-none disabled:opacity-50",
+                        "inline-flex h-11 w-11 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:pointer-events-none disabled:opacity-50",
                         (canSubmitComposer || isListening) && "text-[#5c5be5]",
-                        isCompactEmptyComposer && "max-md:h-8 max-md:w-8",
                       )}
                       aria-label={canSubmitComposer ? "Send" : "Use voice input"}
                     >

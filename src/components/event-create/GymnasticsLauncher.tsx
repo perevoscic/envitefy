@@ -40,6 +40,8 @@ type DiscoveryProgressHandler = (progress: number, status: string) => void;
 const GYM_DISCOVERY_LOG_PREFIX = "[gymnastics-launcher]";
 const INGEST_REQUEST_TIMEOUT_MS = 15_000;
 const GYMNASTICS_DEMO_DRAFT_STORAGE_KEY = "envitefy:gymnastics-demo-draft:v1";
+const LIGHT_RAISED_BUTTON_CLASS =
+  "group inline-flex min-h-12 w-fit max-w-full items-center justify-center gap-2.5 rounded-full border border-white/90 bg-[#f0eef5] px-6 py-3 text-sm font-semibold shadow-[8px_8px_18px_rgba(45,38,74,0.18),-8px_-8px_18px_rgba(255,255,255,0.98)] transition-all duration-300 hover:scale-[0.98] hover:shadow-[4px_4px_10px_rgba(45,38,74,0.15),-4px_-4px_10px_rgba(255,255,255,0.94)] active:scale-95 active:shadow-[inset_2px_2px_5px_rgba(45,38,74,0.12),inset_-2px_-2px_5px_rgba(255,255,255,0.85)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6d35f5]/35 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100";
 const GYM_DISCOVERY_PROGRESS_THEME: DiscoveryProgressTheme = {
   badgeBackground: "rgba(255,255,255,0.12)",
   badgeBorder: "rgba(255,255,255,0.22)",
@@ -53,6 +55,48 @@ const GYM_DISCOVERY_PROGRESS_THEME: DiscoveryProgressTheme = {
   fillStart: "#6d35f5",
   textColor: "#ffffff",
 };
+
+function GradientCardBorder({
+  active,
+  end,
+  id,
+  middle,
+  start,
+}: {
+  active: boolean;
+  end: string;
+  id: string;
+  middle: string;
+  start: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+      focusable="false"
+    >
+      <defs>
+        <linearGradient id={id} x1="0%" x2="100%" y1="0%" y2="100%">
+          <stop offset="0%" stopColor={start} />
+          <stop offset="52%" stopColor={middle} />
+          <stop offset="100%" stopColor={end} />
+        </linearGradient>
+      </defs>
+      <rect
+        x="1"
+        y="1"
+        width="calc(100% - 2px)"
+        height="calc(100% - 2px)"
+        rx="26"
+        fill="none"
+        opacity={active ? 1 : 0.48}
+        stroke={`url(#${id})`}
+        strokeWidth={active ? 2 : 1}
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
 
 export default function GymnasticsLauncher({
   forwardQueryString,
@@ -514,25 +558,25 @@ export default function GymnasticsLauncher({
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f5f5fa] px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
+    <main className="relative min-h-screen overflow-hidden bg-[#f5f5fa] px-4 pb-5 pt-24 sm:px-6 sm:pb-10 sm:pt-24 lg:px-10 lg:pt-10">
       <div className="pointer-events-none absolute -top-40 right-[-8rem] h-[32rem] w-[32rem] rounded-full bg-[#a986ff]/15 blur-3xl" />
       <div className="pointer-events-none absolute bottom-[-14rem] left-[12%] h-[28rem] w-[28rem] rounded-full bg-[#7cc7ff]/10 blur-3xl" />
 
       <div className="relative mx-auto w-full max-w-7xl">
         <header className="max-w-4xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#ded6f5] bg-white/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#6240ad] shadow-sm backdrop-blur">
+          <div className="hidden items-center gap-2 rounded-full border border-[#ded6f5] bg-white/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#6240ad] shadow-sm backdrop-blur sm:inline-flex">
             <Sparkles className="h-3.5 w-3.5" />
             Gymnastics meet builder
           </div>
-          <h1 className="mt-5 text-4xl font-black leading-[1.02] tracking-[-0.035em] text-[#17112f] sm:text-5xl lg:text-6xl">
+          <h1 className="mt-1 text-[1.75rem] font-black leading-[1.08] tracking-[-0.03em] text-[#17112f] sm:mt-5 sm:text-5xl sm:leading-[1.02] sm:tracking-[-0.035em] lg:text-6xl">
             Create your meet page.
-            <span className="block text-[#6d35f5]">Choose how to start.</span>
+            <span className="mt-1.5 block text-[#6d35f5] sm:mt-0">Choose how to start.</span>
           </h1>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#66677f] sm:text-lg">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#66677f] sm:mt-4 sm:text-lg">
             Bring a packet or public link and we’ll build an editable first draft—or start with a
             blank canvas for full control.
           </p>
-          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-[#68677d]">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] font-semibold text-[#68677d] sm:mt-4 sm:gap-x-5 sm:gap-y-2 sm:text-xs">
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
               Nothing publishes automatically
@@ -544,34 +588,45 @@ export default function GymnasticsLauncher({
           </div>
         </header>
 
-        <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:mt-8 sm:gap-5 lg:grid-cols-3">
           <section
             aria-label="Upload a meet packet"
-            className={`relative flex min-h-[28rem] flex-col overflow-hidden rounded-[1.75rem] bg-white p-6 transition-all duration-200 sm:p-7 ${
+            className={`relative isolate flex min-h-0 flex-col overflow-hidden rounded-[1.35rem] bg-[radial-gradient(circle_at_12%_8%,rgba(126,58,242,0.16),transparent_38%),linear-gradient(145deg,#ffffff_25%,#f7f2ff_100%)] p-4 transition-all duration-200 sm:rounded-[1.75rem] sm:p-7 lg:min-h-[28rem] ${
               selectedPath === "upload"
-                ? "border-2 border-[#7e3af2] shadow-[0_20px_55px_rgba(108,45,232,0.16)]"
-                : "border border-[#e3e3ec] shadow-[0_12px_35px_rgba(21,18,48,0.06)] hover:-translate-y-0.5 hover:border-[#cfc5e9]"
+                ? "border-2 border-transparent shadow-[0_20px_55px_rgba(108,45,232,0.16)]"
+                : "border-2 border-transparent shadow-[0_12px_35px_rgba(21,18,48,0.06)] hover:-translate-y-0.5"
             }`}
           >
-            <div className="absolute right-5 top-5 rounded-full bg-[#efe7ff] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#6934d5]">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-14 -top-16 -z-10 h-44 w-44 rounded-full border-[26px] border-[rgba(140,99,237,0.07)]"
+            />
+            <GradientCardBorder
+              active={selectedPath === "upload"}
+              end="#38a3ff"
+              id="gym-upload-card-border"
+              middle="#a986ff"
+              start="#7e3af2"
+            />
+            <div className="absolute right-4 top-4 rounded-full bg-[#efe7ff] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-[#6934d5] sm:right-5 sm:top-5 sm:px-3 sm:text-[10px] sm:tracking-[0.14em]">
               Recommended
             </div>
             <div className="flex items-center gap-3">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f2ebff] text-[#6d35f5]">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#f2ebff] text-[#6d35f5] sm:h-12 sm:w-12 sm:rounded-2xl">
                 <Upload className="h-5 w-5" />
               </span>
               <span className="text-xs font-black tabular-nums text-[#aaa5ba]">01</span>
             </div>
-            <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#8d8ba4]">
+            <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8d8ba4] sm:mt-5 sm:text-[11px] sm:tracking-[0.2em]">
               Fastest setup
             </p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-[#17112f] sm:text-3xl">
+            <h2 className="mt-1.5 text-xl font-black tracking-tight text-[#17112f] sm:mt-2 sm:text-3xl">
               Upload a meet packet
             </h2>
-            <p className="mt-3 text-sm leading-relaxed text-[#66677f] sm:text-[15px]">
+            <p className="mt-2 text-[13px] leading-relaxed text-[#66677f] sm:mt-3 sm:text-[15px]">
               Best for PDF packets, schedules, and parent information sheets.
             </p>
-            <ul className="mt-5 space-y-2.5 text-sm text-[#52526a]">
+            <ul className="mt-5 hidden space-y-2.5 text-sm text-[#52526a] lg:block">
               {[
                 "Dates, times & venue",
                 "Admission & spectator policies",
@@ -586,7 +641,12 @@ export default function GymnasticsLauncher({
               ))}
             </ul>
 
-            <div className="mt-auto pt-6">
+            <div className="mt-auto pt-4 text-center sm:pt-6">
+              {!uploadBusy ? (
+                <p className="mb-3 text-[11px] font-medium text-[#858197]">
+                  PDF, JPG or PNG · Usually under 1 minute
+                </p>
+              ) : null}
               {!uploadBusy ? (
                 <button
                   type="button"
@@ -595,15 +655,13 @@ export default function GymnasticsLauncher({
                     fileInputRef.current?.click();
                   }}
                   disabled={discoveryBusy}
-                  className="group w-full rounded-2xl border-2 border-dashed border-[#cfc8df] bg-[#faf9fd] px-4 py-4 text-left transition hover:border-[#6d35f5] hover:bg-[#f7f3ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6d35f5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={`${LIGHT_RAISED_BUTTON_CLASS} text-[#6840c2] hover:bg-[#eee9fb]`}
                 >
-                  <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#5530a8]">
-                    <Upload className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
-                    Choose packet
-                  </div>
-                  <p className="mt-1.5 text-center text-[11px] font-medium text-[#858197]">
-                    PDF, JPG or PNG · Usually under 1 minute
-                  </p>
+                  <span className="flex items-center justify-center gap-2">
+                    <Upload className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110" />
+                    <span className="sm:hidden">Upload packet</span>
+                    <span className="hidden sm:inline">Choose packet</span>
+                  </span>
                 </button>
               ) : (
                 <DiscoveryProgressPanel
@@ -641,15 +699,26 @@ export default function GymnasticsLauncher({
 
           <section
             aria-label="Sync a public meet URL"
-            className={`flex min-h-[28rem] flex-col rounded-[1.75rem] bg-white/80 p-6 transition-all duration-200 sm:p-7 ${
+            className={`relative isolate flex min-h-0 flex-col overflow-hidden rounded-[1.35rem] bg-[radial-gradient(circle_at_88%_8%,rgba(67,104,176,0.15),transparent_38%),linear-gradient(145deg,#ffffff_25%,#f2f7ff_100%)] p-4 transition-all duration-200 sm:rounded-[1.75rem] sm:p-7 lg:min-h-[28rem] ${
               selectedPath === "url"
-                ? "border-2 border-[#7e3af2] shadow-[0_20px_55px_rgba(108,45,232,0.14)]"
-                : "border border-[#e3e3ec] shadow-[0_12px_35px_rgba(21,18,48,0.05)] hover:-translate-y-0.5 hover:border-[#cfc5e9]"
+                ? "border-2 border-transparent shadow-[0_20px_55px_rgba(108,45,232,0.14)]"
+                : "border-2 border-transparent shadow-[0_12px_35px_rgba(21,18,48,0.05)] hover:-translate-y-0.5"
             } ${discoveryBusy && !urlBusy ? "opacity-60" : ""}`}
           >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-14 -top-16 -z-10 h-44 w-44 rounded-full border-[26px] border-[rgba(67,104,176,0.07)]"
+            />
+            <GradientCardBorder
+              active={selectedPath === "url"}
+              end="#38a3ff"
+              id="gym-url-card-border"
+              middle="#6f63ff"
+              start="#7e3af2"
+            />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#edf3ff] text-[#4368b0]">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#edf3ff] text-[#4368b0] sm:h-12 sm:w-12 sm:rounded-2xl">
                   <Globe className="h-5 w-5" />
                 </span>
                 <span className="text-xs font-black tabular-nums text-[#aaa5ba]">02</span>
@@ -659,22 +728,22 @@ export default function GymnasticsLauncher({
                 About 1–2 min
               </span>
             </div>
-            <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#8d8ba4]">
+            <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8d8ba4] sm:mt-5 sm:text-[11px] sm:tracking-[0.2em]">
               Import from the web
             </p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-[#17112f] sm:text-3xl">
+            <h2 className="mt-1.5 text-xl font-black tracking-tight text-[#17112f] sm:mt-2 sm:text-3xl">
               Sync a live meet URL
             </h2>
-            <p className="mt-3 text-sm leading-relaxed text-[#66677f] sm:text-[15px]">
+            <p className="mt-2 text-[13px] leading-relaxed text-[#66677f] sm:mt-3 sm:text-[15px]">
               Use a public organizer, results, or event-information page.
             </p>
-            <div className="mt-5 rounded-2xl border border-[#e4e5ed] bg-[#f8f9fc] p-3 text-xs leading-relaxed text-[#727187]">
+            <div className="mt-5 hidden rounded-2xl border border-[#e4e5ed] bg-[#f8f9fc] p-3 text-xs leading-relaxed text-[#727187] lg:block">
               We’ll follow relevant public links and bring the useful details into one editable
               draft.
             </div>
 
-            <div className="mt-auto space-y-3 pt-6">
-              <label className="block">
+            <div className="mt-auto hidden space-y-3 pt-6 text-center lg:block">
+              <label className="block text-left">
                 <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-[#77758b]">
                   Public meet URL
                 </span>
@@ -687,6 +756,7 @@ export default function GymnasticsLauncher({
                   className="w-full rounded-xl border border-[#d7d9e5] bg-white px-4 py-3 text-sm text-[#1c2040] outline-none transition placeholder:text-[#a3a7b8] focus:border-[#8c63ed] focus:ring-2 focus:ring-[#8c63ed]/20"
                 />
               </label>
+              {renderDiscoveryError(urlError)}
               {urlBusy ? (
                 <DiscoveryProgressPanel
                   cancelLabel="Cancel sync"
@@ -701,27 +771,74 @@ export default function GymnasticsLauncher({
                   type="button"
                   onClick={() => void handleUrlSync()}
                   disabled={discoveryBusy}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#171b35] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#0e1229] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6d35f5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={`${LIGHT_RAISED_BUTTON_CLASS} text-[#345f9d] hover:bg-[#eaf1fb]`}
                 >
                   Sync public page
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                 </button>
               )}
-              {renderDiscoveryError(urlError)}
+            </div>
+
+            <div className="mt-4 lg:hidden">
+              <div className="space-y-3 text-center">
+                <label className="block text-left">
+                  <span className="sr-only">Public meet URL</span>
+                  <input
+                    type="url"
+                    value={meetUrl}
+                    onChange={(event) => setMeetUrl(event.target.value)}
+                    onFocus={() => setSelectedPath("url")}
+                    placeholder="Paste public meet URL"
+                    className="min-h-11 w-full rounded-xl border border-[#d7d9e5] bg-white px-4 py-2.5 text-left text-base text-[#1c2040] outline-none transition placeholder:text-[#a3a7b8] focus:border-[#8c63ed] focus:ring-2 focus:ring-[#8c63ed]/20"
+                  />
+                </label>
+                {renderDiscoveryError(urlError)}
+                {urlBusy ? (
+                  <DiscoveryProgressPanel
+                    cancelLabel="Cancel sync"
+                    label={urlStageLabel}
+                    onCancel={() => cancelDiscovery()}
+                    progress={urlProgress}
+                    showDetails={false}
+                    theme={GYM_DISCOVERY_PROGRESS_THEME}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void handleUrlSync()}
+                    disabled={discoveryBusy}
+                    className={`${LIGHT_RAISED_BUTTON_CLASS} text-[#345f9d] hover:bg-[#eaf1fb]`}
+                  >
+                    Build from this link
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                  </button>
+                )}
+              </div>
             </div>
           </section>
 
           <section
             aria-label="Start with the visual builder"
-            className={`flex min-h-[28rem] flex-col rounded-[1.75rem] bg-white/80 p-6 transition-all duration-200 sm:p-7 ${
+            className={`relative isolate flex min-h-0 flex-col overflow-hidden rounded-[1.35rem] bg-[radial-gradient(circle_at_88%_10%,rgba(59,128,103,0.15),transparent_38%),linear-gradient(145deg,#ffffff_25%,#f1faf6_100%)] p-4 transition-all duration-200 sm:rounded-[1.75rem] sm:p-7 lg:min-h-[28rem] ${
               selectedPath === "scratch"
-                ? "border-2 border-[#7e3af2] shadow-[0_20px_55px_rgba(108,45,232,0.14)]"
-                : "border border-[#e3e3ec] shadow-[0_12px_35px_rgba(21,18,48,0.05)] hover:-translate-y-0.5 hover:border-[#cfc5e9]"
+                ? "border-2 border-transparent shadow-[0_20px_55px_rgba(108,45,232,0.14)]"
+                : "border-2 border-transparent shadow-[0_12px_35px_rgba(21,18,48,0.05)] hover:-translate-y-0.5"
             } ${discoveryBusy ? "opacity-60" : ""}`}
           >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-14 -top-16 -z-10 h-44 w-44 rounded-full border-[26px] border-[rgba(59,128,103,0.07)]"
+            />
+            <GradientCardBorder
+              active={selectedPath === "scratch"}
+              end="#76d3ad"
+              id="gym-template-card-border"
+              middle="#35a47a"
+              start="#6d35f5"
+            />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef7f3] text-[#3b8067]">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#eef7f3] text-[#3b8067] sm:h-12 sm:w-12 sm:rounded-2xl">
                   <WandSparkles className="h-5 w-5" />
                 </span>
                 <span className="text-xs font-black tabular-nums text-[#aaa5ba]">03</span>
@@ -731,16 +848,16 @@ export default function GymnasticsLauncher({
                 Starts instantly
               </span>
             </div>
-            <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#8d8ba4]">
+            <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8d8ba4] sm:mt-5 sm:text-[11px] sm:tracking-[0.2em]">
               Full creative control
             </p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-[#17112f] sm:text-3xl">
+            <h2 className="mt-1.5 text-xl font-black tracking-tight text-[#17112f] sm:mt-2 sm:text-3xl">
               Start with a template
             </h2>
-            <p className="mt-3 text-sm leading-relaxed text-[#66677f] sm:text-[15px]">
+            <p className="mt-2 text-[13px] leading-relaxed text-[#66677f] sm:mt-3 sm:text-[15px]">
               Pick a polished layout and build the page section by section.
             </p>
-            <ul className="mt-5 space-y-2.5 text-sm text-[#52526a]">
+            <ul className="mt-5 hidden space-y-2.5 text-sm text-[#52526a] lg:block">
               {[
                 "Choose a visual theme",
                 "Edit every page section",
@@ -755,15 +872,15 @@ export default function GymnasticsLauncher({
               ))}
             </ul>
 
-            <div className="mt-auto pt-6">
+            <div className="mt-auto pt-4 text-center sm:pt-6">
               <button
                 type="button"
                 onClick={openTemplateBuilder}
                 disabled={discoveryBusy}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#171b35] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#0e1229] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6d35f5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                className={`${LIGHT_RAISED_BUTTON_CLASS} text-[#33705b] hover:bg-[#eaf4ef]`}
               >
                 Browse templates
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
               </button>
             </div>
           </section>
