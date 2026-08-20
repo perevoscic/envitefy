@@ -2,19 +2,25 @@
 
 import {
   Activity,
+  Building2,
   Calendar,
+  CalendarDays,
   Car,
   ClipboardList,
+  Coffee,
   ExternalLink,
+  Info,
   MapPin,
+  Phone,
   ShieldAlert,
   Ticket,
+  TriangleAlert,
   Users,
 } from "lucide-react";
 import Image from "next/image";
 import React from "react";
 import StaticMap from "@/components/StaticMap";
-import { stripLinkedDomainMentions } from "./displayText";
+import { splitGuidanceSentences, stripLinkedDomainMentions } from "./displayText";
 import { ShowcaseThemeConfig } from "./showcaseThemes";
 import { GymMeetRenderModel } from "./types";
 
@@ -189,6 +195,11 @@ export default function ShowcaseDiscoveryContent({
                 .map((card: any) => ({
                   ...card,
                   body: stripLinkedDomainMentions(card.body, sectionLinks),
+                  items: Array.isArray(card.items)
+                    ? card.items
+                        .map((item: string) => stripLinkedDomainMentions(item, sectionLinks))
+                        .filter(Boolean)
+                    : [],
                 }))
                 .filter(
                   (card: any) =>
@@ -206,6 +217,201 @@ export default function ShowcaseDiscoveryContent({
                     block.id === "hotel-cards"
                       ? "text-sm font-black uppercase tracking-[0.2em] opacity-70 sm:text-base"
                       : "text-[10px] font-black uppercase tracking-[0.18em] opacity-60";
+                  const isHotelCard = card.presentation === "hotel";
+                  const isGuidanceCard = card.presentation === "guidance";
+                  const guidanceItems = isGuidanceCard
+                    ? Array.from(
+                        new Set([
+                          ...splitGuidanceSentences(card.body),
+                          ...(Array.isArray(card.items) ? card.items : []),
+                        ]),
+                      )
+                    : [];
+                  const GuidanceIcon =
+                    card.icon === "traffic"
+                      ? TriangleAlert
+                      : card.icon === "parking"
+                        ? Car
+                        : card.icon === "policy"
+                          ? ShieldAlert
+                          : card.icon === "info"
+                            ? Info
+                            : ClipboardList;
+                  if (isHotelCard) {
+                    const highlights = Array.isArray(card.highlights) ? card.highlights : [];
+                    const details = Array.isArray(card.details) ? card.details : [];
+                    return (
+                      <article
+                        key={cardReactKey}
+                        className={`${theme.cardClass} flex h-full flex-col overflow-hidden border-l-[3px] border-l-violet-500`}
+                      >
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          <span
+                            aria-hidden="true"
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600"
+                          >
+                            <Building2 size={20} strokeWidth={2.2} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[9px] font-black uppercase tracking-[0.18em] opacity-50">
+                              Host hotel
+                            </p>
+                            <h3 className="mt-1 text-base font-black leading-tight tracking-tight sm:text-lg">
+                              {card.label}
+                            </h3>
+                          </div>
+                        </div>
+
+                        {highlights.length > 0 ? (
+                          <dl className="mt-4 grid gap-2 sm:grid-cols-2">
+                            {highlights.map((highlight: any, highlightIndex: number) => (
+                              <div
+                                key={`${cardReactKey}-highlight-${highlightIndex}`}
+                                className="rounded-xl bg-violet-500/[0.07] px-3 py-2.5"
+                              >
+                                <dt className="text-[9px] font-black uppercase tracking-[0.15em] opacity-55">
+                                  {highlight.label}
+                                </dt>
+                                <dd className="mt-1 text-sm font-black leading-snug">
+                                  {highlight.value}
+                                </dd>
+                              </div>
+                            ))}
+                          </dl>
+                        ) : card.meta ? (
+                          <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] opacity-60">
+                            {card.meta}
+                          </p>
+                        ) : null}
+
+                        {details.length > 0 ? (
+                          <dl className="mt-4 grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                            {details.map((detail: any, detailIndex: number) => {
+                              const DetailIcon =
+                                detail.icon === "parking"
+                                  ? Car
+                                  : detail.icon === "breakfast"
+                                    ? Coffee
+                                    : detail.icon === "deadline"
+                                      ? CalendarDays
+                                      : Phone;
+                              return (
+                                <div
+                                  key={`${cardReactKey}-detail-${detailIndex}`}
+                                  className="flex items-start gap-2.5"
+                                >
+                                  <DetailIcon
+                                    aria-hidden="true"
+                                    className="mt-0.5 shrink-0 opacity-45"
+                                    size={15}
+                                    strokeWidth={2.1}
+                                  />
+                                  <div className="min-w-0">
+                                    <dt className="text-[9px] font-black uppercase tracking-[0.14em] opacity-50">
+                                      {detail.label}
+                                    </dt>
+                                    <dd className="mt-0.5 break-words text-sm font-semibold leading-snug opacity-90">
+                                      {detail.value}
+                                    </dd>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </dl>
+                        ) : card.body ? (
+                          <p className="mt-4 whitespace-pre-line text-sm leading-relaxed opacity-85">
+                            {card.body}
+                          </p>
+                        ) : null}
+
+                        {safeUrl(card.action?.url) ? (
+                          <div className="mt-auto pt-5">
+                            <a
+                              href={card.action.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={theme.ctaSecondaryClass}
+                            >
+                              {card.action.label || "Book Hotel"}
+                              <ExternalLink size={14} />
+                            </a>
+                          </div>
+                        ) : null}
+                      </article>
+                    );
+                  }
+                  if (isGuidanceCard) {
+                    const warningTone = card.tone === "warning";
+                    return (
+                      <article
+                        key={cardReactKey}
+                        className={`${theme.cardClass} relative overflow-hidden border-l-[3px] ${
+                          warningTone ? "border-l-amber-400" : "border-l-sky-500"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          <span
+                            aria-hidden="true"
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                              warningTone
+                                ? "bg-amber-500/10 text-amber-600"
+                                : "bg-sky-500/10 text-sky-600"
+                            }`}
+                          >
+                            <GuidanceIcon size={19} strokeWidth={2.25} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              {card.label ? (
+                                <h3 className="text-sm font-black tracking-tight sm:text-base">
+                                  {card.label}
+                                </h3>
+                              ) : null}
+                              {card.meta ? (
+                                <span
+                                  className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] ${
+                                    warningTone
+                                      ? "bg-amber-500/10 text-amber-700"
+                                      : "bg-sky-500/10 text-sky-700"
+                                  }`}
+                                >
+                                  {card.meta}
+                                </span>
+                              ) : null}
+                            </div>
+                            {guidanceItems.length > 1 ? (
+                              <ul className="mt-3 space-y-2.5 text-sm leading-relaxed opacity-90 sm:text-[15px]">
+                                {guidanceItems.map((item: string, itemIndex: number) => (
+                                  <li
+                                    key={`${cardReactKey}-guidance-${itemIndex}`}
+                                    className="flex items-start gap-2.5"
+                                  >
+                                    <span className="mt-[0.55rem] h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-35" />
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : guidanceItems[0] ? (
+                              <p className="mt-3 text-sm leading-relaxed opacity-90 sm:text-[15px]">
+                                {guidanceItems[0]}
+                              </p>
+                            ) : null}
+                            {safeUrl(card.action?.url) ? (
+                              <a
+                                href={card.action.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`mt-4 ${theme.ctaSecondaryClass}`}
+                              >
+                                {card.action.label || "Open Link"}
+                                <ExternalLink size={14} />
+                              </a>
+                            ) : null}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  }
                   return (
                     <div
                       key={cardReactKey}

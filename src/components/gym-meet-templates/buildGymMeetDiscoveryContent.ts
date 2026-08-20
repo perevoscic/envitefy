@@ -213,6 +213,21 @@ const buildStructuredHotelCards = (items: any[]) =>
       label: item.name,
       meta,
       body: details.join("\n"),
+      presentation: "hotel" as const,
+      highlights: [
+        item.distanceFromVenue ? { label: "Distance", value: item.distanceFromVenue } : null,
+        item.groupRate ? { label: "Nightly rate", value: item.groupRate } : null,
+      ].filter(Boolean),
+      details: [
+        item.parking ? { label: "Parking", value: item.parking, icon: "parking" as const } : null,
+        item.breakfast
+          ? { label: "Breakfast", value: item.breakfast, icon: "breakfast" as const }
+          : null,
+        item.reservationDeadline
+          ? { label: "Book by", value: item.reservationDeadline, icon: "deadline" as const }
+          : null,
+        item.phone ? { label: "Phone", value: item.phone, icon: "phone" as const } : null,
+      ].filter(Boolean),
       action: /^https?:\/\//i.test(item.bookingUrl || "")
         ? {
             label: "Book Hotel",
@@ -280,20 +295,68 @@ const classifyResourceRenderTarget = (item: any) => {
   return audience === "public_attendee" ? "meet_details" : "hidden";
 };
 
+const mergePublicSectionBodies = (...values: unknown[]) => {
+  const merged: string[] = [];
+  const normalizeKey = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  for (const sentence of values
+    .flatMap((value) => safeString(value).split(/\n+|(?<=[.!?])\s+(?=[A-Z0-9])/))
+    .map((value) => value.trim())
+    .filter(Boolean)) {
+    const key = normalizeKey(sentence);
+    if (!key) continue;
+    const existingIndex = merged.findIndex((item) => {
+      const existingKey = normalizeKey(item);
+      return (
+        existingKey === key ||
+        (key.length > 24 && existingKey.includes(key)) ||
+        (existingKey.length > 24 && key.includes(existingKey))
+      );
+    });
+    if (existingIndex < 0) {
+      merged.push(sentence);
+      continue;
+    }
+    if (key.length > normalizeKey(merged[existingIndex]).length) {
+      merged[existingIndex] = sentence;
+    }
+  }
+
+  return collapseRepeatedDisplayText(merged.join(" "));
+};
+
 const normalizePublicSection = (
   section: any,
   title: string,
-  fallback?: { body?: unknown; bullets?: unknown[]; hideReason?: string },
+  fallback?: {
+    body?: unknown;
+    bullets?: unknown[];
+    hideReason?: string;
+    mergeFallback?: boolean;
+  },
 ) => {
   const existing = section && typeof section === "object" ? section : null;
-  const body = collapseRepeatedDisplayText(existing ? existing?.body : fallback?.body || "");
-  const bulletSource = existing
-    ? Array.isArray(existing?.bullets)
-      ? existing.bullets
-      : []
-    : Array.isArray(fallback?.bullets)
-      ? fallback.bullets
-      : [];
+  const shouldMergeFallback = Boolean(existing && fallback?.mergeFallback);
+  const body = shouldMergeFallback
+    ? mergePublicSectionBodies(existing?.body, fallback?.body)
+    : collapseRepeatedDisplayText(existing ? existing?.body : fallback?.body || "");
+  const bulletSource = shouldMergeFallback
+    ? [
+        ...(Array.isArray(existing?.bullets) ? existing.bullets : []),
+        ...(Array.isArray(fallback?.bullets) ? fallback.bullets : []),
+      ]
+    : existing
+      ? Array.isArray(existing?.bullets)
+        ? existing.bullets
+        : []
+      : Array.isArray(fallback?.bullets)
+        ? fallback.bullets
+        : [];
   const bullets = uniqueTextLines(
     bulletSource.map((item) => safeString(item)),
     8,
@@ -301,11 +364,13 @@ const normalizePublicSection = (
   const items = normalizeTravelHotels(existing?.items);
   const explicitVisibility = safeString(existing?.visibility);
   const visibility =
-    explicitVisibility === "visible" || explicitVisibility === "hidden"
-      ? explicitVisibility
-      : body || bullets.length > 0 || items.length > 0
-        ? "visible"
-        : "hidden";
+    shouldMergeFallback && (body || bullets.length > 0 || items.length > 0)
+      ? "visible"
+      : explicitVisibility === "visible" || explicitVisibility === "hidden"
+        ? explicitVisibility
+        : body || bullets.length > 0 || items.length > 0
+          ? "visible"
+          : "hidden";
   return {
     title: safeString(existing?.title || title) || title,
     body,
@@ -373,6 +438,27 @@ const collectPublicBodyLines = (
     options?.limit || 6,
   );
 
+const formatPublicSectionFact = (label: string, value: unknown) => {
+  const text = safeString(value).replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  const normalizedText = text.toLowerCase();
+  const normalizedLabel = label.toLowerCase();
+  if (
+    normalizedText === normalizedLabel ||
+    normalizedText.startsWith(`${normalizedLabel}:`) ||
+    normalizedText.startsWith(`${normalizedLabel} `)
+  ) {
+    return text;
+  }
+  return `${label}: ${text}`;
+};
+
+const toPublicSectionSentence = (value: unknown) => {
+  const text = safeString(value).replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+};
+
 const buildFallbackPublicMeetDetailsBody = (params: {
   detailsText: unknown;
   title?: unknown;
@@ -381,6 +467,9 @@ const buildFallbackPublicMeetDetailsBody = (params: {
   hostGym?: unknown;
   doorsOpen?: unknown;
   arrivalGuidance?: unknown;
+  registrationInfo?: unknown;
+  rotationSheetsInfo?: unknown;
+  scoringInfo?: unknown;
   awardsInfo?: unknown;
 }) => {
   const overviewLine = (() => {
@@ -400,25 +489,38 @@ const buildFallbackPublicMeetDetailsBody = (params: {
         excludeMeetDetailKeywords: true,
         limit: 4,
       }),
-      safeString(params.doorsOpen),
-      safeString(params.arrivalGuidance),
-      safeString(params.awardsInfo),
+      formatPublicSectionFact("Doors open", params.doorsOpen),
+      formatPublicSectionFact("Arrival guidance", params.arrivalGuidance),
+      formatPublicSectionFact("Registration", params.registrationInfo),
+      formatPublicSectionFact("Rotation sheets", params.rotationSheetsInfo),
+      formatPublicSectionFact("Scoring", params.scoringInfo),
+      formatPublicSectionFact("Awards", params.awardsInfo),
     ],
-    5,
+    12,
   ).join(" ");
 };
 
 const normalizeAdmissionAudience = (label: unknown) => {
-  const normalized = safeString(label).toLowerCase();
+  const original = safeString(label).replace(/\s+/g, " ").trim();
+  const normalized = original.toLowerCase();
   if (!normalized) return "Admission";
-  if (/\b(adults?|13\+|13\s*(?:and|&)\s*up)\b/i.test(normalized)) return "Adults (13+)";
-  if (/\b(children|child|kids?|5[-–]\s*12|5\s*(?:to|-)\s*12)\b/i.test(normalized)) {
-    return "Children (5-12)";
-  }
   if (/\b(under\s*5|5\s*(?:and|&)\s*under|4\s*(?:and|&)\s*under)\b/i.test(normalized)) {
     return "Under 5";
   }
-  return safeString(label) || "Admission";
+  const rangeMatch = normalized.match(/\b(\d{1,2})\s*(?:[-–]|to)\s*(\d{1,2})\b/i);
+  const plusMatch = normalized.match(/\b(\d{1,2})\s*\+/);
+  const andUpMatch = normalized.match(/\b(\d{1,2})\s*(?:and|&)\s*up\b/i);
+  if (
+    /\b(adults?|adult)\b/i.test(normalized) ||
+    ((plusMatch || andUpMatch) && !/\bchild/i.test(normalized))
+  ) {
+    const minimumAge = plusMatch?.[1] || andUpMatch?.[1];
+    return minimumAge ? `Adults (${minimumAge}+)` : "Adults";
+  }
+  if (/\b(children|child|kids?)\b/i.test(normalized) || rangeMatch) {
+    return rangeMatch ? `Children (${rangeMatch[1]}-${rangeMatch[2]})` : "Children";
+  }
+  return original || "Admission";
 };
 
 const normalizeCurrencyDisplay = (value: unknown) => {
@@ -662,11 +764,13 @@ const sanitizeVenueSectionForMap = (section: any, venueLabel: string, addressLab
 const sanitizeSpectatorBody = (body: unknown, hasStructuredAdmissionCards: boolean) => {
   const normalized = collapseRepeatedDisplayText(body);
   if (!normalized) return "";
-  const lines = uniqueTextLines(normalized.split(/(?<=[.!?])\s+|\n+/), 6).filter(
-    (line) =>
-      !hasStructuredAdmissionCards ||
-      !/\b(adults?|children|under\s*5|cash|card|credit|debit|\$\d)/i.test(line),
-  );
+  const lines = uniqueTextLines(normalized.split(/(?<=[.!?])\s+|\n+/), 20)
+    .filter(
+      (line) =>
+        !hasStructuredAdmissionCards ||
+        !/\b(adults?|children|under\s*5|cash|card|credit|debit|\$\d)/i.test(line),
+    )
+    .slice(0, 8);
   return lines.join(" ");
 };
 
@@ -700,30 +804,31 @@ const ensureUniqueDiscoveryCardKeys = <T extends { key?: string }>(
   });
 };
 
-const buildPublicSectionBlocks = (section: any) => {
-  const titleKey =
-    safeString(section?.title || "section")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "section";
-  const blocks: any[] = [];
+const buildPublicGuidanceCard = (
+  section: any,
+  options: {
+    key: string;
+    label: string;
+    icon: "parking" | "traffic" | "info" | "policy";
+    meta?: string;
+    tone?: "default" | "warning";
+  },
+) => {
+  if (safeString(section?.visibility) !== "visible") return null;
   const body = safeString(section?.body);
-  const bullets = uniqueTextLines(Array.isArray(section?.bullets) ? section.bullets : [], 8);
-  if (body) {
-    blocks.push({
-      id: `${titleKey}-body`,
-      type: "text" as const,
-      text: body,
-    });
-  }
-  if (bullets.length > 0) {
-    blocks.push({
-      id: `${titleKey}-bullets`,
-      type: "line-list" as const,
-      lines: bullets.map((text) => ({ text })),
-    });
-  }
-  return blocks;
+  const items = uniqueTextLines(Array.isArray(section?.bullets) ? section.bullets : [], 8);
+  if (!body && items.length === 0) return null;
+
+  return {
+    key: options.key,
+    label: options.label,
+    body,
+    items,
+    meta: safeString(options.meta),
+    presentation: "guidance" as const,
+    icon: options.icon,
+    tone: options.tone || ("default" as const),
+  };
 };
 
 const normalizeRedundantLinkSummaryText = (value: unknown) =>
@@ -1522,6 +1627,9 @@ export function buildGymMeetDiscoveryContent({
         hostGym: eventData?.hostGym,
         doorsOpen: meetSection?.doorsOpen || parseMeetDetails?.doorsOpen,
         arrivalGuidance: meetSection?.arrivalGuidance || parseMeetDetails?.arrivalGuidance,
+        registrationInfo: meetSection?.registrationInfo || parseMeetDetails?.registrationInfo,
+        rotationSheetsInfo: meetSection?.rotationSheetsInfo || parseMeetDetails?.rotationSheetsInfo,
+        scoringInfo: meetSection?.scoringInfo || parseMeetDetails?.scoringInfo,
         awardsInfo: meetSection?.awardsInfo || parseMeetDetails?.awardsInfo,
       }),
       ...reroutedAdmissionMeetLines,
@@ -1529,21 +1637,21 @@ export function buildGymMeetDiscoveryContent({
       .filter(Boolean)
       .join(" ");
     const fallbackParkingBody =
-      collectPublicBodyLines(
+      uniqueTextLines(
         [
           safeString(logistics?.parking || parseLogistics?.parking),
           safeString(logistics?.rideShare || parseLogistics?.rideShare),
           safeString(logistics?.accessibility || parseLogistics?.accessibility),
-        ].join("\n"),
-        { limit: 3 },
+        ],
+        3,
       ).join(" ") ||
       (facilityMapAddress
         ? `Parking details were not listed in the packet. Plan to arrive early at ${facilityMapAddress} and follow on-site signage for spectator parking and drop-off.`
         : "");
     const fallbackTrafficBody =
-      collectPublicBodyLines(
-        safeString(logistics?.trafficAlerts || parseLogistics?.trafficAlerts),
-        { limit: 2 },
+      uniqueTextLines(
+        [safeString(logistics?.trafficAlerts || parseLogistics?.trafficAlerts)],
+        2,
       ).join(" ") ||
       (facilityMapAddress
         ? "Allow extra arrival time near the venue and follow posted event traffic direction on arrival."
@@ -1552,12 +1660,7 @@ export function buildGymMeetDiscoveryContent({
       [
         venueLabel,
         addressLabel,
-        ...collectPublicBodyLines(
-          safeString(meetSection?.facilityLayout || parseMeetDetails?.facilityLayout),
-          {
-            limit: 2,
-          },
-        ),
+        safeString(meetSection?.facilityLayout || parseMeetDetails?.facilityLayout),
       ],
       3,
     ).join(" ");
@@ -1568,28 +1671,24 @@ export function buildGymMeetDiscoveryContent({
             .filter(Boolean)
             .join(": "),
         ),
-        ...collectPublicBodyLines(
-          [
-            safeString(logistics?.policyFood),
-            safeString(logistics?.policyHydration),
-            safeString(logistics?.policySafety),
-            safeString(logistics?.policyAnimals),
-          ].join("\n"),
-          { limit: 4 },
-        ),
+        safeString(logistics?.policyFood || parseResult?.policies?.food),
+        safeString(logistics?.policyHydration || parseResult?.policies?.hydration),
+        safeString(logistics?.policySafety || parseResult?.policies?.safety),
+        safeString(logistics?.policyAnimals || parseResult?.policies?.animals),
       ],
-      5,
-    ).join(" ");
-    const fallbackTravelBody = collectPublicBodyLines(
-      safeString(logistics?.hotelInfo || parseLogistics?.hotel),
-      {
-        limit: 2,
-      },
+      8,
+    )
+      .map(toPublicSectionSentence)
+      .join(" ");
+    const fallbackTravelBody = uniqueTextLines(
+      [safeString(logistics?.hotelInfo || parseLogistics?.hotel)],
+      2,
     ).join(" ");
     const effectivePublicSections = {
       meetDetails: normalizePublicSection(publicPageSections?.meetDetails, "Meet Details", {
         body: fallbackMeetDetailsBody,
         hideReason: "No attendee-safe meet overview survived filtering.",
+        mergeFallback: true,
       }),
       parking: normalizePublicSection(publicPageSections?.parking, "Parking", {
         body: fallbackParkingBody,
@@ -1606,6 +1705,7 @@ export function buildGymMeetDiscoveryContent({
       spectatorInfo: normalizePublicSection(publicPageSections?.spectatorInfo, "Spectator Info", {
         body: fallbackSpectatorBody,
         hideReason: "No attendee-safe admission or spectator policies survived filtering.",
+        mergeFallback: true,
       }),
       travel: normalizePublicSection(publicPageSections?.travel, "Hotels & Travel", {
         body: fallbackTravelBody,
@@ -1623,6 +1723,18 @@ export function buildGymMeetDiscoveryContent({
       venueLabel,
       addressLabel,
     );
+    const meetGuidanceCard = buildPublicGuidanceCard(effectivePublicSections?.meetDetails, {
+      key: "meet-overview",
+      label: "What families need to know",
+      icon: "info",
+      meta: "At a glance",
+    });
+    const venueGuidanceCard = buildPublicGuidanceCard(sanitizedVenueSection, {
+      key: "venue-guidance",
+      label: "Venue guidance",
+      icon: "info",
+      meta: "Getting oriented",
+    });
     const admissionCardsNormalized = mergeAdmissionVariants(
       Array.isArray(parseResult?.admission) && parseResult.admission.length > 0
         ? [...parseResult.admission, ...recoveredAdmissionMatrixCards]
@@ -1631,6 +1743,18 @@ export function buildGymMeetDiscoveryContent({
     const spectatorBody = sanitizeSpectatorBody(
       effectivePublicSections?.spectatorInfo?.body,
       admissionCardsNormalized.length > 0,
+    );
+    const spectatorGuidanceCard = buildPublicGuidanceCard(
+      {
+        ...effectivePublicSections?.spectatorInfo,
+        body: spectatorBody,
+      },
+      {
+        key: "spectator-policies",
+        label: "Spectator policies",
+        icon: "policy",
+        meta: "Know before you go",
+      },
     );
     const resultLinks = selectSectionResourceLinks(resourceLinks, "results", 8);
     const hotelLinks = selectSectionResourceLinks(resourceLinks, "hotels", 8);
@@ -1649,27 +1773,77 @@ export function buildGymMeetDiscoveryContent({
       ].filter(Boolean),
       8,
     );
+    const publicTravelCards = publicTravelHotelCards.map((card, index) => {
+      if (card.action?.url) return card;
+      const fallbackAction = publicTravelFallbackLinks[index] || publicTravelFallbackLinks[0];
+      return fallbackAction
+        ? {
+            ...card,
+            action: {
+              label: "Reserve Hotel",
+              url: fallbackAction.url,
+            },
+          }
+        : card;
+    });
+    const hotelCardActionUrls = new Set(
+      publicTravelCards.map((card) => safeString(card.action?.url)).filter(Boolean),
+    );
+    const remainingPublicTravelLinks = publicTravelFallbackLinks.filter(
+      (link) => !hotelCardActionUrls.has(link.url),
+    );
     const publicTravelBody = sanitizeLinkedCopy(
       effectivePublicSections?.travel?.body,
       publicTravelFallbackLinks,
     );
-    const publicTravelBlocks = buildPublicSectionBlocks({
-      ...effectivePublicSections?.travel,
-      body:
-        isLowSignalTravelSummaryText(publicTravelBody) ||
-        isRedundantLinkSummaryText(publicTravelBody, publicTravelFallbackLinks)
-          ? ""
-          : publicTravelBody,
-    });
+    const publicTravelGuidanceCard = buildPublicGuidanceCard(
+      {
+        ...effectivePublicSections?.travel,
+        body:
+          isLowSignalTravelSummaryText(publicTravelBody) ||
+          isRedundantLinkSummaryText(publicTravelBody, publicTravelFallbackLinks)
+            ? ""
+            : publicTravelBody,
+      },
+      {
+        key: "travel-guidance",
+        label: "Travel guidance",
+        icon: "info",
+        meta: "Plan your stay",
+      },
+    );
+    const publicTravelBlocks =
+      publicTravelGuidanceCard && publicTravelCards.length === 0
+        ? [
+            {
+              id: "travel-guidance-cards",
+              type: "card-grid" as const,
+              columns: 2 as const,
+              cards: [publicTravelGuidanceCard],
+            },
+          ]
+        : [];
     const parkingLinks = selectSectionResourceLinks(resourceLinks, "traffic_parking", 8);
+    const trafficGuidanceCards = [
+      buildPublicGuidanceCard(effectivePublicSections?.parking, {
+        key: "parking-dropoff",
+        label: "Parking & drop-off",
+        icon: "parking",
+        meta: "Before you leave",
+      }),
+      buildPublicGuidanceCard(effectivePublicSections?.traffic, {
+        key: "traffic-alert",
+        label: "Traffic alert",
+        icon: "traffic",
+        meta: "Plan extra time",
+        tone: "warning",
+      }),
+    ].filter(Boolean);
     const documentLinks =
       effectivePublicSections?.documents?.visibility === "visible"
         ? uniqueLinks(effectivePublicSections.documents.links, 12)
         : [];
-    const resultsBody =
-      classifyPublicAudience(safeString(parseMeetDetails?.resultsInfo)) === "public_attendee"
-        ? safeString(parseMeetDetails?.resultsInfo)
-        : "";
+    const resultsBody = safeString(meetSection?.resultsInfo || parseMeetDetails?.resultsInfo);
     const announcementCards = uniqueBy(
       [
         ...(Array.isArray(parseCommunications?.announcements)
@@ -1698,7 +1872,16 @@ export function buildGymMeetDiscoveryContent({
         hasContent:
           safeString(effectivePublicSections?.meetDetails?.visibility) === "visible" &&
           Boolean(safeString(effectivePublicSections?.meetDetails?.body)),
-        blocks: buildPublicSectionBlocks(effectivePublicSections?.meetDetails),
+        blocks: meetGuidanceCard
+          ? [
+              {
+                id: "meet-guidance-cards",
+                type: "card-grid" as const,
+                columns: 2 as const,
+                cards: [meetGuidanceCard],
+              },
+            ]
+          : [],
       },
       {
         id: "admission",
@@ -1720,10 +1903,16 @@ export function buildGymMeetDiscoveryContent({
                 },
               ]
             : []),
-          ...buildPublicSectionBlocks({
-            ...effectivePublicSections?.spectatorInfo,
-            body: spectatorBody,
-          }),
+          ...(spectatorGuidanceCard
+            ? [
+                {
+                  id: "spectator-guidance-cards",
+                  type: "card-grid" as const,
+                  columns: 2 as const,
+                  cards: [spectatorGuidanceCard],
+                },
+              ]
+            : []),
         ],
       },
       {
@@ -1736,7 +1925,16 @@ export function buildGymMeetDiscoveryContent({
             Boolean(safeString(sanitizedVenueSection?.body))) ||
           Boolean(facilityMapAddress),
         blocks: [
-          ...buildPublicSectionBlocks(sanitizedVenueSection),
+          ...(venueGuidanceCard
+            ? [
+                {
+                  id: "venue-guidance-cards",
+                  type: "card-grid" as const,
+                  columns: 2 as const,
+                  cards: [venueGuidanceCard],
+                },
+              ]
+            : []),
           ...(facilityMapAddress
             ? [
                 {
@@ -1754,21 +1952,24 @@ export function buildGymMeetDiscoveryContent({
         label: "Traffic & Parking",
         kind: "traffic_parking",
         priority: 40,
-        hasContent:
-          (safeString(effectivePublicSections?.parking?.visibility) === "visible" &&
-            Boolean(safeString(effectivePublicSections?.parking?.body))) ||
-          (safeString(effectivePublicSections?.traffic?.visibility) === "visible" &&
-            Boolean(safeString(effectivePublicSections?.traffic?.body))) ||
-          parkingLinks.length > 0,
+        hasContent: trafficGuidanceCards.length > 0 || parkingLinks.length > 0,
         blocks: [
-          ...buildPublicSectionBlocks(effectivePublicSections?.parking),
-          ...buildPublicSectionBlocks(effectivePublicSections?.traffic),
+          ...(trafficGuidanceCards.length > 0
+            ? [
+                {
+                  id: "arrival-guidance-cards",
+                  type: "card-grid" as const,
+                  columns: 2 as const,
+                  cards: trafficGuidanceCards,
+                },
+              ]
+            : []),
           ...(parkingLinks.length > 0
             ? [
                 {
                   id: "parking-links",
                   type: "link-list" as const,
-                  title: "Parking Links",
+                  title: "Plan your route",
                   links: parkingLinks,
                 },
               ]
@@ -1783,27 +1984,27 @@ export function buildGymMeetDiscoveryContent({
         hasContent:
           (safeString(effectivePublicSections?.travel?.visibility) === "visible" &&
             (Boolean(safeString(effectivePublicSections?.travel?.body)) ||
-              publicTravelHotelCards.length > 0)) ||
-          publicTravelFallbackLinks.length > 0,
+              publicTravelCards.length > 0)) ||
+          remainingPublicTravelLinks.length > 0,
         blocks: [
-          ...(publicTravelHotelCards.length > 0
+          ...(publicTravelCards.length > 0
             ? [
                 {
                   id: "hotel-cards",
                   type: "card-grid" as const,
                   columns: 2 as const,
-                  cards: publicTravelHotelCards,
+                  cards: publicTravelCards,
                 },
               ]
             : []),
           ...publicTravelBlocks,
-          ...(publicTravelFallbackLinks.length > 0
+          ...(remainingPublicTravelLinks.length > 0
             ? [
                 {
                   id: "hotel-links",
                   type: "link-list" as const,
                   title: "Hotel & Travel Links",
-                  links: publicTravelFallbackLinks,
+                  links: remainingPublicTravelLinks,
                 },
               ]
             : []),

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
-import { getEventDiscoveryByEventId, getEventHistoryById } from "@/lib/db";
+import { getEventDiscoveryStatusByEventId, getEventHistoryOwnerById } from "@/lib/db";
 import { buildDiscoveryStatusResponse, ensureDiscoveryForExistingEvent } from "@/lib/discovery";
 
 export const runtime = "nodejs";
@@ -13,14 +13,15 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { eventId } = await context.params;
-  const historyRow = await getEventHistoryById(eventId);
+  const historyRow = await getEventHistoryOwnerById(eventId);
   if (!historyRow) return NextResponse.json({ error: "Event not found" }, { status: 404 });
   if (historyRow.user_id && historyRow.user_id !== userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const discovery =
-    (await getEventDiscoveryByEventId(eventId)) || (await ensureDiscoveryForExistingEvent(eventId));
+    (await getEventDiscoveryStatusByEventId(eventId)) ||
+    (await ensureDiscoveryForExistingEvent(eventId));
   if (!discovery) {
     return NextResponse.json(
       {
@@ -29,6 +30,7 @@ export async function GET(_request: Request, context: { params: Promise<{ eventI
         processingStage: "ingested",
         lastSuccessfulStage: null,
         needsHumanReview: false,
+        draftReady: false,
         builderReady: false,
         errorCode: null,
         errorStage: null,

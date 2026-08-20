@@ -2,35 +2,24 @@
 // @ts-nocheck
 "use client";
 
+import { Calendar, Check, Clock, Trophy } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Calendar,
-  Check,
-  Clock,
-  ExternalLink,
-  Trophy,
-} from "lucide-react";
-import ShowcaseDiscoveryContent, {
-  getShowcaseDiscoveryTabs,
-} from "../ShowcaseDiscoveryContent";
+import { formatGymMeetTime, joinUniqueDisplayParts } from "../displayText";
 import FloatingActionStrip from "../FloatingActionStrip";
+import ShowcaseDiscoveryContent, { getShowcaseDiscoveryTabs } from "../ShowcaseDiscoveryContent";
 import { ShowcaseThemeConfig } from "../showcaseThemes";
+import { getGymMeetTitleSizeStyle } from "../titleSizing";
 import { getGymMeetTitleTypography } from "../titleTypography";
 import { GymMeetTemplateRendererProps } from "../types";
-import { getGymMeetTitleSizeStyle } from "../titleSizing";
-import { formatGymMeetTime, joinUniqueDisplayParts } from "../displayText";
 
 const MOBILE_TAB_SAFE_EDGE_PX = 24;
 const DESKTOP_TAB_SAFE_EDGE_PX = 8;
 
 const formatStatus = (value: string) => {
-  const normalized = String(value || "").replace(/_/g, " ").trim();
+  const normalized = String(value || "")
+    .replace(/_/g, " ")
+    .trim();
   return normalized ? normalized[0].toUpperCase() + normalized.slice(1) : "Pending";
-};
-
-const safeUrl = (value: unknown) => {
-  const text = typeof value === "string" ? value.trim() : "";
-  return /^https?:\/\//i.test(text) ? text : "";
 };
 
 const Section = ({
@@ -191,18 +180,18 @@ export default function ShowcaseGymMeetTemplate({
   const volunteerSlots = Array.isArray(model.volunteers?.volunteerSlots)
     ? model.volunteers.volunteerSlots
     : Array.isArray(model.volunteers?.slots)
-    ? model.volunteers.slots
-    : [];
+      ? model.volunteers.slots
+      : [];
   const carpools = Array.isArray(model.volunteers?.carpoolOffers)
     ? model.volunteers.carpoolOffers
     : Array.isArray(model.volunteers?.carpools)
-    ? model.volunteers.carpools
-    : [];
+      ? model.volunteers.carpools
+      : [];
   const gearItems = Array.isArray(model.gear?.items)
     ? model.gear.items
     : Array.isArray(model.gear)
-    ? model.gear
-    : [];
+      ? model.gear
+      : [];
 
   const topTabs = useMemo(() => {
     return getShowcaseDiscoveryTabs(model.discovery?.sections || []);
@@ -227,10 +216,7 @@ export default function ShowcaseGymMeetTemplate({
       const safeViewportRight = rail.scrollLeft + rail.clientWidth - safeEdgeInset;
       const epsilon = 1;
 
-      if (
-        buttonLeft >= safeViewportLeft - epsilon &&
-        buttonRight <= safeViewportRight + epsilon
-      ) {
+      if (buttonLeft >= safeViewportLeft - epsilon && buttonRight <= safeViewportRight + epsilon) {
         return;
       }
 
@@ -244,15 +230,14 @@ export default function ShowcaseGymMeetTemplate({
         behavior,
       });
     },
-    []
+    [],
   );
-  const hasQuickAccessSection = model.quickLinks.length > 0;
   const heroHostGym = model.hostGym || model.team || "";
   const heroAddressLine =
     model.address || model.mapAddress || model.headerLocation
       ? joinUniqueDisplayParts(
           [heroHostGym, model.address || model.mapAddress || model.headerLocation],
-          ", "
+          ", ",
         )
       : "";
 
@@ -267,8 +252,7 @@ export default function ShowcaseGymMeetTemplate({
   useEffect(() => {
     if (!activeTabId) return;
     const behavior =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "auto"
         : "smooth";
     const rafId = window.requestAnimationFrame(() => {
@@ -280,7 +264,9 @@ export default function ShowcaseGymMeetTemplate({
   return (
     <div className={theme.pageClass}>
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-        {!isReadOnly && !hideOwnerActions && ownerToolbar ? <div className="mb-4">{ownerToolbar}</div> : null}
+        {!isReadOnly && !hideOwnerActions && ownerToolbar ? (
+          <div className="mb-4">{ownerToolbar}</div>
+        ) : null}
 
         <div className={theme.shellClass}>
           <header className={theme.headerClass} style={heroStyle}>
@@ -338,7 +324,9 @@ export default function ShowcaseGymMeetTemplate({
                   ) : null}
                 </div>
                 {heroAddressLine ? (
-                  <p className={`mt-3 text-sm font-black uppercase tracking-[0.22em] ${theme.subtitleClass}`}>
+                  <p
+                    className={`mt-3 text-sm font-black uppercase tracking-[0.22em] ${theme.subtitleClass}`}
+                  >
                     {heroAddressLine}
                   </p>
                 ) : null}
@@ -365,7 +353,6 @@ export default function ShowcaseGymMeetTemplate({
                 buttonClass={theme.ctaSecondaryClass}
                 onShare={onShare}
                 onCalendar={onCalendar}
-                resourcesHref={hasQuickAccessSection ? "#quick-access" : undefined}
               />
             ) : null}
           </div>
@@ -402,14 +389,10 @@ export default function ShowcaseGymMeetTemplate({
                 </div>
               </div>
 
-              <ShowcaseDiscoveryContent
-                model={model}
-                theme={theme}
-                activeTab={activeTabId}
-              />
+              <ShowcaseDiscoveryContent model={model} theme={theme} activeTab={activeTabId} />
             </section>
 
-            {(model.rosterAthletes.length > 0 || practiceBlocks.length > 0) ? (
+            {model.rosterAthletes.length > 0 || practiceBlocks.length > 0 ? (
               <div className="grid gap-5 xl:grid-cols-[1.02fr_0.98fr]">
                 {model.rosterAthletes.length > 0 ? (
                   <Section title="Active Roster" eyebrow="Attendance" theme={theme}>
@@ -420,7 +403,10 @@ export default function ShowcaseGymMeetTemplate({
                             <div>
                               <p className="text-base font-black">{athlete.name}</p>
                               <p className="mt-1 text-sm opacity-70">
-                                {[athlete.level, athlete.position || athlete.primaryEvents?.join(", ")]
+                                {[
+                                  athlete.level,
+                                  athlete.position || athlete.primaryEvents?.join(", "),
+                                ]
                                   .filter(Boolean)
                                   .join(" • ")}
                               </p>
@@ -446,14 +432,18 @@ export default function ShowcaseGymMeetTemplate({
                             <p className="text-base font-black">{block.day}</p>
                             <p className="text-xs font-bold uppercase tracking-[0.16em] opacity-60">
                               {block.time ||
-                                [formatGymMeetTime(block.startTime), formatGymMeetTime(block.endTime)]
+                                [
+                                  formatGymMeetTime(block.startTime),
+                                  formatGymMeetTime(block.endTime),
+                                ]
                                   .filter(Boolean)
                                   .join(" - ")}
                             </p>
                           </div>
                           {(Array.isArray(block.focus) ? block.focus.length : block.focus) ? (
                             <p className="mt-2 text-sm opacity-80">
-                              Focus: {Array.isArray(block.focus) ? block.focus.join(", ") : block.focus}
+                              Focus:{" "}
+                              {Array.isArray(block.focus) ? block.focus.join(", ") : block.focus}
                             </p>
                           ) : null}
                           {block.skillGoals || block.description ? (
@@ -469,10 +459,10 @@ export default function ShowcaseGymMeetTemplate({
               </div>
             ) : null}
 
-            {(gearItems.length > 0 ||
-              model.gear?.uniform ||
-              volunteerSlots.length > 0 ||
-              carpools.length > 0) ? (
+            {gearItems.length > 0 ||
+            model.gear?.uniform ||
+            volunteerSlots.length > 0 ||
+            carpools.length > 0 ? (
               <Section title="Gear & Support" eyebrow="Operations" theme={theme}>
                 <div className="grid gap-3 md:grid-cols-2">
                   {model.gear?.uniform ? (
@@ -611,28 +601,6 @@ export default function ShowcaseGymMeetTemplate({
                     </button>
                   </div>
                 )}
-              </Section>
-            ) : null}
-
-            {model.quickLinks.length > 0 ? (
-              <Section id="quick-access" title="Quick Access" eyebrow="Links" theme={theme}>
-                <div className="flex flex-wrap gap-2">
-                  {model.quickLinks.map((link) =>
-                    safeUrl(link.url) || /^data:/i.test(link.url) ? (
-                      <a
-                        key={link.url}
-                        href={link.url}
-                        target={/^data:/i.test(link.url) ? undefined : "_blank"}
-                        rel={/^data:/i.test(link.url) ? undefined : "noopener noreferrer"}
-                        download={/^data:/i.test(link.url) ? "source-file" : undefined}
-                        className={theme.ctaSecondaryClass}
-                      >
-                        {link.label || "Open Link"}
-                        <ExternalLink size={14} />
-                      </a>
-                    ) : null
-                  )}
-                </div>
               </Section>
             ) : null}
 

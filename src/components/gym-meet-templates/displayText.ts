@@ -182,6 +182,41 @@ export const stripLinkedDomainMentions = (
   return isLowSignalLinkedText(fallback) ? "" : fallback;
 };
 
+export const splitGuidanceSentences = (value: unknown, limit = 8): string[] => {
+  const text = toDisplayString(value).replace(/\s+/g, " ").trim();
+  if (!text) return [];
+
+  const segmented = (() => {
+    try {
+      const Segmenter = (Intl as any)?.Segmenter;
+      if (typeof Segmenter !== "function") return [];
+      return Array.from(
+        new Segmenter("en", { granularity: "sentence" }).segment(text),
+        (part: any) => toDisplayString(part?.segment),
+      );
+    } catch {
+      return [];
+    }
+  })();
+  const candidates =
+    segmented.length > 0
+      ? segmented
+      : text.split(/(?<=[.!?])\s+(?=[A-Z0-9“"'])/g).map((part) => part.trim());
+
+  const seen = new Set<string>();
+  const sentences: string[] = [];
+  for (const candidate of candidates) {
+    const sentence = toDisplayString(candidate);
+    const key = normalizeCompareText(sentence);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    sentences.push(sentence);
+    if (sentences.length >= Math.max(1, limit)) break;
+  }
+
+  return sentences.length > 0 ? sentences : [text];
+};
+
 const ISO_DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export const formatGymMeetTime = (value: unknown): string => {

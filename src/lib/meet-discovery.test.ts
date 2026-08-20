@@ -52,6 +52,24 @@ test("meet discovery public artifact filtering no longer treats session_ops as a
   assert.match(publicContentSource, /if \(audience === "coach_ops"\) \{/);
 });
 
+test("public artifacts preserve dedicated parent-packet fields without keyword reclassification", () => {
+  const source = readSource("src/lib/meet-discovery/core.ts");
+
+  assert.match(source, /function collectDedicatedPublicFieldTexts\(/);
+  assert.match(
+    source,
+    /formatDedicatedPublicFact\("Doors open", parseResult\.meetDetails\.doorsOpen\)[\s\S]*formatDedicatedPublicFact\("Arrival guidance", parseResult\.meetDetails\.arrivalGuidance\)[\s\S]*formatDedicatedPublicFact\("Registration", parseResult\.meetDetails\.registrationInfo\)[\s\S]*formatDedicatedPublicFact\("Rotation sheets", parseResult\.meetDetails\.rotationSheetsInfo\)[\s\S]*formatDedicatedPublicFact\("Scoring", parseResult\.meetDetails\.scoringInfo\)[\s\S]*formatDedicatedPublicFact\("Awards", parseResult\.meetDetails\.awardsInfo\)/,
+  );
+  assert.match(
+    source,
+    /collectDedicatedPublicFieldTexts\(\s*\[\s*parseResult\.policies\.food,[\s\S]*parseResult\.policies\.hydration,[\s\S]*parseResult\.policies\.safety,[\s\S]*parseResult\.policies\.animals/,
+  );
+  assert.match(
+    source,
+    /findPublicEvidenceText\(\/\\b\(\?:official results\|live scoring\|meet results\)\\b\/i/,
+  );
+});
+
 test("mapParseResultToGymData stops emitting schedule and session-derived fields", () => {
   const source = readSource("src/lib/meet-discovery/core.ts");
 
@@ -65,7 +83,10 @@ test("__testUtils no longer exports schedule-session helpers", () => {
   const source = readSource("src/lib/meet-discovery/core.ts");
 
   assert.match(source, /export const __testUtils = \{/);
-  assert.doesNotMatch(source, /export const __testUtils = \{[\s\S]*deriveScheduleFromExtractedText/);
+  assert.doesNotMatch(
+    source,
+    /export const __testUtils = \{[\s\S]*deriveScheduleFromExtractedText/,
+  );
   assert.doesNotMatch(source, /export const __testUtils = \{[\s\S]*mergeScheduleWithFallback/);
   assert.doesNotMatch(source, /export const __testUtils = \{[\s\S]*classifySchedulePageText/);
   assert.doesNotMatch(source, /export const __testUtils = \{[\s\S]*isStaleDerivedSchedule/);

@@ -49,11 +49,7 @@ export type GymMeetTemplateGroup =
   | "editorial"
   | "dashboard";
 
-export type GymMeetTemplateLayoutFamily =
-  | "standard"
-  | "editorial"
-  | "dashboard"
-  | "app-shell";
+export type GymMeetTemplateLayoutFamily = "standard" | "editorial" | "dashboard" | "app-shell";
 
 export type GymMeetTitleTypographyId =
   | "anton"
@@ -241,7 +237,16 @@ export type GymMeetDiscoveryCard = {
   body?: string;
   meta?: string;
   items?: string[];
+  highlights?: Array<{ label: string; value: string }>;
+  details?: Array<{
+    label: string;
+    value: string;
+    icon?: "parking" | "breakfast" | "deadline" | "phone";
+  }>;
   action?: GymMeetLinkAction;
+  presentation?: "default" | "guidance" | "hotel";
+  icon?: "parking" | "traffic" | "info" | "policy";
+  tone?: "default" | "warning";
 };
 
 export type GymMeetDiscoveryBlock =

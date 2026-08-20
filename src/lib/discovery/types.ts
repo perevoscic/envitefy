@@ -221,6 +221,8 @@ export type DiscoveryStatusResponse = {
   processingStage: DiscoveryStage | DiscoveryFailureStage;
   lastSuccessfulStage: DiscoveryStage | null;
   needsHumanReview: boolean;
+  /** Core fields have been mapped and the builder can open while enrichment continues. */
+  draftReady: boolean;
   builderReady: boolean;
   errorCode: string | null;
   errorStage: string | null;

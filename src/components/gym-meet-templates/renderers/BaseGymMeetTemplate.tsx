@@ -2,13 +2,13 @@
 // @ts-nocheck
 "use client";
 
-import React from "react";
 import { Calendar, Check, Clock } from "lucide-react";
-import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
+import React from "react";
 import FloatingActionStrip from "../FloatingActionStrip";
+import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
+import { getGymMeetTitleSizeStyle } from "../titleSizing";
 import { getGymMeetTitleTypography } from "../titleTypography";
 import { GymMeetTemplateRendererProps } from "../types";
-import { getGymMeetTitleSizeStyle } from "../titleSizing";
 
 const formatTime = (value: string) => {
   if (!value) return "";
@@ -25,7 +25,9 @@ const formatTime = (value: string) => {
 };
 
 const formatStatus = (value: string) => {
-  const normalized = String(value || "").replace(/_/g, " ").trim();
+  const normalized = String(value || "")
+    .replace(/_/g, " ")
+    .trim();
   return normalized ? normalized[0].toUpperCase() + normalized.slice(1) : "Pending";
 };
 
@@ -98,20 +100,18 @@ export default function BaseGymMeetTemplate({
   const volunteerSlots = Array.isArray(model.volunteers?.volunteerSlots)
     ? model.volunteers.volunteerSlots
     : Array.isArray(model.volunteers?.slots)
-    ? model.volunteers.slots
-    : [];
+      ? model.volunteers.slots
+      : [];
   const carpools = Array.isArray(model.volunteers?.carpoolOffers)
     ? model.volunteers.carpoolOffers
     : Array.isArray(model.volunteers?.carpools)
-    ? model.volunteers.carpools
-    : [];
+      ? model.volunteers.carpools
+      : [];
   const gearItems = Array.isArray(model.gear?.items)
     ? model.gear.items
     : Array.isArray(model.gear)
-    ? model.gear
-    : [];
-  const hasQuickAccessSection = model.quickLinks.length > 0;
-
+      ? model.gear
+      : [];
   const heroStyle = model.heroImage
     ? {
         backgroundImage: `linear-gradient(180deg, rgba(2,6,23,0.22), rgba(2,6,23,0.56)), url(${model.heroImage})`,
@@ -123,10 +123,15 @@ export default function BaseGymMeetTemplate({
   return (
     <div className={variant.pageClass}>
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-        {!isReadOnly && !hideOwnerActions && ownerToolbar ? <div className="mb-4">{ownerToolbar}</div> : null}
+        {!isReadOnly && !hideOwnerActions && ownerToolbar ? (
+          <div className="mb-4">{ownerToolbar}</div>
+        ) : null}
 
         <div className={variant.shellClass}>
-          <header className={`relative overflow-hidden ${variant.heroPanelClass}`} style={heroStyle}>
+          <header
+            className={`relative overflow-hidden ${variant.heroPanelClass}`}
+            style={heroStyle}
+          >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_36%)]" />
             <div className="relative px-5 py-8 sm:px-8 sm:py-10">
               {model.heroBadges.length > 0 ? (
@@ -151,7 +156,9 @@ export default function BaseGymMeetTemplate({
                   >
                     {model.title}
                   </h1>
-                  <div className={`mt-4 flex flex-wrap gap-4 text-sm font-semibold ${variant.mutedClass}`}>
+                  <div
+                    className={`mt-4 flex flex-wrap gap-4 text-sm font-semibold ${variant.mutedClass}`}
+                  >
                     {model.dateLabel ? (
                       <span className="inline-flex items-center gap-2">
                         <Calendar size={16} /> {model.dateLabel}
@@ -186,7 +193,6 @@ export default function BaseGymMeetTemplate({
                 buttonClass={variant.secondaryButtonClass}
                 onShare={onShare}
                 onCalendar={onCalendar}
-                resourcesHref={hasQuickAccessSection ? "#quick-access" : undefined}
               />
             ) : null}
           </div>
@@ -194,7 +200,7 @@ export default function BaseGymMeetTemplate({
           <main className="space-y-4 px-3 pb-5 pt-6 sm:px-5 sm:pb-6 sm:pt-7">
             <GymMeetDiscoveryContent model={model} variant={variant} />
 
-            {(model.rosterAthletes.length > 0 || practiceBlocks.length > 0) ? (
+            {model.rosterAthletes.length > 0 || practiceBlocks.length > 0 ? (
               <div
                 className={`grid gap-4 ${
                   variant.timeline ? "lg:grid-cols-[0.95fr_1.05fr]" : "lg:grid-cols-2"
@@ -215,7 +221,10 @@ export default function BaseGymMeetTemplate({
                             <div>
                               <p className="text-base font-black">{athlete.name}</p>
                               <p className="mt-1 text-sm opacity-70">
-                                {[athlete.level, athlete.position || athlete.primaryEvents?.join(", ")]
+                                {[
+                                  athlete.level,
+                                  athlete.position || athlete.primaryEvents?.join(", "),
+                                ]
                                   .filter(Boolean)
                                   .join(" • ")}
                               </p>
@@ -256,11 +265,14 @@ export default function BaseGymMeetTemplate({
                           </div>
                           {(Array.isArray(block.focus) ? block.focus.length : block.focus) ? (
                             <p className="mt-2 text-sm opacity-80">
-                              Focus: {Array.isArray(block.focus) ? block.focus.join(", ") : block.focus}
+                              Focus:{" "}
+                              {Array.isArray(block.focus) ? block.focus.join(", ") : block.focus}
                             </p>
                           ) : null}
                           {block.skillGoals || block.description ? (
-                            <p className="mt-2 text-sm opacity-70">{block.skillGoals || block.description}</p>
+                            <p className="mt-2 text-sm opacity-70">
+                              {block.skillGoals || block.description}
+                            </p>
                           ) : null}
                         </div>
                       ))}
@@ -270,10 +282,10 @@ export default function BaseGymMeetTemplate({
               </div>
             ) : null}
 
-            {(gearItems.length > 0 ||
-              model.gear?.uniform ||
-              volunteerSlots.length > 0 ||
-              carpools.length > 0) ? (
+            {gearItems.length > 0 ||
+            model.gear?.uniform ||
+            volunteerSlots.length > 0 ||
+            carpools.length > 0 ? (
               <div className="grid gap-4 lg:grid-cols-2">
                 <BaseSection
                   title="Gear & Support"
@@ -293,7 +305,8 @@ export default function BaseGymMeetTemplate({
                   {gearItems.length > 0 ? (
                     <div className="mt-3 grid gap-2">
                       {gearItems.slice(0, 8).map((item: any, idx: number) => {
-                        const label = typeof item === "string" ? item : item?.name || `Gear ${idx + 1}`;
+                        const label =
+                          typeof item === "string" ? item : item?.name || `Gear ${idx + 1}`;
                         return (
                           <div key={label} className={variant.summaryCardClass}>
                             <p className="text-sm font-semibold">{label}</p>
@@ -310,7 +323,9 @@ export default function BaseGymMeetTemplate({
                       <div className="mt-3 grid gap-2">
                         {volunteerSlots.slice(0, 4).map((slot: any, idx: number) => (
                           <div key={slot.id || idx} className={variant.summaryCardClass}>
-                            <p className="text-sm font-semibold">{slot.role || `Volunteer ${idx + 1}`}</p>
+                            <p className="text-sm font-semibold">
+                              {slot.role || `Volunteer ${idx + 1}`}
+                            </p>
                             <p className="mt-1 text-xs opacity-70">{slot.name || "Open slot"}</p>
                           </div>
                         ))}
@@ -450,32 +465,6 @@ export default function BaseGymMeetTemplate({
                   )}
                 </BaseSection>
               </div>
-            ) : null}
-
-            {model.quickLinks.length > 0 ? (
-              <BaseSection
-                id="quick-access"
-                title="Quick Access"
-                eyebrow="Links"
-                className={variant.sectionClass}
-                titleClass={variant.sectionTitleClass}
-                titleStyle={variant.sectionTitleStyle}
-              >
-                <div className="flex flex-wrap gap-2">
-                  {model.quickLinks.map((link) => (
-                    <a
-                      key={link.url}
-                      href={link.url}
-                      target={/^data:/i.test(link.url) ? undefined : "_blank"}
-                      rel={/^data:/i.test(link.url) ? undefined : "noopener noreferrer"}
-                      download={/^data:/i.test(link.url) ? "source-file" : undefined}
-                      className={variant.secondaryButtonClass}
-                    >
-                      {link.label || "Open Link"}
-                    </a>
-                  ))}
-                </div>
-              </BaseSection>
             ) : null}
 
             <footer className="px-2 py-6 text-center text-xs font-semibold uppercase tracking-[0.22em] opacity-50">

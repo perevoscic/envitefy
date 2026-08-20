@@ -10,6 +10,7 @@ import {
   getGymMeetScheduleDaySortTime,
   joinUniqueDisplayParts,
   sanitizeGymMeetDisplayDateLabel,
+  splitGuidanceSentences,
   stripLinkedDomainMentions,
 } from "./displayText";
 
@@ -49,6 +50,19 @@ test("stripLinkedDomainMentions removes linked bare domains from copy", () => {
       { url: "https://www.usacompetitions.com/results" },
     ]),
     "Live scoring available online.",
+  );
+});
+
+test("splitGuidanceSentences turns arrival copy into scannable facts without breaking addresses", () => {
+  assert.deepEqual(
+    splitGuidanceSentences(
+      "Pay before leaving. Rideshare drop-off is at 333 S Franklin St., across from Water Street. Allow extra time Friday.",
+    ),
+    [
+      "Pay before leaving.",
+      "Rideshare drop-off is at 333 S Franklin St., across from Water Street.",
+      "Allow extra time Friday.",
+    ],
   );
 });
 

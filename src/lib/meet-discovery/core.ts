@@ -18,14 +18,6 @@ import {
 } from "@/lib/discovery-budget";
 import { normalizeAccessControlPayload } from "@/lib/event-access";
 import { getVisionClient } from "@/lib/gcp";
-import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
-import {
-  createDiscoveryRequestCache,
-  type DiscoveryRequestCache,
-  getOrCreatePdfPageImage,
-  getOrCreateWeakCacheValue,
-} from "./cache";
-import { computeGymBuilderStatuses } from "./status";
 import {
   extractPdfAnnotationLinks,
   extractPdfTextWithPdfJs,
@@ -42,12 +34,17 @@ import {
 } from "@/lib/travel-accommodation-discovery";
 import { normalizeVenueFactForCompare, sanitizeVenueFactLines } from "@/lib/venue-facts";
 import { parseDataUrlBase64 } from "@/utils/data-url";
+import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
+import {
+  createDiscoveryRequestCache,
+  type DiscoveryRequestCache,
+  getOrCreatePdfPageImage,
+  getOrCreateWeakCacheValue,
+} from "./cache";
 import { GYM_DISCOVERY_PUBLIC_PAGE_V2 } from "./constants";
+import { computeGymBuilderStatuses } from "./status";
 
-export {
-  computeGymBuilderStatuses,
-  GYM_DISCOVERY_PUBLIC_PAGE_V2,
-};
+export { computeGymBuilderStatuses, GYM_DISCOVERY_PUBLIC_PAGE_V2 };
 
 export type DiscoverySourceInput =
   | {
@@ -278,11 +275,7 @@ export type DiscoveryResourceKind =
 
 export type DiscoveryResourceStatus = "available" | "not_posted" | "unknown";
 
-export type GymContentAudience =
-  | "public_attendee"
-  | "coach_ops"
-  | "mixed"
-  | "unknown";
+export type GymContentAudience = "public_attendee" | "coach_ops" | "mixed" | "unknown";
 
 export type GymResourceRenderTarget =
   | "meet_details"
@@ -590,9 +583,7 @@ export type DiscoveryEvidence = {
   };
 };
 
-type ParsePromptProfile =
-  | "overview_core"
-  | "parent_public";
+type ParsePromptProfile = "overview_core" | "parent_public";
 
 type ParseContentMix = {
   registrationHeavy: boolean;
@@ -934,7 +925,9 @@ async function persistVisionInputDebugArtifact(
     const workflow = sanitizeArtifactPathPart(artifact.workflow || "gymnastics", "gymnastics");
     const stage = sanitizeArtifactPathPart(artifact.stage, "vision-input");
     const pageNumber =
-      typeof artifact.page === "number" && Number.isFinite(artifact.page) ? artifact.page + 1 : null;
+      typeof artifact.page === "number" && Number.isFinite(artifact.page)
+        ? artifact.page + 1
+        : null;
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     const hash = createHash("sha1").update(buffer).digest("hex").slice(0, 12);
     const fileName = `${stamp}${pageNumber ? `-page-${pageNumber}` : ""}-${hash}${getArtifactExtensionForMimeType(
@@ -2667,7 +2660,7 @@ export function buildDiscoveryEvidence(
   );
   const spectatorSection = sectionMatchLines(
     [
-      /(spectator admission|spectator admissions|admission|ticket|door fees?|weekend passes?|adult|child|cash only|parents?\/spectators?|additional info)/i,
+      /(spectator admission|spectator admissions|admission|ticket|door fees?|doors? open|weekend passes?|adult|child|cash only|parents?\/spectators?|additional info|rotation sheets?|event merchandise)/i,
     ],
     12,
   );
@@ -2934,10 +2927,7 @@ const DEFAULT_GEMINI_PARSE_MODEL = "gemini-3.6-flash";
 
 function resolveGeminiParseModels(): string[] {
   const configuredModel = safeString(process.env.GEMINI_MODEL);
-  return uniqueBy(
-    [configuredModel, DEFAULT_GEMINI_PARSE_MODEL].filter(Boolean),
-    (model) => model,
-  );
+  return uniqueBy([configuredModel, DEFAULT_GEMINI_PARSE_MODEL].filter(Boolean), (model) => model);
 }
 
 let openAiClient: OpenAI | null = null;
@@ -4218,11 +4208,7 @@ async function extractTextFromImage(
     } catch {
       // Fall through to OpenAI OCR.
     }
-    const fallbackText = await openAiOcrTextFromImage(
-      prepared,
-      "image/png",
-      options?.aiArtifact,
-    );
+    const fallbackText = await openAiOcrTextFromImage(prepared, "image/png", options?.aiArtifact);
     return cleanExtractedText(fallbackText);
   };
   return cache ? getOrCreateWeakCacheValue(cache.imageText, buffer, run) : run();
@@ -5320,13 +5306,6 @@ function classifyGymAudienceText(
   };
 }
 
-function isPublicAudienceText(
-  text: unknown,
-  source: GymAudienceClassifiedText["source"] = "raw_detail",
-): boolean {
-  return classifyGymAudienceText(text, source)?.audience === "public_attendee";
-}
-
 function filterPublicAudienceTexts(
   items: Array<unknown>,
   source: GymAudienceClassifiedText["source"],
@@ -5340,6 +5319,36 @@ function filterPublicAudienceTexts(
       .map((item) => item.text),
     (item) => item.toLowerCase(),
   ).slice(0, limit);
+}
+
+/**
+ * Dedicated parse fields already carry an audience contract from the schema.
+ * Reclassifying their values by keywords drops useful copy after labels such as
+ * "Doors open" have been removed by the model (for example, "7:00 AM daily").
+ */
+function collectDedicatedPublicFieldTexts(
+  items: Array<string | null | undefined>,
+  limit = 8,
+): string[] {
+  return uniqueBy(
+    items.map((item) => safeString(item).replace(/\s+/g, " ").trim()).filter(Boolean),
+    (item) => item.toLowerCase(),
+  ).slice(0, limit);
+}
+
+function formatDedicatedPublicFact(label: string, value: string | null | undefined): string {
+  const text = safeString(value).replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  const normalizedText = text.toLowerCase();
+  const normalizedLabel = label.toLowerCase();
+  if (
+    normalizedText === normalizedLabel ||
+    normalizedText.startsWith(`${normalizedLabel}:`) ||
+    normalizedText.startsWith(`${normalizedLabel} `)
+  ) {
+    return text;
+  }
+  return `${label}: ${text}`;
 }
 
 function isTransientPublicAnnouncement(text: string): boolean {
@@ -8336,7 +8345,6 @@ function selectEvidenceForParseProfile(
     parent_public: [
       /\b(?:admission|ticket|cash|parking|traffic|doors|arrival|entrance|facility|layout|guest services|outside food|service animal|parents?\/spectators?|additional info|spectator admissions?)\b/i,
     ],
-    
   };
 
   const excerpts = selectExcerptWindows(extractedText, excerptPatternsByType[profile], {
@@ -8389,7 +8397,6 @@ function buildTargetedParsePrompt(
       "Focus on doors, arrival, parking, traffic, admissions, venue logistics, public policies, and public announcements.",
       "Populate public-facing meet details and logistics before using generic leftovers.",
     ],
-    
   };
   return [
     OPENAI_SCHEMA_INSTRUCTIONS,
@@ -8491,9 +8498,7 @@ function mergeParseResultsByProfile(
 
   const overview = results.find((item) => item.profile === "overview_core")?.result;
   const parent = results.find((item) => item.profile === "parent_public")?.result;
-  const corePriority = [overview, parent].filter(
-    (item): item is ParseResult => Boolean(item),
-  );
+  const corePriority = [overview, parent].filter((item): item is ParseResult => Boolean(item));
   for (const candidate of corePriority) {
     merged.title = fillScalar(merged.title, candidate.title);
     merged.dates = fillScalar(merged.dates, candidate.dates);
@@ -11911,7 +11916,9 @@ export async function parseMeetFromExtractedText(
     }));
     const extractedResults = targetedParseResults
       .map(({ profile, result }) => (result ? { profile, result } : null))
-      .filter((item): item is { profile: ParsePromptProfile; result: ParseResult } => Boolean(item));
+      .filter((item): item is { profile: ParsePromptProfile; result: ParseResult } =>
+        Boolean(item),
+      );
     if (options?.performance) {
       options.performance.modelParseMs += Date.now() - modelStartedAt;
     }
@@ -12145,8 +12152,7 @@ function computeParseCompletenessSnapshot(parseResult: ParseResult): ParseComple
       parseResult.meetDetails.resultsInfo,
       parseResult.meetDetails.rotationSheetsInfo,
       parseResult.meetDetails.awardsInfo,
-    ].filter(Boolean).length +
-    (parseResult.meetDetails.operationalNotes.length > 0 ? 1 : 0);
+    ].filter(Boolean).length + (parseResult.meetDetails.operationalNotes.length > 0 ? 1 : 0);
 
   const logisticsFilled =
     [
@@ -12278,6 +12284,62 @@ function backfillDeterministicParseFields(
       .filter((item) => item.url && !notPostedUrls.has(normalizeUrl(item.url))),
     (item) => `${item.label}|${item.url}`,
   );
+  const publicEvidenceLines = uniqueLines(
+    [
+      ...evidence.snippets.firstLines,
+      ...evidence.snippets.additionalInfoLines,
+      ...evidence.snippets.trafficLines,
+      ...evidence.snippets.hallLayoutLines,
+      ...evidence.sections.spectator,
+      ...evidence.sections.venue,
+      ...evidence.sections.traffic,
+      ...evidence.sections.policy,
+    ],
+    60,
+  );
+  const findPublicEvidenceText = (pattern: RegExp, limit = 2) =>
+    uniqueLines(
+      publicEvidenceLines.filter((line) => pattern.test(line)),
+      limit,
+    ).join(" ");
+  next.meetDetails.doorsOpen =
+    next.meetDetails.doorsOpen || findPublicEvidenceText(/\bdoors?\s+open\b/i, 1) || null;
+  next.meetDetails.arrivalGuidance =
+    next.meetDetails.arrivalGuidance ||
+    findPublicEvidenceText(
+      /\b(?:plan to arrive|arrive\s+(?:one|\d+)|allow\s+\d+[–-]?\d*\s+minutes?\s+to\s+walk)\b/i,
+      2,
+    ) ||
+    null;
+  next.meetDetails.registrationInfo =
+    next.meetDetails.registrationInfo ||
+    findPublicEvidenceText(
+      /\b(?:registration area|register the gymnast|guest services booth)\b/i,
+      2,
+    ) ||
+    null;
+  next.meetDetails.resultsInfo =
+    next.meetDetails.resultsInfo ||
+    findPublicEvidenceText(/\b(?:official results|live scoring|meet results)\b/i, 2) ||
+    null;
+  next.meetDetails.rotationSheetsInfo =
+    next.meetDetails.rotationSheetsInfo ||
+    findPublicEvidenceText(/\brotation sheets?\b/i, 2) ||
+    null;
+  next.meetDetails.operationalNotes = mergeUniqueStrings(
+    next.meetDetails.operationalNotes,
+    uniqueLines(
+      publicEvidenceLines.filter((line) => /\bdaylight savings? time\b/i.test(line)),
+      2,
+    ),
+  );
+  next.policies.misc = mergeUniqueStrings(
+    next.policies.misc,
+    uniqueLines(
+      publicEvidenceLines.filter((line) => /\bevent merchandise\b/i.test(line)),
+      2,
+    ),
+  );
   const parkingLinks = evidence.resources.links
     .filter((item) => item.kind === "parking" && item.status !== "not_posted")
     .map((item) => ({
@@ -12343,8 +12405,7 @@ function computeMappedCompletenessSnapshot(mapped: any): ParseCompletenessSnapsh
       safeString(advanced?.meet?.resultsInfo),
       safeString(advanced?.meet?.rotationSheetsInfo),
       safeString(advanced?.meet?.awardsInfo),
-    ].filter(Boolean).length +
-    (pickArray(advanced?.meet?.operationalNotes).length > 0 ? 1 : 0);
+    ].filter(Boolean).length + (pickArray(advanced?.meet?.operationalNotes).length > 0 ? 1 : 0);
   const logisticsFilled =
     [
       safeString(advanced?.logistics?.hotelName),
@@ -12635,41 +12696,39 @@ function buildGymPublicPageSections(params: {
   const publicAnnouncementLines = pickArray(parseResult.communications?.announcements)
     .map((item) => safeString(item?.title || item?.body || item?.text || item?.message))
     .filter((item) => isTransientPublicAnnouncement(item));
+  const derivedMeetOverview = buildDerivedPublicMeetOverview({
+    title,
+    dates,
+    venue,
+    hostGym,
+    hasCoreLocation,
+  });
+  const dedicatedMeetFacts = collectDedicatedPublicFieldTexts(
+    [
+      formatDedicatedPublicFact("Doors open", parseResult.meetDetails.doorsOpen),
+      formatDedicatedPublicFact("Arrival guidance", parseResult.meetDetails.arrivalGuidance),
+      formatDedicatedPublicFact("Registration", parseResult.meetDetails.registrationInfo),
+      formatDedicatedPublicFact("Rotation sheets", parseResult.meetDetails.rotationSheetsInfo),
+      formatDedicatedPublicFact("Scoring", parseResult.meetDetails.scoringInfo),
+      formatDedicatedPublicFact("Awards", parseResult.meetDetails.awardsInfo),
+    ],
+    6,
+  );
+  const publicOperationalNotes = filterPublicAudienceTexts(
+    parseResult.meetDetails.operationalNotes,
+    "parse_field",
+    6,
+  );
   const meetDetailBody = joinSectionSentences(
-    buildDerivedPublicMeetOverview({
-      title,
-      dates,
-      venue,
-      hostGym,
-      hasCoreLocation,
-    }),
-    ...filterPublicAudienceTexts(
-      [
-        parseResult.meetDetails.doorsOpen,
-        parseResult.meetDetails.arrivalGuidance,
-        parseResult.meetDetails.awardsInfo,
-        ...parseResult.meetDetails.operationalNotes,
-      ],
-      "parse_field",
-      4,
-    ),
+    derivedMeetOverview,
+    ...dedicatedMeetFacts,
+    ...publicOperationalNotes,
   );
   const meetDetails = createGymPublicPageSection({
     title: "Meet Details",
     body: meetDetailBody,
     bullets: [],
-    origin:
-      meetDetailBody &&
-      meetDetailBody !==
-        buildDerivedPublicMeetOverview({
-          title,
-          dates,
-          venue,
-          hostGym,
-          hasCoreLocation,
-        })
-        ? "mixed"
-        : "derived_summary",
+    origin: meetDetailBody && meetDetailBody !== derivedMeetOverview ? "mixed" : "derived_summary",
     evidenceRefs: [
       "meet_details",
       ...(publicAnnouncementLines.length > 0 ? ["announcements"] : []),
@@ -12681,13 +12740,12 @@ function buildGymPublicPageSections(params: {
   });
 
   const publicParkingBody = joinSectionSentences(
-    ...filterPublicAudienceTexts(
+    ...collectDedicatedPublicFieldTexts(
       [
         parseResult.logistics.parking,
         parseResult.logistics.rideShare,
         parseResult.logistics.accessibility,
       ],
-      "parse_field",
       4,
     ),
   );
@@ -12713,7 +12771,7 @@ function buildGymPublicPageSections(params: {
   });
 
   const publicTrafficBody = joinSectionSentences(
-    ...filterPublicAudienceTexts([parseResult.logistics.trafficAlerts], "parse_field", 2),
+    ...collectDedicatedPublicFieldTexts([parseResult.logistics.trafficAlerts], 2),
   );
   const trafficBody =
     publicTrafficBody ||
@@ -12732,9 +12790,8 @@ function buildGymPublicPageSections(params: {
     hideReason: "No attendee-safe traffic guidance survived filtering.",
   });
 
-  const publicFacilityLayout = filterPublicAudienceTexts(
+  const publicFacilityLayout = collectDedicatedPublicFieldTexts(
     [parseResult.meetDetails.facilityLayout],
-    "parse_field",
     2,
   );
   const venueSection = createGymPublicPageSection({
@@ -12757,7 +12814,6 @@ function buildGymPublicPageSections(params: {
         .filter(Boolean)
         .join(": "),
     )
-    .filter((item) => isPublicAudienceText(item, "parse_field"))
     .filter(Boolean)
     .join(" ");
   const publicSpectatorBullets = filterPublicAudienceTexts(
@@ -12765,33 +12821,31 @@ function buildGymPublicPageSections(params: {
     "parse_field",
     6,
   );
+  const spectatorBody = joinSectionSentences(
+    admissionSummary,
+    ...collectDedicatedPublicFieldTexts(
+      [
+        parseResult.policies.food,
+        parseResult.policies.hydration,
+        parseResult.policies.safety,
+        parseResult.policies.animals,
+      ],
+      4,
+    ),
+  );
   const spectatorInfo = createGymPublicPageSection({
     title: "Spectator Info",
-    body: joinSectionSentences(
-      admissionSummary,
-      ...filterPublicAudienceTexts(
-        [
-          parseResult.policies.food,
-          parseResult.policies.hydration,
-          parseResult.policies.safety,
-          parseResult.policies.animals,
-        ],
-        "parse_field",
-        4,
-      ),
-    ),
+    body: spectatorBody,
     bullets: publicSpectatorBullets,
-    origin:
-      admissionSummary || publicSpectatorBullets.length > 0 ? "pdf_grounded" : "derived_summary",
+    origin: spectatorBody || publicSpectatorBullets.length > 0 ? "pdf_grounded" : "derived_summary",
     evidenceRefs: ["spectator", ...(evidence?.sections.spectator.slice(0, 3) || [])],
-    visibility: admissionSummary || publicSpectatorBullets.length > 0 ? "visible" : "hidden",
+    visibility: spectatorBody || publicSpectatorBullets.length > 0 ? "visible" : "hidden",
     hideReason: "No attendee-safe admission or spectator policies survived filtering.",
   });
 
   const travelBody = joinSectionSentences(
-    ...filterPublicAudienceTexts(
+    ...collectDedicatedPublicFieldTexts(
       [parseResult.logistics.hotel, buildTravelAccommodationNarrativeFromHotels(travelHotels)],
-      "parse_field",
       2,
     ),
   );

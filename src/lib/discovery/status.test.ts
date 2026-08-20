@@ -115,4 +115,34 @@ test("buildDiscoveryStatusResponse omits error details for non-failed states", (
   assert.equal(status.errorStage, null);
   assert.equal(status.errorMessage, null);
   assert.equal(status.errorDetails, null);
+  assert.equal(status.draftReady, true);
+  assert.equal(status.builderReady, true);
+});
+
+test("draft becomes available after mapping while enrichment continues", () => {
+  const status = buildDiscoveryStatusResponse(
+    buildDiscoveryRow({
+      pipeline: createDiscoveryPipelineState({
+        processingStage: "enrich",
+        lastSuccessfulStage: "map",
+      }),
+    }),
+  );
+
+  assert.equal(status.draftReady, true);
+  assert.equal(status.builderReady, false);
+});
+
+test("draft is not available while the packet is still being parsed", () => {
+  const status = buildDiscoveryStatusResponse(
+    buildDiscoveryRow({
+      pipeline: createDiscoveryPipelineState({
+        processingStage: "parse",
+        lastSuccessfulStage: "extract",
+      }),
+    }),
+  );
+
+  assert.equal(status.draftReady, false);
+  assert.equal(status.builderReady, false);
 });

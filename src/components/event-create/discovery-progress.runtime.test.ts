@@ -6,6 +6,7 @@ import {
   GYMNASTICS_URL_PARSE_TAIL_LABEL,
   GYMNASTICS_URL_PARSE_TAIL_PROGRESS,
   getDiscoveryStageLabel,
+  resolveGymnasticsPipelineProgress,
   resolveGymnasticsUrlParseProgress,
 } from "./discovery-progress.ts";
 
@@ -36,4 +37,19 @@ test("gymnastics URL parse progress switches into a stable live tail after the c
 test("upload and football flows keep their existing determinate late-stage labels", () => {
   assert.equal(getDiscoveryStageLabel("gymnastics-upload", 90), "Checking parking and arrival...");
   assert.equal(getDiscoveryStageLabel("football-url", 94), "Checking bus arrival notes...");
+});
+
+test("server pipeline stages expose real gymnastics progress and open once the draft is mapped", () => {
+  assert.deepEqual(resolveGymnasticsPipelineProgress("file", "extract"), {
+    progress: 76,
+    label: "Reading meet packet...",
+  });
+  assert.deepEqual(resolveGymnasticsPipelineProgress("url", "parse"), {
+    progress: 84,
+    label: "Extracting dates, venue & admission...",
+  });
+  assert.deepEqual(resolveGymnasticsPipelineProgress("file", "enrich", "map"), {
+    progress: 95,
+    label: "Draft ready — opening the builder...",
+  });
 });

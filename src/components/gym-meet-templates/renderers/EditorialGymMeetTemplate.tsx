@@ -2,14 +2,14 @@
 // @ts-nocheck
 "use client";
 
-import React from "react";
 import { Calendar, Check, Clock, Trophy } from "lucide-react";
-import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
+import React from "react";
+import { joinUniqueDisplayParts } from "../displayText";
 import FloatingActionStrip from "../FloatingActionStrip";
+import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
+import { getGymMeetTitleSizeStyle } from "../titleSizing";
 import { getGymMeetTitleTypography } from "../titleTypography";
 import { GymMeetTemplateRendererProps } from "../types";
-import { getGymMeetTitleSizeStyle } from "../titleSizing";
-import { joinUniqueDisplayParts } from "../displayText";
 
 const formatTime = (value: string) => {
   if (!value) return "";
@@ -26,7 +26,9 @@ const formatTime = (value: string) => {
 };
 
 const formatStatus = (value: string) => {
-  const normalized = String(value || "").replace(/_/g, " ").trim();
+  const normalized = String(value || "")
+    .replace(/_/g, " ")
+    .trim();
   return normalized ? normalized[0].toUpperCase() + normalized.slice(1) : "Pending";
 };
 
@@ -92,25 +94,24 @@ export default function EditorialGymMeetTemplate({
   const volunteerSlots = Array.isArray(model.volunteers?.volunteerSlots)
     ? model.volunteers.volunteerSlots
     : Array.isArray(model.volunteers?.slots)
-    ? model.volunteers.slots
-    : [];
+      ? model.volunteers.slots
+      : [];
   const carpools = Array.isArray(model.volunteers?.carpoolOffers)
     ? model.volunteers.carpoolOffers
     : Array.isArray(model.volunteers?.carpools)
-    ? model.volunteers.carpools
-    : [];
+      ? model.volunteers.carpools
+      : [];
   const gearItems = Array.isArray(model.gear?.items)
     ? model.gear.items
     : Array.isArray(model.gear)
-    ? model.gear
-    : [];
-  const hasQuickAccessSection = model.quickLinks.length > 0;
+      ? model.gear
+      : [];
   const heroHostGym = model.hostGym || model.team || "";
   const heroAddressLine =
     model.address || model.mapAddress || model.headerLocation
       ? joinUniqueDisplayParts(
           [heroHostGym, model.address || model.mapAddress || model.headerLocation],
-          ", "
+          ", ",
         )
       : "";
   const heroStyle = model.heroImage
@@ -124,10 +125,15 @@ export default function EditorialGymMeetTemplate({
   return (
     <div className={variant.pageClass}>
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-        {!isReadOnly && !hideOwnerActions && ownerToolbar ? <div className="mb-4">{ownerToolbar}</div> : null}
+        {!isReadOnly && !hideOwnerActions && ownerToolbar ? (
+          <div className="mb-4">{ownerToolbar}</div>
+        ) : null}
 
         <div className={variant.shellClass}>
-          <header className={`relative overflow-hidden ${variant.heroPanelClass}`} style={heroStyle}>
+          <header
+            className={`relative overflow-hidden ${variant.heroPanelClass}`}
+            style={heroStyle}
+          >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_36%)]" />
             <div className="relative px-5 py-8 sm:px-8 sm:py-10">
               {model.heroBadges.length > 0 ? (
@@ -152,7 +158,9 @@ export default function EditorialGymMeetTemplate({
                   >
                     {model.title}
                   </h1>
-                  <div className={`mt-4 flex flex-wrap gap-4 text-sm font-semibold ${variant.mutedClass}`}>
+                  <div
+                    className={`mt-4 flex flex-wrap gap-4 text-sm font-semibold ${variant.mutedClass}`}
+                  >
                     {model.dateLabel ? (
                       <span className="inline-flex items-center gap-2">
                         <Calendar size={16} /> {model.dateLabel}
@@ -170,7 +178,9 @@ export default function EditorialGymMeetTemplate({
                     ) : null}
                   </div>
                   {heroAddressLine ? (
-                    <p className={`mt-3 text-sm font-black uppercase tracking-[0.18em] ${variant.mutedClass}`}>
+                    <p
+                      className={`mt-3 text-sm font-black uppercase tracking-[0.18em] ${variant.mutedClass}`}
+                    >
                       {heroAddressLine}
                     </p>
                   ) : null}
@@ -196,7 +206,6 @@ export default function EditorialGymMeetTemplate({
                 buttonClass={variant.secondaryButtonClass}
                 onShare={onShare}
                 onCalendar={onCalendar}
-                resourcesHref={hasQuickAccessSection ? "#quick-access" : undefined}
               />
             ) : null}
           </div>
@@ -204,32 +213,14 @@ export default function EditorialGymMeetTemplate({
           <main className="space-y-5 px-3 pb-5 pt-6 sm:px-6 sm:pb-6 sm:pt-7">
             <GymMeetDiscoveryContent model={model} variant={variant} />
 
-            {(model.team || model.season || model.hostGym || model.venue || model.address) ? (
-              <Section title="Meet Snapshot" eyebrow="Overview" className={variant.sectionClass}>
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                  {[
-                    { label: "Host Gym", value: model.hostGym || model.team },
-                    { label: "Season", value: model.season },
-                    { label: "Venue", value: model.venue || model.headerLocation },
-                    { label: "Address", value: model.address || model.mapAddress },
-                  ]
-                    .filter((item) => item.value)
-                    .map((item) => (
-                      <div key={item.label} className={variant.summaryCardClass}>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                          {item.label}
-                        </p>
-                        <p className="mt-2 text-sm leading-relaxed">{item.value}</p>
-                      </div>
-                    ))}
-                </div>
-              </Section>
-            ) : null}
-
-            {(model.rosterAthletes.length > 0 || practiceBlocks.length > 0) ? (
+            {model.rosterAthletes.length > 0 || practiceBlocks.length > 0 ? (
               <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
                 {model.rosterAthletes.length > 0 ? (
-                  <Section title="Active Roster" eyebrow="Attendance" className={variant.sectionClass}>
+                  <Section
+                    title="Active Roster"
+                    eyebrow="Attendance"
+                    className={variant.sectionClass}
+                  >
                     <div className="grid gap-3">
                       {model.rosterAthletes.map((athlete: any) => (
                         <div key={athlete.id} className={variant.summaryCardClass}>
@@ -237,7 +228,10 @@ export default function EditorialGymMeetTemplate({
                             <div>
                               <p className="text-base font-black">{athlete.name}</p>
                               <p className="mt-1 text-sm opacity-70">
-                                {[athlete.level, athlete.position || athlete.primaryEvents?.join(", ")]
+                                {[
+                                  athlete.level,
+                                  athlete.position || athlete.primaryEvents?.join(", "),
+                                ]
                                   .filter(Boolean)
                                   .join(" • ")}
                               </p>
@@ -272,11 +266,14 @@ export default function EditorialGymMeetTemplate({
                           </div>
                           {(Array.isArray(block.focus) ? block.focus.length : block.focus) ? (
                             <p className="mt-2 text-sm opacity-80">
-                              Focus: {Array.isArray(block.focus) ? block.focus.join(", ") : block.focus}
+                              Focus:{" "}
+                              {Array.isArray(block.focus) ? block.focus.join(", ") : block.focus}
                             </p>
                           ) : null}
                           {block.skillGoals || block.description ? (
-                            <p className="mt-2 text-sm opacity-70">{block.skillGoals || block.description}</p>
+                            <p className="mt-2 text-sm opacity-70">
+                              {block.skillGoals || block.description}
+                            </p>
                           ) : null}
                         </div>
                       ))}
@@ -286,12 +283,16 @@ export default function EditorialGymMeetTemplate({
               </div>
             ) : null}
 
-            {(gearItems.length > 0 ||
-              model.gear?.uniform ||
-              volunteerSlots.length > 0 ||
-              carpools.length > 0) ? (
+            {gearItems.length > 0 ||
+            model.gear?.uniform ||
+            volunteerSlots.length > 0 ||
+            carpools.length > 0 ? (
               <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-                <Section title="Gear & Support" eyebrow="Operations" className={variant.sectionClass}>
+                <Section
+                  title="Gear & Support"
+                  eyebrow="Operations"
+                  className={variant.sectionClass}
+                >
                   <div className="grid gap-3 sm:grid-cols-2">
                     {model.gear?.uniform ? (
                       <div className={variant.summaryCardClass}>
@@ -302,7 +303,8 @@ export default function EditorialGymMeetTemplate({
                       </div>
                     ) : null}
                     {gearItems.slice(0, 6).map((item: any, idx: number) => {
-                      const label = typeof item === "string" ? item : item?.name || `Gear ${idx + 1}`;
+                      const label =
+                        typeof item === "string" ? item : item?.name || `Gear ${idx + 1}`;
                       return (
                         <div key={label} className={variant.summaryCardClass}>
                           <p className="text-sm font-semibold">{label}</p>
@@ -311,7 +313,9 @@ export default function EditorialGymMeetTemplate({
                     })}
                     {volunteerSlots.slice(0, 4).map((slot: any, idx: number) => (
                       <div key={slot.id || idx} className={variant.summaryCardClass}>
-                        <p className="text-sm font-semibold">{slot.role || `Volunteer ${idx + 1}`}</p>
+                        <p className="text-sm font-semibold">
+                          {slot.role || `Volunteer ${idx + 1}`}
+                        </p>
                         <p className="mt-1 text-xs opacity-70">{slot.name || "Open slot"}</p>
                       </div>
                     ))}
@@ -321,8 +325,9 @@ export default function EditorialGymMeetTemplate({
                           {carpool.driverName || `Driver ${idx + 1}`}
                         </p>
                         <p className="mt-1 text-xs opacity-70">
-                          {[carpool.departureLocation, carpool.departureTime].filter(Boolean).join(" • ") ||
-                            "Trip details TBD"}
+                          {[carpool.departureLocation, carpool.departureTime]
+                            .filter(Boolean)
+                            .join(" • ") || "Trip details TBD"}
                         </p>
                       </div>
                     ))}
@@ -428,30 +433,6 @@ export default function EditorialGymMeetTemplate({
                     </button>
                   </div>
                 )}
-              </Section>
-            ) : null}
-
-            {model.quickLinks.length > 0 ? (
-              <Section
-                id="quick-access"
-                title="Quick Access"
-                eyebrow="Contacts"
-                className={variant.sectionClass}
-              >
-                <div className="flex flex-wrap gap-2">
-                  {model.quickLinks.map((link) => (
-                    <a
-                      key={link.url}
-                      href={link.url}
-                      target={/^data:/i.test(link.url) ? undefined : "_blank"}
-                      rel={/^data:/i.test(link.url) ? undefined : "noopener noreferrer"}
-                      download={/^data:/i.test(link.url) ? "source-file" : undefined}
-                      className={variant.secondaryButtonClass}
-                    >
-                      {link.label || "Open Link"}
-                    </a>
-                  ))}
-                </div>
               </Section>
             ) : null}
 

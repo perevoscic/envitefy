@@ -2,14 +2,14 @@
 // @ts-nocheck
 "use client";
 
-import React from "react";
 import { Calendar, Check, Clock, Trophy } from "lucide-react";
-import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
+import React from "react";
+import { joinUniqueDisplayParts } from "../displayText";
 import FloatingActionStrip from "../FloatingActionStrip";
+import GymMeetDiscoveryContent from "../GymMeetDiscoveryContent";
+import { getGymMeetTitleSizeStyle } from "../titleSizing";
 import { getGymMeetTitleTypography } from "../titleTypography";
 import { GymMeetTemplateRendererProps } from "../types";
-import { getGymMeetTitleSizeStyle } from "../titleSizing";
-import { joinUniqueDisplayParts } from "../displayText";
 
 const formatTime = (value: string) => {
   if (!value) return "";
@@ -26,7 +26,9 @@ const formatTime = (value: string) => {
 };
 
 const formatStatus = (value: string) => {
-  const normalized = String(value || "").replace(/_/g, " ").trim();
+  const normalized = String(value || "")
+    .replace(/_/g, " ")
+    .trim();
   return normalized ? normalized[0].toUpperCase() + normalized.slice(1) : "Pending";
 };
 
@@ -93,38 +95,33 @@ export default function DashboardGymMeetTemplate({
   const volunteerSlots = Array.isArray(model.volunteers?.volunteerSlots)
     ? model.volunteers.volunteerSlots
     : Array.isArray(model.volunteers?.slots)
-    ? model.volunteers.slots
-    : [];
+      ? model.volunteers.slots
+      : [];
   const carpools = Array.isArray(model.volunteers?.carpoolOffers)
     ? model.volunteers.carpoolOffers
     : Array.isArray(model.volunteers?.carpools)
-    ? model.volunteers.carpools
-    : [];
+      ? model.volunteers.carpools
+      : [];
   const gearItems = Array.isArray(model.gear?.items)
     ? model.gear.items
     : Array.isArray(model.gear)
-    ? model.gear
-    : [];
-  const hasRosterOrPractice =
-    model.rosterAthletes.length > 0 || practiceBlocks.length > 0;
+      ? model.gear
+      : [];
+  const hasRosterOrPractice = model.rosterAthletes.length > 0 || practiceBlocks.length > 0;
   const hasOperationsSection =
     gearItems.length > 0 ||
     Boolean(model.gear?.uniform) ||
     volunteerSlots.length > 0 ||
     carpools.length > 0;
-  const hasQuickAccessSection = model.quickLinks.length > 0;
   const heroHostGym = model.hostGym || model.team || "";
   const heroAddressLine =
     model.address || model.mapAddress || model.headerLocation
       ? joinUniqueDisplayParts(
           [heroHostGym, model.address || model.mapAddress || model.headerLocation],
-          ", "
+          ", ",
         )
       : "";
-  const hasSidebarSections =
-    Boolean(model.hostGym || model.team || model.venue || model.headerLocation || model.address || model.mapAddress || model.coach || model.assistantCoach) ||
-    rsvpProps.enabled ||
-    hasQuickAccessSection;
+  const hasSidebarSections = Boolean(model.coach || model.assistantCoach) || rsvpProps.enabled;
   const heroStyle = model.heroImage
     ? {
         backgroundImage: `linear-gradient(180deg, rgba(2,6,23,0.2), rgba(2,6,23,0.56)), url(${model.heroImage})`,
@@ -136,10 +133,15 @@ export default function DashboardGymMeetTemplate({
   return (
     <div className={variant.pageClass}>
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-        {!isReadOnly && !hideOwnerActions && ownerToolbar ? <div className="mb-4">{ownerToolbar}</div> : null}
+        {!isReadOnly && !hideOwnerActions && ownerToolbar ? (
+          <div className="mb-4">{ownerToolbar}</div>
+        ) : null}
 
         <div className={variant.shellClass}>
-          <header className={`relative overflow-hidden ${variant.heroPanelClass}`} style={heroStyle}>
+          <header
+            className={`relative overflow-hidden ${variant.heroPanelClass}`}
+            style={heroStyle}
+          >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_38%)]" />
             <div className="relative px-5 py-8 sm:px-8 sm:py-10">
               {model.heroBadges.length > 0 ? (
@@ -163,7 +165,9 @@ export default function DashboardGymMeetTemplate({
                   >
                     {model.title}
                   </h1>
-                  <div className={`mt-4 flex flex-wrap gap-4 text-sm font-semibold ${variant.mutedClass}`}>
+                  <div
+                    className={`mt-4 flex flex-wrap gap-4 text-sm font-semibold ${variant.mutedClass}`}
+                  >
                     {model.dateLabel ? (
                       <span className="inline-flex items-center gap-2">
                         <Calendar size={16} /> {model.dateLabel}
@@ -181,7 +185,9 @@ export default function DashboardGymMeetTemplate({
                     ) : null}
                   </div>
                   {heroAddressLine ? (
-                    <p className={`mt-3 text-sm font-black uppercase tracking-[0.18em] ${variant.mutedClass}`}>
+                    <p
+                      className={`mt-3 text-sm font-black uppercase tracking-[0.18em] ${variant.mutedClass}`}
+                    >
                       {heroAddressLine}
                     </p>
                   ) : null}
@@ -207,7 +213,6 @@ export default function DashboardGymMeetTemplate({
                 buttonClass={variant.secondaryButtonClass}
                 onShare={onShare}
                 onCalendar={onCalendar}
-                resourcesHref={hasQuickAccessSection ? "#quick-access" : undefined}
               />
             ) : null}
           </div>
@@ -215,133 +220,158 @@ export default function DashboardGymMeetTemplate({
           <main className="px-3 pb-5 pt-6 sm:px-5 sm:pb-6 sm:pt-7">
             <GymMeetDiscoveryContent model={model} variant={variant} />
 
-            {(hasRosterOrPractice || hasOperationsSection || hasSidebarSections) ? (
+            {hasRosterOrPractice || hasOperationsSection || hasSidebarSections ? (
               <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
                 <div className="space-y-5">
                   {hasRosterOrPractice ? (
-                  <div className="grid gap-4 xl:grid-cols-2">
-                    {model.rosterAthletes.length > 0 ? (
-                      <Section title="Active Roster" eyebrow="Attendance" className={variant.sectionClass}>
-                        <div className="grid gap-3">
-                          {model.rosterAthletes.map((athlete: any) => (
-                            <div key={athlete.id} className={variant.summaryCardClass}>
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <p className="text-base font-black">{athlete.name}</p>
-                                  <p className="mt-1 text-sm opacity-70">
-                                    {[athlete.level, athlete.position || athlete.primaryEvents?.join(", ")]
-                                      .filter(Boolean)
-                                      .join(" • ")}
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      {model.rosterAthletes.length > 0 ? (
+                        <Section
+                          title="Active Roster"
+                          eyebrow="Attendance"
+                          className={variant.sectionClass}
+                        >
+                          <div className="grid gap-3">
+                            {model.rosterAthletes.map((athlete: any) => (
+                              <div key={athlete.id} className={variant.summaryCardClass}>
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-base font-black">{athlete.name}</p>
+                                    <p className="mt-1 text-sm opacity-70">
+                                      {[
+                                        athlete.level,
+                                        athlete.position || athlete.primaryEvents?.join(", "),
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" • ")}
+                                    </p>
+                                  </div>
+                                  <span
+                                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${
+                                      variant.sectionMutedClass || "bg-black/5"
+                                    }`}
+                                  >
+                                    <Check size={12} /> {formatStatus(athlete.status)}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </Section>
+                      ) : null}
+
+                      {practiceBlocks.length > 0 ? (
+                        <Section
+                          title="Practice Planner"
+                          eyebrow="Prep"
+                          className={variant.sectionClass}
+                        >
+                          <div className="space-y-3">
+                            {practiceBlocks.map((block: any, idx: number) => (
+                              <div key={block.id || idx} className={variant.summaryCardClass}>
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-base font-black">{block.day}</p>
+                                  <p className="text-xs font-bold uppercase tracking-[0.16em] opacity-60">
+                                    {block.time ||
+                                      [formatTime(block.startTime), formatTime(block.endTime)]
+                                        .filter(Boolean)
+                                        .join(" - ")}
                                   </p>
                                 </div>
-                                <span
-                                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${
-                                    variant.sectionMutedClass || "bg-black/5"
-                                  }`}
-                                >
-                                  <Check size={12} /> {formatStatus(athlete.status)}
-                                </span>
+                                {(Array.isArray(block.focus) ? block.focus.length : block.focus) ? (
+                                  <p className="mt-2 text-sm opacity-80">
+                                    Focus:{" "}
+                                    {Array.isArray(block.focus)
+                                      ? block.focus.join(", ")
+                                      : block.focus}
+                                  </p>
+                                ) : null}
+                                {block.skillGoals || block.description ? (
+                                  <p className="mt-2 text-sm opacity-70">
+                                    {block.skillGoals || block.description}
+                                  </p>
+                                ) : null}
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      </Section>
-                    ) : null}
-
-                    {practiceBlocks.length > 0 ? (
-                      <Section title="Practice Planner" eyebrow="Prep" className={variant.sectionClass}>
-                        <div className="space-y-3">
-                          {practiceBlocks.map((block: any, idx: number) => (
-                            <div key={block.id || idx} className={variant.summaryCardClass}>
-                              <div className="flex items-center justify-between gap-3">
-                                <p className="text-base font-black">{block.day}</p>
-                                <p className="text-xs font-bold uppercase tracking-[0.16em] opacity-60">
-                                  {block.time ||
-                                    [formatTime(block.startTime), formatTime(block.endTime)]
-                                      .filter(Boolean)
-                                      .join(" - ")}
-                                </p>
-                              </div>
-                              {(Array.isArray(block.focus) ? block.focus.length : block.focus) ? (
-                                <p className="mt-2 text-sm opacity-80">
-                                  Focus: {Array.isArray(block.focus) ? block.focus.join(", ") : block.focus}
-                                </p>
-                              ) : null}
-                              {block.skillGoals || block.description ? (
-                                <p className="mt-2 text-sm opacity-70">
-                                  {block.skillGoals || block.description}
-                                </p>
-                              ) : null}
-                            </div>
-                          ))}
-                        </div>
-                      </Section>
-                    ) : null}
-                  </div>
-                ) : null}
+                            ))}
+                          </div>
+                        </Section>
+                      ) : null}
+                    </div>
+                  ) : null}
 
                   {hasOperationsSection ? (
-                  <Section title="Operations Grid" eyebrow="Support" className={variant.sectionClass}>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {model.gear?.uniform ? (
-                        <div className={variant.summaryCardClass}>
-                          <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                            Uniform
-                          </p>
-                          <p className="mt-2 text-sm">{model.gear.uniform}</p>
-                        </div>
-                      ) : null}
-                      {gearItems.slice(0, 6).map((item: any, idx: number) => {
-                        const label = typeof item === "string" ? item : item?.name || `Gear ${idx + 1}`;
-                        return (
-                          <div key={label} className={variant.summaryCardClass}>
-                            <p className="text-sm font-semibold">{label}</p>
+                    <Section
+                      title="Operations Grid"
+                      eyebrow="Support"
+                      className={variant.sectionClass}
+                    >
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {model.gear?.uniform ? (
+                          <div className={variant.summaryCardClass}>
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                              Uniform
+                            </p>
+                            <p className="mt-2 text-sm">{model.gear.uniform}</p>
                           </div>
-                        );
-                      })}
-                      {volunteerSlots.slice(0, 4).map((slot: any, idx: number) => (
-                        <div key={slot.id || idx} className={variant.summaryCardClass}>
-                          <p className="text-sm font-semibold">{slot.role || `Volunteer ${idx + 1}`}</p>
-                          <p className="mt-1 text-xs opacity-70">{slot.name || "Open slot"}</p>
-                        </div>
-                      ))}
-                      {carpools.slice(0, 3).map((carpool: any, idx: number) => (
-                        <div key={carpool.id || idx} className={variant.summaryCardClass}>
-                          <p className="text-sm font-semibold">
-                            {carpool.driverName || `Driver ${idx + 1}`}
-                          </p>
-                          <p className="mt-1 text-xs opacity-70">
-                            {[carpool.departureLocation, carpool.departureTime].filter(Boolean).join(" • ") ||
-                              "Trip details TBD"}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </Section>
-                ) : null}
+                        ) : null}
+                        {gearItems.slice(0, 6).map((item: any, idx: number) => {
+                          const label =
+                            typeof item === "string" ? item : item?.name || `Gear ${idx + 1}`;
+                          return (
+                            <div key={label} className={variant.summaryCardClass}>
+                              <p className="text-sm font-semibold">{label}</p>
+                            </div>
+                          );
+                        })}
+                        {volunteerSlots.slice(0, 4).map((slot: any, idx: number) => (
+                          <div key={slot.id || idx} className={variant.summaryCardClass}>
+                            <p className="text-sm font-semibold">
+                              {slot.role || `Volunteer ${idx + 1}`}
+                            </p>
+                            <p className="mt-1 text-xs opacity-70">{slot.name || "Open slot"}</p>
+                          </div>
+                        ))}
+                        {carpools.slice(0, 3).map((carpool: any, idx: number) => (
+                          <div key={carpool.id || idx} className={variant.summaryCardClass}>
+                            <p className="text-sm font-semibold">
+                              {carpool.driverName || `Driver ${idx + 1}`}
+                            </p>
+                            <p className="mt-1 text-xs opacity-70">
+                              {[carpool.departureLocation, carpool.departureTime]
+                                .filter(Boolean)
+                                .join(" • ") || "Trip details TBD"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </Section>
+                  ) : null}
                 </div>
 
                 <div className={`space-y-4 ${variant.stickyRailClass}`}>
-                  <Section title="Meet Snapshot" eyebrow="Overview" className={variant.sidebarCardClass}>
-                    <div className="grid gap-3">
-                      {[
-                        { label: "Host Gym", value: model.hostGym || model.team },
-                        { label: "Venue", value: model.venue || model.headerLocation },
-                        { label: "Address", value: model.address || model.mapAddress },
-                        { label: "Coach", value: model.coach },
-                        { label: "Assistant Coach", value: model.assistantCoach },
-                      ]
-                        .filter((item) => item.value)
-                        .map((item) => (
-                          <div key={item.label} className={variant.summaryCardClass}>
-                            <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                              {item.label}
-                            </p>
-                            <p className="mt-2 text-sm leading-relaxed">{item.value}</p>
-                          </div>
-                        ))}
-                    </div>
-                  </Section>
+                  {model.coach || model.assistantCoach ? (
+                    <Section
+                      title="Team Contacts"
+                      eyebrow="Meet Staff"
+                      className={variant.sidebarCardClass}
+                    >
+                      <div className="grid gap-3">
+                        {[
+                          { label: "Coach", value: model.coach },
+                          { label: "Assistant Coach", value: model.assistantCoach },
+                        ]
+                          .filter((item) => item.value)
+                          .map((item) => (
+                            <div key={item.label} className={variant.summaryCardClass}>
+                              <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                                {item.label}
+                              </p>
+                              <p className="mt-2 text-sm leading-relaxed">{item.value}</p>
+                            </div>
+                          ))}
+                      </div>
+                    </Section>
+                  ) : null}
 
                   {rsvpProps.enabled ? (
                     <Section title="RSVP" eyebrow="Attendance" className={variant.sidebarCardClass}>
@@ -405,7 +435,9 @@ export default function DashboardGymMeetTemplate({
                                   : "border-black/10 bg-white hover:border-slate-300"
                               }`}
                             >
-                              <div className="font-black uppercase tracking-[0.14em]">Not Going</div>
+                              <div className="font-black uppercase tracking-[0.14em]">
+                                Not Going
+                              </div>
                               <div className="mt-1 opacity-75">Athlete cannot attend.</div>
                             </button>
                           </div>
@@ -433,30 +465,6 @@ export default function DashboardGymMeetTemplate({
                           </button>
                         </div>
                       )}
-                    </Section>
-                  ) : null}
-
-                  {model.quickLinks.length > 0 ? (
-                    <Section
-                      id="quick-access"
-                      title="Quick Access"
-                      eyebrow="Links"
-                      className={variant.sidebarCardClass}
-                    >
-                      <div className="grid gap-2">
-                        {model.quickLinks.map((link) => (
-                          <a
-                            key={link.url}
-                            href={link.url}
-                            target={/^data:/i.test(link.url) ? undefined : "_blank"}
-                            rel={/^data:/i.test(link.url) ? undefined : "noopener noreferrer"}
-                            download={/^data:/i.test(link.url) ? "source-file" : undefined}
-                            className={variant.secondaryButtonClass}
-                          >
-                            {link.label || "Open Link"}
-                          </a>
-                        ))}
-                      </div>
                     </Section>
                   ) : null}
                 </div>

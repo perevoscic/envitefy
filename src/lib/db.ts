@@ -7,6 +7,12 @@ import {
 } from "node:crypto";
 import { promisify } from "node:util";
 import { Pool, PoolClient, QueryResult, type QueryResultRow } from "pg";
+import {
+  assertEventPageBlueprint,
+  type EventPageBlueprint,
+  type EventPageStatus,
+  type EventTheme,
+} from "@/features/event-pages/schemas/eventBlueprint.schema";
 import { ADMIN_USER_METRICS_CTE_SQL } from "@/lib/admin-user-metrics-sql";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
@@ -17,12 +23,6 @@ import type {
   DiscoverySourceRecord,
   EventDiscoveryRow,
 } from "@/lib/discovery/types";
-import {
-  type EventPageBlueprint,
-  type EventPageStatus,
-  type EventTheme,
-  assertEventPageBlueprint,
-} from "@/features/event-pages/schemas/eventBlueprint.schema";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import type { HistoryTimeFilter, HistoryView } from "@/lib/history-view";
 import { buildEventStartAtTsSql } from "@/lib/pg-event-start-ts";
@@ -2927,6 +2927,20 @@ export async function getEventHistoryById(id: string): Promise<EventHistoryRow |
   return await ensureEventHistoryRowPublicSlug(res.rows[0] || null);
 }
 
+export async function getEventHistoryOwnerById(
+  id: string,
+): Promise<{ id: string; user_id: string | null } | null> {
+  if (!id) return null;
+  const res = await query<{ id: string; user_id: string | null }>(
+    `select id, user_id
+     from event_history
+     where id = $1
+     limit 1`,
+    [id],
+  );
+  return res.rows[0] || null;
+}
+
 function buildEventHistoryPublicDataProjectionSql(dataSql: string, idSql: string): string {
   const base = `((coalesce(${dataSql}, '{}'::jsonb) - 'ocrText') #- '{attachment,dataUrl}' #- '{profileImage,dataUrl}' #- '{signupForm,header,backgroundImage,dataUrl}')`;
   const withoutThumbnail = `case
@@ -4389,6 +4403,34 @@ export async function getEventDiscoveryByEventId(
       [eventId],
     );
     return mapEventDiscoveryRow(res.rows[0]);
+  } catch (err) {
+    if (isTableMissingError(err)) return null;
+    throw err;
+  }
+}
+
+export async function getEventDiscoveryStatusByEventId(
+  eventId: string,
+): Promise<Pick<EventDiscoveryRow, "id" | "eventId" | "pipeline" | "debug"> | null> {
+  if (!eventId) return null;
+  try {
+    await ensureEventDiscoveriesTable();
+    const res = await query<Pick<EventDiscoveryQueryRow, "id" | "eventId" | "pipeline" | "debug">>(
+      `select
+         id,
+         event_id as "eventId",
+         pipeline,
+         case
+           when debug ? 'failureSummary'
+             then jsonb_build_object('failureSummary', debug->'failureSummary')
+           else null
+         end as debug
+       from event_discoveries
+       where event_id = $1
+       limit 1`,
+      [eventId],
+    );
+    return res.rows[0] || null;
   } catch (err) {
     if (isTableMissingError(err)) return null;
     throw err;

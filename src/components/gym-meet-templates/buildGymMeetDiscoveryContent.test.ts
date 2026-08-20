@@ -1607,6 +1607,151 @@ test("legacy gymnastics discovery without pipeline version still suppresses sche
   );
 });
 
+test("public-page-v2 augments a sparse stored overview with typed parent-packet facts", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      eventTitle: "2026 Women’s Gasparilla Classic",
+      title: "2026 Women’s Gasparilla Classic",
+      venue: "Tampa Convention Center",
+      address: "333 S Franklin St, Tampa, FL 33602",
+      discoverySource: {
+        pipelineVersion: "gym-public-v2",
+        parseResult: {
+          admission: [
+            { label: "Adults", price: "$25", note: "Cash; daily fee" },
+            { label: "Children ages 5-17", price: "$20", note: "Cash; daily fee" },
+          ],
+          meetDetails: {},
+          logistics: {},
+          policies: {},
+          communications: {},
+        },
+        publicPageSections: {
+          meetDetails: {
+            title: "Meet Details",
+            body: "2026 Women’s Gasparilla Classic takes place March 6-8, 2026 at Tampa Convention Center.",
+            bullets: [],
+            visibility: "visible",
+          },
+          spectatorInfo: {
+            title: "Spectator Info",
+            body: "Adults: $25. Children ages 5-17: $20.",
+            bullets: [],
+            visibility: "visible",
+          },
+          venue: { title: "Venue Details", body: "", bullets: [], visibility: "hidden" },
+          parking: { title: "Parking", body: "", bullets: [], visibility: "hidden" },
+          traffic: { title: "Traffic", body: "", bullets: [], visibility: "hidden" },
+          travel: { title: "Travel", body: "", bullets: [], visibility: "hidden" },
+          documents: { title: "Documents", links: [], visibility: "hidden" },
+        },
+      },
+    },
+    customFields: { meetDateRangeLabel: "March 6-8, 2026" },
+    advancedSections: {
+      meet: {
+        doorsOpen: "7:00am each day.",
+        arrivalGuidance: "Arrive one hour early for the first session.",
+        registrationInfo: "Registration is on the second floor by Guest Services.",
+        rotationSheetsInfo: "Print rotation sheets before arriving.",
+        resultsInfo: "Official results and live scoring are available online.",
+      },
+      logistics: {
+        policyHydration: "Gymnasts should bring a water bottle.",
+        policyAnimals: "Only service dogs with a certificate are allowed.",
+      },
+      coaches: {},
+    },
+  });
+
+  const meetDetailsSection = findSection(discovery, "meet-details");
+  const admissionSection = findSection(discovery, "admission");
+  const meetDetails = JSON.stringify(meetDetailsSection);
+  const admission = JSON.stringify(admissionSection);
+  const results = JSON.stringify(findSection(discovery, "results"));
+
+  assert.match(meetDetails, /Doors open: 7:00am each day/i);
+  assert.match(meetDetails, /Arrive one hour early/i);
+  assert.match(meetDetails, /second floor by Guest Services/i);
+  assert.match(meetDetails, /Print rotation sheets/i);
+  assert.match(results, /Official results and live scoring/i);
+  assert.match(admission, /Children \(5-17\)/i);
+  assert.doesNotMatch(admission, /Children \(5-12\)/i);
+  assert.match(admission, /bring a water bottle/i);
+  assert.match(admission, /Only service dogs/i);
+  assert.equal(
+    findBlock(meetDetailsSection, "meet-guidance-cards")?.cards?.[0]?.presentation,
+    "guidance",
+  );
+  assert.equal(
+    findBlock(admissionSection, "spectator-guidance-cards")?.cards?.[0]?.presentation,
+    "guidance",
+  );
+});
+
+test("public-page-v2 presents parking and traffic as labeled arrival guidance cards", () => {
+  const discovery = buildGymMeetDiscoveryContent({
+    eventData: {
+      eventTitle: "2026 Women’s Gasparilla Classic",
+      address: "333 S Franklin St, Tampa, FL 33602",
+      discoverySource: {
+        pipelineVersion: "gym-public-v2",
+        parseResult: { logistics: {}, meetDetails: {}, communications: {} },
+        publicPageSections: {
+          parking: {
+            title: "Parking",
+            body: "Pay by mobile app before leaving. Use the rideshare drop-off across from Water Street.",
+            bullets: [],
+            visibility: "visible",
+          },
+          traffic: {
+            title: "Traffic",
+            body: "A nearby arena event may cause delays. Allow extra time Friday.",
+            bullets: [],
+            visibility: "visible",
+          },
+        },
+      },
+    },
+    customFields: {},
+    advancedSections: { meet: {}, logistics: {}, coaches: {} },
+  });
+
+  const traffic = findSection(discovery, "traffic-parking");
+  const guidance = findBlock(traffic, "arrival-guidance-cards");
+  assert.equal(guidance?.type, "card-grid");
+  assert.equal(guidance?.columns, 2);
+  assert.deepEqual(
+    guidance?.cards.map((card: any) => ({
+      label: card.label,
+      presentation: card.presentation,
+      icon: card.icon,
+      tone: card.tone,
+      meta: card.meta,
+    })),
+    [
+      {
+        label: "Parking & drop-off",
+        presentation: "guidance",
+        icon: "parking",
+        tone: "default",
+        meta: "Before you leave",
+      },
+      {
+        label: "Traffic alert",
+        presentation: "guidance",
+        icon: "traffic",
+        tone: "warning",
+        meta: "Plan extra time",
+      },
+    ],
+  );
+  assert.match(JSON.stringify(guidance), /rideshare drop-off/i);
+  assert.match(JSON.stringify(guidance), /nearby arena event/i);
+  assert.equal(findBlock(traffic, "parking-body"), undefined);
+  assert.equal(findBlock(traffic, "traffic-body"), undefined);
+});
+
 test("mixed public packet hides weak sections, merges admission variants, and limits quick access to approved links", () => {
   const eventData = {
     createdVia: "meet-discovery",
@@ -2110,7 +2255,6 @@ test("structured travel hotels render as hotel cards with fallback link", () => 
                 parking: "Complimentary",
                 breakfast: "Available for purchase",
                 reservationDeadline: "2026-02-12",
-                bookingUrl: "https://example.com/book-marriott",
               },
             ],
           },
@@ -2133,10 +2277,20 @@ test("structured travel hotels render as hotel cards with fallback link", () => 
   assert.equal(cards?.type, "card-grid");
   assert.match(JSON.stringify(cards), /Fort Lauderdale Marriott Coral Springs/);
   assert.match(JSON.stringify(cards), /\$189\.00 \+ tax/);
-  assert.match(JSON.stringify(cards), /https:\/\/example\.com\/book-marriott/);
-  assert.deepEqual(findBlock(hotels, "hotel-links")?.links, [
-    { label: "Host Hotels", url: "https://example.com/hotels" },
+  assert.equal(cards?.cards?.[0]?.action?.url, "https://example.com/hotels");
+  assert.equal(cards?.cards?.[0]?.action?.label, "Reserve Hotel");
+  assert.equal(cards?.cards?.[0]?.presentation, "hotel");
+  assert.deepEqual(cards?.cards?.[0]?.highlights, [
+    { label: "Distance", value: "5 miles" },
+    { label: "Nightly rate", value: "$189.00 + tax" },
   ]);
+  assert.deepEqual(cards?.cards?.[0]?.details, [
+    { label: "Parking", value: "Complimentary", icon: "parking" },
+    { label: "Breakfast", value: "Available for purchase", icon: "breakfast" },
+    { label: "Book by", value: "2026-02-12", icon: "deadline" },
+  ]);
+  assert.equal(findBlock(hotels, "hotel-links"), undefined);
+  assert.equal(findBlock(hotels, "travel-guidance-cards"), undefined);
 });
 
 test("quick access collapses duplicate labels even when discovery finds multiple urls", () => {

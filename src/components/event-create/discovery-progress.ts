@@ -62,8 +62,7 @@ export function getDiscoveryStageLabel(flow: DiscoveryProgressFlow, progress: nu
   const stages = DISCOVERY_STAGE_COPY[flow];
 
   return (
-    stages.find((stage) => clampedProgress < stage.until)?.label ??
-    stages[stages.length - 1].label
+    stages.find((stage) => clampedProgress < stage.until)?.label ?? stages[stages.length - 1].label
   );
 }
 
@@ -72,7 +71,7 @@ export function resolveGymnasticsUrlParseProgress(elapsedMs: number) {
   const progress = Math.min(
     GYMNASTICS_URL_PARSE_START_PROGRESS +
       Math.floor(safeElapsedMs / GYMNASTICS_URL_PARSE_PROGRESS_STEP_MS),
-    GYMNASTICS_URL_PARSE_TAIL_PROGRESS
+    GYMNASTICS_URL_PARSE_TAIL_PROGRESS,
   );
   const indeterminate = progress >= GYMNASTICS_URL_PARSE_TAIL_PROGRESS;
 
@@ -83,4 +82,35 @@ export function resolveGymnasticsUrlParseProgress(elapsedMs: number) {
       ? GYMNASTICS_URL_PARSE_TAIL_LABEL
       : getDiscoveryStageLabel("gymnastics-url", progress),
   };
+}
+
+export type GymnasticsDiscoveryPipelineStage =
+  | "ingested"
+  | "extract"
+  | "parse"
+  | "map"
+  | "enrich"
+  | "compose_public"
+  | "review_ready"
+  | "published";
+
+export function resolveGymnasticsPipelineProgress(
+  sourceType: "file" | "url",
+  processingStage: string | null | undefined,
+  lastSuccessfulStage?: string | null,
+) {
+  const stage = String(processingStage || lastSuccessfulStage || "ingested").trim();
+  const sourceLabel = sourceType === "file" ? "meet packet" : "meet page";
+  const stages: Record<string, { progress: number; label: string }> = {
+    ingested: { progress: 72, label: `Preparing ${sourceLabel}...` },
+    extract: { progress: 76, label: `Reading ${sourceLabel}...` },
+    parse: { progress: 84, label: "Extracting dates, venue & admission..." },
+    map: { progress: 91, label: "Building your editable draft..." },
+    enrich: { progress: 95, label: "Draft ready — opening the builder..." },
+    compose_public: { progress: 97, label: "Finishing your event page..." },
+    review_ready: { progress: 100, label: "Opening meet builder..." },
+    published: { progress: 100, label: "Opening meet builder..." },
+  };
+
+  return stages[stage] || stages.ingested;
 }

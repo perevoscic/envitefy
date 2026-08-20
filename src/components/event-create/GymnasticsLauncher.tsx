@@ -1,6 +1,17 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, Globe, Upload, WandSparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  Globe,
+  ShieldCheck,
+  Sparkles,
+  Upload,
+  WandSparkles,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -10,15 +21,12 @@ import DiscoveryProgressPanel, {
 } from "@/components/event-create/DiscoveryProgressPanel";
 import {
   createDiscoveryStatusClientError,
-  toDiscoveryUiError,
   type DiscoveryUiError,
+  toDiscoveryUiError,
 } from "@/components/event-create/discovery-client-error";
-import { GYM_DISCOVERY_STATUS_PHRASES } from "@/components/event-create/gym-discovery-status-phrases";
 import {
-  GYMNASTICS_URL_PARSE_START_PROGRESS,
-  GYMNASTICS_URL_PARSE_TAIL_LABEL,
   getDiscoveryStageLabel,
-  resolveGymnasticsUrlParseProgress,
+  resolveGymnasticsPipelineProgress,
 } from "@/components/event-create/discovery-progress";
 import { resolveDiscoveryClientParseTimeoutMs } from "@/lib/discovery-budget";
 
@@ -30,7 +38,6 @@ type GymnasticsLauncherProps = {
 type DiscoveryInput = { file?: File; url?: string };
 type DiscoveryProgressHandler = (progress: number, status: string) => void;
 const GYM_DISCOVERY_LOG_PREFIX = "[gymnastics-launcher]";
-const PROCESSING_PROGRESS_CAP = 90;
 const INGEST_REQUEST_TIMEOUT_MS = 15_000;
 const GYMNASTICS_DEMO_DRAFT_STORAGE_KEY = "envitefy:gymnastics-demo-draft:v1";
 const GYM_DISCOVERY_PROGRESS_THEME: DiscoveryProgressTheme = {
@@ -63,23 +70,20 @@ export default function GymnasticsLauncher({
   const [urlBusy, setUrlBusy] = useState(false);
   const [urlProgress, setUrlProgress] = useState(0);
   const [urlStatus, setUrlStatus] = useState("");
-  const [urlIndeterminate, setUrlIndeterminate] = useState(false);
   const [urlError, setUrlError] = useState<DiscoveryUiError | null>(null);
   const [meetUrl, setMeetUrl] = useState("");
   const discoveryBusy = uploadBusy || urlBusy;
   const uploadXhrRef = useRef<XMLHttpRequest | null>(null);
   const ingestAbortRef = useRef<AbortController | null>(null);
   const parseAbortRef = useRef<AbortController | null>(null);
-  const parseProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cancelRequestedRef = useRef(false);
   const currentDiscoveryEventIdRef = useRef<string | null>(null);
   const discoveryLogStateRef = useRef<{
     status: string;
     bucket: number;
   }>({ status: "", bucket: -1 });
-  const uploadIndeterminate =
-    uploadBusy && uploadStatus === "Processing..." && uploadProgress >= PROCESSING_PROGRESS_CAP;
-  const uploadStageLabel = getDiscoveryStageLabel("gymnastics-upload", uploadProgress);
+  const uploadStageLabel =
+    uploadStatus || getDiscoveryStageLabel("gymnastics-upload", uploadProgress);
   const urlStageLabel = urlStatus || getDiscoveryStageLabel("gymnastics-url", urlProgress);
   const resolveParseTimeoutMs = (inputType: "file" | "url") =>
     resolveDiscoveryClientParseTimeoutMs(inputType);
@@ -154,10 +158,6 @@ export default function GymnasticsLauncher({
       parseAbortRef.current.abort();
       parseAbortRef.current = null;
     }
-    if (parseProgressTimerRef.current) {
-      clearInterval(parseProgressTimerRef.current);
-      parseProgressTimerRef.current = null;
-    }
   };
 
   const requestDiscoveryCancel = async (eventId: string | null) => {
@@ -186,7 +186,6 @@ export default function GymnasticsLauncher({
     setUploadStatus("");
     setUrlProgress(0);
     setUrlStatus("");
-    setUrlIndeterminate(false);
     setUploadError(null);
     setUrlError(null);
   };
@@ -217,12 +216,7 @@ export default function GymnasticsLauncher({
     const reportProgress = (progress: number, status: string) => {
       const bucket = Math.floor(progress / 10);
       const lastState = discoveryLogStateRef.current;
-      if (
-        lastState.status !== status ||
-        lastState.bucket !== bucket ||
-        progress === PROCESSING_PROGRESS_CAP ||
-        progress === 100
-      ) {
+      if (lastState.status !== status || lastState.bucket !== bucket || progress === 100) {
         log(`progress ${progress}%`, { status });
         discoveryLogStateRef.current = { status, bucket };
       }
@@ -346,24 +340,9 @@ export default function GymnasticsLauncher({
       discoveryId: ingestJson.discoveryId || null,
     });
     const parseStartedAt = Date.now();
-    if (file) {
-      reportProgress(GYMNASTICS_URL_PARSE_START_PROGRESS, "Processing meet file...");
-      let parseProgress = GYMNASTICS_URL_PARSE_START_PROGRESS;
-      parseProgressTimerRef.current = setInterval(() => {
-        parseProgress = Math.min(parseProgress + 3, PROCESSING_PROGRESS_CAP);
-        reportProgress(
-          parseProgress,
-          parseProgress >= PROCESSING_PROGRESS_CAP ? "Processing..." : "Processing meet file...",
-        );
-      }, 700);
-    } else {
-      const initialUrlParseState = resolveGymnasticsUrlParseProgress(0);
-      reportProgress(initialUrlParseState.progress, initialUrlParseState.label);
-      parseProgressTimerRef.current = setInterval(() => {
-        const nextUrlParseState = resolveGymnasticsUrlParseProgress(Date.now() - parseStartedAt);
-        reportProgress(nextUrlParseState.progress, nextUrlParseState.label);
-      }, 500);
-    }
+    const sourceType = file ? "file" : "url";
+    const initialPipelineProgress = resolveGymnasticsPipelineProgress(sourceType, "ingested");
+    reportProgress(initialPipelineProgress.progress, initialPipelineProgress.label);
 
     try {
       parseAbortRef.current = new AbortController();
@@ -396,12 +375,19 @@ export default function GymnasticsLauncher({
           processingStage: statusJson?.processingStage ?? null,
           lastSuccessfulStage: statusJson?.lastSuccessfulStage ?? null,
           needsHumanReview: statusJson?.needsHumanReview ?? null,
+          draftReady: statusJson?.draftReady ?? null,
           builderReady: statusJson?.builderReady ?? null,
         });
-        if (statusJson?.builderReady === true) {
+        const pipelineProgress = resolveGymnasticsPipelineProgress(
+          sourceType,
+          statusJson?.processingStage,
+          statusJson?.lastSuccessfulStage,
+        );
+        reportProgress(pipelineProgress.progress, pipelineProgress.label);
+        if (statusJson?.draftReady === true || statusJson?.builderReady === true) {
           break;
         }
-        await new Promise((resolve) => window.setTimeout(resolve, 1000));
+        await new Promise((resolve) => window.setTimeout(resolve, 1500));
       }
       if (Date.now() - parseStartedAt >= parseTimeoutMs) {
         log("discovery pipeline timed out", { eventId, timeoutMs: parseTimeoutMs });
@@ -409,16 +395,10 @@ export default function GymnasticsLauncher({
       }
     } finally {
       parseAbortRef.current = null;
-      if (parseProgressTimerRef.current) {
-        clearInterval(parseProgressTimerRef.current);
-        parseProgressTimerRef.current = null;
-      }
     }
 
     log("routing to builder", { eventId });
-    if (file) {
-      reportProgress(100, "Opening meet builder...");
-    }
+    reportProgress(100, "Opening meet builder...");
     await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
     currentDiscoveryEventIdRef.current = null;
@@ -495,7 +475,6 @@ export default function GymnasticsLauncher({
     setUrlBusy(true);
     setUrlProgress(0);
     setUrlStatus("");
-    setUrlIndeterminate(false);
     console.log(`${GYM_DISCOVERY_LOG_PREFIX} URL sync requested`, {
       url: trimmed,
       ingestTimeoutMs: INGEST_REQUEST_TIMEOUT_MS,
@@ -507,20 +486,17 @@ export default function GymnasticsLauncher({
         onProgress: (progress, status) => {
           setUrlProgress(progress);
           setUrlStatus(status);
-          setUrlIndeterminate(status === GYMNASTICS_URL_PARSE_TAIL_LABEL);
         },
       });
     } catch (err: unknown) {
       if (isAbortError(err)) {
         setUrlProgress(0);
         setUrlStatus("");
-        setUrlIndeterminate(false);
         currentDiscoveryEventIdRef.current = null;
         return;
       }
       setUrlError(toDiscoveryUiError(err, "Failed to sync URL"));
       setUrlStatus("");
-      setUrlIndeterminate(false);
       currentDiscoveryEventIdRef.current = null;
     } finally {
       setUrlBusy(false);
@@ -538,75 +514,104 @@ export default function GymnasticsLauncher({
   };
 
   return (
-    <main className="min-h-screen bg-[#f3f4f8] px-4 py-10 sm:px-6 lg:px-10">
-      <div className="mx-auto w-full max-w-6xl">
-        <h1 className="max-w-3xl text-4xl font-black leading-tight text-[#0f1935] sm:text-5xl md:text-6xl">
-          How would you like to
-          <br />
-          <span className="text-[#6d35f5]">build your gymnast event?</span>
-        </h1>
+    <main className="relative min-h-screen overflow-hidden bg-[#f5f5fa] px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
+      <div className="pointer-events-none absolute -top-40 right-[-8rem] h-[32rem] w-[32rem] rounded-full bg-[#a986ff]/15 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-[-14rem] left-[12%] h-[28rem] w-[28rem] rounded-full bg-[#7cc7ff]/10 blur-3xl" />
 
-        <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="relative mx-auto w-full max-w-7xl">
+        <header className="max-w-4xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#ded6f5] bg-white/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#6240ad] shadow-sm backdrop-blur">
+            <Sparkles className="h-3.5 w-3.5" />
+            Gymnastics meet builder
+          </div>
+          <h1 className="mt-5 text-4xl font-black leading-[1.02] tracking-[-0.035em] text-[#17112f] sm:text-5xl lg:text-6xl">
+            Create your meet page.
+            <span className="block text-[#6d35f5]">Choose how to start.</span>
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#66677f] sm:text-lg">
+            Bring a packet or public link and we’ll build an editable first draft—or start with a
+            blank canvas for full control.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-[#68677d]">
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              Nothing publishes automatically
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-[#6d35f5]" />
+              Every detail stays editable
+            </span>
+          </div>
+        </header>
+
+        <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-3">
           <section
-            onClick={() => setSelectedPath("upload")}
-            className={`rounded-[2rem] bg-white p-6 transition-all ${
+            aria-label="Upload a meet packet"
+            className={`relative flex min-h-[28rem] flex-col overflow-hidden rounded-[1.75rem] bg-white p-6 transition-all duration-200 sm:p-7 ${
               selectedPath === "upload"
-                ? "border-2 border-[#7e3af2] shadow-[0_15px_45px_rgba(108,45,232,0.18)]"
-                : "border border-[#e5e6ef]"
+                ? "border-2 border-[#7e3af2] shadow-[0_20px_55px_rgba(108,45,232,0.16)]"
+                : "border border-[#e3e3ec] shadow-[0_12px_35px_rgba(21,18,48,0.06)] hover:-translate-y-0.5 hover:border-[#cfc5e9]"
             }`}
           >
-            <div className="mb-4 flex items-center justify-between">
-              <span
-                className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${
-                  selectedPath === "upload"
-                    ? "bg-[#f3ebff] text-[#6d35f5]"
-                    : "bg-[#eef0f5] text-[#8c94a8]"
-                }`}
-              >
+            <div className="absolute right-5 top-5 rounded-full bg-[#efe7ff] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#6934d5]">
+              Recommended
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f2ebff] text-[#6d35f5]">
                 <Upload className="h-5 w-5" />
               </span>
-              {selectedPath === "upload" ? (
-                <CheckCircle2 className="h-5 w-5 text-[#6d35f5]" />
-              ) : null}
+              <span className="text-xs font-black tabular-nums text-[#aaa5ba]">01</span>
             </div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8d8ba4]">
+            <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#8d8ba4]">
               Fastest setup
             </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">Upload meet file.</h2>
-            <p className="mt-3 text-base text-[#66677f]">
-              Upload your meet packet (PDF/JPG) and we will pull meet details, admission, venue, and travel into your page.
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-[#17112f] sm:text-3xl">
+              Upload a meet packet
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-[#66677f] sm:text-[15px]">
+              Best for PDF packets, schedules, and parent information sheets.
             </p>
+            <ul className="mt-5 space-y-2.5 text-sm text-[#52526a]">
+              {[
+                "Dates, times & venue",
+                "Admission & spectator policies",
+                "Parking, hotels & travel",
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#efe9ff] text-[#6d35f5]">
+                    <Check className="h-3 w-3" strokeWidth={3} />
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
 
-            <div className="mt-7">
+            <div className="mt-auto pt-6">
               {!uploadBusy ? (
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={() => {
                     setSelectedPath("upload");
                     fileInputRef.current?.click();
                   }}
                   disabled={discoveryBusy}
-                  className="w-full rounded-2xl border-2 border-dashed border-[#d7d4e5] bg-[#f8f8fc] px-4 py-5 text-left transition hover:border-[#6d35f5] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="group w-full rounded-2xl border-2 border-dashed border-[#cfc8df] bg-[#faf9fd] px-4 py-4 text-left transition hover:border-[#6d35f5] hover:bg-[#f7f3ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6d35f5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <div className="flex items-center justify-center gap-2 text-sm font-semibold text-[#5530a8]">
-                    <Upload className="h-4 w-4" />
-                    Click to Upload File
+                  <div className="flex items-center justify-center gap-2 text-sm font-bold text-[#5530a8]">
+                    <Upload className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
+                    Choose packet
                   </div>
-                  <p className="mt-1 text-center text-xs font-medium text-[#7d7a92]">
-                    PDF, JPG, PNG
+                  <p className="mt-1.5 text-center text-[11px] font-medium text-[#858197]">
+                    PDF, JPG or PNG · Usually under 1 minute
                   </p>
                 </button>
               ) : (
                 <DiscoveryProgressPanel
                   cancelLabel="Cancel upload"
-                  indeterminate={uploadIndeterminate}
+                  expectation="Core draft usually opens in under a minute"
                   label={uploadStageLabel}
                   onCancel={() => cancelDiscovery()}
                   progress={uploadProgress}
-                  rotatingStatusPhrases={
-                    uploadBusy && uploadProgress < 100 ? GYM_DISCOVERY_STATUS_PHRASES : undefined
-                  }
                   theme={GYM_DISCOVERY_PROGRESS_THEME}
                 />
               )}
@@ -615,74 +620,91 @@ export default function GymnasticsLauncher({
                 type="file"
                 accept=".pdf,image/png,image/jpeg,image/jpg"
                 className="hidden"
-                onChange={(e) => {
-                  const picked = e.target.files?.[0] || null;
+                onChange={(event) => {
+                  const picked = event.target.files?.[0] || null;
                   void handleUploadPick(picked);
-                  e.currentTarget.value = "";
+                  event.currentTarget.value = "";
                 }}
               />
               {uploadFileName ? (
-                <p className="mt-2 truncate text-xs text-[#6a6782]">Selected: {uploadFileName}</p>
+                <div
+                  className="mt-3 flex items-center gap-2 rounded-xl bg-[#f5f2fb] px-3 py-2 text-xs text-[#5f5b74]"
+                  title={uploadFileName}
+                >
+                  <FileText className="h-4 w-4 shrink-0 text-[#7754bd]" />
+                  <span className="min-w-0 truncate">{uploadFileName}</span>
+                </div>
               ) : null}
               {renderDiscoveryError(uploadError)}
             </div>
           </section>
 
           <section
-            onClick={() => setSelectedPath("url")}
-            className={`flex flex-col rounded-[2rem] bg-[#f9fafc] p-6 transition-all ${
+            aria-label="Sync a public meet URL"
+            className={`flex min-h-[28rem] flex-col rounded-[1.75rem] bg-white/80 p-6 transition-all duration-200 sm:p-7 ${
               selectedPath === "url"
-                ? "border-2 border-[#7e3af2] shadow-[0_15px_45px_rgba(108,45,232,0.18)]"
-                : "border border-[#e5e6ef]"
-            }`}
+                ? "border-2 border-[#7e3af2] shadow-[0_20px_55px_rgba(108,45,232,0.14)]"
+                : "border border-[#e3e3ec] shadow-[0_12px_35px_rgba(21,18,48,0.05)] hover:-translate-y-0.5 hover:border-[#cfc5e9]"
+            } ${discoveryBusy && !urlBusy ? "opacity-60" : ""}`}
           >
-            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef0f5] text-[#8c94a8]">
-              <Globe className="h-5 w-5" />
-            </div>
-            {selectedPath === "url" ? (
-              <div className="-mt-16 mb-10 flex justify-end">
-                <CheckCircle2 className="h-5 w-5 text-[#6d35f5]" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#edf3ff] text-[#4368b0]">
+                  <Globe className="h-5 w-5" />
+                </span>
+                <span className="text-xs font-black tabular-nums text-[#aaa5ba]">02</span>
               </div>
-            ) : null}
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a0a5b6]">
-              External integration
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#76758a]">
+                <Clock3 className="h-3.5 w-3.5" />
+                About 1–2 min
+              </span>
+            </div>
+            <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#8d8ba4]">
+              Import from the web
             </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">Live URL Sync</h2>
-            <p className="mt-3 text-base text-[#66677f]">
-              Paste a link to an existing meet page to sync data.
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-[#17112f] sm:text-3xl">
+              Sync a live meet URL
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-[#66677f] sm:text-[15px]">
+              Use a public organizer, results, or event-information page.
             </p>
-            <div className="mt-auto space-y-3 pt-6 pb-2">
-              <input
-                type="url"
-                value={meetUrl}
-                onChange={(e) => setMeetUrl(e.target.value)}
-                onFocus={() => setSelectedPath("url")}
-                placeholder="https://gym-results.com/meet/123"
-                className="w-full rounded-2xl border border-[#d7d9e5] bg-white px-4 py-3 text-sm text-[#1c2040] outline-none ring-[#6d35f5] placeholder:text-[#a3a7b8] focus:ring-2"
-              />
+            <div className="mt-5 rounded-2xl border border-[#e4e5ed] bg-[#f8f9fc] p-3 text-xs leading-relaxed text-[#727187]">
+              We’ll follow relevant public links and bring the useful details into one editable
+              draft.
+            </div>
+
+            <div className="mt-auto space-y-3 pt-6">
+              <label className="block">
+                <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-[#77758b]">
+                  Public meet URL
+                </span>
+                <input
+                  type="url"
+                  value={meetUrl}
+                  onChange={(event) => setMeetUrl(event.target.value)}
+                  onFocus={() => setSelectedPath("url")}
+                  placeholder="https://meet-site.com/event"
+                  className="w-full rounded-xl border border-[#d7d9e5] bg-white px-4 py-3 text-sm text-[#1c2040] outline-none transition placeholder:text-[#a3a7b8] focus:border-[#8c63ed] focus:ring-2 focus:ring-[#8c63ed]/20"
+                />
+              </label>
               {urlBusy ? (
                 <DiscoveryProgressPanel
                   cancelLabel="Cancel sync"
-                  indeterminate={urlIndeterminate}
                   label={urlStageLabel}
                   onCancel={() => cancelDiscovery()}
                   progress={urlProgress}
-                  rotatingStatusPhrases={
-                    urlBusy && urlProgress < 100 ? GYM_DISCOVERY_STATUS_PHRASES : undefined
-                  }
+                  showDetails={false}
                   theme={GYM_DISCOVERY_PROGRESS_THEME}
                 />
               ) : (
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleUrlSync();
-                  }}
+                  onClick={() => void handleUrlSync()}
                   disabled={discoveryBusy}
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-[#0f1935] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0b1430] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#171b35] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#0e1229] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6d35f5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Sync URL
+                  Sync public page
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               )}
               {renderDiscoveryError(urlError)}
@@ -690,48 +712,67 @@ export default function GymnasticsLauncher({
           </section>
 
           <section
-            onClick={() => setSelectedPath("scratch")}
-            className={`flex flex-col rounded-[2rem] bg-[#f9fafc] p-6 transition-all ${
+            aria-label="Start with the visual builder"
+            className={`flex min-h-[28rem] flex-col rounded-[1.75rem] bg-white/80 p-6 transition-all duration-200 sm:p-7 ${
               selectedPath === "scratch"
-                ? "border-2 border-[#7e3af2] shadow-[0_15px_45px_rgba(108,45,232,0.18)]"
-                : "border border-[#e5e6ef]"
-            }`}
+                ? "border-2 border-[#7e3af2] shadow-[0_20px_55px_rgba(108,45,232,0.14)]"
+                : "border border-[#e3e3ec] shadow-[0_12px_35px_rgba(21,18,48,0.05)] hover:-translate-y-0.5 hover:border-[#cfc5e9]"
+            } ${discoveryBusy ? "opacity-60" : ""}`}
           >
-            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef0f5] text-[#8c94a8]">
-              <WandSparkles className="h-5 w-5" />
-            </div>
-            {selectedPath === "scratch" ? (
-              <div className="-mt-16 mb-10 flex justify-end">
-                <CheckCircle2 className="h-5 w-5 text-[#6d35f5]" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef7f3] text-[#3b8067]">
+                  <WandSparkles className="h-5 w-5" />
+                </span>
+                <span className="text-xs font-black tabular-nums text-[#aaa5ba]">03</span>
               </div>
-            ) : null}
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a0a5b6]">
-              Custom design
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#467662]">
+                <Sparkles className="h-3.5 w-3.5" />
+                Starts instantly
+              </span>
+            </div>
+            <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#8d8ba4]">
+              Full creative control
             </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0f1935]">Visual Builder</h2>
-            <p className="mt-3 text-base text-[#66677f]">
-              The ultimate control. Design your meet page block-by-block using our template gallery.
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-[#17112f] sm:text-3xl">
+              Start with a template
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-[#66677f] sm:text-[15px]">
+              Pick a polished layout and build the page section by section.
             </p>
-            <div className="mt-auto pt-6 pb-2">
+            <ul className="mt-5 space-y-2.5 text-sm text-[#52526a]">
+              {[
+                "Choose a visual theme",
+                "Edit every page section",
+                "Add your own images & details",
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e9f4ef] text-[#3b8067]">
+                    <Check className="h-3 w-3" strokeWidth={3} />
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-auto pt-6">
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openTemplateBuilder();
-                }}
+                onClick={openTemplateBuilder}
                 disabled={discoveryBusy}
-                className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${
-                  selectedPath === "scratch"
-                    ? "bg-[#6d35f5] hover:bg-[#5f2ed7]"
-                    : "bg-[#0f1935] hover:bg-[#0b1430]"
-                }`}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#171b35] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#0e1229] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6d35f5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Open Template Builder
+                Browse templates
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           </section>
         </div>
+
+        <p className="mt-5 text-center text-xs text-[#77758a]">
+          Not sure where to start? Uploading the organizer’s packet usually produces the most
+          complete first draft.
+        </p>
       </div>
     </main>
   );

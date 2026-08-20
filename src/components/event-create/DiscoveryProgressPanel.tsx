@@ -1,8 +1,8 @@
 "use client";
 
+import { X } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
 import { pickNextRandomPhrase } from "@/components/event-create/gym-discovery-status-phrases";
 
 export type DiscoveryProgressTheme = {
@@ -21,12 +21,14 @@ export type DiscoveryProgressTheme = {
 
 type DiscoveryProgressPanelProps = {
   cancelLabel: string;
+  expectation?: string;
   indeterminate?: boolean;
   label: string;
   onCancel: () => void;
   progress: number;
   /** When set, status line cycles a random phrase on each bar animation loop instead of `label`. */
   rotatingStatusPhrases?: readonly string[];
+  showDetails?: boolean;
   theme: DiscoveryProgressTheme;
 };
 
@@ -34,11 +36,13 @@ const MINIMUM_VISIBLE_PROGRESS = 14;
 
 export default function DiscoveryProgressPanel({
   cancelLabel,
+  expectation,
   indeterminate = false,
   label,
   onCancel,
   progress,
   rotatingStatusPhrases,
+  showDetails = true,
   theme,
 }: DiscoveryProgressPanelProps) {
   const clampedProgress = Math.max(0, Math.min(100, Math.round(progress)));
@@ -49,6 +53,7 @@ export default function DiscoveryProgressPanel({
       : MINIMUM_VISIBLE_PROGRESS;
 
   const useRotation = Boolean(rotatingStatusPhrases?.length);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [displayPhrase, setDisplayPhrase] = useState(() =>
     rotatingStatusPhrases?.length ? pickNextRandomPhrase(rotatingStatusPhrases, null) : "",
   );
@@ -64,6 +69,16 @@ export default function DiscoveryProgressPanel({
     el.addEventListener("animationiteration", onIter);
     return () => el.removeEventListener("animationiteration", onIter);
   }, [indeterminate, rotatingStatusPhrases]);
+
+  useEffect(() => {
+    if (!showDetails) return;
+    const startedAt = Date.now();
+    setElapsedSeconds(0);
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [showDetails]);
 
   const statusText = useRotation ? displayPhrase : label;
 
@@ -103,20 +118,31 @@ export default function DiscoveryProgressPanel({
             }}
           />
         </div>
-        <div className="relative flex items-center justify-between gap-3 px-4 py-3.5">
-          <p className="min-w-0 truncate text-sm font-semibold" style={{ color: theme.textColor }}>
-            {statusText}
-          </p>
-          <span
-            className="shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em]"
-            style={{
-              backgroundColor: theme.badgeBackground,
-              borderColor: theme.badgeBorder,
-              color: theme.textColor,
-            }}
-          >
-            {indeterminate ? "Live" : `${clampedProgress}%`}
-          </span>
+        <div className="relative px-4 py-3.5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="min-w-0 text-sm font-semibold" style={{ color: theme.textColor }}>
+              {statusText}
+            </p>
+            <span
+              className="shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em]"
+              style={{
+                backgroundColor: theme.badgeBackground,
+                borderColor: theme.badgeBorder,
+                color: theme.textColor,
+              }}
+            >
+              {indeterminate ? "Live" : `${clampedProgress}%`}
+            </span>
+          </div>
+          {showDetails ? (
+            <div
+              className="mt-2 flex items-center justify-between gap-3 text-[10px] font-medium opacity-75"
+              style={{ color: theme.textColor }}
+            >
+              <span>{expectation || "Building an editable draft"}</span>
+              <span className="shrink-0 tabular-nums">{elapsedSeconds}s elapsed</span>
+            </div>
+          ) : null}
         </div>
       </div>
       <button
