@@ -112,6 +112,38 @@ export function getPrimaryEventProductOutput(
   if (!record) return inferOutputFromText(fallbackText);
   const publicEvent = asRecord(record.publicEvent);
   const conciergeDraft = asRecord(record.conciergeDraft);
+  const explicitOutput =
+    normalizeOutput(record.primaryOutput) ||
+    normalizeOutput(record.productType) ||
+    normalizeOutput(record.publicRenderer) ||
+    normalizeOutput(publicEvent?.primaryOutput) ||
+    normalizeOutput(publicEvent?.renderer) ||
+    normalizeOutput(conciergeDraft?.primaryOutput) ||
+    normalizeOutput(conciergeDraft?.productType) ||
+    firstOutputFromArray(record.requestedOutputs) ||
+    firstOutputFromArray(record.outputs) ||
+    firstOutputFromArray(conciergeDraft?.requestedOutputs) ||
+    firstOutputFromArray(conciergeDraft?.outputs);
+  if (explicitOutput) return explicitOutput;
+
+  const createdVia = String(record.createdVia || "")
+    .trim()
+    .toLowerCase();
+  const discoverySource = asRecord(record.discoverySource);
+  const discoveryWorkflow = String(discoverySource?.workflow || "")
+    .trim()
+    .toLowerCase();
+  const category = String(record.category || "")
+    .trim()
+    .toLowerCase();
+  const isDiscoveryEventPage =
+    /(?:^|[-_])discovery(?:$|[-_])/.test(createdVia) ||
+    discoveryWorkflow === "gymnastics" ||
+    category === "gymnastics" ||
+    category === "sport_gymnastics" ||
+    category === "sport_gymnastics_schedule";
+  if (isDiscoveryEventPage) return "event_page";
+
   const inferredText = [
     record.title,
     record.eventPurpose,
@@ -124,20 +156,7 @@ export function getPrimaryEventProductOutput(
     .filter((value): value is string => typeof value === "string")
     .join(" ");
 
-  return (
-    normalizeOutput(record.primaryOutput) ||
-    normalizeOutput(record.productType) ||
-    normalizeOutput(record.publicRenderer) ||
-    normalizeOutput(publicEvent?.primaryOutput) ||
-    normalizeOutput(publicEvent?.renderer) ||
-    normalizeOutput(conciergeDraft?.primaryOutput) ||
-    normalizeOutput(conciergeDraft?.productType) ||
-    firstOutputFromArray(record.requestedOutputs) ||
-    firstOutputFromArray(record.outputs) ||
-    firstOutputFromArray(conciergeDraft?.requestedOutputs) ||
-    firstOutputFromArray(conciergeDraft?.outputs) ||
-    inferOutputFromText(inferredText)
-  );
+  return inferOutputFromText(inferredText);
 }
 
 export function isCardFirstEventProduct(output: unknown): boolean {

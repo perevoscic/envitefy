@@ -898,15 +898,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           if (!runRes.ok) {
             throw new Error(runJson?.error || "Failed discovery rerun");
           }
-          setDiscoveryEnrichmentState(
-            {
-              state: "running",
-              pending: true,
-              startedAt: new Date().toISOString(),
-              finishedAt: null,
-              lastError: "",
-            },
-          );
+          setDiscoveryEnrichmentState({
+            state: "running",
+            pending: true,
+            startedAt: new Date().toISOString(),
+            finishedAt: null,
+            lastError: "",
+          });
           const deadlineAt = Date.now() + 90_000;
           while (Date.now() < deadlineAt) {
             const statusRes = await fetch(`/api/discovery/${editEventId}/status`, {
@@ -1247,12 +1245,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           { id: "rsvp", label: "RSVP", enabled: data.rsvpEnabled },
           { id: "passcode", label: "Passcode", enabled: true },
         ].filter((item) => item.enabled),
-      [
-        hasAnnouncementEntries,
-        hasLogistics,
-        hasMeet,
-        data.rsvpEnabled,
-      ],
+      [hasAnnouncementEntries, hasLogistics, hasMeet, data.rsvpEnabled],
     );
 
     const [activeSection, setActiveSection] = useState<string>(navItems[0]?.id || "details");
@@ -1330,22 +1323,24 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 ...builderEvent,
                 ...builderVenue,
                 advancedSections:
-                  existingBuilderDraft?.advancedSections && typeof existingBuilderDraft.advancedSections === "object"
+                  existingBuilderDraft?.advancedSections &&
+                  typeof existingBuilderDraft.advancedSections === "object"
                     ? existingBuilderDraft.advancedSections
                     : existing.advancedSections,
               }
             : existing;
           const existingCreatedVia = asTrimmedString(existing?.createdVia).toLowerCase().trim();
-          const existingDiscoverySource =
-            isDiscoveryV2
-              ? buildLegacyDiscoverySourceFromV2(existing)
-              : existing?.discoverySource && typeof existing.discoverySource === "object"
+          const existingDiscoverySource = isDiscoveryV2
+            ? buildLegacyDiscoverySourceFromV2(existing)
+            : existing?.discoverySource && typeof existing.discoverySource === "object"
               ? (existing.discoverySource as Record<string, any>)
               : null;
           const inferredHostGym = inferHostGymFromDiscovery(existingDiscoverySource);
           setLoadedDiscoverySource(existingDiscoverySource);
           setLoadedDiscoveryPublicArtifacts(
-            isDiscoveryV2 && existing?.publicArtifacts && typeof existing.publicArtifacts === "object"
+            isDiscoveryV2 &&
+              existing?.publicArtifacts &&
+              typeof existing.publicArtifacts === "object"
               ? (existing.publicArtifacts as Record<string, any>)
               : null,
           );
@@ -1428,7 +1423,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             isDiscoveryV2 ||
             existingCreatedVia === "meet-discovery" ||
             Boolean(existingDiscoverySource?.input);
-          const resolvedTime = asTrimmedString(effectiveExisting.time) || asTrimmedString(loadedTime);
+          const resolvedTime =
+            asTrimmedString(effectiveExisting.time) || asTrimmedString(loadedTime);
 
           // Load all data fields, prioritizing existing values
           const accessControl = effectiveExisting.accessControl || {};
@@ -1437,7 +1433,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           );
 
           const editableDetails = isExistingDiscoveryEvent
-            ? stripDiscoveryGeneratedDetails(effectiveExisting.details || effectiveExisting.description)
+            ? stripDiscoveryGeneratedDetails(
+                effectiveExisting.details || effectiveExisting.description,
+              )
             : effectiveExisting.details || effectiveExisting.description || "";
 
           setData((prev) => ({
@@ -1521,10 +1519,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           } else if (effectiveExisting.theme?.id) {
             const themeExists = config.themes.find((t) => t.id === effectiveExisting.theme.id);
             if (themeExists) {
-              console.log(
-                "[Edit] Setting themeId from theme object:",
-                effectiveExisting.theme.id,
-              );
+              console.log("[Edit] Setting themeId from theme object:", effectiveExisting.theme.id);
               setThemeId(effectiveExisting.theme.id);
             } else {
               console.warn("[Edit] Theme from object not found in config, using default");
@@ -1562,8 +1557,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           setLoadingExisting(false);
         } catch (err: unknown) {
           if (!active || controller.signal.aborted) return;
-          const isAbort =
-            err instanceof DOMException && err.name === "AbortError";
+          const isAbort = err instanceof DOMException && err.name === "AbortError";
           if (isAbort) return;
           console.error("[Edit] Error loading event:", err);
           setLoadingExisting(false);
@@ -1897,6 +1891,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           title: data.title || config.displayName,
           data: {
             category: isDiscoveryV2Update ? "gymnastics" : config.category,
+            primaryOutput: "event_page",
+            requestedOutputs: ["event_page"],
             createdVia: isDiscoveryV2Update
               ? "meet-discovery-v2"
               : isDiscoveryUpdate
@@ -1927,22 +1923,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     ...(loadedDiscoveryPipelineSummary || {}),
                     processingStage:
                       loadedDiscoveryPipelineSummary?.processingStage || "review_ready",
-                    needsHumanReview: Boolean(
-                      loadedDiscoveryPipelineSummary?.needsHumanReview,
-                    ),
-                    publishReady:
-                      loadedDiscoveryPipelineSummary?.publishReady === true,
+                    needsHumanReview: Boolean(loadedDiscoveryPipelineSummary?.needsHumanReview),
+                    publishReady: loadedDiscoveryPipelineSummary?.publishReady === true,
                     discoveryId: loadedDiscoveryPipelineSummary?.discoveryId || "",
                   },
                 }
               : {}),
             ...(!isDiscoveryV2Update &&
               loadedDiscoverySource && {
-              discoverySource: {
-                ...loadedDiscoverySource,
-                updatedAt: new Date().toISOString(),
-              },
-            }),
+                discoverySource: {
+                  ...loadedDiscoverySource,
+                  updatedAt: new Date().toISOString(),
+                },
+              }),
             startISO,
             endISO,
             location: locationParts || undefined,
