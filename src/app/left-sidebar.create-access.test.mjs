@@ -29,25 +29,29 @@ test("left sidebar controller resets create panel state when create access disap
   );
 });
 
-test("event creation routes keep My Events active while the create submenu tracks its route", () => {
+test("event creation routes open Create Event and do not activate My Events", () => {
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
   const viewSource = readSource("src/app/left-sidebar.tsx");
 
   assert.match(
     controllerSource,
-    /const isCreateEntryActive =\s*sidebarPage === "createEvent" \|\| sidebarPage === "createEventOther";/,
+    /const isCreateEntryActive =\s*isCreateRouteActive \|\| sidebarPage === "createEvent" \|\| sidebarPage === "createEventOther";/,
   );
   assert.match(
     viewSource,
-    /const isViewingEventFromListInRoot =[\s\S]*?pathname\.startsWith\("\/event\/"\)[\s\S]*?const isMyEventsActive =[\s\S]*?isViewingEventFromListInRoot && eventContextSourcePage === "myEvents"/,
+    /const isViewingEventFromListInRoot =\s*sidebarPage === "root" &&\s*!isCreateEntryActive &&/,
   );
-  assert.doesNotMatch(
+  assert.match(
     controllerSource,
-    /const isCreateEntryActive =\s*isCreateRouteActive \|\|/,
+    /if \(!hasCreateEventAccess \|\| !activeCreateItem\) return;\s*clearEventContext\(\);\s*setSidebarPage\("createEvent"\);/,
   );
   assert.match(
     controllerSource,
     /const isCreateMenuButtonActive = useCallback\(\s*\(item:[\s\S]*?\) =>\s*isCreateItemActive\(item\)/,
+  );
+  assert.match(
+    controllerSource,
+    /const href = templateHrefMap\.get\(label\) \|\| fallbackHref;\s*if \(href\) \{\s*clearEventContext\(\);/,
   );
 });
 
@@ -118,9 +122,12 @@ test("left sidebar exposes signed-in AI Concierge entry", () => {
   );
   assert.match(
     controllerSource,
-    /const \[sidebarPage, setSidebarPage\] = useState<SidebarPage>\(\(\) =>\s*normalizedPathname === "\/chat" \? "aiThreads" : "root",\s*\);/s,
+    /const \[sidebarPage, setSidebarPage\] = useState<SidebarPage>\(\(\) =>\s*normalizedPathname === "\/chat"\s*\? "aiThreads"\s*:\s*isCreateEventRoute\(normalizedPathname\)\s*\? "createEvent"\s*:\s*"root",\s*\);/s,
   );
-  assert.match(controllerSource, /const lastChatRouteSyncPathRef = useRef<string \| null>\(null\);/);
+  assert.match(
+    controllerSource,
+    /const lastChatRouteSyncPathRef = useRef<string \| null>\(null\);/,
+  );
   assert.match(
     controllerSource,
     /if \(normalizedPathname !== "\/chat"\) \{[\s\S]*?lastChatRouteSyncPathRef\.current = null;[\s\S]*?return;[\s\S]*?\}[\s\S]*?if \(lastChatRouteSyncPathRef\.current === normalizedPathname\) return;[\s\S]*?lastChatRouteSyncPathRef\.current = normalizedPathname;[\s\S]*?clearEventContext\(\);[\s\S]*?setSidebarPage\("aiThreads"\);/s,

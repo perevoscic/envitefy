@@ -61,9 +61,27 @@ const CREATE_EVENT_SECTION_TITLES: Record<TemplateDef["section"], string> = {
   appointments_general: "General",
 };
 
-function matchesHrefPath(path: string, href: string): boolean {
+function normalizeNavigationPath(value: string): string {
+  const path = value.split(/[?#]/, 1)[0]?.replace(/\/+$/, "") || "";
+  return path || "/";
+}
+
+function getCreateEventRouteBase(href: string): string {
+  const path = normalizeNavigationPath(href);
+  return path.endsWith("/customize") ? path.slice(0, -"/customize".length) : path;
+}
+
+export function matchesCreateEventHrefPath(path: string, href: string): boolean {
   if (!path || !href) return false;
-  return path === href || path.startsWith(`${href}/`);
+  const pathname = normalizeNavigationPath(path);
+  const routeBase = getCreateEventRouteBase(href);
+  if (!routeBase.startsWith("/event/")) return false;
+
+  return (
+    pathname === routeBase ||
+    pathname === `${routeBase}/customize` ||
+    pathname.startsWith(`${routeBase}/customize/`)
+  );
 }
 
 function isTemplateAvailableForScopes(
@@ -126,10 +144,9 @@ export function getCreateEventSections(
 
 export function isCreateEventRoute(path: string | null | undefined): boolean {
   if (!path) return false;
-  if (path === "/event/new" || path.startsWith("/event/new/")) return true;
-  return ALL_TEMPLATE_LINKS.some((link) =>
-    matchesHrefPath(path, link.href.split("?")[0] || "")
-  );
+  const pathname = normalizeNavigationPath(path);
+  if (pathname === "/event/new" || pathname.startsWith("/event/new/")) return true;
+  return ALL_TEMPLATE_LINKS.some((link) => matchesCreateEventHrefPath(pathname, link.href));
 }
 
 // Backward-compatible full lists for code paths not yet visibility-aware.

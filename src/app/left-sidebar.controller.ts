@@ -13,6 +13,7 @@ import {
   getCreateEventSections,
   getTemplateLinks,
   isCreateEventRoute,
+  matchesCreateEventHrefPath,
 } from "@/config/navigation-config";
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
@@ -346,7 +347,11 @@ export function useLeftSidebarController({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>(() =>
-    normalizedPathname === "/chat" ? "aiThreads" : "root",
+    normalizedPathname === "/chat"
+      ? "aiThreads"
+      : isCreateEventRoute(normalizedPathname)
+        ? "createEvent"
+        : "root",
   );
   const [showPastMyEvents, setShowPastMyEvents] = useState(false);
   const [showPastInvitedEvents, setShowPastInvitedEvents] = useState(false);
@@ -980,10 +985,7 @@ export function useLeftSidebarController({
   const isCreateItemActive = useCallback(
     (item: { href: string }) => {
       if (!pathname) return false;
-      const baseHref = item.href.split("?")[0];
-      if (!baseHref) return false;
-      if (baseHref === "/") return pathname === "/";
-      return pathname === baseHref || pathname.startsWith(`${baseHref}/`);
+      return matchesCreateEventHrefPath(pathname, item.href);
     },
     [pathname],
   );
@@ -1044,6 +1046,12 @@ export function useLeftSidebarController({
     setForcedCreateActiveLabel(null);
     setSidebarPage("root");
   }, [hasCreateEventAccess, setSidebarPage, sidebarPage]);
+
+  useEffect(() => {
+    if (!hasCreateEventAccess || !activeCreateItem) return;
+    clearEventContext();
+    setSidebarPage("createEvent");
+  }, [activeCreateItem, clearEventContext, hasCreateEventAccess]);
 
   const openCompactEventsPage = useCallback(
     (page: EventListPage) => {
@@ -1225,6 +1233,7 @@ export function useLeftSidebarController({
       }
       const href = templateHrefMap.get(label) || fallbackHref;
       if (href) {
+        clearEventContext();
         collapseSidebarOnTouch();
         const keepCreatePanel = href.startsWith("/event/");
         if (!keepCreatePanel) {
@@ -1237,6 +1246,7 @@ export function useLeftSidebarController({
       triggerCreateEvent();
     },
     [
+      clearEventContext,
       collapseSidebarOnTouch,
       handleRootSnapNavigate,
       router,
@@ -1330,7 +1340,7 @@ export function useLeftSidebarController({
     [findEventListItemFromPath],
   );
   const isCreateEntryActive =
-    sidebarPage === "createEvent" || sidebarPage === "createEventOther";
+    isCreateRouteActive || sidebarPage === "createEvent" || sidebarPage === "createEventOther";
 
   useEffect(() => {
     const inferredSource = inferEventListSourceFromPath(pathname);

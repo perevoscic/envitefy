@@ -393,6 +393,7 @@ function RootNavigationPanel({
   const isChatActive = (pathname === "/chat" || sidebarPage === "aiThreads") && !isSnapUploadActive;
   const isViewingEventFromListInRoot =
     sidebarPage === "root" &&
+    !isCreateEntryActive &&
     Boolean(
       pathname && (pathname.startsWith("/event/") || pathname.startsWith("/smart-signup-form/")),
     );
