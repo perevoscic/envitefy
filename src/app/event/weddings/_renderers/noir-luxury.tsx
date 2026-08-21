@@ -179,7 +179,7 @@ export default function NoirLuxury({ theme, event }: Props) {
         </div>
       </section>
 
-      <section className="py-32 px-6 flex justify-center">
+      <section id="rsvp" className="py-32 px-6 flex justify-center">
         <div className="w-full max-w-2xl border-2 border-[#D4AF37] p-2 relative">
           <div className="absolute top-0 left-0 w-4 h-4 bg-[#D4AF37]"></div>
           <div className="absolute top-0 right-0 w-4 h-4 bg-[#D4AF37]"></div>
@@ -210,7 +210,10 @@ export default function NoirLuxury({ theme, event }: Props) {
                   <input type="radio" name="rsvp" className="accent-[#D4AF37]" /> DECLINE
                 </label>
               </div>
-              <button className="bg-[#D4AF37] text-black px-12 py-3 uppercase tracking-widest font-bold text-xs hover:bg-[#F5E6C4] transition-colors mt-8">
+              <button
+                type="submit"
+                className="bg-[#D4AF37] text-black px-12 py-3 uppercase tracking-widest font-bold text-xs hover:bg-[#F5E6C4] transition-colors mt-8"
+              >
                 Confirm Attendance
               </button>
             </form>

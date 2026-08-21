@@ -10,10 +10,10 @@ import {
 } from "react";
 import type { TemplateKey } from "@/config/feature-visibility";
 import {
+  findActiveCreateEventItem,
   getCreateEventSections,
   getTemplateLinks,
   isCreateEventRoute,
-  matchesCreateEventHrefPath,
 } from "@/config/navigation-config";
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
@@ -951,12 +951,19 @@ export function useLeftSidebarController({
 
   const visibleTemplateKeys = featureVisibility.visibleTemplateKeys;
   const sportPreferences = featureVisibility.sportPreferences;
+  const isCreateRouteActive = useMemo(() => isCreateEventRoute(pathname), [pathname]);
+  const canRenderCreateEventNavigation = isAdmin || isCreateRouteActive;
   const visibleTemplateLinks = useMemo(
     () =>
-      isAdmin
+      canRenderCreateEventNavigation
         ? getTemplateLinks(visibleTemplateKeys, productScopes, sportPreferences)
         : [],
-    [isAdmin, productScopes, sportPreferences, visibleTemplateKeys],
+    [
+      canRenderCreateEventNavigation,
+      productScopes,
+      sportPreferences,
+      visibleTemplateKeys,
+    ],
   );
 
   const templateHrefMap = useMemo(() => {
@@ -969,7 +976,7 @@ export function useLeftSidebarController({
 
   const createMenuItems = useMemo(
     () =>
-      isAdmin
+      canRenderCreateEventNavigation
         ? getCreateEventSections(
             visibleTemplateKeys,
             productScopes,
@@ -978,26 +985,25 @@ export function useLeftSidebarController({
             (section) => section.items,
           )
         : [],
-    [isAdmin, productScopes, sportPreferences, visibleTemplateKeys],
+    [
+      canRenderCreateEventNavigation,
+      productScopes,
+      sportPreferences,
+      visibleTemplateKeys,
+    ],
   );
   const otherCreateMenuItems = useMemo(() => [], []);
-  const isCreateRouteActive = useMemo(() => isCreateEventRoute(pathname), [pathname]);
-  const isCreateItemActive = useCallback(
-    (item: { href: string }) => {
-      if (!pathname) return false;
-      return matchesCreateEventHrefPath(pathname, item.href);
-    },
-    [pathname],
-  );
   const activeCreateItem = useMemo(
-    () => createMenuItems.find((item) => isCreateItemActive(item)) ?? null,
-    [createMenuItems, isCreateItemActive],
+    () => findActiveCreateEventItem(pathname, createMenuItems),
+    [createMenuItems, pathname],
   );
   const isOtherEventsActive = sidebarPage === "createEventOther";
   const createMenuOptionCount = createMenuItems.length;
   const hasCreateEventAccess = useMemo(
-    () => isAdmin && (useGymnasticsDirectCreate || createMenuOptionCount > 0),
-    [createMenuOptionCount, isAdmin, useGymnasticsDirectCreate],
+    () =>
+      canRenderCreateEventNavigation &&
+      (useGymnasticsDirectCreate || createMenuOptionCount > 0),
+    [canRenderCreateEventNavigation, createMenuOptionCount, useGymnasticsDirectCreate],
   );
 
   useEffect(() => {
@@ -1256,13 +1262,18 @@ export function useLeftSidebarController({
   );
 
   const isCreateMenuButtonActive = useCallback(
-    (item: { label: string; href: string }) =>
-      isCreateItemActive(item) ||
-      (forcedCreateActiveLabel !== null &&
-        forcedCreateActiveLabel.toLowerCase() === item.label.toLowerCase()) ||
-      (lastCreateSelection !== null &&
-        lastCreateSelection.toLowerCase() === item.label.toLowerCase()),
-    [forcedCreateActiveLabel, isCreateItemActive, lastCreateSelection],
+    (item: { label: string; href: string }) => {
+      if (isCreateRouteActive) {
+        return activeCreateItem === item;
+      }
+      return (
+        (forcedCreateActiveLabel !== null &&
+          forcedCreateActiveLabel.toLowerCase() === item.label.toLowerCase()) ||
+        (lastCreateSelection !== null &&
+          lastCreateSelection.toLowerCase() === item.label.toLowerCase())
+      );
+    },
+    [activeCreateItem, forcedCreateActiveLabel, isCreateRouteActive, lastCreateSelection],
   );
 
   const history = (historySidebarItems || []) as HistoryRow[];

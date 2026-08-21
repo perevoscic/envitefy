@@ -529,7 +529,7 @@ export default function GildedWedding({ theme, event }: Props) {
 
         {/* RSVP Button */}
         {event.rsvpEnabled && (
-          <div className="py-16 text-center relative z-30">
+          <div id="rsvp" className="py-16 text-center relative z-30">
             <a
               href={rsvpUrl}
               className="inline-block bg-[#2C2420] text-white px-12 py-4 uppercase tracking-[0.2em] text-xs hover:bg-[#D4AF37] transition-colors duration-500"

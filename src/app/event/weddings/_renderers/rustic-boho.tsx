@@ -8,7 +8,7 @@ import {
   MapPin,
   Gift,
 } from "lucide-react";
-import type { EventData, ThemeConfig } from "./content-sections";
+import { buildWeddingLocationHref, type EventData, type ThemeConfig } from "./content-sections";
 
 type Props = { theme: ThemeConfig; event: EventData };
 
@@ -21,6 +21,25 @@ const _getNames = (event: EventData) =>
 
 export default function RusticBoho({ theme, event }: Props) {
   const [activeTab, setActiveTab] = useState("home");
+
+  const getGalleryImage = (index: number) => {
+    const image = event.gallery?.[index] as
+      | string
+      | { url?: string; src?: string; preview?: string }
+      | undefined;
+    if (typeof image === "string") return image;
+    return image?.url || image?.src || image?.preview || "";
+  };
+
+  const mainImage =
+    (event as EventData & { customHeroImage?: string }).customHeroImage ||
+    getGalleryImage(0) ||
+    theme.decorations?.heroImage ||
+    "/templates/wedding-placeholders/sunset-vineyard-hero.jpeg";
+  const bouquetImage =
+    getGalleryImage(1) || "/templates/weddings/rustic-boho/detail-bouquet.webp";
+  const handsImage =
+    getGalleryImage(2) || "/templates/weddings/rustic-boho/detail-hands.webp";
 
   const navItems = [
     { id: "home", label: "Home", icon: Sun },
@@ -49,7 +68,8 @@ export default function RusticBoho({ theme, event }: Props) {
   const location =
     event.location || event.venue?.name || "AutoCamp Joshua Tree";
 
-  const registryUrl = event.registry?.[0]?.url || "#";
+  const registryUrl = event.registry?.[0]?.url;
+  const directionsHref = buildWeddingLocationHref(event, location);
 
   return (
     <div
@@ -83,26 +103,25 @@ export default function RusticBoho({ theme, event }: Props) {
                 "We're getting married under the oaks. Join us for a weekend of campfires, tacos, and dancing in Joshua Tree."}
             </p>
 
-            <div className="flex justify-center md:justify-start gap-4 pt-4">
-              <a
-                href={event.rsvp?.url || "#rsvp"}
-                className="bg-[#9C563D] text-[#FDF8F3] px-8 py-4 rounded-full font-medium hover:bg-[#85452F] transition-colors shadow-lg shadow-[#9C563D]/20"
-              >
-                RSVP Now
-              </a>
-            </div>
+            {event.rsvpEnabled && (
+              <div className="flex justify-center md:justify-start gap-4 pt-4">
+                <a
+                  href={event.rsvp?.url || "#rsvp"}
+                  className="bg-[#9C563D] text-[#FDF8F3] px-8 py-4 rounded-full font-medium hover:bg-[#85452F] transition-colors shadow-lg shadow-[#9C563D]/20"
+                >
+                  RSVP Now
+                </a>
+              </div>
+            )}
           </div>
 
           <div className="md:col-span-7 grid grid-cols-2 gap-4 h-[500px] md:h-[600px]">
             <div className="space-y-4 pt-12">
               <div className="h-3/5 w-full bg-white p-2 rounded-t-[100px] rounded-b-2xl shadow-sm rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
                 <img
-                  src={
-                    event.gallery?.[0]?.url ||
-                    "https://images.unsplash.com/photo-1529636721198-d762f9241513?q=80&w=800&auto=format&fit=crop"
-                  }
+                  src={mainImage}
                   className="w-full h-full object-cover rounded-t-[90px] rounded-b-xl grayscale hover:grayscale-0 transition-all duration-700"
-                  alt=""
+                  alt="Couple at sunset"
                 />
               </div>
               <div className="h-2/5 w-full bg-[#E8DCC4] rounded-2xl flex items-center justify-center p-6 text-center">
@@ -114,12 +133,9 @@ export default function RusticBoho({ theme, event }: Props) {
             <div className="space-y-4">
               <div className="h-2/5 w-full bg-[#D6C0A9] rounded-2xl overflow-hidden relative group">
                 <img
-                  src={
-                    event.gallery?.[1]?.url ||
-                    "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?q=80&w=800&auto=format&fit=crop"
-                  }
+                  src={bouquetImage}
                   className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700"
-                  alt=""
+                  alt="Rustic bouquet and wedding rings"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="bg-white/80 p-3 rounded-full">
@@ -129,12 +145,9 @@ export default function RusticBoho({ theme, event }: Props) {
               </div>
               <div className="h-3/5 w-full bg-white p-2 rounded-b-[100px] rounded-t-2xl shadow-sm rotate-[2deg] hover:rotate-0 transition-transform duration-500">
                 <img
-                  src={
-                    event.gallery?.[2]?.url ||
-                    "https://images.unsplash.com/photo-1621621667797-e06afc210438?q=80&w=800&auto=format&fit=crop"
-                  }
+                  src={handsImage}
                   className="w-full h-full object-cover rounded-b-[90px] rounded-t-xl"
-                  alt=""
+                  alt="Newlyweds holding hands at sunset"
                 />
               </div>
             </div>
@@ -180,12 +193,14 @@ export default function RusticBoho({ theme, event }: Props) {
               {event.registryNote ||
                 "We have everything we need. If you'd like to contribute, we're saving for a homestead."}
             </p>
-            <a
-              href={registryUrl}
-              className="w-full inline-block text-center bg-white text-[#9C563D] py-3 rounded-xl font-medium text-sm hover:bg-[#F3EBE0] transition-colors"
-            >
-              View Registry
-            </a>
+            {registryUrl && (
+              <a
+                href={registryUrl}
+                className="w-full inline-block text-center bg-white text-[#9C563D] py-3 rounded-xl font-medium text-sm hover:bg-[#F3EBE0] transition-colors"
+              >
+                View Registry
+              </a>
+            )}
           </div>
 
           <div
@@ -208,7 +223,7 @@ export default function RusticBoho({ theme, event }: Props) {
                 "Luxury Airstreams provided for all guests."}
               <br />
               <a
-                href={event.locationUrl || "#"}
+                href={directionsHref || "#location"}
                 className="underline mt-2 inline-block hover:text-[#9C563D]"
               >
                 Get Directions
@@ -217,6 +232,23 @@ export default function RusticBoho({ theme, event }: Props) {
           </div>
         </div>
       </section>
+
+      {event.rsvpEnabled && (
+        <section id="rsvp" className="px-6 py-20 text-center text-[#4A4036]">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#9C563D]">
+            Kindly respond
+          </p>
+          <h2
+            className="mt-4 text-4xl"
+            style={{ fontFamily: theme.fonts.headline }}
+          >
+            We hope you can join us.
+          </h2>
+          {event.rsvp?.deadline && (
+            <p className="mt-4 text-sm text-[#8C7A63]">Respond by {event.rsvp.deadline}</p>
+          )}
+        </section>
+      )}
 
       <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
         <div className="flex bg-white/90 backdrop-blur-md p-2 rounded-full shadow-xl border border-[#EBE3D9] gap-2">

@@ -95,12 +95,12 @@ export default function WeddingCustomizeClient({ event, template }: WeddingCusto
   );
 
   return (
-    <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6">
-      <div className="space-y-4">
+    <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="min-w-0">
         <WeddingRenderer template={template} event={eventPreview} />
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+      <div className="bg-white border border-slate-200 p-4 lg:min-h-screen">
         <div className="mb-4">
           <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
             Add your details

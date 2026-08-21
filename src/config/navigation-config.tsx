@@ -39,15 +39,17 @@ export type TemplateLink = {
   section: TemplateDef["section"];
 };
 
-const ALL_TEMPLATE_LINKS: TemplateLink[] = TEMPLATE_DEFINITIONS.filter(
-  (t) => t.key !== "football_season",
-).map((t) => ({
+const ALL_TEMPLATE_ROUTE_LINKS: TemplateLink[] = TEMPLATE_DEFINITIONS.map((t) => ({
   key: t.key,
   label: t.label,
   href: t.href,
   icon: t.icon,
   section: t.section,
 }));
+
+const ALL_TEMPLATE_LINKS = ALL_TEMPLATE_ROUTE_LINKS.filter(
+  (link) => link.key !== "football_season",
+);
 
 const CREATE_EVENT_SECTION_ORDER: TemplateDef["section"][] = [
   "milestones",
@@ -82,6 +84,31 @@ export function matchesCreateEventHrefPath(path: string, href: string): boolean 
     pathname === `${routeBase}/customize` ||
     pathname.startsWith(`${routeBase}/customize/`)
   );
+}
+
+function isSportsCreateEventRoute(path: string): boolean {
+  return ALL_TEMPLATE_ROUTE_LINKS.some(
+    (link) =>
+      link.section === "sports" && matchesCreateEventHrefPath(path, link.href),
+  );
+}
+
+function isPersonalizedSportsMenuHref(href: string): boolean {
+  const routeBase = getCreateEventRouteBase(href);
+  return routeBase === "/event/sport-events" || routeBase === "/event/gymnastics";
+}
+
+export function findActiveCreateEventItem<T extends { href: string }>(
+  path: string | null | undefined,
+  items: readonly T[],
+): T | null {
+  if (!path) return null;
+
+  const directMatch = items.find((item) => matchesCreateEventHrefPath(path, item.href));
+  if (directMatch) return directMatch;
+  if (!isSportsCreateEventRoute(path)) return null;
+
+  return items.find((item) => isPersonalizedSportsMenuHref(item.href)) ?? null;
 }
 
 function isTemplateAvailableForScopes(
@@ -146,7 +173,9 @@ export function isCreateEventRoute(path: string | null | undefined): boolean {
   if (!path) return false;
   const pathname = normalizeNavigationPath(path);
   if (pathname === "/event/new" || pathname.startsWith("/event/new/")) return true;
-  return ALL_TEMPLATE_LINKS.some((link) => matchesCreateEventHrefPath(pathname, link.href));
+  return ALL_TEMPLATE_ROUTE_LINKS.some((link) =>
+    matchesCreateEventHrefPath(pathname, link.href),
+  );
 }
 
 // Backward-compatible full lists for code paths not yet visibility-aware.

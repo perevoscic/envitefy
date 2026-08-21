@@ -120,7 +120,7 @@ export default function BauhausWedding({ theme, event }: Props) {
 
       {/* RSVP Section */}
       {event.rsvpEnabled && (
-        <div className="w-full max-w-2xl bg-white p-8 border-4 border-black">
+        <div id="rsvp" className="w-full max-w-2xl bg-white p-8 border-4 border-black">
           <div className="text-center">
             <h2
               className="text-3xl font-bold mb-4 uppercase tracking-wider"

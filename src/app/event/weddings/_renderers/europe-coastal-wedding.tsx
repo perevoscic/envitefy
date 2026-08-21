@@ -203,30 +203,32 @@ export default function EuropeCoastalWedding({ theme, event }: Props) {
           <a href="#travel" className="hover:text-[#004B8D]">
             Travel
           </a>
-          <a href="#rsvp" className="hover:text-[#004B8D]">
-            RSVP
-          </a>
+          {event.rsvpEnabled && (
+            <a href="#rsvp" className="hover:text-[#004B8D]">
+              RSVP
+            </a>
+          )}
         </div>
       </nav>
 
       {/* Hero */}
-      <header className="relative h-[90vh] flex items-center justify-center p-8">
-        <div className="absolute inset-0 m-4 border border-[#004B8D]/20 rounded-t-[10rem]">
+      <header className="relative flex min-h-[90svh] flex-col overflow-hidden bg-white md:h-[90vh] md:min-h-0 md:flex-row md:items-center md:justify-end md:px-[6vw] md:py-8">
+        <div className="relative mx-4 mt-4 h-[55svh] shrink-0 rounded-t-[10rem] border border-[#004B8D]/20 md:absolute md:inset-0 md:m-4 md:h-auto">
           <img
             src={heroImage}
-            className="w-full h-full object-cover rounded-t-[10rem] opacity-90"
+            className="h-full w-full rounded-t-[10rem] object-cover object-[35%_center] opacity-100 md:object-center md:opacity-90"
             alt="Coastal View"
           />
-          <div className="absolute inset-0 bg-blue-900/10 rounded-t-[10rem]"></div>
+          <div className="absolute inset-0 rounded-t-[10rem] bg-transparent md:bg-blue-900/10"></div>
         </div>
 
-        <div className="relative z-10 bg-white p-12 md:p-16 text-center shadow-2xl max-w-2xl rounded-t-[5rem]">
+        <div className="relative z-10 w-full bg-white p-8 text-center shadow-2xl sm:p-10 md:max-w-[35rem] md:rounded-t-[5rem] md:bg-white/95 md:p-12 md:backdrop-blur-sm">
           <span className="text-[#F4D03F] text-4xl mb-4 block">☼</span>
           <p className="uppercase tracking-[0.3em] text-xs font-bold mb-4 text-blue-400">
             The Wedding Of
           </p>
           <h1
-            className="text-6xl md:text-8xl mb-6 text-[#004B8D]"
+            className="mb-6 text-5xl text-[#004B8D] sm:text-6xl md:text-7xl"
             style={{ fontFamily: theme.fonts.headline }}
           >
             {names}

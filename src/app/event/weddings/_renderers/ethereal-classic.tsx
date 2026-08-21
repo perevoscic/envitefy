@@ -369,7 +369,10 @@ export default function EtherealClassic({ theme, event }: Props) {
                   </label>
                 </div>
               </div>
-              <button className="w-full bg-slate-800 text-white py-3 uppercase tracking-widest hover:bg-rose-400 transition-colors mt-6">
+              <button
+                type="submit"
+                className="w-full bg-slate-800 text-white py-3 uppercase tracking-widest hover:bg-rose-400 transition-colors mt-6"
+              >
                 Send RSVP
               </button>
             </form>

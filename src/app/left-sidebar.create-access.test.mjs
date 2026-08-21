@@ -7,12 +7,20 @@ const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("left sidebar controller derives a single create-access flag", () => {
+test("left sidebar renders create navigation for admins and active builder routes", () => {
   const source = readSource("src/app/left-sidebar.controller.ts");
 
   assert.match(
     source,
-    /const hasCreateEventAccess = useMemo\(\s*\(\) => isAdmin && \(useGymnasticsDirectCreate \|\| createMenuOptionCount > 0\),\s*\[createMenuOptionCount, isAdmin, useGymnasticsDirectCreate\],?\s*\)/s,
+    /const canRenderCreateEventNavigation = isAdmin \|\| isCreateRouteActive;/,
+  );
+  assert.match(
+    source,
+    /const createMenuItems = useMemo\(\s*\(\) =>\s*canRenderCreateEventNavigation\s*\? getCreateEventSections/s,
+  );
+  assert.match(
+    source,
+    /const hasCreateEventAccess = useMemo\(\s*\(\) =>\s*canRenderCreateEventNavigation &&\s*\(useGymnasticsDirectCreate \|\| createMenuOptionCount > 0\),\s*\[canRenderCreateEventNavigation, createMenuOptionCount, useGymnasticsDirectCreate\],?\s*\)/s,
   );
 });
 
@@ -47,7 +55,11 @@ test("event creation routes open Create Event and do not activate My Events", ()
   );
   assert.match(
     controllerSource,
-    /const isCreateMenuButtonActive = useCallback\(\s*\(item:[\s\S]*?\) =>\s*isCreateItemActive\(item\)/,
+    /const activeCreateItem = useMemo\(\s*\(\) => findActiveCreateEventItem\(pathname, createMenuItems\)/,
+  );
+  assert.match(
+    controllerSource,
+    /if \(isCreateRouteActive\) \{\s*return activeCreateItem === item;\s*\}/,
   );
   assert.match(
     controllerSource,

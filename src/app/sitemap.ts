@@ -1,14 +1,10 @@
 import type { MetadataRoute } from "next";
-import { landingLiveCardSnapshots } from "@/components/landing/landing-live-card-snapshots";
-import { buildLandingShowcasePath } from "@/lib/landing-showcase";
 
 type StaticEntry = {
   path: string;
   priority: number;
   changeFrequency: NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
 };
-
-type SitemapEntry = MetadataRoute.Sitemap[number];
 
 const baseUrl = (
   process.env.NEXT_PUBLIC_BASE_URL ||
@@ -51,25 +47,10 @@ const staticEntries: StaticEntry[] = [
   { path: "/terms", priority: 0.3, changeFrequency: "yearly" },
 ];
 
-function dedupeSitemapEntries(entries: SitemapEntry[]): SitemapEntry[] {
-  const seen = new Set<string>();
-  return entries.filter((entry) => {
-    if (seen.has(entry.url)) return false;
-    seen.add(entry.url);
-    return true;
-  });
-}
-
 export default function sitemap(): MetadataRoute.Sitemap {
-  const staticUrls = staticEntries.map(({ path, priority, changeFrequency }) => ({
+  return staticEntries.map(({ path, priority, changeFrequency }) => ({
     url: `${baseUrl}${path}`,
     changeFrequency,
     priority,
   }));
-  const showcaseUrls = landingLiveCardSnapshots.map((snapshot) => ({
-    url: `${baseUrl}${buildLandingShowcasePath(snapshot.slug)}`,
-    changeFrequency: "monthly" as const,
-    priority: 0.75,
-  }));
-  return dedupeSitemapEntries([...staticUrls, ...showcaseUrls]);
 }

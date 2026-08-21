@@ -16,6 +16,10 @@ import {
 import { ADMIN_USER_METRICS_CTE_SQL } from "@/lib/admin-user-metrics-sql";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
+import {
+  describeDatabaseError,
+  isDatabaseUnavailableError,
+} from "@/lib/database-errors";
 import type {
   CanonicalDiscoveryParse,
   DiscoveryDocument,
@@ -87,28 +91,10 @@ function isAuthenticationPgError(err: unknown): boolean {
 }
 
 function isTransientPgError(err: unknown): boolean {
-  const anyErr = err as any;
-  const code = String(anyErr?.code || "");
-  const message = String(anyErr?.message || "");
-  return (
-    [
-      "PG_AUTH_BACKOFF",
-      "ETIMEDOUT",
-      "ECONNREFUSED",
-      "ECONNRESET",
-      "EHOSTUNREACH",
-      "ENETUNREACH",
-    ].includes(code) ||
-    /timeout|terminat|refused|getaddrinfo|not known|too many authentication errors|circuit breaker open/i.test(
-      message,
-    ) ||
-    isAuthenticationPgError(err)
-  );
+  return isDatabaseUnavailableError(err) || isAuthenticationPgError(err);
 }
 
-export function isDatabaseUnavailableError(err: unknown): boolean {
-  return isTransientPgError(err);
-}
+export { isDatabaseUnavailableError } from "@/lib/database-errors";
 
 function getPool(): Pool {
   if (!global.__pgPool) {
@@ -575,7 +561,7 @@ export async function getIsAdminByEmail(email: string): Promise<boolean> {
         if (isTransientPgError(retryErr)) {
           console.warn(
             "[db] getIsAdminByEmail: database unavailable during schema ensure, defaulting isAdmin=false",
-            (retryErr as any)?.message || retryErr,
+            describeDatabaseError(retryErr),
           );
           return false;
         }
@@ -590,7 +576,7 @@ export async function getIsAdminByEmail(email: string): Promise<boolean> {
     if (isTransientPgError(err)) {
       console.warn(
         "[db] getIsAdminByEmail: database unavailable, defaulting isAdmin=false",
-        (err as any)?.message || err,
+        describeDatabaseError(err),
       );
       return false;
     }
@@ -1016,7 +1002,7 @@ async function backfillUserProductAccess(row: AppUserRow): Promise<AppUserRow> {
       if (!isTransientPgError(err)) throw err;
       console.warn(
         "[db] userHasGymnasticsHistory skipped during scope backfill",
-        (err as any)?.message || err,
+        describeDatabaseError(err),
       );
     }
   }
@@ -1214,7 +1200,7 @@ export async function getUserIdByEmail(email: string): Promise<string | null> {
     if (isTransientPgError(err)) {
       console.warn(
         "[db] getUserIdByEmail: database unavailable, returning null",
-        (err as any)?.message || err,
+        describeDatabaseError(err),
       );
       return null;
     }
@@ -1293,7 +1279,7 @@ export async function getMicrosoftRefreshToken(email: string): Promise<string | 
     if (isTransientPgError(err)) {
       console.warn(
         "[db] getMicrosoftRefreshToken: database unavailable, returning null",
-        (err as any)?.message || err,
+        describeDatabaseError(err),
       );
       return null;
     }
@@ -1335,7 +1321,7 @@ export async function getGoogleRefreshToken(email: string): Promise<string | nul
     if (isTransientPgError(err)) {
       console.warn(
         "[db] getGoogleRefreshToken: database unavailable, returning null",
-        (err as any)?.message || err,
+        describeDatabaseError(err),
       );
       return null;
     }

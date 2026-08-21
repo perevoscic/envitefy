@@ -382,9 +382,15 @@
 .nav-chrome-glass-header,
 .nav-chrome-menu-card,
 .nav-chrome-sidebar-card,
-.nav-chrome-mobile-drawer,
 .nav-chrome-footer-trigger {
   position: relative;
+}
+
+.nav-chrome-glass-header,
+.nav-chrome-menu-card,
+.nav-chrome-sidebar-card,
+.nav-chrome-mobile-drawer,
+.nav-chrome-footer-trigger {
   overflow: hidden;
   border: 1px solid var(--nav-chrome-border);
   background:
@@ -536,6 +542,13 @@
 
 .nav-chrome-mobile-drawer {
   box-shadow: var(--nav-chrome-shadow-strong);
+}
+
+@media (max-width: 767px) {
+  .nav-chrome-mobile-drawer {
+    background: linear-gradient(180deg, #fbf9ff 0%, #f4efff 100%);
+    backdrop-filter: none;
+  }
 }
 
 .nav-chrome-mobile-drawer-header {
@@ -1041,7 +1054,8 @@ h4,
 h5 {
   font-family: var(--font-playfair), "Times New Roman", serif;
   letter-spacing: 0.02em;
-  color: color-mix(in oklab, var(--foreground) 92%, white 8%);
+  /* Keep themed surfaces in control of contrast (for example, wedding text over dark heroes). */
+  color: inherit;
 }
 
 @layer utilities {

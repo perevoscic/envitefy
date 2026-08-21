@@ -20,7 +20,7 @@ const QUICK_START_CARDS: BuilderCard[] = [
     label: "Wedding ",
     icon: "💍",
     copy: "Gallery hero, luxe typography options.",
-    href: "/event/weddings/customize",
+    href: "/event/weddings",
   },
   {
     label: "Birthday Party",

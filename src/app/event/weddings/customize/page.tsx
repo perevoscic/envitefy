@@ -19,12 +19,12 @@ import {
   Users,
   Image as ImageIcon,
   Type,
-  Palette,
   CheckSquare,
   Gift,
   Coffee,
   Upload,
   Trash2,
+  RotateCcw,
   Plane,
   Navigation,
   Building,
@@ -41,7 +41,6 @@ import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { normalizeUrlValue } from "@/utils/contact";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
-import Link from "next/link";
 import etherealClassic from "../../../../../templates/weddings/ethereal-classic/config.json" with { type: "json" };
 import modernEditorial from "../../../../../templates/weddings/modern-editorial/config.json" with { type: "json" };
 import rusticBoho from "../../../../../templates/weddings/rustic-boho/config.json" with { type: "json" };
@@ -62,9 +61,30 @@ import industrialWedding from "../../../../../templates/weddings/industrial-wedd
 import libraryWedding from "../../../../../templates/weddings/library-wedding/config.json" with { type: "json" };
 import gardenWedding from "../../../../../templates/weddings/garden-wedding/config.json" with { type: "json" };
 import skylineWedding from "../../../../../templates/weddings/skyline-wedding/config.json" with { type: "json" };
+import midnightElegance from "../../../../../templates/weddings/midnight-elegance/config.json" with { type: "json" };
+import wildRoseHalo from "../../../../../templates/weddings/wild-rose-halo/config.json" with { type: "json" };
+import goldenHourPromise from "../../../../../templates/weddings/golden-hour-promise/config.json" with { type: "json" };
+import ivoryLaceCrest from "../../../../../templates/weddings/ivory-lace-crest/config.json" with { type: "json" };
+import emeraldGardenVignette from "../../../../../templates/weddings/emerald-garden-vignette/config.json" with { type: "json" };
+import blushLinenRomance from "../../../../../templates/weddings/blush-linen-romance/config.json" with { type: "json" };
+import sapphireMoonlitArch from "../../../../../templates/weddings/sapphire-moonlit-arch/config.json" with { type: "json" };
+import rusticOakStorybook from "../../../../../templates/weddings/rustic-oak-storybook/config.json" with { type: "json" };
+import champagneVelvet from "../../../../../templates/weddings/champagne-velvet/config.json" with { type: "json" };
+import celestialWhisper from "../../../../../templates/weddings/celestial-whisper/config.json" with { type: "json" };
+import pearlTideHorizon from "../../../../../templates/weddings/pearl-tide-horizon/config.json" with { type: "json" };
+import crimsonOrchard from "../../../../../templates/weddings/crimson-orchard/config.json" with { type: "json" };
+import opalineCrest from "../../../../../templates/weddings/opaline-crest/config.json" with { type: "json" };
+import velvetMidnightLily from "../../../../../templates/weddings/velvet-midnight-lily/config.json" with { type: "json" };
+import lavenderMistCascade from "../../../../../templates/weddings/lavender-mist-cascade/config.json" with { type: "json" };
+import coralSandsKeepsake from "../../../../../templates/weddings/coral-sands-keepsake/config.json" with { type: "json" };
+import eternalMarble from "../../../../../templates/weddings/eternal-marble/config.json" with { type: "json" };
+import willowFernEmbrace from "../../../../../templates/weddings/willow-fern-embrace/config.json" with { type: "json" };
+import silverFrostGala from "../../../../../templates/weddings/silver-frost-gala/config.json" with { type: "json" };
+import autumnEmberWaltz from "../../../../../templates/weddings/autumn-ember-waltz/config.json" with { type: "json" };
 import DesignThemes from "./_components/DesignThemes";
 import weddingTemplateCatalog from "../../../../../templates/weddings/index.json" with { type: "json" };
 import RegistryPanel from "./[id]/RegistryPanel";
+import { getWeddingDesign } from "@/lib/wedding-designs";
 
 const NAV_ITEMS = [
   "Home",
@@ -151,6 +171,26 @@ const TEMPLATE_CONFIGS: Record<string, any> = {
   "library-wedding": libraryWedding,
   "garden-wedding": gardenWedding,
   "skyline-wedding": skylineWedding,
+  "midnight-elegance": midnightElegance,
+  "wild-rose-halo": wildRoseHalo,
+  "golden-hour-promise": goldenHourPromise,
+  "ivory-lace-crest": ivoryLaceCrest,
+  "emerald-garden-vignette": emeraldGardenVignette,
+  "blush-linen-romance": blushLinenRomance,
+  "sapphire-moonlit-arch": sapphireMoonlitArch,
+  "rustic-oak-storybook": rusticOakStorybook,
+  "champagne-velvet": champagneVelvet,
+  "celestial-whisper": celestialWhisper,
+  "pearl-tide-horizon": pearlTideHorizon,
+  "crimson-orchard": crimsonOrchard,
+  "opaline-crest": opalineCrest,
+  "velvet-midnight-lily": velvetMidnightLily,
+  "lavender-mist-cascade": lavenderMistCascade,
+  "coral-sands-keepsake": coralSandsKeepsake,
+  "eternal-marble": eternalMarble,
+  "willow-fern-embrace": willowFernEmbrace,
+  "silver-frost-gala": silverFrostGala,
+  "autumn-ember-waltz": autumnEmberWaltz,
 };
 
 const TEMPLATE_LIBRARY = (Array.isArray(weddingTemplateCatalog)
@@ -175,6 +215,19 @@ const getCoupleNames = (partner1?: string, partner2?: string) => {
   const names = [partner1, partner2].filter(Boolean).join(" & ").trim();
   return names || "";
 };
+
+const getPreviewCouple = (themeId: string) => {
+  const [partner1, partner2] = getWeddingDesign(themeId).previewNames
+    .split("&")
+    .map((name) => name.trim());
+  return {
+    partner1: partner1 || INITIAL_DATA.partner1,
+    partner2: partner2 || INITIAL_DATA.partner2,
+  };
+};
+
+const buildPreviewStory = (partner1: string, partner2: string) =>
+  `We met at a coffee shop in Brooklyn on a rainy Tuesday. ${partner2} offered to share an umbrella, and the rest is history. Five years, two dogs, and countless coffees later, ${partner1} and ${partner2} are ready to start forever.`;
 
 const buildDisplayTitle = (themeId?: string | null, partner1?: string, partner2?: string) => {
   const templateName = getTemplateTitle(themeId);
@@ -987,7 +1040,7 @@ const INITIAL_DATA = {
     themeId: DEFAULT_TEMPLATE_ID,
   },
   images: {
-    hero: "/templates/wedding-placeholders/midnight-bloom-hero.jpeg",
+    hero: null as string | null,
     headlineBg: "/templates/wedding-placeholders/ivory-ink-hero.jpeg",
   },
   travel: {
@@ -1056,20 +1109,12 @@ const INITIAL_DATA = {
     isEnabled: true,
     deadline: "2028-08-22",
   },
-  gallery: [
-    {
-      id: 1,
-      url: "/templates/wedding-placeholders/coastal-pearl-hero.jpeg",
-    },
-    {
-      id: 2,
-      url: "/templates/wedding-placeholders/sunset-vineyard-hero.jpeg",
-    },
-    {
-      id: 3,
-      url: "/templates/wedding-placeholders/garden-atelier-hero.jpeg",
-    },
-  ],
+  gallery: [] as Array<{
+    id: number | string;
+    url: string;
+    src?: string;
+    preview?: string;
+  }>,
   registry: [
     {
       id: 1,
@@ -1506,6 +1551,12 @@ const App = () => {
     distance: "",
   });
   const [creatingDraft, setCreatingDraft] = useState(false);
+  const designGalleryHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (data.date) params.set("d", data.date);
+    const query = params.toString();
+    return `/event/weddings${query ? `?${query}` : ""}`;
+  }, [data.date]);
 
   // When no editEventId is present, create a draft event_history row
   // so the builder always has an id to attach nested data (registry, etc.).
@@ -1523,10 +1574,11 @@ const App = () => {
             : null) ||
           INITIAL_DATA.theme.themeId ||
           DEFAULT_TEMPLATE_ID;
+        const draftCouple = getPreviewCouple(draftThemeId);
         const draftTitle = buildDraftTitle(
           draftThemeId,
-          INITIAL_DATA.partner1,
-          INITIAL_DATA.partner2
+          draftCouple.partner1,
+          draftCouple.partner2
         );
         const res = await fetch("/api/history", {
           method: "POST",
@@ -1543,7 +1595,9 @@ const App = () => {
               variationId: draftThemeId,
               title: draftTitle,
               templateName: getTemplateTitle(draftThemeId),
-              coupleNames: getCoupleNames(INITIAL_DATA.partner1, INITIAL_DATA.partner2),
+              coupleNames: getCoupleNames(draftCouple.partner1, draftCouple.partner2),
+              partner1: draftCouple.partner1,
+              partner2: draftCouple.partner2,
               theme: { ...INITIAL_DATA.theme, themeId: draftThemeId },
             },
           }),
@@ -1681,6 +1735,8 @@ const App = () => {
   const fallbackHeroImage =
     (selectedTemplate as any)?.theme?.decorations?.heroImage ||
     "/templates/wedding-placeholders/ivory-ink-hero.jpeg";
+  const currentHeroImage = data.images.hero || fallbackHeroImage;
+  const hasCustomHeroImage = Boolean(data.images.hero);
 
   const previewEvent = useMemo(() => {
     const location = [data.city, data.state].filter(Boolean).join(", ");
@@ -1776,14 +1832,32 @@ const App = () => {
     if (editEventId) return;
     if (!templateIdParam) return;
     if (!TEMPLATE_CONFIGS[templateIdParam]) return;
-    updateTheme("themeId", templateIdParam);
-  }, [editEventId, templateIdParam, updateTheme]);
-
-  const themeLocked = Boolean(editEventId);
+    const previewCouple = getPreviewCouple(templateIdParam);
+    setData((previous) => ({
+      ...previous,
+      partner1:
+        previous.partner1 === INITIAL_DATA.partner1
+          ? previewCouple.partner1
+          : previous.partner1,
+      partner2:
+        previous.partner2 === INITIAL_DATA.partner2
+          ? previewCouple.partner2
+          : previous.partner2,
+      story:
+        previous.story === INITIAL_DATA.story
+          ? buildPreviewStory(previewCouple.partner1, previewCouple.partner2)
+          : previous.story,
+      registry: previous.registry.map((item) =>
+        item.label === "Zola – Ava & Mason"
+          ? { ...item, label: `Zola – ${previewCouple.partner1} & ${previewCouple.partner2}` }
+          : item,
+      ),
+      theme: { ...previous.theme, themeId: templateIdParam },
+    }));
+  }, [editEventId, templateIdParam]);
 
   const selectTheme = useCallback(
     async (themeId: string) => {
-      if (themeLocked) return;
       const previewTop = previewRef.current?.scrollTop ?? null;
       const designTop = designGridRef.current?.scrollTop ?? null;
       updateTheme("themeId", themeId);
@@ -2270,13 +2344,23 @@ const App = () => {
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
     <div className="h-full flex flex-col animate-fade-in">
-      <div className="mb-6 w-full max-w-sm text-center flex-shrink-0">
-        <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-          Add your details
-        </h2>
-        <p className="text-slate-500 text-sm">
-          Customize every aspect of your wedding website.
-        </p>
+      <div className="mb-6 w-full max-w-sm flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => router.push(designGalleryHref)}
+          className="mb-5 inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-full border border-[#d9d0c6] bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#65584e] shadow-sm transition hover:border-[#a98553] hover:text-[#76562e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98553]/40"
+        >
+          <ChevronLeft size={15} aria-hidden="true" />
+          All wedding designs
+        </button>
+        <div className="text-center">
+          <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
+            Add your details
+          </h2>
+          <p className="text-slate-500 text-sm">
+            Customize every aspect of your wedding website.
+          </p>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto w-full max-w-sm min-h-0">
@@ -2286,12 +2370,6 @@ const App = () => {
             icon={<Type size={18} />}
             desc="Names, date, location."
             onClick={() => setActiveView("headline")}
-          />
-          <MenuCard
-            title="Design"
-            icon={<Palette size={18} />}
-            desc="Theme, fonts, colors."
-            onClick={() => setActiveView("design")}
           />
           <MenuCard
             title="Images"
@@ -2420,46 +2498,76 @@ const App = () => {
     <EditorLayout title="Images" onBack={() => setActiveView("main")}>
       <div className="space-y-8">
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-3 tracking-wider">
-            Hero Image
-          </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative">
-            {data.images.hero ? (
-              <div className="relative w-full h-48 rounded-lg overflow-hidden">
+          <div className="mb-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Main / top image
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-400">
+              The large image shown at the top of this wedding design.
+            </p>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+              {currentHeroImage ? (
                 <img
-                  src={data.images.hero}
-                  alt="Hero"
-                  className="w-full h-full object-cover"
+                  src={currentHeroImage}
+                  alt="Current template hero"
+                  className="h-full w-full object-cover"
                 />
-                <button
-                  onClick={() =>
-                    setData((prev) => ({
-                      ...prev,
-                      images: { ...prev.images, hero: null },
-                    }))
-                  }
-                  className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <Upload size={20} />
+              ) : (
+                <div className="flex h-full items-center justify-center text-slate-400">
+                  <ImageIcon size={28} />
                 </div>
-                <p className="text-sm text-slate-600 mb-1">Upload main photo</p>
-                <p className="text-xs text-slate-400">
-                  Recommended: 1600x900px
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={(e) => handleImageUpload("hero", e)}
-                />
-              </>
-            )}
+              )}
+              <span className="absolute left-3 top-3 rounded-full border border-white/40 bg-black/55 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-sm">
+                {hasCustomHeroImage ? "Custom replacement" : "Template image"}
+              </span>
+            </div>
+
+            <div className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-800">Main / top image</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    {hasCustomHeroImage
+                      ? "Your replacement is currently displayed in the template."
+                      : "This is the original image included with the selected template."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <label className="relative inline-flex cursor-pointer items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700">
+                  <Upload size={14} />
+                  {hasCustomHeroImage ? "Replace image" : "Replace template image"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                    onChange={(e) => handleImageUpload("hero", e)}
+                  />
+                </label>
+
+                {hasCustomHeroImage && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setData((prev) => ({
+                        ...prev,
+                        images: { ...prev.images, hero: null },
+                      }))
+                    }
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    <RotateCcw size={14} />
+                    Restore template image
+                  </button>
+                )}
+              </div>
+
+              <p className="mt-3 text-[11px] text-slate-400">Recommended: 1600 × 900 px</p>
+            </div>
           </div>
         </div>
       </div>
@@ -2493,22 +2601,10 @@ const App = () => {
         </div>
 
         {activeDesignView === "themes" && (
-          <div className="border border-slate-100 rounded-xl shadow-sm">
-            {themeLocked && (
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50 text-slate-600 text-sm">
-                <span>Theme locked after draft creation.</span>
-                <Link
-                  href="/event/weddings/customize"
-                  className="text-indigo-600 font-semibold text-xs hover:underline"
-                >
-                  Create new event to try another theme
-                </Link>
-              </div>
-            )}
+          <div className="overflow-hidden rounded-xl border border-slate-100 shadow-sm">
             <DesignThemes
               selectedTemplateId={data.theme.themeId}
               onSelectAction={(id) => selectTheme(id)}
-              disabled={themeLocked}
             />
           </div>
         )}
@@ -3218,18 +3314,21 @@ const App = () => {
       <div
         ref={previewRef}
         {...previewTouchHandlers}
-        className="flex-1 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+        className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide scroll-smooth bg-[#f0f2f5] flex justify-center"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
         }}
       >
-        <div className="w-full max-w-[100%] md:max-w-[calc(100%-420px)] xl:max-w-[1000px] my-4 md:my-8 md:ml-auto md:mr-[420px] transition-all duration-500 ease-in-out">
-          <div className="mb-6 shadow-2xl md:rounded-xl overflow-hidden">
+        <div className="w-full min-w-0 my-4 md:my-8 transition-all duration-500 ease-in-out">
+          <div
+            data-wedding-preview
+            className="pointer-events-auto relative isolate z-0 mb-6 overflow-hidden shadow-2xl md:rounded-xl"
+            style={{ contain: "paint", transform: "translateZ(0)" }}
+          >
             <WeddingRenderer
               template={selectedTemplate}
               event={previewEvent}
-              renderMode="scanned-invite-preview"
             />
           </div>
           <div
@@ -4033,7 +4132,7 @@ const App = () => {
       )}
 
       <div
-        className={`nav-chrome-mobile-drawer w-full md:w-[400px] flex flex-col z-20 absolute md:fixed top-0 right-0 h-screen transition-transform duration-300 transform md:translate-x-0 ${
+        className={`nav-chrome-mobile-drawer w-full md:w-[400px] md:shrink-0 flex flex-col z-[60] md:z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
         {...drawerTouchHandlers}

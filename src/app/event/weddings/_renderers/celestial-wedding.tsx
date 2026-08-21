@@ -438,7 +438,7 @@ export default function CelestialWedding({ theme, event }: Props) {
 
         {/* RSVP */}
         {event.rsvpEnabled && (
-          <section className="py-32">
+          <section id="rsvp" className="py-32">
             <div className="border border-[#D4AF37] p-2 rotate-1 max-w-lg mx-auto">
               <div className="border border-[#D4AF37] p-12 -rotate-1 bg-[#0F152E]">
                 <h2

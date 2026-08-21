@@ -170,7 +170,7 @@ export default function SkylineWedding({ theme, event }: Props) {
 
       {/* RSVP */}
       {event.rsvpEnabled && (
-        <section className="py-32 px-8 text-center bg-gradient-to-b from-slate-900 to-black">
+        <section id="rsvp" className="py-32 px-8 text-center bg-gradient-to-b from-slate-900 to-black">
           <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tight">
             The Guest List
           </h2>

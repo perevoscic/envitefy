@@ -231,7 +231,12 @@ export default function IndustrialWedding({ theme, event }: Props) {
         </div>
 
         <nav className="flex flex-col gap-4 mt-8 md:mt-0">
-          {["Manifesto", "Logistics", "Registry", "RSVP"].map((item) => (
+          {[
+            "Manifesto",
+            "Logistics",
+            ...(event.registry?.length ? ["Registry"] : []),
+            ...(event.rsvpEnabled ? ["RSVP"] : []),
+          ].map((item) => (
             <a
               key={item}
               href={`#${item.toLowerCase()}`}

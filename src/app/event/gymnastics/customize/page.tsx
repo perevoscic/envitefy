@@ -3200,7 +3200,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         className={
           isEmbed
             ? "flex h-dvh min-h-0 w-full flex-1 flex-col overflow-hidden bg-white"
-            : `nav-chrome-mobile-drawer w-full md:w-[400px] flex flex-col z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
+            : `nav-chrome-mobile-drawer w-full md:w-[400px] md:shrink-0 flex flex-col z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
                 mobileMenuOpen ? "translate-x-0" : "translate-x-full"
               }`
         }
@@ -3455,13 +3455,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         <div
           {...previewTouchHandlers}
           aria-hidden={mobileMenuOpen ? true : undefined}
-          className="flex-1 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+          className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
           }}
         >
-          <div className="w-full my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
+          <div className="w-full min-w-0 my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
             <div
               id="guide-preview-root"
               className="min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden transition-all duration-500 relative z-0"

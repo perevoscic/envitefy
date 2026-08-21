@@ -1,6 +1,6 @@
 import React from "react";
 import { ArrowRight, Calendar, MapPin, Heart } from "lucide-react";
-import type { EventData, ThemeConfig } from "./content-sections";
+import { buildWeddingLocationHref, type EventData, type ThemeConfig } from "./content-sections";
 
 type Props = { theme: ThemeConfig; event: EventData };
 
@@ -51,6 +51,7 @@ export default function ModernEditorial({ theme, event }: Props) {
 
   const venueLine =
     event.venue?.address || "215 Chrystie St, New York, NY 10002";
+  const directionsHref = buildWeddingLocationHref(event, venueLine);
 
   const rsvpUrl = event.rsvp?.url || "#rsvp";
 
@@ -228,7 +229,7 @@ export default function ModernEditorial({ theme, event }: Props) {
           </h2>
           <p className="font-mono text-lg mb-8">{venueLine}</p>
           <a
-            href={event.locationUrl || "#"}
+            href={directionsHref || "#location"}
             className="inline-block bg-black text-white font-bold py-4 px-8 w-max hover:bg-white hover:text-black transition-colors border-2 border-black"
           >
             GET DIRECTIONS

@@ -7,6 +7,10 @@ import { cookies } from "next/headers";
 import { TEMPLATE_KEYS } from "@/config/feature-visibility";
 import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken, getGoogleRefreshToken, getMicrosoftRefreshToken, getUserIdByEmail, updateFeatureVisibilityByEmail } from "@/lib/db";
 import {
+  describeDatabaseError,
+  isDatabaseUnavailableError,
+} from "@/lib/database-errors";
+import {
   normalizePrimarySignupSource,
   normalizeProductScopes,
   type PrimarySignupSource,
@@ -15,13 +19,7 @@ import {
 import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
 
 function isTransientDbError(err: unknown): boolean {
-  const anyErr = err as any;
-  const code = String(anyErr?.code || "");
-  const message = String(anyErr?.message || "");
-  return (
-    ["ENOTFOUND", "ETIMEDOUT", "ECONNREFUSED", "ECONNRESET", "EHOSTUNREACH", "ENETUNREACH"].includes(code) ||
-    /getaddrinfo|timeout|refused|not known/i.test(message)
-  );
+  return isDatabaseUnavailableError(err);
 }
 
 function resolveAuthSecret() {
@@ -130,7 +128,7 @@ export async function resolveSessionUserId(sessionLike: {
       }
       return null;
     } catch (err) {
-      const message = (err as any)?.message || String(err);
+      const message = describeDatabaseError(err);
       if (isTransientDbError(err)) {
         console.warn("[auth] resolveSessionUserId email lookup skipped: database unavailable", message);
       } else {
@@ -312,7 +310,7 @@ export function getAuthOptions(): NextAuthOptions {
             try {
               tokenAny.isAdmin = await getIsAdminByEmail(email);
             } catch (err) {
-              const message = (err as any)?.message || String(err);
+              const message = describeDatabaseError(err);
               if (isTransientDbError(err)) {
                 console.warn("[auth] isAdmin lookup skipped: database unavailable", message);
               } else {
@@ -344,7 +342,7 @@ export function getAuthOptions(): NextAuthOptions {
                 tokenAny.productScopes = accessMetadata.productScopes;
               }
             } catch (err) {
-              const message = (err as any)?.message || String(err);
+              const message = describeDatabaseError(err);
               if (isTransientDbError(err)) {
                 console.warn("[auth] product scope lookup skipped: database unavailable", message);
               } else {
@@ -381,7 +379,7 @@ export function getAuthOptions(): NextAuthOptions {
               try {
                 await saveGoogleRefreshToken(email, (account as any).refresh_token as string);
               } catch (err) {
-                const message = (err as any)?.message || String(err);
+                const message = describeDatabaseError(err);
                 if (isTransientDbError(err)) {
                   console.warn("[auth] saveGoogleRefreshToken skipped: database unavailable", message);
                 } else {
@@ -426,7 +424,7 @@ export function getAuthOptions(): NextAuthOptions {
                 }
               }
             } catch (err) {
-              const message = (err as any)?.message || String(err);
+              const message = describeDatabaseError(err);
               if (isTransientDbError(err)) {
                 console.warn("[auth] stored provider token lookup skipped: database unavailable", message);
               } else {
@@ -438,7 +436,7 @@ export function getAuthOptions(): NextAuthOptions {
             }
           }
         } catch (err) {
-          const message = (err as any)?.message || String(err);
+          const message = describeDatabaseError(err);
           if (isTransientDbError(err)) {
             console.warn("[auth] jwt callback recovered from transient database error", message);
           } else {

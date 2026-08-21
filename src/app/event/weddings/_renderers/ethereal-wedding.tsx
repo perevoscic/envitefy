@@ -151,9 +151,11 @@ export default function EtherealWedding({ theme, event }: Props) {
             >
               Details
             </a>
-            <a href="#rsvp" className="hover:text-rose-400 transition-colors">
-              RSVP
-            </a>
+            {event.rsvpEnabled && (
+              <a href="#rsvp" className="hover:text-rose-400 transition-colors">
+                RSVP
+              </a>
+            )}
           </div>
         </div>
       </nav>

@@ -94,16 +94,20 @@ export default function CinematicWedding({ theme, event }: Props) {
           <a href="#set" className="hover:opacity-80 transition-opacity">
             The Set
           </a>
-          <a href="#cast" className="hover:opacity-80 transition-opacity">
-            The Cast
-          </a>
+          {event.party && event.party.length > 0 && (
+            <a href="#cast" className="hover:opacity-80 transition-opacity">
+              The Cast
+            </a>
+          )}
         </div>
-        <a
-          href={rsvpUrl}
-          className="border border-white/70 px-6 py-2 text-xs font-bold tracking-[0.2em] uppercase hover:bg-white hover:text-black transition-all text-gray-100"
-        >
-          Ticket Info
-        </a>
+        {event.rsvpEnabled && (
+          <a
+            href={rsvpUrl}
+            className="border border-white/70 px-6 py-2 text-xs font-bold tracking-[0.2em] uppercase hover:bg-white hover:text-black transition-all text-gray-100"
+          >
+            Ticket Info
+          </a>
+        )}
       </nav>
 
       {/* Hero */}

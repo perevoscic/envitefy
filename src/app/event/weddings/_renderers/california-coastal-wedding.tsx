@@ -156,9 +156,11 @@ export default function CaliforniaCoastalWedding({ theme, event }: Props) {
           >
             Location
           </a>
-          <a href="#rsvp" className="hover:text-[#D4A373] transition-colors">
-            Confirm
-          </a>
+          {event.rsvpEnabled && (
+            <a href="#rsvp" className="hover:text-[#D4A373] transition-colors">
+              Confirm
+            </a>
+          )}
         </div>
       </nav>
 

@@ -7,14 +7,16 @@ const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("sitemap excludes user-created event and signup URLs", () => {
+test("sitemap excludes individual event, signup, and showcase URLs", () => {
   const sitemap = readSource("src/app/sitemap.ts");
 
   assert.match(sitemap, /export default function sitemap/);
-  assert.match(sitemap, /dedupeSitemapEntries/);
   assert.doesNotMatch(sitemap, /listPublicEventSitemapRows/);
   assert.doesNotMatch(sitemap, /buildEventProductPath/);
+  assert.doesNotMatch(sitemap, /landingLiveCardSnapshots/);
+  assert.doesNotMatch(sitemap, /buildLandingShowcasePath/);
   assert.doesNotMatch(sitemap, /\/card\//);
   assert.doesNotMatch(sitemap, /\/event\//);
   assert.doesNotMatch(sitemap, /\/smart-signup-form\//);
+  assert.doesNotMatch(sitemap, /\/showcase\//);
 });

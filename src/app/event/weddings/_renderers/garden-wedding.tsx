@@ -419,7 +419,7 @@ export default function GardenWedding({ theme, event }: Props) {
 
       {/* RSVP */}
       {event.rsvpEnabled && (
-        <section className="py-32 px-4 text-center relative z-10">
+        <section id="rsvp" className="py-32 px-4 text-center relative z-10">
           <h2
             className="text-5xl mb-12 font-thin text-slate-800"
             style={{ fontFamily: theme.fonts.headline }}

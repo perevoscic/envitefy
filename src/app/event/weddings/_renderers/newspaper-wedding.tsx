@@ -108,7 +108,7 @@ export default function NewspaperWedding({ theme, event }: Props) {
               </ul>
             </div>
             {event.rsvp?.url && (
-              <div className="border-t border-black pt-6">
+              <div id="rsvp" className="border-t border-black pt-6">
                 <a
                   href={event.rsvp.url}
                   className="block text-center font-bold uppercase tracking-wide border border-black px-4 py-2 hover:bg-black hover:text-white transition-colors"

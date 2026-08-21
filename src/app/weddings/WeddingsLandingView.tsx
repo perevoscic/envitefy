@@ -203,7 +203,7 @@ function SectionEyebrow({ children }: { children: string }) {
 export default function WeddingsLandingView({ page }: { page: UseCasePage }) {
   const pageUrl = `https://envitefy.com${page.path}`;
   const primaryHref = `${page.path}?auth=signup`;
-  const studioHref = "/event/weddings/customize";
+  const studioHref = "/event/weddings";
 
   const webPageLd = {
     "@context": "https://schema.org",

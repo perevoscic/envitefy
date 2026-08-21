@@ -24,7 +24,7 @@ export default async function WeddingCustomizePage({
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="min-h-screen w-full bg-slate-100">
       <WeddingCustomizeClient
         event={JSON.parse(JSON.stringify(event))}
         template={template}

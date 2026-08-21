@@ -229,33 +229,35 @@ export default function WinterWedding({ theme, event }: Props) {
           <a href="#details" className="hover:text-white transition-colors">
             Details
           </a>
-          <a
-            href="#rsvp"
-            className="border border-white/30 px-4 py-2 hover:bg-[#B7410E] hover:border-[#B7410E] transition-all"
-          >
-            RSVP
-          </a>
+          {event.rsvpEnabled && (
+            <a
+              href="#rsvp"
+              className="border border-white/30 px-4 py-2 hover:bg-[#B7410E] hover:border-[#B7410E] transition-all"
+            >
+              RSVP
+            </a>
+          )}
         </div>
       </nav>
 
       {/* Hero */}
-      <header className="relative h-screen flex flex-col items-center justify-center p-6 overflow-hidden">
-        <div className="absolute inset-0 z-0">
+      <header className="relative flex min-h-[100svh] flex-col overflow-hidden bg-[#1A2F25] md:h-screen md:min-h-0 md:flex-row md:items-start md:justify-start md:p-12 md:pt-28">
+        <div className="relative z-0 h-[58svh] w-full shrink-0 md:absolute md:inset-0 md:h-auto">
           <img
             src={heroImage}
-            className="w-full h-full object-cover opacity-70"
+            className="h-full w-full object-cover object-center opacity-100 md:opacity-70"
             alt="Snowy Mountains"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1A2F25] via-transparent to-[#1A2F25]/40"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1A2F25]/15 via-transparent to-transparent md:from-[#1A2F25] md:to-[#1A2F25]/40"></div>
         </div>
 
-        <div className="relative z-10 text-center border-y border-white/20 py-16 px-12 backdrop-blur-md bg-[#1A2F25]/40 max-w-4xl shadow-2xl">
+        <div className="relative z-10 w-full border-y border-white/20 bg-[#1A2F25] px-7 py-8 text-center shadow-2xl sm:px-9 md:max-w-[26rem] md:bg-[#1A2F25]/70 md:py-10 md:backdrop-blur-md">
           <Snowflake
             className="w-10 h-10 mx-auto mb-8 text-white animate-spin-slow"
             strokeWidth={1}
           />
           <h1
-            className="text-5xl md:text-8xl font-light mb-6 tracking-wide text-white drop-shadow-lg leading-tight"
+            className="mb-6 text-4xl font-light leading-tight tracking-wide text-white drop-shadow-lg sm:text-5xl"
             style={{ fontFamily: theme.fonts.headline }}
           >
             {names}

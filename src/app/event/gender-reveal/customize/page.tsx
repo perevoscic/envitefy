@@ -1667,13 +1667,13 @@ export default function GenderRevealTemplateCustomizePage() {
       <div
         ref={previewRef}
         {...previewTouchHandlers}
-        className="flex-1 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+        className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
         }}
       >
-        <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] my-4 md:my-8 transition-all duration-500 ease-in-out">
+        <div className="w-full min-w-0 my-4 md:my-8 transition-all duration-500 ease-in-out">
           <div
             className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
               currentTheme.bg || "bg-white"
@@ -2225,7 +2225,7 @@ export default function GenderRevealTemplateCustomizePage() {
       )}
 
       <div
-        className={`nav-chrome-mobile-drawer w-full md:w-[400px] flex flex-col z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
+        className={`nav-chrome-mobile-drawer w-full md:w-[400px] md:shrink-0 flex flex-col z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
         {...drawerTouchHandlers}

@@ -1769,13 +1769,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         {!isEmbed && (
           <div
             {...previewTouchHandlers}
-            className="flex-1 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
+            className="flex-1 min-w-0 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
             style={{
               WebkitOverflowScrolling: "touch",
               overscrollBehavior: "contain",
             }}
           >
-            <div className="w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1120px] my-4 md:my-8 mb-20 md:mb-24 pb-8 transition-all duration-500 ease-in-out">
+            <div className="w-full min-w-0 my-4 md:my-8 mb-20 md:mb-24 pb-8 transition-all duration-500 ease-in-out">
               <div className="mt-4 md:mt-6">
                 <FootballSeasonPreviewFrame theme={templateTheme}>
                   <FootballSeasonHeader
@@ -2060,7 +2060,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           className={`w-full flex flex-col ${
             isEmbed
               ? "min-h-screen bg-white"
-              : `nav-chrome-mobile-drawer md:w-[400px] z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
+              : `nav-chrome-mobile-drawer md:w-[400px] md:shrink-0 z-20 absolute md:relative top-0 right-0 bottom-0 h-full transition-transform duration-300 transform md:translate-x-0 ${
                   mobileMenuOpen ? "translate-x-0" : "translate-x-full"
                 }`
           }`}

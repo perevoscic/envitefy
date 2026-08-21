@@ -58,6 +58,20 @@ export type EventData = {
   gallery?: Array<{ url?: string; src?: string; preview?: string }>;
 };
 
+export const buildWeddingLocationHref = (event: EventData, fallback?: string) => {
+  const configuredUrl = event.locationUrl?.trim();
+  if (configuredUrl) return configuredUrl;
+
+  const query =
+    event.venue?.address?.trim() ||
+    event.location?.trim() ||
+    event.venue?.name?.trim() ||
+    fallback?.trim();
+  if (!query) return null;
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+};
+
 export const getLuminance = (hex: string): number => {
   const normalized = hex.replace("#", "");
   if (normalized.length !== 6) return 0;
@@ -128,8 +142,10 @@ export function ContentSections({
                 className="border-l-4 pl-4"
                 style={{ borderColor: accent }}
               >
-                <h3 className="font-medium text-lg">{item.title}</h3>
-                <p className="text-sm opacity-80">
+                <h3 className="font-medium text-lg" style={{ color: baseText }}>
+                  {item.title}
+                </h3>
+                <p className="text-sm opacity-80" style={{ color: baseText }}>
                   {item.time} — {item.location}
                 </p>
               </div>
@@ -149,8 +165,12 @@ export function ContentSections({
           <div className="grid grid-cols-2 gap-6">
             {event.party.map((p, idx) => (
               <div key={idx}>
-                <p className="font-medium">{p.name}</p>
-                <p className="text-sm opacity-70">{p.role}</p>
+                <p className="font-medium" style={{ color: baseText }}>
+                  {p.name}
+                </p>
+                <p className="text-sm opacity-70" style={{ color: baseText }}>
+                  {p.role}
+                </p>
               </div>
             ))}
           </div>
@@ -237,9 +257,9 @@ export function ContentSections({
       )}
 
       {event.rsvpEnabled && (
-        <section className="text-center pt-4">
+        <section id="rsvp" className="text-center pt-4">
           <a
-            href={event.rsvpLink}
+            href={event.rsvpLink || event.rsvp?.url || "#rsvp"}
             className="inline-block px-8 py-3 text-sm font-semibold rounded-md"
             style={{
               backgroundColor: accent,

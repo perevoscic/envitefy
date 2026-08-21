@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { TEMPLATE_KEYS } from "./feature-visibility";
 import {
+  findActiveCreateEventItem,
   getTemplateLinks,
   isCreateEventRoute,
   matchesCreateEventHrefPath,
@@ -85,6 +86,29 @@ describe("create event route matching", () => {
     ]) {
       expect(isCreateEventRoute(path)).toBe(true);
     }
+  });
+
+  test("selects the personalized sports row when a specialized sports route has no row", () => {
+    const items = [
+      { label: "Weddings", href: "/event/weddings/customize" },
+      { label: "Sports", href: "/event/sport-events" },
+    ];
+
+    expect(findActiveCreateEventItem("/event/gymnastics", items)?.label).toBe("Sports");
+    expect(findActiveCreateEventItem("/event/gymnastics/customize", items)?.label).toBe(
+      "Sports",
+    );
+  });
+
+  test("prefers an exact sports row over the personalized sports fallback", () => {
+    const items = [
+      { label: "Soccer", href: "/event/soccer/customize" },
+      { label: "Sports", href: "/event/sport-events" },
+    ];
+
+    expect(findActiveCreateEventItem("/event/soccer/customize", items)?.label).toBe(
+      "Soccer",
+    );
   });
 
   test("does not classify saved event and registry routes as builders", () => {

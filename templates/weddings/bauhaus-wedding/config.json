@@ -8,7 +8,7 @@
   "theme": {
     "colors": { "primary": "#F0F0F0", "secondary": "#000000", "background": "#EAEAEA" },
     "fonts": { "headline": "Geist Sans", "body": "Geist Sans" },
-    "decorations": { "heroImage": "/templates/wedding-placeholders/midnight-bloom-hero.jpeg" }
+    "decorations": { "heroImage": "/templates/weddings/generated-heroes/bauhaus-wedding-hero.webp" }
   }
 }
 

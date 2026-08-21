@@ -1,75 +1,65 @@
+import { Check, Gem } from "lucide-react";
+import WeddingDesignPreview from "@/components/weddings/WeddingDesignPreview";
+import type { WeddingDesign } from "@/lib/wedding-designs";
+
 export default function ThemeCard({
   theme,
   selected,
   onSelect,
   disabled = false,
 }: {
-  theme: any;
+  theme: WeddingDesign;
   selected: boolean;
   onSelect: () => void;
   disabled?: boolean;
 }) {
-  const primary = theme.primaryColor || "#f8fafc";
-  const secondary = theme.secondaryColor || "#1f2937";
-  const headlineFont = theme.headlineFont || "serif";
-  const heroImage = typeof theme.heroImage === "string" ? theme.heroImage : null;
-
-  const luminance = (hex: string) => {
-    const normalized = hex.replace("#", "");
-    if (normalized.length !== 6) return 0;
-    const r = parseInt(normalized.slice(0, 2), 16) / 255;
-    const g = parseInt(normalized.slice(2, 4), 16) / 255;
-    const b = parseInt(normalized.slice(4, 6), 16) / 255;
-    const channel = (c: number) =>
-      c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
-  };
-
-  const textColor = (() => {
-    const lum = luminance(secondary.replace("#", "").length === 6 ? secondary : "#1f2937");
-    return lum > 0.7 ? "#111827" : secondary;
-  })();
-
   return (
     <button
+      type="button"
       onClick={onSelect}
       disabled={disabled}
-      className={`border rounded-md overflow-hidden transition ${
-        selected ? "border-[var(--accent-color)] ring-2 ring-[var(--accent-color)]/40" : "border-gray-200"
+      aria-pressed={selected}
+      className={`group overflow-hidden rounded-2xl border bg-white text-left transition duration-300 ${
+        selected
+          ? "border-[#a98553] shadow-[0_14px_36px_rgba(102,75,44,0.18)] ring-2 ring-[#a98553]/20"
+          : "border-[#e5ddd5] shadow-sm hover:-translate-y-0.5 hover:border-[#cbb99f] hover:shadow-lg"
       }`}
       style={{
-        ["--accent-color" as string]: textColor,
         opacity: disabled ? 0.6 : 1,
         cursor: disabled ? "not-allowed" : "pointer",
       }}
     >
-      <div
-        className="w-full h-20 flex items-center justify-center text-center"
-        style={
-          heroImage
-            ? {
-                backgroundImage:
-                  `linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.55)), url(${heroImage})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                color: "#f8fafc",
-                fontFamily: headlineFont,
-              }
-            : {
-                backgroundColor: primary,
-                color: textColor,
-                fontFamily: headlineFont,
-              }
-        }
-      >
-        <span className="text-sm font-semibold leading-tight px-2">{theme.name}</span>
+      <div className="relative m-2 overflow-hidden rounded-xl">
+        <WeddingDesignPreview design={theme} />
+        {selected ? (
+          <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-[#2f2925] px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white shadow-lg">
+            <Check className="h-3 w-3" />
+            Selected
+          </div>
+        ) : null}
       </div>
-      <div className="p-2 text-left" style={{ color: textColor }}>
-        <div className="text-sm font-medium" style={{ fontFamily: headlineFont, color: textColor }}>
-          {theme.name}
+      <div className="px-4 pb-4 pt-2">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className='[font-family:var(--font-playfair),_"Times_New_Roman",_serif] text-lg text-[#302925]'>
+              {theme.name}
+            </div>
+            <div className="mt-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#9a7850]">
+              {theme.signature}
+            </div>
+          </div>
+          <Gem className="mt-1 h-4 w-4 shrink-0 text-[#b18a59]" />
         </div>
-        <div className="text-xs uppercase" style={{ color: "#6b7280" }}>
-          {theme.category}
+        <p className="mt-2 text-[11px] leading-relaxed text-slate-500">{theme.description}</p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {[theme.style, theme.color].map((label) => (
+            <span
+              key={label}
+              className="rounded-full border border-[#e4dcd3] bg-[#faf8f5] px-2.5 py-1 text-[9px] font-semibold text-[#6f6258]"
+            >
+              {label}
+            </span>
+          ))}
         </div>
       </div>
     </button>

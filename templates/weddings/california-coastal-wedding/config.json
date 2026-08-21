@@ -8,7 +8,7 @@
   "theme": {
     "colors": { "primary": "#F5F2EB", "secondary": "#D4A373", "background": "#F5F2EB" },
     "fonts": { "headline": "Inter", "body": "Inter" },
-    "decorations": { "heroImage": "/templates/wedding-placeholders/coastal-pearl-hero.jpeg" }
+    "decorations": { "heroImage": "/templates/weddings/generated-heroes/california-coastal-wedding-hero.webp" }
   }
 }
 

@@ -133,35 +133,55 @@ export default function LibraryWedding({ theme, event }: Props) {
         }}
       ></div>
 
-      {/* Book Cover / Hero with Visible Image */}
-      <header className="min-h-screen flex items-center justify-center p-8 relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img
-            src={heroImage}
-            className="w-full h-full object-cover opacity-40 mix-blend-luminosity"
-            alt="Library"
-          />
-          <div className="absolute inset-0 bg-[#2B211E]/50 radial-gradient(circle, transparent 20%, #2B211E 100%)"></div>
-        </div>
+      {/* The book-cover title and portrait have separate space so copy never hides the couple. */}
+      <header className="relative z-10 overflow-hidden bg-[#211815]">
+        <div
+          data-library-cover
+          className="relative flex min-h-[58svh] items-center justify-center overflow-hidden px-5 py-12 sm:px-8 md:py-16"
+        >
+          <div className="pointer-events-none absolute inset-0 opacity-70 [background:radial-gradient(circle_at_50%_18%,rgba(212,197,176,0.12),transparent_34%),linear-gradient(90deg,transparent_0%,rgba(212,197,176,0.04)_50%,transparent_100%)]" />
+          <div className="pointer-events-none absolute inset-x-8 top-7 flex items-center gap-4 text-[9px] uppercase tracking-[0.28em] text-[#D4C5B0]/45 md:inset-x-16">
+            <span>Private edition</span>
+            <span className="h-px flex-1 bg-[#D4C5B0]/20" />
+            <span>New York</span>
+          </div>
 
-        <div className="relative z-10 border-[3px] border-[#D4C5B0] p-2 max-w-lg w-full shadow-2xl">
-          <div className="border border-[#D4C5B0] p-12 text-center bg-[#2B211E]/90 backdrop-blur-sm">
-            <span className="uppercase tracking-[0.3em] text-[10px] mb-6 block border-b border-[#D4C5B0]/30 pb-4">
-              Vol. I — The Beginning
-            </span>
-            <h1
-              className="text-5xl md:text-7xl mb-4 font-normal leading-none text-[#E6DCCF]"
-              style={{ fontFamily: theme.fonts.headline }}
-            >
-              {names}
-            </h1>
-            <div className="flex justify-center my-6">
-              <Feather className="text-[#D4C5B0] opacity-50 rotate-45" />
+          <div className="relative w-full max-w-3xl border-[3px] border-[#D4C5B0] p-2 shadow-2xl">
+            <div className="border border-[#D4C5B0] bg-[#2B211E] px-6 py-7 text-center sm:px-10 sm:py-9 md:px-14">
+              <span className="mb-5 block border-b border-[#D4C5B0]/30 pb-4 text-[10px] uppercase tracking-[0.3em]">
+                Vol. I — The Beginning
+              </span>
+              <h1
+                className="mb-3 text-4xl font-normal leading-[0.92] text-[#E6DCCF] sm:text-5xl md:text-6xl"
+                style={{ fontFamily: theme.fonts.headline }}
+              >
+                {names}
+              </h1>
+              <div className="my-4 flex justify-center sm:my-5">
+                <Feather className="rotate-45 text-[#D4C5B0] opacity-50" />
+              </div>
+              <p className="text-sm uppercase tracking-[0.16em] sm:text-base sm:tracking-widest">
+                {dateFormatted}
+              </p>
+              <p className="mt-2 text-xs italic opacity-70">{venueName}</p>
             </div>
-            <p className="text-lg uppercase tracking-widest">{dateFormatted}</p>
-            <p className="text-xs italic mt-2 opacity-70">{venueName}</p>
           </div>
         </div>
+
+        <figure
+          data-library-photo
+          className="relative mx-auto h-[56svh] min-h-[360px] max-w-[1500px] overflow-hidden border-y border-[#D4C5B0]/25"
+        >
+          <img
+            src={heroImage}
+            className="h-full w-full object-cover object-[center_38%]"
+            alt="Couple among the library shelves"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#211815]/35 via-transparent to-[#211815]/65" />
+          <figcaption className="absolute bottom-6 right-6 border-r border-[#D4C5B0]/60 pr-4 text-right text-[9px] uppercase tracking-[0.28em] text-[#F2E8DA]/80 sm:bottom-8 sm:right-10">
+            A portrait from our first volume
+          </figcaption>
+        </figure>
       </header>
 
       {/* Chapter I: The Story */}
@@ -237,7 +257,7 @@ export default function LibraryWedding({ theme, event }: Props) {
 
       {/* Epilogue / RSVP */}
       {event.rsvpEnabled && (
-        <section className="py-24 px-8 text-center relative z-10">
+        <section id="rsvp" className="py-24 px-8 text-center relative z-10">
           <div className="max-w-lg mx-auto border-t border-b border-[#D4C5B0]/30 py-12">
             <h2
               className="text-3xl font-bold mb-8"

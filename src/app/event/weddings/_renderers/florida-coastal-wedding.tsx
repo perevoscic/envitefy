@@ -255,9 +255,11 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
           <a href="#stay" className="hover:text-pink-500 transition-colors">
             Stay
           </a>
-          <a href="#rsvp" className="hover:text-pink-500 transition-colors">
-            RSVP
-          </a>
+          {event.rsvpEnabled && (
+            <a href="#rsvp" className="hover:text-pink-500 transition-colors">
+              RSVP
+            </a>
+          )}
         </div>
         {event.locationUrl && (
           <a
@@ -270,19 +272,19 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
       </nav>
 
       {/* Hero */}
-      <header className="relative min-h-[90vh] flex items-center justify-center p-6 md:p-12">
+      <header className="relative flex min-h-[90svh] flex-col overflow-hidden bg-white md:min-h-[90vh] md:flex-row md:items-center md:justify-start md:px-[6vw] md:py-12">
         {/* Background Image */}
-        <div className="absolute inset-0 z-0">
+        <div className="relative z-0 h-[55svh] w-full shrink-0 md:absolute md:inset-0 md:h-auto">
           <img
             src={heroImage}
-            className="w-full h-full object-cover opacity-90"
+            className="h-full w-full object-cover object-[68%_center] opacity-100 md:object-center md:opacity-90"
             alt="Florida Palm Trees"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white/90"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent md:from-white/20 md:to-white/90"></div>
         </div>
 
         {/* Hero Card */}
-        <div className="relative z-10 bg-white/80 backdrop-blur-md p-12 md:p-20 text-center border-4 border-double border-pink-300 shadow-2xl max-w-3xl transform rotate-1 hover:rotate-0 transition-transform duration-500">
+        <div className="relative z-10 w-full border-4 border-double border-pink-300 bg-white p-8 text-center shadow-2xl transition-transform duration-500 sm:p-10 md:max-w-[36rem] md:rotate-1 md:bg-white/90 md:p-14 md:backdrop-blur-md md:hover:rotate-0">
           <div className="absolute -top-6 -left-6 w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center border-2 border-white shadow-md">
             <Citrus className="text-orange-400 w-8 h-8" />
           </div>
@@ -291,7 +293,7 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
             {location}
           </p>
           <h1
-            className="text-6xl md:text-8xl mb-6 text-pink-500 font-bold drop-shadow-sm"
+            className="mb-6 text-5xl font-bold text-pink-500 drop-shadow-sm sm:text-6xl md:text-7xl"
             style={{ fontFamily: theme.fonts.headline }}
           >
             {names}

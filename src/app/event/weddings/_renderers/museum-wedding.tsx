@@ -1,6 +1,6 @@
 
 import { ArrowRight, MapPin, Coffee, } from "lucide-react";
-import type { EventData, ThemeConfig } from "./content-sections";
+import { buildWeddingLocationHref, type EventData, type ThemeConfig } from "./content-sections";
 
 type Props = {
   theme: ThemeConfig;
@@ -104,6 +104,7 @@ export default function MuseumWedding({ theme, event }: Props) {
     event.rsvp?.url && typeof event.rsvp.url === "string"
       ? event.rsvp.url
       : "#rsvp";
+  const directionsHref = buildWeddingLocationHref(event, locationParts.address);
 
   return (
     <div
@@ -116,9 +117,12 @@ export default function MuseumWedding({ theme, event }: Props) {
         <div className="text-xs font-mono hidden md:block">
           EST. {new Date().getFullYear()} — {locationCity}
         </div>
-        <button className="text-xs uppercase font-bold border border-black px-4 py-2 hover:bg-black hover:text-white transition-colors">
+        <a
+          href="#location"
+          className="text-xs uppercase font-bold border border-black px-4 py-2 hover:bg-black hover:text-white transition-colors"
+        >
           Info
-        </button>
+        </a>
       </header>
 
       {/* Main Exhibition Area */}
@@ -153,7 +157,7 @@ export default function MuseumWedding({ theme, event }: Props) {
         </section>
 
         {/* Gallery Grid */}
-        <section className="grid md:grid-cols-2 border-b border-black">
+        <section id="location" className="grid md:grid-cols-2 border-b border-black">
           <div className="border-r border-black p-6 md:p-12 flex flex-col justify-between h-full min-h-[50vh]">
             <div>
               <span className="font-mono text-xs border border-black px-2 py-1 rounded-full">
@@ -169,7 +173,7 @@ export default function MuseumWedding({ theme, event }: Props) {
             </div>
             <div className="mt-12">
               <a
-                href={event.locationUrl || "#"}
+                href={directionsHref || "#location"}
                 className="inline-flex items-center gap-2 font-bold hover:gap-4 transition-all"
               >
                 GET DIRECTIONS <ArrowRight size={16} />
@@ -325,7 +329,7 @@ export default function MuseumWedding({ theme, event }: Props) {
 
         {/* Footer RSVP */}
         {event.rsvpEnabled && (
-          <section className="p-6 md:p-24 text-center bg-black text-white">
+          <section id="rsvp" className="p-6 md:p-24 text-center bg-black text-white">
             <h2
               className="text-[8vw] font-bold leading-none mb-8"
               style={{ fontFamily: theme.fonts.headline }}

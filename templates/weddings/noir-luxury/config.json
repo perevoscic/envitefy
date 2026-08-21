@@ -8,6 +8,6 @@
   "theme": {
     "colors": { "primary": "#0A0A0A", "secondary": "#D4AF37", "background": "transparent" },
     "fonts": { "headline": "Playfair Display", "body": "Inter" },
-    "decorations": { "heroImage": "/templates/wedding-placeholders/velvet-noir-hero.jpeg" }
+    "decorations": { "heroImage": "/templates/weddings/generated-heroes/noir-luxury-hero.webp" }
   }
 }
