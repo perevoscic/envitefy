@@ -1,12 +1,6 @@
 import type { MetadataRoute } from "next";
 import { landingLiveCardSnapshots } from "@/components/landing/landing-live-card-snapshots";
-import { listPublicEventSitemapRows } from "@/lib/db";
 import { buildLandingShowcasePath } from "@/lib/landing-showcase";
-import { isIndexablePublicSmartSignupData } from "@/lib/smart-signup-indexing";
-import { buildEventProductPath } from "@/utils/event-product-route";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 type StaticEntry = {
   path: string;
@@ -57,43 +51,6 @@ const staticEntries: StaticEntry[] = [
   { path: "/terms", priority: 0.3, changeFrequency: "yearly" },
 ];
 
-function readPublicEventSitemapLimit(): number {
-  const parsed = Number.parseInt(process.env.PUBLIC_EVENT_SITEMAP_LIMIT || "500", 10);
-  if (!Number.isFinite(parsed)) return 500;
-  return Math.max(0, Math.min(2000, parsed));
-}
-
-async function buildPublicEventUrls(): Promise<SitemapEntry[]> {
-  const limit = readPublicEventSitemapLimit();
-  if (limit <= 0) return [];
-
-  try {
-    const rows = await listPublicEventSitemapRows(limit);
-    return rows
-      .map<SitemapEntry | null>((row) => {
-        const path = buildEventProductPath({
-          eventId: row.id,
-          title: row.title,
-          data: row.data,
-          publicSlug: row.public_slug,
-        });
-        if (path.startsWith("/smart-signup-form/") && !isIndexablePublicSmartSignupData(row.data)) {
-          return null;
-        }
-
-        return {
-          url: `${baseUrl}${path}`,
-          changeFrequency: "weekly" as const,
-          priority: path.startsWith("/card/") ? 0.65 : 0.7,
-        };
-      })
-      .filter((entry): entry is SitemapEntry => Boolean(entry));
-  } catch (error) {
-    console.warn("[sitemap] failed to load public event URLs", error);
-    return [];
-  }
-}
-
 function dedupeSitemapEntries(entries: SitemapEntry[]): SitemapEntry[] {
   const seen = new Set<string>();
   return entries.filter((entry) => {
@@ -103,7 +60,7 @@ function dedupeSitemapEntries(entries: SitemapEntry[]): SitemapEntry[] {
   });
 }
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export default function sitemap(): MetadataRoute.Sitemap {
   const staticUrls = staticEntries.map(({ path, priority, changeFrequency }) => ({
     url: `${baseUrl}${path}`,
     changeFrequency,
@@ -114,7 +71,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "monthly" as const,
     priority: 0.75,
   }));
-  const publicEventUrls = await buildPublicEventUrls();
-
-  return dedupeSitemapEntries([...staticUrls, ...showcaseUrls, ...publicEventUrls]);
+  return dedupeSitemapEntries([...staticUrls, ...showcaseUrls]);
 }
