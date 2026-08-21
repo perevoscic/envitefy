@@ -22,12 +22,15 @@ test("landing page is hosted-event-led and premium", () => {
   assert.doesNotMatch(page, /FAQPage/);
 
   assert.match(landingExperience, /id="landing-hero"/);
-  assert.match(landingExperience, /Create beautiful online invitations, from invite to RSVP/);
+  assert.match(landingExperience, /One beautiful event page\. Every guest detail\./);
+  assert.match(landingExperience, /No app for guests/);
+  assert.match(landingExperience, /Live RSVP tracking/);
+  assert.match(landingExperience, /One link stays current/);
   assert.match(landingExperience, /Let's create/);
   assert.match(landingExperience, /View live examples/);
   assert.match(landingData, /mobilePrimaryCtaLabel: "Create invite"/);
   assert.match(landingData, /mobilePrimaryCtaLabel: "Create wedding"/);
-  assert.match(landingExperience, /View examples/);
+  assert.doesNotMatch(landingExperience, /grid grid-cols-2 gap-3 sm:flex/);
   assert.match(landingExperience, /PremiumLandingHero/);
   assert.match(landingExperience, /GuestActionSuite/);
   assert.doesNotMatch(landingExperience, /from "framer-motion"/);

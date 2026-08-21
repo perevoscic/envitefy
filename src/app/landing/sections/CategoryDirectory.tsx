@@ -10,10 +10,10 @@ function cx(...parts: Array<string | false | null | undefined>) {
 
 export function HeroCategoryStrip() {
   return (
-    <nav aria-label="Event categories" className="mt-8">
+    <nav aria-label="Event categories" className="mt-6">
       <Link
         href="#categories"
-        className="inline-flex h-11 items-center justify-center rounded-md border border-white/18 bg-black/18 px-4 text-[12px] font-semibold text-white backdrop-blur transition hover:bg-white/14 sm:hidden"
+        className="inline-flex h-11 cursor-pointer items-center justify-center rounded-md border border-white/28 bg-black/24 px-4 text-xs font-semibold text-white backdrop-blur transition hover:border-white/45 hover:bg-white/14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#21170e] motion-reduce:transition-none sm:hidden"
       >
         Browse event types
       </Link>
@@ -22,7 +22,7 @@ export function HeroCategoryStrip() {
           <li key={card.id}>
             <Link
               href={card.href}
-              className="inline-flex h-9 items-center rounded-full border border-white/18 bg-black/22 px-3.5 text-[11px] font-semibold tracking-[0.04em] text-white backdrop-blur transition hover:border-white/40 hover:bg-white/16"
+              className="inline-flex h-9 cursor-pointer items-center rounded-full border border-white/22 bg-black/28 px-3.5 text-[11px] font-semibold tracking-[0.04em] text-white backdrop-blur transition hover:border-white/45 hover:bg-white/16 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white motion-reduce:transition-none"
             >
               {card.label}
             </Link>
@@ -67,7 +67,7 @@ export default function CategoryDirectory() {
                 href={card.href}
                 data-category={card.id}
                 className={cx(
-                  "group relative isolate overflow-hidden rounded-lg border border-[#e4d8c4] bg-[#201a23] shadow-[0_24px_60px_rgba(32,26,35,0.12)] transition hover:-translate-y-0.5 hover:border-[#c9b48a]",
+                  "group relative isolate overflow-hidden rounded-lg border border-[#e4d8c4] bg-[#201a23] shadow-[0_24px_60px_rgba(32,26,35,0.12)] transition hover:-translate-y-0.5 hover:border-[#c9b48a] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#a16207]/50 focus-visible:ring-offset-4 motion-reduce:transform-none motion-reduce:transition-none",
                   card.featured
                     ? "min-h-[22rem] sm:col-span-2 lg:col-span-6 lg:min-h-[32rem]"
                     : "min-h-[18rem] lg:col-span-4 lg:min-h-[22rem]",
@@ -82,8 +82,11 @@ export default function CategoryDirectory() {
                       ? "(min-width: 1024px) 50vw, 100vw"
                       : "(min-width: 1024px) 33vw, 50vw"
                   }
-                  className="object-cover transition duration-700 group-hover:scale-105"
-                  style={{ objectPosition: image.objectPosition ?? "center" }}
+                  className="object-cover transition duration-700 group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none"
+							style={{
+								objectPosition:
+									"objectPosition" in image ? image.objectPosition : "center",
+							}}
                 />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,12,20,0.08)_0%,rgba(18,12,20,0.28)_42%,rgba(18,12,20,0.88)_100%)]" />
                 <div className="relative z-10 flex h-full flex-col justify-end p-5 sm:p-7">

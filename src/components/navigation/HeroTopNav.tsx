@@ -445,8 +445,8 @@ export default function HeroTopNav({
         >
           <div
             className={cx(
-              "flex items-center justify-between gap-4 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center",
-              isTransparentOverHero ? "lg:gap-8" : "lg:gap-6",
+              "flex items-center justify-between gap-4 xl:grid xl:grid-cols-[auto_minmax(0,1fr)_auto] xl:items-center",
+              isTransparentOverHero ? "xl:gap-5 2xl:gap-8" : "xl:gap-5 2xl:gap-6",
             )}
           >
             <Link
@@ -469,8 +469,8 @@ export default function HeroTopNav({
 
             <nav
               className={cx(
-                "hidden min-w-0 flex-nowrap items-center justify-center lg:flex",
-                isTransparentOverHero ? "gap-5 xl:gap-7" : "gap-3 xl:gap-5",
+                "hidden min-w-0 flex-nowrap items-center justify-center xl:flex",
+                isTransparentOverHero ? "gap-4 2xl:gap-7" : "gap-3 2xl:gap-5",
               )}
               aria-label="Hero navigation"
             >
@@ -529,7 +529,7 @@ export default function HeroTopNav({
               })}
             </nav>
 
-            <div className="hidden shrink-0 items-center gap-3 justify-self-end lg:flex">
+            <div className="hidden shrink-0 items-center gap-3 justify-self-end xl:flex">
               {status === "authenticated" ? (
                 <Link
                   href={dashboardHref}
@@ -608,7 +608,7 @@ export default function HeroTopNav({
               type="button"
               className={cx(
                 mobileLogoOnly ? "hidden" : "inline-flex",
-                "nav-chrome-motion h-11 w-11 items-center justify-center shadow-sm lg:hidden",
+                "nav-chrome-motion h-11 w-11 items-center justify-center shadow-sm xl:hidden",
                 isTransparentOverHero && isTransparentLight
                   ? "rounded-full border border-[#25172d]/10 bg-[#25172d]/8 text-[#25172d]"
                   : isDarkGlass
@@ -645,7 +645,7 @@ export default function HeroTopNav({
                   }
                 }}
                 className={cx(
-                  "!fixed inset-0 z-[1000] h-dvh w-screen touch-pan-y !overflow-y-auto overscroll-y-contain px-4 pb-6 pt-[max(0.9rem,env(safe-area-inset-top))] transition-[transform,opacity] duration-300 ease-out will-change-transform [-webkit-overflow-scrolling:touch] lg:hidden",
+                  "!fixed inset-0 z-[1000] h-dvh w-screen touch-pan-y !overflow-y-auto overscroll-y-contain px-4 pb-6 pt-[max(0.9rem,env(safe-area-inset-top))] transition-[transform,opacity] duration-300 ease-out will-change-transform [-webkit-overflow-scrolling:touch] xl:hidden",
                   mobileMenuOpen
                     ? "pointer-events-auto translate-x-0 opacity-100"
                     : "pointer-events-none translate-x-full opacity-0",

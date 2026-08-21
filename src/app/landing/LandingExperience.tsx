@@ -134,12 +134,14 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
     alt: activeSlide.imageAlt,
     fill: true,
     sizes: "100vw",
+    priority: true,
   });
   const { props: desktopHeroImageProps } = getImageProps({
     src: activeSlide.desktopImage,
     alt: activeSlide.imageAlt,
     fill: true,
     sizes: "100vw",
+    priority: true,
   });
 
   const showPreviousSlide = () => {
@@ -158,23 +160,23 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
       className="relative isolate min-h-[100svh] overflow-hidden bg-[#120f14] text-white"
     >
       <div key={activeSlide.id} className="pointer-events-none absolute inset-0 z-0">
-          <picture>
-            <source
-              media="(min-width: 768px)"
-              srcSet={desktopHeroImageProps.srcSet}
-              sizes={desktopHeroImageProps.sizes}
-            />
-            <img
-              {...mobileHeroImageProps}
-              alt={activeSlide.imageAlt}
-              fetchPriority="high"
-              className="object-cover"
-              style={{
-                ...mobileHeroImageProps.style,
-                objectPosition: activeSlide.imagePosition ?? "center",
-              }}
-            />
-          </picture>
+        <picture>
+          <source
+            media="(min-width: 768px)"
+            srcSet={desktopHeroImageProps.srcSet}
+            sizes={desktopHeroImageProps.sizes}
+          />
+          <img
+            {...mobileHeroImageProps}
+            alt={activeSlide.imageAlt}
+            fetchPriority="high"
+            className="object-cover"
+            style={{
+              ...mobileHeroImageProps.style,
+              objectPosition: activeSlide.imagePosition ?? "center",
+            }}
+          />
+        </picture>
       </div>
       <HeroImageScrim />
 
@@ -182,66 +184,75 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
         type="button"
         onClick={showPreviousSlide}
         aria-label="Show previous hero slide"
-        className="absolute left-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md border border-white/18 bg-black/34 text-white shadow-[0_18px_40px_rgba(0,0,0,0.24)] backdrop-blur transition hover:bg-white/16 md:flex"
+        className="absolute right-20 top-28 z-20 hidden h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-white/24 bg-black/40 text-white shadow-[0_18px_40px_rgba(0,0,0,0.24)] backdrop-blur transition hover:bg-white/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#21170e] motion-reduce:transition-none md:flex"
       >
-        <ChevronLeft className="h-5 w-5" />
+        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
       </button>
       <button
         type="button"
         onClick={showNextSlide}
         aria-label="Show next hero slide"
-        className="absolute right-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md border border-white/18 bg-black/34 text-white shadow-[0_18px_40px_rgba(0,0,0,0.24)] backdrop-blur transition hover:bg-white/16 md:flex"
+        className="absolute right-4 top-28 z-20 hidden h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-white/24 bg-black/40 text-white shadow-[0_18px_40px_rgba(0,0,0,0.24)] backdrop-blur transition hover:bg-white/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#21170e] motion-reduce:transition-none md:flex"
       >
-        <ChevronRight className="h-5 w-5" />
+        <ChevronRight className="h-5 w-5" aria-hidden="true" />
       </button>
 
-      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-none flex-col justify-end px-5 pb-20 pt-32 sm:px-8 lg:px-16 lg:pb-24">
+      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-none flex-col justify-center px-5 pb-20 pt-24 sm:justify-end sm:px-8 sm:pb-24 sm:pt-32 lg:px-16 lg:pb-28 [@media_(min-width:640px)_and_(max-height:820px)]:pb-24 [@media_(min-width:640px)_and_(max-height:820px)]:pt-16">
         <div className="max-w-4xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#fff1c8] drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] sm:text-xs">
-              {activeSlide.eyebrow}
-            </p>
-            <h1
-              className="mt-5 max-w-5xl text-5xl font-light leading-[0.98] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.82)] sm:text-7xl lg:text-[5.8rem]"
-              style={{ color: "#fff", fontFamily: "Georgia, 'Times New Roman', serif" }}
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#fff1c8] drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] sm:text-xs">
+            {activeSlide.eyebrow}
+          </p>
+          <h1
+            className="mt-4 max-w-[15ch] text-5xl font-light leading-[0.96] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.82)] [text-wrap:balance] sm:text-7xl lg:text-[5.8rem]"
+            style={{ color: "#fff", fontFamily: "Georgia, 'Times New Roman', serif" }}
+          >
+            One beautiful event page. Every guest detail.
+          </h1>
+          <p className="mt-3 max-w-2xl text-lg font-semibold leading-7 text-[#fff1c8] sm:mt-4 sm:text-xl">
+            {activeSlide.title}
+          </p>
+          <p
+            className="mt-4 max-w-2xl text-base leading-7 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-lg sm:leading-8"
+            style={{ color: "#fff" }}
+          >
+            {activeSlide.description}
+          </p>
+          <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[11px] font-semibold text-white/92 sm:text-xs">
+            {[
+              "No app for guests",
+              "Live RSVP tracking",
+              "One link stays current",
+            ].map((proof) => (
+              <li key={proof} className="inline-flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#f3d58b]" aria-hidden="true" />
+                {proof}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-6 grid gap-3 sm:flex sm:flex-row">
+            <button
+              type="button"
+              onClick={onPrimaryAction}
+              className="inline-flex h-12 w-full min-w-0 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#f3d58b] bg-[#f3d58b] px-5 text-sm font-bold text-[#21170e] shadow-[0_18px_44px_rgba(0,0,0,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ffe8b0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3d58b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#21170e] motion-reduce:transform-none motion-reduce:transition-none sm:w-auto sm:px-6"
             >
-              Create beautiful online invitations, from invite to RSVP.
-            </h1>
-            <p className="mt-4 text-lg font-semibold text-[#fff1c8] sm:text-xl">
-              {activeSlide.title}
-            </p>
-            <p
-              className="mt-6 max-w-2xl text-base leading-8 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-lg"
-              style={{ color: "#fff" }}
+              <span className="whitespace-nowrap">Try the AI Concierge</span>
+              <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+            </button>
+            <Link
+              href={activeSlide.href ?? "#showcase"}
+              className="inline-flex h-12 w-full min-w-0 cursor-pointer items-center justify-center rounded-md border border-white/30 bg-black/34 px-5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(0,0,0,0.16)] backdrop-blur transition hover:-translate-y-0.5 hover:border-white/50 hover:bg-white/14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#21170e] motion-reduce:transform-none motion-reduce:transition-none sm:w-auto sm:px-6"
             >
-              {activeSlide.description}
-            </p>
-            <div className="mt-9 grid grid-cols-2 gap-3 sm:flex sm:flex-row">
-              <button
-                type="button"
-                onClick={onPrimaryAction}
-                className="inline-flex h-12 w-full min-w-0 items-center justify-center gap-1.5 rounded-md border border-white/18 bg-white/14 px-3 text-[12px] font-semibold text-white shadow-[0_18px_44px_rgba(0,0,0,0.24)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/22 sm:w-auto sm:gap-2 sm:px-6 sm:text-sm"
-              >
-                <span className="whitespace-nowrap">Try the AI Concierge</span>
-                <ArrowRight className="h-4 w-4 shrink-0" />
-              </button>
-              <Link
-                href={activeSlide.href ?? "#showcase"}
-                className="inline-flex h-12 w-full min-w-0 items-center justify-center rounded-md border border-white/18 bg-black/18 px-3 text-[12px] font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/14 sm:w-auto sm:px-6 sm:text-sm"
-              >
-                <span className="truncate sm:hidden">
-                  {activeSlide.secondaryCtaLabel ?? "View examples"}
-                </span>
-                <span className="hidden sm:inline">
-                  {activeSlide.secondaryCtaLabel ?? "View live examples"}
-                </span>
-              </Link>
-            </div>
-            <HeroCategoryStrip />
+              <span className="max-w-full truncate">
+                {activeSlide.secondaryCtaLabel ?? "View live examples"}
+              </span>
+            </Link>
+          </div>
+          <HeroCategoryStrip />
         </div>
       </div>
 
       <div
-        className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2"
+        className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 sm:bottom-8"
         aria-label="Hero product slides"
         role="group"
       >
@@ -252,7 +263,7 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
             onClick={() => setActiveSlideIndex(index)}
             aria-label={`Show ${slide.title}`}
             aria-pressed={activeSlideIndex === index}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition hover:bg-black/24 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white motion-reduce:transition-none"
           >
             <span
               className={cx(
@@ -264,6 +275,9 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
           </button>
         ))}
       </div>
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        Hero slide {activeSlideIndex + 1} of {heroProductSlides.length}: {activeSlide.title}
+      </p>
     </section>
   );
 }
