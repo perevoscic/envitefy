@@ -52,7 +52,7 @@ type UploadBlobParams = {
   access: BlobAccess;
 };
 
-const PRIVATE_STORE_ACCESS_ERROR = /cannot use public access on a private store/i;
+const BLOB_STORE_ACCESS_ERROR = /cannot use (?:public|private) access on a (?:private|public) store/i;
 
 let detectedBlobStoreAccess: BlobAccess | null = null;
 
@@ -106,8 +106,8 @@ function getOriginalOutputName(fileName: string): string {
   return sanitizePathSegment(fileName || "image") || "image";
 }
 
-function isPrivateStoreAccessError(error: unknown): boolean {
-  return error instanceof Error && PRIVATE_STORE_ACCESS_ERROR.test(error.message);
+function isBlobStoreAccessError(error: unknown): boolean {
+  return error instanceof Error && BLOB_STORE_ACCESS_ERROR.test(error.message);
 }
 
 function buildPrivateBlobProxyPath(pathname: string): string {
@@ -138,10 +138,10 @@ async function uploadBlobAsset(params: UploadBlobParams): Promise<BlobAsset> {
       contentType: params.contentType || "application/octet-stream",
     });
   } catch (error) {
-    if (preferredAccess !== "public" || !isPrivateStoreAccessError(error)) {
+    if (!isBlobStoreAccessError(error)) {
       throw error;
     }
-    resolvedAccess = "private";
+    resolvedAccess = preferredAccess === "public" ? "private" : "public";
     blob = await put(params.pathname, params.bytes, {
       access: resolvedAccess,
       contentType: params.contentType || "application/octet-stream",
@@ -174,6 +174,33 @@ export async function uploadPublicBinaryAsset(params: {
     bytes: params.bytes,
     contentType: params.contentType,
     access: "public",
+  });
+  return {
+    url: uploaded.url,
+    pathname: uploaded.pathname,
+    sizeBytes: uploaded.sizeBytes,
+    access: uploaded.access,
+    rawBlobUrl: uploaded.rawBlobUrl,
+  };
+}
+
+/** Upload bytes private-store-first, avoiding a known failed public attempt for account media. */
+export async function uploadPrivateBinaryAsset(params: {
+  bytes: Buffer;
+  pathname: string;
+  contentType: string;
+}): Promise<{
+  url: string;
+  pathname: string;
+  sizeBytes: number;
+  access: BlobAccess;
+  rawBlobUrl?: string;
+}> {
+  const uploaded = await uploadBlobAsset({
+    pathname: params.pathname.replace(/^\/+/, ""),
+    bytes: params.bytes,
+    contentType: params.contentType,
+    access: "private",
   });
   return {
     url: uploaded.url,

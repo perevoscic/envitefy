@@ -2,7 +2,7 @@ import sharp from "sharp";
 import { NextResponse } from "next/server";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { getUserByEmail, updateUserAvatarByEmail } from "@/lib/db";
-import { uploadPublicBinaryAsset } from "@/lib/media-upload";
+import { uploadPrivateBinaryAsset } from "@/lib/media-upload";
 import { validateProfileAvatarMeta } from "@/lib/profile-avatar";
 
 export const runtime = "nodejs";
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       .resize(512, 512, { fit: "cover", position: "attention" })
       .webp({ quality: 88 })
       .toBuffer();
-    const uploaded = await uploadPublicBinaryAsset({
+    const uploaded = await uploadPrivateBinaryAsset({
       bytes: avatarBytes,
       pathname: `profile-media/${user.id}/avatar-${Date.now()}.webp`,
       contentType: "image/webp",

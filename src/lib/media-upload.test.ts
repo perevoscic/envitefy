@@ -69,3 +69,14 @@ test("image upload source path cannot collide with generated display asset", () 
     /pathname: `event-media\/\$\{params\.scopeId\}\/\$\{params\.usage\}\/\$\{params\.assetKind\}\.webp`/,
   );
 });
+
+test("account media can prefer the private store without losing public-store compatibility", () => {
+  const source = readFileSync(new URL("./media-upload.ts", import.meta.url), "utf8");
+
+  assert.match(source, /export async function uploadPrivateBinaryAsset/);
+  assert.match(source, /access: "private"/);
+  assert.match(
+    source,
+    /resolvedAccess = preferredAccess === "public" \? "private" : "public"/,
+  );
+});

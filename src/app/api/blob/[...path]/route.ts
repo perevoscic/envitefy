@@ -15,7 +15,7 @@ function normalizeBlobPath(parts: string[]): string | null {
     .filter(Boolean)
     .join("/");
 
-  if (!pathname.startsWith("event-media/")) {
+  if (!["event-media/", "profile-media/"].some((prefix) => pathname.startsWith(prefix))) {
     return null;
   }
 
