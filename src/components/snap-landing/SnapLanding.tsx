@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -311,7 +312,10 @@ function Hero({
                 <Zap className="h-3.5 w-3.5" /> From Upload to Event
               </span>
 
-              <h1 className="mb-6 text-5xl font-extrabold leading-[1.02] tracking-tight text-white md:text-7xl">
+              <h1
+                className="mb-6 text-5xl font-extrabold leading-[1.02] tracking-tight text-white md:text-7xl"
+                style={{ fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" }}
+              >
                 Stop sharing screenshots.
                 <br />
                 <span className="bg-[linear-gradient(135deg,#ffffff_0%,#d8cbff_45%,#a5b4fc_100%)] bg-clip-text text-transparent">
@@ -339,10 +343,13 @@ function Hero({
             <div className="min-w-0 xl:-ml-20 2xl:-ml-28">
               <div className="relative mt-2 h-[60vh] min-h-[22rem] w-full overflow-hidden rounded-[1.8rem] border border-white/14 bg-[#090d18]/88 shadow-[0_32px_90px_rgba(4,1,14,0.42)] sm:h-[62vh] xl:mt-0 xl:h-[58vh] 2xl:h-[56vh] md:rounded-[2rem]">
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(8,12,24,0.28)_18%,rgba(8,12,24,0.08)_72%,rgba(8,12,24,0.34))]" />
-                <img
+                <Image
                   src="/images/snap-hero-after.webp"
                   alt="Envitefy Snap interface after upload conversion"
-                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  fill
+                  priority
+                  sizes="(max-width: 1279px) 100vw, 58vw"
+                  className="object-cover object-center"
                 />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,10,20,0.1),rgba(7,10,20,0.34))]" />
               </div>
@@ -358,21 +365,21 @@ function TrustBar() {
   return (
     <section className="px-4 pb-6 pt-2 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.06] px-6 py-8 text-center backdrop-blur-2xl">
-          <p className="mb-6 text-sm font-semibold tracking-[0.28em] text-white/52 uppercase">
+        <div className="rounded-[1.8rem] border border-white/14 bg-[#171126] px-6 py-8 text-center shadow-[0_18px_55px_rgba(7,4,18,0.3)]">
+          <p className="mb-6 text-sm font-semibold tracking-[0.28em] text-white uppercase">
             Trusted by 10,000+ busy parents & organizers
           </p>
           <div className="flex flex-wrap items-center justify-center gap-5 text-white md:gap-10">
-            <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-semibold">
+            <span className="rounded-full border border-white/14 bg-[#30254f] px-4 py-2 text-sm font-semibold text-white">
               ParentCircle
             </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-semibold">
+            <span className="rounded-full border border-white/14 bg-[#30254f] px-4 py-2 text-sm font-semibold text-white">
               EventPro
             </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-semibold">
+            <span className="rounded-full border border-white/14 bg-[#30254f] px-4 py-2 text-sm font-semibold text-white">
               CommunityHub
             </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-semibold">
+            <span className="rounded-full border border-white/14 bg-[#30254f] px-4 py-2 text-sm font-semibold text-white">
               TeamSnap
             </span>
           </div>
@@ -649,7 +656,7 @@ export default function SnapLanding() {
   };
 
   return (
-    <div className="relative z-[1] isolate min-h-screen overflow-x-clip bg-transparent font-sans text-white selection:bg-white/20 selection:text-white">
+    <main className="relative z-[1] isolate min-h-screen overflow-x-clip bg-transparent font-sans text-white selection:bg-white/20 selection:text-white">
       <ScenicBackground scene={activeScene} scenes={SNAP_SCENES} />
 
       <HeroTopNav
@@ -686,6 +693,6 @@ export default function SnapLanding() {
         signupSource="snap"
         successRedirectUrl={authMode === "signup" ? "/snap" : "/"}
       />
-    </div>
+    </main>
   );
 }

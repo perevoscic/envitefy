@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
   CheckCircle2,
@@ -15,14 +14,13 @@ import {
   Users,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import { getImageProps } from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import HeroImageScrim from "@/components/landing/HeroImageScrim";
 import HeroTopNav from "@/components/navigation/HeroTopNav";
 import MobileBrandHeader from "@/components/navigation/MobileBrandHeader";
 import ScrollAwareBottomNav from "@/components/navigation/ScrollAwareBottomNav";
-import { Testimonial as DesignTestimonial } from "@/components/ui/design-testimonial";
 import { signedOutMobileMenuLinks } from "@/config/navigation";
 import {
   creationPaths,
@@ -36,7 +34,6 @@ import {
   landingTestimonials,
   templateCarouselFeatures,
 } from "./landing-data";
-import AIConciergeSection from "./sections/AIConciergeSection";
 import CategoryDirectory, { HeroCategoryStrip } from "./sections/CategoryDirectory";
 
 const AuthModal = dynamic(() => import("@/components/auth/AuthModal"), {
@@ -62,6 +59,17 @@ const FeatureCarousel = dynamic(() => import("@/components/ui/feature-carousel")
   loading: () => null,
   ssr: false,
 });
+const DesignTestimonial = dynamic(
+  () => import("@/components/ui/design-testimonial").then((module) => module.Testimonial),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+const AIConciergeSection = dynamic(() => import("./sections/AIConciergeSection"), {
+  loading: () => null,
+  ssr: false,
+});
 
 const landingFlowSectionClass = "";
 const landingFlowInnerClass = "";
@@ -81,50 +89,58 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
+function DeferredLandingContent({
+  children,
+  className = "min-h-[100svh]",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+    if (!("IntersectionObserver" in window)) {
+      setIsReady(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setIsReady(true);
+        observer.disconnect();
+      },
+      { rootMargin: "320px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={containerRef} className={className} aria-busy={!isReady}>
+      {isReady ? children : <div className="h-full min-h-[inherit]" aria-hidden="true" />}
+    </div>
+  );
+}
+
 function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void }) {
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const activeSlide = heroProductSlides[activeSlideIndex] ?? heroProductSlides[0];
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const preloadRemainingSlides = () => {
-      const imageSources = new Set<string>();
-      for (const slide of heroProductSlides.slice(1)) {
-        imageSources.add(slide.desktopImage);
-        imageSources.add(slide.image);
-      }
-
-      for (const src of imageSources) {
-        const preloadedImage = new window.Image();
-        preloadedImage.decoding = "async";
-        preloadedImage.src = src;
-      }
-    };
-
-    const w = window as typeof window & {
-      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
-      cancelIdleCallback?: (handle: number) => void;
-    };
-    if (typeof w.requestIdleCallback === "function") {
-      const idleHandle = w.requestIdleCallback(preloadRemainingSlides, { timeout: 2500 });
-      return () => w.cancelIdleCallback?.(idleHandle);
-    }
-
-    const timeout = window.setTimeout(preloadRemainingSlides, 1200);
-    return () => window.clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const interval = window.setInterval(() => {
-      setActiveSlideIndex((currentIndex) => (currentIndex + 1) % heroProductSlides.length);
-    }, 7000);
-
-    return () => window.clearInterval(interval);
-  }, []);
+  const { props: mobileHeroImageProps } = getImageProps({
+    src: activeSlide.image,
+    alt: activeSlide.imageAlt,
+    fill: true,
+    sizes: "100vw",
+  });
+  const { props: desktopHeroImageProps } = getImageProps({
+    src: activeSlide.desktopImage,
+    alt: activeSlide.imageAlt,
+    fill: true,
+    sizes: "100vw",
+  });
 
   const showPreviousSlide = () => {
     setActiveSlideIndex(
@@ -141,36 +157,25 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
       id="landing-hero"
       className="relative isolate min-h-[100svh] overflow-hidden bg-[#120f14] text-white"
     >
-      <AnimatePresence initial={false} mode="sync">
-        <motion.div
-          key={activeSlide.id}
-          initial={{ opacity: 0, scale: 1.02 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.005 }}
-          transition={{ duration: 0.32, ease: "easeOut" }}
-          className="pointer-events-none absolute inset-0 z-0"
-        >
-          <Image
-            src={activeSlide.desktopImage}
-            alt={activeSlide.imageAlt}
-            fill
-            priority={activeSlideIndex === 0}
-            unoptimized
-            sizes="100vw"
-            className="hidden object-cover object-center md:block"
-          />
-          <Image
-            src={activeSlide.image}
-            alt={activeSlide.imageAlt}
-            fill
-            priority={activeSlideIndex === 0}
-            unoptimized
-            sizes="100vw"
-            className="object-cover md:hidden"
-            style={{ objectPosition: activeSlide.imagePosition ?? "center" }}
-          />
-        </motion.div>
-      </AnimatePresence>
+      <div key={activeSlide.id} className="pointer-events-none absolute inset-0 z-0">
+          <picture>
+            <source
+              media="(min-width: 768px)"
+              srcSet={desktopHeroImageProps.srcSet}
+              sizes={desktopHeroImageProps.sizes}
+            />
+            <img
+              {...mobileHeroImageProps}
+              alt={activeSlide.imageAlt}
+              fetchPriority="high"
+              className="object-cover"
+              style={{
+                ...mobileHeroImageProps.style,
+                objectPosition: activeSlide.imagePosition ?? "center",
+              }}
+            />
+          </picture>
+      </div>
       <HeroImageScrim />
 
       <button
@@ -191,24 +196,19 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
       </button>
 
       <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-none flex-col justify-end px-5 pb-20 pt-32 sm:px-8 lg:px-16 lg:pb-24">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${activeSlide.id}-content`}
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -18 }}
-            transition={{ duration: 0.48, ease: "easeOut" }}
-            className="max-w-4xl"
-          >
+        <div className="max-w-4xl">
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#fff1c8] drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] sm:text-xs">
               {activeSlide.eyebrow}
             </p>
             <h1
               className="mt-5 max-w-5xl text-5xl font-light leading-[0.98] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.82)] sm:text-7xl lg:text-[5.8rem]"
-              style={{ color: "#fff", fontFamily: "var(--font-playfair), Georgia, serif" }}
+              style={{ color: "#fff", fontFamily: "Georgia, 'Times New Roman', serif" }}
             >
-              {activeSlide.title}
+              Create beautiful online invitations, from invite to RSVP.
             </h1>
+            <p className="mt-4 text-lg font-semibold text-[#fff1c8] sm:text-xl">
+              {activeSlide.title}
+            </p>
             <p
               className="mt-6 max-w-2xl text-base leading-8 text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-lg"
               style={{ color: "#fff" }}
@@ -237,8 +237,7 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
               </Link>
             </div>
             <HeroCategoryStrip />
-          </motion.div>
-        </AnimatePresence>
+        </div>
       </div>
 
       <div
@@ -253,11 +252,16 @@ function HeroProductCarousel({ onPrimaryAction }: { onPrimaryAction: () => void 
             onClick={() => setActiveSlideIndex(index)}
             aria-label={`Show ${slide.title}`}
             aria-pressed={activeSlideIndex === index}
-            className={cx(
-              "h-2.5 rounded-full transition-all",
-              activeSlideIndex === index ? "w-9 bg-white" : "w-2.5 bg-white/42 hover:bg-white/70",
-            )}
-          />
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
+            <span
+              className={cx(
+                "h-2.5 rounded-full transition-all",
+                activeSlideIndex === index ? "w-9 bg-white" : "w-2.5 bg-white/55",
+              )}
+              aria-hidden="true"
+            />
+          </button>
         ))}
       </div>
     </section>
@@ -291,15 +295,7 @@ function GuestActionPreview({ activeAction }: { activeAction: GuestActionId }) {
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.045)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-40" />
       <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(240,213,143,0.72),transparent)]" />
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeAction}
-          initial={{ opacity: 0, x: 34 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -34 }}
-          transition={{ duration: 0.42, ease: "easeOut" }}
-          className="relative flex flex-1 flex-col"
-        >
+      <div key={activeAction} className="relative flex flex-1 flex-col">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p
@@ -386,7 +382,7 @@ function GuestActionPreview({ activeAction }: { activeAction: GuestActionId }) {
                     className="aspect-[16/10] w-full flex-none object-cover object-top"
                   />
                   <div className="flex flex-1 flex-col p-4">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9d7a3e]">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#765524]">
                       {config.eventEyebrow}
                     </p>
                     <h4
@@ -443,7 +439,7 @@ function GuestActionPreview({ activeAction }: { activeAction: GuestActionId }) {
             >
               <div className="grid gap-5 lg:grid-cols-[1fr_11rem] lg:items-start">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9d7a3e]">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#765524]">
                     Host control
                   </p>
                   <h3 className="mt-2 max-w-2xl text-3xl font-semibold leading-tight text-[#201a23] xl:text-[2.15rem]">
@@ -481,7 +477,7 @@ function GuestActionPreview({ activeAction }: { activeAction: GuestActionId }) {
                 </div>
 
                 <div className="min-h-0 overflow-hidden rounded-lg border border-[#e1d6c2] bg-white">
-                  <p className="px-4 pt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#9d7a3e]">
+                  <p className="px-4 pt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#765524]">
                     Response timeline
                   </p>
                   <div className="mt-3 divide-y divide-[#f0e8d9]">
@@ -521,8 +517,7 @@ function GuestActionPreview({ activeAction }: { activeAction: GuestActionId }) {
               </div>
             </div>
           </div>
-        </motion.div>
-      </AnimatePresence>
+      </div>
     </div>
   );
 }
@@ -637,17 +632,19 @@ function TemplateGallery() {
       <div className="mx-auto flex min-h-[100svh] w-full max-w-none flex-1 flex-col justify-start px-4 pb-8 pt-[calc(2.25rem+env(safe-area-inset-top))] sm:px-6 sm:pb-10 sm:pt-[calc(3rem+env(safe-area-inset-top))] lg:h-full lg:min-h-0 lg:justify-center lg:px-8 lg:pb-12 lg:pt-[calc(8rem+env(safe-area-inset-top))]">
         <div className="w-full">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9d7a3e]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#765524]">
               Templates and proof
             </p>
           </div>
 
-          <FeatureCarousel
-            features={templateCarouselFeatures}
-            className="mt-10 max-w-none"
-            style={{ width: "min(100%, 112rem)" }}
-            accentColor="#6f8f7b"
-          />
+          <DeferredLandingContent className="mt-10 min-h-[600px]">
+            <FeatureCarousel
+              features={templateCarouselFeatures}
+              className="max-w-none"
+              style={{ width: "min(100%, 112rem)" }}
+              accentColor="#6f8f7b"
+            />
+          </DeferredLandingContent>
         </div>
       </div>
     </section>
@@ -758,7 +755,7 @@ function TestimonialsProof() {
       <div className="flex min-h-[100svh] w-full flex-col justify-center pb-12 pt-[calc(8.5rem+env(safe-area-inset-top))] sm:pb-16 sm:pt-[calc(7.5rem+env(safe-area-inset-top))] lg:pb-20 lg:pt-[calc(8rem+env(safe-area-inset-top))]">
         <div>
           <div className="mx-auto max-w-none px-4 text-center sm:px-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9d7a3e]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#765524]">
               Guest and host feedback
             </p>
             <h2
@@ -817,21 +814,27 @@ export default function LandingExperience() {
         <PremiumLandingHero onPrimaryAction={openConciergeDemo} />
         <CategoryDirectory />
 
-        <AIConciergeSection />
+        <DeferredLandingContent>
+          <AIConciergeSection />
+        </DeferredLandingContent>
 
-        <section className="border-b border-[#ded2bd] bg-[#f8f3ea]">
-          <LandingLiveCardShowcase
-            eyebrow="Interactive proof"
-            title="Live cards connected to real event details."
-            description="Swipe through product-backed live cards for weddings, birthdays, showers, school events, team weekends, and hosted gatherings."
-            tone="luxury"
-          />
-        </section>
+        <DeferredLandingContent>
+          <section className="border-b border-[#ded2bd] bg-[#f8f3ea]">
+            <LandingLiveCardShowcase
+              eyebrow="Interactive proof"
+              title="Live cards connected to real event details."
+              description="Swipe through product-backed live cards for weddings, birthdays, showers, school events, team weekends, and hosted gatherings."
+              tone="luxury"
+            />
+          </section>
+        </DeferredLandingContent>
 
         <GuestActionSuite onPrimaryAction={() => openAuth("signup")} />
         <TemplateGallery />
         <CreationPaths onPrimaryAction={() => openAuth("signup")} />
-        <TestimonialsProof />
+        <DeferredLandingContent>
+          <TestimonialsProof />
+        </DeferredLandingContent>
       </main>
       <ScrollAwareBottomNav
         onConciergeSelect={openConciergeDemo}

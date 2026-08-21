@@ -113,7 +113,7 @@ export default async function ShowcaseIndexPage() {
                     />
                   </div>
                   <div className="space-y-3 px-5 py-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#a66f46]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7d4a27]">
                       {category}
                     </p>
                     <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[#231612]">

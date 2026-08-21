@@ -73,8 +73,11 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="font-vars min-h-[100dvh] flex items-center justify-center p-6 bg-[#F3F0FA]">
-      <section className="w-full max-w-md rounded-2xl border border-[#E8E0EF] bg-white p-8 shadow-[0_20px_50px_rgba(87,67,157,0.08)]">
+    <main
+      className="font-vars flex min-h-[100dvh] items-center justify-center bg-[#F3F0FA] p-4 sm:p-6"
+      data-mobile-form-surface
+    >
+      <section className="w-full max-w-md rounded-2xl border border-[#E8E0EF] bg-white p-5 shadow-[0_20px_50px_rgba(87,67,157,0.08)] sm:p-8">
         <Link
           href="/landing"
           className="mb-8 flex justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6b3cff]/40 focus-visible:ring-offset-2 rounded-lg"
@@ -101,7 +104,7 @@ export default function ForgotPasswordPage() {
             name="email"
             type="email"
             autoComplete="email"
-            className="w-full rounded-xl border border-[#D9C5B8] bg-[#FBF7F2] px-4 py-3 text-sm text-[#2B1B16] placeholder:text-[#6A5549]/70 focus:border-[#6b3cff]/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6b3cff]/25 transition"
+            className="min-h-11 w-full rounded-xl border border-[#D9C5B8] bg-[#FBF7F2] px-4 py-3 text-base text-[#2B1B16] placeholder:text-[#6A5549]/70 transition focus:border-[#6b3cff]/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6b3cff]/25"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -110,7 +113,7 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-full bg-[#6b3cff] px-6 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-[0_10px_28px_rgba(107,60,255,0.38)] transition hover:bg-[#5b32e0] hover:shadow-[0_12px_32px_rgba(107,60,255,0.42)] disabled:pointer-events-none disabled:opacity-60"
+            className="min-h-11 w-full rounded-full bg-[#6b3cff] px-6 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-[0_10px_28px_rgba(107,60,255,0.38)] transition hover:bg-[#5b32e0] hover:shadow-[0_12px_32px_rgba(107,60,255,0.42)] disabled:pointer-events-none disabled:opacity-60"
           >
             {loading ? "Sending…" : "Send reset link"}
           </button>

@@ -14,6 +14,17 @@ export function useMobileDrawer() {
   const [open, setOpen] = useState(false);
   const previewTouchStart = useRef<TouchPoint>(null);
   const drawerTouchStart = useRef<TouchPoint>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
+
+  const openDrawer = useCallback(() => {
+    previousActiveElement.current =
+      typeof document !== "undefined" && document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setOpen(true);
+  }, []);
+
+  const closeDrawer = useCallback(() => setOpen(false), []);
 
   const handlePreviewTouchStart = useCallback(
     (event: TouchEvent<HTMLElement>) => {
@@ -43,10 +54,10 @@ export function useMobileDrawer() {
         deltaX > MIN_SWIPE_DISTANCE &&
         deltaY < MAX_VERTICAL_DRIFT
       ) {
-        setOpen(true);
+        openDrawer();
       }
     },
-    [open]
+    [open, openDrawer]
   );
 
   const handleDrawerTouchStart = useCallback(
@@ -73,10 +84,10 @@ export function useMobileDrawer() {
       const deltaY = Math.abs(touch.clientY - start.y);
 
       if (deltaX > MIN_SWIPE_DISTANCE && deltaY < MAX_VERTICAL_DRIFT) {
-        setOpen(false);
+        closeDrawer();
       }
     },
-    []
+    [closeDrawer]
   );
 
   useEffect(() => {
@@ -102,20 +113,71 @@ export function useMobileDrawer() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !open) return;
+    if (typeof window === "undefined" || typeof document === "undefined" || !open) return;
+    const drawer = [...document.querySelectorAll<HTMLElement>(".nav-chrome-mobile-drawer")].find(
+      (element) => getComputedStyle(element).display !== "none",
+    );
+    if (!drawer) return;
+
+    const previousRole = drawer.getAttribute("role");
+    const previousModal = drawer.getAttribute("aria-modal");
+    const previousTabIndex = drawer.getAttribute("tabindex");
+    drawer.setAttribute("role", "dialog");
+    drawer.setAttribute("aria-modal", "true");
+    drawer.setAttribute("tabindex", "-1");
+
+    const focusableSelector =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const getFocusable = () =>
+      [...drawer.querySelectorAll<HTMLElement>(focusableSelector)].filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden";
+      });
+    const focusFrame = window.requestAnimationFrame(() => {
+      (getFocusable()[0] || drawer).focus({ preventScroll: true });
+    });
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpen(false);
+        event.preventDefault();
+        closeDrawer();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = getFocusable();
+      if (!focusable.length) {
+        event.preventDefault();
+        drawer.focus({ preventScroll: true });
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener("keydown", handleKeyDown);
+      if (previousRole === null) drawer.removeAttribute("role");
+      else drawer.setAttribute("role", previousRole);
+      if (previousModal === null) drawer.removeAttribute("aria-modal");
+      else drawer.setAttribute("aria-modal", previousModal);
+      if (previousTabIndex === null) drawer.removeAttribute("tabindex");
+      else drawer.setAttribute("tabindex", previousTabIndex);
+      previousActiveElement.current?.focus({ preventScroll: true });
+    };
+  }, [closeDrawer, open]);
 
   return {
     mobileMenuOpen: open,
-    openMobileMenu: () => setOpen(true),
-    closeMobileMenu: () => setOpen(false),
+    openMobileMenu: openDrawer,
+    closeMobileMenu: closeDrawer,
     previewTouchHandlers: {
       onTouchStart: handlePreviewTouchStart,
       onTouchEnd: handlePreviewTouchEnd,

@@ -24,7 +24,7 @@ export default function BirthdaySectionIntro({
       </p>
       <h2
         className={`mt-4 text-3xl font-semibold leading-[1.06] tracking-[-0.045em] sm:text-5xl ${
-          inverse ? "text-white" : "text-[var(--birthday-ink)]"
+          inverse ? "!text-white" : "text-[var(--birthday-ink)]"
         }`}
       >
         {title}

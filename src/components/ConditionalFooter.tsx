@@ -54,6 +54,7 @@ const MARKETING_ROUTE_PATHS = new Set([
   "/guides",
   "/gymnastics",
   "/how-it-works",
+  "/invitation-maker",
   "/landing",
   "/privacy",
   "/showcase",
@@ -72,20 +73,21 @@ const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
   {
     title: "Create",
     links: [
-      { label: "Concierge", href: "/landing#concierge" },
+      { label: "Invitation maker", href: "/invitation-maker" },
+      { label: "Concierge", href: "/#concierge" },
       { label: "Weddings", href: "/weddings" },
       { label: "Live cards", href: "/showcase" },
       { label: "Snap uploads", href: "/snap" },
-      { label: "Start your event", href: "/landing#creation-paths" },
+      { label: "Start your event", href: "/#creation-paths" },
     ],
   },
   {
     title: "Event Pages",
     links: [
-      { label: "Public event pages", href: "/landing#guest-flow" },
+      { label: "Public event pages", href: "/#guest-flow" },
       { label: "RSVP event pages", href: "/guides/rsvp-event-page" },
       { label: "Live card invitations", href: "/guides/live-card-invitations" },
-      { label: "Guest action flow", href: "/landing#guest-flow" },
+      { label: "Guest action flow", href: "/#guest-flow" },
       { label: "Share without an app", href: "/guides/share-event-page-without-app" },
     ],
   },
@@ -127,7 +129,7 @@ const MARKETING_FOOTER_GROUPS: FooterGroup[] = [
 ];
 
 const MARKETING_FOOTER_UTILITY_LINKS: FooterLink[] = [
-  { label: "Invites", href: "/guides/live-card-invitations" },
+  { label: "Invitation maker", href: "/invitation-maker" },
   { label: "RSVP", href: "/guides/rsvp-event-page" },
   { label: "Weddings", href: "/weddings" },
   { label: "Sign-ups", href: "/signup-forms" },

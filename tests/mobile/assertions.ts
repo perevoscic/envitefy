@@ -70,9 +70,11 @@ export async function expectIntentionalHorizontalRegions(
   page: Page,
   selectors: string[] = [],
 ) {
-  for (const selector of selectors) {
+  const allSelectors = [...new Set(["[data-mobile-horizontal-scroll]", ...selectors])];
+  for (const selector of allSelectors) {
     const regions = page.locator(selector);
     const count = await regions.count();
+    if (selector === "[data-mobile-horizontal-scroll]" && count === 0) continue;
     expect(count, `Missing declared horizontal region ${selector}`).toBeGreaterThan(0);
     for (let index = 0; index < count; index += 1) {
       const region = regions.nth(index);

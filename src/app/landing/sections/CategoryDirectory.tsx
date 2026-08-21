@@ -41,7 +41,7 @@ export default function CategoryDirectory() {
     >
       <div className="mx-auto max-w-[90rem]">
         <div className="max-w-3xl">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#9d7a3e]">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#765524]">
             Event types
           </p>
           <h2

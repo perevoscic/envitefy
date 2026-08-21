@@ -82,9 +82,9 @@ function SuiteStationeryPreview({
         ? {
             stage: "bg-[#f3efe4]",
             invite: "bg-[#fbf8f1] text-[#3d3428] border-[#9cae7a]/70",
-            monogram: "border-[#9cae7a] text-[#6d7f4f]",
+            monogram: "border-[#9cae7a] text-[#56663d]",
             rule: "border-[#c5d1ab]",
-            script: "text-[#6d7f4f]",
+            script: "text-[#56663d]",
             muted: "text-[#6b6154]",
             cardBack: "bg-[#ebe4d4] border-[#b7c49a]",
             cardMid: "bg-[#f4efe3] border-[#a8b888]",
@@ -92,9 +92,9 @@ function SuiteStationeryPreview({
         : {
             stage: "bg-[#f4eee4]",
             invite: "bg-[#fffdf9] text-[#3c2b1d] border-[#c0a37b]",
-            monogram: "border-[#c0a37b] text-[#94724c]",
+            monogram: "border-[#c0a37b] text-[#795b3d]",
             rule: "border-[#e5d7c3]",
-            script: "text-[#94724c]",
+            script: "text-[#795b3d]",
             muted: "text-[#6b5848]",
             cardBack: "bg-[#ebe1d1] border-[#d4bea0]",
             cardMid: "bg-[#f7f1e7] border-[#cbb48f]",
@@ -194,7 +194,7 @@ const reviews = [
 
 function SectionEyebrow({ children }: { children: string }) {
   return (
-    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-[#94724c]">
+    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-[#795b3d]">
       {children}
     </span>
   );

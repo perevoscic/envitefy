@@ -3217,8 +3217,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           {!isEmbed && (
             <div className="nav-chrome-mobile-drawer-header md:hidden sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3">
               <button
+                type="button"
                 onClick={closeMobileMenu}
-                className="nav-chrome-mobile-drawer-back-button flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                className="nav-chrome-mobile-drawer-back-button flex min-h-11 items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold"
               >
                 <ChevronLeft size={14} />
                 Back to preview
@@ -3227,7 +3228,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             </div>
           )}
 
-          <div className="p-6 pt-4 pb-8 md:pt-6 md:pb-10" style={{ pointerEvents: "auto" }}>
+          <div
+            className="p-4 pb-8 pt-4 md:p-6 md:pb-10 md:pt-6"
+            data-mobile-form-surface
+            style={{ pointerEvents: "auto" }}
+          >
             {discoveryEnrichmentBanner}
             {activeView === "main" &&
               (editEventId && loadingExisting ? (
@@ -3253,7 +3258,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           </div>
         </div>
 
-        <div className="shrink-0 p-4 border-t border-slate-100 bg-slate-50">
+        <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Before Publish
@@ -3271,7 +3276,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     <button
                       type="button"
                       onClick={() => openEditorView(item.view)}
-                      className="font-medium underline underline-offset-2 decoration-amber-400 hover:text-amber-800"
+                      className="inline-flex min-h-11 items-center rounded-md px-1 font-medium underline decoration-amber-400 underline-offset-2 hover:bg-amber-50 hover:text-amber-800"
                     >
                       {item.label}
                     </button>
@@ -3326,7 +3331,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     router.push("/event/gymnastics");
                   }
                 }}
-                className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-medium text-sm tracking-wide transition-colors shadow-sm"
+                className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white py-3 text-sm font-medium tracking-wide text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
               >
                 Cancel
               </button>
@@ -3336,7 +3341,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               disabled={submitting || missingEssentials.length > 0}
               className={`${
                 editEventId ? "flex-1" : "w-full"
-              } py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm tracking-wide transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
+              } min-h-11 rounded-lg bg-slate-900 py-3 text-sm font-medium tracking-wide text-white shadow-lg transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60`}
             >
               {submitting
                 ? editEventId
@@ -3449,6 +3454,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
           {...previewTouchHandlers}
+          aria-hidden={mobileMenuOpen ? true : undefined}
           className="flex-1 min-h-0 relative overflow-y-auto scrollbar-hide bg-[#f0f2f5] flex justify-center"
           style={{
             WebkitOverflowScrolling: "touch",

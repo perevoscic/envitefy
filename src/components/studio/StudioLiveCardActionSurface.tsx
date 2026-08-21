@@ -1295,6 +1295,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                   >
                     <button
                       type="button"
+                      aria-label={button.label}
                       onClick={() => {
                         if (!props.isDesignMode) button.onClick();
                       }}

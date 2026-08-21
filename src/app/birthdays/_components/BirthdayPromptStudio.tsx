@@ -38,7 +38,7 @@ export default function BirthdayPromptStudio({ primaryHref }: { primaryHref: str
           </div>
 
           <div className="mt-auto pt-10">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">
               Try another example
             </p>
             <div className="mt-3 flex flex-wrap gap-2" role="tablist" aria-label="Birthday prompts">

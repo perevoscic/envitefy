@@ -428,7 +428,7 @@ export default function SportsLandingPage() {
               </p>
 
               <div className="mt-7">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#718099]">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#536177]">
                   Sport
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -449,7 +449,7 @@ export default function SportsLandingPage() {
               </div>
 
               <div className="mt-7">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#718099]">Look</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#536177]">Look</p>
                 <div className="mt-3 grid gap-2">
                   {styleOptions.map((style) => (
                     <Link
@@ -476,7 +476,7 @@ export default function SportsLandingPage() {
                           className={
                             style.id === selectedStyle
                               ? "text-xs text-white/58"
-                              : "text-xs text-[#778297]"
+                              : "text-xs text-[#536078]"
                           }
                         >
                           {style.description}

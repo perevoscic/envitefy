@@ -1511,6 +1511,7 @@ export default function LeftSidebar() {
         aria-hidden="true"
       />
 
+      {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: the mobile condition assigns role=dialog with aria-modal together. */}
       <div
         ref={viewModel.asideRef}
         role={!viewModel.isDesktop && viewModel.isOpen ? "dialog" : undefined}

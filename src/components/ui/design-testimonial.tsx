@@ -146,7 +146,7 @@ export function Testimonial({
         <div className="relative z-10 flex min-h-[25rem] sm:min-h-[24rem]">
           <div className="flex w-16 shrink-0 flex-col items-center justify-center border-r border-border/80 px-3 sm:w-20 sm:px-5 lg:w-24">
             <motion.span
-              className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground sm:text-xs"
+              className="text-[10px] font-mono uppercase tracking-[0.2em] text-slate-600 sm:text-xs"
               style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -176,7 +176,7 @@ export function Testimonial({
                 transition={{ duration: prefersReducedMotion ? 0 : 0.4 }}
                 className="mb-7"
               >
-                <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-mono text-muted-foreground">
+                <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-mono text-slate-600">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
                   <span className="truncate">{current.company}</span>
                 </span>
@@ -293,7 +293,10 @@ export function Testimonial({
           </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-1 left-1/2 z-0 w-screen -translate-x-1/2 overflow-hidden py-3 opacity-[0.12] [mask-image:linear-gradient(90deg,transparent,black_8%,black_92%,transparent)]">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-1 left-1/2 z-0 w-screen -translate-x-1/2 overflow-hidden py-3 opacity-[0.12] [mask-image:linear-gradient(90deg,transparent,black_8%,black_92%,transparent)]"
+        >
           <motion.div
             className="flex whitespace-nowrap text-5xl font-bold leading-[1.16] tracking-normal text-foreground sm:text-6xl"
             animate={prefersReducedMotion ? undefined : { x: [0, -1400] }}

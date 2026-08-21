@@ -208,7 +208,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
       <section className="overflow-hidden bg-[#fffaf7] px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
         <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
           <div className="max-w-xl">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#a25b78]">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#7d3856]">
               More than an invitation
             </p>
             <h2 className="mt-5 font-serif text-4xl leading-[1.05] text-[#241b29] sm:text-5xl lg:text-6xl">
@@ -260,7 +260,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
             </div>
             <div className="absolute right-[3%] top-[8%] max-w-[13rem] rounded-2xl bg-white/92 p-4 shadow-[0_24px_60px_rgba(66,45,60,0.18)] backdrop-blur">
               <p className="font-serif text-2xl text-[#332638]">49 guesses</p>
-              <p className="mt-1 text-xs font-semibold text-[#8a7583]">
+              <p className="mt-1 text-xs font-semibold text-[#5f4f59]">
                 and everyone is counting down
               </p>
             </div>
@@ -307,7 +307,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
       <section className="bg-[#f8efe9] px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#a25b78]">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#7d3856]">
               One page, before and after
             </p>
             <h2 className="mt-5 font-serif text-4xl leading-tight text-[#241b29] sm:text-5xl">
@@ -361,7 +361,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
             </div>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#a25b78]">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#7d3856]">
               Thoughtful by design
             </p>
             <h2 className="mt-5 font-serif text-4xl leading-tight text-[#241b29] sm:text-5xl">
@@ -400,7 +400,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
       >
         <div className="mx-auto max-w-7xl">
           <div className="max-w-3xl">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#a25b78]">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#7d3856]">
               Two ways to start
             </p>
             <h2 className="mt-5 font-serif text-4xl leading-tight text-[#241b29] sm:text-5xl">
@@ -419,7 +419,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                   <Camera className="h-5 w-5" aria-hidden="true" />
                 </span>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a25b78]">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7d3856]">
                     SNAP
                   </p>
                   <h3 className="font-serif text-3xl text-[#241b29]">Upload the invitation</h3>
@@ -430,7 +430,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                 flyer. You review the draft, then share one guest link instead of a blurry image.
               </p>
               <div className="mt-6 rounded-[1.5rem] bg-[#f8efe9] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a25b78]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7d3856]">
                   Extracted from the invite
                 </p>
                 <p className="mt-2 font-serif text-2xl text-[#241b29]">Little Spark Reveal</p>
@@ -444,7 +444,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
                       key={label}
                       className="flex items-center justify-between rounded-xl bg-white px-3 py-2"
                     >
-                      <span className="text-[#8a7583]">{label}</span>
+                      <span className="text-[#5f4f59]">{label}</span>
                       <span className="font-semibold text-[#241b29]">{value}</span>
                     </div>
                   ))}
@@ -504,7 +504,7 @@ export default function GenderRevealEditorialSections({ page }: { page: UseCaseP
       <section className="bg-[#f8efe9] px-5 py-20 sm:px-8 sm:py-24 lg:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1fr)]">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#a25b78]">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#7d3856]">
               Good to know
             </p>
             <h2 className="mt-5 font-serif text-4xl leading-tight text-[#241b29] sm:text-5xl">

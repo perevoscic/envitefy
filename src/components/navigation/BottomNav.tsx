@@ -91,9 +91,9 @@ export default function BottomNav({
     <>
       <nav
         aria-label="Signed-out mobile navigation"
-        className="mx-auto w-full max-w-md select-none rounded-t-[1.35rem] border border-violet-100/70 border-b-0 bg-white/95 px-3 pb-[calc(0.85rem+env(safe-area-inset-bottom))] pt-0 text-[#352742] shadow-[0_-8px_24px_rgba(99,102,241,0.08)] backdrop-blur-xl"
+        className="mx-auto mb-[max(0.45rem,env(safe-area-inset-bottom))] w-[calc(100%_-_1.5rem)] max-w-[27rem] select-none rounded-[1.65rem] border border-white/90 bg-[radial-gradient(circle_at_50%_-45%,rgba(139,92,246,0.2),transparent_52%),linear-gradient(145deg,rgba(255,255,255,0.98),rgba(244,241,250,0.96))] px-2.5 pb-2 pt-2 text-[#352742] shadow-[0_16px_42px_rgba(54,39,84,0.2),inset_0_1px_0_rgba(255,255,255,0.96)] backdrop-blur-2xl"
       >
-        <div className="grid grid-cols-5 items-end gap-1">
+        <div className="grid grid-cols-5 items-end gap-0.5">
           {items.map((item) => {
             const Icon = item.icon;
             const isFeatured = Boolean(item.featured);
@@ -102,26 +102,26 @@ export default function BottomNav({
               <>
                 <span
                   className={cx(
-                    "relative flex items-center justify-center transition-all duration-300",
+                    "relative flex shrink-0 items-center justify-center transition-all duration-300 ease-out",
                     isFeatured
-                      ? "-mt-6 h-12 w-12 rounded-full bg-gradient-to-tr from-pink-500 via-violet-600 to-indigo-500 text-white shadow-[0_0_12px_rgba(139,92,246,0.35),0_10px_20px_rgba(217,70,239,0.22)] group-hover:scale-105 group-active:scale-95"
+                      ? "-mt-7 h-14 w-14 rounded-full border-[3px] border-white/90 bg-[linear-gradient(145deg,#a56cff,#7138f5_54%,#4d8cff)] text-white shadow-[0_12px_24px_rgba(91,52,190,0.34),0_3px_8px_rgba(91,52,190,0.2),inset_0_1px_1px_rgba(255,255,255,0.42)] group-hover:-translate-y-0.5 group-hover:scale-[1.03] group-active:translate-y-0 group-active:scale-95"
                       : cx(
-                          "h-6 w-6 rounded-full",
+                          "h-9 w-9 rounded-full border bg-[#f0eef5] shadow-[4px_4px_10px_rgba(45,38,74,0.13),-4px_-4px_10px_rgba(255,255,255,0.96)] group-hover:-translate-y-0.5 group-active:translate-y-0 group-active:scale-95",
                           isActive
-                            ? "scale-110 text-violet-600 drop-shadow-[0_0_3px_rgba(139,92,246,0.5)]"
-                            : "text-gray-400 group-hover:text-violet-500",
+                            ? "scale-[1.04] border-[#ded1ff] bg-[linear-gradient(145deg,#f7f3ff,#ebe4ff)] text-[#6d35f5] shadow-[5px_5px_12px_rgba(82,55,135,0.17),-5px_-5px_12px_rgba(255,255,255,0.98),inset_0_1px_0_rgba(255,255,255,0.9)]"
+                            : "border-white/90 text-[#8f879b] group-hover:text-[#7442e8]",
                         ),
                   )}
                 >
                   {isFeatured ? (
                     <span
                       aria-hidden="true"
-                      className="absolute inset-0 rounded-full bg-white/15 blur-[1px]"
+                      className="absolute inset-[3px] rounded-full bg-[radial-gradient(circle_at_34%_24%,rgba(255,255,255,0.34),transparent_42%)]"
                     />
                   ) : null}
                   {isFeatured && item.action === "concierge" ? (
                     <span
-                      className="relative h-6 w-6 bg-white drop-shadow-[0_0_8px_rgba(255,255,255,0.52)]"
+                      className="relative h-7 w-7 bg-white drop-shadow-[0_2px_7px_rgba(255,255,255,0.5)]"
                       style={conciergeNavLogoMaskStyle}
                       aria-hidden="true"
                     />
@@ -131,8 +131,12 @@ export default function BottomNav({
                 </span>
                 <span
                   className={cx(
-                    "mt-1 max-w-full truncate text-[8.5px] font-bold leading-tight tracking-tight",
-                    isActive || isFeatured ? "text-violet-700" : "text-gray-400",
+                    "mt-1 max-w-full truncate rounded-full px-0.5 py-0.5 text-[8px] font-semibold leading-tight tracking-[-0.01em] transition-all duration-200 min-[360px]:px-1.5 min-[360px]:text-[9px]",
+                    isActive
+                      ? "bg-white/75 text-[#5b359d] shadow-[0_3px_8px_rgba(67,45,104,0.1),inset_0_1px_0_rgba(255,255,255,0.9)]"
+                      : isFeatured
+                        ? "text-[#6940b0]"
+                        : "text-[#938c9e] group-hover:text-[#6940b0]",
                   )}
                 >
                   {item.label}
@@ -140,15 +144,15 @@ export default function BottomNav({
                 {isActive ? (
                   <span
                     aria-hidden="true"
-                    className="absolute bottom-0 h-[3px] w-5 rounded-full bg-violet-600 shadow-[0_0_6px_rgba(139,92,246,1)]"
+                    className="absolute -bottom-0.5 h-1 w-1 rounded-full bg-[linear-gradient(135deg,#8b5cf6,#4d8cff)] shadow-[0_0_7px_rgba(109,53,245,0.58)]"
                   />
                 ) : null}
               </>
             );
 
             const className = cx(
-              "group relative flex min-w-0 cursor-pointer flex-col items-center justify-end gap-1 px-1 pb-1 pt-0 text-center outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2",
-              isFeatured ? "min-h-[3.35rem]" : "min-h-[3.2rem]",
+              "group relative flex min-w-0 cursor-pointer flex-col items-center justify-end px-0.5 pb-0.5 pt-1 text-center outline-none transition-all duration-200 focus-visible:rounded-[1.15rem] focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2",
+              isFeatured ? "min-h-[3.75rem]" : "min-h-[3.6rem]",
             );
 
             if (item.action) {

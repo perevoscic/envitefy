@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -139,7 +138,7 @@ export default function HeroTopNav({
   mobileNavLinks,
   primaryCtaLabel = "Get Started",
   authenticatedPrimaryHref,
-  brandHref = "/landing",
+  brandHref = "/",
   dashboardHref = "/",
   guestPrimaryHref,
   loginSuccessRedirectUrl = dashboardHref,
@@ -158,7 +157,6 @@ export default function HeroTopNav({
   const [activeNavHref, setActiveNavHref] = useState<string | null>(null);
   const mobileMenuCardRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuToggleRef = useRef<HTMLButtonElement | null>(null);
-  const mobileMenuDragStartX = useRef<number | null>(null);
   const mobileMenuSwipeStartX = useRef<number | null>(null);
   const pendingMobileHashHrefRef = useRef<string | null>(null);
   const isTransparentDark = variant === "transparent-dark";
@@ -419,10 +417,7 @@ export default function HeroTopNav({
     };
 
   return (
-    <motion.header
-      initial={isTransparentVariant ? { y: -96, opacity: 0 } : false}
-      animate={isTransparentVariant ? { y: 0, opacity: 1 } : undefined}
-      transition={isTransparentVariant ? { duration: 0.8, ease: "easeOut" } : undefined}
+    <header
       data-scrolled-past-hero={hasScrolledPastHero ? "true" : "false"}
       className={cx(
         "fixed inset-x-0 top-0 z-50 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] sm:px-6 lg:px-8",
@@ -518,8 +513,7 @@ export default function HeroTopNav({
                       )}
                     />
                     {isActive ? (
-                      <motion.span
-                        layoutId="hero-top-nav-active-underline"
+                      <span
                         className={cx(
                           "pointer-events-none absolute inset-x-0 -bottom-0.5 h-[2.5px] origin-center rounded-full",
                           getActiveUnderlineClass({
@@ -528,7 +522,6 @@ export default function HeroTopNav({
                             isDarkGlass,
                           }),
                         )}
-                        transition={{ type: "spring", stiffness: 420, damping: 34 }}
                       />
                     ) : null}
                   </span>
@@ -635,23 +628,10 @@ export default function HeroTopNav({
 
         {mobileMenuPortalReady && typeof document !== "undefined"
           ? createPortal(
-              <motion.div
+              <div
                 id="hero-top-nav-mobile"
                 aria-hidden={!mobileMenuOpen}
-                initial={false}
-                animate={{
-                  x: mobileMenuOpen ? 0 : "100%",
-                  opacity: mobileMenuOpen ? 1 : 0,
-                }}
-                transition={{
-                  type: "spring",
-                  stiffness: 360,
-                  damping: 36,
-                  mass: 0.9,
-                }}
-                drag={mobileMenuOpen ? "x" : false}
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.1}
+                inert={!mobileMenuOpen ? true : undefined}
                 onPointerDownCapture={(event) => {
                   mobileMenuSwipeStartX.current = event.clientX;
                 }}
@@ -664,23 +644,11 @@ export default function HeroTopNav({
                     setMobileLoginExpanded(false);
                   }
                 }}
-                onDragStart={(_event, info) => {
-                  mobileMenuDragStartX.current = info.point.x;
-                }}
-                onDragEnd={(_event, info) => {
-                  const dragStartX = mobileMenuDragStartX.current;
-                  mobileMenuDragStartX.current = null;
-                  const dragDistanceX =
-                    dragStartX == null ? info.offset.x : info.point.x - dragStartX;
-
-                  if (dragDistanceX > 100) {
-                    setMobileMenuOpen(false);
-                    setMobileLoginExpanded(false);
-                  }
-                }}
                 className={cx(
-                  "!fixed inset-0 z-[1000] h-dvh w-screen touch-pan-y !overflow-y-auto overscroll-y-contain px-4 pb-6 pt-[max(0.9rem,env(safe-area-inset-top))] will-change-transform [-webkit-overflow-scrolling:touch] lg:hidden",
-                  mobileMenuOpen ? "pointer-events-auto" : "pointer-events-none",
+                  "!fixed inset-0 z-[1000] h-dvh w-screen touch-pan-y !overflow-y-auto overscroll-y-contain px-4 pb-6 pt-[max(0.9rem,env(safe-area-inset-top))] transition-[transform,opacity] duration-300 ease-out will-change-transform [-webkit-overflow-scrolling:touch] lg:hidden",
+                  mobileMenuOpen
+                    ? "pointer-events-auto translate-x-0 opacity-100"
+                    : "pointer-events-none translate-x-full opacity-0",
                   useDarkMobileMenu
                     ? "theme-glass-menu bg-[#150c29] text-white shadow-[0_30px_80px_rgba(4,1,14,0.5)]"
                     : "bg-[linear-gradient(180deg,#faf7ff_0%,#f4efff_100%)] text-[#31264f] shadow-[0_30px_80px_rgba(80,61,150,0.2)]",
@@ -812,6 +780,8 @@ export default function HeroTopNav({
 
                             <div
                               id="hero-top-nav-mobile-login"
+                              aria-hidden={!mobileLoginExpanded}
+                              inert={!mobileLoginExpanded ? true : undefined}
                               className={cx(
                                 "grid w-full transition-[grid-template-rows,opacity,margin] duration-300 ease-out",
                                 mobileLoginExpanded
@@ -902,11 +872,11 @@ export default function HeroTopNav({
                     ) : null}
                   </nav>
                 </div>
-              </motion.div>,
+              </div>,
               document.body,
             )
           : null}
       </div>
-    </motion.header>
+    </header>
   );
 }

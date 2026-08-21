@@ -95,12 +95,12 @@ export default function ResetPasswordPageClient() {
         <p className="text-sm text-muted-foreground mb-6">
           Enter your new password.
         </p>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4" data-mobile-form-surface>
           <input
             name="newPassword"
             type="password"
             autoComplete="new-password"
-            className="w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
+            className="min-h-11 w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-base text-foreground/90 shadow-inner transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]"
             placeholder="New password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
@@ -110,7 +110,7 @@ export default function ResetPasswordPageClient() {
             name="confirmPassword"
             type="password"
             autoComplete="new-password"
-            className="w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-sm text-foreground/90 shadow-inner focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)] transition"
+            className="min-h-11 w-full rounded-xl border border-border/80 bg-white/80 px-4 py-3 text-base text-foreground/90 shadow-inner transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]"
             placeholder="Confirm new password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -119,7 +119,7 @@ export default function ResetPasswordPageClient() {
           <button
             type="submit"
             disabled={loading}
-            className="btn btn-primary w-full justify-center"
+            className="btn btn-primary min-h-12 w-full justify-center"
           >
             {loading ? "Resetting..." : "Reset password"}
           </button>

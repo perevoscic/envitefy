@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import LiveCardHeroTextOverlay from "@/components/studio/LiveCardHeroTextOverlay";
 import StudioLiveCardActionSurface, {
@@ -48,6 +49,8 @@ export default function StudioShowcaseLiveCard({
   const resolvedActiveTab = activeTab ?? internalActiveTab;
   const handleActiveTabChange = onActiveTabChange ?? setInternalActiveTab;
   const usesPosterArtFrame = preview.invitationData.heroTextMode === "image";
+  const canOptimizeImage =
+    preview.imageUrl.startsWith("/") && !preview.imageUrl.startsWith("/api/");
 
   useEffect(() => {
     if (activeTab === undefined) {
@@ -140,14 +143,26 @@ export default function StudioShowcaseLiveCard({
         className,
       )}
     >
-      <img
-        src={preview.imageUrl}
-        alt={preview.title}
-        loading={imageLoading}
-        fetchPriority={imageFetchPriority}
-        decoding="async"
-        className="absolute inset-0 h-full w-full object-cover object-center"
-      />
+      {canOptimizeImage ? (
+        <Image
+          src={preview.imageUrl}
+          alt={preview.title}
+          fill
+          loading={imageLoading}
+          fetchPriority={imageFetchPriority}
+          sizes={showcaseMode ? "300px" : "(min-width: 768px) 420px, 92vw"}
+          className="object-cover object-center"
+        />
+      ) : (
+        <img
+          src={preview.imageUrl}
+          alt={preview.title}
+          loading={imageLoading}
+          fetchPriority={imageFetchPriority}
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+      )}
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.06)_26%,rgba(0,0,0,0.28)_100%)]" />
       <LiveCardHeroTextOverlay invitationData={preview.invitationData} />
       <div

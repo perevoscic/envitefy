@@ -12,7 +12,7 @@ test("left sidebar controller derives a single create-access flag", () => {
 
   assert.match(
     source,
-    /const hasCreateEventAccess = useMemo\(\s*\(\) => useGymnasticsDirectCreate \|\| createMenuOptionCount > 0,\s*\[createMenuOptionCount, useGymnasticsDirectCreate\],?\s*\)/s,
+    /const hasCreateEventAccess = useMemo\(\s*\(\) => isAdmin && \(useGymnasticsDirectCreate \|\| createMenuOptionCount > 0\),\s*\[createMenuOptionCount, isAdmin, useGymnasticsDirectCreate\],?\s*\)/s,
   );
 });
 
@@ -26,6 +26,28 @@ test("left sidebar controller resets create panel state when create access disap
   assert.match(
     source,
     /useEffect\(\(\) => \{\s*if \(\s*hasCreateEventAccess \|\|\s*\(sidebarPage !== "createEvent" && sidebarPage !== "createEventOther"\)\s*\) \{\s*return;\s*\}\s*setForcedCreateActiveLabel\(null\);\s*setSidebarPage\("root"\);\s*\}, \[hasCreateEventAccess, setSidebarPage, sidebarPage\]\);/s,
+  );
+});
+
+test("event creation routes keep My Events active while the create submenu tracks its route", () => {
+  const controllerSource = readSource("src/app/left-sidebar.controller.ts");
+  const viewSource = readSource("src/app/left-sidebar.tsx");
+
+  assert.match(
+    controllerSource,
+    /const isCreateEntryActive =\s*sidebarPage === "createEvent" \|\| sidebarPage === "createEventOther";/,
+  );
+  assert.match(
+    viewSource,
+    /const isViewingEventFromListInRoot =[\s\S]*?pathname\.startsWith\("\/event\/"\)[\s\S]*?const isMyEventsActive =[\s\S]*?isViewingEventFromListInRoot && eventContextSourcePage === "myEvents"/,
+  );
+  assert.doesNotMatch(
+    controllerSource,
+    /const isCreateEntryActive =\s*isCreateRouteActive \|\|/,
+  );
+  assert.match(
+    controllerSource,
+    /const isCreateMenuButtonActive = useCallback\(\s*\(item:[\s\S]*?\) =>\s*isCreateItemActive\(item\)/,
   );
 });
 

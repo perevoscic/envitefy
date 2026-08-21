@@ -13,7 +13,7 @@ const MARKETING_PRODUCT_LINKS = [
   { page: "gymnastics", label: "Gymnastics", href: "/gymnastics" },
 ];
 
-const MARKETING_HOME_LINK = { label: "Home", href: "/landing" };
+const MARKETING_HOME_LINK = { label: "Home", href: "/" };
 
 /**
  * Builds the shared guest marketing navigation for `/landing`, `/studio`, `/snap`, and `/gymnastics`.

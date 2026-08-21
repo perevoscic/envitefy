@@ -15,6 +15,7 @@ const PUBLIC_UNAUTH_PATHS = new Set([
   "/",
   "/studio",
   "/landing",
+  "/invitation-maker",
   "/gymnastics",
   "/open",
   "/about",

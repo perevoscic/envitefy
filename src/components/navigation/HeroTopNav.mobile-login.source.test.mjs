@@ -12,7 +12,7 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
 
   assert.match(source, /import \{ usePathname \} from "next\/navigation";/);
   assert.match(source, /import LoginForm from "@\/components\/auth\/LoginForm";/);
-  assert.match(source, /import \{ motion \} from "framer-motion";/);
+  assert.doesNotMatch(source, /framer-motion/);
   assert.match(source, /import \{ createPortal \} from "react-dom";/);
   assert.match(source, /loginSuccessRedirectUrl\?: string;/);
   assert.match(source, /mobileNavLinks\?: HeroTopNavLink\[];/);
@@ -28,7 +28,7 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
   );
   assert.match(source, /const mobileMenuCardRef = useRef<HTMLDivElement \| null>\(null\);/);
   assert.match(source, /const mobileMenuToggleRef = useRef<HTMLButtonElement \| null>\(null\);/);
-  assert.match(source, /const mobileMenuDragStartX = useRef<number \| null>\(null\);/);
+  assert.doesNotMatch(source, /mobileMenuDragStartX/);
   assert.match(source, /const mobileMenuSwipeStartX = useRef<number \| null>\(null\);/);
   assert.match(
     source,
@@ -59,28 +59,17 @@ test("HeroTopNav keeps desktop auth actions while using inline login inside the 
   assert.match(source, /id="hero-top-nav-mobile"/);
   assert.match(source, /createPortal\(/);
   assert.match(source, /document\.body/);
-  assert.match(source, /<motion\.div/);
-  assert.match(source, /initial=\{false\}/);
-  assert.match(source, /x: mobileMenuOpen \? 0 : "100%"/);
-  assert.match(source, /opacity: mobileMenuOpen \? 1 : 0/);
-  assert.match(source, /type: "spring"/);
-  assert.match(source, /drag=\{mobileMenuOpen \? "x" : false\}/);
-  assert.match(source, /dragConstraints=\{\{ left: 0, right: 0 \}\}/);
-  assert.match(source, /dragElastic=\{0\.1\}/);
+  assert.match(source, /transition-\[transform,opacity\] duration-300 ease-out/);
   assert.match(source, /onPointerDownCapture=\{\(event\) => \{/);
   assert.match(source, /mobileMenuSwipeStartX\.current = event\.clientX;/);
   assert.match(source, /onPointerUpCapture=\{\(event\) => \{/);
   assert.match(source, /event\.clientX - swipeStartX > 100/);
-  assert.match(source, /onDragStart=\{\(_event, info\) => \{/);
-  assert.match(source, /mobileMenuDragStartX\.current = info\.point\.x;/);
-  assert.match(source, /const dragDistanceX =/);
-  assert.match(source, /info\.point\.x - dragStartX/);
-  assert.match(source, /if \(dragDistanceX > 100\) \{/);
   assert.match(source, /"!fixed inset-0 z-\[1000\] h-dvh w-screen touch-pan-y !overflow-y-auto/);
   assert.match(source, /overscroll-y-contain/);
   assert.match(source, /\[-webkit-overflow-scrolling:touch\]/);
   assert.match(source, /will-change-transform/);
-  assert.match(source, /mobileMenuOpen \? "pointer-events-auto" : "pointer-events-none"/);
+  assert.match(source, /"pointer-events-auto translate-x-0 opacity-100"/);
+  assert.match(source, /"pointer-events-none translate-x-full opacity-0"/);
   assert.match(source, /theme-glass-menu bg-\[#150c29\] text-white/);
   assert.match(
     source,

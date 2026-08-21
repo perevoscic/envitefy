@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type BrowserContext, type Page } from "playwright/test";
 import {
   expectIntentionalHorizontalRegions,
@@ -68,7 +69,38 @@ for (const route of MOBILE_ROUTE_CASES) {
       await page.goto(resolvedPath as string, { waitUntil: "domcontentloaded" });
       await expectPrimaryContent(page, route.readySelector || "main, [role='main']");
       await page.evaluate(() => document.fonts.ready);
-      await expectNoDocumentOverflow(page, route.allowedHorizontalRegions);
+      await page.evaluate(() => {
+        for (const animation of document.getAnimations()) {
+          try {
+            animation.finish();
+          } catch {
+            // Infinite and scroll-driven animations are not relevant to the static audit state.
+          }
+        }
+      });
+      await page.waitForTimeout(120);
+      const accessibility = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .exclude("[data-mobile-a11y-ignore]")
+        .exclude(".cta-roller-content[aria-hidden='true']")
+        .analyze();
+      const seriousAccessibilityViolations = accessibility.violations.filter((violation) =>
+        ["serious", "critical"].includes(violation.impact || ""),
+      );
+      const accessibilitySummary = seriousAccessibilityViolations.map((violation) => ({
+        help: violation.help,
+        id: violation.id,
+        impact: violation.impact,
+        targets: violation.nodes.slice(0, 8).map((node) => node.target.join(" ")),
+      }));
+      expect(
+        accessibilitySummary,
+        `Serious accessibility violations at ${page.url()}`,
+      ).toEqual([]);
+      await expectNoDocumentOverflow(page, [
+        "[data-mobile-horizontal-scroll]",
+        ...(route.allowedHorizontalRegions || []),
+      ]);
       await expectIntentionalHorizontalRegions(page, route.allowedHorizontalRegions);
 
       const viewport = testInfo.project.use.viewport as { width: number; height: number };
@@ -97,8 +129,11 @@ for (const route of MOBILE_ROUTE_CASES) {
         });
       }
 
+      const actionableConsoleErrors = consoleErrors.filter(
+        (message) => !/ERR_NETWORK_ACCESS_DENIED|ERR_BLOCKED_BY_CLIENT/.test(message),
+      );
       expect(pageErrors, `Page errors at ${page.url()}`).toEqual([]);
-      expect(consoleErrors, `Console errors at ${page.url()}`).toEqual([]);
+      expect(actionableConsoleErrors, `Console errors at ${page.url()}`).toEqual([]);
     } finally {
       await context.close();
     }

@@ -77,6 +77,7 @@ export const signedOutBottomNav: SignedOutBottomNavItem[] = [
 ];
 
 export const signedOutMobileMenuLinks: SignedOutMobileMenuLink[] = [
+  { label: "Invitation Maker", href: "/invitation-maker" },
   ...publicUseCaseNavLinks,
   { label: "Guides", href: "/guides" },
   { label: "Contact", href: "/contact" },

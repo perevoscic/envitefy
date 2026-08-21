@@ -1330,7 +1330,7 @@ export function useLeftSidebarController({
     [findEventListItemFromPath],
   );
   const isCreateEntryActive =
-    isCreateRouteActive || sidebarPage === "createEvent" || sidebarPage === "createEventOther";
+    sidebarPage === "createEvent" || sidebarPage === "createEventOther";
 
   useEffect(() => {
     const inferredSource = inferEventListSourceFromPath(pathname);

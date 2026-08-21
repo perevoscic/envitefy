@@ -15,14 +15,14 @@ test("landing page is hosted-event-led and premium", () => {
   const designTestimonial = readSource("src/components/ui/design-testimonial.tsx");
 
   assert.match(page, /<LandingExperience \/>/);
-  assert.match(page, /Beautiful Hosted Event Pages, RSVP & Invitations/);
-  assert.match(page, /polished hosted event page/);
+  assert.match(page, /Online Invitation Maker with RSVP & Event Pages/);
+  assert.match(page, /Create an online invitation and hosted event page/);
   assert.doesNotMatch(page, /message, upload, snap, flyer, invite, PDF, schedule, or design idea/);
   assert.doesNotMatch(page, /ld-landing-faq/);
   assert.doesNotMatch(page, /FAQPage/);
 
   assert.match(landingExperience, /id="landing-hero"/);
-  assert.match(landingData, /Beautiful hosted events, from invite to RSVP/);
+  assert.match(landingExperience, /Create beautiful online invitations, from invite to RSVP/);
   assert.match(landingExperience, /Let's create/);
   assert.match(landingExperience, /View live examples/);
   assert.match(landingData, /mobilePrimaryCtaLabel: "Create invite"/);
@@ -30,10 +30,16 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingExperience, /View examples/);
   assert.match(landingExperience, /PremiumLandingHero/);
   assert.match(landingExperience, /GuestActionSuite/);
-  assert.match(landingExperience, /<AnimatePresence initial=\{false\} mode="sync">/);
-  assert.match(landingExperience, /const preloadedImage = new window\.Image\(\)/);
-  assert.match(landingExperience, /transition=\{\{ duration: 0\.32, ease: "easeOut" \}\}/);
-  assert.match(landingExperience, /unoptimized/);
+  assert.doesNotMatch(landingExperience, /from "framer-motion"/);
+  const heroCarouselSource = landingExperience.slice(
+    landingExperience.indexOf("function HeroProductCarousel"),
+    landingExperience.indexOf("function PremiumLandingHero"),
+  );
+  assert.doesNotMatch(heroCarouselSource, /const preloadedImage = new window\.Image\(\)/);
+  assert.doesNotMatch(heroCarouselSource, /window\.setInterval/);
+  assert.match(heroCarouselSource, /key=\{activeSlide\.id\}/);
+  assert.doesNotMatch(heroCarouselSource, /unoptimized/);
+  assert.match(landingExperience, /fontFamily: "Georgia, 'Times New Roman', serif"/);
   assert.match(landingExperience, /className="pointer-events-none absolute inset-0 z-0"/);
   assert.match(landingExperience, /<HeroImageScrim/);
   assert.match(heroImageScrim, /absolute inset-0 z-\[1\] bg-\[linear-gradient/);
@@ -168,7 +174,7 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingData, /heroProductSlides/);
   assert.match(landingExperience, /heroProductSlides/);
   assert.match(landingExperience, /HeroProductCarousel/);
-  assert.match(landingExperience, /AnimatePresence/);
+  assert.doesNotMatch(landingExperience, /AnimatePresence/);
   assert.match(landingData, /desktopImage/);
   assert.match(landingData, /\/images\/landing\/hero\/garden-brunch-desktop\.webp/);
   assert.match(landingData, /\/images\/landing\/hero\/birthday-dino-desktop\.webp/);
@@ -190,11 +196,14 @@ test("landing page is hosted-event-led and premium", () => {
   assert.match(landingData, /Sweet details, beautifully organized/);
   assert.match(landingData, /A warm welcome in one link/);
   assert.doesNotMatch(landingData, /\/images\/landing\/hero\/[^"]+\.png/);
-  assert.match(landingExperience, /7000/);
+  assert.doesNotMatch(heroCarouselSource, /7000/);
   assert.match(landingExperience, /min-h-\[100svh\]/);
   assert.match(landingExperience, /justify-end/);
   assert.match(landingExperience, /fill/);
-  assert.match(landingExperience, /object-cover object-center/);
+  assert.match(heroCarouselSource, /getImageProps/);
+  assert.match(heroCarouselSource, /<picture>/);
+  assert.match(heroCarouselSource, /media="\(min-width: 768px\)"/);
+  assert.match(heroCarouselSource, /className="object-cover"/);
   assert.match(landingExperience, /variant="transparent-dark"/);
   assert.match(landingData, /capacity state/);
   assert.match(landingExperience, /Turn every event page into the place guests actually act/);
@@ -323,7 +332,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(heroTopNav, /aria-current/);
   assert.match(heroTopNav, /usePathname/);
   assert.match(heroTopNav, /getActivePathHref/);
-  assert.match(heroTopNav, /layoutId="hero-top-nav-active-underline"/);
+  assert.match(heroTopNav, /getActiveUnderlineClass/);
   assert.match(heroTopNav, /isTransparentOverHero/);
   assert.match(heroTopNav, /data-scrolled-past-hero/);
   assert.match(heroTopNav, /Math\.max\(120, window\.innerHeight \* 0\.82\)/);
@@ -384,7 +393,11 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   );
   assert.match(
     landingShowcase,
-    /<StudioShowcaseLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+interactive=\{activeIndex === index\}\s+imageLoading=\{index <= 2 \|\| activeIndex === index \? "eager" : "lazy"\}\s+imageFetchPriority=\{activeIndex === index \? "high" : "auto"\}\s+showcaseOverlay=/,
+    /Math\.abs\(index - activeIndex\) <= 1/,
+  );
+  assert.match(
+    landingShowcase,
+    /<StudioShowcaseLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+interactive=\{activeIndex === index\}\s+imageLoading=\{activeIndex === index \? "eager" : "lazy"\}\s+imageFetchPriority=\{activeIndex === index \? "high" : "auto"\}\s+showcaseOverlay=/,
   );
   assert.doesNotMatch(landingShowcase, /createMarketingInvitationData/);
   assert.doesNotMatch(landingShowcase, /\/api\/blob\/event-media\//);
@@ -402,7 +415,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   assert.match(conditionalFooter, /href: "\/signup-forms"/);
   assert.doesNotMatch(conditionalFooter, /href: "\/use-cases/);
   assert.doesNotMatch(conditionalFooter, /Templates/);
-  assert.match(conditionalFooter, /Invites/);
+  assert.match(conditionalFooter, /Invitation maker/);
   assert.match(conditionalFooter, /Sign-ups/);
   assert.match(conditionalFooter, /Share without an app/);
   assert.match(conditionalFooter, /href: "\/privacy"/);
@@ -426,6 +439,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   const bottomNav = readSource("src/components/navigation/BottomNav.tsx");
   const createActionSheet = readSource("src/components/navigation/CreateActionSheet.tsx");
   const menuBottomSheet = readSource("src/components/navigation/MenuBottomSheet.tsx");
+  const modalDialogHook = readSource("src/hooks/useModalDialog.ts");
   const conciergeSheet = readSource("src/components/navigation/ConciergeSheet.tsx");
   const signedOutPageChrome = readSource("src/components/navigation/SignedOutPageChrome.tsx");
   const showcasePage = readSource("src/app/showcase/page.tsx");
@@ -484,19 +498,20 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(bottomNav, /initialActiveLabel\?: string/);
   assert.match(bottomNav, /onHashSelect\?: \(href: string\) => void/);
   assert.match(bottomNav, /handleHashSelect\(item\.href\)/);
-  assert.match(bottomNav, /bg-white\/95/);
-  assert.match(bottomNav, /backdrop-blur-xl/);
+  assert.match(bottomNav, /radial-gradient\(circle_at_50%_-45%/);
+  assert.match(bottomNav, /backdrop-blur-2xl/);
+  assert.match(bottomNav, /rounded-\[1\.65rem\]/);
   assert.match(bottomNav, /env\(safe-area-inset-bottom\)/);
   assert.match(bottomNav, /initialActiveLabel = "Concierge"/);
   assert.match(bottomNav, /const \[activeLabel, setActiveLabel\] = useState\(initialActiveLabel\)/);
   assert.match(bottomNav, /onHashSelect\?: \(href: string\) => void/);
   assert.match(bottomNav, /const handleHashSelect = \(href: string\) => \{/);
   assert.match(bottomNav, /onMenuSelect\?\.\(\)/);
-  assert.match(bottomNav, /drop-shadow-\[0_0_3px_rgba\(139,92,246,0\.5\)\]/);
-  assert.match(bottomNav, /shadow-\[0_0_6px_rgba\(139,92,246,1\)\]/);
-  assert.match(bottomNav, /bg-gradient-to-tr from-pink-500 via-violet-600 to-indigo-500/);
+  assert.match(bottomNav, /shadow-\[4px_4px_10px_rgba\(45,38,74,0\.13\)/);
+  assert.match(bottomNav, /bg-\[linear-gradient\(135deg,#8b5cf6,#4d8cff\)\]/);
+  assert.match(bottomNav, /bg-\[linear-gradient\(145deg,#a56cff,#7138f5_54%,#4d8cff\)\]/);
   assert.match(bottomNav, /logo-colored\.png/);
-  assert.match(bottomNav, /bg-white drop-shadow-\[0_0_8px_rgba\(255,255,255,0\.52\)\]/);
+  assert.match(bottomNav, /bg-white drop-shadow-\[0_2px_7px_rgba\(255,255,255,0\.5\)\]/);
   assert.match(bottomNav, /<CreateActionSheet/);
   assert.doesNotMatch(bottomNav, /<MenuBottomSheet/);
   assert.doesNotMatch(bottomNav, /action === "signin"/);
@@ -520,7 +535,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   );
   assert.match(
     signedOutPageChrome,
-    /router\.push\(href\.startsWith\("#"\) \? `\/landing\$\{href\}` : href\)/,
+    /router\.push\(href\.startsWith\("#"\) \? `\/\$\{href\}` : href\)/,
   );
   assert.match(showcasePage, /<SignedOutPageChrome/);
   assert.match(showcasePage, /activeBottomNavLabel="Examples"/);
@@ -532,13 +547,19 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.doesNotMatch(createActionSheet, /onTemplateSelect/);
   assert.match(createActionSheet, /Upload Flyer \/ Scan Invite/);
   assert.match(createActionSheet, /Create Manually/);
+  assert.match(createActionSheet, /radial-gradient\(circle_at_86%_6%/);
+  assert.match(createActionSheet, /aria-label="Close create options"/);
+  assert.match(createActionSheet, /<X className="h-\[18px\] w-\[18px\]"/);
   assert.match(menuBottomSheet, /bg-\[#150c29\]/);
   assert.match(menuBottomSheet, /bottom-0/);
   assert.match(menuBottomSheet, /const sheetHeight = "calc\(100svh - 0\.75rem\)"/);
   assert.match(menuBottomSheet, /height: authActive \? "auto" : sheetHeight/);
   assert.match(menuBottomSheet, /maxHeight: sheetHeight/);
-  assert.match(menuBottomSheet, /body\.style\.position = "fixed"/);
-  assert.match(menuBottomSheet, /window\.scrollTo\(0, scrollY\)/);
+  assert.match(menuBottomSheet, /useModalDialog\(\{ dialogRef, onClose: closeSheet, open \}\)/);
+  assert.match(modalDialogHook, /body\.style\.position = "fixed"/);
+  assert.match(modalDialogHook, /window\.scrollTo\(0, scrollY\)/);
+  assert.match(modalDialogHook, /event\.key === "Escape"/);
+  assert.match(modalDialogHook, /event\.key !== "Tab"/);
   assert.match(menuBottomSheet, /overflow-y-auto/);
   assert.match(menuBottomSheet, /rounded-t-\[1\.75rem\]/);
   assert.match(menuBottomSheet, /initial=\{\{ y: "100%", opacity: 0 \}\}/);
@@ -582,7 +603,8 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(mobileBrandHeader, /h-auto w-\[120px\] brightness-0 invert/);
   assert.match(mobileBrandHeader, /brightness-0 invert/);
   assert.doesNotMatch(mobileBrandHeader, /envitefy-wordmark-white\.svg/);
-  assert.match(mobileBrandHeader, /bg-black\/10 text-white shadow-none/);
+  assert.match(mobileBrandHeader, /bg-black\/20 text-white shadow-none/);
+  assert.match(mobileBrandHeader, /hover:bg-black\/30/);
   assert.doesNotMatch(mobileBrandHeader, /from-\[#7a6f8f\]/);
   assert.doesNotMatch(mobileBrandHeader, /rounded-full px-7/);
   assert.ok(fs.existsSync(officialLogoPng));

@@ -365,7 +365,7 @@ export default function AdminUsersPage() {
                     }}
                     placeholder="Search by email, first or last name..."
                     disabled={!!activeStatView}
-                    className="w-full pl-11 pr-10 py-3 text-sm rounded-2xl border border-[#d8d0f3] bg-white text-[#483a74] placeholder:text-[#9a8fc0] focus:border-[#9b86df] focus:ring-2 focus:ring-[#baa9ea]/55 focus:outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="min-h-12 w-full rounded-2xl border border-[#d8d0f3] bg-white py-3 pr-10 pl-11 text-base text-[#483a74] transition-all placeholder:text-[#766b9d] focus:border-[#9b86df] focus:ring-2 focus:ring-[#baa9ea]/55 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
                     suppressHydrationWarning
                   />
                   <svg

@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Amita:wght@400;700&family=Arizonia&family=Cookie&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Courgette&family=Dancing+Script:wght@400;700&family=Euphoria+Script&family=Great+Vibes&family=Indie+Flower&family=Josefin+Slab:wght@100;200;300;400;500;600;700&family=Kalam:wght@400;700&family=Kaushan+Script&family=La+Belle+Aurore&family=MonteCarlo&family=Montserrat:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=Pacifico&family=Parisienne&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;600;700&family=Redressed&family=Sacramento&family=Satisfy&family=Shadows+Into+Light&family=Sofia&family=Sonsie+One&family=Style+Script&family=Tangerine:wght@400;700&family=Yellowtail&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -913,7 +912,6 @@ body {
   padding: 0;
   /* Extend to edges but allow vertical scrolling */
   width: 100%;
-  overflow-x: hidden;
   overflow-y: auto;
   /* Allow scrolling */
   -webkit-overflow-scrolling: touch;
@@ -1128,17 +1126,17 @@ h5 {
   }
 
   .btn-primary {
-    background: #8b5cf6;
+    background: #6d28d9;
     color: #ffffff;
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+    border: 1px solid rgba(109, 40, 217, 0.35);
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.25);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
   .btn-primary:hover {
-    background: #7c3aed;
-    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+    background: #5b21b6;
+    box-shadow: 0 6px 16px rgba(109, 40, 217, 0.35);
   }
 
   .btn-secondary {

@@ -12,6 +12,14 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: [
+        "/api/",
+        "/admin/",
+        "/calendar",
+        "/events/",
+        "/settings",
+        "/concierge-v2/events/",
+      ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
     host: baseUrl,

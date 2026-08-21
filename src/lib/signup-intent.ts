@@ -26,6 +26,7 @@ export const SIGNUP_INTENTS: SignupIntent[] = [
 const SIGNUP_INTENT_SET = new Set<string>(SIGNUP_INTENTS);
 
 const INTENT_BY_MARKETING_PATH: Record<string, SignupIntent> = {
+  "/invitation-maker": "snap",
   "/snap": "snap",
   "/weddings": "weddings",
   "/bridal-showers": "bridal_showers",

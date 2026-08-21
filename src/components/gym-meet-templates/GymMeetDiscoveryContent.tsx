@@ -639,7 +639,14 @@ export default function GymMeetDiscoveryContent({ model, variant }: { model: any
             className="transition-transform duration-200 ease-out will-change-transform"
             style={{ transform: `translateX(${bounceOffset}px)` }}
           >
-            <div ref={railRef} className={navRailClass}>
+            <div
+              ref={railRef}
+              className={navRailClass}
+              role="tablist"
+              aria-label="Meet information sections"
+              tabIndex={0}
+              data-mobile-horizontal-scroll
+            >
               {sections.map((section: any) => {
                 const isActive = activeSection?.id === section.id;
                 const navLabel = section.navLabel || section.label;
@@ -650,10 +657,11 @@ export default function GymMeetDiscoveryContent({ model, variant }: { model: any
                       tabButtonRefs.current[section.id] = node;
                     }}
                     onClick={() => setActiveSectionId(section.id)}
-                    className={`${focusRing} ${resolvedNavButtonClass} ${
+                    className={`${focusRing} min-h-11 ${resolvedNavButtonClass} ${
                       isActive ? activeTabClass : idleTabClass
                     }`}
-                    aria-current={isActive ? "page" : undefined}
+                    role="tab"
+                    aria-selected={isActive}
                     aria-label={navLabel}
                     title={navLabel}
                   >

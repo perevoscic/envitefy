@@ -88,7 +88,7 @@ const guideVisuals = {
     route: "Wedding page",
   },
   "birthday-rsvp-invitation": {
-    accent: "bg-[#fff4ec] text-[#b55a2a]",
+    accent: "bg-[#fff4ec] text-[#843b19]",
     bestFor: "Birthday invites, parent notes, guest responses",
     icon: Sparkles,
     route: "Birthday RSVP",
@@ -264,7 +264,7 @@ export default function GuidesPage() {
                         <Icon className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold uppercase text-[#6f7b75]">
+                        <p className="text-xs font-bold uppercase text-[#52605c]">
                           Step {index + 1}
                         </p>
                         <h3
@@ -329,7 +329,7 @@ export default function GuidesPage() {
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-[#52605c]">{guide.intro}</p>
                 <div className="mt-5 border-t border-[#d9ded3] pt-4">
-                  <p className="text-xs font-bold uppercase text-[#6f7b75]">Best for</p>
+                  <p className="text-xs font-bold uppercase text-[#52605c]">Best for</p>
                   <p className="mt-1 text-sm font-semibold text-[#303735]">{visual.bestFor}</p>
                 </div>
               </Link>
@@ -370,7 +370,7 @@ export default function GuidesPage() {
           <div>
             <p className="text-xs font-bold uppercase text-[#b8e0d4]">Next step</p>
             <h2
-              className="mt-3 text-3xl font-semibold leading-tight"
+              className="mt-3 text-3xl font-semibold leading-tight !text-white"
               style={{ fontFamily: pageFont }}
             >
               Turn the guide into a live page guests can actually use.

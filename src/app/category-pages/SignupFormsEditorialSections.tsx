@@ -189,7 +189,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
       <section className="overflow-hidden bg-[#f8f9ff] px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
         <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
           <div className="max-w-xl">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#5270d7]">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#3c55ad]">
               Coordination people enjoy using
             </p>
             <h2 className="mt-5 text-4xl font-semibold leading-[1.06] text-[#171b33] sm:text-5xl lg:text-6xl">
@@ -288,7 +288,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
       <section className="bg-[#eef2ff] px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#5270d7]">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#3c55ad]">
               One flexible form
             </p>
             <h2 className="mt-5 text-4xl font-semibold leading-tight text-[#171b33] sm:text-5xl">
@@ -345,7 +345,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
             </div>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#5270d7]">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#3c55ad]">
               Built for organizers
             </p>
             <h2 className="mt-5 text-4xl font-semibold leading-tight text-[#171b33] sm:text-5xl">
@@ -381,7 +381,7 @@ export default function SignupFormsEditorialSections({ page }: { page: UseCasePa
       <section className="bg-[#eef2ff] px-5 py-20 sm:px-8 sm:py-24 lg:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1fr)]">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#5270d7]">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#3c55ad]">
               Good to know
             </p>
             <h2 className="mt-5 text-4xl font-semibold leading-tight text-[#171b33] sm:text-5xl">

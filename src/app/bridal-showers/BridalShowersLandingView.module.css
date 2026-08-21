@@ -3,7 +3,7 @@
   --bridal-pearl: #fffdfa;
   --bridal-ink: #241f1d;
   --bridal-muted: #6c625d;
-  --bridal-gold: #9b7e55;
+  --bridal-gold: #6e5638;
   --bridal-gold-deep: #6e5638;
   --bridal-gold-soft: #e8ded0;
   --bridal-blush: #f3dedc;
@@ -974,7 +974,7 @@
 }
 
 .testimonialGrid figcaption small {
-  color: #85776d;
+  color: #5f534b;
   font-size: 0.5rem;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -984,7 +984,7 @@
   position: absolute;
   right: 25px;
   bottom: 23px;
-  color: #bba894;
+  color: #6e5638;
   font-size: 0.53rem;
   font-style: normal;
   letter-spacing: 0.1em;

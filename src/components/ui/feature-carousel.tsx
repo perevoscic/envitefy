@@ -12,6 +12,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { AnimatePresence, motion } from "motion/react";
+import Image from "next/image";
 import Link from "next/link";
 import { type CSSProperties, useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -206,7 +207,7 @@ export function FeatureCarousel({
                   }}
                   animate={{
                     y: wrappedDistance * ITEM_HEIGHT,
-                    opacity: Math.max(0, 1 - Math.abs(wrappedDistance) * 0.25),
+                    opacity: Math.max(0.9, 1 - Math.abs(wrappedDistance) * 0.05),
                   }}
                   transition={{
                     type: "spring",
@@ -223,19 +224,19 @@ export function FeatureCarousel({
                     onMouseEnter={() => setIsPaused(true)}
                     onMouseLeave={() => setIsPaused(false)}
                     className={cn(
-                      "group relative flex max-w-[min(15rem,calc(100vw-5rem))] items-center gap-2 rounded-full border px-4 py-2.5 text-left transition-all duration-700 md:max-w-none md:gap-4 md:px-10 md:py-5 lg:px-8 lg:py-4",
+                      "group relative flex min-h-11 max-w-[min(15rem,calc(100vw-5rem))] items-center gap-2 rounded-full border px-4 py-2.5 text-left transition-all duration-700 md:max-w-none md:gap-4 md:px-10 md:py-5 lg:px-8 lg:py-4",
                       isActive
                         ? "z-10 border-white bg-white"
-                        : "border-white/20 bg-transparent text-white/60 hover:border-white/40 hover:text-white",
+                        : "border-white/60 bg-[#17211d]/95 text-white hover:border-white/80 hover:bg-[#0f1713]",
                     )}
-                    style={isActive ? { color: accentColor } : undefined}
+                    style={isActive ? { color: "#2f3c35" } : undefined}
                   >
                     <div
                       className={cn(
                         "flex items-center justify-center transition-colors duration-500",
-                        isActive ? "" : "text-white/40",
+                        isActive ? "" : "text-white/85",
                       )}
-                      style={isActive ? { color: accentColor } : undefined}
+                      style={isActive ? { color: "#2f3c35" } : undefined}
                     >
                       <HugeiconsIcon
                         icon={feature.icon ?? CheckmarkCircle01Icon}
@@ -282,14 +283,20 @@ export function FeatureCarousel({
                   }}
                   className="absolute inset-0 origin-center overflow-hidden rounded-[1.75rem] border-4 border-background bg-background md:rounded-[2.4rem] md:border-8"
                 >
-                  <img
-                    src={feature.image}
-                    alt={feature.imageAlt ?? feature.label}
-                    className={cn(
-                      "h-full w-full object-cover transition-all duration-700",
-                      isActive ? "grayscale-0 blur-0" : "grayscale blur-[2px] brightness-75",
-                    )}
-                  />
+                  {isActive || isPrev || isNext ? (
+                    <Image
+                      src={feature.image}
+                      alt={feature.imageAlt ?? feature.label}
+                      fill
+                      loading={isActive ? "eager" : "lazy"}
+                      fetchPriority={isActive ? "high" : "auto"}
+                      sizes="(min-width: 1024px) 32vw, (min-width: 768px) 70vw, 88vw"
+                      className={cn(
+                        "object-cover transition-all duration-700",
+                        isActive ? "grayscale-0 blur-0" : "grayscale blur-[2px] brightness-75",
+                      )}
+                    />
+                  ) : null}
 
                   {feature.href ? (
                     <Link

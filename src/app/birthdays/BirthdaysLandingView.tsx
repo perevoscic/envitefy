@@ -9,7 +9,7 @@ import { birthdayCreateHref } from "./birthday-landing-data";
 export default function BirthdaysLandingView({ page }: { page: UseCasePage }) {
   const pageUrl = `https://envitefy.com${page.path}`;
   const cssVars = {
-    "--birthday-accent": "#b85d39",
+    "--birthday-accent": "#8f3f23",
     "--birthday-ink": "#2d211c",
     "--birthday-muted": "#75645b",
     "--birthday-green": "#21372c",

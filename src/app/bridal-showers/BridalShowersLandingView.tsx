@@ -45,7 +45,7 @@ const themeOptions = {
   gold: {
     name: "Champagne Gold",
     eyebrow: "Timeless luxury",
-    accent: "#9b7e55",
+    accent: "#6e5638",
     ink: "#59442e",
     soft: "#f4ede3",
     script: "With love & joy",

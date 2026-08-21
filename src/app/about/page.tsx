@@ -272,7 +272,7 @@ export default function AboutPage() {
                       <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#fff4df] text-[#9a5b18]">
                         <Icon className="h-5 w-5" />
                       </div>
-                      <span className="rounded-full border border-[#d9ded3] bg-[#f7f8f3] px-3 py-1 text-xs font-bold uppercase text-[#6f7b75] sm:mt-3 sm:inline-flex">
+                      <span className="rounded-full border border-[#d9ded3] bg-[#f7f8f3] px-3 py-1 text-xs font-bold uppercase text-[#52605c] sm:mt-3 sm:inline-flex">
                         {String(index + 1).padStart(2, "0")} {label}
                       </span>
                     </div>

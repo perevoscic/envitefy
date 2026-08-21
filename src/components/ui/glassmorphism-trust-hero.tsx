@@ -94,7 +94,8 @@ const AnimatedNumber = ({
   suffix?: string;
   value: number;
 }) => {
-  const [displayValue, setDisplayValue] = useState(0);
+  // Keep the real value in server-rendered HTML so non-JS crawlers and link previews do not see 0.
+  const [displayValue, setDisplayValue] = useState(value);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -104,6 +105,7 @@ const AnimatedNumber = ({
       return;
     }
 
+    setDisplayValue(0);
     let frameId = 0;
     const start = performance.now();
 
@@ -133,6 +135,7 @@ const AnimatedNumber = ({
 
 const SurfaceScroller = () => (
   <div
+    aria-hidden="true"
     className="relative flex overflow-hidden"
     style={{
       maskImage: "linear-gradient(to right, transparent, black 18%, black 82%, transparent)",
@@ -238,7 +241,7 @@ export default function HeroSection() {
             </Link>
             <Link
               className="group inline-flex min-h-14 items-center justify-center gap-3 rounded-full border border-white/80 bg-white/48 px-8 py-4 text-sm font-semibold text-[#202124] shadow-[0_14px_40px_rgba(32,49,55,0.08)] backdrop-blur-xl transition hover:bg-white/72 active:scale-[0.98]"
-              href="/landing"
+              href="/"
             >
               <Play className="h-4 w-4 fill-current" />
               <span>Watch flow</span>

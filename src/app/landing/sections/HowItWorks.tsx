@@ -71,7 +71,7 @@ export default function HowItWorks() {
             </p>
 
             <div className="mt-8 rounded-[2rem] border border-[#ebe3ff] bg-white p-6 shadow-[0_20px_52px_rgba(102,76,189,0.08)]">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#7f69c8]">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5f49a8]">
                 What comes out
               </p>
               <div className="mt-4 grid gap-3">
@@ -99,7 +99,7 @@ export default function HowItWorks() {
                 className="rounded-[2rem] border border-[#ece4ff] bg-white p-6 shadow-[0_18px_46px_rgba(98,71,186,0.08)]"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-semibold uppercase tracking-[0.22em] text-[#8f7bbf]">
+                  <span className="text-sm font-semibold uppercase tracking-[0.22em] text-[#635284]">
                     {step}
                   </span>
                   <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#f0e7ff_0%,#ffffff_100%)] text-[#6d54ca] shadow-sm">

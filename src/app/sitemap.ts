@@ -23,10 +23,9 @@ const baseUrl = (
   "https://envitefy.com"
 ).replace(/\/+$/, "");
 
-const buildTime = process.env.BUILD_TIME ? new Date(process.env.BUILD_TIME) : new Date();
-
 const staticEntries: StaticEntry[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
+  { path: "/invitation-maker", priority: 0.95, changeFrequency: "weekly" },
   { path: "/snap", priority: 0.9, changeFrequency: "weekly" },
   { path: "/chat", priority: 0.86, changeFrequency: "weekly" },
   { path: "/gymnastics", priority: 0.9, changeFrequency: "weekly" },
@@ -84,7 +83,6 @@ async function buildPublicEventUrls(): Promise<SitemapEntry[]> {
 
         return {
           url: `${baseUrl}${path}`,
-          lastModified: row.created_at ? new Date(row.created_at) : buildTime,
           changeFrequency: "weekly" as const,
           priority: path.startsWith("/card/") ? 0.65 : 0.7,
         };
@@ -108,13 +106,11 @@ function dedupeSitemapEntries(entries: SitemapEntry[]): SitemapEntry[] {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticUrls = staticEntries.map(({ path, priority, changeFrequency }) => ({
     url: `${baseUrl}${path}`,
-    lastModified: buildTime,
     changeFrequency,
     priority,
   }));
   const showcaseUrls = landingLiveCardSnapshots.map((snapshot) => ({
     url: `${baseUrl}${buildLandingShowcasePath(snapshot.slug)}`,
-    lastModified: buildTime,
     changeFrequency: "monthly" as const,
     priority: 0.75,
   }));

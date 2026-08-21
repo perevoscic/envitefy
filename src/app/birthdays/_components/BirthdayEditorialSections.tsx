@@ -146,7 +146,7 @@ function HostDashboard({ primaryHref }: { primaryHref: string }) {
           <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-7">
             <div>
               <p className="text-sm font-bold">Host bar</p>
-              <p className="mt-1 text-xs text-white/50">Maya&apos;s Rainbow Park Party</p>
+              <p className="mt-1 text-xs text-white/80">Maya&apos;s Rainbow Park Party</p>
             </div>
             <span className="rounded-full bg-[#dff5e7] px-3 py-1 text-[10px] font-bold text-[#267247]">
               LIVE
@@ -157,7 +157,7 @@ function HostDashboard({ primaryHref }: { primaryHref: string }) {
             {birthdayHostStats.map((stat) => (
               <div key={stat.label} className="bg-[var(--birthday-green)] p-5">
                 <p className="text-3xl font-semibold">{stat.value}</p>
-                <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-white/45">
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-white/80">
                   {stat.label}
                 </p>
               </div>
@@ -178,7 +178,7 @@ function HostDashboard({ primaryHref }: { primaryHref: string }) {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{guest.family}</p>
-                    <p className="text-xs text-[#806d62]">{guest.count}</p>
+                    <p className="text-xs text-[#66564d]">{guest.count}</p>
                   </div>
                   <span
                     className={`rounded-full px-2 py-1 text-[10px] font-bold ${
@@ -197,12 +197,12 @@ function HostDashboard({ primaryHref }: { primaryHref: string }) {
               <div className="rounded-2xl bg-[#fff1e8] p-4 text-[var(--birthday-ink)]">
                 <Utensils className="h-5 w-5 text-[var(--birthday-accent)]" aria-hidden="true" />
                 <p className="mt-4 text-xl font-semibold">4 food notes</p>
-                <p className="mt-1 text-xs text-[#806d62]">Ready to review</p>
+                <p className="mt-1 text-xs text-[#66564d]">Ready to review</p>
               </div>
               <div className="rounded-2xl bg-[var(--birthday-yellow)] p-4 text-[var(--birthday-green)]">
                 <MessageCircle className="h-5 w-5" aria-hidden="true" />
                 <p className="mt-4 text-xl font-semibold">7 reminders</p>
-                <p className="mt-1 text-xs text-[var(--birthday-green)]/65">For pending families</p>
+                <p className="mt-1 text-xs text-[var(--birthday-green)]">For pending families</p>
               </div>
             </div>
           </div>
@@ -330,7 +330,7 @@ function StartWays() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#cfbfef]">
                   Envitefy Concierge
                 </p>
-                <h3 className="text-2xl font-semibold tracking-[-0.03em]">
+                <h3 className="text-2xl font-semibold tracking-[-0.03em] !text-white">
                   Describe the party in a message.
                 </h3>
               </div>

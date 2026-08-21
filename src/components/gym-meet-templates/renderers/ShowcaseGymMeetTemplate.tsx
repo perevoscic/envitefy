@@ -364,6 +364,10 @@ export default function ShowcaseGymMeetTemplate({
                   <div
                     ref={tabsRailRef}
                     className="no-scrollbar flex gap-2 overflow-x-auto px-1 py-1 pr-12 md:pr-1"
+                    role="tablist"
+                    aria-label="Meet information sections"
+                    tabIndex={0}
+                    data-mobile-horizontal-scroll
                   >
                     {topTabs.map((tab) => {
                       const Icon = tab.icon;
@@ -376,7 +380,9 @@ export default function ShowcaseGymMeetTemplate({
                             tabButtonRefs.current[tab.id] = node;
                           }}
                           onClick={() => setActiveTab(tab.id)}
-                          className={`${selected ? theme.navActiveClass : theme.navIdleClass} inline-flex max-w-[240px] shrink-0 items-center justify-center gap-2 whitespace-nowrap`}
+                          className={`${selected ? theme.navActiveClass : theme.navIdleClass} inline-flex min-h-11 max-w-[240px] shrink-0 items-center justify-center gap-2 whitespace-nowrap`}
+                          role="tab"
+                          aria-selected={selected}
                           aria-label={tab.label}
                           title={tab.label}
                         >

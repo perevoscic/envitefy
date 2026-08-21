@@ -6,9 +6,9 @@ import LandingExperience from "./LandingExperience";
 const siteOgImageUrl = getRandomSiteOgImageUrl();
 
 export const metadata: Metadata = {
-  title: "Envitefy | Beautiful Hosted Event Pages, RSVP & Invitations",
+  title: "Online Invitation Maker with RSVP & Event Pages | Envitefy",
   description:
-    "Create a polished hosted event page with a live invitation, RSVP, maps, calendar saves, registry links, smart sign-ups, and guest updates from one shareable link.",
+    "Create an online invitation and hosted event page with RSVP, maps, calendar saves, registry links, smart sign-ups, and updates in one shareable link.",
   keywords: [
     "hosted event page",
     "event invitation page",
@@ -24,9 +24,9 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Envitefy | Beautiful Hosted Event Pages, RSVP & Invitations",
+    title: "Online Invitation Maker with RSVP & Event Pages | Envitefy",
     description:
-      "Create a polished hosted event page with a live invitation, RSVP, maps, calendar saves, registry links, smart sign-ups, and guest updates from one shareable link.",
+      "Create an online invitation and hosted event page with RSVP, maps, calendar saves, registry links, smart sign-ups, and updates in one shareable link.",
     url: "https://envitefy.com/",
     siteName: "Envitefy",
     images: [buildSiteOgImage(siteOgImageUrl, "Envitefy event pages and invitations preview")],
@@ -34,9 +34,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Envitefy | Beautiful Hosted Event Pages, RSVP & Invitations",
+    title: "Online Invitation Maker with RSVP & Event Pages | Envitefy",
     description:
-      "Create a polished hosted event page with a live invitation, RSVP, maps, calendar saves, registry links, smart sign-ups, and guest updates from one shareable link.",
+      "Create an online invitation and hosted event page with RSVP, maps, calendar saves, registry links, smart sign-ups, and updates in one shareable link.",
     images: [siteOgImageUrl],
   },
 };
@@ -48,7 +48,7 @@ export default async function LandingPage() {
     name: "Envitefy",
     url: "https://envitefy.com/",
     description:
-      "Create a polished hosted event page with a live invitation, RSVP, maps, calendar saves, registry links, smart sign-ups, and guest updates from one shareable link.",
+      "Create an online invitation and hosted event page with RSVP, maps, calendar saves, registry links, smart sign-ups, and updates in one shareable link.",
   };
 
   return (

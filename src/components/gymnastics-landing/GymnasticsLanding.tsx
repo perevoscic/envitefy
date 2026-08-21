@@ -331,7 +331,7 @@ export default function GymnasticsLanding() {
   };
 
   return (
-    <div
+    <main
       className={`${styles.root} relative z-[1] isolate min-h-screen overflow-x-clip bg-transparent text-white selection:bg-white/20 selection:text-white`}
     >
       <ScenicBackground scene={activeScene} scenes={GYMNASTICS_SCENES} />
@@ -357,9 +357,13 @@ export default function GymnasticsLanding() {
             <span className={sectionBubbleClass}>Gymnastics Meet Pages</span>
             <h1
               className={`${styles.headline} mb-8 text-5xl font-light leading-[0.94] tracking-tight !text-white drop-shadow-[0_4px_22px_rgba(0,0,0,0.82)] sm:text-6xl lg:text-[6rem]`}
+              style={{ fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" }}
             >
               Turn a meet packet into a
-              <span className="mt-4 block font-serif text-4xl italic leading-tight text-white sm:text-5xl lg:text-[4.15rem]">
+              <span
+                className="mt-4 block text-4xl italic leading-tight text-white sm:text-5xl lg:text-[4.15rem]"
+                style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+              >
                 {" "}
                 polished page families can actually use
               </span>
@@ -713,6 +717,6 @@ export default function GymnasticsLanding() {
         signupSource="gymnastics"
         successRedirectUrl={authMode === "signup" ? "/event/gymnastics" : "/"}
       />
-    </div>
+    </main>
   );
 }

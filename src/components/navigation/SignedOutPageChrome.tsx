@@ -26,7 +26,7 @@ const signedOutPageNavLinks = [
 
 export default function SignedOutPageChrome({
   activeBottomNavLabel = "Concierge",
-  brandHref = "/landing",
+  brandHref = "/",
   topNavVariant = "default",
 }: SignedOutPageChromeProps) {
   const router = useRouter();
@@ -59,7 +59,7 @@ export default function SignedOutPageChrome({
   }, [openAuth, searchParams]);
 
   const openLandingHash = (href: string) => {
-    router.push(href.startsWith("#") ? `/landing${href}` : href);
+    router.push(href.startsWith("#") ? `/${href}` : href);
   };
 
   return (

@@ -45,7 +45,7 @@ const collections = [
     body: "Earthy citrus tones, modern florals, and a sun-washed palette made for an easygoing shower.",
     image: "/templates/baby-showers/terracotta-bloom.webp",
     imageAlt: "Terracotta floral baby shower table setting",
-    accent: "#d7662e",
+    accent: "#963b16",
     soft: "#fff0e7",
   },
   {
@@ -120,7 +120,7 @@ function SectionHeading({
 }) {
   return (
     <div className={align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-2xl"}>
-      <p className="inline-flex rounded-full bg-[#fff0e6] px-3.5 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[#d75b20]">
+      <p className="inline-flex rounded-full bg-[#fff0e6] px-3.5 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[#9a3c12]">
         {eyebrow}
       </p>
       <h2
@@ -149,14 +149,14 @@ function HeroInvitation() {
       />
 
       <div className={styles.invitationCard}>
-        <div className="flex items-center justify-center gap-2 text-[0.58rem] font-bold uppercase tracking-[0.24em] text-[#d75b20]">
+        <div className="flex items-center justify-center gap-2 text-[0.58rem] font-bold uppercase tracking-[0.24em] text-[#9a3c12]">
           <Sparkles className="h-3 w-3" aria-hidden="true" />
           A little sprout is on the way
         </div>
         <p className={cx(styles.serif, "mt-3 text-3xl font-bold leading-none text-[#13233d]")}>
           Olivia&apos;s
         </p>
-        <p className={cx(styles.serif, "mt-1 text-xl italic text-[#d75b20]")}>baby shower</p>
+        <p className={cx(styles.serif, "mt-1 text-xl italic text-[#9a3c12]")}>baby shower</p>
         <div className="mx-auto my-4 h-px w-12 bg-[#efb692]" />
         <p className="text-[0.68rem] font-semibold leading-5 text-slate-600">
           Saturday, September 12 · 11:00 AM
@@ -165,7 +165,7 @@ function HeroInvitation() {
         </p>
         <div className="mt-4 grid grid-cols-2 gap-2 text-[0.58rem] font-bold uppercase tracking-[0.1em]">
           <span className="rounded-full bg-[#eaf3fb] px-2 py-2 text-[#245b87]">RSVP open</span>
-          <span className="rounded-full bg-[#fff0e6] px-2 py-2 text-[#d75b20]">
+          <span className="rounded-full bg-[#fff0e6] px-2 py-2 text-[#9a3c12]">
             View registry
           </span>
         </div>
@@ -173,7 +173,7 @@ function HeroInvitation() {
 
       <div className="absolute inset-x-5 bottom-5 rounded-2xl border border-white/70 bg-white/92 p-4 shadow-xl backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#fff0e6] text-[#e66627]">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#fff0e6] text-[#9a3c12]">
             <Gift className="h-4 w-4" aria-hidden="true" />
           </div>
           <div>
@@ -430,7 +430,7 @@ export default function BabyShowersLandingView() {
                     name: "Babylist",
                     note: "Our complete baby registry",
                     initials: "BL",
-                    color: "#e56647",
+                    color: "#9a3522",
                     background: "#fff0ec",
                   },
                   {
@@ -471,14 +471,14 @@ export default function BabyShowersLandingView() {
                 <div className="rounded-2xl bg-[#13233d] p-4 text-white">
                   <Users className="h-4 w-4 text-[#ff9a5f]" aria-hidden="true" />
                   <p className="mt-3 text-xl font-bold">36</p>
-                  <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-white/65">
+                  <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-white/82">
                     Guests going
                   </p>
                 </div>
-                <div className="rounded-2xl bg-[#fff0e6] p-4 text-[#9f431a]">
+                <div className="rounded-2xl bg-[#fff0e6] p-4 text-[#7a2f0f]">
                   <CalendarDays className="h-4 w-4" aria-hidden="true" />
                   <p className="mt-3 text-sm font-bold">Saved to calendar</p>
-                  <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#9f431a]/65">
+                  <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#7a2f0f]">
                     One tap for guests
                   </p>
                 </div>
@@ -522,10 +522,10 @@ export default function BabyShowersLandingView() {
                 return (
                   <article key={item.number} className={styles.stepCard}>
                     <div className="flex items-center justify-between">
-                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#fff0e6] text-[#d75b20]">
+                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#fff0e6] text-[#9a3c12]">
                         <Icon className="h-5 w-5" aria-hidden="true" />
                       </div>
-                      <span className={cx(styles.serif, "text-3xl font-bold text-[#dbe6ef]")}>
+                      <span className={cx(styles.serif, "text-3xl font-bold text-[#526a7c]")}>
                         {item.number}
                       </span>
                     </div>
@@ -563,7 +563,7 @@ export default function BabyShowersLandingView() {
                     className="rounded-2xl border border-white/10 bg-white/[0.06] p-5"
                   >
                     <Icon className="h-5 w-5 text-[#ff9a5f]" aria-hidden="true" />
-                    <h3 className="mt-4 font-bold">{item.title}</h3>
+                    <h3 className="mt-4 font-bold !text-white">{item.title}</h3>
                     <p className="mt-2 text-sm leading-6 text-white/65">{item.body}</p>
                   </div>
                 );
@@ -598,7 +598,7 @@ export default function BabyShowersLandingView() {
                     &ldquo;{note.quote}&rdquo;
                   </blockquote>
                   <div className="mt-6 flex items-center gap-3 border-t border-slate-100 pt-5">
-                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[#fff0e6] text-xs font-extrabold text-[#d75b20]">
+                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[#fff0e6] text-xs font-extrabold text-[#9a3c12]">
                       {note.initials}
                     </div>
                     <div>

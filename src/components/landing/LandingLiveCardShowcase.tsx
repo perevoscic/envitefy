@@ -498,6 +498,8 @@ export default function LandingLiveCardShowcase({
                   className="w-[min(272px,calc(100vw-5.5rem))] shrink-0 snap-center cursor-pointer sm:w-[min(300px,calc(100vw-4rem))]"
                 >
                   <div
+                    aria-hidden={activeIndex !== index}
+                    inert={activeIndex !== index}
                     className={cx(
                       "rounded-[2.2rem] shadow-[0_28px_60px_rgba(15,23,42,0.12),0_12px_28px_rgba(15,23,42,0.08),0_1px_0_rgba(255,255,255,0.7)_inset] transition-all duration-700 ease-out",
                       activeIndex === index
@@ -505,30 +507,37 @@ export default function LandingLiveCardShowcase({
                         : "scale-[0.85] opacity-40 blur-[2px]",
                     )}
                   >
-                    <StudioShowcaseLiveCard
-                      preview={item.preview}
-                      compactChrome
-                      showcaseMode
-                      interactive={activeIndex === index}
-                      imageLoading={index <= 2 || activeIndex === index ? "eager" : "lazy"}
-                      imageFetchPriority={activeIndex === index ? "high" : "auto"}
-                      showcaseOverlay={
-                        showcaseOverlayIndex === index && activeIndex === index ? (
-                          <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/45 backdrop-blur-md">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openShowcaseFullscreen(index);
-                              }}
-                              className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/92 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-slate-900 shadow-[0_18px_45px_rgba(15,23,42,0.24)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
-                            >
-                              Open live card
-                            </button>
-                          </div>
-                        ) : null
-                      }
-                    />
+                    {Math.abs(index - activeIndex) <= 1 ? (
+                      <StudioShowcaseLiveCard
+                        preview={item.preview}
+                        compactChrome
+                        showcaseMode
+                        interactive={activeIndex === index}
+                        imageLoading={activeIndex === index ? "eager" : "lazy"}
+                        imageFetchPriority={activeIndex === index ? "high" : "auto"}
+                        showcaseOverlay={
+                          showcaseOverlayIndex === index && activeIndex === index ? (
+                            <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/45 backdrop-blur-md">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openShowcaseFullscreen(index);
+                                }}
+                                className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/92 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-slate-900 shadow-[0_18px_45px_rgba(15,23,42,0.24)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                              >
+                                Open live card
+                              </button>
+                            </div>
+                          ) : null
+                        }
+                      />
+                    ) : (
+                      <div
+                        aria-hidden="true"
+                        className="aspect-[9/16] w-full rounded-[2.2rem] bg-white/45"
+                      />
+                    )}
                   </div>
                 </div>
               ))}

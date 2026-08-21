@@ -23,7 +23,7 @@ export default function SnapEventPreview({
       <div className="relative overflow-hidden rounded-[2rem] border border-[#e7ddff] bg-[linear-gradient(180deg,#ffffff_0%,#faf7ff_100%)] p-4 shadow-[0_28px_80px_rgba(91,58,191,0.12)] sm:p-5">
         <div className="rounded-[1.6rem] border border-[#ece1ff] bg-white p-5 shadow-[0_12px_30px_rgba(91,58,191,0.06)]">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-[#8c73d6]">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-[#654da8]">
               Snap workflow
             </p>
             <span className="rounded-full border border-[#eadfff] bg-[#faf7ff] px-3 py-1 text-[0.68rem] font-semibold text-[#6e55b5]">
@@ -56,7 +56,7 @@ export default function SnapEventPreview({
                 key={row.label}
                 className="flex items-center justify-between rounded-2xl border border-[#efe9ff] bg-[#faf8ff] px-4 py-3"
               >
-                <span className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#8b83aa]">
+                <span className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#5e557c]">
                   {row.label}
                 </span>
                 <span className="text-sm font-semibold text-[#231c49]">

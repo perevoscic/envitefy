@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.png?v=v10", sizes: "any", type: "image/png" },
+      { url: "/icon.png?v=v10", sizes: "512x512", type: "image/png" },
       { url: "/icons/icon-192.png?v=v10", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512.png?v=v10", sizes: "512x512", type: "image/png" },
       {
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
       { url: "/icons/apple-touch-icon-167.png?v=v10", sizes: "167x167" },
       { url: "/icons/apple-touch-icon-180.png?v=v10", sizes: "180x180" },
     ],
-    shortcut: [{ url: "/favicon.png?v=v10" }],
+    shortcut: [{ url: "/icon.png?v=v10" }],
   },
   appleWebApp: {
     capable: true,
@@ -135,20 +135,23 @@ export default async function RootLayout({
   const websiteLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": `${siteUrl}/#website`,
     name: "Envitefy",
     url: siteUrl,
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `https://www.google.com/search?q=site%3A${new URL(siteUrl).hostname}+{search_term_string}`,
-      "query-input": "required name=search_term_string",
-    },
+    publisher: { "@id": `${siteUrl}/#organization` },
   };
   const organizationLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": `${siteUrl}/#organization`,
     name: "Envitefy",
     url: siteUrl,
-    logo: `${siteUrl}/Logo_stacked.png`,
+    logo: {
+      "@type": "ImageObject",
+      url: `${siteUrl}/icons/icon-512.png`,
+      width: 512,
+      height: 512,
+    },
     description:
       "Envitefy turns invites, flyers, PDFs, schedules, and studio-created cards into hosted live event pages with RSVPs, calendar saves, maps, registry links, and gymnastics meet pages.",
     sameAs: ["https://www.youtube.com/@Envitefy"],
@@ -160,7 +163,8 @@ export default async function RootLayout({
   };
   const softwareApplicationLd = {
     "@context": "https://schema.org",
-    "@type": ["WebApplication", "SoftwareApplication"],
+    "@type": "WebApplication",
+    "@id": `${siteUrl}/#application`,
     name: "Envitefy",
     url: siteUrl,
     applicationCategory: "EventManagementApplication",
@@ -168,15 +172,7 @@ export default async function RootLayout({
     description:
       "Create hosted live event pages, live card invitations, RSVP pages, Snap/upload pages from PDFs and flyers, and gymnastics meet pages.",
     publisher: {
-      "@type": "Organization",
-      name: "Envitefy",
-      url: siteUrl,
-      logo: `${siteUrl}/Logo_stacked.png`,
-    },
-    offers: {
-      "@type": "Offer",
-      category: "SaaS",
-      url: `${siteUrl}/snap`,
+      "@id": `${siteUrl}/#organization`,
     },
   };
 
@@ -233,7 +229,7 @@ export default async function RootLayout({
         <Script
           async
           src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GOOGLE_ANALYTICS_MEASUREMENT_ID)}`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
         <Script id="ga4-init" strategy="afterInteractive">{`
           window.dataLayer = window.dataLayer || [];
