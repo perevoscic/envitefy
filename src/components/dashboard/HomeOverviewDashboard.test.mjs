@@ -73,3 +73,20 @@ test("dashboard invitation card applies thumbnail focus as image object position
   assert.match(source, /const thumbnailObjectPosition = getDashboardThumbnailObjectPosition\(item\);/);
   assert.match(source, /objectPosition: thumbnailObjectPosition/);
 });
+
+test("scanned dashboard events expose touch-safe share and delete actions", () => {
+  const source = readFileSync(new URL("./HomeOverviewDashboard.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /import EventActions from "@\/components\/EventActions";/);
+  assert.match(source, /import EventDeleteModal from "@\/components\/EventDeleteModal";/);
+  assert.match(source, /isScannedInviteCreatedVia\(item\.createdVia\)/);
+  assert.match(source, /shareUrl=\{`\/event\/\$\{encodeURIComponent\(item\.id\)\}`\}/);
+  assert.doesNotMatch(source, /showLabels/);
+  assert.match(source, /deleteMode=\{deleteMode\}/);
+  assert.match(source, /navigateAfterDelete=\{false\}/);
+  assert.match(source, /min-h-11 min-w-11/);
+  assert.match(source, /labelClassName="hidden sm:inline"/);
+  const eventActionsSource = readFileSync(new URL("../EventActions.tsx", import.meta.url), "utf8");
+  assert.match(eventActionsSource, /min-w-11/);
+  assert.match(eventActionsSource, /aria-label=\{`Share \$\{shareTitle\}`\}/);
+});

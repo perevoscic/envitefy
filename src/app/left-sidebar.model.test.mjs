@@ -292,7 +292,7 @@ test("left sidebar reopens My Events and selects newly created upload routes", (
   assert.match(controllerSource, /const CREATED_EVENT_CONTEXT_STORAGE_KEY = "envitefy:created-event-context:v1";/);
   assert.match(controllerSource, /function readPendingCreatedEventContext\(\)/);
   assert.match(controllerSource, /function pendingCreatedEventMatchesPath\(/);
-  assert.match(controllerSource, /function eventListItemMatchesPath\(/);
+  assert.match(controllerSource, /eventListItemMatchesPath,/);
   assert.match(controllerSource, /const findEventListItemFromPath = useCallback/);
   assert.match(controllerSource, /eventListItemMatchesPath\(item, routePath\)/);
   assert.match(controllerSource, /const createdHint = String\(searchParams\?\.get\("created"\) \|\| ""\)/);
@@ -310,4 +310,63 @@ test("left sidebar reopens My Events and selects newly created upload routes", (
   assert.match(controllerSource, /setSidebarPage\("myEvents"\);/);
   assert.match(controllerSource, /const inferred = findEventListItemFromPath\(pathname\);/);
   assert.match(controllerSource, /if \(inferred\?\.item\.row\.id === rowId\) return true;/);
+});
+
+test("canonical public slugs match the current event route", async () => {
+  const { buildGroupedEventLists, eventListItemMatchesPath } = await loadModelModule();
+  const publicSlug = "it-s-game-time-josiah-s-10th-birthday-at-josiah-s-house";
+  const grouped = buildGroupedEventLists({
+    history: [
+      {
+        id: "birthday-1",
+        title: "It's Game Time — Josiah's 10th Birthday",
+        public_slug: publicSlug,
+        created_at: "2030-04-01T00:00:00.000Z",
+        data: {
+          category: "birthday party",
+          startISO: "2030-04-10T12:00:00.000Z",
+        },
+      },
+    ],
+    getEventStartIso: (data) => data?.startISO ?? null,
+    buildEventPath: (eventId, title, _params, canonicalSlug) =>
+      `/event/${canonicalSlug || `${eventId}-${title}`}`,
+    isSportsPreviewFirstEvent: () => false,
+    isInvitedEventLikeRecord: () => false,
+    canShowOwnerRsvpDashboard: () => true,
+  });
+  const item = grouped.myEvents.upcoming[0]?.items[0];
+
+  assert.ok(item);
+  assert.equal(item.href, `/event/${publicSlug}`);
+  assert.equal(item.ownerHref, `/event/${publicSlug}`);
+  assert.equal(eventListItemMatchesPath(item, `/event/${publicSlug}`), true);
+  assert.equal(eventListItemMatchesPath(item, "/event/a-different-event"), false);
+});
+
+test("left sidebar opens the matching event list and marks the current event row", () => {
+  const controllerSource = fs.readFileSync(
+    path.join(repoRoot, "src/app/left-sidebar.controller.ts"),
+    "utf8"
+  );
+  const sidebarSource = fs.readFileSync(
+    path.join(repoRoot, "src/app/left-sidebar.tsx"),
+    "utf8"
+  );
+
+  assert.match(
+    controllerSource,
+    /const lastEventListRouteSyncPathRef = useRef<string \| null>\(null\);/
+  );
+  assert.match(
+    controllerSource,
+    /const inferred = findEventListItemFromPath\(normalizedPathname\);/
+  );
+  assert.match(
+    controllerSource,
+    /if \(lastEventListRouteSyncPathRef\.current === normalizedPathname\) return;/
+  );
+  assert.match(controllerSource, /setSidebarPage\(inferred\.source\);/);
+  assert.match(controllerSource, /if \(inferred\.bucket === "past"\)/);
+  assert.match(sidebarSource, /aria-current=\{isActive \? "page" : undefined\}/);
 });

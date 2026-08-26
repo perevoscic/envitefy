@@ -2061,6 +2061,7 @@ type DashboardProjectionQueryRow = {
   id: string;
   user_id?: string | null;
   title: string;
+  public_slug?: string | null;
   created_at?: string | null;
   start_at: any;
   start_iso: any;
@@ -2121,6 +2122,7 @@ type SidebarProjectionQueryRow = {
   id: string;
   user_id?: string | null;
   title: string;
+  public_slug?: string | null;
   created_at?: string | null;
   category: any;
   status: any;
@@ -2183,6 +2185,7 @@ function mapDashboardProjectionRowToEventHistoryRow(
     id: row.id,
     user_id: row.user_id,
     title: row.title,
+    public_slug: row.public_slug || null,
     created_at: row.created_at || undefined,
     data: {
       startAt: row.start_at ?? null,
@@ -2253,6 +2256,7 @@ function mapSidebarProjectionRowToEventHistoryRow(row: SidebarProjectionQueryRow
     id: row.id,
     user_id: row.user_id,
     title: row.title,
+    public_slug: row.public_slug || null,
     created_at: row.created_at || undefined,
     data: {
       category: row.category ?? null,
@@ -2392,6 +2396,7 @@ async function listProjectedDashboardHistoryRowsByIds(
        eh.id,
        eh.user_id,
        eh.title,
+       eh.public_slug,
        eh.created_at,
        coalesce(eh.data, '{}'::jsonb)->'startAt' as start_at,
        coalesce(eh.data, '{}'::jsonb)->'startISO' as start_iso,
@@ -2513,6 +2518,7 @@ async function listProjectedSidebarHistoryRowsByIds(
        eh.id,
        eh.user_id,
        eh.title,
+       eh.public_slug,
        eh.created_at,
        case
          when r.requested_shared then to_jsonb('Shared events'::text)
@@ -2651,6 +2657,7 @@ function buildHistoryUnionQuery(view: HistoryView, timeFilter: HistoryTimeFilter
         eh.id,
         eh.user_id,
         eh.title,
+        eh.public_slug,
         eh.created_at
       from event_history eh
       where eh.user_id = $1
@@ -2663,6 +2670,7 @@ function buildHistoryUnionQuery(view: HistoryView, timeFilter: HistoryTimeFilter
         eh.id,
         eh.user_id,
         eh.title,
+        eh.public_slug,
         ${ownProjection} as data,
         eh.created_at,
         ${buildHistoryEventStartAtSql(ownStartRawSql)} as event_start_at,
@@ -2675,6 +2683,7 @@ function buildHistoryUnionQuery(view: HistoryView, timeFilter: HistoryTimeFilter
         eh.id,
         eh.user_id,
         eh.title,
+        eh.public_slug,
         ${sharedProjection} as data,
         eh.created_at,
         ${buildHistoryEventStartAtSql(sharedStartRawSql)} as event_start_at,
@@ -2690,7 +2699,7 @@ function buildHistoryUnionQuery(view: HistoryView, timeFilter: HistoryTimeFilter
       union all
       select * from shared_rows
     )
-    select id, user_id, title, data, created_at
+    select id, user_id, title, public_slug, data, created_at
     from combined
     where ${buildHistoryTimeFilterSql(timeFilter, "combined")}
     order by created_at desc nulls last, id desc
@@ -2718,6 +2727,7 @@ function buildHistoryOwnOnlyQuery(view: HistoryView, timeFilter: HistoryTimeFilt
         eh.id,
         eh.user_id,
         eh.title,
+        eh.public_slug,
         eh.created_at
       from event_history eh
       where eh.user_id = $1
@@ -2730,6 +2740,7 @@ function buildHistoryOwnOnlyQuery(view: HistoryView, timeFilter: HistoryTimeFilt
         eh.id,
         eh.user_id,
         eh.title,
+        eh.public_slug,
         ${projection} as data,
         eh.created_at,
         ${buildHistoryEventStartAtSql(startRawSql)} as event_start_at,
@@ -2741,6 +2752,7 @@ function buildHistoryOwnOnlyQuery(view: HistoryView, timeFilter: HistoryTimeFilt
       id,
       user_id,
       title,
+      public_slug,
       data,
       created_at
     from own_rows

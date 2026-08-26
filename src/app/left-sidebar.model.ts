@@ -69,6 +69,34 @@ export type GroupedEventLists = Record<
   }
 >;
 
+function readSidebarPathnameFromHref(href: string): string {
+  try {
+    return new URL(href, "https://envitefy.local").pathname;
+  } catch {
+    return href.split("?")[0] || "";
+  }
+}
+
+export function eventListItemMatchesPath(
+  item: GroupedEventItem,
+  currentPath: string | null,
+): boolean {
+  const routePath = String(currentPath || "").trim();
+  if (!routePath) return false;
+  const itemPaths = [item.href, item.publicHref, item.ownerHref]
+    .map((href) => String(href || "").trim())
+    .filter(Boolean)
+    .map(readSidebarPathnameFromHref)
+    .filter(Boolean);
+
+  return (
+    itemPaths.includes(routePath) ||
+    routePath === `/event/${item.row.id}` ||
+    routePath === `/smart-signup-form/${item.row.id}` ||
+    routePath.endsWith(`-${item.row.id}`)
+  );
+}
+
 export const CALENDAR_DEFAULT_STORAGE_KEY = "envitefy:event-actions:calendar-default:v1";
 export const MY_EVENTS_PAST_EXPANDED_STORAGE_KEY = "sidebar:my-events:past-expanded";
 export const INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY = "sidebar:invited-events:past-expanded";

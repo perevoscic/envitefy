@@ -20,7 +20,6 @@ import {
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
-  EVENT_SKIN_ACTIONS_CLASS,
   EVENT_SKIN_CONTENT_TOP_PADDING_CLASS,
   EVENT_SKIN_FOOTER_CLASS,
   EVENT_SKIN_FOOTER_DIVIDER_CLASS,
@@ -748,23 +747,28 @@ export default function ScannedInviteSkin({
       <div
         className={`relative z-10 mx-auto max-w-6xl px-4 md:px-8 ${EVENT_SKIN_CONTENT_TOP_PADDING_CLASS}`}
       >
-        {actions ? <div className={EVENT_SKIN_ACTIONS_CLASS}>{actions}</div> : null}
-
         <div className="grid grid-cols-1 items-start gap-8 pt-4 lg:grid-cols-12 lg:gap-8">
           <div className="space-y-10 lg:col-span-8">
             <header className="space-y-4 pt-2 md:pt-8">
-              <motion.div
-                initial={{ scale: 0, rotate: -20 }}
-                animate={{ scale: 1, rotate: -5 }}
-                className="inline-flex items-center gap-2 rounded-full px-6 py-2 text-[10px] font-black uppercase tracking-[0.3em] shadow-lg"
-                style={{
-                  backgroundColor: "var(--theme-accent)",
-                  boxShadow: `0 10px 20px -5px ${colors.accent}`,
-                  color: chipTextColor,
-                }}
-              >
-                {displayCategoryLabel}
-              </motion.div>
+              <div className="flex min-w-0 items-center justify-between gap-3">
+                <motion.div
+                  initial={{ scale: 0, rotate: -20 }}
+                  animate={{ scale: 1, rotate: -5 }}
+                  className="inline-flex min-w-0 items-center gap-2 rounded-full px-6 py-2 text-[10px] font-black uppercase tracking-[0.3em] shadow-lg"
+                  style={{
+                    backgroundColor: "var(--theme-accent)",
+                    boxShadow: `0 10px 20px -5px ${colors.accent}`,
+                    color: chipTextColor,
+                  }}
+                >
+                  {displayCategoryLabel}
+                </motion.div>
+                {actions ? (
+                  <div className="relative z-20 flex shrink-0 items-center justify-end">
+                    {actions}
+                  </div>
+                ) : null}
+              </div>
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

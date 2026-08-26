@@ -26,3 +26,17 @@ test("scanned invite skin uses full-width prose Good to Know tiles", () => {
   assert.match(source, /icon=\{<Car/);
   assert.doesNotMatch(source, /label="Venue"[\s\S]{0,120}MapPin[\s\S]{0,80}label="Where"/);
 });
+
+test("scanned invite actions share the category row", () => {
+  const source = fs.readFileSync(
+    path.join(repoRoot, "src/components/ScannedInviteSkin.tsx"),
+    "utf8",
+  );
+
+  assert.match(
+    source,
+    /<header className="space-y-4 pt-2 md:pt-8">[\s\S]*?className="flex min-w-0 items-center justify-between gap-3"[\s\S]*?\{displayCategoryLabel\}[\s\S]*?\{actions \? \(/,
+  );
+  assert.match(source, /className="relative z-20 flex shrink-0 items-center justify-end"/);
+  assert.doesNotMatch(source, /EVENT_SKIN_ACTIONS_CLASS/);
+});

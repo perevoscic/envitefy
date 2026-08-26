@@ -19,7 +19,7 @@ function getCacheKey(
   limit: number,
   timeFilter: HistoryTimeFilter
 ): string {
-  return `history:v3:${userId}:${view}:${limit}:${timeFilter}`;
+  return `history:v4:${userId}:${view}:${limit}:${timeFilter}`;
 }
 
 export function getCachedHistory(

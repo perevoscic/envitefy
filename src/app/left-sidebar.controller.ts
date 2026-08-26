@@ -18,8 +18,8 @@ import {
 import { getEventStartIso, isInvitedEventLikeRecord } from "@/lib/dashboard-data";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
 import { normalizePrimarySignupSource } from "@/lib/product-scopes";
-import type { SportPreferences } from "@/lib/sports-preferences";
 import { getCreateActionForSignupIntent } from "@/lib/signup-intent";
+import type { SportPreferences } from "@/lib/sports-preferences";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import { isSportsPreviewFirstEvent } from "@/utils/event-navigation";
 import { buildEventPath } from "@/utils/event-url";
@@ -32,6 +32,7 @@ import {
   countGroupedEventItems,
   EventListPage,
   EventSidebarMode,
+  eventListItemMatchesPath,
   GroupedEventItem,
   HistoryRow,
   INVITED_EVENTS_PAST_EXPANDED_STORAGE_KEY,
@@ -278,23 +279,6 @@ function pendingCreatedEventMatchesPath(
   );
 }
 
-function eventListItemMatchesPath(item: GroupedEventItem, currentPath: string | null): boolean {
-  const routePath = String(currentPath || "").trim();
-  if (!routePath) return false;
-  const itemPaths = [item.href, item.publicHref, item.ownerHref]
-    .map((href) => String(href || "").trim())
-    .filter(Boolean)
-    .map(readPathnameFromHref)
-    .filter(Boolean);
-
-  return (
-    itemPaths.includes(routePath) ||
-    routePath === `/event/${item.row.id}` ||
-    routePath === `/smart-signup-form/${item.row.id}` ||
-    routePath.endsWith(`-${item.row.id}`)
-  );
-}
-
 export function useLeftSidebarController({
   session,
   status,
@@ -383,6 +367,7 @@ export function useLeftSidebarController({
   const prevSidebarPageRef = useRef<SidebarPage>("root");
   const lastAdminRouteSyncPathRef = useRef<string | null>(null);
   const lastChatRouteSyncPathRef = useRef<string | null>(null);
+  const lastEventListRouteSyncPathRef = useRef<string | null>(null);
 
   const mirrorLocalCalendarDefault = useCallback((provider: CalendarProviderKey | null) => {
     if (typeof window === "undefined") return;
@@ -1354,15 +1339,43 @@ export function useLeftSidebarController({
     isCreateRouteActive || sidebarPage === "createEvent" || sidebarPage === "createEventOther";
 
   useEffect(() => {
-    const inferredSource = inferEventListSourceFromPath(pathname);
-    if (!inferredSource) return;
-    if (eventContextSourcePage !== inferredSource) {
-      setEventContextSourcePage(inferredSource);
+    const isEventListRoute =
+      normalizedPathname.startsWith("/event/") ||
+      normalizedPathname.startsWith("/smart-signup-form/");
+    if (!isEventListRoute) {
+      lastEventListRouteSyncPathRef.current = null;
+      return;
     }
-    if (inferredSource === "invitedEvents") {
-      setEventSidebarMode("guest");
+
+    const inferred = findEventListItemFromPath(normalizedPathname);
+    if (!inferred) return;
+
+    if (selectedEventId && selectedEventId !== inferred.item.row.id) {
+      clearEventContext();
     }
-  }, [eventContextSourcePage, inferEventListSourceFromPath, pathname, setEventContextSourcePage]);
+    if (eventContextSourcePage !== inferred.source) {
+      setEventContextSourcePage(inferred.source);
+    }
+    setEventSidebarMode(inferred.source === "invitedEvents" ? "guest" : "owner");
+
+    if (lastEventListRouteSyncPathRef.current === normalizedPathname) return;
+    lastEventListRouteSyncPathRef.current = normalizedPathname;
+    setSidebarPage(inferred.source);
+    if (inferred.bucket === "past") {
+      if (inferred.source === "invitedEvents") {
+        setShowPastInvitedEvents(true);
+      } else {
+        setShowPastMyEvents(true);
+      }
+    }
+  }, [
+    clearEventContext,
+    eventContextSourcePage,
+    findEventListItemFromPath,
+    normalizedPathname,
+    selectedEventId,
+    setEventContextSourcePage,
+  ]);
 
   useEffect(() => {
     const createdHint = String(searchParams?.get("created") || "")

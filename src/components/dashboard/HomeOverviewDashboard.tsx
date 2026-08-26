@@ -17,7 +17,10 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import EventActions from "@/components/EventActions";
+import EventDeleteModal from "@/components/EventDeleteModal";
 import { FlipClock } from "@/components/ui/flip-clock";
+import { isScannedInviteCreatedVia } from "@/lib/dashboard-data";
 import {
   type ThumbnailFocus,
   thumbnailFocusToObjectPosition,
@@ -257,6 +260,8 @@ function InvitationEventCard({
   const statusClassName = getInvitationStatusTextClass(item);
   const countdown = buildCountdownParts(parseSafeDate(item.startAt), now);
   const isInvited = item.ownership === "invited";
+  const isScannedOrUploaded = isScannedInviteCreatedVia(item.createdVia);
+  const deleteMode = item.shareStatus ? "removeInvited" : "delete";
   const thumbnailObjectPosition = getDashboardThumbnailObjectPosition(item);
   const primaryButtonClassName = `group/btn inline-flex min-h-[56px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[20px] px-5 py-4 text-sm font-bold text-white shadow-xl transition-all sm:min-h-[60px] sm:min-w-[170px] sm:px-8 sm:text-base ${
     isInvited
@@ -444,6 +449,39 @@ function InvitationEventCard({
                 );
               })}
             </div>
+
+            {isScannedOrUploaded ? (
+              <div
+                className="mb-4 flex min-h-11 items-center justify-end gap-2"
+                role="group"
+                aria-label={`Actions for ${item.title}`}
+              >
+                <EventActions
+                  shareUrl={`/event/${encodeURIComponent(item.id)}`}
+                  event={{
+                    title: item.title,
+                    start: item.startAt,
+                    end: item.endAt,
+                    location: item.locationText,
+                  }}
+                  calendarTitle={item.title}
+                  historyId={item.id}
+                  variant="compact"
+                  showCalendar={false}
+                  showEmail={false}
+                />
+                <EventDeleteModal
+                  eventId={item.id}
+                  eventTitle={item.title}
+                  deleteMode={deleteMode}
+                  eventData={deleteMode === "removeInvited" ? { shared: true } : undefined}
+                  navigateAfterDelete={false}
+                  buttonClassName="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white/90 px-3 py-2 text-sm font-medium text-red-600 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                  labelClassName="hidden sm:inline"
+                  ariaLabel={`${deleteMode === "removeInvited" ? "Remove" : "Delete"} ${item.title}`}
+                />
+              </div>
+            ) : null}
 
             <div className="flex gap-3 sm:gap-4">
               {renderAction(primaryAction, primaryButtonClassName, true)}

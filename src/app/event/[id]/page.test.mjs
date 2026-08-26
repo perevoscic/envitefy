@@ -7,6 +7,22 @@ const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
+test("generic OCR event pages expose owner share and delete actions", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+  const fallbackOcrBranch = source.match(
+    /if \(isOcrEvent\) \{[\s\S]*?(?=\n {2}const isBabyShowerTemplate =)/,
+  )?.[0];
+
+  assert.ok(fallbackOcrBranch, "expected the generic OCR fallback branch");
+  assert.match(fallbackOcrBranch, /actions=\{/);
+  assert.match(fallbackOcrBranch, /!isReadOnly &&[\s\S]*isOwner/);
+  assert.match(fallbackOcrBranch, /<EventActions/);
+  assert.doesNotMatch(fallbackOcrBranch, /showLabels/);
+  assert.match(fallbackOcrBranch, /<EventDeleteModal/);
+  assert.match(fallbackOcrBranch, /min-h-11 min-w-11/);
+  assert.match(fallbackOcrBranch, /labelClassName="hidden sm:inline"/);
+});
+
 test("event route branches football discovery/template events into the football renderer", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
 

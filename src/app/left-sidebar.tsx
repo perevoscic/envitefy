@@ -905,72 +905,74 @@ function EventListPanel({
   };
 
   const renderRows = (items: GroupedEventItem[], muted: boolean) =>
-    items.map((item) => (
-      <div
-        key={item.row.id}
-        className={`${SIDEBAR_SUBMENU_ROW_CLASS} items-start px-2 py-2.5 ${
-          isHistoryRowActive(item.row.id)
-            ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS
-            : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
-        } ${muted ? pastRowOpacityClass : ""}`}
-      >
-        <button
-          type="button"
-          onClick={() => onRowClick(item)}
-          className="flex min-w-0 flex-1 items-start gap-3 text-left"
+    items.map((item) => {
+      const isActive = isHistoryRowActive(item.row.id);
+      return (
+        <div
+          key={item.row.id}
+          className={`${SIDEBAR_SUBMENU_ROW_CLASS} items-start px-2 py-2.5 ${
+            isActive ? SIDEBAR_SUBMENU_ROW_ACTIVE_CLASS : SIDEBAR_SUBMENU_ROW_INACTIVE_CLASS
+          } ${muted ? pastRowOpacityClass : ""}`}
         >
-          <span
-            className={`${SIDEBAR_SUBMENU_ICON_CLASS} mt-0.5 ${
-              isHistoryRowActive(item.row.id)
-                ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
-                : `${item.tintClass} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
-            }`}
+          <button
+            type="button"
+            onClick={() => onRowClick(item)}
+            className="flex min-w-0 flex-1 items-start gap-3 text-left"
+            aria-current={isActive ? "page" : undefined}
           >
-            <CalendarDays size={16} />
-          </span>
-          <span className="min-w-0 flex-1">
-            {showPendingBadge || item.isInvited ? (
-              <span className="flex items-center gap-2">
+            <span
+              className={`${SIDEBAR_SUBMENU_ICON_CLASS} mt-0.5 ${
+                isActive
+                  ? SIDEBAR_SUBMENU_ICON_ACTIVE_CLASS
+                  : `${item.tintClass} ${SIDEBAR_SUBMENU_ICON_INACTIVE_CLASS}`
+              }`}
+            >
+              <CalendarDays size={16} />
+            </span>
+            <span className="min-w-0 flex-1">
+              {showPendingBadge || item.isInvited ? (
+                <span className="flex items-center gap-2">
+                  <span
+                    className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
+                      isActive
+                        ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
+                        : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+                    }`}
+                  >
+                    {item.title}
+                  </span>
+                  {item.shareStatus === "pending" ? (
+                    <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-amber-700">
+                      Pending
+                    </span>
+                  ) : null}
+                </span>
+              ) : (
                 <span
                   className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
-                    isHistoryRowActive(item.row.id)
+                    isActive
                       ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
                       : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
                   }`}
                 >
                   {item.title}
                 </span>
-                {item.shareStatus === "pending" ? (
-                  <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-amber-700">
-                    Pending
-                  </span>
-                ) : null}
-              </span>
-            ) : (
+              )}
               <span
-                className={`font-[var(--font-josefin-sans)] block truncate text-[0.98rem] font-bold leading-snug md:text-[1.02rem] ${
-                  isHistoryRowActive(item.row.id)
-                    ? SIDEBAR_SUBMENU_LABEL_ACTIVE_CLASS
-                    : SIDEBAR_SUBMENU_LABEL_INACTIVE_CLASS
+                className={`mt-0.5 block truncate text-xs ${
+                  isActive
+                    ? "text-[#9d95db]"
+                    : "text-[#c1bcf0] group-hover:text-[#b0aae4]"
                 }`}
               >
-                {item.title}
+                {item.dateLabel}
               </span>
-            )}
-            <span
-              className={`mt-0.5 block truncate text-xs ${
-                isHistoryRowActive(item.row.id)
-                  ? "text-[#9d95db]"
-                  : "text-[#c1bcf0] group-hover:text-[#b0aae4]"
-              }`}
-            >
-              {item.dateLabel}
             </span>
-          </span>
-        </button>
-        {renderRowActions(item)}
-      </div>
-    ));
+          </button>
+          {renderRowActions(item)}
+        </div>
+      );
+    });
 
   const renderGroupSections = (sections: GroupedEventSection[], muted: boolean) =>
     sections.map((group, index) => (

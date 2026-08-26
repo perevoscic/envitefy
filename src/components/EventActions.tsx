@@ -644,8 +644,8 @@ export default function EventActions({
   const buttonClassName =
     variant === "compact"
       ? tone === "light"
-        ? "inline-flex items-center gap-2 px-3 py-1.5 text-sm text-white hover:text-white/90 hover:bg-white/15 drop-shadow transition-colors"
-        : "inline-flex items-center gap-2 rounded-lg border border-[#ddd4f8] bg-white/90 px-3 py-1.5 text-sm font-medium text-[#4f3f7a] shadow-sm transition hover:border-[#cabcf0] hover:bg-[#f7f2ff] hover:text-[#2f2550]"
+        ? "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 px-3 py-2 text-sm text-white hover:text-white/90 hover:bg-white/15 drop-shadow transition-colors"
+        : "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg border border-[#ddd4f8] bg-white/90 px-3 py-2 text-sm font-medium text-[#4f3f7a] shadow-sm transition hover:border-[#cabcf0] hover:bg-[#f7f2ff] hover:text-[#2f2550]"
       : tone === "light"
       ? "inline-flex items-center gap-2 text-white hover:text-white/90 drop-shadow"
       : "inline-flex items-center gap-2 text-neutral-900 hover:text-black";
@@ -687,7 +687,13 @@ export default function EventActions({
           </button>
         )}
 
-        <button type="button" onClick={onShareLink} className={buttonClassName}>
+        <button
+          type="button"
+          onClick={onShareLink}
+          className={buttonClassName}
+          aria-label={`Share ${shareTitle}`}
+          title={`Share ${shareTitle}`}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -709,7 +715,13 @@ export default function EventActions({
         </button>
 
         {showEmail ? (
-          <button type="button" onClick={onEmail} className={buttonClassName}>
+          <button
+            type="button"
+            onClick={onEmail}
+            className={buttonClassName}
+            aria-label={`Email ${shareTitle}`}
+            title={`Email ${shareTitle}`}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"

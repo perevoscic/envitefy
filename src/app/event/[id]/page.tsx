@@ -3250,6 +3250,33 @@ export default async function EventPage({
         registryName={rawRegistryName}
         registryUrl={primaryRegistryUrl}
         ocrFacts={scannedInviteOcrFacts}
+        actions={
+          !isReadOnly &&
+          isOwner && (
+            <div
+              className="flex min-h-11 items-center gap-2 text-sm font-medium sm:gap-3"
+              role="group"
+              aria-label="Event actions"
+            >
+              <EventActions
+                shareUrl={shareUrl}
+                event={data as any}
+                calendarTitle={title}
+                historyId={row.id}
+                variant="compact"
+                showCalendar={false}
+                showEmail={false}
+              />
+              <EventDeleteModal
+                eventId={row.id}
+                eventTitle={title}
+                buttonClassName="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white/90 px-3 py-2 text-sm font-medium text-red-600 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                labelClassName="hidden sm:inline"
+                ariaLabel={`Delete ${title}`}
+              />
+            </div>
+          )
+        }
       />,
     );
   }
