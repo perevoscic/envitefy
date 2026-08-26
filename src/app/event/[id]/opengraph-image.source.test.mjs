@@ -7,13 +7,22 @@ function readSource(relPath) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
 }
 
-test("event OG metadata uses the canonical public slug image route", () => {
+test("event OG metadata shares saved artwork at its natural aspect ratio", () => {
   const pageSource = readSource("src/app/event/[id]/page.tsx");
 
-  assert.match(pageSource, /const ogImageSegment = row/);
-  assert.match(pageSource, /buildEventSlugSegment\(row\.id, title, publicSlug\)/);
-  assert.match(pageSource, /\/event\/\$\{ogImageSegment\}\/opengraph-image/);
-  assert.match(pageSource, /EVENT_OG_IMAGE_VERSION/);
+  assert.match(pageSource, /resolveCoverImageUrlFromEventData/);
+  assert.match(pageSource, /async function resolveEventShareImageUrl/);
+  assert.match(pageSource, /await resolveEventShareImageUrl\(data\)/);
+  assert.match(pageSource, /await absoluteUrl\("\/og-default\.jpg"\)/);
+  assert.doesNotMatch(pageSource, /const ogImageSegment = row/);
+
+  const metadataBlock = pageSource.match(
+    /export async function generateMetadata[\s\S]*?(?=\nexport async function generateViewport)/,
+  )?.[0];
+  assert.ok(metadataBlock, "expected event metadata generator");
+  assert.match(metadataBlock, /images: \[\s*\{\s*url: img,\s*alt: title,/);
+  assert.doesNotMatch(metadataBlock, /width: 1200/);
+  assert.doesNotMatch(metadataBlock, /height: 630/);
 });
 
 test("event OG data route resolves public slugs and chooses saved event artwork", () => {

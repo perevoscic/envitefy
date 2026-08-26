@@ -82,7 +82,10 @@ import {
 } from "@/lib/owner-rsvp-dashboard";
 import { createServerTimingTracker } from "@/lib/server-timing";
 import { resolveEventPageBackgroundColor, resolveEventThemeColor } from "@/lib/theme-color";
-import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
+import {
+  resolveAttachmentPreviewUrl,
+  resolveCoverImageUrlFromEventData,
+} from "@/lib/upload-config";
 import {
   buildWeddingScanFlyerColorsFromImageColors,
   buildWeddingScanSchedule,
@@ -223,7 +226,6 @@ function DeletedEventNotice() {
 
 export const dynamic = "force-dynamic";
 const EVENT_PAGE_TIMING_ENV = process.env.EVENT_PAGE_TIMING === "1";
-const EVENT_OG_IMAGE_VERSION = "2";
 
 const getCachedEventHistoryBySlugOrId = cache(async (value: string, userId?: string | null) =>
   getEventHistoryPublicRenderBySlugOrId({
@@ -231,6 +233,14 @@ const getCachedEventHistoryBySlugOrId = cache(async (value: string, userId?: str
     userId: userId || undefined,
   }),
 );
+
+async function resolveEventShareImageUrl(data: Record<string, any>): Promise<string | null> {
+  const candidate = resolveCoverImageUrlFromEventData(data);
+  if (!candidate || /^data:/i.test(candidate)) return null;
+  const isPublicRelativePath = candidate.startsWith("/") && !candidate.startsWith("//");
+  if (!isPublicRelativePath && !/^https?:\/\//i.test(candidate)) return null;
+  return absoluteUrl(candidate);
+}
 
 const FLOATING_ISO_REGEX = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/;
 
@@ -447,13 +457,9 @@ export async function generateMetadata(props: {
   const indexable = Boolean(row && isPublicEventIndexable(data));
   const description = buildPublicEventMetaDescription(title, data, indexable);
 
-  // Generate OG image URL from the canonical public slug so link previews stay stable.
-  const ogImageSegment = row
-    ? buildEventSlugSegment(row.id, title, publicSlug)
-    : encodeURIComponent(awaitedParams.id);
-  const img = await absoluteUrl(
-    `/event/${ogImageSegment}/opengraph-image?v=${EVENT_OG_IMAGE_VERSION}`,
-  );
+  // Share the saved flyer/invite directly so receiving apps can preserve its natural aspect ratio.
+  const img =
+    (row ? await resolveEventShareImageUrl(data) : null) || (await absoluteUrl("/og-default.jpg"));
 
   // Generate canonical URL
   const canonicalPath = row
@@ -482,8 +488,6 @@ export async function generateMetadata(props: {
       images: [
         {
           url: img,
-          width: 1200,
-          height: 630,
           alt: title,
         },
       ],
@@ -1750,9 +1754,8 @@ export default async function EventPage({
     );
     redirect(next);
   }
-  const publicEventOgImageUrl = await absoluteUrl(
-    `/event/${canonicalSegment}/opengraph-image?v=${EVENT_OG_IMAGE_VERSION}`,
-  );
+  const publicEventOgImageUrl =
+    (await resolveEventShareImageUrl(data)) || (await absoluteUrl("/og-default.jpg"));
   publicEventStructuredData = buildPublicEventJsonLd({
     title,
     data,
