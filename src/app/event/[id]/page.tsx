@@ -235,7 +235,16 @@ const getCachedEventHistoryBySlugOrId = cache(async (value: string, userId?: str
 );
 
 async function resolveEventShareImageUrl(data: Record<string, any>): Promise<string | null> {
-  const candidate = resolveCoverImageUrlFromEventData(data);
+  const attachment =
+    data.attachment && typeof data.attachment === "object" && !Array.isArray(data.attachment)
+      ? (data.attachment as Record<string, unknown>)
+      : null;
+  const attachmentThumbnail = sanitizePersistedMediaUrl(
+    typeof attachment?.thumbnailUrl === "string" ? attachment.thumbnailUrl : null,
+  );
+  // Link-preview crawlers are more reliable with the lightweight upload thumbnail. It uses
+  // `fit: "inside"`, so this keeps the complete flyer rather than cropping it into a landscape card.
+  const candidate = attachmentThumbnail || resolveCoverImageUrlFromEventData(data);
   if (!candidate || /^data:/i.test(candidate)) return null;
   const isPublicRelativePath = candidate.startsWith("/") && !candidate.startsWith("//");
   if (!isPublicRelativePath && !/^https?:\/\//i.test(candidate)) return null;

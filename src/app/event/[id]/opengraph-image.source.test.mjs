@@ -10,6 +10,8 @@ function readSource(relPath) {
 test("event OG metadata shares saved artwork at its natural aspect ratio", () => {
   const pageSource = readSource("src/app/event/[id]/page.tsx");
 
+  assert.match(pageSource, /attachment\?\.thumbnailUrl/);
+  assert.match(pageSource, /attachmentThumbnail \|\| resolveCoverImageUrlFromEventData/);
   assert.match(pageSource, /resolveCoverImageUrlFromEventData/);
   assert.match(pageSource, /async function resolveEventShareImageUrl/);
   assert.match(pageSource, /await resolveEventShareImageUrl\(data\)/);
