@@ -7,6 +7,7 @@ import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
 import { getEventHistoryPublicRenderBySlugOrId } from "@/lib/db";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
+import { resolveEventShareImage, toPublicShareMediaUrl } from "@/lib/share-image";
 import { resolveEventCelebrationKind } from "@/utils/event-celebration";
 import { buildEventPath, buildStudioCardPath } from "@/utils/event-url";
 
@@ -141,7 +142,7 @@ function isLoopbackHostname(hostname: string): boolean {
 }
 
 async function normalizeSharedCardImageUrl(value: unknown): Promise<string> {
-  const raw = readString(value);
+  const raw = toPublicShareMediaUrl(value) || readString(value);
   if (!raw) return "";
   if (raw.startsWith("/")) return absoluteUrl(raw);
   if (!/^https?:\/\//i.test(raw)) return raw;
@@ -349,13 +350,9 @@ async function resolveSharedCard(value: string) {
   const data = isRecord(row.data) ? row.data : {};
   const studioCard = isRecord(data.studioCard) ? data.studioCard : null;
   const title = sanitizeGuestTitle(row.title) || sanitizeGuestTitle(data.title) || "Invitation";
+  const eventShareImage = resolveEventShareImage(data);
   const imageUrl = await normalizeSharedCardImageUrl(
-    readString(data.coverImageUrl) ||
-      readString(studioCard?.imageUrl) ||
-      readString(data.customHeroImage) ||
-      readString(data.heroImage) ||
-      readString(data.thumbnail) ||
-      resolveConciergeLiveCardImagePath(data),
+    eventShareImage?.url || resolveConciergeLiveCardImagePath(data),
   );
 
   if (!imageUrl) return null;
@@ -364,6 +361,7 @@ async function resolveSharedCard(value: string) {
     row,
     title,
     imageUrl,
+    shareImage: { ...eventShareImage, url: imageUrl },
     invitationData: withDirectRsvpInvitationData({
       invitationData: isRecord(studioCard?.invitationData)
         ? sanitizeInvitationData(studioCard.invitationData)
@@ -397,6 +395,13 @@ export async function generateMetadata(props: {
   const description = resolveSharedCardMetaDescription(
     sharedCard.invitationData as Record<string, unknown>,
   );
+  const metadataImage = {
+    url: sharedCard.imageUrl,
+    alt: `${sharedCard.title} invitation`,
+    ...(sharedCard.shareImage.width ? { width: sharedCard.shareImage.width } : {}),
+    ...(sharedCard.shareImage.height ? { height: sharedCard.shareImage.height } : {}),
+    ...(sharedCard.shareImage.type ? { type: sharedCard.shareImage.type } : {}),
+  };
 
   return {
     title: `${sharedCard.title} — Envitefy`,
@@ -408,7 +413,15 @@ export async function generateMetadata(props: {
       title: `${sharedCard.title} — Envitefy`,
       description,
       url,
-      images: [{ url: sharedCard.imageUrl }],
+      siteName: "Envitefy",
+      images: [metadataImage],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${sharedCard.title} — Envitefy`,
+      description,
+      images: [{ url: sharedCard.imageUrl, alt: `${sharedCard.title} invitation` }],
     },
   };
 }

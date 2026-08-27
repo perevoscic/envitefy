@@ -783,7 +783,7 @@ export default function HomeOverviewDashboard({
       : "Dashboard Focus"
     : "Dashboard Overview";
   const heroSummary = nextEvent
-    ? `${nextEvent.title} is next on your calendar. Keep track of timing, travel, and what still needs attention.`
+    ? ""
     : "Your home dashboard will spotlight countdowns, travel, weather, and upcoming invites as soon as you add an event.";
   const nextEventStats = useMemo(
     () =>
@@ -864,9 +864,11 @@ export default function HomeOverviewDashboard({
           <h1 className="text-4xl font-black leading-none tracking-tight text-slate-900 md:text-5xl">
             Welcome, <span className="text-indigo-600">{viewerLabel}.</span>
           </h1>
-          <p className="mt-4 max-w-2xl text-base font-medium text-slate-400">
-            {heroSummary}
-          </p>
+          {heroSummary ? (
+            <p className="mt-4 max-w-2xl text-base font-medium text-slate-400">
+              {heroSummary}
+            </p>
+          ) : null}
         </div>
       </header>
 

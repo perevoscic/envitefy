@@ -88,6 +88,10 @@ export type UploadResponse = {
       height?: number;
       previewImageUrl?: string;
       thumbnailUrl?: string;
+      thumbnailWidth?: number;
+      thumbnailHeight?: number;
+      thumbnailMimeType?: "image/webp";
+      thumbnailSizeBytes?: number;
       storageKind: "blob";
       optimizedFromMimeType?: string;
       originalName?: string;

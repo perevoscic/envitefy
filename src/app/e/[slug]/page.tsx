@@ -10,6 +10,7 @@ import {
   getEventHistoryPublicRenderBySlugOrId,
   getEventPageBySlug,
 } from "@/lib/db";
+import { resolveEventShareImage } from "@/lib/share-image";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,6 +49,15 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     "View this Envitefy event page.",
   );
   const url = await absoluteUrl(`/e/${eventPage?.slug || row.public_slug || slug}`);
+  const shareImage = resolveEventShareImage(data);
+  const imageUrl = await absoluteUrl(shareImage?.url || "/og-default.jpg");
+  const metadataImage = {
+    url: imageUrl,
+    alt: `${title} event`,
+    ...(shareImage?.width ? { width: shareImage.width } : {}),
+    ...(shareImage?.height ? { height: shareImage.height } : {}),
+    ...(shareImage?.type ? { type: shareImage.type } : {}),
+  };
   return {
     title: `${title} | Envitefy`,
     description,
@@ -57,7 +67,14 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       description,
       url,
       siteName: "Envitefy",
+      images: [metadataImage],
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [{ url: imageUrl, alt: `${title} event` }],
     },
   };
 }

@@ -16,6 +16,7 @@
     "test:mobile:update": "node scripts/run-mobile-tests.mjs --update",
     "test:mobile:full": "node scripts/run-mobile-tests.mjs --full",
     "test:mobile:lighthouse": "npm run build && lhci autorun --config=lighthouserc.json",
+    "verify:share-preview": "node scripts/verify-share-preview.mjs",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
     "check": "biome check .",

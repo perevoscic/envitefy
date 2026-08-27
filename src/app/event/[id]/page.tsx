@@ -81,11 +81,9 @@ import {
   isScannedOrUploadedEventData,
 } from "@/lib/owner-rsvp-dashboard";
 import { createServerTimingTracker } from "@/lib/server-timing";
+import { resolveEventShareImage, type EventShareImage } from "@/lib/share-image";
 import { resolveEventPageBackgroundColor, resolveEventThemeColor } from "@/lib/theme-color";
-import {
-  resolveAttachmentPreviewUrl,
-  resolveCoverImageUrlFromEventData,
-} from "@/lib/upload-config";
+import { resolveAttachmentPreviewUrl } from "@/lib/upload-config";
 import {
   buildWeddingScanFlyerColorsFromImageColors,
   buildWeddingScanSchedule,
@@ -234,21 +232,11 @@ const getCachedEventHistoryBySlugOrId = cache(async (value: string, userId?: str
   }),
 );
 
-async function resolveEventShareImageUrl(data: Record<string, any>): Promise<string | null> {
-  const attachment =
-    data.attachment && typeof data.attachment === "object" && !Array.isArray(data.attachment)
-      ? (data.attachment as Record<string, unknown>)
-      : null;
-  const attachmentThumbnail = sanitizePersistedMediaUrl(
-    typeof attachment?.thumbnailUrl === "string" ? attachment.thumbnailUrl : null,
-  );
-  // Link-preview crawlers are more reliable with the lightweight upload thumbnail. It uses
-  // `fit: "inside"`, so this keeps the complete flyer rather than cropping it into a landscape card.
-  const candidate = attachmentThumbnail || resolveCoverImageUrlFromEventData(data);
-  if (!candidate || /^data:/i.test(candidate)) return null;
-  const isPublicRelativePath = candidate.startsWith("/") && !candidate.startsWith("//");
-  if (!isPublicRelativePath && !/^https?:\/\//i.test(candidate)) return null;
-  return absoluteUrl(candidate);
+async function resolveAbsoluteEventShareImage(
+  data: Record<string, unknown>,
+): Promise<EventShareImage | null> {
+  const image = resolveEventShareImage(data);
+  return image ? { ...image, url: await absoluteUrl(image.url) } : null;
 }
 
 const FLOATING_ISO_REGEX = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/;
@@ -466,9 +454,16 @@ export async function generateMetadata(props: {
   const indexable = Boolean(row && isPublicEventIndexable(data));
   const description = buildPublicEventMetaDescription(title, data, indexable);
 
-  // Share the saved flyer/invite directly so receiving apps can preserve its natural aspect ratio.
-  const img =
-    (row ? await resolveEventShareImageUrl(data) : null) || (await absoluteUrl("/og-default.jpg"));
+  // Share the optimized, uncropped flyer/invite through a crawler-accessible public media route.
+  const shareImage = row ? await resolveAbsoluteEventShareImage(data) : null;
+  const img = shareImage?.url || (await absoluteUrl("/og-default.jpg"));
+  const openGraphImage = {
+    url: img,
+    alt: title,
+    ...(shareImage?.width ? { width: shareImage.width } : {}),
+    ...(shareImage?.height ? { height: shareImage.height } : {}),
+    ...(shareImage?.type ? { type: shareImage.type } : {}),
+  };
 
   // Generate canonical URL
   const canonicalPath = row
@@ -494,19 +489,14 @@ export async function generateMetadata(props: {
       description,
       url,
       siteName: "Envitefy",
-      images: [
-        {
-          url: img,
-          alt: title,
-        },
-      ],
+      images: [openGraphImage],
       type: "article",
     },
     twitter: {
       card: "summary_large_image",
       title: `${title} — Envitefy`,
       description,
-      images: [img],
+      images: [{ url: img, alt: title }],
     },
     alternates: {
       canonical: url,
@@ -1764,7 +1754,7 @@ export default async function EventPage({
     redirect(next);
   }
   const publicEventOgImageUrl =
-    (await resolveEventShareImageUrl(data)) || (await absoluteUrl("/og-default.jpg"));
+    (await resolveAbsoluteEventShareImage(data))?.url || (await absoluteUrl("/og-default.jpg"));
   publicEventStructuredData = buildPublicEventJsonLd({
     title,
     data,

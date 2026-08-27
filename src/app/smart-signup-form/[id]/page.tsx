@@ -15,6 +15,7 @@ import {
 } from "@/lib/db";
 import { isIndexablePublicSmartSignupData } from "@/lib/smart-signup-indexing";
 import { combineVenueAndLocation } from "@/lib/mappers";
+import { toPublicShareMediaUrl } from "@/lib/share-image";
 import type { SignupForm } from "@/types/signup";
 import { buildEventSlugSegment } from "@/utils/event-url";
 import { sanitizeSignupForm } from "@/utils/signup";
@@ -103,10 +104,11 @@ async function resolveSignupHeaderImageUrl(
     const params = new URLSearchParams();
     params.set("variant", "signup-header");
     if (row.media.signupHeaderSig) params.set("v", row.media.signupHeaderSig);
-    return absoluteUrl(`/api/events/${row.id}/thumbnail?${params.toString()}`);
+    return absoluteUrl(`/media/events/${row.id}/thumbnail?${params.toString()}`);
   }
   if (/^https?:\/\//i.test(image.dataUrl) || image.dataUrl.startsWith("/")) {
-    return absoluteUrl(image.dataUrl);
+    const publicImageUrl = toPublicShareMediaUrl(image.dataUrl);
+    return publicImageUrl ? absoluteUrl(publicImageUrl) : null;
   }
   return null;
 }

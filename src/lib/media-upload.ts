@@ -437,6 +437,10 @@ async function processImageUpload(params: {
           height: processed.original.height,
           previewImageUrl: display.url,
           thumbnailUrl: thumb.url,
+          thumbnailWidth: thumb.width,
+          thumbnailHeight: thumb.height,
+          thumbnailMimeType: "image/webp" as const,
+          thumbnailSizeBytes: thumb.sizeBytes,
           storageKind: "blob" as const,
           optimizedFromMimeType: params.validated.mimeType,
           originalName: params.validated.fileName,
@@ -502,6 +506,9 @@ async function processPdfUpload(params: {
   }
 
   const variants = await renderImageVariants(previewPng);
+  if (!variants.thumb) {
+    throw new Error("Could not generate PDF preview thumbnail");
+  }
   const [display, thumb, source] = await Promise.all([
     uploadWebpAsset({
       scopeId: params.scopeId,
@@ -574,6 +581,10 @@ async function processPdfUpload(params: {
         sizeBytes: source.sizeBytes,
         previewImageUrl: display.url,
         thumbnailUrl: thumb.url,
+        thumbnailWidth: thumb.width,
+        thumbnailHeight: thumb.height,
+        thumbnailMimeType: "image/webp",
+        thumbnailSizeBytes: thumb.sizeBytes,
         storageKind: "blob",
         originalName: params.validated.fileName,
         originalType: params.validated.mimeType,
