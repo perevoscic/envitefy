@@ -3006,7 +3006,7 @@ export async function getEventHistoryOwnerById(
 }
 
 function buildEventHistoryPublicDataProjectionSql(dataSql: string, idSql: string): string {
-  const base = `((coalesce(${dataSql}, '{}'::jsonb) - 'ocrText') #- '{attachment,dataUrl}' #- '{profileImage,dataUrl}' #- '{signupForm,header,backgroundImage,dataUrl}')`;
+  const base = `((coalesce(${dataSql}, '{}'::jsonb) - 'ocrText' - 'calendarSync') #- '{attachment,dataUrl}' #- '{profileImage,dataUrl}' #- '{signupForm,header,backgroundImage,dataUrl}')`;
   const withoutThumbnail = `case
     when coalesce(${dataSql}->>'thumbnail', '') like 'data:%' then (${base} - 'thumbnail')
     else ${base}

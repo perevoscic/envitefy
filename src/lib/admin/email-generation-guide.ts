@@ -1,3 +1,7 @@
+import {
+  buildEnvitefyMarketingCatalogPrompt,
+  ENVITEFY_PRODUCT_MARKETING_CATALOG,
+} from "../product-marketing-catalog.ts";
 import { ENVITEFY_PUBLIC_ORIGIN } from "../public-asset-url.ts";
 
 export type AdminEmailGuideAudienceMode = "individual" | "broadcast";
@@ -7,39 +11,95 @@ export type AdminEmailGuideAudienceMode = "individual" | "broadcast";
  * Imported by the generator prompts and body polish so rules stay aligned.
  */
 export const ADMIN_EMAIL_GENERATION_GUIDE = {
-  role: "You generate polished, professional Envitefy admin marketing emails.",
+  role: "You are Envitefy's client-focused marketing team. The admin writing the prompt is your client: listen closely, treat their words as the campaign brief, and create a polished professional email that follows their requested audience, topics, exclusions, and image direction without adding your own campaign segments.",
 
-  productSummary:
-    "Envitefy helps people create and share public event pages, live cards, invitations, RSVP flows, smart sign-up forms, registry links, and multi-vertical events.",
+  productSummary: ENVITEFY_PRODUCT_MARKETING_CATALOG.positioning.primaryMessage,
+
+  /** Shared source of truth; updates here automatically reach the generated system prompt. */
+  productCatalog: ENVITEFY_PRODUCT_MARKETING_CATALOG,
+
+  messagingFramework: [
+    "Write outcome-first marketing copy: audience pain → Envitefy action → product transformation → useful actions → emotional/practical payoff.",
+    "Every scenario body should use two concise sentences and explain what the customer gets after the initial action; do not stop at 'photograph the invite' or 'describe the party.'",
+    "Use concrete verbs and benefits. Prefer creates, saves, organizes, adds, shares, reopens, tracks, and keeps over vague claims such as simplifies or makes things easier.",
+    "For Snap, communicate the complete product story: source invitation/event image → saved event/live card → calendar + sharing → easy future access and less paper/message clutter.",
+    "For Envitefy Concierge, communicate the complete creation story: the host's words → polished invitation/live event page → relevant guest tools such as RSVP, calendar, registry, directions, reminders, or sharing.",
+    "Use the client's requested event type and audience throughout the headline, copy, and image scene.",
+    "Sound like an experienced professional marketing team: specific, polished, credible, warm, and useful—never generic feature filler.",
+  ] as const,
 
   outputShape: {
     format: "strict JSON only",
-    fields: ["subject", "preheader", "bodyHtml", "buttonText", "buttonUrl", "notes"] as const,
+    fields: [
+      "subject",
+      "preheader",
+      "bodyHtml",
+      "buttonText",
+      "buttonUrl",
+      "notes",
+      "scenarioRows",
+    ] as const,
   },
 
   /** What the model may put in bodyHtml. Scenario visuals/CTAs are injected server-side. */
   bodyHtmlOnly: [
-    "{{greeting}} paragraph",
+    "exactly three sibling elements with no container around them",
+    "one p containing {{greeting}}",
     "one h1 headline tied to the campaign prompt",
-    "one short intro paragraph",
+    "one short p intro paragraph",
   ] as const,
 
-  /** Injected after generation — do not ask the model to recreate these. */
+  /** Injected after generation from the model-selected scenario rows. */
   serverInjected: [
-    "Snap still-photo scenario row with Try Snap CTA",
-    "Concierge birthday scenario row with Open Concierge CTA",
-    "Teachers / class party scenario row",
-    "Share-an-event scenario row",
+    "only the scenarioRows selected for the user's request",
+    "one professional still photo for each selected scenario row",
+    "server-owned CTA URL and button for each selected product scenario",
   ] as const,
+
+  scenarioRows: {
+    count: "Select 1-4 rows, using only product scenarios relevant to the user's prompt.",
+    ids: {
+      snap: "Use when the prompt asks to snap, scan, photograph, or upload an invitation or flyer.",
+      concierge:
+        "Use when the prompt asks to create, draft, or plan an invitation/event with Envitefy Concierge or from a description.",
+      "live-page":
+        "Use when the prompt emphasizes a hosted event page, live card, current details, browser access, calendar, maps, updates, or one guest action center.",
+      rsvp: "Use when the prompt emphasizes RSVPs, attendance, headcounts, households, plus-ones, guest questions, pending replies, or host response tracking.",
+      signups:
+        "Use when the prompt emphasizes smart sign-ups, volunteers, food, supplies, shifts, quantities, capacity, QR sharing, or waitlists.",
+      weddings:
+        "Use for wedding-specific invitation suites, itineraries, registries/funds, multi-event RSVPs, meals, travel, or wedding guest logistics. Do not select it solely because a wedding invitation is the source for a general Snap story.",
+      sports:
+        "Use for gymnastics, football, game day, team schedules, meet packets, sessions, athlete availability, parent updates, or other sport-specific workflows.",
+      teachers:
+        "Use only when the prompt explicitly asks for teachers, classrooms, school staff, or class events.",
+      share:
+        "Use when the prompt explicitly emphasizes sending, copying, or reopening one event link. Do not use it as a substitute for the dedicated RSVP, signups, weddings, or sports scenario when one of those is the campaign focus.",
+    },
+    fidelity: [
+      "The user's prompt is the source of truth for audience, event types, use cases, and exclusions.",
+      "Do not include a scenario merely because it exists in the available scenario list.",
+      "If the prompt says parents only, every selected row and image scene must feature parents—not teachers, classrooms, or school staff.",
+      "Write a prompt-specific title, body, and imageScene for every selected row; never reuse generic birthday, teacher, or sharing copy when it does not match the request.",
+      "A Snap row is incomplete unless it explains the saved event/live card, calendar action, easy sharing, and the benefit of keeping details accessible instead of losing or storing the paper invite.",
+      "For RSVP-focused rows, sell the host outcome and the relevant response depth—not merely an RSVP button. Use the catalog to mention accurate headcounts, household or plus-one details, pending replies, and event-specific questions when relevant.",
+      "Know the full product catalog but select at most the few scenario rows that directly serve the campaign brief; do not turn one email into a list of every Envitefy capability.",
+      "imageScene describes one professional photographic scene and must match the row's event type and audience.",
+    ],
+  },
 
   must: [
     "Return email-client-safe HTML fragment only for bodyHtml (no full document).",
     "Keep bodyHtml to intro copy only: greeting, headline, one short paragraph.",
+    "Return the greeting p, h1, and intro p as direct siblings. Do not wrap them in a div, table, card, section, or other layout container.",
+    "Do not add background colors, borders, shadows, border radii, widths, or layout padding to bodyHtml; the Envitefy email wrapper owns the visual surface and spacing.",
     "Always set buttonText and buttonUrl to empty strings when scenario rows are used (scenario CTAs are enough).",
     "Prefer buttonUrl https://envitefy.com only when a single final wrapper CTA is intentionally required.",
     "Only use {{greeting}}, {{firstName}}, and {{lastName}} personalization tokens.",
     "Put the recipient name only in {{greeting}} (e.g. Hi {{firstName}} via greeting). Do not open the headline or body paragraph with {{firstName}} again.",
-    "Prefer concrete product benefits (live cards, RSVP, snap, Concierge, smart sign-ups) over vague lifestyle claims.",
+    "Prefer concrete product benefits (live cards, RSVP, snap, Envitefy Concierge, smart sign-ups) over vague lifestyle claims.",
+    "Always write the product name as “Envitefy Concierge.” Never write “Concierge” by itself in customer-facing copy.",
+    "Follow explicit audience limits and exclusions from the user prompt in the subject, preheader, intro, scenarioRows, and image scenes.",
   ] as const,
 
   mustNot: [
@@ -52,6 +112,7 @@ export const ADMIN_EMAIL_GENERATION_GUIDE = {
     "Do not invent pricing, launch dates, offers, guarantees, legal claims, or user data the prompt did not supply.",
     "Do not duplicate the final Create an event / Open Envitefy button in bodyHtml.",
     "Do not repeat the recipient name after {{greeting}} (avoid “{{firstName}}, …” right after Hi).",
+    "Do not add teachers, classrooms, school staff, or class events unless the user prompt explicitly requests that audience or use case.",
   ] as const,
 
   bannedTextLinkLabels: [
@@ -90,9 +151,9 @@ export const ADMIN_EMAIL_GENERATION_GUIDE = {
   },
 
   revision:
-    "When currentDraft.bodyHtml is present, treat the prompt as an edit request and revise intro copy only unless the prompt asks otherwise.",
+    "When currentDraft.bodyHtml is present, treat the prompt as an edit request. Preserve currentDraft.scenarioRows unless the prompt changes the audience, event types, use cases, exclusions, or image direction; when it does, revise the affected rows to match the new brief.",
 
-  allowedHtmlElements: ["p", "h1", "h2", "div", "table", "tr", "td", "ul", "li", "strong", "em", "a"] as const,
+  allowedHtmlElements: ["p", "h1", "strong", "em"] as const,
 
   /** Visual rules for generated scenario stills (no GIFs). */
   imageVisuals: {
@@ -152,6 +213,11 @@ export function buildAdminEmailSystemPromptFromGuide(
     `Use inline styles on ordinary email-safe elements such as ${guide.allowedHtmlElements.join(", ")}.`,
     `bodyHtml should contain ONLY: ${guide.bodyHtmlOnly.join("; ")}.`,
     `Server injects (do not duplicate): ${guide.serverInjected.join("; ")}.`,
+    `Scenario selection rules: ${guide.scenarioRows.count} ${Object.entries(guide.scenarioRows.ids)
+      .map(([id, rule]) => `${id}: ${rule}`)
+      .join(" ")} ${guide.scenarioRows.fidelity.join(" ")}`,
+    `Complete Envitefy product marketing catalog: ${buildEnvitefyMarketingCatalogPrompt()}.`,
+    `Marketing framework: ${guide.messagingFramework.join(" ")}`,
     ...guide.must,
     ...guide.mustNot,
     buildAdminEmailAudienceGuidance(audienceMode),
@@ -174,6 +240,7 @@ export function buildAdminEmailGuidePromptPayload(params: {
     bannedTextLinkLabels: readonly string[];
     voice: (typeof ADMIN_EMAIL_GENERATION_GUIDE)["voice"];
     ctaDefaults: (typeof ADMIN_EMAIL_GENERATION_GUIDE)["ctaDefaults"];
+    scenarioRows: (typeof ADMIN_EMAIL_GENERATION_GUIDE)["scenarioRows"];
   };
   productScenariosNote: string;
   generatedImageAssetsCount: number;
@@ -202,9 +269,10 @@ export function buildAdminEmailGuidePromptPayload(params: {
       bannedTextLinkLabels: guide.bannedTextLinkLabels,
       voice: guide.voice,
       ctaDefaults: guide.ctaDefaults,
+      scenarioRows: guide.scenarioRows,
     },
     productScenariosNote:
-      "Scenario rows (snap, concierge, teachers, share) are injected server-side with professional still photos and CTAs. No GIFs. Do not duplicate them in bodyHtml.",
+      "The server injects only the rows returned in scenarioRows, with one professional still photo and a server-owned CTA per selected row. Do not duplicate them in bodyHtml.",
     generatedImageAssetsCount: params.generatedImageAssetsCount,
     layoutRecipe: {
       bodyHtmlOnly: guide.bodyHtmlOnly,

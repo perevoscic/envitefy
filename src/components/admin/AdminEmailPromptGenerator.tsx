@@ -6,6 +6,7 @@ import {
   ADMIN_EMAIL_CAMPAIGN_DRAFT_KEY,
   type AdminEmailCampaignDraft,
 } from "@/lib/admin/email-campaign-draft";
+import type { AdminEmailScenarioId } from "@/lib/admin/email-scenarios";
 import { createEmailTemplate } from "@/lib/email-template";
 
 type AudienceMode = "individual" | "broadcast";
@@ -17,7 +18,14 @@ type GeneratedImageAsset = {
   altText: string;
   prompt: string;
   model: string;
-  scenarioId?: "snap" | "concierge" | "teachers" | "share";
+  scenarioId?: AdminEmailScenarioId;
+};
+
+type GeneratedScenarioRow = {
+  scenarioId: AdminEmailScenarioId;
+  title: string;
+  body: string;
+  imageScene: string;
 };
 
 type GeneratedDraft = {
@@ -27,6 +35,7 @@ type GeneratedDraft = {
   buttonText: string;
   buttonUrl: string;
   notes: string;
+  scenarioRows?: GeneratedScenarioRow[];
   imageAssets?: GeneratedImageAsset[];
 };
 
@@ -120,6 +129,7 @@ export default function AdminEmailPromptGenerator() {
                 .replace(/<img\b[^>]*>/gi, "")
                 .trim() || undefined
             : undefined,
+          currentScenarioRows: draft?.scenarioRows || [],
           // Never reuse GIFs or incomplete legacy image sets.
           currentImageAssets: (draft?.imageAssets || []).filter(
             (asset) =>
@@ -188,17 +198,27 @@ export default function AdminEmailPromptGenerator() {
     {
       label: "Back to school",
       prompt:
-        "Write a back-to-school email for parents and teachers. Cover snapping birthday flyers, asking Concierge about an upcoming birthday, class parties, and sharing one event link. Include clear CTAs.",
+        "Write a back-to-school email for parents and teachers. Cover snapping birthday flyers, asking Envitefy Concierge about an upcoming birthday, class parties, and sharing one event link. Include clear CTAs.",
     },
     {
       label: "Birthday parties",
       prompt:
-        "Promote Envitefy for birthday parties: snap a flyer into a live card, use Concierge if details are still fuzzy, then share RSVP with families.",
+        "Promote Envitefy for birthday parties: snap or upload the invitation into a saved live event card, add it to a calendar, keep it easy to reopen, and share one link with families. Also explain how Envitefy Concierge can create a polished birthday invitation with RSVP and guest-ready details from the parent's words.",
     },
     {
       label: "Teachers + share",
       prompt:
         "Email for teachers and room parents: turn class party flyers into live pages, collect helpers with smart sign-ups, and share one link with every family.",
+    },
+    {
+      label: "RSVPs + guests",
+      prompt:
+        "Write a professional host-focused email about Envitefy RSVP pages. Explain that guests can respond from the live invitation without an app and that supported events can collect yes, maybe, or no, household headcounts, adults and kids, plus-ones, allergies, meal choices, guest notes, and event-specific questions. Show how hosts track replies and pending guests in one place.",
+    },
+    {
+      label: "Smart sign-ups",
+      prompt:
+        "Promote Envitefy smart sign-ups for volunteers, potlucks, supplies, team snacks, shifts, and custom needs. Cover quantities, capacity, per-person limits, automatic waitlists, live claimed/still-needed status, link or QR sharing, and no app required for guests.",
     },
   ];
 
@@ -302,8 +322,8 @@ export default function AdminEmailPromptGenerator() {
               {audienceMode === "broadcast"
                 ? "Newsletter tone for all users. Use In Campaign preselects All users."
                 : "1:1 tone for a test or short list. Use In Campaign preselects Individual."}{" "}
-              Each generate creates professional still photos (QA-checked to avoid AI-looking
-              art) for Snap, Concierge, teachers, and sharing—with CTAs to envitefy.com.
+              Each generate follows your requested audience and use cases, then creates
+              professional still photos only for the selected sections—with CTAs to envitefy.com.
             </p>
           </div>
 
@@ -453,8 +473,8 @@ export default function AdminEmailPromptGenerator() {
                 Generating professional scenario photos…
               </p>
               <p className="max-w-sm text-xs text-slate-500">
-                Creating QA-checked stills for Snap, Concierge, teachers, and share (no GIFs).
-                First run often takes 2–5 minutes — image gen + vision QA for each row.
+                Creating QA-checked stills only for the sections requested in your prompt (no
+                GIFs). First run often takes 2–5 minutes — image gen + vision QA for each row.
               </p>
             </div>
           ) : draft ? (

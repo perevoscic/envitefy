@@ -49,6 +49,7 @@ import {
 } from "@/utils/registry-links";
 import { cleanRsvpContactLabel } from "@/utils/rsvp";
 import { readFileAsDataUrl } from "@/utils/thumbnail";
+import { parseCalendarDateTimeToIso } from "@/lib/calendar-date-time";
 
 type EventFields = {
   title: string;
@@ -857,14 +858,10 @@ export default function Dashboard({
     [clearScanTimers],
   );
 
-  const parseStartToIso = useCallback((value: string | null, _timezone: string) => {
+  const parseStartToIso = useCallback((value: string | null, timezone: string) => {
     if (!value) return null;
-    try {
-      const isoDate = new Date(value);
-      if (!Number.isNaN(isoDate.getTime())) return isoDate.toISOString();
-    } catch {
-      // ignore
-    }
+    const timezoneAwareIso = parseCalendarDateTimeToIso(value, timezone);
+    if (timezoneAwareIso) return timezoneAwareIso;
     const parsed = chrono.parseDate(value, new Date(), { forwardDate: true });
     return parsed ? new Date(parsed.getTime()).toISOString() : null;
   }, []);
@@ -1010,24 +1007,6 @@ export default function Dashboard({
         const data = await res.json();
         const tz =
           data?.fieldsGuess?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-        const formatIsoForInput = (iso: string | null, timezone: string) => {
-          if (!iso) return null;
-          try {
-            const dt = new Date(iso);
-            if (Number.isNaN(dt.getTime())) return iso;
-            return new Intl.DateTimeFormat(undefined, {
-              year: "numeric",
-              month: "short",
-              day: "2-digit",
-              hour: "numeric",
-              minute: "2-digit",
-              hour12: true,
-              timeZone: timezone,
-            }).format(dt);
-          } catch {
-            return iso;
-          }
-        };
         // Clean RSVP field: extract ONLY phone number (digits only) or email (no "RSVP:", names, etc.)
         // This ensures the field contains ONLY the contact info that can be used directly for SMS/email
         const cleanRsvp = (rsvpText: string | null | undefined): string | null => {
@@ -1252,8 +1231,9 @@ export default function Dashboard({
         const adjusted: EventFields | null = data?.fieldsGuess
           ? {
               title: String(data.fieldsGuess.title || "Event"),
-              start: formatIsoForInput(data.fieldsGuess.start, tz),
-              end: formatIsoForInput(data.fieldsGuess.end, tz),
+              start:
+                typeof data.fieldsGuess.start === "string" ? data.fieldsGuess.start : null,
+              end: typeof data.fieldsGuess.end === "string" ? data.fieldsGuess.end : null,
               timeFound:
                 typeof data.fieldsGuess.timeFound === "boolean"
                   ? data.fieldsGuess.timeFound
@@ -1701,6 +1681,7 @@ export default function Dashboard({
             startISO: ready.start,
             endISO: ready.end,
             timeFound: eventInput.timeFound,
+            allDay: eventInput.timeFound === false || undefined,
             location: ready.location || undefined,
             venue:
               typeof eventInput.venue === "string" && eventInput.venue.trim()
@@ -1810,6 +1791,18 @@ export default function Dashboard({
             error: serverError || "We couldn't save this event to your account. Please try again.",
           };
         }
+
+        // Calendar sync is deliberately non-blocking. keepalive lets the request finish while
+        // navigation continues to the newly created Envitefy event.
+        void fetch("/api/events/calendar/auto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          keepalive: true,
+          body: JSON.stringify({ eventId }),
+        }).catch((error: Error) => {
+          console.warn("Automatic calendar sync could not be started:", error.message);
+        });
 
         if (typeof window !== "undefined") {
           window.dispatchEvent(

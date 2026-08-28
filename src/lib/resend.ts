@@ -3,6 +3,7 @@
  * Uses direct HTTP calls to avoid optional peer deps in the SDK.
  */
 
+import { DEFAULT_ENVITEFY_SENDER, normalizeEnvitefySender } from "./email-sender";
 import { createEmailTemplate } from "./email-template";
 
 function assertApiKey(): string {
@@ -44,7 +45,9 @@ async function resendHttpSend(params: {
   // If domain not verified, Resend returns 400/422. Retry with onboarding.
   const maybeDomainError = /domain|from address|verified/i.test(first.text || "");
   if (maybeDomainError || first.status === 400 || first.status === 422) {
-    const fallbackFrom = process.env.RESEND_FROM_EMAIL || "Envitefy <onboarding@resend.dev>";
+    const fallbackFrom = normalizeEnvitefySender(
+      process.env.RESEND_FROM_EMAIL || DEFAULT_ENVITEFY_SENDER,
+    );
     const second = await doSend(fallbackFrom);
     if (second.ok) return;
     throw new Error(`Resend HTTP ${second.status}: ${second.text || "send failed"}`);
@@ -82,14 +85,13 @@ export interface BulkEmailResult {
 /**
  * Send bulk emails using Resend with batching
  */
-export async function sendBulkEmail(
-  params: BulkEmailParams
-): Promise<BulkEmailResult> {
-  const fromEmail =
+export async function sendBulkEmail(params: BulkEmailParams): Promise<BulkEmailResult> {
+  const fromEmail = normalizeEnvitefySender(
     params.fromEmail ||
-    process.env.RESEND_FROM_EMAIL ||
-    process.env.SES_FROM_EMAIL_NO_REPLY ||
-    "Envitefy <onboarding@resend.dev>";
+      process.env.RESEND_FROM_EMAIL ||
+      process.env.SES_FROM_EMAIL_NO_REPLY ||
+      DEFAULT_ENVITEFY_SENDER,
+  );
 
   // Resend free tier: 2 requests/second. We'll send 1 at a time with 550ms delay to be safe.
   const RATE_LIMIT_BATCH = 1;
@@ -121,8 +123,7 @@ export async function sendBulkEmail(
               body: personalizedBody,
               buttonText: params.buttonText,
               buttonUrl: params.buttonUrl,
-              footerText:
-                "You're receiving this because you have an Envitefy account.",
+              footerText: "You're receiving this because you have an Envitefy account.",
             });
 
         await resendHttpSend({
@@ -133,7 +134,9 @@ export async function sendBulkEmail(
         });
 
         result.sent++;
-        console.log(`[resend] ✓ Sent to ${recipient.email} (${result.sent}/${params.recipients.length})`);
+        console.log(
+          `[resend] ✓ Sent to ${recipient.email} (${result.sent}/${params.recipients.length})`,
+        );
       } catch (error: any) {
         result.failed++;
         result.errors.push({
@@ -168,10 +171,11 @@ export async function sendTestEmail(toEmail: string): Promise<boolean> {
     });
 
     await resendHttpSend({
-      from:
+      from: normalizeEnvitefySender(
         process.env.RESEND_FROM_EMAIL ||
-        process.env.SES_FROM_EMAIL_NO_REPLY ||
-        "Envitefy <onboarding@resend.dev>",
+          process.env.SES_FROM_EMAIL_NO_REPLY ||
+          DEFAULT_ENVITEFY_SENDER,
+      ),
       to: toEmail,
       subject: "Resend Test Email",
       html,
@@ -183,4 +187,3 @@ export async function sendTestEmail(toEmail: string): Promise<boolean> {
     return false;
   }
 }
-

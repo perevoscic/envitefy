@@ -1,4 +1,5 @@
 import type { SignupForm } from "@/types/signup";
+import { formatCalendarDateTimeInTimeZone } from "@/lib/calendar-date-time";
 
 export type NormalizedEvent = {
   title: string;
@@ -78,7 +79,10 @@ export function toGoogleEvent(event: NormalizedEvent) {
 }
 
 export function toMicrosoftEvent(event: NormalizedEvent) {
-  const toGraphLocal = (s: string) => (s || "").slice(0, 19); // expect local 'YYYY-MM-DDTHH:mm:ss'
+  const toGraphLocal = (value: string) =>
+    event.allDay
+      ? `${value.slice(0, 10)}T00:00:00`
+      : formatCalendarDateTimeInTimeZone(value, event.timezone) || value.slice(0, 19);
   const bodyContent = event.description || "";
   const graphEvent: any = {
     subject: event.title || "Event",

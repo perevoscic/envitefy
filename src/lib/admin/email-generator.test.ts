@@ -2,24 +2,35 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
-
 import {
+  buildEnvitefyMarketingCatalogPrompt,
+  ENVITEFY_PRODUCT_MARKETING_CATALOG,
+  listEnvitefyMarketingFeatures,
+} from "../product-marketing-catalog.ts";
+import {
+  ADMIN_EMAIL_GENERATION_GUIDE,
+  buildAdminEmailSystemPromptFromGuide,
+} from "./email-generation-guide.ts";
+import {
+  applyAdminEmailPromptConstraints,
   buildScenarioRowHtml,
   buildStillImageRetryHint,
   ensureDraftIncludesImageAssets,
+  extractCampaignIntroHtml,
   hasCompleteScenarioStillAssets,
   normalizeAdminEmailDraft,
   parseAdminEmailGenerationRequest,
   polishAdminEmailBodyHtml,
+  recoverAdminEmailDraftForPrompt,
   sanitizeGeneratedEmailHtml,
   stripRedundantNameAfterGreeting,
+  validateAdminEmailPromptFidelity,
 } from "./email-generator.ts";
 import {
   buildAdminEmailImageQaPrompt,
   normalizeAdminEmailImageQaResult,
   reasonsIndicateBrandLogo,
 } from "./email-image-qa.ts";
-import { ADMIN_EMAIL_GENERATION_GUIDE } from "./email-generation-guide.ts";
 
 const repoRoot = process.cwd();
 const emailGeneratorSource = () =>
@@ -44,15 +55,76 @@ test("admin email generation guide is the source of truth for LLM rules", () => 
     path.join(repoRoot, "src/lib/admin/email-generation-guide.ts"),
     "utf8",
   );
+  const catalogSource = fs.readFileSync(
+    path.join(repoRoot, "src/lib/product-marketing-catalog.ts"),
+    "utf8",
+  );
   assert.match(guideSource, /ADMIN_EMAIL_GENERATION_GUIDE/);
   assert.match(guideSource, /bodyHtmlOnly/);
   assert.match(guideSource, /serverInjected/);
+  assert.match(guideSource, /client-focused marketing team/);
+  assert.match(guideSource, /treat their words as the campaign brief/);
+  assert.match(guideSource, /only the scenarioRows selected/);
+  assert.match(guideSource, /ENVITEFY_PRODUCT_MARKETING_CATALOG/);
+  assert.match(guideSource, /buildEnvitefyMarketingCatalogPrompt/);
+  assert.match(catalogSource, /Google Calendar, Apple Calendar\/ICS, and Outlook/);
+  assert.match(catalogSource, /lost invitations/);
+  assert.match(catalogSource, /fridge and message-thread clutter/);
+  assert.match(catalogSource, /rsvp-households-headcount/);
+  assert.match(catalogSource, /smart-signups/);
+  assert.match(guideSource, /messagingFramework/);
+  assert.match(guideSource, /audience pain.*product transformation.*payoff/);
   assert.match(guideSource, /bannedTextLinkLabels/);
   assert.match(guideSource, /Turn a flyer into a live event card/);
   assert.match(guideSource, /Do not put scenario rows/);
   assert.match(guideSource, /imageVisuals/);
   assert.match(guideSource, /never animated GIFs/);
   assert.match(emailGeneratorSource(), /email-generation-guide/);
+  assert.match(emailGeneratorSource(), /draft_prompt_fidelity_retry/);
+});
+
+test("complete product catalog is embedded in the email-team prompt", () => {
+  const agentsSource = fs.readFileSync(path.join(repoRoot, "AGENTS.md"), "utf8");
+  const featureIds = new Set(listEnvitefyMarketingFeatures().map((feature) => feature.id));
+  for (const requiredId of [
+    "snap-source-import",
+    "envitefy-concierge",
+    "templates-manual-studio",
+    "saved-event-workspace",
+    "hosted-live-pages",
+    "one-link-sharing-updates",
+    "event-details-schedules",
+    "calendar-saves",
+    "maps-directions",
+    "event-access-codes",
+    "rsvp-responses",
+    "rsvp-households-headcount",
+    "rsvp-questions-notes",
+    "rsvp-host-dashboard",
+    "rsvp-specialized-flows",
+    "registries-gifts",
+    "smart-signups",
+    "guest-reminders-updates",
+    "guest-action-center",
+    "wedding-suites",
+    "family-celebrations",
+    "gymnastics-meet-hubs",
+    "sports-team-schedules",
+    "school-community-business-events",
+  ]) {
+    assert.ok(featureIds.has(requiredId), `missing product marketing feature: ${requiredId}`);
+  }
+
+  const prompt = buildAdminEmailSystemPromptFromGuide("broadcast");
+  assert.match(prompt, /Complete Envitefy product marketing catalog/);
+  assert.match(prompt, /rsvp-households-headcount/);
+  assert.match(prompt, /yes, maybe, and no responses/);
+  assert.match(prompt, /automatic waitlists/);
+  assert.match(prompt, /Envitefy Concierge/);
+  assert.ok(prompt.includes(buildEnvitefyMarketingCatalogPrompt()));
+  assert.equal(ADMIN_EMAIL_GENERATION_GUIDE.productCatalog, ENVITEFY_PRODUCT_MARKETING_CATALOG);
+  assert.match(agentsSource, /Every launched customer-facing feature must add or update/);
+  assert.match(agentsSource, /email marketing LLM prompt/);
 });
 
 test("admin email generator builds QA-checked still scenario photos without GIFs", () => {
@@ -64,6 +136,10 @@ test("admin email generator builds QA-checked still scenario photos without GIFs
   assert.doesNotMatch(source, /generateSnapDemoGifAsset/);
   assert.doesNotMatch(scenarios, /ADMIN_EMAIL_SNAP_GIF_FRAMES/);
   assert.match(scenarios, /id: "snap"/);
+  assert.match(scenarios, /id: "rsvp"/);
+  assert.match(scenarios, /id: "signups"/);
+  assert.match(scenarios, /id: "weddings"/);
+  assert.match(scenarios, /id: "sports"/);
   assert.match(scenarios, /stillScene:/);
   assert.match(scenarios, /Documentary-style photo/);
   assert.match(scenarios, /No logos/);
@@ -129,6 +205,14 @@ test("admin email generation requests require a prompt and normalize audience mo
     prompt: "Generate a launch email for parents.",
     audienceMode: "broadcast",
     currentSubject: " Existing subject ",
+    currentScenarioRows: [
+      {
+        scenarioId: "snap",
+        title: " Existing wedding row ",
+        body: " Existing copy ",
+        imageScene: " Existing scene ",
+      },
+    ],
     currentImageAssets: [
       {
         role: "scenario",
@@ -163,6 +247,14 @@ test("admin email generation requests require a prompt and normalize audience mo
         altText: "Snap photo",
         prompt: "Snap scene",
         model: "gpt-image-2",
+      },
+    ]);
+    assert.deepEqual(parsed.value.currentScenarioRows, [
+      {
+        scenarioId: "snap",
+        title: "Existing wedding row",
+        body: "Existing copy",
+        imageScene: "Existing scene",
       },
     ]);
   }
@@ -238,11 +330,12 @@ test("generated drafts require subject and body and keep only http CTA urls", ()
     buttonText: "Create an event",
     buttonUrl: "",
     notes: "Assumed birthday parents.",
+    scenarioRows: [],
     imageAssets: [],
   });
 });
 
-test("scenario rows and assets are injected when the model omits them", () => {
+test("only model-selected scenario rows and assets are injected", () => {
   const draft = normalizeAdminEmailDraft({
     subject: "Try live event cards",
     preheader: "Make RSVPs easier.",
@@ -251,6 +344,20 @@ test("scenario rows and assets are injected when the model omits them", () => {
     buttonText: "Create an event",
     buttonUrl: "https://envitefy.com/studio",
     notes: "",
+    scenarioRows: [
+      {
+        scenarioId: "snap",
+        title: "Snap a wedding invitation in seconds",
+        body: "Photograph the wedding invitation and keep its details together in one live card.",
+        imageScene: "A parent photographing a printed wedding invitation at a kitchen table.",
+      },
+      {
+        scenarioId: "concierge",
+        title: "Create a polished birthday invitation",
+        body: "Tell Envitefy Concierge the party details and get a share-ready invitation without a blank form.",
+        imageScene: "A parent planning a birthday invitation on a phone at home.",
+      },
+    ],
   });
 
   assert.ok(draft);
@@ -267,7 +374,7 @@ test("scenario rows and assets are injected when the model omits them", () => {
       role: "scenario",
       scenarioId: "concierge",
       url: "https://envitefy.com/api/blob/event-media/admin-email/demo/concierge/display.webp",
-      altText: "Birthday coming up? Ask Concierge",
+      altText: "Birthday coming up? Ask Envitefy Concierge",
       prompt: "concierge scene",
       model: "gpt-image-2",
     },
@@ -291,17 +398,370 @@ test("scenario rows and assets are injected when the model omits them", () => {
 
   assert.match(withImage.bodyHtml, /snap\.png/);
   assert.match(withImage.bodyHtml, /concierge\/display\.webp/);
-  assert.match(withImage.bodyHtml, /teachers\/display\.webp/);
-  assert.match(withImage.bodyHtml, /share\/display\.webp/);
+  assert.doesNotMatch(withImage.bodyHtml, /teachers\/display\.webp/);
+  assert.doesNotMatch(withImage.bodyHtml, /share\/display\.webp/);
   assert.match(withImage.bodyHtml, /https:\/\/envitefy\.com\/snap/);
   assert.match(withImage.bodyHtml, /https:\/\/envitefy\.com\/chat/);
+  assert.match(withImage.bodyHtml, /Snap a wedding invitation in seconds/);
+  assert.match(withImage.bodyHtml, /Create a polished birthday invitation/);
   assert.match(withImage.bodyHtml, /Try Snap/);
-  assert.match(withImage.bodyHtml, /Open Concierge/);
+  assert.match(withImage.bodyHtml, /Open Envitefy Concierge/);
+  assert.doesNotMatch(withImage.bodyHtml, /Teachers:|class parties/i);
   assert.doesNotMatch(withImage.bodyHtml, /Turn a flyer into a live event card/i);
   assert.doesNotMatch(withImage.bodyHtml, /\.gif/i);
   assert.equal(withImage.buttonText, "");
   assert.equal(withImage.buttonUrl, "");
-  assert.equal(withImage.imageAssets.length, 4);
+  assert.equal(withImage.imageAssets.length, 2);
+});
+
+test("parents-only campaign briefs reject teacher content before image generation", () => {
+  const prompt =
+    "Email of how to snap wedding invites and create birthday invites only for parents. Use new images. Make sure it looks professional.";
+  const offBrief = normalizeAdminEmailDraft({
+    subject: "Wedding and birthday invitations made easy",
+    preheader: "Two simple ways to plan.",
+    bodyHtml: "<p>{{greeting}}</p><h1>Plan with confidence</h1><p>For parents and teachers.</p>",
+    buttonText: "",
+    buttonUrl: "",
+    notes: "",
+    scenarioRows: [
+      {
+        scenarioId: "teachers",
+        title: "Teachers: class parties made simpler",
+        body: "Plan a classroom event.",
+        imageScene: "Teachers gathered in a classroom.",
+      },
+    ],
+  });
+  assert.ok(offBrief);
+  assert.match(validateAdminEmailPromptFidelity(prompt, offBrief).join(" "), /parents only/i);
+  assert.match(validateAdminEmailPromptFidelity(prompt, offBrief).join(" "), /teachers scenario/i);
+  assert.match(
+    validateAdminEmailPromptFidelity(prompt, offBrief).join(" "),
+    /Envitefy Concierge creation scenario/i,
+  );
+  assert.deepEqual(
+    validateAdminEmailPromptFidelity(
+      "Make the subject shorter without changing the campaign sections.",
+      offBrief,
+      offBrief.scenarioRows,
+    ),
+    [],
+  );
+
+  const onBrief = normalizeAdminEmailDraft({
+    subject: "Snap wedding details. Create birthday magic.",
+    preheader: "Two professional invitation tools made for busy parents.",
+    bodyHtml:
+      "<p>{{greeting}}</p><h1>Two invitations, one easier workflow</h1><p>Capture a wedding invitation or create a birthday invitation from your words.</p>",
+    buttonText: "",
+    buttonUrl: "",
+    notes: "Parents-only audience honored.",
+    scenarioRows: [
+      {
+        scenarioId: "snap",
+        title: "Snap the wedding invitation",
+        body: "Photograph the printed wedding invitation and Envitefy creates a saved live event card with the details organized. Add it to a calendar, share one easy link, and reopen it anytime instead of losing the paper invite or adding more fridge clutter.",
+        imageScene: "A parent photographing an elegant printed wedding invitation at home.",
+      },
+      {
+        scenarioId: "concierge",
+        title: "Create the birthday invitation",
+        body: "Describe the celebration in your own words and Envitefy Concierge creates a polished invitation and live event page. Add RSVP and calendar details, then share one guest-ready link.",
+        imageScene: "A parent creating a birthday invitation on a phone in a bright home.",
+      },
+    ],
+  });
+  assert.ok(onBrief);
+  assert.deepEqual(validateAdminEmailPromptFidelity(prompt, onBrief), []);
+});
+
+test("parents-only briefs are repaired automatically instead of exposing a fidelity error", () => {
+  const prompt =
+    "Email of how to snap wedding invites and create birthday invites only for parents. Use new images. Make sure it looks professional.";
+  const repeatedTeacherDraft = normalizeAdminEmailDraft({
+    subject: "Wedding and birthday planning for parents and teachers",
+    preheader: "Keep every school event organized.",
+    bodyHtml:
+      "<p>{{greeting}}</p><h1>Plan every invitation</h1><p>Parents and teachers can keep class-party details together.</p>",
+    buttonText: "",
+    buttonUrl: "",
+    notes: "Teacher campaign",
+    scenarioRows: [
+      {
+        scenarioId: "teachers",
+        title: "Teachers: class parties made simpler",
+        body: "Help school staff plan classroom events.",
+        imageScene: "Teachers gathered in a classroom.",
+      },
+    ],
+  });
+  assert.ok(repeatedTeacherDraft);
+
+  const constrained = applyAdminEmailPromptConstraints(prompt, repeatedTeacherDraft);
+  assert.equal(constrained.scenarioRows.length, 0);
+  assert.doesNotMatch(
+    [constrained.subject, constrained.preheader, constrained.bodyHtml, constrained.notes].join(" "),
+    /teachers?|classrooms?|school[-\s]+staff|class[-\s]+part(?:y|ies)|school[-\s]+events?/i,
+  );
+
+  const recovered = recoverAdminEmailDraftForPrompt(prompt, repeatedTeacherDraft);
+  assert.deepEqual(
+    recovered.scenarioRows.map((row) => row.scenarioId),
+    ["snap", "concierge"],
+  );
+  assert.match(recovered.scenarioRows[0]?.title || "", /wedding/i);
+  assert.match(recovered.scenarioRows[1]?.title || "", /birthday/i);
+  assert.deepEqual(validateAdminEmailPromptFidelity(prompt, recovered), []);
+  assert.doesNotMatch(
+    [
+      recovered.subject,
+      recovered.preheader,
+      recovered.bodyHtml,
+      ...recovered.scenarioRows.flatMap((row) => [row.title, row.body, row.imageScene]),
+    ].join(" "),
+    /teachers?|classrooms?|school[-\s]+staff|class[-\s]+part(?:y|ies)|school[-\s]+events?/i,
+  );
+  assert.doesNotMatch(emailGeneratorSource(), /Email generator did not follow the campaign brief/);
+});
+
+test("teacher and room-parent preset recovers to a clean relevant scenario set", () => {
+  const prompt =
+    "Email for teachers and room parents: turn class party flyers into live pages, collect helpers with smart sign-ups, and share one link with every family.";
+  const rejectedDraft = normalizeAdminEmailDraft({
+    subject: "Simplify the next class party",
+    preheader: "One place for the flyer and helpers.",
+    bodyHtml:
+      "<p>{{greeting}}</p><h1>Make class parties easier</h1><p>Keep every family informed.</p>",
+    buttonText: "",
+    buttonUrl: "",
+    notes: "",
+    scenarioRows: [
+      {
+        scenarioId: "snap",
+        title: "Turn the flyer into a card",
+        body: "Photograph the flyer.",
+        imageScene: "A classroom flyer on a desk.",
+      },
+      {
+        scenarioId: "rsvp",
+        title: "Collect replies",
+        body: "Add an RSVP button.",
+        imageScene: "A teacher looking at a phone.",
+      },
+    ],
+  });
+  assert.ok(rejectedDraft);
+
+  const recovered = recoverAdminEmailDraftForPrompt(prompt, rejectedDraft);
+  assert.deepEqual(
+    recovered.scenarioRows.map((row) => row.scenarioId),
+    ["teachers", "signups", "share"],
+  );
+  assert.deepEqual(validateAdminEmailPromptFidelity(prompt, recovered), []);
+  assert.doesNotMatch(recovered.bodyHtml, /Photograph the flyer|Add an RSVP button/i);
+
+  const recoveredWithoutCandidate = recoverAdminEmailDraftForPrompt(prompt, null);
+  assert.deepEqual(
+    recoveredWithoutCandidate.scenarioRows.map((row) => row.scenarioId),
+    ["teachers", "signups", "share"],
+  );
+  assert.deepEqual(validateAdminEmailPromptFidelity(prompt, recoveredWithoutCandidate), []);
+});
+
+test("Snap scenario copy must explain the full product outcome", () => {
+  const shallowDraft = normalizeAdminEmailDraft({
+    subject: "Snap a wedding invite",
+    preheader: "Keep the details handy.",
+    bodyHtml:
+      "<p>{{greeting}}</p><h1>Snap the invitation</h1><p>Turn the printed details into a live card.</p>",
+    buttonText: "",
+    buttonUrl: "",
+    notes: "",
+    scenarioRows: [
+      {
+        scenarioId: "snap",
+        title: "Snap a wedding invite into a live card",
+        body: "Photograph a printed wedding invitation to quickly turn its details into a convenient live card that parents can keep handy.",
+        imageScene: "A parent photographing a printed wedding invitation.",
+      },
+    ],
+  });
+  assert.ok(shallowDraft);
+  const violations = validateAdminEmailPromptFidelity(
+    "Explain how parents can snap a wedding invitation.",
+    shallowDraft,
+  ).join(" ");
+  assert.match(violations, /calendar action/i);
+  assert.match(violations, /easy sharing/i);
+
+  const completeDraft = normalizeAdminEmailDraft({
+    ...shallowDraft,
+    scenarioRows: [
+      {
+        scenarioId: "snap",
+        title: "Turn the paper invite into an event you can use",
+        body: "Snap or upload the wedding invitation and Envitefy creates a saved live event card with every important detail organized. Add it to your calendar, share one easy link, and reopen it anytime instead of losing the paper invite or crowding the fridge.",
+        imageScene: "A parent photographing a printed wedding invitation.",
+      },
+    ],
+  });
+  assert.ok(completeDraft);
+  assert.deepEqual(
+    validateAdminEmailPromptFidelity(
+      "Explain how parents can snap a wedding invitation.",
+      completeDraft,
+    ),
+    [],
+  );
+});
+
+test("explicit RSVP and smart-signup briefs require complete dedicated scenarios", () => {
+  const incompleteRsvpDraft = normalizeAdminEmailDraft({
+    subject: "Know who is coming",
+    preheader: "Keep guest replies organized.",
+    bodyHtml:
+      "<p>{{greeting}}</p><h1>Make responses easier</h1><p>Collect RSVP responses from one event page.</p>",
+    buttonText: "",
+    buttonUrl: "",
+    notes: "",
+    scenarioRows: [
+      {
+        scenarioId: "live-page",
+        title: "One live page",
+        body: "Guests can RSVP from the event page.",
+        imageScene: "A parent reviewing an event page on a phone.",
+      },
+    ],
+  });
+  assert.ok(incompleteRsvpDraft);
+  assert.match(
+    validateAdminEmailPromptFidelity(
+      "Email for parents about RSVP, household headcounts, and pending replies.",
+      incompleteRsvpDraft,
+    ).join(" "),
+    /include an RSVP scenario/i,
+  );
+
+  const completeRsvpDraft = normalizeAdminEmailDraft({
+    ...incompleteRsvpDraft,
+    scenarioRows: [
+      {
+        scenarioId: "rsvp",
+        title: "Keep every RSVP with the invitation",
+        body: "Guests respond from the live page while the host tracks household headcounts, plus-ones, notes, and pending replies in one organized place.",
+        imageScene: "A parent reviewing birthday guest responses on a laptop.",
+      },
+    ],
+  });
+  assert.ok(completeRsvpDraft);
+  assert.deepEqual(
+    validateAdminEmailPromptFidelity(
+      "Email for parents about RSVP, household headcounts, and pending replies.",
+      completeRsvpDraft,
+    ),
+    [],
+  );
+
+  const shallowSignupDraft = normalizeAdminEmailDraft({
+    subject: "Organize volunteer signups",
+    preheader: "A simple form for helpers.",
+    bodyHtml:
+      "<p>{{greeting}}</p><h1>Bring every helper together</h1><p>Create a volunteer signup.</p>",
+    buttonText: "",
+    buttonUrl: "",
+    notes: "",
+    scenarioRows: [
+      {
+        scenarioId: "signups",
+        title: "Volunteer signup",
+        body: "Create a form for volunteer roles and share it with the group.",
+        imageScene: "A community organizer planning with a laptop.",
+      },
+    ],
+  });
+  assert.ok(shallowSignupDraft);
+  const signupViolations = validateAdminEmailPromptFidelity(
+    "Promote smart signups for volunteer shifts, capacity, and waitlists.",
+    shallowSignupDraft,
+  ).join(" ");
+  assert.match(signupViolations, /claimed, full, waitlisted, or still needed/i);
+
+  const completeSignupDraft = normalizeAdminEmailDraft({
+    ...shallowSignupDraft,
+    scenarioRows: [
+      {
+        scenarioId: "signups",
+        title: "Fill every volunteer shift without spreadsheet cleanup",
+        body: "Create volunteer slots with capacity and automatic waitlists, then see what is claimed, full, waitlisted, or still needed from one live form.",
+        imageScene: "A community organizer reviewing volunteer shifts on a laptop.",
+      },
+    ],
+  });
+  assert.ok(completeSignupDraft);
+  assert.deepEqual(
+    validateAdminEmailPromptFidelity(
+      "Promote smart signups for volunteer shifts, capacity, and waitlists.",
+      completeSignupDraft,
+    ),
+    [],
+  );
+});
+
+test("generated copy always uses the full Envitefy Concierge product name", () => {
+  const bareNameDraft = normalizeAdminEmailDraft({
+    subject: "Create your birthday invitation with Concierge",
+    preheader: "Turn your words into a polished event page.",
+    bodyHtml:
+      "<p>{{greeting}}</p><h1>Start with a simple description</h1><p>Concierge helps shape the invitation.</p>",
+    buttonText: "",
+    buttonUrl: "",
+    notes: "",
+    scenarioRows: [
+      {
+        scenarioId: "concierge",
+        title: "Ask Concierge",
+        body: "Concierge drafts a polished invitation from your words with RSVP and a shareable link.",
+        imageScene: "A parent creating an invitation on a phone.",
+      },
+    ],
+  });
+  assert.ok(bareNameDraft);
+  assert.equal(bareNameDraft.subject, "Create your birthday invitation with Envitefy Concierge");
+  assert.match(bareNameDraft.bodyHtml, /Envitefy Concierge helps shape the invitation/);
+  assert.equal(bareNameDraft.scenarioRows[0]?.title, "Ask Envitefy Concierge");
+  assert.doesNotMatch(
+    [
+      bareNameDraft.subject,
+      bareNameDraft.bodyHtml,
+      ...bareNameDraft.scenarioRows.flatMap((row) => [row.title, row.body]),
+    ].join(" "),
+    /(?<!Envitefy\s)\bConcierge\b/i,
+  );
+  assert.deepEqual(
+    validateAdminEmailPromptFidelity("Create a birthday invitation for parents.", bareNameDraft),
+    [],
+  );
+
+  const brandedDraft = normalizeAdminEmailDraft({
+    ...bareNameDraft,
+    subject: "Create your birthday invitation with Envitefy Concierge",
+    bodyHtml:
+      "<p>{{greeting}}</p><h1>Start with a simple description</h1><p>Envitefy Concierge helps shape the invitation.</p>",
+    scenarioRows: [
+      {
+        scenarioId: "concierge",
+        title: "Ask Envitefy Concierge",
+        body: "Envitefy Concierge drafts a polished invitation from your words with RSVP and a shareable link.",
+        imageScene: "A parent creating an invitation on a phone.",
+      },
+    ],
+  });
+  assert.ok(brandedDraft);
+  assert.deepEqual(
+    validateAdminEmailPromptFidelity("Create a birthday invitation for parents.", brandedDraft),
+    [],
+  );
 });
 
 test("polish removes flyer text links and duplicate purple buttons", () => {
@@ -323,11 +783,27 @@ test("polish removes flyer text links and duplicate purple buttons", () => {
   assert.equal((polished.match(/Create an event/g) || []).length, 1);
 });
 
+test("campaign intro removes model-owned nested card styling", () => {
+  const intro = extractCampaignIntroHtml(`
+    <div style="background:#fff; border:1px solid #ddd; border-radius:16px; padding:28px;">
+      <p style="background:#fafafa; padding:8px;">{{greeting}}</p>
+      <h1 style="background:#fff; margin:20px;">Keep every invitation useful</h1>
+      <p style="border:1px solid #ddd;">Snap the details and keep them ready.</p>
+    </div>
+  `);
+
+  assert.doesNotMatch(intro, /<\/?div\b/i);
+  assert.doesNotMatch(intro, /background|border|padding/i);
+  assert.match(intro, /<p style="margin:0 0 16px 0;/);
+  assert.match(intro, /<h1 style="margin:0 0 12px 0;/);
+  assert.match(intro, /<p style="margin:0 0 24px 0;/);
+});
+
 test("polish strips repeated firstName after greeting", () => {
   const polished = polishAdminEmailBodyHtml(`
     <p style="margin:0 0 16px 0;">{{greeting}}</p>
     <h1>Make the birthday invite easy</h1>
-    <p>{{firstName}}, snap a party flyer into a live card, use Concierge while the details come together.</p>
+    <p>{{firstName}}, snap a party flyer into a live card, use Envitefy Concierge while the details come together.</p>
   `);
 
   assert.match(polished, /\{\{greeting\}\}/);
@@ -371,6 +847,8 @@ test("scenario row helper renders title body image and CTA", () => {
   assert.match(html, /Try Snap/);
   assert.match(html, /https:\/\/envitefy\.com\/snap/);
   assert.match(html, /snap\.png/);
+  assert.match(html, /border-top:1px solid #E8E1FF/);
+  assert.doesNotMatch(html, /background:#FBFAFF|border-radius:16px/);
 });
 
 test("image QA rejects high AI-ish scores and keeps guide reject traits", () => {
@@ -417,10 +895,7 @@ test("image QA does not treat negated logo reasons as brand overlays", () => {
     ]),
     false,
   );
-  assert.equal(
-    reasonsIndicateBrandLogo(["Envitefy logo watermark in the corner"]),
-    true,
-  );
+  assert.equal(reasonsIndicateBrandLogo(["Envitefy logo watermark in the corner"]), true);
   assert.equal(reasonsIndicateBrandLogo(["without logos or watermarks"]), false);
 
   const passed = normalizeAdminEmailImageQaResult({

@@ -1,17 +1,20 @@
 import OpenAI from "openai";
 import { resolveEmailEmbedAssetUrl, uploadPublicBinaryAsset } from "../media-upload.ts";
 import {
-  ADMIN_EMAIL_PRODUCT_SCENARIOS,
-  resolveScenarioCtaUrl,
-  type AdminEmailScenarioId,
-} from "./email-scenarios.ts";
-import {
   ADMIN_EMAIL_GENERATION_GUIDE,
   bannedAdminEmailTextLinkPattern,
   buildAdminEmailGuidePromptPayload,
   buildAdminEmailSystemPromptFromGuide,
 } from "./email-generation-guide.ts";
-import { inspectAdminEmailImageProfessionalism, reasonsIndicateBrandLogo } from "./email-image-qa.ts";
+import {
+  inspectAdminEmailImageProfessionalism,
+  reasonsIndicateBrandLogo,
+} from "./email-image-qa.ts";
+import {
+  ADMIN_EMAIL_PRODUCT_SCENARIOS,
+  type AdminEmailScenarioId,
+  resolveScenarioCtaUrl,
+} from "./email-scenarios.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -21,6 +24,7 @@ export type AdminEmailGenerationRequest = {
   prompt: string;
   audienceMode: AdminEmailAudienceMode;
   currentImageAssets: AdminEmailImageAsset[];
+  currentScenarioRows: AdminEmailScenarioRow[];
   currentSubject?: string | null;
   currentBodyHtml?: string | null;
 };
@@ -36,6 +40,13 @@ export type AdminEmailImageAsset = {
   scenarioId?: AdminEmailScenarioId;
 };
 
+export type AdminEmailScenarioRow = {
+  scenarioId: AdminEmailScenarioId;
+  title: string;
+  body: string;
+  imageScene: string;
+};
+
 export type AdminEmailDraft = {
   subject: string;
   preheader: string;
@@ -43,6 +54,7 @@ export type AdminEmailDraft = {
   buttonText: string;
   buttonUrl: string;
   notes: string;
+  scenarioRows: AdminEmailScenarioRow[];
   imageAssets: AdminEmailImageAsset[];
 };
 
@@ -73,8 +85,12 @@ const MAX_PROMPT_LENGTH = 5000;
 const MAX_BODY_HTML_LENGTH = 50000;
 const MAX_IMAGE_ASSETS = 8;
 const MAX_IMAGE_QA_ATTEMPTS = 3;
+const MAX_DRAFT_FIDELITY_ATTEMPTS = 3;
 const BANNED_TEXT_LINK_PATTERN = bannedAdminEmailTextLinkPattern();
 const ADMIN_EMAIL_LOG_PREFIX = "[admin-email]";
+const ADMIN_EMAIL_SCENARIO_IDS = new Set<AdminEmailScenarioId>(
+  ADMIN_EMAIL_PRODUCT_SCENARIOS.map((scenario) => scenario.id),
+);
 
 function logAdminEmail(
   level: "info" | "warn" | "error",
@@ -107,7 +123,9 @@ function parseImageRole(value: unknown): AdminEmailImageRole {
 
 function parseScenarioId(value: unknown): AdminEmailScenarioId | undefined {
   const id = cleanString(value, 40);
-  if (id === "snap" || id === "concierge" || id === "teachers" || id === "share") return id;
+  if (ADMIN_EMAIL_SCENARIO_IDS.has(id as AdminEmailScenarioId)) {
+    return id as AdminEmailScenarioId;
+  }
   return undefined;
 }
 
@@ -119,6 +137,16 @@ function cleanString(value: unknown, maxLength = 2000): string {
 function cleanMultilineString(value: unknown, maxLength = MAX_BODY_HTML_LENGTH): string {
   if (typeof value !== "string") return "";
   return value.replace(/\r\n/g, "\n").trim().slice(0, maxLength);
+}
+
+function normalizeEnvitefyConciergeName(value: string): string {
+  return value.replace(/(?<!Envitefy\s)\bConcierge\b/gi, "Envitefy Concierge");
+}
+
+function normalizeEnvitefyConciergeInHtml(html: string): string {
+  return html.replace(/>([^<]*)</g, (_full, text: string) => {
+    return `>${normalizeEnvitefyConciergeName(text)}<`;
+  });
 }
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -133,6 +161,15 @@ function isHttpUrl(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function escapeEmailHtmlText(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function isGifAssetUrl(url: string): boolean {
@@ -173,13 +210,18 @@ function parseCurrentImageAssets(value: unknown): AdminEmailImageAsset[] {
     .slice(0, MAX_IMAGE_ASSETS);
 }
 
-export function hasCompleteScenarioStillAssets(assets: AdminEmailImageAsset[]): boolean {
+export function hasCompleteScenarioStillAssets(
+  assets: AdminEmailImageAsset[],
+  scenarioIds: readonly AdminEmailScenarioId[] = ADMIN_EMAIL_PRODUCT_SCENARIOS.map(
+    (scenario) => scenario.id,
+  ),
+): boolean {
   const byId = new Map(
     assets
       .filter((asset) => asset.scenarioId && !isGifAssetUrl(asset.url) && asset.role !== "demo")
       .map((asset) => [asset.scenarioId as AdminEmailScenarioId, asset]),
   );
-  return ADMIN_EMAIL_PRODUCT_SCENARIOS.every((scenario) => byId.has(scenario.id));
+  return scenarioIds.every((scenarioId) => byId.has(scenarioId));
 }
 
 export function parseAdminEmailGenerationRequest(
@@ -204,6 +246,7 @@ export function parseAdminEmailGenerationRequest(
       prompt,
       audienceMode,
       currentImageAssets: parseCurrentImageAssets(value.currentImageAssets),
+      currentScenarioRows: parseScenarioRows(value.currentScenarioRows),
       currentSubject: cleanString(value.currentSubject, 160) || null,
       currentBodyHtml: cleanMultilineString(value.currentBodyHtml, 8000) || null,
     },
@@ -232,15 +275,678 @@ export function sanitizeGeneratedEmailHtml(value: string): string {
   return sanitizeImageTags(cleaned).trim();
 }
 
+function parseScenarioRows(value: unknown): AdminEmailScenarioRow[] {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set<AdminEmailScenarioId>();
+  const rows: AdminEmailScenarioRow[] = [];
+  for (const item of value) {
+    if (!isRecord(item)) continue;
+    const scenarioId = parseScenarioId(item.scenarioId);
+    if (!scenarioId || seen.has(scenarioId)) continue;
+
+    const title = normalizeEnvitefyConciergeName(cleanString(item.title, 120));
+    const body = normalizeEnvitefyConciergeName(cleanString(item.body, 500));
+    const imageScene = normalizeEnvitefyConciergeName(cleanString(item.imageScene, 1200));
+    if (!title || !body || !imageScene) continue;
+
+    seen.add(scenarioId);
+    rows.push({ scenarioId, title, body, imageScene });
+    if (rows.length >= ADMIN_EMAIL_PRODUCT_SCENARIOS.length) break;
+  }
+  return rows;
+}
+
+const TEACHER_AUDIENCE_PATTERN =
+  /\b(?:teachers?|classrooms?|school\s+staff|educators?|class\s+part(?:y|ies)|school\s+events?)\b/i;
+const EXPLICIT_TEACHER_BRIEF_PATTERN =
+  /\b(?:teachers?|classrooms?|school\s+staff|educators?|room\s+parents?|class\s+part(?:y|ies)|school\s+events?)\b/i;
+const PARENTS_ONLY_PATTERN = /\b(?:(?:only|just)\s+(?:for\s+)?parents?|parents?\s+only)\b/i;
+const BARE_CONCIERGE_PATTERN = /(?<!Envitefy\s)\bConcierge\b/i;
+const SNAP_EVENT_RESULT_PATTERN =
+  /\b(?:live\s+(?:event\s+)?card|event\s+(?:card|page|record)|hosted\s+event\s+page)\b/i;
+const SNAP_CALENDAR_PATTERN = /\bcalendar\b/i;
+const SNAP_SHARE_PATTERN = /\b(?:share(?:able|d|s|ing)?|one\s+link)\b/i;
+const SNAP_KEEP_PATTERN =
+  /\b(?:reopen|never\s+lose|won'?t\s+(?:lose|get\s+lost)|easy\s+to\s+(?:find|access)|always\s+(?:available|handy)|accessible|stored|fridge|paper\s+clutter|old\s+(?:texts?|messages?|emails?)|screenshots?|digging|hunting)\b/i;
+const CONCIERGE_INPUT_PATTERN = /\b(?:describe|plain\s+language|your\s+words|tell)\b/i;
+const CONCIERGE_RESULT_PATTERN =
+  /\b(?:polished\s+)?(?:invitation|live\s+(?:event\s+)?card|event\s+page|hosted\s+page)\b/i;
+const CONCIERGE_TOOL_PATTERNS = [
+  /\brsvp\b/i,
+  /\bcalendar\b/i,
+  /\b(?:share(?:able|d|s|ing)?|one\s+link)\b/i,
+  /\b(?:registry|gift\s+links?)\b/i,
+  /\b(?:directions?|maps?)\b/i,
+  /\b(?:reminders?|updates?)\b/i,
+  /\b(?:smart\s+)?sign-?ups?\b/i,
+  /\bguest\s+tracking\b/i,
+] as const;
+const RSVP_RESPONSE_PATTERN = /\b(?:rsvp|respond|response|attendance|coming)\b/i;
+const RSVP_HOST_VALUE_PATTERN =
+  /\b(?:track|organize|host|pending|headcounts?|guest\s+counts?|who\s+(?:is|has)|still\s+needs?)\b/i;
+const RSVP_DEPTH_PATTERN =
+  /\b(?:households?|plus-ones?|adults?|kids?|children|allerg(?:y|ies)|dietary|meals?|notes?|messages?|questions?|guesses?|availability)\b/i;
+const SIGNUP_USE_CASE_PATTERN =
+  /\b(?:volunteers?|helpers?|potlucks?|food|snacks?|supplies|shifts?|slots?|items?|roles?)\b/i;
+const SIGNUP_LIMIT_PATTERN = /\b(?:quantit(?:y|ies)|capacity|limits?|full|waitlists?)\b/i;
+const SIGNUP_STATUS_PATTERN = /\b(?:claimed|filled|full|waitlisted|still\s+needed|available)\b/i;
+const CREATE_INVITATION_PATTERN =
+  /\b(?:create|make|build|draft|design)\s+(?!an?\s+email\b)(?:an?\s+|the\s+|my\s+|your\s+|their\s+|our\s+|new\s+|polished\s+|professional\s+|beautiful\s+|birthday\s+|wedding\s+|baby\s+shower\s+|bridal\s+shower\s+|gender\s+reveal\s+){0,4}(?:invites?|invitations?|event\s+pages?|live\s+cards?)\b/i;
+const EXPLICIT_NON_CONCIERGE_CREATION_PATTERN =
+  /\b(?:manual(?:ly)?|from\s+a\s+template|using\s+(?:a\s+)?template|in\s+Studio|without\s+Envitefy\s+Concierge)\b/i;
+
+type ExplicitFeatureRequirement = {
+  label: string;
+  requestPattern: RegExp;
+  outputPattern: RegExp;
+};
+
+const EXPLICIT_FEATURE_REQUIREMENTS: readonly ExplicitFeatureRequirement[] = [
+  {
+    label: "RSVP or attendance",
+    requestPattern:
+      /\b(?:rsvp|attendance|guest\s+(?:repl(?:y|ies)|responses?)|headcounts?|plus-ones?)\b/i,
+    outputPattern:
+      /\b(?:rsvp|attendance|guest\s+(?:repl(?:y|ies)|responses?)|headcounts?|plus-ones?|who\s+is\s+coming)\b/i,
+  },
+  {
+    label: "smart sign-ups",
+    requestPattern:
+      /\b(?:(?:smart\s+)?sign-?ups?|volunteer\s+(?:slots?|roles?|forms?)|potluck\s+(?:items?|forms?))\b/i,
+    outputPattern:
+      /\b(?:(?:smart\s+)?sign-?ups?|volunteers?|potlucks?|supplies|shifts?|slots?|waitlists?)\b/i,
+  },
+  {
+    label: "calendar saves",
+    requestPattern: /\b(?:calendar|save\s+the\s+date)\b/i,
+    outputPattern: /\b(?:calendar|save\s+the\s+date)\b/i,
+  },
+  {
+    label: "maps or directions",
+    requestPattern: /\b(?:maps?|directions?|venue\s+navigation)\b/i,
+    outputPattern: /\b(?:maps?|directions?|venue\s+navigation)\b/i,
+  },
+  {
+    label: "registry or gift links",
+    requestPattern: /\b(?:registr(?:y|ies)|gift\s+links?|wishlists?|honeymoon\s+funds?)\b/i,
+    outputPattern: /\b(?:registr(?:y|ies)|gift\s+links?|wishlists?|fund\s+links?)\b/i,
+  },
+] as const;
+
+const EXPLICIT_EVENT_TYPE_REQUIREMENTS: readonly ExplicitFeatureRequirement[] = [
+  { label: "weddings", requestPattern: /\bweddings?\b/i, outputPattern: /\bweddings?\b/i },
+  {
+    label: "birthdays",
+    requestPattern: /\bbirthdays?(?:\s+part(?:y|ies))?\b/i,
+    outputPattern: /\bbirthdays?(?:\s+part(?:y|ies))?\b/i,
+  },
+  {
+    label: "baby showers",
+    requestPattern: /\bbaby\s+showers?\b/i,
+    outputPattern: /\bbaby\s+showers?\b/i,
+  },
+  {
+    label: "bridal showers",
+    requestPattern: /\bbridal\s+showers?\b/i,
+    outputPattern: /\bbridal\s+showers?\b/i,
+  },
+  {
+    label: "gender reveals",
+    requestPattern: /\bgender\s+reveals?\b/i,
+    outputPattern: /\bgender\s+reveals?\b/i,
+  },
+  {
+    label: "gymnastics",
+    requestPattern: /\b(?:gymnastics|gym\s+meets?)\b/i,
+    outputPattern: /\b(?:gymnastics|gym\s+meets?)\b/i,
+  },
+  {
+    label: "football or sports",
+    requestPattern: /\b(?:football|sports?|game\s+day)\b/i,
+    outputPattern: /\b(?:football|sports?|game\s+day|team\s+schedules?)\b/i,
+  },
+] as const;
+
+function promptPositivelyRequests(prompt: string, pattern: RegExp): boolean {
+  const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+  const globalPattern = new RegExp(pattern.source, flags);
+  for (const match of prompt.matchAll(globalPattern)) {
+    const index = match.index ?? 0;
+    const prefix = prompt.slice(Math.max(0, index - 40), index);
+    if (
+      /\b(?:do\s+not|don'?t|without|exclud(?:e|ing)|omit|avoid|no|not\s+for)\b[\s\S]{0,28}$/i.test(
+        prefix,
+      )
+    ) {
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
+function matchCase(value: string, replacement: string): string {
+  return /^[A-Z]/.test(value)
+    ? `${replacement.charAt(0).toUpperCase()}${replacement.slice(1)}`
+    : replacement;
+}
+
+function sanitizeParentsOnlyText(value: string): string {
+  return value
+    .replace(/\bclass[-\s]+part(?:y|ies)\b/gi, (match) =>
+      matchCase(match, /ies$/i.test(match) ? "family celebrations" : "family celebration"),
+    )
+    .replace(/\bschool[-\s]+events?\b/gi, (match) =>
+      matchCase(match, /s$/i.test(match) ? "family events" : "family event"),
+    )
+    .replace(/\bclassrooms?\b/gi, (match) =>
+      matchCase(match, /s$/i.test(match) ? "family settings" : "family setting"),
+    )
+    .replace(/\bschool[-\s]+staff\b/gi, (match) => matchCase(match, "parents"))
+    .replace(/\broom\s+parents?\b/gi, (match) => matchCase(match, "parents"))
+    .replace(/\bteachers?\b/gi, (match) =>
+      matchCase(match, /s$/i.test(match) ? "parents" : "parent"),
+    )
+    .replace(/\beducators?\b/gi, (match) =>
+      matchCase(match, /s$/i.test(match) ? "parents" : "parent"),
+    )
+    .replace(/\bparents?\s+(?:and|&)\s+parents?\b/gi, "parents")
+    .replace(/\bparents?,\s*parents?\b/gi, "parents");
+}
+
+/** Remove deterministic audience conflicts before validation or image generation. */
+export function applyAdminEmailPromptConstraints(
+  prompt: string,
+  draft: AdminEmailDraft,
+  currentScenarioRows: AdminEmailScenarioRow[] = [],
+): AdminEmailDraft {
+  const parentsOnly = PARENTS_ONLY_PATTERN.test(prompt);
+  const teacherRequested =
+    !parentsOnly &&
+    (promptPositivelyRequests(prompt, EXPLICIT_TEACHER_BRIEF_PATTERN) ||
+      currentScenarioRows.some((row) => row.scenarioId === "teachers"));
+  const scenarioRows = teacherRequested
+    ? draft.scenarioRows
+    : draft.scenarioRows.filter((row) => row.scenarioId !== "teachers");
+
+  if (!parentsOnly) return { ...draft, scenarioRows };
+
+  return {
+    ...draft,
+    subject: sanitizeParentsOnlyText(draft.subject),
+    preheader: sanitizeParentsOnlyText(draft.preheader),
+    bodyHtml: sanitizeParentsOnlyText(draft.bodyHtml),
+    buttonText: sanitizeParentsOnlyText(draft.buttonText),
+    notes: sanitizeParentsOnlyText(draft.notes),
+    scenarioRows: scenarioRows.map((row) => ({
+      ...row,
+      title: sanitizeParentsOnlyText(row.title),
+      body: sanitizeParentsOnlyText(row.body),
+      imageScene: sanitizeParentsOnlyText(row.imageScene),
+    })),
+  };
+}
+
+type PromptEventMatch = { label: string; index: number };
+
+const PROMPT_EVENT_PATTERNS = [
+  { label: "baby shower", pattern: /\bbaby\s+showers?\b/gi },
+  { label: "bridal shower", pattern: /\bbridal\s+showers?\b/gi },
+  { label: "gender reveal", pattern: /\bgender\s+reveals?\b/gi },
+  { label: "gymnastics meet", pattern: /\b(?:gymnastics|gym\s+meets?)\b/gi },
+  { label: "football", pattern: /\bfootball\b/gi },
+  { label: "sports event", pattern: /\b(?:sports?|game\s+day)\b/gi },
+  { label: "field trip", pattern: /\bfield\s+(?:trips?|days?)\b/gi },
+  { label: "open house", pattern: /\bopen\s+houses?\b/gi },
+  { label: "wedding", pattern: /\bweddings?\b/gi },
+  { label: "birthday", pattern: /\bbirthdays?(?:\s+part(?:y|ies))?\b/gi },
+] as const;
+
+function promptEventMatches(prompt: string): PromptEventMatch[] {
+  const matches: PromptEventMatch[] = [];
+  for (const definition of PROMPT_EVENT_PATTERNS) {
+    for (const match of prompt.matchAll(definition.pattern)) {
+      matches.push({ label: definition.label, index: match.index ?? 0 });
+    }
+  }
+  return matches.sort((left, right) => left.index - right.index);
+}
+
+function scenarioActionPattern(scenarioId: AdminEmailScenarioId): RegExp {
+  if (scenarioId === "snap") return /\b(?:snap|scan|photograph|upload)\b/gi;
+  if (scenarioId === "concierge") {
+    return /\b(?:create|make|build|draft|design|Envitefy\s+Concierge)\b/gi;
+  }
+  if (scenarioId === "rsvp") {
+    return /\b(?:rsvp|attendance|headcounts?|guest\s+(?:repl(?:y|ies)|responses?))\b/gi;
+  }
+  if (scenarioId === "signups") {
+    return /\b(?:(?:smart\s+)?sign-?ups?|volunteers?|potlucks?|shifts?|slots?)\b/gi;
+  }
+  return /\b(?:event|invitation|page|share)\b/gi;
+}
+
+function eventLabelForScenario(prompt: string, scenarioId: AdminEmailScenarioId): string {
+  const events = promptEventMatches(prompt);
+  if (events.length === 0) return "";
+  const actions = Array.from(prompt.matchAll(scenarioActionPattern(scenarioId))).map(
+    (match) => match.index ?? 0,
+  );
+  if (actions.length === 0) return events[0]?.label || "";
+
+  let best = events[0];
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (const actionIndex of actions) {
+    for (const event of events) {
+      const distance = event.index - actionIndex;
+      const score = distance >= 0 && distance <= 90 ? distance : 1000 + Math.abs(distance);
+      if (score < bestScore) {
+        best = event;
+        bestScore = score;
+      }
+    }
+  }
+  return best?.label || "";
+}
+
+function requiredScenarioIdsForPrompt(
+  prompt: string,
+  currentScenarioRows: AdminEmailScenarioRow[] = [],
+): AdminEmailScenarioId[] {
+  const required: AdminEmailScenarioId[] = [];
+  const add = (scenarioId: AdminEmailScenarioId) => {
+    if (!required.includes(scenarioId) && required.length < 4) required.push(scenarioId);
+  };
+
+  const teacherRequested =
+    !PARENTS_ONLY_PATTERN.test(prompt) &&
+    promptPositivelyRequests(prompt, EXPLICIT_TEACHER_BRIEF_PATTERN);
+  if (teacherRequested) add("teachers");
+  if (promptPositivelyRequests(prompt, /\b(?:snap|scan|photograph|upload)\b/i)) add("snap");
+  if (
+    promptPositivelyRequests(
+      prompt,
+      /\b(?:Envitefy\s+Concierge|ask\s+(?:Envitefy\s+)?Concierge|from\s+(?:my|your|their|the\s+host'?s)\s+words)\b/i,
+    ) ||
+    (promptPositivelyRequests(prompt, CREATE_INVITATION_PATTERN) &&
+      !EXPLICIT_NON_CONCIERGE_CREATION_PATTERN.test(prompt))
+  ) {
+    add("concierge");
+  }
+  if (
+    promptPositivelyRequests(
+      prompt,
+      /\b(?:rsvp|attendance|guest\s+(?:repl(?:y|ies)|responses?)|headcounts?|plus-ones?)\b/i,
+    )
+  ) {
+    add("rsvp");
+  }
+  if (
+    promptPositivelyRequests(
+      prompt,
+      /\b(?:(?:smart\s+)?sign-?ups?|volunteer\s+(?:slots?|roles?|forms?)|potluck\s+(?:items?|forms?))\b/i,
+    )
+  ) {
+    add("signups");
+  }
+  if (
+    promptPositivelyRequests(
+      prompt,
+      /\b(?:(?:share|sharing|send)\s+(?:the\s+|one\s+|an?\s+)?(?:event\s+)?link|one\s+(?:event\s+)?link)\b/i,
+    )
+  ) {
+    add("share");
+  }
+  if (required.length === 0 && /\bweddings?\b/i.test(prompt)) add("weddings");
+  if (required.length === 0 && /\b(?:gymnastics|football|sports?|game\s+day)\b/i.test(prompt)) {
+    add("sports");
+  }
+  if (
+    required.length === 0 &&
+    /\b(?:live\s+(?:event\s+)?(?:page|card)|hosted\s+page|calendar|maps?|directions?|registr(?:y|ies))\b/i.test(
+      prompt,
+    )
+  ) {
+    add("live-page");
+  }
+  if (required.length === 0 && currentScenarioRows.length > 0) {
+    for (const row of currentScenarioRows) add(row.scenarioId);
+  }
+  if (required.length === 0) add("live-page");
+  return required;
+}
+
+function buildFallbackScenarioRow(
+  scenarioId: AdminEmailScenarioId,
+  prompt: string,
+): AdminEmailScenarioRow {
+  const eventLabel = eventLabelForScenario(prompt, scenarioId);
+  const eventPrefix = eventLabel ? `${eventLabel} ` : "";
+  const actor = PARENTS_ONLY_PATTERN.test(prompt) ? "parent" : "host";
+
+  if (scenarioId === "snap") {
+    return {
+      scenarioId,
+      title: `Turn the ${eventPrefix}invitation into a live event card`,
+      body: `Photograph or upload the ${eventPrefix}invitation and Envitefy creates a saved live event card with the important details organized. Add it to a calendar, share one easy link, and reopen it anytime instead of losing the paper invite or adding more fridge clutter.`,
+      imageScene: `Professional documentary photo of a ${actor} photographing or uploading a printed ${eventPrefix}invitation in a bright home, with natural light and realistic hands.`,
+    };
+  }
+  if (scenarioId === "concierge") {
+    return {
+      scenarioId,
+      title: `Create a polished ${eventPrefix}invitation with Envitefy Concierge`,
+      body: `Describe the ${eventPrefix}event in your own words and Envitefy Concierge creates a polished invitation and live event page for review. Add relevant tools such as RSVP and calendar details, then share one guest-ready link.`,
+      imageScene: `Professional lifestyle photo of a ${actor} calmly creating a ${eventPrefix}invitation on a phone at home, with natural light and realistic materials.`,
+    };
+  }
+  if (scenarioId === "rsvp") {
+    return {
+      scenarioId,
+      title: `Keep ${eventPrefix}RSVPs with the invitation`,
+      body: "Guests respond from the live event page while the host tracks attendance, household headcounts, plus-ones, notes, and pending replies in one organized place.",
+      imageScene: `Professional documentary photo of a ${actor} reviewing ${eventPrefix}guest responses on a laptop or phone at a tidy planning table.`,
+    };
+  }
+  if (scenarioId === "signups") {
+    return {
+      scenarioId,
+      title: `Coordinate ${eventPrefix}sign-ups without spreadsheet cleanup`,
+      body: "Create volunteer, food, supply, or shift slots with quantities, capacity, and automatic waitlists, then see what is claimed, full, waitlisted, or still needed from one live form.",
+      imageScene: `Professional documentary photo of a ${actor} reviewing ${eventPrefix}volunteer or supply sign-ups on a laptop in a realistic community setting.`,
+    };
+  }
+
+  const scenario = ADMIN_EMAIL_PRODUCT_SCENARIOS.find((item) => item.id === scenarioId);
+  return {
+    scenarioId,
+    title:
+      eventLabel && scenario
+        ? `${scenario.title} for your ${eventLabel}`
+        : scenario?.title || "One live event home",
+    body:
+      scenario?.body ||
+      "Create a polished event page with RSVP, calendar, directions, registry, sign-up, sharing, and update tools when they fit the event.",
+    imageScene:
+      scenario?.stillScene ||
+      `Professional lifestyle photo of a ${actor} using a phone to organize an event.`,
+  };
+}
+
+function buildFallbackDraftSeed(prompt: string): AdminEmailDraft {
+  const eventLabel = promptEventMatches(prompt)[0]?.label || "event";
+  const teacherRequested =
+    !PARENTS_ONLY_PATTERN.test(prompt) &&
+    promptPositivelyRequests(prompt, EXPLICIT_TEACHER_BRIEF_PATTERN);
+  const subject = teacherRequested
+    ? "Make class events easier with Envitefy"
+    : `Make your next ${eventLabel} easier with Envitefy`;
+  const headline = teacherRequested
+    ? "One simpler way to organize the next class event"
+    : `Keep every ${eventLabel} detail useful and easy to share`;
+  const intro = teacherRequested
+    ? "Bring the flyer, helpers, and family-ready details together with the Envitefy tools that fit your class event."
+    : "Turn the important details into one organized experience that is easy to use, share, and revisit.";
+
+  return {
+    subject,
+    preheader: "Keep event details and guest actions together in one useful place.",
+    bodyHtml: `<p>{{greeting}}</p><h1>${headline}</h1><p>${intro}</p>`,
+    buttonText: "",
+    buttonUrl: "",
+    notes: "Deterministic recovery draft built from the campaign brief.",
+    scenarioRows: [],
+    imageAssets: [],
+  };
+}
+
+/** Last-resort recovery so internal prompt-fidelity checks never become the user's result. */
+export function recoverAdminEmailDraftForPrompt(
+  prompt: string,
+  draft: AdminEmailDraft | null,
+  currentScenarioRows: AdminEmailScenarioRow[] = [],
+): AdminEmailDraft {
+  const constrained = applyAdminEmailPromptConstraints(
+    prompt,
+    draft || buildFallbackDraftSeed(prompt),
+    currentScenarioRows,
+  );
+  const requiredIds = requiredScenarioIdsForPrompt(prompt, currentScenarioRows);
+  const scenarioRows = requiredIds.map((scenarioId) =>
+    buildFallbackScenarioRow(scenarioId, prompt),
+  );
+
+  return applyAdminEmailPromptConstraints(
+    prompt,
+    {
+      ...constrained,
+      buttonText: "",
+      buttonUrl: "",
+      scenarioRows,
+    },
+    currentScenarioRows,
+  );
+}
+
+/**
+ * Defense-in-depth for explicit audience constraints. The model gets focused
+ * correction attempts before image generation, so an off-brief draft never
+ * spends time creating irrelevant scenario art.
+ */
+export function validateAdminEmailPromptFidelity(
+  prompt: string,
+  draft: AdminEmailDraft,
+  currentScenarioRows: AdminEmailScenarioRow[] = [],
+): string[] {
+  const violations: string[] = [];
+  if (!draft.scenarioRows.length) {
+    violations.push("Select at least one product scenario that is relevant to the campaign brief.");
+  }
+
+  const generatedCopy = [
+    draft.subject,
+    draft.preheader,
+    draft.bodyHtml,
+    draft.buttonText,
+    draft.notes,
+    ...draft.scenarioRows.flatMap((row) => [row.title, row.body, row.imageScene]),
+  ].join(" ");
+  const customerFacingCopy = [
+    draft.subject,
+    draft.preheader,
+    draft.bodyHtml,
+    draft.buttonText,
+    ...draft.scenarioRows.flatMap((row) => [row.title, row.body]),
+  ].join(" ");
+  if (BARE_CONCIERGE_PATTERN.test(generatedCopy)) {
+    violations.push(
+      "Replace every standalone “Concierge” reference with the full product name “Envitefy Concierge.”",
+    );
+  }
+
+  for (const row of draft.scenarioRows) {
+    const rowCopy = `${row.title} ${row.body}`;
+    if (row.scenarioId === "snap") {
+      const missing: string[] = [];
+      if (!SNAP_EVENT_RESULT_PATTERN.test(rowCopy)) missing.push("saved event/live card result");
+      if (!SNAP_CALENDAR_PATTERN.test(rowCopy)) missing.push("calendar action");
+      if (!SNAP_SHARE_PATTERN.test(rowCopy)) missing.push("easy sharing");
+      if (!SNAP_KEEP_PATTERN.test(rowCopy)) {
+        missing.push("easy future access or the paper/message clutter pain it removes");
+      }
+      if (missing.length > 0) {
+        violations.push(
+          `Expand the Snap scenario beyond photographing or extracting details. It is missing: ${missing.join(
+            ", ",
+          )}.`,
+        );
+      }
+    }
+
+    if (row.scenarioId === "concierge") {
+      const toolCount = CONCIERGE_TOOL_PATTERNS.filter((pattern) => pattern.test(rowCopy)).length;
+      const missing: string[] = [];
+      if (!CONCIERGE_INPUT_PATTERN.test(rowCopy)) missing.push("creation from the host's words");
+      if (!CONCIERGE_RESULT_PATTERN.test(rowCopy)) {
+        missing.push("polished invitation/live event page result");
+      }
+      if (toolCount < 2) missing.push("at least two relevant guest or host tools");
+      if (missing.length > 0) {
+        violations.push(
+          `Expand the Envitefy Concierge scenario beyond generic planning help. It is missing: ${missing.join(
+            ", ",
+          )}.`,
+        );
+      }
+    }
+
+    if (row.scenarioId === "rsvp") {
+      const missing: string[] = [];
+      if (!RSVP_RESPONSE_PATTERN.test(rowCopy)) missing.push("a guest response action");
+      if (!RSVP_HOST_VALUE_PATTERN.test(rowCopy)) missing.push("the host tracking outcome");
+      if (!RSVP_DEPTH_PATTERN.test(rowCopy)) {
+        missing.push("relevant response depth such as headcounts, plus-ones, or guest notes");
+      }
+      if (missing.length > 0) {
+        violations.push(
+          `Expand the RSVP scenario beyond a button. It is missing: ${missing.join(", ")}.`,
+        );
+      }
+    }
+
+    if (row.scenarioId === "signups") {
+      const missing: string[] = [];
+      if (!SIGNUP_USE_CASE_PATTERN.test(rowCopy)) missing.push("a concrete signup use case");
+      if (!SIGNUP_LIMIT_PATTERN.test(rowCopy)) missing.push("quantities, capacity, or waitlists");
+      if (!SIGNUP_STATUS_PATTERN.test(rowCopy)) {
+        missing.push("visibility into what is claimed, full, waitlisted, or still needed");
+      }
+      if (missing.length > 0) {
+        violations.push(
+          `Expand the smart sign-up scenario beyond a generic form. It is missing: ${missing.join(
+            ", ",
+          )}.`,
+        );
+      }
+    }
+  }
+
+  for (const requirement of EXPLICIT_FEATURE_REQUIREMENTS) {
+    if (
+      promptPositivelyRequests(prompt, requirement.requestPattern) &&
+      !requirement.outputPattern.test(customerFacingCopy)
+    ) {
+      violations.push(
+        `The campaign brief explicitly requests ${requirement.label}; include that capability and its customer benefit in the email.`,
+      );
+    }
+  }
+
+  for (const requirement of EXPLICIT_EVENT_TYPE_REQUIREMENTS) {
+    if (
+      promptPositivelyRequests(prompt, requirement.requestPattern) &&
+      !requirement.outputPattern.test(customerFacingCopy)
+    ) {
+      violations.push(
+        `The campaign brief explicitly names ${requirement.label}; keep that event type visible in the customer-facing email copy and selected scenarios.`,
+      );
+    }
+  }
+
+  if (
+    promptPositivelyRequests(prompt, /\b(?:snap|scan|photograph|upload)\b/i) &&
+    !draft.scenarioRows.some((row) => row.scenarioId === "snap")
+  ) {
+    violations.push(
+      "The campaign brief explicitly requests Envitefy Snap; include a Snap scenario.",
+    );
+  }
+
+  if (
+    promptPositivelyRequests(
+      prompt,
+      /\b(?:rsvp|attendance|guest\s+(?:repl(?:y|ies)|responses?)|headcounts?|plus-ones?)\b/i,
+    ) &&
+    !draft.scenarioRows.some((row) => row.scenarioId === "rsvp")
+  ) {
+    violations.push("The campaign brief explicitly requests RSVP; include an RSVP scenario.");
+  }
+
+  if (
+    promptPositivelyRequests(
+      prompt,
+      /\b(?:Envitefy\s+Concierge|ask\s+(?:Envitefy\s+)?Concierge|from\s+(?:my|your|their|the\s+host'?s)\s+words)\b/i,
+    ) &&
+    !draft.scenarioRows.some((row) => row.scenarioId === "concierge")
+  ) {
+    violations.push(
+      "The campaign brief explicitly requests Envitefy Concierge; include an Envitefy Concierge scenario.",
+    );
+  }
+
+  if (
+    promptPositivelyRequests(prompt, CREATE_INVITATION_PATTERN) &&
+    !EXPLICIT_NON_CONCIERGE_CREATION_PATTERN.test(prompt) &&
+    !draft.scenarioRows.some((row) => row.scenarioId === "concierge")
+  ) {
+    violations.push(
+      "The campaign brief asks to create an invitation; include an Envitefy Concierge creation scenario unless the client explicitly requests manual or template creation.",
+    );
+  }
+
+  if (
+    promptPositivelyRequests(
+      prompt,
+      /\b(?:(?:smart\s+)?sign-?ups?|volunteer\s+(?:slots?|roles?|forms?)|potluck\s+(?:items?|forms?))\b/i,
+    ) &&
+    !draft.scenarioRows.some((row) => row.scenarioId === "signups")
+  ) {
+    violations.push(
+      "The campaign brief explicitly requests smart sign-ups; include a smart sign-up scenario.",
+    );
+  }
+
+  const parentsOnly = PARENTS_ONLY_PATTERN.test(prompt);
+  const teacherRequested =
+    promptPositivelyRequests(prompt, EXPLICIT_TEACHER_BRIEF_PATTERN) ||
+    (!parentsOnly && currentScenarioRows.some((row) => row.scenarioId === "teachers"));
+  const selectedTeacherRow = draft.scenarioRows.some((row) => row.scenarioId === "teachers");
+  if (selectedTeacherRow && !teacherRequested) {
+    violations.push(
+      "Remove the teachers scenario because the campaign brief did not request teachers, classrooms, school staff, or class events.",
+    );
+  }
+
+  if (parentsOnly) {
+    const audienceText = [
+      draft.subject,
+      draft.preheader,
+      draft.bodyHtml,
+      ...draft.scenarioRows.flatMap((row) => [row.title, row.body, row.imageScene]),
+    ].join(" ");
+    if (TEACHER_AUDIENCE_PATTERN.test(audienceText)) {
+      violations.push(
+        "The brief says parents only; remove every teacher, classroom, school-staff, class-party, and school-event reference from copy and image scenes.",
+      );
+    }
+  }
+
+  return violations;
+}
+
 export function normalizeAdminEmailDraft(value: unknown): AdminEmailDraft | null {
   if (!isRecord(value)) return null;
 
-  const subject = cleanString(value.subject, 140);
-  const preheader = cleanString(value.preheader, 180);
-  const bodyHtml = sanitizeGeneratedEmailHtml(cleanMultilineString(value.bodyHtml));
-  const buttonText = cleanString(value.buttonText, 60);
+  const subject = normalizeEnvitefyConciergeName(cleanString(value.subject, 140));
+  const preheader = normalizeEnvitefyConciergeName(cleanString(value.preheader, 180));
+  const bodyHtml = normalizeEnvitefyConciergeInHtml(
+    sanitizeGeneratedEmailHtml(cleanMultilineString(value.bodyHtml)),
+  );
+  const buttonText = normalizeEnvitefyConciergeName(cleanString(value.buttonText, 60));
   const rawButtonUrl = cleanString(value.buttonUrl, 500);
-  const notes = cleanString(value.notes, 500);
+  const notes = normalizeEnvitefyConciergeName(cleanString(value.notes, 500));
+  const scenarioRows = parseScenarioRows(value.scenarioRows);
 
   if (!subject || !bodyHtml) return null;
 
@@ -251,6 +957,7 @@ export function normalizeAdminEmailDraft(value: unknown): AdminEmailDraft | null
     buttonText,
     buttonUrl: isHttpUrl(rawButtonUrl) ? rawButtonUrl : "",
     notes,
+    scenarioRows,
     imageAssets: [],
   };
 }
@@ -304,19 +1011,44 @@ function buildSystemPrompt(audienceMode: AdminEmailAudienceMode): string {
 
 function buildUserPrompt(
   input: AdminEmailGenerationRequest,
-  generatedImageAssets: AdminEmailImageAsset[],
+  currentImageAssetsCount: number,
+  correctionViolations: string[] = [],
 ): string {
+  const constrainedCurrentDraft = applyAdminEmailPromptConstraints(
+    input.prompt,
+    {
+      subject: input.currentSubject || "",
+      preheader: "",
+      bodyHtml: input.currentBodyHtml || "",
+      buttonText: "",
+      buttonUrl: "",
+      notes: "",
+      scenarioRows: input.currentScenarioRows,
+      imageAssets: [],
+    },
+    input.currentScenarioRows,
+  );
   return JSON.stringify({
     mode: input.currentBodyHtml ? "revise_existing_draft" : "create_new_draft",
     prompt: input.prompt,
     audienceMode: input.audienceMode,
     ...buildAdminEmailGuidePromptPayload({
       audienceMode: input.audienceMode,
-      generatedImageAssetsCount: generatedImageAssets.length,
+      generatedImageAssetsCount: currentImageAssetsCount,
     }),
+    correction:
+      correctionViolations.length > 0
+        ? {
+            required: true,
+            violations: correctionViolations,
+            instruction:
+              "Regenerate the entire draft and fix every violation. Do not defend or repeat the prior off-brief choice.",
+          }
+        : { required: false, violations: [], instruction: "" },
     currentDraft: {
-      subject: input.currentSubject || "",
-      bodyHtml: input.currentBodyHtml || "",
+      subject: constrainedCurrentDraft.subject,
+      bodyHtml: constrainedCurrentDraft.bodyHtml,
+      scenarioRows: constrainedCurrentDraft.scenarioRows,
     },
   });
 }
@@ -637,6 +1369,7 @@ function promptRequestsFreshImages(prompt: string): boolean {
 
 async function generateScenarioStillAssets(
   input: AdminEmailGenerationRequest,
+  scenarioRows: AdminEmailScenarioRow[],
   params: {
     client: OpenAI;
     imageModel: string;
@@ -651,15 +1384,16 @@ async function generateScenarioStillAssets(
       asset,
     ]),
   );
+  const selectedScenarioIds = scenarioRows.map((row) => row.scenarioId);
   // Only regenerate every scenario when the user explicitly asks; otherwise fill gaps
-  // (e.g. legacy GIF stripped from Snap while Concierge/teachers/share stills remain).
+  // for the scenarios selected by the client brief.
   const forceAll = promptRequestsFreshImages(input.prompt);
-  const reuseIds = ADMIN_EMAIL_PRODUCT_SCENARIOS.filter(
-    (scenario) => !forceAll && existingById.has(scenario.id),
-  ).map((scenario) => scenario.id);
-  const regenerateIds = ADMIN_EMAIL_PRODUCT_SCENARIOS.filter(
-    (scenario) => forceAll || !existingById.has(scenario.id),
-  ).map((scenario) => scenario.id);
+  const reuseIds = selectedScenarioIds.filter(
+    (scenarioId) => !forceAll && existingById.has(scenarioId),
+  );
+  const regenerateIds = selectedScenarioIds.filter(
+    (scenarioId) => forceAll || !existingById.has(scenarioId),
+  );
 
   logAdminEmail("info", "scenario_still_plan", {
     forceAll,
@@ -669,43 +1403,43 @@ async function generateScenarioStillAssets(
   });
 
   return Promise.all(
-    ADMIN_EMAIL_PRODUCT_SCENARIOS.map(async (scenario) => {
-      const existing = existingById.get(scenario.id);
+    scenarioRows.map(async (row) => {
+      const existing = existingById.get(row.scenarioId);
       if (!forceAll && existing) {
         logAdminEmail("info", "scenario_still_reused", {
-          scenarioId: scenario.id,
+          scenarioId: row.scenarioId,
           urlHost: safeUrlHost(existing.url),
         });
         return existing;
       }
 
-      const prompt = buildStillImagePrompt(input.prompt, scenario.stillScene);
+      const prompt = buildStillImagePrompt(input.prompt, row.imageScene);
       const scenarioStartedAt = Date.now();
       logAdminEmail("info", "scenario_still_generate_start", {
-        scenarioId: scenario.id,
+        scenarioId: row.scenarioId,
         imageModel: params.imageModel,
         promptChars: prompt.length,
       });
       const bytes = await generateQaApprovedStillBytes({
         prompt,
         model: params.imageModel,
-        scenarioId: scenario.id,
+        scenarioId: row.scenarioId,
         client: params.client,
         generateImage: params.generateImage,
         inspectImage: params.inspectImage,
       });
       const uploaded = await uploadStillImageAsset({
         bytes,
-        fileName: `${slugForPrompt(input.prompt)}-${scenario.id}.png`,
-        altText: scenario.title,
+        fileName: `${slugForPrompt(input.prompt)}-${row.scenarioId}.png`,
+        altText: row.title,
         prompt,
         model: params.imageModel,
         role: "scenario",
-        scenarioId: scenario.id,
+        scenarioId: row.scenarioId,
         uploadImage: params.uploadImage,
       });
       logAdminEmail("info", "scenario_still_generate_complete", {
-        scenarioId: scenario.id,
+        scenarioId: row.scenarioId,
         urlHost: safeUrlHost(uploaded.url),
         elapsedMs: Date.now() - scenarioStartedAt,
       });
@@ -724,6 +1458,7 @@ function safeUrlHost(url: string): string {
 
 async function generateEmailImageAssets(
   input: AdminEmailGenerationRequest,
+  scenarioRows: AdminEmailScenarioRow[],
   params: {
     client: OpenAI;
     imageModel: string;
@@ -732,12 +1467,28 @@ async function generateEmailImageAssets(
     inspectImage?: GenerateAdminEmailDraftDeps["inspectImage"];
   },
 ): Promise<AdminEmailImageAsset[]> {
-  return generateScenarioStillAssets(input, params);
+  return generateScenarioStillAssets(input, scenarioRows, params);
 }
 
-function shouldRegenerateImage(input: AdminEmailGenerationRequest): boolean {
-  // Always rebuild when legacy GIFs/demo assets were stripped or any scenario still is missing.
-  if (!hasCompleteScenarioStillAssets(input.currentImageAssets)) return true;
+function shouldRegenerateImage(
+  input: AdminEmailGenerationRequest,
+  scenarioRows: AdminEmailScenarioRow[],
+): boolean {
+  // Always rebuild when legacy GIFs/demo assets were stripped or any selected scenario still is missing.
+  if (
+    !hasCompleteScenarioStillAssets(
+      input.currentImageAssets,
+      scenarioRows.map((row) => row.scenarioId),
+    )
+  ) {
+    return true;
+  }
+  const currentScenes = new Map(
+    input.currentScenarioRows.map((row) => [row.scenarioId, row.imageScene]),
+  );
+  if (scenarioRows.some((row) => currentScenes.get(row.scenarioId) !== row.imageScene)) {
+    return true;
+  }
   if (/\.gif(?:$|[?#])/i.test(input.currentBodyHtml || "")) return true;
   return promptRequestsFreshImages(input.prompt);
 }
@@ -757,14 +1508,12 @@ export function buildCtaButtonHtml(params: {
 
 export function buildGeneratedEmailImageBlock(
   asset: AdminEmailImageAsset,
-  href = DEFAULT_ENVITEFY_CTA_URL,
+  href: string = DEFAULT_ENVITEFY_CTA_URL,
 ): string {
   if (isGifAssetUrl(asset.url)) return "";
-  return `<div style="margin:0 0 16px 0; border-radius:16px; overflow:hidden; background:#F5F2FF;">
-  <a href="${href}" target="_blank" style="display:block; text-decoration:none;">
-    <img src="${asset.url}" width="544" alt="${asset.altText}" style="display:block; width:100%; max-width:544px; height:auto; border:0; outline:none; text-decoration:none;" />
-  </a>
-</div>`;
+  return `<a href="${href}" target="_blank" style="display:block; margin:0 0 16px 0; text-decoration:none;">
+  <img src="${asset.url}" width="544" alt="${escapeEmailHtmlText(normalizeEnvitefyConciergeName(asset.altText))}" style="display:block; width:100%; max-width:544px; height:auto; border:0; border-radius:14px; outline:none; text-decoration:none;" />
+</a>`;
 }
 
 export function buildScenarioRowHtml(params: {
@@ -774,15 +1523,13 @@ export function buildScenarioRowHtml(params: {
   ctaUrl: string;
   image?: AdminEmailImageAsset | null;
 }): string {
-  const imageBlock = params.image
-    ? buildGeneratedEmailImageBlock(params.image, params.ctaUrl)
-    : "";
+  const imageBlock = params.image ? buildGeneratedEmailImageBlock(params.image, params.ctaUrl) : "";
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 28px 0;">
   <tr>
-    <td style="padding:18px; border:1px solid #E8E1FF; border-radius:16px; background:#FBFAFF;">
+    <td style="padding:24px 0 0 0; border-top:1px solid #E8E1FF; background-color:#FFFFFF;" bgcolor="#FFFFFF">
       ${imageBlock}
-      <h2 style="margin:0 0 8px 0;font-size:20px;line-height:26px;color:#172033;">${params.title}</h2>
-      <p style="margin:0 0 14px 0;font-size:15px;line-height:22px;color:#243047;">${params.body}</p>
+      <h2 style="margin:0 0 8px 0;font-size:20px;line-height:26px;color:#172033;">${escapeEmailHtmlText(params.title)}</h2>
+      <p style="margin:0 0 14px 0;font-size:15px;line-height:22px;color:#243047;">${escapeEmailHtmlText(params.body)}</p>
       ${buildCtaButtonHtml({ href: params.ctaUrl, label: params.ctaLabel, margin: "0" })}
     </td>
   </tr>
@@ -797,8 +1544,26 @@ function findScenarioImage(
 }
 
 const DEFAULT_CAMPAIGN_INTRO = `<p style="margin:0 0 16px 0;font-size:16px;line-height:24px;color:#243047;">{{greeting}}</p>
-<h1 style="margin:0 0 12px 0;font-size:28px;line-height:34px;color:#172033;">Plan birthdays, class parties, and shares the easy way</h1>
-<p style="margin:0 0 24px 0;font-size:16px;line-height:24px;color:#243047;">Here are practical ways families and teachers use Envitefy.</p>`;
+<h1 style="margin:0 0 12px 0;font-size:28px;line-height:34px;color:#172033;">Make your next event easier</h1>
+<p style="margin:0 0 24px 0;font-size:16px;line-height:24px;color:#243047;">Create a polished event page, keep the details together, and share it when you are ready.</p>`;
+
+const CAMPAIGN_GREETING_STYLE = "margin:0 0 16px 0;font-size:16px;line-height:24px;color:#243047;";
+const CAMPAIGN_HEADLINE_STYLE = "margin:0 0 12px 0;font-size:28px;line-height:34px;color:#172033;";
+const CAMPAIGN_INTRO_STYLE = "margin:0 0 24px 0;font-size:16px;line-height:24px;color:#243047;";
+
+function normalizeCampaignIntroMarkup(html: string): string {
+  let paragraphIndex = 0;
+  return html
+    .replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, "$1")
+    .replace(/<\/?(?:div|section|article)\b[^>]*>/gi, "")
+    .replace(/<h1\b[^>]*>/gi, `<h1 style="${CAMPAIGN_HEADLINE_STYLE}">`)
+    .replace(/<p\b[^>]*>/gi, () => {
+      const style = paragraphIndex === 0 ? CAMPAIGN_GREETING_STYLE : CAMPAIGN_INTRO_STYLE;
+      paragraphIndex += 1;
+      return `<p style="${style}">`;
+    })
+    .trim();
+}
 
 /**
  * After {{greeting}} (already "Hi Name"), drop a redundant {{firstName}} lead-in
@@ -817,10 +1582,7 @@ export function stripRedundantNameAfterGreeting(html: string): string {
       }
       if (!seenGreeting) return full;
 
-      const stripped = inner.replace(
-        /^\s*\{\{\s*firstName\s*\}\}\s*(?:[,–—:\-]\s*|\s+)/i,
-        "",
-      );
+      const stripped = inner.replace(/^\s*\{\{\s*firstName\s*\}\}\s*(?:[,–—:-]\s*|\s+)/i, "");
       if (stripped === inner) return full;
 
       const capitalized = stripped.replace(/^(\s*)([a-z])/, (_m, ws: string, ch: string) => {
@@ -890,7 +1652,7 @@ export function extractCampaignIntroHtml(bodyHtml: string): string {
 
   // Drop any leftover purple buttons from the intro — scenarios + wrapper own CTAs.
   intro = intro.replace(/<div[^>]*>\s*<a[^>]*background-color\s*:\s*#7F67D3[\s\S]*?<\/div>/gi, "");
-  intro = polishAdminEmailBodyHtml(intro);
+  intro = normalizeCampaignIntroMarkup(polishAdminEmailBodyHtml(intro));
 
   if (!/<p\b|<h1\b/i.test(intro)) return DEFAULT_CAMPAIGN_INTRO;
   return intro;
@@ -901,16 +1663,22 @@ export function buildStructuredScenarioEmail(
   imageAssets: AdminEmailImageAsset[],
 ): string {
   const intro = extractCampaignIntroHtml(draft.bodyHtml);
-  const rows = ADMIN_EMAIL_PRODUCT_SCENARIOS.map((scenario) => {
-    const image = findScenarioImage(imageAssets, scenario.id);
-    return buildScenarioRowHtml({
-      title: scenario.title,
-      body: scenario.body,
-      ctaLabel: scenario.ctaLabel,
-      ctaUrl: resolveScenarioCtaUrl(scenario.ctaPath),
-      image: image || null,
-    });
-  }).join("\n");
+  const rows = draft.scenarioRows
+    .map((row) => {
+      const scenario = ADMIN_EMAIL_PRODUCT_SCENARIOS.find(
+        (candidate) => candidate.id === row.scenarioId,
+      );
+      if (!scenario) return "";
+      const image = findScenarioImage(imageAssets, row.scenarioId);
+      return buildScenarioRowHtml({
+        title: row.title,
+        body: row.body,
+        ctaLabel: scenario.ctaLabel,
+        ctaUrl: resolveScenarioCtaUrl(scenario.ctaPath),
+        image: image || null,
+      });
+    })
+    .join("\n");
 
   // No final body CTA — createEmailTemplate adds one from buttonText/buttonUrl.
   return polishAdminEmailBodyHtml(`${intro}\n${rows}`);
@@ -938,16 +1706,20 @@ export function ensureDraftIncludesImageAssets(
   draft: AdminEmailDraft,
   imageAssets: AdminEmailImageAsset[],
 ): AdminEmailDraft {
-  if (!imageAssets.length) {
+  if (!draft.scenarioRows.length) {
     return ensureDraftIncludesPrimaryCta({ ...draft, imageAssets: [] });
   }
 
-  const bodyHtml = buildStructuredScenarioEmail(draft, imageAssets);
+  const selectedScenarioIds = new Set(draft.scenarioRows.map((row) => row.scenarioId));
+  const selectedImageAssets = imageAssets.filter(
+    (asset) => asset.scenarioId && selectedScenarioIds.has(asset.scenarioId),
+  );
+  const bodyHtml = buildStructuredScenarioEmail(draft, selectedImageAssets);
   // Scenario rows already include CTAs — suppress wrapper duplicate button.
   return ensureDraftIncludesPrimaryCta({
     ...draft,
     bodyHtml,
-    imageAssets,
+    imageAssets: selectedImageAssets,
     buttonText: "",
     buttonUrl: "",
   });
@@ -955,10 +1727,7 @@ export function ensureDraftIncludesImageAssets(
 
 function reusableStillAssets(assets: AdminEmailImageAsset[]): AdminEmailImageAsset[] {
   return assets.filter(
-    (asset) =>
-      Boolean(asset.scenarioId) &&
-      asset.role === "scenario" &&
-      !isGifAssetUrl(asset.url),
+    (asset) => Boolean(asset.scenarioId) && asset.role === "scenario" && !isGifAssetUrl(asset.url),
   );
 }
 
@@ -976,77 +1745,134 @@ export async function generateAdminEmailDraft(
   const imageModel = resolveAdminEmailImageModel(deps.openAiImageModel);
   const client = deps.createOpenAiClient?.(apiKey) || new OpenAI({ apiKey });
   const reusableAssets = reusableStillAssets(input.currentImageAssets);
-  const regenerateImages = shouldRegenerateImage({
-    ...input,
-    currentImageAssets: reusableAssets,
-  });
 
   logAdminEmail("info", "draft_generate_start", {
     audienceMode: input.audienceMode,
     model,
     imageModel,
-    regenerateImages,
     reusableAssetCount: reusableAssets.length,
     promptChars: input.prompt.length,
     hasCurrentBodyHtml: Boolean(input.currentBodyHtml),
   });
 
-  let imageAssets: AdminEmailImageAsset[];
+  let draft: AdminEmailDraft | null = null;
+  let lastCandidate: AdminEmailDraft | null = null;
+  let correctionViolations: string[] = [];
   try {
-    imageAssets = regenerateImages
-      ? await generateEmailImageAssets(
-          { ...input, currentImageAssets: reusableAssets },
-          {
-            client,
-            imageModel,
-            generateImage: deps.generateImage,
-            uploadImage: deps.uploadImage,
-            inspectImage: deps.inspectImage,
-          },
-        )
-      : reusableAssets;
-  } catch (error) {
-    logAdminEmail("error", "draft_image_phase_failed", {
-      audienceMode: input.audienceMode,
-      imageModel,
-      error: errorMessage(error),
-      elapsedMs: Date.now() - startedAt,
-    });
-    throw error;
-  }
-
-  let draft: AdminEmailDraft | null;
-  try {
-    const completion = await client.chat.completions.create({
-      model,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "admin_email_draft",
-          strict: true,
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            required: ["subject", "preheader", "bodyHtml", "buttonText", "buttonUrl", "notes"],
-            properties: {
-              subject: { type: "string" },
-              preheader: { type: "string" },
-              bodyHtml: { type: "string" },
-              buttonText: { type: "string" },
-              buttonUrl: { type: "string" },
-              notes: { type: "string" },
+    for (let attempt = 1; attempt <= MAX_DRAFT_FIDELITY_ATTEMPTS; attempt += 1) {
+      const completion = await client.chat.completions.create({
+        model,
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "admin_email_draft",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              required: [
+                "subject",
+                "preheader",
+                "bodyHtml",
+                "buttonText",
+                "buttonUrl",
+                "notes",
+                "scenarioRows",
+              ],
+              properties: {
+                subject: { type: "string" },
+                preheader: { type: "string" },
+                bodyHtml: { type: "string" },
+                buttonText: { type: "string" },
+                buttonUrl: { type: "string" },
+                notes: { type: "string" },
+                scenarioRows: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    required: ["scenarioId", "title", "body", "imageScene"],
+                    properties: {
+                      scenarioId: {
+                        type: "string",
+                        enum: ADMIN_EMAIL_PRODUCT_SCENARIOS.map((scenario) => scenario.id),
+                      },
+                      title: { type: "string" },
+                      body: { type: "string" },
+                      imageScene: { type: "string" },
+                    },
+                  },
+                },
+              },
             },
           },
-        },
-      } as any,
-      messages: [
-        { role: "system", content: buildSystemPrompt(input.audienceMode) },
-        { role: "user", content: buildUserPrompt(input, imageAssets) },
-      ],
-    });
+        } as any,
+        messages: [
+          { role: "developer", content: buildSystemPrompt(input.audienceMode) },
+          {
+            role: "user",
+            content: buildUserPrompt(input, reusableAssets.length, correctionViolations),
+          },
+        ],
+      });
 
-    const raw = completion.choices?.[0]?.message?.content || "";
-    draft = normalizeAdminEmailDraft(extractJsonObject(raw));
+      const raw = completion.choices?.[0]?.message?.content || "";
+      const normalizedCandidate = normalizeAdminEmailDraft(extractJsonObject(raw));
+      const candidate = normalizedCandidate
+        ? applyAdminEmailPromptConstraints(
+            input.prompt,
+            normalizedCandidate,
+            input.currentScenarioRows,
+          )
+        : null;
+      if (!candidate) {
+        correctionViolations = [
+          "Return every required field with non-empty subject, bodyHtml, and at least one complete scenarioRows item.",
+        ];
+      } else {
+        lastCandidate = candidate;
+        correctionViolations = validateAdminEmailPromptFidelity(
+          input.prompt,
+          candidate,
+          input.currentScenarioRows,
+        );
+        if (correctionViolations.length === 0) {
+          draft = candidate;
+          break;
+        }
+      }
+
+      logAdminEmail("warn", "draft_prompt_fidelity_retry", {
+        audienceMode: input.audienceMode,
+        model,
+        attempt,
+        violations: correctionViolations,
+      });
+    }
+
+    if (!draft) {
+      const recovered = recoverAdminEmailDraftForPrompt(
+        input.prompt,
+        lastCandidate,
+        input.currentScenarioRows,
+      );
+      const recoveryViolations = validateAdminEmailPromptFidelity(
+        input.prompt,
+        recovered,
+        input.currentScenarioRows,
+      );
+      if (recoveryViolations.length === 0) {
+        draft = recovered;
+        correctionViolations = [];
+        logAdminEmail("warn", "draft_prompt_fidelity_recovered", {
+          audienceMode: input.audienceMode,
+          model,
+          selectedScenarioIds: recovered.scenarioRows.map((row) => row.scenarioId),
+        });
+      } else {
+        correctionViolations = recoveryViolations;
+      }
+    }
   } catch (error) {
     logAdminEmail("error", "draft_copy_phase_failed", {
       audienceMode: input.audienceMode,
@@ -1063,7 +1889,46 @@ export async function generateAdminEmailDraft(
       model,
       elapsedMs: Date.now() - startedAt,
     });
-    throw new Error("Email generator returned an invalid draft.");
+    throw new Error(
+      correctionViolations.length
+        ? "We couldn't create a draft that matched every campaign instruction. Please try Generate again."
+        : "Email generator returned an invalid draft. Please try Generate again.",
+    );
+  }
+
+  const selectedScenarioIds = new Set(draft.scenarioRows.map((row) => row.scenarioId));
+  const selectedReusableAssets = reusableAssets.filter(
+    (asset) => asset.scenarioId && selectedScenarioIds.has(asset.scenarioId),
+  );
+  const imageInput = { ...input, currentImageAssets: selectedReusableAssets };
+  const regenerateImages = shouldRegenerateImage(imageInput, draft.scenarioRows);
+
+  logAdminEmail("info", "draft_scenario_plan", {
+    audienceMode: input.audienceMode,
+    selectedScenarioIds: draft.scenarioRows.map((row) => row.scenarioId),
+    regenerateImages,
+    reusableAssetCount: selectedReusableAssets.length,
+  });
+
+  let imageAssets: AdminEmailImageAsset[];
+  try {
+    imageAssets = regenerateImages
+      ? await generateEmailImageAssets(imageInput, draft.scenarioRows, {
+          client,
+          imageModel,
+          generateImage: deps.generateImage,
+          uploadImage: deps.uploadImage,
+          inspectImage: deps.inspectImage,
+        })
+      : selectedReusableAssets;
+  } catch (error) {
+    logAdminEmail("error", "draft_image_phase_failed", {
+      audienceMode: input.audienceMode,
+      imageModel,
+      error: errorMessage(error),
+      elapsedMs: Date.now() - startedAt,
+    });
+    throw error;
   }
 
   const finalized = ensureDraftIncludesImageAssets(draft, imageAssets);

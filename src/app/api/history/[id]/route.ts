@@ -57,6 +57,7 @@ function sanitizeHistoryPublicData(data: unknown): Record<string, any> {
   delete redacted.sourceContext;
   delete redacted.missingFields;
   delete redacted.ocrText;
+  delete redacted.calendarSync;
 
   if (isRecord(redacted.accessControl)) {
     redacted.accessControl = {

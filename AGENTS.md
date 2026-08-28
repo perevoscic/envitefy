@@ -87,3 +87,10 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 ## Docs Drift
 
 - Trust the route tree, registries, and SQL more than the top-level docs. The README is directionally useful, but it undersells how much of the app now lives in wedding themes, discovery workflows, public event rendering, signup tooling, and admin operations.
+
+## Product Marketing Catalog Contract
+
+- `src/lib/product-marketing-catalog.ts` is the customer-facing product and sales source of truth. The admin email generator imports it directly into the email marketing LLM prompt.
+- Every launched customer-facing feature must add or update its catalog entry in the same change. Include the customer promise, concrete proof points, availability (`core`, `event-dependent`, or `specialized`), and when the marketing team should sell it.
+- Do not duplicate the complete feature inventory inside `src/lib/admin/email-generation-guide.ts`; keep that file focused on campaign behavior and let it consume the shared catalog so future feature updates reach email generation automatically.
+- Do not add admin-only, disabled, feature-flagged, experimental, or unverified capabilities to the marketing catalog.
