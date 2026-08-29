@@ -447,9 +447,10 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   const signedOutPageChrome = readSource("src/components/navigation/SignedOutPageChrome.tsx");
   const showcasePage = readSource("src/app/showcase/page.tsx");
   const mobileBrandHeader = readSource("src/components/navigation/MobileBrandHeader.tsx");
+  const envitefyWordmark = readSource("src/components/branding/EnvitefyWordmark.tsx");
   const signedOutNav = readSource("src/components/navigation/signed-out-nav.ts");
   const signedOutNavConfig = readSource("src/config/navigation.ts");
-  const officialLogoPng = path.join(repoRoot, "public/brand/envitefy-wordmark.png");
+  const officialLogoPng = path.join(repoRoot, "public/logo.png");
   const heroTopNav = readSource("src/components/navigation/HeroTopNav.tsx");
   const aiConciergeSection = readSource("src/app/landing/sections/AIConciergeSection.tsx");
 
@@ -566,7 +567,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(menuBottomSheet, /overflow-y-auto/);
   assert.match(menuBottomSheet, /rounded-t-\[1\.75rem\]/);
   assert.match(menuBottomSheet, /initial=\{\{ y: "100%", opacity: 0 \}\}/);
-  assert.match(menuBottomSheet, /\/brand\/envitefy-wordmark\.png/);
+  assert.match(menuBottomSheet, /\/logo\.png/);
   assert.match(menuBottomSheet, /brightness-0 invert/);
   assert.doesNotMatch(menuBottomSheet, /envitefy-wordmark-white\.svg/);
   assert.match(menuBottomSheet, /signedOutMobileMenuLinks\.map/);
@@ -602,7 +603,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(mobileBrandHeader, /translate-y-0 opacity-100 pointer-events-auto/);
   assert.match(mobileBrandHeader, /-translate-y-4 opacity-0 pointer-events-none/);
   assert.match(mobileBrandHeader, /data-hero-visible=/);
-  assert.match(mobileBrandHeader, /\/brand\/envitefy-wordmark\.png/);
+  assert.match(mobileBrandHeader, /\/logo\.png/);
   assert.match(mobileBrandHeader, /h-auto w-\[120px\] brightness-0 invert/);
   assert.match(mobileBrandHeader, /brightness-0 invert/);
   assert.doesNotMatch(mobileBrandHeader, /envitefy-wordmark-white\.svg/);
@@ -611,6 +612,9 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.doesNotMatch(mobileBrandHeader, /from-\[#7a6f8f\]/);
   assert.doesNotMatch(mobileBrandHeader, /rounded-full px-7/);
   assert.ok(fs.existsSync(officialLogoPng));
+  assert.match(envitefyWordmark, /var\(--font-josefin-sans\)/);
+  assert.match(envitefyWordmark, /"Josefin Sans"/);
+  assert.doesNotMatch(envitefyWordmark, /josefin-slab|Josefin Slab/);
 
   assert.match(landingExperience, /<ScrollAwareBottomNav/);
   assert.match(landingExperience, /<MobileBrandHeader/);

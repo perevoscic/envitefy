@@ -24,12 +24,13 @@ export default function EnvitefyWordmark({
     >
       <span
         aria-hidden
-        className={`josefin-slab-variable inline-block shrink-0 whitespace-nowrap align-middle overflow-visible leading-[1.16] pl-[0.02em] pr-[0.14em] pt-[0.04em] pb-[0.16em] ${
+        className={`josefin-sans-variable inline-block shrink-0 whitespace-nowrap align-middle overflow-visible leading-[1.16] pl-[0.02em] pr-[0.14em] pt-[0.04em] pb-[0.16em] ${
           shine ? "envitefy-wordmark-shine" : ""
         } ${className}`.trim()}
         style={{
-          fontFamily: 'var(--font-josefin-slab), "Josefin Slab", serif',
+          fontFamily: 'var(--font-josefin-sans), "Josefin Sans", sans-serif',
           fontWeight: 700,
+          fontVariationSettings: '"wght" 700',
           fontOpticalSizing: "auto",
           letterSpacing: "-0.075em",
           fontStyle: "normal",

@@ -125,10 +125,10 @@ export default function MenuBottomSheet({
                 onClick={closeSheet}
               >
                 <Image
-                  src="/brand/envitefy-wordmark.png"
+                  src="/logo.png"
                   alt="Envitefy"
-                  width={1103}
-                  height={354}
+                  width={600}
+                  height={160}
                   className="h-auto w-[118px] brightness-0 invert transition-transform duration-300 group-hover:scale-[1.02]"
                 />
               </Link>

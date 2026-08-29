@@ -63,10 +63,10 @@ export default function MobileBrandHeader({ onMenuClick }: MobileBrandHeaderProp
     >
       <Link href="/" aria-label="Envitefy home" className="flex items-center">
         <Image
-          src="/brand/envitefy-wordmark.png"
+          src="/logo.png"
           alt="Envitefy"
-          width={1103}
-          height={354}
+          width={600}
+          height={160}
           sizes="120px"
           priority
           className="h-auto w-[120px] brightness-0 invert"
