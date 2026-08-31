@@ -17,6 +17,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Josefin Slab";
+  src: url("/fonts/Josefin_Slab/JosefinSlab-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --radius: 1rem;
   --mobile-chrome-top: #f3eeff;

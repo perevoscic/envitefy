@@ -451,6 +451,10 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   const signedOutNav = readSource("src/components/navigation/signed-out-nav.ts");
   const signedOutNavConfig = readSource("src/config/navigation.ts");
   const officialLogoPng = path.join(repoRoot, "public/logo.png");
+  const josefinSlabFont = path.join(
+    repoRoot,
+    "public/fonts/Josefin_Slab/JosefinSlab-VariableFont_wght.ttf",
+  );
   const heroTopNav = readSource("src/components/navigation/HeroTopNav.tsx");
   const aiConciergeSection = readSource("src/app/landing/sections/AIConciergeSection.tsx");
 
@@ -612,9 +616,13 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.doesNotMatch(mobileBrandHeader, /from-\[#7a6f8f\]/);
   assert.doesNotMatch(mobileBrandHeader, /rounded-full px-7/);
   assert.ok(fs.existsSync(officialLogoPng));
-  assert.match(envitefyWordmark, /var\(--font-josefin-sans\)/);
-  assert.match(envitefyWordmark, /"Josefin Sans"/);
-  assert.doesNotMatch(envitefyWordmark, /josefin-slab|Josefin Slab/);
+  assert.ok(fs.existsSync(josefinSlabFont));
+  assert.match(envitefyWordmark, /scale-\[2\.95\]/);
+  assert.match(envitefyWordmark, /var\(--font-josefin-slab\)/);
+  assert.match(envitefyWordmark, /"Josefin Slab"/);
+  assert.match(envitefyWordmark, /fontWeight: 700/);
+  assert.match(envitefyWordmark, /letterSpacing: "-0\.075em"/);
+  assert.doesNotMatch(envitefyWordmark, /josefin-sans-variable|"Josefin Sans"/);
 
   assert.match(landingExperience, /<ScrollAwareBottomNav/);
   assert.match(landingExperience, /<MobileBrandHeader/);

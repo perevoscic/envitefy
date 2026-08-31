@@ -8,6 +8,24 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - Anonymous `/` is not the real landing route. `src/middleware.ts` rewrites signed-out users to `/landing`; signed-in users stay on `/`.
 - `npm run dev` does not run plain `next dev`. It goes through `scripts/dev-single.js`, defaults to port `3000`, writes to `.next-dev`, and uses `.next-dev.lock` to block a second dev server.
 
+## Envitefy Logo Brand Lock
+
+The lowercase `envitefy` wordmark is a locked brand asset. Do not change any of the settings below unless the user explicitly asks to change the logo itself.
+
+- Canonical component: `src/components/branding/EnvitefyWordmark.tsx`
+- Exact typeface: locally bundled **Josefin Slab**, normal style, weight `700`, optical sizing `auto`
+- Font asset: `public/fonts/Josefin_Slab/JosefinSlab-VariableFont_wght.ttf`
+- Font registration: the `@font-face` named `"Josefin Slab"` in `src/app/globals.css`
+- Exact tracking: `letter-spacing: -0.075em`
+- Exact default transform when `scaled` is enabled: `scale-[2.95]`
+- Exact internal line height and optical padding: `leading-[1.16] pl-[0.02em] pr-[0.14em] pt-[0.04em] pb-[0.16em]`
+- Exact primary fill: `linear-gradient(96deg, #6b3cff 0%, #6757ff 22%, #5a7dff 54%, #37a8ff 100%)`
+- Exact light/reversed fill: `#ffffff`
+- The text remains lowercase: `envitefy`
+- Keep `/fonts/` and the font extensions `woff`, `woff2`, `ttf`, and `otf` excluded from authentication middleware so the real typeface loads instead of falling back to Georgia.
+- Placement-specific font sizes may remain responsive, but do not alter the canonical typeface, weight, tracking, scale, line height, padding, colors, gradient stops, or font-loading path without an explicit user request.
+- `src/app/landing/page.test.mjs` and `src/middleware.auth-routing.test.mjs` intentionally guard this contract. Treat failures as brand regressions, not tests to weaken casually.
+
 ## My events vs Invited events (product language)
 
 - **My events** — Events you are **creating and owning** in the workspace. That includes manual creation and upload/snap flows when the result is **not** an “invite card” for the core social-invite verticals (see below). Uploading a schedule, flyer, or anything where you are really **authoring your own event** in Envitefy belongs here, even when the source was a file or camera.

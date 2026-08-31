@@ -5,6 +5,8 @@ type EnvitefyWordmarkProps = {
   tone?: "gradient" | "light";
 };
 
+// Locked Envitefy brand asset. Do not change the canonical typography, scale, spacing,
+// padding, or color values below without an explicit user request. See AGENTS.md.
 const WORDMARK_GRADIENT =
   "linear-gradient(96deg, #6b3cff 0%, #6757ff 22%, #5a7dff 54%, #37a8ff 100%)";
 const WORDMARK_SHINE_GRADIENT =
@@ -20,7 +22,7 @@ export default function EnvitefyWordmark({
     <span
       role="img"
       aria-label="envitefy"
-      className={`inline-block shrink-0 origin-center ${scaled ? "scale-[1.80]" : ""}`.trim()}
+      className={`inline-block shrink-0 origin-center ${scaled ? "scale-[2.95]" : ""}`.trim()}
     >
       <span
         aria-hidden
@@ -31,11 +33,13 @@ export default function EnvitefyWordmark({
           fontFamily: 'var(--font-josefin-slab), "Josefin Slab", serif',
           fontWeight: 700,
           fontOpticalSizing: "auto",
-          letterSpacing: "-0.055em",
+          letterSpacing: "-0.075em",
           fontStyle: "normal",
           ...(tone === "gradient"
             ? {
-                backgroundImage: shine ? WORDMARK_SHINE_GRADIENT : WORDMARK_GRADIENT,
+                backgroundImage: shine
+                  ? WORDMARK_SHINE_GRADIENT
+                  : WORDMARK_GRADIENT,
                 backgroundClip: "text",
                 WebkitBackgroundClip: "text",
                 color: "transparent",

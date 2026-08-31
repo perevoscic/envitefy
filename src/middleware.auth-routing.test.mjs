@@ -65,6 +65,14 @@ test("middleware keeps public share media routes available to link preview crawl
   assert.doesNotMatch(middleware, /isEventShareMetadataImagePath/);
 });
 
+test("middleware leaves local font assets available to every page", () => {
+  const middleware = readSource("src/middleware.ts");
+
+  assert.match(middleware, /pathname\.startsWith\("\/fonts\/"\)/);
+  assert.match(middleware, /\|fonts\|/);
+  assert.match(middleware, /woff\|woff2\|ttf\|otf/);
+});
+
 test("middleware redirects disabled event builders to gymnastics", () => {
   const middleware = readSource("src/middleware.ts");
   const featureVisibility = readSource("src/config/feature-visibility.ts");

@@ -224,6 +224,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/public/") ||
+    pathname.startsWith("/fonts/") ||
     pathname.startsWith("/media/") ||
     pathname.startsWith("/icons/") ||
     pathname.startsWith("/videos/") ||
@@ -396,6 +397,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next|api|public|icons|videos|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|map|webmanifest|mp4|webm)).*)",
+    "/((?!_next|api|public|fonts|icons|videos|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|map|webmanifest|mp4|webm|woff|woff2|ttf|otf)).*)",
   ],
 };
