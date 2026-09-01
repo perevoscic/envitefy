@@ -82,6 +82,7 @@ type CalendarConnectionStatus = {
 
 const CALENDAR_DEFAULT_STORAGE_KEY = "envitefy:event-actions:calendar-default:v1";
 type ApiState<T> = { loading: boolean; error: string | null; data?: T };
+type CalendarConnectionMessage = { kind: "success" | "error"; text: string };
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -113,6 +114,8 @@ export default function SettingsPage() {
   });
   const autoClearedProviderRef = useRef<CalendarProvider | null>(null);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
+  const [calendarConnectionMessage, setCalendarConnectionMessage] =
+    useState<CalendarConnectionMessage | null>(null);
   const [visibleTemplateKeys, setVisibleTemplateKeys] = useState<TemplateKey[]>([...TEMPLATE_KEYS]);
   const [defaultCreateIntent, setDefaultCreateIntent] = useState<SignupIntent | "">("");
   const [featureVisibilitySaving, setFeatureVisibilitySaving] = useState(false);
@@ -310,11 +313,42 @@ export default function SettingsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const googleAuth = params.get("googleAuth");
+    if (!googleAuth) return;
+
+    setActiveSettingsSection("calendars");
+    if (googleAuth === "stored") {
+      setCalendarConnectionMessage({
+        kind: "success",
+        text: "Google Calendar connected. New scanned events can now be added automatically.",
+      });
+      void fetchConnectedCalendars();
+    } else {
+      const reason = params.get("googleAuthReason");
+      const text =
+        reason === "missing-calendar-scope"
+          ? "Google Calendar permission was not granted. Reconnect and approve event access."
+          : reason === "missing-refresh-token"
+            ? "Google did not return offline calendar access. Reconnect and approve access again."
+            : "Google Calendar could not be connected. Please reconnect and try again.";
+      setCalendarConnectionMessage({ kind: "error", text });
+    }
+
+    window.history.replaceState(null, "", `${window.location.pathname}#calendars`);
+  }, [fetchConnectedCalendars]);
+
   const handleCalendarConnect = useCallback(
     (provider: CalendarProvider) => {
       if (typeof window === "undefined") return;
       if (provider === "google") {
-        window.open("/api/google/auth?source=settings", "_blank", "noopener,noreferrer");
+        const next = encodeURIComponent("/settings#calendars");
+        window.open(
+          `/api/google/auth?consent=1&next=${next}`,
+          "_blank",
+          "noopener,noreferrer",
+        );
       } else if (provider === "microsoft") {
         window.open("/api/outlook/auth?source=settings", "_blank", "noopener,noreferrer");
       } else {
@@ -857,7 +891,7 @@ export default function SettingsPage() {
           <section
             className={`${activeSettingsSection === "calendars" ? "block" : "hidden"} space-y-6 rounded-[1.75rem] border border-[#e3dcf0] bg-white/95 p-5 shadow-[0_18px_55px_rgba(65,51,92,0.08)] sm:p-7`}
           >
-            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7964ad]">
                   Connected services
@@ -877,9 +911,22 @@ export default function SettingsPage() {
               >
                 {connectionsLoading ? "Refreshing..." : "Refresh"}
               </button>
-            </div>
+              </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {calendarConnectionMessage ? (
+                <div
+                  className={`rounded-xl border px-3 py-2 text-sm ${
+                    calendarConnectionMessage.kind === "success"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                      : "border-red-200 bg-red-50 text-red-700"
+                  }`}
+                  role="status"
+                >
+                  {calendarConnectionMessage.text}
+                </div>
+              ) : null}
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {[
                 {
                   key: "google" as const,

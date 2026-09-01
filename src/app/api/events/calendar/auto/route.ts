@@ -116,7 +116,10 @@ async function insertGoogleEvent(params: {
   } catch (error: unknown) {
     const status = readProviderErrorStatus(error);
     if (status === 409) {
-      const existing = await calendar.events.get({ calendarId: "primary", eventId: deterministicId });
+      const existing = await calendar.events.get({
+        calendarId: "primary",
+        eventId: deterministicId,
+      });
       return {
         provider: "google",
         externalEventId: existing.data.id || deterministicId,
@@ -292,7 +295,10 @@ async function persistCalendarSync(params: {
   await updateEventHistoryDataMerge(params.eventId, {
     calendarSync: {
       ...existing,
+      status: params.status,
       autoProvider: params.provider,
+      reason: params.error || null,
+      updatedAt: new Date().toISOString(),
       providers: { ...providers, [params.provider]: providerState },
     },
   });
@@ -323,6 +329,7 @@ export async function POST(request: Request) {
     getMicrosoftRefreshToken(email),
   ]);
   const preferred = String(user?.preferred_provider || "").toLowerCase();
+  const existingSync = readExistingCalendarSync(data);
   let provider: CalendarProvider | null = null;
   let refreshToken = "";
   if (preferred === "google" && googleRefreshToken) {
@@ -339,19 +346,46 @@ export async function POST(request: Request) {
     refreshToken = microsoftRefreshToken;
   }
 
-  if (!provider || !refreshToken) {
-    return NextResponse.json({ ok: true, skipped: "no_supported_calendar_connected" });
+  if (preferred === "apple") {
+    return NextResponse.json({
+      ok: true,
+      status: "skipped",
+      reason: "apple_calendar_selected",
+    });
   }
 
-  const existingSync = readExistingCalendarSync(data);
+  if (!provider || !refreshToken) {
+    const updatedAt = new Date().toISOString();
+    await updateEventHistoryDataMerge(eventId, {
+      calendarSync: {
+        ...existingSync,
+        status: "needs_connection",
+        reason: "no_supported_calendar_connected",
+        updatedAt,
+      },
+    }).catch(() => undefined);
+    invalidateUserHistory(userId);
+    invalidateUserDashboard(userId);
+    return NextResponse.json({
+      ok: false,
+      status: "needs_connection",
+      reason: "no_supported_calendar_connected",
+      provider: null,
+    });
+  }
+
   const existingProviders = isRecord(existingSync.providers) ? existingSync.providers : {};
   const existingProviderCandidate = existingProviders[provider];
   const existingProvider: JsonRecord = isRecord(existingProviderCandidate)
     ? existingProviderCandidate
     : {};
-  if (existingProvider.status === "synced" && typeof existingProvider.externalEventId === "string") {
+  if (
+    existingProvider.status === "synced" &&
+    typeof existingProvider.externalEventId === "string"
+  ) {
     return NextResponse.json({
       ok: true,
+      status: "already_synced",
       alreadySynced: true,
       provider,
       externalEventId: existingProvider.externalEventId,
@@ -377,7 +411,7 @@ export async function POST(request: Request) {
     flyerPreviewUrl,
   });
   if (!built.ok) {
-    return NextResponse.json({ ok: true, skipped: built.reason });
+    return NextResponse.json({ ok: true, status: "skipped", reason: built.reason });
   }
 
   try {
@@ -406,7 +440,7 @@ export async function POST(request: Request) {
       webLink: result.webLink,
       attachmentAttached: result.attachmentAttached,
     });
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ ok: true, status: "synced", ...result });
   } catch (error: unknown) {
     const status = readProviderErrorStatus(error);
     const message = readProviderErrorMessage(error).slice(0, 500);

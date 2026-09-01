@@ -5,6 +5,7 @@ import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { resolveSourceIntent } from "@/lib/concierge/creation-intent";
 import { getGoogleRefreshToken, saveGoogleRefreshToken, updatePreferredProviderByEmail, getUserIdByEmail, insertEventHistory } from "@/lib/db";
+import { hasGoogleCalendarEventWriteScope } from "@/lib/google-calendar-oauth";
 
 export const runtime = "nodejs";
 
@@ -16,8 +17,16 @@ type GoogleCallbackDebug = {
   tokenEmail: string | null;
   sessionEmail: string | null;
   tokenPersisted: boolean;
+  calendarScopeGranted: boolean | null;
   persistError: string | null;
 };
+
+function googleAuthFailureReason(debug: GoogleCallbackDebug): string {
+  if (debug.calendarScopeGranted === false) return "missing-calendar-scope";
+  if (debug.persistError) return "persist-error";
+  if (debug.hasRefreshToken || debug.hasCookieRefresh) return "missing-email";
+  return "missing-refresh-token";
+}
 
 function readCookie(header: string | null, name: string): string | null {
   if (!header) return null;
@@ -135,6 +144,10 @@ export async function GET(request: Request) {
       tokenEmail: tokenEmail ?? null,
       sessionEmail: sessionEmail ?? null,
       tokenPersisted: false,
+      calendarScopeGranted:
+        typeof tokens.scope === "string"
+          ? hasGoogleCalendarEventWriteScope(tokens.scope)
+          : null,
       persistError: null,
     };
 
@@ -145,7 +158,9 @@ export async function GET(request: Request) {
           refresh = storedRefresh;
         }
       }
-      if (refresh && sessionEmail) {
+      if (debug.calendarScopeGranted === false) {
+        debug.persistError = "Google Calendar event permission was not granted";
+      } else if (refresh && sessionEmail) {
         await saveGoogleRefreshToken(sessionEmail, refresh);
         debug.tokenPersisted = true;
         await updatePreferredProviderByEmail({
@@ -175,14 +190,7 @@ export async function GET(request: Request) {
           const redirectUrl = new URL(await absoluteUrl(redirectPath));
           redirectUrl.searchParams.set("googleAuth", debug.tokenPersisted ? "stored" : "not-stored");
           if (!debug.tokenPersisted) {
-            redirectUrl.searchParams.set(
-              "googleAuthReason",
-              debug.persistError
-                ? "persist-error"
-                : debug.hasRefreshToken || debug.hasCookieRefresh
-                  ? "missing-email"
-                  : "missing-refresh-token",
-            );
+            redirectUrl.searchParams.set("googleAuthReason", googleAuthFailureReason(debug));
           }
           return applyGoogleRefreshCookie(NextResponse.redirect(redirectUrl), refresh);
         }
@@ -319,14 +327,7 @@ export async function GET(request: Request) {
     const homeUrl = new URL(await absoluteUrl("/"));
     homeUrl.searchParams.set("googleAuth", debug.tokenPersisted ? "stored" : "not-stored");
     if (!debug.tokenPersisted) {
-      homeUrl.searchParams.set(
-        "googleAuthReason",
-        debug.persistError
-          ? "persist-error"
-          : debug.hasRefreshToken || debug.hasCookieRefresh
-            ? "missing-email"
-            : "missing-refresh-token",
-      );
+      homeUrl.searchParams.set("googleAuthReason", googleAuthFailureReason(debug));
     }
     return applyGoogleRefreshCookie(NextResponse.redirect(homeUrl), refresh);
   } catch (err: unknown) {

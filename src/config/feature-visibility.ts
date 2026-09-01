@@ -76,7 +76,7 @@ const ALL_TEMPLATE_DEFINITIONS: TemplateDef[] = [
   {
     key: "weddings",
     label: "Weddings",
-    href: "/event/weddings/customize",
+    href: "/event/weddings",
     icon: "💍",
     section: "milestones",
   },

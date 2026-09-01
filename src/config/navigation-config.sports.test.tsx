@@ -90,7 +90,7 @@ describe("create event route matching", () => {
 
   test("selects the personalized sports row when a specialized sports route has no row", () => {
     const items = [
-      { label: "Weddings", href: "/event/weddings/customize" },
+      { label: "Weddings", href: "/event/weddings" },
       { label: "Sports", href: "/event/sport-events" },
     ];
 

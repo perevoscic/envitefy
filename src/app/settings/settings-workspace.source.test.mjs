@@ -5,7 +5,10 @@ import test from "node:test";
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 
 test("settings uses a sectioned workspace instead of one continuous form", () => {
-  assert.match(source, /type SettingsSectionKey = "profile" \| "calendars" \| "security" \| "creation"/);
+  assert.match(
+    source,
+    /type SettingsSectionKey = "profile" \| "calendars" \| "security" \| "creation"/,
+  );
   assert.match(source, /SETTINGS_SECTIONS\.map/);
   assert.match(source, /aria-label="Settings sections"/);
   assert.match(source, /activeSettingsSection === "profile" \? "block" : "hidden"/);
@@ -29,4 +32,9 @@ test("profile exposes a validated avatar upload experience", () => {
   assert.match(source, /Maximum file size: 5 MB/);
   assert.match(source, /Replace image/);
   assert.match(source, /removeAvatar/);
+});
+
+test("Google Calendar reconnect forces offline consent and returns to calendar settings", () => {
+  assert.match(source, /\/api\/google\/auth\?consent=1&next=/);
+  assert.match(source, /encodeURIComponent\("\/settings#calendars"\)/);
 });

@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
+import { GOOGLE_CALENDAR_EVENT_WRITE_SCOPE } from "@/lib/google-calendar-oauth";
 
 export const runtime = "nodejs";
 
@@ -12,7 +13,6 @@ function normalizeInternalRedirect(value: string | null): string | null {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const forceConsent = searchParams.get("consent") === "1";
   const includeAnalyticsScope = searchParams.get("analytics") === "1";
   const explicitState = searchParams.get("state") || undefined;
   const nextPath = normalizeInternalRedirect(searchParams.get("next"));
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
   );
 
   const scopes = [
-    "https://www.googleapis.com/auth/calendar.events",
+    GOOGLE_CALENDAR_EVENT_WRITE_SCOPE,
     "openid",
     "email",
     "profile",
@@ -43,7 +43,8 @@ export async function GET(request: Request) {
     access_type: "offline",
     include_granted_scopes: true,
     scope: scopes,
-    ...(forceConsent ? { prompt: "consent" as const } : {}),
+    // Calendar connections need a fresh offline token even when Google remembers an older grant.
+    prompt: "consent",
     ...(includeAnalyticsScope && process.env.GOOGLE_ANALYTICS_OAUTH_EMAIL
       ? { login_hint: process.env.GOOGLE_ANALYTICS_OAUTH_EMAIL }
       : {}),
@@ -51,5 +52,4 @@ export async function GET(request: Request) {
   });
   return NextResponse.redirect(url);
 }
-
 

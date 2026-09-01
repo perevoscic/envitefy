@@ -7,6 +7,14 @@ const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
+test("newly saved events explain calendar connection failures", () => {
+  const source = readSource("src/app/event/[id]/page.tsx");
+
+  assert.match(source, /calendarSyncNeedsAttention/);
+  assert.match(source, /Your Envitefy event was saved\./);
+  assert.match(source, /href="\/settings#calendars"/);
+});
+
 test("generic OCR event pages expose owner share and delete actions", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
   const fallbackOcrBranch = source.match(
@@ -77,10 +85,16 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /import \{ cleanGraduationVenueName \} from "@\/lib\/ocr\/text";/);
   assert.match(source, /function sanitizeScannedOcrDisplayTitle/);
   assert.match(source, /titleSegmentLooksLikeOcrVenueNarrative/);
-  assert.match(source, /const title = sanitizeScannedOcrDisplayTitle\(row\.title as string, data\);/);
+  assert.match(
+    source,
+    /const title = sanitizeScannedOcrDisplayTitle\(row\.title as string, data\);/,
+  );
   assert.match(source, /const rawVenueText =/);
   assert.match(source, /const isGraduationCategory =/);
-  assert.match(source, /categoryNormalized === "graduations" \|\| categoryNormalized === "graduation"/);
+  assert.match(
+    source,
+    /categoryNormalized === "graduations" \|\| categoryNormalized === "graduation"/,
+  );
   assert.match(source, /isGraduationCategory \? cleanGraduationVenueName\(rawVenueText\)/);
   assert.match(source, /if \(isGraduationCategory\) \{/);
   assert.match(source, /<GraduationSkin/);
@@ -112,10 +126,7 @@ test("event route branches football discovery/template events into the football 
   assert.match(source, /const publicRsvpUrl = normalizedPublicRsvp\.rsvpUrl \|\| ""/);
   assert.doesNotMatch(source, /findFirstEmail\(data\)/);
   assert.match(source, /const hasPublicRsvpAction = Boolean\(/);
-  assert.match(
-    source,
-    /const showPublicRsvp = !explicitRsvpDisabled && hasPublicRsvpAction;/,
-  );
+  assert.match(source, /const showPublicRsvp = !explicitRsvpDisabled && hasPublicRsvpAction;/);
   assert.match(source, /planCopy=\{birthdayPlanCopy\}/);
   assert.match(source, /ocrFacts=\{scannedInviteOcrFacts\}/);
   assert.ok(
@@ -382,7 +393,10 @@ test("event route renders concierge live cards with public details and direct RS
   assert.match(source, /publicEventRecord\.subheadline/);
   assert.match(source, /liveCardRecord\.scheduleLine/);
   assert.match(source, /publicEventRecord\.scheduleLine/);
-  assert.match(source, /const publicSourceSections = Array\.isArray\(publicEventRecord\.sourceSections\)/);
+  assert.match(
+    source,
+    /const publicSourceSections = Array\.isArray\(publicEventRecord\.sourceSections\)/,
+  );
   assert.match(source, /data\?\.whenLabel/);
   assert.match(source, /const directRsvpEnabled =/);
   assert.match(source, /Boolean\(rsvpRecord\?\.isEnabled\)/);

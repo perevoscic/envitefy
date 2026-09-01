@@ -85,8 +85,27 @@ test("middleware redirects disabled event builders to gymnastics", () => {
     /DISABLED_EVENT_ROUTE_PREFIXES\.some\(\(prefix\) =>\s*matchesPathPrefix\(normalizedPathname, prefix\)\s*\)/s,
   );
   assert.match(middleware, /url\.pathname = "\/event\/gymnastics";/);
-  assert.match(featureVisibility, /href: "\/event\/weddings\/customize"/);
+  assert.match(featureVisibility, /href: "\/event\/weddings"/);
   assert.match(featureVisibility, /href: "\/event\/birthdays\/customize"/);
+});
+
+test("wedding launch routes open the design gallery before the customize studio", () => {
+  const middleware = readSource("src/middleware.ts");
+  const featureVisibility = readSource("src/config/feature-visibility.ts");
+  const signupIntent = readSource("src/lib/signup-intent.ts");
+
+  assert.match(
+    featureVisibility,
+    /key: "weddings",[\s\S]*?href: "\/event\/weddings",/,
+  );
+  assert.match(
+    signupIntent,
+    /weddings: \{[\s\S]*?href: "\/event\/weddings",/,
+  );
+  assert.match(
+    middleware,
+    /normalizedPathname === "\/event\/weddings\/customize"[\s\S]*?!req\.nextUrl\.searchParams\.get\("templateId"\)[\s\S]*?!req\.nextUrl\.searchParams\.get\("edit"\)[\s\S]*?url\.pathname = "\/event\/weddings";/,
+  );
 });
 
 test("middleware gates event creation routes to admins", () => {

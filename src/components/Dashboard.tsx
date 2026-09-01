@@ -123,6 +123,11 @@ type SaveHistoryResult =
       ownership: "owned" | "invited";
       savedTitle?: string;
       publicSlug?: string;
+      calendarSync?: {
+        status?: string;
+        provider?: "google" | "microsoft" | null;
+        reason?: string;
+      } | null;
     }
   | {
       ok: false;
@@ -1792,17 +1797,60 @@ export default function Dashboard({
           };
         }
 
-        // Calendar sync is deliberately non-blocking. keepalive lets the request finish while
-        // navigation continues to the newly created Envitefy event.
-        void fetch("/api/events/calendar/auto", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          keepalive: true,
-          body: JSON.stringify({ eventId }),
-        }).catch((error: Error) => {
-          console.warn("Automatic calendar sync could not be started:", error.message);
-        });
+        // Wait for the provider request before navigating. A fire-and-forget request could be
+        // lost during the immediate route transition and gave the user no useful sync outcome.
+        let calendarSync: {
+          status?: string;
+          provider?: "google" | "microsoft" | null;
+          reason?: string;
+        } | null = null;
+        try {
+          const calendarSyncResponse = await fetch("/api/events/calendar/auto", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            cache: "no-store",
+            body: JSON.stringify({ eventId }),
+          });
+          const calendarSyncPayload = await calendarSyncResponse.json().catch(() => ({}));
+          calendarSync = {
+            status:
+              typeof calendarSyncPayload?.status === "string"
+                ? calendarSyncPayload.status
+                : undefined,
+            provider:
+              calendarSyncPayload?.provider === "google" ||
+              calendarSyncPayload?.provider === "microsoft"
+                ? calendarSyncPayload.provider
+                : null,
+            reason:
+              typeof calendarSyncPayload?.reason === "string"
+                ? calendarSyncPayload.reason
+                : undefined,
+          };
+          reportClientLog({
+            area: "snap-upload",
+            stage: "calendar-sync-complete",
+            scanAttemptId,
+            details: {
+              eventId,
+              ok: calendarSyncResponse.ok && calendarSyncPayload?.ok !== false,
+              status: calendarSync.status || null,
+              provider: calendarSync.provider || null,
+              reason: calendarSync.reason || null,
+            },
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          calendarSync = { status: "failed", reason: "request_failed" };
+          console.warn("Automatic calendar sync could not be completed:", message);
+          reportClientLog({
+            area: "snap-upload",
+            stage: "calendar-sync-failed",
+            scanAttemptId,
+            details: { eventId, message },
+          });
+        }
 
         if (typeof window !== "undefined") {
           window.dispatchEvent(
@@ -1823,7 +1871,14 @@ export default function Dashboard({
           );
         }
         invalidateEventCache({ force: true, source: "dashboard-create" });
-        return { ok: true, eventId, ownership: historyOwnership, savedTitle, publicSlug };
+        return {
+          ok: true,
+          eventId,
+          ownership: historyOwnership,
+          savedTitle,
+          publicSlug,
+          calendarSync,
+        };
       } catch (err) {
         console.error("Failed to save to Envitefy history:", err);
         logUploadIssue(err, "history-save", { scanAttemptId });
@@ -1874,14 +1929,31 @@ export default function Dashboard({
           );
           return false;
         }
-        const { eventId, ownership, savedTitle, publicSlug } = saveResult;
+        const { eventId, ownership, savedTitle, publicSlug, calendarSync } = saveResult;
 
         const eventTitle = savedTitle || eventInput.title || "Event";
         const ownerEventHref = buildEventPath(eventId, eventTitle, undefined, publicSlug);
+        const calendarSyncStatus =
+          calendarSync?.status === "needs_connection" ||
+          calendarSync?.status === "needs_reconnect" ||
+          calendarSync?.status === "failed"
+            ? calendarSync.status
+            : undefined;
         const eventHref = buildEventPath(
           eventId,
           eventTitle,
-          ownership === "owned" ? { created: true, tab: "dashboard" } : { created: true },
+          ownership === "owned"
+            ? {
+                created: true,
+                tab: "dashboard",
+                calendarSync: calendarSyncStatus,
+                calendarProvider: calendarSync?.provider || undefined,
+              }
+            : {
+                created: true,
+                calendarSync: calendarSyncStatus,
+                calendarProvider: calendarSync?.provider || undefined,
+              },
           publicSlug,
         );
         if (ownership === "owned") {

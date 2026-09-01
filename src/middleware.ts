@@ -297,6 +297,17 @@ export async function middleware(req: NextRequest) {
     return redirectWithMarker(url, 308);
   }
 
+  if (
+    normalizedPathname === "/event/weddings/customize" &&
+    !req.nextUrl.searchParams.get("templateId") &&
+    !req.nextUrl.searchParams.get("edit")
+  ) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/event/weddings";
+    url.searchParams.delete("variationId");
+    return redirectWithMarker(url, 302);
+  }
+
   const resolveAuthState = async () => {
     const sessionCookie = getSessionCookie(req);
     if (!sessionCookie?.value) return { hasSession: false, token: null as any };

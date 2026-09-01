@@ -1029,6 +1029,16 @@ export default async function EventPage({
     .trim()
     .toLowerCase();
   const createdParam = createdFlag === "1" || createdFlag === "true";
+  const calendarSyncStatus = readRouteSearchParam(
+    (awaitedSearchParams as any)?.calendarSync,
+  ).toLowerCase();
+  const calendarSyncProvider = readRouteSearchParam(
+    (awaitedSearchParams as any)?.calendarProvider,
+  ).toLowerCase();
+  const calendarSyncNeedsAttention =
+    calendarSyncStatus === "needs_connection" ||
+    calendarSyncStatus === "needs_reconnect" ||
+    calendarSyncStatus === "failed";
   const autoAccept = acceptRaw === "1" || acceptRaw === "true";
   // Try to resolve by slug, slug-id, or id; prefer user context for slug-only matches
   const session: any = await timing.time("session", () => getServerSession(authOptions as any));
@@ -1201,6 +1211,22 @@ export default async function EventPage({
       ) : null}
       {ownerPreviewEmbedded ? <OwnerPreviewMobileTopbarSuppressor /> : null}
       {ownerPreviewReturnHref ? <OwnerPreviewReturnLink href={ownerPreviewReturnHref} /> : null}
+      {isOwner && createdParam && calendarSyncNeedsAttention ? (
+        <aside className="relative z-[80] mx-auto mt-4 flex w-[calc(100%-2rem)] max-w-3xl flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            <span className="font-semibold">Your Envitefy event was saved.</span>{" "}
+            {calendarSyncStatus === "needs_connection"
+              ? "Connect a calendar to add scanned events automatically."
+              : `${calendarSyncProvider === "microsoft" ? "Outlook" : "Google Calendar"} was not updated. Reconnect it, then use Add to calendar on this event.`}
+          </p>
+          <Link
+            href="/settings#calendars"
+            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-800"
+          >
+            Calendar settings
+          </Link>
+        </aside>
+      ) : null}
       {!isOwner ? (
         <EventViewTracker
           eventId={row.id}
@@ -1748,7 +1774,13 @@ export default async function EventPage({
     const next = buildEventPath(
       row.id,
       title,
-      createdParam ? { created: true } : undefined,
+      createdParam
+        ? {
+            created: true,
+            calendarSync: calendarSyncNeedsAttention ? calendarSyncStatus : undefined,
+            calendarProvider: calendarSyncProvider || undefined,
+          }
+        : undefined,
       publicSlug,
     );
     redirect(next);

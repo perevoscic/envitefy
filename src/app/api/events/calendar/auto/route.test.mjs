@@ -3,18 +3,27 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
-const routeSource = fs.readFileSync(path.join(process.cwd(), "src/app/api/events/calendar/auto/route.ts"), "utf8");
-const dashboardSource = fs.readFileSync(path.join(process.cwd(), "src/components/Dashboard.tsx"), "utf8");
+const routeSource = fs.readFileSync(
+  path.join(process.cwd(), "src/app/api/events/calendar/auto/route.ts"),
+  "utf8",
+);
+const dashboardSource = fs.readFileSync(
+  path.join(process.cwd(), "src/components/Dashboard.tsx"),
+  "utf8",
+);
 const historyRouteSource = fs.readFileSync(
   path.join(process.cwd(), "src/app/api/history/[id]/route.ts"),
   "utf8",
 );
 const dbSource = fs.readFileSync(path.join(process.cwd(), "src/lib/db.ts"), "utf8");
 
-test("snap/upload creation starts silent automatic calendar sync after history is saved", () => {
-  assert.match(dashboardSource, /fetch\("\/api\/events\/calendar\/auto"/);
-  assert.match(dashboardSource, /keepalive:\s*true/);
+test("snap/upload creation waits for automatic calendar sync and records its outcome", () => {
+  assert.match(dashboardSource, /await fetch\("\/api\/events\/calendar\/auto"/);
+  assert.match(dashboardSource, /stage:\s*"calendar-sync-complete"/);
+  assert.doesNotMatch(dashboardSource, /void fetch\("\/api\/events\/calendar\/auto"/);
   assert.match(routeSource, /row\.user_id !== userId/);
+  assert.match(routeSource, /status:\s*"needs_connection"/);
+  assert.match(routeSource, /reason:\s*"no_supported_calendar_connected"/);
 });
 
 test("automatic calendar sync is idempotent and supports flyer attachments", () => {

@@ -55,7 +55,7 @@ const CREATE_ACTION_BY_INTENT: Record<
   weddings: {
     label: "Wedding Event",
     ctaLabel: "+ Wedding Event",
-    href: "/event/weddings/customize",
+    href: "/event/weddings",
   },
   bridal_showers: {
     label: "Bridal Shower",
