@@ -396,7 +396,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
   );
   assert.match(
     landingShowcase,
-    /Math\.abs\(index - activeIndex\) <= 1/,
+    /Math\.abs\(index - activeIndex\) <= 2/,
   );
   assert.match(
     landingShowcase,

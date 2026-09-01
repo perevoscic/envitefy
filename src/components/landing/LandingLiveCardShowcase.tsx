@@ -507,7 +507,7 @@ export default function LandingLiveCardShowcase({
                         : "scale-[0.85] opacity-40 blur-[2px]",
                     )}
                   >
-                    {Math.abs(index - activeIndex) <= 1 ? (
+                    {Math.abs(index - activeIndex) <= 2 ? (
                       <StudioShowcaseLiveCard
                         preview={item.preview}
                         compactChrome
