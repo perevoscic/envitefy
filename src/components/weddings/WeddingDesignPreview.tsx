@@ -26,7 +26,7 @@ export default function WeddingDesignPreview({
       colors: {
         primary: design.primaryColor,
         secondary: design.secondaryColor,
-        background: "transparent",
+        background: design.primaryColor,
       },
       fonts: {
         headline: design.headlineFont,
@@ -67,7 +67,10 @@ export default function WeddingDesignPreview({
     <div
       aria-hidden="true"
       inert
+      data-wedding-design={design.id}
+      data-wedding-layout={design.layout}
       className={`relative isolate aspect-[16/10] w-full overflow-hidden bg-white ${className}`}
+      style={{ backgroundColor: design.primaryColor }}
     >
       <div className="pointer-events-none absolute left-0 top-0 h-[400%] w-[400%] origin-top-left scale-[0.25] select-none">
         <WeddingRenderer template={template} event={previewEvent} />

@@ -1,4 +1,4 @@
-import { query } from "../db.ts";
+import { ensureUsersHasLegalPrivacyColumns, query } from "../db.ts";
 import { sendBulkEmail } from "../resend.ts";
 import { ensureEmailCampaignsSchema } from "./email-campaign-schema.ts";
 import {
@@ -43,6 +43,7 @@ function cleanString(value: unknown, maxLength = 5000): string {
 export async function resolveCampaignRecipients(
   audienceFilter: CampaignAudienceFilter | null | undefined,
 ): Promise<CampaignEmailRecipient[]> {
+  await ensureUsersHasLegalPrivacyColumns();
   if (audienceFilter?.testEmail) {
     const emails = parseIndividualCampaignEmails(audienceFilter.testEmail);
     if (emails.length === 0) {
@@ -61,7 +62,7 @@ export async function resolveCampaignRecipients(
     return buildIndividualCampaignRecipients(emails, usersResult.rows);
   }
 
-  const whereConditions: string[] = ["email IS NOT NULL"];
+  const whereConditions: string[] = ["email IS NOT NULL", "marketing_opt_out_at IS NULL"];
   const queryParams: Array<string | number> = [];
   let paramIndex = 1;
 

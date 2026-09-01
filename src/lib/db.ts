@@ -504,6 +504,67 @@ async function ensureUsersHasAdminAndMetricsColumns(): Promise<void> {
   });
 }
 
+export async function ensureUsersHasLegalPrivacyColumns(): Promise<void> {
+  await ensureOnce("users_legal_privacy_columns", async () => {
+    await query(`
+      alter table users add column if not exists terms_version text;
+      alter table users add column if not exists terms_accepted_at timestamptz(6);
+      alter table users add column if not exists privacy_version text;
+      alter table users add column if not exists privacy_acknowledged_at timestamptz(6);
+      alter table users add column if not exists legal_acceptance_metadata jsonb not null default '{}'::jsonb;
+      alter table users add column if not exists marketing_opt_out_at timestamptz(6);
+    `);
+  });
+}
+
+export type UserLegalAcceptance = {
+  termsVersion: string;
+  privacyVersion: string;
+  acceptedAt: string;
+  source: "email_signup" | "google_signup";
+  ipHash: string | null;
+  userAgent: string | null;
+};
+
+export async function recordUserLegalAcceptanceByEmail(
+  email: string,
+  acceptance: UserLegalAcceptance,
+): Promise<void> {
+  await ensureUsersHasLegalPrivacyColumns();
+  await query(
+    `update users
+        set terms_version = $2,
+            terms_accepted_at = $3::timestamptz,
+            privacy_version = $4,
+            privacy_acknowledged_at = $3::timestamptz,
+            legal_acceptance_metadata = $5::jsonb
+      where email = $1`,
+    [
+      email.trim().toLowerCase(),
+      acceptance.termsVersion,
+      acceptance.acceptedAt,
+      acceptance.privacyVersion,
+      JSON.stringify({
+        source: acceptance.source,
+        ipHash: acceptance.ipHash,
+        userAgent: acceptance.userAgent,
+      }),
+    ],
+  );
+}
+
+export async function unsubscribeMarketingEmail(email: string): Promise<boolean> {
+  await ensureUsersHasLegalPrivacyColumns();
+  const result = await query(
+    `update users
+        set marketing_opt_out_at = coalesce(marketing_opt_out_at, now())
+      where email = $1
+      returning id`,
+    [email.trim().toLowerCase()],
+  );
+  return (result.rowCount || 0) > 0;
+}
+
 function buildUserWhereClause(
   params: { userId?: string | null; email?: string | null },
   firstParamIndex: number,
@@ -1149,11 +1210,13 @@ export async function createUserWithEmailPassword(params: {
   lastName?: string;
   password: string;
   signupSource: "snap" | "gymnastics";
+  legalAcceptance: UserLegalAcceptance;
 }): Promise<AppUserRow> {
-  const { email, firstName, lastName, password, signupSource } = params;
+  const { email, firstName, lastName, password, signupSource, legalAcceptance } = params;
   await ensureUsersHasFeatureVisibilityColumn();
   await ensureUsersHasProductScopeColumns();
   await ensureUsersHasAvatarUrlColumn();
+  await ensureUsersHasLegalPrivacyColumns();
   const existing = await getUserByEmail(email);
   if (existing) throw new Error("Account already exists for this email");
   const password_hash = await hashPassword(password);
@@ -1161,11 +1224,28 @@ export async function createUserWithEmailPassword(params: {
   const productScopes = productScopesForSignupSource(signupSource);
   const res = await query<AppUserRow>(
     `insert into users (
-       email, first_name, last_name, password_hash, primary_signup_source, product_scopes
+       email, first_name, last_name, password_hash, primary_signup_source, product_scopes,
+       terms_version, terms_accepted_at, privacy_version, privacy_acknowledged_at,
+       legal_acceptance_metadata
      )
-     values ($1, $2, $3, $4, $5, $6::text[])
+     values ($1, $2, $3, $4, $5, $6::text[], $7, $8::timestamptz, $9, $8::timestamptz, $10::jsonb)
      returning ${USER_SELECT_COLUMNS}`,
-    [lower, firstName || null, lastName || null, password_hash, signupSource, productScopes],
+    [
+      lower,
+      firstName || null,
+      lastName || null,
+      password_hash,
+      signupSource,
+      productScopes,
+      legalAcceptance.termsVersion,
+      legalAcceptance.acceptedAt,
+      legalAcceptance.privacyVersion,
+      JSON.stringify({
+        source: legalAcceptance.source,
+        ipHash: legalAcceptance.ipHash,
+        userAgent: legalAcceptance.userAgent,
+      }),
+    ],
   );
   return res.rows[0];
 }
@@ -1214,10 +1294,12 @@ export async function createOrUpdateOAuthUser(params: {
   lastName?: string | null;
   provider: string;
   signupSource?: "snap" | "gymnastics";
+  legalAcceptance?: UserLegalAcceptance;
 }): Promise<AppUserRow> {
   await ensureUsersHasFeatureVisibilityColumn();
   await ensureUsersHasProductScopeColumns();
   await ensureUsersHasAvatarUrlColumn();
+  await ensureUsersHasLegalPrivacyColumns();
   const lower = params.email.toLowerCase();
   const existing = await getUserByEmail(lower);
 
@@ -1228,14 +1310,33 @@ export async function createOrUpdateOAuthUser(params: {
 
   // Create new OAuth user with NULL password_hash
   const signupSource = params.signupSource || "snap";
+  if (!params.legalAcceptance) {
+    throw new Error("Current legal acceptance is required to create an OAuth account");
+  }
   const productScopes = productScopesForSignupSource(signupSource);
   const res = await query<AppUserRow>(
     `insert into users (
-       email, first_name, last_name, password_hash, primary_signup_source, product_scopes
+       email, first_name, last_name, password_hash, primary_signup_source, product_scopes,
+       terms_version, terms_accepted_at, privacy_version, privacy_acknowledged_at,
+       legal_acceptance_metadata
      )
-     values ($1, $2, $3, NULL, $4, $5::text[])
+     values ($1, $2, $3, NULL, $4, $5::text[], $6, $7::timestamptz, $8, $7::timestamptz, $9::jsonb)
      returning ${USER_SELECT_COLUMNS}`,
-    [lower, params.firstName || null, params.lastName || null, signupSource, productScopes],
+    [
+      lower,
+      params.firstName || null,
+      params.lastName || null,
+      signupSource,
+      productScopes,
+      params.legalAcceptance.termsVersion,
+      params.legalAcceptance.acceptedAt,
+      params.legalAcceptance.privacyVersion,
+      JSON.stringify({
+        source: params.legalAcceptance.source,
+        ipHash: params.legalAcceptance.ipHash,
+        userAgent: params.legalAcceptance.userAgent,
+      }),
+    ],
   );
   return res.rows[0];
 }
@@ -1329,7 +1430,16 @@ export async function getGoogleRefreshToken(email: string): Promise<string | nul
   }
 }
 
-// removed deleteProviderRefreshTokenByEmail helper (undo)
+export async function deleteStoredOAuthTokens(
+  email: string,
+  provider?: "google" | "microsoft",
+): Promise<number> {
+  const lower = email.trim().toLowerCase();
+  const result = provider
+    ? await query(`delete from oauth_tokens where email = $1 and provider = $2`, [lower, provider])
+    : await query(`delete from oauth_tokens where email = $1`, [lower]);
+  return result.rowCount || 0;
+}
 
 export async function updateUserNamesByEmail(params: {
   email: string;

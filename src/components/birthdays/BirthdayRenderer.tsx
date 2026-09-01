@@ -1,9 +1,29 @@
 "use client";
 
 import React, { useState, useEffect, useContext, createContext } from "react";
+import BirthdayExperienceBody from "@/components/birthdays/BirthdayExperienceBody";
+import BirthdayExperienceHero from "@/components/birthdays/BirthdayExperienceHero";
+import { BIRTHDAY_DESIGN_BY_ID } from "@/data/birthday-design-catalog";
+import type { BirthdayExperienceProfile } from "@/data/birthday-experience-profiles.mjs";
 import { buildPreferredDirectionsHref } from "@/lib/directions";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
-import { Calendar, Clock, MapPin, Navigation, Share2, X } from "lucide-react";
+import {
+  Calendar,
+  CalendarDays,
+  Camera,
+  CheckCircle2,
+  Clock,
+  FileText,
+  Gift,
+  Heart,
+  HelpCircle,
+  Lightbulb,
+  MapPin,
+  Navigation,
+  Share2,
+  X,
+  XCircle,
+} from "lucide-react";
 import GuestRsvpModal, { type RsvpResponse } from "../GuestRsvpModal";
 import EventMap from "../EventMap";
 import AppleCalendarLink from "../AppleCalendarLink";
@@ -68,6 +88,7 @@ export type ThemeConfig = {
     heroImage?: string;
     [key: string]: unknown;
   };
+  experience?: BirthdayExperienceProfile;
 };
 
 export type EventData = {
@@ -215,7 +236,10 @@ export default function BirthdayRenderer({
     };
   }, [lightboxImageUrl]);
 
-  // Normalize theme config from the template object
+  const catalogDesign = BIRTHDAY_DESIGN_BY_ID.get(template.id);
+
+  // Normalize theme config from the template object. Catalog profiles are also
+  // resolved by ID so birthday pages saved before the profile launch upgrade in place.
   const theme: ThemeConfig = {
     id: template.id,
     name: template.name,
@@ -235,6 +259,7 @@ export default function BirthdayRenderer({
       ...template.decorations,
     },
     heroImage: template.heroImage,
+    experience: template.experience || catalogDesign?.experience,
   };
 
   return (
@@ -247,7 +272,7 @@ export default function BirthdayRenderer({
           ["--event-mobile-bar-bg" as string]: theme.colors.primary,
         }}
       >
-        {actions && layout !== "editorial-feature" && (
+        {actions && layout !== "editorial-feature" && !theme.experience && (
           <div className="hidden md:flex justify-center py-3">{actions}</div>
         )}
         {renderLayout(
@@ -338,6 +363,18 @@ function renderLayout(
   onRsvpClick?: (response?: RsvpIntent) => void,
   chrome?: BirthdayRendererChrome,
 ) {
+  if (theme.experience) {
+    const experience = theme.experience;
+    return (
+      <UniqueBirthdayExperienceLayout
+        theme={{ ...theme, experience }}
+        event={event}
+        actions={actions}
+        onRsvpClick={onRsvpClick}
+      />
+    );
+  }
+
   switch (layout) {
     case "confetti-splash":
       return (
@@ -519,6 +556,52 @@ function renderLayout(
 }
 
 // --- Layouts ---
+
+function UniqueBirthdayExperienceLayout({
+  theme,
+  event,
+  actions,
+  onRsvpClick,
+}: {
+  theme: ThemeConfig & { experience: BirthdayExperienceProfile };
+  event: EventData;
+  actions?: React.ReactNode;
+  onRsvpClick?: (response?: RsvpIntent) => void;
+}) {
+  const profile = theme.experience;
+  const darkMode = profile.tone === "dark";
+  const userRsvpResponse = useContext(UserRsvpContext);
+
+  return (
+    <div
+      className="min-h-screen"
+      data-birthday-composition={profile.composition}
+      data-birthday-experience={profile.signature}
+      data-birthday-body-composition={profile.bodyComposition}
+      data-birthday-body-experience={profile.bodySignature}
+      style={{ backgroundColor: theme.colors.primary }}
+    >
+      <BirthdayExperienceHero
+        theme={{ ...theme, experience: profile }}
+        event={event}
+        actions={actions}
+        onRsvpClick={onRsvpClick}
+      />
+      <BirthdayExperienceBody
+        theme={{ ...theme, experience: profile }}
+        event={event}
+        userRsvpResponse={userRsvpResponse}
+        onRsvpClick={onRsvpClick}
+      />
+      <Footer
+        theme={theme}
+        event={event}
+        backgroundColor={theme.colors.primary}
+        darkMode={darkMode}
+      />
+    </div>
+  );
+}
 
 function ConfettiSplashLayout({
   theme,
@@ -1714,7 +1797,7 @@ function BirthdayContentSections({
             }`}
           >
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-2xl">📝</span>
+              <FileText className="h-6 w-6" aria-hidden="true" />
               <h2
                 className="text-2xl font-bold"
                 style={{
@@ -1737,7 +1820,7 @@ function BirthdayContentSections({
             }`}
           >
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-2xl">💡</span>
+              <Lightbulb className="h-6 w-6" aria-hidden="true" />
               <h2
                 className="text-2xl font-bold"
                 style={{
@@ -1761,7 +1844,7 @@ function BirthdayContentSections({
           }`}
         >
           <div className="flex items-center gap-3 mb-8 justify-center">
-            <span className="text-3xl">🗓️</span>
+            <CalendarDays className="h-7 w-7" aria-hidden="true" />
             <h2
               className="text-3xl font-bold text-center"
               style={{ fontFamily: theme.fonts.headline, color: headingColor }}
@@ -1783,11 +1866,17 @@ function BirthdayContentSections({
                   <h3 className="font-bold text-xl">{item.title}</h3>
                   {item.time && (
                     <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold tracking-tighter">
-                      ⏰ {item.time}
+                      <Clock className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
+                      {item.time}
                     </span>
                   )}
                 </div>
-                {item.location && <p className="text-sm opacity-60">📍 {item.location}</p>}
+                {item.location && (
+                  <p className="flex items-center gap-1.5 text-sm opacity-60">
+                    <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                    {item.location}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -1798,7 +1887,7 @@ function BirthdayContentSections({
       {event.gallery && event.gallery.length > 0 && (
         <section>
           <div className="flex items-center gap-3 mb-8 justify-center">
-            <span className="text-3xl">📸</span>
+            <Camera className="h-7 w-7" aria-hidden="true" />
             <h2
               className="text-3xl font-bold text-center"
               style={{ fontFamily: theme.fonts.headline, color: headingColor }}
@@ -1829,10 +1918,11 @@ function BirthdayContentSections({
       {event.hosts && event.hosts.length > 0 && (
         <section className="text-center">
           <h2
-            className="text-xl font-bold mb-6 uppercase tracking-[0.2em] opacity-40"
+            className="mb-6 inline-flex items-center gap-2 text-xl font-bold uppercase tracking-[0.2em] opacity-40"
             style={{ color: textColor }}
           >
-            Hosted with ❤️ by
+            Hosted with care
+            <Heart className="h-5 w-5" aria-hidden="true" />
           </h2>
           <div className="flex flex-wrap justify-center gap-4">
             {event.hosts.map((host, idx) => (
@@ -1874,7 +1964,8 @@ function BirthdayContentSections({
                     : "bg-white hover:bg-slate-50 shadow-md border border-slate-100"
                 } `}
               >
-                🎁 {r.label || registryCopy.itemFallbackLabel}
+                <Gift className="mr-2 inline h-4 w-4" aria-hidden="true" />
+                {r.label || registryCopy.itemFallbackLabel}
               </a>
             ))}
           </div>
@@ -1891,13 +1982,13 @@ function BirthdayContentSections({
                 border: `2px solid ${theme.colors.secondary}40`,
               }}
             >
-              <span className="text-2xl" aria-hidden="true">
-                {userRsvpResponse === "yes"
-                  ? "\u2705"
-                  : userRsvpResponse === "no"
-                    ? "\u274C"
-                    : "\u{1F914}"}
-              </span>
+              {userRsvpResponse === "yes" ? (
+                <CheckCircle2 className="h-6 w-6" aria-hidden="true" />
+              ) : userRsvpResponse === "no" ? (
+                <XCircle className="h-6 w-6" aria-hidden="true" />
+              ) : (
+                <HelpCircle className="h-6 w-6" aria-hidden="true" />
+              )}
               <span className="text-lg font-black" style={{ color: theme.colors.secondary }}>
                 {userRsvpResponse === "yes"
                   ? "You're going!"

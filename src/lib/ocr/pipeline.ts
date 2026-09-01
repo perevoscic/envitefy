@@ -1,10 +1,10 @@
+import { randomUUID } from "node:crypto";
 import * as chrono from "chrono-node";
 import { getServerSession } from "next-auth";
 import sharp from "sharp";
 import { authOptions } from "@/lib/auth";
 import { normalizeBirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { corsJson } from "@/lib/cors";
-import { incrementUserScanCounters } from "@/lib/db";
 import {
   clampTimeoutMs,
   OCR_SKIN_TIMEOUT_MS,
@@ -50,6 +50,7 @@ import {
   parseTimeTo24h,
 } from "@/lib/ocr/practice-schedule";
 import { normalizeRegistryUrlForDetectedEvent } from "@/lib/ocr/registry-url";
+import { recordCompletedScanAttempt } from "@/lib/scan-attempts";
 import {
   appendMovieTitleToDescription,
   appendSecondaryLocationsToDescription,
@@ -2054,16 +2055,52 @@ export async function handleOcrRequest(request: Request) {
     }
     const thumbnailFocus = normalizeThumbnailFocus(llmImage?.thumbnailFocus);
 
-    void (async () => {
-      try {
-        const session = await getServerSession(authOptions);
-        const email = session?.user?.email as string | undefined;
-        if (!email) return;
-        try {
-          await incrementUserScanCounters({ email, category });
-        } catch {}
-      } catch {}
-    })();
+    scanAttemptId = scanAttemptId || `scan-${randomUUID()}`;
+    let troubleshootingPreview: Buffer | null = null;
+    try {
+      troubleshootingPreview = await sharp(colorBuffer)
+        .rotate()
+        .resize({
+          width: 1400,
+          height: 1400,
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .jpeg({ quality: 72, progressive: true })
+        .toBuffer();
+    } catch (previewError) {
+      console.warn("[ocr] troubleshooting preview unavailable", {
+        scanAttemptId,
+        message: previewError instanceof Error ? previewError.message : String(previewError),
+      });
+    }
+
+    try {
+      const session = await getServerSession(authOptions);
+      const email = session?.user?.email;
+      if (typeof email === "string" && email.trim()) {
+        await recordCompletedScanAttempt({
+          scanAttemptId,
+          email,
+          title: fieldsGuess.title || finalTitle,
+          category,
+          sourceType: "upload",
+          fileName: file.name || null,
+          fileSize: file.size || null,
+          mimeType: mime,
+          ocrSource,
+          ocrText: raw,
+          fieldsGuess,
+          previewBytes: troubleshootingPreview,
+          previewMimeType: troubleshootingPreview ? "image/jpeg" : null,
+        });
+      }
+    } catch (attemptError) {
+      console.error("[ocr] troubleshooting record failed", {
+        scanAttemptId,
+        message: attemptError instanceof Error ? attemptError.message : String(attemptError),
+      });
+    }
 
     const ocrTiming = {
       totalMs: Date.now() - startedAt,

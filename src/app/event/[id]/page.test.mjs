@@ -7,12 +7,41 @@ const repoRoot = process.cwd();
 
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
-test("newly saved events explain calendar connection failures", () => {
+test("newly saved events offer accurate calendar setup choices", () => {
   const source = readSource("src/app/event/[id]/page.tsx");
+  const promptSource = readSource("src/components/FirstScanCalendarPrompt.tsx");
+  const eventActionsSource = readSource("src/components/EventActions.tsx");
 
   assert.match(source, /calendarSyncNeedsAttention/);
-  assert.match(source, /Your Envitefy event was saved\./);
-  assert.match(source, /href="\/settings#calendars"/);
+  assert.match(source, /FirstScanCalendarPrompt/);
+  assert.match(source, /calendarSyncNoticeStatus === "needs_connection" && calendarLinks/);
+  assert.match(source, /appleCalendarHref=\{calendarLinks\?\.appleInline \|\| null\}/);
+  assert.match(source, /calendarSetupStatus=\{calendarSetupStatus\}/);
+  assert.match(source, /calendarSetupFailureReason=\{calendarSetupFailureReason\}/);
+  assert.match(promptSource, /Connect Google Calendar/);
+  assert.match(promptSource, /Connect Outlook/);
+  assert.match(promptSource, /Add this event to Apple Calendar/);
+  assert.match(promptSource, /<Dialog\.Description className="sr-only">/);
+  assert.match(promptSource, />\s*Google\s*</);
+  assert.match(promptSource, />\s*Outlook\s*</);
+  assert.match(promptSource, />\s*Apple\s*</);
+  assert.doesNotMatch(promptSource, /Auto-sync this event and future scans/);
+  assert.doesNotMatch(promptSource, /Apple uses a one-event handoff/);
+  assert.match(promptSource, /calendarSetupStatus === "not-stored"/);
+  assert.match(promptSource, /was not connected to your Envitefy account/);
+  assert.doesNotMatch(promptSource, /connected, but this event was not added/);
+  assert.match(promptSource, /const FLOATING_NOTICE_CLASS =/);
+  assert.match(promptSource, /fixed left-1\/2/);
+  assert.match(promptSource, /aria-label="Dismiss calendar notice"/);
+  assert.match(promptSource, /setTimeout\(\(\) => setNoticeDismissed\(true\), 5_000\)/);
+  assert.doesNotMatch(promptSource, /relative z-\[80\] mx-auto mt-4/);
+  assert.match(promptSource, /Not now/);
+  assert.match(promptSource, /\/api\/events\/calendar\/auto/);
+  assert.match(promptSource, /openAppleCalendarIcs\(appleCalendarHref\)/);
+  assert.match(
+    eventActionsSource,
+    /defaultCalendarProvider[\s\S]*isProviderValid\(defaultCalendarProvider, connectedCalendars\)[\s\S]*openCalendarProvider\(defaultCalendarProvider\)/,
+  );
 });
 
 test("generic OCR event pages expose owner share and delete actions", () => {

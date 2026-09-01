@@ -69,6 +69,7 @@ type LeftSidebarControllerArgs = {
   status: string;
   menu: {
     connectedCalendars: Record<string, boolean>;
+    calendarConnectionsLoaded: boolean;
     refreshConnectedCalendars: () => Promise<unknown> | unknown;
     featureVisibility: {
       visibleTemplateKeys: TemplateKey[];
@@ -291,6 +292,7 @@ export function useLeftSidebarController({
 }: LeftSidebarControllerArgs): LeftSidebarControllerViewModel {
   const {
     connectedCalendars,
+    calendarConnectionsLoaded,
     refreshConnectedCalendars,
     featureVisibility,
     primarySignupSource,
@@ -864,21 +866,17 @@ export function useLeftSidebarController({
 
   useEffect(() => {
     if (status !== "authenticated") return;
+    if (!calendarConnectionsLoaded) return;
     if (!defaultCalendarProvider) return;
-    if (defaultCalendarProvider === "google" && !connectedCalendars.google) {
-      setDefaultCalendarProvider(null);
-      mirrorLocalCalendarDefault(null);
-      void saveCalendarDefault(null);
-      return;
-    }
-    if (defaultCalendarProvider === "microsoft" && !connectedCalendars.microsoft) {
-      setDefaultCalendarProvider(null);
-      mirrorLocalCalendarDefault(null);
-      void saveCalendarDefault(null);
-    }
+    if (connectedCalendars[defaultCalendarProvider]) return;
+    setDefaultCalendarProvider(null);
+    mirrorLocalCalendarDefault(null);
+    void saveCalendarDefault(null);
   }, [
+    connectedCalendars.apple,
     connectedCalendars.google,
     connectedCalendars.microsoft,
+    calendarConnectionsLoaded,
     defaultCalendarProvider,
     mirrorLocalCalendarDefault,
     saveCalendarDefault,

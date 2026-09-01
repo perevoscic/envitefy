@@ -287,7 +287,6 @@ export default function EventActions({
       connections?: CalendarConnectionStatus | null
     ) => {
       if (!provider) return false;
-      if (provider === "apple") return true;
       if (!isSignedIn) return true;
       return Boolean(connections?.[provider]);
     },
@@ -623,16 +622,26 @@ export default function EventActions({
 
   const onCalendarPrimaryClick = () => {
     if (!calendarLinks) return;
+    if (
+      defaultCalendarProvider &&
+      isProviderValid(defaultCalendarProvider, connectedCalendars)
+    ) {
+      openCalendarProvider(defaultCalendarProvider);
+      return;
+    }
     openCalendarModal();
   };
 
   const onCalendarProviderSelect = (provider: CalendarProvider) => {
+    const canRememberProvider = isProviderValid(provider, connectedCalendars);
     const preference: CalendarPreference = {
       provider,
-      remember: rememberCalendarDefault,
+      remember: rememberCalendarDefault && canRememberProvider,
     };
     setCalendarModalOpen(false);
-    persistCalendarPreference(preference);
+    if (!rememberCalendarDefault || canRememberProvider) {
+      persistCalendarPreference(preference);
+    }
     openCalendarProvider(provider);
   };
 
@@ -843,7 +852,7 @@ export default function EventActions({
                   onChange={(evt) => setRememberCalendarDefault(evt.target.checked)}
                   className="mt-0.5 h-4 w-4 rounded border-[#cdbff0] text-[#7f8cff]"
                 />
-                <span>Use this as my default for next time</span>
+                <span>Remember a connected provider as my default calendar</span>
               </label>
 
               <div className="mt-4 flex justify-end">

@@ -41,21 +41,21 @@ function isStudioCardSharePath(pathname: string) {
   return segments.length === 2 && segments[0] === "card";
 }
 
-function AuthTransitionOverlay({ message = "Opening Envitefy..." }: { message?: string }) {
+function AuthTransitionOverlay() {
   return (
     <div
       className="auth-transition-overlay fixed inset-0 z-[14000] flex cursor-progress touch-none select-none flex-col items-center justify-center gap-5 bg-[#f8f5ff]/90 px-6 backdrop-blur-xl"
       role="status"
       aria-live="polite"
-      aria-label={message}
+      aria-label="Loading Envitefy"
     >
+      <p className="relative z-10 text-sm font-semibold text-[#51456d]">Loading ...</p>
       <div
         className="auth-transition-mark relative flex h-24 w-56 items-center justify-center overflow-hidden rounded-[2rem]"
         aria-hidden
       >
         <EnvitefyWordmark className="relative z-10 text-[4rem] leading-none" scaled={false} shine />
       </div>
-      <p className="text-sm font-semibold text-[#51456d]">{message}</p>
     </div>
   );
 }
@@ -136,7 +136,7 @@ export default function AppShell({
   return (
     <EventCacheProvider>
       {process.env.NODE_ENV === "development" ? <MobileOverflowReporter /> : null}
-      {authTransitionMessage ? <AuthTransitionOverlay message={authTransitionMessage} /> : null}
+      {authTransitionMessage ? <AuthTransitionOverlay /> : null}
       {showAppChrome ? (
         <MenuProvider>
           <LeftSidebar />
@@ -155,7 +155,7 @@ export default function AppShell({
           className={isChatPath ? "h-[100dvh] overflow-hidden" : ""}
         >
           {isRedirectingFromMarketing ? (
-            <AuthTransitionOverlay message="Opening Envitefy..." />
+            <AuthTransitionOverlay />
           ) : (
             <>
               <div className="min-h-0 flex-1 min-w-0">{children}</div>

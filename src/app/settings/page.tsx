@@ -1,12 +1,15 @@
 "use client";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   CalendarDays,
   Camera,
   ChevronRight,
+  RefreshCw,
   Settings2,
   ShieldCheck,
   Sparkles,
   Trash2,
+  Unplug,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
@@ -46,6 +49,7 @@ import { PROFILE_AVATAR_ACCEPT, validateProfileAvatarMeta } from "@/lib/profile-
 import { MobileActionBar } from "@/components/ui/MobileActionBar";
 
 type CalendarProvider = "google" | "microsoft" | "apple";
+type ConnectedCalendarProvider = Exclude<CalendarProvider, "apple">;
 type SettingsSectionKey = "profile" | "calendars" | "security" | "creation";
 
 const SETTINGS_SECTIONS: Array<{
@@ -114,6 +118,11 @@ export default function SettingsPage() {
   });
   const autoClearedProviderRef = useRef<CalendarProvider | null>(null);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
+  const [disconnectingProvider, setDisconnectingProvider] =
+    useState<ConnectedCalendarProvider | null>(null);
+  const [disconnectPromptProvider, setDisconnectPromptProvider] =
+    useState<ConnectedCalendarProvider | null>(null);
+  const [disconnectPromptError, setDisconnectPromptError] = useState<string | null>(null);
   const [calendarConnectionMessage, setCalendarConnectionMessage] =
     useState<CalendarConnectionMessage | null>(null);
   const [visibleTemplateKeys, setVisibleTemplateKeys] = useState<TemplateKey[]>([...TEMPLATE_KEYS]);
@@ -273,13 +282,13 @@ export default function SettingsPage() {
     }
   };
 
-  const preferredProviderInvalid =
-    (preferredProvider === "google" && !connectedCalendars.google) ||
-    (preferredProvider === "microsoft" && !connectedCalendars.microsoft);
+  const normalizedPreferredProvider = normalizeProvider(preferredProvider);
+  const preferredProviderInvalid = Boolean(
+    normalizedPreferredProvider && !connectedCalendars[normalizedPreferredProvider],
+  );
 
   const togglePreferredProvider = (provider: CalendarProvider) => {
-    if (provider === "google" && !connectedCalendars.google) return;
-    if (provider === "microsoft" && !connectedCalendars.microsoft) return;
+    if (!connectedCalendars[provider]) return;
     setPreferredProvider((prev) => (prev === provider ? "" : provider));
     setCalendarState((prev) => ({ ...prev, error: null, data: undefined }));
   };
@@ -340,7 +349,7 @@ export default function SettingsPage() {
   }, [fetchConnectedCalendars]);
 
   const handleCalendarConnect = useCallback(
-    (provider: CalendarProvider) => {
+    (provider: ConnectedCalendarProvider) => {
       if (typeof window === "undefined") return;
       if (provider === "google") {
         const next = encodeURIComponent("/settings#calendars");
@@ -351,12 +360,6 @@ export default function SettingsPage() {
         );
       } else if (provider === "microsoft") {
         window.open("/api/outlook/auth?source=settings", "_blank", "noopener,noreferrer");
-      } else {
-        window.open(
-          "https://support.apple.com/guide/calendar/welcome/mac",
-          "_blank",
-          "noopener,noreferrer",
-        );
       }
       window.setTimeout(() => {
         void fetchConnectedCalendars();
@@ -364,6 +367,46 @@ export default function SettingsPage() {
     },
     [fetchConnectedCalendars],
   );
+
+  async function disconnectCalendar(provider: ConnectedCalendarProvider) {
+    const label = provider === "google" ? "Google Calendar" : "Outlook";
+    setDisconnectingProvider(provider);
+    setDisconnectPromptError(null);
+    setCalendarConnectionMessage(null);
+    try {
+      const response = await fetch("/api/oauth/disconnect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ provider }),
+      });
+      const payload: { error?: string } = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || `Could not disconnect ${label}`);
+      }
+
+      setConnectedCalendars((current) => ({ ...current, [provider]: false }));
+      if (preferredProvider === provider) {
+        setPreferredProvider("");
+        mirrorLocalCalendarDefault(null);
+      }
+      setCalendarConnectionMessage({
+        kind: "success",
+        text: `${label} disconnected. Background calendar sync is now off.`,
+      });
+      await fetchConnectedCalendars();
+      setDisconnectPromptProvider(null);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : `Could not disconnect ${label}`;
+      setDisconnectPromptError(message);
+      setCalendarConnectionMessage({
+        kind: "error",
+        text: message,
+      });
+    } finally {
+      setDisconnectingProvider(null);
+    }
+  }
 
   async function saveCalendarDefault() {
     if (preferredProviderInvalid) {
@@ -468,8 +511,9 @@ export default function SettingsPage() {
   }, [fetchConnectedCalendars]);
 
   useEffect(() => {
+    if (connectionsLoading) return;
     const invalidProvider = preferredProviderInvalid ? normalizeProvider(preferredProvider) : null;
-    if (!invalidProvider || invalidProvider === "apple") {
+    if (!invalidProvider) {
       autoClearedProviderRef.current = null;
       return;
     }
@@ -504,7 +548,7 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [preferredProvider, preferredProviderInvalid]);
+  }, [connectionsLoading, preferredProvider, preferredProviderInvalid]);
 
   async function onSaveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -900,7 +944,7 @@ export default function SettingsPage() {
                   Calendars
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Connect providers and choose your default calendar for event quick-add.
+                  Connect Google or Outlook for background sync and choose your default calendar.
                 </p>
               </div>
               <button
@@ -943,38 +987,83 @@ export default function SettingsPage() {
                   label: "Outlook",
                   connected: connectedCalendars.microsoft,
                 },
-              ].map((item) => (
-                <div
-                  key={item.key}
-                  className="space-y-3 rounded-2xl border border-[#e5dcff] bg-[linear-gradient(145deg,#fff,#fbf9ff)] p-4 shadow-[0_8px_24px_rgba(80,61,121,0.05)]"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-[#2f1d47]">{item.label}</p>
-                    <span
-                      className={`text-xs rounded-full px-2 py-0.5 ${
-                        item.connected
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-[#f1edff] text-[#6f5ba3]"
-                      }`}
-                    >
-                      {item.connected ? "Connected" : "Not connected"}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleCalendarConnect(item.key)}
-                    className="inline-flex w-full items-center justify-center rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff]"
+              ].map((item) => {
+                const disconnecting =
+                  item.key !== "apple" && disconnectingProvider === item.key;
+                return (
+                  <div
+                    key={item.key}
+                    className="space-y-3 rounded-2xl border border-[#e5dcff] bg-[linear-gradient(145deg,#fff,#fbf9ff)] p-4 shadow-[0_8px_24px_rgba(80,61,121,0.05)]"
                   >
-                    {item.connected ? "Reconnect" : `Connect ${item.label}`}
-                  </button>
-                </div>
-              ))}
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-[#2f1d47]">{item.label}</p>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs ${
+                          item.connected
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-[#f1edff] text-[#6f5ba3]"
+                        }`}
+                      >
+                        {item.connected
+                          ? "Connected"
+                          : item.key === "apple"
+                            ? "Add per event"
+                            : "Not connected"}
+                      </span>
+                    </div>
+
+                    {item.key === "apple" ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[#e6e0f4] bg-[#f6f4fa] px-3 py-2 text-xs font-semibold text-[#a29aae]"
+                      >
+                        <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                        Background sync unavailable
+                      </button>
+                    ) : item.connected ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCalendarConnect(item.key)}
+                          disabled={disconnecting}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                          <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                          Reconnect
+                        </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDisconnectPromptError(null);
+                              setDisconnectPromptProvider(item.key);
+                            }}
+                          disabled={disconnecting}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                          <Unplug className="h-4 w-4" aria-hidden="true" />
+                          {disconnecting ? "Disconnecting…" : "Disconnect"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleCalendarConnect(item.key)}
+                        className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2"
+                      >
+                        Connect {item.label}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="space-y-4 rounded-2xl border border-[#e5dcff] bg-white p-4 sm:p-5">
               <p className="text-sm font-medium text-[#2f1d47]">Default calendar</p>
               <p className="text-xs text-[#7a6ca8]">
-                Tap a provider to set default. Tap again to clear.
+                Choose a connected provider. Apple Calendar remains available as a one-event
+                add until a connection is available.
               </p>
               <div className="flex items-start gap-4">
                 {[
@@ -997,8 +1086,8 @@ export default function SettingsPage() {
                     glyph: "O",
                   },
                 ].map((item) => {
-                  const isDefault = preferredProvider === item.key;
-                  const isDisabled = item.key !== "apple" && !item.connected;
+                  const isDisabled = !item.connected;
+                  const isDefault = preferredProvider === item.key && !isDisabled;
                   return (
                     <div key={item.key} className="flex flex-col items-center gap-1">
                       <button
@@ -1007,11 +1096,13 @@ export default function SettingsPage() {
                         disabled={isDisabled}
                         onClick={() => togglePreferredProvider(item.key)}
                         title={
-                          isDefault
+                          isDisabled
+                            ? item.key === "apple"
+                              ? "Apple Calendar is available from each event, but is not connected as a default"
+                              : `${item.label} is not connected`
+                            : isDefault
                             ? `Default is ${item.label}. Click to clear default`
-                            : isDisabled
-                              ? `${item.label} is not connected`
-                              : `Set ${item.label} as default`
+                            : `Set ${item.label} as default`
                         }
                         className={`relative flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-semibold transition ${
                           isDefault
@@ -1366,6 +1457,82 @@ export default function SettingsPage() {
         </div>
         </div>
       </section>
+
+      <Dialog.Root
+        open={Boolean(disconnectPromptProvider)}
+        onOpenChange={(open) => {
+          if (open || disconnectingProvider) return;
+          setDisconnectPromptProvider(null);
+          setDisconnectPromptError(null);
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[12990] bg-[#170f24]/55 backdrop-blur-[6px] data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in motion-reduce:animate-none" />
+          <Dialog.Content
+            onEscapeKeyDown={(event) => {
+              if (disconnectingProvider) event.preventDefault();
+            }}
+            onPointerDownOutside={(event) => {
+              if (disconnectingProvider) event.preventDefault();
+            }}
+            className="fixed inset-x-4 bottom-4 z-[13000] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[2rem] border border-[#ddd2f5] bg-white px-5 pb-5 pt-7 text-[#2f1d47] shadow-[0_28px_90px_rgba(36,21,58,0.34)] focus:outline-none data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in motion-reduce:animate-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[calc(100%-2rem)] sm:max-w-[26rem] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:px-7 sm:pb-7 sm:pt-8"
+          >
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.35rem] bg-[linear-gradient(145deg,#eee8ff,#e4efff)] text-[#6f5cc4] shadow-[inset_0_0_0_1px_rgba(124,103,190,0.08)]">
+              <Unplug className="h-7 w-7" aria-hidden="true" />
+            </div>
+
+            <Dialog.Title className="mt-6 text-center font-[family-name:var(--font-playfair),Georgia,serif] text-2xl font-semibold tracking-tight text-[#281c38]">
+              Disconnect {disconnectPromptProvider === "google" ? "Google Calendar" : "Outlook"}?
+            </Dialog.Title>
+            <Dialog.Description className="mx-auto mt-3 max-w-sm text-center text-sm leading-6 text-[#6f6479]">
+              New scanned events will stop syncing automatically. Events already added to your
+              calendar will stay there.
+            </Dialog.Description>
+
+            <div className="mt-5 rounded-2xl border border-[#e7dffc] bg-[#faf8ff] px-4 py-3 text-sm leading-6 text-[#574967]">
+              You can reconnect this calendar anytime from Settings.
+            </div>
+
+            {disconnectPromptError ? (
+              <p
+                role="alert"
+                className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm leading-5 text-rose-700"
+              >
+                {disconnectPromptError}
+              </p>
+            ) : null}
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  disabled={Boolean(disconnectingProvider)}
+                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#d8cdf0] bg-white px-5 text-sm font-semibold text-[#4f3f7a] transition hover:bg-[#f7f3ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Keep connected
+                </button>
+              </Dialog.Close>
+              <button
+                type="button"
+                onClick={() => {
+                  if (disconnectPromptProvider) {
+                    void disconnectCalendar(disconnectPromptProvider);
+                  }
+                }}
+                disabled={Boolean(disconnectingProvider)}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#a23c54] px-5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(162,60,84,0.24)] transition hover:bg-[#8f3047] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a23c54] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {disconnectingProvider ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Unplug className="h-4 w-4" aria-hidden="true" />
+                )}
+                {disconnectingProvider ? "Disconnecting…" : "Disconnect"}
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </main>
   );
 }

@@ -26,6 +26,12 @@ test("snap/upload creation waits for automatic calendar sync and records its out
   assert.match(routeSource, /reason:\s*"no_supported_calendar_connected"/);
 });
 
+test("a stale Apple default cannot block a connected automatic-sync provider", () => {
+  assert.doesNotMatch(routeSource, /apple_calendar_selected/);
+  assert.match(routeSource, /else if \(googleRefreshToken\)/);
+  assert.match(routeSource, /else if \(microsoftRefreshToken\)/);
+});
+
 test("automatic calendar sync is idempotent and supports flyer attachments", () => {
   assert.match(routeSource, /function googleEventId\(eventId: string\)/);
   assert.match(routeSource, /transactionId:\s*`envitefy:\$\{params\.eventId\}`/);

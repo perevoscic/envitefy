@@ -29,6 +29,8 @@ test("AppShell hides app chrome on marketing and full live-card routes", () => {
   assert.match(appShell, /router\.replace\(pathname === "\/landing" \|\| !createAction \? "\/" : createAction\.href\)/);
   assert.match(appShell, /z-\[14000\]/);
   assert.match(appShell, /auth-transition-overlay/);
+  assert.match(appShell, />Loading \.\.\.<\/p>[\s\S]*<EnvitefyWordmark/);
+  assert.doesNotMatch(appShell, /Opening Envitefy/);
   assert.match(appShell, /data-auth-transition/);
   assert.match(appShell, /shine/);
   assert.match(appShell, /AUTH_TRANSITION_EVENT/);

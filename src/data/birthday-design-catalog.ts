@@ -1,5 +1,13 @@
 import { birthdayTemplateCatalog } from "@/components/event-create/BirthdayTemplateGallery";
+import {
+  buildBirthdayExperienceProfiles,
+  type BirthdayExperienceProfile,
+} from "@/data/birthday-experience-profiles.mjs";
 import { type BirthdayDesignTemplate, NEW_BIRTHDAY_DESIGNS } from "@/data/birthday-template-data";
+
+export type BirthdayCatalogDesign = BirthdayDesignTemplate & {
+  experience: BirthdayExperienceProfile;
+};
 
 type LegacyDesignDetail = {
   style: string;
@@ -236,10 +244,10 @@ export const ORIGINAL_BIRTHDAY_DESIGNS: BirthdayDesignTemplate[] = birthdayTempl
     };
   });
 
-export const BIRTHDAY_DESIGN_CATALOG: BirthdayDesignTemplate[] = [
+export const BIRTHDAY_DESIGN_CATALOG: BirthdayCatalogDesign[] = buildBirthdayExperienceProfiles([
   ...ORIGINAL_BIRTHDAY_DESIGNS,
   ...NEW_BIRTHDAY_DESIGNS,
-];
+]);
 
 export const BIRTHDAY_DESIGN_BY_ID = new Map(
   BIRTHDAY_DESIGN_CATALOG.map((design) => [design.id, design] as const),

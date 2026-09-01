@@ -5,6 +5,10 @@ import { ArrowRight } from "lucide-react";
 import { FormEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRecaptcha } from "@/hooks/useRecaptcha";
+import {
+  CURRENT_PRIVACY_VERSION,
+  CURRENT_TERMS_VERSION,
+} from "@/lib/legal-versions";
 import type { SignupIntent } from "@/lib/signup-intent";
 import { hideAuthTransition, showAuthTransition } from "@/utils/authTransition";
 
@@ -45,7 +49,8 @@ export default function SignupForm({
   const [toastOpen, setToastOpen] = useState(false);
   const [toastText, setToastText] = useState("");
   const toastTimerRef = useRef<number | undefined>(undefined);
-  const [agreeTerms, setAgreeTerms] = useState(true);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [legalError, setLegalError] = useState<string | null>(null);
   const { executeRecaptcha, recaptchaConfigured, recaptchaReady } = useRecaptcha();
   const recaptchaLoading = recaptchaConfigured && !recaptchaReady;
   const textInputClass = cx(
@@ -82,11 +87,37 @@ export default function SignupForm({
     throw new Error(data?.error || "Unable to start signup from this page.");
   };
 
+  const ensureLegalAcceptance = async (source: "email_signup" | "google_signup") => {
+    if (!agreeTerms) {
+      throw new Error(
+        "Confirm that you are at least 18 and accept the Terms and Privacy Policy to continue.",
+      );
+    }
+    const response = await fetch("/api/auth/legal-acceptance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ageConfirmed: true,
+        termsAccepted: true,
+        privacyAcknowledged: true,
+        termsVersion: CURRENT_TERMS_VERSION,
+        privacyVersion: CURRENT_PRIVACY_VERSION,
+        source,
+      }),
+      credentials: "include",
+    });
+    if (response.ok) return;
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.error || "Unable to record your legal acceptance.");
+  };
+
   const onEmailSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setMessage(null);
+    setLegalError(null);
     try {
+      await ensureLegalAcceptance("email_signup");
       await ensureSignupSourceCookie();
 
       if (password !== confirmPassword) {
@@ -165,6 +196,10 @@ export default function SignupForm({
         return;
       }
       setMessage("Account created, please log in");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to create account";
+      setMessage(errorMessage);
+      if (!agreeTerms) setLegalError(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -172,14 +207,19 @@ export default function SignupForm({
 
   const onGoogleSignUp = async () => {
     setSubmitting(true);
+    setMessage(null);
+    setLegalError(null);
     try {
+      await ensureLegalAcceptance("google_signup");
       await ensureSignupSourceCookie();
       showAuthTransition("Opening Google sign up...");
       await signIn("google", { callbackUrl: successRedirectUrl });
     } catch (err) {
       hideAuthTransition();
       console.error("Google sign-up error:", err);
-      setMessage(err instanceof Error ? err.message : "Failed to sign up with Google");
+      const errorMessage = err instanceof Error ? err.message : "Failed to sign up with Google";
+      setMessage(errorMessage);
+      if (!agreeTerms) setLegalError(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -375,19 +415,26 @@ export default function SignupForm({
           </button>
         </div>
         <label
+          htmlFor="signup-legal-acceptance"
           className={cx(
             "flex select-none items-start gap-2 text-sm text-foreground/80",
             isInlineDark && "!text-white/72",
           )}
         >
           <input
+            id="signup-legal-acceptance"
             type="checkbox"
             className="mt-0.5 h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+            aria-describedby="signup-legal-help signup-legal-error"
             checked={agreeTerms}
-            onChange={(e) => setAgreeTerms(e.target.checked)}
+            onChange={(e) => {
+              setAgreeTerms(e.target.checked);
+              if (e.target.checked) setLegalError(null);
+            }}
+            required
           />
-          <span>
-            I agree to the{" "}
+          <span id="signup-legal-help">
+            I confirm I am at least 18, agree to the{" "}
             <a
               href="/terms"
               target="_blank"
@@ -396,13 +443,27 @@ export default function SignupForm({
             >
               Terms of Use
             </a>
+            , and acknowledge the{" "}
+            <a
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cx("text-secondary hover:underline", isInlineDark && "!text-[#f0d58f]")}
+            >
+              Privacy Policy
+            </a>
             .
           </span>
         </label>
+        {legalError && (
+          <p id="signup-legal-error" role="alert" className="text-sm text-error">
+            {legalError}
+          </p>
+        )}
         <Button
           type="submit"
           size="lg"
-          disabled={submitting || recaptchaLoading}
+          disabled={submitting || recaptchaLoading || !agreeTerms}
           className="group w-full !rounded-full bg-gradient-to-r from-brand to-brand-glow text-primary-foreground shadow-xl shadow-brand/30 hover:opacity-95"
         >
           {submitting ? "Creating..." : recaptchaLoading ? "Loading..." : "Create account"}

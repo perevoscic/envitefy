@@ -134,8 +134,12 @@ export async function GET(request: Request) {
       refresh = cookieRefresh;
     }
 
-    const tokenEmail = emailFromIdToken(tokens.id_token) || (await emailFromGoogle(tokens.access_token));
-    const sessionEmail = tokenEmail || sessionEmailFromJwt;
+    const tokenEmail =
+      emailFromIdToken(tokens.id_token) || (await emailFromGoogle(tokens.access_token));
+    // A user may connect a Google Calendar whose address differs from their Envitefy login.
+    // Persist the calendar token against the authenticated Envitefy account so connection
+    // status and background sync can find it after OAuth returns.
+    const sessionEmail = sessionEmailFromJwt || tokenEmail;
     const debug: GoogleCallbackDebug = {
       callbackReached: true,
       hasRefreshToken: Boolean(tokens.refresh_token),

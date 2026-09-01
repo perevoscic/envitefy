@@ -9,10 +9,12 @@ type FaqPageItem = Omit<FAQItem, "answer"> & { answer: string };
 
 export const metadata: Metadata = {
   title: "Envitefy FAQ",
-  description: "Answers about Snap accounts, Gymnastics accounts, event sharing, and calendars.",
+  description:
+    "Answers about creating events, Envitefy Snap, Envitefy Concierge, live pages, RSVP, smart sign-ups, calendars, privacy, and sharing.",
   openGraph: {
     title: "Envitefy FAQ",
-    description: "Find answers about Snap, Gymnastics, calendars, and existing accounts.",
+    description:
+      "Find answers about Envitefy creation tools, live event pages, guest actions, calendars, privacy, and sharing.",
     url: "https://envitefy.com/faq",
     siteName: "Envitefy",
     images: [buildSiteOgImage(siteOgImageUrl)],
@@ -23,79 +25,121 @@ export const metadata: Metadata = {
 
 const faqItems: FaqPageItem[] = [
   {
+    id: "ways-to-create",
+    question: "How can I create an event in Envitefy?",
+    answer:
+      "Start with Envitefy Snap when you have a photo or file, describe the event to Envitefy Concierge, or use a template, manual creation, or Studio. Each path gives you event details and a guest experience to review before sharing.",
+  },
+  {
+    id: "snap-uploads",
+    question: "What can I upload with Envitefy Snap?",
+    answer:
+      "Snap accepts camera photos and uploads of invitations, flyers, screenshots, schedules, PDFs, and other event images. It extracts useful details for you to review, then creates a saved event and polished live page instead of stopping at a scan or text copy.",
+  },
+  {
+    id: "envitefy-concierge",
+    question: "What is Envitefy Concierge?",
+    answer:
+      "Envitefy Concierge turns a plain-language event idea or uploaded context into an editable invitation and guest-ready live page. It can ask for missing details and shape the RSVP, calendar, directions, registry, updates, reminders, or sign-up experience when the event needs them.",
+  },
+  {
+    id: "my-events-invited-events",
+    question: "What is the difference between My events and Invited events?",
+    answer:
+      "My events contains events you create and own, including a flyer, schedule, PDF, or other source material you upload for something you are hosting. Invited events contains classic invitation cards you received, such as a birthday, wedding, gender reveal, or similar social invitation.",
+  },
+  {
     id: "share-without-app",
-    question: "Can I share my event without guests downloading an app?",
+    question: "Do guests need an app or Envitefy account?",
     answer:
-      "Yes. Guests can open and RSVP through a shared email or text link, so no app download is required.",
-  },
-  {
-    id: "pdf-to-event-page",
-    question: "Can Envitefy turn a PDF into an event page?",
-    answer:
-      "Yes. Snap can process PDFs with event details and help create a hosted event page with RSVP, links, maps, and calendar actions.",
-  },
-  {
-    id: "flyer-invite-screenshot",
-    question: "Can I upload a flyer or invite screenshot?",
-    answer:
-      "Yes. Envitefy Snap accepts flyers, invite screenshots, images, and schedules, then lets you review the extracted event details before saving or sharing.",
+      "No. Shared event pages and smart sign-up forms open in phone and desktop browsers. Guests can use the actions available on the page without installing an app or creating an account.",
   },
   {
     id: "live-card-invitation",
-    question: "What is a live card invitation?",
+    question: "What is a live event page or live card?",
     answer:
-      "A live card is a shareable invitation connected to a hosted event page, so the design, details, RSVP actions, and updates live together.",
-  },
-  {
-    id: "event-page-rsvp",
-    question: "Can Envitefy event pages include RSVP links?",
-    answer:
-      "Yes. Event pages can include RSVP-oriented guest actions alongside event details, maps, links, and calendar saves.",
-  },
-  {
-    id: "calendar-saves",
-    question: "Can guests save events to a calendar?",
-    answer:
-      "Yes. Envitefy keeps dates, times, and locations structured so calendar save actions can be available from the shared page.",
-  },
-  {
-    id: "registry-links",
-    question: "Can I include registry links or outside resources?",
-    answer:
-      "Yes. Hosts can include helpful links such as registries, signups, tickets, meet resources, or other event pages.",
-  },
-  {
-    id: "gymnastics-meet-pages",
-    question: "Does Envitefy support gymnastics meet pages?",
-    answer:
-      "Yes. Envitefy Gymnastics supports meet pages with schedules, venue details, hotel information, maps, and parent-friendly sharing.",
-  },
-  {
-    id: "co-manage-events",
-    question: "Can I co-manage events with other Envitefy users?",
-    answer:
-      "Yes. Invite another Envitefy user from the share menu and they will accept from their email to stay synced on every change.",
+      "It is a hosted, mobile-friendly event home where the invitation, latest details, and available guest actions stay together. Depending on the event, those actions can include RSVP, schedules, directions, calendars, registries, and sign-up slots.",
   },
   {
     id: "guest-updates",
-    question: "If I change event details, do guests see the update?",
+    question: "If I change event details, do guests need a new link?",
     answer:
-      "Yes. The shared link reflects the latest info, so guests can return to the same page for current details.",
+      "No. Update the event and the same shared link remains the current place for guests to check timing, locations, schedules, instructions, and other live details.",
   },
   {
-    id: "snap-gymnastics-access",
-    question: "How do Snap and Gymnastics access work?",
+    id: "event-access-codes",
+    question: "Can an event page require an access code?",
     answer:
-      "Snap is available to every account. Gymnastics accounts include both gymnastics and snap access.",
+      "Yes, for supported event pages. A host can add a per-event access code so guests must unlock the page before continuing to its details and RSVP experience.",
+  },
+  {
+    id: "event-page-rsvp",
+    question: "Can guests RSVP directly from the event page?",
+    answer:
+      "Yes, when RSVP is enabled for that event. Supported pages can collect yes, maybe, and no responses without sending guests to a disconnected form or requiring an app.",
+  },
+  {
+    id: "rsvp-details",
+    question: "What information can an RSVP collect?",
+    answer:
+      "Supported flows can collect household or party size, adults, kids, siblings, plus-ones, guest messages, allergies, dietary needs, meal choices, and event-specific answers. The fields vary by event type and host settings.",
+  },
+  {
+    id: "host-rsvp-tracking",
+    question: "Can hosts track RSVP responses?",
+    answer:
+      "Yes, for events with RSVP enabled. Host views can organize response counts, yes, maybe, no, pending guests, recent replies, headcounts, and event-specific answers in one place.",
+  },
+  {
+    id: "smart-signups",
+    question: "What are smart sign-up forms?",
+    answer:
+      "Smart sign-ups coordinate volunteers, potluck food, supplies, shifts, classroom needs, fundraisers, team snacks, and custom slots. Organizers can set quantities, capacity, time windows, per-person limits, full-slot locking, and automatic waitlists, then share the live form by link or QR code.",
+  },
+  {
+    id: "calendar-saves",
+    question: "Which calendars does Envitefy support?",
+    answer:
+      "Live pages can offer Google Calendar, Apple Calendar through an ICS handoff, and Outlook calendar actions. Signed-in owners can connect Google Calendar or Outlook to automatically sync newly scanned events; Apple Calendar uses a one-event ICS save.",
+  },
+  {
+    id: "maps-and-schedules",
+    question: "Can an event page include directions and a detailed schedule?",
+    answer:
+      "Yes, when those details apply. Pages can combine maps and directions with venue, parking, arrival, drop-off, pickup, travel, single-event timing, multi-part itineraries, or multi-session schedules.",
+  },
+  {
+    id: "registry-links",
+    question: "Can I include registry, gift, or fund links?",
+    answer:
+      "Yes, on supported events. Hosts can keep major registry providers and custom registry, wishlist, gift, or fund links beside the invitation so guests do not have to search for them separately.",
+  },
+  {
+    id: "specialized-event-types",
+    question: "Which event types have specialized experiences?",
+    answer:
+      "Envitefy includes specialized paths for weddings and wedding weekends; birthdays, showers, gender reveals, anniversaries, and family celebrations; gymnastics and sports; school, volunteer, community, workplace, real-estate, appointment, workshop, and custom events.",
+  },
+  {
+    id: "review-automated-results",
+    question: "Should I review details created by Snap or Envitefy Concierge?",
+    answer:
+      "Yes. Automated extraction and generated content can be incomplete or wrong. Review names, dates, times, time zones, locations, links, permissions, guest information, and wording before publishing, sharing, traveling, or saving anything to a calendar.",
+  },
+  {
+    id: "product-improvement-data",
+    question: "Does Envitefy use service data to improve the product?",
+    answer:
+      "Yes. As explained in the Privacy Policy, Envitefy may use service, usage, feedback, and submitted content to operate, secure, evaluate, and improve current and future Envitefy products, including limited authorized human review. Envitefy does not use private content to train a general-purpose Envitefy foundation model. Optional analytics stays off unless you allow it.",
   },
 ];
 
 const faqPairs = faqItems.map((item) => [item.question, item.answer] as const);
 
 const faqHighlights = [
-  { value: "No app", label: "Guest-friendly links" },
-  { value: "Uploads", label: "PDF, flyer, image" },
-  { value: "Live pages", label: "RSVP, maps, calendar" },
+  { value: "Create", label: "Upload, describe, or design" },
+  { value: "No app", label: "Guest-ready browser links" },
+  { value: "Coordinate", label: "RSVP, sign-ups, calendar" },
 ] as const;
 
 export default function FaqPage() {
@@ -131,7 +175,7 @@ export default function FaqPage() {
     <CompanyPageShell
       eyebrow="FAQ"
       title="Clear answers for hosts and guests."
-      description="Find quick answers about hosted event pages, Snap uploads, RSVP, registries, smart signups, calendar saves, guest links, and account access."
+      description="Find quick answers about creating events, live pages, RSVP, smart sign-ups, calendars, privacy, and what guests can do from one shared link."
       primaryLabel="Start creating"
       primaryHref="/"
       secondaryLabel="Contact us"
@@ -141,7 +185,7 @@ export default function FaqPage() {
       <FAQs
         items={faqItems}
         title="Frequently asked questions"
-        description="Answers about Snap, Gymnastics, calendars, hosted event pages, RSVP, registry links, and existing accounts."
+        description="Answers about Envitefy creation tools, hosted event pages, guest actions, calendars, privacy, and sharing."
         headingLevel="h2"
         showHeader={false}
         className="border-t border-[#d9ded3] bg-white/72 px-4 py-16 sm:px-6 lg:py-24"

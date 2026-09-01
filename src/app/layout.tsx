@@ -1,12 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { getServerSession } from "next-auth";
 import Providers from "./providers";
 import AppShell from "./AppShell";
 import "./globals.css";
 import { authOptions } from "@/lib/auth";
-import { GOOGLE_ANALYTICS_MEASUREMENT_ID } from "@/lib/google-analytics";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import { themeColorPalette } from "@/lib/theme-color";
@@ -225,25 +223,11 @@ export default async function RootLayout({
             } catch (e) {}
           })();
         `}</Script>
-        {/* Google tag (gtag.js) */}
-        <Script
-          async
-          src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GOOGLE_ANALYTICS_MEASUREMENT_ID)}`}
-          strategy="lazyOnload"
-        />
-        <Script id="ga4-init" strategy="afterInteractive">{`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          window.gtag = gtag;
-          gtag('js', new Date());
-          gtag('config', '${GOOGLE_ANALYTICS_MEASUREMENT_ID}', { send_page_view: false });
-        `}</Script>
         <Providers session={serverSession}>
           <Suspense fallback={null}>
             <AppShell serverSession={serverSession}>{children}</AppShell>
           </Suspense>
         </Providers>
-        <SpeedInsights />
       </body>
     </html>
   );

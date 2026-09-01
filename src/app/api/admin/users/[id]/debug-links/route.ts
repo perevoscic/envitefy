@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 import {
   getAdminUserDebugLinks,
+  getAdminUserScanAttemptLinks,
   type AdminUserDebugLinkKind,
 } from "@/lib/admin/users";
 
@@ -32,11 +33,15 @@ export async function GET(
       return NextResponse.json({ error: "kind must be events or scans" }, { status: 400 });
     }
 
-    const links = await getAdminUserDebugLinks(id, kind);
+    const [links, scanAttempts] = await Promise.all([
+      getAdminUserDebugLinks(id, kind),
+      kind === "scans" ? getAdminUserScanAttemptLinks(id) : Promise.resolve([]),
+    ]);
     return NextResponse.json({
       ok: true,
       eventLinks: kind === "events" ? links : [],
       scanLinks: kind === "scans" ? links : [],
+      scanAttempts,
     });
   } catch (error) {
     return adminErrorResponse(error, "Failed to load user debug links");

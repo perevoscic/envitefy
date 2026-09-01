@@ -103,7 +103,9 @@ test("admin user table still shows last event date and debug URLs", () => {
   assert.match(source, /\/debug-links\?kind=\$\{debugLinkKind\}/);
   assert.match(source, /Dev event URLs/);
   assert.match(source, /Dev scan URLs/);
-  assert.match(source, /No saved scan URLs yet/);
+  assert.match(source, /Troubleshooting records/);
+  assert.match(source, /predates detailed attempt tracking/);
+  assert.match(source, /readAdminScanAttemptLinks\(record\.scanAttempts\)/);
   assert.match(source, /readAdminDebugLinks\(rawLinks\)/);
   assert.match(source, /buildAdminEventDebugHref/);
 });

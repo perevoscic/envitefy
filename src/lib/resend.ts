@@ -5,6 +5,7 @@
 
 import { DEFAULT_ENVITEFY_SENDER, normalizeEnvitefySender } from "./email-sender";
 import { createEmailTemplate } from "./email-template";
+import { createMarketingUnsubscribeUrl } from "./marketing-unsubscribe";
 
 function assertApiKey(): string {
   const key = process.env.RESEND_API_KEY;
@@ -17,6 +18,7 @@ async function resendHttpSend(params: {
   to: string;
   subject: string;
   html: string;
+  unsubscribeUrl?: string;
 }): Promise<void> {
   const apiKey = assertApiKey();
 
@@ -32,6 +34,14 @@ async function resendHttpSend(params: {
         to: params.to,
         subject: params.subject,
         html: params.html,
+        ...(params.unsubscribeUrl
+          ? {
+              headers: {
+                "List-Unsubscribe": `<${params.unsubscribeUrl}>`,
+                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+              },
+            }
+          : {}),
       }),
     });
     const text = await res.text().catch(() => "");
@@ -86,6 +96,10 @@ export interface BulkEmailResult {
  * Send bulk emails using Resend with batching
  */
 export async function sendBulkEmail(params: BulkEmailParams): Promise<BulkEmailResult> {
+  const postalAddress = process.env.LEGAL_POSTAL_ADDRESS?.trim();
+  if (!postalAddress) {
+    throw new Error("LEGAL_POSTAL_ADDRESS is required before sending marketing email");
+  }
   const fromEmail = normalizeEnvitefySender(
     params.fromEmail ||
       process.env.RESEND_FROM_EMAIL ||
@@ -115,15 +129,20 @@ export async function sendBulkEmail(params: BulkEmailParams): Promise<BulkEmailR
           .replace(/\{\{greeting\}\}/g, greeting)
           .replace(/\{\{firstName\}\}/g, firstName)
           .replace(/\{\{lastName\}\}/g, lastName);
+        const unsubscribeUrl = await createMarketingUnsubscribeUrl(recipient.email);
+
+        const complianceFooter = `<div style="margin:32px auto 0;padding:20px;text-align:center;border-top:1px solid #e5e7eb;font:12px/1.6 Arial,sans-serif;color:#6b7280"><p style="margin:0">Envitefy · ${postalAddress.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</p><p style="margin:6px 0 0"><a href="${unsubscribeUrl}" style="color:#52605c;text-decoration:underline">Unsubscribe from marketing emails</a></p></div>`;
 
         const html = params.rawHtml
-          ? personalizedBody
+          ? personalizedBody.replace(/<\/body>/i, `${complianceFooter}</body>`)
           : createEmailTemplate({
               title: params.subject,
               body: personalizedBody,
               buttonText: params.buttonText,
               buttonUrl: params.buttonUrl,
               footerText: "You're receiving this because you have an Envitefy account.",
+              unsubscribeUrl,
+              postalAddress,
             });
 
         await resendHttpSend({
@@ -131,6 +150,7 @@ export async function sendBulkEmail(params: BulkEmailParams): Promise<BulkEmailR
           to: recipient.email,
           subject: params.subject,
           html,
+          unsubscribeUrl: unsubscribeUrl.replace("/unsubscribe?", "/api/email/unsubscribe?"),
         });
 
         result.sent++;

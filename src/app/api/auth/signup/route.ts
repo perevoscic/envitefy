@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { TEMPLATE_KEYS } from "@/config/feature-visibility";
-import { createUserWithEmailPassword, updateFeatureVisibilityByEmail } from "@/lib/db";
+import {
+  createUserWithEmailPassword,
+  updateFeatureVisibilityByEmail,
+} from "@/lib/db";
+import {
+  LEGAL_ACCEPTANCE_COOKIE_NAME,
+  readCookieValue,
+  verifyLegalAcceptanceToken,
+} from "@/lib/legal-acceptance";
 import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
 
 function getSignupSourceFromCookieHeader(
@@ -103,6 +111,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
+    const legalAcceptance = await verifyLegalAcceptanceToken(
+      readCookieValue(req.headers.get("cookie"), LEGAL_ACCEPTANCE_COOKIE_NAME),
+    );
+    if (!legalAcceptance || legalAcceptance.source !== "email_signup") {
+      return NextResponse.json(
+        { error: "Please confirm your age and accept the current Terms and Privacy Policy." },
+        { status: 400 },
+      );
+    }
+
     if (
       requestedSignupSource &&
       cookieSignupSource &&
@@ -153,6 +171,7 @@ export async function POST(req: Request) {
       firstName,
       lastName,
       signupSource: effectiveSignupSource,
+      legalAcceptance,
     });
     if (effectiveSignupIntent && effectiveSignupIntent !== "snap") {
       await updateFeatureVisibilityByEmail({
@@ -171,6 +190,12 @@ export async function POST(req: Request) {
       sameSite: "lax",
     });
     response.cookies.set("envitefy_signup_intent", "", {
+      expires: new Date(0),
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+    });
+    response.cookies.set(LEGAL_ACCEPTANCE_COOKIE_NAME, "", {
       expires: new Date(0),
       httpOnly: true,
       path: "/",

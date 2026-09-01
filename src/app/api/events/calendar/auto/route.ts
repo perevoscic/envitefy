@@ -338,20 +338,12 @@ export async function POST(request: Request) {
   } else if (preferred === "microsoft" && microsoftRefreshToken) {
     provider = "microsoft";
     refreshToken = microsoftRefreshToken;
-  } else if (preferred !== "apple" && googleRefreshToken) {
+  } else if (googleRefreshToken) {
     provider = "google";
     refreshToken = googleRefreshToken;
-  } else if (preferred !== "apple" && microsoftRefreshToken) {
+  } else if (microsoftRefreshToken) {
     provider = "microsoft";
     refreshToken = microsoftRefreshToken;
-  }
-
-  if (preferred === "apple") {
-    return NextResponse.json({
-      ok: true,
-      status: "skipped",
-      reason: "apple_calendar_selected",
-    });
   }
 
   if (!provider || !refreshToken) {

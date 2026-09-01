@@ -179,6 +179,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Let guests save the event instead of relying on the invitation to remember it.",
           proofPoints: [
             "Live pages support Google Calendar, Apple Calendar/ICS, and Outlook calendar actions.",
+            "Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings; Apple Calendar uses a one-event ICS handoff.",
             "Calendar entries can carry event timing, location, and available reminder information.",
             "Specialized schedule flows can expose the relevant event or session timing.",
           ],
@@ -394,7 +395,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           customerPromise:
             "Use guest and logistics tools shaped for family events rather than a generic event page.",
           proofPoints: [
-            "Birthday creation starts with 104 filterable designs: the original 24, 30 new kids events, 40 adult birthday themes, and 10 anniversary celebrations, with featured mixes that rotate by session.",
+            "Birthday creation starts with 104 filterable, compositionally distinct designs: the original 24, 30 new kids events, 40 adult birthday themes, and 10 anniversary celebrations. Every design has a non-repeating full-page signature across its hero, body composition, fact treatment, gallery rhythm, typography, media framing, and gallery preview; the original 24 use 24 different body compositions.",
             "Birthday pages can combine household RSVP, adult/kid counts, allergies, directions, pickup/drop-off, gifts, calendar, and updates.",
             "Baby and bridal shower pages can combine RSVP, registry links, host notes, guest questions, reminders, maps, and calendar saves.",
             "Gender reveal pages can combine RSVP, Team Pink or Team Blue guesses, optional tally behavior, gift links, reminders, and updates.",

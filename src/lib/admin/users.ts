@@ -1,4 +1,5 @@
 import { query } from "@/lib/db";
+import { ensureScanAttemptsSchema, type ScanAttemptStatus } from "@/lib/scan-attempts";
 import { ADMIN_SCAN_SQL, daysAgo, toIsoString, toNumber } from "./data-utils";
 
 export type AdminUsersSummary = {
@@ -16,6 +17,14 @@ export type AdminUserDebugLink = {
   primaryOutput: string | null;
   createdVia: string | null;
   sourceType: string | null;
+  createdAt: string | null;
+};
+
+export type AdminUserScanAttemptLink = {
+  id: string;
+  title: string;
+  category: string;
+  status: ScanAttemptStatus;
   createdAt: string | null;
 };
 
@@ -89,6 +98,36 @@ export async function getAdminUserDebugLinks(
     primaryOutput: row.primary_output || null,
     createdVia: row.created_via || null,
     sourceType: row.source_type || null,
+    createdAt: toIsoString(row.created_at),
+  }));
+}
+
+export async function getAdminUserScanAttemptLinks(
+  userId: string,
+  limit = 20,
+): Promise<AdminUserScanAttemptLink[]> {
+  const safeLimit = Math.max(1, Math.min(50, Math.floor(limit)));
+  await ensureScanAttemptsSchema();
+  const result = await query<{
+    id: string;
+    title: string | null;
+    category: string | null;
+    status: ScanAttemptStatus;
+    created_at: Date | string | null;
+  }>(
+    `select id::text, title, category, status, created_at
+     from scan_attempts
+     where user_id = $1::uuid
+     order by created_at desc, id desc
+     limit $2`,
+    [userId, safeLimit],
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    title: row.title || "Untitled scan attempt",
+    category: row.category || "Uncategorized",
+    status: row.status,
     createdAt: toIsoString(row.created_at),
   }));
 }

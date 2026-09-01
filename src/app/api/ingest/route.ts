@@ -1,10 +1,10 @@
+import { randomUUID } from "node:crypto";
 import * as chrono from "chrono-node";
 import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { corsJson, corsPreflight } from "@/lib/cors";
 import {
   deleteEventHistoryById,
-  incrementUserScanCounters,
   insertEventHistory,
   upsertEventHistoryInputBlob,
 } from "@/lib/db";
@@ -14,6 +14,7 @@ import { getVisionClient } from "@/lib/gcp";
 import { prepareDiscoverySourceFile, readAndValidateUploadFile } from "@/lib/media-upload";
 import { buildDefaultGymMeetData } from "@/lib/meet-discovery";
 import { rasterizePdfPageToPng } from "@/lib/pdf-raster";
+import { recordCompletedScanAttempt } from "@/lib/scan-attempts";
 
 export const runtime = "nodejs";
 const DISCOVERY_INGEST_LOG_PREFIX = "[discovery-ingest]";
@@ -366,14 +367,48 @@ async function handleLegacyIngest(request: Request) {
     return null;
   };
   const category = detectCategory(raw, schedule);
+  const scanAttemptId = `legacy-ingest-${randomUUID()}`;
+  let troubleshootingPreview: Buffer | null = null;
+  try {
+    troubleshootingPreview = await (await import("sharp")).default(ocrBuffer)
+      .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 72, progressive: true })
+      .toBuffer();
+  } catch {}
 
   try {
     const session = await getServerSession(authOptions);
-    const email = session?.user?.email as string | undefined;
-    if (email) {
+    const email = session?.user?.email;
+    if (typeof email === "string" && email.trim()) {
       try {
-        await incrementUserScanCounters({ email, category });
-      } catch {}
+        await recordCompletedScanAttempt({
+          scanAttemptId,
+          email,
+          title,
+          category,
+          sourceType: "upload",
+          fileName: file.name || null,
+          fileSize: file.size || null,
+          mimeType: mime,
+          ocrSource: "google-vision-document-text",
+          ocrText: raw,
+          fieldsGuess: {
+            title,
+            start: start?.toISOString() ?? null,
+            end: end?.toISOString() ?? null,
+            location: locationLine,
+            timezone: tz,
+          },
+          previewBytes: troubleshootingPreview,
+          previewMimeType: troubleshootingPreview ? "image/jpeg" : null,
+        });
+      } catch (attemptError) {
+        console.error("[ingest] troubleshooting record failed", {
+          scanAttemptId,
+          message:
+            attemptError instanceof Error ? attemptError.message : String(attemptError),
+        });
+      }
     }
   } catch {}
 
@@ -390,6 +425,7 @@ async function handleLegacyIngest(request: Request) {
     schedule,
     events,
     category,
+    scanAttemptId,
   });
 }
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
+import { PrivacyChoicesButton } from "@/components/PrivacyControls";
 
 const RESERVED_EVENT_PATHS = new Set([
   "new",
@@ -233,6 +234,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                     {link.label}
                   </Link>
                 ))}
+                <PrivacyChoicesButton className="hover:text-[#2b1b16]" />
               </div>
             </div>
           </div>
@@ -273,6 +275,8 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
             <Link href="https://envitefy.com/privacy" className="hover:text-foreground">
               Privacy Policy
             </Link>
+            <span className="hidden opacity-40 sm:inline">•</span>
+            <PrivacyChoicesButton className="hover:text-foreground" />
             <span className="hidden opacity-40 sm:inline">•</span>
             <span>© {new Date().getFullYear()} Envitefy</span>
           </div>

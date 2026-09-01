@@ -1,3 +1,5 @@
+import type { BirthdayExperienceProfile } from "@/data/birthday-experience-profiles.mjs";
+
 export type BirthdayDesignAudience = "Kids" | "Adults";
 export type BirthdayDesignOccasion = "Birthday" | "Anniversary";
 export type BirthdayDesignRecipient = "Kids" | "Women" | "Men" | "Anyone" | "Couples";
@@ -27,6 +29,7 @@ export type BirthdayDesignTemplate = {
   decorations: {
     graphicType: string;
   };
+  experience?: BirthdayExperienceProfile;
 };
 
 type BirthdayDesignSeed = Omit<

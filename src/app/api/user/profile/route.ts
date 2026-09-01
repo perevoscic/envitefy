@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
 import {
-  updateUserNamesByEmail,
+  getGoogleRefreshToken,
+  getMicrosoftRefreshToken,
   getUserByEmail,
   updatePreferredProviderByEmail,
+  updateUserNamesByEmail,
 } from "@/lib/db";
 
 export async function GET(req: Request) {
@@ -63,6 +65,28 @@ export async function PUT(req: Request) {
     let updatedUser = await getUserByEmail(email);
     if (!updatedUser) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    if (hasPreferredProvider && preferredProvider) {
+      if (preferredProvider === "apple") {
+        return NextResponse.json(
+          {
+            error:
+              "Apple Calendar is available from each event, but is not connected as a default calendar.",
+          },
+          { status: 400 },
+        );
+      }
+      const providerConnected =
+        preferredProvider === "google"
+          ? Boolean(await getGoogleRefreshToken(email))
+          : Boolean(await getMicrosoftRefreshToken(email));
+      if (!providerConnected) {
+        return NextResponse.json(
+          { error: "Connect this calendar before setting it as your default." },
+          { status: 400 },
+        );
+      }
     }
 
     if (hasFirst || hasLast) {

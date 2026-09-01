@@ -28,6 +28,7 @@
     "blob:delete-broken-input-blobs": "node scripts/delete-broken-event-history-input-blobs.mjs",
     "blob:transport-event-media": "node --experimental-strip-types scripts/transport-event-media-to-blob.ts",
     "purge:user-event-data": "node --experimental-strip-types scripts/purge-user-event-data.ts",
+    "purge:expired-private-data": "node scripts/purge-expired-private-data.mjs",
     "signup:templates": "node scripts/generate-signup-templates-openai.mjs",
     "signup:templates:nana": "node scripts/generate-signup-templates-google.mjs --profile=nana",
     "signup:templates:openrouter": "node scripts/generate-signup-templates-openrouter.mjs",

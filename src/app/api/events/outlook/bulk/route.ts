@@ -24,15 +24,6 @@ export async function POST(request: NextRequest) {
       const { getMicrosoftRefreshToken } = await import("@/lib/db");
       refreshToken = await getMicrosoftRefreshToken(email);
     } catch {}
-    if (!refreshToken) {
-      const providers = (tokenData as any).providers || {};
-      const m = providers.microsoft || {};
-      if (m.refreshToken) refreshToken = m.refreshToken as string;
-    }
-    if (!refreshToken) {
-      const legacy = request.cookies.get("o_refresh")?.value;
-      if (legacy) refreshToken = legacy;
-    }
     if (!refreshToken) return NextResponse.json({ error: "Microsoft not connected" }, { status: 400 });
 
     const body: BulkBody = await request.json();

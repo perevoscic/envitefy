@@ -13,6 +13,7 @@ import {
   type ScanEventPageOcrResult,
   type ScanEventPageSource,
 } from "@/lib/scan-event-page";
+import { markScanAttemptSaved } from "@/lib/scan-attempts";
 import { buildEventPath } from "@/utils/event-url";
 
 export const runtime = "nodejs";
@@ -119,6 +120,7 @@ export async function POST(request: Request) {
 
     const ocr = await runScanOcr({ requestUrl: request.url, file, scanAttemptId });
     if (!ocr.ok) return ocr.response;
+    scanAttemptId = normalizeScanAttemptId(ocr.payload.scanAttemptId) || scanAttemptId;
     const { fieldsGuess, context: locationContext } = buildOcrLocationContext(ocr.payload);
     const normalizedLocation = normalizeOcrLocationFields({
       venue: fieldsGuess.venue,
@@ -153,6 +155,23 @@ export async function POST(request: Request) {
       title: payload.title,
       data: payload.data,
     });
+
+    if (scanAttemptId) {
+      try {
+        await markScanAttemptSaved({
+          scanAttemptId,
+          userId: userId || null,
+          eventId: row.id,
+        });
+      } catch (attemptError) {
+        console.error("[scan-event-page] troubleshooting link failed", {
+          scanAttemptId,
+          eventId: row.id,
+          message:
+            attemptError instanceof Error ? attemptError.message : String(attemptError),
+        });
+      }
+    }
 
     if (userId) {
       invalidateUserHistory(userId);

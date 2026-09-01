@@ -1,19 +1,11 @@
 "use client";
 
-import {
-  ArrowLeft,
-  ArrowRight,
-  CakeSlice,
-  Check,
-  Search,
-  SlidersHorizontal,
-  Sparkles,
-  X,
-} from "lucide-react";
-import Image from "next/image";
+import { ArrowRight, Check, Search, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import BirthdayGalleryHero from "@/components/birthdays/BirthdayGalleryHero";
+import BirthdayDesignPreview from "@/components/birthdays/BirthdayDesignPreview";
 import { BIRTHDAY_DESIGN_CATALOG, ORIGINAL_BIRTHDAY_DESIGNS } from "@/data/birthday-design-catalog";
 import type { BirthdayDesignTemplate } from "@/data/birthday-template-data";
 
@@ -26,6 +18,8 @@ type CollectionFilter =
   | "Anniversaries";
 
 const FEATURED_COUNT = 15;
+const FEATURED_ORIGINAL_KIDS_COUNT = 3;
+const FEATURED_NEW_KIDS_COUNT = 3;
 const originalDesignIds = new Set(ORIGINAL_BIRTHDAY_DESIGNS.map((design) => design.id));
 
 const createSeededRandom = (seed: number) => {
@@ -65,14 +59,16 @@ const selectFeaturedIds = (seed: number) => {
   };
 
   add(
-    BIRTHDAY_DESIGN_CATALOG.filter((design) => originalDesignIds.has(design.id)),
-    3,
+    BIRTHDAY_DESIGN_CATALOG.filter(
+      (design) => originalDesignIds.has(design.id) && design.audience === "Kids",
+    ),
+    FEATURED_ORIGINAL_KIDS_COUNT,
   );
   add(
     BIRTHDAY_DESIGN_CATALOG.filter(
       (design) => design.source === "New" && design.audience === "Kids",
     ),
-    3,
+    FEATURED_NEW_KIDS_COUNT,
   );
   add(
     BIRTHDAY_DESIGN_CATALOG.filter((design) => design.recipient === "Women"),
@@ -111,12 +107,6 @@ const formatMilestone = (design: BirthdayDesignTemplate) => {
   return `${value}${suffix}`;
 };
 
-const getCollectionLabel = (design: BirthdayDesignTemplate) => {
-  if (design.source === "Original") return "Original collection";
-  if (design.collection === "Kids") return "New kids";
-  return design.collection;
-};
-
 function FilterSelect({
   label,
   value,
@@ -143,39 +133,6 @@ function FilterSelect({
         ))}
       </select>
     </label>
-  );
-}
-
-function DesignPreview({
-  design,
-  priority = false,
-}: {
-  design: BirthdayDesignTemplate;
-  priority?: boolean;
-}) {
-  return (
-    <div className="relative aspect-[7/4] overflow-hidden bg-[#fff5ea]">
-      <Image
-        src={design.heroImage}
-        alt={`${design.name} decorated event preview`}
-        fill
-        priority={priority}
-        sizes="(min-width: 1280px) 31vw, (min-width: 768px) 47vw, 100vw"
-        className="object-cover transition duration-700 group-hover:scale-[1.025]"
-      />
-      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-      <div className="absolute bottom-4 left-4 right-4 text-white">
-        <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/75">
-          {getCollectionLabel(design)} · {design.style}
-        </p>
-        <p
-          className="mt-1 text-xl font-bold leading-tight drop-shadow-sm sm:text-2xl"
-          style={{ fontFamily: design.headlineFont }}
-        >
-          {design.defaultHeadline}
-        </p>
-      </div>
-    </div>
   );
 }
 
@@ -281,33 +238,7 @@ export default function BirthdayDesignGallery() {
 
   return (
     <main className="min-h-screen bg-[#fff9f1] text-[#35251d]">
-      <section className="relative overflow-hidden border-b border-[#f0d8c0] bg-[#421f32] px-5 py-12 text-white sm:px-8 lg:px-12 lg:py-16">
-        <div className="absolute -right-20 -top-32 h-[410px] w-[410px] rounded-full bg-[#ff8a5b]/20 blur-3xl" />
-        <div className="absolute -bottom-40 left-[15%] h-[360px] w-[360px] rounded-full bg-[#f7ca65]/15 blur-3xl" />
-        <div className="relative mx-auto max-w-[1500px]">
-          <Link
-            href="/birthdays"
-            className="mb-8 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-white/65 transition hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Birthday inspiration
-          </Link>
-          <div className="max-w-5xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#ffc781]/35 bg-[#ffc781]/10 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.28em] text-[#ffd9a5]">
-              <CakeSlice className="h-3.5 w-3.5" aria-hidden="true" />
-              104 complete event designs
-            </div>
-            <h1 className='max-w-4xl [font-family:var(--font-playfair),_"Times_New_Roman",_serif] text-5xl font-normal leading-[0.95] tracking-[-0.045em] sm:text-6xl lg:text-7xl'>
-              Find a design that feels like the celebration
-            </h1>
-            <p className="mt-6 max-w-3xl text-base font-light leading-relaxed text-white/75 sm:text-lg">
-              Start with the original 24, explore 30 new kids events, or choose from 40 adult
-              birthdays and 10 anniversary celebrations. Every new image is a complete,
-              theme-matched event setup.
-            </p>
-          </div>
-        </div>
-      </section>
+      <BirthdayGalleryHero buildCustomizeHref={buildCustomizeHref} />
 
       <section className="z-20 border-b border-[#efd8c2] bg-[#fff9f1]/95 px-5 py-5 backdrop-blur-xl sm:px-8 lg:px-12 xl:sticky xl:top-0">
         <div className="mx-auto max-w-[1500px] space-y-5">
@@ -410,19 +341,14 @@ export default function BirthdayDesignGallery() {
               <X className="h-3.5 w-3.5" aria-hidden="true" />
               Clear {activeFilterCount} {activeFilterCount === 1 ? "filter" : "filters"}
             </button>
-          ) : (
-            <p className="flex items-center gap-2 text-xs text-[#846b5e]">
-              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
-              Featured picks rotate by session and always mix kids, adults, and anniversaries.
-            </p>
-          )}
+          ) : null}
         </div>
       </section>
 
       <section className="mx-auto max-w-[1500px] px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
         {visibleDesigns.length > 0 ? (
           <div className="grid grid-cols-1 gap-x-7 gap-y-11 md:grid-cols-2 xl:grid-cols-3">
-            {visibleDesigns.map((design, index) => {
+            {visibleDesigns.map((design) => {
               const milestoneLabel = formatMilestone(design);
               return (
                 <article key={design.id} className="group relative rounded-[1.4rem]">
@@ -435,11 +361,7 @@ export default function BirthdayDesignGallery() {
                   </Link>
                   <div className="relative overflow-hidden rounded-[1.35rem] border border-[#ead5c2] bg-white p-2 shadow-[0_18px_50px_rgba(87,48,29,0.08)] transition duration-500 group-hover:-translate-y-1 group-hover:shadow-[0_28px_70px_rgba(87,48,29,0.16)]">
                     <div className="overflow-hidden rounded-[1rem]">
-                      <DesignPreview design={design} priority={index < 6} />
-                    </div>
-                    <div className="absolute left-5 top-5 flex items-center gap-2 rounded-full bg-white/92 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.17em] text-[#4a3023] shadow-sm backdrop-blur">
-                      <span className="text-[#d87338]">{String(index + 1).padStart(2, "0")}</span>
-                      {getCollectionLabel(design)}
+                      <BirthdayDesignPreview design={design} />
                     </div>
                   </div>
                   <div className="px-2 pt-5">
@@ -457,7 +379,12 @@ export default function BirthdayDesignGallery() {
                       </span>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {[design.recipient, milestoneLabel, design.style]
+                      {[
+                        design.recipient,
+                        milestoneLabel,
+                        design.style,
+                        design.experience.compositionLabel,
+                      ]
                         .filter((label): label is string => Boolean(label))
                         .map((label) => (
                           <span

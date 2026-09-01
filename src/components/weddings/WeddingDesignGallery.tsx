@@ -5,12 +5,25 @@ import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Gem, Sparkles } from "lucide-react";
 import WeddingDesignPreview from "@/components/weddings/WeddingDesignPreview";
+import WeddingTemplateRunway from "@/components/weddings/WeddingTemplateRunway";
 import {
+  type WeddingDesign,
   weddingDesignCatalog,
   weddingDesignColors,
   weddingDesignSeasons,
   weddingDesignStyles,
 } from "@/lib/wedding-designs";
+
+const WEDDING_RUNWAY_IDS = [
+  "garden-wedding",
+  "noir-luxury",
+  "california-coastal-wedding",
+  "retro-70s",
+] as const;
+
+const weddingRunwayDesigns = WEDDING_RUNWAY_IDS.map((templateId) =>
+  weddingDesignCatalog.find((design) => design.id === templateId),
+).filter((design): design is WeddingDesign => Boolean(design));
 
 function FilterSelect({
   label,
@@ -66,9 +79,9 @@ export default function WeddingDesignGallery() {
 
   return (
     <main className="min-h-screen bg-[#f7f4ef] text-[#2d2723]">
-      <section className="relative overflow-hidden border-b border-[#ded5ca] bg-[#1f1b18] px-5 py-14 text-white sm:px-8 lg:px-12 lg:py-20">
-        <div className="absolute -right-24 -top-40 h-[430px] w-[430px] rounded-full border border-[#d3b47b]/25" />
-        <div className="absolute -right-5 -top-16 h-[290px] w-[290px] rounded-full border border-[#d3b47b]/15" />
+      <section className="relative overflow-hidden border-b border-[#ded5ca] bg-[#1f1b18] px-5 py-12 text-white sm:px-8 lg:px-12 lg:py-16">
+        <div className="absolute -right-32 top-1/2 h-[420px] w-[420px] -translate-y-1/2 rounded-full bg-[#d3b47b]/10 blur-3xl" />
+        <div className="absolute -left-40 -top-48 h-[420px] w-[420px] rounded-full bg-[#68513a]/18 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-px w-full bg-gradient-to-r from-transparent via-[#d3b47b]/60 to-transparent" />
         <div className="relative mx-auto max-w-[1500px]">
           <Link
@@ -78,21 +91,28 @@ export default function WeddingDesignGallery() {
             <ArrowLeft className="h-4 w-4" />
             Wedding inspiration
           </Link>
-          <div className="max-w-4xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d3b47b]/35 bg-[#d3b47b]/10 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.28em] text-[#ead3a7]">
-              <Gem className="h-3.5 w-3.5" />
-              Envitefy wedding atelier
+          <div className="grid items-center gap-10 xl:grid-cols-[minmax(0,0.82fr)_minmax(620px,1.18fr)] xl:gap-14">
+            <div className="max-w-4xl">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d3b47b]/35 bg-[#d3b47b]/10 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.28em] text-[#ead3a7]">
+                <Gem className="h-3.5 w-3.5" aria-hidden="true" />
+                40 complete event-page designs
+              </div>
+              <h1
+                className='max-w-3xl [font-family:var(--font-playfair),_"Times_New_Roman",_serif] text-5xl font-normal leading-[0.95] tracking-[-0.045em] sm:text-6xl lg:text-7xl'
+                style={{ color: "#fff" }}
+              >
+                Find your wedding design
+              </h1>
+              <p className="mt-6 max-w-2xl text-base font-light leading-relaxed text-white/72 sm:text-lg">
+                Choose a complete event-page design—not just a color palette. Every template has
+                its own layout, typography, image treatment, section rhythm, and finishing
+                details.
+              </p>
             </div>
-            <h1
-              className='max-w-3xl [font-family:var(--font-playfair),_"Times_New_Roman",_serif] text-5xl font-normal leading-[0.95] tracking-[-0.045em] sm:text-6xl lg:text-7xl'
-              style={{ color: "#fff" }}
-            >
-              Find your wedding design
-            </h1>
-            <p className="mt-6 max-w-2xl text-base font-light leading-relaxed text-white/67 sm:text-lg">
-              Choose a complete visual world—not just a color palette. Every design has its own
-              layout, typography, image treatment, section rhythm, and finishing details.
-            </p>
+            <WeddingTemplateRunway
+              designs={weddingRunwayDesigns}
+              getHref={buildCustomizeHref}
+            />
           </div>
         </div>
       </section>
@@ -117,7 +137,7 @@ export default function WeddingDesignGallery() {
       <section className="mx-auto max-w-[1500px] px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
         {visibleDesigns.length > 0 ? (
           <div className="grid grid-cols-1 gap-x-7 gap-y-11 md:grid-cols-2 xl:grid-cols-3">
-            {visibleDesigns.map((design, index) => (
+            {visibleDesigns.map((design) => (
               <article key={design.id} className="group relative rounded-[1.4rem]">
                 <Link
                   href={buildCustomizeHref(design.id)}
@@ -131,10 +151,6 @@ export default function WeddingDesignGallery() {
                       design={design}
                       className="overflow-hidden rounded-[1rem]"
                     />
-                    <div className="absolute left-5 top-5 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-[#3c332d] shadow-sm backdrop-blur">
-                      <span className="text-[#a58456]">{String(index + 1).padStart(2, "0")}</span>
-                      {design.style}
-                    </div>
                   </div>
                   <div className="px-2 pt-5">
                     <div className="flex items-start justify-between gap-4">

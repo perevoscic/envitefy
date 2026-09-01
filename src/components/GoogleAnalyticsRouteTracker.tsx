@@ -1,8 +1,9 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { GOOGLE_ANALYTICS_MEASUREMENT_ID } from "@/lib/google-analytics";
+import { ANALYTICS_READY_EVENT, hasAnalyticsConsent } from "@/lib/privacy-preferences";
 
 declare global {
   interface Window {
@@ -13,22 +14,21 @@ declare global {
 
 export default function GoogleAnalyticsRouteTracker() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const search = searchParams?.toString() || "";
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.gtag !== "function") {
-      return;
-    }
-
-    const pagePath = search ? `${pathname}?${search}` : pathname;
-    window.gtag("event", "page_view", {
-      send_to: GOOGLE_ANALYTICS_MEASUREMENT_ID,
-      page_title: document.title,
-      page_location: window.location.href,
-      page_path: pagePath,
-    });
-  }, [pathname, search]);
+    const sendPageView = () => {
+      if (!hasAnalyticsConsent() || typeof window.gtag !== "function") return;
+      window.gtag("event", "page_view", {
+        send_to: GOOGLE_ANALYTICS_MEASUREMENT_ID,
+        page_title: document.title,
+        page_location: `${window.location.origin}${pathname}`,
+        page_path: pathname,
+      });
+    };
+    sendPageView();
+    window.addEventListener(ANALYTICS_READY_EVENT, sendPageView);
+    return () => window.removeEventListener(ANALYTICS_READY_EVENT, sendPageView);
+  }, [pathname]);
 
   return null;
 }

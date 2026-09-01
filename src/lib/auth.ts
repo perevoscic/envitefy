@@ -17,6 +17,10 @@ import {
   type ProductScope,
 } from "@/lib/product-scopes";
 import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
+import {
+  LEGAL_ACCEPTANCE_COOKIE_NAME,
+  verifyLegalAcceptanceToken,
+} from "@/lib/legal-acceptance";
 
 function isTransientDbError(err: unknown): boolean {
   return isDatabaseUnavailableError(err);
@@ -63,6 +67,15 @@ async function readSignupIntentCookie(): Promise<SignupIntent | null> {
   try {
     const jar = await cookies();
     return normalizeSignupIntent(jar.get("envitefy_signup_intent")?.value);
+  } catch {
+    return null;
+  }
+}
+
+async function readLegalAcceptanceCookie() {
+  try {
+    const jar = await cookies();
+    return await verifyLegalAcceptanceToken(jar.get(LEGAL_ACCEPTANCE_COOKIE_NAME)?.value);
   } catch {
     return null;
   }
@@ -256,6 +269,13 @@ export function getAuthOptions(): NextAuthOptions {
               return false;
             }
             const signupIntent = await readSignupIntentCookie();
+            const legalAcceptance = await readLegalAcceptanceCookie();
+            if (!legalAcceptance || legalAcceptance.source !== "google_signup") {
+              console.warn("[auth] blocked Google signup without current legal acceptance", {
+                email: user.email,
+              });
+              return false;
+            }
 
             const firstName = (profile as any)?.given_name || user.name?.split(" ")[0] || null;
             const lastName = (profile as any)?.family_name || user.name?.split(" ").slice(1).join(" ") || null;
@@ -266,6 +286,7 @@ export function getAuthOptions(): NextAuthOptions {
               lastName,
               provider: "google",
               signupSource,
+              legalAcceptance,
             });
             await applySignupIntentDefaults(user.email, signupIntent);
 

@@ -15,12 +15,19 @@ const walkFiles = (directory) =>
 test("birthday creation starts with a rotating, filterable 104-design gallery", () => {
   const pageSource = readSource("src/app/event/birthdays/page.tsx");
   const gallerySource = readSource("src/components/birthdays/BirthdayDesignGallery.tsx");
+  const heroSource = readSource("src/components/birthdays/BirthdayGalleryHero.tsx");
 
   assert.match(pageSource, /<BirthdayDesignGallery\s*\/>/);
   assert.doesNotMatch(pageSource, /router\.replace/);
   assert.match(gallerySource, /BIRTHDAY_DESIGN_CATALOG\.filter/);
   assert.match(gallerySource, /Featured mix/);
   assert.match(gallerySource, /sessionStorage\.getItem/);
+  assert.match(gallerySource, /FEATURED_ORIGINAL_KIDS_COUNT = 3/);
+  assert.match(gallerySource, /FEATURED_NEW_KIDS_COUNT = 3/);
+  assert.match(
+    gallerySource,
+    /originalDesignIds\.has\(design\.id\) && design\.audience === "Kids"/,
+  );
   assert.match(gallerySource, /Original 24/);
   assert.match(gallerySource, /New kids/);
   assert.match(gallerySource, /Adult birthdays/);
@@ -28,6 +35,8 @@ test("birthday creation starts with a rotating, filterable 104-design gallery", 
   assert.match(gallerySource, /label="Milestone"/);
   assert.match(gallerySource, /label="Style"/);
   assert.match(gallerySource, /params\.set\("templateId", templateId\)/);
+  assert.match(heroSource, /birthday-gallery-hero-v2\.webp/);
+  assert.equal(heroSource.match(/audience: "Kids"/g)?.length, 3);
 });
 
 test("the generated birthday collection contains 30 kids, 40 adult, and 10 anniversary WebPs", () => {

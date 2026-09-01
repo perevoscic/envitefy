@@ -16,27 +16,18 @@ export async function POST(request: NextRequest) {
     const providers = (tokenData as any)?.providers || {};
     const email = (tokenData as any)?.email as string | undefined;
     const g = providers.google || {};
-    let refreshToken = g.refreshToken as string | undefined;
-    const accessToken = g.accessToken as string | undefined;
+    let refreshToken: string | undefined;
+    let accessToken: string | undefined;
     const expiresAt = g.expiresAt as number | undefined;
 
-    // Prefer DB token for signed-in users; avoid cookie to prevent cross-user leakage
-    if (!refreshToken && !accessToken) {
-      if (email) {
-        try {
-          const dbToken = await getGoogleRefreshToken(email);
-          if (dbToken) refreshToken = dbToken;
-        } catch {}
-        // Dev-only fallback: allow legacy cookie even when signed in to ease setup
-        if (!refreshToken && process.env.NODE_ENV !== "production") {
-          const legacy = request.cookies.get("g_refresh")?.value;
-          if (legacy) refreshToken = legacy;
-        }
-      } else {
-        // Unauthenticated/legacy fallback: accept refresh token from our legacy cookie if present
-        const legacy = request.cookies.get("g_refresh")?.value;
-        if (legacy) refreshToken = legacy;
-      }
+    // Signed-in calendar access follows the database so disconnect takes effect immediately.
+    if (email) {
+      try {
+        refreshToken = (await getGoogleRefreshToken(email)) || undefined;
+      } catch {}
+    } else {
+      refreshToken = (g.refreshToken as string | undefined) || request.cookies.get("g_refresh")?.value;
+      accessToken = g.accessToken as string | undefined;
     }
     if (!refreshToken && !accessToken) {
       // Check if token exists but expired

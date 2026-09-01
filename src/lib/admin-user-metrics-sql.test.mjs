@@ -42,5 +42,7 @@ test("admin user debug links are loaded through a user-scoped query", () => {
   assert.match(route, /getAdminUserDebugLinks\(id, kind\)/);
   assert.match(route, /eventLinks: kind === "events"/);
   assert.match(route, /scanLinks: kind === "scans"/);
+  assert.match(route, /getAdminUserScanAttemptLinks\(id\)/);
+  assert.match(route, /scanAttempts/);
   assert.match(route, /kind must be events or scans/);
 });

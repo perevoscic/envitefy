@@ -14,7 +14,7 @@ test("login form supports redirect targets passed by the caller", () => {
 
   assert.match(loginForm, /successRedirectUrl = "\/"/);
   assert.match(loginForm, /callbackUrl: successRedirectUrl/);
-  assert.match(loginForm, /showAuthTransition\("Opening Envitefy\.\.\."\)/);
+  assert.match(loginForm, /showAuthTransition\("Loading \.\.\."\)/);
   assert.match(loginForm, /window\.location\.replace\(successRedirectUrl\)/);
   assert.match(loginForm, /signIn\("google", \{ callbackUrl: successRedirectUrl \}\)/);
   assert.match(authModal, /<LoginForm[\s\S]*successRedirectUrl=\{successRedirectUrl\}/s);

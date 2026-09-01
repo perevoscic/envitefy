@@ -15,6 +15,7 @@ import { SidebarProvider } from "./sidebar-context";
 import GlobalEventCreate from "./GlobalEventCreate";
 import GlobalSmartSignup from "./GlobalSmartSignup";
 import GoogleAnalyticsRouteTracker from "@/components/GoogleAnalyticsRouteTracker";
+import PrivacyControls from "@/components/PrivacyControls";
 import PwaInstallToast from "@/components/PwaInstallToast";
 import ThemeColorSync from "@/components/ThemeColorSync";
 import { ThemeKey, ThemeVariant, resolveThemeCssVariables } from "@/themes";
@@ -96,6 +97,7 @@ export default function Providers({
         <ThemeProvider>
           <RegisterServiceWorker />
           <GoogleAnalyticsRouteTracker />
+          <PrivacyControls />
           <PwaInstallToast />
           <ThemeColorSync />
           <GymnasticsDemoDraftClaimListener />

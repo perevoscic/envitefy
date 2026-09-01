@@ -29,6 +29,14 @@ type AdminEventDebugLink = {
   createdAt: string | null;
 };
 
+type AdminScanAttemptDebugLink = {
+  id: string;
+  title: string;
+  category: string;
+  status: "processed" | "saved" | "failed";
+  createdAt: string | null;
+};
+
 const USER_EVENT_CATEGORY_KEYS: Record<EventTypeKey, string> = {
   scans_birthdays: "events_birthdays",
   scans_weddings: "events_weddings",
@@ -823,6 +831,7 @@ type DebugLinkKind = "events" | "scans";
 type DebugLinkState = {
   key: string;
   links: AdminEventDebugLink[];
+  scanAttempts: AdminScanAttemptDebugLink[];
   loading: boolean;
   loaded: boolean;
   error: string | null;
@@ -853,14 +862,17 @@ function BreakdownPopup({
   const debugLinkKey = userId && debugLinkKind ? `${userId}:${debugLinkKind}` : null;
   const activeDebugLinkState = debugLinkState?.key === debugLinkKey ? debugLinkState : null;
   const eventLinks = activeDebugLinkState?.links ?? [];
+  const scanAttempts = activeDebugLinkState?.scanAttempts ?? [];
   const hasEventLinks = eventLinks.length > 0;
+  const hasScanAttempts = scanAttempts.length > 0;
   const isScanBreakdown = label.toLowerCase() === "scans";
   const debugLinksHeading = isScanBreakdown ? "Dev scan URLs" : "Dev event URLs";
   const showMissingScanLinks =
     isScanBreakdown &&
     normalizedCount > 0 &&
     Boolean(activeDebugLinkState?.loaded) &&
-    !hasEventLinks;
+    !hasEventLinks &&
+    !hasScanAttempts;
 
   useEffect(() => {
     if (!open) return;
@@ -890,6 +902,7 @@ function BreakdownPopup({
     setDebugLinkState({
       key: debugLinkKey,
       links: [],
+      scanAttempts: [],
       loading: true,
       loaded: false,
       error: null,
@@ -913,6 +926,7 @@ function BreakdownPopup({
         setDebugLinkState({
           key: debugLinkKey,
           links: readAdminDebugLinks(rawLinks),
+          scanAttempts: readAdminScanAttemptLinks(record.scanAttempts),
           loading: false,
           loaded: true,
           error: null,
@@ -922,6 +936,7 @@ function BreakdownPopup({
         setDebugLinkState({
           key: debugLinkKey,
           links: [],
+          scanAttempts: [],
           loading: false,
           loaded: true,
           error: error instanceof Error ? error.message : "Could not load debug links",
@@ -1005,6 +1020,32 @@ function BreakdownPopup({
           </div>
         </div>
       )}
+      {hasScanAttempts && (
+        <div className="mt-3 border-t border-[#e8e1fb] pt-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8b7fb6]">
+            Troubleshooting records
+          </p>
+          <div className="max-h-56 space-y-2 overflow-auto pr-1">
+            {scanAttempts.map((attempt) => (
+              <Link
+                key={attempt.id}
+                href={`/admin/scans/${attempt.id}`}
+                className="block rounded-lg border border-[#e8e1fb] bg-[#faf8ff] px-3 py-2 text-xs text-[#4b3f72] transition hover:border-[#c7baf4] hover:bg-[#f4efff]"
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="truncate font-medium">{attempt.title}</span>
+                  <span className="shrink-0 text-[10px] uppercase tracking-wide text-[#766b9d]">
+                    {attempt.status === "processed" ? "not saved" : attempt.status}
+                  </span>
+                </span>
+                <span className="mt-0.5 block text-[11px] text-[#9186bb]">
+                  {attempt.category}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
       {activeDebugLinkState?.loading && (
         <p className="mt-3 border-t border-[#e8e1fb] pt-3 text-xs text-[#9186bb]">
           Loading dev URLs...
@@ -1017,7 +1058,8 @@ function BreakdownPopup({
       )}
       {showMissingScanLinks && (
         <p className="mt-3 border-t border-[#e8e1fb] pt-3 text-xs text-[#9186bb]">
-          No saved scan URLs yet
+          This count predates detailed attempt tracking, so the uploaded scan cannot be
+          reconstructed.
         </p>
       )}
     </div>
@@ -1103,6 +1145,28 @@ function readAdminDebugLinks(value: unknown) {
   }
 
   return eventLinks;
+}
+
+function readAdminScanAttemptLinks(value: unknown): AdminScanAttemptDebugLink[] {
+  const rawItems: unknown[] = Array.isArray(value) ? value : [];
+  const attempts: AdminScanAttemptDebugLink[] = [];
+
+  for (const item of rawItems) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const record = item as Record<string, unknown>;
+    const id = readAdminDebugString(record.id);
+    const rawStatus = readAdminDebugString(record.status);
+    if (!id || !["processed", "saved", "failed"].includes(rawStatus)) continue;
+    attempts.push({
+      id,
+      title: readAdminDebugString(record.title) || "Untitled scan attempt",
+      category: readAdminDebugString(record.category) || "Uncategorized",
+      status: rawStatus as AdminScanAttemptDebugLink["status"],
+      createdAt: readAdminDebugString(record.createdAt) || null,
+    });
+  }
+
+  return attempts;
 }
 
 function readAdminDebugError(value: unknown): string {

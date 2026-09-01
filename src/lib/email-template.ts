@@ -24,6 +24,8 @@ export function createEmailTemplate(params: {
   buttonText?: string;
   buttonUrl?: string;
   footerText?: string;
+  unsubscribeUrl?: string;
+  postalAddress?: string;
 }): string {
   const baseUrl = resolvePublicAssetOrigin();
   const wordmarkUrl = `${baseUrl}/email/envitefy-wordmark-email.png`;
@@ -140,6 +142,8 @@ ${socialIconsRow}
                 <p style="margin:24px 0 0; font-size:12px; color:#9CA3AF; font-family:'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
                   &copy; ${currentYear} Envitefy. All rights reserved.
                 </p>
+                ${params.postalAddress ? `<p style="margin:8px 0 0; font-size:12px; line-height:1.5; color:#9CA3AF;">${escapeHtml(params.postalAddress)}</p>` : ""}
+                ${params.unsubscribeUrl ? `<p style="margin:8px 0 0; font-size:12px; color:#737373;"><a href="${escapeHtml(params.unsubscribeUrl)}" style="color:#52605c; text-decoration:underline;">Unsubscribe from marketing emails</a></p>` : ""}
               </td>
             </tr>
           </table>

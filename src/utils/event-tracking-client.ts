@@ -1,5 +1,7 @@
 "use client";
 
+import { hasAnalyticsConsent } from "@/lib/privacy-preferences";
+
 export type ClientTrackingEventName =
   | "public_event_view"
   | "share_link_click"
@@ -43,12 +45,23 @@ function getTargetDomain(targetUrl: string | null | undefined): string | null {
   }
 }
 
+function sanitizeUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const parsed = new URL(value, window.location.origin);
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return null;
+  }
+}
+
 export function trackEventInteraction(payload: ClientTrackingPayload): void {
   if (typeof window === "undefined") return;
+  if (!hasAnalyticsConsent()) return;
   const eventId = payload.eventId.trim();
   if (!eventId) return;
 
-  const targetUrl = payload.targetUrl || null;
+  const targetUrl = sanitizeUrl(payload.targetUrl);
   const body = JSON.stringify({
     eventId,
     eventName: payload.eventName,
@@ -57,8 +70,8 @@ export function trackEventInteraction(payload: ClientTrackingPayload): void {
     targetLabel: payload.targetLabel || null,
     sourceSurface: payload.sourceSurface || null,
     visitorId: getVisitorId(),
-    path: `${window.location.pathname}${window.location.search}`,
-    referrer: document.referrer || null,
+    path: window.location.pathname,
+    referrer: sanitizeUrl(document.referrer),
     metadata: payload.metadata || null,
   });
 

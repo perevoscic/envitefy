@@ -37,6 +37,7 @@ interface MenuContextValue {
     microsoft: boolean;
     apple: boolean;
   };
+  calendarConnectionsLoaded: boolean;
   refreshConnectedCalendars: () => Promise<void>;
   handleCalendarConnect: (provider: CalendarProviderKey) => void;
   isAdmin: boolean;
@@ -74,6 +75,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     microsoft: false,
     apple: false,
   });
+  const [calendarConnectionsLoaded, setCalendarConnectionsLoaded] = useState(false);
 
   const sessionUser = (session?.user || null) as SessionUserWithAdmin | null;
   const isAdmin = Boolean(sessionUser?.isAdmin);
@@ -91,12 +93,30 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   }, [displayName]);
 
   const fetchConnectedCalendars = useCallback(async () => {
-    setConnectedCalendars({
-      google: false,
-      microsoft: false,
-      apple: false,
-    });
-  }, []);
+    if (status !== "authenticated") {
+      setConnectedCalendars({ google: false, microsoft: false, apple: false });
+      setCalendarConnectionsLoaded(false);
+      return;
+    }
+    setCalendarConnectionsLoaded(false);
+    try {
+      const response = await fetch("/api/calendars", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!response.ok) throw new Error("Failed to load calendar connections");
+      const payload = await response.json().catch(() => ({}));
+      setConnectedCalendars({
+        google: Boolean(payload?.google),
+        microsoft: Boolean(payload?.microsoft),
+        apple: Boolean(payload?.apple),
+      });
+    } catch {
+      setConnectedCalendars({ google: false, microsoft: false, apple: false });
+    } finally {
+      setCalendarConnectionsLoaded(true);
+    }
+  }, [status]);
 
   const handleCalendarConnect = useCallback(
     (_provider: CalendarProviderKey) => {
@@ -121,6 +141,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       categories,
       history,
       connectedCalendars,
+      calendarConnectionsLoaded,
       refreshConnectedCalendars: fetchConnectedCalendars,
       handleCalendarConnect,
       isAdmin,
@@ -139,6 +160,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       categories,
       history,
       connectedCalendars,
+      calendarConnectionsLoaded,
       fetchConnectedCalendars,
       handleCalendarConnect,
       isAdmin,

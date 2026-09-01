@@ -53,7 +53,7 @@ export default function LoginForm({
       });
       if (result?.ok) {
         // Keep the modal open until navigation so the current page does not flash.
-        showAuthTransition("Opening Envitefy...");
+        showAuthTransition("Loading ...");
         onSuccess?.();
         window.location.replace(successRedirectUrl);
         return;

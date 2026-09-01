@@ -46,56 +46,34 @@ export async function GET(request: NextRequest) {
     const providersFromJwt = asObject(tokenData?.providers);
     const googleProvider = asObject(providersFromJwt.google);
     const microsoftProvider = asObject(providersFromJwt.microsoft);
-    const appleProvider = asObject(providersFromJwt.apple);
     const email = typeof tokenData?.email === "string" ? tokenData.email : undefined;
 
     // Legacy cookie-based OAuth fallbacks
     const googleCookie = request.cookies.get("g_refresh")?.value;
     const microsoftCookie = request.cookies.get("o_refresh")?.value;
 
-    // Determine connection without cross-user cookie leakage:
-    // - If signed in (email present), ignore legacy cookies; rely on JWT/DB
-    // - If not signed in, allow legacy cookies as a convenience
-    let googleConnected = Boolean(googleProvider.refreshToken);
-    if (!googleConnected && !email && googleCookie) {
-      googleConnected = true;
-    }
-
-    let microsoftConnected = Boolean(
-      microsoftProvider.connected || microsoftProvider.refreshToken
-    );
-    if (!microsoftConnected && !email && microsoftCookie) {
-      microsoftConnected = true;
-    }
-
-    // If not connected yet but we have an email, check database token store
-    if (email && (!googleConnected || !microsoftConnected)) {
+    // The database is authoritative for signed-in users. JWT provider data can outlive a
+    // provider-specific disconnect, so it must not keep a disconnected calendar active.
+    let googleConnected = false;
+    let microsoftConnected = false;
+    if (email) {
       try {
-        if (!googleConnected) {
-          const g = await getGoogleRefreshToken(email);
-          googleConnected = Boolean(g);
-        }
+        googleConnected = Boolean(await getGoogleRefreshToken(email));
       } catch {}
       try {
-        if (!microsoftConnected) {
-          const m = await getMicrosoftRefreshToken(email);
-          microsoftConnected = Boolean(m);
-        }
+        microsoftConnected = Boolean(await getMicrosoftRefreshToken(email));
       } catch {}
-      // Dev-only: if Google still not connected but legacy cookie exists, count it to reduce confusion during setup
-      if (
-        !googleConnected &&
-        process.env.NODE_ENV !== "production" &&
-        request.cookies.get("g_refresh")?.value
-      ) {
-        googleConnected = true;
-      }
+    } else {
+      googleConnected = Boolean(googleProvider.refreshToken || googleCookie);
+      microsoftConnected = Boolean(
+        microsoftProvider.connected || microsoftProvider.refreshToken || microsoftCookie,
+      );
     }
 
     const resp: CalendarProviderStatus = {
       google: googleConnected,
       microsoft: microsoftConnected,
-      apple: Boolean(appleProvider.connected) || false,
+      apple: false,
     };
 
     return NextResponse.json(resp);

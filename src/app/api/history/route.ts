@@ -25,6 +25,7 @@ import {
   normalizeHistoryView,
   redactHistoryHeavyFields,
 } from "@/lib/history-view";
+import { markScanAttemptSaved } from "@/lib/scan-attempts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -361,6 +362,23 @@ export async function POST(req: Request) {
       });
     }
     const row = await insertEventHistory({ userId, title, data });
+
+    if (scanAttemptId) {
+      try {
+        await markScanAttemptSaved({
+          scanAttemptId,
+          userId,
+          eventId: row.id,
+        });
+      } catch (attemptError) {
+        console.error("[history] scan troubleshooting link failed", {
+          scanAttemptId,
+          eventId: row.id,
+          message:
+            attemptError instanceof Error ? attemptError.message : String(attemptError),
+        });
+      }
+    }
     
     // Invalidate cache for this user since we just added a new event
     if (userId) {

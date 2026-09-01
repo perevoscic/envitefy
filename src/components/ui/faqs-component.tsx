@@ -1,14 +1,7 @@
-"use client";
-
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 
 export type FAQItem = {
   id: string;
@@ -93,7 +86,7 @@ export default function FAQs({
   accordionClassName,
 }: FAQsProps) {
   const headingId = `${sectionId}-heading`;
-  const initialValue = defaultValue ?? items[0]?.id;
+  const accordionName = `${sectionId}-accordion`;
 
   return (
     <section
@@ -123,34 +116,36 @@ export default function FAQs({
           ) : null}
 
           <div className={showHeader ? "md:col-span-3" : "w-full"}>
-            <Accordion
-              type="single"
-              collapsible
-              defaultValue={initialValue}
+            <div
               className={cn(
                 "bg-card w-full rounded-[var(--radius)] border border-border px-6 py-2 shadow-sm ring-1 ring-foreground/5 sm:px-8",
                 accordionClassName,
               )}
             >
               {items.map((item) => (
-                <AccordionItem
+                <details
                   key={item.id}
-                  value={item.id}
-                  className="border-dotted last:border-b-0"
+                  name={accordionName}
+                  open={item.id === defaultValue || undefined}
+                  className="group border-b border-dotted last:border-b-0"
                 >
-                  <AccordionTrigger className="cursor-pointer text-base font-semibold leading-7 hover:no-underline">
-                    {item.question}
-                  </AccordionTrigger>
-                  <AccordionContent>
+                  <summary className="flex min-h-12 touch-manipulation cursor-pointer list-none items-center justify-between gap-4 rounded-md py-4 text-left text-base font-semibold leading-7 transition-colors hover:bg-foreground/[0.035] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:bg-foreground/[0.06] [&::-webkit-details-marker]:hidden">
+                    <span>{item.question}</span>
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="h-4 w-4 shrink-0 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none"
+                    />
+                  </summary>
+                  <div className="pb-4 pt-0">
                     {typeof item.answer === "string" ? (
                       <p className="text-muted-foreground text-base leading-7">{item.answer}</p>
                     ) : (
                       item.answer
                     )}
-                  </AccordionContent>
-                </AccordionItem>
+                  </div>
+                </details>
               ))}
-            </Accordion>
+            </div>
           </div>
 
           {showHeader ? (
