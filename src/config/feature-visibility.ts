@@ -69,7 +69,7 @@ const ALL_TEMPLATE_DEFINITIONS: TemplateDef[] = [
   {
     key: "birthdays",
     label: "Birthdays",
-    href: "/event/birthdays/customize",
+    href: "/event/birthdays",
     icon: "🎂",
     section: "milestones",
   },

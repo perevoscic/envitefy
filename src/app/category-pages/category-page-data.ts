@@ -784,7 +784,7 @@ export const useCasePages = [
     heroImageAlt: "Birthday party event page preview",
     heroImagePosition: "center",
     primaryCta: "Create a birthday invitation",
-    primaryHref: "/event/birthdays/customize",
+    primaryHref: "/event/birthdays",
     secondaryCta: "See how it works",
     secondaryHref: "#birthday-live-page",
     theme: {

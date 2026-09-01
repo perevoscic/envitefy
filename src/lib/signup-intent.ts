@@ -90,7 +90,7 @@ const CREATE_ACTION_BY_INTENT: Record<
   birthdays: {
     label: "Birthday Party",
     ctaLabel: "+ Birthday Party",
-    href: "/event/birthdays/customize",
+    href: "/event/birthdays",
   },
 };
 

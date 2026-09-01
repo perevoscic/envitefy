@@ -1,33 +1,34 @@
 // @ts-nocheck
 "use client";
 
-import React, { useRef, useState, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
+  Cake,
+  CheckSquare,
   ChevronLeft,
   ChevronRight,
-  Users,
-  Image as ImageIcon,
-  Type,
-  Palette,
-  CheckSquare,
   Gift,
+  Image as ImageIcon,
   Menu,
-  Upload,
+  Palette,
   Trash2,
-  Cake,
+  Type,
+  Upload,
+  Users,
 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
 import {
   type BirthdayTemplateDefinition,
   birthdayTemplateCatalog,
 } from "@/components/event-create/BirthdayTemplateGallery";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
+import { BIRTHDAY_DESIGN_BY_ID, BIRTHDAY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
-import { buildEventPath } from "@/utils/event-url";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
+import { buildEventPath } from "@/utils/event-url";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
-import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
 import BirthdayDesignThemes from "./_components/BirthdayDesignThemes";
 import { BIRTHDAY_THEMES } from "./birthdayThemes";
 
@@ -104,7 +105,20 @@ const FONT_SIZES = {
   },
 };
 
-const PROFESSIONAL_THEMES = BIRTHDAY_THEMES;
+const PROFESSIONAL_THEMES = [
+  ...BIRTHDAY_DESIGN_CATALOG,
+  ...BIRTHDAY_THEMES.filter(
+    (legacyTheme) => !BIRTHDAY_DESIGN_CATALOG.some((design) => design.id === legacyTheme.id),
+  ),
+];
+
+const getProfessionalThemePalette = (theme?: (typeof PROFESSIONAL_THEMES)[number] | null) => {
+  const recommendedPalette = Array.isArray(theme?.recommendedColorPalette)
+    ? theme.recommendedColorPalette.filter(Boolean)
+    : [];
+  if (recommendedPalette.length > 0) return recommendedPalette;
+  return [theme?.primaryColor, theme?.secondaryColor].filter(Boolean);
+};
 
 type SimpleTemplateThemeSnapshot = {
   id: string;
@@ -186,9 +200,9 @@ const INITIAL_DATA = {
     fontSize: "medium",
     professionalThemeId: "rainbow_confetti_splash",
   },
-  themePalette:
-    PROFESSIONAL_THEMES.find((t) => t.id === "rainbow_confetti_splash")?.recommendedColorPalette ||
-    [],
+  themePalette: getProfessionalThemePalette(
+    PROFESSIONAL_THEMES.find((t) => t.id === "rainbow_confetti_splash"),
+  ),
   images: {
     hero: null,
     headlineBg: null,
@@ -352,7 +366,7 @@ const _ThemeSwatch = ({
   >
     <div
       className="h-12 w-full border-b border-black/5"
-      style={getPreviewStyle(theme.recommendedColorPalette)}
+      style={getPreviewStyle(getProfessionalThemePalette(theme))}
     />
     <div className="p-3">
       <div className="text-sm font-semibold text-slate-700">{theme.themeName}</div>
@@ -364,22 +378,57 @@ const _ThemeSwatch = ({
 export default function BirthdayTemplateCustomizePage() {
   const search = useSearchParams();
   const router = useRouter();
-  const _defaultDate = search?.get("d") ?? undefined;
+  const defaultDateParam = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
-  const templateId = search?.get("templateId");
+  const templateIdParam = search?.get("templateId");
   const variationIdParam = search?.get("variationId") ?? undefined;
-  const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>(
-    templateId || birthdayTemplateCatalog[0]?.id,
-  );
+  const selectedThemeId = PROFESSIONAL_THEMES.find((theme) => theme.id === templateIdParam)?.id;
+  const catalogTemplateId = birthdayTemplateCatalog.find(
+    (template) => template.id === templateIdParam,
+  )?.id;
+  const initialTemplateId = catalogTemplateId || birthdayTemplateCatalog[0]?.id;
+  const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>(initialTemplateId);
   const [activeVariationId, setActiveVariationId] = useState<string | undefined>(
     variationIdParam ||
-      birthdayTemplateCatalog.find((t) => t.id === (templateId || ""))?.variations?.[0]?.id ||
+      birthdayTemplateCatalog.find((t) => t.id === initialTemplateId)?.variations?.[0]?.id ||
       birthdayTemplateCatalog[0]?.variations?.[0]?.id,
   );
   const [loadingExisting, setLoadingExisting] = useState(false);
   const template = getTemplateById(activeTemplateId);
   const [activeView, setActiveView] = useState("main");
-  const [data, setData] = useState(INITIAL_DATA);
+  const [data, setData] = useState(() => {
+    const selectedTheme = PROFESSIONAL_THEMES.find((theme) => theme.id === selectedThemeId);
+    const selectedDesign = selectedTheme?.id ? BIRTHDAY_DESIGN_BY_ID.get(selectedTheme.id) : null;
+    const selectedDate =
+      defaultDateParam && /^\d{4}-\d{2}-\d{2}$/.test(defaultDateParam)
+        ? defaultDateParam
+        : INITIAL_DATA.date;
+    const isAnniversary = selectedDesign?.occasion === "Anniversary";
+    const isAdultBirthday =
+      selectedDesign?.occasion === "Birthday" && selectedDesign.audience === "Adults";
+
+    return {
+      ...INITIAL_DATA,
+      childName: isAnniversary
+        ? "Alex & Jordan"
+        : isAdultBirthday
+          ? "Jordan"
+          : INITIAL_DATA.childName,
+      age: selectedDesign?.milestone || (isAdultBirthday ? 40 : INITIAL_DATA.age),
+      date: selectedDate,
+      partyDetails: {
+        ...INITIAL_DATA.partyDetails,
+        theme: selectedDesign?.name || INITIAL_DATA.partyDetails.theme,
+      },
+      theme: {
+        ...INITIAL_DATA.theme,
+        professionalThemeId: selectedTheme?.id || INITIAL_DATA.theme.professionalThemeId,
+      },
+      themePalette: getProfessionalThemePalette(selectedTheme).length
+        ? getProfessionalThemePalette(selectedTheme)
+        : INITIAL_DATA.themePalette,
+    };
+  });
   const [_rsvpSubmitted, _setRsvpSubmitted] = useState(false);
   const [_rsvpAttending, _setRsvpAttending] = useState("yes");
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -409,6 +458,12 @@ export default function BirthdayTemplateCustomizePage() {
   }, []);
   const [newHost, setNewHost] = useState({ name: "", role: "" });
   const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
+  const designGalleryHref = React.useMemo(() => {
+    const params = new URLSearchParams();
+    if (data.date) params.set("d", data.date);
+    const query = params.toString();
+    return `/event/birthdays${query ? `?${query}` : ""}`;
+  }, [data.date]);
   const buildCalendarDetails = () => {
     const title = data.title || "Birthday Event";
     let start: Date | null = null;
@@ -671,7 +726,7 @@ export default function BirthdayTemplateCustomizePage() {
   const professionalPalette =
     (Array.isArray(data.themePalette) && data.themePalette.length > 0
       ? data.themePalette
-      : currentProfessionalTheme.recommendedColorPalette) || [];
+      : getProfessionalThemePalette(currentProfessionalTheme)) || [];
 
   // Analyze palette to determine if it's dark or light
   const isDarkPalette = React.useMemo(
@@ -817,7 +872,9 @@ export default function BirthdayTemplateCustomizePage() {
         ...prev.theme,
         professionalThemeId: activeVariationId,
       },
-      themePalette: matchedTheme.recommendedColorPalette || prev.themePalette,
+      themePalette: getProfessionalThemePalette(matchedTheme).length
+        ? getProfessionalThemePalette(matchedTheme)
+        : prev.themePalette,
     }));
   }, [activeVariationId]);
 
@@ -830,6 +887,24 @@ export default function BirthdayTemplateCustomizePage() {
   const activeRenderTheme =
     PROFESSIONAL_THEMES.find((theme) => theme.id === data.theme.professionalThemeId) ||
     PROFESSIONAL_THEMES[0];
+  const activeDesign =
+    BIRTHDAY_DESIGN_BY_ID.get(activeTemplateId || "") ||
+    BIRTHDAY_DESIGN_BY_ID.get(data.theme.professionalThemeId || "") ||
+    null;
+  const isAnniversaryDesign = activeDesign?.occasion === "Anniversary";
+  const isAdultBirthdayDesign =
+    activeDesign?.occasion === "Birthday" && activeDesign.audience === "Adults";
+  const celebrationNameLabel = isAnniversaryDesign
+    ? "Couple's Names"
+    : isAdultBirthdayDesign
+      ? "Celebrant's Name"
+      : "Child's Name";
+  const celebrationNamePlaceholder = isAnniversaryDesign
+    ? "Alex & Jordan"
+    : isAdultBirthdayDesign
+      ? "Celebrant's name"
+      : "Child's name";
+  const ageLabel = isAnniversaryDesign ? "Years Together" : "Age";
   const _activeGalleryItem =
     data.gallery.length > 0 ? data.gallery[Math.min(galleryIndex, data.gallery.length - 1)] : null;
 
@@ -889,10 +964,7 @@ export default function BirthdayTemplateCustomizePage() {
           (() => {
             const tid = existing.theme?.professionalThemeId || existing.variationId || null;
             const match = tid ? PROFESSIONAL_THEMES.find((t) => t.id === tid) : null;
-            return (
-              match?.recommendedColorPalette ||
-              (match ? [match.primaryColor, match.secondaryColor] : null)
-            );
+            return match ? getProfessionalThemePalette(match) : null;
           })() ||
           null;
         const existingThemeKey =
@@ -1024,11 +1096,7 @@ export default function BirthdayTemplateCustomizePage() {
         PROFESSIONAL_THEMES.find((theme) => theme.id === data.theme.professionalThemeId) ||
         PROFESSIONAL_THEMES[0];
 
-      const professionalPalette =
-        currentProfessionalTheme.recommendedColorPalette ||
-        [currentProfessionalTheme.primaryColor, currentProfessionalTheme.secondaryColor].filter(
-          Boolean,
-        );
+      const professionalPalette = getProfessionalThemePalette(currentProfessionalTheme);
 
       const currentFont = FONTS[data.theme.font] || FONTS.playfair;
       const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
@@ -1043,13 +1111,17 @@ export default function BirthdayTemplateCustomizePage() {
         PROFESSIONAL_THEME_CLASSES[data.theme?.professionalThemeId || ""] ||
         null;
 
+      const celebrationTitle = isAnniversaryDesign
+        ? `${data.childName}'s ${data.age}${getAgeSuffix(data.age)} Anniversary`
+        : `${data.childName}'s ${data.age}${getAgeSuffix(data.age)} Birthday`;
       const payload: any = {
-        title: `${data.childName}'s ${data.age}${getAgeSuffix(data.age)} Birthday`,
+        title: celebrationTitle,
         data: {
           category: "Birthdays",
           createdVia: "birthday-renderer",
           status: "published",
           draftStatus: "published",
+          occasion: isAnniversaryDesign ? "anniversary" : "birthday",
           createdManually: true,
           startISO,
           endISO,
@@ -1171,6 +1243,7 @@ export default function BirthdayTemplateCustomizePage() {
     template?.variations,
     activeTemplateId,
     activeVariationId,
+    isAnniversaryDesign,
     editEventId,
     router,
   ]);
@@ -1199,9 +1272,21 @@ export default function BirthdayTemplateCustomizePage() {
   const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
       <div className="mb-6 w-full max-w-sm text-center">
+        {!editEventId && (
+          <button
+            type="button"
+            onClick={() => router.push(designGalleryHref)}
+            className="mb-5 inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-full border border-[#e4cdb6] bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#725744] shadow-sm transition hover:border-[#d87338] hover:text-[#a74920] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d87338]/40"
+          >
+            <ChevronLeft size={15} aria-hidden="true" />
+            All celebration designs
+          </button>
+        )}
         <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">Add your details</h2>
         <p className="text-slate-500 text-sm">
-          Customize every aspect of your birthday party website.
+          {isAnniversaryDesign
+            ? "Customize every aspect of your anniversary celebration page."
+            : "Customize every aspect of your birthday event page."}
         </p>
       </div>
 
@@ -1209,7 +1294,13 @@ export default function BirthdayTemplateCustomizePage() {
         <MenuCard
           title="Headline"
           icon={<Type size={18} />}
-          desc="Child's name, age, date, location."
+          desc={
+            isAnniversaryDesign
+              ? "Names, years together, date, location."
+              : isAdultBirthdayDesign
+                ? "Celebrant, age, date, location."
+                : "Child's name, age, date, location."
+          }
           onClick={() => setActiveView("headline")}
         />
         <MenuCard
@@ -1262,13 +1353,13 @@ export default function BirthdayTemplateCustomizePage() {
     <EditorLayout title="Headline" onBack={() => setActiveView("main")}>
       <div className="space-y-6">
         <InputGroup
-          label="Child's Name"
+          label={celebrationNameLabel}
           value={data.childName}
           onChange={(v) => updateData("childName", v)}
-          placeholder="Child's name"
+          placeholder={celebrationNamePlaceholder}
         />
         <InputGroup
-          label="Age"
+          label={ageLabel}
           type="number"
           value={data.age}
           onChange={(v) => updateData("age", Number.parseInt(v, 10) || 0)}

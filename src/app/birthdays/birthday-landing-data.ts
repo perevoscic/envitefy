@@ -25,7 +25,7 @@ export type BirthdayMilestone = {
   href: string;
 };
 
-export const birthdayCreateHref = "/event/birthdays/customize";
+export const birthdayCreateHref = "/event/birthdays";
 
 export const birthdayPromptExamples = [
   {

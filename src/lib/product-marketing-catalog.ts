@@ -394,6 +394,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           customerPromise:
             "Use guest and logistics tools shaped for family events rather than a generic event page.",
           proofPoints: [
+            "Birthday creation starts with 104 filterable designs: the original 24, 30 new kids events, 40 adult birthday themes, and 10 anniversary celebrations, with featured mixes that rotate by session.",
             "Birthday pages can combine household RSVP, adult/kid counts, allergies, directions, pickup/drop-off, gifts, calendar, and updates.",
             "Baby and bridal shower pages can combine RSVP, registry links, host notes, guest questions, reminders, maps, and calendar saves.",
             "Gender reveal pages can combine RSVP, Team Pink or Team Blue guesses, optional tally behavior, gift links, reminders, and updates.",

@@ -35,7 +35,7 @@ function PromptCreation({ primaryHref }: { primaryHref: string }) {
         <BirthdaySectionIntro
           eyebrow="From words to wow"
           title="Describe the birthday. See the invitation take shape."
-          body="There is no fixed catalog to search. Tell Envitefy who you are celebrating, what they love, and how the party should feel. The visual direction is created from that prompt."
+          body="Start with a featured mix from 104 complete event designs, filter by age, recipient, milestone, or style, then personalize it for the person you are celebrating. You can also describe what they love and let Envitefy shape the direction from your prompt."
         />
         <BirthdayPromptStudio primaryHref={primaryHref} />
       </div>

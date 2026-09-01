@@ -1,12 +1,11 @@
 "use client";
 
-import {
-  useState,
-} from "react";
+import { useState } from "react";
+import { NEW_BIRTHDAY_DESIGNS } from "@/data/birthday-template-data";
 import TemplateGallery, {
+  type ResolvedTemplateVariation,
   type TemplateGalleryTemplate,
   type TemplateGalleryVariation,
-  type ResolvedTemplateVariation,
 } from "./TemplateGallery";
 import {
   type TemplateFontTokenId,
@@ -836,15 +835,47 @@ const baseBirthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
   },
 ];
 
-export const birthdayTemplateCatalog: BirthdayTemplateDefinition[] =
-  baseBirthdayTemplateCatalog.map((template) => {
+const generatedTemplateFontIds: TemplateFontTokenId[] = [
+  "sans-classic-center",
+  "serif-regal-center",
+  "raleway-editorial",
+  "poppins-center",
+  "font-kalam",
+  "font-pacifico",
+];
+
+const generatedBirthdayTemplateCatalog: BirthdayTemplateDefinition[] =
+  NEW_BIRTHDAY_DESIGNS.map((design, index) => ({
+    id: design.id,
+    name: design.name,
+    description: design.description,
+    heroImageName: design.heroImage.replace("/templates/birthdays/", ""),
+    heroMood: design.heroMood,
+    menu: [...birthdayMenu],
+    variations: buildStories(
+      design.id,
+      generatedTemplateFontIds[index % generatedTemplateFontIds.length],
+      getColorStoriesForTemplate(index + baseBirthdayTemplateCatalog.length),
+    ),
+    preview: {
+      birthdayName: design.occasion === "Anniversary" ? "Alex & Jordan" : "Birthday Star",
+      dateLabel: "September 20, 2026",
+      location: "Your favorite venue",
+    },
+    backgroundPrompt: `A complete ${design.name.toLowerCase()} event setup with coordinated decorations, tables, and lighting.`,
+  }));
+
+export const birthdayTemplateCatalog: BirthdayTemplateDefinition[] = [
+  ...baseBirthdayTemplateCatalog.map((template) => {
     const isBirthdayTemplate = Boolean(template.preview?.birthdayName);
     if (!isBirthdayTemplate) return template;
     return {
       ...template,
       heroImageName: `${template.id}.webp`,
     };
-  });
+  }),
+  ...generatedBirthdayTemplateCatalog,
+];
 
 type Props = {
   appliedTemplateId: string | null;

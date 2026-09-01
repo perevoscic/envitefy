@@ -1,11 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { ArrowRight, CalendarHeart } from "lucide-react";
 import Image from "next/image";
-import {
-  ArrowRight,
-  CalendarHeart,
-} from "lucide-react";
+import Link from "next/link";
 import { BabyCarriageIcon } from "./BabyCarriageIcon";
 
 type BuilderCard = {
@@ -26,7 +23,7 @@ const QUICK_START_CARDS: BuilderCard[] = [
     label: "Birthday Party",
     icon: "🎂",
     copy: "Whimsical themes with kid-ready layouts.",
-    href: "/event/birthdays/customize",
+    href: "/event/birthdays",
   },
   {
     label: "Baby Shower",
