@@ -528,7 +528,9 @@ function formatQaFeedback(qaFeedback) {
 }
 
 function isStoryboardBudgetFeedback(qaFeedback) {
-  return qaFeedback?.source === "storyboard-budget" || qaFeedback?.discardExistingFramePlan === true;
+  return (
+    qaFeedback?.source === "storyboard-budget" || qaFeedback?.discardExistingFramePlan === true
+  );
 }
 
 function formatShotBudgetGuide(sceneSpec) {
@@ -601,7 +603,11 @@ function formatShotBudgetGuide(sceneSpec) {
   const key = frameCount >= 10 ? 10 : frameCount;
   const map = maps[key];
   if (!map) return "";
-  return [`Required ${frameCount}-frame shot budget map:`, ...map, "If no disallowed prop risk exists on a frame, return disallowedPropRisk as an empty string."].join("\n");
+  return [
+    `Required ${frameCount}-frame shot budget map:`,
+    ...map,
+    "If no disallowed prop risk exists on a frame, return disallowedPropRisk as an empty string.",
+  ].join("\n");
 }
 
 export async function runBriefAgent({ client, model, campaignInput }) {
@@ -614,11 +620,19 @@ export async function runBriefAgent({ client, model, campaignInput }) {
     userLines: [
       "Produce a conversion-focused campaign brief.",
       `Loose prompt: ${campaignInput.criteria || campaignInput.looseInput?.rawPrompt || ""}`,
+      campaignInput.campaignName ? `Campaign name: ${campaignInput.campaignName}` : "",
+      Array.isArray(campaignInput.channels) && campaignInput.channels.length > 0
+        ? `Distribution channels: ${campaignInput.channels.join(", ")}`
+        : "",
+      campaignInput.audience ? `Requested audience: ${campaignInput.audience}` : "",
+      campaignInput.objective ? `Business objective: ${campaignInput.objective}` : "",
       campaignInput.productName ? `Product name: ${campaignInput.productName}` : "",
       campaignInput.targetVertical ? `Target vertical: ${campaignInput.targetVertical}` : "",
       campaignInput.tone ? `Desired tone: ${campaignInput.tone}` : "",
       campaignInput.callToAction ? `CTA: ${campaignInput.callToAction}` : "",
-      campaignInput.looseInput?.extraNotes ? `Extra notes: ${campaignInput.looseInput.extraNotes}` : "",
+      campaignInput.looseInput?.extraNotes
+        ? `Extra notes: ${campaignInput.looseInput.extraNotes}`
+        : "",
       "Brand naming must be exact in every field: envitefy.com (never envitefye.com or any variant).",
       "Choose one audience, one pain, one promise, and one proof moment. Do not make the brief broad or generic.",
     ],
@@ -654,7 +668,14 @@ export async function runCritiqueAgent({ client, model, brief, persona }) {
   });
 }
 
-export async function runArtDirectionAgent({ client, model, campaignInput, brief, persona, critique }) {
+export async function runArtDirectionAgent({
+  client,
+  model,
+  campaignInput,
+  brief,
+  persona,
+  critique,
+}) {
   return runStructuredStage({
     client,
     model,
@@ -810,7 +831,9 @@ export async function runCreativeQaAgent({
 
 export function normalizeSocialCopyFrame(frame) {
   return {
-    frameNumber: Number.isFinite(Number(frame?.frameNumber)) ? Math.trunc(Number(frame.frameNumber)) : 0,
+    frameNumber: Number.isFinite(Number(frame?.frameNumber))
+      ? Math.trunc(Number(frame.frameNumber))
+      : 0,
     text: clean(frame?.text),
     emphasisWord: clean(frame?.emphasisWord),
     voiceover: clean(frame?.voiceover),

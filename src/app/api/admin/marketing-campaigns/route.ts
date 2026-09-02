@@ -70,7 +70,10 @@ async function saveReferenceImages(runDir: string, referenceFiles: File[]) {
   for (let index = 0; index < referenceFiles.length; index += 1) {
     const file = referenceFiles[index];
     const ext = REFERENCE_IMAGE_TYPES.get(file.type) || path.extname(file.name) || ".png";
-    const baseName = sanitizeReferenceName(path.basename(file.name, path.extname(file.name)), `reference-${index + 1}`);
+    const baseName = sanitizeReferenceName(
+      path.basename(file.name, path.extname(file.name)),
+      `reference-${index + 1}`,
+    );
     const fileName = `${String(index + 1).padStart(2, "0")}-${baseName}${ext}`;
     const relativePath = path.join("reference-images", fileName);
     const filePath = path.join(runDir, relativePath);
@@ -125,7 +128,7 @@ export async function POST(request: Request) {
 
     const runPaths = campaignRun.resolveRunPaths(process.cwd(), {
       outputRoot: input.outputRoot,
-      jobLabel: input.jobLabel || input.productName || "marketing-campaign",
+      jobLabel: input.jobLabel || input.campaignName || input.productName || "marketing-campaign",
       rawPrompt: input.criteria || input.looseInput?.rawPrompt,
     });
 

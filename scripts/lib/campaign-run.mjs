@@ -76,6 +76,10 @@ function createStatusDocument(runPaths, requestPayload) {
     request: {
       assetType: requestPayload?.input?.assetType || "short-video",
       socialPlacement: requestPayload?.input?.socialPlacement || "",
+      campaignName: requestPayload?.input?.campaignName || "",
+      channels: Array.isArray(requestPayload?.input?.channels) ? requestPayload.input.channels : [],
+      audience: requestPayload?.input?.audience || "",
+      objective: requestPayload?.input?.objective || "",
       productName: requestPayload?.input?.productName || "",
       targetVertical: requestPayload?.input?.targetVertical || "",
       tone: requestPayload?.input?.tone || "",
@@ -125,19 +129,25 @@ function collectNonCompliantImageModels(frames = [], expectedModel = "gpt-image-
   const expected = clean(expectedModel).toLowerCase();
   return (Array.isArray(frames) ? frames : [])
     .map((frame) => ({
-      frameNumber: Number.isFinite(Number(frame?.frameNumber)) ? Math.trunc(Number(frame.frameNumber)) : 0,
+      frameNumber: Number.isFinite(Number(frame?.frameNumber))
+        ? Math.trunc(Number(frame.frameNumber))
+        : 0,
       effectiveImageModel: clean(frame?.effectiveImageModel),
     }))
     .filter(
       (frame) =>
-        frame.frameNumber > 0 && frame.effectiveImageModel && frame.effectiveImageModel.toLowerCase() !== expected,
+        frame.frameNumber > 0 &&
+        frame.effectiveImageModel &&
+        frame.effectiveImageModel.toLowerCase() !== expected,
     );
 }
 
 export function buildImageModelComplianceError(frames = [], expectedModel = "gpt-image-2") {
   const mismatches = collectNonCompliantImageModels(frames, expectedModel);
   if (!mismatches.length) return "";
-  const details = mismatches.map((item) => `frame ${item.frameNumber}=${item.effectiveImageModel}`).join(", ");
+  const details = mismatches
+    .map((item) => `frame ${item.frameNumber}=${item.effectiveImageModel}`)
+    .join(", ");
   return `Image model compliance failure: expected ${expectedModel} but got ${details}.`;
 }
 
@@ -206,7 +216,13 @@ function resetStageRecord(statusDoc, stageKey) {
 }
 
 function resetStoryboardStageState(statusDoc) {
-  for (const stageKey of ["coordinator", "social-copy", "creative-qa", "image-generation", "video"]) {
+  for (const stageKey of [
+    "coordinator",
+    "social-copy",
+    "creative-qa",
+    "image-generation",
+    "video",
+  ]) {
     resetStageRecord(statusDoc, stageKey);
   }
 }
@@ -241,7 +257,7 @@ function normalizeCaptionValue(caption) {
   const source = asObject(caption);
   const text = clean(source.text);
   const words = text.split(/\s+/).filter(Boolean);
-  const emphasisWord = clean(source.emphasisWord) || (words[0] || "");
+  const emphasisWord = clean(source.emphasisWord) || words[0] || "";
   return {
     text,
     emphasisWord,
@@ -387,7 +403,9 @@ function normalizeBrandDomainDeep(value) {
 function shouldRetryWithImageFallback(error) {
   const message = clean(error?.message || error);
   if (!message) return true;
-  return /model|not found|not exist|unsupported|invalid|unavailable|access|permission|verified/i.test(message);
+  return /model|not found|not exist|unsupported|invalid|unavailable|access|permission|verified/i.test(
+    message,
+  );
 }
 
 function buildImageModelAttemptOrder(requestedModel) {
@@ -415,7 +433,8 @@ function resolveReferenceImagePaths(runPaths, referenceImages = []) {
 
 export function mimeTypeForImagePath(filePath, fallback = "") {
   const normalizedFallback = clean(fallback).toLowerCase();
-  if (["image/jpeg", "image/png", "image/webp"].includes(normalizedFallback)) return normalizedFallback;
+  if (["image/jpeg", "image/png", "image/webp"].includes(normalizedFallback))
+    return normalizedFallback;
   const ext = path.extname(filePath).toLowerCase();
   if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
   if (ext === ".png") return "image/png";
@@ -426,7 +445,10 @@ export function mimeTypeForImagePath(filePath, fallback = "") {
 function buildReferencePrompt(prompt, referenceImages = []) {
   if (!referenceImages.length) return prompt;
   const names = referenceImages
-    .map((reference, index) => `${index + 1}. ${reference.originalName || path.basename(reference.path)}`)
+    .map(
+      (reference, index) =>
+        `${index + 1}. ${reference.originalName || path.basename(reference.path)}`,
+    )
     .join("\n");
   return [
     prompt,
@@ -444,10 +466,12 @@ function expandMinimalBirthdayDelayCriteria(criteria) {
   const text = normalizeBrandDomainText(clean(criteria));
   if (!text) return text;
   const normalized = text.toLowerCase();
-  const isBirthday = /\bbirthday|daughter|son|kid|child|party invite|invitation|invite|flyer\b/.test(normalized);
-  const isDelay = /\bdelay|delayed|late|won'?t arrive|not arrive|not on time|rush|last minute|seconds|fast\b/.test(
-    normalized,
-  );
+  const isBirthday =
+    /\bbirthday|daughter|son|kid|child|party invite|invitation|invite|flyer\b/.test(normalized);
+  const isDelay =
+    /\bdelay|delayed|late|won'?t arrive|not arrive|not on time|rush|last minute|seconds|fast\b/.test(
+      normalized,
+    );
   if (!isBirthday || !isDelay) return text;
 
   return [
@@ -467,7 +491,14 @@ async function toUploadableReferenceImage(reference, index) {
   return toFile(buffer, name, { type: mimeType });
 }
 
-async function generateImageBuffer({ client, requestedModel, prompt, size, user, referenceImages = [] }) {
+async function generateImageBuffer({
+  client,
+  requestedModel,
+  prompt,
+  size,
+  user,
+  referenceImages = [],
+}) {
   const resolvedReferences = normalizeReferenceImages(referenceImages);
   const promptWithReferences =
     resolvedReferences.length > 0 ? buildReferencePrompt(prompt, resolvedReferences) : prompt;
@@ -526,7 +557,11 @@ async function generateImageBuffer({ client, requestedModel, prompt, size, user,
 }
 
 export function resolveTextModel() {
-  return process.env.STORYBOARD_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.6-luna";
+  return (
+    process.env.STORYBOARD_OPENAI_TEXT_MODEL ||
+    process.env.STUDIO_OPENAI_TEXT_MODEL ||
+    "gpt-5.6-luna"
+  );
 }
 
 export function resolveImageModel() {
@@ -567,12 +602,18 @@ function normalizeOverrideBlock(rawInput = {}) {
     screenLock: clean(rawOverrides.screenLock || looseOverrides.screenLock),
     composition: clean(rawOverrides.composition || looseOverrides.composition),
     mood: clean(rawOverrides.mood || looseOverrides.mood),
-    mainCharacterDetails: clean(rawOverrides.mainCharacterDetails || looseOverrides.mainCharacterDetails),
-    locationEnvironment: clean(rawOverrides.locationEnvironment || looseOverrides.locationEnvironment),
+    mainCharacterDetails: clean(
+      rawOverrides.mainCharacterDetails || looseOverrides.mainCharacterDetails,
+    ),
+    locationEnvironment: clean(
+      rawOverrides.locationEnvironment || looseOverrides.locationEnvironment,
+    ),
     propsKeyObjects: clean(rawOverrides.propsKeyObjects || looseOverrides.propsKeyObjects),
     visualStyle: clean(rawOverrides.visualStyle || looseOverrides.visualStyle),
     cameraFormat: clean(rawOverrides.cameraFormat || looseOverrides.cameraFormat),
-    frameToFrameChanges: clean(rawOverrides.frameToFrameChanges || looseOverrides.frameToFrameChanges),
+    frameToFrameChanges: clean(
+      rawOverrides.frameToFrameChanges || looseOverrides.frameToFrameChanges,
+    ),
     actionSequence: Array.isArray(rawOverrides.actionSequence)
       ? rawOverrides.actionSequence
       : Array.isArray(looseOverrides.actionSequence)
@@ -589,6 +630,16 @@ export function normalizeCampaignInput(rawInput = {}) {
   const input = normalizeBrandDomainDeep(asObject(rawInput));
   const assetType = normalizeAssetType(input.assetType);
   const socialPlacement = assetType === "social-image" ? clean(input.socialPlacement) : "";
+  const campaignName = clean(input.campaignName);
+  const channels = Array.from(
+    new Set(
+      (Array.isArray(input.channels) ? input.channels : [])
+        .map((channel) => clean(channel).toLowerCase())
+        .filter(Boolean),
+    ),
+  ).slice(0, 8);
+  const audience = clean(input.audience);
+  const objective = clean(input.objective);
   const criteria = expandMinimalBirthdayDelayCriteria(
     clean(input.criteria) ||
       clean(input.prompt) ||
@@ -612,16 +663,24 @@ export function normalizeCampaignInput(rawInput = {}) {
     ? userExtraNotes
     : [userExtraNotes, deliverableNotes].filter(Boolean).join("\n");
   const overrides = normalizeOverrideBlock(input);
-  const referenceImages = normalizeReferenceImages(input.referenceImages || input.looseInput?.referenceImages);
+  const referenceImages = normalizeReferenceImages(
+    input.referenceImages || input.looseInput?.referenceImages,
+  );
   const rawPrompt = [
     criteria,
+    campaignName ? `Campaign: ${campaignName}` : "",
+    channels.length ? `Channels: ${channels.join(", ")}` : "",
+    audience ? `Audience: ${audience}` : "",
+    objective ? `Objective: ${objective}` : "",
     productName ? `Product: ${productName}` : "",
     targetVertical ? `Target vertical: ${targetVertical}` : "",
     tone ? `Tone: ${tone}` : "",
     callToAction ? `CTA: ${callToAction}` : "",
     `Deliverable: ${assetType === "social-image" ? "static social image campaign" : "short-form video"}`,
     socialPlacement ? `Social placement: ${socialPlacement}` : "",
-    referenceImages.length ? `Reference images: ${referenceImages.map((image) => image.originalName).join(", ")}` : "",
+    referenceImages.length
+      ? `Reference images: ${referenceImages.map((image) => image.originalName).join(", ")}`
+      : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -629,6 +688,10 @@ export function normalizeCampaignInput(rawInput = {}) {
   return {
     assetType,
     socialPlacement,
+    campaignName,
+    channels,
+    audience,
+    objective,
     criteria: normalizeBrandDomainText(criteria),
     productName: normalizeBrandDomainText(productName),
     targetVertical,
@@ -693,20 +756,41 @@ export function resolveRunPaths(projectRoot = process.cwd(), options = {}) {
 }
 
 async function loadRunArtifacts(runPaths) {
-  const [request, status, brief, persona, critique, sceneSpec, framePlan, socialCopy, creativeQa, frames] =
-    await Promise.all([
-      readJson(runPaths.requestPath, null),
-      readJson(runPaths.statusPath, null),
-      readJson(runPaths.briefPath, null),
-      readJson(runPaths.personaPath, null),
-      readJson(runPaths.critiquePath, null),
-      readJson(runPaths.sceneSpecPath, null),
-      readJson(runPaths.framePlanPath, null),
-      readJson(runPaths.socialCopyPath, null),
-      readJson(runPaths.creativeQaPath, null),
-      readJson(runPaths.framesPath, null),
-    ]);
-  return { request, status, brief, persona, critique, sceneSpec, framePlan, socialCopy, creativeQa, frames };
+  const [
+    request,
+    status,
+    brief,
+    persona,
+    critique,
+    sceneSpec,
+    framePlan,
+    socialCopy,
+    creativeQa,
+    frames,
+  ] = await Promise.all([
+    readJson(runPaths.requestPath, null),
+    readJson(runPaths.statusPath, null),
+    readJson(runPaths.briefPath, null),
+    readJson(runPaths.personaPath, null),
+    readJson(runPaths.critiquePath, null),
+    readJson(runPaths.sceneSpecPath, null),
+    readJson(runPaths.framePlanPath, null),
+    readJson(runPaths.socialCopyPath, null),
+    readJson(runPaths.creativeQaPath, null),
+    readJson(runPaths.framesPath, null),
+  ]);
+  return {
+    request,
+    status,
+    brief,
+    persona,
+    critique,
+    sceneSpec,
+    framePlan,
+    socialCopy,
+    creativeQa,
+    frames,
+  };
 }
 
 export async function getRunSnapshot({ projectRoot = process.cwd(), runId, runDir }) {
@@ -771,7 +855,12 @@ export function normalizeCreativeQaForStoryboardBudget({
     return { creativeQa, softened: false };
   }
 
-  const budgetReview = validateStoryboardFrameBudget({ requestPayload, sceneSpec, framePlan, brief });
+  const budgetReview = validateStoryboardFrameBudget({
+    requestPayload,
+    sceneSpec,
+    framePlan,
+    brief,
+  });
   if (!budgetReview.pass || creativeQaHasHardBlocker(creativeQa)) {
     return { creativeQa, softened: false };
   }
@@ -802,7 +891,8 @@ function hasStoryboardRewritePlan(feedback) {
 
 function resolveRequestedFrameCount(requestPayload, sceneSpec) {
   const requested = normalizeFrameCountValue(
-    requestPayload?.input?.looseInput?.overrides?.numberOfFrames ?? requestPayload?.input?.frameCount,
+    requestPayload?.input?.looseInput?.overrides?.numberOfFrames ??
+      requestPayload?.input?.frameCount,
     0,
   );
   if (requested > 0) return requested;
@@ -846,7 +936,9 @@ function storyboardAllowsDemoHeavy(requestPayload, brief) {
     .map((value) => clean(value).toLowerCase())
     .filter(Boolean)
     .join(" ");
-  return /\b(product demo|demo-heavy|walkthrough|tutorial|screen recording|feature tour)\b/.test(haystack);
+  return /\b(product demo|demo-heavy|walkthrough|tutorial|screen recording|feature tour)\b/.test(
+    haystack,
+  );
 }
 
 function isStoryboardBudgetFeedback(feedback) {
@@ -882,7 +974,10 @@ function pickAllowedPhoneDominantFrames(frames) {
 function hasDisallowedPropRisk(value) {
   const risk = clean(value);
   if (!risk) return false;
-  const normalized = risk.toLowerCase().replace(/[.\s_-]+$/g, "").trim();
+  const normalized = risk
+    .toLowerCase()
+    .replace(/[.\s_-]+$/g, "")
+    .trim();
   return ![
     "none",
     "no",
@@ -920,9 +1015,10 @@ export function inferFramePhoneDominance(frame) {
   const text = frameSearchText(frame);
   if (!text) return declared || "secondary";
 
-  const phoneIsSecondary = /\b(phone|screen)\s+(?:is\s+)?secondary\b|\bsecondary\s+(?:phone|screen)\b|\bphone down\b|\bno phone\b|\bphone absent\b/.test(
-    text,
-  );
+  const phoneIsSecondary =
+    /\b(phone|screen)\s+(?:is\s+)?secondary\b|\bsecondary\s+(?:phone|screen)\b|\bphone down\b|\bno phone\b|\bphone absent\b/.test(
+      text,
+    );
   const phoneIsNonDominant =
     phoneIsSecondary ||
     /\bno phone screen visible\b|\bno device foreground\b|\bphone at (?:her|his|their|the) side\b|\bphone held low\b|\bphone not visible\b|\bphone tucked away\b/.test(
@@ -978,7 +1074,11 @@ function replaceInferredSceneSpecField(sceneSpec, key, value) {
 
 function searchableCampaignText(value) {
   if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.map((entry) => searchableCampaignText(entry)).filter(Boolean).join(" ");
+  if (Array.isArray(value))
+    return value
+      .map((entry) => searchableCampaignText(entry))
+      .filter(Boolean)
+      .join(" ");
   if (value && typeof value === "object") {
     return Object.values(value)
       .map((entry) => searchableCampaignText(entry))
@@ -998,7 +1098,8 @@ function requestedChildLabel(brief = {}) {
 
 function requestedInviteSubject(brief = {}) {
   const text = searchableCampaignText(brief).toLowerCase();
-  if (/\bcaleb\b/.test(text) && /\bpool party\b/.test(text)) return "Caleb's birthday pool-party live invite";
+  if (/\bcaleb\b/.test(text) && /\bpool party\b/.test(text))
+    return "Caleb's birthday pool-party live invite";
   if (/\bcaleb\b/.test(text) && /\bbirthday\b/.test(text)) return "Caleb's birthday live invite";
   if (/\bpool party\b/.test(text)) return "the birthday pool-party live invite";
   if (/\bbirthday\b/.test(text)) return "the birthday live invite";
@@ -1087,9 +1188,11 @@ function budgetRepairFrameTemplates(brief = {}) {
   return [
     {
       title: "Deadline becomes real",
-      actionBeat: "the host walks from the hallway into the kitchen while reading a printed-invite delay alert on her phone held in both hands",
+      actionBeat:
+        "the host walks from the hallway into the kitchen while reading a printed-invite delay alert on her phone held in both hands",
       cameraShot: "wide observational room shot",
-      composition: "wide movement shot with the host mid-step entering the kitchen, phone naturally held with visible fingers, clean counter in the background, ordinary home context, no party setup",
+      composition:
+        "wide movement shot with the host mid-step entering the kitchen, phone naturally held with visible fingers, clean counter in the background, ordinary home context, no party setup",
       mood: "concerned, candid, warm",
       persuasionRole: "hook",
       screenState: "no screen proof yet",
@@ -1103,9 +1206,11 @@ function budgetRepairFrameTemplates(brief = {}) {
     },
     {
       title: "Delay is digital",
-      actionBeat: "over her shoulder, the laptop on the counter shows an order-status page or email delay page while her hands hover near the trackpad",
+      actionBeat:
+        "over her shoulder, the laptop on the counter shows an order-status page or email delay page while her hands hover near the trackpad",
       cameraShot: "over-the-shoulder digital proof insert",
-      composition: "angled over-the-shoulder view of laptop delay proof with minimal readable page content, clean counter surface, no party setup",
+      composition:
+        "angled over-the-shoulder view of laptop delay proof with minimal readable page content, clean counter surface, no party setup",
       mood: "specific, digital, urgent",
       persuasionRole: "pain-proof",
       screenState: "digital order or email delay proof",
@@ -1119,25 +1224,30 @@ function budgetRepairFrameTemplates(brief = {}) {
     },
     {
       title: "Search for a faster way",
-      actionBeat: "standing at the counter, she searches for a faster digital invite option on her phone with both thumbs",
+      actionBeat:
+        "standing at the counter, she searches for a faster digital invite option on her phone with both thumbs",
       cameraShot: "hands-in-action side angle",
-      composition: "side-angle hands and phone action with her torso moving through frame, search screen visible only enough to suggest intent, clean counter, no party scene",
+      composition:
+        "side-angle hands and phone action with her torso moving through frame, search screen visible only enough to suggest intent, clean counter, no party scene",
       mood: "decisive, practical",
       persuasionRole: "decision-point",
       screenState: "search intent for fast digital invite solution",
       propFocus: "two-handed phone search action",
       emotionalBeat: "decision",
       proofTarget: "show action without a generic search trope",
-      mustDifferFromPrevious: "change from static tabletop evidence to active hands sorting details",
+      mustDifferFromPrevious:
+        "change from static tabletop evidence to active hands sorting details",
       shotFamily: "hands-action",
       phoneDominance: "dominant",
       brandingPresence: "none",
     },
     {
       title: "Decision turns into action",
-      actionBeat: "from a three-quarter rear angle, she leaves the counter and moves toward the living room with the decision made",
+      actionBeat:
+        "from a three-quarter rear angle, she leaves the counter and moves toward the living room with the decision made",
       cameraShot: "over-the-shoulder side angle",
-      composition: "over-the-shoulder moving shot with her body crossing from kitchen into living room, clean home background changes, no device foreground and no party scene",
+      composition:
+        "over-the-shoulder moving shot with her body crossing from kitchen into living room, clean home background changes, no device foreground and no party scene",
       mood: "focused, calm shift",
       persuasionRole: "product-entry",
       screenState: "the source details are organized and ready for the product proof beat",
@@ -1153,7 +1263,8 @@ function budgetRepairFrameTemplates(brief = {}) {
       title: "Instant page proof",
       actionBeat: `${product} turns the gathered birthday details into a clean live invitation on a phone lying flat screen-up on the counter`,
       cameraShot: "angled product-proof close-up",
-      composition: "phone lies flat screen-up on the counter, shot from a shallow overhead angle with full surface contact visible, readable enough for proof, clean counter only, no upright or leaning phone",
+      composition:
+        "phone lies flat screen-up on the counter, shot from a shallow overhead angle with full surface contact visible, readable enough for proof, clean counter only, no upright or leaning phone",
       mood: "clear, useful, polished",
       persuasionRole: "product-proof",
       screenState: "birthday live-card creation is visibly underway",
@@ -1167,9 +1278,11 @@ function budgetRepairFrameTemplates(brief = {}) {
     },
     {
       title: "Pressure drops",
-      actionBeat: "the host steps back from the table and visibly relaxes as the work starts feeling manageable",
+      actionBeat:
+        "the host steps back from the table and visibly relaxes as the work starts feeling manageable",
       cameraShot: "candid side-profile reaction",
-      composition: "human reaction in the room with event materials behind her and no device emphasis",
+      composition:
+        "human reaction in the room with event materials behind her and no device emphasis",
       mood: "relieved, grounded",
       persuasionRole: "emotional-release",
       screenState: "the product has reduced uncertainty",
@@ -1183,9 +1296,11 @@ function budgetRepairFrameTemplates(brief = {}) {
     },
     {
       title: "Confidence spreads",
-      actionBeat: "a nearby helper reacts to the polished invite direction in the real room, making the result feel socially approved rather than staged",
+      actionBeat:
+        "a nearby helper reacts to the polished invite direction in the real room, making the result feel socially approved rather than staged",
       cameraShot: "candid two-person social proof",
-      composition: "natural side-angle interaction in the living room with no phone foreground, no extra screens, no party setup, no extra tabletop planning props, and no staged phone demo",
+      composition:
+        "natural side-angle interaction in the living room with no phone foreground, no extra screens, no party setup, no extra tabletop planning props, and no staged phone demo",
       mood: "reassuring, credible",
       persuasionRole: "social-proof",
       screenState: "trust comes from another person reacting positively in the room",
@@ -1201,23 +1316,27 @@ function budgetRepairFrameTemplates(brief = {}) {
       title: "Send-ready proof",
       actionBeat: `${product} shows the polished send-ready birthday live invite on a phone lying flat screen-up on the counter`,
       cameraShot: "tight angled send-ready proof",
-      composition: "phone lies flat screen-up with full contact on the counter, finished live invite visible, framed by clean home surface only, no upright or leaning phone, no extra tabletop planning props, and no direct presentation pose",
+      composition:
+        "phone lies flat screen-up with full contact on the counter, finished live invite visible, framed by clean home surface only, no upright or leaning phone, no extra tabletop planning props, and no direct presentation pose",
       mood: "premium, finished, confident",
       persuasionRole: "send-ready-proof",
       screenState: "polished birthday live invite is ready to share",
       propFocus: "finished Envitefy live-card proof",
       emotionalBeat: "certainty",
       proofTarget: "prove the finished result is polished",
-      mustDifferFromPrevious: "change from human social proof to the second and final allowed product-proof close-up",
+      mustDifferFromPrevious:
+        "change from human social proof to the second and final allowed product-proof close-up",
       shotFamily: "phone-proof",
       phoneDominance: "dominant",
       brandingPresence: "screen",
     },
     {
       title: "Back in the moment",
-      actionBeat: "the host returns attention to the room and pre-party planning details with the invite work no longer dominating her",
+      actionBeat:
+        "the host returns attention to the room and pre-party planning details with the invite work no longer dominating her",
       cameraShot: "observational medium reaction",
-      composition: "host in the home environment with a relaxed look after sharing the digital invite, no device foreground, clean ordinary home context, and no party already underway",
+      composition:
+        "host in the home environment with a relaxed look after sharing the digital invite, no device foreground, clean ordinary home context, and no party already underway",
       mood: "calm, capable",
       persuasionRole: "relief-proof",
       screenState: "the product proof is complete and the person is back in control",
@@ -1231,9 +1350,11 @@ function budgetRepairFrameTemplates(brief = {}) {
     },
     {
       title: "Ready to host",
-      actionBeat: "the host relaxes in the same home planning space with visible relief and confidence because the digital invite is already shared",
+      actionBeat:
+        "the host relaxes in the same home planning space with visible relief and confidence because the digital invite is already shared",
       cameraShot: "final in-scene hero payoff",
-      composition: "warm hero view centered on the relieved host in the pre-party home setting, with no phone foreground, no extra tabletop planning props, no party setup, no activity-venue content, and no logo card",
+      composition:
+        "warm hero view centered on the relieved host in the pre-party home setting, with no phone foreground, no extra tabletop planning props, no party setup, no activity-venue content, and no logo card",
       mood: "relieved, proud, ready",
       persuasionRole: "final-payoff",
       screenState: "single final emotional payoff after the Envitefy live card has been shared",
@@ -1270,7 +1391,9 @@ function compactBudgetRepairFrameTemplates(total, brief = {}) {
     mood: "relieved, proud, ready",
     persuasionRole: "final-payoff",
     screenState: "single final emotional payoff after the digital invite is handled",
-    propFocus: childLabel ? `host transformation, ${childLabel}, and clean home context` : "host transformation and clean home context",
+    propFocus: childLabel
+      ? `host transformation, ${childLabel}, and clean home context`
+      : "host transformation and clean home context",
     emotionalBeat: "conversion",
     proofTarget: "land the benefit without another product demo",
     mustDifferFromPrevious: "end on a human payoff instead of a screen",
@@ -1302,7 +1425,8 @@ function compactBudgetRepairFrameTemplates(total, brief = {}) {
       title: "Details gathered",
       actionBeat: `the host organizes the event details${childNearby} with hands in motion while keeping the setting bright, clean, and realistic`,
       cameraShot: "environment-detail insert",
-      composition: "close environmental detail of hands, countertop, and simple planning cues, with no extra tabletop clutter and no product screen dominating the frame",
+      composition:
+        "close environmental detail of hands, countertop, and simple planning cues, with no extra tabletop clutter and no product screen dominating the frame",
       mood: "specific, focused",
       persuasionRole: "pain-proof",
       screenState: "event details are still unresolved",
@@ -1318,7 +1442,8 @@ function compactBudgetRepairFrameTemplates(total, brief = {}) {
       title: "Product path starts",
       actionBeat: `the host opens ${product} on a naturally held phone and starts turning the event details into ${inviteSubject}`,
       cameraShot: "hands-in-action side angle",
-      composition: "side-angle hands and phone action with visible natural grip, screen visible enough to show product entry, clean home background, not held up to the lens",
+      composition:
+        "side-angle hands and phone action with visible natural grip, screen visible enough to show product entry, clean home background, not held up to the lens",
       mood: "decisive, practical",
       persuasionRole: "product-entry",
       screenState: "product entry begins on the phone",
@@ -1334,7 +1459,8 @@ function compactBudgetRepairFrameTemplates(total, brief = {}) {
       title: "Human momentum",
       actionBeat: `from a three-quarter rear angle, the host moves through the room${childNearby} with the event details now under control`,
       cameraShot: "over-the-shoulder movement shot",
-      composition: "over-the-shoulder or side movement in the same home, body angle changed, no phone foreground and no product screen",
+      composition:
+        "over-the-shoulder or side movement in the same home, body angle changed, no phone foreground and no product screen",
       mood: "focused, calmer",
       persuasionRole: "transition",
       screenState: "the product action is underway but the frame stays human",
@@ -1350,7 +1476,8 @@ function compactBudgetRepairFrameTemplates(total, brief = {}) {
       title: "Live page proof",
       actionBeat: `${product} turns the event details into ${inviteSubject} on a phone lying flat screen-up or held naturally in two hands`,
       cameraShot: "angled product-proof close-up",
-      composition: "supported phone proof from a shallow overhead or natural two-hand angle, screen visible, clean surface or hands, no upright or leaning phone",
+      composition:
+        "supported phone proof from a shallow overhead or natural two-hand angle, screen visible, clean surface or hands, no upright or leaning phone",
       mood: "clear, useful, polished",
       persuasionRole: "product-proof",
       screenState: `${inviteSubject} creation is visibly underway`,
@@ -1384,7 +1511,8 @@ function compactBudgetRepairFrameTemplates(total, brief = {}) {
       title: "Send-ready proof",
       actionBeat: `${product} shows the polished send-ready ${inviteSubject} or share confirmation on a supported phone`,
       cameraShot: "tight angled send-ready proof",
-      composition: "phone lies flat screen-up or is held in two hands with a believable grip, finished live invite visible, no direct presentation pose",
+      composition:
+        "phone lies flat screen-up or is held in two hands with a believable grip, finished live invite visible, no direct presentation pose",
       mood: "premium, finished, confident",
       persuasionRole: "send-ready-proof",
       screenState: `polished ${inviteSubject} is ready to share`,
@@ -1404,7 +1532,9 @@ function compactBudgetRepairFrameTemplates(total, brief = {}) {
       mood: "reassuring, credible",
       persuasionRole: "social-proof",
       screenState: "trust comes from another person reacting positively in the room",
-      propFocus: childLabel ? `${childLabel}'s response and room context` : "human response and room context",
+      propFocus: childLabel
+        ? `${childLabel}'s response and room context`
+        : "human response and room context",
       emotionalBeat: "confidence",
       proofTarget: "show trust and design confidence through social reaction",
       mustDifferFromPrevious: "change from solo reaction or product proof to human validation",
@@ -1555,7 +1685,9 @@ export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, frame
   const disallowedDominantPhoneFrames = dominantPhoneFrames.filter(
     (frameNumber) => !pickAllowedPhoneDominantFrames(frames).includes(frameNumber),
   );
-  const distinctShotFamilies = new Set(frames.map((frame) => clean(frame.shotFamily)).filter(Boolean));
+  const distinctShotFamilies = new Set(
+    frames.map((frame) => clean(frame.shotFamily)).filter(Boolean),
+  );
   const environmentalFrames = frames.filter((frame) =>
     ["wide-environment", "environment-detail"].includes(clean(frame.shotFamily)),
   );
@@ -1598,7 +1730,9 @@ export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, frame
   }
 
   if (total >= 10 && distinctShotFamilies.size < 5) {
-    reasons.push(`Insufficient shot variety: ${distinctShotFamilies.size} shot families; minimum is 5.`);
+    reasons.push(
+      `Insufficient shot variety: ${distinctShotFamilies.size} shot families; minimum is 5.`,
+    );
     rewriteFrameNumbers.push(...frames.map((frame) => frame.frameNumber));
     requiredShotFamilies.push(
       "wide-environment",
@@ -1613,25 +1747,37 @@ export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, frame
   }
 
   if (total >= 8 && environmentalFrames.length < 2) {
-    reasons.push(`Insufficient environmental setup: ${environmentalFrames.length} context frames; minimum is 2.`);
-    rewriteFrameNumbers.push(...frames.slice(0, Math.min(3, total)).map((frame) => frame.frameNumber));
+    reasons.push(
+      `Insufficient environmental setup: ${environmentalFrames.length} context frames; minimum is 2.`,
+    );
+    rewriteFrameNumbers.push(
+      ...frames.slice(0, Math.min(3, total)).map((frame) => frame.frameNumber),
+    );
     requiredShotFamilies.push("wide-environment", "environment-detail");
   }
 
   if (total >= 8 && nonPhoneFirstFrames.length < 2) {
-    reasons.push(`Insufficient non-phone action coverage: ${nonPhoneFirstFrames.length} frames; minimum is 2.`);
-    rewriteFrameNumbers.push(...dominantPhoneFrames.slice(0, Math.max(1, dominantPhoneFrames.length - 1)));
+    reasons.push(
+      `Insufficient non-phone action coverage: ${nonPhoneFirstFrames.length} frames; minimum is 2.`,
+    );
+    rewriteFrameNumbers.push(
+      ...dominantPhoneFrames.slice(0, Math.max(1, dominantPhoneFrames.length - 1)),
+    );
     requiredShotFamilies.push("hands-action", "reaction", "social-proof");
   }
 
   if (total >= 10 && socialProofFrames.length < 1) {
     reasons.push("Missing social-proof frame: add one trust or recipient-response beat.");
-    rewriteFrameNumbers.push(...frames.slice(Math.max(0, total - 4), total - 1).map((frame) => frame.frameNumber));
+    rewriteFrameNumbers.push(
+      ...frames.slice(Math.max(0, total - 4), total - 1).map((frame) => frame.frameNumber),
+    );
     requiredShotFamilies.push("social-proof");
   }
 
   if (phoneDominantSocialProofFrames.length > 0) {
-    reasons.push(`Social-proof frames must not be phone demos: ${phoneDominantSocialProofFrames.join(", ")}.`);
+    reasons.push(
+      `Social-proof frames must not be phone demos: ${phoneDominantSocialProofFrames.join(", ")}.`,
+    );
     rewriteFrameNumbers.push(...phoneDominantSocialProofFrames);
   }
 
@@ -1647,7 +1793,9 @@ export function validateStoryboardFrameBudget({ requestPayload, sceneSpec, frame
   }
 
   if (finalFrameIsGraphicLogoPayoff(finalFrame)) {
-    reasons.push("Final frame must be an in-scene emotional payoff, not a graphic logo or end-card shot.");
+    reasons.push(
+      "Final frame must be an in-scene emotional payoff, not a graphic logo or end-card shot.",
+    );
     rewriteFrameNumbers.push(finalFrame?.frameNumber);
   }
 
@@ -1839,7 +1987,11 @@ async function runStoryboardPlanningLoop({
         campaignInput: requestPayload?.input,
         looseInput: requestPayload?.input?.looseInput,
       };
-      const repairedFramePlan = repairStoryboardFrameBudget(workingSceneSpec, framePlan, repairContext);
+      const repairedFramePlan = repairStoryboardFrameBudget(
+        workingSceneSpec,
+        framePlan,
+        repairContext,
+      );
       const repairedBudgetReview = validateStoryboardFrameBudget({
         requestPayload,
         sceneSpec: workingSceneSpec,
@@ -1854,11 +2006,19 @@ async function runStoryboardPlanningLoop({
         pushWarning(statusDoc, "Storyboard budget repair applied deterministically.");
       } else if (attempt < 1) {
         qaFeedback = budgetReview.feedback;
-        await persistStatus("Rewriting storyboard to satisfy shot budget", "running", "coordinator");
+        await persistStatus(
+          "Rewriting storyboard to satisfy shot budget",
+          "running",
+          "coordinator",
+        );
         continue;
       } else {
         await writeJson(runPaths.creativeQaPath, budgetReview.feedback);
-        await persistStatus("Storyboard budget blocked image generation", "awaiting_storyboard_review", "coordinator");
+        await persistStatus(
+          "Storyboard budget blocked image generation",
+          "awaiting_storyboard_review",
+          "coordinator",
+        );
         throw new Error(budgetReason);
       }
     }
@@ -1932,7 +2092,9 @@ async function runStoryboardPlanningLoop({
     }
 
     setStageStatus(statusDoc, "creative-qa", "warning", {
-      error: Array.isArray(creativeQa?.reasons) ? creativeQa.reasons.join(" | ") : "Creative QA failed",
+      error: Array.isArray(creativeQa?.reasons)
+        ? creativeQa.reasons.join(" | ")
+        : "Creative QA failed",
     });
     qaFeedback = creativeQa;
   }
@@ -1940,7 +2102,11 @@ async function runStoryboardPlanningLoop({
   const qaReason = summarizeCreativeQaFailure(creativeQa);
   pushWarning(statusDoc, `Creative QA blocked images: ${qaReason}`);
   setStageStatus(statusDoc, "creative-qa", "warning", { error: qaReason });
-  await persistStatus("Creative QA blocked image generation", "awaiting_storyboard_review", "creative-qa");
+  await persistStatus(
+    "Creative QA blocked image generation",
+    "awaiting_storyboard_review",
+    "creative-qa",
+  );
   throw new Error(qaReason);
 }
 
@@ -1972,7 +2138,9 @@ async function generateStoryboardImagesForRun({
   const imageSize = resolveImageSize(sceneSpec.cameraFormat.value);
   const resolvedReferenceImages = resolveReferenceImagePaths(runPaths, referenceImages);
   if (resolvedReferenceImages.length > 0) {
-    framesManifest.referenceImages = resolvedReferenceImages.map(({ absolutePath: _absolutePath, ...reference }) => reference);
+    framesManifest.referenceImages = resolvedReferenceImages.map(
+      ({ absolutePath: _absolutePath, ...reference }) => reference,
+    );
     await writeJson(runPaths.framesPath, framesManifest);
   }
   const sequenceReferenceImages = [...resolvedReferenceImages];
@@ -2034,7 +2202,11 @@ async function generateStoryboardImagesForRun({
       error: modelComplianceError,
     });
     statusDoc.error = modelComplianceError;
-    await persistStatus("Image generation failed model compliance checks", "error", "image-generation");
+    await persistStatus(
+      "Image generation failed model compliance checks",
+      "error",
+      "image-generation",
+    );
     throw new Error(statusDoc.error);
   }
 
@@ -2149,7 +2321,11 @@ export async function runCampaign({
     await writeJson(runPaths.sceneSpecPath, sceneSpec);
     setStageStatus(statusDoc, "art-direction", "done");
 
-    const { sceneSpec: plannedSceneSpec, framePlan, socialCopy } = await runStoryboardPlanningLoop({
+    const {
+      sceneSpec: plannedSceneSpec,
+      framePlan,
+      socialCopy,
+    } = await runStoryboardPlanningLoop({
       client,
       model: textModel,
       runPaths,
@@ -2225,7 +2401,12 @@ export async function rerunSocialCopyForRun({ projectRoot = process.cwd(), runId
 
   let framesManifest = frames;
   if (!framesManifest) {
-    framesManifest = createFramesManifest(runPaths, sceneSpec, framePlan.frames || [], request.models || {});
+    framesManifest = createFramesManifest(
+      runPaths,
+      sceneSpec,
+      framePlan.frames || [],
+      request.models || {},
+    );
   }
   framesManifest = mergeSocialCopyIntoFrames(framesManifest, normalizedSocialCopy);
 
@@ -2245,8 +2426,17 @@ export async function rerunSocialCopyForRun({ projectRoot = process.cwd(), runId
 
 export async function rerunStoryboardForRun({ projectRoot = process.cwd(), runId, runDir }) {
   const runPaths = resolveRunPaths(projectRoot, { runId, runDir });
-  const { request, brief, persona, critique, sceneSpec, framePlan, socialCopy, creativeQa, status } =
-    await loadRunArtifacts(runPaths);
+  const {
+    request,
+    brief,
+    persona,
+    critique,
+    sceneSpec,
+    framePlan,
+    socialCopy,
+    creativeQa,
+    status,
+  } = await loadRunArtifacts(runPaths);
   if (!request || !brief || !persona || !critique || !sceneSpec || !framePlan) {
     throw new Error("Run is missing required campaign artifacts for storyboard regeneration.");
   }
@@ -2266,12 +2456,16 @@ export async function rerunStoryboardForRun({ projectRoot = process.cwd(), runId
   }
 
   if (!hasStoryboardRewritePlan(storyboardFeedback)) {
-    throw new Error("Storyboard budget or Creative QA feedback is required before regenerating the storyboard.");
+    throw new Error(
+      "Storyboard budget or Creative QA feedback is required before regenerating the storyboard.",
+    );
   }
 
   const statusDoc = status || createStatusDocument(runPaths, request);
   statusDoc.error = null;
-  statusDoc.warningMessages = Array.isArray(statusDoc.warningMessages) ? statusDoc.warningMessages : [];
+  statusDoc.warningMessages = Array.isArray(statusDoc.warningMessages)
+    ? statusDoc.warningMessages
+    : [];
   statusDoc.frameCounts = {
     total: 0,
     pending: 0,
@@ -2302,23 +2496,26 @@ export async function rerunStoryboardForRun({ projectRoot = process.cwd(), runId
     const client = createOpenAiClient();
     const textModel = clean(request?.models?.textModel) || resolveTextModel();
     const imageModel = clean(request?.models?.imageModel) || resolveImageModel();
-    const { sceneSpec: nextSceneSpec, framePlan: nextFramePlan, socialCopy: nextSocialCopy } =
-      await runStoryboardPlanningLoop({
-        client,
-        model: textModel,
-        runPaths,
-        statusDoc,
-        requestPayload: request,
-        sceneSpec,
-        brief,
-        persona,
-        critique,
-        tone: request?.input?.tone || "",
-        persistStatus,
-        initialQaFeedback: storyboardFeedback,
-        currentFramePlan: framePlan.frames || [],
-        currentSocialCopy: socialCopy,
-      });
+    const {
+      sceneSpec: nextSceneSpec,
+      framePlan: nextFramePlan,
+      socialCopy: nextSocialCopy,
+    } = await runStoryboardPlanningLoop({
+      client,
+      model: textModel,
+      runPaths,
+      statusDoc,
+      requestPayload: request,
+      sceneSpec,
+      brief,
+      persona,
+      critique,
+      tone: request?.input?.tone || "",
+      persistStatus,
+      initialQaFeedback: storyboardFeedback,
+      currentFramePlan: framePlan.frames || [],
+      currentSocialCopy: socialCopy,
+    });
 
     const framesManifest = await generateStoryboardImagesForRun({
       client,
@@ -2328,7 +2525,8 @@ export async function rerunStoryboardForRun({ projectRoot = process.cwd(), runId
       framePlan: nextFramePlan,
       socialCopy: nextSocialCopy,
       requestModels: request?.models || {},
-      referenceImages: request?.input?.referenceImages || request?.input?.looseInput?.referenceImages || [],
+      referenceImages:
+        request?.input?.referenceImages || request?.input?.looseInput?.referenceImages || [],
       statusDoc,
       persistStatus,
       autoRenderVideo: false,

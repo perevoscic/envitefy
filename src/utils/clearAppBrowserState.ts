@@ -1,5 +1,7 @@
 "use client";
 
+import { PRIVACY_PREFERENCES_STORAGE_KEY } from "@/lib/privacy-preferences";
+
 const LOCAL_STORAGE_KEYS = new Set([
   "signupItemColors",
   "welcomeAfterSignup",
@@ -9,22 +11,22 @@ const LOCAL_STORAGE_KEYS = new Set([
   "pwa-install-dismissed",
 ]);
 
-const SESSION_STORAGE_KEYS = new Set([
-  "__snap_sw_reloaded__",
-]);
+const SESSION_STORAGE_KEYS = new Set(["__snap_sw_reloaded__"]);
 
-const STORAGE_PREFIXES = [
-  "envitefy:",
-  "profile-cache:",
-  "sidebar:",
-  "snapmydate:",
-];
+const PRESERVED_LOCAL_STORAGE_KEYS = new Set([PRIVACY_PREFERENCES_STORAGE_KEY]);
 
-function clearMatchingStorage(storage: Storage, exactKeys: Set<string>) {
+const STORAGE_PREFIXES = ["envitefy:", "profile-cache:", "sidebar:", "snapmydate:"];
+
+function clearMatchingStorage(
+  storage: Storage,
+  exactKeys: Set<string>,
+  preservedKeys?: ReadonlySet<string>,
+) {
   const keysToRemove: string[] = [];
   for (let index = 0; index < storage.length; index += 1) {
     const key = storage.key(index);
     if (!key) continue;
+    if (preservedKeys?.has(key)) continue;
     if (exactKeys.has(key) || STORAGE_PREFIXES.some((prefix) => key.startsWith(prefix))) {
       keysToRemove.push(key);
     }
@@ -37,7 +39,7 @@ function clearMatchingStorage(storage: Storage, exactKeys: Set<string>) {
 export function clearAppBrowserState() {
   if (typeof window === "undefined") return;
   try {
-    clearMatchingStorage(window.localStorage, LOCAL_STORAGE_KEYS);
+    clearMatchingStorage(window.localStorage, LOCAL_STORAGE_KEYS, PRESERVED_LOCAL_STORAGE_KEYS);
   } catch {
     // Ignore storage access failures.
   }

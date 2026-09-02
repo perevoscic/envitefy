@@ -21,13 +21,16 @@ test("signup requires current legal acceptance for email and Google", async () =
 });
 
 test("optional tracking is consent gated and strips query strings", async () => {
-  const [layout, controls, footer, tracker, interaction] = await Promise.all([
-    read("src/app/layout.tsx"),
-    read("src/components/PrivacyControls.tsx"),
-    read("src/components/ConditionalFooter.tsx"),
-    read("src/components/GoogleAnalyticsRouteTracker.tsx"),
-    read("src/utils/event-tracking-client.ts"),
-  ]);
+  const [layout, controls, footer, tracker, interaction, preferences, browserState] =
+    await Promise.all([
+      read("src/app/layout.tsx"),
+      read("src/components/PrivacyControls.tsx"),
+      read("src/components/ConditionalFooter.tsx"),
+      read("src/components/GoogleAnalyticsRouteTracker.tsx"),
+      read("src/utils/event-tracking-client.ts"),
+      read("src/lib/privacy-preferences.ts"),
+      read("src/utils/clearAppBrowserState.ts"),
+    ]);
   assert.doesNotMatch(layout, /googletagmanager/);
   assert.match(controls, /preferences\?\.analytics === true/);
   assert.doesNotMatch(controls, /hasLoaded && preferences && !isOpen/);
@@ -36,6 +39,12 @@ test("optional tracking is consent gated and strips query strings", async () => 
   assert.doesNotMatch(tracker, /useSearchParams/);
   assert.match(interaction, /if \(!hasAnalyticsConsent\(\)\) return/);
   assert.match(interaction, /path: window\.location\.pathname/);
+  assert.match(preferences, /envitefy_privacy_preferences/);
+  assert.match(preferences, /PRIVACY_PREFERENCES_COOKIE_MAX_AGE_SECONDS/);
+  assert.match(preferences, /savePrivacyPreferencesCookie\(preferences\)/);
+  assert.match(browserState, /PRIVACY_PREFERENCES_STORAGE_KEY/);
+  assert.match(browserState, /PRESERVED_LOCAL_STORAGE_KEYS/);
+  assert.match(browserState, /preservedKeys\?\.has\(key\)/);
 });
 
 test("campaigns suppress opt-outs and carry compliance controls", async () => {

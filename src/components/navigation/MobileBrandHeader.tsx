@@ -1,9 +1,9 @@
 "use client";
 
 import { Menu } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 
 type MobileBrandHeaderProps = {
   onMenuClick?: () => void;
@@ -61,15 +61,15 @@ export default function MobileBrandHeader({ onMenuClick }: MobileBrandHeaderProp
       )}
       data-hero-visible={isHeroVisible ? "true" : "false"}
     >
-      <Link href="/" aria-label="Envitefy home" className="flex items-center">
-        <Image
-          src="/logo.png"
-          alt="Envitefy"
-          width={600}
-          height={160}
-          sizes="120px"
-          priority
-          className="h-auto w-[120px] brightness-0 invert"
+      <Link
+        href="/"
+        aria-label="Envitefy home"
+        className="flex shrink-0 items-center overflow-hidden"
+      >
+        <EnvitefyWordmark
+          scaled={false}
+          tone="light"
+          className="max-w-full text-[2.05rem] leading-none"
         />
       </Link>
 

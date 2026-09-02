@@ -607,9 +607,16 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(mobileBrandHeader, /translate-y-0 opacity-100 pointer-events-auto/);
   assert.match(mobileBrandHeader, /-translate-y-4 opacity-0 pointer-events-none/);
   assert.match(mobileBrandHeader, /data-hero-visible=/);
-  assert.match(mobileBrandHeader, /\/logo\.png/);
-  assert.match(mobileBrandHeader, /h-auto w-\[120px\] brightness-0 invert/);
-  assert.match(mobileBrandHeader, /brightness-0 invert/);
+  assert.match(
+    mobileBrandHeader,
+    /import EnvitefyWordmark from "@\/components\/branding\/EnvitefyWordmark";/,
+  );
+  assert.match(mobileBrandHeader, /<EnvitefyWordmark/);
+  assert.match(mobileBrandHeader, /scaled=\{false\}/);
+  assert.match(mobileBrandHeader, /tone="light"/);
+  assert.match(mobileBrandHeader, /text-\[2\.05rem\] leading-none/);
+  assert.doesNotMatch(mobileBrandHeader, /\/logo\.png/);
+  assert.doesNotMatch(mobileBrandHeader, /brightness-0 invert/);
   assert.doesNotMatch(mobileBrandHeader, /envitefy-wordmark-white\.svg/);
   assert.match(mobileBrandHeader, /bg-black\/20 text-white shadow-none/);
   assert.match(mobileBrandHeader, /hover:bg-black\/30/);
