@@ -17,7 +17,7 @@ export const DEFAULT_LOCATION_LOCK =
 export const DEFAULT_BACKGROUND_ANCHORS =
   "home kitchen or living room, clean counter, window light, phone, laptop only when needed for search or email proof, birthday context only on digital screens";
 export const DEFAULT_SCREEN_LOCK =
-  "the same clean Envitefy mobile event page, modern white interface, simple typography, the Envitefy wordmark in the header matching public/email/envitefy-wordmark-email.png, and the Envitefy app icon matching public/favicon.png anywhere a launcher icon, favicon, or small app badge appears";
+  "the same clean Envitefy mobile event page, modern white interface, simple typography, the exact Envitefy wordmark in the header matching public/brand/envitefy-wordmark.png, and the exact Envitefy app icon matching public/icons/apple-touch-icon-120.png anywhere a launcher icon, favicon, avatar, or small app badge appears";
 export const DEFAULT_COMPOSITION =
   "varied candid vertical ad frames mixing home movement, phone notification proof, browser search, product entry, two-handed or flat-phone product proof, reaction, and final digital live-card result";
 export const DEFAULT_MOOD = "focused, modern, warm, premium";

@@ -4,7 +4,11 @@ export const runtime = "nodejs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { readJsonFile, resolveRunDir } from "@/lib/admin/marketing-campaigns";
+import {
+  hydrateMarketingRun,
+  persistMarketingRun,
+  readJsonFile,
+} from "@/lib/admin/marketing-campaigns";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 
 type StageRecord = {
@@ -40,7 +44,7 @@ export async function POST(
   try {
     await requireAdminSession();
     const { runId } = await context.params;
-    runDir = resolveRunDir(runId);
+    runDir = await hydrateMarketingRun(runId);
     const requestPayload = await readJsonFile<{ input?: { assetType?: string } } | null>(
       path.join(runDir, "request.json"),
       null,
@@ -96,6 +100,7 @@ export async function POST(
       await writeStatus(runDir, status);
     }
 
+    await persistMarketingRun(runDir);
     return NextResponse.json({
       ok: true,
       runId,
@@ -118,6 +123,7 @@ export async function POST(
         error: message,
       };
       await writeStatus(runDir, status).catch(() => undefined);
+      await persistMarketingRun(runDir).catch(() => undefined);
     }
     return adminErrorResponse(error, "Failed to prepare social posts");
   }

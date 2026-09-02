@@ -1,22 +1,9 @@
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-import fs from "node:fs";
-import fsPromises from "node:fs/promises";
-import path from "node:path";
-import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
-import { resolveRunAssetPath } from "@/lib/admin/marketing-campaigns";
-
-function contentTypeForFile(filePath: string) {
-  const ext = path.extname(filePath).toLowerCase();
-  if (ext === ".png") return "image/png";
-  if (ext === ".mp4") return "video/mp4";
-  if (ext === ".json") return "application/json; charset=utf-8";
-  if (ext === ".srt") return "text/plain; charset=utf-8";
-  return "application/octet-stream";
-}
+import { readMarketingRunAsset } from "@/lib/admin/marketing-campaigns";
 
 export async function GET(
   request: Request,
@@ -26,12 +13,13 @@ export async function GET(
     await requireAdminSession();
     const { runId } = await context.params;
     const file = new URL(request.url).searchParams.get("file") || "";
-    const absolutePath = resolveRunAssetPath(runId, file);
-    await fsPromises.access(absolutePath);
-    const stream = fs.createReadStream(absolutePath);
-    return new NextResponse(Readable.toWeb(stream) as ReadableStream, {
+    const asset = await readMarketingRunAsset(runId, file);
+    if (!asset) {
+      return NextResponse.json({ error: "Run asset not found" }, { status: 404 });
+    }
+    return new NextResponse(new Uint8Array(asset.bytes), {
       headers: {
-        "Content-Type": contentTypeForFile(absolutePath),
+        "Content-Type": asset.contentType,
         "Cache-Control": "no-store",
       },
     });

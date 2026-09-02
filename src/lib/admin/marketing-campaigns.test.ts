@@ -3,7 +3,29 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { buildRunAssetUrl, readMarketingRunDetail, resolveRunAssetPath } from "./marketing-campaigns.ts";
+import {
+  buildRunAssetUrl,
+  getMarketingRunsRoot,
+  readMarketingRunDetail,
+  resolveMarketingCampaignProjectRoot,
+  resolveRunAssetPath,
+} from "./marketing-campaigns.ts";
+
+test("serverless marketing runs use the writable temporary filesystem", () => {
+  const previousVercel = process.env.VERCEL;
+  process.env.VERCEL = "1";
+  try {
+    const projectRoot = resolveMarketingCampaignProjectRoot("/var/task");
+    assert.equal(projectRoot, path.join(os.tmpdir(), "envitefy-marketing"));
+    assert.equal(
+      getMarketingRunsRoot(projectRoot),
+      path.join(os.tmpdir(), "envitefy-marketing", "qa-artifacts", "storyboard-runs"),
+    );
+  } finally {
+    if (previousVercel === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = previousVercel;
+  }
+});
 
 test("buildRunAssetUrl encodes nested run asset paths", () => {
   const url = buildRunAssetUrl("20260422-140000-test-run", "images/frame-01.png");

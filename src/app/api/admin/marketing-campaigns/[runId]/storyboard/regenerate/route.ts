@@ -1,10 +1,16 @@
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { readJsonFile, resolveRunDir } from "@/lib/admin/marketing-campaigns";
+import {
+  hydrateMarketingRun,
+  persistMarketingRun,
+  readJsonFile,
+  resolveMarketingCampaignProjectRoot,
+} from "@/lib/admin/marketing-campaigns";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 import { spawnBackgroundNodeScript } from "@/lib/admin/spawn-background";
 
@@ -15,7 +21,7 @@ export async function POST(
   try {
     await requireAdminSession();
     const { runId } = await context.params;
-    const runDir = resolveRunDir(runId);
+    const runDir = await hydrateMarketingRun(runId);
     const [status, creativeQa] = await Promise.all([
       readJsonFile<any>(path.join(runDir, "status.json"), null),
       readJsonFile<any>(path.join(runDir, "creative-qa.json"), null),
@@ -61,12 +67,21 @@ export async function POST(
       await fs.writeFile(path.join(runDir, "status.json"), `${JSON.stringify(status, null, 2)}\n`, "utf8");
     }
 
-    const pid = spawnBackgroundNodeScript({
-      scriptPath: path.join(process.cwd(), "scripts", "regenerate-marketing-storyboard.mjs"),
-      args: ["--run-dir", runDir],
-      cwd: process.cwd(),
-      logFile: path.join(runDir, "storyboard-rerun.log"),
-    });
+    let pid: number | null = null;
+    if (resolveMarketingCampaignProjectRoot() !== process.cwd()) {
+      const campaignRun = await import(
+        "../../../../../../../../scripts/lib/campaign-run.mjs"
+      );
+      await campaignRun.rerunStoryboardForRun({ runId, runDir });
+      await persistMarketingRun(runDir);
+    } else {
+      pid = spawnBackgroundNodeScript({
+        scriptPath: path.join(process.cwd(), "scripts", "regenerate-marketing-storyboard.mjs"),
+        args: ["--run-dir", runDir],
+        cwd: process.cwd(),
+        logFile: path.join(runDir, "storyboard-rerun.log"),
+      });
+    }
 
     return NextResponse.json({ ok: true, runId, pid });
   } catch (error) {

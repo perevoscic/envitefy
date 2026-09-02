@@ -3,7 +3,7 @@ export const runtime = "nodejs";
 
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { readJsonFile, resolveRunDir } from "@/lib/admin/marketing-campaigns";
+import { hydrateMarketingRun, readJsonFile } from "@/lib/admin/marketing-campaigns";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 
 export async function GET(
@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: "A valid frame number is required" }, { status: 400 });
     }
 
-    const runDir = resolveRunDir(runId);
+    const runDir = await hydrateMarketingRun(runId);
     const framesManifest = await readJsonFile<any>(path.join(runDir, "frames.json"), null);
     const frame = framesManifest?.frames?.find((item: any) => item?.frameNumber === frameNumber);
     if (!frame) {
@@ -31,6 +31,8 @@ export async function GET(
       inputPath: path.join(runDir, frame.imageFile),
       caption: frame.caption,
       cameraFormat: framesManifest?.renderSize?.cameraFormat || framesManifest?.sceneSpec?.cameraFormat,
+      width: Number(framesManifest?.renderSize?.width) || 1080,
+      height: Number(framesManifest?.renderSize?.height) || 1920,
     });
 
     return new NextResponse(buffer, {

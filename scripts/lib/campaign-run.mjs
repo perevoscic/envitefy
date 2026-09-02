@@ -178,6 +178,7 @@ function normalizeReferenceImages(values = []) {
         path: imagePath,
         absolutePath: clean(source.absolutePath),
         originalName: clean(source.originalName || source.name || path.basename(imagePath)),
+        role: clean(source.role),
         mimeType: clean(source.mimeType || source.type),
         size: Number.isFinite(Number(source.size)) ? Number(source.size) : 0,
       };
@@ -450,12 +451,29 @@ function buildReferencePrompt(prompt, referenceImages = []) {
         `${index + 1}. ${reference.originalName || path.basename(reference.path)}`,
     )
     .join("\n");
+  const brandInstructions = referenceImages
+    .map((reference) => {
+      const name = reference.originalName || path.basename(reference.path);
+      if (reference.role === "brand-wordmark") {
+        return `${name} is the exact official Envitefy wordmark. Use it only when the frame calls for an Envitefy wordmark or prominent brand-name placement. Preserve its lowercase lettering, typeface, spacing, proportions, purple-to-blue gradient, and transparent background; never redraw, restyle, recolor, crop, or invent a variation.`;
+      }
+      if (reference.role === "brand-app-icon") {
+        return `${name} is the exact official Envitefy app icon. Use it only for a compact app badge, avatar, launcher icon, favicon, or small brand mark. Preserve its artwork, colors, rounded-square shape, and proportions; never redraw, restyle, recolor, crop, or invent a variation.`;
+      }
+      return "";
+    })
+    .filter(Boolean);
   return [
     prompt,
     "",
     "REFERENCE IMAGES:",
     names,
     "Use the attached reference images as visual guidance for character appearance, environment, wardrobe, props, product UI, color, mood, or composition when relevant.",
+    brandInstructions.length ? "OFFICIAL BRAND ASSET RULES:" : "",
+    ...brandInstructions,
+    brandInstructions.length
+      ? "Brand references are placement assets, not a request to add branding everywhere. When brandingPresence is none, keep the wordmark and app icon out of the image. Use only the asset appropriate to the requested placement; do not combine both unless the frame explicitly requires both."
+      : "",
     "If a reference image is named frame-01-character-reference, use it only for the same person's face, hairstyle, body type, and home lighting; do not copy its pose, camera angle, color palette, table setup, prop layout, decor accents, curtains, mugs, towels, notes, phone-case color, or background accessory colors into later frames.",
     "The frame-01 reference is not a style board or prop board. Preserve the frame-specific action, camera instructions, and brand-color discipline over the reference image.",
     "Do not copy unrelated artifacts from the references. Preserve the frame-specific action and camera instructions.",
@@ -640,6 +658,13 @@ export function normalizeCampaignInput(rawInput = {}) {
   ).slice(0, 8);
   const audience = clean(input.audience);
   const objective = clean(input.objective);
+  const brandAssets = Array.from(
+    new Set(
+      (Array.isArray(input.brandAssets) ? input.brandAssets : [])
+        .map((asset) => clean(asset).toLowerCase())
+        .filter((asset) => asset === "wordmark" || asset === "app-icon"),
+    ),
+  );
   const criteria = expandMinimalBirthdayDelayCriteria(
     clean(input.criteria) ||
       clean(input.prompt) ||
@@ -672,6 +697,7 @@ export function normalizeCampaignInput(rawInput = {}) {
     channels.length ? `Channels: ${channels.join(", ")}` : "",
     audience ? `Audience: ${audience}` : "",
     objective ? `Objective: ${objective}` : "",
+    brandAssets.length ? `Approved Envitefy brand assets: ${brandAssets.join(", ")}` : "",
     productName ? `Product: ${productName}` : "",
     targetVertical ? `Target vertical: ${targetVertical}` : "",
     tone ? `Tone: ${tone}` : "",
@@ -692,6 +718,7 @@ export function normalizeCampaignInput(rawInput = {}) {
     channels,
     audience,
     objective,
+    brandAssets,
     criteria: normalizeBrandDomainText(criteria),
     productName: normalizeBrandDomainText(productName),
     targetVertical,

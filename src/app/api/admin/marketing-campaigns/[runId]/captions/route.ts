@@ -2,6 +2,10 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import {
+  hydrateMarketingRun,
+  persistMarketingRun,
+} from "@/lib/admin/marketing-campaigns";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 
 export async function POST(
@@ -13,8 +17,10 @@ export async function POST(
     const { runId } = await context.params;
     const body = await request.json();
     const captions = Array.isArray(body?.captions) ? body.captions : [];
+    const runDir = await hydrateMarketingRun(runId);
     const campaignRun = await import("../../../../../../../scripts/lib/campaign-run.mjs");
-    const result = await campaignRun.saveCaptionEditsForRun({ runId, captions });
+    const result = await campaignRun.saveCaptionEditsForRun({ runId, runDir, captions });
+    await persistMarketingRun(runDir);
     return NextResponse.json({
       ok: true,
       frames: result.framesManifest?.frames || [],

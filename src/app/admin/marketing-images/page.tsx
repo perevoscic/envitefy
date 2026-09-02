@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { useSession } from "next-auth/react";
@@ -35,6 +36,7 @@ import {
 type AssetType = "social-image" | "short-video";
 type MarketingChannel = "facebook" | "instagram" | "youtube" | "tiktok";
 type CampaignFilter = "all" | MarketingChannel;
+type BrandAssetId = "wordmark" | "app-icon";
 
 type MarketingPromptIdea = {
   campaignName: string;
@@ -199,6 +201,21 @@ const MARKETING_CHANNELS = [
   { value: "tiktok" as const, label: "TikTok", shortLabel: "TT" },
 ];
 
+const BRAND_ASSETS = [
+  {
+    value: "wordmark" as const,
+    label: "Envitefy wordmark",
+    description: "Wide brand-name placement",
+    src: "/brand/envitefy-wordmark.png",
+  },
+  {
+    value: "app-icon" as const,
+    label: "Envitefy app icon",
+    description: "Compact icon or app badge",
+    src: "/icons/apple-touch-icon-120.png",
+  },
+];
+
 const INITIAL_FORM = {
   assetType: "social-image" as AssetType,
   campaignName: "",
@@ -206,6 +223,7 @@ const INITIAL_FORM = {
   audience: "",
   objective: "",
   channels: ["instagram"] as MarketingChannel[],
+  brandAssets: ["wordmark", "app-icon"] as BrandAssetId[],
   socialPlacement: "feed-square",
   criteria: "",
   productName: "Envitefy",
@@ -226,6 +244,19 @@ const INITIAL_FORM = {
   composition: "",
   mood: "",
 };
+
+const ADVANCED_FORM_FIELDS = [
+  { key: "characterLock", label: "Character Lock" },
+  { key: "outfitLock", label: "Outfit Lock" },
+  { key: "phoneLock", label: "Phone Lock" },
+  { key: "flyerLock", label: "Flyer Lock" },
+  { key: "locationLock", label: "Location Lock" },
+  { key: "backgroundAnchors", label: "Background Anchors" },
+  { key: "screenLock", label: "Screen Lock" },
+  { key: "visualStyle", label: "Visual Style" },
+  { key: "composition", label: "Composition" },
+  { key: "mood", label: "Mood" },
+] as const;
 
 function cn(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
@@ -787,6 +818,15 @@ export default function MarketingCampaignsPage() {
     });
   }
 
+  function toggleBrandAsset(asset: BrandAssetId) {
+    setForm((current) => ({
+      ...current,
+      brandAssets: current.brandAssets.includes(asset)
+        ? current.brandAssets.filter((value) => value !== asset)
+        : [...current.brandAssets, asset],
+    }));
+  }
+
   async function handleGeneratePromptIdea() {
     setGeneratingPrompt(true);
     setError(null);
@@ -856,6 +896,7 @@ export default function MarketingCampaignsPage() {
         campaignName: form.campaignName,
         jobLabel: form.campaignName,
         channels: form.channels,
+        brandAssets: form.brandAssets,
         audience: form.audience,
         objective: form.objective,
         socialPlacement: form.assetType === "social-image" ? form.socialPlacement : "",
@@ -1563,6 +1604,68 @@ export default function MarketingCampaignsPage() {
                   helper="Use this for hard constraints, not for the main campaign brief. Add exclusions for props, locations, staging, or physical continuity."
                 />
 
+                <fieldset className="space-y-3">
+                  <legend className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7f7897]">
+                    Official Envitefy brand assets
+                  </legend>
+                  <div className="grid gap-2">
+                    {BRAND_ASSETS.map((asset) => {
+                      const selected = form.brandAssets.includes(asset.value);
+                      return (
+                        <button
+                          key={asset.value}
+                          type="button"
+                          onClick={() => toggleBrandAsset(asset.value)}
+                          aria-pressed={selected}
+                          className={cn(
+                            "flex min-h-[76px] cursor-pointer items-center gap-3 rounded-[18px] border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67c5] focus-visible:ring-offset-2",
+                            selected
+                              ? "border-[#8f78df] bg-[#f5f0ff]"
+                              : "border-[#e5e0ee] bg-[#fbfafc] hover:border-[#cfc6e5] hover:bg-white",
+                          )}
+                        >
+                          <span className="flex h-12 w-[116px] shrink-0 items-center justify-center rounded-[12px] border border-[#ebe6f2] bg-white px-2">
+                            <Image
+                              src={asset.src}
+                              alt={asset.label}
+                              width={asset.value === "wordmark" ? 100 : 44}
+                              height={asset.value === "wordmark" ? 32 : 44}
+                              className={cn(
+                                "object-contain",
+                                asset.value === "wordmark" ? "h-auto w-[100px]" : "h-11 w-11",
+                              )}
+                            />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-xs font-bold text-[#2b2045]">
+                              {asset.label}
+                            </span>
+                            <span className="mt-1 block text-[10px] leading-4 text-[#7d7593]">
+                              {asset.description}
+                            </span>
+                          </span>
+                          <span
+                            aria-hidden="true"
+                            className={cn(
+                              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border",
+                              selected
+                                ? "border-[#7c67c5] bg-[#7c67c5] text-white"
+                                : "border-[#cfc7dc] bg-white text-transparent",
+                            )}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="px-1 text-xs leading-5 text-[#8a84a1]">
+                    Selected assets are copied into the campaign as locked references. The agent
+                    uses the wordmark for brand-name placement and the icon for compact marks only
+                    when the creative calls for them.
+                  </p>
+                </fieldset>
+
                 <div className="space-y-3">
                   <Label>Reference Images</Label>
                   <label className="flex cursor-pointer items-center justify-center gap-2 rounded-[18px] border border-dashed border-[#ccc4df] bg-[#fbfafc] px-4 py-4 text-sm font-semibold text-[#62577d] transition hover:border-[#8f78df] hover:bg-white">
@@ -1620,22 +1723,11 @@ export default function MarketingCampaignsPage() {
                       className="overflow-hidden"
                     >
                       <div className="grid gap-4 border-t border-[#f0ecf7] pt-5">
-                        {[
-                          ["characterLock", "Character Lock"],
-                          ["outfitLock", "Outfit Lock"],
-                          ["phoneLock", "Phone Lock"],
-                          ["flyerLock", "Flyer Lock"],
-                          ["locationLock", "Location Lock"],
-                          ["backgroundAnchors", "Background Anchors"],
-                          ["screenLock", "Screen Lock"],
-                          ["visualStyle", "Visual Style"],
-                          ["composition", "Composition"],
-                          ["mood", "Mood"],
-                        ].map(([key, label]) => (
+                        {ADVANCED_FORM_FIELDS.map(({ key, label }) => (
                           <TextField
                             key={key}
                             label={label}
-                            value={(form as Record<string, string>)[key]}
+                            value={form[key]}
                             onChange={(event) =>
                               setForm((current) => ({ ...current, [key]: event.target.value }))
                             }

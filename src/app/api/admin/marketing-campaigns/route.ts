@@ -1,10 +1,17 @@
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { NextResponse } from "next/server";
-import { listMarketingRuns } from "@/lib/admin/marketing-campaigns";
+import { after, NextResponse } from "next/server";
+import {
+  getMarketingRunsRoot,
+  isMarketingCampaignBlobStorageEnabled,
+  listMarketingRuns,
+  persistMarketingRun,
+  resolveMarketingCampaignProjectRoot,
+} from "@/lib/admin/marketing-campaigns";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 import { spawnBackgroundNodeScript } from "@/lib/admin/spawn-background";
 
@@ -15,6 +22,20 @@ const REFERENCE_IMAGE_TYPES = new Map([
   ["image/png", ".png"],
   ["image/webp", ".webp"],
 ]);
+const BUILT_IN_BRAND_ASSETS = {
+  wordmark: {
+    sourceParts: ["public", "brand", "envitefy-wordmark.png"],
+    fileName: "envitefy-wordmark-brand-reference.png",
+    role: "brand-wordmark",
+  },
+  "app-icon": {
+    sourceParts: ["public", "icons", "apple-touch-icon-120.png"],
+    fileName: "envitefy-app-icon-brand-reference.png",
+    role: "brand-app-icon",
+  },
+} as const;
+
+type BuiltInBrandAssetId = keyof typeof BUILT_IN_BRAND_ASSETS;
 
 function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -89,6 +110,41 @@ async function saveReferenceImages(runDir: string, referenceFiles: File[]) {
   return saved;
 }
 
+function isBuiltInBrandAssetId(value: string): value is BuiltInBrandAssetId {
+  return Object.hasOwn(BUILT_IN_BRAND_ASSETS, value);
+}
+
+async function saveBuiltInBrandAssets(runDir: string, values: unknown) {
+  const assetIds = Array.from(
+    new Set(
+      (Array.isArray(values) ? values : [])
+        .map((value) => clean(value).toLowerCase())
+        .filter(isBuiltInBrandAssetId),
+    ),
+  );
+  if (!assetIds.length) return [];
+
+  const referenceDir = path.join(runDir, "reference-images");
+  await fs.mkdir(referenceDir, { recursive: true });
+  const saved = [];
+  for (const assetId of assetIds) {
+    const asset = BUILT_IN_BRAND_ASSETS[assetId];
+    const sourcePath = path.join(process.cwd(), ...asset.sourceParts);
+    const relativePath = path.join("reference-images", asset.fileName);
+    const destinationPath = path.join(runDir, relativePath);
+    await fs.copyFile(sourcePath, destinationPath);
+    const fileStat = await fs.stat(destinationPath);
+    saved.push({
+      path: relativePath,
+      originalName: asset.fileName,
+      role: asset.role,
+      mimeType: "image/png",
+      size: fileStat.size,
+    });
+  }
+  return saved;
+}
+
 async function readRunArtifact(runDir: string, fileName: string) {
   try {
     const raw = await fs.readFile(path.join(runDir, fileName), "utf8");
@@ -126,14 +182,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Campaign criteria is required" }, { status: 400 });
     }
 
+    const workingProjectRoot = resolveMarketingCampaignProjectRoot();
+    const isServerlessRuntime = workingProjectRoot !== process.cwd();
+    if (isServerlessRuntime && !isMarketingCampaignBlobStorageEnabled()) {
+      throw new Error(
+        "Marketing campaign storage is not configured. Add BLOB_READ_WRITE_TOKEN to the production environment.",
+      );
+    }
     const runPaths = campaignRun.resolveRunPaths(process.cwd(), {
-      outputRoot: input.outputRoot,
+      outputRoot: isServerlessRuntime
+        ? getMarketingRunsRoot(workingProjectRoot)
+        : input.outputRoot,
       jobLabel: input.jobLabel || input.campaignName || input.productName || "marketing-campaign",
       rawPrompt: input.criteria || input.looseInput?.rawPrompt,
     });
 
     await fs.mkdir(runPaths.runDir, { recursive: true });
-    const referenceImages = await saveReferenceImages(runPaths.runDir, referenceFiles);
+    const [brandReferenceImages, uploadedReferenceImages] = await Promise.all([
+      saveBuiltInBrandAssets(runPaths.runDir, input.brandAssets),
+      saveReferenceImages(runPaths.runDir, referenceFiles),
+    ]);
+    const referenceImages = [...brandReferenceImages, ...uploadedReferenceImages];
     if (referenceImages.length > 0) {
       input = campaignRun.normalizeCampaignInput({
         ...body,
@@ -176,12 +245,40 @@ export async function POST(request: Request) {
       "utf8",
     );
 
-    const pid = spawnBackgroundNodeScript({
-      scriptPath: path.join(process.cwd(), "scripts", "generate-marketing-campaign.mjs"),
-      args: ["--request-file", runPaths.requestPath, "--run-dir", runPaths.runDir, "--skip-video"],
-      cwd: process.cwd(),
-      logFile: path.join(runPaths.runDir, "runner.log"),
-    });
+    let pid: number | null = null;
+    if (isServerlessRuntime) {
+      await persistMarketingRun(runPaths.runDir);
+      after(async () => {
+        try {
+          await campaignRun.runCampaign({
+            campaignInput: input,
+            projectRoot: process.cwd(),
+            runDir: runPaths.runDir,
+            autoRenderVideo: false,
+          });
+        } catch (error) {
+          console.error("[marketing-campaigns] serverless campaign run failed", {
+            runId: path.basename(runPaths.runDir),
+            message: error instanceof Error ? error.message : String(error),
+          });
+        } finally {
+          await persistMarketingRun(runPaths.runDir);
+        }
+      });
+    } else {
+      pid = spawnBackgroundNodeScript({
+        scriptPath: path.join(process.cwd(), "scripts", "generate-marketing-campaign.mjs"),
+        args: [
+          "--request-file",
+          runPaths.requestPath,
+          "--run-dir",
+          runPaths.runDir,
+          "--skip-video",
+        ],
+        cwd: process.cwd(),
+        logFile: path.join(runPaths.runDir, "runner.log"),
+      });
+    }
 
     const requestPayload = await readRunArtifact(runPaths.runDir, "request.json");
 

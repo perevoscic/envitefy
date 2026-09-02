@@ -7,6 +7,10 @@ const socialRoute = await readFile(
   new URL("../../api/admin/marketing-campaigns/[runId]/social-images/route.ts", import.meta.url),
   "utf8",
 );
+const campaignRoute = await readFile(
+  new URL("../../api/admin/marketing-campaigns/route.ts", import.meta.url),
+  "utf8",
+);
 const promptRoute = await readFile(
   new URL("../../api/admin/marketing-campaigns/prompt-ideas/route.ts", import.meta.url),
   "utf8",
@@ -17,6 +21,10 @@ const promptAgent = await readFile(
 );
 const campaignRun = await readFile(
   new URL("../../../../scripts/lib/campaign-run.mjs", import.meta.url),
+  "utf8",
+);
+const storyboardGenerator = await readFile(
+  new URL("../../../../scripts/lib/storyboard-generator.mjs", import.meta.url),
   "utf8",
 );
 
@@ -66,4 +74,26 @@ test("campaign library records channel and strategy context", () => {
   assert.match(campaignRun, /channels/);
   assert.match(campaignRun, /audience/);
   assert.match(campaignRun, /objective/);
+});
+
+test("creative production includes selectable official Envitefy brand references", () => {
+  assert.match(source, /Official Envitefy brand assets/);
+  assert.match(source, /\/brand\/envitefy-wordmark\.png/);
+  assert.match(source, /\/icons\/apple-touch-icon-120\.png/);
+  assert.match(source, /brandAssets: form\.brandAssets/);
+  assert.match(campaignRoute, /BUILT_IN_BRAND_ASSETS/);
+  assert.match(campaignRoute, /fs\.copyFile/);
+  assert.match(campaignRoute, /brand-wordmark/);
+  assert.match(campaignRoute, /brand-app-icon/);
+  assert.match(campaignRun, /When brandingPresence is none, keep the wordmark and app icon out/);
+  assert.match(storyboardGenerator, /public\/brand\/envitefy-wordmark\.png/);
+  assert.match(storyboardGenerator, /public\/icons\/apple-touch-icon-120\.png/);
+});
+
+test("production campaign runs use writable durable serverless storage", () => {
+  assert.match(campaignRoute, /resolveMarketingCampaignProjectRoot/);
+  assert.match(campaignRoute, /getMarketingRunsRoot\(workingProjectRoot\)/);
+  assert.match(campaignRoute, /persistMarketingRun\(runPaths\.runDir\)/);
+  assert.match(campaignRoute, /after\(async \(\) =>/);
+  assert.match(campaignRoute, /campaignRun\.runCampaign/);
 });

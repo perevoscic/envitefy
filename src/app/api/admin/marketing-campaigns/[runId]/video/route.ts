@@ -1,10 +1,16 @@
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { readJsonFile, resolveRunDir } from "@/lib/admin/marketing-campaigns";
+import {
+  hydrateMarketingRun,
+  persistMarketingRun,
+  readJsonFile,
+  resolveMarketingCampaignProjectRoot,
+} from "@/lib/admin/marketing-campaigns";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 import { spawnBackgroundNodeScript } from "@/lib/admin/spawn-background";
 
@@ -15,7 +21,7 @@ export async function POST(
   try {
     await requireAdminSession();
     const { runId } = await context.params;
-    const runDir = resolveRunDir(runId);
+    const runDir = await hydrateMarketingRun(runId);
     const status = await readJsonFile<any>(path.join(runDir, "status.json"), null);
 
     if (status?.stages?.video?.status === "running") {
@@ -36,12 +42,21 @@ export async function POST(
       await fs.writeFile(path.join(runDir, "status.json"), `${JSON.stringify(status, null, 2)}\n`, "utf8");
     }
 
-    const pid = spawnBackgroundNodeScript({
-      scriptPath: path.join(process.cwd(), "scripts", "assemble-storyboard-video.mjs"),
-      args: ["--run-dir", runDir],
-      cwd: process.cwd(),
-      logFile: path.join(runDir, "video.log"),
-    });
+    let pid: number | null = null;
+    if (resolveMarketingCampaignProjectRoot() !== process.cwd()) {
+      const videoAssembler = await import(
+        "../../../../../../../scripts/lib/video-assembler.mjs"
+      );
+      await videoAssembler.assembleVideoForRun({ runId, runDir });
+      await persistMarketingRun(runDir);
+    } else {
+      pid = spawnBackgroundNodeScript({
+        scriptPath: path.join(process.cwd(), "scripts", "assemble-storyboard-video.mjs"),
+        args: ["--run-dir", runDir],
+        cwd: process.cwd(),
+        logFile: path.join(runDir, "video.log"),
+      });
+    }
 
     return NextResponse.json({ ok: true, runId, pid });
   } catch (error) {
