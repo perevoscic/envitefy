@@ -96,6 +96,19 @@ function drawCenteredLine(ctx, text, y, accentWord, accentColor) {
   }
 }
 
+function drawLeftLine(ctx, text, x, y, accentWord, accentColor) {
+  const words = clean(text).split(/\s+/).filter(Boolean);
+  const gap = ctx.measureText(" ").width;
+  let cursor = x;
+
+  for (const word of words) {
+    const isAccent = clean(accentWord).toLowerCase() === word.toLowerCase();
+    ctx.fillStyle = isAccent ? accentColor : "#ffffff";
+    ctx.fillText(word, cursor, y);
+    cursor += ctx.measureText(word).width + gap;
+  }
+}
+
 function drawImageCover(ctx, image, width, height) {
   const imageWidth = image.width || width;
   const imageHeight = image.height || height;
@@ -107,6 +120,82 @@ function drawImageCover(ctx, image, width, height) {
   ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
 }
 
+async function drawSocialPostLayout({
+  ctx,
+  loadImage,
+  projectRoot,
+  caption,
+  callToAction,
+  accentColor,
+}) {
+  const canvasWidth = ctx.canvas.width;
+  const canvasHeight = ctx.canvas.height;
+  const isLandscape = canvasWidth > canvasHeight;
+  const safeX = canvasWidth * 0.07;
+  const safeWidth = canvasWidth * (isLandscape ? 0.48 : 0.82);
+
+  const overlay = ctx.createLinearGradient(0, 0, isLandscape ? canvasWidth * 0.76 : 0, canvasHeight);
+  overlay.addColorStop(0, "rgba(12, 9, 27, 0.88)");
+  overlay.addColorStop(isLandscape ? 0.6 : 0.46, "rgba(18, 12, 40, 0.68)");
+  overlay.addColorStop(1, "rgba(18, 12, 40, 0.08)");
+  ctx.fillStyle = overlay;
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  const wordmarkPath = path.join(projectRoot, "public", "brand", "envitefy-wordmark.png");
+  if (await exists(wordmarkPath)) {
+    const wordmark = await loadImage(wordmarkPath);
+    const logoWidth = canvasWidth * (isLandscape ? 0.22 : 0.34);
+    const logoHeight = logoWidth * ((wordmark.height || 355) / (wordmark.width || 1103));
+    ctx.drawImage(wordmark, safeX, canvasHeight * 0.065, logoWidth, logoHeight);
+  }
+
+  const text = clean(caption?.text);
+  const emphasisWord = clean(caption?.emphasisWord);
+  let fontSize = Math.round(canvasWidth * (isLandscape ? 0.058 : 0.078));
+  let lines = [];
+  while (fontSize >= Math.round(canvasWidth * 0.044)) {
+    ctx.font = `900 ${fontSize}px "Envitefy Caption", sans-serif`;
+    lines = wrapText(ctx, text, safeWidth, isLandscape ? 3 : 4);
+    const longest = Math.max(...lines.map((line) => ctx.measureText(line).width), 0);
+    if (longest <= safeWidth) break;
+    fontSize -= 6;
+  }
+
+  ctx.font = `900 ${fontSize}px "Envitefy Caption", sans-serif`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.34)";
+  ctx.shadowBlur = 22;
+  ctx.shadowOffsetY = 7;
+  const lineHeight = fontSize * 1.02;
+  const headlineBottom = canvasHeight * (isLandscape ? 0.7 : 0.72);
+  const startY = headlineBottom - (Math.max(lines.length, 1) - 1) * lineHeight;
+  for (let index = 0; index < lines.length; index += 1) {
+    drawLeftLine(ctx, lines[index], safeX, startY + index * lineHeight, emphasisWord, accentColor);
+  }
+
+  const cta = clean(callToAction);
+  if (cta) {
+    ctx.shadowColor = "transparent";
+    ctx.font = `800 ${Math.round(canvasWidth * (isLandscape ? 0.018 : 0.032))}px "Envitefy Caption", sans-serif`;
+    const horizontalPadding = canvasWidth * 0.026;
+    const pillHeight = canvasHeight * (isLandscape ? 0.085 : 0.058);
+    const pillWidth = Math.min(ctx.measureText(cta).width + horizontalPadding * 2, safeWidth);
+    const pillY = canvasHeight * (isLandscape ? 0.79 : 0.81);
+    const radius = pillHeight / 2;
+    const pillGradient = ctx.createLinearGradient(safeX, pillY, safeX + pillWidth, pillY);
+    pillGradient.addColorStop(0, "#6b3cff");
+    pillGradient.addColorStop(1, "#37a8ff");
+    ctx.fillStyle = pillGradient;
+    ctx.beginPath();
+    ctx.roundRect(safeX, pillY, pillWidth, pillHeight, radius);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.textBaseline = "middle";
+    ctx.fillText(cta, safeX + horizontalPadding, pillY + pillHeight / 2);
+  }
+}
+
 export async function renderCaptionedFrameBuffer({
   projectRoot = process.cwd(),
   inputPath,
@@ -114,7 +203,9 @@ export async function renderCaptionedFrameBuffer({
   cameraFormat = "vertical",
   width,
   height,
-  accentColor = "#34d399",
+  accentColor = "#5a7dff",
+  layout = "video-caption",
+  callToAction = "",
 }) {
   const { createCanvas, loadImage } = await getCanvasModule();
   const fontFamily = await ensureCaptionFont(projectRoot);
@@ -125,6 +216,18 @@ export async function renderCaptionedFrameBuffer({
   const ctx = canvas.getContext("2d");
   const image = await loadImage(inputPath);
   drawImageCover(ctx, image, canvasWidth, canvasHeight);
+
+  if (layout === "social-post") {
+    await drawSocialPostLayout({
+      ctx,
+      loadImage,
+      projectRoot,
+      caption,
+      callToAction,
+      accentColor,
+    });
+    return canvas.toBuffer("image/png");
+  }
 
   const gradient = ctx.createLinearGradient(0, canvasHeight * 0.52, 0, canvasHeight);
   gradient.addColorStop(0, "rgba(0,0,0,0)");
@@ -170,7 +273,9 @@ export async function renderCaptionedFrameToFile({
   cameraFormat = "vertical",
   width,
   height,
-  accentColor = "#34d399",
+  accentColor = "#5a7dff",
+  layout = "video-caption",
+  callToAction = "",
 }) {
   const buffer = await renderCaptionedFrameBuffer({
     projectRoot,
@@ -180,6 +285,8 @@ export async function renderCaptionedFrameToFile({
     width,
     height,
     accentColor,
+    layout,
+    callToAction,
   });
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, buffer);

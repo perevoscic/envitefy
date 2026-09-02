@@ -10,6 +10,8 @@ import {
   FRAME_PLAN_RESPONSE_FORMAT,
   SOCIAL_COPY_RESPONSE_FORMAT,
   SOCIAL_COPY_SYSTEM_PROMPT,
+  SOCIAL_IMAGE_COORDINATOR_SYSTEM_PROMPT,
+  SOCIAL_IMAGE_COPY_SYSTEM_PROMPT,
 } from "./lib/campaign-agents.mjs";
 
 test("brief prompt requires one audience, one pain, one promise, and one proof moment", () => {
@@ -46,6 +48,13 @@ test("social copy prompt bans literal filler captions", () => {
   assert.match(SOCIAL_COPY_SYSTEM_PROMPT, /Ban filler like 'here we go'/i);
   assert.match(SOCIAL_COPY_SYSTEM_PROMPT, /must persuade rather than label/i);
   assert.match(SOCIAL_COPY_SYSTEM_PROMPT, /one less task/i);
+});
+
+test("static social prompts produce standalone agency-style post concepts", () => {
+  assert.match(SOCIAL_IMAGE_COORDINATOR_SYSTEM_PROMPT, /standalone post creative/i);
+  assert.match(SOCIAL_IMAGE_COORDINATOR_SYSTEM_PROMPT, /negative space for a short headline/i);
+  assert.match(SOCIAL_IMAGE_COPY_SYSTEM_PROMPT, /ready-to-publish post caption/i);
+  assert.match(SOCIAL_IMAGE_COPY_SYSTEM_PROMPT, /Do not mention video, motion, watching, or voiceover/i);
 });
 
 test("brief, social copy, and creative qa schemas require the new fields", () => {

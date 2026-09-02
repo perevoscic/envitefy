@@ -1,26 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   CheckCircle2,
   ChevronDown,
+  Clapperboard,
   Clock3,
+  Download,
   FileJson,
+  GalleryHorizontal,
   ImagePlus,
+  Images,
   LayoutGrid,
   Loader2,
+  MonitorUp,
   MoreHorizontal,
   Play,
   RotateCcw,
   Save,
+  Smartphone,
   Sparkles,
   Video,
   X,
 } from "lucide-react";
+
+type AssetType = "social-image" | "short-video";
 
 type Caption = {
   text: string;
@@ -108,6 +116,57 @@ const TARGET_VERTICALS = [
 
 const KINETIC_STYLES = ["pop-in", "typewriter", "word-by-word", "static"];
 
+const SOCIAL_PLACEMENTS = [
+  {
+    value: "feed-square",
+    label: "Feed Post",
+    detail: "Instagram + Facebook",
+    ratio: "1:1",
+    cameraFormat: "square",
+    icon: GalleryHorizontal,
+  },
+  {
+    value: "story-vertical",
+    label: "Story",
+    detail: "Instagram + Facebook",
+    ratio: "9:16",
+    cameraFormat: "vertical",
+    icon: Smartphone,
+  },
+  {
+    value: "social-landscape",
+    label: "Landscape Post",
+    detail: "LinkedIn + X",
+    ratio: "16:9",
+    cameraFormat: "horizontal",
+    icon: MonitorUp,
+  },
+] as const;
+
+const VIDEO_FORMATS = [
+  {
+    value: "vertical",
+    label: "Vertical Video",
+    detail: "Reels, TikTok, Shorts",
+    ratio: "9:16",
+    icon: Smartphone,
+  },
+  {
+    value: "square",
+    label: "Square Video",
+    detail: "Social feeds",
+    ratio: "1:1",
+    icon: GalleryHorizontal,
+  },
+  {
+    value: "horizontal",
+    label: "Landscape Video",
+    detail: "YouTube + paid social",
+    ratio: "16:9",
+    icon: MonitorUp,
+  },
+] as const;
+
 const STAGE_ORDER = [
   "brief",
   "persona",
@@ -117,16 +176,19 @@ const STAGE_ORDER = [
   "social-copy",
   "creative-qa",
   "image-generation",
+  "social-export",
   "video",
 ];
 
 const INITIAL_FORM = {
+  assetType: "social-image" as AssetType,
+  socialPlacement: "feed-square",
   criteria: "",
   productName: "",
   targetVertical: "",
   tone: "",
   callToAction: "",
-  frameCount: "5",
+  frameCount: "3",
   notes: "",
   characterLock: "",
   outfitLock: "",
@@ -135,7 +197,7 @@ const INITIAL_FORM = {
   locationLock: "",
   backgroundAnchors: "",
   screenLock: "",
-  cameraFormat: "vertical",
+  cameraFormat: "square",
   visualStyle: "",
   composition: "",
   mood: "",
@@ -150,10 +212,19 @@ function stageLabel(key: string) {
   if (key === "social-copy") return "Social Copy";
   if (key === "creative-qa") return "Creative QA";
   if (key === "image-generation") return "Image Generation";
+  if (key === "social-export") return "Social Export";
   return key
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function normalizeAssetType(value: unknown): AssetType {
+  return value === "social-image" ? "social-image" : "short-video";
+}
+
+function assetTypeLabel(value: AssetType) {
+  return value === "social-image" ? "Social image" : "Short-form video";
 }
 
 function prettyJson(value: unknown) {
@@ -177,7 +248,9 @@ function formatTimestamp(value: string | null | undefined) {
 function statusTone(status: string | null | undefined): BadgeTone {
   const normalized = (status || "").toLowerCase();
   if (["done", "completed", "complete", "succeeded"].includes(normalized)) return "success";
-  if (["running", "queued", "rendering_video", "render-queued"].includes(normalized)) return "info";
+  if (["running", "queued", "rendering_video", "rendering_images", "render-queued"].includes(normalized)) {
+    return "info";
+  }
   if (["warning", "warnings"].includes(normalized)) return "warning";
   if (["failed", "error"].includes(normalized)) return "danger";
   return "default";
@@ -263,11 +336,14 @@ function StatusBadge({ children, tone = "default" }: { children: ReactNode; tone
   );
 }
 
-function Label({ children }: { children: ReactNode }) {
-  return (
-    <label className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7f7897]">
+function Label({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {
+  const className = "px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7f7897]";
+  return htmlFor ? (
+    <label htmlFor={htmlFor} className={className}>
       {children}
     </label>
+  ) : (
+    <div className={className}>{children}</div>
   );
 }
 
@@ -290,11 +366,13 @@ function TextField({
   max?: number;
   step?: number;
 }) {
+  const inputId = useId();
   const hasValue = `${value}`.length > 0;
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      <Label htmlFor={inputId}>{label}</Label>
       <input
+        id={inputId}
         type={type}
         value={value}
         onChange={onChange}
@@ -327,10 +405,12 @@ function TextAreaField({
   rows?: number;
   helper?: string;
 }) {
+  const inputId = useId();
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      <Label htmlFor={inputId}>{label}</Label>
       <textarea
+        id={inputId}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
@@ -355,11 +435,13 @@ function SelectField({
   options: string[];
   emptyLabel?: string;
 }) {
+  const inputId = useId();
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      <Label htmlFor={inputId}>{label}</Label>
       <div className="relative">
         <select
+          id={inputId}
           value={value}
           onChange={onChange}
           className={cn(
@@ -400,7 +482,7 @@ function SecondaryButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center justify-center gap-2 rounded-[18px] border border-[#ddd8e9] bg-white px-4 py-2.5 text-sm font-semibold text-[#5f5678] transition hover:bg-[#faf8fd] disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] border border-[#ddd8e9] bg-white px-4 py-2.5 text-sm font-semibold text-[#5f5678] transition hover:bg-[#faf8fd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67c5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {icon}
       {children}
@@ -429,7 +511,7 @@ function PrimaryButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-[18px] bg-[#7c67c5] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_16px_28px_rgba(124,103,197,0.25)] transition hover:bg-[#715abf] disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] bg-[#7c67c5] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_16px_28px_rgba(124,103,197,0.25)] transition hover:bg-[#715abf] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67c5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
         className,
       )}
     >
@@ -451,6 +533,7 @@ export default function MarketingCampaignsPage() {
   const [savingCaptions, setSavingCaptions] = useState(false);
   const [regeneratingCaptions, setRegeneratingCaptions] = useState(false);
   const [regeneratingStoryboard, setRegeneratingStoryboard] = useState(false);
+  const [renderingSocialImages, setRenderingSocialImages] = useState(false);
   const [renderingVideo, setRenderingVideo] = useState(false);
   const [lightboxFrame, setLightboxFrame] = useState<Frame | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -522,7 +605,9 @@ export default function MarketingCampaignsPage() {
 
   useEffect(() => {
     if (!detail?.status?.state) return;
-    const shouldPoll = ["queued", "running", "render-queued", "rendering_video"].includes(detail.status.state);
+    const shouldPoll = ["queued", "running", "render-queued", "rendering_video", "rendering_images"].includes(
+      detail.status.state,
+    );
     if (!shouldPoll) return;
     const intervalId = window.setInterval(() => {
       loadDetail(detail.runId, true);
@@ -530,6 +615,11 @@ export default function MarketingCampaignsPage() {
     }, 2000);
     return () => window.clearInterval(intervalId);
   }, [detail?.runId, detail?.status?.state]);
+
+  const detailAssetType = normalizeAssetType(
+    detail?.request?.input?.assetType || detail?.status?.request?.assetType,
+  );
+  const formIsSocialImage = form.assetType === "social-image";
 
   const stages = useMemo(() => {
     const stageMap = detail?.status?.stages || {};
@@ -541,6 +631,9 @@ export default function MarketingCampaignsPage() {
       updatedAt: stageMap[key]?.updatedAt || null,
     }));
   }, [detail]);
+  const visibleStages = stages.filter((stage) =>
+    detailAssetType === "social-image" ? stage.key !== "video" : stage.key !== "social-export",
+  );
 
   const frameRows = detail?.frames?.frames || [];
   const qaSummary = useMemo<CreativeQa | null>(() => {
@@ -577,7 +670,9 @@ export default function MarketingCampaignsPage() {
       rewriteBrief: typeof qa.rewriteBrief === "string" ? qa.rewriteBrief : "",
     };
   }, [detail?.creativeQa]);
-  const runIsActive = ["queued", "running", "render-queued", "rendering_video"].includes(detail?.status?.state || "");
+  const runIsActive = ["queued", "running", "render-queued", "rendering_video", "rendering_images"].includes(
+    detail?.status?.state || "",
+  );
   const storyboardCanRegenerate =
     Boolean(qaSummary) ||
     Boolean(
@@ -591,6 +686,30 @@ export default function MarketingCampaignsPage() {
       : cameraFormat === "square"
         ? "aspect-square"
         : "aspect-[9/16]";
+  const preparedPostCount = frameRows.filter((frame) => Boolean(frame.captionedImageUrl)).length;
+  const detailSocialPlacement = SOCIAL_PLACEMENTS.find(
+    (placement) => placement.value === detail?.request?.input?.socialPlacement,
+  );
+
+  function handleAssetTypeChange(assetType: AssetType) {
+    setForm((current) => ({
+      ...current,
+      assetType,
+      socialPlacement: assetType === "social-image" ? "feed-square" : current.socialPlacement,
+      cameraFormat: assetType === "social-image" ? "square" : "vertical",
+      frameCount: assetType === "social-image" ? "3" : "5",
+    }));
+  }
+
+  function handleSocialPlacementChange(value: string) {
+    const placement = SOCIAL_PLACEMENTS.find((item) => item.value === value);
+    if (!placement) return;
+    setForm((current) => ({
+      ...current,
+      socialPlacement: placement.value,
+      cameraFormat: placement.cameraFormat,
+    }));
+  }
 
   async function handleGenerate(event: React.FormEvent) {
     event.preventDefault();
@@ -603,6 +722,8 @@ export default function MarketingCampaignsPage() {
           ? Math.min(24, parsedFrameCount)
           : 5;
       const payload = {
+        assetType: form.assetType,
+        socialPlacement: form.assetType === "social-image" ? form.socialPlacement : "",
         criteria: form.criteria,
         productName: form.productName,
         targetVertical: form.targetVertical || "General",
@@ -776,6 +897,27 @@ export default function MarketingCampaignsPage() {
     }
   }
 
+  async function handlePrepareSocialImages() {
+    if (!detail?.runId) return;
+    setRenderingSocialImages(true);
+    setError(null);
+    try {
+      await persistCaptions();
+      const response = await fetch(
+        `/api/admin/marketing-campaigns/${encodeURIComponent(detail.runId)}/social-images`,
+        { method: "POST" },
+      );
+      const json = await response.json();
+      if (!response.ok) throw new Error(json?.error || "Failed to prepare social posts");
+      await loadRuns(true);
+      await loadDetail(detail.runId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to prepare social posts");
+    } finally {
+      setRenderingSocialImages(false);
+    }
+  }
+
   async function handleResetPage() {
     setError(null);
     setShowAdvanced(false);
@@ -818,17 +960,27 @@ export default function MarketingCampaignsPage() {
               ← Admin
             </Link>
             <h1 className="font-[var(--font-playfair)] text-4xl leading-none font-semibold tracking-[-0.04em] text-[#22163b] sm:text-5xl">
-              Marketing Images
+              Marketing Creative Studio
             </h1>
             <p className="max-w-3xl text-sm font-medium text-[#6f6786] sm:text-base">
-              Generate branded storyboard images, refine captions, and render short-form videos.
+              Create finished social image posts or build captioned short-form videos in dedicated workflows.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <SecondaryButton onClick={handleResetPage} icon={<RotateCcw className="h-4 w-4" />}>
               Reset Page
             </SecondaryButton>
-            {detail?.videoUrl ? (
+            {detailAssetType === "social-image" && frameRows[0]?.captionedImageUrl ? (
+              <a
+                href={frameRows[0].captionedImageUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[18px] border border-[#ddd8e9] bg-white px-4 py-2.5 text-sm font-semibold text-[#5f5678] transition hover:bg-[#faf8fd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67c5] focus-visible:ring-offset-2"
+              >
+                <Images className="h-4 w-4" aria-hidden="true" />
+                Open Latest Post
+              </a>
+            ) : detail?.videoUrl ? (
               <a
                 href={detail.videoUrl}
                 target="_blank"
@@ -850,7 +1002,7 @@ export default function MarketingCampaignsPage() {
         <div className="grid items-start gap-8 xl:grid-cols-[380px_minmax(0,1fr)]">
           <aside className="space-y-8 xl:sticky xl:top-6">
             <PageCard
-              title={<h2 className="text-xl font-semibold text-[#271a45]">New Run</h2>}
+              title={<h2 className="text-xl font-semibold text-[#271a45]">New Campaign</h2>}
               action={
                 <button
                   type="button"
@@ -865,12 +1017,79 @@ export default function MarketingCampaignsPage() {
               }
             >
               <form onSubmit={handleGenerate} className="space-y-5">
+                <fieldset className="space-y-3">
+                  <legend className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7f7897]">
+                    What are you creating?
+                  </legend>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                    {([
+                      {
+                        value: "social-image" as const,
+                        label: "Social image",
+                        description: "Finished, downloadable posts",
+                        icon: Images,
+                      },
+                      {
+                        value: "short-video" as const,
+                        label: "Short-form video",
+                        description: "Storyboard, captions, MP4",
+                        icon: Clapperboard,
+                      },
+                    ]).map((option) => {
+                      const selected = form.assetType === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => handleAssetTypeChange(option.value)}
+                          aria-pressed={selected}
+                          className={cn(
+                            "min-h-[112px] rounded-[22px] border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67c5] focus-visible:ring-offset-2",
+                            selected
+                              ? "border-[#8f78df] bg-[#f3edff] shadow-[0_12px_30px_rgba(93,63,174,0.12)]"
+                              : "border-[#e5e0ee] bg-[#fbfafc] hover:border-[#cfc6e5] hover:bg-white",
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <span
+                              className={cn(
+                                "flex h-10 w-10 items-center justify-center rounded-[14px]",
+                                selected ? "bg-[#7c67c5] text-white" : "bg-white text-[#7c67c5]",
+                              )}
+                            >
+                              <option.icon className="h-5 w-5" aria-hidden="true" />
+                            </span>
+                            <span
+                              aria-hidden="true"
+                              className={cn(
+                                "mt-1 h-3 w-3 rounded-full border-2",
+                                selected ? "border-[#7c67c5] bg-[#7c67c5]" : "border-[#c9c1da] bg-white",
+                              )}
+                            />
+                          </div>
+                          <div className="mt-4 text-sm font-bold text-[#271a45]">{option.label}</div>
+                          <div className="mt-1 text-xs leading-5 text-[#7d7593]">{option.description}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
                 <TextAreaField
-                  label="Campaign Criteria"
+                  label="Campaign Brief"
                   value={form.criteria}
                   onChange={(event) => setForm((current) => ({ ...current, criteria: event.target.value }))}
-                  placeholder="a mom creates a live card using envitefy studio for her son Caleb's 7th birthday pool party..."
+                  placeholder={
+                    formIsSocialImage
+                      ? "Promote Envitefy to busy parents with a polished, scroll-stopping post that makes event planning feel effortless..."
+                      : "A mom creates a live card using Envitefy Studio for her son's birthday, moving from planning stress to send-ready relief..."
+                  }
                   rows={4}
+                  helper={
+                    formIsSocialImage
+                      ? "Describe the audience, offer, proof, and visual idea. Each concept should work as a standalone post."
+                      : "Describe the audience, hook, transformation, proof moment, and final payoff for the sequence."
+                  }
                 />
                 <TextField
                   label="Product Name"
@@ -890,15 +1109,55 @@ export default function MarketingCampaignsPage() {
                     options={TARGET_VERTICALS.filter((vertical) => vertical !== "General")}
                   />
                   <TextField
-                    label="Frames"
+                    label={formIsSocialImage ? "Post Concepts" : "Frames"}
                     type="number"
                     min={1}
                     max={24}
                     value={form.frameCount}
                     onChange={(event) => setForm((current) => ({ ...current, frameCount: event.target.value }))}
-                    placeholder="5"
+                    placeholder={formIsSocialImage ? "3" : "5"}
                   />
                 </div>
+
+                <fieldset className="space-y-3">
+                  <legend className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7f7897]">
+                    {formIsSocialImage ? "Social Placement" : "Video Format"}
+                  </legend>
+                  <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
+                    {(formIsSocialImage ? SOCIAL_PLACEMENTS : VIDEO_FORMATS).map((option) => {
+                      const selected = formIsSocialImage
+                        ? form.socialPlacement === option.value
+                        : form.cameraFormat === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() =>
+                            formIsSocialImage
+                              ? handleSocialPlacementChange(option.value)
+                              : setForm((current) => ({ ...current, cameraFormat: option.value }))
+                          }
+                          aria-pressed={selected}
+                          className={cn(
+                            "min-h-[104px] rounded-[18px] border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67c5] focus-visible:ring-offset-2",
+                            selected
+                              ? "border-[#8f78df] bg-[#f3edff]"
+                              : "border-[#e5e0ee] bg-[#fbfafc] hover:border-[#cfc6e5] hover:bg-white",
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <option.icon className="h-4 w-4 text-[#7c67c5]" aria-hidden="true" />
+                            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-[#71668b]">
+                              {option.ratio}
+                            </span>
+                          </div>
+                          <div className="mt-3 text-xs font-bold text-[#2b2045]">{option.label}</div>
+                          <div className="mt-1 text-[10px] leading-4 text-[#837b99]">{option.detail}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
 
                 <TextField
                   label="Tone"
@@ -1010,9 +1269,23 @@ export default function MarketingCampaignsPage() {
                   type="submit"
                   disabled={submitting}
                   className="w-full py-3.5"
-                  icon={submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current" />}
+                  icon={
+                    submitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : formIsSocialImage ? (
+                      <Sparkles className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4 fill-current" />
+                    )
+                  }
                 >
-                  {submitting ? "Generating Images…" : "Generate Images"}
+                  {submitting
+                    ? formIsSocialImage
+                      ? "Creating Post Concepts…"
+                      : "Building Storyboard…"
+                    : formIsSocialImage
+                      ? "Generate Social Posts"
+                      : "Generate Video Storyboard"}
                 </PrimaryButton>
               </form>
             </PageCard>
@@ -1027,6 +1300,9 @@ export default function MarketingCampaignsPage() {
                   const selected = selectedRunId === run.runId;
                   const runState = run.status?.state || "unknown";
                   const runLabel = run.request?.input?.productName || "Untitled";
+                  const runAssetType = normalizeAssetType(
+                    run.request?.input?.assetType || run.status?.request?.assetType,
+                  );
                   return (
                     <button
                       type="button"
@@ -1043,8 +1319,11 @@ export default function MarketingCampaignsPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-bold text-[#24193f]">{run.runId}</div>
-                          <div className="mt-1 text-xs font-medium text-[#7b7394]">
-                            {statusLabel(runState)} · {runLabel}
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-[#7b7394]">
+                            <span>{statusLabel(runState)} · {runLabel}</span>
+                            <StatusBadge tone={runAssetType === "social-image" ? "info" : "default"}>
+                              {assetTypeLabel(runAssetType)}
+                            </StatusBadge>
                           </div>
                         </div>
                         {runState === "running" ? (
@@ -1082,29 +1361,61 @@ export default function MarketingCampaignsPage() {
                     disabled={!detail?.runId || !storyboardCanRegenerate || regeneratingStoryboard || runIsActive}
                     icon={regeneratingStoryboard ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   >
-                    {regeneratingStoryboard ? "Rewriting…" : "Regenerate Storyboard"}
+                    {regeneratingStoryboard
+                      ? "Rewriting…"
+                      : detailAssetType === "social-image"
+                        ? "Regenerate Concepts"
+                        : "Regenerate Storyboard"}
                   </SecondaryButton>
                   <SecondaryButton
                     onClick={handleRegenerateCaptions}
                     disabled={!detail?.runId || regeneratingCaptions || runIsActive}
                     icon={regeneratingCaptions ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   >
-                    {regeneratingCaptions ? "Regenerating…" : "Regenerate Captions"}
+                    {regeneratingCaptions
+                      ? "Regenerating…"
+                      : detailAssetType === "social-image"
+                        ? "Regenerate Copy"
+                        : "Regenerate Captions"}
                   </SecondaryButton>
                   <SecondaryButton
                     onClick={handleSaveCaptions}
                     disabled={!detail?.runId || savingCaptions || runIsActive}
                     icon={savingCaptions ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   >
-                    {savingCaptions ? "Saving…" : "Save Captions"}
+                    {savingCaptions
+                      ? "Saving…"
+                      : detailAssetType === "social-image"
+                        ? "Save Copy"
+                        : "Save Captions"}
                   </SecondaryButton>
-                  <PrimaryButton
-                    onClick={handleRenderVideo}
-                    disabled={!detail?.runId || renderingVideo || runIsActive}
-                    icon={renderingVideo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
-                  >
-                    {renderingVideo ? "Rendering…" : "Render Video"}
-                  </PrimaryButton>
+                  {detailAssetType === "social-image" ? (
+                    <PrimaryButton
+                      onClick={handlePrepareSocialImages}
+                      disabled={!detail?.runId || !frameRows.length || renderingSocialImages || runIsActive}
+                      icon={
+                        renderingSocialImages ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Images className="h-4 w-4" />
+                        )
+                      }
+                    >
+                      {renderingSocialImages
+                        ? "Preparing…"
+                        : preparedPostCount
+                          ? "Update Social Posts"
+                          : "Prepare Social Posts"}
+                    </PrimaryButton>
+                  ) : (
+                    <PrimaryButton
+                      onClick={handleRenderVideo}
+                      disabled={!detail?.runId || renderingVideo || runIsActive}
+                      icon={renderingVideo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+                    >
+                      {renderingVideo ? "Rendering…" : "Render Video"}
+                    </PrimaryButton>
+                  )}
                 </div>
               }
             >
@@ -1121,7 +1432,7 @@ export default function MarketingCampaignsPage() {
                       { label: "State", value: formatRunState(detail.status.state), icon: Clock3 },
                       { label: "Current Stage", value: formatStageName(detail.status.currentStage), icon: LayoutGrid },
                       {
-                        label: "Requested Frames",
+                        label: detailAssetType === "social-image" ? "Requested Posts" : "Requested Frames",
                         value: String(
                           detail.status.request?.frameCount ||
                             detail.request?.input?.looseInput?.overrides?.numberOfFrames ||
@@ -1130,8 +1441,11 @@ export default function MarketingCampaignsPage() {
                         icon: FileJson,
                       },
                       {
-                        label: "Frames Done",
-                        value: `${detail.status.frameCounts?.done || 0}/${detail.status.frameCounts?.total || 0}`,
+                        label: detailAssetType === "social-image" ? "Posts Ready" : "Frames Done",
+                        value:
+                          detailAssetType === "social-image"
+                            ? `${preparedPostCount}/${frameRows.length || detail.status.frameCounts?.total || 0}`
+                            : `${detail.status.frameCounts?.done || 0}/${detail.status.frameCounts?.total || 0}`,
                         icon: CheckCircle2,
                       },
                       {
@@ -1156,7 +1470,7 @@ export default function MarketingCampaignsPage() {
                   </div>
 
                   <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                    {stages.map((stage) => {
+                    {visibleStages.map((stage) => {
                       const tone = statusTone(stage.status);
                       const isRunning = tone === "info";
                       return (
@@ -1202,32 +1516,41 @@ export default function MarketingCampaignsPage() {
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <h3 className="font-[var(--font-playfair)] text-3xl font-semibold tracking-[-0.04em] text-[#23183d]">
-                      Frame Review
+                      {detailAssetType === "social-image" ? "Social Post Review" : "Frame Review"}
                     </h3>
                     <AnimatePresence initial={false}>
                       {frameRows.length ? (
-                        frameRows.map((frame, index) => (
-                          <motion.div
-                            key={frame.frameNumber}
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.28, delay: index * 0.04 }}
-                          >
+                        frameRows.map((frame, index) => {
+                          const previewImageUrl =
+                            detailAssetType === "social-image" && frame.captionedImageUrl
+                              ? frame.captionedImageUrl
+                              : frame.imageUrl;
+                          return (
+                            <motion.div
+                              key={frame.frameNumber}
+                              initial={{ opacity: 0, y: 16 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.28, delay: index * 0.04 }}
+                            >
                             <PageCard className="hover:shadow-[0_24px_70px_rgba(84,49,170,0.1)]">
                               <div className="flex flex-col gap-6 xl:flex-row xl:gap-8">
                                 <div className="w-full shrink-0 xl:w-52">
                                   <div className="relative overflow-hidden rounded-[24px] bg-[#f1ecfb]">
-                                    {frame.imageUrl ? (
+                                    {previewImageUrl ? (
                                       <button
                                         type="button"
-                                        onClick={() => setLightboxFrame(frame)}
+                                        onClick={() => setLightboxFrame({ ...frame, imageUrl: previewImageUrl })}
                                         className="group block w-full text-left"
-                                        aria-label={`Open frame ${frame.frameNumber} image`}
+                                        aria-label={`Open ${
+                                          detailAssetType === "social-image" ? "social post" : "frame"
+                                        } ${frame.frameNumber} image`}
                                       >
                                         <img
-                                          src={frame.imageUrl}
-                                          alt={`Frame ${frame.frameNumber}`}
+                                          src={previewImageUrl}
+                                          alt={`${
+                                            detailAssetType === "social-image" ? "Social post" : "Frame"
+                                          } ${frame.frameNumber}: ${frame.title}`}
                                           className={cn(
                                             mediaAspectClass,
                                             "w-full object-cover transition duration-300 group-hover:scale-[1.02]",
@@ -1251,16 +1574,44 @@ export default function MarketingCampaignsPage() {
                                       </div>
                                     )}
                                     <div className="absolute left-3 top-3">
-                                      <StatusBadge tone="info">Frame {frame.frameNumber}</StatusBadge>
+                                      <StatusBadge tone="info">
+                                        {detailAssetType === "social-image" ? "Post" : "Frame"} {frame.frameNumber}
+                                      </StatusBadge>
                                     </div>
                                   </div>
+                                  {detailAssetType === "social-image" && frame.imageUrl ? (
+                                    <div className="mt-3 grid gap-2">
+                                      {frame.captionedImageUrl ? (
+                                        <a
+                                          href={frame.captionedImageUrl}
+                                          download
+                                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[16px] bg-[#24193f] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#352656] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67c5] focus-visible:ring-offset-2"
+                                        >
+                                          <Download className="h-4 w-4" aria-hidden="true" />
+                                          Download finished post
+                                        </a>
+                                      ) : (
+                                        <div className="rounded-[16px] border border-dashed border-[#ddd8e9] px-3 py-3 text-center text-[11px] font-medium leading-5 text-[#837b99]">
+                                          Prepare posts to add the approved headline and unlock PNG downloads.
+                                        </div>
+                                      )}
+                                      <a
+                                        href={frame.imageUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex min-h-10 items-center justify-center rounded-[14px] border border-[#e3ddec] px-3 py-2 text-xs font-semibold text-[#675d7f] transition hover:bg-[#faf8fd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67c5] focus-visible:ring-offset-2"
+                                      >
+                                        Open original artwork
+                                      </a>
+                                    </div>
+                                  ) : null}
                                 </div>
 
                                 <div className="min-w-0 flex-1 space-y-6">
                                   <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div>
                                       <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#9a92b3]">
-                                        Frame {frame.frameNumber}
+                                        {detailAssetType === "social-image" ? "Post Concept" : "Frame"} {frame.frameNumber}
                                       </div>
                                       <h4 className="mt-1 text-[34px] font-bold leading-none tracking-[-0.05em] text-[#23183d]">
                                         {frame.title}
@@ -1290,7 +1641,7 @@ export default function MarketingCampaignsPage() {
 
                                   <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_190px]">
                                     <TextField
-                                      label="Caption Text"
+                                      label={detailAssetType === "social-image" ? "Post Headline" : "Caption Text"}
                                       value={frame.caption.text || ""}
                                       onChange={(event) =>
                                         updateFrameCaption(frame.frameNumber, "text", event.target.value)
@@ -1314,54 +1665,69 @@ export default function MarketingCampaignsPage() {
                                     </div>
                                   </div>
 
-                                  <div className="grid gap-4 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                      <TextField
-                                        label="Duration"
-                                        type="number"
-                                        min={1.2}
-                                        max={3.5}
-                                        step={0.1}
-                                        value={frame.caption.durationSec ?? 2}
-                                        onChange={(event) =>
-                                          updateFrameCaption(
-                                            frame.frameNumber,
-                                            "durationSec",
-                                            Number(event.target.value),
-                                          )
-                                        }
-                                      />
-                                      <SelectField
-                                        label="Kinetic Style"
-                                        value={frame.caption.kineticStyle || "static"}
-                                        onChange={(event) =>
-                                          updateFrameCaption(
-                                            frame.frameNumber,
-                                            "kineticStyle",
-                                            event.target.value,
-                                          )
-                                        }
-                                        options={KINETIC_STYLES}
-                                      />
-                                    </div>
+                                  {detailAssetType === "social-image" ? (
                                     <TextAreaField
-                                      label="Voiceover"
+                                      label="Post Caption"
                                       value={frame.caption.voiceover || ""}
                                       onChange={(event) =>
                                         updateFrameCaption(frame.frameNumber, "voiceover", event.target.value)
                                       }
                                       rows={3}
+                                      helper="Use this as the ready-to-publish caption that accompanies the finished image."
                                     />
-                                  </div>
+                                  ) : (
+                                    <div className="grid gap-4 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+                                      <div className="grid gap-4 sm:grid-cols-2">
+                                        <TextField
+                                          label="Duration"
+                                          type="number"
+                                          min={1.2}
+                                          max={3.5}
+                                          step={0.1}
+                                          value={frame.caption.durationSec ?? 2}
+                                          onChange={(event) =>
+                                            updateFrameCaption(
+                                              frame.frameNumber,
+                                              "durationSec",
+                                              Number(event.target.value),
+                                            )
+                                          }
+                                        />
+                                        <SelectField
+                                          label="Kinetic Style"
+                                          value={frame.caption.kineticStyle || "static"}
+                                          onChange={(event) =>
+                                            updateFrameCaption(
+                                              frame.frameNumber,
+                                              "kineticStyle",
+                                              event.target.value,
+                                            )
+                                          }
+                                          options={KINETIC_STYLES}
+                                        />
+                                      </div>
+                                      <TextAreaField
+                                        label="Voiceover"
+                                        value={frame.caption.voiceover || ""}
+                                        onChange={(event) =>
+                                          updateFrameCaption(frame.frameNumber, "voiceover", event.target.value)
+                                        }
+                                        rows={3}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </PageCard>
-                          </motion.div>
-                        ))
+                            </motion.div>
+                          );
+                        })
                       ) : (
                         <PageCard>
                           <div className="rounded-[24px] border border-dashed border-[#ddd8e9] px-5 py-12 text-center text-sm text-[#8a84a1]">
-                            Frames will appear here once the run reaches image generation.
+                            {detailAssetType === "social-image"
+                              ? "Post concepts will appear here once image generation begins."
+                              : "Frames will appear here once the run reaches image generation."}
                           </div>
                         </PageCard>
                       )}
@@ -1383,7 +1749,11 @@ export default function MarketingCampaignsPage() {
                                 QA Verdict
                               </div>
                               <div className="mt-1 text-lg font-bold text-[#24193f]">
-                                {qaSummary.pass ? "Approved for images" : "Needs rewrite"}
+                                {qaSummary.pass
+                                  ? detailAssetType === "social-image"
+                                    ? "Approved for social"
+                                    : "Approved for images"
+                                  : "Needs rewrite"}
                               </div>
                             </div>
                             <StatusBadge tone={qaSummary.pass ? "success" : "danger"}>
@@ -1448,7 +1818,7 @@ export default function MarketingCampaignsPage() {
                           <div className="grid gap-3 sm:grid-cols-2">
                             <div className="rounded-[20px] border border-[#efebf6] bg-[#fbfafc] p-4">
                               <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8a7bc4]">
-                                Frames To Rewrite
+                                {detailAssetType === "social-image" ? "Concepts To Rewrite" : "Frames To Rewrite"}
                               </div>
                               <div className="mt-3 text-sm font-semibold text-[#51476b]">
                                 {qaSummary.framesToRewrite.length ? qaSummary.framesToRewrite.join(", ") : "None"}
@@ -1456,7 +1826,7 @@ export default function MarketingCampaignsPage() {
                             </div>
                             <div className="rounded-[20px] border border-[#efebf6] bg-[#fbfafc] p-4">
                               <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#8a7bc4]">
-                                Frames To Cut
+                                {detailAssetType === "social-image" ? "Concepts To Cut" : "Frames To Cut"}
                               </div>
                               <div className="mt-3 text-sm font-semibold text-[#51476b]">
                                 {qaSummary.framesToCut.length ? qaSummary.framesToCut.join(", ") : "None"}
@@ -1490,6 +1860,48 @@ export default function MarketingCampaignsPage() {
                       )}
                     </PageCard>
                   </div>
+
+                  {detailAssetType === "social-image" ? (
+                    <PageCard
+                      title={<h3 className="text-lg font-semibold text-[#271a45]">Social Export Desk</h3>}
+                      bodyClassName="space-y-4"
+                    >
+                      <div className="rounded-[22px] bg-[linear-gradient(135deg,#261943_0%,#5537a5_62%,#337fd5_100%)] p-5 text-white">
+                        <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/70">
+                          Campaign package
+                        </div>
+                        <div className="mt-3 text-3xl font-bold tracking-[-0.05em]">
+                          {preparedPostCount}/{frameRows.length || 0} ready
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-white/80">
+                          {detailSocialPlacement
+                            ? `${detailSocialPlacement.label} · ${detailSocialPlacement.ratio} · ${detailSocialPlacement.detail}`
+                            : `${cameraFormat} social creative`}
+                        </p>
+                      </div>
+                      {preparedPostCount ? (
+                        <div className="grid gap-2">
+                          {frameRows.map((frame) =>
+                            frame.captionedImageUrl ? (
+                              <a
+                                key={`export-${frame.frameNumber}`}
+                                href={frame.captionedImageUrl}
+                                download
+                                className="flex min-h-11 items-center justify-between gap-3 rounded-[16px] border border-[#e6e0ef] px-3 py-2.5 text-xs font-bold text-[#51476b] transition hover:border-[#cfc4e4] hover:bg-[#faf8fd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67c5] focus-visible:ring-offset-2"
+                              >
+                                <span>Post {frame.frameNumber}</span>
+                                <Download className="h-4 w-4 text-[#7c67c5]" aria-hidden="true" />
+                              </a>
+                            ) : null,
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-6 text-[#7d7593]">
+                          Approve the headlines, then choose Prepare Social Posts to create the finished PNG set.
+                        </p>
+                      )}
+                    </PageCard>
+                  ) : null}
 
                   <div className="space-y-4">
                     <h4 className="font-[var(--font-playfair)] text-2xl font-semibold tracking-[-0.04em] text-[#23183d]">
@@ -1529,7 +1941,7 @@ export default function MarketingCampaignsPage() {
                     </div>
                   </div>
 
-                  {detail.videoUrl ? (
+                  {detailAssetType === "short-video" && detail.videoUrl ? (
                     <PageCard title={<h3 className="text-lg font-semibold text-[#271a45]">Rendered Video</h3>}>
                       <video
                         src={detail.videoUrl}

@@ -74,6 +74,8 @@ function createStatusDocument(runPaths, requestPayload) {
       error: 0,
     },
     request: {
+      assetType: requestPayload?.input?.assetType || "short-video",
+      socialPlacement: requestPayload?.input?.socialPlacement || "",
       productName: requestPayload?.input?.productName || "",
       targetVertical: requestPayload?.input?.targetVertical || "",
       tone: requestPayload?.input?.tone || "",
@@ -93,6 +95,7 @@ function createStatusDocument(runPaths, requestPayload) {
       "social-copy": buildStageRecord("social-copy.json"),
       "creative-qa": buildStageRecord("creative-qa.json"),
       "image-generation": buildStageRecord("frames.json"),
+      "social-export": buildStageRecord("images-captioned"),
       video: buildStageRecord("video.mp4"),
     },
   };
@@ -578,8 +581,14 @@ function normalizeOverrideBlock(rawInput = {}) {
   };
 }
 
+function normalizeAssetType(value) {
+  return clean(value).toLowerCase() === "social-image" ? "social-image" : "short-video";
+}
+
 export function normalizeCampaignInput(rawInput = {}) {
   const input = normalizeBrandDomainDeep(asObject(rawInput));
+  const assetType = normalizeAssetType(input.assetType);
+  const socialPlacement = assetType === "social-image" ? clean(input.socialPlacement) : "";
   const criteria = expandMinimalBirthdayDelayCriteria(
     clean(input.criteria) ||
       clean(input.prompt) ||
@@ -592,9 +601,16 @@ export function normalizeCampaignInput(rawInput = {}) {
   const callToAction = normalizeBrandDomainText(clean(input.callToAction || input.cta));
   const jobLabel = clean(input.jobLabel || input.job);
   const outputRoot = clean(input.outputRoot);
-  const extraNotes = normalizeBrandDomainText(
+  const userExtraNotes = normalizeBrandDomainText(
     clean(input.notes) || clean(input.extraNotes) || clean(input.looseInput?.extraNotes),
   );
+  const deliverableNotes =
+    assetType === "social-image"
+      ? "STATIC SOCIAL IMAGE DELIVERABLE: create platform-ready post concepts, not video timing coverage. Every generated image must work as a standalone conversion creative with a clear persuasion job, premium campaign art direction, readable negative space for one short headline, and no dependence on motion or voiceover. When multiple concepts are requested, treat them as a cohesive campaign set with meaningfully different hooks and compositions."
+      : "SHORT-FORM VIDEO DELIVERABLE: create an edit-ready sequence with strong visual progression, caption timing, and a clear final payoff.";
+  const extraNotes = userExtraNotes.includes(deliverableNotes)
+    ? userExtraNotes
+    : [userExtraNotes, deliverableNotes].filter(Boolean).join("\n");
   const overrides = normalizeOverrideBlock(input);
   const referenceImages = normalizeReferenceImages(input.referenceImages || input.looseInput?.referenceImages);
   const rawPrompt = [
@@ -603,12 +619,16 @@ export function normalizeCampaignInput(rawInput = {}) {
     targetVertical ? `Target vertical: ${targetVertical}` : "",
     tone ? `Tone: ${tone}` : "",
     callToAction ? `CTA: ${callToAction}` : "",
+    `Deliverable: ${assetType === "social-image" ? "static social image campaign" : "short-form video"}`,
+    socialPlacement ? `Social placement: ${socialPlacement}` : "",
     referenceImages.length ? `Reference images: ${referenceImages.map((image) => image.originalName).join(", ")}` : "",
   ]
     .filter(Boolean)
     .join("\n");
 
   return {
+    assetType,
+    socialPlacement,
     criteria: normalizeBrandDomainText(criteria),
     productName: normalizeBrandDomainText(productName),
     targetVertical,
@@ -1936,6 +1956,7 @@ async function generateStoryboardImagesForRun({
   statusDoc,
   persistStatus,
   autoRenderVideo = false,
+  assetType = "short-video",
 }) {
   setStageStatus(statusDoc, "image-generation", "running");
   await persistStatus("Generating storyboard images", "running", "image-generation");
@@ -2028,8 +2049,13 @@ async function generateStoryboardImagesForRun({
 
   setStageStatus(statusDoc, "image-generation", "done");
   statusDoc.frameCounts = summarizeFrameCounts(framesManifest.frames);
+  const isSocialImageCampaign = assetType === "social-image";
   await persistStatus(
-    autoRenderVideo ? "Storyboard ready for video rendering" : "Review captions before rendering video",
+    autoRenderVideo
+      ? "Storyboard ready for video rendering"
+      : isSocialImageCampaign
+        ? "Review post copy, then prepare the finished social images"
+        : "Review captions before rendering video",
     autoRenderVideo ? "render-queued" : "awaiting_caption_review",
     autoRenderVideo ? "video" : "image-generation",
   );
@@ -2149,6 +2175,7 @@ export async function runCampaign({
       statusDoc,
       persistStatus,
       autoRenderVideo,
+      assetType: normalizedInput.assetType,
     });
 
     return {

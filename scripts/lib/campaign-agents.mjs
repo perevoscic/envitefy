@@ -473,8 +473,18 @@ export const ART_DIRECTION_SYSTEM_PROMPT =
 export const COORDINATOR_SYSTEM_PROMPT =
   "You are building a frame-by-frame conversion storyboard for a short-form ad assembled from still images. Return exactly the requested number of frames. Each frame must have a different persuasion job such as hook, pain proof, chaos escalation, product entry, transformation proof, send-ready proof, emotional release, premium proof, or final payoff. Protect continuity across identity, face, age, hairstyle, body type, outfit, environment layout, props, photographic style, lighting, mood, and framing baseline unless an explicit change is requested. Use real shot variety, not micro-variations: build at least four distinct shot families when the sequence has eight or more frames, otherwise at least three. When the sequence has ten or more frames, aim for at least five shot families. No more than two frames may use the same base composition. No more than two adjacent frames may share the same camera distance or the same body orientation. Avoid repeated 'person holding phone in same place' shots. No more than three frames may be phone-dominant unless the brief explicitly requires it; compact five-frame ads should usually have only one phone-dominant proof frame. At least one frame must be an environmental pain frame, at least one must be an over-the-shoulder or top-down action frame, at least one must be a tight product-proof frame, and exactly one must be a final hero or CTA frame. Frames 3 through 7 cannot all be demo coverage of the same phone loop. Adjacent frames must change at least two of these: camera distance, camera height, subject angle, hand action, eyeline, prop emphasis, or foreground object. Avoid direct phone presentation to camera. The subject should not hold the phone up to the lens in an unnatural sales-demo pose. Prefer candid side angles, over-the-shoulder coverage, profile views, hands-in-action shots, and observational framing where the subject seems unaware of the camera. If the screen must be legible, solve it with over-the-shoulder, angled close-ups, phone held naturally in two hands, or phone lying flat screen-up on a counter/table with the display visible instead of a frontal presentation pose. Do not use direct-to-camera performance unless the brief explicitly demands it. There must be exactly one payoff or CTA frame, and it must be the final frame. At least one frame must dramatize the pain, one must prove the product action, one must prove the send-ready result, one must prove the premium finished output, and the last must land the payoff. For birthday invite delay campaigns, do not introduce gymnastics, sports venues, dance studios, athlete posters, medals, trophies, or invented gym locations such as Bright Stars Gymnastics unless the user explicitly requested them. For those birthday campaigns, keep the home clean and ordinary and do not show children unless the prompt explicitly asks for the child, party-decor clutter, a completed party table, or extra tabletop planning props unless explicitly requested; keep the story before the party and make the final result the digital Envitefy live birthday card or share confirmation. Do not create handoff scenes or offline delay props. Do not build frames 1-4 as four versions of a woman standing still in the kitchen or sitting at a table. Use distinct beats and movement inside the same home: planning pressure, product-entry intent, product proof, reaction, social proof when there is room, send-ready proof, relief, final payoff. Any phone in a frame must be visibly held by natural fingers or lying flat screen-up on a table/counter with the display visible; every visible phone must have a believable hand grip or full surface support. For every frame, classify shotFamily, phoneDominance, brandingPresence, and disallowedPropRisk honestly. Classify any Google search, search results, phone screen close-up, app screen, typing/tapping/scrolling phone, or held-phone proof frame as phoneDominance dominant. Do not hide a phone-heavy frame by calling it secondary. A laptop interface is not phone-dominant unless the phone is also the dominant object. If a frame introduces a tablet, extra screen, or any prop blocked by the scene spec, name that risk in disallowedPropRisk. If there is no risk, return disallowedPropRisk as an empty string, never 'none' or 'n/a'.";
 
+export const SOCIAL_IMAGE_COORDINATOR_SYSTEM_PROMPT =
+  "You are building a cohesive campaign of platform-ready static social image concepts. Return exactly the requested number of frames. Each frame is a standalone post creative, not a moment that depends on video playback, voiceover, or motion. Give every concept one clear persuasion job, one scroll-stopping visual idea, intentional negative space for a short headline, and an unmistakable product or emotional proof point. The set may also work as a carousel: begin with a strong hook, vary the middle concepts by pain, proof, and benefit, and make the final concept the single premium final-hero payoff. Protect identity and brand continuity while varying composition, camera distance, subject angle, prop emphasis, and hook. Avoid front-facing phone presentation, graphic logo-only cards, text-only cards, repeated layouts, and clutter. Phones must be naturally held by visible fingers or fully supported screen-up. Classify shotFamily, phoneDominance, brandingPresence, and disallowedPropRisk honestly; the final concept must use shotFamily final-hero and must not be phone-dominant. If no disallowed prop risk exists, return an empty string.";
+
 export const SOCIAL_COPY_SYSTEM_PROMPT =
   "You write captions for TikTok and YouTube Shorts. Captions must persuade rather than label. Return exactly one caption object for every storyboard frame, using the same frameNumber values and order as the input frames. Never skip frames, merge frames, renumber frames, or return fewer captions than frames. Rules: 3 to 8 words, mostly lowercase, hook-first, no hashtags, no emoji unless exactly one is justified, and each line must add subtext rather than merely describing what is visible. Ban filler like 'here we go', ban captions that simply restate visible nouns or on-screen UI text, ban generic productivity phrasing like 'one less task', 'one less thing tonight', or similar template relief lines, and keep continuity with the fixed scene. Each caption must do exactly one job: sharpen pain, mark a turning point, confirm the transformation, or land the payoff. Voiceover must sound natural in 2 to 3 seconds.";
+
+export const SOCIAL_IMAGE_COPY_SYSTEM_PROMPT =
+  "You are a senior social copywriter preparing static image ads and organic social posts. Return exactly one caption object for every image concept, using the same frameNumber values and order. The text field is the on-image headline: 3 to 8 words, hook-first, specific, easy to read at feed size, and never a literal description of the picture. The emphasisWord must be one exact word from that headline. Repurpose the voiceover field as the ready-to-publish post caption: write 1 to 3 concise, natural sentences that connect the audience problem to the Envitefy benefit and end with a clear call to action when appropriate. Do not mention video, motion, watching, or voiceover. Avoid generic filler, engagement bait, hashtag stuffing, and invented product claims. Set kineticStyle to static and transition to cut.";
+
+function isStaticSocialImageSpec(sceneSpec) {
+  return /STATIC SOCIAL IMAGE DELIVERABLE/i.test(clean(sceneSpec?.extraNotes?.value));
+}
 
 export const CREATIVE_QA_SYSTEM_PROMPT =
   "You are the final creative QA reviewer before image credits are spent. Separate hard blockers from soft creative notes. Fail only for issues that would waste image generation: frame-count mismatch, disallowed props, unclear product value, missing product proof, missing final in-scene payoff, graphic logo or text-only end cards, multiple end cards, inconsistent brand naming, severe repeated product-demo loops, or captions that are unusable. Do not fail a budget-compliant plan solely because it could be more emotionally varied, because product-proof frames are at the allowed limit, because two product-proof frames have related angles, because a social-proof beat could be more specific, or because captions need polish; report those as notes while passing if the core storyboard works. A plan fails if it still reads like 'the same person in the same room holding the same phone toward camera' with only screen swaps or facial-expression changes. A plan fails if continuity was achieved by locking a single composition instead of locking identity and world. A plan fails if the shot list lacks any clear environmental setup, action coverage, product proof, or premium payoff. A plan fails if the subject repeatedly performs for the camera with unnatural phone presentation poses instead of behaving naturally in-scene. A ten-frame plan normally fails when more than three frames are phone-dominant, when more than two frames share the same phone-presentation pose, or when the only variety is tighter or wider versions of the same shot. Score visual variety realistically, not punitively, when the frame plan already includes distinct shot families. Prefer candid observational framing and side-angle realism over staged product-demo posture. If the plan fails, provide clear hard-blocker reasons, which frames need rewrite, which frames should be cut, what shot families are required, what caption patterns are blocked, which frame must be the single final payoff, the maximum phone-dominant frames allowed, and a concise rewrite brief.";
@@ -679,14 +689,19 @@ export async function runCoordinatorAgent({
   qaFeedback,
   currentFramePlan,
 }) {
+  const isStaticSocialImage = isStaticSocialImageSpec(sceneSpec);
   return runStructuredStage({
     client,
     model,
     responseFormat: FRAME_PLAN_RESPONSE_FORMAT,
     temperature: isStoryboardBudgetFeedback(qaFeedback) ? 0.25 : 0.65,
-    systemPrompt: COORDINATOR_SYSTEM_PROMPT,
+    systemPrompt: isStaticSocialImage
+      ? SOCIAL_IMAGE_COORDINATOR_SYSTEM_PROMPT
+      : COORDINATOR_SYSTEM_PROMPT,
     userLines: [
-      "Create a storyboard frame plan for image generation.",
+      isStaticSocialImage
+        ? "Create a static social image concept plan for image generation."
+        : "Create a storyboard frame plan for image generation.",
       `Scene spec JSON: ${JSON.stringify(sceneSpec)}`,
       `Brief JSON: ${JSON.stringify(brief)}`,
       `Persona JSON: ${JSON.stringify(persona)}`,
@@ -702,7 +717,9 @@ export async function runCoordinatorAgent({
       qaFeedback
         ? "QA feedback is active. Keep successful beats only if they also satisfy the shot budget map. Rewrite any frame whose text or metadata violates phoneDominance, shotFamily, brandingPresence, disallowedPropRisk, or final-hero requirements. Remove any frames explicitly marked to cut, rebalance numbering, and keep exactly one final payoff frame at the end."
         : "",
-      "Build the sequence like an ad editor would: hook, escalation, product entry, action proof, result proof, relief, premium payoff, CTA. Do not spend most of the sequence on front-facing demo coverage.",
+      isStaticSocialImage
+        ? "Build a campaign set like a creative agency would: distinct hooks, clear benefit and product proof, premium art direction, feed-safe negative space, and one final hero payoff. Every concept must sell on its own."
+        : "Build the sequence like an ad editor would: hook, escalation, product entry, action proof, result proof, relief, premium payoff, CTA. Do not spend most of the sequence on front-facing demo coverage.",
       "Treat cameraShot plus composition as hard differentiation tools. Every frame needs a genuinely distinct setup, not a synonym for the same shot.",
       "Use a mix of environmental, insert, over-the-shoulder, top-down or tabletop, side-profile or three-quarter, tight proof, and final hero frames when the story supports it.",
       "Prefer natural observational framing. The subject should feel caught mid-action, not posed for an ad photographer.",
@@ -730,14 +747,17 @@ export async function runSocialCopyAgent({
   qaFeedback,
   currentSocialCopy,
 }) {
+  const isStaticSocialImage = isStaticSocialImageSpec(sceneSpec);
   return runStructuredStage({
     client,
     model,
     responseFormat: SOCIAL_COPY_RESPONSE_FORMAT,
     temperature: 0.8,
-    systemPrompt: SOCIAL_COPY_SYSTEM_PROMPT,
+    systemPrompt: isStaticSocialImage ? SOCIAL_IMAGE_COPY_SYSTEM_PROMPT : SOCIAL_COPY_SYSTEM_PROMPT,
     userLines: [
-      "Write short-form social captions for this storyboard.",
+      isStaticSocialImage
+        ? "Write on-image headlines and ready-to-publish captions for this static social campaign."
+        : "Write short-form social captions for this storyboard.",
       tone ? `Tone: ${tone}` : "",
       `Scene spec JSON: ${JSON.stringify(sceneSpec)}`,
       `Brief JSON: ${JSON.stringify(brief)}`,

@@ -106,9 +106,11 @@ export async function composeCaptionedFramesForRun({
   runId,
   runDir,
   onlyDirty = true,
+  layout = "video-caption",
 }) {
   const runPaths = resolveRunPaths(projectRoot, { runId, runDir });
   const framesManifest = await readJson(runPaths.framesPath, null);
+  const requestPayload = await readJson(runPaths.requestPath, null);
   if (!framesManifest?.frames?.length) throw new Error("frames.json not found or empty.");
   const cameraFormat = clean(
     framesManifest?.renderSize?.cameraFormat || framesManifest?.sceneSpec?.cameraFormat || "vertical",
@@ -131,6 +133,8 @@ export async function composeCaptionedFramesForRun({
       outputPath,
       caption: frame.caption,
       cameraFormat,
+      layout,
+      callToAction: clean(requestPayload?.input?.callToAction),
     });
     frame.caption = {
       ...frame.caption,

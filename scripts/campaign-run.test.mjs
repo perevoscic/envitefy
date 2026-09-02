@@ -26,6 +26,8 @@ test("normalizeCampaignInput folds structured campaign fields into storyboard lo
     targetVertical: "Gymnastics",
     tone: "premium but warm",
     callToAction: "Start your event page",
+    assetType: "social-image",
+    socialPlacement: "feed-square",
     frameCount: 10,
     overrides: {
       cameraFormat: "vertical",
@@ -34,10 +36,30 @@ test("normalizeCampaignInput folds structured campaign fields into storyboard lo
   });
 
   assert.equal(input.productName, "Envitefy");
+  assert.equal(input.assetType, "social-image");
+  assert.equal(input.socialPlacement, "feed-square");
   assert.equal(input.looseInput.overrides.numberOfFrames, 10);
   assert.equal(input.looseInput.overrides.cameraFormat, "vertical");
   assert.match(input.looseInput.rawPrompt, /Product: Envitefy/);
   assert.match(input.looseInput.rawPrompt, /CTA: Start your event page/);
+  assert.match(input.looseInput.rawPrompt, /Deliverable: static social image campaign/);
+  assert.match(input.looseInput.extraNotes, /STATIC SOCIAL IMAGE DELIVERABLE/);
+
+  const normalizedTwice = normalizeCampaignInput(input);
+  assert.equal(
+    normalizedTwice.looseInput.extraNotes.match(/STATIC SOCIAL IMAGE DELIVERABLE/g)?.length,
+    1,
+  );
+});
+
+test("normalizeCampaignInput keeps legacy and CLI runs in short-form video mode", () => {
+  const input = normalizeCampaignInput({
+    criteria: "birthday campaign",
+  });
+
+  assert.equal(input.assetType, "short-video");
+  assert.equal(input.socialPlacement, "");
+  assert.match(input.looseInput.rawPrompt, /Deliverable: short-form video/);
 });
 
 test("resolveRunPaths can rebuild the full path set from an existing run dir", () => {
