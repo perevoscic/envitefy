@@ -130,7 +130,7 @@ const faqItems: FaqPageItem[] = [
     id: "product-improvement-data",
     question: "Does Envitefy use service data to improve the product?",
     answer:
-      "Yes. As explained in the Privacy Policy, Envitefy may use service, usage, feedback, and submitted content to operate, secure, evaluate, and improve current and future Envitefy products, including limited authorized human review. Envitefy does not use private content to train a general-purpose Envitefy foundation model. Optional analytics stays off unless you allow it.",
+      "Except for Google user data, Envitefy may use service, usage, feedback, and submitted content to operate, secure, evaluate, and improve current and future Envitefy products as explained in the Privacy Policy. Information received from Google APIs is used only to provide or improve the Google-connected functionality you request and is not used for generalized product improvement, advertising, or AI training. Optional site analytics stays off unless you allow it.",
   },
 ];
 

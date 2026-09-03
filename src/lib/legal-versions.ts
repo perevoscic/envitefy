@@ -1,4 +1,4 @@
-export const CURRENT_TERMS_VERSION = "2026-09-01";
-export const CURRENT_PRIVACY_VERSION = "2026-09-01";
+export const CURRENT_TERMS_VERSION = "2026-09-03";
+export const CURRENT_PRIVACY_VERSION = "2026-09-03";
 
-export const LEGAL_EFFECTIVE_DATE_LABEL = "September 1, 2026";
+export const LEGAL_EFFECTIVE_DATE_LABEL = "September 3, 2026";

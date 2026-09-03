@@ -65,6 +65,33 @@ test("disconnect deletes stored provider tokens and clears sessions", async () =
   assert.match(route, /next-auth\.session-token/);
 });
 
+test("Google user data is carved out from generalized improvement and AI uses", async () => {
+  const [privacy, terms, faq, googleAuth, calendarScope] = await Promise.all([
+    read("src/app/privacy/page.tsx"),
+    read("src/app/terms/page.tsx"),
+    read("src/app/faq/page.tsx"),
+    read("src/app/api/google/auth/route.ts"),
+    read("src/lib/google-calendar-oauth.ts"),
+  ]);
+  assert.match(privacy, /Google user data and Limited Use/);
+  assert.match(privacy, /openid, email, and profile permissions/);
+  assert.match(privacy, /calendar\.events\.owned/);
+  assert.match(privacy, /analytics\.readonly/);
+  assert.match(privacy, /not used for generalized product research or improvement/);
+  assert.match(privacy, /does not make a local copy of your general Google Calendar contents/);
+  assert.match(privacy, /does not sell Google user data/);
+  assert.match(privacy, /do not read Google user data unless you give explicit consent/);
+  assert.match(privacy, /Google API Services User Data Policy/);
+  assert.match(privacy, /Limited Use requirements/);
+  assert.match(terms, /Except for information received from Google APIs/);
+  assert.match(faq, /Information received from Google APIs is used only/);
+  assert.match(googleAuth, /"openid"/);
+  assert.match(googleAuth, /"email"/);
+  assert.match(googleAuth, /"profile"/);
+  assert.match(googleAuth, /analytics\.readonly/);
+  assert.match(calendarScope, /calendar\.events\.owned/);
+});
+
 test("private scan content access is auditable", async () => {
   const [detail, preview] = await Promise.all([
     read("src/app/admin/scans/[id]/page.tsx"),

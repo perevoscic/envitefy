@@ -36,7 +36,7 @@ const termsSections = [
   },
   {
     title: "7. AI features and product improvement",
-    body: "AI outputs are generated automatically and may resemble existing material or be non-unique. You are responsible for checking accuracy, suitability, and rights before use. Envitefy may use service data, content, feedback, and limited authorized human review to troubleshoot, secure, evaluate, and improve current and future Envitefy products as described in the Privacy Policy. We do not claim ownership of your original content, and we do not use private content to train a general-purpose Envitefy foundation model.",
+    body: "AI outputs are generated automatically and may resemble existing material or be non-unique. You are responsible for checking accuracy, suitability, and rights before use. Except for information received from Google APIs, Envitefy may use service data, content, feedback, and limited authorized human review to troubleshoot, secure, evaluate, and improve current and future Envitefy products as described in the Privacy Policy. Google user data is used only to provide or improve the Google-connected functionality the user requests, subject to the Google API Services User Data Policy and its Limited Use requirements. We do not claim ownership of your original content, and we do not use private content or Google user data to train a general-purpose Envitefy foundation model.",
   },
   {
     title: "8. Integrations, external links, registries, and purchases",
