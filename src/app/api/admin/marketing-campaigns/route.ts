@@ -10,6 +10,7 @@ import {
   isMarketingCampaignBlobStorageEnabled,
   listMarketingRuns,
   persistMarketingRun,
+  persistMarketingRunStatus,
   resolveMarketingCampaignProjectRoot,
 } from "@/lib/admin/marketing-campaigns";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
@@ -249,6 +250,17 @@ export async function POST(request: Request) {
     if (isServerlessRuntime) {
       await persistMarketingRun(runPaths.runDir);
       after(async () => {
+        let statusSync = Promise.resolve();
+        const statusInterval = setInterval(() => {
+          statusSync = statusSync
+            .then(() => persistMarketingRunStatus(runPaths.runDir))
+            .catch((error) => {
+              console.error("[marketing-campaigns] status sync failed", {
+                runId: path.basename(runPaths.runDir),
+                message: error instanceof Error ? error.message : String(error),
+              });
+            });
+        }, 5_000);
         try {
           await campaignRun.runCampaign({
             campaignInput: input,
@@ -262,6 +274,8 @@ export async function POST(request: Request) {
             message: error instanceof Error ? error.message : String(error),
           });
         } finally {
+          clearInterval(statusInterval);
+          await statusSync;
           await persistMarketingRun(runPaths.runDir);
         }
       });

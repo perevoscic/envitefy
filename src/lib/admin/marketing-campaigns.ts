@@ -118,10 +118,8 @@ async function collectRunFiles(root: string, current = root): Promise<string[]> 
   return nested.flat();
 }
 
-export async function persistMarketingRun(runDir: string) {
-  if (!isMarketingCampaignBlobStorageEnabled()) return;
+async function persistMarketingRunFiles(runDir: string, files: string[]) {
   const runId = sanitizeRunId(path.basename(runDir));
-  const files = await collectRunFiles(runDir);
   const batchSize = 6;
   for (let index = 0; index < files.length; index += batchSize) {
     await Promise.all(
@@ -136,6 +134,16 @@ export async function persistMarketingRun(runDir: string) {
       }),
     );
   }
+}
+
+export async function persistMarketingRun(runDir: string) {
+  if (!isMarketingCampaignBlobStorageEnabled()) return;
+  await persistMarketingRunFiles(runDir, await collectRunFiles(runDir));
+}
+
+export async function persistMarketingRunStatus(runDir: string) {
+  if (!isMarketingCampaignBlobStorageEnabled()) return;
+  await persistMarketingRunFiles(runDir, ["request.json", "status.json"]);
 }
 
 export async function hydrateMarketingRun(runId: string) {
