@@ -18,7 +18,7 @@ test("the full FAQ reflects the current customer-facing product", () => {
     "Google Calendar",
     "Apple Calendar",
     "Outlook",
-    "general-purpose Envitefy foundation model",
+    "not used for generalized product improvement, advertising, or AI training",
   ]) {
     assert.match(pageSource, new RegExp(expected, "i"));
   }

@@ -81,8 +81,10 @@ test("Google user data is carved out from generalized improvement and AI uses", 
   assert.match(privacy, /does not make a local copy of your general Google Calendar contents/);
   assert.match(privacy, /does not sell Google user data/);
   assert.match(privacy, /do not read Google user data unless you give explicit consent/);
+  assert.match(privacy, /merger, acquisition, or asset sale only after obtaining/);
   assert.match(privacy, /Google API Services User Data Policy/);
   assert.match(privacy, /Limited Use requirements/);
+  assert.match(privacy, /https:\/\/developers\.google\.com\/terms\/api-services-user-data-policy/);
   assert.match(terms, /Except for information received from Google APIs/);
   assert.match(faq, /Information received from Google APIs is used only/);
   assert.match(googleAuth, /"openid"/);

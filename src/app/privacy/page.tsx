@@ -62,7 +62,7 @@ const privacySections = [
       "Administrative analytics connection: analytics.readonly is requested only when an expressly authorized Envitefy administrator starts the separate Google Analytics connection. It is used solely to display reports for Envitefy’s own GA4 property in Envitefy’s internal administrator dashboard. It is not requested during an ordinary user’s Google sign-in or calendar connection.",
       "Use: information received from Google APIs is used only to provide or improve the Google-connected, user-facing functionality described above. It is not used for generalized product research or improvement, advertising, marketing, retargeting, interest-based profiles, credit decisions, sale to data brokers, or training or improving any generalized artificial-intelligence or machine-learning model.",
       "Storage and deletion: Envitefy stores the Google account fields needed for your account, an OAuth refresh token associated with the connected Envitefy account, and limited calendar-sync metadata such as the Google event identifier, link, connection status, and sync result. Envitefy does not make a local copy of your general Google Calendar contents. Disconnecting Google triggers a revocation request, deletes locally stored Google OAuth tokens, clears the connection, and requires reauthentication for future Google actions. Account deletion also removes connected tokens, subject only to limited backup and legal-retention periods.",
-      "Sharing and human access: Envitefy does not sell Google user data or transfer it to advertising platforms, data brokers, or information resellers. Transfers are limited to service providers acting for Envitefy when necessary to provide or secure the requested feature and under applicable restrictions, to comply with law, or as otherwise permitted by Google’s Limited Use requirements. Envitefy personnel do not read Google user data unless you give explicit consent for specific support, access is necessary for security or abuse investigation, or access is required by law. Aggregated and anonymized information may be used for permitted internal operations.",
+      "Sharing and human access: Envitefy does not sell Google user data or transfer it to advertising platforms, data brokers, or information resellers. Transfers are limited to service providers acting for Envitefy when necessary to provide or secure the requested feature and with user consent where required; for security or abuse investigation; to comply with applicable law; or as part of a merger, acquisition, or asset sale only after obtaining the user’s explicit prior consent. Envitefy personnel do not read Google user data unless you give explicit consent for specific support, access is necessary for security or abuse investigation, or access is required by law. Aggregated and anonymized information may be used for permitted internal operations.",
       "Envitefy’s use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including its Limited Use requirements.",
     ],
   },
@@ -168,6 +168,23 @@ export default function PrivacyPage() {
                 </div>
               </article>
             ))}
+          </div>
+
+          <div className="mt-10 rounded-lg border border-[#b7d8ce] bg-[#edf9f5] p-5 text-sm leading-6 text-[#52605c]">
+            <p className="font-semibold text-[#203137]">Google API data commitment</p>
+            <p className="mt-2">
+              Envitefy&apos;s use and transfer of information received from Google APIs follows the
+              Google API Services User Data Policy, including its Limited Use requirements. Read the{" "}
+              <a
+                href="https://developers.google.com/terms/api-services-user-data-policy"
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-[#203137] underline underline-offset-4"
+              >
+                Google API Services User Data Policy
+              </a>
+              .
+            </p>
           </div>
 
           <div className="mt-10 flex flex-col gap-3 rounded-lg border border-[#d9ded3] bg-[#edf9f5] p-5 text-sm leading-6 text-[#52605c] sm:flex-row sm:items-center sm:justify-between">
