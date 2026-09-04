@@ -28,7 +28,7 @@ test("admin nav config has expected sections", () => {
     "AI Concierge",
     "Scans & Traffic",
     "Emails",
-    "Marketing Assets",
+    "Marketing Hub",
     "Ad Studio",
     "Analytics",
     "Settings",
@@ -41,8 +41,8 @@ test("admin nav config has expected sections", () => {
   assert.match(source, /href: "\/admin\/marketing-images"/);
   assert.match(source, /href: "\/admin\/ad-studio"/);
   assert.ok(
-    source.indexOf('label: "Marketing Assets"') < source.indexOf('label: "Ad Studio"'),
-    "Ad Studio should appear below Marketing Assets",
+    source.indexOf('label: "Marketing Hub"') < source.indexOf('label: "Ad Studio"'),
+    "Ad Studio should appear below Marketing Hub",
   );
 });
 

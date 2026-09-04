@@ -85,7 +85,7 @@ export default async function AdminDashboardPage() {
         <AdminMetricCard
           label="Marketing runs"
           value={formatNumber(overview.kpis.marketingRuns)}
-          detail="Storyboard asset runs"
+          detail="Marketing Hub campaigns"
           href="/admin/marketing-images"
         />
       </section>

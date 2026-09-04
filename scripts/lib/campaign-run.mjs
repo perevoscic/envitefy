@@ -666,10 +666,12 @@ export function normalizeCampaignInput(rawInput = {}) {
         .filter((asset) => asset === "wordmark" || asset === "app-icon"),
     ),
   );
+  const idea = clean(input.idea);
   const criteria = expandMinimalBirthdayDelayCriteria(
     clean(input.criteria) ||
       clean(input.prompt) ||
       clean(input.rawPrompt) ||
+      idea ||
       clean(input.looseInput?.rawPrompt),
   );
   const productName = normalizeBrandDomainText(clean(input.productName));
@@ -695,6 +697,7 @@ export function normalizeCampaignInput(rawInput = {}) {
   const rawPrompt = [
     criteria,
     campaignName ? `Campaign: ${campaignName}` : "",
+    idea && idea !== criteria ? `Original idea: ${idea}` : "",
     channels.length ? `Channels: ${channels.join(", ")}` : "",
     audience ? `Audience: ${audience}` : "",
     objective ? `Objective: ${objective}` : "",
@@ -716,6 +719,7 @@ export function normalizeCampaignInput(rawInput = {}) {
     assetType,
     socialPlacement,
     campaignName,
+    idea,
     channels,
     audience,
     objective,

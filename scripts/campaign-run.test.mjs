@@ -104,6 +104,18 @@ test("normalizeCampaignInput carries the requested frame count into the loose ov
   assert.equal(input.looseInput.overrides.numberOfFrames, 9);
 });
 
+test("normalizeCampaignInput can start from a campaign idea without a production prompt", () => {
+  const input = normalizeCampaignInput({
+    idea: "Show busy parents how one Envitefy link replaces scattered birthday details",
+    channels: ["instagram", "facebook"],
+    assetType: "social-image",
+  });
+
+  assert.match(input.criteria, /one Envitefy link replaces scattered birthday details/);
+  assert.equal(input.idea, "Show busy parents how one Envitefy link replaces scattered birthday details");
+  assert.match(input.looseInput.rawPrompt, /instagram, facebook/);
+});
+
 test("normalizeCampaignInput carries reference images into the run input", () => {
   const input = normalizeCampaignInput({
     criteria: "birthday campaign",
