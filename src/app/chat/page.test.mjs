@@ -6,6 +6,14 @@ import test from "node:test";
 const repoRoot = process.cwd();
 const readSource = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 
+test("/chat redirects signed-out visitors to the main page", () => {
+  const page = readSource("src/app/chat/page.tsx");
+
+  assert.match(page, /getServerSession\(authOptions\)/);
+  assert.match(page, /if \(!session\?\.user\) return null;/);
+  assert.match(page, /if \(!profile\) redirect\("\/"\);/);
+});
+
 test("/chat is the OpenAI-backed concierge creator", () => {
   const appShell = readSource("src/app/AppShell.tsx");
   const page = readSource("src/app/chat/page.tsx");
@@ -24,7 +32,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   const eventActions = readSource("src/lib/concierge/event-actions.ts");
 
   assert.match(page, /ConciergeChatClient/);
-  assert.match(page, /getServerSession\(authOptions as any\)/);
+  assert.match(page, /getServerSession\(authOptions\)/);
   assert.match(page, /getUserByEmail\(email\)/);
   assert.match(page, /userInitials=\{userInitials\}/);
   assert.match(page, /profileInitialsFrom/);

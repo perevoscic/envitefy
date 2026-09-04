@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { getUserByEmail } from "@/lib/db";
 import ConciergeChatClient from "./ConciergeChatClient";
@@ -46,8 +47,10 @@ function profileInitialsFrom(displayName: string | null, email: string) {
   return initials || "U";
 }
 
-async function resolveChatUserProfile(): Promise<ChatUserProfile> {
-  const session = await getServerSession(authOptions as any);
+async function resolveChatUserProfile(): Promise<ChatUserProfile | null> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return null;
+
   const email =
     typeof session?.user?.email === "string" ? session.user.email.trim().toLowerCase() : "";
   const sessionName = cleanDisplayName(session?.user?.name);
@@ -70,6 +73,9 @@ async function resolveChatUserProfile(): Promise<ChatUserProfile> {
 }
 
 export default async function ChatPage() {
-  const { initials: userInitials } = await resolveChatUserProfile();
+  const profile = await resolveChatUserProfile();
+  if (!profile) redirect("/");
+
+  const { initials: userInitials } = profile;
   return <ConciergeChatClient userInitials={userInitials} />;
 }

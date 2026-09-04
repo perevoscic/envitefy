@@ -47,12 +47,13 @@ test("middleware lets authenticated users open /snap for the app launch cards", 
   assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[^\]]*"\/snap"/s);
 });
 
-test("middleware keeps Studio public without treating it as a marketing redirect", () => {
+test("middleware keeps Studio public but requires authentication for chat", () => {
   const middleware = readSource("src/middleware.ts");
   const appShell = readSource("src/app/AppShell.tsx");
 
   assert.match(middleware, /const PUBLIC_UNAUTH_PATHS = new Set\(\[[\s\S]*"\/studio"/s);
-  assert.match(middleware, /const PUBLIC_UNAUTH_PATHS = new Set\(\[[\s\S]*"\/chat"/s);
+  const publicPaths = middleware.match(/const PUBLIC_UNAUTH_PATHS = new Set\(\[([\s\S]*?)\]\);/)?.[1] || "";
+  assert.doesNotMatch(publicPaths, /"\/chat"/);
   assert.match(middleware, /const isStudioCardSharePath = \(pathname: string\) =>/);
   assert.match(middleware, /if \(isStudioCardSharePath\(normalized\)\) return true;/);
   assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[\s\S]*"\/studio"/s);
