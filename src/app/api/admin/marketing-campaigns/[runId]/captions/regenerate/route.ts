@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import {
   hydrateMarketingRun,
   persistMarketingRun,
+  syncMarketingCopyDeskForRun,
 } from "@/lib/admin/marketing-campaigns";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 
@@ -18,10 +19,12 @@ export async function POST(
     const runDir = await hydrateMarketingRun(runId);
     const campaignRun = await import("../../../../../../../../scripts/lib/campaign-run.mjs");
     const result = await campaignRun.rerunSocialCopyForRun({ runId, runDir });
+    const copyDesk = await syncMarketingCopyDeskForRun(runDir);
     await persistMarketingRun(runDir);
     return NextResponse.json({
       ok: true,
       socialCopy: result.socialCopy,
+      copyDesk,
       frames: result.framesManifest?.frames || [],
       status: result.status,
     });

@@ -2,6 +2,11 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { get, list, put } from "@vercel/blob";
+import {
+  buildMarketingCopyDesk,
+  storedPlatformPacksFromCopyDesk,
+  type MarketingCopyDesk,
+} from "./marketing-copy-desk.ts";
 
 const MARKETING_BLOB_PREFIX = "admin-marketing-campaigns";
 const SERVERLESS_WORKING_DIR = "envitefy-marketing";
@@ -288,6 +293,13 @@ export async function readMarketingRunDetail(
     readJsonFile<any>(path.join(runDir, "frames.json"), null),
   ]);
 
+  const copyDesk = buildMarketingCopyDesk({
+    request,
+    brief,
+    socialCopy,
+    frames,
+  });
+
   const videoPath = path.join(runDir, "video.mp4");
   const videoExists = await fs
     .access(videoPath)
@@ -325,6 +337,7 @@ export async function readMarketingRunDetail(
     sceneSpec,
     framePlan,
     socialCopy,
+    copyDesk,
     creativeQa,
     frames: frames
       ? {
@@ -351,4 +364,34 @@ export function resolveRunAssetPath(
     throw new Error("Invalid file path");
   }
   return absolutePath;
+}
+
+export async function syncMarketingCopyDeskForRun(runDir: string): Promise<MarketingCopyDesk> {
+  const [request, brief, socialCopy, frames] = await Promise.all([
+    readJsonFile<Record<string, unknown> | null>(path.join(runDir, "request.json"), null),
+    readJsonFile<Record<string, unknown> | null>(path.join(runDir, "brief.json"), null),
+    readJsonFile<Record<string, unknown> | null>(path.join(runDir, "social-copy.json"), null),
+    readJsonFile<Record<string, unknown> | null>(path.join(runDir, "frames.json"), null),
+  ]);
+
+  const copyDesk = buildMarketingCopyDesk({
+    request,
+    brief,
+    socialCopy,
+    frames,
+    preferStoredPacks: false,
+  });
+
+  if (!copyDesk.available) return copyDesk;
+
+  const nextSocialCopy = {
+    ...(socialCopy && typeof socialCopy === "object" ? socialCopy : {}),
+    platformPacks: storedPlatformPacksFromCopyDesk(copyDesk),
+  };
+  await fs.writeFile(
+    path.join(runDir, "social-copy.json"),
+    `${JSON.stringify(nextSocialCopy, null, 2)}\n`,
+    "utf8",
+  );
+  return copyDesk;
 }

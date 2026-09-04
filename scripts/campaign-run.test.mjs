@@ -239,6 +239,33 @@ test("normalizeSocialCopyForFramePlan pads missing captions to match frame count
   assert.equal(normalized.frames[9].text, "start your event page");
 });
 
+test("normalizeSocialCopyForFramePlan preserves saved platform packs", () => {
+  const framePlan = [{ frameNumber: 1, title: "Hook", persuasionRole: "hook", emotionalBeat: "urgency", proofTarget: "invite" }];
+  const socialCopy = {
+    hook: "the invite is still on the fridge",
+    endCard: "start your event page",
+    platformPacks: {
+      instagram: { caption: "Stored caption", hashtags: "#envitefy" },
+    },
+    frames: [
+      {
+        frameNumber: 1,
+        text: "still texting",
+        emphasisWord: "texting",
+        voiceover: "One link replaces the texts.",
+        durationSec: 2,
+        transition: "cut",
+        kineticStyle: "static",
+        captionRole: "hook",
+      },
+    ],
+  };
+
+  const normalized = normalizeSocialCopyForFramePlan(socialCopy, framePlan);
+  assert.equal(normalized.platformPacks.instagram.caption, "Stored caption");
+  assert.equal(normalized.frames.length, 1);
+});
+
 function buildBudgetFramePlan(overrides = {}) {
   const shotFamilies = [
     "wide-environment",

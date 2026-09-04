@@ -319,6 +319,7 @@ export function normalizeSocialCopyForFramePlan(socialCopy, framePlan = []) {
   return {
     hook: clean(socialCopy?.hook),
     endCard: clean(socialCopy?.endCard),
+    ...(socialCopy?.platformPacks ? { platformPacks: socialCopy.platformPacks } : {}),
     frames: frames.map((frame, index) => {
       const frameNumber = Number(frame?.frameNumber) || index + 1;
       const existing = existingByFrameNumber.get(frameNumber);

@@ -32,6 +32,8 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { MarketingCopyDesk } from "@/components/admin/MarketingCopyDesk";
+import { buildMarketingCopyDesk } from "@/lib/admin/marketing-copy-desk";
 
 type AssetType = "social-image" | "short-video";
 type MarketingChannel = "facebook" | "instagram" | "youtube" | "tiktok";
@@ -111,6 +113,17 @@ type RunDetail = {
   sceneSpec: any;
   framePlan: any;
   socialCopy: any;
+  copyDesk?: {
+    available: boolean;
+    source: "adapted" | "platform-packs";
+    packs: Array<{
+      channel: MarketingChannel;
+      label: string;
+      shortLabel: string;
+      fields: Array<{ key: string; label: string; value: string }>;
+      copyAll: string;
+    }>;
+  };
   creativeQa: CreativeQa | null;
   frames: FramesManifest | null;
   videoUrl: string | null;
@@ -709,6 +722,22 @@ export default function MarketingCampaignsPage() {
   );
 
   const frameRows = detail?.frames?.frames || [];
+  const copyDesk = useMemo(
+    () =>
+      buildMarketingCopyDesk({
+        channels: Array.isArray(detail?.request?.input?.channels)
+          ? detail.request.input.channels
+          : Array.isArray(detail?.status?.request?.channels)
+            ? detail.status.request.channels
+            : null,
+        socialCopy: detail?.socialCopy,
+        request: detail?.request,
+        brief: detail?.brief,
+        frames: detail?.frames,
+        preferStoredPacks: false,
+      }),
+    [detail],
+  );
   const qaSummary = useMemo<CreativeQa | null>(() => {
     if (!detail?.creativeQa) return null;
     const qa = detail.creativeQa;
@@ -1147,15 +1176,16 @@ export default function MarketingCampaignsPage() {
                   Marketing Creative Studio
                 </span>
                 <span className="text-xs font-semibold text-[#cfc3ea]">
-                  Campaigns · creative · production
+                  Campaigns · creative · copy desk
                 </span>
               </div>
               <h1 className="mt-4 font-[var(--font-playfair)] text-4xl leading-none font-semibold tracking-[-0.04em] sm:text-5xl">
                 Marketing Hub
               </h1>
               <p className="mt-4 max-w-3xl text-sm font-medium leading-6 text-[#d8d0e9] sm:text-base">
-                Turn a rough idea into an expert campaign prompt, then produce platform-ready images
-                or short-form video without losing the strategy behind the work.
+                Turn a rough idea into an expert campaign prompt, produce platform-ready images or
+                short-form video, then copy paste-ready text for Instagram, Facebook, TikTok, and
+                YouTube.
               </p>
             </div>
 
@@ -1186,7 +1216,7 @@ export default function MarketingCampaignsPage() {
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               <span>2 · Generate image or video</span>
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>3 · Review & export</span>
+              <span>3 · Copy desk & export</span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <SecondaryButton onClick={handleResetPage} icon={<RotateCcw className="h-4 w-4" />}>
@@ -2130,6 +2160,13 @@ export default function MarketingCampaignsPage() {
               )}
             </PageCard>
 
+            {detail && copyDesk.available ? (
+              <MarketingCopyDesk
+                desk={copyDesk}
+                onCopyError={(message) => setError(message)}
+              />
+            ) : null}
+
             {detail ? (
               <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
                 <div className="space-y-6">
@@ -2579,7 +2616,8 @@ export default function MarketingCampaignsPage() {
                       ) : (
                         <p className="text-sm leading-6 text-[#7d7593]">
                           Approve the headlines, then choose Prepare Social Posts to create the
-                          finished PNG set.
+                          finished PNG set. Copy desk text is ready to paste even before the PNG
+                          export.
                         </p>
                       )}
                     </PageCard>

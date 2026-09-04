@@ -59,7 +59,7 @@ export const adminNavItems: AdminNavItem[] = [
     id: "marketing-assets",
     label: "Marketing Assets",
     href: "/admin/marketing-images",
-    description: "Storyboard runs and generated media",
+    description: "Creative runs, copy desk, and generated media",
   },
   {
     id: "ad-studio",

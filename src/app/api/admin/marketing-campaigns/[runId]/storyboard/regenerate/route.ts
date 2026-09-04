@@ -10,6 +10,7 @@ import {
   persistMarketingRun,
   readJsonFile,
   resolveMarketingCampaignProjectRoot,
+  syncMarketingCopyDeskForRun,
 } from "@/lib/admin/marketing-campaigns";
 import { adminErrorResponse, requireAdminSession } from "@/lib/admin/require-admin";
 import { spawnBackgroundNodeScript } from "@/lib/admin/spawn-background";
@@ -73,6 +74,7 @@ export async function POST(
         "../../../../../../../../scripts/lib/campaign-run.mjs"
       );
       await campaignRun.rerunStoryboardForRun({ runId, runDir });
+      await syncMarketingCopyDeskForRun(runDir);
       await persistMarketingRun(runDir);
     } else {
       pid = spawnBackgroundNodeScript({

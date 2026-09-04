@@ -9,6 +9,7 @@ import {
   readMarketingRunDetail,
   resolveMarketingCampaignProjectRoot,
   resolveRunAssetPath,
+  syncMarketingCopyDeskForRun,
 } from "./marketing-campaigns.ts";
 
 test("serverless marketing runs use the writable temporary filesystem", () => {
@@ -77,4 +78,54 @@ test("readMarketingRunDetail only exposes frame asset urls for files that exist"
 
   assert.match(normalizedFrames[0].imageUrl, /frame-01\.png/);
   assert.equal(normalizedFrames[1].imageUrl, null);
+});
+
+test("readMarketingRunDetail attaches an adapted copy desk from shared social copy", async () => {
+  const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "envitefy-marketing-copy-"));
+  const runId = "20260422-140000-copy-desk";
+  const runDir = path.join(projectRoot, "qa-artifacts", "storyboard-runs", runId);
+  await fs.mkdir(runDir, { recursive: true });
+  await fs.writeFile(
+    path.join(runDir, "request.json"),
+    JSON.stringify({
+      input: {
+        campaignName: "Fridge Invite",
+        channels: ["instagram", "facebook", "tiktok", "youtube"],
+        targetVertical: "Birthday",
+        callToAction: "Create the birthday page",
+      },
+    }),
+  );
+  await fs.writeFile(
+    path.join(runDir, "social-copy.json"),
+    JSON.stringify({
+      hook: "the invite is still on the fridge",
+      endCard: "start your event page",
+      frames: [{ frameNumber: 1, text: "still texting details", voiceover: "One link replaces the texts." }],
+    }),
+  );
+
+  const detail = await readMarketingRunDetail(runId, projectRoot);
+  assert.equal(detail.copyDesk.available, true);
+  assert.equal(detail.copyDesk.source, "adapted");
+  assert.deepEqual(
+    detail.copyDesk.packs.map((pack) => pack.channel),
+    ["instagram", "facebook", "tiktok", "youtube"],
+  );
+  const instagram = detail.copyDesk.packs.find((pack) => pack.channel === "instagram");
+  const facebook = detail.copyDesk.packs.find((pack) => pack.channel === "facebook");
+  assert.ok(instagram?.fields.some((field) => field.key === "caption"));
+  assert.ok(instagram?.fields.some((field) => field.key === "hashtags"));
+  assert.ok(facebook?.fields.some((field) => field.key === "postBody"));
+  assert.notEqual(
+    instagram?.fields.find((field) => field.key === "caption")?.value,
+    facebook?.fields.find((field) => field.key === "postBody")?.value,
+  );
+
+  const synced = await syncMarketingCopyDeskForRun(runDir);
+  const persisted = JSON.parse(await fs.readFile(path.join(runDir, "social-copy.json"), "utf8"));
+  assert.equal(synced.available, true);
+  assert.ok(persisted.platformPacks.instagram.caption);
+  assert.ok(persisted.platformPacks.youtube.title);
+  assert.equal(persisted.hook, "the invite is still on the fridge");
 });

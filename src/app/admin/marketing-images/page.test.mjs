@@ -19,6 +19,25 @@ const promptAgent = await readFile(
   new URL("../../../lib/admin/marketing-prompt-agent.ts", import.meta.url),
   "utf8",
 );
+const copyDeskComponent = await readFile(
+  new URL("../../../components/admin/MarketingCopyDesk.tsx", import.meta.url),
+  "utf8",
+);
+const copyDeskLib = await readFile(
+  new URL("../../../lib/admin/marketing-copy-desk.ts", import.meta.url),
+  "utf8",
+);
+const captionsRoute = await readFile(
+  new URL("../../api/admin/marketing-campaigns/[runId]/captions/route.ts", import.meta.url),
+  "utf8",
+);
+const captionsRegenerateRoute = await readFile(
+  new URL(
+    "../../api/admin/marketing-campaigns/[runId]/captions/regenerate/route.ts",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const campaignRun = await readFile(
   new URL("../../../../scripts/lib/campaign-run.mjs", import.meta.url),
   "utf8",
@@ -96,4 +115,31 @@ test("production campaign runs use writable durable serverless storage", () => {
   assert.match(campaignRoute, /persistMarketingRun\(runPaths\.runDir\)/);
   assert.match(campaignRoute, /after\(async \(\) =>/);
   assert.match(campaignRoute, /campaignRun\.runCampaign/);
+});
+
+test("copy desk adapts shared captions into per-platform paste packs", () => {
+  assert.match(source, /Copy desk/);
+  assert.match(source, /MarketingCopyDesk/);
+  assert.match(source, /buildMarketingCopyDesk/);
+  assert.match(source, /preferStoredPacks: false/);
+  assert.match(source, /Instagram, Facebook, TikTok, and/);
+  assert.match(copyDeskComponent, /Copy all/);
+  assert.match(copyDeskComponent, /Copy \$\{pack\.label\} \$\{field\.label\.toLowerCase\(\)\}/);
+  assert.match(copyDeskLib, /instagram: \{ label: "Instagram"/);
+  assert.match(copyDeskLib, /facebook: \{ label: "Facebook"/);
+  assert.match(copyDeskLib, /tiktok: \{ label: "TikTok"/);
+  assert.match(copyDeskLib, /youtube: \{ label: "YouTube"/);
+  assert.match(copyDeskLib, /makePack\("instagram"/);
+  assert.match(copyDeskLib, /key: "hashtags"/);
+  assert.match(copyDeskLib, /key: "postBody"/);
+  assert.match(copyDeskLib, /key: "title"/);
+  assert.match(copyDeskLib, /key: "description"/);
+  assert.match(copyDeskLib, /generatedAltText/);
+  assert.match(captionsRoute, /requireAdminSession/);
+  assert.match(captionsRoute, /syncMarketingCopyDeskForRun/);
+  assert.match(captionsRegenerateRoute, /requireAdminSession/);
+  assert.match(captionsRegenerateRoute, /syncMarketingCopyDeskForRun/);
+  assert.doesNotMatch(source, /Connect account|Schedule post|Publish now|Blotato|Metricool/);
+  assert.doesNotMatch(copyDeskComponent, /oauth|schedule-to-network|Blotato|Metricool/);
+  assert.doesNotMatch(copyDeskLib, /openai|chat\.completions|images\.generate/);
 });
