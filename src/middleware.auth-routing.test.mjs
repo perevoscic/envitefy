@@ -50,12 +50,26 @@ test("middleware lets authenticated users open /snap for the app launch cards", 
 test("middleware keeps Studio public without treating it as a marketing redirect", () => {
   const middleware = readSource("src/middleware.ts");
   const appShell = readSource("src/app/AppShell.tsx");
+  const publicPaths =
+    middleware.match(/const PUBLIC_UNAUTH_PATHS = new Set\(\[([\s\S]*?)\]\);/)?.[1] || "";
 
-  assert.match(middleware, /const PUBLIC_UNAUTH_PATHS = new Set\(\[[\s\S]*"\/studio"/s);
-  assert.match(middleware, /const PUBLIC_UNAUTH_PATHS = new Set\(\[[\s\S]*"\/chat"/s);
+  assert.match(publicPaths, /"\/studio"/);
+  assert.doesNotMatch(publicPaths, /"\/chat"/);
   assert.match(middleware, /const isStudioCardSharePath = \(pathname: string\) =>/);
   assert.match(middleware, /if \(isStudioCardSharePath\(normalized\)\) return true;/);
   assert.doesNotMatch(appShell, /const MARKETING_PATHS = new Set\(\[[\s\S]*"\/studio"/s);
+});
+
+test("middleware sends unsigned /chat to the main landing redirect", () => {
+  const middleware = readSource("src/middleware.ts");
+  const publicPaths =
+    middleware.match(/const PUBLIC_UNAUTH_PATHS = new Set\(\[([\s\S]*?)\]\);/)?.[1] || "";
+
+  assert.doesNotMatch(publicPaths, /"\/chat"/);
+  assert.match(
+    middleware,
+    /if \(!authState\.hasSession\) \{\s*const url = req.nextUrl.clone\(\);\s*url\.pathname = "\/";/s,
+  );
 });
 
 test("middleware keeps public share media routes available to link preview crawlers", () => {

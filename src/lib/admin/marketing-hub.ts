@@ -145,6 +145,7 @@ export type RunSummary = {
   runDir: string;
   status: RunStatus | null;
   request: RunRequest | null;
+  thumbnailUrl?: string | null;
 };
 
 export type MarketingHubForm = {

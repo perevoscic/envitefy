@@ -29,7 +29,6 @@ const PUBLIC_UNAUTH_PATHS = new Set([
   "/forgot",
   "/reset",
   "/snap",
-  "/chat",
   "/showcase",
   "/sports",
   "/sport-events",

@@ -16,6 +16,12 @@ type MarketingRunSummary = {
   runDir: string;
   status: Record<string, unknown> | null;
   request: Record<string, unknown> | null;
+  thumbnailUrl?: string | null;
+};
+
+type FrameFileRecord = {
+  imageFile?: unknown;
+  captionedImageFile?: unknown;
 };
 
 function clean(value: unknown) {
@@ -70,6 +76,27 @@ async function fileExists(filePath: string) {
     .access(filePath)
     .then(() => true)
     .catch(() => false);
+}
+
+export async function resolveRunThumbnailUrl(runId: string, runDir: string) {
+  try {
+    const frames = await readJsonFile<{ frames?: FrameFileRecord[] } | null>(
+      path.join(runDir, "frames.json"),
+      null,
+    );
+    const records = Array.isArray(frames?.frames) ? frames.frames : [];
+    for (const frame of records) {
+      const candidates = [clean(frame.captionedImageFile), clean(frame.imageFile)].filter(Boolean);
+      for (const file of candidates) {
+        if (await fileExists(path.join(runDir, file))) {
+          return buildRunAssetUrl(runId, file);
+        }
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 function runBlobPrefix(runId: string) {
@@ -220,7 +247,14 @@ async function listBlobMarketingRuns(): Promise<MarketingRunSummary[]> {
           null,
         ),
       ]);
-      return { runId, runDir: resolveRunDir(runId), status, request };
+      const runDir = resolveRunDir(runId);
+      return {
+        runId,
+        runDir,
+        status,
+        request,
+        thumbnailUrl: await resolveRunThumbnailUrl(runId, runDir),
+      };
     }),
   );
 }
@@ -244,11 +278,13 @@ export async function listMarketingRuns(
           path.join(runDir, "request.json"),
           null,
         );
+        const thumbnailUrl = await resolveRunThumbnailUrl(runId, runDir);
         return {
           runId,
           runDir,
           status,
           request,
+          thumbnailUrl,
         };
       }),
   );

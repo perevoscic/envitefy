@@ -166,6 +166,7 @@ export async function GET() {
         runDir: entry.runDir,
         status: entry.status,
         request: entry.request,
+        thumbnailUrl: entry.thumbnailUrl || null,
       })),
     });
   } catch (error) {

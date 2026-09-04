@@ -47,6 +47,7 @@ const campaignRoute = await readFile(
   new URL("../../api/admin/marketing-campaigns/route.ts", import.meta.url),
   "utf8",
 );
+const middleware = await readFile(new URL("../../../middleware.ts", import.meta.url), "utf8");
 const promptRoute = await readFile(
   new URL("../../api/admin/marketing-campaigns/prompt-ideas/route.ts", import.meta.url),
   "utf8",
@@ -139,15 +140,19 @@ test("generate uses the idea as criteria and still posts campaign payload", () =
   assert.match(campaignRun, /clean\(input\.idea\)/);
 });
 
-test("campaign library records status and channel chips", () => {
-  assert.match(marketingHubLib, /facebook/);
-  assert.match(marketingHubLib, /instagram/);
-  assert.match(marketingHubLib, /youtube/);
-  assert.match(marketingHubLib, /tiktok/);
+test("campaign library uses a thumbnail card grid", () => {
+  assert.match(library, /grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4/);
+  assert.match(library, /max-w-\[220px\]/);
+  assert.match(library, /aspect-square/);
+  assert.match(library, /line-clamp-2/);
+  assert.match(library, /thumbnailUrl/);
   assert.match(library, /MARKETING_CHANNELS/);
   assert.match(library, /hubStatusLabel/);
-  assert.match(library, /ChannelChip/);
   assert.match(library, /onOpenCampaign/);
+  assert.doesNotMatch(library, /space-y-2/);
+  assert.doesNotMatch(library, /ChannelChip/);
+  assert.match(campaignRoute, /thumbnailUrl: entry\.thumbnailUrl \|\| null/);
+  assert.match(campaignRoute, /requireAdminSession/);
 });
 
 test("workspace keeps creatives, copy desk, and secondary edit only", () => {
@@ -155,6 +160,12 @@ test("workspace keeps creatives, copy desk, and secondary edit only", () => {
   assert.match(creatives, /Download PNG/);
   assert.match(creatives, /Open MP4/);
   assert.match(creatives, /Open SRT/);
+  assert.match(creatives, /max-w-\[400px\]/);
+  assert.match(creatives, /max-h-\[240px\]/);
+  assert.match(creatives, /object-contain/);
+  assert.match(creatives, /max-w-\[280px\]/);
+  assert.match(creatives, /w-\[160px\]/);
+  assert.doesNotMatch(creatives, /sm:grid-cols-2 xl:grid-cols-3/);
   assert.match(edit, />Edit</);
   assert.match(edit, /Regenerate copy/);
   assert.match(edit, /Save captions/);
@@ -218,4 +229,11 @@ test("copy desk adapts shared captions into per-platform paste packs", () => {
   assert.doesNotMatch(workspace, /Connect account|Schedule post|Publish now|Blotato|Metricool/);
   assert.doesNotMatch(copyDeskComponent, /oauth|schedule-to-network|Blotato|Metricool/);
   assert.doesNotMatch(copyDeskLib, /openai|chat\.completions|images\.generate/);
+});
+
+test("unsigned /chat is not a public unauth path", () => {
+  const publicPaths = middleware.match(/const PUBLIC_UNAUTH_PATHS = new Set\(\[([\s\S]*?)\]\);/)?.[1] || "";
+  assert.doesNotMatch(publicPaths, /"\/chat"/);
+  assert.match(publicPaths, /"\/studio"/);
+  assert.match(middleware, /url\.pathname = "\/";/);
 });

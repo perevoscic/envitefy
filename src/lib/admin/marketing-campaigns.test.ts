@@ -9,6 +9,7 @@ import {
   readMarketingRunDetail,
   resolveMarketingCampaignProjectRoot,
   resolveRunAssetPath,
+  resolveRunThumbnailUrl,
   syncMarketingCopyDeskForRun,
 } from "./marketing-campaigns.ts";
 
@@ -78,6 +79,9 @@ test("readMarketingRunDetail only exposes frame asset urls for files that exist"
 
   assert.match(normalizedFrames[0].imageUrl, /frame-01\.png/);
   assert.equal(normalizedFrames[1].imageUrl, null);
+
+  const thumbnailUrl = await resolveRunThumbnailUrl(runId, runDir);
+  assert.match(thumbnailUrl || "", /frame-01\.png/);
 });
 
 test("readMarketingRunDetail attaches an adapted copy desk from shared social copy", async () => {

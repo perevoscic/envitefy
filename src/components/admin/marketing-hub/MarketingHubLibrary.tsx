@@ -7,14 +7,13 @@ import {
   campaignChannels,
   campaignTitle,
   channelLabel,
-  formatTimestamp,
   hubStatusLabel,
   runAssetType,
   statusTone,
   type CampaignFilter,
   type RunSummary,
 } from "@/lib/admin/marketing-hub";
-import { ChannelChip, PageCard, PrimaryButton, StatusBadge } from "./MarketingHubUi";
+import { PageCard, PrimaryButton, StatusBadge } from "./MarketingHubUi";
 import { cn } from "@/lib/utils";
 
 export function MarketingHubLibrary({
@@ -96,55 +95,49 @@ export function MarketingHubLibrary({
             Loading campaigns…
           </div>
         ) : filteredRuns.length ? (
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
             {filteredRuns.map((run) => {
               const runState = run.status?.state || "unknown";
               const runAssetTypeValue = runAssetType(run);
-              const runChannels = campaignChannels(run);
+              const thumbUrl = run.thumbnailUrl || null;
+              const status = hubStatusLabel(runState);
               return (
                 <button
                   type="button"
                   key={run.runId}
                   onClick={() => onOpenCampaign(run.runId)}
-                  className="w-full cursor-pointer rounded-[22px] border border-transparent px-4 py-4 text-left transition hover:border-[#e8e1f4] hover:bg-[#faf8fd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67c5]"
+                  className="max-w-[220px] cursor-pointer overflow-hidden rounded-[20px] border border-[#efeaf7] bg-[#fcfbfd] text-left transition hover:border-[#d9d0ef] hover:shadow-[0_10px_24px_rgba(84,49,170,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67c5]"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-bold text-[#24193f]">
-                        {campaignTitle(run)}
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <StatusBadge tone={statusTone(hubStatusLabel(runState))}>
-                          {hubStatusLabel(runState)}
-                        </StatusBadge>
-                        <StatusBadge
-                          tone={runAssetTypeValue === "social-image" ? "info" : "default"}
-                        >
-                          {assetTypeLabel(runAssetTypeValue)}
-                        </StatusBadge>
-                        <span className="text-xs font-medium text-[#7b7394]">
-                          {formatTimestamp(run.status?.generatedAt || run.request?.generatedAt)}
-                        </span>
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {runChannels.length ? (
-                          runChannels.map((channel) => (
-                            <ChannelChip key={channel} label={channelLabel(channel)} />
-                          ))
+                  <div className="relative aspect-square bg-[#f1ecfb]">
+                    {thumbUrl ? (
+                      <img
+                        src={thumbUrl}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-[#b7add2]">
+                        {runAssetTypeValue === "social-image" ? (
+                          <Images className="h-8 w-8" aria-hidden="true" />
                         ) : (
-                          <span className="text-[10px] font-medium text-[#9890a8]">
-                            Channel not recorded
-                          </span>
+                          <Clapperboard className="h-8 w-8" aria-hidden="true" />
                         )}
                       </div>
-                    </div>
-                    {hubStatusLabel(runState) === "Generating" ? (
-                      <Loader2 className="mt-0.5 h-4 w-4 animate-spin text-[#7c67c5]" />
-                    ) : runAssetTypeValue === "social-image" ? (
-                      <Images className="mt-0.5 h-4 w-4 text-[#b7add2]" aria-hidden="true" />
-                    ) : (
-                      <Clapperboard className="mt-0.5 h-4 w-4 text-[#b7add2]" aria-hidden="true" />
                     )}
+                    <div className="absolute left-2 top-2">
+                      <StatusBadge tone={statusTone(status)}>{status}</StatusBadge>
+                    </div>
+                    {status === "Generating" ? (
+                      <Loader2 className="absolute right-2 top-2 h-4 w-4 animate-spin text-white drop-shadow" />
+                    ) : null}
+                  </div>
+                  <div className="space-y-1 px-3 py-2.5">
+                    <div className="line-clamp-2 text-sm font-bold leading-5 text-[#24193f]">
+                      {campaignTitle(run)}
+                    </div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a84a1]">
+                      {assetTypeLabel(runAssetTypeValue)}
+                    </div>
                   </div>
                 </button>
               );
