@@ -84,7 +84,7 @@ test("studio prompt includes category-specific and anti-hallucination guardrails
   assert.match(source, /visualPreferences:\s*clean\(details\.visualPreferences\)\s*\|\|\s*null,/);
   assert.match(
     source,
-    /style:\s*\[\s*visualDirection,\s*categoryGuardrails,\s*imageFinishPresetDirection,\s*internalInstructions,\s*refinement,\s*studioGuardrails,\s*\]\s*\.filter\(Boolean\)\s*\.join\("\. "\)\s*\|\|\s*null/s,
+    /style:\s*\[\s*visualDirection,\s*guestPhotoHint,[\s\S]*?imageFinishPresetDirection,\s*internalInstructions,\s*refinement,[\s\S]*?product === "live_card" \? studioGuardrails[\s\S]*?\.filter\(Boolean\)\s*\.join\("\. "\)/s,
   );
   assert.match(source, /imageFinishPreset:\s*imageFinishPreset\?\.label,/);
 });

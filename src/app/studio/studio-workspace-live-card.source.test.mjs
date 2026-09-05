@@ -35,7 +35,7 @@ test("studio live-card builders preserve local invitation data and default gener
     source,
     /eventYear: shouldIncludeStudioEventYear\(details\) \? getStudioEventYear\(details\) \|\| null : null,/,
   );
-  assert.match(source, /date: formatStudioPromptDate\(details\) \|\| null,/);
+  assert.match(source, /date: product === "live_card" \? formatStudioPromptDate\(details\) \|\| null : getStudioEventDate\(details\) \|\| null,/);
   assert.match(source, /export function refreshLiveCardInvitationData\(/);
   assert.match(
     source,
