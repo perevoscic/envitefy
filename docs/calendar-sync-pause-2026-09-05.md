@@ -1,8 +1,12 @@
-# Temporary Google / Outlook calendar pause
+# Google / Outlook calendar sync — restored
 
-Requested September 5, 2026 for Google verification. This is an application-wide pause, with the same behavior for every user. Existing integration code is retained behind `CONNECTED_CALENDAR_SYNC_ENABLED = false` in `src/config/calendar-sync.ts`.
+The user explicitly reversed the temporary verification pause on September 5, 2026: calendar syncing must stay on. `CONNECTED_CALENDAR_SYNC_ENABLED` is now `true` in `src/config/calendar-sync.ts`, restoring Google/Outlook connection controls and sync paths. Do not disable syncing for verification or maintenance unless the user explicitly requests another pause. Individual calendar connections and user preferences still apply.
 
-## Restore after verification
+This change requires deployment to affect the hosted site. Accounts shown as Not connected still need to connect their provider. Enabling sync does not automatically backfill events saved during the pause.
+
+The remaining sections preserve the original pause and restoration record; the earlier pause request is superseded by the instruction above.
+
+## Historical restoration procedure
 
 1. Change `CONNECTED_CALENDAR_SYNC_ENABLED` from `false` to `true` in `src/config/calendar-sync.ts`.
 2. Run the checks listed below, rebuild, and redeploy the application. Restart a local dev server if it does not pick up the shared switch. Both the client bundle and server need the same version.

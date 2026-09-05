@@ -220,7 +220,10 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           proofPoints: [
             "Live pages support Google Calendar, Apple Calendar/ICS, and Outlook calendar actions.",
             ...(CONNECTED_CALENDAR_SYNC_ENABLED
-              ? ["Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings; Apple Calendar uses a one-event ICS handoff."]
+              ? [
+                  "Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings; Apple Calendar uses a one-event ICS handoff.",
+                  "Saved scans and uploads can automatically sync to a connected Google or Outlook calendar using the owner's calendar preference.",
+                ]
               : ["Guests can manually save events with calendar links or ICS downloads; these actions do not require a connected calendar account."]),
             "Calendar entries can carry event timing, location, and available reminder information.",
             "Specialized schedule flows can expose the relevant event or session timing.",

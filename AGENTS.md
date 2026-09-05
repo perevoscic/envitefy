@@ -83,6 +83,7 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 ## Route And Runtime Quirks
 
+- Standing preference (September 5, 2026): Google/Outlook calendar syncing must remain enabled. Keep `CONNECTED_CALENDAR_SYNC_ENABLED = true` in `src/config/calendar-sync.ts`; do not pause it for verification or maintenance unless the user explicitly requests that change. The earlier verification pause is superseded; see `docs/calendar-sync-pause-2026-09-05.md`.
 - Public access is controlled by middleware heuristics, not just folder names. `src/middleware.ts` treats `/event/[slug-or-id]` and `/smart-signup-form/[id]` as public share pages.
 - `/event` itself is different from `/event/[id]`; the base route requires a session cookie and behaves like app workspace entry, not a public share page.
 - Event passcodes are implemented with per-event cookies in `src/lib/event-access.ts`. If you change access-code behavior, also inspect:

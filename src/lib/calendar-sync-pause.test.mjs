@@ -5,6 +5,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import ts from "typescript";
+import { CONNECTED_CALENDAR_SYNC_ENABLED } from "../config/calendar-sync.ts";
 
 const require = createRequire(import.meta.url);
 const root = new URL("../../", import.meta.url);
@@ -65,7 +66,8 @@ function loadModule(relativePath, { enabled = false, calls = [] } = {}) {
   return module.exports;
 }
 
-test("the disabled switch pauses sync, and the same switch can restore it", async () => {
+test("calendar sync stays enabled by default; only an explicit pause blocks it", async () => {
+  assert.equal(CONNECTED_CALENDAR_SYNC_ENABLED, true, "Google and Outlook sync must stay enabled");
   const paused = loadModule("src/lib/calendar-sync-pause.ts").getCalendarSyncPauseResponse();
   assert.equal(paused.status, 503);
   assert.equal(paused.headers.get("cache-control"), "no-store");
