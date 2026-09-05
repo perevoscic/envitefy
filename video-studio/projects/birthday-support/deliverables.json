@@ -1,0 +1,20 @@
+{
+  "id": "birthday-support",
+  "status": "complete",
+  "exports": [
+    {
+      "version": 1,
+      "composition": "EnvitefyBirthdaySupport",
+      "aspectRatio": "9:16",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "durationSeconds": 25,
+      "frames": 750,
+      "path": "out/birthday-support-9x16-v1.mp4",
+      "reviewStatus": "assistant-reviewed-locally",
+      "userApproved": false,
+      "bytes": 12666941
+    }
+  ]
+}

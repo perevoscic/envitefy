@@ -43,8 +43,13 @@ export function resolveOcrBirthdayTitle(input: BirthdayTitleInput): {
       ? (["th", "st", "nd", "rd"][age % 10] ?? "th")
       : "th";
   const ageOrdinal = age === null ? "" : `${age}${suffix}`;
+  // A printed theme can separate the ordinal from "Birthday". Preserve that
+  // phrasing instead of adding a second age immediately before the occasion.
+  const hasPrintedOrdinal = ageOrdinal
+    ? new RegExp(`\\b${ageOrdinal}\\b`, "i").test(input.title)
+    : false;
   return {
-    title: input.title.replace(
+    title: hasPrintedOrdinal ? input.title : input.title.replace(
       /\b(?:\d{1,2}(?:st|nd|rd|th)?\s+)?birthday\b/i,
       `${ageOrdinal ? `${ageOrdinal} ` : ""}Birthday`,
     ),

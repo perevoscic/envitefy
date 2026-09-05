@@ -166,6 +166,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
 
   const historyRef = useRef<HistoryRow[]>([]);
+  const cacheRevisionRef = useRef(0);
   const dashboardRef = useRef<DashboardPayload | null>(null);
   const dashboardRefreshPromiseRef = useRef<Promise<void> | null>(null);
   const isHydratedRef = useRef(false);
@@ -194,6 +195,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   }, [isHydrated]);
 
   const resetCacheState = useCallback(() => {
+    cacheRevisionRef.current += 1;
     if (typeof window !== "undefined" && refreshTimerRef.current != null) {
       window.clearTimeout(refreshTimerRef.current);
     }
@@ -212,6 +214,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshHistory = useCallback(async (_opts?: { force?: boolean }) => {
+    const revision = cacheRevisionRef.current;
     setHistoryLoading(true);
     try {
       const params = new URLSearchParams({
@@ -225,6 +228,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       });
       if (res.status === 304 || !res.ok) return;
       const json = await res.json().catch(() => null);
+      if (revision !== cacheRevisionRef.current) return;
       const items = Array.isArray(json?.items)
         ? (json.items as HistoryRow[])
         : historyRef.current;
@@ -242,6 +246,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshDashboard = useCallback(async (opts?: { force?: boolean }) => {
+    const revision = cacheRevisionRef.current;
     const inflightKey = sessionIdentityKey || "__anonymous__";
     const sharedInflight = dashboardRefreshInflight.get(inflightKey);
     if (sharedInflight) {
@@ -277,6 +282,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
           return;
         }
         const json = await res.json().catch(() => null);
+        if (revision !== cacheRevisionRef.current) return;
         if (isDashboardResponsePayload(json)) {
           const degraded = Boolean((json as DashboardPayload).degraded);
           if (degraded && dashboardRef.current?.nextEvent) {
@@ -394,8 +400,9 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     const onCreated = (event: Event) => {
       const detail = (event as CustomEvent<Record<string, unknown> | null>).detail;
       if (!detail?.id) return;
+      // Ignore older in-flight reads that would overwrite the saved row.
+      cacheRevisionRef.current += 1;
       setHistorySidebarItems((prev) => {
-        if (prev.some((row) => row.id === String(detail.id))) return prev;
         const detailData =
           detail.data && typeof detail.data === "object" ? detail.data : {};
         const nextItem: HistoryRow = {
@@ -414,8 +421,15 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
             ...(detail.category ? { category: String(detail.category) } : {}),
           },
         };
-        return sortHistoryRows([nextItem, ...prev]).slice(0, 200);
+        return sortHistoryRows([nextItem, ...prev.filter((row) => row.id !== nextItem.id)]).slice(0, 200);
       });
+      if (detail.deferRefresh === true) {
+        // The save response already includes this event. Refresh dashboard lazily
+        // when the user next opens it, rather than while navigating to the event.
+        dashboardRef.current = null;
+        setDashboardData(null);
+        return;
+      }
       queueRefresh({ force: true, source: "history:created" });
     };
 

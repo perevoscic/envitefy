@@ -1304,3 +1304,461 @@ Read more: https://nextjs.org/docs/messages/next-image-unconfigured-qualities
     at JSON.parse (<anonymous>) {
   page: '/landing'
 }
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 119,
+    returnedEventCount: 34,
+    droppedMissingStartCount: 85,
+    fallbackUsed: true,
+    fallbackReason: 'no-invited-upcoming-in-window',
+    emptyReason: null
+  },
+  nextEvent: {
+    id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+    title: 'Varsity Panthers vs Central City Tigers',
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'concierge',
+    startAt: '2026-09-19T00:00:00.000Z'
+  },
+  upcomingCount: 5,
+  eventSample: [
+    {
+      id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+      title: 'Varsity Panthers vs Central City Tigers',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-19T00:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '0e4b7539-cd5e-4c34-9584-e8d99df47226',
+      title: 'Sarah & James Wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-25T12:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'de77d39b-1bde-4714-8b2f-a56d331e6cc7',
+      title: 'Ava and James wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-10-10T21:30:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf',
+      title: 'Fright Invite',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'meet-discovery-v2',
+      startAt: '2026-10-23T00:00:00.000Z',
+      status: 'review_ready'
+    },
+    {
+      id: '2ec7e1ce-5df5-4bf3-ba56-3d5f0de70553',
+      title: "Livia's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2036-09-04T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'f5e0117a-bba7-4ba6-88a5-7ef563c417a7',
+      title: 'Basketball Game & Pazzo Dinner',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-04T18:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'e332eb6c-3fda-4e58-b2bb-2c72a0d38e13',
+      title: "It's Game Time — Josiah's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-08-30T19:00:00.000Z',
+      status: null
+    },
+    {
+      id: 'b4a7f186-20b5-44c4-86c1-ca79eb8ce730',
+      title: 'Mine is turning 15',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-08-15T15:00:00.000Z',
+      status: 'published'
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 5138
+}
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 120,
+    returnedEventCount: 35,
+    droppedMissingStartCount: 85,
+    fallbackUsed: true,
+    fallbackReason: 'no-next-event-in-window',
+    emptyReason: null
+  },
+  nextEvent: {
+    id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+    title: 'Varsity Panthers vs Central City Tigers',
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'concierge',
+    startAt: '2026-09-19T00:00:00.000Z'
+  },
+  upcomingCount: 4,
+  eventSample: [
+    {
+      id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+      title: 'Varsity Panthers vs Central City Tigers',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-19T00:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '0e4b7539-cd5e-4c34-9584-e8d99df47226',
+      title: 'Sarah & James Wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-25T12:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'de77d39b-1bde-4714-8b2f-a56d331e6cc7',
+      title: 'Ava and James wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-10-10T21:30:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf',
+      title: 'Fright Invite',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'meet-discovery-v2',
+      startAt: '2026-10-23T00:00:00.000Z',
+      status: 'review_ready'
+    },
+    {
+      id: 'f5e0117a-bba7-4ba6-88a5-7ef563c417a7',
+      title: 'Basketball Game & Pazzo Dinner',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-04T18:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'e332eb6c-3fda-4e58-b2bb-2c72a0d38e13',
+      title: "It's Game Time — Josiah's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-08-30T19:00:00.000Z',
+      status: null
+    },
+    {
+      id: 'b4a7f186-20b5-44c4-86c1-ca79eb8ce730',
+      title: 'Mine is turning 15',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-08-15T15:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '7d90641a-df45-413e-bf96-824d73aed3bc',
+      title: "Madeline's bridal shower",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-08-08T16:00:00.000Z',
+      status: 'published'
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 4722
+}
+ ⨯ error: canceling statement due to statement timeout
+    at async withClient (src\lib\db.ts:236:12)
+    at async resolveEventHistoryIdentityBySlugOrId (src\lib\db.ts:3440:15)
+    at async getEventHistoryPublicRenderBySlugOrId (src\lib\db.ts:3515:20)
+  234 |   client.on("error", onClientError);
+  235 |   try {
+> 236 |     return await callback(client);
+      |            ^
+  237 |   } finally {
+  238 |     client.removeListener("error", onClientError);
+  239 |     client.release(hadError); {
+  length: 109,
+  severity: 'ERROR',
+  code: '57014',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'postgres.c',
+  line: '3405',
+  routine: 'ProcessInterrupts',
+  digest: '3683416621'
+}
+ ⨯ error: canceling statement due to statement timeout
+    at  withClient (src\lib\db.ts:237:13)
+    at  resolveEventHistoryIdentityBySlugOrId (src\lib\db.ts:3441:9)
+    at  getEventHistoryPublicRenderBySlugOrId (about://React/Server/webpack-internal:///(rsc)/./src/lib/db.ts?155:2870:22)
+  235 |   try {
+  236 |     return await callback(client);
+> 237 |   } finally {
+      |             ^
+  238 |     client.removeListener("error", onClientError);
+  239 |     client.release(hadError);
+  240 |   } {
+  environmentName: 'Server',
+  digest: '1651978262'
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Image with src "/no-event-placeholder-card-wide.webp" is using quality "60" which is not configured in images.qualities. This config will be required starting in Next.js 16.
+Read more: https://nextjs.org/docs/messages/next-image-unconfigured-qualities
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 120,
+    returnedEventCount: 35,
+    droppedMissingStartCount: 85,
+    fallbackUsed: true,
+    fallbackReason: 'no-next-event-in-window',
+    emptyReason: null
+  },
+  nextEvent: {
+    id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+    title: 'Varsity Panthers vs Central City Tigers',
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'concierge',
+    startAt: '2026-09-19T00:00:00.000Z'
+  },
+  upcomingCount: 4,
+  eventSample: [
+    {
+      id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+      title: 'Varsity Panthers vs Central City Tigers',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-19T00:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '0e4b7539-cd5e-4c34-9584-e8d99df47226',
+      title: 'Sarah & James Wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-25T12:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'de77d39b-1bde-4714-8b2f-a56d331e6cc7',
+      title: 'Ava and James wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-10-10T21:30:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf',
+      title: 'Fright Invite',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'meet-discovery-v2',
+      startAt: '2026-10-23T00:00:00.000Z',
+      status: 'review_ready'
+    },
+    {
+      id: 'f5e0117a-bba7-4ba6-88a5-7ef563c417a7',
+      title: 'Basketball Game & Pazzo Dinner',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-04T18:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'e332eb6c-3fda-4e58-b2bb-2c72a0d38e13',
+      title: "It's Game Time — Josiah's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-08-30T19:00:00.000Z',
+      status: null
+    },
+    {
+      id: 'b4a7f186-20b5-44c4-86c1-ca79eb8ce730',
+      title: 'Mine is turning 15',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-08-15T15:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '7d90641a-df45-413e-bf96-824d73aed3bc',
+      title: "Madeline's bridal shower",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-08-08T16:00:00.000Z',
+      status: 'published'
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 4719
+}
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 120,
+    returnedEventCount: 35,
+    droppedMissingStartCount: 85,
+    fallbackUsed: true,
+    fallbackReason: 'no-next-event-in-window',
+    emptyReason: null
+  },
+  nextEvent: {
+    id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+    title: 'Varsity Panthers vs Central City Tigers',
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'concierge',
+    startAt: '2026-09-19T00:00:00.000Z'
+  },
+  upcomingCount: 4,
+  eventSample: [
+    {
+      id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+      title: 'Varsity Panthers vs Central City Tigers',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-19T00:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '0e4b7539-cd5e-4c34-9584-e8d99df47226',
+      title: 'Sarah & James Wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-25T12:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'de77d39b-1bde-4714-8b2f-a56d331e6cc7',
+      title: 'Ava and James wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-10-10T21:30:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf',
+      title: 'Fright Invite',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'meet-discovery-v2',
+      startAt: '2026-10-23T00:00:00.000Z',
+      status: 'review_ready'
+    },
+    {
+      id: 'f5e0117a-bba7-4ba6-88a5-7ef563c417a7',
+      title: 'Basketball Game & Pazzo Dinner',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-04T18:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'e332eb6c-3fda-4e58-b2bb-2c72a0d38e13',
+      title: "It's Game Time — Josiah's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-08-30T19:00:00.000Z',
+      status: null
+    },
+    {
+      id: 'b4a7f186-20b5-44c4-86c1-ca79eb8ce730',
+      title: 'Mine is turning 15',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-08-15T15:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '7d90641a-df45-413e-bf96-824d73aed3bc',
+      title: "Madeline's bridal shower",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-08-08T16:00:00.000Z',
+      status: 'published'
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 4719
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/landing'
+}

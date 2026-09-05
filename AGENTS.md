@@ -115,5 +115,6 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 ## Envitefy Video Studio
 
+- The admin Content Studio at `/admin/marketing-images` was retired on September 5, 2026. Its dedicated APIs and Vercel reconciliation cron are removed; do not reintroduce them for local video production. See `docs/admin-content-studio.md`. The customer editor at `/studio` is a separate feature.
 - Video production lives in `video-studio/`. For video creation, revisions, aspect-ratio adaptations, or copy accompanying a studio video, read `video-studio/AGENTS.md` and use `video-studio/.agents/skills/envitefy-video-producer/SKILL.md`.
 - Standing video preferences are in `video-studio/STUDIO-GUIDE.md`; campaign history is indexed in `video-studio/projects/README.md`. Update these records when relevant feedback arrives so fresh tasks do not need the conversation repeated.

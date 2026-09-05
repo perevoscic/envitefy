@@ -18,7 +18,7 @@ test("pipeline sends preprocessed OCR images to vision as JPEG", async () => {
   const source = await readFile(new URL("./pipeline.ts", import.meta.url), "utf8");
   const constants = await readFile(new URL("./constants.ts", import.meta.url), "utf8");
 
-  assert.match(constants, /export const DEFAULT_OCR_MODEL = "gpt-5\.6-terra";/);
+  assert.match(constants, /export const DEFAULT_OCR_MODEL = "gpt-5\.6-luna";/);
   assert.match(constants, /OPENAI_OCR_FAST_MODEL \|\| "gpt-5\.6-luna"/);
   assert.match(source, /rasterizePdfPageToPng\(inputBuffer, 0\)/);
   assert.match(source, /\.grayscale\(\)\s*\.normalize\(\)\s*\.jpeg\(\{ quality: 90 \}\)/);

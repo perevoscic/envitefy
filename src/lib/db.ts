@@ -1,3 +1,4 @@
+import { scanCounterUpdates } from "@/lib/scan-counters";
 import {
   createHash,
   scrypt as nodeScrypt,
@@ -962,28 +963,7 @@ export async function incrementUserScanCounters(params: {
     { userId: params.userId || null, email: params.email || null },
     1,
   );
-  const updates: string[] = ["scans_total = coalesce(scans_total, 0) + 1"];
-  const cat = (params.category || "").toLowerCase();
-  if (cat.includes("birthday")) updates.push("scans_birthdays = coalesce(scans_birthdays, 0) + 1");
-  if (cat.includes("wedding")) updates.push("scans_weddings = coalesce(scans_weddings, 0) + 1");
-  if (cat.includes("sport"))
-    updates.push("scans_sport_events = coalesce(scans_sport_events, 0) + 1");
-  if (cat.includes("doctor") || cat.includes("dr ") || cat.includes("dr."))
-    updates.push("scans_doctor_appointments = coalesce(scans_doctor_appointments, 0) + 1");
-  if (cat.includes("appointment"))
-    updates.push("scans_appointments = coalesce(scans_appointments, 0) + 1");
-  if (cat.includes("play day") || cat.includes("playday") || cat.includes("playdate"))
-    updates.push("scans_play_days = coalesce(scans_play_days, 0) + 1");
-  if (cat.includes("general"))
-    updates.push("scans_general_events = coalesce(scans_general_events, 0) + 1");
-  if (
-    cat.includes("car pool") ||
-    cat.includes("carpool") ||
-    cat.includes("ride share") ||
-    cat.includes("school pickup") ||
-    cat.includes("school drop")
-  )
-    updates.push("scans_car_pool = coalesce(scans_car_pool, 0) + 1");
+  const updates = scanCounterUpdates(params.category);
   await query(`update users set ${updates.join(", ")} where ${where.clause}`, where.values);
 }
 

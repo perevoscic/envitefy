@@ -28,7 +28,6 @@ test("admin nav config has expected sections", () => {
     "AI Concierge",
     "Scans & Traffic",
     "Emails",
-    "Content Studio",
     "Ad Studio",
     "Analytics",
     "Settings",
@@ -38,12 +37,8 @@ test("admin nav config has expected sections", () => {
   }
 
   assert.match(source, /href: "\/admin"/);
-  assert.match(source, /href: "\/admin\/marketing-images"/);
   assert.match(source, /href: "\/admin\/ad-studio"/);
-  assert.ok(
-    source.indexOf('label: "Content Studio"') < source.indexOf('label: "Ad Studio"'),
-    "Ad Studio should appear below Content Studio",
-  );
+  assert.doesNotMatch(source, /Content Studio|marketing-images/);
 });
 
 test("admin layout does not render the duplicate internal admin rail", () => {
@@ -56,9 +51,11 @@ test("admin layout does not render the duplicate internal admin rail", () => {
 test("admin compatibility redirects stay wired", () => {
   const campaigns = readSource("src/app/admin/campaigns/page.tsx");
   const marketingAssets = readSource("src/app/admin/marketing-assets/page.tsx");
+  const marketingCampaigns = readSource("src/app/admin/marketing-campaigns/page.tsx");
 
   assert.match(campaigns, /redirect\("\/admin\/emails\?tab=campaigns"\)/);
-  assert.match(marketingAssets, /redirect\("\/admin\/marketing-images"\)/);
+  assert.match(marketingAssets, /redirect\("\/admin"\)/);
+  assert.match(marketingCampaigns, /redirect\("\/admin"\)/);
 });
 
 test("main sidebar admin entry opens the admin chooser before loading a section", () => {

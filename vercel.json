@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/admin/marketing-studio/reconcile",
-      "schedule": "* * * * *"
+      "path": "/api/internal/scan-diagnostics",
+      "schedule": "0 0 * * *"
     }
   ]
 }

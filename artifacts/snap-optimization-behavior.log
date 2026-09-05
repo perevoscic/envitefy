@@ -1,0 +1,32 @@
+✔ scan returns OCR_PROVIDER_QUOTA_EXCEEDED for {"error":{"code":"credit_balance_exhausted","type":"insufficient_quota"}} (HTTP 429) (34.1879ms)
+✔ scan returns OCR_PROVIDER_QUOTA_EXCEEDED for {"error":{"type":"insufficient_quota"}} (HTTP 429) (10.4852ms)
+✔ scan returns OCR_RATE_LIMITED for {"error":{"code":"rate_limit_exceeded"}} (HTTP 429) (9.2526ms)
+✔ scan returns OCR_PROVIDER_ACCESS_DENIED for {"error":{"code":"invalid_api_key"}} (HTTP 401) (8.8031ms)
+✔ scan returns OCR_PROVIDER_ACCESS_DENIED for null (HTTP 403) (6.8238ms)
+✔ scan returns OCR_PROVIDER_UNAVAILABLE for null (HTTP 503) (6.8128ms)
+✔ turbo scan also stops immediately when provider credits are exhausted (6.806ms)
+✔ both structured and visible-text OCR preserve quota errors (1.6707ms)
+✔ network failures and timeouts remain provider errors (12.6798ms)
+✔ empty model output still tries image and text fallbacks before reporting unreadable (8.1389ms)
+✔ a provider failure is not hidden by a later empty extraction (7.5031ms)
+✔ an unconfigured scan retains its configuration error (7.1739ms)
+✔ automatic scans make one extraction call and retain all printed contact details (55.2466ms)
+✔ compact wire schema expands to the exact original extraction contract (1.1204ms)
+✔ birthday OCR does not turn unrelated flyer numbers into an age (0.7103ms)
+✔ birthday OCR preserves supported age and the printed party theme (0.2537ms)
+✔ an explicitly unknown model age is not reconstructed from generated copy (0.1031ms)
+✔ a printed age before the party theme is not duplicated (0.1638ms)
+✔ conflicting text ages remain unresolved (0.0975ms)
+✔ structured visual ages support both childhood and adult birthdays (0.2029ms)
+✔ invalid structured age values do not become birthday ages (0.1856ms)
+✔ non-birthday titles are unchanged (0.1032ms)
+✔ OCR system prompt requires birthday context and allows unknown ages without duplicated user instructions (0.1947ms)
+✔ OCR pipeline uses the age resolver without standalone-number guessing (0.7036ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 188.6958

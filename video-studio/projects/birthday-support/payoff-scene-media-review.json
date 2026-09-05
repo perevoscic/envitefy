@@ -1,0 +1,23 @@
+{
+  "dialogue": [
+    {
+      "speaker": "Child",
+      "text": "Did you get the cake?",
+      "start": 1.5,
+      "end": 3.2
+    }
+  ],
+  "cuts": [
+    {
+      "start": 0.0,
+      "end": 5.0,
+      "description": "Continuous single shot of a woman dancing and then interacting with a young girl."
+    }
+  ],
+  "issues": [],
+  "audioQuality": {
+    "naturalnessRating": 4,
+    "intelligibilityRating": 4,
+    "explanation": "The child's speech is clear, distinct, and sounds natural."
+  }
+}

@@ -1,4 +1,5 @@
-import { incrementUserScanCounters, query } from "@/lib/db";
+import { query } from "@/lib/db";
+import { scanCounterUpdates } from "@/lib/scan-counters";
 
 const MAX_SCAN_ATTEMPT_ID_LENGTH = 120;
 const MAX_OCR_TEXT_LENGTH = 100_000;
@@ -19,6 +20,7 @@ export type RecordCompletedScanAttemptParams = {
   fieldsGuess?: object | null;
   previewBytes?: Buffer | null;
   previewMimeType?: string | null;
+  diagnosticImageBytes?: Buffer | null;
 };
 
 let scanAttemptsSchemaPromise: Promise<void> | null = null;
@@ -38,72 +40,16 @@ function normalizeFieldsGuess(value: object | null | undefined): object {
   }
 }
 
+// Compatibility entry point for admin readers: verify availability without DDL.
 export async function ensureScanAttemptsSchema(): Promise<void> {
   if (!scanAttemptsSchemaPromise) {
-    scanAttemptsSchemaPromise = (async () => {
-      await query(`
-        create table if not exists scan_attempts (
-          id uuid primary key default gen_random_uuid(),
-          scan_attempt_id varchar(120) not null,
-          user_id uuid not null references users(id) on delete cascade,
-          event_id uuid references event_history(id) on delete set null,
-          status varchar(24) not null default 'processed',
-          title varchar(300),
-          category varchar(160),
-          source_type varchar(32),
-          file_name varchar(512),
-          file_size bigint,
-          mime_type varchar(160),
-          ocr_source varchar(80),
-          ocr_text text,
-          fields_guess jsonb not null default '{}'::jsonb,
-          preview_bytes bytea,
-          preview_mime_type varchar(80),
-          error_message text,
-          created_at timestamptz(6) not null default now(),
-          expires_at timestamptz(6) not null default (now() + interval '30 days'),
-          completed_at timestamptz(6),
-          saved_at timestamptz(6),
-          updated_at timestamptz(6) not null default now()
-        )
-      `);
-      await query(`
-        alter table scan_attempts
-        add column if not exists expires_at timestamptz(6) default (now() + interval '30 days')
-      `);
-      await query(`
-        update scan_attempts
-        set expires_at = created_at + interval '30 days'
-        where expires_at is null
-      `);
-      await query(`
-        create unique index if not exists idx_scan_attempts_user_attempt_unique
-        on scan_attempts(user_id, scan_attempt_id)
-      `);
-      await query(`
-        create index if not exists idx_scan_attempts_user_created_at
-        on scan_attempts(user_id, created_at desc)
-      `);
-      await query(`
-        create index if not exists idx_scan_attempts_status_created_at
-        on scan_attempts(status, created_at desc)
-      `);
-      await query(`
-        create index if not exists idx_scan_attempts_event_id
-        on scan_attempts(event_id)
-        where event_id is not null
-      `);
-      await query(`
-        create index if not exists idx_scan_attempts_expires_at
-        on scan_attempts(expires_at)
-        where expires_at is not null
-      `);
-    })().catch((error) => {
-      scanAttemptsSchemaPromise = null;
-      throw error;
-    });
+    scanAttemptsSchemaPromise = query('select id, expires_at from scan_attempts limit 0')
+      .then(() => undefined)
+      .catch((error) => {
+        scanAttemptsSchemaPromise = null;
+        throw error;
+      });
   }
-
   await scanAttemptsSchemaPromise;
 }
 
@@ -114,7 +60,6 @@ export async function recordCompletedScanAttempt(
   const email = trimText(params.email, 320)?.toLowerCase();
   if (!scanAttemptId || !email) return;
 
-  await ensureScanAttemptsSchema();
   const values = [
     scanAttemptId,
     email,
@@ -130,9 +75,10 @@ export async function recordCompletedScanAttempt(
     params.previewBytes || null,
     trimText(params.previewMimeType, 80),
   ];
+  // One statement atomically records accounting and durable diagnostic work.
   const inserted = await query<{ user_id: string }>(
     `
-      insert into scan_attempts (
+      with inserted as (insert into scan_attempts (
         scan_attempt_id,
         user_id,
         status,
@@ -170,14 +116,24 @@ export async function recordCompletedScanAttempt(
       from users
       where lower(users.email) = $2
       on conflict (user_id, scan_attempt_id) do nothing
-      returning user_id::text
+      returning id, user_id
+      ), counted as (
+        update users set ${scanCounterUpdates(params.category).join(", ")}
+        where id in (select user_id from inserted)
+        returning id
+      ), queued as (
+        insert into scan_diagnostic_jobs(scan_id, image_bytes)
+        select id, $14::bytea from inserted where $14::bytea is not null
+        on conflict (scan_id) do nothing
+        returning scan_id
+      )
+      select user_id::text from inserted
     `,
-    values,
+    [...values, params.diagnosticImageBytes || null],
   );
 
   const insertedUserId = inserted.rows[0]?.user_id;
   if (insertedUserId) {
-    await incrementUserScanCounters({ userId: insertedUserId, category: params.category });
     return;
   }
 
@@ -212,7 +168,6 @@ export async function markScanAttemptSaved(params: {
   const scanAttemptId = trimText(params.scanAttemptId, MAX_SCAN_ATTEMPT_ID_LENGTH);
   if (!scanAttemptId || !params.userId) return;
 
-  await ensureScanAttemptsSchema();
   await query(
     `
       update scan_attempts

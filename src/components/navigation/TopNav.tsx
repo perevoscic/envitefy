@@ -403,13 +403,6 @@ export function ProfileMenu({
                     <span>Campaigns</span>
                   </Link>
                   <Link
-                    href="/admin/marketing-images"
-                    onClick={onClose}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f6f4ff] transition text-[#2f1d47] text-sm"
-                  >
-                    <span>Content Studio</span>
-                  </Link>
-                  <Link
                     href="/admin/ad-studio"
                     onClick={onClose}
                     className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#f6f4ff] transition text-[#2f1d47] text-sm"

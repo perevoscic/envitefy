@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "birthday-support",
+  "title": "Birthday support. Please hold.",
+  "createdAt": "2026-09-05",
+  "request": "ONE 25-second vertical TikTok: 0–7 parent behind kitchen counter wearing call-center headset among balloons, rapid calls 'What time?' 'What’s the address?' 'Did you count us?' Parent: 'Birthday support. Please hold.' Caption 'You volunteered to plan ONE party.' 7–18 remove headset, share actual Envitefy invitation, clear phone details, guest RSVP and Add to Calendar taps. Caption 'One invitation. Everyone in the loop.' 18–25 parent enjoying party, child asks 'Did you get the cake?' Parent freezes, music stops. End 'We handle the invite. You handle the cake.' Envitefy.com. Realistic people, playful SFX, readable captions, actual branding/UI.",
+  "audience": "Parents planning birthday parties",
+  "formats": [
+    {
+      "aspectRatio": "9:16",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30
+    }
+  ],
+  "targetDurationSeconds": 25,
+  "artDirection": {
+    "cast": "Fictional 36-year-old mother, medium brown skin, straight shoulder-length dark brown bob, expressive brown eyes, mustard-yellow sweatshirt. Her seven-year-old daughter wears a mint party dress, curly shoulder-length dark hair.",
+    "setting": "Warm sunlit kitchen, cream cabinetry, butcher-block counter, pink, coral and sky-blue balloons; cozy ordinary family birthday.",
+    "continuity": "Payoff generated from opening interaction; new cast and setting relative to previous campaigns.",
+    "treatment": "Moving realistic footage, brisk cuts, dry exhausted comedy; native synchronized dialogue. Real phone screen recordings composited in editable Remotion phone close-ups."
+  },
+  "audio": {
+    "direction": "Native actor dialogue, three distinct offscreen phone callers, original playful instrumental, short call rings and UI chimes; full music stop on cake realization.",
+    "narration": "None"
+  },
+  "productProof": [
+    "Share live card",
+    "Actual birthday event details",
+    "Native RSVP form and demo-only confirmation",
+    "Calendar picker with verified ICS save"
+  ],
+  "scenes": [
+    {
+      "id": "hook",
+      "start": 0,
+      "end": 7
+    },
+    {
+      "id": "product",
+      "start": 7,
+      "end": 18
+    },
+    {
+      "id": "payoff",
+      "start": 18,
+      "end": 22.5
+    },
+    {
+      "id": "endcard",
+      "start": 22.5,
+      "end": 25
+    }
+  ],
+  "cta": {
+    "text": "We handle the invite. You handle the cake.",
+    "url": "https://envitefy.com"
+  },
+  "status": "complete",
+  "shots": {
+    "chaos": "Create exactly 10 seconds of VERTICAL 9:16 photorealistic live-action situational comedy, continuous real movement, synchronized natural American English dialogue and precise timing. A fictional 36-year-old mother with medium-brown skin, straight shoulder-length dark-brown bob, brown eyes, mustard-yellow sweatshirt sits BEHIND a butcher-block kitchen counter wearing a black CALL CENTER HEADSET with boom microphone. Warm sunlit kitchen with cream cabinets. Pink, coral and sky-blue balloons crowd both sides; party hats and curling ribbon on the counter. [0.0-1.0s] Medium front shot, exhausted silent mother at her ridiculous birthday help desk. A female CALLER voice through the headset asks exactly 'What time?' [1.0-2.3s] Quick punch-in on silent mother's raised eyebrow. A different male caller, slightly telephone-filtered, asks exactly 'What’s the address?' [2.3-3.6s] Medium shot as a balloon bumps her shoulder. A third female caller asks exactly 'Did you count us?' The mother does NOT speak those caller questions. [3.6-6.6s] Medium close-up on mother, deep exhaustion and perfectly dry natural comedic delivery, she says exactly 'Birthday support. Please hold.' Clear accurate lipsync, no extra words. [6.6-7.0s] Brief flat deadpan stare. [7.0-8.3s] She takes the headset off with both hands and places it on the counter in one realistic action. [8.3-10s] She picks up a black smartphone with her left hand, taps it decisively with right index finger and gives a small relieved smile. Screen faces her and is not readable. Hands remain anatomically natural. Keep face between upper quarter and center of portrait frame. Medium framing includes head, shoulders, counter and both hands. No rendered text, captions, logos, music, narrator or other dialogue. Audio: short incoming call chirps, phone-filtered callers, clean mother dialogue, quiet room ambience. All people fictional.",
+    "guests": "Generate exactly 6 seconds of vertical 9:16 realistic moving live-action footage for a birthday invitation comedy. Two natural phone-use shots, no dialogue. [0-3s] Fictional friendly 40-year-old white dad with wavy auburn hair, round glasses, navy henley, seated at his bright apartment breakfast table. A black smartphone is held naturally in his LEFT hand, back facing camera; his RIGHT index finger makes two deliberate taps, then he smiles and nods. [3-6s] Hard cut to fictional 34-year-old East Asian mom with short black pixie hair, brick-red cardigan, seated on a teal sofa in another bright home. She holds black phone in left hand, right index finger makes one deliberate tap, then satisfied smile. Close framing of faces and hands with real human motion. Natural five-finger hands, stable phone shape, realistic skin, candid handheld TikTok style. No legible screen, letters, subtitles, music, voices or logos. Quiet indoor ambient audio only.",
+    "payoff": "Create a NEW exactly 6-second vertical 9:16 photorealistic live-action sequel to the preceding reference video. Preserve EXACT same fictional mother identity, medium-brown skin, shoulder-length straight dark bob, mustard-yellow sweatshirt, cream kitchen and pink/coral/sky-blue balloons. This is a later birthday party. Do not repeat earlier footage. [0-1.5s] Medium-wide kitchen-party shot: mother is standing, genuinely enjoying the party, laughing and doing a tiny dance with two adult guests softly out of focus behind her. No headset, no phone. [1.5-3.6s] Her fictional seven-year-old daughter with medium-brown skin, curly shoulder-length dark hair and mint party dress enters beside her. Clean stable medium two-shot, daughter looks up and asks in a natural clear child's American English voice EXACTLY 'Did you get the cake?' Precise lipsync, mother is silent. [3.6-6.0s] Mother immediately FREEZES mid-smile, eyes widen just a little as realization hits. Hold this human deadpan reaction and let daughter look innocently up at her. No extra dialogue. Keep two-shot continuous during speech and reaction so no awkward face-changing cuts. Warm affectionate comedy, ordinary realistic movement and anatomy. No cake visible. Natural party room ambience, child's dialogue prominent and intelligible. No music, captions, text, borders or logos."
+  },
+  "musicPrompt": "Create an original 30-second entirely INSTRUMENTAL comedic groove for a fast funny parent birthday call-center TikTok. 120 BPM, bouncy plucked electric bass, dry rim-click and snare groove, pizzicato strings, light marimba, a tiny brass wink, playful handclaps. Immediate hook, cheeky and busy at first then breezy and relaxed, human live feel. Clean moderate mix leaving room for dialogue. No vocals, humming, lyrics, speech, vocal chops, recognizable song or artist imitation. No corporate ukulele. Steady upbeat groove throughout; editor will cut sharply for the cake joke.",
+  "reviewStatus": "assistant-reviewed-locally",
+  "export": "out/birthday-support-9x16-v1.mp4"
+}

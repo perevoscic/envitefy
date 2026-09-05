@@ -336,7 +336,6 @@ export default function Dashboard({
     dashboardData: cachedDashboardData,
     dashboardLoading,
     refreshDashboard,
-    invalidateEventCache,
     setDashboardMetricsCache,
   } = useEventCache();
   const dashboardData = (cachedDashboardData as DashboardResponse | null) ?? null;
@@ -346,9 +345,9 @@ export default function Dashboard({
   }, [scanStatus]);
 
   useEffect(() => {
-    if (!isSignedIn || dashboardData || dashboardLoading) return;
+    if (snapProcessingMode || !isSignedIn || dashboardData || dashboardLoading) return;
     void refreshDashboard();
-  }, [dashboardData, dashboardLoading, isSignedIn, refreshDashboard]);
+  }, [dashboardData, dashboardLoading, isSignedIn, refreshDashboard, snapProcessingMode]);
 
   useEffect(() => {
     if (!isSignedIn) {
@@ -1860,6 +1859,7 @@ export default function Dashboard({
           window.dispatchEvent(
             new CustomEvent("history:created", {
               detail: {
+                deferRefresh: true,
                 id: eventId,
                 title: historyData?.title || payload.title,
                 public_slug: publicSlug || null,
@@ -1874,7 +1874,6 @@ export default function Dashboard({
             }),
           );
         }
-        invalidateEventCache({ force: true, source: "dashboard-create" });
         return {
           ok: true,
           eventId,
@@ -1893,7 +1892,6 @@ export default function Dashboard({
       }
     },
     [
-      invalidateEventCache,
       logUploadIssue,
       ocrBirthdayTemplateHint,
       ocrCategory,

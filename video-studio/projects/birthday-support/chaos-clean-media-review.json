@@ -1,0 +1,33 @@
+{
+  "dialogue": [
+    {
+      "start": 0.0,
+      "end": 2.5,
+      "text": "What time? What's the address? Did you count us?"
+    },
+    {
+      "start": 4.0,
+      "end": 6.5,
+      "text": "Birthday support, please hold. Please hold."
+    }
+  ],
+  "cuts": [
+    {
+      "time": 0.0,
+      "description": "Medium shot of a woman sitting at a table with party decorations."
+    },
+    {
+      "time": 1.0,
+      "description": "Close-up of the woman's face."
+    },
+    {
+      "time": 2.0,
+      "description": "Return to medium shot of the woman at the table."
+    }
+  ],
+  "issues": [],
+  "audioQuality": {
+    "rating": 3.5,
+    "description": "The speech is clear, natural, and easily intelligible."
+  }
+}

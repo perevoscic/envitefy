@@ -16,7 +16,6 @@ import {
   HeartPulse,
   Heart,
   Home,
-  Image as ImageIcon,
   Info,
   LayoutDashboard,
   LogOut,
@@ -609,7 +608,6 @@ const adminSidebarIcons: Record<
   concierge: Bot,
   scans: Search,
   emails: Mail,
-  "marketing-assets": ImageIcon,
   "ad-studio": WandSparkles,
   analytics: BarChart3,
   settings: Settings,
@@ -619,12 +617,6 @@ const adminSidebarIcons: Record<
 function isAdminNavItemActive(pathname: string | null, href: string) {
   if (!pathname) return false;
   if (href === "/admin") return pathname === "/admin";
-  if (href === "/admin/marketing-images") {
-    return (
-      pathname.startsWith("/admin/marketing-images") ||
-      pathname.startsWith("/admin/marketing-assets")
-    );
-  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

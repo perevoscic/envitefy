@@ -11,13 +11,19 @@ test("completed OCR attempts persist private troubleshooting diagnostics once", 
   const pipeline = readSource("src/lib/ocr/pipeline.ts");
   const legacyIngest = readSource("src/app/api/ingest/route.ts");
 
-  assert.match(attempts, /create table if not exists scan_attempts/);
-  assert.match(attempts, /idx_scan_attempts_user_attempt_unique/);
-  assert.match(attempts, /preview_bytes bytea/);
+  const migration = readSource("prisma/manual_sql/20260905_scan_diagnostics_queue.sql");
+  const worker = readSource("src/lib/scan-diagnostic-worker.ts");
+  assert.doesNotMatch(attempts, /create table|alter table|await ensureScanAttemptsSchema/);
+  assert.match(migration, /create table if not exists scan_attempts/);
+  assert.match(migration, /idx_scan_attempts_user_attempt_unique/);
+  assert.match(migration, /preview_bytes bytea/);
   assert.match(attempts, /on conflict \(user_id, scan_attempt_id\) do nothing/);
-  assert.match(attempts, /await incrementUserScanCounters\(\{ userId: insertedUserId/);
+  assert.match(attempts, /with inserted as/);
+  assert.match(attempts, /scanCounterUpdates\(params.category\)/);
+  assert.match(attempts, /insert into scan_diagnostic_jobs/);
   assert.match(pipeline, /await recordCompletedScanAttempt\(\{/);
-  assert.match(pipeline, /\.jpeg\(\{ quality: 72, progressive: true \}\)/);
+  assert.match(worker, /\.jpeg\(\{ quality: 72, progressive: true \}\)/);
+  assert.match(pipeline, /diagnosticImageBytes: colorBuffer/);
   assert.match(pipeline, /ocrText: raw/);
   assert.doesNotMatch(pipeline, /incrementUserScanCounters/);
   assert.match(legacyIngest, /await recordCompletedScanAttempt\(\{/);

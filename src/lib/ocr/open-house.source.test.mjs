@@ -8,15 +8,15 @@ function readSource(relPath) {
 }
 
 test("open house extraction preserves realtor portrait focus", () => {
-  const promptSource = readSource("src/lib/ocr/prompts.ts");
+  const promptSource = readSource("src/lib/ocr/extraction-prompt.ts");
   const cropSource = readSource("src/lib/ocr/open-house.ts");
 
-  assert.match(promptSource, /Return openHouse\.visualAssets only for the realtor portrait\/headshot/);
-  assert.match(promptSource, /Do not return property photo crops/);
-  assert.match(promptSource, /realtor portrait\/photo/);
-  assert.match(promptSource, /not the entire realtor\/contact card/);
-  assert.match(promptSource, /include the full visible face, hair, and enough shoulder\/background margin/);
-  assert.match(promptSource, /Prefer a larger portrait box over a tight face crop/);
+  assert.match(promptSource, /visualAssets may contain at most one realtor-headshot crop/);
+  assert.match(promptSource, /No property photo crops/);
+
+  assert.match(promptSource, /No property photo crops, logos, QR codes or contact-card crops/);
+  assert.match(promptSource, /covering the whole face\/hair\/shoulders with margin/);
+  assert.match(promptSource, /normalized 0..1/);
 
   assert.match(cropSource, /function clampRealtorPortraitCrop/);
   assert.match(cropSource, /clampCrop\(asset, imageWidth, imageHeight, 0\.72\)/);

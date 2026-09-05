@@ -1,0 +1,32 @@
+{
+  "dialogue": [
+    {
+      "start": 0.0,
+      "end": 1.0,
+      "text": "[sigh]"
+    }
+  ],
+  "cuts": [
+    {
+      "start": 0.0,
+      "end": 2.5,
+      "description": "Close-up of a woman smiling and interacting with her phone."
+    },
+    {
+      "start": 2.5,
+      "end": 5.0,
+      "description": "Medium shot of a man in a cafe scrolling on his phone."
+    }
+  ],
+  "issues": {
+    "garbledText": "None detected.",
+    "whiteBorders": "None detected.",
+    "malformedHands": "Slightly stiff finger movements during screen interaction.",
+    "identityInconsistencies": "None detected."
+  },
+  "audioQuality": {
+    "naturalness": "Neutral",
+    "intelligibility": "N/A",
+    "explanation": "No spoken words are present, only a brief sigh and low ambient cafe sounds."
+  }
+}

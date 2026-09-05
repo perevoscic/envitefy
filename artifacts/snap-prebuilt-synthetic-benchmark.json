@@ -1,0 +1,7 @@
+{
+  "date": "2026-09-05T21:34:31.176Z",
+  "requests": [],
+  "result": null,
+  "error": "browserContext.addCookies: Protocol error (Storage.setCookies): Invalid cookie fields",
+  "cleanedTestAccount": true
+}

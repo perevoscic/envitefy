@@ -14,7 +14,6 @@ import {
   toNumber,
 } from "./data-utils";
 import { getAdminEventsData, type AdminEventCategorySummary } from "./events";
-import { listMarketingRuns } from "./marketing-campaigns";
 import { getAdminScanData } from "./scans";
 import { getAdminUsersSummary, type AdminUsersSummary } from "./users";
 import { isDatabaseUnavailableError, query } from "@/lib/db";
@@ -56,7 +55,6 @@ export type AdminOverviewData = {
     shares: number;
     rsvps: number;
     emailCampaigns: number;
-    marketingRuns: number;
     conciergeSessions: number;
   };
   users: AdminUsersSummary;
@@ -132,7 +130,6 @@ function createDatabaseUnavailableOverview(error: unknown): AdminOverviewData {
       shares: 0,
       rsvps: 0,
       emailCampaigns: 0,
-      marketingRuns: 0,
       conciergeSessions: 0,
     },
     users,
@@ -177,15 +174,6 @@ async function getEmailCampaignSummary(): Promise<EmailCampaignSummary> {
     total: toNumber(result.rows[0]?.total),
     failed: toNumber(result.rows[0]?.failed),
   };
-}
-
-async function getMarketingRunCount(): Promise<number> {
-  try {
-    const runs = await listMarketingRuns();
-    return runs.length;
-  } catch {
-    return 0;
-  }
 }
 
 async function getRecentActivity(): Promise<AdminRecentActivity[]> {
@@ -320,7 +308,6 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
   let analytics: Awaited<ReturnType<typeof getAdminAnalyticsOverviewSnapshot>>;
   let concierge: AdminConciergeData;
   let emailCampaigns: EmailCampaignSummary;
-  let marketingRuns: number;
   let recentActivity: AdminRecentActivity[];
   let growthInsights: AdminGrowthInsight[];
 
@@ -332,7 +319,6 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
       analytics,
       concierge,
       emailCampaigns,
-      marketingRuns,
       recentActivity,
       growthInsights,
     ] = await Promise.all([
@@ -346,7 +332,6 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
       getAdminAnalyticsOverviewSnapshot(),
       getAdminConciergeData({ includeRecent: false }),
       getEmailCampaignSummary(),
-      getMarketingRunCount(),
       getRecentActivity(),
       getGrowthInsights(),
     ]);
@@ -407,7 +392,6 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
       shares: events.summary.shares,
       rsvps: events.summary.rsvps,
       emailCampaigns: emailCampaigns.total,
-      marketingRuns,
       conciergeSessions: concierge.summary.sessions,
     },
     users,

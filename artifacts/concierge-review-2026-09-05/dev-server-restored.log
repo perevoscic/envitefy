@@ -10406,3 +10406,668 @@ creation_model_run {
  ✓ Compiled in 1553ms (7192 modules)
  ✓ Compiled in 1793ms (7192 modules)
  ✓ Compiled in 1493ms (7192 modules)
+ ✓ Compiled in 1706ms (7192 modules)
+ ✓ Compiled in 1464ms (7192 modules)
+ ✓ Compiled in 1470ms (7192 modules)
+ ✓ Compiled in 1610ms (7192 modules)
+ ✓ Compiled in 1690ms (7192 modules)
+ ✓ Compiled in 2.6s (7192 modules)
+ ○ Compiling /api/history/[id] ...
+ ✓ Compiled /api/history/[id] in 8.2s (15310 modules)
+ ✓ Compiled in 1666ms (7192 modules)
+ ✓ Compiled in 1602ms (7192 modules)
+ DELETE /api/history/522f6d87-b6e2-4c43-b580-4d8be652c77d 200 in 15267ms
+ ○ Compiling /api/history ...
+ ✓ Compiled /api/dashboard in 6.7s (15331 modules)
+ GET /event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics?tab=design 200 in 8035ms
+ GET /event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics?tab=design 200 in 866ms
+ GET /event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics?tab=design 200 in 4115ms
+ GET /event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics?tab=design 200 in 1289ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 9565ms
+ DELETE /api/history/fb6fcbcd-e9df-4a20-b6bd-644950598578 200 in 4798ms
+ GET /api/dashboard?refresh=1&timing=1 200 in 9889ms
+ GET /event/livia-s-10th-birthday-at-amc-theatre?tab=design 200 in 883ms
+ GET /event/livia-s-10th-birthday-at-amc-theatre?tab=design 200 in 842ms
+ GET /event/livia-s-10th-birthday-at-amc-theatre?tab=design 200 in 2457ms
+ GET /event/livia-s-10th-birthday-at-amc-theatre?tab=design 200 in 2380ms
+ ✓ Compiled in 4.5s (7192 modules)
+ GET /event/livia-s-10th-birthday-at-amc-theatre?tab=design 200 in 5204ms
+ GET /event/livia-s-10th-birthday-at-amc-theatre?tab=design 200 in 5119ms
+ GET /event/livia-s-10th-birthday-at-amc-theatre?tab=design 200 in 3350ms
+ GET /event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics?tab=design 200 in 13010ms
+ ✓ Compiled in 1781ms (7192 modules)
+ DELETE /api/history/2ec7e1ce-5df5-4bf3-ba56-3d5f0de70553 200 in 3955ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 739ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 2268ms
+ GET /api/dashboard?refresh=1&timing=1 200 in 3631ms
+ ✓ Compiled in 1840ms (7192 modules)
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3637ms
+ ✓ Compiled in 3s (7192 modules)
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3558ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 4247ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3567ms
+ GET /event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics?tab=design 200 in 21608ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 814ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 805ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 703ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 789ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 773ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3296ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3226ms
+ ✓ Compiled in 1779ms (7192 modules)
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3543ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3624ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 745ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 900ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 828ms
+ GET /event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics?tab=design 200 in 26798ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 837ms
+ GET /event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics?tab=design 200 in 27165ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 799ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 1768ms
+ ✓ Compiled in 1551ms (7192 modules)
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 1976ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 1963ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3071ms
+ ✓ Compiled in 1485ms (7192 modules)
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 1983ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 2016ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 704ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 690ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 756ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 813ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 1607ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 1730ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 1869ms
+ ✓ Compiled in 1519ms (7192 modules)
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 1865ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3163ms
+ ✓ Compiled in 1565ms (7192 modules)
+ ✓ Compiled in 1424ms (7192 modules)
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3234ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 2691ms
+ ✓ Compiled in 1454ms (7192 modules)
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3147ms
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 3025ms
+ ✓ Compiled in 1034ms (7192 modules)
+ GET /event/sarah-and-james-wedding-at-eden-park?tab=dashboard 200 in 2690ms
+ ✓ Compiled in 840ms (7192 modules)
+ ✓ Compiled in 829ms (7192 modules)
+ ✓ Compiled in 828ms (7192 modules)
+ ✓ Compiled in 898ms (7192 modules)
+ ✓ Compiled in 1126ms (7192 modules)
+ ✓ Compiled in 855ms (7192 modules)
+ ✓ Compiled in 1326ms (7192 modules)
+ ✓ Compiled in 1211ms (7192 modules)
+ ✓ Compiled in 899ms (7192 modules)
+ ✓ Compiled in 1583ms (7192 modules)
+ ✓ Compiled in 3.1s (7192 modules)
+ ✓ Compiled in 1378ms (7192 modules)
+ ✓ Compiled in 1309ms (7192 modules)
+ ✓ Compiled in 1353ms (7192 modules)
+ ✓ Compiled in 1582ms (7192 modules)
+ ✓ Compiled in 1451ms (7192 modules)
+ ✓ Compiled in 1377ms (7192 modules)
+ ✓ Compiled in 856ms (7192 modules)
+ ✓ Compiled in 930ms (7192 modules)
+ ✓ Compiled in 894ms (7192 modules)
+ ✓ Compiled in 1680ms (7192 modules)
+ ✓ Compiled in 990ms (7192 modules)
+ ✓ Compiled in 916ms (7192 modules)
+ ✓ Compiled in 1099ms (7192 modules)
+ ✓ Compiled in 5.9s (7192 modules)
+ ✓ Compiled in 1157ms (7192 modules)
+ ✓ Compiled in 910ms (7192 modules)
+ ✓ Compiled in 1064ms (7192 modules)
+ ✓ Compiled in 3s (7192 modules)
+ ✓ Compiled in 1657ms (7192 modules)
+ ✓ Compiled in 1461ms (7192 modules)
+ ✓ Compiled in 1429ms (7192 modules)
+ ✓ Compiled in 1662ms (7192 modules)
+ ✓ Compiled in 1059ms (7192 modules)
+ ✓ Compiled in 2.1s (7192 modules)
+ ✓ Compiled in 1284ms (7192 modules)
+ ✓ Compiled in 1081ms (7192 modules)
+ ✓ Compiled in 1135ms (7192 modules)
+ ✓ Compiled in 1154ms (7192 modules)
+ ✓ Compiled in 1437ms (7192 modules)
+ ✓ Compiled in 1349ms (7192 modules)
+ ✓ Compiled in 1197ms (7192 modules)
+ ✓ Compiled in 1118ms (7192 modules)
+ ✓ Compiled in 1251ms (7192 modules)
+ ✓ Compiled in 1477ms (7192 modules)
+ ✓ Compiled in 1072ms (7192 modules)
+ ✓ Compiled in 1243ms (7192 modules)
+ ✓ Compiled in 1202ms (7192 modules)
+ ✓ Compiled in 1254ms (7192 modules)
+ ✓ Compiled in 980ms (7192 modules)
+ ✓ Compiled in 952ms (7192 modules)
+ ✓ Compiled in 980ms (7192 modules)
+ ✓ Compiled in 1881ms (7192 modules)
+ ✓ Compiled in 1007ms (7192 modules)
+ ✓ Compiled in 1147ms (7192 modules)
+ ✓ Compiled in 1041ms (7192 modules)
+ ✓ Compiled in 1182ms (7192 modules)
+ ✓ Compiled in 1154ms (7192 modules)
+ ✓ Compiled in 1007ms (7192 modules)
+ ✓ Compiled in 1997ms (7192 modules)
+ ✓ Compiled in 2.1s (7192 modules)
+ ✓ Compiled in 1831ms (7192 modules)
+ ✓ Compiled in 1900ms (7192 modules)
+ ✓ Compiled in 2.5s (7192 modules)
+ ✓ Compiled in 1742ms (7192 modules)
+ ✓ Compiled in 4.1s (7192 modules)
+ ✓ Compiled in 1750ms (7192 modules)
+ ✓ Compiled in 1365ms (7192 modules)
+ ✓ Compiled in 1473ms (7192 modules)
+ ✓ Compiled in 3.2s (7192 modules)
+ ✓ Compiled in 6s (7192 modules)
+ ✓ Compiled in 1761ms (7192 modules)
+ ✓ Compiled in 4.7s (7192 modules)
+ ✓ Compiled in 1759ms (7192 modules)
+ ✓ Compiled in 1392ms (7192 modules)
+ ✓ Compiled in 1509ms (7192 modules)
+ ✓ Compiled in 1538ms (7192 modules)
+ ✓ Compiled in 1887ms (7192 modules)
+ GET /event/livia-s-8th-birthday-party-flippin-awesome-at-us-gold-gymnastics?created=1&tab=dashboard&calendarSync=needs_connection 200 in 36297ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 7.2s (15204 modules)
+ GET /favicon.ico 200 in 7884ms
+ ✓ Compiled in 3s (7192 modules)
+ ✓ Compiled in 1301ms (7192 modules)
+ ✓ Compiled in 2.2s (7192 modules)
+ ✓ Compiled in 2.4s (7192 modules)
+ ✓ Compiled in 1533ms (7192 modules)
+ ✓ Compiled in 1450ms (7192 modules)
+ ✓ Compiled in 2.8s (7192 modules)
+ GET /event/livia-s-8th-birthday-party-flippin-awesome-at-us-gold-gymnastics?created=1&tab=dashboard&calendarSync=needs_connection 200 in 24038ms
+ ✓ Compiled in 4.7s (7192 modules)
+ ✓ Compiled in 2.4s (7192 modules)
+ ✓ Compiled in 1743ms (7192 modules)
+ ✓ Compiled in 3s (7192 modules)
+ GET / 200 in 3322ms
+ ○ Compiling /api/creation/threads ...
+ ✓ Compiled /api/creation/threads in 21.3s (15412 modules)
+ GET /icon.png?v=v10 200 in 21918ms
+ GET /api/calendars 200 in 22513ms
+ ○ Compiling /api/user/profile ...
+ GET /api/calendars 200 in 1540ms
+ GET /api/user/feature-visibility 200 in 24636ms
+ ✓ Compiled /api/user/profile in 2.8s (8222 modules)
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 25896ms
+ GET /api/creation/threads?limit=20 200 in 26129ms
+ GET /api/dashboard?timing=1 200 in 26318ms
+ GET /api/user/profile 200 in 2441ms
+ GET /api/user/profile 200 in 4255ms
+ ○ Compiling /api/blob/[...path] ...
+ GET / 200 in 2739ms
+ ✓ Compiled /api/dashboard/enrich-next-event in 15.3s (15533 modules)
+ GET /icon.png?v=v10 200 in 12072ms
+ GET /api/blob/profile-media/9bf78f15-2c85-4a0d-b62f-dca18d4f6f03/avatar-1787320908173.webp 200 in 14702ms
+ GET /api/blob/event-media/upload-6d4dd398-006d-484c-a006-34b4cbf39326/header/display.webp 200 in 16594ms
+ GET /api/blob/event-media/upload-be310cff-d48a-43f3-92fa-11e5f7f52456/header/display.webp 200 in 16616ms
+ GET /api/blob/event-media/upload-b92a412d-76e0-4059-8588-2434101d8afc/header/display.webp 200 in 16625ms
+ GET / 200 in 640ms
+ GET /icon.png?v=v10 200 in 80ms
+ POST /api/dashboard/enrich-next-event 200 in 17497ms
+ ✓ Compiled in 4.2s (7192 modules)
+ ✓ Compiled in 2.3s (7192 modules)
+ GET / 200 in 982ms
+ GET / 200 in 420ms
+ GET /icon.png?v=v10 200 in 114ms
+ ✓ Compiled in 1892ms (7192 modules)
+ GET / 200 in 435ms
+ GET /icon.png?v=v10 200 in 98ms
+ ✓ Compiled in 2.1s (7192 modules)
+ ✓ Compiled in 1863ms (7192 modules)
+ ✓ Compiled in 1893ms (7192 modules)
+ GET / 200 in 2636ms
+ GET / 200 in 878ms
+ GET / 200 in 408ms
+ GET /icon.png?v=v10 200 in 108ms
+ ✓ Compiled in 1598ms (7192 modules)
+ GET / 200 in 388ms
+ GET /icon.png?v=v10 200 in 92ms
+ ✓ Compiled in 1645ms (7192 modules)
+ GET / 200 in 413ms
+ GET /icon.png?v=v10 200 in 100ms
+ ✓ Compiled in 1724ms (7192 modules)
+ GET / 200 in 389ms
+ GET /icon.png?v=v10 200 in 85ms
+ ✓ Compiled in 1560ms (7192 modules)
+ GET / 200 in 407ms
+ GET /icon.png?v=v10 200 in 88ms
+ ✓ Compiled in 3.2s (7192 modules)
+ GET / 200 in 385ms
+ GET /icon.png?v=v10 200 in 89ms
+ ✓ Compiled in 1557ms (7192 modules)
+ GET / 200 in 387ms
+ GET /icon.png?v=v10 200 in 88ms
+ ✓ Compiled in 1783ms (7192 modules)
+ GET / 200 in 420ms
+ GET /icon.png?v=v10 200 in 107ms
+ ✓ Compiled in 3.7s (7192 modules)
+ ✓ Compiled in 1525ms (7192 modules)
+ GET / 200 in 8051ms
+ ✓ Compiled in 6.7s (7192 modules)
+ GET / 200 in 1053ms
+ GET / 200 in 828ms
+ GET /icon.png?v=v10 200 in 218ms
+ ✓ Compiled in 2.9s (7192 modules)
+ GET / 200 in 369ms
+ GET /icon.png?v=v10 200 in 69ms
+ ✓ Compiled in 1523ms (7192 modules)
+ ✓ Compiled in 1283ms (7192 modules)
+ ✓ Compiled in 1512ms (7192 modules)
+ ✓ Compiled in 1468ms (7192 modules)
+ GET / 200 in 4991ms
+ GET / 200 in 3666ms
+ GET / 200 in 1698ms
+ GET / 200 in 381ms
+ GET /icon.png?v=v10 200 in 69ms
+ ✓ Compiled in 1475ms (7192 modules)
+ GET / 200 in 1673ms
+ ✓ Compiled in 1695ms (7192 modules)
+ ✓ Compiled in 1584ms (7192 modules)
+ ✓ Compiled in 1393ms (7192 modules)
+ GET / 200 in 2057ms
+ GET / 200 in 2836ms
+ ✓ Compiled in 1755ms (7192 modules)
+ GET / 200 in 4499ms
+ ✓ Compiled in 3s (7192 modules)
+ ✓ Compiled in 1692ms (7192 modules)
+ ✓ Compiled in 1679ms (7192 modules)
+ ✓ Compiled in 1649ms (7192 modules)
+ ✓ Compiled in 4.2s (7192 modules)
+ ✓ Compiled in 1734ms (7192 modules)
+ ✓ Compiled in 1547ms (7192 modules)
+ ✓ Compiled in 2.2s (7192 modules)
+ ✓ Compiled in 9.4s (7192 modules)
+ ✓ Compiled in 1044ms (7192 modules)
+ ✓ Compiled in 3.4s (7192 modules)
+ ✓ Compiled in 1014ms (7192 modules)
+ ✓ Compiled in 922ms (7192 modules)
+ ✓ Compiled in 1303ms (7192 modules)
+ ✓ Compiled in 1178ms (7192 modules)
+ ✓ Compiled in 1779ms (7192 modules)
+ ✓ Compiled in 1155ms (7192 modules)
+ ✓ Compiled in 5.5s (7192 modules)
+ ✓ Compiled in 1032ms (7192 modules)
+ ✓ Compiled in 1684ms (7192 modules)
+ ✓ Compiled in 1024ms (7192 modules)
+ ✓ Compiled in 1015ms (7192 modules)
+ ✓ Compiled in 1189ms (7192 modules)
+ ✓ Compiled in 1171ms (7192 modules)
+ ✓ Compiled in 1290ms (7192 modules)
+ ✓ Compiled in 2.9s (7192 modules)
+ ✓ Compiled in 1018ms (7192 modules)
+ ✓ Compiled in 1102ms (7192 modules)
+ ✓ Compiled in 1386ms (7192 modules)
+ ✓ Compiled in 2.9s (7192 modules)
+ ✓ Compiled in 1866ms (7192 modules)
+ ✓ Compiled in 1951ms (7192 modules)
+ ✓ Compiled in 1567ms (7192 modules)
+ ✓ Compiled in 4.4s (7192 modules)
+ ✓ Compiled in 1762ms (7192 modules)
+ ✓ Compiled in 1846ms (7192 modules)
+ ✓ Compiled in 1981ms (7192 modules)
+ ✓ Compiled in 1320ms (7192 modules)
+ ✓ Compiled in 959ms (7192 modules)
+ ✓ Compiled in 1676ms (7192 modules)
+ ✓ Compiled in 1505ms (7192 modules)
+ ✓ Compiled in 1680ms (7192 modules)
+ ✓ Compiled in 1565ms (7192 modules)
+ ✓ Compiled in 3s (7192 modules)
+ ✓ Compiled in 5s (7192 modules)
+ ✓ Compiled in 1473ms (7192 modules)
+ ✓ Compiled in 1797ms (7192 modules)
+ ✓ Compiled in 1207ms (7192 modules)
+ ✓ Compiled in 1275ms (7192 modules)
+ ✓ Compiled in 1053ms (7192 modules)
+ ✓ Compiled in 1411ms (7192 modules)
+ ✓ Compiled in 1193ms (7192 modules)
+ ✓ Compiled in 1087ms (7192 modules)
+ ✓ Compiled in 1100ms (7192 modules)
+ ✓ Compiled in 2.2s (7192 modules)
+ ✓ Compiled in 1077ms (7192 modules)
+ ✓ Compiled in 1129ms (7192 modules)
+ ✓ Compiled in 1010ms (7192 modules)
+ ✓ Compiled in 1140ms (7192 modules)
+ ✓ Compiled in 1015ms (7192 modules)
+ ✓ Compiled in 1116ms (7192 modules)
+ ✓ Compiled in 5.1s (15187 modules)
+ ✓ Compiled in 1314ms (7192 modules)
+ ✓ Compiled in 1632ms (7192 modules)
+ ✓ Compiled in 1914ms (7192 modules)
+ ✓ Compiled in 1038ms (7192 modules)
+ ✓ Compiled in 885ms (7192 modules)
+ ✓ Compiled in 825ms (7192 modules)
+ ✓ Compiled in 877ms (7192 modules)
+ ✓ Compiled in 882ms (7192 modules)
+ ✓ Compiled in 841ms (7192 modules)
+ ✓ Compiled in 953ms (7192 modules)
+ ✓ Compiled in 993ms (7192 modules)
+ ✓ Compiled in 917ms (7192 modules)
+ ✓ Compiled in 1700ms (7192 modules)
+ ✓ Compiled in 1722ms (7192 modules)
+ ✓ Compiled in 1312ms (7192 modules)
+ ✓ Compiled in 1498ms (7192 modules)
+ ✓ Compiled in 4.1s (7192 modules)
+ ✓ Compiled in 931ms (7192 modules)
+ ✓ Compiled in 1464ms (7192 modules)
+ ✓ Compiled in 1346ms (7192 modules)
+ ✓ Compiled in 1497ms (7192 modules)
+ ✓ Compiled in 1314ms (7192 modules)
+ ✓ Compiled in 5.9s (7192 modules)
+ ✓ Compiled in 4.1s (7192 modules)
+ ✓ Compiled in 1221ms (7192 modules)
+ ✓ Compiled in 1182ms (7192 modules)
+ ✓ Compiled in 1389ms (7192 modules)
+ ✓ Compiled in 1339ms (7192 modules)
+ ✓ Compiled in 892ms (7192 modules)
+ ✓ Compiled in 3.8s (7192 modules)
+ ✓ Compiled in 991ms (7192 modules)
+ ✓ Compiled in 1509ms (7192 modules)
+ ✓ Compiled in 1386ms (7192 modules)
+ ✓ Compiled in 1914ms (7192 modules)
+ ✓ Compiled in 3.9s (7192 modules)
+ ✓ Compiled in 1654ms (7192 modules)
+ ✓ Compiled in 1541ms (7192 modules)
+ ✓ Compiled in 1623ms (7192 modules)
+ ✓ Compiled in 1299ms (7192 modules)
+ ✓ Compiled in 1466ms (7192 modules)
+ ✓ Compiled in 10s (15404 modules)
+ ✓ Compiled in 1780ms (7192 modules)
+ ✓ Compiled in 1349ms (7192 modules)
+ ✓ Compiled in 1000ms (7192 modules)
+ ✓ Compiled in 1682ms (7192 modules)
+ ✓ Compiled in 2.3s (7192 modules)
+ ✓ Compiled in 1132ms (7192 modules)
+ ✓ Compiled in 1220ms (7192 modules)
+ ✓ Compiled in 984ms (7192 modules)
+ ✓ Compiled in 978ms (7192 modules)
+ ✓ Compiled in 907ms (7192 modules)
+ ✓ Compiled in 1117ms (7192 modules)
+ ✓ Compiled in 928ms (7192 modules)
+ ✓ Compiled in 2000ms (7192 modules)
+ ✓ Compiled in 1806ms (7192 modules)
+ ✓ Compiled in 1364ms (7192 modules)
+ ✓ Compiled in 1655ms (7192 modules)
+ ✓ Compiled in 1543ms (7192 modules)
+ ✓ Compiled in 4.3s (7192 modules)
+ ○ Compiling /api/user/feature-visibility ...
+ ✓ Compiled /api/creation/threads in 18.5s (15188 modules)
+ ✓ Compiled in 9.7s (7192 modules)
+ ✓ Compiled in 1194ms (7192 modules)
+ GET /api/calendars 200 in 17051ms
+ GET /api/calendars 200 in 17242ms
+ GET /api/user/feature-visibility 200 in 17549ms
+ ○ Compiling /api/user/profile ...
+ ✓ Compiled /api/user/profile in 785ms (8219 modules)
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 18694ms
+ GET /api/creation/threads?limit=20 200 in 18940ms
+ GET /api/calendars 200 in 1539ms
+ GET /api/user/profile 200 in 2232ms
+ GET /api/user/profile 200 in 2238ms
+ GET /api/dashboard?timing=1 200 in 19550ms
+ GET /api/calendars 200 in 380ms
+ ✓ Compiled in 1169ms (7192 modules)
+ GET /api/user/profile 200 in 1292ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 2098ms
+ GET /api/user/profile 200 in 1339ms
+ GET /api/creation/threads?limit=20 200 in 2185ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 1639ms
+ GET /api/calendars 200 in 1724ms
+ ○ Compiling /api/blob/[...path] ...
+ ✓ Compiled /api/blob/[...path] in 3.1s (8336 modules)
+ GET /api/blob/profile-media/9bf78f15-2c85-4a0d-b62f-dca18d4f6f03/avatar-1787320908173.webp 200 in 3533ms
+ ✓ Compiled in 894ms (7192 modules)
+ ✓ Compiled in 900ms (7192 modules)
+ ✓ Compiled in 1341ms (7192 modules)
+ ✓ Compiled in 918ms (7192 modules)
+ ✓ Compiled in 1057ms (7192 modules)
+ ✓ Compiled in 1012ms (7192 modules)
+ ✓ Compiled in 2.3s (7192 modules)
+ ✓ Compiled in 1375ms (7192 modules)
+ ✓ Compiled in 1253ms (7192 modules)
+ ✓ Compiled in 1138ms (7192 modules)
+ ✓ Compiled in 1109ms (7192 modules)
+ ✓ Compiled in 1095ms (7192 modules)
+ ✓ Compiled in 994ms (7192 modules)
+ ✓ Compiled in 1047ms (7192 modules)
+ ✓ Compiled in 997ms (7192 modules)
+ ✓ Compiled in 927ms (7192 modules)
+ ✓ Compiled in 1241ms (7192 modules)
+ ✓ Compiled in 1089ms (7192 modules)
+ ✓ Compiled in 1041ms (7192 modules)
+ ✓ Compiled in 959ms (7192 modules)
+ ✓ Compiled in 2.2s (7192 modules)
+ ✓ Compiled in 1337ms (7192 modules)
+ ✓ Compiled in 1077ms (7192 modules)
+ ✓ Compiled in 2.8s (7192 modules)
+ ✓ Compiled in 1724ms (7192 modules)
+ ✓ Compiled in 11.3s (7192 modules)
+ ✓ Compiled in 1105ms (7192 modules)
+ ✓ Compiled in 1187ms (7192 modules)
+ ✓ Compiled in 1368ms (7192 modules)
+ ✓ Compiled in 1364ms (7192 modules)
+ ✓ Compiled in 1645ms (7192 modules)
+ ✓ Compiled in 1855ms (7192 modules)
+ ✓ Compiled in 1464ms (7192 modules)
+ ✓ Compiled in 974ms (7192 modules)
+ ✓ Compiled in 1281ms (7192 modules)
+ ✓ Compiled in 1658ms (7192 modules)
+ ✓ Compiled in 2.8s (7192 modules)
+ ✓ Compiled in 1406ms (7192 modules)
+ ✓ Compiled in 2.1s (7192 modules)
+ ✓ Compiled in 2.2s (7192 modules)
+ ✓ Compiled in 1796ms (7192 modules)
+ ✓ Compiled in 1283ms (7192 modules)
+ ✓ Compiled in 1186ms (7192 modules)
+ ✓ Compiled in 1048ms (7192 modules)
+ ✓ Compiled in 1170ms (7192 modules)
+ ✓ Compiled in 1067ms (7192 modules)
+ ✓ Compiled in 2.2s (7192 modules)
+ ✓ Compiled in 1157ms (7192 modules)
+ ✓ Compiled in 1152ms (7192 modules)
+ ✓ Compiled in 1550ms (7192 modules)
+ ✓ Compiled in 1495ms (7192 modules)
+ ✓ Compiled in 1847ms (7192 modules)
+ ✓ Compiled in 1630ms (7192 modules)
+ ✓ Compiled in 1592ms (7192 modules)
+ ✓ Compiled in 1350ms (7192 modules)
+ ✓ Compiled in 2.4s (7192 modules)
+ ✓ Compiled in 5.2s (7192 modules)
+ ✓ Compiled in 5.3s (7192 modules)
+ ✓ Compiled in 1227ms (7192 modules)
+ ✓ Compiled in 1243ms (7192 modules)
+ ✓ Compiled in 1309ms (7192 modules)
+ ✓ Compiled in 1142ms (7192 modules)
+ ✓ Compiled in 2.9s (7192 modules)
+ ✓ Compiled in 1289ms (7192 modules)
+ ✓ Compiled in 1116ms (7192 modules)
+ ✓ Compiled in 1326ms (7192 modules)
+ ✓ Compiled in 2s (7192 modules)
+ ✓ Compiled in 3.1s (7192 modules)
+ ✓ Compiled in 1138ms (7192 modules)
+ ✓ Compiled in 961ms (7192 modules)
+ ✓ Compiled in 1119ms (7192 modules)
+ ✓ Compiled in 1152ms (7192 modules)
+ ✓ Compiled in 8.9s (7192 modules)
+ ✓ Compiled in 1177ms (7192 modules)
+ ✓ Compiled in 1162ms (7192 modules)
+ ✓ Compiled in 937ms (7192 modules)
+ ✓ Compiled in 917ms (7192 modules)
+ ✓ Compiled in 1271ms (7192 modules)
+ ✓ Compiled in 941ms (7192 modules)
+ ✓ Compiled in 1144ms (7192 modules)
+ ✓ Compiled in 994ms (7192 modules)
+ ✓ Compiled in 3.1s (7192 modules)
+ ✓ Compiled in 1550ms (7192 modules)
+ ✓ Compiled in 1138ms (7192 modules)
+ ✓ Compiled in 1242ms (7192 modules)
+ ✓ Compiled in 987ms (7192 modules)
+ ✓ Compiled in 983ms (7192 modules)
+ ✓ Compiled in 2.4s (7192 modules)
+ ✓ Compiled in 1798ms (7192 modules)
+ GET / 200 in 3253ms
+ ✓ Compiled in 1984ms (7192 modules)
+ ○ Compiling /icon.png ...
+ ✓ Compiled /icon.png in 7.4s (15205 modules)
+ GET /icon.png?v=v10 200 in 7534ms
+ GET / 200 in 248ms
+ GET /icon.png?v=v10 200 in 47ms
+ ✓ Compiled in 1017ms (7192 modules)
+ GET / 200 in 71ms
+ ✓ Compiled in 858ms (7192 modules)
+ GET / 200 in 71ms
+ GET /icon.png?v=v10 200 in 97ms
+ ✓ Compiled in 883ms (7192 modules)
+ GET / 200 in 65ms
+ ✓ Compiled in 893ms (7192 modules)
+ GET / 200 in 1209ms
+ ✓ Compiled in 1262ms (7192 modules)
+ GET / 200 in 82ms
+ ✓ Compiled in 1115ms (7192 modules)
+ GET / 200 in 97ms
+ ✓ Compiled in 1068ms (7192 modules)
+ GET / 200 in 120ms
+ ✓ Compiled in 975ms (7192 modules)
+ GET / 200 in 102ms
+ ✓ Compiled in 971ms (7192 modules)
+ GET / 200 in 131ms
+ ✓ Compiled in 1126ms (7192 modules)
+ GET / 200 in 1237ms
+ ✓ Compiled in 1380ms (7192 modules)
+ GET / 200 in 74ms
+ ✓ Compiled in 1184ms (7192 modules)
+ GET / 200 in 98ms
+ ✓ Compiled in 1129ms (7192 modules)
+ GET / 200 in 91ms
+ ✓ Compiled in 1569ms (7192 modules)
+ GET / 200 in 110ms
+ ✓ Compiled in 1324ms (7192 modules)
+ GET / 200 in 92ms
+ ✓ Compiled in 1299ms (7192 modules)
+ GET / 200 in 107ms
+ ✓ Compiled in 1594ms (7192 modules)
+ GET / 200 in 98ms
+ GET /icon.png?v=v10 200 in 51ms
+ ✓ Compiled in 1548ms (7192 modules)
+ GET / 200 in 71ms
+ ✓ Compiled in 967ms (7192 modules)
+ ✓ Compiled in 1281ms (7192 modules)
+ GET / 200 in 1377ms
+ GET / 200 in 91ms
+ ✓ Compiled in 1199ms (7192 modules)
+ ✓ Compiled in 5.1s (7192 modules)
+ GET / 200 in 5903ms
+ GET / 200 in 148ms
+ GET /icon.png?v=v10 200 in 49ms
+ ✓ Compiled in 2.4s (7192 modules)
+ ✓ Compiled in 2.5s (7192 modules)
+ GET / 200 in 2667ms
+ GET / 200 in 67ms
+ ✓ Compiled in 968ms (7192 modules)
+ GET / 200 in 69ms
+ ✓ Compiled in 871ms (7192 modules)
+ GET / 200 in 73ms
+ ✓ Compiled in 832ms (7192 modules)
+ GET / 200 in 73ms
+ ✓ Compiled in 852ms (7192 modules)
+ GET / 200 in 79ms
+ ✓ Compiled in 2.6s (7192 modules)
+ ✓ Compiled in 1615ms (7192 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 6.5s (15298 modules)
+ GET / 500 in 7641ms
+ GET / 200 in 478ms
+ GET / 200 in 72ms
+ GET / 200 in 316ms
+ ✓ Compiled in 1649ms (7193 modules)
+ ✓ Compiled in 1112ms (7193 modules)
+ GET / 200 in 94ms
+ ✓ Compiled in 1000ms (7193 modules)
+ GET / 200 in 78ms
+ ✓ Compiled in 891ms (7193 modules)
+ GET / 200 in 90ms
+ ✓ Compiled in 987ms (7193 modules)
+ GET / 200 in 77ms
+ ✓ Compiled in 1622ms (7193 modules)
+ GET / 200 in 106ms
+ ✓ Compiled in 2s (7193 modules)
+ ✓ Compiled in 1932ms (7193 modules)
+ GET / 200 in 1379ms
+ GET / 200 in 77ms
+ ✓ Compiled in 959ms (7193 modules)
+ GET / 200 in 1141ms
+ ✓ Compiled in 1158ms (7193 modules)
+ GET / 200 in 1048ms
+ ✓ Compiled in 1285ms (7193 modules)
+ GET / 200 in 88ms
+ ✓ Compiled in 1983ms (7193 modules)
+ GET / 200 in 84ms
+ ✓ Compiled in 1662ms (7193 modules)
+ GET / 200 in 121ms
+ ✓ Compiled in 2.2s (7193 modules)
+ GET / 200 in 1423ms
+ ✓ Compiled in 2.1s (7193 modules)
+ ✓ Compiled in 1978ms (7193 modules)
+ ✓ Compiled in 1702ms (7193 modules)
+ ✓ Compiled in 1840ms (7193 modules)
+ ✓ Compiled in 7.2s (7193 modules)
+ ✓ Compiled in 2.2s (7193 modules)
+ ✓ Compiled in 1349ms (7193 modules)
+ ✓ Compiled in 1438ms (7193 modules)
+ ✓ Compiled in 1852ms (7193 modules)
+ ✓ Compiled in 6.4s (7193 modules)
+ ✓ Compiled in 7s (7193 modules)
+ ✓ Compiled in 1677ms (7193 modules)
+ ✓ Compiled in 1809ms (7193 modules)
+ ✓ Compiled in 1473ms (7193 modules)
+ ✓ Compiled in 3.2s (7193 modules)
+ ✓ Compiled in 1519ms (7192 modules)
+ ✓ Compiled in 1388ms (7192 modules)
+ ✓ Compiled in 1724ms (7192 modules)
+ ✓ Compiled in 1641ms (7192 modules)
+ ✓ Compiled in 992ms (7192 modules)
+ ✓ Compiled in 1095ms (7192 modules)
+ ✓ Compiled in 990ms (7192 modules)
+ ✓ Compiled in 1014ms (7192 modules)
+ ✓ Compiled in 909ms (7192 modules)
+ ✓ Compiled in 2s (7192 modules)
+ ✓ Compiled in 968ms (7192 modules)
+ ✓ Compiled in 919ms (7192 modules)
+ ✓ Compiled in 844ms (7192 modules)
+ ✓ Compiled in 830ms (7192 modules)
+ ✓ Compiled in 846ms (7192 modules)
+ ✓ Compiled in 990ms (7192 modules)
+ ✓ Compiled in 977ms (7192 modules)
+ ✓ Compiled in 1244ms (7192 modules)
+ ✓ Compiled in 944ms (7192 modules)
+ ✓ Compiled in 1710ms (7192 modules)
+ ✓ Compiled in 1097ms (7192 modules)
+ ✓ Compiled in 987ms (7192 modules)
+ ✓ Compiled in 990ms (7192 modules)
+ ✓ Compiled in 929ms (7192 modules)
+ ✓ Compiled in 903ms (7192 modules)
+ ✓ Compiled in 911ms (7192 modules)
+ ✓ Compiled in 906ms (7192 modules)
+ ✓ Compiled in 935ms (7192 modules)
+ ✓ Compiled in 879ms (7192 modules)
+ ✓ Compiled in 1461ms (7192 modules)
+ ✓ Compiled in 1060ms (7192 modules)
+ ✓ Compiled in 981ms (7192 modules)
+ ✓ Compiled in 980ms (7192 modules)
+ ✓ Compiled in 1014ms (7192 modules)
+ ✓ Compiled in 999ms (7192 modules)
+ ✓ Compiled in 861ms (7192 modules)
+ ✓ Compiled in 1979ms (7192 modules)
+ ✓ Compiled in 997ms (7192 modules)
+ ✓ Compiled in 1030ms (7192 modules)
+ ✓ Compiled in 837ms (7192 modules)
+ ✓ Compiled in 1239ms (7192 modules)
+ ✓ Compiled in 1021ms (7192 modules)
+ ✓ Compiled in 1050ms (7192 modules)
+ ✓ Compiled in 1575ms (7192 modules)
+ ✓ Compiled in 1183ms (7192 modules)

@@ -1,0 +1,107 @@
+```json
+[
+  {
+    "text": "What time? What's the address?",
+    "start": 0.0,
+    "end": 1.4,
+    "words": [
+      {
+        "word": "What",
+        "start": 0.0,
+        "end": 0.4
+      },
+      {
+        "word": "time?",
+        "start": 0.4,
+        "end": 0.6
+      },
+      {
+        "word": "What's",
+        "start": 0.6,
+        "end": 0.8
+      },
+      {
+        "word": "the",
+        "start": 0.8,
+        "end": 1.0
+      },
+      {
+        "word": "address?",
+        "start": 1.0,
+        "end": 1.4
+      }
+    ]
+  },
+  {
+    "text": "Did you count us?",
+    "start": 1.4,
+    "end": 2.2,
+    "words": [
+      {
+        "word": "Did",
+        "start": 1.4,
+        "end": 1.6
+      },
+      {
+        "word": "you",
+        "start": 1.6,
+        "end": 1.7
+      },
+      {
+        "word": "count",
+        "start": 1.7,
+        "end": 2.0
+      },
+      {
+        "word": "us?",
+        "start": 2.0,
+        "end": 2.2
+      }
+    ]
+  },
+  {
+    "text": "Birthday support, please hold.",
+    "start": 3.1,
+    "end": 4.7,
+    "words": [
+      {
+        "word": "Birthday",
+        "start": 3.1,
+        "end": 3.6
+      },
+      {
+        "word": "support,",
+        "start": 3.6,
+        "end": 4.1
+      },
+      {
+        "word": "please",
+        "start": 4.1,
+        "end": 4.4
+      },
+      {
+        "word": "hold.",
+        "start": 4.4,
+        "end": 4.7
+      }
+    ]
+  },
+  {
+    "text": "Please hold.",
+    "start": 5.4,
+    "end": 6.0,
+    "words": [
+      {
+        "word": "Please",
+        "start": 5.4,
+        "end": 5.7
+      },
+      {
+        "word": "hold.",
+        "start": 5.7,
+        "end": 6.0
+      }
+    ]
+  }
+]
+```

@@ -1,0 +1,20 @@
+ ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+(node:130780) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[client-log] {
+  area: 'snap-upload',
+  stage: 'event-navigation-start',
+  scanAttemptId: 'scan_39363a3a-e598-4dfe-bd9a-5491413d0ae9',
+  details: {
+    eventId: '0f1ae3a0-27af-4399-b77a-ae5be09a8311',
+    eventHref: '/event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics?created=1&tab=dashboard'
+  },
+  error: null,
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36',
+    viewport: { width: 1440, height: 1000, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 10, rtt: 0, saveData: false }
+  },
+  timestamp: '2026-09-05T21:39:12.929Z'
+}

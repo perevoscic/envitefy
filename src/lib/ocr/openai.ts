@@ -1,4 +1,4 @@
-import { EVENT_EXTRACTION_SCHEMA, parseEventExtraction } from "./extraction-contract.ts";
+import { EVENT_EXTRACTION_RESPONSE_SCHEMA, parseEventExtraction } from "./extraction-contract.ts";
 import { classifyOpenAiHttpFailure } from "./failure.ts";
 import { creationModelBudget, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import { OPENAI_TIMEOUT_MS, resolveOcrModel } from "./constants";
@@ -217,7 +217,7 @@ export async function llmExtractEventFromImage(
           buildChatPayload({
             model,
             temperature: 0.1,
-            responseFormat: { type: "json_schema", json_schema: { name: "event_source_v2", strict: true, schema: EVENT_EXTRACTION_SCHEMA } },
+            responseFormat: { type: "json_schema", json_schema: { name: "event_source_v2", strict: true, schema: EVENT_EXTRACTION_RESPONSE_SCHEMA } },
             messages: [
               { role: "system", content: prompt.system },
               {

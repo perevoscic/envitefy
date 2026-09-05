@@ -1,0 +1,5 @@
+
+> envitefy@0.1.0 lint:vscode
+> node scripts/vscode-lint.mjs src/app/api/ocr/route.ts src/app/event-cache-context.tsx src/components/Dashboard.tsx src/lib/db.ts src/lib/ocr/birthday-age.ts src/lib/ocr/constants.ts src/lib/ocr/extraction-contract.ts src/lib/ocr/openai.ts src/lib/ocr/pipeline.test.ts src/lib/ocr/pipeline.ts src/lib/ocr/prompts.ts src/lib/scan-attempts.ts src/lib/ocr/extraction-prompt.ts src/lib/scan-counters.ts src/lib/scan-diagnostic-worker.ts src/app/api/internal/scan-diagnostics/route.ts
+
+Could not find a Chat to CLI linter bridge. Reload Cursor/VS Code and ensure chatToCli.enableDiagnosticsLinter is enabled.

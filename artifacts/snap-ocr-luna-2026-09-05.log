@@ -1,0 +1,226 @@
+>>> OCR: Trying OpenAI Vision (primary)... { timeoutMs: 30000, fastMode: false, ocrModel: 'gpt-5.6-luna' }
+>>> Using OpenAI model: gpt-5.6-luna
+>>> Making OpenAI Vision API call...
+>>> OpenAI API response status: 200
+>>> OpenAI API response received
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  workload: 'extraction',
+  model: 'gpt-5.6-luna',
+  durationMs: 6043,
+  outcome: 'success',
+  inputTokens: 4888,
+  outputTokens: 591,
+  reasoningTokens: 0
+}
+>>> OCR timing (ms) {
+  totalMs: 6524,
+  locationMs: 0,
+  sessionMs: 0,
+  accountingMs: 0,
+  otherProcessingMs: 375,
+  preprocessMs: 103,
+  primaryOcrMs: 6046,
+  fallbackOcrMs: 0,
+  rewriteMs: 0,
+  scheduleMs: 0,
+  skinMs: 0,
+  fastMode: false,
+  enableRewrites: false,
+  enableSkinInference: false,
+  skinInferenceTimedOut: false,
+  skinTimeoutMs: 3500,
+  turboMode: false,
+  model: 'gpt-5.6-luna',
+  ocrSource: 'openai'
+}
+[ocr] complete {
+  scanAttemptId: 'scan-f3d24d4b-ebf5-433d-a30c-36306df6e8cc',
+  fileName: 'september 28th.jpg',
+  fileSize: 1400728,
+  mimeType: 'image/jpeg',
+  category: 'Birthdays',
+  timings: {
+    totalMs: 6524,
+    locationMs: 0,
+    sessionMs: 0,
+    accountingMs: 0,
+    otherProcessingMs: 375,
+    preprocessMs: 103,
+    primaryOcrMs: 6046,
+    fallbackOcrMs: 0,
+    rewriteMs: 0,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: false,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.6-luna',
+    ocrSource: 'openai'
+  }
+}
+SCAN_COST_REPORT {
+  "date": "2026-09-05T21:24:20.928Z",
+  "status": 200,
+  "ocrSource": "openai",
+  "timing": {
+    "totalMs": 6524,
+    "locationMs": 0,
+    "sessionMs": 0,
+    "accountingMs": 0,
+    "otherProcessingMs": 375,
+    "preprocessMs": 103,
+    "primaryOcrMs": 6046,
+    "fallbackOcrMs": 0,
+    "rewriteMs": 0,
+    "scheduleMs": 0,
+    "skinMs": 0,
+    "fastMode": false,
+    "enableRewrites": false,
+    "enableSkinInference": false,
+    "skinInferenceTimedOut": false,
+    "skinTimeoutMs": 3500,
+    "turboMode": false,
+    "model": "gpt-5.6-luna",
+    "ocrSource": "openai"
+  },
+  "event": {
+    "title": "Livia's 8th Flippin' Awesome 8th Birthday Party",
+    "start": "2026-09-28T15:30:00",
+    "end": "2026-09-28T17:30:00",
+    "timezone": "",
+    "venue": "US Gold Gymnastics",
+    "location": "12432 Emerald Coast Pkwy, Miramar Beach, FL 32550",
+    "rsvp": "RSVP to Veronica 850-960-1214",
+    "sourceEvidence": {
+      "version": "creation-v2-2026-09-05",
+      "sourceText": "Join us for\nLivia's 8th Flippin' Awesome\nBirthday Party\n\nSeptember 28th   3:30PM - 5:30PM\nUS Gold Gymnastics\n12432 Emerald Coast Pkwy, Miramar Beach, FL 32550\nRSVP to Veronica 850-960-1214",
+      "fields": {
+        "title": {
+          "status": "observed",
+          "sourceText": [
+            "Livia's 8th Flippin' Awesome",
+            "Birthday Party"
+          ]
+        },
+        "description": {
+          "status": "missing",
+          "sourceText": []
+        },
+        "category": {
+          "status": "observed",
+          "sourceText": [
+            "Birthday Party"
+          ]
+        },
+        "start": {
+          "status": "inferred",
+          "sourceText": [
+            "September 28th",
+            "3:30PM"
+          ]
+        },
+        "end": {
+          "status": "inferred",
+          "sourceText": [
+            "September 28th",
+            "5:30PM"
+          ]
+        },
+        "address": {
+          "status": "observed",
+          "sourceText": [
+            "12432 Emerald Coast Pkwy, Miramar Beach, FL 32550"
+          ]
+        },
+        "venueName": {
+          "status": "observed",
+          "sourceText": [
+            "US Gold Gymnastics"
+          ]
+        },
+        "birthdayAge": {
+          "status": "observed",
+          "sourceText": [
+            "Livia's 8th"
+          ]
+        },
+        "birthdayName": {
+          "status": "observed",
+          "sourceText": [
+            "Livia's 8th"
+          ]
+        },
+        "hostName": {
+          "status": "missing",
+          "sourceText": []
+        },
+        "rsvp": {
+          "status": "observed",
+          "sourceText": [
+            "RSVP to Veronica 850-960-1214"
+          ]
+        },
+        "rsvpUrl": {
+          "status": "missing",
+          "sourceText": []
+        },
+        "rsvpDeadline": {
+          "status": "missing",
+          "sourceText": []
+        },
+        "registryUrl": {
+          "status": "missing",
+          "sourceText": []
+        },
+        "registryProvider": {
+          "status": "missing",
+          "sourceText": []
+        },
+        "activities": {
+          "status": "missing",
+          "sourceText": []
+        },
+        "attire": {
+          "status": "missing",
+          "sourceText": []
+        },
+        "goodToKnow": {
+          "status": "missing",
+          "sourceText": []
+        }
+      }
+    },
+    "category": "Birthdays"
+  },
+  "requests": [
+    {
+      "model": "gpt-5.6-luna",
+      "responseModel": "gpt-5.6-luna",
+      "status": 200,
+      "durationMs": 6039,
+      "responseFormat": "json_schema",
+      "usage": {
+        "prompt_tokens": 4888,
+        "completion_tokens": 591,
+        "total_tokens": 5479,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "costUsd": 0.0016868
+    }
+  ],
+  "estimatedApiCostUsd": 0.0016868,
+  "priceSource": "https://developers.openai.com/api/docs/pricing"
+}

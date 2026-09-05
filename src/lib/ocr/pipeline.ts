@@ -362,6 +362,9 @@ export async function handleOcrRequest(request: Request) {
       rewriteMs: 0,
       scheduleMs: 0,
       skinMs: 0,
+      locationMs: 0,
+      sessionMs: 0,
+      accountingMs: 0,
     };
 
     const url = new URL(request.url);
@@ -378,8 +381,8 @@ export async function handleOcrRequest(request: Request) {
       .trim()
       .toLowerCase();
     const enableSkinInference = skinParam !== "0" && skinParam !== "false";
-    const enableRewrites =
-      rewritesRequested || !fastMode || process.env.OCR_ENABLE_REWRITES === "1";
+    // Copywriting is an explicit operation; automatic scanning only reads facts.
+    const enableRewrites = rewritesRequested;
     const allowDeepScheduleExtraction = !fastMode || forceLLM || gymOnly;
     const ocrModel = resolveOcrModel(fastMode);
     const configuredSkinTimeoutMs = Number(process.env.OCR_SKIN_TIMEOUT_MS);
@@ -1921,6 +1924,7 @@ export async function handleOcrRequest(request: Request) {
       fieldsGuess.venue = cleanedVenue || null;
     }
 
+    const locationStartedAt = Date.now();
     const locationEnrichment = await enrichOcrVenueAddress({
       venue: fieldsGuess.venue,
       location: fieldsGuess.location,
@@ -1930,6 +1934,8 @@ export async function handleOcrRequest(request: Request) {
     if (locationEnrichment?.address) {
       fieldsGuess.location = locationEnrichment.address;
     }
+
+    stage.locationMs = Date.now() - locationStartedAt;
 
     const birthdayTemplateHint = normalizeBirthdayTemplateHint({
       category,
@@ -1984,54 +1990,37 @@ export async function handleOcrRequest(request: Request) {
     const thumbnailFocus = normalizeThumbnailFocus(llmImage?.thumbnailFocus);
 
     scanAttemptId = scanAttemptId || `scan-${randomUUID()}`;
-    let troubleshootingPreview: Buffer | null = null;
-    try {
-      troubleshootingPreview = await sharp(colorBuffer)
-        .rotate()
-        .resize({
-          width: 1400,
-          height: 1400,
-          fit: "inside",
-          withoutEnlargement: true,
-        })
-        .jpeg({ quality: 72, progressive: true })
-        .toBuffer();
-    } catch (previewError) {
-      console.warn("[ocr] troubleshooting preview unavailable", {
+    const sessionStartedAt = Date.now();
+    const session = await getServerSession(authOptions);
+    stage.sessionMs = Date.now() - sessionStartedAt;
+    const email = session?.user?.email;
+    if (typeof email === "string" && email.trim()) {
+      const accountingStartedAt = Date.now();
+      // Accounting and queue insertion must commit before acknowledging a scan.
+      await recordCompletedScanAttempt({
         scanAttemptId,
-        message: previewError instanceof Error ? previewError.message : String(previewError),
+        email,
+        title: fieldsGuess.title || finalTitle,
+        category,
+        sourceType: "upload",
+        fileName: file.name || null,
+        fileSize: file.size || null,
+        mimeType: mime,
+        ocrSource,
+        ocrText: raw,
+        fieldsGuess,
+        diagnosticImageBytes: colorBuffer,
       });
+      stage.accountingMs = Date.now() - accountingStartedAt;
     }
 
-    try {
-      const session = await getServerSession(authOptions);
-      const email = session?.user?.email;
-      if (typeof email === "string" && email.trim()) {
-        await recordCompletedScanAttempt({
-          scanAttemptId,
-          email,
-          title: fieldsGuess.title || finalTitle,
-          category,
-          sourceType: "upload",
-          fileName: file.name || null,
-          fileSize: file.size || null,
-          mimeType: mime,
-          ocrSource,
-          ocrText: raw,
-          fieldsGuess,
-          previewBytes: troubleshootingPreview,
-          previewMimeType: troubleshootingPreview ? "image/jpeg" : null,
-        });
-      }
-    } catch (attemptError) {
-      console.error("[ocr] troubleshooting record failed", {
-        scanAttemptId,
-        message: attemptError instanceof Error ? attemptError.message : String(attemptError),
-      });
-    }
-
+    const totalMs = Date.now() - startedAt;
     const ocrTiming = {
-      totalMs: Date.now() - startedAt,
+      totalMs,
+      locationMs: stage.locationMs,
+      sessionMs: stage.sessionMs,
+      accountingMs: stage.accountingMs,
+      otherProcessingMs: Math.max(0, totalMs - Object.values(stage).reduce((sum, ms) => sum + ms, 0)),
       preprocessMs: stage.preprocessMs,
       primaryOcrMs: stage.primaryOcrMs,
       fallbackOcrMs: stage.fallbackOcrMs,
@@ -2080,7 +2069,13 @@ export async function handleOcrRequest(request: Request) {
       responseBody.timing = ocrTiming;
     }
 
-    return corsJson(request, responseBody, { headers: { "Cache-Control": "no-store" } });
+    return corsJson(request, responseBody, {
+      headers: {
+        "Cache-Control": "no-store",
+        "Server-Timing": [...Object.entries(stage), ["otherProcessingMs", ocrTiming.otherProcessingMs], ["totalMs", totalMs]]
+          .map(([name, duration]) => `${String(name).replace(/Ms$/, "")};dur=${duration}`).join(", "),
+      },
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("[ocr] failed", {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { afterEach, beforeEach, test } from "node:test";
 import sharp from "sharp";
+import { EVENT_EXTRACTION_SCHEMA } from "./extraction-contract.ts";
 import { getOcrFailureResponse } from "./failure.ts";
 import {
   fetchWithTimeout,
@@ -216,4 +217,53 @@ test("an unconfigured scan retains its configuration error", async (t) => {
   assert.equal(response.status, 503);
   assert.equal((await response.json()).code, "OCR_NOT_CONFIGURED");
   assert.equal(fetchMock.mock.callCount(), 0);
+});
+
+test("automatic scans make one extraction call and retain all printed contact details", async (t) => {
+  function empty(schema) {
+    if (schema.anyOf) return empty(schema.anyOf[0]);
+    if (schema.enum) return schema.enum[0];
+    const type = Array.isArray(schema.type) && schema.type.includes("null") ? "null" : schema.type;
+    if (type === "null") return null;
+    if (type === "array") return [];
+    if (type === "object") return Object.fromEntries(Object.entries(schema.properties).map(([k, s]) => [k, empty(s)]));
+    return type === "boolean" ? false : type === "number" ? 0 : "";
+  }
+  const extracted = empty(EVENT_EXTRACTION_SCHEMA);
+  Object.assign(extracted, {
+    title: "Ava's 7th Pool Birthday Party", category: "Birthdays", birthdayAge: 7,
+    venueName: "Garden Hall", address: "123 Example Street, Austin, TX 78701",
+    rsvp: "RSVP to Sam: 202-555-0101 or sam@example.invalid",
+  });
+  extracted.sourceEvidence.sourceText = `${extracted.title}\nSeptember 28, 2099 3:30PM - 5:30PM\n${extracted.venueName}\n${extracted.address}\n${extracted.rsvp}`;
+  for (const key of Object.keys(extracted.sourceEvidence.fields)) {
+    extracted.sourceEvidence.fields[key] = { status: "missing", sourceText: [] };
+  }
+  for (const key of ["title", "venueName", "address", "rsvp"]) {
+    extracted.sourceEvidence.fields[key] = { status: "observed", sourceText: [extracted[key]] };
+  }
+  extracted.sourceEvidence.fields.category = { status: "inferred", sourceText: [extracted.title] };
+  extracted.sourceEvidence.fields.birthdayAge = { status: "observed", sourceText: ["7th"] };
+  t.mock.method(console, "log", () => {});
+  t.mock.method(console, "info", () => {});
+  const calls = [];
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    assert.equal(String(url), "https://api.openai.com/v1/chat/completions");
+    calls.push(JSON.parse(options.body));
+    return Response.json({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify(extracted) } }] });
+  });
+  const form = new FormData();
+  form.set("file", new File([flyer], "fixture.jpg", { type: "image/jpeg" }));
+  const response = await handleOcrRequest(new Request("http://localhost/api/ocr?fast=0&skin=0&timing=1", { method: "POST", body: form }));
+  const result = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].response_format.type, "json_schema");
+  assert.equal(result.timing.enableRewrites, false);
+  assert.equal(result.timing.rewriteMs, 0);
+  assert.equal(result.fieldsGuess.title, extracted.title);
+  assert.equal(result.fieldsGuess.location, extracted.address);
+  assert.match(result.fieldsGuess.rsvp, /202-555-0101/);
+  assert.match(result.fieldsGuess.rsvp, /sam@example\.invalid/);
+  assert.equal(result.sourceEvidence.sourceText, extracted.sourceEvidence.sourceText);
 });

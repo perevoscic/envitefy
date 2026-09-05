@@ -82,12 +82,6 @@ export default async function AdminDashboardPage() {
           detail="Bulk sends and tests"
           href="/admin/emails?tab=campaigns"
         />
-        <AdminMetricCard
-          label="Marketing runs"
-          value={formatNumber(overview.kpis.marketingRuns)}
-          detail="Storyboard asset runs"
-          href="/admin/marketing-images"
-        />
       </section>
 
       <div className="grid min-w-0 gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">

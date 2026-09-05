@@ -1,3 +1,4 @@
+import { BirthdaySupport } from "./BirthdaySupport";
 import "./index.css";
 import { BirthdaySecondJob } from "./BirthdaySecondJob";
 import {
@@ -44,6 +45,14 @@ const calculateMetadata: CalculateMetadataFunction<VideoProps> = async ({
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      <Composition
+        id="EnvitefyBirthdaySupport"
+        component={BirthdaySupport}
+        width={1080}
+        height={1920}
+        fps={30}
+        durationInFrames={750}
+      />
       <Composition
         id="EnvitefyBirthdaySecondJob"
         component={BirthdaySecondJob}

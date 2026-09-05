@@ -43,6 +43,13 @@ test("an explicitly unknown model age is not reconstructed from generated copy",
   );
 });
 
+test("a printed age before the party theme is not duplicated", () => {
+  const printedTitle = "Livia's 8th Flippin' Awesome Birthday Party";
+  const result = resolveOcrBirthdayTitle({ title: printedTitle, text: printedTitle, birthdayAge: 8 });
+  assert.deepEqual(result, { title: printedTitle, ageOrdinal: "8th" });
+  assert.deepEqual(resolveOcrBirthdayTitle({ ...result, text: printedTitle, birthdayAge: 8 }), result);
+});
+
 test("conflicting text ages remain unresolved", () => {
   assert.deepEqual(resolveOcrBirthdayTitle({ title, text: "Ava turns 7. Ava's 8th birthday." }), {
     title,
@@ -88,12 +95,12 @@ test("non-birthday titles are unchanged", () => {
   );
 });
 
-test("both OCR prompt messages require birthday context and allow unknown ages", () => {
+test("OCR system prompt requires birthday context and allows unknown ages without duplicated user instructions", () => {
   const prompt = buildEventExtractionPrompt("2026-09-05");
-  for (const message of [prompt.system, prompt.user]) {
+  for (const message of [prompt.system]) {
     assert.match(message, /birthday context/i);
     assert.match(message, /birthdayAge=null/);
-    assert.match(message, /omit age from the title and description/);
+    assert.match(message, /omit age from title and description/);
     assert.doesNotMatch(
       message,
       /that number is the AGE|visually detect large decorative age numbers/,

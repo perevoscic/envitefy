@@ -1,0 +1,354 @@
+[96msrc/lib/meet-discovery/core.ts[0m:[93m839[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m839[0m   schedule: ParseResult["schedule"];
+[7m   [0m [91m                        ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m845[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m845[0m   schedule: ParseResult["schedule"];
+[7m   [0m [91m                        ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m858[0m:[93m11[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorTarget'.
+
+[7m858[0m   target: ScheduleColorTarget | null;
+[7m   [0m [91m          ~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m1092[0m:[93m54[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorRef'.
+
+[7m1092[0m function _normalizeScheduleColorRef(value: unknown): ScheduleColorRef | null {
+[7m    [0m [91m                                                     ~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m1106[0m:[93m18[0m - [91merror[0m[90m TS2552: [0mCannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+
+[7m1106[0m   entries: Array<ScheduleColorLegendEntry | Record<string, any>>,
+[7m    [0m [91m                 ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m1107[0m:[93m4[0m - [91merror[0m[90m TS2552: [0mCannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+
+[7m1107[0m ): ScheduleColorLegendEntry[] {
+[7m    [0m [91m   ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m1115[0m:[93m54[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorTarget'.
+
+[7m1115[0m             ? (safeString((entry as any)?.target) as ScheduleColorTarget)
+[7m    [0m [91m                                                     ~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m1157[0m:[93m52[0m - [91merror[0m[90m TS2552: [0mCannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+
+[7m1157[0m function deriveAwardLegendFromColorLegend(entries: ScheduleColorLegendEntry[]): Array<{
+[7m    [0m [91m                                                   ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m1179[0m:[93m11[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorRef'.
+
+[7m1179[0m   color?: ScheduleColorRef | null;
+[7m    [0m [91m          ~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m1190[0m:[93m11[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorRef'.
+
+[7m1190[0m   color?: ScheduleColorRef | null;
+[7m    [0m [91m          ~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m1207[0m:[93m16[0m - [91merror[0m[90m TS2552: [0mCannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+
+[7m1207[0m   colorLegend: ScheduleColorLegendEntry[];
+[7m    [0m [91m               ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m1647[0m:[93m51[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m1647[0m type ScheduleAnnotation = NonNullable<ParseResult["schedule"]["annotations"]>[number];
+[7m    [0m [91m                                                  ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m1648[0m:[93m51[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m1648[0m type ScheduleAssignment = NonNullable<ParseResult["schedule"]["assignments"]>[number];
+[7m    [0m [91m                                                  ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m2479[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m2479[0m   schedule: ParseResult["schedule"] | null | undefined,
+[7m    [0m [91m                        ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m2499[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m2499[0m   schedule: ParseResult["schedule"] | null | undefined,
+[7m    [0m [91m                        ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m2501[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m2501[0m ): ParseResult["schedule"] {
+[7m    [0m [91m               ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m2824[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType '{ kind: DiscoveryResourceKind; status: DiscoveryResourceStatus; label: string; url: string; sourceUrl: string; origin: DiscoveryResourceOrigin; ... 6 more ...; matchReason: string | null; }[]' is not assignable to type 'DiscoveryResourceLink[]'.
+  Type '{ kind: DiscoveryResourceKind; status: DiscoveryResourceStatus; label: string; url: string; sourceUrl: string; origin: DiscoveryResourceOrigin; ... 6 more ...; matchReason: string | null; }' is not assignable to type 'DiscoveryResourceLink'.
+    Types of property 'discoveryMethod' are incompatible.
+      Type 'string' is not assignable to type '"playwright" | "http"'.
+
+[7m2824[0m       links: resourceLinks,
+[7m    [0m [91m      ~~~~~[0m
+
+  [96msrc/lib/meet-discovery/core.ts[0m:[93m588[0m:[93m5[0m
+    [7m588[0m     links: DiscoveryResourceLink[];
+    [7m   [0m [96m    ~~~~~[0m
+    The expected type comes from property 'links' which is declared here on type '{ links: DiscoveryResourceLink[]; hotelHints: string[]; statusHints: string[]; }'
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3206[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m3206[0m ): ParseResult["schedule"]["days"][number]["sessions"] {
+[7m    [0m [91m               ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3222[0m:[93m30[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m3222[0m     clubs: [] as ParseResult["schedule"]["days"][number]["sessions"][number]["clubs"],
+[7m    [0m [91m                             ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3271[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m3271[0m   const sessions: ParseResult["schedule"]["days"][number]["sessions"] = [];
+[7m    [0m [91m                              ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3340[0m:[93m39[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m3340[0m     .filter((day): day is ParseResult["schedule"]["days"][number] => Boolean(day));
+[7m    [0m [91m                                      ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3474[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m3474[0m   sessions: ParseResult["schedule"]["days"][number]["sessions"],
+[7m    [0m [91m                        ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3475[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m3475[0m ): ParseResult["schedule"]["days"][number]["sessions"] {
+[7m    [0m [91m               ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3477[0m:[93m11[0m - [91merror[0m[90m TS7006: [0mParameter 'session' implicitly has an 'any' type.
+
+[7m3477[0m     .map((session) => ({
+[7m    [0m [91m          ~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3492[0m:[93m14[0m - [91merror[0m[90m TS7006: [0mParameter 'session' implicitly has an 'any' type.
+
+[7m3492[0m     .filter((session) => session.code || session.group || session.startTime || session.note);
+[7m    [0m [91m             ~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3498[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m3498[0m ): ParseResult["schedule"] {
+[7m    [0m [91m               ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3503[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m3503[0m   const days: ParseResult["schedule"]["days"] = [];
+[7m    [0m [91m                          ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3504[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m3504[0m   let currentDay: ParseResult["schedule"]["days"][number] | null = null;
+[7m    [0m [91m                              ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3562[0m:[93m13[0m - [91merror[0m[90m TS7006: [0mParameter 'day' implicitly has an 'any' type.
+
+[7m3562[0m       .map((day) => ({
+[7m    [0m [91m            ~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3566[0m:[93m16[0m - [91merror[0m[90m TS7006: [0mParameter 'day' implicitly has an 'any' type.
+
+[7m3566[0m       .filter((day) => day.sessions.length > 0),
+[7m    [0m [91m               ~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3835[0m:[93m51[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.
+  Types of property 'stage' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+
+[7m3835[0m     await persistVisionInputDebugArtifact(buffer, {
+[7m    [0m [91m                                                  ~[0m
+[7m3836[0m       ...artifact,
+[7m    [0m [91m~~~~~~~~~~~~~~~~~~[0m
+[7m3837[0m       mimeType: artifact?.mimeType || mimeType,
+[7m    [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m3838[0m     });
+[7m    [0m [91m~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m3888[0m:[93m51[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.
+  Types of property 'stage' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+
+[7m3888[0m     await persistVisionInputDebugArtifact(buffer, {
+[7m    [0m [91m                                                  ~[0m
+[7m3889[0m       ...artifact,
+[7m    [0m [91m~~~~~~~~~~~~~~~~~~[0m
+[7m3890[0m       mimeType: artifact?.mimeType || mimeType,
+[7m    [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m3891[0m     });
+[7m    [0m [91m~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m4372[0m:[93m51[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.
+  Types of property 'stage' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+
+[7m4372[0m     await persistVisionInputDebugArtifact(buffer, {
+[7m    [0m [91m                                                  ~[0m
+[7m4373[0m       ...artifact,
+[7m    [0m [91m~~~~~~~~~~~~~~~~~~[0m
+[7m4374[0m       mimeType: artifact?.mimeType || mimeType,
+[7m    [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m4375[0m     });
+[7m    [0m [91m~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m5926[0m:[93m3[0m - [91merror[0m[90m TS2322: [0mType '{ followed: boolean; contentType: string | null; score: number; url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to type 'CrawlCandidate'.
+  Type '{ followed: boolean; contentType: string | null; score: number; url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to type 'DiscoveredLink'.
+    Types of property 'kind' are incompatible.
+      Type 'string' is not assignable to type 'DiscoveryLinkKind'.
+
+[7m5926[0m   return {
+[7m    [0m [91m  ~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m5930[0m:[93m36[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to parameter of type 'Omit<CrawlCandidate, "score" | "followed">'.
+  Types of property 'kind' are incompatible.
+    Type 'string' is not assignable to type 'DiscoveryLinkKind'.
+
+[7m5930[0m     score: scoreDiscoveryCandidate(baseCandidate),
+[7m    [0m [91m                                   ~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m6385[0m:[93m3[0m - [91merror[0m[90m TS2741: [0mProperty 'collectBrowserData' is missing in type '{ fetchWithLimit: (url: string, options?: { timeoutMs?: number; signal?: AbortSignal; }) => Promise<{ contentType: string; buffer: Buffer; text: string; }>; extractTextFromPdf: ((buffer: Buffer, options?: { budgetMs?: number; performance?: DiscoveryPerformance; cache?: DiscoveryRequestCache; mode?: DiscoveryMode; si...' but required in type 'Required<UrlDiscoveryTestHooks>'.
+
+[7m6385[0m   return {
+[7m    [0m [91m  ~~~~~~[0m
+
+  [96msrc/lib/meet-discovery/core.ts[0m:[93m632[0m:[93m3[0m
+    [7m632[0m   collectBrowserData?: (
+    [7m   [0m [96m  ~~~~~~~~~~~~~~~~~~[0m
+    'collectBrowserData' is declared here.
+[96msrc/lib/meet-discovery/core.ts[0m:[93m8189[0m:[93m3[0m - [91merror[0m[90m TS2322: [0mType 'string[]' is not assignable to type 'ParsePromptProfile[]'.
+  Type 'string' is not assignable to type 'ParsePromptProfile'.
+
+[7m8189[0m   return uniqueBy(["overview_core", "parent_public"], (item) => item).slice(0, 2);
+[7m    [0m [91m  ~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m9605[0m:[93m4[0m - [91merror[0m[90m TS2552: [0mCannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+
+[7m9605[0m ): ScheduleColorLegendEntry[] {
+[7m    [0m [91m   ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m9617[0m:[93m18[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorLegendEntry'.
+
+[7m9617[0m   const entries: ScheduleColorLegendEntry[] = [];
+[7m    [0m [91m                 ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m9688[0m:[93m12[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorRef'.
+
+[7m9688[0m ): Promise<ScheduleColorRef | null> {
+[7m    [0m [91m           ~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m9852[0m:[93m49[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorTarget'.
+
+[7m9852[0m                 ? (safeString(entry?.target) as ScheduleColorTarget)
+[7m    [0m [91m                                                ~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m9951[0m:[93m4[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorLegendEntry'.
+
+[7m9951[0m ): ScheduleColorLegendEntry[] {
+[7m    [0m [91m   ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m9986[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m9986[0m   schedule: ParseResult["schedule"],
+[7m    [0m [91m                        ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m9990[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m9990[0m ): Promise<ParseResult["schedule"]> {
+[7m    [0m [91m                       ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10018[0m:[93m42[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorRef'.
+
+[7m10018[0m   const sessionSamples = new Map<string, ScheduleColorRef>();
+[7m     [0m [91m                                         ~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10019[0m:[93m39[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorRef'.
+
+[7m10019[0m   const clubSamples = new Map<string, ScheduleColorRef>();
+[7m     [0m [91m                                      ~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10021[0m:[93m32[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorLegendEntry'.
+
+[7m10021[0m   const explicitLegendEntries: ScheduleColorLegendEntry[] = [];
+[7m     [0m [91m                               ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10085[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'.
+
+[7m10085[0m     if (performance) performance.scheduleVisionCalls += 1;
+[7m     [0m [91m                                 ~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10156[0m:[93m33[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ScheduleColorLegendEntry'.
+
+[7m10156[0m   const syntheticLegendEntries: ScheduleColorLegendEntry[] = [];
+[7m     [0m [91m                                ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10268[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10268[0m ): Promise<ParseResult["schedule"] | null> {
+[7m     [0m [91m                       ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10338[0m:[93m39[0m - [91merror[0m[90m TS2345: [0mArgument of type '"scheduleVisual"' is not assignable to parameter of type 'DiscoveryUsageStage'.
+
+[7m10338[0m     recordDiscoveryUsage(performance, "scheduleVisual", payload?.usage);
+[7m     [0m [91m                                      ~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10345[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10345[0m     return normalized?.schedule || null;
+[7m     [0m [91m                       ~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10408[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10408[0m   let merged: ParseResult["schedule"] = {
+[7m     [0m [91m                          ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10454[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'.
+
+[7m10454[0m           options.performance.scheduleVisionCalls += 1;
+[7m     [0m [91m                              ~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10474[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'.
+
+[7m10474[0m       options.performance.scheduleVisionCalls += 1;
+[7m     [0m [91m                          ~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10595[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10595[0m   schedule: ParseResult["schedule"],
+[7m     [0m [91m                        ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10597[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10597[0m ): ParseResult["schedule"] {
+[7m     [0m [91m               ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10662[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10662[0m ): Promise<ParseResult["schedule"] | null> {
+[7m     [0m [91m                       ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10698[0m:[93m22[0m - [91merror[0m[90m TS2304: [0mCannot find name 'GYMNASTICS_SCHEDULE_JSON_SCHEMA'.
+
+[7m10698[0m         json_schema: GYMNASTICS_SCHEDULE_JSON_SCHEMA,
+[7m     [0m [91m                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10716[0m:[93m39[0m - [91merror[0m[90m TS2345: [0mArgument of type '"scheduleText"' is not assignable to parameter of type 'DiscoveryUsageStage'.
+
+[7m10716[0m     recordDiscoveryUsage(performance, "scheduleText", completion.usage);
+[7m     [0m [91m                                      ~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10724[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10724[0m     return normalized?.schedule || null;
+[7m     [0m [91m                       ~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10735[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10735[0m ): ParseResult["schedule"] {
+[7m     [0m [91m               ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10752[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10752[0m   return pages.reduce<ParseResult["schedule"]>(
+[7m     [0m [91m                                  ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10806[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10806[0m   fallbackSchedule: ParseResult["schedule"],
+[7m     [0m [91m                                ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10821[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10821[0m   textSchedule: ParseResult["schedule"],
+[7m     [0m [91m                            ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10822[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10822[0m   fallbackSchedule: ParseResult["schedule"],
+[7m     [0m [91m                                ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10851[0m:[93m77[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10851[0m function toParseScheduleShape(schedule: StoredGymMeetSchedule): ParseResult["schedule"] {
+[7m     [0m [91m                                                                            ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10998[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10998[0m   primary: ParseResult["schedule"] | null | undefined,
+[7m     [0m [91m                       ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m10999[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m10999[0m   fallback: ParseResult["schedule"] | null | undefined,
+[7m     [0m [91m                        ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m11000[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m11000[0m ): ParseResult["schedule"] {
+[7m     [0m [91m               ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m11204[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m11204[0m   schedule: ParseResult["schedule"] | null | undefined,
+[7m     [0m [91m                        ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m11205[0m:[93m16[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m11205[0m ): ParseResult["schedule"] {
+[7m     [0m [91m               ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m11247[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m11247[0m   primary: ParseResult["schedule"] | null | undefined,
+[7m     [0m [91m                       ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m11248[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'schedule' does not exist on type 'ParseResult'.
+
+[7m11248[0m   fallback: ParseResult["schedule"] | null | undefined,
+[7m     [0m [91m                        ~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m13767[0m:[93m32[0m - [91merror[0m[90m TS2677: [0mA type predicate's type must be assignable to its parameter's type.
+  Type '{ label?: string | undefined; url: string; }' is not assignable to type '{ label: string; url: string; }'.
+    Types of property 'label' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+
+[7m13767[0m       ].filter((item): item is { label?: string; url: string } => Boolean(item?.url)),
+[7m     [0m [91m                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/lib/meet-discovery/core.ts[0m:[93m13768[0m:[93m17[0m - [91merror[0m[90m TS18047: [0m'item' is possibly 'null'.
+
+[7m13768[0m       (item) => item.url,
+[7m     [0m [91m                ~~~~[0m

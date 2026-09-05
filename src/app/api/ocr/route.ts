@@ -1,5 +1,6 @@
 import { corsPreflight } from "@/lib/cors";
 import { handleOcrRequest } from "@/lib/ocr/pipeline";
+import { after } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,5 +11,16 @@ export function OPTIONS(request: Request) {
 }
 
 export async function POST(request: Request) {
-  return handleOcrRequest(request);
+  const response = await handleOcrRequest(request);
+  if (response.ok) {
+    after(async () => {
+      try {
+        const { processScanDiagnosticJobs } = await import("@/lib/scan-diagnostic-worker");
+        await processScanDiagnosticJobs();
+      } catch {
+        console.error("[scan-diagnostics] background processing deferred to retry worker");
+      }
+    });
+  }
+  return response;
 }

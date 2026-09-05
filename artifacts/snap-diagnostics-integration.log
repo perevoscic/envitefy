@@ -1,0 +1,10 @@
+[scan-diagnostics] queued retry { scanId: '612778cc-41d9-49f3-b7a1-d35eec61c67b', attempts: 1 }
+✔ atomic scan accounting, diagnostic retries, lease recovery and saved-event preservation (2870.5352ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2873.7572

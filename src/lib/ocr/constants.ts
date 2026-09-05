@@ -1,4 +1,4 @@
-export const DEFAULT_OCR_MODEL = "gpt-5.6-terra";
+export const DEFAULT_OCR_MODEL = "gpt-5.6-luna";
 export const OPENAI_TIMEOUT_MS = 30_000;
 export const OCR_TOTAL_BUDGET_MS = 55_000;
 export const OCR_SKIN_TIMEOUT_MS = 3_500;
