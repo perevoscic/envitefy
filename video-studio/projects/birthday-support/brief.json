@@ -64,5 +64,11 @@
   },
   "musicPrompt": "Create an original 30-second entirely INSTRUMENTAL comedic groove for a fast funny parent birthday call-center TikTok. 120 BPM, bouncy plucked electric bass, dry rim-click and snare groove, pizzicato strings, light marimba, a tiny brass wink, playful handclaps. Immediate hook, cheeky and busy at first then breezy and relaxed, human live feel. Clean moderate mix leaving room for dialogue. No vocals, humming, lyrics, speech, vocal chops, recognizable song or artist imitation. No corporate ukulele. Steady upbeat groove throughout; editor will cut sharply for the cake joke.",
   "reviewStatus": "assistant-reviewed-locally",
-  "export": "out/birthday-support-9x16-v1.mp4"
+  "export": "out/birthday-support/birthday-support-9x16-v2.mp4",
+  "revision": {
+    "version": 2,
+    "status": "complete",
+    "requestedChange": "she is not saying Please hold",
+    "resolution": "Restored complete phrase through source time 5.9 seconds; verified actual export locally."
+  }
 }

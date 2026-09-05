@@ -1,0 +1,93 @@
+{
+  "date": "2026-09-05T21:50:14.280Z",
+  "requests": [
+    {
+      "path": "/api/history",
+      "query": "?view=sidebar&limit=200&time=all",
+      "method": "GET",
+      "status": 200,
+      "startedAt": 1788645017081,
+      "headersMs": 1274,
+      "durationMs": 1274
+    },
+    {
+      "path": "/api/ocr",
+      "query": "?fast=0&skin=0",
+      "method": "POST",
+      "status": 200,
+      "startedAt": 1788645018976,
+      "headersMs": 6415,
+      "durationMs": 6415
+    },
+    {
+      "path": "/api/upload",
+      "query": "",
+      "method": "POST",
+      "status": 200,
+      "startedAt": 1788645025403,
+      "headersMs": 836,
+      "durationMs": 836
+    },
+    {
+      "path": "/api/history",
+      "query": "",
+      "method": "POST",
+      "status": 201,
+      "startedAt": 1788645026240,
+      "headersMs": 610,
+      "durationMs": 610
+    },
+    {
+      "path": "/event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics",
+      "query": "?created=1&tab=dashboard&_rsc=3gku8",
+      "method": "GET",
+      "status": 200,
+      "startedAt": 1788645026852,
+      "headersMs": 7
+    }
+  ],
+  "result": {
+    "title": "Livia's 8th Flippin' Awesome Birthday Party",
+    "start": "2026-09-28T20:30:00.000Z",
+    "end": "2026-09-28T22:30:00.000Z",
+    "venue": "US Gold Gymnastics",
+    "location": "12432 Emerald Coast Pkwy, Miramar Beach, FL 32550",
+    "rsvp": "8509601214",
+    "diagnostics": {
+      "status": "saved",
+      "linked": true,
+      "has_preview": true,
+      "scans_total": 1
+    }
+  },
+  "snapOpenMs": 3207,
+  "pageInfo": {
+    "url": "http://localhost:3011/snap",
+    "title": "Envitefy Snap | Turn invites, flyers, and PDFs into event pages",
+    "text": "Your privacy choices\n\nEnvitefy uses necessary storage for login, security, and core features. Optional analytics helps us measure product performance and stays off unless you allow it. Analytics page paths exclude URL query strings.\n\nUse necessary only\nAllow analytics\nenvitefy\nHOME\nSNAP / UPLOAD\nAI CONCIERGE\nMY EVENTS\nBACK\n\nADMIN\n\nDASHBOARD\nUSERS\nEVENTS\nAI CONCIERGE\nSCANS & TRAFFIC\nEMAILS\nAD STUDIO\nANALYTICS\nSETTINGS\nLOGS / HEALTH\nBACK\n\nAI CONCIERGE\n\nNEW CHAT\n\nDRAFTS\n\nNo AI chats yet.\nBACK\n\nCREATE EVENT\n\nBACK\n\nOTHER EVENTS\n\nBACK\n\nMY EVENTS\n\nNo events yet.\nBACK\n\nINVITED EVENTS\n\nNo invited events yet.\nMY EVENTS\nDASHBOARD\nRSVPS\nMESSAGES\nDESIGN\nSB\nScan Benchmark\nsnap-benchmark-59957951-5e8d-4b7b-aa6f-6e27aebdce0a@example.invalid\nProfile\nAbout us\nContact us\nLog out\n\nFollow Envitefy\n\nEnvitefy on Instagram (opens in a new tab)\nEnvitefy on Facebook (opens in a new tab)\nEnvitefy on YouTube (opens in a new tab)\nEnvitefy on TikTok (opens in a new tab)\nEnvitefy on Reddit (opens in a new tab)\n\nSNAP / UPLOAD\n\nSnap or upload your\nflyer or invite\nSNAP FLYER\nUPLOAD FILE\n\nEnvitefy reads the details, detects invitation types, and routes them into polished, interactive event pages automatically.",
+    "inputs": [
+      {
+        "type": "file",
+        "accept": "image/jpeg,image/png,image/webp"
+      },
+      {
+        "type": "file",
+        "accept": "image/jpeg,image/png,image/webp,application/pdf"
+      },
+      {
+        "type": "file",
+        "accept": "image/jpeg,image/png,image/webp"
+      },
+      {
+        "type": "file",
+        "accept": "image/jpeg,image/png,image/webp,application/pdf"
+      }
+    ]
+  },
+  "uploadToVisibleEventMs": 8648,
+  "visibleEventHeading": "Livia's 8th Flippin' Awesome Birthday Party",
+  "saveToVisibleEventMs": 748,
+  "redundantRefreshesAfterSave": 0,
+  "cleanedUploadedAssets": 3,
+  "cleanedTestAccount": true
+}

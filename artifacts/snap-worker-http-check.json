@@ -1,0 +1,8 @@
+{
+  "unauthenticatedStatus": 401,
+  "authenticatedStatus": 200,
+  "result": {
+    "completed": 0,
+    "failed": 0
+  }
+}

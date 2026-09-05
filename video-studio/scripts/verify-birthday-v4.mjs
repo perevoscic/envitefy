@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import {spawnSync} from 'node:child_process';
-const file='out/birthday-second-job-9x16-v4.mp4';
+const file='out/birthday-second-job/birthday-second-job-9x16-v4.mp4';
 const run=args=>{const r=spawnSync('ffprobe',args,{encoding:'utf8',maxBuffer:6e6});if(r.status!==0)throw new Error(r.stderr);return JSON.parse(r.stdout);};
 const timing=run(['-v','error','-select_streams','v','-show_frames','-show_entries','frame=best_effort_timestamp_time','-of','json',file]).frames.map(f=>Number(f.best_effort_timestamp_time));
 const gaps=timing.flatMap((t,i)=>i&&Math.abs(t-timing[i-1]-1/30)>0.0001?[i]:[]);

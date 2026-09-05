@@ -92,7 +92,7 @@
     "ending": "Clean action cut from Dad turning to the child speaking; preserve full native dialogue with a short audio lead-in; normal-speed wide reaction; end-card fade overlays the last reaction frame with no gap.",
     "localWorkOnly": true,
     "reviewStatus": "assistant-reviewed",
-    "export": "out/birthday-second-job-9x16-v4.mp4"
+    "export": "out/birthday-second-job/birthday-second-job-9x16-v4.mp4"
   },
   "revisions": [
     {
@@ -105,7 +105,7 @@
       "calendarConfirmation": "Calendar event saved",
       "notes": "Full Live Card ratio, stable capture frames, smoother child transition, wide ending reaction, centered enlarged final icon, no duplicate black URL.",
       "reviewStatus": "assistant-reviewed",
-      "export": "out/birthday-second-job-9x16-v3.mp4"
+      "export": "out/birthday-second-job/birthday-second-job-9x16-v3.mp4"
     }
   ]
 }

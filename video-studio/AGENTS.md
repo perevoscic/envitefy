@@ -9,6 +9,7 @@ This folder is the working home for Envitefy video production. A request to crea
 - Read [projects/README.md](projects/README.md) to locate prior work. For a revision, read that campaign's brief, production notes, feedback, and deliverables before changing assets.
 - Infer routine creative choices from the request and saved preferences. Ask only when missing information materially changes the deliverable; continue independent work while waiting.
 - A new video gets its own campaign folder and fresh art direction. Revisions and alternate aspect ratios stay with their original campaign.
+- Save every export, intermediate render, thumbnail, contact sheet, and review image inside `out/<campaign>/`. Never save video-specific files directly in `out/`. Keep revisions and alternate formats in that same folder, with versioned filenames. Set each composition's `calculateMetadata().defaultOutName` to `<campaign>/<filename-without-extension>` so Studio and CLI renders use the folder automatically; explicit render paths must also include it.
 
 ## Memory that survives tasks
 

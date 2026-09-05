@@ -18,3 +18,37 @@
   },
   timestamp: '2026-09-05T21:39:12.929Z'
 }
+[client-log] {
+  area: 'snap-upload',
+  stage: 'event-navigation-start',
+  scanAttemptId: 'scan_374b9c74-484f-428c-ab01-3aedcd984cde',
+  details: {
+    eventId: '3080ebc6-371f-417f-8338-a07b3e07d4d6',
+    eventHref: '/event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics?created=1&tab=dashboard'
+  },
+  error: null,
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36',
+    viewport: { width: 1440, height: 1000, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 10, rtt: 0, saveData: false }
+  },
+  timestamp: '2026-09-05T21:40:23.692Z'
+}
+[client-log] {
+  area: 'snap-upload',
+  stage: 'event-navigation-start',
+  scanAttemptId: 'scan_6f92ea72-444a-4489-b712-ba1a6405020a',
+  details: {
+    eventId: '3482f361-b946-4719-aa05-336a447a1a3b',
+    eventHref: '/event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics?created=1&tab=dashboard'
+  },
+  error: null,
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36',
+    viewport: { width: 1440, height: 1000, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 9.2, rtt: 0, saveData: false }
+  },
+  timestamp: '2026-09-05T21:50:26.851Z'
+}

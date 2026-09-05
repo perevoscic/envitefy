@@ -1,0 +1,78 @@
+{
+  "confidence": 0.06862049,
+  "text": "What time does one the addresses of the cat out and let a supported please hold of the",
+  "words": [
+    {
+      "Text": "what",
+      "Confidence": 0.03720875
+    },
+    {
+      "Text": "time",
+      "Confidence": 0.009089482
+    },
+    {
+      "Text": "does",
+      "Confidence": 0.001
+    },
+    {
+      "Text": "one",
+      "Confidence": 0.002079345
+    },
+    {
+      "Text": "the",
+      "Confidence": 0.0020198436
+    },
+    {
+      "Text": "addresses",
+      "Confidence": 0.0064862114
+    },
+    {
+      "Text": "of",
+      "Confidence": 0.001
+    },
+    {
+      "Text": "the",
+      "Confidence": 0.0020285763
+    },
+    {
+      "Text": "cat",
+      "Confidence": 0.001
+    },
+    {
+      "Text": "out",
+      "Confidence": 0.0021951138
+    },
+    {
+      "Text": "and",
+      "Confidence": 0.0032453546
+    },
+    {
+      "Text": "let",
+      "Confidence": 0.001
+    },
+    {
+      "Text": "a",
+      "Confidence": 0.022056123
+    },
+    {
+      "Text": "supported",
+      "Confidence": 0.023466494
+    },
+    {
+      "Text": "please",
+      "Confidence": 0.30192482
+    },
+    {
+      "Text": "hold",
+      "Confidence": 0.6668295
+    },
+    {
+      "Text": "of",
+      "Confidence": 0.0026655975
+    },
+    {
+      "Text": "the",
+      "Confidence": 0.0043359934
+    }
+  ]
+}

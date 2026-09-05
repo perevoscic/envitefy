@@ -1,0 +1,21 @@
+{
+  "dialogue": [
+    {
+      "text": "Now, the seating chart.",
+      "start": 0.5,
+      "end": 2.5
+    }
+  ],
+  "cuts": [
+    {
+      "start": 0.0,
+      "end": 5.0,
+      "description": "Continuous shot of a couple at a dinner table."
+    }
+  ],
+  "issues": [],
+  "audioQuality": {
+    "rating": 4,
+    "explanation": "Clear and natural speech with minimal noise."
+  }
+}

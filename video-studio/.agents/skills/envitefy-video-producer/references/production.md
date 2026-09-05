@@ -14,8 +14,14 @@ projects/<campaign>/production-notes.md
 projects/<campaign>/feedback.md
 projects/<campaign>/deliverables.json
 public/projects/<campaign>/
-out/<campaign>-<aspect>-v<N>.mp4
+out/<campaign>/<campaign>-<aspect>-v<N>.mp4
+out/<campaign>/<campaign>-<aspect>-v<N>-render.mp4
+out/<campaign>/review-contact.jpg
 ```
+
+Create `out/<campaign>/` before writing exports or running FFmpeg. Keep all output for one video in this folder, including alternate formats, earlier revisions, thumbnails, review images, and capture staging. Reserve `out/_studio/` for shared tooling checks. Never put video-specific files directly in `out/`.
+
+Set every composition's `calculateMetadata().defaultOutName` to `<campaign>/<filename-without-extension>`. Remotion adds `out/` and the selected file extension; this gives Studio's Render dialog and CLI renders without an explicit filename the same per-video destination. For the narrated Intro template, derive the folder from `props.projectId`. Explicit paths override that default, so include `out/<campaign>/` in every render/still command and packaging script.
 
 Add script/storyboard, captions, or social-copy files when useful. Store private provider records under the campaign as `*-job.json` and `*-request.json`, covered by `.gitignore`. Only files needed by the rendered video belong in `public/`. Do not store keys, signed download URLs, or raw provider responses there.
 
@@ -68,9 +74,9 @@ Common commands (substitute the actual composition, version, and frame):
 
 ```powershell
 npm run lint
-npx remotion still EnvitefyHostMode out/host-mode-review.png --frame=230 --scale=0.5 --timeout=120000 --log=error
-npx remotion render EnvitefyHostMode out/host-mode-9x16-v4.mp4 --concurrency=2 --timeout=120000 --log=error
-ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,sample_rate,channels -show_entries format=duration,size -of json out/host-mode-9x16-v4.mp4
+npx remotion still EnvitefyHostMode out/host-mode/host-mode-review.png --frame=230 --scale=0.5 --timeout=120000 --log=error
+npx remotion render EnvitefyHostMode out/host-mode/host-mode-9x16-v4.mp4 --concurrency=2 --timeout=120000 --log=error
+ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,sample_rate,channels -show_entries format=duration,size -of json out/host-mode/host-mode-9x16-v4.mp4
 ```
 
 `npm run lint` runs ESLint and TypeScript. For TS/TSX edits, also use the parent Biome and editor diagnostics commands from the repository instructions. If the optional editor bridge is absent, record that and use standalone checking. Run focused tests when changing functional scripts; ordinary visual changes need rendering/inspection rather than tests that mirror style values.

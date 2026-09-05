@@ -1,6 +1,6 @@
 import fs from 'node:fs'; import cp from 'node:child_process';
 function run(args){const r=cp.spawnSync('ffmpeg',['-y','-hide_banner',...args],{encoding:'utf8'});if(r.status!==0)throw new Error(r.stderr);return r.stderr;}
-const input='out/birthday-support-final-assembled.mp4',output='out/birthday-support-9x16-v1.mp4',project='projects/birthday-support/';
+const input='out/birthday-support/birthday-support-final-assembled.mp4',output='out/birthday-support/birthday-support-9x16-v1.mp4',project='projects/birthday-support/';
 if(!fs.existsSync(input))throw new Error('Render is not finished');
 run(['-loglevel','error','-i',input,'-map','0:v:0','-map','0:a:0','-c:v','copy','-af','atrim=0:25,asetpts=PTS-STARTPTS','-c:a','aac','-b:a','192k','-t','25','-movflags','+faststart',output]);
 const probe=cp.spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=codec_name,width,height,r_frame_rate,duration,nb_read_frames,sample_rate,channels','-show_entries','format=duration,size','-of','json',output],{encoding:'utf8'});

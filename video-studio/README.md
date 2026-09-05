@@ -16,11 +16,17 @@ The [project instructions](AGENTS.md) load the [saved preferences](STUDIO-GUIDE.
 
 [Campaign history](projects/README.md) preserves briefs, selected assets, versions and feedback. Lasting preferences are updated in the guide; a one-shot fix stays with its campaign. The existing parent Envitefy project's instructions also point here, so requests from that project can use the same workflow.
 
+## Output folders
+
+Each video has its own folder under `out/`: `birthday-support/`, `birthday-second-job/`, `host-mode/`, and `intro/`. Keep its MP4 exports, earlier versions, alternate formats, intermediate renders, thumbnails, and review images together there. Shared tooling checks live in `out/_studio/`.
+
+Studio's Render dialog and the CLI use per-video output defaults. When supplying an explicit filename, include `out/<campaign>/` and use a new version for revisions. The [campaign index](projects/README.md) links to the latest reviewed exports; briefs and source media keep their existing campaign folders.
+
 ## Current TikTok
 
-Preview `http://localhost:3100/EnvitefyHostMode`, then export with `npm run render:tiktok` from this folder. The output is `out/envitefy-tiktok-host-mode.mp4`.
+Preview `http://localhost:3100/EnvitefyHostMode`, then export with `npm run render:tiktok` from this folder. The output is `out/host-mode/envitefy-tiktok-host-mode.mp4`.
 
-For Instagram's square version, preview `http://localhost:3100/EnvitefyHostModeSquare` and export with `npm run render:instagram`. The output is `out/envitefy-instagram-square.mp4` (1080 × 1080, 30 fps, 22 seconds). This composition uses shot-specific framing, a side-by-side live-card layout, and repositioned captions and CTA while sharing the vertical version's footage and audio.
+For Instagram's square version, preview `http://localhost:3100/EnvitefyHostModeSquare` and export with `npm run render:instagram`. The output is `out/host-mode/envitefy-instagram-square.mp4` (1080 × 1080, 30 fps, 22 seconds). This composition uses shot-specific framing, a side-by-side live-card layout, and repositioned captions and CTA while sharing the vertical version's footage and audio.
 
 The story is four seconds of group chat chaos, a half-second pause, seven and a half seconds demonstrating one live event card, and ten seconds enjoying the party. The product screens are captured from the app's public `/showcase/the-carter-housewarming` demo. They do not represent a newly published event. All human footage depicts fictional adults.
 
@@ -45,7 +51,7 @@ The preview is at `http://localhost:3100/EnvitefyIntro`. Export when ready:
 npm run render
 ```
 
-Output: `out/envitefy-intro.mp4` (1080 × 1920, 30 fps). Timing and subtitles are saved in `public/projects/intro/manifest.json` and `captions.srt`. Duration follows actual narration and holds the closing scene to reach the brief's target when narration is shorter. Longer narration extends the video; it is never cut to meet a target.
+Output: `out/intro/envitefy-intro.mp4` (1080 × 1920, 30 fps). Timing and subtitles are saved in `public/projects/intro/manifest.json` and `captions.srt`. Duration follows actual narration and holds the closing scene to reach the brief's target when narration is shorter. Longer narration extends the video; it is never cut to meet a target.
 
 ## Credentials and narration
 
@@ -61,7 +67,7 @@ For a fresh concept, use the producer skill and [planning brief](templates/campa
 2. Set the audience, script, voice, target duration, and a fresh art direction. Vary people, locations, composition, palette accents, and animation between campaigns. Keep people consistent within a video's story when appropriate.
 3. Generate new artwork with ImageGen in Codex and copy its output into `public/images/`. Set `heroImage` to the new relative asset path. ImageGen generation is an agent step; the narration CLI does not generate images.
 4. Use `src/lib/product-marketing-catalog.ts` in the parent app to validate each claim. Use current product screenshots for an actual UI demonstration, or clearly identify illustrative cards.
-5. Run `npm run narration -- <new-id>`. In Remotion Studio, change `projectId` in the composition's props, or render with `npx remotion render EnvitefyIntro out/<new-id>.mp4 --props='{"projectId":"<new-id>"}'`.
+5. Run `npm run narration -- <new-id>`. In Remotion Studio, change `projectId` in the composition's props, or render with `npx remotion render EnvitefyIntro out/<new-id>/<new-id>.mp4 --props='{"projectId":"<new-id>"}'`.
 6. Preview every scene, inspect caption timing and text placement, and render the MP4. For a new scene structure, add scene components and update the renderer and manifest validation together.
 
 Branding uses the exact user-selected PNG files: parent `public/email/envitefy-wordmark-email.png` and `public/icons/apple-touch-icon-120.png`, copied byte-for-byte into `public/brand/`. Do not redraw or restyle them. Bundled Josefin fonts retain their OFL notices. The supporting photograph for the earlier introduction is `public/images/garden-party.png`, generated with ImageGen on September 5, 2026; it depicts fictional people.

@@ -4,7 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const studio=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const out=path.join(studio,'public/projects/host-mode');
-const staging=path.join(studio,'out/demo-recapture');
+const staging=path.join(studio,'out/host-mode/demo-recapture');
 await fs.mkdir(out,{recursive:true});
 await fs.mkdir(staging,{recursive:true});
 const browser=await chromium.launch({headless:true});

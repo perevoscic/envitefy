@@ -167,6 +167,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
 
   const historyRef = useRef<HistoryRow[]>([]);
   const cacheRevisionRef = useRef(0);
+  const historyResetEpochRef = useRef(0);
   const dashboardRef = useRef<DashboardPayload | null>(null);
   const dashboardRefreshPromiseRef = useRef<Promise<void> | null>(null);
   const isHydratedRef = useRef(false);
@@ -196,6 +197,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
 
   const resetCacheState = useCallback(() => {
     cacheRevisionRef.current += 1;
+    historyResetEpochRef.current += 1;
     if (typeof window !== "undefined" && refreshTimerRef.current != null) {
       window.clearTimeout(refreshTimerRef.current);
     }
@@ -215,6 +217,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
 
   const refreshHistory = useCallback(async (_opts?: { force?: boolean }) => {
     const revision = cacheRevisionRef.current;
+    const resetEpoch = historyResetEpochRef.current;
     setHistoryLoading(true);
     try {
       const params = new URLSearchParams({
@@ -228,7 +231,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       });
       if (res.status === 304 || !res.ok) return;
       const json = await res.json().catch(() => null);
-      if (revision !== cacheRevisionRef.current) return;
+      if (resetEpoch !== historyResetEpochRef.current) return;
       const items = Array.isArray(json?.items)
         ? (json.items as HistoryRow[])
         : historyRef.current;
@@ -237,7 +240,14 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
           ? (json.diagnostics as HistoryDiagnostics)
           : null
       );
-      setHistorySidebarItems(sortHistoryRows(items).slice(0, 200));
+      setHistorySidebarItems((prev) => {
+        // An older read can still fill the rest of the sidebar without replacing
+        // the event just seeded by a save. Identity resets discard the read above.
+        const rows = revision === cacheRevisionRef.current
+          ? items
+          : [...new Map([...items, ...prev].map((row) => [row.id, row] as const)).values()];
+        return sortHistoryRows(rows).slice(0, 200);
+      });
     } catch {
       // Keep the last good history state on transient failures.
     } finally {

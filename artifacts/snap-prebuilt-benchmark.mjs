@@ -37,6 +37,7 @@ try {
     if (url.origin !== base || !(/^\/api\/(ocr|upload|history|dashboard|auth\/session)/.test(url.pathname) || url.pathname.startsWith("/event/"))) return;
     const item = { path: url.pathname, query: url.search, method: request.method(), status: response.status(), startedAt: starts.get(request), headersMs: Date.now() - starts.get(request) };
     report.requests.push(item);
+    if (url.pathname.startsWith("/event/")) return; // Measure visible page content, not an open RSC stream.
     pending.push((async () => {
       await response.finished();
       item.durationMs = Date.now() - item.startedAt;
@@ -55,8 +56,9 @@ try {
   const startedAt = Date.now();
   await page.locator('input[type="file"]').nth(1).setInputFiles("G:/Develop_Cloud/_Envitefy/Sample-Flyers/september 28th.jpg");
   await page.waitForURL(/\/event\//, { timeout: 120000 });
-  await page.getByText(/Flippin.*Awesome/i).first().waitFor({ state: "visible", timeout: 30000 });
+  await page.getByRole("heading", {name: /Livia.*Flippin.*Awesome/i}).first().waitFor({ state: "visible", timeout: 30000 });
   report.uploadToVisibleEventMs = Date.now() - startedAt;
+  report.visibleEventHeading = await page.getByRole("heading", {name: /Livia.*Flippin.*Awesome/i}).first().innerText();
   report.saveToVisibleEventMs = savedAt ? Date.now() - savedAt : null;
   await page.waitForTimeout(1500); // Observe any delayed invalidation after navigation.
   await Promise.all(pending);
@@ -79,7 +81,9 @@ try {
   assert.equal(refreshes.length, 0);
   report.result = { title: row.title, start: row.data.startISO, end: row.data.endISO, venue: row.data.venue,
     location: row.data.location, rsvp: row.data.rsvp, timings: ocr?.timing, diagnostics };
-  await page.screenshot({ path: "artifacts/snap-prebuilt-result.png", fullPage: true });
+  // Screenshot is optional evidence; never let font loading block benchmark cleanup.
+  await page.screenshot({ path: "artifacts/snap-prebuilt-result.png", fullPage: true, timeout: 5000, animations: "disabled" })
+    .catch(error => { report.screenshotError = error.message; });
 } catch (error) {
   report.error = error.message;
   process.exitCode = 1;

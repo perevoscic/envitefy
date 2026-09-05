@@ -1,58 +1,70 @@
 {
-  "date": "2026-09-05T21:38:58.680Z",
+  "date": "2026-09-05T21:50:14.280Z",
   "requests": [
     {
       "path": "/api/history",
       "query": "?view=sidebar&limit=200&time=all",
       "method": "GET",
       "status": 200,
-      "startedAt": 1788644341553,
-      "headersMs": 1203,
-      "durationMs": 1204
+      "startedAt": 1788645017081,
+      "headersMs": 1274,
+      "durationMs": 1274
     },
     {
       "path": "/api/ocr",
       "query": "?fast=0&skin=0",
       "method": "POST",
       "status": 200,
-      "startedAt": 1788644343685,
-      "headersMs": 7385,
-      "durationMs": 7387
+      "startedAt": 1788645018976,
+      "headersMs": 6415,
+      "durationMs": 6415
     },
     {
       "path": "/api/upload",
       "query": "",
       "method": "POST",
       "status": 200,
-      "startedAt": 1788644351097,
-      "headersMs": 994,
-      "durationMs": 994
+      "startedAt": 1788645025403,
+      "headersMs": 836,
+      "durationMs": 836
     },
     {
       "path": "/api/history",
       "query": "",
       "method": "POST",
       "status": 201,
-      "startedAt": 1788644352093,
-      "headersMs": 835,
-      "durationMs": 835
+      "startedAt": 1788645026240,
+      "headersMs": 610,
+      "durationMs": 610
     },
     {
       "path": "/event/livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics",
       "query": "?created=1&tab=dashboard&_rsc=3gku8",
       "method": "GET",
       "status": 200,
-      "startedAt": 1788644352931,
-      "headersMs": 31,
-      "durationMs": 688
+      "startedAt": 1788645026852,
+      "headersMs": 7
     }
   ],
-  "result": null,
-  "snapOpenMs": 3588,
+  "result": {
+    "title": "Livia's 8th Flippin' Awesome Birthday Party",
+    "start": "2026-09-28T20:30:00.000Z",
+    "end": "2026-09-28T22:30:00.000Z",
+    "venue": "US Gold Gymnastics",
+    "location": "12432 Emerald Coast Pkwy, Miramar Beach, FL 32550",
+    "rsvp": "8509601214",
+    "diagnostics": {
+      "status": "saved",
+      "linked": true,
+      "has_preview": true,
+      "scans_total": 1
+    }
+  },
+  "snapOpenMs": 3207,
   "pageInfo": {
     "url": "http://localhost:3011/snap",
     "title": "Envitefy Snap | Turn invites, flyers, and PDFs into event pages",
-    "text": "Your privacy choices\n\nEnvitefy uses necessary storage for login, security, and core features. Optional analytics helps us measure product performance and stays off unless you allow it. Analytics page paths exclude URL query strings.\n\nUse necessary only\nAllow analytics\nenvitefy\nHOME\nSNAP / UPLOAD\nAI CONCIERGE\nMY EVENTS\nBACK\n\nADMIN\n\nDASHBOARD\nUSERS\nEVENTS\nAI CONCIERGE\nSCANS & TRAFFIC\nEMAILS\nAD STUDIO\nANALYTICS\nSETTINGS\nLOGS / HEALTH\nBACK\n\nAI CONCIERGE\n\nNEW CHAT\n\nDRAFTS\n\nNo AI chats yet.\nBACK\n\nCREATE EVENT\n\nBACK\n\nOTHER EVENTS\n\nBACK\n\nMY EVENTS\n\nNo events yet.\nBACK\n\nINVITED EVENTS\n\nNo invited events yet.\nMY EVENTS\nDASHBOARD\nRSVPS\nMESSAGES\nDESIGN\nSB\nScan Benchmark\nsnap-benchmark-602b6d23-6b35-4571-a42f-ff2a80ae56b3@example.invalid\nProfile\nAbout us\nContact us\nLog out\n\nFollow Envitefy\n\nEnvitefy on Instagram (opens in a new tab)\nEnvitefy on Facebook (opens in a new tab)\nEnvitefy on YouTube (opens in a new tab)\nEnvitefy on TikTok (opens in a new tab)\nEnvitefy on Reddit (opens in a new tab)\n\nSNAP / UPLOAD\n\nSnap or upload your\nflyer or invite\nSNAP FLYER\nUPLOAD FILE\n\nEnvitefy reads the details, detects invitation types, and routes them into polished, interactive event pages automatically.",
+    "text": "Your privacy choices\n\nEnvitefy uses necessary storage for login, security, and core features. Optional analytics helps us measure product performance and stays off unless you allow it. Analytics page paths exclude URL query strings.\n\nUse necessary only\nAllow analytics\nenvitefy\nHOME\nSNAP / UPLOAD\nAI CONCIERGE\nMY EVENTS\nBACK\n\nADMIN\n\nDASHBOARD\nUSERS\nEVENTS\nAI CONCIERGE\nSCANS & TRAFFIC\nEMAILS\nAD STUDIO\nANALYTICS\nSETTINGS\nLOGS / HEALTH\nBACK\n\nAI CONCIERGE\n\nNEW CHAT\n\nDRAFTS\n\nNo AI chats yet.\nBACK\n\nCREATE EVENT\n\nBACK\n\nOTHER EVENTS\n\nBACK\n\nMY EVENTS\n\nNo events yet.\nBACK\n\nINVITED EVENTS\n\nNo invited events yet.\nMY EVENTS\nDASHBOARD\nRSVPS\nMESSAGES\nDESIGN\nSB\nScan Benchmark\nsnap-benchmark-59957951-5e8d-4b7b-aa6f-6e27aebdce0a@example.invalid\nProfile\nAbout us\nContact us\nLog out\n\nFollow Envitefy\n\nEnvitefy on Instagram (opens in a new tab)\nEnvitefy on Facebook (opens in a new tab)\nEnvitefy on YouTube (opens in a new tab)\nEnvitefy on TikTok (opens in a new tab)\nEnvitefy on Reddit (opens in a new tab)\n\nSNAP / UPLOAD\n\nSnap or upload your\nflyer or invite\nSNAP FLYER\nUPLOAD FILE\n\nEnvitefy reads the details, detects invitation types, and routes them into polished, interactive event pages automatically.",
     "inputs": [
       {
         "type": "file",
@@ -72,9 +84,10 @@
       }
     ]
   },
-  "uploadToVisibleEventMs": 10157,
-  "saveToVisibleEventMs": 871,
-  "error": "The input did not match the regular expression /15:30:00/. Input:\n\n`{\"age\":8,\"rsvp\":\"8509601214\",\"venue\":\"US Gold Gymnastics\",\"endISO\":\"2026-09-28T22:30:00.000Z\",\"category\":\"Birthdays\",\"location\":\"12432 Emerald Coast Pkwy, Miramar Beach, FL 32550\",\"ocrFacts\":[{\"label\":\"Phone\",\"value\":\"850-960-1214\"}],\"rsvpName\":\"Veronica\",\"startISO\":\"2026-09-28T20:30:00.000Z\",\"timezone\":\"America/Chicago\",\"ownership\":\"owned\",\"reminders\":[{\"minutes\":1440}],\"thumbnail\":\"/api/blob/event-media/upload-18371665-b031-4414-8f39-cf39b4b70e13/attachment/display.webp\",\"timeFound\":true,\"attachment\":{\"name\":\"september 28th.jpg\",\"type\":\"image/jpeg\",\"width\":1200,\"height\":1800,\"dataUrl\":\"/api/blob/event-media/upload-18371665-b031-4414-8f39-cf39b4b70e13/attachment/source/september-28th.jpg\",\"sizeBytes\":1400728,\"storageKind\":\"blob\",\"originalName\":\"september 28th.jpg\",\"originalType\":\"image/jpeg\",\"thumbnailUrl\":\"/api/blob/event-media/upload-18371665-b031-4414-8f39-cf39b4b70e13/attachment/thumb.webp\",\"thumbnailWidth\":560,\"previewImageUrl\":\"/api/blob/event-media/upload-18371665-b031-4414-8f39-cf39b4b70e13/attachment/display.webp\",\"thumbnailHeight\":840,\"originalSizeBytes\":1400728,\"thumbnailMimeType\":\"image/webp\",\"thumbnailSizeBytes\":75222,\"optimizedFromMimeType\":\"image/jpeg\"},\"createdVia\":\"ocr\",\"publicSlug\":\"livia-s-8th-flippin-awesome-birthday-party-at-us-gold-gymnastics\",\"description\":\"Join us to celebrate Livia's Birthday at US Gold Gymnastics.\",\"birthdayName\":\"Livia\",\"sourceContext\":{\"type\":\"upload\",\"signals\":[{\"code\":\"invite_like_category_only\",\"label\":\"Invite-like category without ownership intent\"}],\"ambiguity\":\"none\",\"confidence\":\"low\",\"hasUsableContext\":true,\"originalCategory\":\"Birthdays\",\"detectedSourceIntent\":\"unknown\",\"requiresUserConfirmation\":true},\"creationIntent\":\"create_event\",\"numberOfGuests\":0,\"thumbnailFocus\":{\"x\":0.52,\"y\":0.48,\"target\":\"face\",\"confidence\":0.98},\"invitedFromScan\":false,\"birthdayAudience\":\"girl\",\"requestedOutputs\":[\"event_page\",\"live_card\"],\"birthdayTemplateHint\":{\"age\":8,\"reasons\":[\"Livia's 8th\",\"Birthday Party\"],\"themeId\":\"editorial_ballerina_bloom\",\"audience\":\"girl\",\"detected\":true,\"confidence\":\"medium\",\"honoreeName\":\"Livia\"}}`\n",
-  "assetCleanupError": "The expression evaluated to a falsy value:\n\n  assert.ok(paths.length && paths.every((p) => /^event-media\\/[^/]+\\/attachment\\//.test(p)))\n",
+  "uploadToVisibleEventMs": 8648,
+  "visibleEventHeading": "Livia's 8th Flippin' Awesome Birthday Party",
+  "saveToVisibleEventMs": 748,
+  "redundantRefreshesAfterSave": 0,
+  "cleanedUploadedAssets": 3,
   "cleanedTestAccount": true
 }

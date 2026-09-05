@@ -74,3 +74,143 @@ creation_model_run {
   id: '0f1ae3a0-27af-4399-b77a-ae5be09a8311',
   userId: '602b6d23-6b35-4571-a42f-ff2a80ae56b3'
 }
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  workload: 'extraction',
+  model: 'gpt-5.6-luna',
+  durationMs: 5279,
+  outcome: 'success',
+  inputTokens: 4888,
+  outputTokens: 612,
+  reasoningTokens: 0
+}
+[ocr] complete {
+  scanAttemptId: 'scan_374b9c74-484f-428c-ab01-3aedcd984cde',
+  fileName: 'september 28th.jpg',
+  fileSize: 1400728,
+  mimeType: 'image/jpeg',
+  category: 'Birthdays',
+  timings: {
+    totalMs: 6377,
+    locationMs: 0,
+    sessionMs: 444,
+    accountingMs: 366,
+    otherProcessingMs: 90,
+    preprocessMs: 189,
+    primaryOcrMs: 5288,
+    fallbackOcrMs: 0,
+    rewriteMs: 0,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: false,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.6-luna',
+    ocrSource: 'openai'
+  }
+}
+[media-upload] processing {
+  scopeId: 'upload-1940f46f-b42b-4766-a48c-03beb407f7c7',
+  usage: 'attachment',
+  fileName: 'september 28th.jpg',
+  mimeType: 'image/jpeg',
+  inputType: 'image',
+  originalSize: 1400728,
+  scanAttemptId: 'scan_374b9c74-484f-428c-ab01-3aedcd984cde'
+}
+[media-upload] complete {
+  scopeId: 'upload-1940f46f-b42b-4766-a48c-03beb407f7c7',
+  usage: 'attachment',
+  kind: 'image',
+  originalSize: 1400728,
+  displaySize: 383632,
+  sourceSize: 1400728,
+  optimizedByQpdf: null,
+  scanAttemptId: 'scan_374b9c74-484f-428c-ab01-3aedcd984cde'
+}
+[history] scan insert start {
+  scanAttemptId: 'scan_374b9c74-484f-428c-ab01-3aedcd984cde',
+  resolvedUserId: '943aeded-ad90-44e9-b48f-6517e8b9b3f3',
+  title: "Livia's 8th Flippin' Awesome Birthday Party",
+  category: 'Birthdays',
+  createdVia: 'ocr',
+  payloadBytes: 2016
+}
+[history] scan insert complete {
+  scanAttemptId: 'scan_374b9c74-484f-428c-ab01-3aedcd984cde',
+  id: '3080ebc6-371f-417f-8338-a07b3e07d4d6',
+  userId: '943aeded-ad90-44e9-b48f-6517e8b9b3f3'
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  workload: 'extraction',
+  model: 'gpt-5.6-luna',
+  durationMs: 5363,
+  outcome: 'success',
+  inputTokens: 4888,
+  outputTokens: 592,
+  reasoningTokens: 0
+}
+[ocr] complete {
+  scanAttemptId: 'scan_6f92ea72-444a-4489-b712-ba1a6405020a',
+  fileName: 'september 28th.jpg',
+  fileSize: 1400728,
+  mimeType: 'image/jpeg',
+  category: 'Birthdays',
+  timings: {
+    totalMs: 6407,
+    locationMs: 0,
+    sessionMs: 422,
+    accountingMs: 466,
+    otherProcessingMs: 63,
+    preprocessMs: 90,
+    primaryOcrMs: 5366,
+    fallbackOcrMs: 0,
+    rewriteMs: 0,
+    scheduleMs: 0,
+    skinMs: 0,
+    fastMode: false,
+    enableRewrites: false,
+    enableSkinInference: false,
+    skinInferenceTimedOut: false,
+    skinTimeoutMs: 3500,
+    turboMode: false,
+    model: 'gpt-5.6-luna',
+    ocrSource: 'openai'
+  }
+}
+[media-upload] processing {
+  scopeId: 'upload-a213b9d7-25b6-4a72-8efd-801079306952',
+  usage: 'attachment',
+  fileName: 'september 28th.jpg',
+  mimeType: 'image/jpeg',
+  inputType: 'image',
+  originalSize: 1400728,
+  scanAttemptId: 'scan_6f92ea72-444a-4489-b712-ba1a6405020a'
+}
+[media-upload] complete {
+  scopeId: 'upload-a213b9d7-25b6-4a72-8efd-801079306952',
+  usage: 'attachment',
+  kind: 'image',
+  originalSize: 1400728,
+  displaySize: 383632,
+  sourceSize: 1400728,
+  optimizedByQpdf: null,
+  scanAttemptId: 'scan_6f92ea72-444a-4489-b712-ba1a6405020a'
+}
+[history] scan insert start {
+  scanAttemptId: 'scan_6f92ea72-444a-4489-b712-ba1a6405020a',
+  resolvedUserId: '59957951-5e8d-4b7b-aa6f-6e27aebdce0a',
+  title: "Livia's 8th Flippin' Awesome Birthday Party",
+  category: 'Birthdays',
+  createdVia: 'ocr',
+  payloadBytes: 2014
+}
+[history] scan insert complete {
+  scanAttemptId: 'scan_6f92ea72-444a-4489-b712-ba1a6405020a',
+  id: '3482f361-b946-4719-aa05-336a447a1a3b',
+  userId: '59957951-5e8d-4b7b-aa6f-6e27aebdce0a'
+}

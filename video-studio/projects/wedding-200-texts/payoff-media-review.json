@@ -1,0 +1,31 @@
+{
+  "dialogue": [
+    {
+      "start": 1.5,
+      "end": 6.0,
+      "text": "We said 'I do', not 'I'll answer 200 texts'."
+    },
+    {
+      "start": 10.5,
+      "end": 12.0,
+      "text": "Now, the seating chart."
+    }
+  ],
+  "cuts": [
+    {
+      "time": "0:00-0:15",
+      "description": "Single continuous shot with no camera cuts."
+    }
+  ],
+  "issues": [
+    {
+      "type": "Visual Inconsistency",
+      "time": "0:09",
+      "description": "Woman's wine glass suddenly changes from white to red wine while the original glass remains on the table."
+    }
+  ],
+  "audioQuality": {
+    "rating": "Good",
+    "description": "Intelligible and moderately natural speech with minimal ambient noise."
+  }
+}

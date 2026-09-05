@@ -1,1 +1,24 @@
-{"status":"in-production","exports":[]}
+{
+  "status": "complete",
+  "reviewStatus": "assistant-reviewed",
+  "userApproved": false,
+  "outputFolder": "out/wedding-200-texts/",
+  "exports": [
+    {
+      "version": 1,
+      "composition": "EnvitefyWedding200Texts",
+      "aspectRatio": "9:16",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "durationSeconds": 25,
+      "frames": 750,
+      "path": "out/wedding-200-texts/wedding-200-texts-9x16-v1.mp4",
+      "codec": "h264",
+      "audio": "AAC stereo 48kHz",
+      "bytes": 12836374,
+      "reviewStatus": "assistant-reviewed",
+      "reviewedAt": "2026-09-05"
+    }
+  ]
+}

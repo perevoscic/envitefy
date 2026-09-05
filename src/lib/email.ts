@@ -1,6 +1,7 @@
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import nodemailer from "nodemailer";
 import { getUserByEmail } from "@/lib/db";
+import { DEFAULT_ENVITEFY_SENDER, normalizeEnvitefySender } from "@/lib/email-sender";
 import { createEmailTemplate, escapeHtml } from "@/lib/email-template";
 import { resolvePublicAssetOrigin } from "@/lib/public-asset-url";
 import type { SignupForm, SignupResponse } from "@/types/signup";
@@ -48,7 +49,7 @@ function resolveNoReplySender(context: string): { from: string; usedFallback: bo
     } catch {}
   }
 
-  return { from, usedFallback };
+  return { from: normalizeEnvitefySender(from), usedFallback };
 }
 
 function readEnv(name: string): string | undefined {
@@ -108,8 +109,8 @@ async function sendViaResend(params: {
     return { sent: false, reason: "RESEND_API_KEY is not configured" };
   }
 
-  const preferredFrom = readEnv("RESEND_FROM_EMAIL") || params.from;
-  const fallbackFrom = "Envitefy <onboarding@resend.dev>";
+  const preferredFrom = normalizeEnvitefySender(readEnv("RESEND_FROM_EMAIL") || params.from);
+  const fallbackFrom = DEFAULT_ENVITEFY_SENDER;
 
   const attempt = async (fromValue: string) => {
     const res = await fetch("https://api.resend.com/emails", {

@@ -1,6 +1,6 @@
 # Birthday Second Job — production notes
 
-Created September 5, 2026. Current reviewed export: out/birthday-second-job-9x16-v4.mp4. The original production notes below describe V1/V2; the revision section records the current implementation.
+Created September 5, 2026. Current reviewed export: out/birthday-second-job/birthday-second-job-9x16-v4.mp4. The original production notes below describe V1/V2; the revision section records the current implementation.
 
 ## Creative and selected media
 
@@ -58,12 +58,12 @@ Run from Video Studio:
 1. `node scripts/generate-birthday-assets.mjs chaos guests music payoff` resumes saved jobs and downloads existing media. Never remove job files to force paid resubmission.
 2. `node scripts/capture-birthday-demo.mjs` records the isolated demo using the locally saved public page response.
 3. `node scripts/prepare-birthday-edit.mjs`
-4. `npx remotion render EnvitefyBirthdaySecondJob out/birthday-second-job-9x16-v2-render.mp4 --concurrency=2 --timeout=120000 --log=error`
+4. `npx remotion render EnvitefyBirthdaySecondJob out/birthday-second-job/birthday-second-job-9x16-v2-render.mp4 --concurrency=2 --timeout=120000 --log=error`
 5. Remux/copy the video and encode a 30-second AAC track with `-af atrim=0:30 -t 30 -movflags +faststart` into the versioned deliverable.
 
 The existing studio remains on port 3100. Campaign source files are separate from Host Mode and Intro.
 
-Final export: out/birthday-second-job-9x16-v2.mp4. Assistant-reviewed on September 5, 2026; not user-approved. A four-worker browser render crashed; the successful render used two workers.
+Final export: out/birthday-second-job/birthday-second-job-9x16-v2.mp4. Assistant-reviewed on September 5, 2026; not user-approved. A four-worker browser render crashed; the successful render used two workers.
 
 ## V3 — user revision, September 5, 2026
 
@@ -75,17 +75,17 @@ Final export: out/birthday-second-job-9x16-v2.mp4. Assistant-reviewed on Septemb
 - mix-birthday-revision.mjs uses smooth music ducking ramps before dialogue and through the gag pause. The final icon is enlarged, centered higher, and accompanied by the new wordmark with no duplicate black domain text.
 - npm run lint and Biome passed after TSX changes. The optional editor diagnostic bridge was unavailable. Local final-frame inspection, all-frame product padding scan, brand SHA-256 equality, full decode and exact-duration verification passed. Audio measures -16.2 LUFS / -1.5 dBFS true peak / 4.1 LU range.
 - Automatic approval rejected the optional external audiovisual review because it would transmit the revised footage to Google. No upload for that review occurred. Final review is local; older audiovisual reports refer to earlier cuts only.
-- Final file: out/birthday-second-job-9x16-v3.mp4; 14,844,367 bytes; 1080 × 1920, 30 fps, 900 frames; H.264/AAC, 48 kHz stereo; video/audio/container exactly 30 seconds, faststart enabled. Assistant-reviewed, not user-approved.
+- Final file: out/birthday-second-job/birthday-second-job-9x16-v3.mp4; 14,844,367 bytes; 1080 × 1920, 30 fps, 900 frames; H.264/AAC, 48 kHz stereo; video/audio/container exactly 30 seconds, faststart enabled. Assistant-reviewed, not user-approved.
 
 ### Reproduce V3 from saved assets
 
 1. node scripts/normalize-birthday-demo.mjs
 2. node scripts/prepare-birthday-revision.mjs
 3. node scripts/mix-birthday-revision.mjs
-4. npx remotion render EnvitefyBirthdaySecondJob out/birthday-second-job-9x16-v3-render.mp4 --concurrency=2 --timeout=120000 --log=error
+4. npx remotion render EnvitefyBirthdaySecondJob out/birthday-second-job/birthday-second-job-9x16-v3-render.mp4 --concurrency=2 --timeout=120000 --log=error
 5. node scripts/package-birthday-v3.mjs
 
-Do not rerun generation for reproduction: use the saved selected media. Evidence: export-verification-v3.json, local-media-qa-v3.json, demo-normalization-v3.json, audio-loudness-v3.log, and out/birthday-v3-final-proof.jpg.
+Do not rerun generation for reproduction: use the saved selected media. Evidence: export-verification-v3.json, local-media-qa-v3.json, demo-normalization-v3.json, audio-loudness-v3.log, and out/birthday-second-job/birthday-v3-final-proof.jpg.
 
 ## V4 — three-row opening and clean ending
 
@@ -103,8 +103,8 @@ Do not rerun generation for reproduction: use the saved selected media. Evidence
 ### Reproduce V4
 
 1. node scripts/prepare-birthday-v4.mjs (uses saved source assets; no generation)
-2. npx remotion render EnvitefyBirthdaySecondJob out/birthday-second-job-9x16-v4-render.mp4 --concurrency=2 --timeout=120000 --log=error
+2. npx remotion render EnvitefyBirthdaySecondJob out/birthday-second-job/birthday-second-job-9x16-v4-render.mp4 --concurrency=2 --timeout=120000 --log=error
 3. node scripts/package-birthday-v4.mjs
 4. node scripts/verify-birthday-v4.mjs
 
-Evidence: export-verification-v4.json, local-media-qa-v4.json, audio-loudness-v4.log, out/birthday-v4-opening.jpg, and out/birthday-v4-final-proof.jpg.
+Evidence: export-verification-v4.json, local-media-qa-v4.json, audio-loudness-v4.log, out/birthday-second-job/birthday-v4-opening.jpg, and out/birthday-second-job/birthday-v4-final-proof.jpg.

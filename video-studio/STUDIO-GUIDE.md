@@ -30,6 +30,7 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 
 ## Formats and delivery
 
+- Keep each video's exports and supporting output files in a separate `out/<campaign>/` folder. Revisions, alternate aspect ratios, intermediate renders, thumbnails, and review images belong with their original video. Do not mix different videos in the top-level `out/` folder. Briefs remain in `projects/<campaign>/`, and source assets remain in `public/projects/<campaign>/`.
 - Honor the requested platform, duration, and aspect ratio. Working defaults: vertical 1080 × 1920 for TikTok/Reels/Shorts; 1080 × 1080 when square/1:1 is requested; horizontal 1920 × 1080 for a standard landscape video. Use 30 fps unless the brief calls for something else.
 - “Instagram” alone does not permanently mean square. Infer from the user's context or clarify feed versus Reel when it changes the work. The Host Mode Instagram adaptation was explicitly requested in 1:1.
 - Re-layout text, cards, CTA, and shot framing for each format. Inspect each export; a center crop alone may hide faces, hand actions, or card controls.
@@ -41,6 +42,7 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 When feedback describes a lasting preference, update the relevant section above in the same task and add a short dated entry below. Keep one current statement per preference. Preserve scene-specific requests in the relevant campaign's feedback record.
 
 Preference history:
+- 2026-09-05: User requested a separate output folder for each video after reviewing the mixed export folder. Applied to existing outputs and future Studio/CLI renders.
 - 2026-09-05: Captured exact branding, fresh casts and settings, no personal twin, natural audio with optional narration, real product demonstrations, action captions, demo naming, and format-specific layouts from the original production task.
 
 - 2026-09-05: User replaced the studio wordmark with public/brand/envitefy-com.png. The supplied wordmark already contains the domain; retain its transparent background and avoid a duplicate black domain line. Scene layout choices are recorded in the campaign feedback.

@@ -16,7 +16,7 @@ const headers={'x-goog-api-key':process.env.GEMINI_API_KEY,'Content-Type':'appli
 async function readJson(file){try{return JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code==='ENOENT')return null;throw e;}}
 async function request(url,options={}){const r=await fetch(url,{...options,signal:AbortSignal.timeout(60000)});const data=await r.json();if(!r.ok)throw new Error(`HTTP ${r.status}: ${JSON.stringify(data).slice(0,900)}`);return data;}
 async function generate(mode){
- if(!['chaos','guests','payoff','music'].includes(mode))throw new Error('Invalid shot');
+ if(!['chaos','guests','payoff','music','payoff-toast'].includes(mode))throw new Error('Invalid shot');
  if(!process.env.GEMINI_API_KEY)throw new Error('Missing GEMINI_API_KEY');
  const music=mode==='music';
  const file=path.join(out,`${mode}.${music?'mp3':'mp4'}`);
@@ -53,6 +53,7 @@ async function generate(mode){
 // Independent scenes can run together; payoff waits for its saved reference.
 const results=await Promise.allSettled(process.argv.slice(2).map(generate));
 for(const result of results)if(result.status==='rejected'){console.error(result.reason.message);process.exitCode=1;}
+
 
 
 

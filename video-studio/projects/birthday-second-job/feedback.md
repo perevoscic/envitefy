@@ -44,7 +44,7 @@ V2 was reviewed by the user; their requested revisions are recorded below. No us
 - Final video/audio/container: exactly 30 seconds; 900 frames; clean full decode. Final size: 14,844,367 bytes.
 - Final soundtrack: -16.2 LUFS integrated, -1.5 dBFS true peak, 4.1 LU range. No clipping.
 - Optional external audiovisual review was rejected by automatic approval because it would send the footage to Google. That review was not run; local checks were completed.
-- Latest reviewed export: out/birthday-second-job-9x16-v3.mp4. V2 is retained. User approval remains pending.
+- Latest reviewed export: out/birthday-second-job/birthday-second-job-9x16-v3.mp4. V2 is retained. User approval remains pending.
 
 ## V4 request — September 5, 2026
 
@@ -59,5 +59,5 @@ V2 was reviewed by the user; their requested revisions are recorded below. No us
 - The last reaction frame remains under the final fade; the card becomes opaque before the video layer ends. There is no empty cream-only frame between the reaction and CTA.
 
 - Final rendered opening and scene-boundary proof inspected. The reaction remains visible during the CTA fade; no isolated blank card frame.
-- Final export: out/birthday-second-job-9x16-v4.mp4; 14,169,476 bytes; exactly 30 seconds; 1080 × 1920 at 30 fps, 900 frames. Both final and ending-source frame timestamps are continuous. Full decode passed.
+- Final export: out/birthday-second-job/birthday-second-job-9x16-v4.mp4; 14,169,476 bytes; exactly 30 seconds; 1080 × 1920 at 30 fps, 900 frames. Both final and ending-source frame timestamps are continuous. Full decode passed.
 - Soundtrack: -16.4 LUFS integrated, -1.5 dBFS true peak, 3.9 LU range. ESLint/TypeScript and Biome passed. All work for V4 stayed local.
