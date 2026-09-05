@@ -1,0 +1,11 @@
+{
+  "rsvp": {
+    "frames": 117,
+    "suspiciousGreyPaddingFrames": []
+  },
+  "calendar": {
+    "frames": 129,
+    "suspiciousGreyPaddingFrames": []
+  },
+  "brandAssetUnchanged": true
+}

@@ -1,0 +1,200 @@
+[
+  {
+    "name": "standard",
+    "width": 600,
+    "socialWidth": 220,
+    "assets": [
+      {
+        "src": "https://envitefy.com/email/social-instagram.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-facebook.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-youtube.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-tiktok.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-reddit.png",
+        "complete": true,
+        "width": 36
+      }
+    ],
+    "reddit": "https://www.reddit.com/user/envitefy/"
+  },
+  {
+    "name": "magazine",
+    "width": 600,
+    "socialWidth": 220,
+    "assets": [
+      {
+        "src": "https://envitefy.com/email/social-instagram.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-facebook.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-youtube.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-tiktok.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-reddit.png",
+        "complete": true,
+        "width": 36
+      }
+    ],
+    "reddit": "https://www.reddit.com/user/envitefy/"
+  },
+  {
+    "name": "standard",
+    "width": 375,
+    "socialWidth": 220,
+    "assets": [
+      {
+        "src": "https://envitefy.com/email/social-instagram.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-facebook.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-youtube.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-tiktok.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-reddit.png",
+        "complete": true,
+        "width": 36
+      }
+    ],
+    "reddit": "https://www.reddit.com/user/envitefy/"
+  },
+  {
+    "name": "magazine",
+    "width": 375,
+    "socialWidth": 220,
+    "assets": [
+      {
+        "src": "https://envitefy.com/email/social-instagram.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-facebook.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-youtube.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-tiktok.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-reddit.png",
+        "complete": true,
+        "width": 36
+      }
+    ],
+    "reddit": "https://www.reddit.com/user/envitefy/"
+  },
+  {
+    "name": "standard",
+    "width": 320,
+    "socialWidth": 220,
+    "assets": [
+      {
+        "src": "https://envitefy.com/email/social-instagram.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-facebook.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-youtube.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-tiktok.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-reddit.png",
+        "complete": true,
+        "width": 36
+      }
+    ],
+    "reddit": "https://www.reddit.com/user/envitefy/"
+  },
+  {
+    "name": "magazine",
+    "width": 320,
+    "socialWidth": 220,
+    "assets": [
+      {
+        "src": "https://envitefy.com/email/social-instagram.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-facebook.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-youtube.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-tiktok.png",
+        "complete": true,
+        "width": 36
+      },
+      {
+        "src": "https://envitefy.com/email/social-reddit.png",
+        "complete": true,
+        "width": 36
+      }
+    ],
+    "reddit": "https://www.reddit.com/user/envitefy/"
+  }
+]

@@ -1,0 +1,55 @@
+import { google } from "googleapis";
+import { NextResponse } from "next/server";
+import { GOOGLE_CALENDAR_EVENT_WRITE_SCOPE } from "@/lib/google-calendar-oauth";
+
+export const runtime = "nodejs";
+
+function normalizeInternalRedirect(value: string | null): string | null {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
+    return null;
+  }
+  return value;
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const includeAnalyticsScope = searchParams.get("analytics") === "1";
+  const explicitState = searchParams.get("state") || undefined;
+  const nextPath = normalizeInternalRedirect(searchParams.get("next"));
+  const redirectState =
+    !explicitState && nextPath
+      ? Buffer.from(
+          encodeURIComponent(JSON.stringify({ type: "oauth_redirect", next: nextPath })),
+        ).toString("base64")
+      : undefined;
+  const state = explicitState ?? redirectState;
+  const oAuth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID!,
+    process.env.GOOGLE_CLIENT_SECRET!,
+    process.env.GOOGLE_REDIRECT_URI!
+  );
+
+  const scopes = [
+    GOOGLE_CALENDAR_EVENT_WRITE_SCOPE,
+    "openid",
+    "email",
+    "profile",
+  ];
+  if (includeAnalyticsScope) {
+    scopes.push("https://www.googleapis.com/auth/analytics.readonly");
+  }
+
+  const url = oAuth2Client.generateAuthUrl({
+    access_type: "offline",
+    include_granted_scopes: true,
+    scope: scopes,
+    // Calendar connections need a fresh offline token even when Google remembers an older grant.
+    prompt: "consent",
+    ...(includeAnalyticsScope && process.env.GOOGLE_ANALYTICS_OAUTH_EMAIL
+      ? { login_hint: process.env.GOOGLE_ANALYTICS_OAUTH_EMAIL }
+      : {}),
+    ...(state ? { state } : {}),
+  });
+  return NextResponse.redirect(url);
+}
+

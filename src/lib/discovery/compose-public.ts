@@ -314,6 +314,7 @@ export async function runDiscoveryComposePublicStage(
     [
       ...(publicArtifacts.publishAssessment.reasons || []),
       ...(discovery.canonicalParse?.issues || []).map((item) => item.message),
+      ...(Array.isArray(travelAccommodationState?.reviewReasons) ? travelAccommodationState.reviewReasons : []),
     ],
     24,
   );

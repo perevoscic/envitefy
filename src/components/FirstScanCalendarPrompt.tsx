@@ -1,5 +1,7 @@
 "use client";
 
+import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
+
 import * as Dialog from "@radix-ui/react-dialog";
 import { AlertTriangle, CalendarClock, CheckCircle2, LoaderCircle, X } from "lucide-react";
 import Link from "next/link";
@@ -85,6 +87,7 @@ export default function FirstScanCalendarPrompt({
   }, [promptKey]);
 
   useEffect(() => {
+    if (!CONNECTED_CALENDAR_SYNC_ENABLED) return;
     if (calendarSetupProvider || syncStatus !== "needs_connection" || !appleCalendarHref) {
       setDecisionLoaded(true);
       return;
@@ -101,6 +104,7 @@ export default function FirstScanCalendarPrompt({
   }, [appleCalendarHref, calendarSetupProvider, promptKey, syncStatus]);
 
   useEffect(() => {
+    if (!CONNECTED_CALENDAR_SYNC_ENABLED) return;
     if (!calendarSetupProvider || syncStartedRef.current) return;
     syncStartedRef.current = true;
     markPromptHandled();
@@ -227,6 +231,8 @@ export default function FirstScanCalendarPrompt({
     });
     openAppleCalendarIcs(appleCalendarHref);
   };
+
+  if (!CONNECTED_CALENDAR_SYNC_ENABLED) return null;
 
   const reconnectCopy =
     syncStatus === "needs_reconnect"

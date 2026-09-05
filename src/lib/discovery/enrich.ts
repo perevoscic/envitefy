@@ -1,4 +1,5 @@
 import { throwIfDiscoveryCancelled } from "@/lib/discovery/cancel";
+import { getEventHistoryById } from "@/lib/db";
 import { runDiscoveryExtractStageWithMode } from "@/lib/discovery/extract";
 import { safeString } from "@/lib/discovery/shared";
 import type { EventDiscoveryRow } from "@/lib/discovery/types";
@@ -68,16 +69,23 @@ export async function runDiscoveryEnrichStage(
 
   const travelAccommodation = await enrichTravelAccommodation({
     sourceType: discovery.source.type,
+    sourceUrl: discovery.source.url,
+    sourceId: discovery.id,
+    eventYear: safeString(enrichedParseResult.startAt).slice(0, 4) || null,
+    signal: options?.signal,
+    budgetMs: Math.min(25000, enrichBudgetMs),
     extractedText,
     extractionMeta: refreshedExtraction.document.extractionMeta as any,
   });
   throwIfDiscoveryCancelled(options?.signal);
 
+  const previousEvent = await getEventHistoryById(discovery.eventId);
+
   return {
     document: refreshedExtraction.document,
     enrichment: {
       parseResult: enrichedParseResult,
-      travelAccommodation: buildTravelAccommodationState(travelAccommodation),
+      travelAccommodation: buildTravelAccommodationState(travelAccommodation, previousEvent?.data?.discoverySource?.travelAccommodation),
       finalizedAt: new Date().toISOString(),
       performance,
     },

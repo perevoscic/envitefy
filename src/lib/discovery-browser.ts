@@ -50,6 +50,10 @@ type PlaywrightPage = {
     options?: { timeout?: number }
   ): Promise<void>;
   waitForTimeout(ms: number): Promise<void>;
+  waitForEvent(
+    name: "download",
+    options?: { timeout?: number }
+  ): Promise<PlaywrightDownload>;
   locator(selector: string): {
     count(): Promise<number>;
     nth(index: number): {
@@ -175,7 +179,9 @@ async function collectVisibleActions(page: PlaywrightPage): Promise<BrowserDisco
       const findContextText = (node: HTMLElement) => {
         const candidates: string[] = [];
         const container = node.closest("p, li, td, section, article, div");
-        if (container) candidates.push(normalize(container.innerText || ""));
+        if (container instanceof HTMLElement) {
+          candidates.push(normalize(container.innerText || ""));
+        }
         let current: HTMLElement | null = node;
         for (let depth = 0; depth < 4 && current; depth += 1) {
           let sibling = current.previousElementSibling as HTMLElement | null;
@@ -390,7 +396,7 @@ export async function collectDiscoveryBrowserData(
       const beforeUrl = normalizeUrl(page.url()) || normalizedRootUrl;
       await button.click({ timeout: 3000 }).catch(() => {});
       const popup = await popupPromise;
-      const download = (await downloadPromise) as PlaywrightDownload | null;
+      const download = await downloadPromise;
 
       if (popup) {
         await popup.waitForLoadState("networkidle", { timeout: timeoutMs }).catch(() => {});

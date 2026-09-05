@@ -1,3 +1,4 @@
+import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { google } from "googleapis";
@@ -10,6 +11,9 @@ type BulkBody = {
 };
 
 export async function POST(request: NextRequest) {
+  const pausedResponse = getCalendarSyncPauseResponse();
+  if (pausedResponse) return pausedResponse;
+
   try {
     const secret =
       process.env.AUTH_SECRET ??

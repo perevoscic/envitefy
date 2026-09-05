@@ -1,0 +1,281 @@
+[
+  {
+    "surface": "signed-out footer",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "links": [
+      {
+        "href": "https://www.instagram.com/envitefy/",
+        "label": "Envitefy on Instagram (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.facebook.com/envitefy/",
+        "label": "Envitefy on Facebook (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.youtube.com/@envitefy",
+        "label": "Envitefy on YouTube (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.tiktok.com/@envitefy",
+        "label": "Envitefy on TikTok (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.reddit.com/user/envitefy/",
+        "label": "Envitefy on Reddit (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "focusOutline": "solid",
+    "overflow": false
+  },
+  {
+    "surface": "signed-out footer",
+    "viewport": {
+      "width": 375,
+      "height": 812
+    },
+    "links": [
+      {
+        "href": "https://www.instagram.com/envitefy/",
+        "label": "Envitefy on Instagram (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.facebook.com/envitefy/",
+        "label": "Envitefy on Facebook (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.youtube.com/@envitefy",
+        "label": "Envitefy on YouTube (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.tiktok.com/@envitefy",
+        "label": "Envitefy on TikTok (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.reddit.com/user/envitefy/",
+        "label": "Envitefy on Reddit (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "focusOutline": "solid",
+    "overflow": false
+  },
+  {
+    "surface": "signed-out footer",
+    "viewport": {
+      "width": 812,
+      "height": 375
+    },
+    "links": [
+      {
+        "href": "https://www.instagram.com/envitefy/",
+        "label": "Envitefy on Instagram (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.facebook.com/envitefy/",
+        "label": "Envitefy on Facebook (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.youtube.com/@envitefy",
+        "label": "Envitefy on YouTube (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.tiktok.com/@envitefy",
+        "label": "Envitefy on TikTok (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.reddit.com/user/envitefy/",
+        "label": "Envitefy on Reddit (opens in a new tab)",
+        "target": "_blank",
+        "rel": "noopener noreferrer",
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "focusOutline": "solid",
+    "overflow": false
+  },
+  {
+    "surface": "signed-in profile menu (mock session)",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "links": [
+      {
+        "href": "https://www.instagram.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.facebook.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.youtube.com/@envitefy",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.tiktok.com/@envitefy",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.reddit.com/user/envitefy/",
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "bounds": {
+      "x": 20,
+      "y": 563.8125,
+      "width": 279,
+      "height": 352.59375
+    },
+    "opensNewTab": true,
+    "closedMenuInert": true
+  },
+  {
+    "surface": "signed-in profile menu (mock session)",
+    "viewport": {
+      "width": 375,
+      "height": 812
+    },
+    "links": [
+      {
+        "href": "https://www.instagram.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.facebook.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.youtube.com/@envitefy",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.tiktok.com/@envitefy",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.reddit.com/user/envitefy/",
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "bounds": {
+      "x": 20,
+      "y": 375.8125,
+      "width": 279,
+      "height": 352.59375
+    },
+    "opensNewTab": true,
+    "closedMenuInert": true
+  },
+  {
+    "surface": "signed-in profile menu (mock session)",
+    "viewport": {
+      "width": 812,
+      "height": 375
+    },
+    "links": [
+      {
+        "href": "https://www.instagram.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.facebook.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.youtube.com/@envitefy",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.tiktok.com/@envitefy",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.reddit.com/user/envitefy/",
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "bounds": {
+      "x": 20,
+      "y": 44.40625,
+      "width": 279,
+      "height": 247
+    },
+    "opensNewTab": true,
+    "closedMenuInert": true
+  }
+]

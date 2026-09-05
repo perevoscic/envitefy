@@ -32,16 +32,18 @@ test("pipeline sends preprocessed OCR images to vision as JPEG", async () => {
 
 test("pipeline rejects empty or generic OCR instead of saving a placeholder event", async () => {
   const source = await readFile(new URL("./pipeline.ts", import.meta.url), "utf8");
+  const failures = await readFile(new URL("./failure.ts", import.meta.url), "utf8");
 
   assert.match(source, /function hasUsableOcrResult/);
   assert.match(source, /function hasUsableRawOcrText/);
   assert.match(source, /OPENAI_GENERIC/);
   assert.match(source, /OPENAI_TEXT_GENERIC/);
-  assert.match(source, /OCR_TIMEOUT/);
-  assert.match(source, /failureCode: lastOcrFailureCode/);
-  assert.match(source, /OCR_NOT_CONFIGURED/);
-  assert.match(source, /OCR_UNREADABLE/);
-  assert.match(source, /Set OPENAI_API_KEY/);
+  assert.match(source, /getOcrFailureResponse\(providerConfigured, failureCode\)/);
+  assert.match(source, /const failureCode = providerFailureCode \|\| lastOcrFailureCode/);
+  assert.match(failures, /OCR_TIMEOUT/);
+  assert.match(failures, /OCR_NOT_CONFIGURED/);
+  assert.match(failures, /OCR_UNREADABLE/);
+  assert.match(failures, /Set OPENAI_API_KEY/);
 });
 
 test("pipeline falls back to visible-text OCR when structured extraction is empty", async () => {

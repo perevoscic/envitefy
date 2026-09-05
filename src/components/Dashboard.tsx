@@ -1,5 +1,7 @@
 "use client";
 
+import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
+
 import * as chrono from "chrono-node";
 import { Eye, Mail, Pencil, Share2, UserPlus } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -1804,52 +1806,54 @@ export default function Dashboard({
           provider?: "google" | "microsoft" | null;
           reason?: string;
         } | null = null;
-        try {
-          const calendarSyncResponse = await fetch("/api/events/calendar/auto", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            cache: "no-store",
-            body: JSON.stringify({ eventId }),
-          });
-          const calendarSyncPayload = await calendarSyncResponse.json().catch(() => ({}));
-          calendarSync = {
-            status:
-              typeof calendarSyncPayload?.status === "string"
-                ? calendarSyncPayload.status
-                : undefined,
-            provider:
-              calendarSyncPayload?.provider === "google" ||
-              calendarSyncPayload?.provider === "microsoft"
-                ? calendarSyncPayload.provider
-                : null,
-            reason:
-              typeof calendarSyncPayload?.reason === "string"
-                ? calendarSyncPayload.reason
-                : undefined,
-          };
-          reportClientLog({
-            area: "snap-upload",
-            stage: "calendar-sync-complete",
-            scanAttemptId,
-            details: {
-              eventId,
-              ok: calendarSyncResponse.ok && calendarSyncPayload?.ok !== false,
-              status: calendarSync.status || null,
-              provider: calendarSync.provider || null,
-              reason: calendarSync.reason || null,
-            },
-          });
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          calendarSync = { status: "failed", reason: "request_failed" };
-          console.warn("Automatic calendar sync could not be completed:", message);
-          reportClientLog({
-            area: "snap-upload",
-            stage: "calendar-sync-failed",
-            scanAttemptId,
-            details: { eventId, message },
-          });
+        if (CONNECTED_CALENDAR_SYNC_ENABLED) {
+          try {
+            const calendarSyncResponse = await fetch("/api/events/calendar/auto", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              cache: "no-store",
+              body: JSON.stringify({ eventId }),
+            });
+            const calendarSyncPayload = await calendarSyncResponse.json().catch(() => ({}));
+            calendarSync = {
+              status:
+                typeof calendarSyncPayload?.status === "string"
+                  ? calendarSyncPayload.status
+                  : undefined,
+              provider:
+                calendarSyncPayload?.provider === "google" ||
+                calendarSyncPayload?.provider === "microsoft"
+                  ? calendarSyncPayload.provider
+                  : null,
+              reason:
+                typeof calendarSyncPayload?.reason === "string"
+                  ? calendarSyncPayload.reason
+                  : undefined,
+            };
+            reportClientLog({
+              area: "snap-upload",
+              stage: "calendar-sync-complete",
+              scanAttemptId,
+              details: {
+                eventId,
+                ok: calendarSyncResponse.ok && calendarSyncPayload?.ok !== false,
+                status: calendarSync.status || null,
+                provider: calendarSync.provider || null,
+                reason: calendarSync.reason || null,
+              },
+            });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            calendarSync = { status: "failed", reason: "request_failed" };
+            console.warn("Automatic calendar sync could not be completed:", message);
+            reportClientLog({
+              area: "snap-upload",
+              stage: "calendar-sync-failed",
+              scanAttemptId,
+              details: { eventId, message },
+            });
+          }
         }
 
         if (typeof window !== "undefined") {

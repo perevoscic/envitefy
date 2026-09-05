@@ -1,0 +1,61 @@
+{
+  "method": "2 × 2 model/prompt comparison; same workload effort and budget policy for both prompt arms. Synthetic fixtures only. Live results do not establish production accuracy.",
+  "results": [
+    {
+      "fixture": "birthday-no-logistics",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "legacy",
+      "promptCharacters": 9856,
+      "live": false
+    },
+    {
+      "fixture": "birthday-no-logistics",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "promptCharacters": 2908,
+      "live": false
+    },
+    {
+      "fixture": "birthday-no-logistics",
+      "model": "gpt-6-astra",
+      "promptVersion": "legacy",
+      "promptCharacters": 9856,
+      "live": false
+    },
+    {
+      "fixture": "birthday-no-logistics",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "promptCharacters": 2908,
+      "live": false
+    },
+    {
+      "fixture": "wedding-two-venues",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "legacy",
+      "promptCharacters": 9491,
+      "live": false
+    },
+    {
+      "fixture": "wedding-two-venues",
+      "model": "gpt-5.6-terra",
+      "promptVersion": "v2",
+      "promptCharacters": 3167,
+      "live": false
+    },
+    {
+      "fixture": "wedding-two-venues",
+      "model": "gpt-6-astra",
+      "promptVersion": "legacy",
+      "promptCharacters": 9491,
+      "live": false
+    },
+    {
+      "fixture": "wedding-two-venues",
+      "model": "gpt-6-astra",
+      "promptVersion": "v2",
+      "promptCharacters": 3167,
+      "live": false
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 import type { Metadata } from "next";
 import Script from "next/script";
 import CompanyPageShell from "@/components/company/CompanyPageShell";
@@ -100,7 +101,9 @@ const faqItems: FaqPageItem[] = [
     id: "calendar-saves",
     question: "Which calendars does Envitefy support?",
     answer:
-      "Live pages can offer Google Calendar, Apple Calendar through an ICS handoff, and Outlook calendar actions. Signed-in owners can connect Google Calendar or Outlook to automatically sync newly scanned events; Apple Calendar uses a one-event ICS save.",
+      CONNECTED_CALENDAR_SYNC_ENABLED
+        ? "Live pages can offer Google Calendar, Apple Calendar through an ICS handoff, and Outlook calendar actions. Signed-in owners can connect Google Calendar or Outlook to automatically sync newly scanned events; Apple Calendar uses a one-event ICS save."
+        : "Live pages can offer manual Google Calendar and Outlook links, plus Apple Calendar through an ICS download. Automatic Google and Outlook syncing is temporarily paused. Scanned, uploaded, and newly created events still save to Envitefy.",
   },
   {
     id: "maps-and-schedules",

@@ -1,0 +1,20 @@
+[
+  {
+    "url": "/api/google/auth",
+    "status": 307,
+    "location": "http://localhost:3000/settings#calendars",
+    "body": null
+  },
+  {
+    "url": "/api/outlook/auth",
+    "status": 307,
+    "location": "http://localhost:3000/settings#calendars",
+    "body": null
+  },
+  {
+    "url": "/api/events/calendar/auto",
+    "status": 503,
+    "location": null,
+    "body": "{\"ok\":false,\"status\":\"paused\",\"code\":\"CALENDAR_SYNC_PAUSED\",\"error\":\"Google Calendar and Outlook syncing is temporarily paused. Your events still save to Envitefy. You can use Add to calendar on an event to save it manually.\"}"
+  }
+]

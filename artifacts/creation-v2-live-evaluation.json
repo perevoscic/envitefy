@@ -7,9 +7,9 @@
       "promptVersion": "legacy",
       "promptCharacters": 9856,
       "live": true,
-      "durationMs": 39,
-      "errorCode": "Error",
-      "status": null
+      "durationMs": 1083,
+      "errorCode": "credit_balance_exhausted",
+      "status": 429
     },
     {
       "fixture": "birthday-no-logistics",
@@ -17,9 +17,9 @@
       "promptVersion": "v2",
       "promptCharacters": 2908,
       "live": true,
-      "durationMs": 4,
-      "errorCode": "Error",
-      "status": null
+      "durationMs": 372,
+      "errorCode": "credit_balance_exhausted",
+      "status": 429
     },
     {
       "fixture": "birthday-no-logistics",
@@ -27,9 +27,9 @@
       "promptVersion": "legacy",
       "promptCharacters": 9856,
       "live": true,
-      "durationMs": 2,
-      "errorCode": "Error",
-      "status": null
+      "durationMs": 373,
+      "errorCode": "credit_balance_exhausted",
+      "status": 429
     },
     {
       "fixture": "birthday-no-logistics",
@@ -37,9 +37,9 @@
       "promptVersion": "v2",
       "promptCharacters": 2908,
       "live": true,
-      "durationMs": 1,
-      "errorCode": "Error",
-      "status": null
+      "durationMs": 336,
+      "errorCode": "credit_balance_exhausted",
+      "status": 429
     }
   ]
 }

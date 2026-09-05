@@ -1,3 +1,12 @@
+import {
+  HOTEL_FIELDS,
+  hotelDeadlineIso,
+  hotelId,
+  parseHotelEvidence,
+  type HotelEvidence,
+  type HotelField,
+  type HotelSource,
+} from "./travel-accommodation-evidence";
 type TravelAccommodationSource = "pdf" | "url" | "web";
 
 export type TravelAccommodationCandidateSubtype =
@@ -7,6 +16,7 @@ export type TravelAccommodationCandidateSubtype =
   | "lodging_candidate";
 
 export type TravelAccommodationProvider =
+  | "astra"
   | "pdf"
   | "firecrawl_scrape_json"
   | "firecrawl_agent"
@@ -36,6 +46,12 @@ export type TravelAccommodationCandidate = {
 };
 
 export type TravelAccommodationHotel = {
+  reservationDeadlineISO?: string | null;
+  id?: string;
+  address?: string | null;
+  bookingInstructions?: string | null;
+  evidence?: Partial<Record<HotelField, HotelEvidence[]>>;
+  conflicts?: Partial<Record<HotelField, HotelEvidence[]>>;
   name: string;
   imageUrl: string | null;
   distanceFromVenue: string | null;
@@ -72,6 +88,7 @@ export type TravelAccommodationAttempt = {
 };
 
 export type TravelAccommodationResult = {
+  sources?: HotelSource[];
   candidates: TravelAccommodationCandidate[];
   pdfHotels: TravelAccommodationHotel[];
   hotels: TravelAccommodationHotel[];
@@ -87,6 +104,7 @@ type TextPage = {
 };
 
 type ContextLink = {
+  pageNumber?: number | null;
   label?: string | null;
   url?: string | null;
   sourceUrl?: string | null;
@@ -161,22 +179,13 @@ export const BOOKING_LINK_TERMS = [
 
 const HOTEL_NAME_HINT_PATTERN =
   /\b(?:hotel|marriott|hilton|hampton inn|hyatt|westin|sheraton|resort|inn|suites|lodge|courtyard|doubletree|embassy suites|holiday inn|fairfield|riverside|renaissance)\b/i;
-const DISTANCE_PATTERN = /\b\d+(?:\.\d+)?\s*(?:mile|miles|mi|minutes?)\b/i;
-const RATE_PATTERN = /\$\s*\d+(?:\.\d{2})?(?:\s*(?:\+\s*tax|per night|nightly))?/i;
-const PHONE_PATTERN = /\b(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}\b/;
-const DATE_LINE_PATTERN =
-  /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:,\s*\d{4})?\b/i;
 const URL_PATTERN =
   /(?:https?:\/\/[^\s)]+|www\.[^\s)]+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s),;!?]*)?)/gi;
 const NOISE_ONLY_PATTERN =
   /\b(results?|photo|video|parking|admission|ticket|rotation|roster|packet)\b/i;
 
 function safeString(value: unknown): string {
-  return typeof value === "string"
-    ? value.trim()
-    : value == null
-      ? ""
-      : String(value).trim();
+  return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
 }
 
 function normalizeWhitespace(value: unknown): string {
@@ -184,19 +193,17 @@ function normalizeWhitespace(value: unknown): string {
 }
 
 function normalizeUrl(value: unknown): string {
-  const raw = safeString(value).replace(/[)\],.;!?]+$/g, "");
+  const raw = safeString(value);
   if (!raw) return "";
-  const withProtocol =
-    /^https?:\/\//i.test(raw)
-      ? raw
-      : /^www\./i.test(raw) ||
-          (/^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(raw) && !/@/.test(raw))
-        ? `https://${raw}`
-        : "";
+  const withProtocol = /^https?:\/\//i.test(raw)
+    ? raw
+    : /^www\./i.test(raw) ||
+        (/^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(raw) && !/@/.test(raw))
+      ? `https://${raw}`
+      : "";
   if (!withProtocol) return "";
   try {
     const parsed = new URL(withProtocol);
-    parsed.hash = "";
     return parsed.toString();
   } catch {
     return "";
@@ -204,11 +211,7 @@ function normalizeUrl(value: unknown): string {
 }
 
 function toIsoDateOnly(value: string | null): string | null {
-  const raw = safeString(value);
-  if (!raw) return null;
-  const parsed = Date.parse(raw);
-  if (!Number.isFinite(parsed)) return null;
-  return new Date(parsed).toISOString().slice(0, 10);
+  return hotelDeadlineIso(value);
 }
 
 function normalizePhone(value: string | null): string | null {
@@ -254,36 +257,21 @@ function countTermHits(haystack: string, terms: string[]): number {
   return hits;
 }
 
+function sentenceCaseLabel(value: string): string {
+  return normalizeWhitespace(value);
+}
+function extractField(text: string, pattern: RegExp): string | null {
+  const line = text.split(/\n/).find((line) => pattern.test(line));
+  return line
+    ? line
+        .replace(pattern, "")
+        .replace(/^[:\s-]+/, "")
+        .trim() || null
+    : null;
+}
+
 function looksLikeBookingUrl(url: string): boolean {
   return /\b(book|reserve|reservation|passkey|rooms?|lodging|hotel)\b/i.test(url);
-}
-
-function extractField(text: string, labelPattern: RegExp): string | null {
-  const lines = text
-    .replace(/\r/g, "\n")
-    .split(/\n+/)
-    .map((line) => normalizeWhitespace(line))
-    .filter(Boolean);
-  for (const line of lines) {
-    if (!labelPattern.test(line)) continue;
-    const cleaned = line.replace(labelPattern, "").replace(/^[:\-\s]+/, "").trim();
-    if (cleaned) return cleaned;
-  }
-  return null;
-}
-
-function pickFirstMatch(text: string, pattern: RegExp): string | null {
-  const match = text.match(pattern);
-  return match ? safeString(match[0]) : null;
-}
-
-function sentenceCaseLabel(value: string): string {
-  const normalized = normalizeWhitespace(value);
-  if (!normalized) return "";
-  return normalized
-    .split(/\s+/)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 function isNoiseOnlyBlock(text: string): boolean {
@@ -294,7 +282,10 @@ function isNoiseOnlyBlock(text: string): boolean {
   return hasNoise && !hasAccommodation;
 }
 
-function detectSubtypeFromText(text: string, url: string | null): TravelAccommodationCandidateSubtype {
+function detectSubtypeFromText(
+  text: string,
+  url: string | null,
+): TravelAccommodationCandidateSubtype {
   const normalized = normalizeWhitespace(text);
   const hasAccommodation = countTermHits(normalized, ACCOMMODATION_TERMS) > 0;
   const hasFieldTerms = countTermHits(normalized, HOTEL_FIELD_TERMS) > 0;
@@ -355,17 +346,18 @@ function buildCandidate(params: {
 }): TravelAccommodationCandidate {
   const normalizedLabel = sentenceCaseLabel(params.label || "Hotels & Travel");
   const contextLabel = sentenceCaseLabel(
-    safeString(params.sectionHeading) || safeString(params.contextText) || normalizedLabel
+    safeString(params.sectionHeading) || safeString(params.contextText) || normalizedLabel,
   );
   const entityLabel =
     params.subtype === "hotel_card_with_booking_link"
       ? sentenceCaseLabel(
           safeString(extractField(params.rawText, /^(?:group|host)\s+hotel\b/i)) ||
             safeString(extractField(params.rawText, /^hotel\b/i)) ||
-            safeString(extractField(params.rawText, /^name\b/i))
+            safeString(extractField(params.rawText, /^name\b/i)),
         ) || null
       : null;
-  const textForSignals = `${params.rawText} ${params.contextText || ""} ${params.sectionHeading || ""} ${params.label}`.trim();
+  const textForSignals =
+    `${params.rawText} ${params.contextText || ""} ${params.sectionHeading || ""} ${params.label}`.trim();
   const confidence = computeCandidateConfidence({
     subtype: params.subtype,
     text: textForSignals,
@@ -394,7 +386,7 @@ function buildCandidate(params: {
     confidence,
     score: Math.round(confidence * 100),
     pageNumber: params.pageNumber,
-    rawText: normalizeWhitespace(params.rawText),
+    rawText: safeString(params.rawText),
     signals: buildSignals(textForSignals),
     contextText: safeString(params.contextText) || null,
     sectionHeading: safeString(params.sectionHeading) || null,
@@ -415,7 +407,9 @@ function extractUrls(text: string): string[] {
   return uniqueBy(out, (item) => item.toLowerCase());
 }
 
-export function detectTravelAccommodationCandidates(input: DetectionInput): TravelAccommodationCandidate[] {
+export function detectTravelAccommodationCandidates(
+  input: DetectionInput,
+): TravelAccommodationCandidate[] {
   const extractedText = safeString(input.extractedText);
   const candidates: TravelAccommodationCandidate[] = [];
 
@@ -423,10 +417,12 @@ export function detectTravelAccommodationCandidates(input: DetectionInput): Trav
   for (const link of links) {
     const url = normalizeUrl(link?.url) || null;
     if (!url) continue;
-    const label = safeString(link?.label) || "Hotels & Travel";
+    const label = safeString(link?.label);
     const contextText = safeString(link?.contextText) || null;
     const sectionHeading = safeString(link?.sectionHeading) || null;
-    const combined = normalizeWhitespace([sectionHeading, contextText, label, url].filter(Boolean).join(" "));
+    const combined = normalizeWhitespace(
+      [sectionHeading, contextText, label, url].filter(Boolean).join(" "),
+    );
     if (!combined) continue;
     if (isNoiseOnlyBlock(combined)) continue;
     const accommodationHits =
@@ -439,14 +435,14 @@ export function detectTravelAccommodationCandidates(input: DetectionInput): Trav
         label,
         url,
         source: input.source === "pdf" ? "pdf" : "url",
-        pageNumber: null,
+        pageNumber: link.pageNumber ?? null,
         rawText: combined,
         contextText,
         sectionHeading,
         sourceUrl: safeString(link?.sourceUrl) || null,
         sourceBlockType: "resource_link",
         linkLabel: safeString(link?.label) || null,
-      })
+      }),
     );
   }
 
@@ -459,7 +455,10 @@ export function detectTravelAccommodationCandidates(input: DetectionInput): Trav
           : null;
       const text = safeString(page?.text);
       if (!text) continue;
-      const lines = text.replace(/\r/g, "\n").split(/\n+/).map((line) => line.trim());
+      const lines = text
+        .replace(/\r/g, "\n")
+        .split(/\n+/)
+        .map((line) => line.trim());
       for (let idx = 0; idx < lines.length; idx++) {
         const slice = lines.slice(idx, idx + 5).join("\n");
         if (!slice) continue;
@@ -470,7 +469,10 @@ export function detectTravelAccommodationCandidates(input: DetectionInput): Trav
         if (urls.length === 0) continue;
         const primaryUrl = urls[0] || null;
         const subtype = detectSubtypeFromText(slice, primaryUrl);
-        if (countTermHits(slice, ACCOMMODATION_TERMS) === 0 && subtype !== "hotel_card_with_booking_link") {
+        if (
+          countTermHits(slice, ACCOMMODATION_TERMS) === 0 &&
+          subtype !== "hotel_card_with_booking_link"
+        ) {
           continue;
         }
         candidates.push(
@@ -486,7 +488,7 @@ export function detectTravelAccommodationCandidates(input: DetectionInput): Trav
             sourceUrl: null,
             sourceBlockType: slice.includes(primaryUrl || "") ? "pdf_link" : "pdf_window",
             linkLabel: null,
-          })
+          }),
         );
       }
     }
@@ -494,9 +496,7 @@ export function detectTravelAccommodationCandidates(input: DetectionInput): Trav
     // URL source fallback: look for inline urls near hotel/travel terms.
     const urls = extractUrls(extractedText);
     for (const url of urls.slice(0, 12)) {
-      const snippet = extractedText
-        .split(/\n+/)
-        .find((line) => line.includes(url)) || `${url}`;
+      const snippet = extractedText.split(/\n+/).find((line) => line.includes(url)) || `${url}`;
       const combined = normalizeWhitespace(`${snippet} ${url}`);
       if (!combined) continue;
       if (countTermHits(combined, ACCOMMODATION_TERMS) === 0 && !looksLikeBookingUrl(url)) continue;
@@ -514,7 +514,7 @@ export function detectTravelAccommodationCandidates(input: DetectionInput): Trav
           sourceUrl: null,
           sourceBlockType: "web_page",
           linkLabel: null,
-        })
+        }),
       );
     }
   }
@@ -562,16 +562,21 @@ function isPlaceholderValue(value: string | null): boolean {
 
 function normalizeHotel(input: TravelAccommodationHotel): TravelAccommodationHotel {
   return {
-    name: sentenceCaseLabel(input.name),
+    ...input,
+    id: input.id || hotelId(input.name),
+    reservationDeadlineISO: hotelDeadlineIso(input.reservationDeadline),
+    name: safeString(input.name),
     imageUrl: normalizeUrl(input.imageUrl) || null,
     distanceFromVenue: safeString(input.distanceFromVenue) || null,
     groupRate: safeString(input.groupRate) || null,
     parking: safeString(input.parking) || null,
     breakfast: safeString(input.breakfast) || null,
-    reservationDeadline: toIsoDateOnly(input.reservationDeadline) || safeString(input.reservationDeadline) || null,
-    phone: normalizePhone(input.phone),
+    reservationDeadline: safeString(input.reservationDeadline) || null,
+    phone: safeString(input.phone) || null,
     bookingUrl: normalizeUrl(input.bookingUrl) || null,
-    notes: Array.isArray(input.notes) ? input.notes.map((item) => normalizeWhitespace(item)).filter(Boolean) : [],
+    notes: Array.isArray(input.notes)
+      ? input.notes.map((item) => normalizeWhitespace(item)).filter(Boolean)
+      : [],
     sourceType: input.sourceType,
     contentOrigin: safeString(input.contentOrigin) || "unknown",
     confidence:
@@ -581,116 +586,125 @@ function normalizeHotel(input: TravelAccommodationHotel): TravelAccommodationHot
   };
 }
 
-function buildHotelFromCandidate(candidate: TravelAccommodationCandidate): TravelAccommodationHotel | null {
-  const text = normalizeWhitespace(candidate.rawText);
-  const bookingUrl = normalizeUrl(candidate.url) || null;
-  const name =
-    sentenceCaseLabel(
-      safeString(candidate.entityLabel) ||
-        safeString(extractField(text, /^(?:group|host)\s+hotel\b/i)) ||
-        safeString(extractField(text, /^hotel\b/i))
-    ) ||
-    "";
-  const distanceFromVenue = pickFirstMatch(text, DISTANCE_PATTERN);
-  const groupRate = pickFirstMatch(text, RATE_PATTERN) || extractField(text, /^group rate\b/i);
-  const parking = extractField(text, /^parking\b/i);
-  const breakfast = extractField(text, /^breakfast\b/i) || extractField(text, /^complimentary\b/i);
-  const reservationDeadline =
-    extractField(text, /^reservation deadline\b/i) || pickFirstMatch(text, DATE_LINE_PATTERN);
-  const phone =
-    extractField(text, /^(?:hotel phone|phone reservations?)\b/i) || pickFirstMatch(text, PHONE_PATTERN);
-  const supportFieldCount = [
-    distanceFromVenue,
-    groupRate,
-    parking,
-    breakfast,
-    reservationDeadline,
-    phone,
-  ].filter(Boolean).length;
-
-  if (!name || (!bookingUrl && supportFieldCount < 2)) return null;
-
-  return normalizeHotel({
-    name,
-    imageUrl: null,
-    distanceFromVenue,
-    groupRate,
-    parking,
-    breakfast,
-    reservationDeadline,
-    phone,
-    bookingUrl,
-    notes: [],
-    sourceType: "pdf",
-    contentOrigin: "pdf_direct",
-    confidence: Math.min(
-      0.97,
-      Number((candidate.confidence + supportFieldCount * 0.02 + (bookingUrl ? 0.04 : 0)).toFixed(2))
-    ),
-  });
-}
-
 export function extractHotelObjectsFromPdf(
-  _document: { extractedText?: string } | null | undefined,
-  candidates: TravelAccommodationCandidate[]
+  document:
+    | {
+        extractedText?: string;
+        sourceUrl?: string | null;
+        pages?: Array<{ pageNumber: number; text: string }>;
+      }
+    | null
+    | undefined,
+  candidates: TravelAccommodationCandidate[],
 ): TravelAccommodationHotel[] {
+  if (document?.extractedText || document?.pages?.length) {
+    const pages = document.pages?.length
+      ? document.pages
+      : [{ pageNumber: 1, text: document.extractedText || "" }];
+    return mergePdfAndWebHotels(
+      pages.flatMap((page) =>
+        parseHotelEvidence(page.text, {
+          sourceType: "pdf",
+          sourceUrl: document.sourceUrl,
+          pageNumber: page.pageNumber,
+          links: candidates.flatMap((item) => (item.url ? [{ ...item, url: item.url }] : [])),
+        }),
+      ),
+      [],
+    );
+  }
   return uniqueBy(
     (Array.isArray(candidates) ? candidates : [])
       .filter((candidate) => candidate.source === "pdf")
-      .map((candidate) => buildHotelFromCandidate(candidate))
+      .flatMap((candidate) =>
+        parseHotelEvidence(candidate.contextText || candidate.rawText, {
+          sourceType: "pdf",
+          sourceUrl: candidate.sourceUrl,
+          pageNumber: candidate.pageNumber,
+        }),
+      )
       .filter((hotel): hotel is TravelAccommodationHotel => Boolean(hotel)),
-    (hotel) => `${hotel.name.toLowerCase()}|${hotel.bookingUrl || ""}`
+    (hotel) => `${hotel.name.toLowerCase()}|${hotel.bookingUrl || ""}`,
   );
 }
 
-function mergeHotelPair(existing: TravelAccommodationHotel, incoming: TravelAccommodationHotel): TravelAccommodationHotel {
+function mergeHotelPair(
+  existing: TravelAccommodationHotel,
+  incoming: TravelAccommodationHotel,
+): TravelAccommodationHotel {
   const a = normalizeHotel(existing);
   const b = normalizeHotel(incoming);
-  const preferPdf = a.sourceType === "pdf" || b.sourceType !== "pdf";
-  const pdf = a.sourceType === "pdf" ? a : b.sourceType === "pdf" ? b : null;
-  const web = a.sourceType === "web" ? a : b.sourceType === "web" ? b : null;
-
-  const pickScalar = (key: keyof TravelAccommodationHotel): string | null => {
-    const aVal = (a[key] as any) as string | null;
-    const bVal = (b[key] as any) as string | null;
-    if (preferPdf) {
-      if (pdf && safeString(pdf[key as any])) return (pdf[key as any] as any) || null;
-    }
-    const first = safeString(aVal) ? aVal : null;
-    const second = safeString(bVal) ? bVal : null;
-    if (first && !isPlaceholderValue(first)) return first;
-    if (second && !isPlaceholderValue(second)) return second;
-    return first || second || null;
-  };
-
-  const imageUrl = web?.imageUrl || a.imageUrl || b.imageUrl || null;
-  return normalizeHotel({
-    name: a.name || b.name,
-    imageUrl,
-    distanceFromVenue: pickScalar("distanceFromVenue"),
-    groupRate: pickScalar("groupRate"),
-    parking: pickScalar("parking"),
-    breakfast: pickScalar("breakfast"),
-    reservationDeadline: pickScalar("reservationDeadline"),
-    phone: pickScalar("phone"),
-    bookingUrl: a.bookingUrl || b.bookingUrl || null,
-    notes: uniqueBy([...(a.notes || []), ...(b.notes || [])], (item) => item.toLowerCase()).slice(0, 10),
+  const merged: TravelAccommodationHotel = {
+    ...a,
+    evidence: { ...a.evidence },
+    conflicts: { ...a.conflicts, ...b.conflicts },
+    notes: uniqueBy([...(a.notes || []), ...(b.notes || [])], (item) => item.toLowerCase()).slice(
+      0,
+      10,
+    ),
     sourceType: a.sourceType === b.sourceType ? a.sourceType : "mixed",
-    contentOrigin:
-      a.contentOrigin === b.contentOrigin ? a.contentOrigin : "pdf_plus_web_enriched",
+    contentOrigin: a.contentOrigin === b.contentOrigin ? a.contentOrigin : "merged_sources",
     confidence: Math.max(a.confidence, b.confidence),
-  });
+  };
+  for (const field of HOTEL_FIELDS) {
+    const first = safeString(a[field]);
+    const second = safeString(b[field]);
+    const evidence = [...(a.evidence?.[field] || []), ...(b.evidence?.[field] || [])];
+    merged.evidence![field] = evidence;
+    const comparable = (value: string) =>
+      field === "phone"
+        ? normalizePhone(value)
+        : field === "reservationDeadline"
+          ? toIsoDateOnly(value) || value.toLowerCase()
+          : field.endsWith("Url")
+            ? value
+            : value.toLowerCase();
+    if (
+      field !== "name" &&
+      first &&
+      second &&
+      comparable(first) !== comparable(second) &&
+      !isPlaceholderValue(first) &&
+      !isPlaceholderValue(second)
+    ) {
+      merged.conflicts![field] = evidence.length
+        ? evidence
+        : [
+            {
+              value: first,
+              quote: first,
+              sourceId: a.contentOrigin,
+              sourceUrl: null,
+              pageNumber: null,
+              method: "text",
+            },
+            {
+              value: second,
+              quote: second,
+              sourceId: b.contentOrigin,
+              sourceUrl: null,
+              pageNumber: null,
+              method: "text",
+            },
+          ];
+      merged[field] = null;
+    } else if (field !== "name")
+      merged[field] = merged.conflicts?.[field]?.length
+        ? null
+        : (!isPlaceholderValue(first) && first) || second || null;
+  }
+  return normalizeHotel(merged);
 }
 
 export function mergePdfAndWebHotels(
   pdfHotels: TravelAccommodationHotel[],
-  webHotels: TravelAccommodationHotel[]
+  webHotels: TravelAccommodationHotel[],
 ): TravelAccommodationHotel[] {
   const normalizedPdf = (Array.isArray(pdfHotels) ? pdfHotels : []).map((hotel) =>
-    normalizeHotel({ ...hotel, sourceType: hotel.sourceType || "pdf" })
+    normalizeHotel({ ...hotel, sourceType: hotel.sourceType || "pdf" }),
   );
   const normalizedWeb = (Array.isArray(webHotels) ? webHotels : []).map((hotel) =>
-    normalizeHotel({ ...hotel, sourceType: hotel.sourceType || "web" })
+    normalizeHotel({ ...hotel, sourceType: hotel.sourceType || "web" }),
   );
 
   const merged: TravelAccommodationHotel[] = [];
@@ -703,22 +717,22 @@ export function mergePdfAndWebHotels(
     for (let idx = 0; idx < merged.length; idx++) {
       if (used.has(idx)) continue;
       const existing = merged[idx]!;
-      if (urlKey && safeString(existing.bookingUrl).toLowerCase() === urlKey) return idx;
+      const differentAddress =
+        hotel.address &&
+        existing.address &&
+        normalizeHotelName(hotel.address) !== normalizeHotelName(existing.address);
+      if (differentAddress) continue;
       if (nameKey && normalizeHotelName(existing.name) === nameKey) return idx;
+      if (
+        urlKey &&
+        existing.bookingUrl === hotel.bookingUrl &&
+        tokenOverlap(tokens, hotelNameTokens(existing.name)) >= 0.8
+      )
+        return idx;
       const overlap = tokenOverlap(tokens, hotelNameTokens(existing.name));
       if (overlap >= 0.8) {
         const samePhone = Boolean(hotel.phone && existing.phone && hotel.phone === existing.phone);
-        const sameRate = Boolean(
-          safeString(hotel.groupRate) &&
-            safeString(existing.groupRate) &&
-            safeString(hotel.groupRate) === safeString(existing.groupRate)
-        );
-        const sameDistance = Boolean(
-          safeString(hotel.distanceFromVenue) &&
-            safeString(existing.distanceFromVenue) &&
-            safeString(hotel.distanceFromVenue) === safeString(existing.distanceFromVenue)
-        );
-        if (samePhone || sameRate || sameDistance) return idx;
+        if (samePhone) return idx;
       }
     }
     return -1;
@@ -759,7 +773,10 @@ function sameHostBoost(candidate: TravelAccommodationCandidate): number {
   try {
     const a = new URL(url);
     const b = new URL(sourceUrl);
-    return a.host === b.host ? 8 : 0;
+    return a.host === b.host &&
+      /\b(hotels?|lodging|accommodations?|travel)\b/i.test(candidate.label)
+      ? 40
+      : 0;
   } catch {
     return 0;
   }
@@ -785,22 +802,26 @@ function resolveTargets(candidates: TravelAccommodationCandidate[]): TravelAccom
     });
   }
   return targets.sort(
-    (a, b) =>
-      b.rank - a.rank ||
-      b.confidence - a.confidence ||
-      a.url.localeCompare(b.url)
+    (a, b) => b.rank - a.rank || b.confidence - a.confidence || a.url.localeCompare(b.url),
   );
 }
 
-export function selectFallbackTravelLink(candidates: TravelAccommodationCandidate[]): string | null {
+export function selectFallbackTravelLink(
+  candidates: TravelAccommodationCandidate[],
+): string | null {
   const targets = resolveTargets(candidates);
   return targets[0]?.url || null;
 }
 
-export function summarizeHotelsForNarrative(hotels: TravelAccommodationHotel[], fallbackLink: string | null): string {
+export function summarizeHotelsForNarrative(
+  hotels: TravelAccommodationHotel[],
+  fallbackLink: string | null,
+): string {
   const top = (Array.isArray(hotels) ? hotels : []).slice(0, 2);
   if (top.length === 0) {
-    return fallbackLink ? "Hotel and travel details are available on the official booking page." : "";
+    return fallbackLink
+      ? "Hotel and travel details are available on the official booking page."
+      : "";
   }
   return top
     .map((hotel) => {
@@ -851,4 +872,3 @@ export function buildTravelAccommodationResult(params: {
     attempts: params.attempts || [],
   };
 }
-

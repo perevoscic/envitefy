@@ -1,3 +1,4 @@
+import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 import Link from "next/link";
 import CompanyPageShell from "@/components/company/CompanyPageShell";
 import { legalConfig } from "@/lib/legal-config";
@@ -58,6 +59,9 @@ const privacySections = [
   {
     title: "6. Google user data and Limited Use",
     body: [
+      ...(!CONNECTED_CALENDAR_SYNC_ENABLED
+        ? ["Current availability: Google Calendar and Outlook connections and automatic syncing are temporarily paused. Envitefy does not request new calendar permissions or read or write connected calendar events during this pause. Google sign-in, manual calendar links, ICS downloads, and disconnecting existing connections remain available."]
+        : []),
       "Access and features: Google sign-in uses the openid, email, and profile permissions to authenticate you, create or locate your Envitefy account, and display the account information you chose to share. The Google Calendar connection requests calendar.events.owned so Envitefy can add an event you created or scanned to your primary calendar and retrieve that specific Envitefy-created calendar event when needed to prevent a duplicate or confirm the calendar action. Envitefy does not import or analyze your general Google Calendar history.",
       "Administrative analytics connection: analytics.readonly is requested only when an expressly authorized Envitefy administrator starts the separate Google Analytics connection. It is used solely to display reports for Envitefy’s own GA4 property in Envitefy’s internal administrator dashboard. It is not requested during an ordinary user’s Google sign-in or calendar connection.",
       "Use: information received from Google APIs is used only to provide or improve the Google-connected, user-facing functionality described above. It is not used for generalized product research or improvement, advertising, marketing, retargeting, interest-based profiles, credit decisions, sale to data brokers, or training or improving any generalized artificial-intelligence or machine-learning model.",

@@ -53,6 +53,7 @@ import {
 import { useEventCache } from "@/app/event-cache-context";
 import conciergeMenuIcon from "@/assets/concierge-menu-icon.png";
 import { adminNavItems, type AdminNavItemId } from "@/components/admin/nav";
+import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventSidebar from "@/components/navigation/EventSidebar";
@@ -1253,10 +1254,11 @@ function FooterProfileMenu({
         {isOpen ? (
           <div
             ref={menuRef}
+            inert={!menuOpen}
             onClick={(event) => event.stopPropagation()}
             onMouseDown={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
-            className={`nav-chrome-menu-card pointer-events-auto !absolute z-[1000] w-[75%] origin-bottom-right rounded-[24px] p-1.5 transition-all duration-300 ease-out ${
+            className={`nav-chrome-menu-card pointer-events-auto !absolute z-[1000] max-h-[calc(100dvh-8rem)] w-full max-w-[18rem] origin-bottom-right !overflow-y-auto rounded-[24px] p-1.5 transition-all duration-300 ease-out ${
               menuOpen
                 ? "translate-y-0 scale-100 opacity-100"
                 : "pointer-events-none translate-y-4 scale-90 opacity-0"
@@ -1304,6 +1306,10 @@ function FooterProfileMenu({
                 </span>
                 <span className="text-[13px] font-medium text-red-400">Log out</span>
               </button>
+              <div className="nav-chrome-divider mx-2 my-1 h-px" />
+              <div className="px-1.5 pb-3 pt-3">
+                <EnvitefySocialLinks placement="menu" />
+              </div>
             </div>
           </div>
         ) : null}

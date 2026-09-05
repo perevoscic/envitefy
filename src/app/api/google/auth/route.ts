@@ -1,3 +1,4 @@
+import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { GOOGLE_CALENDAR_EVENT_WRITE_SCOPE } from "@/lib/google-calendar-oauth";
@@ -12,6 +13,10 @@ function normalizeInternalRedirect(value: string | null): string | null {
 }
 
 export async function GET(request: Request) {
+  if (!CONNECTED_CALENDAR_SYNC_ENABLED) {
+    return NextResponse.redirect(new URL("/settings#calendars", request.url));
+  }
+
   const { searchParams } = new URL(request.url);
   const includeAnalyticsScope = searchParams.get("analytics") === "1";
   const explicitState = searchParams.get("state") || undefined;

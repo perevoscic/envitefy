@@ -1,3 +1,4 @@
+import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { NormalizedEvent, toMicrosoftEvent } from "@/lib/mappers";
@@ -6,6 +7,9 @@ import { getMicrosoftRefreshToken } from "@/lib/db";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  const pausedResponse = getCalendarSyncPauseResponse();
+  if (pausedResponse) return pausedResponse;
+
   try {
     const secret =
       process.env.AUTH_SECRET ??

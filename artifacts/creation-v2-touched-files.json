@@ -28,5 +28,10 @@
   "src/app/studio/studio-workspace-sanitize.ts",
   "src/lib/studio/gemini.ts",
   "src/app/studio/StudioWorkspace.tsx",
-  "src/utils/media-upload-client.ts"
+  "src/utils/media-upload-client.ts",
+  "src/lib/product-marketing-catalog.ts",
+  "src/lib/concierge/types.ts",
+  "src/lib/studio/live-card-schema.ts",
+  "src/app/studio/studio-workspace-types.ts",
+  "src/lib/ocr/prompts.ts"
 ]

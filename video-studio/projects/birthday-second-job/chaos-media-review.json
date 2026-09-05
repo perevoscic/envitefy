@@ -1,0 +1,52 @@
+{
+  "dialogue": [
+    {
+      "start": 4.0,
+      "end": 7.0,
+      "text": "It's a birthday party, not a second job."
+    }
+  ],
+  "cuts": [
+    {
+      "start": 0.0,
+      "end": 1.5,
+      "description": "Medium shot of a man holding green streamers behind a decorated table."
+    },
+    {
+      "start": 1.5,
+      "end": 2.5,
+      "description": "Close-up of the man looking at his phone."
+    },
+    {
+      "start": 2.5,
+      "end": 3.5,
+      "description": "Medium shot of the man looking at the camera with a streamer on his shoulder."
+    },
+    {
+      "start": 3.5,
+      "end": 7.0,
+      "description": "Close-up of the man speaking directly to the camera."
+    },
+    {
+      "start": 7.0,
+      "end": 9.0,
+      "description": "Close-up of the man smiling and interacting with his phone."
+    }
+  ],
+  "issues": [
+    {
+      "type": "garbled text",
+      "time": "00:04 - 00:06",
+      "description": "Subtitles display garbled text: 'Not alrteally park, it's second ling this goc jobe.'"
+    },
+    {
+      "type": "white borders",
+      "time": "00:00 - 00:09",
+      "description": "Vertical video presented with white pillar boxes on both sides."
+    }
+  ],
+  "audioQuality": {
+    "rating": 4,
+    "explanation": "Speech is clear, natural, and highly intelligible."
+  }
+}

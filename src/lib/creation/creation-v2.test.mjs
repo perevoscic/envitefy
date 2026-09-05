@@ -59,6 +59,28 @@ test("conflicting or missing birthday age remains null despite a decorative nume
   value.sourceEvidence.fields.birthdayAge = { status: "conflicting", sourceText: ["30", "40"] };
   assert.equal(parseEventExtraction(value).birthdayAge, null);
 });
+
+test("OCR description keeps cited source wording instead of model-written invitation prose", () => {
+  const value = empty(EVENT_EXTRACTION_SCHEMA);
+  value.sourceEvidence.sourceText = "Elena's birthday\nbring your towel!\n¡Sin regalos!";
+  value.description = "Join Elena for a luxurious pool party with free towels and gifts.";
+  value.sourceEvidence.fields.description = {
+    status: "inferred",
+    sourceText: ["bring your towel!", "¡Sin regalos!"],
+  };
+  assert.equal(parseEventExtraction(value).description, "bring your towel!\n¡Sin regalos!");
+  assert.equal(value.description, "Join Elena for a luxurious pool party with free towels and gifts.");
+  value.sourceEvidence.fields.description = { status: "missing", sourceText: [] };
+  assert.equal(parseEventExtraction(value).description, "");
+});
+
+test("OCR normalized dates cannot roll impossible calendar dates into another month", () => {
+  const value = empty(EVENT_EXTRACTION_SCHEMA);
+  value.sourceEvidence.sourceText = "February 30, 2026";
+  value.start = "2026-02-30T16:00:00Z";
+  value.sourceEvidence.fields.start = { status: "inferred", sourceText: ["February 30, 2026"] };
+  assert.equal(parseEventExtraction(value).start, null);
+});
 test("strict edits enforce typed values, exact evidence, allowlisted fields and explicit clears", () => {
   const request = { message: "Remove the RSVP contact. Set the location to Garden Hall." };
   const valid = {

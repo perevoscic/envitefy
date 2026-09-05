@@ -1,3 +1,4 @@
+import { ENVITEFY_SOCIAL_LINKS } from "./envitefy-social-links";
 import { resolvePublicAssetOrigin } from "./public-asset-url";
 
 /**
@@ -30,33 +31,16 @@ export function createEmailTemplate(params: {
   const baseUrl = resolvePublicAssetOrigin();
   const wordmarkUrl = `${baseUrl}/email/envitefy-wordmark-email.png`;
   const currentYear = new Date().getFullYear();
-  const socialIcons = [
-    {
-      href: "https://www.instagram.com/envitefy/",
-      title: "Instagram",
-      src: `${baseUrl}/email/social-instagram.png`,
-    },
-    {
-      href: "https://www.facebook.com/envitefy/",
-      title: "Facebook",
-      src: `${baseUrl}/email/social-facebook.png`,
-    },
-    {
-      href: "https://www.youtube.com/@envitefy",
-      title: "YouTube",
-      src: `${baseUrl}/email/social-youtube.png`,
-    },
-    {
-      href: "https://www.tiktok.com/@envitefy",
-      title: "TikTok",
-      src: `${baseUrl}/email/social-tiktok.png`,
-    },
-  ];
+  const socialIcons = ENVITEFY_SOCIAL_LINKS.map(({ name, href, iconSrc }) => ({
+    title: name,
+    href,
+    src: `${baseUrl}${iconSrc}`,
+  }));
   const socialIconsRow = socialIcons
     .map(
       (link) => `
-                    <td style="padding: 0 12px;">
-                      <a href="${link.href}" target="_blank" title="${link.title}" style="display: inline-block;">
+                    <td class="social-icon-cell" style="padding: 0 12px;">
+                      <a href="${link.href}" target="_blank" rel="noopener noreferrer" title="${link.title}" style="display: inline-block;">
                         <img src="${link.src}" width="36" height="36" alt="${link.title}" style="display: block;" />
                       </a>
                     </td>`,
@@ -83,6 +67,7 @@ export function createEmailTemplate(params: {
       body { margin: 0; padding: 0; background: #F5F2FF; }
       .preheader { display: none !important; visibility: hidden; opacity: 0; color: transparent; height: 0; width: 0; overflow: hidden; mso-hide: all; }
       @media only screen and (max-width: 640px) {
+        .social-icon-cell { padding: 0 4px !important; }
         .email-page-cell { padding: 0 !important; }
         .email-shell { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; box-shadow: none !important; }
         .email-brand { padding: 24px 20px 12px !important; }

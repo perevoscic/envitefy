@@ -5,6 +5,7 @@ import { inflateRawSync, inflateSync } from "node:zlib";
 import * as chrono from "chrono-node";
 import OpenAI from "openai";
 import sharp from "sharp";
+import { hotelUrl, projectTravelHotels } from "../travel-accommodation-evidence";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
@@ -392,6 +393,11 @@ export type GymPublicSectionOrigin =
 export type GymPublicSectionVisibility = "visible" | "hidden";
 
 export type GymPublicTravelHotelItem = {
+  id?: string;
+  address?: string | null;
+  bookingInstructions?: string | null;
+  discoveredValues?: import("../travel-accommodation-evidence").HotelProjection["discoveredValues"];
+  editedFields?: import("../travel-accommodation-evidence").HotelField[];
   name: string;
   imageUrl?: string | null;
   distanceFromVenue?: string | null;
@@ -460,6 +466,8 @@ type ExtractionResult = {
   extractedText: string;
   extractionMeta: {
     sourceType: "file" | "url";
+    annotationLinks?: import("../travel-accommodation-evidence").HotelLink[];
+    accommodationPageTexts?: Array<{ pageNumber: number; text: string }>;
     usedOcr: boolean;
     linkedAssets: Array<{ url: string; contentType: string }>;
     discoveredLinks?: DiscoveredLink[];
@@ -7089,7 +7097,7 @@ export async function extractDiscoveryText(
           sectionHeading: item.sectionHeading || null,
         })),
       });
-      const pdfTravelHotels = extractHotelObjectsFromPdf(null, travelAccommodationCandidates);
+      const pdfTravelHotels = extractHotelObjectsFromPdf({ extractedText: text, pages: pages.map(page => ({ pageNumber: page.num, text: page.text })) }, travelAccommodationCandidates);
       const travelAccommodationResult = buildTravelAccommodationResult({
         candidates: travelAccommodationCandidates,
         pdfHotels: pdfTravelHotels,
@@ -7099,6 +7107,8 @@ export async function extractDiscoveryText(
         extractedText: text,
         extractionMeta: {
           sourceType: "file",
+          annotationLinks: annotationLinks.map(link => ({ ...link, label: derivePdfAnnotationLabel(link, pages), contextText: link.contextText || link.label })),
+          accommodationPageTexts: pages.map(page => ({ pageNumber: page.num, text: page.text })),
           usedOcr,
           linkedAssets: [],
           discoveredLinks,
@@ -12613,6 +12623,11 @@ function normalizeTravelAccommodationHotels(value: unknown): GymPublicTravelHote
   return uniqueBy(
     pickArray(value)
       .map((item) => ({
+        id: safeString(item?.id) || undefined,
+        address: safeString(item?.address) || null,
+        bookingInstructions: safeString(item?.bookingInstructions) || null,
+        discoveredValues: item?.discoveredValues,
+        editedFields: item?.editedFields,
         name: safeString(item?.name),
         imageUrl: normalizeUrl(item?.imageUrl) || null,
         distanceFromVenue: safeString(item?.distanceFromVenue) || null,
@@ -12621,7 +12636,7 @@ function normalizeTravelAccommodationHotels(value: unknown): GymPublicTravelHote
         breakfast: safeString(item?.breakfast) || null,
         reservationDeadline: safeString(item?.reservationDeadline) || null,
         phone: safeString(item?.phone) || null,
-        bookingUrl: normalizeUrl(item?.bookingUrl) || null,
+        bookingUrl: hotelUrl(item?.bookingUrl),
       }))
       .filter((item) => item.name),
     (item) => `${item.name.toLowerCase()}|${item.bookingUrl || ""}`,
@@ -12685,9 +12700,11 @@ function buildGymPublicPageSections(params: {
     typeof baseData.discoverySource.travelAccommodation === "object"
       ? baseData.discoverySource.travelAccommodation
       : null;
-  const travelHotels = normalizeTravelAccommodationHotels(
-    travelAccommodationState?.hotels || extractionMeta?.travelAccommodationSummary?.pdfHotels,
-  );
+  const travelHotels = projectTravelHotels(
+    normalizeTravelAccommodationHotels(travelAccommodationState?.hotels || extractionMeta?.travelAccommodationSummary?.pdfHotels),
+    normalizeTravelAccommodationHotels(baseData?.advancedSections?.logistics?.hotels),
+    baseData?.advancedSections?.logistics?.discoveredHotelIds || [],
+  ).hotels;
   const travelFallbackLink =
     normalizeUrl(
       travelAccommodationState?.fallbackLink ||
@@ -12849,7 +12866,7 @@ function buildGymPublicPageSections(params: {
 
   const travelBody = joinSectionSentences(
     ...collectDedicatedPublicFieldTexts(
-      [parseResult.logistics.hotel, buildTravelAccommodationNarrativeFromHotels(travelHotels)],
+      [travelAccommodationState ? "" : parseResult.logistics.hotel, buildTravelAccommodationNarrativeFromHotels(travelHotels)],
       2,
     ),
   );
@@ -13136,10 +13153,12 @@ export async function mapParseResultToGymData(
     typeof baseData.discoverySource.travelAccommodation === "object"
       ? baseData.discoverySource.travelAccommodation
       : null;
-  const travelAccommodationHotels = normalizeTravelAccommodationHotels(
-    travelAccommodationState?.hotels ||
-      effectiveExtractionMeta?.travelAccommodationSummary?.pdfHotels,
+  const hotelProjection = projectTravelHotels(
+    normalizeTravelAccommodationHotels(travelAccommodationState?.hotels || effectiveExtractionMeta?.travelAccommodationSummary?.pdfHotels),
+    normalizeTravelAccommodationHotels(existingAdvanced.logistics?.hotels),
+    existingAdvanced.logistics?.discoveredHotelIds || [],
   );
+  const travelAccommodationHotels = hotelProjection.hotels;
   const travelAccommodationFallbackLink =
     normalizeUrl(
       travelAccommodationState?.fallbackLink ||
@@ -13163,12 +13182,8 @@ export async function mapParseResultToGymData(
     })),
     travelAccommodationFallbackLink,
   );
-  const hotelNarrative =
-    safeString(parseResult.logistics.hotel) ||
-    safeString(travelAccommodationState?.narrative) ||
-    derivedTravelNarrative ||
-    safeString(existingAdvanced.logistics?.hotelInfo) ||
-    "";
+  const hotelNarrative = travelAccommodationState ? derivedTravelNarrative :
+    safeString(parseResult.logistics.hotel) || derivedTravelNarrative || safeString(existingAdvanced.logistics?.hotelInfo) || "";
   const inferredResultsLink = buildTextDerivedLink(
     "Official Results",
     parseResult.meetDetails.resultsInfo,
@@ -13513,6 +13528,7 @@ export async function mapParseResultToGymData(
     },
     logistics: {
       ...(existingAdvanced.logistics || {}),
+      discoveredHotelIds: hotelProjection.discoveredHotelIds,
       enabled: usePublicPageV2 ? true : (existingAdvanced.logistics?.enabled ?? false),
       hotelName:
         (travelAccommodationHotels.length === 1 ? travelAccommodationHotels[0]?.name : "") ||

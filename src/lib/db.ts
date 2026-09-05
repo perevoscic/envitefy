@@ -3277,6 +3277,19 @@ export async function updateEventHistoryTitle(
   return await ensureEventHistoryRowPublicSlug(res.rows[0] || null);
 }
 
+/** Update this nested discovery result atomically without replacing the rest of the event. */
+export async function updateEventTravelAccommodation(id: string, accommodation: object): Promise<EventHistoryRow | null> {
+  await ensureEventPublicSlugSchema();
+  const res = await query<EventHistoryRow>(
+    `update event_history set data = jsonb_set(coalesce(data, '{}'::jsonb), '{discoverySource}',
+      (case when jsonb_typeof(data->'discoverySource') = 'object' then data->'discoverySource' else '{}'::jsonb end)
+      || jsonb_build_object('travelAccommodation', $2::jsonb), true)
+     where id = $1 returning id, user_id, title, data, public_slug, created_at`,
+    [id, JSON.stringify(sanitizeJsonValueForPostgres(accommodation))],
+  );
+  return res.rows[0] || null;
+}
+
 export async function updateEventHistoryDataMerge(
   id: string,
   patch: any,

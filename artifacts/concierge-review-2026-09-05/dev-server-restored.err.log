@@ -462,3 +462,845 @@ Import trace for requested module:
   page: '/icon.png'
 }
  ⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+Image with src "/no-event-placeholder-card-wide.webp" is using quality "60" which is not configured in images.qualities. This config will be required starting in Next.js 16.
+Read more: https://nextjs.org/docs/messages/next-image-unconfigured-qualities
+Image with src "/no-event-placeholder-card-wide.webp" is using quality "60" which is not configured in images.qualities. This config will be required starting in Next.js 16.
+Read more: https://nextjs.org/docs/messages/next-image-unconfigured-qualities
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 120,
+    returnedEventCount: 35,
+    droppedMissingStartCount: 85,
+    fallbackUsed: true,
+    fallbackReason: 'no-invited-upcoming-in-window',
+    emptyReason: null
+  },
+  nextEvent: {
+    id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+    title: 'Varsity Panthers vs Central City Tigers',
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'concierge',
+    startAt: '2026-09-19T00:00:00.000Z'
+  },
+  upcomingCount: 6,
+  eventSample: [
+    {
+      id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+      title: 'Varsity Panthers vs Central City Tigers',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-19T00:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '0e4b7539-cd5e-4c34-9584-e8d99df47226',
+      title: 'Sarah & James Wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-25T12:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'fb6fcbcd-e9df-4a20-b6bd-644950598578',
+      title: "Livia's 8th Flippin Awesome Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-09-28T20:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'de77d39b-1bde-4714-8b2f-a56d331e6cc7',
+      title: 'Ava and James wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-10-10T21:30:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf',
+      title: 'Fright Invite',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'meet-discovery-v2',
+      startAt: '2026-10-23T00:00:00.000Z',
+      status: 'review_ready'
+    },
+    {
+      id: '2ec7e1ce-5df5-4bf3-ba56-3d5f0de70553',
+      title: "Livia's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2036-09-04T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'f5e0117a-bba7-4ba6-88a5-7ef563c417a7',
+      title: 'Basketball Game & Pazzo Dinner',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-04T18:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'e332eb6c-3fda-4e58-b2bb-2c72a0d38e13',
+      title: "It's Game Time — Josiah's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-08-30T19:00:00.000Z',
+      status: null
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 5897
+}
+Image with src "/no-event-placeholder-card-wide.webp" is using quality "60" which is not configured in images.qualities. This config will be required starting in Next.js 16.
+Read more: https://nextjs.org/docs/messages/next-image-unconfigured-qualities
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 120,
+    returnedEventCount: 35,
+    droppedMissingStartCount: 85,
+    fallbackUsed: true,
+    fallbackReason: 'no-invited-upcoming-in-window',
+    emptyReason: null
+  },
+  nextEvent: {
+    id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+    title: 'Varsity Panthers vs Central City Tigers',
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'concierge',
+    startAt: '2026-09-19T00:00:00.000Z'
+  },
+  upcomingCount: 6,
+  eventSample: [
+    {
+      id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+      title: 'Varsity Panthers vs Central City Tigers',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-19T00:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '0e4b7539-cd5e-4c34-9584-e8d99df47226',
+      title: 'Sarah & James Wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-25T12:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'fb6fcbcd-e9df-4a20-b6bd-644950598578',
+      title: "Livia's 8th Flippin Awesome Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-09-28T20:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'de77d39b-1bde-4714-8b2f-a56d331e6cc7',
+      title: 'Ava and James wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-10-10T21:30:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf',
+      title: 'Fright Invite',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'meet-discovery-v2',
+      startAt: '2026-10-23T00:00:00.000Z',
+      status: 'review_ready'
+    },
+    {
+      id: '2ec7e1ce-5df5-4bf3-ba56-3d5f0de70553',
+      title: "Livia's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2036-09-04T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'f5e0117a-bba7-4ba6-88a5-7ef563c417a7',
+      title: 'Basketball Game & Pazzo Dinner',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-04T18:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'e332eb6c-3fda-4e58-b2bb-2c72a0d38e13',
+      title: "It's Game Time — Josiah's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-08-30T19:00:00.000Z',
+      status: null
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 5895
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/icon.png'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/'
+}
+Image with src "/no-event-placeholder-card-wide.webp" is using quality "60" which is not configured in images.qualities. This config will be required starting in Next.js 16.
+Read more: https://nextjs.org/docs/messages/next-image-unconfigured-qualities
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 120,
+    returnedEventCount: 35,
+    droppedMissingStartCount: 85,
+    fallbackUsed: true,
+    fallbackReason: 'no-invited-upcoming-in-window',
+    emptyReason: null
+  },
+  nextEvent: {
+    id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+    title: 'Varsity Panthers vs Central City Tigers',
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'concierge',
+    startAt: '2026-09-19T00:00:00.000Z'
+  },
+  upcomingCount: 6,
+  eventSample: [
+    {
+      id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+      title: 'Varsity Panthers vs Central City Tigers',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-19T00:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '0e4b7539-cd5e-4c34-9584-e8d99df47226',
+      title: 'Sarah & James Wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-25T12:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'fb6fcbcd-e9df-4a20-b6bd-644950598578',
+      title: "Livia's 8th Flippin Awesome Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-09-28T20:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'de77d39b-1bde-4714-8b2f-a56d331e6cc7',
+      title: 'Ava and James wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-10-10T21:30:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf',
+      title: 'Fright Invite',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'meet-discovery-v2',
+      startAt: '2026-10-23T00:00:00.000Z',
+      status: 'review_ready'
+    },
+    {
+      id: '2ec7e1ce-5df5-4bf3-ba56-3d5f0de70553',
+      title: "Livia's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2036-09-04T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'f5e0117a-bba7-4ba6-88a5-7ef563c417a7',
+      title: 'Basketball Game & Pazzo Dinner',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-04T18:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'e332eb6c-3fda-4e58-b2bb-2c72a0d38e13',
+      title: "It's Game Time — Josiah's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-08-30T19:00:00.000Z',
+      status: null
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 5898
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/icon.png'
+}
+Image with src "/no-event-placeholder-card-wide.webp" is using quality "60" which is not configured in images.qualities. This config will be required starting in Next.js 16.
+Read more: https://nextjs.org/docs/messages/next-image-unconfigured-qualities
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 120,
+    returnedEventCount: 35,
+    droppedMissingStartCount: 85,
+    fallbackUsed: true,
+    fallbackReason: 'no-invited-upcoming-in-window',
+    emptyReason: null
+  },
+  nextEvent: {
+    id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+    title: 'Varsity Panthers vs Central City Tigers',
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'concierge',
+    startAt: '2026-09-19T00:00:00.000Z'
+  },
+  upcomingCount: 6,
+  eventSample: [
+    {
+      id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+      title: 'Varsity Panthers vs Central City Tigers',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-19T00:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '0e4b7539-cd5e-4c34-9584-e8d99df47226',
+      title: 'Sarah & James Wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-25T12:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'fb6fcbcd-e9df-4a20-b6bd-644950598578',
+      title: "Livia's 8th Flippin Awesome Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-09-28T20:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'de77d39b-1bde-4714-8b2f-a56d331e6cc7',
+      title: 'Ava and James wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-10-10T21:30:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf',
+      title: 'Fright Invite',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'meet-discovery-v2',
+      startAt: '2026-10-23T00:00:00.000Z',
+      status: 'review_ready'
+    },
+    {
+      id: '2ec7e1ce-5df5-4bf3-ba56-3d5f0de70553',
+      title: "Livia's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2036-09-04T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'f5e0117a-bba7-4ba6-88a5-7ef563c417a7',
+      title: 'Basketball Game & Pazzo Dinner',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-04T18:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'e332eb6c-3fda-4e58-b2bb-2c72a0d38e13',
+      title: "It's Game Time — Josiah's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-08-30T19:00:00.000Z',
+      status: null
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 5897
+}
+>>> OpenAI API error: { status: 429 }
+>>> OpenAI Vision API exception: Error [OpenAiOcrError]: OpenAI API returned 429
+    at llmExtractEventFromImage (src\lib\ocr\openai.ts:226:13)
+    at async runOpenAiCandidate (src\lib\ocr\pipeline.ts:472:17)
+    at async handleOcrRequest (src\lib\ocr\pipeline.ts:540:27)
+  224 |     if (!res.ok) {
+  225 |       console.error(">>> OpenAI API error:", { status: res.status });
+> 226 |       throw new OpenAiOcrError(`OpenAI API returned ${res.status}`, {
+      |             ^
+  227 |         code: "OPENAI_HTTP_ERROR",
+  228 |         status: res.status,
+  229 |       }); {
+  code: 'OPENAI_HTTP_ERROR',
+  status: 429,
+  timeoutMs: undefined
+}
+>>> OCR: OpenAI Vision failed with error: Error [OpenAiOcrError]: OpenAI API returned 429
+    at llmExtractEventFromImage (src\lib\ocr\openai.ts:226:13)
+    at async runOpenAiCandidate (src\lib\ocr\pipeline.ts:472:17)
+    at async handleOcrRequest (src\lib\ocr\pipeline.ts:540:27)
+  224 |     if (!res.ok) {
+  225 |       console.error(">>> OpenAI API error:", { status: res.status });
+> 226 |       throw new OpenAiOcrError(`OpenAI API returned ${res.status}`, {
+      |             ^
+  227 |         code: "OPENAI_HTTP_ERROR",
+  228 |         status: res.status,
+  229 |       }); {
+  code: 'OPENAI_HTTP_ERROR',
+  status: 429,
+  timeoutMs: undefined
+}
+>>> OpenAI API error: { status: 429 }
+>>> OpenAI Vision API exception: Error [OpenAiOcrError]: OpenAI API returned 429
+    at llmExtractEventFromImage (src\lib\ocr\openai.ts:226:13)
+    at async runOpenAiCandidate (src\lib\ocr\pipeline.ts:472:17)
+    at async handleOcrRequest (src\lib\ocr\pipeline.ts:569:28)
+  224 |     if (!res.ok) {
+  225 |       console.error(">>> OpenAI API error:", { status: res.status });
+> 226 |       throw new OpenAiOcrError(`OpenAI API returned ${res.status}`, {
+      |             ^
+  227 |         code: "OPENAI_HTTP_ERROR",
+  228 |         status: res.status,
+  229 |       }); {
+  code: 'OPENAI_HTTP_ERROR',
+  status: 429,
+  timeoutMs: undefined
+}
+>>> OCR: OpenAI Vision color fallback failed with error: Error [OpenAiOcrError]: OpenAI API returned 429
+    at llmExtractEventFromImage (src\lib\ocr\openai.ts:226:13)
+    at async runOpenAiCandidate (src\lib\ocr\pipeline.ts:472:17)
+    at async handleOcrRequest (src\lib\ocr\pipeline.ts:569:28)
+  224 |     if (!res.ok) {
+  225 |       console.error(">>> OpenAI API error:", { status: res.status });
+> 226 |       throw new OpenAiOcrError(`OpenAI API returned ${res.status}`, {
+      |             ^
+  227 |         code: "OPENAI_HTTP_ERROR",
+  228 |         status: res.status,
+  229 |       }); {
+  code: 'OPENAI_HTTP_ERROR',
+  status: 429,
+  timeoutMs: undefined
+}
+>>> OpenAI visible-text OCR error: {
+  status: 429,
+  body: '{\n' +
+    '    "error": {\n' +
+    '        "message": "You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",\n' +
+    '        "type": "insufficient_quota",\n' +
+    '        "param": null,\n' +
+    '        "code": "credit_balance_exhausted"\n' +
+    '    }\n' +
+    '}\n'
+}
+>>> OpenAI visible-text OCR exception: Error [OpenAiOcrError]: OpenAI visible-text OCR returned 429
+    at llmExtractVisibleTextFromImage (src\lib\ocr\openai.ts:323:13)
+    at async runOpenAiTextCandidate (src\lib\ocr\pipeline.ts:494:23)
+    at async handleOcrRequest (src\lib\ocr\pipeline.ts:599:17)
+  321 |       const errorBody = await res.text();
+  322 |       console.error(">>> OpenAI visible-text OCR error:", { status: res.status, body: errorBody });
+> 323 |       throw new OpenAiOcrError(`OpenAI visible-text OCR returned ${res.status}`, {
+      |             ^
+  324 |         code: "OPENAI_HTTP_ERROR",
+  325 |         status: res.status,
+  326 |       }); {
+  code: 'OPENAI_HTTP_ERROR',
+  status: 429,
+  timeoutMs: undefined
+}
+>>> OCR: OpenAI visible-text fallback failed with error: Error [OpenAiOcrError]: OpenAI visible-text OCR returned 429
+    at llmExtractVisibleTextFromImage (src\lib\ocr\openai.ts:323:13)
+    at async runOpenAiTextCandidate (src\lib\ocr\pipeline.ts:494:23)
+    at async handleOcrRequest (src\lib\ocr\pipeline.ts:599:17)
+  321 |       const errorBody = await res.text();
+  322 |       console.error(">>> OpenAI visible-text OCR error:", { status: res.status, body: errorBody });
+> 323 |       throw new OpenAiOcrError(`OpenAI visible-text OCR returned ${res.status}`, {
+      |             ^
+  324 |         code: "OPENAI_HTTP_ERROR",
+  325 |         status: res.status,
+  326 |       }); {
+  code: 'OPENAI_HTTP_ERROR',
+  status: 429,
+  timeoutMs: undefined
+}
+[ocr] unreadable {
+  scanAttemptId: 'scan_6a2f03fd-23f1-4f61-bc83-9a3db932affe',
+  fileName: 'september 28th.jpg',
+  fileSize: 1400728,
+  mimeType: 'image/jpeg',
+  providerConfigured: true,
+  timings: {
+    totalMs: 3028,
+    preprocessMs: 145,
+    primaryOcrMs: 695,
+    fallbackOcrMs: 1634,
+    fastMode: false,
+    turboMode: false,
+    model: 'gpt-5.6-terra',
+    fallbackModel: 'gpt-5.6-luna',
+    ocrSource: 'none',
+    failureCode: 'OPENAI_HTTP_ERROR'
+  }
+}
+[client-log] {
+  area: 'snap-upload',
+  stage: 'ingest-final',
+  scanAttemptId: 'scan_6a2f03fd-23f1-4f61-bc83-9a3db932affe',
+  details: {
+    fileName: 'september 28th.jpg',
+    fileSize: 1400728,
+    fileType: 'image/jpeg',
+    scanAttemptId: 'scan_6a2f03fd-23f1-4f61-bc83-9a3db932affe'
+  },
+  error: {
+    name: 'Error',
+    message: 'OCR could not read enough event details from this file. Please try a clearer image or enter the event manually.',
+    stack: 'Error: OCR could not read enough event details from this file. Please try a clearer image or enter the event manually.\n' +
+      '    at Dashboard.useCallback[ingest] (webpack-internal:///(app-pages-browser)/./src/components/Dashboard.tsx:829:27)'
+  },
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36',
+    viewport: { width: 1920, height: 911, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 10, rtt: 100, saveData: false }
+  },
+  timestamp: '2026-09-05T20:33:51.254Z'
+}
+[client-log] {
+  area: 'snap-upload',
+  stage: 'http',
+  scanAttemptId: 'scan_6a2f03fd-23f1-4f61-bc83-9a3db932affe',
+  details: {
+    status: 422,
+    statusText: 'Unprocessable Entity',
+    code: 'OCR_UNREADABLE',
+    detail: 'OPENAI_HTTP_ERROR',
+    ocrSource: 'none',
+    fileName: 'september 28th.jpg',
+    fileSize: 1400728,
+    fileType: 'image/jpeg',
+    scanAttemptId: 'scan_6a2f03fd-23f1-4f61-bc83-9a3db932affe'
+  },
+  error: {
+    name: 'Error',
+    message: 'OCR could not read enough event details from this file. Please try a clearer image or enter the event manually.',
+    stack: 'Error: OCR could not read enough event details from this file. Please try a clearer image or enter the event manually.\n' +
+      '    at Dashboard.useCallback[ingest] (webpack-internal:///(app-pages-browser)/./src/components/Dashboard.tsx:818:36)'
+  },
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36',
+    viewport: { width: 1920, height: 911, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 10, rtt: 100, saveData: false }
+  },
+  timestamp: '2026-09-05T20:33:51.254Z'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/snap'
+}
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 120,
+    returnedEventCount: 35,
+    droppedMissingStartCount: 85,
+    fallbackUsed: true,
+    fallbackReason: 'no-invited-upcoming-in-window',
+    emptyReason: null
+  },
+  nextEvent: {
+    id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+    title: 'Varsity Panthers vs Central City Tigers',
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'concierge',
+    startAt: '2026-09-19T00:00:00.000Z'
+  },
+  upcomingCount: 6,
+  eventSample: [
+    {
+      id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+      title: 'Varsity Panthers vs Central City Tigers',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-19T00:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '0e4b7539-cd5e-4c34-9584-e8d99df47226',
+      title: 'Sarah & James Wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-25T12:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'fb6fcbcd-e9df-4a20-b6bd-644950598578',
+      title: "Livia's 8th Flippin Awesome Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-09-28T20:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'de77d39b-1bde-4714-8b2f-a56d331e6cc7',
+      title: 'Ava and James wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-10-10T21:30:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf',
+      title: 'Fright Invite',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'meet-discovery-v2',
+      startAt: '2026-10-23T00:00:00.000Z',
+      status: 'review_ready'
+    },
+    {
+      id: '2ec7e1ce-5df5-4bf3-ba56-3d5f0de70553',
+      title: "Livia's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2036-09-04T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'f5e0117a-bba7-4ba6-88a5-7ef563c417a7',
+      title: 'Basketball Game & Pazzo Dinner',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-04T18:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'e332eb6c-3fda-4e58-b2bb-2c72a0d38e13',
+      title: "It's Game Time — Josiah's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-08-30T19:00:00.000Z',
+      status: null
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 5897
+}
+[client-log] {
+  area: 'snap-upload',
+  stage: 'event-navigation-start',
+  scanAttemptId: 'scan_5fe2f49c-b90a-4d68-9ecd-7e7a576a7641',
+  details: {
+    eventId: '522f6d87-b6e2-4c43-b580-4d8be652c77d',
+    eventHref: '/event/livia-s-8th-birthday-party-flippin-awesome-at-us-gold-gymnastics?created=1&tab=dashboard&calendarSync=needs_connection'
+  },
+  error: null,
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36',
+    viewport: { width: 1920, height: 911, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 9.45, rtt: 100, saveData: false }
+  },
+  timestamp: '2026-09-05T20:42:32.311Z'
+}
+[client-log] {
+  area: 'snap-upload',
+  stage: 'calendar-sync-complete',
+  scanAttemptId: 'scan_5fe2f49c-b90a-4d68-9ecd-7e7a576a7641',
+  details: {
+    eventId: '522f6d87-b6e2-4c43-b580-4d8be652c77d',
+    ok: false,
+    status: 'needs_connection',
+    provider: null,
+    reason: 'no_supported_calendar_connected'
+  },
+  error: null,
+  environment: {
+    onLine: true,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36',
+    viewport: { width: 1920, height: 911, devicePixelRatio: 1 },
+    connection: { effectiveType: '4g', downlink: 9.45, rtt: 100, saveData: false }
+  },
+  timestamp: '2026-09-05T20:42:32.310Z'
+}
+[dashboard] computeDashboardPayload {
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  userEmail: 'bugjosru@gmail.com',
+  diagnostics: {
+    sourceRowCount: 120,
+    returnedEventCount: 35,
+    droppedMissingStartCount: 85,
+    fallbackUsed: true,
+    fallbackReason: 'no-invited-upcoming-in-window',
+    emptyReason: null
+  },
+  nextEvent: {
+    id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+    title: 'Varsity Panthers vs Central City Tigers',
+    ownership: 'owned',
+    shareStatus: null,
+    createdVia: 'concierge',
+    startAt: '2026-09-19T00:00:00.000Z'
+  },
+  upcomingCount: 7,
+  eventSample: [
+    {
+      id: '9c3003b1-b4eb-48b2-823d-4e68945eab87',
+      title: 'Varsity Panthers vs Central City Tigers',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-19T00:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '0e4b7539-cd5e-4c34-9584-e8d99df47226',
+      title: 'Sarah & James Wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-25T12:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '522f6d87-b6e2-4c43-b580-4d8be652c77d',
+      title: "Livia's 8th Birthday Party — Flippin Awesome",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-09-28T20:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'fb6fcbcd-e9df-4a20-b6bd-644950598578',
+      title: "Livia's 8th Flippin Awesome Birthday Party",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'ocr',
+      startAt: '2026-09-28T20:30:00.000Z',
+      status: null
+    },
+    {
+      id: 'de77d39b-1bde-4714-8b2f-a56d331e6cc7',
+      title: 'Ava and James wedding',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-10-10T21:30:00.000Z',
+      status: 'published'
+    },
+    {
+      id: '489b1f69-9e4d-49ea-bdf7-d5f5174e9fdf',
+      title: 'Fright Invite',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'meet-discovery-v2',
+      startAt: '2026-10-23T00:00:00.000Z',
+      status: 'review_ready'
+    },
+    {
+      id: '2ec7e1ce-5df5-4bf3-ba56-3d5f0de70553',
+      title: "Livia's 10th Birthday",
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2036-09-04T19:00:00.000Z',
+      status: 'published'
+    },
+    {
+      id: 'f5e0117a-bba7-4ba6-88a5-7ef563c417a7',
+      title: 'Basketball Game & Pazzo Dinner',
+      ownership: 'owned',
+      shareStatus: null,
+      createdVia: 'concierge',
+      startAt: '2026-09-04T18:00:00.000Z',
+      status: 'published'
+    }
+  ]
+}
+[dashboard] response_bytes {
+  state: 'miss',
+  userId: '9bf78f15-2c85-4a0d-b62f-dca18d4f6f03',
+  bytes: 6694
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/landing'
+}

@@ -1,4 +1,5 @@
-import { EVENT_EXTRACTION_SCHEMA, EXTRACTION_EVIDENCE_INSTRUCTION, parseEventExtraction } from "./extraction-contract.ts";
+import { EVENT_EXTRACTION_SCHEMA, parseEventExtraction } from "./extraction-contract.ts";
+import { classifyOpenAiHttpFailure } from "./failure.ts";
 import { creationModelBudget, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import { OPENAI_TIMEOUT_MS, resolveOcrModel } from "./constants";
 import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
@@ -28,6 +29,16 @@ export class OpenAiOcrError extends Error {
     this.status = options.status;
     this.timeoutMs = options.timeoutMs;
   }
+}
+
+async function openAiHttpError(response: Response): Promise<OpenAiOcrError> {
+  const body: unknown = await response.json().catch(() => null);
+  const code = classifyOpenAiHttpFailure(response.status, body);
+  // Retain the cause without logging arbitrary provider bodies or credentials.
+  return new OpenAiOcrError(`OpenAI OCR returned ${response.status} (${code})`, {
+    code,
+    status: response.status,
+  });
 }
 
 function isAbortLikeError(error: unknown): boolean {
@@ -131,7 +142,7 @@ export async function fetchWithTimeout(url: string, options: RequestInit, timeou
   const timeout = setTimeout(() => controller.abort(timeoutError), timeoutMs);
   try {
     return await fetch(url, { ...options, signal: controller.signal });
-  } catch (error) {
+  } catch {
     if (controller.signal.aborted) {
       const reason = controller.signal.reason;
       if (reason instanceof OpenAiOcrError) throw reason;
@@ -140,7 +151,9 @@ export async function fetchWithTimeout(url: string, options: RequestInit, timeou
         timeoutMs,
       });
     }
-    throw error;
+    throw new OpenAiOcrError("Could not connect to the OpenAI scan service", {
+      code: "OPENAI_NETWORK_ERROR",
+    });
   } finally {
     clearTimeout(timeout);
   }
@@ -206,7 +219,7 @@ export async function llmExtractEventFromImage(
             temperature: 0.1,
             responseFormat: { type: "json_schema", json_schema: { name: "event_source_v2", strict: true, schema: EVENT_EXTRACTION_SCHEMA } },
             messages: [
-              { role: "system", content: `${prompt.system}\n${EXTRACTION_EVIDENCE_INSTRUCTION}` },
+              { role: "system", content: prompt.system },
               {
                 role: "user",
                 content: [
@@ -222,11 +235,7 @@ export async function llmExtractEventFromImage(
     );
     log(">>> OpenAI API response status:", res.status);
     if (!res.ok) {
-      console.error(">>> OpenAI API error:", { status: res.status });
-      throw new OpenAiOcrError(`OpenAI API returned ${res.status}`, {
-        code: "OPENAI_HTTP_ERROR",
-        status: res.status,
-      });
+      throw await openAiHttpError(res);
     }
     const j: any = await res.json();
     log(">>> OpenAI API response received");
@@ -318,12 +327,7 @@ export async function llmExtractVisibleTextFromImage(
     );
     log(">>> OpenAI visible-text OCR response status:", res.status);
     if (!res.ok) {
-      const errorBody = await res.text();
-      console.error(">>> OpenAI visible-text OCR error:", { status: res.status, body: errorBody });
-      throw new OpenAiOcrError(`OpenAI visible-text OCR returned ${res.status}`, {
-        code: "OPENAI_HTTP_ERROR",
-        status: res.status,
-      });
+      throw await openAiHttpError(res);
     }
     const j: any = await res.json();
     const text = j?.choices?.[0]?.message?.content || "";

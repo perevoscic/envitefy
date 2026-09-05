@@ -1,6 +1,7 @@
 // @ts-nocheck
 "use client";
 
+import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
 import {
   CheckSquare,
   ChevronLeft,
@@ -1979,68 +1980,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         Create yours now.
                       </p>
                     </a>
-                    <div className="mt-4 flex items-center justify-center gap-4">
-                      <a
-                        href="https://www.facebook.com/envitefy"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="opacity-60 transition-opacity hover:opacity-100"
-                        aria-label="Facebook"
-                      >
-                        <Image
-                          src="/email/social-facebook.svg"
-                          alt="Facebook"
-                          width={24}
-                          height={24}
-                          className="h-6 w-6"
-                        />
-                      </a>
-                      <a
-                        href="https://www.instagram.com/envitefy/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="opacity-60 transition-opacity hover:opacity-100"
-                        aria-label="Instagram"
-                      >
-                        <Image
-                          src="/email/social-instagram.svg"
-                          alt="Instagram"
-                          width={24}
-                          height={24}
-                          className="h-6 w-6"
-                        />
-                      </a>
-                      <a
-                        href="https://www.tiktok.com/@envitefy"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="opacity-60 transition-opacity hover:opacity-100"
-                        aria-label="TikTok"
-                      >
-                        <Image
-                          src="/email/social-tiktok.svg"
-                          alt="TikTok"
-                          width={24}
-                          height={24}
-                          className="h-6 w-6"
-                        />
-                      </a>
-                      <a
-                        href="https://www.youtube.com/@Envitefy"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="opacity-60 transition-opacity hover:opacity-100"
-                        aria-label="YouTube"
-                      >
-                        <Image
-                          src="/email/social-youtube.svg"
-                          alt="YouTube"
-                          width={24}
-                          height={24}
-                          className="h-6 w-6"
-                        />
-                      </a>
-                    </div>
+                    <EnvitefySocialLinks placement="event" />
                   </footer>
                 </FootballSeasonPreviewFrame>
               </div>

@@ -1,0 +1,37 @@
+{
+  "dialogue": [
+    {
+      "text": "It's a birthday party, not a second job.",
+      "start": 3.5,
+      "end": 7.2
+    }
+  ],
+  "cuts": [
+    {
+      "start": 0.0,
+      "end": 1.5,
+      "description": "Medium shot of man holding streamer."
+    },
+    {
+      "start": 1.5,
+      "end": 4.2,
+      "description": "Close-up of man looking at wrist."
+    },
+    {
+      "start": 4.2,
+      "end": 7.5,
+      "description": "Extreme close-up of man speaking."
+    },
+    {
+      "start": 7.5,
+      "end": 9.0,
+      "description": "Medium shot of man using phone."
+    }
+  ],
+  "issues": [],
+  "audioQuality": {
+    "naturalness": "Moderate-High",
+    "intelligibility": "Moderate-High",
+    "summary": "Clear and intelligible speech with natural delivery."
+  }
+}

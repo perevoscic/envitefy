@@ -1,0 +1,121 @@
+{
+  "checkedAt": "2026-09-05T18:56:10.822Z",
+  "attempt": {
+    "provider": "playwright",
+    "ok": true,
+    "url": "https://usacompetitions.com/south-florida-fright-invite/",
+    "error": null
+  },
+  "hotels": [
+    {
+      "id": "hotel-s5gty",
+      "name": "Fort Lauderdale Marriott Coral Springs",
+      "address": null,
+      "imageUrl": null,
+      "distanceFromVenue": "5 miles",
+      "groupRate": "$162.00 + tax (per night)",
+      "parking": "Complimentary Parking",
+      "breakfast": "For Purchase",
+      "reservationDeadline": "October 2, 2026",
+      "phone": "(954) 753-5598",
+      "bookingInstructions": "mention “2026 Fright Invite”",
+      "bookingUrl": "https://www.marriott.com/event-reservations/reservation-link.mi?id=1764091239004&key=GRP&app=resvlink&_branch_match_id=1385405844295325234&_branch_referrer=H4sIAAAAAAAAA8soKSkottLXTywo0MtNLCrKzC8p0UvOz9UvSi3OyczLtgdK2ALZZSCOWmaKraG5mYmBpaGRsaWBgYladmqlrXtQgFpdUWpaKlB3Xnp8UlF%2BeXFqkW1wYlpiUSYAOan%2BMWAAAAA%3D",
+      "notes": [],
+      "sourceType": "web",
+      "contentOrigin": "source_text",
+      "confidence": 0.9,
+      "evidence": {
+        "name": [
+          {
+            "value": "Fort Lauderdale Marriott Coral Springs",
+            "quote": "Fort Lauderdale Marriott Coral Springs",
+            "sourceUrl": "https://usacompetitions.com/south-florida-fright-invite/",
+            "sourceId": "https://usacompetitions.com/south-florida-fright-invite/",
+            "pageNumber": null,
+            "method": "text"
+          }
+        ],
+        "distanceFromVenue": [
+          {
+            "value": "5 miles",
+            "quote": "Distance from Venue: 5 miles",
+            "sourceUrl": "https://usacompetitions.com/south-florida-fright-invite/",
+            "sourceId": "https://usacompetitions.com/south-florida-fright-invite/",
+            "pageNumber": null,
+            "method": "text"
+          }
+        ],
+        "groupRate": [
+          {
+            "value": "$162.00 + tax (per night)",
+            "quote": "Rate: $162.00 + tax (per night)",
+            "sourceUrl": "https://usacompetitions.com/south-florida-fright-invite/",
+            "sourceId": "https://usacompetitions.com/south-florida-fright-invite/",
+            "pageNumber": null,
+            "method": "text"
+          }
+        ],
+        "breakfast": [
+          {
+            "value": "For Purchase",
+            "quote": "Breakfast: For Purchase",
+            "sourceUrl": "https://usacompetitions.com/south-florida-fright-invite/",
+            "sourceId": "https://usacompetitions.com/south-florida-fright-invite/",
+            "pageNumber": null,
+            "method": "text"
+          }
+        ],
+        "parking": [
+          {
+            "value": "Complimentary Parking",
+            "quote": "Parking: Complimentary Parking",
+            "sourceUrl": "https://usacompetitions.com/south-florida-fright-invite/",
+            "sourceId": "https://usacompetitions.com/south-florida-fright-invite/",
+            "pageNumber": null,
+            "method": "text"
+          }
+        ],
+        "reservationDeadline": [
+          {
+            "value": "October 2, 2026",
+            "quote": "Reservation Deadline: October 2, 2026",
+            "sourceUrl": "https://usacompetitions.com/south-florida-fright-invite/",
+            "sourceId": "https://usacompetitions.com/south-florida-fright-invite/",
+            "pageNumber": null,
+            "method": "text"
+          }
+        ],
+        "phone": [
+          {
+            "value": "(954) 753-5598",
+            "quote": "Phone Reservations: (954) 753-5598; mention “2026 Fright Invite”",
+            "sourceUrl": "https://usacompetitions.com/south-florida-fright-invite/",
+            "sourceId": "https://usacompetitions.com/south-florida-fright-invite/",
+            "pageNumber": null,
+            "method": "text"
+          }
+        ],
+        "bookingInstructions": [
+          {
+            "value": "mention “2026 Fright Invite”",
+            "quote": "Phone Reservations: (954) 753-5598; mention “2026 Fright Invite”",
+            "sourceUrl": "https://usacompetitions.com/south-florida-fright-invite/",
+            "sourceId": "https://usacompetitions.com/south-florida-fright-invite/",
+            "pageNumber": null,
+            "method": "text"
+          }
+        ],
+        "bookingUrl": [
+          {
+            "value": "https://www.marriott.com/event-reservations/reservation-link.mi?id=1764091239004&key=GRP&app=resvlink&_branch_match_id=1385405844295325234&_branch_referrer=H4sIAAAAAAAAA8soKSkottLXTywo0MtNLCrKzC8p0UvOz9UvSi3OyczLtgdK2ALZZSCOWmaKraG5mYmBpaGRsaWBgYladmqlrXtQgFpdUWpaKlB3Xnp8UlF%2BeXFqkW1wYlpiUSYAOan%2BMWAAAAA%3D",
+            "quote": " [Reserve Hotel Online](https://www.marriott.com/event-reservations/reservation-link.mi?id=1764091239004&key=GRP&app=resvlink&_branch_match_id=1385405844295325234&_branch_referrer=H4sIAAAAAAAAA8soKSkottLXTywo0MtNLCrKzC8p0UvOz9UvSi3OyczLtgdK2ALZZSCOWmaKraG5mYmBpaGRsaWBgYladmqlrXtQgFpdUWpaKlB3Xnp8UlF%2BeXFqkW1wYlpiUSYAOan%2BMWAAAAA%3D) ",
+            "sourceUrl": "https://usacompetitions.com/south-florida-fright-invite/",
+            "sourceId": "https://usacompetitions.com/south-florida-fright-invite/",
+            "pageNumber": null,
+            "method": "link"
+          }
+        ]
+      }
+    }
+  ]
+}

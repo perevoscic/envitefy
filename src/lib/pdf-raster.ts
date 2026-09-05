@@ -1,6 +1,8 @@
 import sharp from "sharp";
+import { pdfLinkContext } from "./pdf-link-context";
 
 export type PdfAnnotationLink = {
+  contextText?: string | null;
   url: string;
   label: string | null;
   pageNumber: number;
@@ -272,7 +274,6 @@ function normalizeHttpUrl(value: unknown): string {
   try {
     const parsed = new URL(raw);
     if (!/^https?:$/i.test(parsed.protocol)) return "";
-    parsed.hash = "";
     return parsed.toString();
   } catch {
     return "";
@@ -444,6 +445,7 @@ export async function extractPdfAnnotationLinks(
       const page = await doc.getPage(pageNumber);
       try {
         const annotations = await page.getAnnotations();
+        const textContent = await page.getTextContent();
         for (const annotation of Array.isArray(annotations) ? annotations : []) {
           const url = normalizeHttpUrl(
             annotation?.url ||
@@ -455,7 +457,8 @@ export async function extractPdfAnnotationLinks(
           const key = `${pageNumber}|${url}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          const label =
+          const nearby = pdfLinkContext(Array.isArray(annotation?.rect) ? annotation.rect : [], textContent.items || []);
+          const label = nearby.label ||
             safeString(annotation?.title) ||
             safeString(annotation?.contents) ||
             safeString(annotation?.fieldName) ||
@@ -463,6 +466,7 @@ export async function extractPdfAnnotationLinks(
           links.push({
             url,
             label,
+            contextText: nearby.contextText,
             pageNumber,
             source: "pdf_annotation",
           });

@@ -1,5 +1,7 @@
 "use client";
 
+import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NormalizedEvent } from "@/lib/mappers";
@@ -303,13 +305,13 @@ export default function EventCreateWysiwyg({ defaultDate, initialCategoryKey }: 
         const res = await fetch("/api/calendars", { credentials: "include" });
         const data = await res.json();
         setConnectedCalendars({
-          google: Boolean(data?.google),
-          microsoft: Boolean(data?.microsoft),
+          google: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.google),
+          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.microsoft),
           apple: Boolean(data?.apple),
         });
         setSelectedCalendars({
-          google: Boolean(data?.google),
-          microsoft: Boolean(data?.microsoft),
+          google: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.google),
+          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.microsoft),
           apple: Boolean(data?.apple),
         });
       } catch (err) {
@@ -649,7 +651,7 @@ export default function EventCreateWysiwyg({ defaultDate, initialCategoryKey }: 
       };
 
       const calendarPromises: Promise<any>[] = [];
-      if (selectedCalendars.google) {
+      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.google) {
         calendarPromises.push(
           fetch("/api/events/google", {
             method: "POST",
@@ -662,7 +664,7 @@ export default function EventCreateWysiwyg({ defaultDate, initialCategoryKey }: 
           }),
         );
       }
-      if (selectedCalendars.microsoft) {
+      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.microsoft) {
         calendarPromises.push(
           fetch("/api/events/outlook", {
             method: "POST",

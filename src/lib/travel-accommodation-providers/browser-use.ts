@@ -2,13 +2,11 @@ import type {
   TravelAccommodationAttempt,
   TravelAccommodationHotel,
 } from "@/lib/travel-accommodation-discovery";
+import { validateModelHotels } from "./astra";
+import type { TravelProviderOptions } from "./budget";
 
 function safeString(value: unknown): string {
-  return typeof value === "string"
-    ? value.trim()
-    : value == null
-    ? ""
-    : String(value).trim();
+  return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
 }
 
 function normalizeUrl(value: unknown): string {
@@ -22,8 +20,13 @@ function normalizeUrl(value: unknown): string {
 }
 
 export async function extractHotelsWithBrowserUse(
-  url: string
-): Promise<{ hotels: TravelAccommodationHotel[]; fallbackLink: string | null; attempt: TravelAccommodationAttempt }> {
+  url: string,
+  options: TravelProviderOptions,
+): Promise<{
+  hotels: TravelAccommodationHotel[];
+  fallbackLink: string | null;
+  attempt: TravelAccommodationAttempt;
+}> {
   const apiKey = safeString(process.env.BROWSER_USE_API_KEY);
   const baseUrl = safeString(process.env.BROWSER_USE_BASE_URL);
   if (!apiKey || !baseUrl || process.env.DISCOVERY_TRAVEL_BROWSER_USE_ENABLED !== "1") {
@@ -40,6 +43,7 @@ export async function extractHotelsWithBrowserUse(
   }
   try {
     const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/tasks`, {
+      signal: options.signal,
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -47,33 +51,21 @@ export async function extractHotelsWithBrowserUse(
       },
       body: JSON.stringify({
         startUrl: url,
-        task:
-          "Find hotel and travel accommodation details for this event and return structured hotel cards with name, bookingUrl, groupRate, reservationDeadline, parking, breakfast, phone, imageUrl, and distanceFromVenue.",
+        task: "Read only this event's linked accommodation pages. Return data.content containing exact page text with markdown links and data.hotels, each with sourceBlock and fields. Every field (name, address, bookingUrl, bookingInstructions, groupRate, reservationDeadline, parking, breakfast, phone, imageUrl, distanceFromVenue) is null or {value, quote}. Quotes must occur verbatim inside sourceBlock and values inside quotes. Preserve full booking URLs. No guesses or attractions.",
       }),
     });
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
-      throw new Error(safeString((payload as any)?.error || response.statusText) || "Browser Use request failed");
+      throw new Error(
+        safeString((payload as any)?.error || response.statusText) || "Browser Use request failed",
+      );
     }
-    const hotels = (Array.isArray((payload as any)?.data?.hotels) ? (payload as any).data.hotels : [])
-      .map((hotel: any) => ({
-        name: safeString(hotel?.name),
-        imageUrl: normalizeUrl(hotel?.imageUrl) || null,
-        distanceFromVenue: safeString(hotel?.distanceFromVenue) || null,
-        groupRate: safeString(hotel?.groupRate) || null,
-        parking: safeString(hotel?.parking) || null,
-        breakfast: safeString(hotel?.breakfast) || null,
-        reservationDeadline: safeString(hotel?.reservationDeadline) || null,
-        phone: safeString(hotel?.phone) || null,
-        bookingUrl: normalizeUrl(hotel?.bookingUrl) || null,
-        notes: Array.isArray(hotel?.notes) ? hotel.notes.map((item: any) => safeString(item)).filter(Boolean) : [],
-        sourceType: "web" as const,
-        contentOrigin: "browser_use",
-        confidence: 0.82,
-      }))
-      .filter((hotel: TravelAccommodationHotel) => hotel.name);
     return {
-      hotels,
+      hotels: validateModelHotels(
+        (payload as any)?.data,
+        safeString((payload as any)?.data?.content),
+        { sourceUrl: url },
+      ),
       fallbackLink: normalizeUrl((payload as any)?.data?.fallbackLink) || null,
       attempt: {
         provider: "browser_use",

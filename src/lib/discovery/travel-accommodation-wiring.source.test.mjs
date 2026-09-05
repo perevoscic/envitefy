@@ -23,8 +23,11 @@ test("discovery v2 compose-public prefers enriched travel accommodation state", 
 
 test("discovery v2 pipeline persists travel accommodation into app-facing discoverySource", () => {
   const source = readSource("src/lib/discovery/run.ts");
-  assert.match(source, /updateEventHistoryDataMerge/);
-  assert.match(source, /discoverySource:\s*\{[\s\S]*travelAccommodation/);
+  assert.match(source, /updateEventTravelAccommodation\(current.eventId, travelAccommodationState\)/);
+  assert.match(source, /invalidateUserHistory/);
+  assert.match(source, /invalidateUserDashboard/);
+  const db = readSource("src/lib/db.ts");
+  assert.match(db, /jsonb_set\(coalesce\(data, '\{\}'::jsonb\), '\{discoverySource\}'/);
 });
 
 test("playwright travel provider uses direct playwright extraction (not generic crawler)", () => {

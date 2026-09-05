@@ -1,0 +1,156 @@
+(node:273320) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/travel-accommodation-enrichment.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ extractHotelCardsFromContent parses HOST HOTEL INFORMATION cards with generic booking CTAs (2.9569ms)
+✔ extractHotelCandidatesFromMarkdown still derives names from nearby generic booking labels (0.2869ms)
+✖ extractHotelCardsFromContent ignores reserve hotel online CTA blocks and stops before local attractions (0.4071ms)
+✖ enrichTravelAccommodation prefers the same-host hotel hub when both hub and vendor links exist (1817.1143ms)
+✖ enrichTravelAccommodation uses AI fallback to recover hotel names from non-card layouts (1593.6327ms)
+✖ enrichTravelAccommodation records a clear timeout error when Firecrawl exceeds the budget (1579.0311ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 1
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4996.5821
+
+✖ failing tests:
+
+test at src\lib\travel-accommodation-enrichment.test.ts:10:1
+✖ extractHotelCardsFromContent parses HOST HOTEL INFORMATION cards with generic booking CTAs (2.9569ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+        address: '1714 SW 34th St, Gainesville, FL 32607',
+  +     bookingUrl: null,
+  +     name: '### Hilton University of Florida Conference Center',
+  +     notes: 'Phone: (352) 371-3600 | Reservation Deadline: March 20, 2026 | Rates: $189 King | $199 Double Queen | Shuttle to venue included. | [Book Now](https://book.example.com/hilton-uf)',
+  -     bookingUrl: 'https://book.example.com/hilton-uf',
+  -     name: 'Hilton University of Florida Conference Center',
+  -     notes: 'Shuttle to venue included.',
+        phone: '(352) 371-3600',
+  +     rateSummary: '$189 King | $199 Double Queen',
+  -     rateSummary: '$189 King $199 Double Queen',
+        reservationDeadline: 'March 20, 2026'
+      },
+      {
+        address: '3700 SW 42nd Street, Gainesville, FL 32608',
+  +     bookingUrl: null,
+  +     name: '### Courtyard Gainesville',
+  +     notes: 'Deadline to Book: March 18, 2026 | Rate: $169/night plus tax | Newly renovated lobby. | [Reserve](https://book.example.com/courtyard) | ## PARKING INFORMATION | Lot A opens at 6:30 AM.',
+  -     bookingUrl: 'https://book.example.com/courtyard',
+  -     name: 'Courtyard Gainesville',
+  -     notes: 'Newly renovated lobby.',
+        phone: '352-335-3800',
+        rateSummary: '$169/night plus tax',
+        reservationDeadline: 'March 18, 2026'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/travel-accommodation-enrichment.test.ts:36:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.start (node:internal/test_runner/test:1015:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\travel-accommodation-enrichment.test.ts:77:1
+✖ extractHotelCardsFromContent ignores reserve hotel online CTA blocks and stops before local attractions (0.4071ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+  +     address: null,
+  +     bookingUrl: null,
+  +     name: '### DoubleTree by Hilton Gainesville',
+  +     notes: 'Phone: (352) 375-2400 | Reservation Deadline: March 19, 2026 | Rate: $148.00 + tax (per night) | Distance from Venue: 1.2 miles | Breakfast: Restaurant on-site | Parking: Complimentary | [Reserve Hotel Online](https://doubletree.example.com/book)',
+  -     bookingUrl: 'https://doubletree.example.com/book',
+  -     name: 'DoubleTree by Hilton Gainesville',
+  -     notes: 'Distance from Venue: 1.2 miles | Breakfast: Restaurant on-site | Parking: Complimentary',
+        phone: '(352) 375-2400',
+        rateSummary: '$148.00 + tax (per night)',
+        reservationDeadline: 'March 19, 2026'
+      },
+      {
+  +     address: null,
+  +     bookingUrl: null,
+  +     name: '### Hotel Indigo',
+  +     notes: 'Phone: (352) 240-8900 | Reservation Deadline: March 31, 2026 | Rate: $199.00 + tax (per night) | Distance from Venue: Same complex | Breakfast: Restaurant on-site | Parking: Complimentary | [Reserve Hotel Online](https://indigo.example.com/book) | ## LOCAL ATTRACTIONS | Depot Park | Open daily.',
+  -     bookingUrl: 'https://indigo.example.com/book',
+  -     name: 'Hotel Indigo',
+  -     notes: 'Distance from Venue: Same complex | Breakfast: Restaurant on-site | Parking: Complimentary',
+        phone: '(352) 240-8900',
+        rateSummary: '$199.00 + tax (per night)',
+        reservationDeadline: 'March 31, 2026'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/travel-accommodation-enrichment.test.ts:106:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\travel-accommodation-enrichment.test.ts:128:1
+✖ enrichTravelAccommodation prefers the same-host hotel hub when both hub and vendor links exist (1817.1143ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'https://api.groupbook.io/group/usag-state-2026'
+  - 'https://usacompetitions.com/2026-xcel-bsg-state-championships/'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/travel-accommodation-enrichment.test.ts:188:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'https://api.groupbook.io/group/usag-state-2026',
+    expected: 'https://usacompetitions.com/2026-xcel-bsg-state-championships/',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\travel-accommodation-enrichment.test.ts:203:1
+✖ enrichTravelAccommodation uses AI fallback to recover hotel names from non-card layouts (1593.6327ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/travel-accommodation-enrichment.test.ts:297:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\travel-accommodation-enrichment.test.ts:312:1
+✖ enrichTravelAccommodation records a clear timeout error when Firecrawl exceeds the budget (1579.0311ms)
+  TypeError: Cannot read properties of undefined (reading 'lastError')
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/travel-accommodation-enrichment.test.ts:348:35)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7)

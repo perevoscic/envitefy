@@ -1,3 +1,4 @@
+import { ENVITEFY_SOCIAL_LINKS } from "@/lib/envitefy-social-links";
 import { buildLandingShowcasePath } from "@/lib/landing-showcase";
 import { buildPublicAssetUrl, resolvePublicAssetOrigin } from "@/lib/public-asset-url";
 
@@ -109,6 +110,7 @@ export const MAGAZINE_1_HTML = `<!DOCTYPE html>
       height:1px; line-height:1px; font-size:1px; background:#ece8f8;
     }
     @media screen and (max-width:640px) {
+      .social-icon-cell { padding:0 4px !important; }
       .px { padding-left:20px !important; padding-right:20px !important; }
       .h1 { font-size:30px !important; line-height:36px !important; }
       .h2 { font-size:22px !important; line-height:28px !important; }
@@ -336,34 +338,17 @@ export interface MagazineRenderOptions {
 function renderMagazineSocialFooter(options: MagazineRenderOptions): string {
   const base = resolvePublicAssetOrigin(options.baseUrl);
   const currentYear = new Date().getFullYear();
-  const socialIcons = [
-    {
-      href: "https://www.instagram.com/envitefy/",
-      title: "Instagram",
-      src: `${base}/email/social-instagram.png`,
-    },
-    {
-      href: "https://www.facebook.com/envitefy/",
-      title: "Facebook",
-      src: `${base}/email/social-facebook.png`,
-    },
-    {
-      href: "https://www.youtube.com/@envitefy",
-      title: "YouTube",
-      src: `${base}/email/social-youtube.png`,
-    },
-    {
-      href: "https://www.tiktok.com/@envitefy",
-      title: "TikTok",
-      src: `${base}/email/social-tiktok.png`,
-    },
-  ];
+  const socialIcons = ENVITEFY_SOCIAL_LINKS.map(({ name, href, iconSrc }) => ({
+    title: name,
+    href,
+    src: `${base}${iconSrc}`,
+  }));
 
   const socialIconsRow = socialIcons
     .map(
       (link) => `
-                      <td style="padding:0 12px;">
-                        <a href="${link.href}" target="_blank" title="${link.title}" style="display:inline-block;">
+                      <td class="social-icon-cell" style="padding:0 12px;">
+                        <a href="${link.href}" target="_blank" rel="noopener noreferrer" title="${link.title}" style="display:inline-block;">
                           <img src="${link.src}" width="36" height="36" alt="${link.title}" style="display:block;">
                         </a>
                       </td>`,

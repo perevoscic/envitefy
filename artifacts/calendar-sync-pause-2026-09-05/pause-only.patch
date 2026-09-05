@@ -1,0 +1,1030 @@
+diff --git a/src/app/api/events/google/route.ts b/src/app/api/events/google/route.ts
+index 3ca56d16..01e21e56 100644
+--- a/src/app/api/events/google/route.ts
++++ b/src/app/api/events/google/route.ts
+@@ -1,3 +1,4 @@
++import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
+ import { google } from "googleapis";
+ import { NextRequest, NextResponse } from "next/server";
+ import { getToken } from "next-auth/jwt";
+@@ -7,6 +8,9 @@ import { getGoogleRefreshToken } from "@/lib/db";
+ export const runtime = "nodejs";
+ 
+ export async function POST(request: NextRequest) {
++  const pausedResponse = getCalendarSyncPauseResponse();
++  if (pausedResponse) return pausedResponse;
++
+   try {
+     const secret =
+       process.env.AUTH_SECRET ??
+diff --git a/src/app/api/events/google/bulk/route.ts b/src/app/api/events/google/bulk/route.ts
+index 0386ec41..c1132846 100644
+--- a/src/app/api/events/google/bulk/route.ts
++++ b/src/app/api/events/google/bulk/route.ts
+@@ -1,3 +1,4 @@
++import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
+ import { NextRequest, NextResponse } from "next/server";
+ import { getToken } from "next-auth/jwt";
+ import { google } from "googleapis";
+@@ -10,6 +11,9 @@ type BulkBody = {
+ };
+ 
+ export async function POST(request: NextRequest) {
++  const pausedResponse = getCalendarSyncPauseResponse();
++  if (pausedResponse) return pausedResponse;
++
+   try {
+     const secret =
+       process.env.AUTH_SECRET ??
+diff --git a/src/app/api/google/insert/route.ts b/src/app/api/google/insert/route.ts
+index c21a5d15..7dee6396 100644
+--- a/src/app/api/google/insert/route.ts
++++ b/src/app/api/google/insert/route.ts
+@@ -1,9 +1,13 @@
++import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
+ import { google } from "googleapis";
+ import { NextResponse } from "next/server";
+ 
+ export const runtime = "nodejs";
+ 
+ export async function POST(request: Request) {
++  const pausedResponse = getCalendarSyncPauseResponse();
++  if (pausedResponse) return pausedResponse;
++
+   try {
+     const body = await request.json();
+     const { title, start, end, location, description, timezone = "America/Chicago" } = body || {};
+diff --git a/src/app/api/google/auth/route.ts b/src/app/api/google/auth/route.ts
+index 23e64f27..488ed3c7 100644
+--- a/src/app/api/google/auth/route.ts
++++ b/src/app/api/google/auth/route.ts
+@@ -1,3 +1,4 @@
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
+ import { google } from "googleapis";
+ import { NextResponse } from "next/server";
+ import { GOOGLE_CALENDAR_EVENT_WRITE_SCOPE } from "@/lib/google-calendar-oauth";
+@@ -12,6 +13,10 @@ function normalizeInternalRedirect(value: string | null): string | null {
+ }
+ 
+ export async function GET(request: Request) {
++  if (!CONNECTED_CALENDAR_SYNC_ENABLED) {
++    return NextResponse.redirect(new URL("/settings#calendars", request.url));
++  }
++
+   const { searchParams } = new URL(request.url);
+   const includeAnalyticsScope = searchParams.get("analytics") === "1";
+   const explicitState = searchParams.get("state") || undefined;
+diff --git a/src/app/api/google/callback/route.ts b/src/app/api/google/callback/route.ts
+index 08c1c5d7..b2ac8cb6 100644
+--- a/src/app/api/google/callback/route.ts
++++ b/src/app/api/google/callback/route.ts
+@@ -1,3 +1,4 @@
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
+ import { google } from "googleapis";
+ import { NextResponse } from "next/server";
+ import { getToken } from "next-auth/jwt";
+@@ -105,6 +106,10 @@ async function emailFromGoogle(accessToken?: string | null): Promise<string | un
+ }
+ 
+ export async function GET(request: Request) {
++  if (!CONNECTED_CALENDAR_SYNC_ENABLED) {
++    return NextResponse.redirect(new URL("/settings#calendars", request.url));
++  }
++
+   try {
+     const { searchParams } = new URL(request.url);
+     const code = searchParams.get("code");
+diff --git a/src/app/api/events/outlook/route.ts b/src/app/api/events/outlook/route.ts
+index bd7bd53b..57a604e1 100644
+--- a/src/app/api/events/outlook/route.ts
++++ b/src/app/api/events/outlook/route.ts
+@@ -1,3 +1,4 @@
++import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
+ import { NextRequest, NextResponse } from "next/server";
+ import { getToken } from "next-auth/jwt";
+ import { NormalizedEvent, toMicrosoftEvent } from "@/lib/mappers";
+@@ -6,6 +7,9 @@ import { getMicrosoftRefreshToken } from "@/lib/db";
+ export const runtime = "nodejs";
+ 
+ export async function POST(request: NextRequest) {
++  const pausedResponse = getCalendarSyncPauseResponse();
++  if (pausedResponse) return pausedResponse;
++
+   try {
+     const secret =
+       process.env.AUTH_SECRET ??
+diff --git a/src/app/api/events/outlook/bulk/route.ts b/src/app/api/events/outlook/bulk/route.ts
+index de61fdb1..0d9d6bb0 100644
+--- a/src/app/api/events/outlook/bulk/route.ts
++++ b/src/app/api/events/outlook/bulk/route.ts
+@@ -1,3 +1,4 @@
++import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
+ import { NextRequest, NextResponse } from "next/server";
+ import { getToken } from "next-auth/jwt";
+ import { NormalizedEvent, toMicrosoftEvent } from "@/lib/mappers";
+@@ -9,6 +10,9 @@ type BulkBody = {
+ };
+ 
+ export async function POST(request: NextRequest) {
++  const pausedResponse = getCalendarSyncPauseResponse();
++  if (pausedResponse) return pausedResponse;
++
+   try {
+     const secret =
+       process.env.AUTH_SECRET ??
+diff --git a/src/app/api/outlook/insert/route.ts b/src/app/api/outlook/insert/route.ts
+index 0b7db053..ccfa220c 100644
+--- a/src/app/api/outlook/insert/route.ts
++++ b/src/app/api/outlook/insert/route.ts
+@@ -1,8 +1,12 @@
++import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
+ import { NextResponse } from "next/server";
+ 
+ export const runtime = "nodejs";
+ 
+ export async function POST(request: Request) {
++  const pausedResponse = getCalendarSyncPauseResponse();
++  if (pausedResponse) return pausedResponse;
++
+   try {
+     const body = await request.json();
+     const { title, start, end, location, description, timezone = "America/Chicago" } = body || {};
+diff --git a/src/app/api/outlook/auth/route.ts b/src/app/api/outlook/auth/route.ts
+index 46f269fd..edcbd712 100644
+--- a/src/app/api/outlook/auth/route.ts
++++ b/src/app/api/outlook/auth/route.ts
+@@ -1,3 +1,4 @@
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
+ import { NextResponse } from "next/server";
+ 
+ export const runtime = "nodejs";
+@@ -10,6 +11,10 @@ function normalizeInternalRedirect(value: string | null): string | null {
+ }
+ 
+ export async function GET(request: Request) {
++  if (!CONNECTED_CALENDAR_SYNC_ENABLED) {
++    return NextResponse.redirect(new URL("/settings#calendars", request.url));
++  }
++
+   const { searchParams } = new URL(request.url);
+   const clientId = process.env.OUTLOOK_CLIENT_ID!;
+   const redirectUri = process.env.OUTLOOK_REDIRECT_URI!;
+diff --git a/src/app/api/outlook/callback/route.ts b/src/app/api/outlook/callback/route.ts
+index 83621e67..e3bee3fc 100644
+--- a/src/app/api/outlook/callback/route.ts
++++ b/src/app/api/outlook/callback/route.ts
+@@ -1,3 +1,4 @@
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
+ import { NextResponse } from "next/server";
+ import { getToken } from "next-auth/jwt";
+ import { saveMicrosoftRefreshToken, updatePreferredProviderByEmail } from "@/lib/db";
+@@ -26,6 +27,10 @@ function readRedirectPath(state: string | null): string | null {
+ }
+ 
+ export async function GET(request: Request) {
++  if (!CONNECTED_CALENDAR_SYNC_ENABLED) {
++    return NextResponse.redirect(new URL("/settings#calendars", request.url));
++  }
++
+   try {
+     const { searchParams } = new URL(request.url);
+     const code = searchParams.get("code");
+diff --git a/src/app/api/events/calendar/auto/route.ts b/src/app/api/events/calendar/auto/route.ts
+index d0db1375..6cf55523 100644
+--- a/src/app/api/events/calendar/auto/route.ts
++++ b/src/app/api/events/calendar/auto/route.ts
+@@ -1,3 +1,4 @@
++import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
+ import { google } from "googleapis";
+ import { getServerSession } from "next-auth";
+ import { NextResponse } from "next/server";
+@@ -307,6 +308,9 @@ async function persistCalendarSync(params: {
+ }
+ 
+ export async function POST(request: Request) {
++  const pausedResponse = getCalendarSyncPauseResponse();
++  if (pausedResponse) return pausedResponse;
++
+   const session = await getServerSession(authOptions);
+   const userId = await resolveSessionUserId(session);
+   const email = session?.user?.email?.trim().toLowerCase() || "";
+diff --git a/src/components/EventCreateForm.tsx b/src/components/EventCreateForm.tsx
+index 0b379ca0..815904c1 100644
+--- a/src/components/EventCreateForm.tsx
++++ b/src/components/EventCreateForm.tsx
+@@ -1,5 +1,7 @@
+ "use client";
+ 
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
++
+ import React, { useEffect, useMemo, useRef, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import RegistryLinksEditor, { type RegistryFormEntry } from "@/components/RegistryLinksEditor";
+@@ -289,13 +291,13 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
+         const res = await fetch("/api/calendars", { credentials: "include" });
+         const data = await res.json();
+         setConnectedCalendars({
+-          google: Boolean(data?.google),
+-          microsoft: Boolean(data?.microsoft),
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.google),
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.microsoft),
+           apple: Boolean(data?.apple),
+         });
+         setSelectedCalendars({
+-          google: Boolean(data?.google),
+-          microsoft: Boolean(data?.microsoft),
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.google),
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.microsoft),
+           apple: Boolean(data?.apple),
+         });
+       } catch (err) {
+@@ -539,7 +541,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
+       };
+ 
+       const calendarPromises: Promise<any>[] = [];
+-      if (selectedCalendars.google) {
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.google) {
+         calendarPromises.push(
+           fetch("/api/events/google", {
+             method: "POST",
+@@ -552,7 +554,7 @@ export default function EventCreateForm({ defaultDate, onCancel }: Props) {
+           }),
+         );
+       }
+-      if (selectedCalendars.microsoft) {
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.microsoft) {
+         calendarPromises.push(
+           fetch("/api/events/outlook", {
+             method: "POST",
+diff --git a/src/components/EventCreateModal.tsx b/src/components/EventCreateModal.tsx
+index 2d181fe6..e435bac5 100644
+--- a/src/components/EventCreateModal.tsx
++++ b/src/components/EventCreateModal.tsx
+@@ -1,5 +1,7 @@
+ "use client";
+ 
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
++
+ import React, { useEffect, useMemo, useRef, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import { RegistryFormEntry } from "@/components/RegistryLinksEditor";
+@@ -486,7 +488,7 @@ export default function EventCreateModal({ open, onClose, defaultDate }: Props)
+ 
+       const calendarPromises: Promise<any>[] = [];
+ 
+-      if (selectedCalendars.google) {
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.google) {
+         calendarPromises.push(
+           fetch("/api/events/google", {
+             method: "POST",
+@@ -500,7 +502,7 @@ export default function EventCreateModal({ open, onClose, defaultDate }: Props)
+         );
+       }
+ 
+-      if (selectedCalendars.microsoft) {
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.microsoft) {
+         calendarPromises.push(
+           fetch("/api/events/outlook", {
+             method: "POST",
+diff --git a/src/components/EventCreateWysiwyg.tsx b/src/components/EventCreateWysiwyg.tsx
+index fd246824..002b913f 100644
+--- a/src/components/EventCreateWysiwyg.tsx
++++ b/src/components/EventCreateWysiwyg.tsx
+@@ -1,5 +1,7 @@
+ "use client";
+ 
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
++
+ import React, { useEffect, useMemo, useRef, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import type { NormalizedEvent } from "@/lib/mappers";
+@@ -303,13 +305,13 @@ export default function EventCreateWysiwyg({ defaultDate, initialCategoryKey }:
+         const res = await fetch("/api/calendars", { credentials: "include" });
+         const data = await res.json();
+         setConnectedCalendars({
+-          google: Boolean(data?.google),
+-          microsoft: Boolean(data?.microsoft),
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.google),
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.microsoft),
+           apple: Boolean(data?.apple),
+         });
+         setSelectedCalendars({
+-          google: Boolean(data?.google),
+-          microsoft: Boolean(data?.microsoft),
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.google),
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.microsoft),
+           apple: Boolean(data?.apple),
+         });
+       } catch (err) {
+@@ -649,7 +651,7 @@ export default function EventCreateWysiwyg({ defaultDate, initialCategoryKey }:
+       };
+ 
+       const calendarPromises: Promise<any>[] = [];
+-      if (selectedCalendars.google) {
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.google) {
+         calendarPromises.push(
+           fetch("/api/events/google", {
+             method: "POST",
+@@ -662,7 +664,7 @@ export default function EventCreateWysiwyg({ defaultDate, initialCategoryKey }:
+           }),
+         );
+       }
+-      if (selectedCalendars.microsoft) {
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.microsoft) {
+         calendarPromises.push(
+           fetch("/api/events/outlook", {
+             method: "POST",
+diff --git a/src/components/event-create/AppointmentsCreate.tsx b/src/components/event-create/AppointmentsCreate.tsx
+index ffdf17e9..97f1dcc9 100644
+--- a/src/components/event-create/AppointmentsCreate.tsx
++++ b/src/components/event-create/AppointmentsCreate.tsx
+@@ -1,5 +1,7 @@
+ "use client";
+ 
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
++
+ import React, { useEffect, useMemo, useRef, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import type { NormalizedEvent } from "@/lib/mappers";
+@@ -167,13 +169,13 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
+         const res = await fetch("/api/calendars", { credentials: "include" });
+         const data = await res.json();
+         setConnectedCalendars({
+-          google: !!data?.google,
+-          microsoft: !!data?.microsoft,
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.google,
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.microsoft,
+           apple: !!data?.apple,
+         });
+         setSelectedCalendars({
+-          google: !!data?.google,
+-          microsoft: !!data?.microsoft,
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.google,
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.microsoft,
+           apple: !!data?.apple,
+         });
+       } catch {}
+@@ -408,7 +410,7 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
+         signupForm: null,
+       };
+       const tasks: Promise<any>[] = [];
+-      if (selectedCalendars.google)
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.google)
+         tasks.push(
+           fetch("/api/events/google", {
+             method: "POST",
+@@ -417,7 +419,7 @@ export default function AppointmentsCreate({ defaultDate }: Props) {
+             body: JSON.stringify(normalizedEvent),
+           }).catch(() => ({ ok: false }))
+         );
+-      if (selectedCalendars.microsoft)
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.microsoft)
+         tasks.push(
+           fetch("/api/events/outlook", {
+             method: "POST",
+diff --git a/src/components/event-create/BabyShowersCreate.tsx b/src/components/event-create/BabyShowersCreate.tsx
+index dd8d0895..2e4aa366 100644
+--- a/src/components/event-create/BabyShowersCreate.tsx
++++ b/src/components/event-create/BabyShowersCreate.tsx
+@@ -1,5 +1,7 @@
+ "use client";
+ 
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
++
+ import React, { useEffect, useMemo, useRef, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import type { NormalizedEvent } from "@/lib/mappers";
+@@ -416,13 +418,13 @@ export default function BabyShowersCreate({
+         const res = await fetch("/api/calendars", { credentials: "include" });
+         const data = await res.json();
+         setConnectedCalendars({
+-          google: !!data?.google,
+-          microsoft: !!data?.microsoft,
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.google,
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.microsoft,
+           apple: !!data?.apple,
+         });
+         setSelectedCalendars({
+-          google: !!data?.google,
+-          microsoft: !!data?.microsoft,
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.google,
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.microsoft,
+           apple: !!data?.apple,
+         });
+       } catch {}
+@@ -789,7 +791,7 @@ export default function BabyShowersCreate({
+         signupForm: null,
+       };
+       const tasks: Promise<any>[] = [];
+-      if (selectedCalendars.google)
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.google)
+         tasks.push(
+           fetch("/api/events/google", {
+             method: "POST",
+@@ -798,7 +800,7 @@ export default function BabyShowersCreate({
+             body: JSON.stringify(normalizedEvent),
+           }).catch(() => ({ ok: false }))
+         );
+-      if (selectedCalendars.microsoft)
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.microsoft)
+         tasks.push(
+           fetch("/api/events/outlook", {
+             method: "POST",
+diff --git a/src/components/event-create/BirthdaysCreate.tsx b/src/components/event-create/BirthdaysCreate.tsx
+index 0ec97cf7..a0ab0b2b 100644
+--- a/src/components/event-create/BirthdaysCreate.tsx
++++ b/src/components/event-create/BirthdaysCreate.tsx
+@@ -1,5 +1,7 @@
+ "use client";
+ 
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
++
+ import React, { useEffect, useMemo, useRef, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import type { NormalizedEvent } from "@/lib/mappers";
+@@ -297,13 +299,13 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
+         const res = await fetch("/api/calendars", { credentials: "include" });
+         const data = await res.json();
+         setConnectedCalendars({
+-          google: Boolean(data?.google),
+-          microsoft: Boolean(data?.microsoft),
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.google),
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.microsoft),
+           apple: Boolean(data?.apple),
+         });
+         setSelectedCalendars({
+-          google: Boolean(data?.google),
+-          microsoft: Boolean(data?.microsoft),
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.google),
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && Boolean(data?.microsoft),
+           apple: Boolean(data?.apple),
+         });
+       } catch {}
+@@ -908,7 +910,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
+       };
+ 
+       const calendarPromises: Promise<any>[] = [];
+-      if (selectedCalendars.google) {
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.google) {
+         calendarPromises.push(
+           fetch("/api/events/google", {
+             method: "POST",
+@@ -918,7 +920,7 @@ export default function BirthdaysCreate({ defaultDate, editEventId }: Props) {
+           }).catch(() => ({ ok: false })),
+         );
+       }
+-      if (selectedCalendars.microsoft) {
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.microsoft) {
+         calendarPromises.push(
+           fetch("/api/events/outlook", {
+             method: "POST",
+diff --git a/src/components/event-create/GenderRevealCreate.tsx b/src/components/event-create/GenderRevealCreate.tsx
+index 8c00607b..2849a628 100644
+--- a/src/components/event-create/GenderRevealCreate.tsx
++++ b/src/components/event-create/GenderRevealCreate.tsx
+@@ -1,5 +1,7 @@
+ "use client";
+ 
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
++
+ import React, { useEffect, useMemo, useRef, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import type { NormalizedEvent } from "@/lib/mappers";
+@@ -417,13 +419,13 @@ export default function GenderRevealCreate({
+         const res = await fetch("/api/calendars", { credentials: "include" });
+         const data = await res.json();
+         setConnectedCalendars({
+-          google: !!data?.google,
+-          microsoft: !!data?.microsoft,
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.google,
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.microsoft,
+           apple: !!data?.apple,
+         });
+         setSelectedCalendars({
+-          google: !!data?.google,
+-          microsoft: !!data?.microsoft,
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.google,
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.microsoft,
+           apple: !!data?.apple,
+         });
+       } catch {}
+@@ -797,7 +799,7 @@ export default function GenderRevealCreate({
+         signupForm: null,
+       };
+       const tasks: Promise<any>[] = [];
+-      if (selectedCalendars.google)
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.google)
+         tasks.push(
+           fetch("/api/events/google", {
+             method: "POST",
+@@ -806,7 +808,7 @@ export default function GenderRevealCreate({
+             body: JSON.stringify(normalizedEvent),
+           }).catch(() => ({ ok: false }))
+         );
+-      if (selectedCalendars.microsoft)
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.microsoft)
+         tasks.push(
+           fetch("/api/events/outlook", {
+             method: "POST",
+diff --git a/src/components/event-create/SportEventsCreate.tsx b/src/components/event-create/SportEventsCreate.tsx
+index b698815a..22e3337f 100644
+--- a/src/components/event-create/SportEventsCreate.tsx
++++ b/src/components/event-create/SportEventsCreate.tsx
+@@ -1,5 +1,7 @@
+ "use client";
+ 
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
++
+ import React, { useEffect, useMemo, useRef, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import type { NormalizedEvent } from "@/lib/mappers";
+@@ -166,13 +168,13 @@ export default function SportEventsCreate({ defaultDate }: Props) {
+         const res = await fetch("/api/calendars", { credentials: "include" });
+         const data = await res.json();
+         setConnectedCalendars({
+-          google: !!data?.google,
+-          microsoft: !!data?.microsoft,
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.google,
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.microsoft,
+           apple: !!data?.apple,
+         });
+         setSelectedCalendars({
+-          google: !!data?.google,
+-          microsoft: !!data?.microsoft,
++          google: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.google,
++          microsoft: CONNECTED_CALENDAR_SYNC_ENABLED && !!data?.microsoft,
+           apple: !!data?.apple,
+         });
+       } catch {}
+@@ -401,7 +403,7 @@ export default function SportEventsCreate({ defaultDate }: Props) {
+         signupForm: null,
+       };
+       const tasks: Promise<any>[] = [];
+-      if (selectedCalendars.google)
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.google)
+         tasks.push(
+           fetch("/api/events/google", {
+             method: "POST",
+@@ -410,7 +412,7 @@ export default function SportEventsCreate({ defaultDate }: Props) {
+             body: JSON.stringify(normalizedEvent),
+           }).catch(() => ({ ok: false }))
+         );
+-      if (selectedCalendars.microsoft)
++      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.microsoft)
+         tasks.push(
+           fetch("/api/events/outlook", {
+             method: "POST",
+diff --git a/src/components/Dashboard.tsx b/src/components/Dashboard.tsx
+index 8130676e..b60ed0e9 100644
+--- a/src/components/Dashboard.tsx
++++ b/src/components/Dashboard.tsx
+@@ -1,5 +1,7 @@
+ "use client";
+ 
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
++
+ import * as chrono from "chrono-node";
+ import { Eye, Mail, Pencil, Share2, UserPlus } from "lucide-react";
+ import { usePathname, useRouter } from "next/navigation";
+@@ -1804,52 +1806,54 @@ export default function Dashboard({
+           provider?: "google" | "microsoft" | null;
+           reason?: string;
+         } | null = null;
+-        try {
+-          const calendarSyncResponse = await fetch("/api/events/calendar/auto", {
+-            method: "POST",
+-            headers: { "Content-Type": "application/json" },
+-            credentials: "include",
+-            cache: "no-store",
+-            body: JSON.stringify({ eventId }),
+-          });
+-          const calendarSyncPayload = await calendarSyncResponse.json().catch(() => ({}));
+-          calendarSync = {
+-            status:
+-              typeof calendarSyncPayload?.status === "string"
+-                ? calendarSyncPayload.status
+-                : undefined,
+-            provider:
+-              calendarSyncPayload?.provider === "google" ||
+-              calendarSyncPayload?.provider === "microsoft"
+-                ? calendarSyncPayload.provider
+-                : null,
+-            reason:
+-              typeof calendarSyncPayload?.reason === "string"
+-                ? calendarSyncPayload.reason
+-                : undefined,
+-          };
+-          reportClientLog({
+-            area: "snap-upload",
+-            stage: "calendar-sync-complete",
+-            scanAttemptId,
+-            details: {
+-              eventId,
+-              ok: calendarSyncResponse.ok && calendarSyncPayload?.ok !== false,
+-              status: calendarSync.status || null,
+-              provider: calendarSync.provider || null,
+-              reason: calendarSync.reason || null,
+-            },
+-          });
+-        } catch (error) {
+-          const message = error instanceof Error ? error.message : String(error);
+-          calendarSync = { status: "failed", reason: "request_failed" };
+-          console.warn("Automatic calendar sync could not be completed:", message);
+-          reportClientLog({
+-            area: "snap-upload",
+-            stage: "calendar-sync-failed",
+-            scanAttemptId,
+-            details: { eventId, message },
+-          });
++        if (CONNECTED_CALENDAR_SYNC_ENABLED) {
++          try {
++            const calendarSyncResponse = await fetch("/api/events/calendar/auto", {
++              method: "POST",
++              headers: { "Content-Type": "application/json" },
++              credentials: "include",
++              cache: "no-store",
++              body: JSON.stringify({ eventId }),
++            });
++            const calendarSyncPayload = await calendarSyncResponse.json().catch(() => ({}));
++            calendarSync = {
++              status:
++                typeof calendarSyncPayload?.status === "string"
++                  ? calendarSyncPayload.status
++                  : undefined,
++              provider:
++                calendarSyncPayload?.provider === "google" ||
++                calendarSyncPayload?.provider === "microsoft"
++                  ? calendarSyncPayload.provider
++                  : null,
++              reason:
++                typeof calendarSyncPayload?.reason === "string"
++                  ? calendarSyncPayload.reason
++                  : undefined,
++            };
++            reportClientLog({
++              area: "snap-upload",
++              stage: "calendar-sync-complete",
++              scanAttemptId,
++              details: {
++                eventId,
++                ok: calendarSyncResponse.ok && calendarSyncPayload?.ok !== false,
++                status: calendarSync.status || null,
++                provider: calendarSync.provider || null,
++                reason: calendarSync.reason || null,
++              },
++            });
++          } catch (error) {
++            const message = error instanceof Error ? error.message : String(error);
++            calendarSync = { status: "failed", reason: "request_failed" };
++            console.warn("Automatic calendar sync could not be completed:", message);
++            reportClientLog({
++              area: "snap-upload",
++              stage: "calendar-sync-failed",
++              scanAttemptId,
++              details: { eventId, message },
++            });
++          }
+         }
+ 
+         if (typeof window !== "undefined") {
+diff --git a/src/components/FirstScanCalendarPrompt.tsx b/src/components/FirstScanCalendarPrompt.tsx
+index ca356dad..55f8fb37 100644
+--- a/src/components/FirstScanCalendarPrompt.tsx
++++ b/src/components/FirstScanCalendarPrompt.tsx
+@@ -1,5 +1,7 @@
+ "use client";
+ 
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
++
+ import * as Dialog from "@radix-ui/react-dialog";
+ import { AlertTriangle, CalendarClock, CheckCircle2, LoaderCircle, X } from "lucide-react";
+ import Link from "next/link";
+@@ -85,6 +87,7 @@ export default function FirstScanCalendarPrompt({
+   }, [promptKey]);
+ 
+   useEffect(() => {
++    if (!CONNECTED_CALENDAR_SYNC_ENABLED) return;
+     if (calendarSetupProvider || syncStatus !== "needs_connection" || !appleCalendarHref) {
+       setDecisionLoaded(true);
+       return;
+@@ -101,6 +104,7 @@ export default function FirstScanCalendarPrompt({
+   }, [appleCalendarHref, calendarSetupProvider, promptKey, syncStatus]);
+ 
+   useEffect(() => {
++    if (!CONNECTED_CALENDAR_SYNC_ENABLED) return;
+     if (!calendarSetupProvider || syncStartedRef.current) return;
+     syncStartedRef.current = true;
+     markPromptHandled();
+@@ -228,6 +232,8 @@ export default function FirstScanCalendarPrompt({
+     openAppleCalendarIcs(appleCalendarHref);
+   };
+ 
++  if (!CONNECTED_CALENDAR_SYNC_ENABLED) return null;
++
+   const reconnectCopy =
+     syncStatus === "needs_reconnect"
+       ? `${providerLabel(syncProvider || null)} needs to be reconnected before events can sync.`
+diff --git a/src/app/settings/page.tsx b/src/app/settings/page.tsx
+index 7ea05706..487f7108 100644
+--- a/src/app/settings/page.tsx
++++ b/src/app/settings/page.tsx
+@@ -1,4 +1,6 @@
+ "use client";
++
++import { CONNECTED_CALENDAR_SYNC_ENABLED, CALENDAR_SYNC_PAUSED_MESSAGE } from "@/config/calendar-sync";
+ import * as Dialog from "@radix-ui/react-dialog";
+ import {
+   CalendarDays,
+@@ -350,6 +352,7 @@ export default function SettingsPage() {
+ 
+   const handleCalendarConnect = useCallback(
+     (provider: ConnectedCalendarProvider) => {
++      if (!CONNECTED_CALENDAR_SYNC_ENABLED) return;
+       if (typeof window === "undefined") return;
+       if (provider === "google") {
+         const next = encodeURIComponent("/settings#calendars");
+@@ -944,7 +947,9 @@ export default function SettingsPage() {
+                   Calendars
+                 </h2>
+                 <p className="mt-1 text-sm text-muted-foreground">
+-                  Connect Google or Outlook for background sync and choose your default calendar.
++                  {CONNECTED_CALENDAR_SYNC_ENABLED
++                    ? "Connect Google or Outlook for background sync and choose your default calendar."
++                    : CALENDAR_SYNC_PAUSED_MESSAGE}
+                 </p>
+               </div>
+               <button
+@@ -1026,11 +1031,11 @@ export default function SettingsPage() {
+                         <button
+                           type="button"
+                           onClick={() => handleCalendarConnect(item.key)}
+-                          disabled={disconnecting}
++                          disabled={disconnecting || !CONNECTED_CALENDAR_SYNC_ENABLED}
+                           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
+                         >
+                           <RefreshCw className="h-4 w-4" aria-hidden="true" />
+-                          Reconnect
++                          {CONNECTED_CALENDAR_SYNC_ENABLED ? "Reconnect" : "Sync paused"}
+                         </button>
+                           <button
+                             type="button"
+@@ -1049,9 +1054,10 @@ export default function SettingsPage() {
+                       <button
+                         type="button"
+                         onClick={() => handleCalendarConnect(item.key)}
+-                        className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2"
++                        disabled={!CONNECTED_CALENDAR_SYNC_ENABLED}
++                        className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
+                       >
+-                        Connect {item.label}
++                        {CONNECTED_CALENDAR_SYNC_ENABLED ? `Connect ${item.label}` : "Sync paused"}
+                       </button>
+                     )}
+                   </div>
+@@ -1059,7 +1065,7 @@ export default function SettingsPage() {
+               })}
+             </div>
+ 
+-            <div className="space-y-4 rounded-2xl border border-[#e5dcff] bg-white p-4 sm:p-5">
++            <div hidden={!CONNECTED_CALENDAR_SYNC_ENABLED} className="space-y-4 rounded-2xl border border-[#e5dcff] bg-white p-4 sm:p-5">
+               <p className="text-sm font-medium text-[#2f1d47]">Default calendar</p>
+               <p className="text-xs text-[#7a6ca8]">
+                 Choose a connected provider. Apple Calendar remains available as a one-event
+diff --git a/src/lib/product-marketing-catalog.ts b/src/lib/product-marketing-catalog.ts
+index 6760c1f7..4fa10b1b 100644
+--- a/src/lib/product-marketing-catalog.ts
++++ b/src/lib/product-marketing-catalog.ts
+@@ -1,3 +1,4 @@
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
+ /**
+  * Customer-facing Envitefy product truth for marketing and sales copy.
+  *
+@@ -218,7 +219,9 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
+             "Let guests save the event instead of relying on the invitation to remember it.",
+           proofPoints: [
+             "Live pages support Google Calendar, Apple Calendar/ICS, and Outlook calendar actions.",
+-            "Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings; Apple Calendar uses a one-event ICS handoff.",
++            ...(CONNECTED_CALENDAR_SYNC_ENABLED
++              ? ["Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings; Apple Calendar uses a one-event ICS handoff."]
++              : ["Guests can manually save events with calendar links or ICS downloads; these actions do not require a connected calendar account."]),
+             "Calendar entries can carry event timing, location, and available reminder information.",
+             "Specialized schedule flows can expose the relevant event or session timing.",
+           ],
+diff --git a/src/app/faq/page.tsx b/src/app/faq/page.tsx
+index 9e3531f0..fa5a37de 100644
+--- a/src/app/faq/page.tsx
++++ b/src/app/faq/page.tsx
+@@ -1,3 +1,4 @@
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
+ import type { Metadata } from "next";
+ import Script from "next/script";
+ import CompanyPageShell from "@/components/company/CompanyPageShell";
+@@ -100,7 +101,9 @@ const faqItems: FaqPageItem[] = [
+     id: "calendar-saves",
+     question: "Which calendars does Envitefy support?",
+     answer:
+-      "Live pages can offer Google Calendar, Apple Calendar through an ICS handoff, and Outlook calendar actions. Signed-in owners can connect Google Calendar or Outlook to automatically sync newly scanned events; Apple Calendar uses a one-event ICS save.",
++      CONNECTED_CALENDAR_SYNC_ENABLED
++        ? "Live pages can offer Google Calendar, Apple Calendar through an ICS handoff, and Outlook calendar actions. Signed-in owners can connect Google Calendar or Outlook to automatically sync newly scanned events; Apple Calendar uses a one-event ICS save."
++        : "Live pages can offer manual Google Calendar and Outlook links, plus Apple Calendar through an ICS download. Automatic Google and Outlook syncing is temporarily paused. Scanned, uploaded, and newly created events still save to Envitefy.",
+   },
+   {
+     id: "maps-and-schedules",
+diff --git a/src/app/privacy/page.tsx b/src/app/privacy/page.tsx
+index b8c6dd1b..785c2f3f 100644
+--- a/src/app/privacy/page.tsx
++++ b/src/app/privacy/page.tsx
+@@ -1,3 +1,4 @@
++import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
+ import Link from "next/link";
+ import CompanyPageShell from "@/components/company/CompanyPageShell";
+ import { legalConfig } from "@/lib/legal-config";
+@@ -58,6 +59,9 @@ const privacySections = [
+   {
+     title: "6. Google user data and Limited Use",
+     body: [
++      ...(!CONNECTED_CALENDAR_SYNC_ENABLED
++        ? ["Current availability: Google Calendar and Outlook connections and automatic syncing are temporarily paused. Envitefy does not request new calendar permissions or read or write connected calendar events during this pause. Google sign-in, manual calendar links, ICS downloads, and disconnecting existing connections remain available."]
++        : []),
+       "Access and features: Google sign-in uses the openid, email, and profile permissions to authenticate you, create or locate your Envitefy account, and display the account information you chose to share. The Google Calendar connection requests calendar.events.owned so Envitefy can add an event you created or scanned to your primary calendar and retrieve that specific Envitefy-created calendar event when needed to prevent a duplicate or confirm the calendar action. Envitefy does not import or analyze your general Google Calendar history.",
+       "Administrative analytics connection: analytics.readonly is requested only when an expressly authorized Envitefy administrator starts the separate Google Analytics connection. It is used solely to display reports for Envitefy’s own GA4 property in Envitefy’s internal administrator dashboard. It is not requested during an ordinary user’s Google sign-in or calendar connection.",
+       "Use: information received from Google APIs is used only to provide or improve the Google-connected, user-facing functionality described above. It is not used for generalized product research or improvement, advertising, marketing, retargeting, interest-based profiles, credit decisions, sale to data brokers, or training or improving any generalized artificial-intelligence or machine-learning model.",
+diff --git a/src/config/calendar-sync.ts b/src/config/calendar-sync.ts
+new file mode 100644
+--- /dev/null
++++ b/src/config/calendar-sync.ts
+@@ -0,0 +1,10 @@
++/**
++ * Temporary calendar integration hold for Google verification (2026-09-05).
++ * Set to true and rebuild/redeploy to restore the existing integration flows.
++ * Restore record: docs/calendar-sync-pause-2026-09-05.md.
++ * This shared switch applies to every user and both client and server code.
++ */
++export const CONNECTED_CALENDAR_SYNC_ENABLED: boolean = false;
++
++export const CALENDAR_SYNC_PAUSED_MESSAGE =
++  "Google Calendar and Outlook syncing is temporarily paused. Your events still save to Envitefy. You can use Add to calendar on an event to save it manually.";
+diff --git a/src/lib/calendar-sync-pause.ts b/src/lib/calendar-sync-pause.ts
+new file mode 100644
+--- /dev/null
++++ b/src/lib/calendar-sync-pause.ts
+@@ -0,0 +1,16 @@
++import { CALENDAR_SYNC_PAUSED_MESSAGE, CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
++
++/** Stop before authentication, token refresh, provider calls, or sync metadata writes. */
++export function getCalendarSyncPauseResponse(): Response | null {
++  if (CONNECTED_CALENDAR_SYNC_ENABLED) return null;
++
++  return Response.json(
++    {
++      ok: false,
++      status: "paused",
++      code: "CALENDAR_SYNC_PAUSED",
++      error: CALENDAR_SYNC_PAUSED_MESSAGE,
++    },
++    { status: 503, headers: { "Cache-Control": "no-store" } },
++  );
++}
+diff --git a/src/lib/calendar-sync-pause.test.mjs b/src/lib/calendar-sync-pause.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/src/lib/calendar-sync-pause.test.mjs
+@@ -0,0 +1,138 @@
++import assert from "node:assert/strict";
++import { readFileSync } from "node:fs";
++import { createRequire } from "node:module";
++import test from "node:test";
++import { fileURLToPath } from "node:url";
++import vm from "node:vm";
++import ts from "typescript";
++
++const require = createRequire(import.meta.url);
++const root = new URL("../../", import.meta.url);
++const nextServer = require("next/server");
++const realReact = require("react");
++const { renderToStaticMarkup } = require("react-dom/server");
++
++function loadModule(relativePath, { enabled = false, calls = [] } = {}) {
++  const filename = fileURLToPath(new URL(relativePath, root));
++  let source = readFileSync(filename, "utf8");
++  if (relativePath === "src/config/calendar-sync.ts" && enabled !== undefined) {
++    source = source.replace(/SYNC_ENABLED: boolean = (true|false)/, `SYNC_ENABLED: boolean = ${enabled}`);
++  }
++  const result = ts.transpileModule(source, {
++    compilerOptions: {
++      target: ts.ScriptTarget.ES2022,
++      module: ts.ModuleKind.CommonJS,
++      jsx: ts.JsxEmit.ReactJSX,
++      esModuleInterop: true,
++    },
++    fileName: filename,
++  });
++  const module = { exports: {} };
++  const forbidden = (name) => new Proxy(() => {
++    calls.push(name);
++    throw new Error(`Unexpected side effect: ${name}`);
++  }, {
++    get(_target, key) {
++      if (key === "__esModule") return true;
++      return forbidden(`${name}.${String(key)}`);
++    },
++  });
++  const localRequire = (name) => {
++    if (name === "next/server") return nextServer;
++    if (name === "react") return realReact;
++    if (name === "react/jsx-runtime") return require(name);
++    if (name === "@/config/calendar-sync") {
++      return loadModule("src/config/calendar-sync.ts", { enabled, calls });
++    }
++    if (name === "@/lib/calendar-sync-pause") {
++      return loadModule("src/lib/calendar-sync-pause.ts", { enabled, calls });
++    }
++    return forbidden(name);
++  };
++  vm.runInNewContext(result.outputText, {
++    module,
++    exports: module.exports,
++    require: localRequire,
++    Request,
++    Response,
++    URL,
++    URLSearchParams,
++    Buffer,
++    process: { env: {} },
++    fetch: forbidden("fetch"),
++    console: { info() {}, warn() {}, error() {} },
++  }, { filename });
++  return module.exports;
++}
++
++test("the disabled switch pauses sync, and the same switch can restore it", async () => {
++  const paused = loadModule("src/lib/calendar-sync-pause.ts").getCalendarSyncPauseResponse();
++  assert.equal(paused.status, 503);
++  assert.equal(paused.headers.get("cache-control"), "no-store");
++  assert.equal((await paused.json()).code, "CALENDAR_SYNC_PAUSED");
++  assert.equal(loadModule("src/lib/calendar-sync-pause.ts", { enabled: true }).getCalendarSyncPauseResponse(), null);
++});
++
++const writeRoutes = [
++  "events/calendar/auto",
++  ...["google", "outlook"].flatMap(provider => [
++    `events/${provider}`,
++    `events/${provider}/bulk`,
++    `${provider}/insert`,
++  ]),
++];
++
++for (const route of writeRoutes) {
++  test(`${route} refuses calendar writes before using existing credentials or touching data`, async () => {
++    const calls = [];
++    const handler = loadModule(`src/app/api/${route}/route.ts`, { calls });
++    const response = await handler.POST(new nextServer.NextRequest(`https://envitefy.com/api/${route}`, {
++      method: "POST",
++      headers: { cookie: "g_refresh=existing; o_refresh=existing" },
++      body: JSON.stringify({ eventId: "saved-event", title: "Saved invitation" }),
++    }));
++    assert.equal(response.status, 503);
++    const payload = await response.json();
++    assert.equal(payload.status, "paused");
++    assert.equal(payload.ok, false);
++    assert.deepEqual(calls, []);
++  });
++}
++
++for (const provider of ["google", "outlook"]) {
++  for (const action of ["auth", "callback"]) {
++    test(`${provider}/${action} cannot request scopes or exchange an in-flight OAuth code`, async () => {
++      const calls = [];
++      const handler = loadModule(`src/app/api/${provider}/${action}/route.ts`, { calls });
++      const response = await handler.GET(new Request(
++        `https://envitefy.com/api/${provider}/${action}?code=old-code&analytics=1&next=https://example.com`,
++      ));
++      assert.equal(response.status, 307);
++      assert.equal(response.headers.get("location"), "https://envitefy.com/settings#calendars");
++      assert.deepEqual(calls, []);
++    });
++  }
++}
++
++test("old calendar setup URLs do not render a connection prompt or sync notice", () => {
++  const calls = [];
++  const { default: Prompt } = loadModule("src/components/FirstScanCalendarPrompt.tsx", { calls });
++  const html = renderToStaticMarkup(realReact.createElement(Prompt, {
++    userId: "owner",
++    eventId: "saved-event",
++    returnPath: "/event/saved-event",
++    syncStatus: "needs_connection",
++    calendarSetupProvider: "google",
++    calendarSetupStatus: "stored",
++  }));
++  assert.equal(html, "");
++  assert.deepEqual(calls, []);
++});
++
++test("marketing omits paused background sync and restores the original claim when enabled", () => {
++  const paused = loadModule("src/lib/product-marketing-catalog.ts").buildEnvitefyMarketingCatalogPrompt();
++  assert.doesNotMatch(paused, /background sync/);
++  assert.match(paused, /manually save events/);
++  const restored = loadModule("src/lib/product-marketing-catalog.ts", { enabled: true }).buildEnvitefyMarketingCatalogPrompt();
++  assert.match(restored, /Google Calendar and Outlook background sync/);
++});

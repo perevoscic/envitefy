@@ -189,9 +189,8 @@ export async function generateStudioInvitation(
       warnings.push(...imageResult.warnings);
       if (imageResult.ok) {
         let artwork = imageResult.imageDataUrl;
-        let checked: ArtworkCheck = editingExistingImage && product === "live_card"
-          ? { status: "unavailable", issues: [] }
-          : await studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product);
+        const checkContext = { imageEdit: normalizedRequest.imageEdit, references: referenceImages };
+        let checked: ArtworkCheck = await studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product, checkContext);
         if (checked.status === "failed") {
           const repairPrompt = [imagePrompt, `Targeted quality repair: ${checked.issues.join(", ")}. Fix only these observed defects, retaining the approved facts, subject and design.`].join("\n");
           const repaired = provider === "openai"
@@ -199,7 +198,7 @@ export async function generateStudioInvitation(
             : await studioGenerationDeps.editInvitationImageWithGemini(repairPrompt, artwork);
           if (repaired.ok) {
             artwork = repaired.imageDataUrl;
-            checked = await studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product);
+            checked = await studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product, checkContext);
             // A failed image cannot be accepted merely because the repair verifier timed out.
             if (checked.status === "unavailable") checked = { status: "failed", issues: ["repair_unverified"] };
           }

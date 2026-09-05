@@ -5,6 +5,7 @@ import Providers from "./providers";
 import AppShell from "./AppShell";
 import "./globals.css";
 import { authOptions } from "@/lib/auth";
+import { ENVITEFY_SOCIAL_LINKS } from "@/lib/envitefy-social-links";
 import { buildSiteOgImage, getRandomSiteOgImageUrl } from "@/lib/site-og-images";
 import { resolveThemeCssVariables, ThemeKey, ThemeVariant } from "@/themes";
 import { themeColorPalette } from "@/lib/theme-color";
@@ -152,7 +153,7 @@ export default async function RootLayout({
     },
     description:
       "Envitefy turns invites, flyers, PDFs, schedules, and studio-created cards into hosted live event pages with RSVPs, calendar saves, maps, registry links, and gymnastics meet pages.",
-    sameAs: ["https://www.youtube.com/@Envitefy"],
+    sameAs: ENVITEFY_SOCIAL_LINKS.map(({ href }) => href),
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",

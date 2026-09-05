@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
 import EnvitefyWordmark from "@/components/branding/EnvitefyWordmark";
 import { PrivacyChoicesButton } from "@/components/PrivacyControls";
 
@@ -182,7 +183,7 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
     return (
       <footer className="relative z-[2] w-full bg-[#fcfbf7]">
         <div className="isolate w-full overflow-hidden border-y border-[#d7c5a5] bg-[#fcfbf7]/96 shadow-[0_30px_80px_rgba(33,26,35,0.10)] backdrop-blur-[12px] [backface-visibility:hidden] [transform:translateZ(0)] [will-change:transform]">
-          <div className="relative grid gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(0,1.05fr)_repeat(5,minmax(0,0.62fr))] lg:px-10">
+          <div className="relative grid gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(268px,1.05fr)_repeat(5,minmax(0,0.62fr))] lg:px-10">
             <div className="max-lg:col-span-full pr-4">
               <Link href="/" className="inline-flex items-center overflow-visible">
                 <EnvitefyWordmark
@@ -195,6 +196,11 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
                 Create polished hosted event pages with live invitations, RSVP, registries, calendar
                 saves, maps, sign-ups, and guest updates from one shareable link.
               </p>
+              {hasNoSession ? (
+                <div className="mt-6">
+                  <EnvitefySocialLinks />
+                </div>
+              ) : null}
             </div>
 
             <div className="col-span-full grid grid-cols-2 gap-x-6 gap-y-8 lg:contents">
@@ -246,6 +252,11 @@ export default function ConditionalFooter({ serverSession }: ConditionalFooterPr
   return (
     <footer className="w-full bg-transparent">
       <div className="mx-auto max-w-7xl px-3 py-6 text-[10px] text-foreground/80 sm:text-xs md:text-sm">
+        {hasNoSession ? (
+          <div className="mb-5 flex justify-center">
+            <EnvitefySocialLinks />
+          </div>
+        ) : null}
         <div className="w-full">
           <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:whitespace-nowrap">
             <Link href="/" className="hover:text-foreground">

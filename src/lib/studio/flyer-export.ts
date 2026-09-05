@@ -27,7 +27,9 @@ export function flyerTextBlocks(
   const location = [...new Set([event.venueName, event.venueAddress].filter(Boolean))].join("\n");
   return [
     event.title,
-    event.honoreeName && !event.title.toLowerCase().includes(event.honoreeName.toLowerCase()) ? event.honoreeName : "",
+    event.honoreeName && !event.title.toLowerCase().includes(event.honoreeName.toLowerCase())
+      ? event.honoreeName
+      : "",
     event.approvedWording || event.description || copy?.invitation.openingLine || "",
     schedule,
     location,

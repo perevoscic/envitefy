@@ -80,10 +80,14 @@ export async function runInlineGymnasticsEnrichmentPhase(params: {
 
   const travelAccommodation = await enrichTravelAccommodation({
     sourceType: params.sourceInput.type,
+    sourceUrl: params.sourceInput.type === "url" ? params.sourceInput.url : null,
+    sourceId: params.eventId,
+    eventYear: safeString(enrichedParseResult.startAt).slice(0, 4) || null,
+    budgetMs: Math.min(25000, enrichBudgetMs),
     extractedText: extraction.extractedText || baseExtractedText,
     extractionMeta: extraction.extractionMeta,
   });
-  const travelAccommodationState = buildTravelAccommodationState(travelAccommodation);
+  const travelAccommodationState = buildTravelAccommodationState(travelAccommodation, discoverySource.travelAccommodation);
   const mergedCoreEventDataWithTravel = {
     ...params.mergedCoreEventData,
     discoverySource: {

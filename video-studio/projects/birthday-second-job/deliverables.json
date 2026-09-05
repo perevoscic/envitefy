@@ -1,0 +1,62 @@
+{
+  "campaignId": "birthday-second-job",
+  "updatedAt": "2026-09-05",
+  "latest": [
+    {
+      "composition": "EnvitefyBirthdaySecondJob",
+      "aspectRatio": "9:16",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "durationSeconds": 30,
+      "frames": 900,
+      "version": 4,
+      "path": "out/birthday-second-job-9x16-v4.mp4",
+      "bytes": 14169476,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false,
+      "reviewNotes": "Opening verified as three distinct rows. Child entrance recut on Dad turning, native dialogue preserved, normal-speed wide reaction. Final CTA fades over retained reaction frame with no empty intermediate frame. All 900 final timestamps and 172 ending-source timestamps verified at 30 fps with no gaps. Full decode and exact 30-second video/audio/container verified. Local audio measurement: -16.4 LUFS, -1.5 dBFS true peak. No external uploads for this revision.",
+      "captions": "burned-in; editable scene captions and campaign SRT retained"
+    }
+  ],
+  "previous": [
+    {
+      "composition": "EnvitefyBirthdaySecondJob",
+      "aspectRatio": "9:16",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "durationSeconds": 30,
+      "frames": 900,
+      "version": 2,
+      "path": "out/birthday-second-job-9x16-v2.mp4",
+      "bytes": 17588998,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false,
+      "reviewNotes": "Full story/audio review plus corrected RSVP first-frame inspection; exact 30-second video/audio streams and clean decode verified.",
+      "captions": "burned-in; editable scene captions and campaign SRT retained"
+    },
+    {
+      "composition": "EnvitefyBirthdaySecondJob",
+      "aspectRatio": "9:16",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "durationSeconds": 30,
+      "frames": 900,
+      "version": 3,
+      "path": "out/birthday-second-job-9x16-v3.mp4",
+      "bytes": 14844367,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false,
+      "reviewNotes": "Local visual inspection of final rendered scenes and cut boundaries; all 246 product-demo frames scanned for grey capture padding; supplied wordmark hash verified; exact 30-second video/audio/container, 900 frames, complete decode pass. Soundtrack -16.2 LUFS integrated and -1.5 dBFS true peak. Optional external audiovisual review blocked by automatic approval; no footage uploaded for that review.",
+      "captions": "burned-in; editable scene captions and campaign SRT retained"
+    }
+  ]
+}

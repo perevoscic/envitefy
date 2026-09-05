@@ -1,7 +1,7 @@
 import {
   getEventDiscoveryByEventId,
   updateEventDiscovery,
-  updateEventHistoryDataMerge,
+  updateEventTravelAccommodation,
 } from "@/lib/db";
 import {
   beginDiscoveryPipelineCancellationScope,
@@ -29,6 +29,8 @@ import {
 } from "@/lib/discovery/shared";
 import { buildDiscoveryStatusResponse } from "@/lib/discovery/status";
 import type { DiscoveryFailureStage, EventDiscoveryRow } from "@/lib/discovery/types";
+import { invalidateUserHistory } from "@/lib/history-cache";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 
 function resolveFailureStage(stage: string): DiscoveryFailureStage {
   switch (stage) {
@@ -202,12 +204,11 @@ export async function runDiscoveryPipeline(eventId: string, options?: { signal?:
         ? (enriched.enrichment as any).travelAccommodation
         : null;
     if (travelAccommodationState && typeof travelAccommodationState === "object") {
-      await updateEventHistoryDataMerge(current.eventId, {
-        discoverySource: {
-          travelAccommodation: travelAccommodationState,
-          updatedAt: new Date().toISOString(),
-        },
-      }).catch(() => {});
+      const saved = await updateEventTravelAccommodation(current.eventId, travelAccommodationState);
+      if (saved?.user_id) {
+        invalidateUserHistory(saved.user_id);
+        invalidateUserDashboard(saved.user_id);
+      }
     }
     assertActive(options?.signal);
 

@@ -1,0 +1,22 @@
+✖ creation threads list and resume authenticated user sessions only (6.204ms)
+✖ /chat is the OpenAI-backed concierge creator (15.3592ms)
+✖ /chat live-card preview preserves RSVP and registry action metadata (3.633ms)
+✖ studio marketing showcase uses a centered active-card carousel (3.9819ms)
+✖ studio category upload accepts attachments and opens a poster-first live card preview (4.7157ms)
+✖ studio tab keeps a single current project instead of paging the saved library (4.0958ms)
+✖ studio editor shifts mobile users from prompt composer to preview after generation (4.0407ms)
+✖ studio workspace keeps theme rewrite notes ephemeral and visible in the preview shell (4.9505ms)
+✖ studio builders and surfaces strip Game Day RSVP from validation, preview, and publish defaults (4.9811ms)
+ℹ tests 478
+ℹ pass 469
+ℹ fail 9
+✖ failing tests:
+✖ creation threads list and resume authenticated user sessions only (6.204ms)
+✖ /chat is the OpenAI-backed concierge creator (15.3592ms)
+✖ /chat live-card preview preserves RSVP and registry action metadata (3.633ms)
+✖ studio marketing showcase uses a centered active-card carousel (3.9819ms)
+✖ studio category upload accepts attachments and opens a poster-first live card preview (4.7157ms)
+✖ studio tab keeps a single current project instead of paging the saved library (4.0958ms)
+✖ studio editor shifts mobile users from prompt composer to preview after generation (4.0407ms)
+✖ studio workspace keeps theme rewrite notes ephemeral and visible in the preview shell (4.9505ms)
+✖ studio builders and surfaces strip Game Day RSVP from validation, preview, and publish defaults (4.9811ms)

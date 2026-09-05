@@ -1,0 +1,81 @@
+{
+  "date": "2026-09-05T20:44:49.677Z",
+  "status": 200,
+  "ocrSource": "openai",
+  "timing": {
+    "totalMs": 7125,
+    "preprocessMs": 114,
+    "primaryOcrMs": 5417,
+    "fallbackOcrMs": 0,
+    "rewriteMs": 1256,
+    "scheduleMs": 0,
+    "skinMs": 0,
+    "fastMode": false,
+    "enableRewrites": true,
+    "enableSkinInference": false,
+    "skinInferenceTimedOut": false,
+    "skinTimeoutMs": 3500,
+    "turboMode": false,
+    "model": "gpt-5.6-terra",
+    "ocrSource": "openai"
+  },
+  "event": {
+    "title": "Livia's 8th Birthday Party",
+    "start": "2026-09-28T15:30:00",
+    "end": "2026-09-28T17:30:00",
+    "timezone": "",
+    "venue": "US Gold Gymnastics",
+    "category": "Birthdays"
+  },
+  "requests": [
+    {
+      "model": "gpt-5.6-terra",
+      "responseModel": "gpt-5.6-terra",
+      "status": 200,
+      "durationMs": 5410,
+      "responseFormat": "json_schema",
+      "usage": {
+        "prompt_tokens": 8492,
+        "completion_tokens": 558,
+        "total_tokens": 9050,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "costUsd": 0.02368
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "responseModel": "gpt-5.6-luna",
+      "status": 200,
+      "durationMs": 1256,
+      "responseFormat": "text",
+      "usage": {
+        "prompt_tokens": 359,
+        "completion_tokens": 21,
+        "total_tokens": 380,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      },
+      "costUsd": 0.000097
+    }
+  ],
+  "estimatedApiCostUsd": 0.023777,
+  "priceSource": "https://developers.openai.com/api/docs/pricing"
+}

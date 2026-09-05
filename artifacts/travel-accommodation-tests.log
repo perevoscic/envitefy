@@ -1,0 +1,28 @@
+✔ organizer page produces one complete card with evidence and original booking parameters (13.5377ms)
+✔ multiple cards keep addresses, rates and CTAs attached to the right hotel (0.4509ms)
+✔ PDF hidden hyperlinks keep page context and resolve a generic booking label (0.7014ms)
+✔ PDF coordinate context keeps the link label and the nearby hotel, excluding another column (0.2115ms)
+✔ PDF -> official hub -> hotel list follows links once and stores the source chain (15.4165ms)
+✔ official event hotel hub ranks ahead of an external vendor link (2.2746ms)
+✔ a shared deadline aborts network work, stops fallbacks and retains PDF facts (38.6504ms)
+✔ caller cancellation propagates instead of saving a cancelled result (0.9832ms)
+✔ conflicting rates stay unresolved with both sources; equivalent phone formatting does not conflict (0.394ms)
+✔ different hotels sharing the same housing link remain separate (0.2272ms)
+✔ refresh preserves manual edits and explicit clears while updating untouched fields (0.2743ms)
+✔ deleted hotels do not return on refresh (0.072ms)
+✔ failed refresh keeps previous hotel records and original check evidence (0.1816ms)
+✔ model fields require evidence in that hotel's own source block (0.2897ms)
+✔ URLs preserve group parameters and fragments and reject non-web schemes (0.0545ms)
+✔ links explicitly naming a different year are not fetched (0.2151ms)
+✔ deadlines require an explicit year and a real calendar date (0.0753ms)
+✔ browser DOM extraction preserves real hrefs and heading boundaries (1893.5758ms)
+✔ Astra request uses the evidence schema and validates the returned hotel (1.461ms)
+✔ public hotel cards show address and booking instructions with the original CTA (10.5518ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1983.5356

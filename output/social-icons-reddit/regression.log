@@ -1,0 +1,41 @@
+✔ event customize previews fill the responsive workspace (2.5656ms)
+✔ event customize drawers overlay mobile and reserve one desktop column (1.7823ms)
+✔ legacy wedding edit route also uses the full responsive page (0.6747ms)
+✔ wedding headings inherit each theme's contrast color (3.1404ms)
+✔ photographic wedding title cards stay at the image edges (1.2603ms)
+✔ library wedding keeps its title cover separate from the couple portrait (0.5765ms)
+✔ rustic boho collage uses its editable hero and reliable local detail photos (0.9499ms)
+✔ wedding customize preview renders each selected design's real layout (160.6172ms)
+✔ wedding creation starts with the design gallery and preserves the selected design (1.6904ms)
+✔ wedding details do not offer a second design selection step (1.2095ms)
+✔ new wedding drafts use the selected template image until the user uploads one (1.1586ms)
+✔ wedding image editor identifies and previews the current template hero (1.1034ms)
+✔ the 20 expanded wedding designs use signature page compositions instead of shared color swaps (2.5243ms)
+✔ wedding customize provides a return path to the design gallery (1.1005ms)
+✔ California wedding navigation points to real preview sections (0.7278ms)
+✔ all 40 wedding designs load CTAs with real destinations (2.9892ms)
+✔ landing page is hosted-event-led and premium (11.6029ms)
+✔ landing keeps auth-aware nav and the live card gallery (10.9609ms)
+✔ landing uses scroll-aware signed-out mobile bottom navigation (4.6954ms)
+✔ landing homepage promotes each category with a CTA (1.5539ms)
+✔ root layout leaves head metadata to Next (1.4207ms)
+✔ root metadata declares Envitefy as the install app name (1.6804ms)
+✔ web app manifest names the installed app Envitefy (0.3935ms)
+✔ installed app chrome uses a consistent light browser surface (1.2684ms)
+✔ left sidebar mobile header opens navigation from click without early touch handlers (1.6853ms)
+✔ chat route compact nav button opens the sidebar directly (2.2607ms)
+✔ left sidebar locks background scroll on mobile open and restores scroll position (0.6646ms)
+✔ left sidebar open state avoids a steady transformed drawer layer (0.8107ms)
+✔ shared email template uses the public email wordmark (1.6602ms)
+✔ shared email template uses one responsive content surface (0.4456ms)
+✔ RSVP confirmation email can render a hosted event image (1.4612ms)
+✔ RSVP confirmation email rejects non-http image sources (0.2332ms)
+✔ RSVP confirmation email uses provider calendar choices without a duplicate CTA (1.2562ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 361.3377

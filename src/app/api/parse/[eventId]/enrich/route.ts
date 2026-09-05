@@ -337,6 +337,10 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
     >;
     const travelAccommodation = await enrichTravelAccommodation({
       sourceType: sourceInput.type,
+      sourceUrl: sourceInput.type === "url" ? sourceInput.url : null,
+      sourceId: eventId,
+      eventYear: safeString(enrichedParseResult.startAt).slice(0, 4) || null,
+      signal: req.signal,
       extractedText: extraction.extractedText || baseExtractedText,
       extractionMeta: extraction.extractionMeta,
     });
@@ -344,7 +348,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
       ...latestData,
       discoverySource: {
         ...latestDiscoverySource,
-        travelAccommodation: buildTravelAccommodationState(travelAccommodation),
+        travelAccommodation: buildTravelAccommodationState(travelAccommodation, latestDiscoverySource.travelAccommodation),
       },
     };
     const mapped = await mapParseResultToGymData(
@@ -398,7 +402,7 @@ export async function POST(req: Request, context: { params: Promise<{ eventId: s
               publishAssessment: publicArtifacts.publishAssessment,
             }
           : {}),
-        travelAccommodation: buildTravelAccommodationState(travelAccommodation),
+        travelAccommodation: latestDataWithTravel.discoverySource.travelAccommodation,
         parseResult: publicArtifacts?.parseResult || enrichedParseResult,
         enrichment: enrichmentState,
         enrichedAt: finishedAt,

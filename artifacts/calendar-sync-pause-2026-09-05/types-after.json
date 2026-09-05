@@ -1,0 +1,1034 @@
+[
+  {
+    "file": ".next-dev-3001/types/validator.ts",
+    "line": 1295,
+    "code": 2307,
+    "message": "Cannot find module '../../src/app/api/events/[id]/og-data/route.js' or its corresponding type declarations."
+  },
+  {
+    "file": ".next/types/app/api/creation/threads/[id]/route.ts",
+    "line": 244,
+    "code": 2344,
+    "message": "Type '{ __tag__: \"DELETE\"; __param_position__: \"second\"; __param_type__: { params: Promise<{ id: string; }> | { id: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.\n  The types of '__param_type__.params' are incompatible between these types.\n    Type 'Promise<{ id: string; }> | { id: string; }' is not assignable to type 'Promise<any>'.\n      Type '{ id: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]"
+  },
+  {
+    "file": "artifacts/concierge-review-2026-09-04/baseline-preload.ts",
+    "line": 1,
+    "code": 2307,
+    "message": "Cannot find module 'bun' or its corresponding type declarations."
+  },
+  {
+    "file": "artifacts/concierge-review-2026-09-04/baseline-preload.ts",
+    "line": 13,
+    "code": 7006,
+    "message": "Parameter 'builder' implicitly has an 'any' type."
+  },
+  {
+    "file": "artifacts/concierge-review-2026-09-04/baseline-preload.ts",
+    "line": 14,
+    "code": 7006,
+    "message": "Parameter 'args' implicitly has an 'any' type."
+  },
+  {
+    "file": "public/DEBUG/envitefy/server.ts",
+    "line": 47,
+    "code": 7006,
+    "message": "Parameter 'word' implicitly has an 'any' type."
+  },
+  {
+    "file": "public/DEBUG/envitefy/server.ts",
+    "line": 142,
+    "code": 7006,
+    "message": "Parameter 'w' implicitly has an 'any' type."
+  },
+  {
+    "file": "public/DEBUG/envitefy/src/components/ReviewStage.tsx",
+    "line": 686,
+    "code": 2367,
+    "message": "This comparison appears to be unintentional because the types '\"name\" | \"schedule\" | \"admission\" | \"location\" | \"notes\" | \"date\" | \"contact\"' and '\"locName\"' have no overlap."
+  },
+  {
+    "file": "scripts/reassign-demo-events-to-bugjosru.ts",
+    "line": 65,
+    "code": 2344,
+    "message": "Type 'T' does not satisfy the constraint 'QueryResultRow'."
+  },
+  {
+    "file": "src/app/api/scan/event-page/route.ts",
+    "line": 123,
+    "code": 2345,
+    "message": "Argument of type 'string | null | undefined' is not assignable to parameter of type 'FormDataEntryValue | null'.\n  Type 'undefined' is not assignable to type 'FormDataEntryValue | null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3494,
+    "code": 2322,
+    "message": "Type 'string | null' is not assignable to type 'string'.\n  Type 'null' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3508,
+    "code": 2322,
+    "message": "Type 'string | null' is not assignable to type 'string | Blob | undefined'.\n  Type 'null' is not assignable to type 'string | Blob | undefined'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3598,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3618,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3623,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3770,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3791,
+    "code": 18047,
+    "message": "'calendarLinks' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3799,
+    "code": 18047,
+    "message": "'calendarLinks' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3809,
+    "code": 18047,
+    "message": "'calendarLinks' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3852,
+    "code": 2322,
+    "message": "Type 'string | null' is not assignable to type 'string'.\n  Type 'null' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3852,
+    "code": 18047,
+    "message": "'attachmentInfo' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3875,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3876,
+    "code": 2769,
+    "message": "No overload matches this call.\n  Overload 1 of 2, '(props: Props): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | Promise<...> | Component<...> | null | undefined', gave the following error.\n    Type 'SignupForm | null' is not assignable to type 'SignupForm'.\n      Type 'null' is not assignable to type 'SignupForm'.\n  Overload 2 of 2, '(props: Props, context?: any): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<...> | Promise<...> | Component<...> | null | undefined', gave the following error.\n    Type 'SignupForm | null' is not assignable to type 'SignupForm'.\n      Type 'null' is not assignable to type 'SignupForm'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3916,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3978,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3991,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3997,
+    "code": 2345,
+    "message": "Argument of type 'string | null' is not assignable to parameter of type 'string'.\n  Type 'null' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 3998,
+    "code": 2345,
+    "message": "Argument of type 'string | null' is not assignable to parameter of type 'string'.\n  Type 'null' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 4046,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 4052,
+    "code": 2345,
+    "message": "Argument of type 'string | null' is not assignable to parameter of type 'string'.\n  Type 'null' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 4053,
+    "code": 2345,
+    "message": "Argument of type 'string | null' is not assignable to parameter of type 'string'.\n  Type 'null' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 4101,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 4107,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/event/[id]/page.tsx",
+    "line": 4113,
+    "code": 18047,
+    "message": "'row' is possibly 'null'."
+  },
+  {
+    "file": "src/app/studio/studio-types.ts",
+    "line": 2,
+    "code": 2305,
+    "message": "Module '\"@/lib/studio/types\"' has no exported member 'LucideIcon'."
+  },
+  {
+    "file": "src/app/studio/studio-workspace-field-config.ts",
+    "line": 181,
+    "code": 2322,
+    "message": "Type '\"url\"' is not assignable to type '\"number\" | \"text\" | \"time\" | \"select\" | \"textarea\" | \"date\" | \"checkbox\"'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 213,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 237,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 261,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; initialActiveTab: \"registry\"; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; initialActiveTab: \"registry\"; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 287,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; initialActiveTab: \"rsvp\"; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; initialActiveTab: \"rsvp\"; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 313,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 337,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 360,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 384,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 406,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 427,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 449,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 471,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/StudioMarketingPage.tsx",
+    "line": 493,
+    "code": 2322,
+    "message": "Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.\n  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'."
+  },
+  {
+    "file": "src/app/studio/workspace/StudioCategoryGrid.tsx",
+    "line": 87,
+    "code": 2322,
+    "message": "Type 'unknown[]' is not assignable to type 'StudioCategoryGridItem[]'.\n  Type 'unknown' is not assignable to type 'StudioCategoryGridItem'."
+  },
+  {
+    "file": "src/app/studio/workspace/StudioCategoryGrid.tsx",
+    "line": 88,
+    "code": 2345,
+    "message": "Argument of type '(this: undefined, tileKey: StudioCategoryGridTileKey) => { kind: \"upload\"; key: \"upload\"; }[] | { kind: \"category\"; key: InviteCategory; category: StudioCategoryTileDefinition; }[]' is not assignable to parameter of type '(this: undefined, value: StudioCategoryGridTileKey, index: number, array: StudioCategoryGridTileKey[]) => { kind: \"upload\"; key: \"upload\"; } | readonly { ...; }[]'.\n  Type '{ kind: \"upload\"; key: \"upload\"; }[] | { kind: \"category\"; key: InviteCategory; category: StudioCategoryTileDefinition; }[]' is not assignable to type '{ kind: \"upload\"; key: \"upload\"; } | readonly { kind: \"upload\"; key: \"upload\"; }[]'.\n    Type '{ kind: \"category\"; key: InviteCategory; category: StudioCategoryTileDefinition; }[]' is not assignable to type '{ kind: \"upload\"; key: \"upload\"; } | readonly { kind: \"upload\"; key: \"upload\"; }[]'.\n      Type '{ kind: \"category\"; key: InviteCategory; category: StudioCategoryTileDefinition; }[]' is not assignable to type 'readonly { kind: \"upload\"; key: \"upload\"; }[]'.\n        Type '{ kind: \"category\"; key: InviteCategory; category: StudioCategoryTileDefinition; }' is not assignable to type '{ kind: \"upload\"; key: \"upload\"; }'.\n          Types of property 'kind' are incompatible.\n            Type '\"category\"' is not assignable to type '\"upload\"'."
+  },
+  {
+    "file": "src/components/BirthdaySkin.tsx",
+    "line": 964,
+    "code": 2339,
+    "message": "Property 'startsWith' does not exist on type 'never'."
+  },
+  {
+    "file": "src/components/BirthdaySkin.tsx",
+    "line": 965,
+    "code": 2339,
+    "message": "Property 'startsWith' does not exist on type 'never'."
+  },
+  {
+    "file": "src/components/MapEmbed.tsx",
+    "line": 87,
+    "code": 2304,
+    "message": "Cannot find name 'address'."
+  },
+  {
+    "file": "src/components/OpenHouseSkin.tsx",
+    "line": 798,
+    "code": 2339,
+    "message": "Property 'startsWith' does not exist on type 'never'."
+  },
+  {
+    "file": "src/components/OpenHouseSkin.tsx",
+    "line": 799,
+    "code": 2339,
+    "message": "Property 'startsWith' does not exist on type 'never'."
+  },
+  {
+    "file": "src/components/studio/StudioLiveCardActionSurface.tsx",
+    "line": 1278,
+    "code": 2367,
+    "message": "This comparison appears to be unintentional because the types '\"location\" | \"rsvp\" | \"registry\" | \"details\" | \"calendar\" | \"logo\"' and '\"share\"' have no overlap."
+  },
+  {
+    "file": "src/components/studio/StudioLiveCardActionSurface.tsx",
+    "line": 1281,
+    "code": 2367,
+    "message": "This comparison appears to be unintentional because the types '\"location\" | \"rsvp\" | \"registry\" | \"details\" | \"calendar\" | \"logo\"' and '\"share\"' have no overlap."
+  },
+  {
+    "file": "src/components/studio/StudioLiveCardActionSurface.tsx",
+    "line": 1303,
+    "code": 2367,
+    "message": "This comparison appears to be unintentional because the types '\"location\" | \"rsvp\" | \"registry\" | \"details\" | \"calendar\" | \"logo\"' and '\"share\"' have no overlap."
+  },
+  {
+    "file": "src/components/studio/StudioLiveCardActionSurface.tsx",
+    "line": 1342,
+    "code": 2367,
+    "message": "This comparison appears to be unintentional because the types '\"location\" | \"rsvp\" | \"registry\" | \"details\" | \"calendar\" | \"logo\"' and '\"share\"' have no overlap."
+  },
+  {
+    "file": "src/components/weddings/WeddingRenderer.tsx",
+    "line": 130,
+    "code": 2339,
+    "message": "Property 'accent' does not exist on type '{ primary: string; secondary: string; background: string; }'."
+  },
+  {
+    "file": "src/components/weddings/WeddingRenderer.tsx",
+    "line": 131,
+    "code": 2339,
+    "message": "Property 'text' does not exist on type '{ primary: string; secondary: string; background: string; }'."
+  },
+  {
+    "file": "src/config/navigation-config.sports.test.tsx",
+    "line": 1,
+    "code": 2307,
+    "message": "Cannot find module 'bun:test' or its corresponding type declarations."
+  },
+  {
+    "file": "src/lib/concierge/fallback.test.ts",
+    "line": 1585,
+    "code": 2322,
+    "message": "Type '{ rsvpEnabled: boolean; numberOfGuests: number; rsvpName: string; rsvpContact: string; currentQuestion: null; missingFields: never[]; draftStatus: string; readiness?: import(\"D:/Develop_local/envitefy/src/lib/concierge/readiness\").CreationReadiness; ... 40 more ...; source: ConciergeSource; }' is not assignable to type 'ConciergeEventDraft'.\n  Types of property 'draftStatus' are incompatible.\n    Type 'string' is not assignable to type 'CreationDraftStatus'."
+  },
+  {
+    "file": "src/lib/concierge/fallback.test.ts",
+    "line": 2458,
+    "code": 2345,
+    "message": "Argument of type 'string | null' is not assignable to parameter of type 'string'.\n  Type 'null' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/lib/concierge/fallback.test.ts",
+    "line": 2459,
+    "code": 2345,
+    "message": "Argument of type 'string | null' is not assignable to parameter of type 'string'.\n  Type 'null' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/lib/concierge/fallback.test.ts",
+    "line": 2463,
+    "code": 18046,
+    "message": "'payload.data.studioCard.invitationData.eventDetails' is of type 'unknown'."
+  },
+  {
+    "file": "src/lib/concierge/fallback.test.ts",
+    "line": 2628,
+    "code": 18046,
+    "message": "'payload.data.studioCard.invitationData.eventDetails' is of type 'unknown'."
+  },
+  {
+    "file": "src/lib/google-calendar-oauth.test.ts",
+    "line": 1,
+    "code": 2307,
+    "message": "Cannot find module 'bun:test' or its corresponding type declarations."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 839,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 845,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 858,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorTarget'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 1092,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorRef'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 1106,
+    "code": 2552,
+    "message": "Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?"
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 1107,
+    "code": 2552,
+    "message": "Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?"
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 1115,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorTarget'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 1157,
+    "code": 2552,
+    "message": "Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?"
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 1179,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorRef'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 1190,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorRef'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 1207,
+    "code": 2552,
+    "message": "Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?"
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 1647,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 1648,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 2479,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 2499,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 2501,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 2824,
+    "code": 2322,
+    "message": "Type '{ kind: DiscoveryResourceKind; status: DiscoveryResourceStatus; label: string; url: string; sourceUrl: string; origin: DiscoveryResourceOrigin; ... 6 more ...; matchReason: string | null; }[]' is not assignable to type 'DiscoveryResourceLink[]'.\n  Type '{ kind: DiscoveryResourceKind; status: DiscoveryResourceStatus; label: string; url: string; sourceUrl: string; origin: DiscoveryResourceOrigin; ... 6 more ...; matchReason: string | null; }' is not assignable to type 'DiscoveryResourceLink'.\n    Types of property 'discoveryMethod' are incompatible.\n      Type 'string' is not assignable to type '\"http\" | \"playwright\"'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3206,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3222,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3271,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3340,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3474,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3475,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3477,
+    "code": 7006,
+    "message": "Parameter 'session' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3492,
+    "code": 7006,
+    "message": "Parameter 'session' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3498,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3503,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3504,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3562,
+    "code": 7006,
+    "message": "Parameter 'day' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3566,
+    "code": 7006,
+    "message": "Parameter 'day' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3835,
+    "code": 2345,
+    "message": "Argument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.\n  Types of property 'stage' are incompatible.\n    Type 'string | undefined' is not assignable to type 'string'.\n      Type 'undefined' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 3888,
+    "code": 2345,
+    "message": "Argument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.\n  Types of property 'stage' are incompatible.\n    Type 'string | undefined' is not assignable to type 'string'.\n      Type 'undefined' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 4372,
+    "code": 2345,
+    "message": "Argument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.\n  Types of property 'stage' are incompatible.\n    Type 'string | undefined' is not assignable to type 'string'.\n      Type 'undefined' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 5926,
+    "code": 2322,
+    "message": "Type '{ followed: boolean; contentType: string | null; score: number; url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to type 'CrawlCandidate'.\n  Type '{ followed: boolean; contentType: string | null; score: number; url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to type 'DiscoveredLink'.\n    Types of property 'kind' are incompatible.\n      Type 'string' is not assignable to type 'DiscoveryLinkKind'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 5930,
+    "code": 2345,
+    "message": "Argument of type '{ url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to parameter of type 'Omit<CrawlCandidate, \"score\" | \"followed\">'.\n  Types of property 'kind' are incompatible.\n    Type 'string' is not assignable to type 'DiscoveryLinkKind'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 6385,
+    "code": 2741,
+    "message": "Property 'collectBrowserData' is missing in type '{ fetchWithLimit: (url: string, options?: { timeoutMs?: number; signal?: AbortSignal; }) => Promise<{ contentType: string; buffer: Buffer; text: string; }>; extractTextFromPdf: ((buffer: Buffer, options?: { budgetMs?: number; performance?: DiscoveryPerformance; cache?: DiscoveryRequestCache; mode?: DiscoveryMode; si...' but required in type 'Required<UrlDiscoveryTestHooks>'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 8189,
+    "code": 2322,
+    "message": "Type 'string[]' is not assignable to type 'ParsePromptProfile[]'.\n  Type 'string' is not assignable to type 'ParsePromptProfile'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 9605,
+    "code": 2552,
+    "message": "Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?"
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 9617,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorLegendEntry'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 9688,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorRef'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 9852,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorTarget'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 9951,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorLegendEntry'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 9986,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 9990,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10018,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorRef'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10019,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorRef'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10021,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorLegendEntry'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10085,
+    "code": 2339,
+    "message": "Property 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10156,
+    "code": 2304,
+    "message": "Cannot find name 'ScheduleColorLegendEntry'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10268,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10338,
+    "code": 2345,
+    "message": "Argument of type '\"scheduleVisual\"' is not assignable to parameter of type 'DiscoveryUsageStage'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10345,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10408,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10454,
+    "code": 2339,
+    "message": "Property 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10474,
+    "code": 2339,
+    "message": "Property 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10595,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10597,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10662,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10698,
+    "code": 2304,
+    "message": "Cannot find name 'GYMNASTICS_SCHEDULE_JSON_SCHEMA'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10716,
+    "code": 2345,
+    "message": "Argument of type '\"scheduleText\"' is not assignable to parameter of type 'DiscoveryUsageStage'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10724,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10735,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10752,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10806,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10821,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10822,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10851,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10998,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 10999,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 11000,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 11204,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 11205,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 11247,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 11248,
+    "code": 2339,
+    "message": "Property 'schedule' does not exist on type 'ParseResult'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 13767,
+    "code": 2677,
+    "message": "A type predicate's type must be assignable to its parameter's type.\n  Type '{ label?: string | undefined; url: string; }' is not assignable to type '{ label: string; url: string; }'.\n    Types of property 'label' are incompatible.\n      Type 'string | undefined' is not assignable to type 'string'.\n        Type 'undefined' is not assignable to type 'string'."
+  },
+  {
+    "file": "src/lib/meet-discovery/core.ts",
+    "line": 13768,
+    "code": 18047,
+    "message": "'item' is possibly 'null'."
+  },
+  {
+    "file": "src/lib/profile-avatar.test.ts",
+    "line": 1,
+    "code": 2307,
+    "message": "Cannot find module 'bun:test' or its corresponding type declarations."
+  },
+  {
+    "file": "src/lib/scan-event-page.ts",
+    "line": 222,
+    "code": 2322,
+    "message": "Type '({ label: string | null; venue: string | null; location: string; address: string | null; timeText: string | null; description: string | null; } | null)[]' is not assignable to type 'OcrSecondaryLocation[]'.\n  Type '{ label: string | null; venue: string | null; location: string; address: string | null; timeText: string | null; description: string | null; } | null' is not assignable to type 'OcrSecondaryLocation'.\n    Type 'null' is not assignable to type 'OcrSecondaryLocation'."
+  },
+  {
+    "file": "src/lib/scan-event-page.ts",
+    "line": 236,
+    "code": 2677,
+    "message": "A type predicate's type must be assignable to its parameter's type.\n  Type 'OcrSecondaryLocation' is not assignable to type '{ label: string | null; venue: string | null; location: string; address: string | null; timeText: string | null; description: string | null; }'.\n    Types of property 'venue' are incompatible.\n      Type 'string | null | undefined' is not assignable to type 'string | null'.\n        Type 'undefined' is not assignable to type 'string | null'."
+  },
+  {
+    "file": "src/lib/sports-discovery/adapters.test.ts",
+    "line": 1,
+    "code": 2307,
+    "message": "Cannot find module 'bun:test' or its corresponding type declarations."
+  },
+  {
+    "file": "src/lib/sports-discovery/detect.test.ts",
+    "line": 1,
+    "code": 2307,
+    "message": "Cannot find module 'bun:test' or its corresponding type declarations."
+  },
+  {
+    "file": "src/lib/sports-discovery/profiles.test.ts",
+    "line": 1,
+    "code": 2307,
+    "message": "Cannot find module 'bun:test' or its corresponding type declarations."
+  },
+  {
+    "file": "src/lib/sports-preferences.test.ts",
+    "line": 1,
+    "code": 2307,
+    "message": "Cannot find module 'bun:test' or its corresponding type declarations."
+  },
+  {
+    "file": "src/lib/studio/gemini.edit-source.test.ts",
+    "line": 2,
+    "code": 2305,
+    "message": "Module '\"node:module\"' has no exported member 'registerHooks'."
+  },
+  {
+    "file": "src/lib/studio/gemini.edit-source.test.ts",
+    "line": 8,
+    "code": 7006,
+    "message": "Parameter 'specifier' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/gemini.edit-source.test.ts",
+    "line": 8,
+    "code": 7006,
+    "message": "Parameter 'context' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/gemini.edit-source.test.ts",
+    "line": 8,
+    "code": 7006,
+    "message": "Parameter 'nextResolve' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/generate.edit-mode.test.ts",
+    "line": 2,
+    "code": 2305,
+    "message": "Module '\"node:module\"' has no exported member 'registerHooks'."
+  },
+  {
+    "file": "src/lib/studio/generate.edit-mode.test.ts",
+    "line": 8,
+    "code": 7006,
+    "message": "Parameter 'specifier' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/generate.edit-mode.test.ts",
+    "line": 8,
+    "code": 7006,
+    "message": "Parameter 'context' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/generate.edit-mode.test.ts",
+    "line": 8,
+    "code": 7006,
+    "message": "Parameter 'nextResolve' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/generate.edit-mode.test.ts",
+    "line": 41,
+    "code": 7006,
+    "message": "Parameter 'prompt' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/generate.edit-mode.test.ts",
+    "line": 41,
+    "code": 7006,
+    "message": "Parameter 'source' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/generate.edit-mode.test.ts",
+    "line": 190,
+    "code": 7006,
+    "message": "Parameter 'prompt' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/generate.edit-mode.test.ts",
+    "line": 190,
+    "code": 7006,
+    "message": "Parameter 'source' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/generate.edit-mode.test.ts",
+    "line": 277,
+    "code": 7006,
+    "message": "Parameter 'prompt' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/prompts.theme-framing.test.ts",
+    "line": 2,
+    "code": 2305,
+    "message": "Module '\"node:module\"' has no exported member 'registerHooks'."
+  },
+  {
+    "file": "src/lib/studio/prompts.theme-framing.test.ts",
+    "line": 8,
+    "code": 7006,
+    "message": "Parameter 'specifier' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/prompts.theme-framing.test.ts",
+    "line": 8,
+    "code": 7006,
+    "message": "Parameter 'context' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/prompts.theme-framing.test.ts",
+    "line": 8,
+    "code": 7006,
+    "message": "Parameter 'nextResolve' implicitly has an 'any' type."
+  },
+  {
+    "file": "src/lib/studio/source-image.test.ts",
+    "line": 9,
+    "code": 2345,
+    "message": "Argument of type 'Buffer<ArrayBufferLike>' is not assignable to parameter of type 'BodyInit | null | undefined'.\n  Type 'Buffer<ArrayBufferLike>' is missing the following properties from type 'URLSearchParams': size, append, delete, get, and 2 more."
+  },
+  {
+    "file": "src/lib/theme-color.ts",
+    "line": 143,
+    "code": 2322,
+    "message": "Type 'undefined' is not assignable to type 'string | null'."
+  },
+  {
+    "file": "src/utils/event-product-route.test.ts",
+    "line": 1,
+    "code": 2307,
+    "message": "Cannot find module 'bun:test' or its corresponding type declarations."
+  }
+]

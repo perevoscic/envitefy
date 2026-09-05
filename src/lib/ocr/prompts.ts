@@ -1,6 +1,9 @@
+import { EXTRACTION_EVIDENCE_INSTRUCTION } from "./extraction-contract.ts";
+
 export function buildEventExtractionPrompt(todayIso: string) {
   const system = `
-  You read any kind of invitation or appointment card from an image and output one clean JSON object.
+  You extract event facts from invitation or appointment images using the supplied strict JSON schema. Creative invitation copy is written in a later stage.
+  ${EXTRACTION_EVIDENCE_INSTRUCTION}
   
   CURSIVE/HANDWRITING:
   • Treat large cursive/handwritten/script text as real text (often names). Resolve ambiguous letters using surrounding context and repeated occurrences. Do not drop names because they are cursive.
@@ -13,7 +16,7 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Only convert a supported birthdayAge to an ORDINAL (e.g., 7th, 10th, 5th) and include it in the title. Keep birthdayAge, title, and description consistent.
   • Examples: "Ava's Birthday / October 24 / 3 PM / $7 admission" → birthdayAge=null; "Ava turns 7 / October 24 / 3 PM" → birthdayAge=7.
   • Never put months/dates/times in the title.
-  • Also classify birthdayAudience as "girl", "boy", or "neutral" from text/theme cues only. Use "girl" for cues like ballerina, ballet, tutu, princess, bows, tea party, she/her. Use "boy" for cues like all-star, sports, mvp, superhero, trucks, he/him. If unclear, use "neutral".
+  • Set birthdayAudience to "girl" or "boy" only when printed wording explicitly identifies the honoree that way, including unambiguous pronouns. Otherwise use "neutral". Never infer gender from names, faces, colors, sports, princesses, ballet, trucks, or other decorative themes.
   • Return birthdaySignals as a short array of the exact cues you used, birthdayName when you can see the honoree, and birthdayAge only when supported by the birthday context above.
   
   TITLE (never include date/time or location; keep under 120 chars):
@@ -25,18 +28,18 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Generic cases: "<Occasion> — <Name/Group>" or "<Name/Group> <Occasion>".
   • Never reduce to a generic title (e.g., "Baby Shower") if a name is visible.
   
-  DESCRIPTION (factual, concise):
-  • One short sentence (two at most) using only facts in the image: date, time, and place. Prefer venue/business names over street addresses; if both appear, use the venue and optionally city/state (omit the street). Do not write "at <host/org>" unless that host is also the printed venue. Prefer omitting the place clause over guessing from the organizer. Do not copy the full title verbatim; you may briefly name the party theme if it is not already obvious from the title. Start the sentence with a capital letter. No RSVP/URLs/prices. No templated phrases like "Please join us" or "You're invited". Do not invent placeholders like "private residence" unless those exact words appear.
+  DESCRIPTION (source wording only):
+  • Copy the printed event description verbatim, citing its exact source spans in sourceEvidence.fields.description. Preserve spelling, capitalization, line breaks, names and language. Do not compose a summary sentence from the date, time, venue or theme. If no description is printed, return an empty string. Dedicated RSVP, price, date and location lines belong in their respective fields. Never invent placeholders such as "private residence".
   
   ADDRESS / VENUE (strict host ≠ place):
   • address: if present, street/city form like "Street, City, ST ZIP". Strip labels like "Address:" or "At:".
   • venueName: where guests physically go (beach access, park, pavilion, restaurant, gym facility, school, church, etc.). Use the exact printed place name.
   • hostName: organizer/sponsor/brand from "Hosted by …", "Sponsored by …", "Presented by …", or a header/logo org line at the top. Never copy host/org into venueName or address.
   • Prefer place cues in this order: (1) dedicated location label/footer badge/oval ("Location", "Where", boxed place name), (2) body phrases like "Join us at …", "Meet at …", "at <place>", (3) street address lines.
-  • A top-of-flyer brand/org alone is NOT the venue. Example: header "U.S. Gold Gymnastics", body "Join us at Pompano Joe's beach access", footer "Pompano Joes Beach Access" → hostName "U.S. Gold Gymnastics", venueName "Pompano Joes Beach Access", address null.
+  • A top-of-flyer brand/org alone is NOT the venue. Example: header "U.S. Gold Gymnastics", body "Join us at Pompano Joe's beach access", footer "Pompano Joes Beach Access" → hostName "U.S. Gold Gymnastics", venueName "Pompano Joes Beach Access", address "".
   • Only put an org in venueName when the flyer clearly says the event is AT that place (printed "at <org>", facility name as the location block, or a street address for that site). Example: venueName "US Gold Gymnastics" with address "123 Main St, City, ST ZIP" when that facility is the printed site.
-  • If only an organizer/brand is printed and no place/address appears, set venueName and address to null. Prefer null over guessing the host's facility.
-  • Never put parking notes, overflow parking, or driving directions in address. Those belong in ocrFacts with label "Parking". Leave address null when only parking text is printed so the venue can be place-enriched.
+  • If only an organizer/brand is printed and no place/address appears, set venueName to null and address to "". Prefer an empty field over guessing the host's facility.
+  • Never put parking notes, overflow parking, or driving directions in address. Those belong in ocrFacts with label "Parking". Leave address empty when only parking text is printed so the venue can be place-enriched.
   • Graduation flyers: graduate/honoree names belong in title only. venueName must be a real place name such as a school, auditorium, stadium, church, or campus venue. If the visible text is only an event title like "Graduation Ceremony — Lena De La Cruz" or "Class of 2026 Graduation", return venueName as null instead of copying that title.
   
   RSVP:
@@ -48,7 +51,7 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • If the flyer has a host/sponsor line like "Hosted by <Name/Group>", put the printed host name/group in hostName without the "Hosted by" prefix and without a leading "the". Else null.
 
   FEATURE DETECTION:
-  • Activities: detect explicit event flow items from the flyer (e.g., "cake cutting", "cocktail hour", "games", "dancing", "dinner", "ceremony", "reception"). Return short phrases in activities[] preserving wording where possible. If none, activities is null.
+  • Activities: detect explicit event flow items from the flyer (e.g., "cake cutting", "cocktail hour", "games", "dancing", "dinner", "ceremony", "reception"). Return printed phrases in activities[]. If none, return [].
   • Pickleball/sport flyers: put divisions or event format such as "open doubles", "men", "women", "mixed", "clinic", "open class", "prizes", "music", and "refreshments" in activities[] when printed.
   • Football flyers: put pregame, kickoff, halftime show, marching band, concessions, student section opens, tailgate, and watch-party specials in activities[] when printed.
   • Attire: if dress code / attire guidance appears (e.g., "Black Tie", "Casual", "Superhero Costume", "Formal Attire"), return concise text in attire. Else null.
@@ -63,7 +66,7 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Treat a flyer as category "Open House" only when "open house" appears with real-estate listing signals such as realtor, real estate, MLS, price, beds/baths, square feet, brokerage, agency, property address, listing URL, or house features. Do not use "Open House" for school, church, community, gym, family day, business, or campus open houses unless real-estate listing signals are present.
   • Title format: "Open House — <street/address or property headline>". Never include the date/time in the title.
   • Use the property address as address. Use agency/brokerage as hostName only if no realtor name is visible; otherwise put realtor details in openHouse.
-  • Description: one concise factual sentence with the open-house date/time/address and one listing detail if printed. Do not invent sales copy.
+  • Description: copy printed property-description wording verbatim or return an empty string. Keep date/time/address and listing specifications in their dedicated fields. Do not invent sales copy.
   • Extract all standard real-estate facts into openHouse: listingType, propertyType, price, mlsNumber, bedrooms, bathrooms, sqft, lotSize, yearBuilt, parking, hoa, address, neighborhood, agencyName, brokerageName, realtorName, realtorTitle, realtorLicense, realtorPhone, realtorEmail, websiteUrl, listingUrl, features.
   • Put any other meaningful listing/realtor detail not covered by those named fields into openHouse.extractedFields as {key,label,value,confidence}. Include school district, QR/listing codes, license IDs, showing notes, financing notes, and flyer-specific labels.
   • Return openHouse.visualAssets only for the realtor portrait/headshot. Do not return property photo crops; the event page uses the full original flyer as the only property image. Coordinates are normalized 0..1 in the upright image: x/y top-left, width/height box size. Include at most one realtor portrait/photo with role "realtor-headshot". For realtor-headshot, crop the portrait image area only, not the entire realtor/contact card: include the full visible face, hair, and enough shoulder/background margin so the face is safely inside the crop. Prefer a larger portrait box over a tight face crop when uncertain. Do not include logos, icons, QR codes, text blocks, price/spec bars, or property photo panes.
@@ -75,7 +78,7 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Put the presenter/sponsor line such as school athletics, booster club, bar/grill, or venue host in hostName.
 
   GOOD TO KNOW (guest reminders):
-  • Read the **bottom** of the flyer and any **small or cursive** lines: practical tips and attendance facts for guests (e.g. "don't forget a towel and sunscreen!", "bring a swimsuit", "all skill levels welcome", "ages 16+", "free to play", "gifts optional"). Put that wording in **goodToKnow** — preserve meaning; fix obvious OCR typos only (e.g. "twoel" → "towel"). One sentence or short phrase; do **not** put RSVP, phone, address, or date/time here (those go in other fields). If nothing like that appears, goodToKnow is null.
+  • Read the **bottom** of the flyer and any **small or cursive** lines: practical tips and attendance facts for guests (e.g. "don't forget a towel and sunscreen!", "bring a swimsuit", "all skill levels welcome", "ages 16+", "free to play", "gifts optional"). Copy that wording into **goodToKnow** and cite the source. Preserve the printed spelling; do not rewrite it. Do **not** put dedicated RSVP, phone, address, or date/time lines here (those go in other fields). If nothing like that appears, goodToKnow is null.
   • For pickleball/sport flyers, put printed entry fees, registration fees, skill-level eligibility, team/partner requirements, and equipment notes such as "bring your paddle" in goodToKnow. Keep registration links/phone numbers in RSVP fields instead.
 
   THUMBNAIL FOCUS (for dashboard card cropping, not identity recognition):
@@ -87,8 +90,9 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Do not identify the person. Only locate the best crop focus point.
   
   DATE/TIME:
-  • Use the date/time from the flyer. If no year is printed, choose the next upcoming calendar date for that month/day (same calendar year when that date is still ahead this year; if that month/day has already passed this year, use next year — e.g. viewing in December for a January party uses the following year). Set yearVisible=false when the flyer does not print a year.
-  • When the flyer shows a time window (e.g. "1PM to 4PM", "1:00 PM – 4:00 PM", "from 1 to 4 pm"), set start to the opening time and end to the closing time on the same calendar date as start (both full ISO datetimes). If only one time is shown, end may be null.
+  • Transcribe the event date, time, printed year and timezone exactly. Set yearVisible=false when the event date has no printed year. The application determines missing years from the source date and its local calendar; never invent the year here.
+  • Return normalized start/end only when the source supports a complete date and unambiguous time. If year, time or AM/PM is unresolved, return null while retaining every printed date/time span as inferred evidence. Never replace a missing time with midnight. Do not invent a UTC offset or timezone.
+  • For a clear time window, distinguish opening/start from closing/end; an RSVP deadline and check-in time are separate facts. Do not force overnight end times onto the same day. Flag incompatible dates, weekdays or time alternatives as conflicting evidence instead of choosing silently.
   
   CATEGORIES:
   • One of: Weddings, Birthdays, Baby Showers, Bridal Showers, Housewarming, Open House, Engagements, Anniversaries, Graduations, Religious Events, Doctor Appointments, Appointments, Sport Events, General Events.
@@ -97,15 +101,15 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Clinical tone only. Title is the appointment type (e.g., "Dental Cleaning"). Never invitation wording. Never include DOB.
   
   OUTPUT (strict JSON only, no extra text):
-  { "title": string, "start": string, "end": string|null, "address": string|null, "venueName": string|null, "description": string|null, "category": string, "rsvp": string|null, "rsvpUrl": string|null, "rsvpDeadline": string|null, "hostName": string|null, "activities": string[]|null, "attire": string|null, "registryUrl": string|null, "ocrFacts": Array<{ "label": string, "value": string }>|null, "yearVisible": boolean, "birthdayAudience": "girl"|"boy"|"neutral"|null, "birthdaySignals": string[], "birthdayName": string|null, "birthdayAge": number|null, "goodToKnow": string|null, "thumbnailFocus": { "target": "face"|"title"|"center", "x": number, "y": number, "confidence": number|null }, "openHouse": { "listingType": string|null, "propertyType": string|null, "price": string|null, "mlsNumber": string|null, "bedrooms": string|null, "bathrooms": string|null, "sqft": string|null, "lotSize": string|null, "yearBuilt": string|null, "parking": string|null, "hoa": string|null, "address": string|null, "neighborhood": string|null, "agencyName": string|null, "brokerageName": string|null, "realtorName": string|null, "realtorTitle": string|null, "realtorLicense": string|null, "realtorPhone": string|null, "realtorEmail": string|null, "websiteUrl": string|null, "listingUrl": string|null, "features": string[]|null, "extractedFields": Array<{ "key": string, "label": string, "value": string, "confidence": number|null }>|null, "visualAssets": Array<{ "role": string, "label": string|null, "x": number, "y": number, "width": number, "height": number, "confidence": number|null }>|null }|null }
+  Follow the supplied response schema as the sole field/type contract, including sourceEvidence. Use empty strings for missing title, address, description and category; null for absent nullable fields; [] for absent arrays. Do not add keys or return a second response shape.
   `;
 
   const user = `
-  Return exactly one event as strict JSON {title,start,end,address,venueName,description,category,rsvp,rsvpUrl,rsvpDeadline,hostName,activities,attire,registryUrl,ocrFacts,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge,goodToKnow,thumbnailFocus,openHouse}.
+  Extract the event using the supplied schema, including the verbatim source transcript and per-field evidence.
   If the image is a birthday flyer, apply the Birthday Enhancements: identify age only from clear birthday context, never from a decorative number's size alone. If age is absent, ambiguous, or conflicting, set birthdayAge=null and omit age from the title and description. If the flyer has a big headline naming the party (pool party, bash, theme), keep it in the title together with the honoree's name and supported age, if any (see TITLE rules). Do not include dates/times in the title.
-  For birthdayAudience, use text/theme cues only. Do not infer from a face or from the honoree name alone.
+  For birthdayAudience, require explicit printed wording about the honoree. Decorative themes, faces and names do not establish gender; otherwise use "neutral".
   Pay special attention to cursive/handwritten names; never reduce the title to a generic occasion if a name is visible.
-  The description must NOT repeat the title; make it a standalone, single sentence that begins with a capital letter, and prefer venue names over street addresses.
+  Copy a printed description verbatim with exact evidence; leave it empty when absent. Do not write invitation prose or a new summary during extraction.
   Keep RSVP details out of the description. Put RSVP wording in rsvp, RSVP links in rsvpUrl, RSVP-by dates in rsvpDeadline, and printed "Hosted by" names/groups in hostName without a leading "the".
   Never put the organizer/header brand in venueName. Use body "at <place>" lines and footer location labels for venueName. Prefer null venue over guessing the host's facility.
   Classify nearby footer lines by role before filling RSVP fields: "Questions?", "Text", "Call", and "Contact" are instructions, while "Hosted by ..." is the host/organizer. Never use generic instruction text as the RSVP display name.
@@ -115,8 +119,8 @@ export function buildEventExtractionPrompt(todayIso: string) {
   For real-estate open house flyers, use category "Open House", fill openHouse with listing/realtor details, put extra variable details in openHouse.extractedFields, and return only the realtor portrait/headshot crop in openHouse.visualAssets. Do not return property photo crops.
   Also extract activities[] when event flow items are printed, attire when dress code exists, registryUrl when a gift registry link appears, and ocrFacts for meaningful extra printed details not already represented elsewhere.
   Also return thumbnailFocus for dashboard card cropping: face first, then main title/headline, then image center.
-  If year is missing, use the next occurrence on/after ${todayIso} and set yearVisible=false.
-  If a start and end time are printed for the party, return both as start and end (same date).
+  Reference date: ${todayIso}. The application resolves missing years and timezones; leave incomplete normalized dates null and retain the printed date/time evidence. Set yearVisible=false when no event year is printed.
+  Return supported start/end times without guessing AM/PM, a missing end, or the date of an overnight end.
   Always fill **goodToKnow** when the image has a bottom/footer guest tip or attendance fact (don't forget / bring / remember / all skill levels / ages / free to play), including cursive. Keep those tips out of the main description sentence.
   `;
 

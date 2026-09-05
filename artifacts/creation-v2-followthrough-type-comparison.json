@@ -1,0 +1,8 @@
+{
+  "checkedFiles": 35,
+  "diagnosticsInTouchedFiles": 0,
+  "dependencyDiagnostics": 89,
+  "baselineDiagnostics": 89,
+  "introducedDiagnosticLocations": 0,
+  "comparison": "Error code and source location; TypeScript can reorder equivalent unions between programs."
+}

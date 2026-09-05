@@ -1,0 +1,523 @@
+✖ USAG packet cover prose yields a meet-details section (not only admission) (21.5029ms)
+✖ preamble before the first -- N of M -- PDF marker is included in routable extracted text (1.0546ms)
+✖ meet-details is not a ghost tab when only results links exist (communication cards live on results section) (3.3506ms)
+✖ traffic-parking stays visible with map-only content when address is set and logistics parking fields are empty (0.8525ms)
+✔ mixed packet content keeps rich operational sections separate while preserving results (2.8301ms)
+✔ payment instructions do not leak into the hero header (1.9764ms)
+✔ discovery hero summary excludes arrival guidance cards (0.9391ms)
+✖ normalizeGymMeetEventData passes unstripped details into discovery for Meet Details prose (1.0178ms)
+✔ detailsTextForDiscovery alone can populate doors open when hero detailsText is empty (0.4947ms)
+✔ resource links route only approved public links into hotels and results (1.9642ms)
+✔ parking resource links render under Traffic and Parking without a Resources tab (0.4613ms)
+✖ rotation hub with not_posted shows neutral status instead of a wrong PDF (0.5702ms)
+✔ lightweight results stay in the results section without leaking into admission (0.8566ms)
+✔ public registration info stays in meet details while admission remains separate (0.5263ms)
+✔ normalizeGymMeetEventData strips discovery-generated description text (0.7129ms)
+✔ normalizeGymMeetEventData strips packet intro boilerplate from discovery details (0.2922ms)
+✔ no coach content means no coaches section (0.5798ms)
+✔ schema and json-ld noise are filtered out of user-facing sections (0.5512ms)
+✖ packet and faq links merge into meet details when sparse (0.5912ms)
+✖ rich results merge into meet details communication cards (0.606ms)
+✖ coach deadline cards render month day year instead of raw ISO dates (0.5866ms)
+✖ spectator presale announcements route into admission and linked domains stay out of copy (0.8202ms)
+✖ normalized logistics policies, hotel notes, and bare-domain results links render in dedicated sections (0.5626ms)
+✖ normalized operational-note noise stays out of meet details and coach notes (0.4606ms)
+✖ operational routing keeps public meet facts out of announcements (0.7702ms)
+✖ persisted generated announcements are suppressed while transient updates remain (0.5668ms)
+✖ venue details stay venue-only and absorb the venue map blocks (2.291ms)
+✖ uploaded gear and general announcements stay visible inside meet details (0.4732ms)
+✖ builder announcements render inside the meet details tab (0.4596ms)
+✔ club_participation announcement fragments are suppressed (0.4207ms)
+✖ duplicate announcement ids are normalized to unique card keys (1.0263ms)
+✔ public-page-v2 discovery renders attendee sections and suppresses schedule/coaches (0.8051ms)
+✔ legacy gymnastics discovery without pipeline version still suppresses schedule/coaches (0.4504ms)
+✔ public-page-v2 augments a sparse stored overview with typed parent-packet facts (1.1421ms)
+✔ public-page-v2 presents parking and traffic as labeled arrival guidance cards (0.3267ms)
+✖ mixed public packet hides weak sections, merges admission variants, and limits quick access to approved links (1.2964ms)
+✔ admission discount notes do not overwrite actual prices or mark child tickets free (0.3807ms)
+✔ legacy discovery admission cards also preserve card prices over cash discounts (0.3221ms)
+✔ legacy discovery recovers credit-card and cash pricing from source lines when parsed admission rows are malformed (0.9531ms)
+✔ session eligibility notes from parsed admission rows move to meet details instead of admission (0.544ms)
+✔ public hotel section drops duplicate travel copy when it only repeats the hotel link label (0.3658ms)
+✔ public hotel section drops low-signal host hotels copy even when the fallback link label differs (0.274ms)
+✔ structured travel hotels render as hotel cards with fallback link (0.4578ms)
+✖ quick access collapses duplicate labels even when discovery finds multiple urls (0.6383ms)
+✖ quick access prioritizes parking, hotels, documents, then results (0.5706ms)
+ℹ tests 45
+ℹ suites 0
+ℹ pass 24
+ℹ fail 21
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 65.9844
+
+✖ failing tests:
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:7:1
+✖ USAG packet cover prose yields a meet-details section (not only admission) (21.5029ms)
+  AssertionError [ERR_ASSERTION]: expected meet-details tab content from narrative packet lines
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:30:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.start (node:internal/test_runner/test:1015:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:34:1
+✖ preamble before the first -- N of M -- PDF marker is included in routable extracted text (1.0546ms)
+  AssertionError [ERR_ASSERTION]: preamble with pricing must survive page splitting (real PDFs put cover letter before page 1 marker)
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:56:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: '{"sections":[]}',
+    expected: /\$26\.00/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:58:1
+✖ meet-details is not a ghost tab when only results links exist (communication cards live on results section) (3.3506ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(results?.hasContent)
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:77:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:80:1
+✖ traffic-parking stays visible with map-only content when address is set and logistics parking fields are empty (0.8525ms)
+  AssertionError [ERR_ASSERTION]: expected parking-map block
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:102:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:216:1
+✖ normalizeGymMeetEventData passes unstripped details into discovery for Meet Details prose (1.0178ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /30 minutes for parking/i. Input:
+  
+  '{"id":"meet-details","label":"Meet Details","kind":"meet_overview","priority":10,"hasContent":true,"blocks":[{"id":"meet-guidance-cards","type":"card-grid","columns":2,"cards":[{"key":"meet-overview","label":"What families need to know","body":"Doors open: 7:15 AM","items":[],"meta":"At a glance","presentation":"guidance","icon":"info","tone":"default"}]}]}'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:233:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '{"id":"meet-details","label":"Meet Details","kind":"meet_overview","priority":10,"hasContent":true,"blocks":[{"id":"meet-guidance-cards","type":"card-grid","columns":2,"cards":[{"key":"meet-overview","label":"What families need to know","body":"Doors open: 7:15 AM","items":[],"meta":"At a glance","presentation":"guidance","icon":"info","tone":"default"}]}]}',
+    expected: /30 minutes for parking/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:402:1
+✖ rotation hub with not_posted shows neutral status instead of a wrong PDF (0.5702ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Not yet posted/i. Input:
+  
+  '[{"id":"meet-details","label":"Meet Details","kind":"meet_overview","priority":10,"hasContent":true,"blocks":[{"id":"meet-guidance-cards","type":"card-grid","columns":2,"cards":[{"key":"meet-overview","label":"What families need to know","body":"Rotation sheets will be posted online before the event.","items":[],"meta":"At a glance","presentation":"guidance","icon":"info","tone":"default"}]}]},{"id":"venue-details","label":"Venue Details","kind":"venue","priority":30,"hasContent":true,"blocks":[{"id":"venue-map","type":"map","title":"Arrival Map","address":"123 Main St, Chicago, IL 60601"}]},{"id":"traffic-parking","label":"Traffic & Parking","kind":"traffic_parking","priority":40,"hasContent":true,"blocks":[{"id":"arrival-guidance-cards","type":"card-grid","columns":2,"cards":[{"key":"parking-dropoff","label":"Parking & drop-off","body":"Parking details were not listed in the packet. Plan to arrive early at 123 Main St, Chicago, IL 60601 and follow on-site signage for spectator parking and drop-off.","items":[],"meta":"Before you leave","presentation":"guidance","icon":"parking","tone":"default"},{"key":"traffic-alert","label":"Traffic alert","body":"Allow extra arrival time near the venue and follow posted event traffic direction on arrival.","items":[],"meta":"Plan extra time","presentation":"guidance","icon":"traffic","tone":"warning"}]}]}]'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:442:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '-map","type":"map","title":"Arrival Map","address":"123 Main St, Chicago, IL 60601"}]},{"id":"traffic-parking","label":"Traffic & Parking","kind":"traffic_parking","priority":40,"hasContent":true,"blocks":[{"id":"arrival-guidance-cards","type":"card-grid","columns":2,"cards":[{"key":"parking-dropoff","label":"Parking & drop-off","body":"Parking details were not listed in the packet. Plan to arrive early at 123 Main St, Chicago, IL 60601 and follow on-site signage for spectator parking and drop-off.","items":[],"meta":"Before you leave","presentation":"guidance","icon":"parking","tone":"default"},{"key":"traffic-alert","label":"Traffic alert","body":"Allow extra arrival time near the venue and follow posted event traffic direction on arrival.","items":[],"meta":"Plan extra time","presentation":"guidance","icon":"traffic","tone":"warning"}]}]}]...',
+    expected: /Not yet posted/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:594:1
+✖ packet and faq links merge into meet details when sparse (0.5912ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(meetDetails)
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:618:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:621:1
+✖ rich results merge into meet details communication cards (0.606ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(results)
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:686:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:691:1
+✖ coach deadline cards render month day year instead of raw ISO dates (0.5866ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(values.includes("Mar 1, 2026"))
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:725:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:730:1
+✖ spectator presale announcements route into admission and linked domains stay out of copy (0.8202ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(admission)
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:779:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:787:1
+✖ normalized logistics policies, hotel notes, and bare-domain results links render in dedicated sections (0.5626ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /https:\/\/usacompetitions\.com\//i. Input:
+  
+  '{"id":"results","label":"Results","kind":"results","priority":60,"hasContent":true,"blocks":[{"id":"results-info","type":"text","text":"Live scoring available at USACompetitions.com."}]}'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:825:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '{"id":"results","label":"Results","kind":"results","priority":60,"hasContent":true,"blocks":[{"id":"results-info","type":"text","text":"Live scoring available at USACompetitions.com."}]}',
+    expected: /https:\/\/usacompetitions\.com\//i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:832:1
+✖ normalized operational-note noise stays out of meet details and coach notes (0.4606ms)
+  AssertionError [ERR_ASSERTION]: The "string" argument must be of type string. Received type undefined (undefined)
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:865:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /Coaches sign in at the registration table/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:867:1
+✖ operational routing keeps public meet facts out of announcements (0.7702ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(admission)
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:956:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:977:1
+✖ persisted generated announcements are suppressed while transient updates remain (0.5668ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Session 2 families should arrive 20 minutes earlier/i. Input:
+  
+  '{"id":"meet-details","label":"Meet Details","kind":"meet_overview","priority":10,"hasContent":true,"blocks":[{"id":"meet-guidance-cards","type":"card-grid","columns":2,"cards":[{"key":"meet-overview","label":"What families need to know","body":"Rotation sheets will be posted online before the event.","items":[],"meta":"At a glance","presentation":"guidance","icon":"info","tone":"default"}]}]}'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:1029:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '{"id":"meet-details","label":"Meet Details","kind":"meet_overview","priority":10,"hasContent":true,"blocks":[{"id":"meet-guidance-cards","type":"card-grid","columns":2,"cards":[{"key":"meet-overview","label":"What families need to know","body":"Rotation sheets will be posted online before the event.","items":[],"meta":"At a glance","presentation":"guidance","icon":"info","tone":"default"}]}]}',
+    expected: /Session 2 families should arrive 20 minutes earlier/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:1033:1
+✖ venue details stay venue-only and absorb the venue map blocks (2.291ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(admission)
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:1108:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:1133:1
+✖ uploaded gear and general announcements stay visible inside meet details (0.4732ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(meetDetails)
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:1173:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:1180:1
+✖ builder announcements render inside the meet details tab (0.4596ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Spectator admission pre-sale closes Thursday at 8:00 PM/i. Input:
+  
+  '{"id":"meet-details","label":"Meet Details","kind":"meet_overview","priority":10,"hasContent":true,"blocks":[{"id":"meet-guidance-cards","type":"card-grid","columns":2,"cards":[{"key":"meet-overview","label":"What families need to know","body":"Doors open at 7:15 AM.","items":[],"meta":"At a glance","presentation":"guidance","icon":"info","tone":"default"}]}]}'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:1221:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '{"id":"meet-details","label":"Meet Details","kind":"meet_overview","priority":10,"hasContent":true,"blocks":[{"id":"meet-guidance-cards","type":"card-grid","columns":2,"cards":[{"key":"meet-overview","label":"What families need to know","body":"Doors open at 7:15 AM.","items":[],"meta":"At a glance","presentation":"guidance","icon":"info","tone":"default"}]}]}',
+    expected: /Spectator admission pre-sale closes Thursday at 8:00 PM/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:1266:1
+✖ duplicate announcement ids are normalized to unique card keys (1.0263ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'announcement-2',
+  -   'announcement-2-2'
+  - ]
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:1310:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:1584:1
+✖ mixed public packet hides weak sections, merges admission variants, and limits quick access to approved links (1.2964ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /https:\/\/example\.com\/hotels/i. Input:
+  
+  '{"id":"hotels","label":"Hotels & Travel","kind":"hotels","priority":50,"hasContent":true,"blocks":[{"id":"travel-guidance-cards","type":"card-grid","columns":2,"cards":[{"key":"travel-guidance","label":"Travel guidance","body":"Host hotels are available for traveling families.","items":[],"meta":"Plan your stay","presentation":"guidance","icon":"info","tone":"default"}]}]}'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:1723:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '{"id":"hotels","label":"Hotels & Travel","kind":"hotels","priority":50,"hasContent":true,"blocks":[{"id":"travel-guidance-cards","type":"card-grid","columns":2,"cards":[{"key":"travel-guidance","label":"Travel guidance","body":"Host hotels are available for traveling families.","items":[],"meta":"Plan your stay","presentation":"guidance","icon":"info","tone":"default"}]}]}',
+    expected: /https:\/\/example\.com\/hotels/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:2090:1
+✖ quick access collapses duplicate labels even when discovery finds multiple urls (0.6383ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+  +     label: 'Photo / Video Order Form',
+  +     url: 'https://pci.jotform.com/photo-video'
+  -     label: 'Host Hotels',
+  -     url: 'https://example.com/hotels'
+      },
+      {
+  +     label: 'Apparel Sizing Form',
+  +     url: 'https://forms.office.com/apparel'
+  +   },
+  +   {
+        label: 'Official Results',
+        url: 'https://example.com/results'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:2169:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at src\components\gym-meet-templates\buildGymMeetDiscoveryContent.test.ts:2174:1
+✖ quick access prioritizes parking, hotels, documents, then results (0.5706ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+    [
+      {
+        label: 'Parking Garage Directions',
+        url: 'https://static.usagym.org/parking.jpg'
+      },
+  ...
+      {
+  -     label: 'Photo / Video Order Form',
+  -     url: 'https://pci.jotform.com/photo-video'
+  -   },
+  -   {
+  -     label: 'Apparel Sizing Form',
+  -     url: 'https://forms.office.com/apparel'
+  -   },
+  -   {
+        label: 'Official Results',
+        url: 'https://example.com/results'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/components/gym-meet-templates/buildGymMeetDiscoveryContent.test.ts:2257:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

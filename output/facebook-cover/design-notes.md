@@ -1,0 +1,19 @@
+# Facebook cover concept
+
+Output: `professional-cover-v1.png`
+
+Created with the built-in image generation tool. This is a design concept, with an illustrative phone screen. For production, replace that illustration with a real Envitefy screen and check the cover in Facebook's desktop and mobile previews. The logo reference was rendered from the canonical component's locked Josefin Slab font settings, using its white tone.
+
+## Final generation prompt
+
+Use case: compositing.
+Asset type: a finished horizontal Envitefy Facebook cover redesign, a professional design concept. Output one full-bleed banner, approximately 2400 by 912 pixels (same 2.63:1 wide proportions as Image 1), no mockup frame.
+Input images: Image 1 is the original poster to redesign, and a reference for its digital birthday invitation product. Image 2 is the exact canonical brand wordmark to insert: preserve the lowercase white lettering, letter shapes, relative proportions, tight spacing, and original Josefin Slab typography faithfully. Use the Image 2 wordmark instead of the older lettering in Image 1. It is a finished brand asset, not typography to redesign.
+
+Primary request: make the original cover more professional and less synthetically AI-styled. Give it the calm, deliberate look of a real graphic designer's restrained editorial campaign.
+Composition: a solid midnight navy #101e3a left panel about 56% of the width; the right 44% is a simple overhead daylight product photograph on a warm, pale, matte wooden table. A straight vertical division, no blending, gradient, ornamental waves, or frame. Generous intentional negative space. All important text comfortably inset from outer edges. Keep the lower-left corner free.
+Left: cleanly insert the exact white wordmark from Image 2, prominent but with breathing room, left-aligned. Below it, use attractive clean sans serif typography, two short lines only if needed, with the exact headline: "Where invites come alive." Everything white, no cyan emphasized word, no underline. Under the headline place one quiet typographic feature line: "Digital invites · Easy sharing · Live updates · RSVPs". Below with space, display the plain text URL "envitefy.com" in white. Strict alignment and sophisticated spacing; no extra CTA pill, badges, icons, pictograms, or claims. The wordmark has its own exact supplied typography, other text a single modern sans serif family.
+Right: replace the original artificially blurred people and hand with a believable photograph of a single ordinary black smartphone resting naturally on the table at a slight 8-degree diagonal. Modest realistic thickness, a physically correct contact shadow, natural indirect window light and subtle real wood texture. The phone is large enough to clearly identify the invitation. On screen, use the same friendly birthday invitation concept from Image 1, with small tasteful balloon/bunting accents, a white background, and only the following clearly rendered text: "YOU'RE INVITED", "Peter's", "7th Birthday Party", and one purple "VIEW & RESPOND" button. Treat it as a simplified illustrative product preview; do not add tiny fabricated addresses, dates, data, or illegible paragraphs. The table can include only a small portion of a neutral folded linen napkin at the far right edge, keeping the composition spare. No hands or people needed.
+Lighting: neutral, soft and realistic, with slight natural imperfection, not golden cinematic glow, not CGI, not shiny beauty advertising.
+Avoid: particle clouds, neon outlines, gradient blobs, glitter, 3D app tiles, glossy skin, fake family background, saturated blue lighting, floating objects, plastic textures, oversized shadows, additional logos, stock-photo watermarks, unreadable microcopy, quotation marks around the design copy.
+Critical invariant: preserve the exact Image 2 wordmark asset's shapes, white color, letter spacing and proportions. Do not invent a new Envitefy logo.

@@ -1,0 +1,7 @@
+Reused the exact existing email PNG assets for Instagram, Facebook, YouTube, and TikTok. The Reddit PNG is an unchanged copy of the user attachment and links to https://www.reddit.com/user/envitefy/.
+
+One shared list now supplies the site footer, signed-in profile menu, 16 event footers/previews, both email templates, and organization social metadata. Removed the circular icon containers from site navigation to match the email presentation.
+
+Validation: Biome lint passed on 24 changed files; TypeScript reported no diagnostics; 33 targeted regression tests passed. Both site placements passed at desktop, phone portrait, and phone landscape sizes. Signed-in checks used a mock session. Both generated email footer sections were visually checked in isolation at widths of 600, 375, and 320 pixels. Light and dark event icon rows were also rendered and checked. All five icons loaded, and Reddit opened the supplied URL in a new tab.
+
+The VS Code diagnostics bridge was unavailable, so direct TypeScript diagnostics were used. The full magazine email retains its pre-existing fixed-width showcase-card layout; the mobile checks above cover the updated footer section.

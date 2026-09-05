@@ -1,4 +1,6 @@
 "use client";
+
+import { CONNECTED_CALENDAR_SYNC_ENABLED, CALENDAR_SYNC_PAUSED_MESSAGE } from "@/config/calendar-sync";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   CalendarDays,
@@ -350,6 +352,7 @@ export default function SettingsPage() {
 
   const handleCalendarConnect = useCallback(
     (provider: ConnectedCalendarProvider) => {
+      if (!CONNECTED_CALENDAR_SYNC_ENABLED) return;
       if (typeof window === "undefined") return;
       if (provider === "google") {
         const next = encodeURIComponent("/settings#calendars");
@@ -944,7 +947,9 @@ export default function SettingsPage() {
                   Calendars
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Connect Google or Outlook for background sync and choose your default calendar.
+                  {CONNECTED_CALENDAR_SYNC_ENABLED
+                    ? "Connect Google or Outlook for background sync and choose your default calendar."
+                    : CALENDAR_SYNC_PAUSED_MESSAGE}
                 </p>
               </div>
               <button
@@ -1026,11 +1031,11 @@ export default function SettingsPage() {
                         <button
                           type="button"
                           onClick={() => handleCalendarConnect(item.key)}
-                          disabled={disconnecting}
+                          disabled={disconnecting || !CONNECTED_CALENDAR_SYNC_ENABLED}
                           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
                         >
                           <RefreshCw className="h-4 w-4" aria-hidden="true" />
-                          Reconnect
+                          {CONNECTED_CALENDAR_SYNC_ENABLED ? "Reconnect" : "Sync paused"}
                         </button>
                           <button
                             type="button"
@@ -1049,9 +1054,10 @@ export default function SettingsPage() {
                       <button
                         type="button"
                         onClick={() => handleCalendarConnect(item.key)}
-                        className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2"
+                        disabled={!CONNECTED_CALENDAR_SYNC_ENABLED}
+                        className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[#d9cdfa] bg-white px-3 py-2 text-xs font-semibold text-[#4f3f7a] transition hover:bg-[#f5eeff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c67be] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
                       >
-                        Connect {item.label}
+                        {CONNECTED_CALENDAR_SYNC_ENABLED ? `Connect ${item.label}` : "Sync paused"}
                       </button>
                     )}
                   </div>
@@ -1059,7 +1065,7 @@ export default function SettingsPage() {
               })}
             </div>
 
-            <div className="space-y-4 rounded-2xl border border-[#e5dcff] bg-white p-4 sm:p-5">
+            <div hidden={!CONNECTED_CALENDAR_SYNC_ENABLED} className="space-y-4 rounded-2xl border border-[#e5dcff] bg-white p-4 sm:p-5">
               <p className="text-sm font-medium text-[#2f1d47]">Default calendar</p>
               <p className="text-xs text-[#7a6ca8]">
                 Choose a connected provider. Apple Calendar remains available as a one-event

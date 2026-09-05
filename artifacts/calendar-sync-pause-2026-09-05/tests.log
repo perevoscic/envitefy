@@ -1,0 +1,47 @@
+✔ snap/upload creation waits for automatic calendar sync and records its outcome (1.627ms)
+✔ a stale Apple default cannot block a connected automatic-sync provider (0.2541ms)
+✔ automatic calendar sync is idempotent and supports flyer attachments (0.2926ms)
+✔ private provider sync identifiers are removed from public event projections (0.3773ms)
+✔ calendar connection requests a refresh token and the narrow event scope (2.0639ms)
+✔ calendar connection is stored against the signed-in Envitefy account (0.3122ms)
+✔ Outlook calendar connection preserves a safe post-OAuth return path (1.0476ms)
+✔ the full FAQ reflects the current customer-facing product (0.9875ms)
+✔ the full FAQ removes stale account tiers and the inaccurate co-management claim (0.3293ms)
+✔ FAQ disclosures work before client hydration (0.2045ms)
+✔ settings uses a sectioned workspace instead of one continuous form (0.8856ms)
+✔ sports deep links and compact preference grids remain available (0.2011ms)
+✔ profile exposes a validated avatar upload experience (0.1252ms)
+✔ Google Calendar reconnect forces offline consent and returns to calendar settings (0.0738ms)
+✔ only connected calendars can be selected and persisted as the default (0.1607ms)
+✔ Apple remains an event-by-event action and never saves a default (0.214ms)
+✔ calendar cards expose honest sync and disconnect states (0.3039ms)
+✔ provider disconnect removes only that calendar without ending the account session (0.1139ms)
+✔ shared navigation waits for real connection status before clearing a default (0.136ms)
+✔ the disabled switch pauses sync, and the same switch can restore it (58.735ms)
+✔ events/calendar/auto refuses calendar writes before using existing credentials or touching data (56.8846ms)
+✔ events/google refuses calendar writes before using existing credentials or touching data (16.8938ms)
+✔ events/google/bulk refuses calendar writes before using existing credentials or touching data (15.7513ms)
+✔ google/insert refuses calendar writes before using existing credentials or touching data (14.6899ms)
+✔ events/outlook refuses calendar writes before using existing credentials or touching data (12.6425ms)
+✔ events/outlook/bulk refuses calendar writes before using existing credentials or touching data (13.5296ms)
+✔ outlook/insert refuses calendar writes before using existing credentials or touching data (11.6525ms)
+✔ google/auth cannot request scopes or exchange an in-flight OAuth code (8.5434ms)
+✔ google/callback cannot request scopes or exchange an in-flight OAuth code (20.9906ms)
+✔ outlook/auth cannot request scopes or exchange an in-flight OAuth code (5.6148ms)
+✔ outlook/callback cannot request scopes or exchange an in-flight OAuth code (8.9762ms)
+✔ old calendar setup URLs do not render a connection prompt or sync notice (41.1951ms)
+✔ marketing omits paused background sync and restores the original claim when enabled (16.2082ms)
+✔ signup requires current legal acceptance for email and Google (123.5981ms)
+✔ optional tracking is consent gated and strips query strings (110.7274ms)
+✔ campaigns suppress opt-outs and carry compliance controls (19.5449ms)
+✔ disconnect deletes stored provider tokens and clears sessions (1.2794ms)
+✔ Google user data is carved out from generalized improvement and AI uses (7.0948ms)
+✔ private scan content access is auditable (413.0314ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2294.8153

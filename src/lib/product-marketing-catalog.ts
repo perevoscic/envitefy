@@ -1,3 +1,4 @@
+import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 /**
  * Customer-facing Envitefy product truth for marketing and sales copy.
  *
@@ -125,6 +126,22 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "The pain point is lost invitations, scattered screenshots, fridge clutter, or remembering whether the customer is hosting or attending.",
           ],
         },
+        {
+          id: "envitefy-social-profiles",
+          name: "Follow Envitefy",
+          availability: "core",
+          customerPromise:
+            "Find Envitefy's social profiles directly from the website or your account navigation.",
+          proofPoints: [
+            "Signed-out site footers link to Envitefy on Instagram, Facebook, YouTube, TikTok, and Reddit.",
+            "Signed-in users can find the same links in the sidebar profile menu on desktop and mobile.",
+            "Email footers and event pages with social links reuse the same five profiles and email icon assets.",
+            "Social links open in a new tab so customers can keep their place in Envitefy.",
+          ],
+          sellWhen: [
+            "Invite customers to follow Envitefy or show them where to find the brand's social profiles.",
+          ],
+        },
       ],
     },
     {
@@ -144,6 +161,21 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           ],
           sellWhen: [
             "The brief mentions a live card, event site, invitation page, mobile experience, or one place for guests.",
+          ],
+        },
+        {
+          id: "standalone-invitation-exports",
+          name: "Downloadable digital and printable invitations",
+          availability: "event-dependent",
+          customerPromise:
+            "Download an invitation image that includes the event wording and supplied guest details.",
+          proofPoints: [
+            "Digital flyer exports include supplied names, wording, date, time, venue and address in the image.",
+            "Printable flyer exports use a 5-by-7-inch PNG at 300 DPI with safe text margins.",
+            "The export checks text fit and asks for shorter wording when the supplied content cannot fit legibly.",
+          ],
+          sellWhen: [
+            "The host wants a self-contained invitation image to share or a printable 5-by-7 invitation.",
           ],
         },
         {
@@ -171,10 +203,12 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           proofPoints: [
             "Supports ordinary single events as well as schedules, multi-session sports meets, and multi-event wedding weekends.",
             "Event-specific pages can include arrival, parking, drop-off, pickup, rain-plan, admission, travel, or other logistics.",
+            "Gymnastics discovery can collect organizer-listed hotels from event pages or PDF links, keeping published rates, booking deadlines, phone instructions, and original reservation links together when available.",
             "Hosts can update the details without changing the shared link.",
           ],
           sellWhen: [
             "The event has more detail than fits comfortably on a paper card or requires a schedule or itinerary.",
+            "Families traveling to a gymnastics meet need the organizer's accommodation details and booking links in the event page.",
           ],
         },
         {
@@ -185,7 +219,9 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Let guests save the event instead of relying on the invitation to remember it.",
           proofPoints: [
             "Live pages support Google Calendar, Apple Calendar/ICS, and Outlook calendar actions.",
-            "Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings; Apple Calendar uses a one-event ICS handoff.",
+            ...(CONNECTED_CALENDAR_SYNC_ENABLED
+              ? ["Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings; Apple Calendar uses a one-event ICS handoff."]
+              : ["Guests can manually save events with calendar links or ICS downloads; these actions do not require a connected calendar account."]),
             "Calendar entries can carry event timing, location, and available reminder information.",
             "Specialized schedule flows can expose the relevant event or session timing.",
           ],

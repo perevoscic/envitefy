@@ -198,7 +198,8 @@ export function isInlineDataUrl(value: unknown): value is string {
   return typeof value === "string" && value.trim().startsWith("data:");
 }
 
-export function isRemoteMediaUrl(value: unknown): value is string {
+// A rejected URL can still be a string, so this is a format check.
+export function isRemoteMediaUrl(value: unknown): boolean {
   return typeof value === "string" && /^https?:\/\//i.test(value.trim());
 }
 

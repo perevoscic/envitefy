@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import sharp from "sharp";
 
@@ -6,6 +6,7 @@ const outDir = join(process.cwd(), "public", "email");
 mkdirSync(outDir, { recursive: true });
 
 const strokeColor = "#4E4E50";
+const redditMarkData = readFileSync(join(outDir, "social-reddit-mark.png")).toString("base64");
 
 const icons = {
   "social-instagram": `<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
@@ -19,13 +20,32 @@ const icons = {
   <path d="M7.48 5.5a2 2 0 0 0-2 2v33a2 2 0 0 0 2 2h33.04a2 2 0 0 0 2-2v-33a2 2 0 0 0-2-2H7.48Z" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`,
   "social-youtube": `<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
-  <path d="M43.1124 14.394a5.0056 5.0056 0 0 0-3.5332-3.5332c-2.3145-.8936-24.7326-1.3314-31.2358.0256A5.0059 5.0059 0 0 0 4.81 14.42c-1.0446 4.583-1.1239 14.4914.0256 19.1767A5.006 5.006 0 0 0 8.369 37.13c4.5829 1.0548 26.3712 1.2033 31.2358 0a5.0057 5.0057 0 0 0 3.5332-3.5333c1.1138-4.993 1.1931-14.2867-.0256-19.2027Z" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M30.5669 23.9952 20.1208 18.004V29.9863Z" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M7.48 5.5a2 2 0 0 0-2 2v33a2 2 0 0 0 2 2h33.04a2 2 0 0 0 2-2v-33a2 2 0 0 0-2-2H7.48Z" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M20 16 32 24 20 32Z" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`,
-  "social-tiktok": `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><defs><style>.a{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;}</style></defs><path class="a" d="M18.73,22.4A10.55,10.55,0,1,0,29.27,33V4.5A10.55,10.55,0,0,0,39.82,15.05"></path></g></svg>`,
+  "social-tiktok": `<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <path d="M7.48 5.5a2 2 0 0 0-2 2v33a2 2 0 0 0 2 2h33.04a2 2 0 0 0 2-2v-33a2 2 0 0 0-2-2H7.48Z" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M20.838 23.04A6.33 6.33 0 1 0 27.162 29.4V12.3A6.33 6.33 0 0 0 33.492 18.63" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`,
+  "social-reddit": `<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <defs>
+    <filter id="reddit-ink" color-interpolation-filters="sRGB">
+      <feFlood flood-color="${strokeColor}" result="ink"/>
+      <feComposite in="ink" in2="SourceAlpha" operator="in"/>
+    </filter>
+  </defs>
+  <path d="M7.48 5.5a2 2 0 0 0-2 2v33a2 2 0 0 0 2 2h33.04a2 2 0 0 0 2-2v-33a2 2 0 0 0-2-2H7.48Z" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <image x="10" y="10" width="28" height="28" href="data:image/png;base64,${redditMarkData}" filter="url(#reddit-ink)"/>
+</svg>`,
 };
 
+const requestedIcons = new Set(process.argv.slice(2));
+for (const name of requestedIcons) {
+  if (!Object.hasOwn(icons, name)) throw new Error(`Unknown email icon: ${name}`);
+}
+
 for (const [name, svg] of Object.entries(icons)) {
+  if (requestedIcons.size > 0 && !requestedIcons.has(name)) continue;
   const svgPath = join(outDir, `${name}.svg`);
   const pngPath = join(outDir, `${name}.png`);
   writeFileSync(svgPath, svg, "utf8");

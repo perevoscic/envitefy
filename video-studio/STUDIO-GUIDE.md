@@ -4,7 +4,7 @@ Saved from the user's production decisions on September 5, 2026. These are defau
 
 ## Brand and product
 
-- Use the exact chosen PNG wordmark: parent `public/email/envitefy-wordmark-email.png`. Studio copy: `public/brand/envitefy-wordmark-email.png`.
+- Use the exact new PNG wordmark: parent public/brand/envitefy-com.png. Studio copy: public/brand/envitefy-com.png. This supplied asset already reads envitefy.com; preserve its alpha transparency and do not add a separate black domain line. It supersedes the earlier email wordmark for new videos and requested revisions.
 - Use the exact chosen icon: parent `public/icons/apple-touch-icon-120.png`. Studio copy: `public/brand/apple-touch-icon-120.png`.
 - Preserve the assets' colors, artwork, transparency, and proportions. Resize to suit the composition; do not redraw the wordmark with a substitute font.
 - Use `envitefy.com` for the brand CTA. Product references in ordinary copy may say Envitefy; the supplied visual wordmark remains lowercase.
@@ -42,3 +42,5 @@ When feedback describes a lasting preference, update the relevant section above 
 
 Preference history:
 - 2026-09-05: Captured exact branding, fresh casts and settings, no personal twin, natural audio with optional narration, real product demonstrations, action captions, demo naming, and format-specific layouts from the original production task.
+
+- 2026-09-05: User replaced the studio wordmark with public/brand/envitefy-com.png. The supplied wordmark already contains the domain; retain its transparent background and avoid a duplicate black domain line. Scene layout choices are recorded in the campaign feedback.

@@ -1,3 +1,4 @@
+import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -10,6 +11,10 @@ function normalizeInternalRedirect(value: string | null): string | null {
 }
 
 export async function GET(request: Request) {
+  if (!CONNECTED_CALENDAR_SYNC_ENABLED) {
+    return NextResponse.redirect(new URL("/settings#calendars", request.url));
+  }
+
   const { searchParams } = new URL(request.url);
   const clientId = process.env.OUTLOOK_CLIENT_ID!;
   const redirectUri = process.env.OUTLOOK_REDIRECT_URI!;

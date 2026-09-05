@@ -1,5 +1,7 @@
 "use client";
 
+import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RegistryFormEntry } from "@/components/RegistryLinksEditor";
@@ -486,7 +488,7 @@ export default function EventCreateModal({ open, onClose, defaultDate }: Props) 
 
       const calendarPromises: Promise<any>[] = [];
 
-      if (selectedCalendars.google) {
+      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.google) {
         calendarPromises.push(
           fetch("/api/events/google", {
             method: "POST",
@@ -500,7 +502,7 @@ export default function EventCreateModal({ open, onClose, defaultDate }: Props) 
         );
       }
 
-      if (selectedCalendars.microsoft) {
+      if (CONNECTED_CALENDAR_SYNC_ENABLED && selectedCalendars.microsoft) {
         calendarPromises.push(
           fetch("/api/events/outlook", {
             method: "POST",

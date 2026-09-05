@@ -1,349 +1,435 @@
 import assert from "node:assert/strict";
-import test from "node:test";
-
+import test, { type TestContext } from "node:test";
 import {
+  buildTravelAccommodationState,
   enrichTravelAccommodation,
-  extractHotelCardsFromContent,
-  extractHotelCandidatesFromMarkdown,
-} from "./travel-accommodation-enrichment.ts";
+} from "./travel-accommodation-enrichment";
+import {
+  HOTEL_FIELDS,
+  hotelDeadlineIso,
+  hotelUrl,
+  parseHotelEvidence,
+  projectTravelHotels,
+} from "./travel-accommodation-evidence";
+import { readHotelPage } from "./travel-accommodation-providers/playwright";
+import { extractPdfAnnotationLinks, extractPdfTextWithPdfJs } from "./pdf-raster";
+import { mergePdfAndWebHotels } from "./travel-accommodation-discovery";
+import { validateModelHotels } from "./travel-accommodation-providers/astra";
+import { pdfLinkContext } from "./pdf-link-context";
+import { buildGymMeetDiscoveryContent } from "../components/gym-meet-templates/buildGymMeetDiscoveryContent";
 
-test("extractHotelCardsFromContent parses HOST HOTEL INFORMATION cards with generic booking CTAs", () => {
-  const content = `
-## HOST HOTEL INFORMATION
+const eventUrl = "https://usacompetitions.com/south-florida-fright-invite/";
+const bookingUrl =
+  "https://www.marriott.com/event-reservations/reservation-link.mi?id=1764091239004&key=GRP&code=AbC#rooms";
+// Facts transcribed from the organizer's Host Hotels section on 2026-09-05.
+const fright = `### HOST HOTELS
+#
+Fort Lauderdale Marriott Coral Springs
+Distance from Venue: 5 miles
+Rate: $162.00 + tax (per night)
+Breakfast: For Purchase
+Parking: Complimentary Parking
+Reservation Deadline: October 2, 2026
+Phone Reservations: (954) 753-5598; mention “2026 Fright Invite”
+[Reserve Hotel Online](${bookingUrl})
+### LOCAL ATTRACTIONS
+Everglades Holiday Park
+Distance: 22 miles
+### PHOTO GALLERY`;
 
-### Hilton University of Florida Conference Center
-1714 SW 34th St, Gainesville, FL 32607
-Phone: (352) 371-3600
-Reservation Deadline: March 20, 2026
-Rates: $189 King | $199 Double Queen
-Shuttle to venue included.
-[Book Now](https://book.example.com/hilton-uf)
-
-### Courtyard Gainesville
-3700 SW 42nd Street, Gainesville, FL 32608
-352-335-3800
-Deadline to Book: March 18, 2026
-Rate: $169/night plus tax
-Newly renovated lobby.
-[Reserve](https://book.example.com/courtyard)
-
-## PARKING INFORMATION
-Lot A opens at 6:30 AM.
-`;
-
-  const hotels = extractHotelCardsFromContent(content);
-
-  assert.deepEqual(hotels, [
-    {
-      name: "Hilton University of Florida Conference Center",
-      bookingUrl: "https://book.example.com/hilton-uf",
-      address: "1714 SW 34th St, Gainesville, FL 32607",
-      phone: "(352) 371-3600",
-      reservationDeadline: "March 20, 2026",
-      rateSummary: "$189 King $199 Double Queen",
-      notes: "Shuttle to venue included.",
-    },
-    {
-      name: "Courtyard Gainesville",
-      bookingUrl: "https://book.example.com/courtyard",
-      address: "3700 SW 42nd Street, Gainesville, FL 32608",
-      phone: "352-335-3800",
-      reservationDeadline: "March 18, 2026",
-      rateSummary: "$169/night plus tax",
-      notes: "Newly renovated lobby.",
-    },
-  ]);
-});
-
-test("extractHotelCandidatesFromMarkdown still derives names from nearby generic booking labels", () => {
-  const markdown = `
-Marriott Downtown
-[Reserve here](https://book.example.com/marriott)
-
-Host Hotels
-[Book now](https://book.example.com/host-hotels)
-`;
-
-  const hotels = extractHotelCandidatesFromMarkdown(markdown);
-
-  assert.deepEqual(hotels, [
-    {
-      name: "Marriott Downtown",
-      url: "https://book.example.com/marriott",
-    },
-  ]);
-});
-
-test("extractHotelCardsFromContent ignores reserve hotel online CTA blocks and stops before local attractions", () => {
-  const content = `
-## HOST HOTEL INFORMATION
-
-### DoubleTree by Hilton Gainesville
-Phone: (352) 375-2400
-Reservation Deadline: March 19, 2026
-Rate: $148.00 + tax (per night)
-Distance from Venue: 1.2 miles
-Breakfast: Restaurant on-site
-Parking: Complimentary
-[Reserve Hotel Online](https://doubletree.example.com/book)
-
-### Hotel Indigo
-Phone: (352) 240-8900
-Reservation Deadline: March 31, 2026
-Rate: $199.00 + tax (per night)
-Distance from Venue: Same complex
-Breakfast: Restaurant on-site
-Parking: Complimentary
-[Reserve Hotel Online](https://indigo.example.com/book)
-
-## LOCAL ATTRACTIONS
-Depot Park
-Open daily.
-`;
-
-  const hotels = extractHotelCardsFromContent(content);
-
-  assert.deepEqual(hotels, [
-    {
-      name: "DoubleTree by Hilton Gainesville",
-      bookingUrl: "https://doubletree.example.com/book",
-      phone: "(352) 375-2400",
-      reservationDeadline: "March 19, 2026",
-      rateSummary: "$148.00 + tax (per night)",
-      notes:
-        "Distance from Venue: 1.2 miles | Breakfast: Restaurant on-site | Parking: Complimentary",
-    },
-    {
-      name: "Hotel Indigo",
-      bookingUrl: "https://indigo.example.com/book",
-      phone: "(352) 240-8900",
-      reservationDeadline: "March 31, 2026",
-      rateSummary: "$199.00 + tax (per night)",
-      notes:
-        "Distance from Venue: Same complex | Breakfast: Restaurant on-site | Parking: Complimentary",
-    },
-  ]);
-});
-
-test("enrichTravelAccommodation prefers the same-host hotel hub when both hub and vendor links exist", async (t) => {
-  const previousKey = process.env.FIRECRAWL_API_KEY;
-  const previousOpenAiKey = process.env.OPENAI_API_KEY;
-  const originalFetch = global.fetch;
-  process.env.FIRECRAWL_API_KEY = "test-key";
-  delete process.env.OPENAI_API_KEY;
-
-  t.after(() => {
-    global.fetch = originalFetch;
-    if (previousKey === undefined) delete process.env.FIRECRAWL_API_KEY;
-    else process.env.FIRECRAWL_API_KEY = previousKey;
-    if (previousOpenAiKey === undefined) delete process.env.OPENAI_API_KEY;
-    else process.env.OPENAI_API_KEY = previousOpenAiKey;
+test("organizer page produces one complete card with evidence and original booking parameters", async () => {
+  const result = await enrichTravelAccommodation({
+    sourceType: "url",
+    sourceUrl: eventUrl,
+    extractedText: fright,
+    extractionMeta: null,
   });
+  assert.equal(result.hotels.length, 1);
+  const hotel = result.hotels[0];
+  assert.equal(hotel.name, "Fort Lauderdale Marriott Coral Springs");
+  assert.equal(hotel.bookingUrl, bookingUrl);
+  assert.equal(hotel.groupRate, "$162.00 + tax (per night)");
+  assert.equal(hotel.distanceFromVenue, "5 miles");
+  assert.equal(hotel.phone, "(954) 753-5598");
+  assert.equal(hotel.bookingInstructions, "mention “2026 Fright Invite”");
+  assert.equal(hotel.reservationDeadline, "October 2, 2026");
+  assert.deepEqual(hotel.notes, []);
+  assert.equal(hotel.evidence?.groupRate?.[0].sourceUrl, eventUrl);
+  assert.equal(hotel.evidence?.groupRate?.[0].quote, "Rate: $162.00 + tax (per night)");
+  assert.equal(result.attempts.length, 0);
+  assert.equal(buildTravelAccommodationState(result).status, "complete");
+});
 
-  const requestedUrls: string[] = [];
-  global.fetch = (async (_input: any, init?: any) => {
-    const body = JSON.parse(String(init?.body || "{}"));
-    requestedUrls.push(String(body?.url || ""));
-    return {
-      ok: true,
-      async json() {
-        return {
-          data: {
-            markdown: `
-## HOST HOTEL INFORMATION
+test("multiple cards keep addresses, rates and CTAs attached to the right hotel", () => {
+  const hotels = parseHotelEvidence(`## HOST HOTEL INFORMATION
 ### Hilton Garden Inn
-4075 SW 33rd Place, Gainesville, FL 32608
-[Book](https://book.example.com/hilton-garden)
-`,
-            metadata: {
-              sourceURL: "https://usacompetitions.com/2026-xcel-bsg-state-championships/",
-            },
-          },
-        };
-      },
-    } as Response;
-  }) as typeof fetch;
+123 Main Street, Gainesville, FL 32608
+Rate: $189 King | $199 Double Queen
+[Book Now](https://book.example.com/hilton)
+### Hotel Indigo
+Rate: $199 plus tax
+[Reserve](https://book.example.com/indigo)
+## PARKING INFORMATION
+Lot A opens at 6:30 AM.`);
+  assert.equal(hotels.length, 2);
+  assert.equal(hotels[0].address, "123 Main Street, Gainesville, FL 32608");
+  assert.equal(hotels[0].groupRate, "$189 King | $199 Double Queen");
+  assert.equal(hotels[1].bookingUrl, "https://book.example.com/indigo");
+  assert.equal(hotels[1].notes.length, 0);
+});
 
-  const travel = await enrichTravelAccommodation({
-    traceId: "travel-test",
+test("PDF hidden hyperlinks keep page context and resolve a generic booking label", async () => {
+  const text = "HOST HOTELS\nHilton Garden Inn\nRate: $170 plus tax\nBook here";
+  const result = await enrichTravelAccommodation({
+    sourceType: "file",
+    sourceId: "event-upload-1",
+    extractedText: text,
     extractionMeta: {
-      resourceLinks: [
-        {
-          kind: "hotel_booking",
-          label: "Host Hotels",
-          url: "https://api.groupbook.io/group/usag-state-2026",
-          sourceUrl: "https://usacompetitions.com/wp-content/uploads/2026/03/state-info.pdf",
-        },
-        {
-          kind: "hotel_booking",
-          label: "Host Hotel Information",
-          url: "https://usacompetitions.com/2026-xcel-bsg-state-championships/",
-          sourceUrl: "https://usacompetitions.com/wp-content/uploads/2026/03/state-info.pdf",
-        },
-      ],
+      accommodationPageTexts: [{ pageNumber: 4, text }],
+      annotationLinks: [{ url: bookingUrl, label: "Book here", pageNumber: 4, contextText: text }],
     },
-    budgetMs: 2_000,
   });
+  assert.equal(result.hotels[0].bookingUrl, bookingUrl);
+  assert.equal(result.hotels[0].evidence?.groupRate?.[0].pageNumber, 4);
+  assert.equal(result.hotels[0].evidence?.groupRate?.[0].sourceId, "event-upload-1");
+});
 
-  assert.equal(requestedUrls[0], "https://usacompetitions.com/2026-xcel-bsg-state-championships/");
-  assert.equal(
-    travel?.hotelSource.sourceUrl,
-    "https://usacompetitions.com/2026-xcel-bsg-state-championships/"
+test("PDF coordinate context keeps the link label and the nearby hotel, excluding another column", () => {
+  const result = pdfLinkContext(
+    [60, 100, 120, 112],
+    [
+      { str: "Hilton Garden Inn", transform: [1, 0, 0, 1, 60, 150], width: 130 },
+      { str: "Book here", transform: [1, 0, 0, 1, 60, 102], width: 60 },
+      { str: "Unrelated hotel", transform: [1, 0, 0, 1, 350, 150], width: 100 },
+    ],
   );
-  assert.equal(travel?.fallbackLink?.url, "https://api.groupbook.io/group/usag-state-2026");
-  assert.deepEqual(travel?.hotels, [
-    {
-      name: "Hilton Garden Inn",
-      bookingUrl: "https://book.example.com/hilton-garden",
-      address: "4075 SW 33rd Place, Gainesville, FL 32608",
-    },
-  ]);
+  assert.equal(result.label, "Book here");
+  assert.equal(result.contextText, "Hilton Garden Inn\nBook here");
 });
 
-test("enrichTravelAccommodation uses AI fallback to recover hotel names from non-card layouts", async (t) => {
-  const previousFirecrawlKey = process.env.FIRECRAWL_API_KEY;
-  const previousOpenAiKey = process.env.OPENAI_API_KEY;
-  const originalFetch = global.fetch;
-  process.env.FIRECRAWL_API_KEY = "test-key";
-  process.env.OPENAI_API_KEY = "openai-test-key";
-
-  t.after(() => {
-    global.fetch = originalFetch;
-    if (previousFirecrawlKey === undefined) delete process.env.FIRECRAWL_API_KEY;
-    else process.env.FIRECRAWL_API_KEY = previousFirecrawlKey;
-    if (previousOpenAiKey === undefined) delete process.env.OPENAI_API_KEY;
-    else process.env.OPENAI_API_KEY = previousOpenAiKey;
-  });
-
-  const requestedUrls: string[] = [];
-  global.fetch = (async (input: any, init?: any) => {
-    const url = String(input);
-    requestedUrls.push(url);
-    if (/firecrawl\.dev/.test(url)) {
-      return {
-        ok: true,
-        async json() {
-          return {
-            data: {
-              markdown: `
-Travel accommodations
-- DoubleTree by Hilton Gainesville [Reserve](https://book.example.com/doubletree) Phone: (352) 375-2400
-- Hotel Indigo [Reserve](https://book.example.com/indigo) Phone: (352) 240-8900
-`,
-              metadata: {
-                sourceURL: "https://example.com/event-hotels",
-              },
-            },
-          };
-        },
-      } as Response;
-    }
-    const body = JSON.parse(String(init?.body || "{}"));
-    assert.equal(body.model, process.env.OPENAI_TRAVEL_ACCOMMODATION_MODEL || process.env.OPENAI_DISCOVERY_PARSE_MODEL || "gpt-5.6-luna");
-    return {
-      ok: true,
-      async json() {
-        return {
-          choices: [
-            {
-              message: {
-                content: JSON.stringify({
-                  sectionLabel: "Travel accommodations",
-                  hotels: [
-                    {
-                      name: "DoubleTree by Hilton Gainesville",
-                      bookingUrl: "https://book.example.com/doubletree",
-                      phone: "(352) 375-2400",
-                      reservationDeadline: null,
-                      rateSummary: null,
-                      address: null,
-                      notes: null,
-                    },
-                    {
-                      name: "Hotel Indigo",
-                      bookingUrl: "https://book.example.com/indigo",
-                      phone: "(352) 240-8900",
-                      reservationDeadline: null,
-                      rateSummary: null,
-                      address: null,
-                      notes: null,
-                    },
-                  ],
-                  warnings: [],
-                }),
-              },
-            },
-          ],
-        };
-      },
-    } as Response;
-  }) as typeof fetch;
-
-  const travel = await enrichTravelAccommodation({
-    traceId: "travel-ai-fallback-test",
-    extractionMeta: {
-      resourceLinks: [
-        {
-          kind: "hotel_booking",
-          label: "Host Hotel Information",
-          url: "https://example.com/event-hotels",
-          sourceUrl: "https://example.com/event-packet.pdf",
-        },
-      ],
-    },
-    budgetMs: 8_000,
-  });
-
-  assert.equal(requestedUrls.some((url) => /api\.openai\.com/.test(url)), true);
-  assert.deepEqual(travel?.hotels, [
-    {
-      name: "DoubleTree by Hilton Gainesville",
-      bookingUrl: "https://book.example.com/doubletree",
-      phone: "(352) 375-2400",
-    },
-    {
-      name: "Hotel Indigo",
-      bookingUrl: "https://book.example.com/indigo",
-      phone: "(352) 240-8900",
-    },
-  ]);
-});
-
-test("enrichTravelAccommodation records a clear timeout error when Firecrawl exceeds the budget", async (t) => {
-  const previousKey = process.env.FIRECRAWL_API_KEY;
-  const previousOpenAiKey = process.env.OPENAI_API_KEY;
-  const originalFetch = global.fetch;
-  process.env.FIRECRAWL_API_KEY = "test-key";
+function mockScrape(t: TestContext, handler: typeof fetch) {
+  const original = globalThis.fetch;
+  const key = process.env.FIRECRAWL_API_KEY;
+  const ai = process.env.OPENAI_API_KEY;
+  const browser = process.env.DISCOVERY_TRAVEL_BROWSER_USE_ENABLED;
+  process.env.FIRECRAWL_API_KEY = "fixture-key";
   delete process.env.OPENAI_API_KEY;
-
+  delete process.env.DISCOVERY_TRAVEL_BROWSER_USE_ENABLED;
+  globalThis.fetch = handler;
   t.after(() => {
-    global.fetch = originalFetch;
-    if (previousKey === undefined) delete process.env.FIRECRAWL_API_KEY;
-    else process.env.FIRECRAWL_API_KEY = previousKey;
-    if (previousOpenAiKey === undefined) delete process.env.OPENAI_API_KEY;
-    else process.env.OPENAI_API_KEY = previousOpenAiKey;
+    globalThis.fetch = original;
+    for (const [name, value] of [
+      ["FIRECRAWL_API_KEY", key],
+      ["OPENAI_API_KEY", ai],
+      ["DISCOVERY_TRAVEL_BROWSER_USE_ENABLED", browser],
+    ]) {
+      if (value === undefined) delete process.env[name!];
+      else process.env[name!] = value;
+    }
   });
+}
+const json = (content: string) =>
+  new Response(JSON.stringify({ success: true, data: { markdown: content } }), { status: 200 });
 
-  global.fetch = (async () => {
-    const error = new Error("The operation was aborted");
-    (error as any).name = "AbortError";
-    throw error;
-  }) as typeof fetch;
+test("PDF -> official hub -> hotel list follows links once and stores the source chain", async (t) => {
+  const hub = "https://organizer.example/2026-event/";
+  const list = "https://housing.example/2026/hotels";
+  const requests: string[] = [];
+  mockScrape(t, async (_input, init) => {
+    const request = JSON.parse(String(init?.body));
+    requests.push(request.url);
+    return request.url === hub ? json(`[Host hotels](${list})`) : json(fright);
+  });
+  const result = await enrichTravelAccommodation({
+    sourceType: "file",
+    sourceUrl: "https://organizer.example/packet.pdf",
+    extractedText: "Host Hotels: see link",
+    extractionMeta: {
+      annotationLinks: [{ label: "Host Hotel Information", url: hub, pageNumber: 2 }],
+    },
+    budgetMs: 1000,
+  });
+  assert.deepEqual(requests, [hub, list]);
+  assert.equal(result.hotels.length, 1);
+  assert.equal(result.sources?.find((source) => source.url === hub)?.pageNumber, 2);
+  assert.equal(result.sources?.find((source) => source.url === list)?.parentUrl, hub);
+  assert.equal(result.hotels[0].evidence?.name?.[0].sourceUrl, list);
+  assert.equal(result.fallbackLink, list);
+});
 
-  const travel = await enrichTravelAccommodation({
-    traceId: "travel-timeout-test",
+test("official event hotel hub ranks ahead of an external vendor link", async (t) => {
+  const hub = "https://organizer.example/2026-event/";
+  const requests: string[] = [];
+  mockScrape(t, async (_input, init) => {
+    requests.push(JSON.parse(String(init?.body)).url);
+    return json(fright);
+  });
+  await enrichTravelAccommodation({
+    sourceType: "file",
+    extractedText: "",
+    sourceUrl: "https://organizer.example/packet.pdf",
     extractionMeta: {
       resourceLinks: [
-        {
-          kind: "hotel_booking",
-          label: "Host Hotel Information",
-          url: "https://usacompetitions.com/2026-xcel-bsg-state-championships/",
-          sourceUrl: "https://usacompetitions.com/wp-content/uploads/2026/03/state-info.pdf",
-        },
+        { label: "Host Hotels", url: "https://vendor.example/group/2026" },
+        { label: "Host Hotel Information", url: hub },
       ],
     },
-    budgetMs: 25_000,
+    budgetMs: 1000,
   });
+  assert.equal(requests[0], hub);
+});
 
-  assert.equal(travel?.hotelSource.lastError, "Firecrawl scrape timed out after 25000ms");
+test("a shared deadline aborts network work, stops fallbacks and retains PDF facts", async (t) => {
+  let signal: AbortSignal | null | undefined;
+  let requests = 0;
+  mockScrape(t, async (_input, init) => {
+    requests++;
+    signal = init?.signal;
+    return new Promise<Response>(() => {});
+  });
+  const result = await enrichTravelAccommodation({
+    sourceType: "file",
+    extractedText: "Host Hotels\nHilton Garden Inn\nRate: $170",
+    extractionMeta: {
+      resourceLinks: [{ label: "Hotel Information", url: "https://organizer.example/hotels" }],
+    },
+    budgetMs: 25,
+  });
+  assert.equal(requests, 1);
+  assert.equal(signal?.aborted, true);
+  assert.match(result.attempts[0].error || "", /timed out after 25ms/);
+  assert.equal(result.hotels[0].groupRate, "$170");
+  assert.equal(buildTravelAccommodationState(result).status, "partial");
+});
+
+test("caller cancellation propagates instead of saving a cancelled result", async (t) => {
+  const controller = new AbortController();
+  mockScrape(t, async () => {
+    controller.abort(new Error("Event cancelled"));
+    return new Promise<Response>(() => {});
+  });
+  await assert.rejects(
+    enrichTravelAccommodation({
+      sourceType: "file",
+      extractedText: "",
+      extractionMeta: {
+        resourceLinks: [{ label: "Hotels", url: "https://organizer.example/hotels" }],
+      },
+      signal: controller.signal,
+    }),
+    /Event cancelled/,
+  );
+});
+
+test("conflicting rates stay unresolved with both sources; equivalent phone formatting does not conflict", () => {
+  const pdf = parseHotelEvidence(
+    "Host Hotels\nHilton Garden Inn\nRate: $170\nPhone: 954-753-5598",
+    { sourceType: "pdf", sourceUrl: "https://organizer.example/packet.pdf" },
+  );
+  const web = parseHotelEvidence(
+    "Host Hotels\nHilton Garden Inn\nRate: $190\nPhone: (954) 753-5598",
+    { sourceUrl: eventUrl },
+  );
+  const merged = mergePdfAndWebHotels(pdf, web)[0];
+  assert.equal(merged.groupRate, null);
+  assert.deepEqual(
+    merged.conflicts?.groupRate?.map((fact) => fact.value),
+    ["$170", "$190"],
+  );
+  assert.equal(merged.conflicts?.phone, undefined);
+});
+
+test("different hotels sharing the same housing link remain separate", () => {
+  const hotels = parseHotelEvidence(
+    `Host Hotels\nHilton Garden Inn\n[Book](${bookingUrl})\nHotel Indigo\n[Book](${bookingUrl})`,
+  );
+  assert.equal(mergePdfAndWebHotels([], hotels).length, 2);
+});
+
+test("refresh preserves manual edits and explicit clears while updating untouched fields", () => {
+  const initial = projectTravelHotels([
+    { name: "Hotel Indigo", groupRate: "$170", phone: "111", parking: "Paid" },
+  ]);
+  initial.hotels[0].groupRate = "$150";
+  initial.hotels[0].phone = null;
+  const next = projectTravelHotels(
+    [{ name: "Hotel Indigo", groupRate: "$190", phone: "222", parking: "Free" }],
+    initial.hotels,
+    initial.discoveredHotelIds,
+  );
+  assert.equal(next.hotels[0].groupRate, "$150");
+  assert.equal(next.hotels[0].phone, null);
+  assert.equal(next.hotels[0].parking, "Free");
+  const again = projectTravelHotels(
+    [{ name: "Hotel Indigo", groupRate: "$200" }],
+    next.hotels,
+    next.discoveredHotelIds,
+  );
+  assert.equal(again.hotels[0].groupRate, "$150");
+});
+
+test("deleted hotels do not return on refresh", () => {
+  const initial = projectTravelHotels([{ name: "Hotel Indigo" }]);
+  assert.deepEqual(
+    projectTravelHotels([{ name: "Hotel Indigo" }], [], initial.discoveredHotelIds).hotels,
+    [],
+  );
+});
+
+test("failed refresh keeps previous hotel records and original check evidence", () => {
+  const hotels = parseHotelEvidence(fright, { sourceUrl: eventUrl });
+  const state = buildTravelAccommodationState(
+    {
+      hotels: [],
+      pdfHotels: [],
+      candidates: [],
+      attempts: [{ provider: "playwright", ok: false, url: eventUrl, error: "Timeout" }],
+      fallbackLink: null,
+      confidence: 0.4,
+      resolution: { provider: "none", resolvedUrl: null, resolutionType: "none", confidence: 0.4 },
+    },
+    { hotels },
+  );
+  assert.equal(state.status, "partial");
+  assert.equal(state.hotels[0].bookingUrl, bookingUrl);
+});
+
+test("model fields require evidence in that hotel's own source block", () => {
+  const block = "Small Boutique Stay\nRate: $170";
+  const fields: Record<string, { value: string; quote: string } | null> = Object.fromEntries(
+    HOTEL_FIELDS.map((field) => [field, null]),
+  );
+  fields.name = { value: "Small Boutique Stay", quote: "Small Boutique Stay" };
+  fields.groupRate = { value: "$170", quote: "Rate: $170" };
+  fields.parking = { value: "Free", quote: "Parking: Free" };
+  const hotels = validateModelHotels(
+    { hotels: [{ sourceBlock: block, fields }] },
+    `${block}\nAnother Hotel\nParking: Free`,
+    { sourceUrl: eventUrl },
+  );
+  assert.equal(hotels.length, 1);
+  assert.equal(hotels[0].groupRate, "$170");
+  assert.equal(hotels[0].parking, null);
+  assert.deepEqual(
+    validateModelHotels({ hotels: [{ sourceBlock: "Invented source", fields }] }, block, {}),
+    [],
+  );
+});
+
+test("URLs preserve group parameters and fragments and reject non-web schemes", () => {
+  assert.equal(hotelUrl(bookingUrl), bookingUrl);
+  assert.equal(hotelUrl("javascript:alert(1)"), null);
+  assert.equal(hotelUrl("/hotels#group", eventUrl), "https://usacompetitions.com/hotels#group");
+});
+
+test("links explicitly naming a different year are not fetched", async () => {
+  const result = await enrichTravelAccommodation({
+    sourceType: "file",
+    extractedText: "",
+    extractionMeta: {
+      resourceLinks: [{ label: "Hotels", url: "https://organizer.example/2025/hotels" }],
+    },
+    eventYear: "2026",
+  });
+  assert.match(result.attempts[0].error || "", /different event year/);
+  assert.equal(result.fallbackLink, null);
+});
+
+test("deadlines require an explicit year and a real calendar date", () => {
+  assert.equal(hotelDeadlineIso("October 2, 2026"), "2026-10-02");
+  assert.equal(hotelDeadlineIso("October 2"), null);
+  assert.equal(hotelDeadlineIso("February 30, 2026"), null);
+  assert.equal(hotelDeadlineIso("02/03/2026"), null);
+});
+
+test("browser DOM extraction preserves real hrefs and heading boundaries", async () => {
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(
+      `<nav>Other Event Hotel</nav><main><h3>HOST HOTELS</h3><p>Fort Lauderdale Marriott Coral Springs</p><p>Rate: $162.00 + tax (per night)</p><a href="${bookingUrl}">Reserve Hotel Online</a><h3>LOCAL ATTRACTIONS</h3><p>Everglades Holiday Park</p></main>`,
+    );
+    const content = await readHotelPage(page);
+    const hotels = parseHotelEvidence(content, { sourceUrl: eventUrl });
+    assert.equal(hotels.length, 1);
+    assert.equal(hotels[0].bookingUrl, bookingUrl);
+    assert.equal(hotels[0].notes.length, 0);
+    assert.equal(content.includes("Other Event Hotel"), false);
+    const pdf = await page.pdf();
+    const annotations = await extractPdfAnnotationLinks(pdf);
+    const extracted = await extractPdfTextWithPdfJs(pdf);
+    assert.equal(annotations[0].url, bookingUrl);
+    assert.match(annotations[0].contextText || "", /Marriott Coral Springs/);
+    const imported = await enrichTravelAccommodation({
+      sourceType: "file",
+      extractedText: extracted.text,
+      sourceId: "browser-pdf-fixture",
+      extractionMeta: {
+        annotationLinks: annotations,
+        accommodationPageTexts: extracted.pages.map((item) => ({
+          pageNumber: item.num,
+          text: item.text,
+        })),
+      },
+    });
+    assert.equal(imported.hotels[0].bookingUrl, bookingUrl);
+    assert.equal(imported.hotels[0].evidence?.bookingUrl?.[0].pageNumber, 1);
+  } finally {
+    await browser.close();
+  }
+});
+
+test("Astra request uses the evidence schema and validates the returned hotel", async (t) => {
+  const block = "Small Boutique Stay\nRate: $170";
+  const fields = Object.fromEntries(
+    HOTEL_FIELDS.map((field) => [
+      field,
+      field === "name"
+        ? { value: "Small Boutique Stay", quote: "Small Boutique Stay" }
+        : field === "groupRate"
+          ? { value: "$170", quote: "Rate: $170" }
+          : null,
+    ]),
+  );
+  mockScrape(t, async (input, init) => {
+    assert.match(String(input), /api.openai.com/);
+    const body = JSON.parse(String(init?.body));
+    assert.equal(body.model, process.env.OPENAI_TRAVEL_ACCOMMODATION_MODEL || "gpt-6-astra");
+    assert.equal(body.response_format.json_schema.strict, true);
+    return new Response(
+      JSON.stringify({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: { content: JSON.stringify({ hotels: [{ sourceBlock: block, fields }] }) },
+          },
+        ],
+      }),
+    );
+  });
+  process.env.OPENAI_API_KEY = "fixture-key";
+  const result = await enrichTravelAccommodation({
+    sourceType: "file",
+    extractedText: `Host Hotels\n${block}`,
+    extractionMeta: { accommodationPageTexts: [{ pageNumber: 3, text: `Host Hotels\n${block}` }] },
+  });
+  assert.equal(result.hotels[0].name, "Small Boutique Stay");
+  assert.equal(result.hotels[0].evidence?.groupRate?.[0].pageNumber, 3);
+});
+
+test("public hotel cards show address and booking instructions with the original CTA", () => {
+  const hotel = parseHotelEvidence(fright, { sourceUrl: eventUrl })[0];
+  hotel.address = "123 Main Street, Coral Springs, FL";
+  const content = buildGymMeetDiscoveryContent({
+    eventData: { title: "Fright Invite" },
+    customFields: {},
+    advancedSections: { logistics: { hotels: [hotel] } },
+    date: "2026-10-23",
+  });
+  const serialized = JSON.stringify(content.sections.find((section) => section.id === "hotels"));
+  assert.ok(serialized);
+  assert.ok(serialized.includes(hotel.address));
+  assert.ok(serialized.includes("mention “2026 Fright Invite”"));
+  assert.ok(serialized.includes(bookingUrl));
 });

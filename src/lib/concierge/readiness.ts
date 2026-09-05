@@ -27,7 +27,8 @@ export function getCreationReadiness(draft: ConciergeEventDraft | null): Creatio
       publishBlockers: ["eventPurpose"],
     };
   const contextBlocked = Boolean(
-    (draft.sourceContext.boundary && draft.sourceContext.boundary !== "envitefy_question") || draft.sourceContext.ambiguity === "multiple",
+    (draft.sourceContext.boundary && draft.sourceContext.boundary !== "envitefy_question") ||
+      draft.sourceContext.ambiguity === "multiple",
   );
   const canSaveDraft = Boolean(draft.canPersist && !contextBlocked);
   const canPreview =

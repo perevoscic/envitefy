@@ -15,6 +15,7 @@ import {
   resolveOcrModel,
 } from "@/lib/ocr/constants";
 import { buildOcrFacts, mergeOcrFacts, normalizeOcrFacts } from "@/lib/ocr/facts";
+import { getOcrFailureResponse, shouldStopOcrFallbacks } from "@/lib/ocr/failure";
 import {
   looksLikeParkingOrDirectionsNote,
   normalizeOcrLocationFields,
@@ -451,6 +452,7 @@ export async function handleOcrRequest(request: Request) {
     let raw = "";
     let ocrSource = "none";
     let lastOcrFailureCode: string | null = null;
+    let providerFailureCode: string | null = null;
     const fallbackOcrModel = resolveOcrModel(true);
 
     const openAiFailureCode = (error: unknown) => {
@@ -460,6 +462,7 @@ export async function handleOcrRequest(request: Request) {
     };
     const logOpenAiFailure = (message: string, error: unknown) => {
       lastOcrFailureCode = openAiFailureCode(error);
+      if (error instanceof OpenAiOcrError) providerFailureCode = error.code;
       console.error(message, error);
     };
 
@@ -525,7 +528,7 @@ export async function handleOcrRequest(request: Request) {
       }
     }
 
-    if (!raw) {
+    if (!raw && !shouldStopOcrFallbacks(providerFailureCode)) {
       const primaryTimeoutMs = clampTimeoutMs(
         Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 5_000)),
         OPENAI_TIMEOUT_MS,
@@ -553,7 +556,7 @@ export async function handleOcrRequest(request: Request) {
     }
     stage.primaryOcrMs = Date.now() - primaryStartedAt;
 
-    if (!raw) {
+    if (!raw && !shouldStopOcrFallbacks(providerFailureCode)) {
       const fallbackStartedAt = Date.now();
       const fallbackTimeoutMs = clampTimeoutMs(
         Math.min(OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 2_000)),
@@ -583,7 +586,7 @@ export async function handleOcrRequest(request: Request) {
       }
     }
 
-    if (!raw) {
+    if (!raw && !shouldStopOcrFallbacks(providerFailureCode)) {
       const textFallbackStartedAt = Date.now();
       const textFallbackTimeoutMs = clampTimeoutMs(
         Math.min(12_000, OPENAI_TIMEOUT_MS, remainingBudgetMs(startedAt, totalBudgetMs, 2_000)),
@@ -614,13 +617,16 @@ export async function handleOcrRequest(request: Request) {
 
     if (!raw.trim()) {
       const providerConfigured = Boolean(process.env.OPENAI_API_KEY);
+      const failureCode = providerFailureCode || lastOcrFailureCode;
+      const failure = getOcrFailureResponse(providerConfigured, failureCode);
       if (scanAttemptId) {
-        console.warn("[ocr] unreadable", {
+        console.warn("[ocr] extraction failed", {
           scanAttemptId,
           fileName: file.name || null,
           fileSize: file.size || null,
           mimeType: mime,
           providerConfigured,
+          code: failure.code,
           timings: {
             totalMs: Date.now() - startedAt,
             preprocessMs: stage.preprocessMs,
@@ -631,30 +637,20 @@ export async function handleOcrRequest(request: Request) {
             model: ocrModel,
             fallbackModel: fallbackOcrModel,
             ocrSource,
-            failureCode: lastOcrFailureCode,
+            failureCode,
           },
         });
       }
-      const providerError =
-        lastOcrFailureCode === "OPENAI_TIMEOUT"
-          ? "OCR timed out before OpenAI returned event details. Please try again, or enter the event manually if the image is complex."
-          : "OCR could not read enough event details from this file. Please try a clearer image or enter the event manually.";
       return corsJson(
         request,
         {
-          error: providerConfigured
-            ? providerError
-            : "OCR is not configured. Set OPENAI_API_KEY before snapping or uploading event flyers.",
-          code: providerConfigured
-            ? lastOcrFailureCode === "OPENAI_TIMEOUT"
-              ? "OCR_TIMEOUT"
-              : "OCR_UNREADABLE"
-            : "OCR_NOT_CONFIGURED",
-          detail: providerConfigured ? lastOcrFailureCode : undefined,
+          error: failure.error,
+          code: failure.code,
+          detail: providerConfigured ? failureCode : undefined,
           ocrSource,
         },
         {
-          status: providerConfigured ? (lastOcrFailureCode === "OPENAI_TIMEOUT" ? 504 : 422) : 503,
+          status: failure.status,
         },
       );
     }

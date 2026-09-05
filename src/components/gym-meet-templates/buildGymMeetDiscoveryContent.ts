@@ -15,7 +15,7 @@ import {
   sanitizeGymMeetDisplayDateLabel,
   stripLinkedDomainMentions,
 } from "./displayText";
-import { GymMeetDiscoveryContent, GymMeetDiscoverySection, GymMeetLinkAction } from "./types";
+import type { GymMeetDiscoveryContent, GymMeetDiscoverySection, GymMeetLinkAction } from "./types";
 
 const safeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
@@ -186,6 +186,8 @@ const normalizeTravelHotels = (items: any[]) =>
     (Array.isArray(items) ? items : [])
       .map((item: any) => ({
         name: safeString(item?.name),
+        address: safeString(item?.address) || null,
+        bookingInstructions: safeString(item?.bookingInstructions) || null,
         imageUrl: safeString(item?.imageUrl) || null,
         distanceFromVenue: safeString(item?.distanceFromVenue) || null,
         groupRate: safeString(item?.groupRate) || null,
@@ -203,6 +205,8 @@ const buildStructuredHotelCards = (items: any[]) =>
   normalizeTravelHotels(items).map((item, index) => {
     const meta = [item.distanceFromVenue, item.groupRate].filter(Boolean).join(" • ");
     const details = [
+      item.address ? `Address: ${item.address}` : "",
+      item.bookingInstructions || "",
       item.parking ? `Parking: ${item.parking}` : "",
       item.breakfast ? `Breakfast: ${item.breakfast}` : "",
       item.reservationDeadline ? `Book by: ${item.reservationDeadline}` : "",
@@ -219,6 +223,8 @@ const buildStructuredHotelCards = (items: any[]) =>
         item.groupRate ? { label: "Nightly rate", value: item.groupRate } : null,
       ].filter(Boolean),
       details: [
+        ...(item.address ? [{ label: "Address", value: item.address, icon: "parking" as const }] : []),
+        ...(item.bookingInstructions ? [{ label: "Booking instructions", value: item.bookingInstructions, icon: "phone" as const }] : []),
         item.parking ? { label: "Parking", value: item.parking, icon: "parking" as const } : null,
         item.breakfast
           ? { label: "Breakfast", value: item.breakfast, icon: "breakfast" as const }

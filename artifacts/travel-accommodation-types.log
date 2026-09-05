@@ -1,0 +1,98 @@
+src/lib/meet-discovery/core.ts(839,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(845,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(858,11): error TS2304: Cannot find name 'ScheduleColorTarget'.
+src/lib/meet-discovery/core.ts(1092,54): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(1106,18): error TS2552: Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+src/lib/meet-discovery/core.ts(1107,4): error TS2552: Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+src/lib/meet-discovery/core.ts(1115,54): error TS2304: Cannot find name 'ScheduleColorTarget'.
+src/lib/meet-discovery/core.ts(1157,52): error TS2552: Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+src/lib/meet-discovery/core.ts(1179,11): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(1190,11): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(1207,16): error TS2552: Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+src/lib/meet-discovery/core.ts(1647,51): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(1648,51): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(2479,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(2499,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(2501,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(2824,7): error TS2322: Type '{ kind: DiscoveryResourceKind; status: DiscoveryResourceStatus; label: string; url: string; sourceUrl: string; origin: DiscoveryResourceOrigin; ... 6 more ...; matchReason: string | null; }[]' is not assignable to type 'DiscoveryResourceLink[]'.
+  Type '{ kind: DiscoveryResourceKind; status: DiscoveryResourceStatus; label: string; url: string; sourceUrl: string; origin: DiscoveryResourceOrigin; ... 6 more ...; matchReason: string | null; }' is not assignable to type 'DiscoveryResourceLink'.
+    Types of property 'discoveryMethod' are incompatible.
+      Type 'string' is not assignable to type '"playwright" | "http"'.
+src/lib/meet-discovery/core.ts(3206,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3222,30): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3271,31): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3340,39): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3474,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3475,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3477,11): error TS7006: Parameter 'session' implicitly has an 'any' type.
+src/lib/meet-discovery/core.ts(3492,14): error TS7006: Parameter 'session' implicitly has an 'any' type.
+src/lib/meet-discovery/core.ts(3498,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3503,27): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3504,31): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3562,13): error TS7006: Parameter 'day' implicitly has an 'any' type.
+src/lib/meet-discovery/core.ts(3566,16): error TS7006: Parameter 'day' implicitly has an 'any' type.
+src/lib/meet-discovery/core.ts(3835,51): error TS2345: Argument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.
+  Types of property 'stage' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/meet-discovery/core.ts(3888,51): error TS2345: Argument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.
+  Types of property 'stage' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/meet-discovery/core.ts(4372,51): error TS2345: Argument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.
+  Types of property 'stage' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/meet-discovery/core.ts(5926,3): error TS2322: Type '{ followed: boolean; contentType: string | null; score: number; url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to type 'CrawlCandidate'.
+  Type '{ followed: boolean; contentType: string | null; score: number; url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to type 'DiscoveredLink'.
+    Types of property 'kind' are incompatible.
+      Type 'string' is not assignable to type 'DiscoveryLinkKind'.
+src/lib/meet-discovery/core.ts(5930,36): error TS2345: Argument of type '{ url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to parameter of type 'Omit<CrawlCandidate, "score" | "followed">'.
+  Types of property 'kind' are incompatible.
+    Type 'string' is not assignable to type 'DiscoveryLinkKind'.
+src/lib/meet-discovery/core.ts(6385,3): error TS2741: Property 'collectBrowserData' is missing in type '{ fetchWithLimit: (url: string, options?: { timeoutMs?: number; signal?: AbortSignal; }) => Promise<{ contentType: string; buffer: Buffer; text: string; }>; extractTextFromPdf: ((buffer: Buffer, options?: { budgetMs?: number; performance?: DiscoveryPerformance; cache?: DiscoveryRequestCache; mode?: DiscoveryMode; si...' but required in type 'Required<UrlDiscoveryTestHooks>'.
+src/lib/meet-discovery/core.ts(8189,3): error TS2322: Type 'string[]' is not assignable to type 'ParsePromptProfile[]'.
+  Type 'string' is not assignable to type 'ParsePromptProfile'.
+src/lib/meet-discovery/core.ts(9605,4): error TS2552: Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+src/lib/meet-discovery/core.ts(9617,18): error TS2304: Cannot find name 'ScheduleColorLegendEntry'.
+src/lib/meet-discovery/core.ts(9688,12): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(9852,49): error TS2304: Cannot find name 'ScheduleColorTarget'.
+src/lib/meet-discovery/core.ts(9951,4): error TS2304: Cannot find name 'ScheduleColorLegendEntry'.
+src/lib/meet-discovery/core.ts(9986,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(9990,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10018,42): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(10019,39): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(10021,32): error TS2304: Cannot find name 'ScheduleColorLegendEntry'.
+src/lib/meet-discovery/core.ts(10085,34): error TS2339: Property 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'.
+src/lib/meet-discovery/core.ts(10156,33): error TS2304: Cannot find name 'ScheduleColorLegendEntry'.
+src/lib/meet-discovery/core.ts(10268,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10338,39): error TS2345: Argument of type '"scheduleVisual"' is not assignable to parameter of type 'DiscoveryUsageStage'.
+src/lib/meet-discovery/core.ts(10345,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10408,27): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10454,31): error TS2339: Property 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'.
+src/lib/meet-discovery/core.ts(10474,27): error TS2339: Property 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'.
+src/lib/meet-discovery/core.ts(10595,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10597,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10662,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10698,22): error TS2304: Cannot find name 'GYMNASTICS_SCHEDULE_JSON_SCHEMA'.
+src/lib/meet-discovery/core.ts(10716,39): error TS2345: Argument of type '"scheduleText"' is not assignable to parameter of type 'DiscoveryUsageStage'.
+src/lib/meet-discovery/core.ts(10724,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10735,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10752,35): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10806,33): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10821,29): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10822,33): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10851,77): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10998,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10999,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(11000,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(11204,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(11205,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(11247,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(11248,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(13767,32): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type '{ label?: string | undefined; url: string; }' is not assignable to type '{ label: string; url: string; }'.
+    Types of property 'label' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/lib/meet-discovery/core.ts(13768,17): error TS18047: 'item' is possibly 'null'.

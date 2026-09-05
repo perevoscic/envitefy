@@ -1,0 +1,13 @@
+{"fixture":"birthday-no-logistics","model":"gpt-5.6-terra","promptVersion":"legacy","promptCharacters":9856,"live":false}
+{"fixture":"birthday-no-logistics","model":"gpt-5.6-terra","promptVersion":"v2","promptCharacters":2908,"live":false}
+{"fixture":"birthday-no-logistics","model":"gpt-6-astra","promptVersion":"legacy","promptCharacters":9856,"live":false}
+{"fixture":"birthday-no-logistics","model":"gpt-6-astra","promptVersion":"v2","promptCharacters":2908,"live":false}
+{"fixture":"wedding-two-venues","model":"gpt-5.6-terra","promptVersion":"legacy","promptCharacters":9491,"live":false}
+{"fixture":"wedding-two-venues","model":"gpt-5.6-terra","promptVersion":"v2","promptCharacters":3167,"live":false}
+{"fixture":"wedding-two-venues","model":"gpt-6-astra","promptVersion":"legacy","promptCharacters":9491,"live":false}
+{"fixture":"wedding-two-venues","model":"gpt-6-astra","promptVersion":"v2","promptCharacters":3167,"live":false}
+artifacts/creation-v2-evaluation-plan.json
+(node:224152) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/prompts.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)

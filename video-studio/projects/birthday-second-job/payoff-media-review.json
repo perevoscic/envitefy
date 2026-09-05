@@ -1,0 +1,61 @@
+{
+  "dialogue": [
+    {
+      "start": 4.0,
+      "end": 7.0,
+      "text": "It's a birthday party, not a second job."
+    },
+    {
+      "start": 13.0,
+      "end": 15.0,
+      "text": "Actually, I want a different theme."
+    }
+  ],
+  "cuts": [
+    {
+      "start": 0.0,
+      "end": 1.0,
+      "description": "Medium shot of man holding green streamer in decorated kitchen."
+    },
+    {
+      "start": 1.0,
+      "end": 2.0,
+      "description": "Close-up of man looking down at his phone."
+    },
+    {
+      "start": 2.0,
+      "end": 3.0,
+      "description": "Medium shot of man with streamer on arm looking at phone, then up."
+    },
+    {
+      "start": 3.0,
+      "end": 7.0,
+      "description": "Close-up of man speaking directly to the camera."
+    },
+    {
+      "start": 7.0,
+      "end": 9.0,
+      "description": "Close-up of man smiling and tapping his phone."
+    },
+    {
+      "start": 9.0,
+      "end": 15.0,
+      "description": "Medium shot of man at table; daughter enters and speaks to him."
+    },
+    {
+      "start": 15.0,
+      "end": 19.0,
+      "description": "Close-up of man holding mug, reacting to his daughter's request."
+    }
+  ],
+  "issues": {
+    "garbledText": "Subtitles at 00:04-00:07 display garbled text ('Not airtealy park, it's second ling this goc jobe') instead of the spoken words.",
+    "whiteBorders": "Vertical video has white pillar boxes on the left and right sides.",
+    "malformedHands": "None detected.",
+    "identityInconsistencies": "None detected."
+  },
+  "audioQuality": {
+    "rating": 7,
+    "explanation": "Speech is clear, natural, and easily intelligible."
+  }
+}

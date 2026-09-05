@@ -1,0 +1,113 @@
+[
+  {
+    "surface": "signed-in profile menu (mock session)",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "links": [
+      {
+        "href": "https://www.instagram.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.facebook.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.tiktok.com/@envitefy",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.youtube.com/@envitefy",
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "bounds": {
+      "x": 20,
+      "y": 564.40625,
+      "width": 279,
+      "height": 352
+    },
+    "opensNewTab": true,
+    "closedMenuInert": true
+  },
+  {
+    "surface": "signed-in profile menu (mock session)",
+    "viewport": {
+      "width": 375,
+      "height": 812
+    },
+    "links": [
+      {
+        "href": "https://www.instagram.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.facebook.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.tiktok.com/@envitefy",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.youtube.com/@envitefy",
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "bounds": {
+      "x": 20,
+      "y": 376.40625,
+      "width": 279,
+      "height": 352
+    },
+    "opensNewTab": true,
+    "closedMenuInert": true
+  },
+  {
+    "surface": "signed-in profile menu (mock session)",
+    "viewport": {
+      "width": 812,
+      "height": 375
+    },
+    "links": [
+      {
+        "href": "https://www.instagram.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.facebook.com/envitefy/",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.tiktok.com/@envitefy",
+        "width": 44,
+        "height": 44
+      },
+      {
+        "href": "https://www.youtube.com/@envitefy",
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "bounds": {
+      "x": 20,
+      "y": 44.40625,
+      "width": 279,
+      "height": 247
+    },
+    "opensNewTab": true,
+    "closedMenuInert": true
+  }
+]

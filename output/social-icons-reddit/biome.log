@@ -1,0 +1,32 @@
+src\components\branding\EnvitefySocialLinks.tsx:28:13 lint/a11y/useAnchorContent ━━━━━━━━━━━━━━━━━━━
+
+  × Provide screen reader accessible content when using `a` elements.
+  
+    26 │         {ENVITEFY_SOCIAL_LINKS.map(({ name, href, iconSrc }) => (
+    27 │           <li key={name}>
+  > 28 │             <a
+       │             ^^
+  > 29 │               href={href}
+        ...
+  > 43 │               />
+  > 44 │             </a>
+       │             ^^^^
+    45 │           </li>
+    46 │         ))}
+  
+  i All links on a page should have content that is accessible to screen readers.
+  
+  i Accessible content refers to digital content that is designed and structured in a way that makes it easy for people with disabilities to access, understand, and interact with using assistive technologies.
+  
+  i Follow these links for more information,
+     WCAG 2.4.4
+     WCAG 4.1.2
+  
+
+Checked 24 files in 271ms. No fixes applied.
+Found 1 error.
+lint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+

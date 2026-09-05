@@ -1,0 +1,29 @@
+{
+  "beforeSummary": {
+    "changed": 0,
+    "unchanged": 25,
+    "matches": 0,
+    "duration": 365867000,
+    "errors": 0,
+    "warnings": 0,
+    "infos": 0,
+    "skipped": 0,
+    "suggestedFixesSkipped": 0,
+    "diagnosticsNotPrinted": 0,
+    "scannerDuration": 3249000
+  },
+  "afterSummary": {
+    "changed": 0,
+    "unchanged": 28,
+    "matches": 0,
+    "duration": 641542200,
+    "errors": 0,
+    "warnings": 0,
+    "infos": 0,
+    "skipped": 0,
+    "suggestedFixesSkipped": 0,
+    "diagnosticsNotPrinted": 0,
+    "scannerDuration": 4034100
+  },
+  "addedDiagnostics": []
+}

@@ -1,6 +1,7 @@
 // @ts-nocheck
 "use client";
 
+import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
@@ -5359,68 +5360,7 @@ export default function SimpleTemplateView({
                     Create yours now.
                   </p>
                 </a>
-                <div className="flex items-center justify-center gap-4 mt-4">
-                  <a
-                    href="https://www.facebook.com/envitefy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="opacity-60 hover:opacity-100 transition-opacity"
-                    aria-label="Facebook"
-                  >
-                    <Image
-                      src="/email/social-facebook.svg"
-                      alt="Facebook"
-                      width={24}
-                      height={24}
-                      className="w-6 h-6 brightness-0 invert"
-                    />
-                  </a>
-                  <a
-                    href="https://www.instagram.com/envitefy/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="opacity-60 hover:opacity-100 transition-opacity"
-                    aria-label="Instagram"
-                  >
-                    <Image
-                      src="/email/social-instagram.svg"
-                      alt="Instagram"
-                      width={24}
-                      height={24}
-                      className="w-6 h-6 brightness-0 invert"
-                    />
-                  </a>
-                  <a
-                    href="https://www.tiktok.com/@envitefy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="opacity-60 hover:opacity-100 transition-opacity"
-                    aria-label="TikTok"
-                  >
-                    <Image
-                      src="/email/social-tiktok.svg"
-                      alt="TikTok"
-                      width={24}
-                      height={24}
-                      className="w-6 h-6 brightness-0 invert"
-                    />
-                  </a>
-                  <a
-                    href="https://www.youtube.com/@Envitefy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="opacity-60 hover:opacity-100 transition-opacity"
-                    aria-label="YouTube"
-                  >
-                    <Image
-                      src="/email/social-youtube.svg"
-                      alt="YouTube"
-                      width={24}
-                      height={24}
-                      className="w-6 h-6 brightness-0 invert"
-                    />
-                  </a>
-                </div>
+                <EnvitefySocialLinks placement="event" inverse />
               </footer>
             </div>
           </div>

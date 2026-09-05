@@ -1,0 +1,127 @@
+ M android/.gradle/9.2.0/fileHashes/fileHashes.lock
+ D artifacts/apply-creation-v2-studio.cjs
+ D artifacts/apply-creation-v2.cjs
+ M artifacts/concierge-review-2026-09-05/dev-server-restored.err.log
+ M artifacts/concierge-review-2026-09-05/dev-server-restored.log
+ M artifacts/creation-v2-biome.log
+ M artifacts/creation-v2-contract-tests.log
+ M artifacts/creation-v2-live-evaluation.json
+ M artifacts/creation-v2-touched-files.json
+ D artifacts/finish-creation-v2.cjs
+ D artifacts/refine-creation-v2.cjs
+ D artifacts/repair-creation-v2-fixtures.cjs
+ D artifacts/update-creation-v2-guards.cjs
+ D artifacts/update-creation-v2-ui-guards.cjs
+ M debug.log
+ M public/email/social-youtube.png
+ M public/email/social-youtube.svg
+ D public/snap-steps/1.upload.jpg
+ D public/snap-steps/1.upload.png
+ D public/snap-steps/2.analyze.png
+ M scripts/generate-email-icons.mjs
+ M src/app/api/parse/[eventId]/enrich/route.ts
+ M src/app/event/appointments/customize/page.tsx
+ M src/app/event/baby-showers/customize/page.tsx
+ M src/app/event/cheerleading/customize/page.tsx
+ M src/app/event/dance-ballet/customize/page.tsx
+ M src/app/event/football-season/customize/page.tsx
+ M src/app/event/gender-reveal/customize/page.tsx
+ M src/app/event/general/customize/page.tsx
+ M src/app/event/soccer/customize/page.tsx
+ M src/app/event/special-events/customize/page.tsx
+ M src/app/event/sport-events/customize/page.tsx
+ M src/app/event/weddings/_renderers/content-sections.tsx
+ M src/app/event/weddings/customize/page.tsx
+ M src/app/event/workshops/customize/page.tsx
+ M src/app/layout.tsx
+ M src/app/left-sidebar.tsx
+ M src/components/ConditionalFooter.tsx
+ M src/components/SimpleTemplateView.tsx
+ M src/components/event-templates/CheerleadingTemplate.tsx
+ M src/components/event-templates/DanceBalletTemplate.tsx
+ M src/components/gym-meet-templates/buildGymMeetDiscoveryContent.ts
+ M src/lib/concierge/readiness.ts
+ M src/lib/creation/creation-v2.test.mjs
+ M src/lib/db.ts
+ M src/lib/discovery-browser.ts
+ M src/lib/discovery-gymnastics-enrich-inline.ts
+ M src/lib/discovery/compose-public.ts
+ M src/lib/discovery/enrich.ts
+ M src/lib/discovery/run.ts
+ M src/lib/discovery/travel-accommodation-wiring.source.test.mjs
+ M src/lib/email-template.ts
+ M src/lib/email-templates/magazine-1.ts
+ M src/lib/meet-discovery/core.ts
+ M src/lib/ocr/extraction-contract.ts
+ M src/lib/ocr/openai.ts
+ M src/lib/ocr/pipeline.test.ts
+ M src/lib/ocr/pipeline.ts
+ M src/lib/ocr/prompts.source.test.mjs
+ M src/lib/ocr/prompts.ts
+ M src/lib/pdf-raster.ts
+ M src/lib/product-marketing-catalog.ts
+ M src/lib/studio/flyer-export.ts
+ M src/lib/studio/generate.ts
+ M src/lib/studio/output-checks.ts
+ M src/lib/travel-accommodation-discovery.ts
+ M src/lib/travel-accommodation-enrichment.test.ts
+ M src/lib/travel-accommodation-enrichment.ts
+ M src/lib/travel-accommodation-providers/browser-use.ts
+ M src/lib/travel-accommodation-providers/firecrawl.ts
+ M src/lib/travel-accommodation-providers/playwright.ts
+ M src/lib/upload-config.ts
+ M video-studio/STUDIO-GUIDE.md
+ M video-studio/projects/README.md
+ M video-studio/src/Root.tsx
+?? artifacts/calendar-sync-pause-2026-09-05/
+?? artifacts/creation-v2-broad-scan-summary.log
+?? artifacts/creation-v2-evaluation-plan.json
+?? artifacts/creation-v2-evaluation-plan.log
+?? artifacts/creation-v2-final-tests.log
+?? artifacts/creation-v2-followthrough-tests.log
+?? artifacts/creation-v2-followthrough-type-baseline.log
+?? artifacts/creation-v2-followthrough-type-comparison.json
+?? artifacts/creation-v2-followthrough-types.log
+?? artifacts/fright-invite-hotels-live.json
+?? artifacts/travel-accommodation-tests.log
+?? artifacts/travel-accommodation-types.log
+?? artifacts/travel-discovery-typefix-baseline-tests.log
+?? artifacts/travel-renderer-baseline-tests.log
+?? artifacts/travel-renderer-tests.log
+?? artifacts/verify-fright-hotels.cjs
+?? docs/creation-v2-implementation-2026-09-05.md
+?? docs/hotel-discovery-2026-09-05.md
+?? output/
+?? public/brand/envitefy-com.png
+?? public/email/social-reddit.png
+?? scripts/run-travel-tests.mjs
+?? src/components/branding/EnvitefySocialLinks.tsx
+?? src/config/calendar-sync.ts
+?? src/lib/calendar-sync-pause.ts
+?? src/lib/envitefy-social-links.ts
+?? src/lib/ocr/failure.ts
+?? src/lib/ocr/provider-errors.test.ts
+?? src/lib/pdf-link-context.ts
+?? src/lib/travel-accommodation-evidence.ts
+?? src/lib/travel-accommodation-providers/astra.ts
+?? src/lib/travel-accommodation-providers/budget.ts
+?? video-studio/projects/birthday-second-job/
+?? video-studio/public/brand/envitefy-com.png
+?? video-studio/public/projects/birthday-second-job/
+?? video-studio/scripts/capture-birthday-demo.mjs
+?? video-studio/scripts/edit-birthday-shots.mjs
+?? video-studio/scripts/generate-birthday-assets.mjs
+?? video-studio/scripts/inspect-birthday-media.mjs
+?? video-studio/scripts/inspect-payoff-continuity.py
+?? video-studio/scripts/mix-birthday-revision.mjs
+?? video-studio/scripts/normalize-birthday-demo.mjs
+?? video-studio/scripts/package-birthday-final.mjs
+?? video-studio/scripts/package-birthday-v3.mjs
+?? video-studio/scripts/package-birthday-v4.mjs
+?? video-studio/scripts/prepare-birthday-edit.mjs
+?? video-studio/scripts/prepare-birthday-revision.mjs
+?? video-studio/scripts/prepare-birthday-v4.mjs
+?? video-studio/scripts/review-birthday-final.mjs
+?? video-studio/scripts/verify-birthday-v4.mjs
+?? video-studio/src/BirthdaySecondJob.tsx
+?? video-studio/src/birthday-second-job/

@@ -1,0 +1,13 @@
+Social links implementation review
+
+- Signed-out marketing and standard footers show Instagram, Facebook, TikTok, and YouTube links.
+- Signed-in sidebar profile menus show the same links on desktop and mobile.
+- URLs reuse Envitefy profiles already present in the repository.
+- Browser checks passed at 1440x1000, 375x812, and 812x375 for both placements.
+- Signed-in browser checks used a mock session and intercepted API responses; no real account data was changed.
+- Verified 44px link targets, accessible names, footer keyboard focus, new-tab behavior, and inert closed profile menus.
+- Landscape profile menu scrolls and stays within the viewport.
+- Biome lint passed for all four changed files.
+- Direct TypeScript checks passed for all four changed files with project options and dependencies.
+- VS Code diagnostics unavailable: no Chat to CLI linter bridge was running.
+- Existing targeted regression suite: 32 passed, 1 pre-existing failure in the disabled birthday-builder routing source guard. The test and its inspected routing/configuration files are unchanged from HEAD.

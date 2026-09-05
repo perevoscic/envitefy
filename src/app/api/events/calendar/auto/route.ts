@@ -1,3 +1,4 @@
+import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
 import { google } from "googleapis";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
@@ -307,6 +308,9 @@ async function persistCalendarSync(params: {
 }
 
 export async function POST(request: Request) {
+  const pausedResponse = getCalendarSyncPauseResponse();
+  if (pausedResponse) return pausedResponse;
+
   const session = await getServerSession(authOptions);
   const userId = await resolveSessionUserId(session);
   const email = session?.user?.email?.trim().toLowerCase() || "";

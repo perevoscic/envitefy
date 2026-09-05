@@ -7,6 +7,7 @@ import {
   stringList,
 } from "../creation/source-evidence.ts";
 import type { EventOcrLlmResult } from "./types.ts";
+import { validCalendarDate } from "../concierge/readiness.ts";
 
 const strings = (keys: string[]) => Object.fromEntries(keys.map((key) => [key, nullableString]));
 const number = { type: ["number", "null"] };
@@ -18,6 +19,8 @@ const fact = strictObject({
 });
 const evidenceKeys = [
   "title",
+  "description",
+  "category",
   "start",
   "end",
   "address",
@@ -29,6 +32,10 @@ const evidenceKeys = [
   "rsvpUrl",
   "rsvpDeadline",
   "registryUrl",
+  "registryProvider",
+  "activities",
+  "attire",
+  "goodToKnow",
 ];
 export const EVENT_EXTRACTION_SCHEMA = strictObject({
   ...strings([
@@ -120,10 +127,17 @@ export const EXTRACTION_EVIDENCE_INSTRUCTION = `First transcribe the visible sou
 
 export function parseEventExtraction(value: unknown): EventOcrLlmResult | null {
   if (!matchesSchema(value, EVENT_EXTRACTION_SCHEMA)) return null;
-  const event = value as EventOcrLlmResult;
+  const event = { ...(value as EventOcrLlmResult) };
   const evidence = normalizeSourceEvidence(event.sourceEvidence);
   if (!evidence) return null;
   event.sourceEvidence = evidence;
+  for (const field of ["start", "end"] as const) {
+    const date = event[field];
+    if (date && (!validCalendarDate(date) || !Number.isFinite(Date.parse(date))))
+      event[field] = null;
+  }
+  if (event.start && event.end && Date.parse(event.end) <= Date.parse(event.start))
+    event.end = null;
   for (const key of evidenceKeys) {
     const field = evidence.fields[key];
     if (
@@ -131,8 +145,12 @@ export function parseEventExtraction(value: unknown): EventOcrLlmResult | null {
       field?.status === "conflicting" ||
       !field?.sourceText.length
     ) {
-      Object.assign(event, { [key]: ["title", "address"].includes(key) ? "" : null });
+      Object.assign(event, { [key]: ["title", "address", "description", "category"].includes(key) ? "" : key === "activities" ? [] : null });
     }
   }
+  // Extraction carries source wording; polished copy belongs to the creative stage.
+  const descriptionEvidence = evidence.fields.description;
+  if (descriptionEvidence && ["observed", "inferred"].includes(descriptionEvidence.status))
+    event.description = descriptionEvidence.sourceText.join("\n");
   return event;
 }

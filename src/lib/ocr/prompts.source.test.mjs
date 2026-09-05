@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { EVENT_EXTRACTION_SCHEMA } from "./extraction-contract.ts";
+import { buildEventExtractionPrompt } from "./prompts.ts";
 
 test("event OCR prompt includes dashboard thumbnail focus contract", () => {
   const promptSource = readFileSync(new URL("./prompts.ts", import.meta.url), "utf8");
@@ -29,11 +31,26 @@ test("event OCR prompt and pipeline preserve generic OCR facts", () => {
   assert.match(typesSource, /venueName\?: string \| null/);
   assert.match(pipelineSource, /llmImage\.venueName/);
   assert.match(promptSource, /meaningful flyer detail not already represented/);
-  assert.match(promptSource, /"ocrFacts": Array<\{ "label": string, "value": string \}>\|null/);
+  assert.equal(EVENT_EXTRACTION_SCHEMA.properties.ocrFacts.type, "array");
+  assert.equal(EVENT_EXTRACTION_SCHEMA.properties.ocrFacts.items.properties.value.type[0], "string");
   assert.match(typesSource, /ocrFacts\?: OcrFact\[\] \| null/);
   assert.match(pipelineSource, /normalizeOcrFacts\(llmImage\?\.ocrFacts \|\| llmImage\?\.facts\)/);
   assert.match(pipelineSource, /extractCommonOcrFactsFromFlyerText\(raw\)/);
   assert.match(pipelineSource, /ocrFacts: ocrFacts\.length \? ocrFacts : null/);
+});
+
+test("event extraction uses one evidence contract without copywriting or missing-date guesses", () => {
+  const { system, user } = buildEventExtractionPrompt("2026-09-05");
+  assert.equal((system.match(/First transcribe the visible source text verbatim/g) || []).length, 1);
+  assert.match(system, /description verbatim/);
+  assert.match(user, /Do not write invitation prose/);
+  for (const message of [system, user]) {
+    assert.doesNotMatch(message, /standalone, single sentence|choose the next upcoming|use the next occurrence|from text\/theme cues/);
+  }
+  assert.match(system, /Never infer gender from names, faces, colors/);
+  assert.match(system, /Never replace a missing time with midnight/);
+  assert.match(system, /sole field\/type contract/);
+  assert.deepEqual(EVENT_EXTRACTION_SCHEMA.properties.start.type, ["string", "null"]);
 });
 
 test("event OCR prompt separates host/org from venue place", () => {
