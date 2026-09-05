@@ -3,15 +3,19 @@ type OpenAiChatCompatibilityOptions = {
 };
 
 /**
- * Preserve the effective behavior of the model roles Envitefy used before GPT-5.6.
- * Terra and Luna replace non-reasoning balanced/fast routes, while Sol replaces
- * GPT-5.5 routes that already defaulted to medium reasoning.
+ * Preserve reasoning by workload: Terra/Luna run without reasoning, while
+ * Astra keeps the medium effort used by the premium Sol routes it replaces.
+ * Astra does not accept custom temperature or non-reasoning effort levels.
  */
 export function openAiChatCompatibilityParams(
   model: unknown,
   options: OpenAiChatCompatibilityOptions = {},
 ): Record<string, string | number> {
   const normalized = typeof model === "string" ? model.trim().toLowerCase() : "";
+
+  if (/^gpt-6-astra(?:-|$)/.test(normalized)) {
+    return { reasoning_effort: "medium" };
+  }
 
   if (/^gpt-5\.6-(?:terra|luna)(?:-|$)/.test(normalized)) {
     return { reasoning_effort: "none" };

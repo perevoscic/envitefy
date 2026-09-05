@@ -119,7 +119,7 @@ function previewProcessStatusText({
   if (isReceivedInviteDraft && hasDraftProduct) {
     return "Received invite review: details are locked to the upload. Save it to Invited events when it looks right.";
   }
-  return "Generated draft: review it here, then save/publish when ready.";
+  return "Draft preview: review the design here, then choose Publish event when ready.";
 }
 
 function rsvpStatusText({
@@ -184,7 +184,7 @@ export default function ChatProductPreview({
   rsvpDashboardHref,
   hasDraftProduct,
   isReceivedInviteDraft = false,
-  publishActionLabel = "Save / Publish",
+  publishActionLabel = "Publish event",
   publishBusyLabel = "Publishing...",
   isPublishing,
   onPublish,
@@ -236,10 +236,10 @@ export default function ChatProductPreview({
 
   return (
     <aside
-      className={`min-h-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl md:static md:border-l md:border-[#e5dff0] md:bg-white/58 ${
+      className={`min-h-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl lg:static lg:border-l lg:border-[#e5dff0] lg:bg-white/58 ${
         mobileView === "preview"
-          ? "fixed inset-x-0 bottom-0 top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 flex rounded-t-[1.75rem] shadow-[0_-24px_70px_rgba(35,24,72,0.18)] md:rounded-none md:shadow-none"
-          : "hidden md:flex"
+          ? "fixed inset-x-0 bottom-0 top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 flex rounded-t-[1.75rem] shadow-[0_-24px_70px_rgba(35,24,72,0.18)] lg:rounded-none lg:shadow-none"
+          : "hidden lg:flex"
       }`}
     >
       <div className="flex h-full min-h-0 flex-col">

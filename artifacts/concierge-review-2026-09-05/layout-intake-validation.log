@@ -1,0 +1,120 @@
+✔ concierge message API requires server-side auth and never accepts body user ids (1.0046ms)
+✔ creation intake API owns session persistence and auth (14.8227ms)
+✔ creation intake resume reads the signed-in user's latest session only (0.8211ms)
+✔ saved creation sessions keep continuation scoped to the owner (0.6244ms)
+✔ concierge creation routes expose optional timing payloads and Server-Timing headers (0.5343ms)
+✔ creation intake times model extraction and DB writes inside the handler (0.3843ms)
+✔ concierge routes return safe public errors on internal failures (0.7444ms)
+✖ creation threads list and resume authenticated user sessions only (2.6059ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 162.493
+
+✖ failing tests:
+
+test at src\app\api\concierge\message\route.test.mjs:171:1
+✖ creation threads list and resume authenticated user sessions only (2.6059ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /resolveSessionUserId\(session\)/. Input:
+  
+  'import { NextResponse } from "next/server";\r\n' +
+    'import { getAuthenticatedRequestUser } from "@/lib/auth";\r\n' +
+    'import { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";\r\n' +
+    'import { listCreationSessions } from "@/lib/concierge/event-storage";\r\n' +
+    'import type {\r\n' +
+    '  CreationSession,\r\n' +
+    '  CreationThreadSummary,\r\n' +
+    '  CreationThreadsResponse,\r\n' +
+    '} from "@/lib/concierge/types";\r\n' +
+    '\r\n' +
+    'export const runtime = "nodejs";\r\n' +
+    'export const dynamic = "force-dynamic";\r\n' +
+    '\r\n' +
+    'function cleanString(value: unknown): string | null {\r\n' +
+    '  if (typeof value !== "string") return null;\r\n' +
+    '  const trimmed = value.replace(/\\s+/g, " ").trim();\r\n' +
+    '  return trimmed || null;\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function savedEventIdFromSession(session: CreationSession): string | null {\r\n' +
+    '  const value = session.metadata?.savedEventId;\r\n' +
+    '  return cleanString(value);\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function threadTitle(session: CreationSession): string {\r\n' +
+    '  const draft = session.draft;\r\n' +
+    '  return (\r\n' +
+    '    cleanString(draft.title) ||\r\n' +
+    '    cleanString(draft.previewCopy?.headline) ||\r\n' +
+    '    cleanString(draft.eventPurpose) ||\r\n' +
+    '    cleanString(draft.requestedOutputs?.[0]?.replace(/_/g, " ")) ||\r\n' +
+    '    "New AI creation"\r\n' +
+    '  );\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function toThreadSummary(session: CreationSession): CreationThreadSummary {\r\n' +
+    '  return {\r\n' +
+    '    id: session.id,\r\n' +
+    '    title: threadTitle(session),\r\n' +
+    '    status: String(session.status || "needs_event_details"),\r\n' +
+    '    updatedAt: session.updated_at,\r\n' +
+    '    createdAt: session.created_at,\r\n' +
+    '    savedEventId: savedEventIdFromSession(session),\r\n' +
+    '  };\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'export async function GET(req: Request) {\r\n' +
+    '  try {\r\n' +
+    '    const authUser = await getAuthenticatedRequestUser(req);\r\n' +
+    '    if (!authUser.ok) {\r\n' +
+    '      return NextResponse.json(\r\n' +
+    '        {\r\n' +
+    '          ok: false,\r\n' +
+    '          error: "Sign in to use Envitefy Concierge.",\r\n' +
+    '        } satisfies CreationThreadsResponse,\r\n' +
+    '        { status: 401 },\r\n' +
+    '      );\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    const url = new URL(req.url);\r\n' +
+    '    const rawLimit = Number(url.searchParams.get("limit") || 20);\r\n' +
+    '    const includeSaved = url.searchParams.get("includeSaved") === "1";\r\n' +
+    '    const threads = await listCreationSessions({\r\n' +
+    '      userId: authUser.userId,\r\n' +
+    '      limit: Number.isFinite(rawLimit) ? rawLimit : 20,\r\n' +
+    '      includeSaved,\r\n' +
+    '    });\r\n' +
+    '\r\n' +
+    '    return NextResponse.json({\r\n' +
+    '      ok: true,\r\n' +
+    '      threads: threads.map(toThreadSummary),\r\n' +
+    '    } satisfies CreationThreadsResponse);\r\n' +
+    '  } catch (error) {\r\n' +
+    '    return NextResponse.json(\r\n' +
+    '      {\r\n' +
+    '        ok: false,\r\n' +
+    '        error: conciergeApiErrorMessage(error, "Unable to load AI creation threads."),\r\n' +
+    '      } satisfies CreationThreadsResponse,\r\n' +
+    '      { status: 500 },\r\n' +
+    '    );\r\n' +
+    '  }\r\n' +
+    '}\r\n'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/app/api/concierge/message/route.test.mjs:179:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'import { NextResponse } from "next/server";\r\nimport { getAuthenticatedRequestUser } from "@/lib/auth";\r\nimport { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";\r\nimport { listCreationSessions } from "@/lib/concierge/event-storage";\r\nimport type {\r\n  CreationSession,\r\n  CreationThreadSummary,\r\n  CreationThreadsResponse,\r\n} from "@/lib/concierge/types";\r\n\r\nexport const runtime = "nodejs";\r\nexport const dynamic = "force-dynamic";\r\n\r\nfunction cleanString(value: unknown): string | null {\r\n  if (typeof value !== "string") return null;\r\n  const trimmed = value.replace(/\\s+/g, " ").trim();\r\n  return trimmed || null;\r\n}\r\n\r\nfunction savedEventIdFromSession(session: CreationSession): string | null {\r\n  const value = session.metadata?.savedEventId;\r\n  return cleanString(value);\r\n}\r\n\r\nfunction threadTitle(session: CreationSession): string {\r\n  const draft = session.draft;\r\n  return (\r\n    cleanString(draft.title) ||\r\n    cleanString(draft.previewCopy?.headline) ||\r\n    cleanString(draft.eventPurpose) ||\r\n    cleanString(draft.requestedOutputs?.[0]?.replace(/_/g, " ")) ||\r\n    "New AI creation"\r\n  );\r\n}\r\n\r\nfunction toThreadSummary(session: CreationSession): CreationThreadSummary {\r\n  return {\r\n    id: session.id,\r\n    title: threadTitle(session),\r\n    status: String(session.status || "needs_event_details"),\r\n    updatedAt: session.updated_at,\r\n    createdAt: session.created_at,\r\n    savedEventId: savedEventIdFromSession(session),\r\n  };\r\n}\r\n\r\nexport async function GET(req: Request) {\r\n  try {\r\n    const authUser = await getAuthenticatedRequestUser(req);\r\n    if (!authUser.ok) {\r\n      return NextResponse.json(\r\n        {\r\n          ok: false,\r\n          error: "Sign in to use Envitefy Concierge.",\r\n        } satisfies CreationThreadsResponse,\r\n        { status: 401 },\r\n      );\r\n    }\r\n\r\n    const url = new URL(req.url);\r\n    const rawLimit = Number(url.searchParams.get("limit") || 20);\r\n    const includeSaved = url.searchParams.get("includeSaved") === "1";\r\n    const threads = await listCreationSessions({\r\n      userId: authUser.userId,\r\n      limit: Number.isFinite(rawLimit) ? rawLimit : 20,\r\n      includeSaved,\r\n    });\r\n\r\n    return NextResponse.json({\r\n      ok: true,\r\n      threads: threads.map(toThreadSummary),\r\n    } satisfies CreationThreadsResponse);\r\n  } catch (error) {\r\n    return NextResponse.json(\r\n      {\r\n        ok: false,\r\n        error: conciergeApiErrorMessage(error, "Unable to load AI creation threads."),\r\n      } satisfies CreationThreadsResponse,\r\n      { status: 500 },\r\n    );\r\n  }\r\n}\r\n',
+    expected: /resolveSessionUserId\(session\)/,
+    operator: 'match',
+    diff: 'simple'
+  }

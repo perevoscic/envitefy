@@ -1,3 +1,4 @@
+import type { StudioProduct } from "./product-contract.ts";
 import { GoogleGenAI } from "@google/genai";
 import { STUDIO_LIVE_CARD_RESPONSE_SCHEMA } from "@/lib/studio/live-card-schema";
 import {
@@ -222,6 +223,7 @@ async function postGeminiImage(
   prompt: string,
   sourceImageDataUrl?: string,
   referenceImages?: StudioResolvedSourceImage[],
+  product?: StudioProduct,
 ): Promise<
   | { ok: true; response: any; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] }
@@ -276,7 +278,7 @@ async function postGeminiImage(
           }
         : {
             responseModalities: ["TEXT", "IMAGE"],
-            imageConfig: resolveInviteImageConfig(),
+            imageConfig: { ...resolveInviteImageConfig(), ...(product === "event_page" ? { aspectRatio: "3:2" } : {}) },
           },
     });
     return { ok: true, response, warnings: [] };
@@ -332,8 +334,9 @@ export async function generateInvitationTextWithGemini(prompt: string): Promise<
 export async function generateInvitationImageWithGemini(
   prompt: string,
   referenceImages?: StudioResolvedSourceImage[],
+  product?: StudioProduct,
 ): Promise<GeminiImageResult> {
-  const result = await postGeminiImage(resolveImageModel(), prompt, undefined, referenceImages);
+  const result = await postGeminiImage(resolveImageModel(), prompt, undefined, referenceImages, product);
   if (!result.ok) return result;
 
   const imageDataUrl = extractImageDataUrlFromGeminiResponse(result.response);

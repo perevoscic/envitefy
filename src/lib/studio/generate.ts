@@ -1,3 +1,7 @@
+import { composeFlyerExport } from "./flyer-export.ts";
+import { applyVerifiedCopy, verifyStudioArtwork, type ArtworkCheck } from "./output-checks.ts";
+import { buildProductCopyPrompt, buildProductArtworkPrompt } from "./product-prompts.ts";
+import { validateCreativePlan, resolveStudioProduct } from "./product-contract.ts";
 import {
   editInvitationImageWithGemini,
   generateInvitationImageWithGemini,
@@ -10,8 +14,6 @@ import {
 } from "@/lib/studio/openai";
 import {
   buildExistingInvitationImageEditPrompt,
-  buildInvitationImagePrompt,
-  buildLiveCardPrompt,
   sanitizeStudioLiveCardVisibleCopy,
 } from "@/lib/studio/prompts";
 import { resolveStudioProvider } from "@/lib/studio/provider";
@@ -72,6 +74,8 @@ function getOrderedStudioReferenceImageUrls(
 }
 
 export const studioGenerationDeps = {
+  composeFlyerExport,
+  verifyStudioArtwork,
   applyStudioThemeNormalization,
   editInvitationImageWithGemini,
   editInvitationImageWithOpenAi,
@@ -90,6 +94,8 @@ export async function generateStudioInvitation(
   const provider = studioGenerationDeps.resolveStudioProvider();
   const mode = request.mode || "both";
   const surface = request.surface || (mode === "both" || mode === "text" ? "page" : "image");
+  const product = resolveStudioProduct(request.product, surface);
+  let qualityCheck: ArtworkCheck["status"] = "unavailable";
   const themeNormalization = await studioGenerationDeps.normalizeStudioTheme({
     provider,
     event: request.event,
@@ -105,7 +111,7 @@ export async function generateStudioInvitation(
   let imageDataUrl: string | null = null;
   const errors: NonNullable<StudioGenerateResponse["errors"]> = {};
 
-  const wantsText = mode === "text" || mode === "both";
+  const wantsText = mode === "text" || mode === "both" || (mode === "image" && !request.imageEdit);
   const wantsImage = mode === "image" || mode === "both";
 
   if (themeNormalization.riskLevel === "block") {
@@ -126,14 +132,15 @@ export async function generateStudioInvitation(
   }
 
   if (wantsText) {
-    const textPrompt = buildLiveCardPrompt(normalizedRequest.event, normalizedRequest.guidance);
+    const textPrompt = buildProductCopyPrompt(normalizedRequest.event, normalizedRequest.guidance, product);
     const textResult =
       provider === "openai"
         ? await studioGenerationDeps.generateStudioLiveCardWithOpenAi(textPrompt)
         : await studioGenerationDeps.generateStudioLiveCardWithGemini(textPrompt);
     warnings.push(...textResult.warnings);
     if (textResult.ok) {
-      liveCard = sanitizeStudioLiveCardVisibleCopy(normalizedRequest.event, textResult.liveCard);
+      liveCard = applyVerifiedCopy(normalizedRequest.event, sanitizeStudioLiveCardVisibleCopy(normalizedRequest.event, textResult.liveCard));
+      liveCard.creativePlan = validateCreativePlan(normalizedRequest.event, product, liveCard.creativePlan);
       invitation = liveCard.invitation;
     } else {
       errors.text = textResult.error;
@@ -152,18 +159,12 @@ export async function generateStudioInvitation(
     if (requestedRefCount > 0 && referenceImages.length !== requestedRefCount) {
       errors.image = buildReferenceImageError(provider);
     } else {
+      const artworkPrompt = buildProductArtworkPrompt(normalizedRequest.event, normalizedRequest.guidance, liveCard, product, referenceImages.length);
       const imagePrompt = editingExistingImage
-        ? buildExistingInvitationImageEditPrompt(normalizedRequest.imageEdit?.editInstruction)
-        : buildInvitationImagePrompt(
-            normalizedRequest.event,
-            normalizedRequest.guidance,
-            liveCard,
-            {
-              surface,
-              editingExistingImage: false,
-              referenceImageCount: referenceImages.length,
-            },
-          );
+        ? product === "live_card"
+          ? buildExistingInvitationImageEditPrompt(normalizedRequest.imageEdit?.editInstruction)
+          : ["Edit the supplied artwork. Remove all existing typography so the application can typeset the current event facts. Preserve the visual subject and apply the requested changes.", normalizedRequest.imageEdit?.editInstruction, artworkPrompt].filter(Boolean).join("\n")
+        : artworkPrompt;
       const imageResult = editingExistingImage
         ? provider === "openai"
           ? await studioGenerationDeps.editInvitationImageWithOpenAi(
@@ -178,14 +179,42 @@ export async function generateStudioInvitation(
           ? await studioGenerationDeps.generateInvitationImageWithOpenAi(
               imagePrompt,
               referenceImages.length > 0 ? referenceImages : undefined,
+              product,
             )
           : await studioGenerationDeps.generateInvitationImageWithGemini(
               imagePrompt,
               referenceImages.length > 0 ? referenceImages : undefined,
+              product,
             );
       warnings.push(...imageResult.warnings);
       if (imageResult.ok) {
-        imageDataUrl = imageResult.imageDataUrl;
+        let artwork = imageResult.imageDataUrl;
+        let checked: ArtworkCheck = editingExistingImage && product === "live_card"
+          ? { status: "unavailable", issues: [] }
+          : await studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product);
+        if (checked.status === "failed") {
+          const repairPrompt = [imagePrompt, `Targeted quality repair: ${checked.issues.join(", ")}. Fix only these observed defects, retaining the approved facts, subject and design.`].join("\n");
+          const repaired = provider === "openai"
+            ? await studioGenerationDeps.editInvitationImageWithOpenAi(repairPrompt, artwork)
+            : await studioGenerationDeps.editInvitationImageWithGemini(repairPrompt, artwork);
+          if (repaired.ok) {
+            artwork = repaired.imageDataUrl;
+            checked = await studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product);
+            // A failed image cannot be accepted merely because the repair verifier timed out.
+            if (checked.status === "unavailable") checked = { status: "failed", issues: ["repair_unverified"] };
+          }
+        }
+        qualityCheck = checked.status;
+        if (checked.status === "failed") {
+          errors.image = { code: "image_quality_failed", message: "The artwork did not pass its text and layout checks after one repair. Please regenerate it.", provider, retryable: true };
+        } else {
+          if (checked.status === "unavailable") warnings.push("Automatic artwork verification was unavailable; review the preview before sharing.");
+          try {
+            imageDataUrl = await studioGenerationDeps.composeFlyerExport(artwork, normalizedRequest.event, liveCard, product);
+          } catch (error) {
+            errors.image = { code: "export_failed", message: error instanceof Error ? error.message : "Flyer export failed.", provider, retryable: false };
+          }
+        }
       } else {
         errors.image = imageResult.error;
         warnings.push("Invitation image generation failed.");
@@ -201,11 +230,13 @@ export async function generateStudioInvitation(
       ? hasTextSuccess
       : mode === "image"
         ? hasImageSuccess
-        : hasTextSuccess || hasImageSuccess;
+        : hasTextSuccess && hasImageSuccess;
 
   return {
     ok,
     mode,
+    product,
+    qualityCheck,
     liveCard,
     invitation,
     imageDataUrl,

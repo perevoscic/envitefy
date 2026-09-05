@@ -1,0 +1,60 @@
+bun test v1.3.11 (af24e281)
+
+src\app\chat\ConciergeChatClient.snap-upload.test.mjs:
+(pass) chat snap upload scans in chat instead of routing through dashboard upload action
+(pass) chat snap upload exposes retry controls on failure
+(pass) chat upload queues the picked file before product selection
+(pass) chat upload status renders as a concierge bubble
+(pass) date confirmation replies bypass streaming and object errors are normalized
+(pass) chat live-card uploads can drive the preview image
+
+src\lib\concierge\conversation-golden.test.mjs:
+(pass) conversation 1: greeting stays warm and does not create a draft [16.00ms]
+(pass) conversation 2: birthday live card reaches a ready owned draft [16.00ms]
+(pass) conversation 3: received invite without source asks for upload or pasted text
+(pass) conversation 4: received invite with concrete details is ready as invited
+(pass) conversation 5: non-invite upload becomes an owned My Events draft [15.00ms]
+(pass) conversation 6: output-only RSVP request asks for event context first
+(pass) conversation 7: ambiguous this asks which source to use
+(pass) conversation 8: weather question with missing location asks for city
+(pass) conversation 9: future weather question explains forecast-window limits
+(pass) conversation 10: unrelated private-data mutation is not an event detail
+(pass) conversation 11: Envitefy product questions are answered instead of becoming drafts
+(pass) conversation 12: generate requests with missing details explain the blocker
+(pass) conversation 13: unsafe or unrelated prompts do not become drafts
+
+src\lib\concierge\conversation-repair.test.mjs:
+(pass) the recorded customers' sharing questions do not ask us to contact guests
+(pass) format comparisons do not order products; choices and removals replace the selection [16.00ms]
+(pass) extract exact title corrections without copying complaints or dropping a twin
+(pass) explicit requests for two products still work while comparative questions stay unchanged
+(pass) a ready draft acknowledges a real correction instead of claiming nothing changed
+(pass) title and output corrections reach the draft and survive unrelated follow-ups and stale model output [15.00ms]
+(pass) capability answers distinguish supported RSVP fields, planning counts and the publish step
+(pass) persona corrects unsupported promises before calling a model
+(pass) a past refusal does not remain attached to an otherwise usable event source
+(pass) cancelled persona replies do not emit a fallback or finish the response
+
+src\lib\concierge\fast-paths.test.mjs:
+(pass) event assistant fast path covers deterministic asset, RSVP deadline, and tone requests
+(pass) creation intake fast path covers greetings, starter chips, output chips, and OCR results
+
+src\lib\concierge\persona.test.mjs:
+(pass) persona streams deterministic fallback when no OpenAI key exists
+(pass) persona does not force a product-format prompt for starter categories
+(pass) persona reaches normal Envitefy side questions when OpenAI is configured
+(pass) persona uses deterministic fallback for date confirmation prompts
+(pass) persona uses deterministic fallback for private account-data boundaries
+(pass) persona reaches ready drafts with optional gift prompts
+(pass) persona preserves streamed token spacing
+(pass) persona strips markdown emphasis and star separators from confirmations
+(pass) persona prompt and sanitizer keep streamed tone polished
+(pass) persona publicizes product labels instead of raw output keys
+(pass) persona does not expose default timezone copy
+(pass) persona receives bounded weather context for forecast questions
+(pass) persona keeps missing-location weather prompt exact
+(pass) persona falls back when first token times out [15.00ms]
+
+ 45 pass
+ 0 fail
+Ran 45 tests across 5 files. [252.00ms]

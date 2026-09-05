@@ -1,3 +1,4 @@
+import { resolveStudioProduct } from "@/lib/studio/product-contract";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import type { LiveCardRsvpChoice } from "@/lib/live-card-rsvp";
 import { resolveStudioImageFinishPreset } from "@/lib/studio/image-finish-presets";
@@ -499,6 +500,7 @@ export function resolveStudioCallToAction(
   details: EventDetails,
   ...candidates: Array<string | null | undefined>
 ): string {
+  if (details.rsvpEnabled === false) return "View details";
   const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);
   for (const candidate of candidates) {
     const next = clean(candidate);
@@ -513,6 +515,7 @@ export function resolveStudioRsvpMessage(
   details: EventDetails,
   ...candidates: Array<string | null | undefined>
 ): string {
+  if (details.rsvpEnabled === false) return "";
   const categorySupportsRsvp = supportsStudioCategoryRsvp(details.category);
   for (const candidate of candidates) {
     const next = clean(candidate);
@@ -1024,6 +1027,7 @@ export function buildStudioRequest(
   sourceImageDataUrl?: string,
   previousDetails?: EventDetails,
 ): StudioGenerateRequest {
+  const product = resolveStudioProduct(details.product, surface);
   const refinement = clean(editPrompt);
   const sourceImage = clean(sourceImageDataUrl);
   const editInstruction = sourceImage
@@ -1080,7 +1084,11 @@ export function buildStudioRequest(
   return {
     mode,
     surface,
+    product,
     event: {
+      approvedWording: details.approvedWording || null,
+      rsvpEnabled: details.rsvpEnabled ?? categorySupportsRsvp,
+      additionalLocations: details.additionalLocations || [],
       title: getDisplayTitle(details),
       category: details.category,
       occasion: pickFirst(details.occasion, details.category),
@@ -1112,17 +1120,14 @@ export function buildStudioRequest(
       realtorLicense: clean(details.realtorLicense) || null,
       ageOrMilestone: getAgeOrMilestone(details) || null,
       userIdea: designIdea || null,
-      description:
-        [baseDescription, refinement ? `Edit request: ${refinement}` : "", guestPhotoHint]
-          .filter(Boolean)
-          .join(" ") || null,
-      date: formatStudioPromptDate(details) || null,
+      description: baseDescription || null,
+      date: product === "live_card" ? formatStudioPromptDate(details) || null : getStudioEventDate(details) || null,
       startTime: getStudioEventStartTime(details) || null,
       endTime: getStudioEventEndTime(details) || null,
-      timezone:
+      timezone: details.timezone || (
         typeof Intl !== "undefined"
           ? Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Chicago"
-          : "America/Chicago",
+          : "America/Chicago"),
       venueName:
         pickFirst(
           details.venueName,
@@ -1157,11 +1162,12 @@ export function buildStudioRequest(
       style:
         [
           visualDirection,
-          categoryGuardrails,
+          guestPhotoHint,
+          product === "live_card" ? categoryGuardrails : `Preserve the selected ${details.category} event type and supplied subject/reference photos.`,
           imageFinishPresetDirection,
           internalInstructions,
           refinement,
-          studioGuardrails,
+          product === "live_card" ? studioGuardrails : "The product contract controls image text and safe zones. Event wording is typeset separately.",
         ]
           .filter(Boolean)
           .join(". ") || null,
@@ -1205,6 +1211,7 @@ export function buildInvitationData(
   const liveCard = response.liveCard;
   const invitation = liveCard?.invitation || response.invitation;
   return refreshLiveCardInvitationData(details, {
+    creativePlan: liveCard?.creativePlan,
     title: liveCard?.title || invitation?.title,
     subtitle: invitation?.subtitle || buildStudioSubtitleFallback(details),
     description:
@@ -1279,6 +1286,7 @@ export function refreshLiveCardInvitationData(
     locationLine,
     callToAction,
     socialCaption: publicSocialCaption,
+    creativePlan: previous?.creativePlan,
     heroTextMode,
     theme: {
       primaryColor: clean(previous?.theme?.primaryColor) || fallbackTheme.primaryColor,

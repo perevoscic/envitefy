@@ -1,0 +1,28 @@
+{
+  "fixture": "Synthetic birthday and open-house briefs; no model calls",
+  "liveCard": {
+    "characters": 9406,
+    "words": 1429,
+    "rules": 56
+  },
+  "standaloneImage": {
+    "characters": 12220,
+    "words": 1893,
+    "rules": 83
+  },
+  "pageImage": {
+    "characters": 12049,
+    "words": 1868,
+    "rules": 79
+  },
+  "ocr": {
+    "characters": 18731,
+    "words": 2655,
+    "rules": 0
+  },
+  "standaloneImageExcludesLogistics": true,
+  "standaloneReservesActionArea": true,
+  "openHouseRequestsCollage": true,
+  "openHouseAlsoForbidsCollage": true,
+  "liveCardRequiresMinimumNotes": true
+}

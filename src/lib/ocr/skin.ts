@@ -46,6 +46,7 @@ export type OcrSkinSelection = {
 };
 
 type OcrSkinPromptInput = {
+  signal?: AbortSignal;
   category: OcrSkinCategory | string;
   sportKind?: OcrSportKind | string | null;
   imageBytes: Buffer;
@@ -613,7 +614,7 @@ function buildPrompt(input: OcrSkinPromptInput): string {
 }
 
 function resolveOpenAiTextModel(): string {
-  return process.env.OCR_SKIN_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.6-sol";
+  return process.env.OCR_SKIN_OPENAI_TEXT_MODEL || process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-6-astra";
 }
 
 function resolveGeminiTextModel(): string {
@@ -679,7 +680,7 @@ async function inferWithOpenAi(input: OcrSkinPromptInput): Promise<RawOcrSkinPay
           ],
         },
       ],
-    });
+    }, { signal: input.signal, maxRetries: 0 });
     const raw = completion.choices?.[0]?.message?.content || "";
     const parsed = extractJsonObject(raw);
     return parsed && typeof parsed === "object" ? (parsed as RawOcrSkinPayload) : null;
@@ -711,6 +712,7 @@ async function inferWithGemini(input: OcrSkinPromptInput): Promise<RawOcrSkinPay
         },
       ],
       config: {
+        abortSignal: input.signal,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,

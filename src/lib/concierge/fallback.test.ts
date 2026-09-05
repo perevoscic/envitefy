@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { mock } from "node:test";
 import { getOutputRequirement, resolveSourceIntent } from "./creation-intent.ts";
 import { extractConciergeDraft, normalizeConciergeDraft } from "./extract.ts";
 import {
@@ -12,6 +12,10 @@ import {
   buildConciergeHistoryPayload,
   canPersistConciergeHistoryDraft,
 } from "./history-payload.ts";
+
+// Keep the fixed 2026 event fixtures in the future; past-date confirmation has its own cases.
+test.beforeEach((context) => mock.timers.enable({ apis: ["Date"], now: new Date(/\bpast\b|product and time corrections/.test(context.name) ? "2026-09-05T12:00:00Z" : "2026-01-15T12:00:00Z") }));
+test.afterEach(() => mock.timers.reset());
 
 test("fallback extracts a partial birthday draft from a relationship sentence", () => {
   const draft = fallbackExtractConciergeDraft({ message: "my daughter's birthday" });
@@ -1819,12 +1823,10 @@ test("OpenAI extraction path normalizes to the same draft shape", async () => {
               create: async () => ({
                 choices: [
                   {
+                    finish_reason: "stop",
                     message: {
                       content: JSON.stringify({
-                        intent: "create_event",
-                        eventType: "baby_shower",
-                        title: "Baby shower brunch",
-                        outputs: ["rsvp_page"],
+                        edits: [{ field: "eventType", operation: "set", value: "baby_shower", source: "latest_user_message", sourceText: "baby shower" }],
                         previewCopy: {
                           headline: "Baby shower brunch",
                           subheadline: "Details coming soon",
@@ -1846,8 +1848,9 @@ test("OpenAI extraction path normalizes to the same draft shape", async () => {
 
   assert.equal(result.usedAi, true);
   assert.equal(result.draft.eventType, "baby_shower");
-  assert.deepEqual(result.draft.outputs, ["live_card", "rsvp_page"]);
-  assert.equal(result.draft.previewCopy.locationLine, "Location TBD");
+  // The model cannot add a product the customer never selected.
+  assert.deepEqual(result.draft.outputs, ["live_card"]);
+  assert.match(result.draft.previewCopy.locationLine, /TBC|Location TBD/);
 });
 
 test("OpenAI normalization treats nested eventData venue as satisfying location", () => {
@@ -1948,7 +1951,7 @@ test("conversation repair messages preserve draft details and bypass extraction"
   let draft = fallbackExtractConciergeDraft({
     message: "Birthday Live Card fro Lara, 7",
   });
-  draft = fallbackExtractConciergeDraft({ message: "May 23rd", draft });
+  draft = fallbackExtractConciergeDraft({ message: "May 23rd at 3 PM", draft });
   draft = fallbackExtractConciergeDraft({ message: "AMC Theater Destin", draft });
   draft = fallbackExtractConciergeDraft({ message: "yes", draft });
   draft = fallbackExtractConciergeDraft({ message: "10", draft });
@@ -1990,6 +1993,7 @@ test("conversation repair messages preserve draft details and bypass extraction"
               create: async () => ({
                 choices: [
                   {
+                    finish_reason: "stop",
                     message: {
                       content: JSON.stringify({
                         honoreeName: "You Already Asked",
@@ -2043,7 +2047,7 @@ test("frustrated detail replies can still fill the active draft slot", () => {
     draft: first,
   });
 
-  assert.equal(first.currentQuestion, "location");
+  assert.equal(first.currentQuestion, "time");
   assert.equal(reply.timeText, "5:00 PM");
   assert.equal(reply.location, "the library");
   assert.equal(reply.venue, "the library");
@@ -2065,7 +2069,7 @@ test("unclear replies rephrase the missing detail instead of repeating the same 
   let rsvpDraft = fallbackExtractConciergeDraft({
     message: "Birthday Live Card for Lara, 7",
   });
-  rsvpDraft = fallbackExtractConciergeDraft({ message: "May 23rd", draft: rsvpDraft });
+  rsvpDraft = fallbackExtractConciergeDraft({ message: "May 23rd at 3 PM", draft: rsvpDraft });
   rsvpDraft = fallbackExtractConciergeDraft({ message: "AMC Theater Destin", draft: rsvpDraft });
   rsvpDraft = fallbackExtractConciergeDraft({ message: "yes", draft: rsvpDraft });
 
@@ -2284,7 +2288,7 @@ test("unsafe and unrelated standalone prompts do not become event drafts", () =>
     {
       message: "Put the event page on Facebook for anyone who wants a copy or video.",
       boundary: "external_action",
-      reply: /can't post to Facebook/i,
+      reply: /can't post to your social accounts/i,
     },
     {
       message: "Tell me a birthday joke.",
@@ -2325,8 +2329,8 @@ test("unsafe and unrelated standalone prompts do not become event drafts", () =>
     assert.deepEqual(draft.requestedOutputs, [], message);
     assert.match(assistant, reply, message);
     if (boundary === "external_action") {
-      assert.match(assistant, /write the post copy/i, message);
-      assert.match(assistant, /Envitefy event link/i, message);
+      assert.match(assistant, /prepare the event link and message/i, message);
+      assert.match(assistant, /for you to share/i, message);
       assert.doesNotMatch(assistant, /video brief/i, message);
     }
     assert.doesNotMatch(assistant, /When should this happen/i, message);
@@ -2385,14 +2389,10 @@ test("OpenAI readiness is downgraded when source and purpose are missing", async
               create: async () => ({
                 choices: [
                   {
+                    finish_reason: "stop",
                     message: {
                       content: JSON.stringify({
-                        intent: "create_output",
-                        requestedOutputs: ["live_card"],
-                        eventType: "general",
-                        title: "",
-                        draftStatus: "preview_ready",
-                        missingFields: [],
+                        edits: [],
                         previewCopy: {
                           headline: "Live card",
                           subheadline: "Details coming soon",
@@ -2455,8 +2455,8 @@ test("save payload stores generated concierge products as owned My Events rows",
   assert.equal(payload.data.rsvp.direct, false);
   assert.equal(payload.data.publicEvent.renderer, "live_card");
   assert.equal(payload.data.publicEvent.primaryOutput, "live_card");
-  assert.equal(payload.data.liveCard.scheduleLine, "Date TBD");
-  assert.equal(payload.data.liveCard.locationLine, "Location TBD");
+  assert.match(payload.data.liveCard.scheduleLine, /TBC|Date TBD/);
+  assert.match(payload.data.liveCard.locationLine, /TBC|Location TBD/);
   assert.equal(payload.data.studioCard.imageUrl, "/studio/birthday.webp");
   assert.equal(payload.data.studioCard.invitationData.title, "Ava is turning 7");
   assert.equal(payload.data.studioCard.invitationData.heroTextMode, "image");

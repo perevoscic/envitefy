@@ -38,9 +38,10 @@ const emailGeneratorSource = () =>
 const emailScenariosSource = () =>
   fs.readFileSync(path.join(repoRoot, "src/lib/admin/email-scenarios.ts"), "utf8");
 
-test("admin email generator defaults to gpt-5.6-sol", () => {
+test("admin email generator defaults to Astra with compatible reasoning parameters", () => {
   const source = emailGeneratorSource();
-  assert.match(source, /DEFAULT_ADMIN_EMAIL_GENERATOR_MODEL = "gpt-5\.6-sol"/);
+  assert.match(source, /DEFAULT_ADMIN_EMAIL_GENERATOR_MODEL = "gpt-6-astra"/);
+  assert.match(source, /\.\.\.openAiChatCompatibilityParams\(model\)/);
   assert.doesNotMatch(source, /OPENAI_CONCIERGE_CHAT_MODEL/);
 });
 

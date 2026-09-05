@@ -175,6 +175,7 @@ function isLegacyLocalUploadPath(value: string): boolean {
 
 export async function persistImageMediaValue(params: {
   value?: string | null;
+  preferOriginal?: boolean;
   eventId?: string | null;
   uploadToken?: string | null;
   fileName?: string;
@@ -196,7 +197,7 @@ export async function persistImageMediaValue(params: {
         uploadToken: params.uploadToken,
       });
       return sanitizePersistedMediaUrl(
-        upload.stored.display?.url || upload.eventMedia.thumbnail || params.fallbackValue || null,
+        (params.preferOriginal ? upload.stored.source?.url : upload.stored.display?.url) || upload.eventMedia.thumbnail || params.fallbackValue || null,
       );
     }
     return sanitizePersistedMediaUrl(params.fallbackValue);
@@ -211,7 +212,7 @@ export async function persistImageMediaValue(params: {
     uploadToken: params.uploadToken,
   });
   return sanitizePersistedMediaUrl(
-    upload.stored.display?.url || upload.eventMedia.thumbnail || params.fallbackValue || null,
+    (params.preferOriginal ? upload.stored.source?.url : upload.stored.display?.url) || upload.eventMedia.thumbnail || params.fallbackValue || null,
   );
 }
 

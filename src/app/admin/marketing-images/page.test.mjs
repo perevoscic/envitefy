@@ -1,8 +1,72 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { choosePreviewVersion } from "./studio-state.ts";
 
-const source = await readFile(new URL("./page.tsx", import.meta.url), "utf8");
+const source = await readFile(new URL("./legacy/page.tsx", import.meta.url), "utf8");
+const studio = await readFile(new URL("./page.tsx", import.meta.url), "utf8");
+const studioUi = await readFile(new URL("./studio-components.tsx", import.meta.url), "utf8");
+const composer = await readFile(new URL("./studio-composer.tsx", import.meta.url), "utf8");
+const library = await readFile(new URL("./studio-library.tsx", import.meta.url), "utf8");
+const studioState = await readFile(new URL("./use-content-studio.ts", import.meta.url), "utf8");
+
+test("content studio starts with one composer and keeps production diagnostics out of the main page", () => {
+  assert.match(studio, /Content Studio/);
+  assert.match(studio, /Creative conversation/);
+  assert.match(studio, /<StudioComposer/);
+  assert.match(composer, /Content output/);
+  assert.match(composer, /Social platform/);
+  assert.doesNotMatch(studio, /Campaign Workspace|Stage JSON|Creative QA|Post Concepts/);
+  assert.match(library, /Earlier campaigns/);
+  assert.match(library, /legacy\?run=/);
+  assert.match(studioUi, /Dialog\.Title/);
+});
+
+test("studio resumes only an explicitly selected conversation and saves exact edited prompts", () => {
+  assert.match(studioState, /searchParams\.set\("conversation", id\)/);
+  assert.doesNotMatch(studioState, /setConversation\(conversations\[0\]/);
+  assert.match(studioUi, /Save prompt/);
+  assert.match(studioUi, /promptOverride: prompt/);
+  assert.match(studioState, /clientRequestId: pendingRequest\.current\.id/);
+});
+
+test("mobile creation switches between conversation and preview with a route back to the composer", () => {
+  assert.match(studio, /aria-label="Creation view"/);
+  assert.match(studio, /aria-pressed=\{mobileView === panel\}/);
+  assert.match(studio, /id="studio-conversation-panel"/);
+  assert.match(studio, /id="studio-preview-panel"/);
+  assert.match(studio, /onClick=\{focusConversation\}/);
+  assert.match(studio, /requestAnimationFrame\(\(\) => composer\.current\?\.focus\(\)\)/);
+  assert.match(studio, /What would you like to create\?/);
+  assert.doesNotMatch(studio, /max-h-\[320px\]|making today/);
+});
+
+function version(id, output, status, assetId) {
+  return {
+    id,
+    output,
+    status,
+    result: { prompt: "saved prompt", ...(assetId ? { assetId } : {}) },
+  };
+}
+
+test("a pending or failed media result keeps the previous usable preview", () => {
+  const ready = version("one", "image", "ready", "asset-one");
+  const pending = version("two", "video", "running");
+  const failed = version("three", "image", "failed");
+  assert.equal(choosePreviewVersion([ready, pending], pending), ready);
+  assert.equal(choosePreviewVersion([ready, failed], failed), ready);
+  assert.equal(choosePreviewVersion([pending], pending), null);
+});
+
+test("selected earlier results remain selected and prompt-only results need no asset", () => {
+  const old = version("one", "image", "ready", "asset-one");
+  const recent = version("two", "image", "ready", "asset-two");
+  const prompt = version("three", "prompt", "ready");
+  assert.equal(choosePreviewVersion([old, recent], old), old);
+  assert.equal(choosePreviewVersion([old, recent, prompt], prompt), prompt);
+  assert.equal(choosePreviewVersion([version("bad", "image", "ready")], null), null);
+});
 const socialRoute = await readFile(
   new URL("../../api/admin/marketing-campaigns/[runId]/social-images/route.ts", import.meta.url),
   "utf8",

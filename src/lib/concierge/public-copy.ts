@@ -88,14 +88,20 @@ export function sanitizeGuestCopy(value: unknown): string | null {
   const cleaned = cleanString(value);
   if (!cleaned) return null;
   if (looksLikeInternalCreativeDirection(cleaned)) return null;
-  return normalizeKnownGeneratedGuestCopy(cleaned) || null;
+  return (typeof value === "string" ? value : cleaned)
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => normalizeKnownGeneratedGuestCopy(line.replace(/[\t ]+/g, " ").trim()))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim() || null;
 }
 
 export function sanitizeGuestTitle(value: unknown): string | null {
   const cleaned = cleanString(value);
   if (!cleaned) return null;
   const stripped = stripPromptPrefix(cleaned);
-  if (!stripped || looksLikeInternalCreativeDirection(stripped)) return null;
+  if (!stripped || stripped.length > 140 || /\b(?:sidebar|whole message|please (?:fix|change)|you (?:used|forgot|said))\b/i.test(stripped) || looksLikeInternalCreativeDirection(stripped)) return null;
   return stripped;
 }
 
@@ -107,7 +113,7 @@ export function guestSubheadlineForEvent(args: {
 }): string {
   if (args.eventType === "birthday") {
     if (args.honoreeName && args.ageOrMilestone) {
-      return `${args.honoreeName} is turning ${args.ageOrMilestone}`;
+      return `${args.honoreeName} ${/\s(?:and|&)\s/i.test(args.honoreeName) ? "are" : "is"} turning ${args.ageOrMilestone}`;
     }
     if (args.honoreeName) return `Celebrate ${args.honoreeName}`;
     return "Birthday celebration";
@@ -175,12 +181,12 @@ export function sanitizeConciergePublicEventData(data: Record<string, unknown>) 
     data.previewCopy && typeof data.previewCopy === "object"
       ? (data.previewCopy as Partial<ConciergePreviewCopy>)
       : {
-          headline: liveCard.headline ?? publicEvent.headline ?? data.headlineTitle ?? data.title,
-          subheadline: liveCard.subheadline ?? publicEvent.subheadline,
-          body: liveCard.body ?? publicEvent.body ?? data.description,
-          scheduleLine: liveCard.scheduleLine ?? publicEvent.scheduleLine ?? data.scheduleLine,
-          locationLine: liveCard.locationLine ?? publicEvent.locationLine ?? data.locationLabel,
-          cta: liveCard.cta,
+          headline: cleanString(liveCard.headline ?? publicEvent.headline ?? data.headlineTitle ?? data.title) || undefined,
+          subheadline: cleanString(liveCard.subheadline ?? publicEvent.subheadline) || undefined,
+          body: cleanString(liveCard.body ?? publicEvent.body ?? data.description) || undefined,
+          scheduleLine: cleanString(liveCard.scheduleLine ?? publicEvent.scheduleLine ?? data.scheduleLine) || undefined,
+          locationLine: cleanString(liveCard.locationLine ?? publicEvent.locationLine ?? data.locationLabel) || undefined,
+          cta: cleanString(liveCard.cta) || undefined,
         },
     {
       eventType: (data.eventType as ConciergeEventType) || "general",

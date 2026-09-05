@@ -1,0 +1,5 @@
+
+> envitefy@0.1.0 lint:vscode
+> node scripts/vscode-lint.mjs src/lib/concierge/copy-workflow.ts src/lib/concierge/host-brief.ts src/lib/concierge/host-privacy.ts src/lib/concierge/types.ts src/lib/concierge/fallback.ts src/lib/concierge/extract.ts src/lib/concierge/intake.ts src/lib/concierge/persona.ts src/lib/concierge/capabilities.ts src/lib/concierge/creation-intent.ts src/lib/concierge/requirements.ts src/app/api/creation/intake/stream/route.ts src/app/chat/ConciergeChatClient.tsx src/lib/product-marketing-catalog.ts
+
+Could not find a Chat to CLI linter bridge. Reload Cursor/VS Code and ensure chatToCli.enableDiagnosticsLinter is enabled.

@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
+import { openAiChatCompatibilityParams } from "../../openai-chat-params.ts";
 import type { AdStudioProviderStatus, AdStudioRenderableFormat } from "@/lib/admin/ad-studio/types";
 
 type JsonObject = Record<string, unknown>;
@@ -64,7 +65,7 @@ export function resolveAdStudioTextModel(): string {
   return (
     safeString(process.env.ADMIN_AD_STUDIO_OPENAI_TEXT_MODEL) ||
     safeString(process.env.STUDIO_OPENAI_TEXT_MODEL) ||
-    "gpt-5.6-sol"
+    "gpt-6-astra"
   );
 }
 
@@ -190,6 +191,7 @@ export async function runJsonTextAgent<T>({
     const client = getOpenAiClient();
     const completion = await client.chat.completions.create({
       model,
+      ...openAiChatCompatibilityParams(model),
       response_format: {
         type: "json_schema",
         json_schema: {

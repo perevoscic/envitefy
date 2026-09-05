@@ -1,9 +1,11 @@
 "use client";
 
+import { normalizeSourceEvidence, type SourceEvidence } from "./creation/source-evidence.ts";
 import { prepareOcrUploadFile } from "@/utils/media-upload-client";
 
 export type SnapOcrUploadResult = {
   ocrText?: string | null;
+  sourceEvidence?: SourceEvidence | null;
   fieldsGuess?: Record<string, unknown> | null;
   category?: string | null;
   birthdayTemplateHint?: unknown;
@@ -34,6 +36,7 @@ function normalizeOcrUploadPayload(payload: unknown): SnapOcrUploadResult {
   const record = asRecord(payload) || {};
   return {
     ocrText: typeof record.ocrText === "string" ? record.ocrText : null,
+    sourceEvidence: normalizeSourceEvidence(record.sourceEvidence),
     fieldsGuess: asRecord(record.fieldsGuess),
     category: typeof record.category === "string" ? record.category : null,
     birthdayTemplateHint: record.birthdayTemplateHint ?? null,

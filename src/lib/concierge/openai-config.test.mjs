@@ -93,30 +93,30 @@ test("concierge chat model defaults to GPT-5.6 Luna and supports a separate over
   });
 });
 
-test("concierge premium model defaults to GPT-5.6 Sol and supports a separate override", () => {
+test("concierge premium model defaults to Astra and supports a separate override", () => {
   withEnv({}, () => {
-    assert.equal(resolveConciergeOpenAiPremiumModel(), "gpt-5.6-sol");
+    assert.equal(resolveConciergeOpenAiPremiumModel(), "gpt-6-astra");
   });
   withEnv({ OPENAI_CONCIERGE_PREMIUM_MODEL: "gpt-premium-custom" }, () => {
     assert.equal(resolveConciergeOpenAiPremiumModel(), "gpt-premium-custom");
   });
 });
 
-test("concierge extraction routes normal work to Terra and premium work to Sol", () => {
+test("concierge extraction routes normal work to Terra and premium work to Astra", () => {
   withEnv({}, () => {
     assert.equal(resolveConciergeOpenAiExtractionModel(), "gpt-5.6-terra");
-    assert.equal(resolveConciergeOpenAiExtractionModel({ premium: true }), "gpt-5.6-sol");
+    assert.equal(resolveConciergeOpenAiExtractionModel({ premium: true }), "gpt-6-astra");
   });
   withEnv({ OPENAI_CONCIERGE_EXTRACTION_MODEL: "gpt-extract-custom" }, () => {
     assert.equal(resolveConciergeOpenAiExtractionModel({ premium: true }), "gpt-extract-custom");
   });
 });
 
-test("concierge planner routes simple work to Luna, base work to Terra, and premium work to Sol", () => {
+test("concierge planner routes simple work to Luna, base work to Terra, and premium work to Astra", () => {
   withEnv({}, () => {
     assert.equal(resolveConciergeOpenAiPlannerModel({ simple: true }), "gpt-5.6-luna");
     assert.equal(resolveConciergeOpenAiPlannerModel(), "gpt-5.6-terra");
-    assert.equal(resolveConciergeOpenAiPlannerModel({ premium: true }), "gpt-5.6-sol");
+    assert.equal(resolveConciergeOpenAiPlannerModel({ premium: true }), "gpt-6-astra");
   });
   withEnv({ OPENAI_CONCIERGE_SIMPLE_ACTION_MODEL: "gpt-simple-custom" }, () => {
     assert.equal(resolveConciergeOpenAiPlannerModel({ simple: true }), "gpt-simple-custom");
@@ -132,7 +132,10 @@ test("concierge timeout defaults to 10000ms and accepts bounded overrides", () =
   });
 });
 
-test("GPT-5.6 chat requests preserve role-specific reasoning and omit custom temperature", () => {
+test("chat requests preserve role-specific reasoning and omit unsupported temperature", () => {
+  assert.deepEqual(openAiChatTemperatureParam("gpt-6-astra", 0.1), {
+    reasoning_effort: "medium",
+  });
   assert.deepEqual(openAiChatTemperatureParam("gpt-5.6-sol", 0.1), {});
   assert.deepEqual(openAiChatTemperatureParam("gpt-5.6-terra", 0.55), {
     reasoning_effort: "none",

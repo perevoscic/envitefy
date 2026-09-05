@@ -21,6 +21,7 @@ const nextConfig = (phase: string): NextConfig => ({
   outputFileTracingRoot: process.cwd(),
   outputFileTracingIncludes: {
     "/*": [
+      "./public/fonts/Josefin_Sans/static/JosefinSans-Regular.ttf",
       "./node_modules/@napi-rs/canvas/**/*",
       "./node_modules/@napi-rs/canvas-*/**/*",
       "./node_modules/pdfjs-dist/**/*",

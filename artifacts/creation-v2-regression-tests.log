@@ -1,0 +1,195 @@
+(node:72240) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ conversation 1: greeting stays warm and does not create a draft (68.6524ms)
+✔ conversation 2: birthday live card reaches a ready owned draft (58.5386ms)
+✔ conversation 3: received invite without source asks for upload or pasted text (1.4873ms)
+✔ conversation 4: received invite with concrete details is ready as invited (3.6686ms)
+✔ conversation 5: non-invite upload becomes an owned My Events draft (4.0723ms)
+✔ conversation 6: output-only RSVP request asks for event context first (1.374ms)
+✔ conversation 7: ambiguous this asks which source to use (1.2163ms)
+✔ conversation 8: weather question with missing location asks for city (1.4588ms)
+✔ conversation 9: future weather question explains forecast-window limits (0.3625ms)
+✔ conversation 10: unrelated private-data mutation is not an event detail (0.8157ms)
+✔ conversation 11: Envitefy product questions are answered instead of becoming drafts (1.6187ms)
+✔ conversation 12: generate requests with missing details explain the blocker (1.9992ms)
+✔ conversation 13: unsafe or unrelated prompts do not become drafts (3.6031ms)
+(node:393864) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/capabilities.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the recorded customers' sharing questions do not ask us to contact guests (2.3104ms)
+✔ format comparisons do not order products; choices and removals replace the selection (15.8215ms)
+✔ extract exact title corrections without copying complaints or dropping a twin (2.1864ms)
+✔ explicit requests for two products still work while comparative questions stay unchanged (0.5246ms)
+✔ a ready draft acknowledges a real correction instead of claiming nothing changed (99.4629ms)
+✔ title and output corrections reach the draft and survive unrelated follow-ups and stale model output (35.2867ms)
+✔ capability answers distinguish supported RSVP fields, planning counts and the publish step (4.674ms)
+✔ persona still corrects unsupported promises when a model is unavailable (2.6317ms)
+✔ a past refusal does not remain attached to an otherwise usable event source (3.6653ms)
+✔ cancelled persona replies do not emit a fallback or finish the response (1.7583ms)
+(node:220144) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/extract.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  workload: 'correction',
+  model: 'gpt-5.6-terra',
+  durationMs: 0,
+  outcome: 'success',
+  inputTokens: null,
+  outputTokens: null,
+  reasoningTokens: null
+}
+✔ a later invitation request remembers both languages and produces useful TBC copy without AI (115.3273ms)
+✔ an incomplete model translation cannot replace the bilingual starting copy (9.4716ms)
+✔ unrelated model extraction cannot rewrite approved invitation prose (10.7814ms)
+✔ a new language preference refreshes starting copy and marks approved prose for revision (5.5605ms)
+✔ a bare date response never becomes the missing venue (5.9564ms)
+✔ model language blocks must be complete and cannot retain a removed language (4.7011ms)
+✔ unfinished writing survives unrelated replies and clears only when completed or cancelled (0.3098ms)
+✔ retrying an interrupted answer uses current facts rather than reapplying the original edits (2.4277ms)
+✔ an AI retry cannot overwrite current logistics with stale preview fields (4.01ms)
+✔ the chat appends the exact canonical wording after contextual planning advice (3.3481ms)
+✔ a provider outage keeps useful starting copy and makes the interruption recoverable (2.1738ms)
+(node:209088) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/host-privacy.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ a privacy instruction protects canonical fields even if the preview was already masked (72.4554ms)
+✔ an intentional coarse location survives but adding 'private' cannot conceal a street address (29.6155ms)
+✔ additional stops retain their sequence and time but lose private address and map fields (1.7602ms)
+✔ removed private address paragraphs cannot survive in approved bilingual guest prose (1.6359ms)
+✔ confirmed contact privacy removes saved and stale prose contacts while keeping schedule facts (1.7945ms)
+✔ missing privacy preferences and explicit retractions do not redact public event details (1.2543ms)
+✔ all-private guest prose becomes empty and needs review rather than invented replacement wording (1.7313ms)
+✔ privacy is enforced through fallback and AI normalization, including stale model fields (16.2121ms)
+✔ online RSVP can stay enabled without repeatedly demanding a hidden host contact (5.0123ms)
+(node:343032) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/conversation-edits.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ a worried host's introduction becomes event facts rather than the whole draft title (72.6087ms)
+✔ unknown events never use a long conversational introduction as a canonical title (31.0123ms)
+✔ exact titles support natural imperative wording, punctuation and apostrophes (0.5344ms)
+✔ one natural correction independently updates title, schedule, location and RSVP (46.6ms)
+✔ moving the date does not overwrite the venue even when a later clause mentions location (12.0281ms)
+✔ location changes stop at the next instruction and allow exact quoted names (13.119ms)
+✔ a date or title correction preserves approved bilingual guest prose (4.921ms)
+✔ explicit RSVP toggles take precedence over stale extracted values and remain reversible (14.6011ms)
+✔ removing host contact information clears previously saved contact fields (2.2606ms)
+✔ saved prose cannot retain a removed host contact or the superseded event date (7.8268ms)
+✔ the factual guard accepts corrected prose and unrelated dates and bilingual style (5.3303ms)
+✔ stale copy checks project ISO facts into the event timezone rather than server time (7.6899ms)
+(node:376536) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/openai-config.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ concierge extraction/planning base model defaults to GPT-5.6 Terra (1.4648ms)
+✔ concierge fast model flag uses GPT-5.6 Luna (0.5315ms)
+✔ explicit concierge model wins over fast model flag (0.3157ms)
+✔ configured fast model wins when fast model flag is enabled (0.3953ms)
+✔ concierge chat model defaults to GPT-5.6 Luna and supports a separate override (0.5097ms)
+✔ concierge premium model defaults to Astra and supports a separate override (0.6066ms)
+✔ concierge extraction routes normal work to Terra and premium work to Astra (0.4927ms)
+✔ concierge planner routes simple work to Luna, base work to Terra, and premium work to Astra (0.5253ms)
+✔ concierge timeout defaults to 10000ms and accepts bounded overrides (0.5237ms)
+✔ chat requests preserve role-specific reasoning and omit unsupported temperature (1.1645ms)
+✔ concierge persona model defaults to base reasoning model (0.4971ms)
+✔ concierge persona streaming timeouts leave room for reasoning and accept overrides (0.4457ms)
+(node:337652) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/creation/source-evidence.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ OCR preserves verbatim transcript separately from normalized facts and rejects unsupported evidence (1.1155ms)
+✔ conflicting or missing birthday age remains null despite a decorative numeral (0.1898ms)
+✔ strict edits enforce typed values, exact evidence, allowlisted fields and explicit clears (0.6702ms)
+✔ uploads cannot overwrite existing user facts or clear them (70.5429ms)
+✔ preview and draft save work before logistics; publication still requires them (35.3999ms)
+✔ publication rejects impossible dates, end-before-start, invalid timezone and source conflicts (1.9877ms)
+✔ saved-event actions reject model status changes and out-of-scope assets (0.388ms)
+✔ Astra budgets preserve reasoning headroom and never send unsupported temperature (0.2403ms)
+✔ calendar conversion uses event timezone and rejects missing or repeated DST times (2.1516ms)
+✔ OCR pipeline marks whether a visible time was found (1.6717ms)
+✔ OCR history save preserves missing-time metadata and avoids inferred ends (31.5902ms)
+✔ public OCR event pages hide inferred midnight start times (1.3551ms)
+(node:376900) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/ocr/birthday-age.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ birthday OCR does not turn unrelated flyer numbers into an age (2.4843ms)
+✔ birthday OCR preserves supported age and the printed party theme (0.4099ms)
+✔ an explicitly unknown model age is not reconstructed from generated copy (0.1628ms)
+✔ conflicting text ages remain unresolved (0.1586ms)
+✔ structured visual ages support both childhood and adult birthdays (0.2475ms)
+✔ invalid structured age values do not become birthday ages (0.2263ms)
+✔ non-birthday titles are unchanged (0.206ms)
+✔ both OCR prompt messages require birthday context and allow unknown ages (0.4925ms)
+✔ OCR pipeline uses the age resolver without standalone-number guessing (0.7107ms)
+✔ event OCR prompt includes dashboard thumbnail focus contract (1.905ms)
+✔ event OCR prompt and pipeline preserve generic OCR facts (0.8372ms)
+✔ event OCR prompt separates host/org from venue place (0.3737ms)
+✔ event OCR prompt keeps RSVP contact guidance generic (0.3165ms)
+✔ event OCR prompt separates food vendor menu facts from location and RSVP (0.3127ms)
+(node:327432) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/openai-chat-params.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ GPT-5.6 Terra and Luna preserve non-reasoning request behavior (0.949ms)
+✔ GPT-5.6 Sol keeps its medium reasoning default (0.1177ms)
+✔ Astra preserves premium reasoning and omits unsupported sampling parameters (0.1198ms)
+✔ older models retain supported temperature settings (0.0944ms)
+(node:369556) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/generate.edit-mode.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generateStudioInvitation uses edit mode when imageEdit carries an app-owned blob proxy url (1.6812ms)
+✔ generateStudioInvitation dispatches live-card text and fresh images through OpenAI (3.5037ms)
+✔ generateStudioInvitation dispatches existing-image edits through OpenAI (0.4268ms)
+✔ generateStudioInvitation strips Design Idea-only terms before approving visible image copy (1.4584ms)
+✔ studio openai adapter uses structured text generation and image generate/edit endpoints (1.4207ms)
+✔ studio openai image prep accepts same-origin relative asset urls and forwards reference images (0.5284ms)
+(node:217196) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/product-prompts.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ product routes remain distinct with backwards compatible page/image defaults (1.0534ms)
+✔ Astra plans and writes once with fact/private/output/wording boundaries (0.5449ms)
+✔ artwork contract selects exactly one composition and correct text policy (0.3194ms)
+✔ standalone flyer typesets exact facts, multiple stops and print density (142.0135ms)
+✔ flyer rejects overflow rather than truncating approved wording (142.3526ms)
+✔ one targeted repair is verified, then the complete flyer is returned (105.3065ms)
+✔ repeated image failure cannot return success from the text-only half (0.7261ms)
+✔ unavailable quality check is reported honestly without claiming a passed image (0.4675ms)
+(node:363792) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/prompts.theme-framing.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ studio live-card prompt keeps birthday themes tied to the celebration type (4.0605ms)
+✔ studio invitation image prompt keeps custom themes invitation-ready (1.2791ms)
+✔ studio prompts treat raw design-idea fragments as visual direction instead of printed copy (2.8804ms)
+✔ studio image prompts drop malformed generated opening lines before approving raster text (0.54ms)
+✔ studio baked-text invitation prompts give every non-birthday-wedding category explicit invitation guidance (2.7517ms)
+✔ studio open house image prompts describe premium property collage and keep realtor photos in the app tab (0.9175ms)
+✔ studio prompts keep game day themes tied to the sports invitation type (0.212ms)
+✔ studio invitation image prompt keeps the bottom action zone safe without forcing a footer strip (0.2625ms)
+✔ studio invitation image prompt applies selected image finish presets to standalone images (0.2714ms)
+✔ studio invitation image prompt applies selected image finish presets to live-card rasters only when present (0.3191ms)
+✔ studio invitation image prompt keeps game day imagery grounded in provided sports context (0.1992ms)
+✔ page live-card prompts require baked-in raster text and preserve a clear bottom action zone (0.269ms)
+✔ page live-card image edit prompts preserve baked-in text and logos (0.1936ms)
+✔ birthday image prompts keep only the subject title while protecting the button zone (0.6891ms)
+✔ live-card generation excludes logistics hidden in titles in both generation surfaces (1.1688ms)
+✔ poster-first live-card text prompts omit visible year and require poster-like copy (0.2328ms)
+✔ studio live-card prompts keep birthday copy centered on honoree name and age before theme (0.1742ms)
+✔ studio invitation image prompts use subject-photo makeover rules instead of cutout behavior (0.1629ms)
+ℹ tests 129
+ℹ suites 0
+ℹ pass 129
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1098.446

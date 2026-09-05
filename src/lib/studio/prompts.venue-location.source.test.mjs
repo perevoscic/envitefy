@@ -10,5 +10,5 @@ test("studio prompts keep visible non-open-house location copy on the venue name
   assert.match(source, /if \(looksLikeStreetAddress\(visible\)\) return venue;/);
   assert.match(source, /locationLine: resolveVisibleLocationLineForStudioEvent\(/);
   assert.match(source, /locationLine` must use the Venue Name only for non-Open-House events/);
-  assert.match(source, /visible place text must use the venue name only/);
+  assert.match(source, /Do not print addresses, venue names, dates, times/);
 });

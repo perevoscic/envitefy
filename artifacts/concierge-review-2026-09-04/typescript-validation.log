@@ -1,0 +1,251 @@
+.next-dev-3001/types/validator.ts(1295,39): error TS2307: Cannot find module '../../src/app/api/events/[id]/og-data/route.js' or its corresponding type declarations.
+.next/types/app/api/creation/threads/[id]/route.ts(244,7): error TS2344: Type '{ __tag__: "DELETE"; __param_position__: "second"; __param_type__: { params: Promise<{ id: string; }> | { id: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  The types of '__param_type__.params' are incompatible between these types.
+    Type 'Promise<{ id: string; }> | { id: string; }' is not assignable to type 'Promise<any>'.
+      Type '{ id: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+artifacts/concierge-review-2026-09-04/baseline-preload.ts(1,24): error TS2307: Cannot find module 'bun' or its corresponding type declarations.
+artifacts/concierge-review-2026-09-04/baseline-preload.ts(13,44): error TS7006: Parameter 'builder' implicitly has an 'any' type.
+artifacts/concierge-review-2026-09-04/baseline-preload.ts(14,56): error TS7006: Parameter 'args' implicitly has an 'any' type.
+public/DEBUG/envitefy/server.ts(47,16): error TS7006: Parameter 'word' implicitly has an 'any' type.
+public/DEBUG/envitefy/server.ts(142,19): error TS7006: Parameter 'w' implicitly has an 'any' type.
+public/DEBUG/envitefy/src/components/ReviewStage.tsx(686,25): error TS2367: This comparison appears to be unintentional because the types '"name" | "schedule" | "admission" | "location" | "notes" | "date" | "contact"' and '"locName"' have no overlap.
+scripts/reassign-demo-events-to-bugjosru.ts(65,25): error TS2344: Type 'T' does not satisfy the constraint 'QueryResultRow'.
+src/app/api/scan/event-page/route.ts(123,44): error TS2345: Argument of type 'string | null | undefined' is not assignable to parameter of type 'FormDataEntryValue | null'.
+  Type 'undefined' is not assignable to type 'FormDataEntryValue | null'.
+src/app/event/[id]/page.tsx(3494,15): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/app/event/[id]/page.tsx(3508,17): error TS2322: Type 'string | null' is not assignable to type 'string | Blob | undefined'.
+  Type 'null' is not assignable to type 'string | Blob | undefined'.
+src/app/event/[id]/page.tsx(3598,39): error TS18047: 'row' is possibly 'null'.
+src/app/event/[id]/page.tsx(3618,69): error TS18047: 'row' is possibly 'null'.
+src/app/event/[id]/page.tsx(3623,28): error TS18047: 'row' is possibly 'null'.
+src/app/event/[id]/page.tsx(3770,30): error TS18047: 'row' is possibly 'null'.
+src/app/event/[id]/page.tsx(3791,29): error TS18047: 'calendarLinks' is possibly 'null'.
+src/app/event/[id]/page.tsx(3799,29): error TS18047: 'calendarLinks' is possibly 'null'.
+src/app/event/[id]/page.tsx(3809,29): error TS18047: 'calendarLinks' is possibly 'null'.
+src/app/event/[id]/page.tsx(3852,25): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/app/event/[id]/page.tsx(3852,30): error TS18047: 'attachmentInfo' is possibly 'null'.
+src/app/event/[id]/page.tsx(3875,26): error TS18047: 'row' is possibly 'null'.
+src/app/event/[id]/page.tsx(3876,17): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: Props): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | Promise<...> | Component<...> | null | undefined', gave the following error.
+    Type 'SignupForm | null' is not assignable to type 'SignupForm'.
+      Type 'null' is not assignable to type 'SignupForm'.
+  Overload 2 of 2, '(props: Props, context?: any): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<...> | Promise<...> | Component<...> | null | undefined', gave the following error.
+    Type 'SignupForm | null' is not assignable to type 'SignupForm'.
+      Type 'null' is not assignable to type 'SignupForm'.
+src/app/event/[id]/page.tsx(3916,32): error TS18047: 'row' is possibly 'null'.
+src/app/event/[id]/page.tsx(3978,40): error TS18047: 'row' is possibly 'null'.
+src/app/event/[id]/page.tsx(3991,34): error TS18047: 'row' is possibly 'null'.
+src/app/event/[id]/page.tsx(3997,47): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/app/event/[id]/page.tsx(3998,49): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/app/event/[id]/page.tsx(4046,36): error TS18047: 'row' is possibly 'null'.
+src/app/event/[id]/page.tsx(4052,49): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/app/event/[id]/page.tsx(4053,51): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/app/event/[id]/page.tsx(4101,37): error TS18047: 'row' is possibly 'null'.
+src/app/event/[id]/page.tsx(4107,52): error TS18047: 'row' is possibly 'null'.
+src/app/event/[id]/page.tsx(4113,28): error TS18047: 'row' is possibly 'null'.
+src/app/studio/studio-types.ts(2,3): error TS2305: Module '"@/lib/studio/types"' has no exported member 'LucideIcon'.
+src/app/studio/studio-workspace-field-config.ts(181,7): error TS2322: Type '"url"' is not assignable to type '"number" | "text" | "time" | "select" | "textarea" | "date" | "checkbox"'.
+src/app/studio/StudioMarketingPage.tsx(213,7): error TS2322: Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(237,7): error TS2322: Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(261,7): error TS2322: Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; initialActiveTab: "registry"; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; initialActiveTab: "registry"; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(287,7): error TS2322: Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; initialActiveTab: "rsvp"; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; initialActiveTab: "rsvp"; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(313,7): error TS2322: Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(337,7): error TS2322: Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(360,7): error TS2322: Type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; wideImageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(384,7): error TS2322: Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(406,7): error TS2322: Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(427,7): error TS2322: Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(449,7): error TS2322: Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(471,7): error TS2322: Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/StudioMarketingPage.tsx(493,7): error TS2322: Type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' is not assignable to type 'StudioMarketingCardConfig'.
+  Property 'id' is missing in type '{ title: string; imageUrl: string; sharePath: string; invitationData: LiveCardInvitationData; }' but required in type 'StudioShowcasePreview'.
+src/app/studio/workspace/StudioCategoryGrid.tsx(87,9): error TS2322: Type 'unknown[]' is not assignable to type 'StudioCategoryGridItem[]'.
+  Type 'unknown' is not assignable to type 'StudioCategoryGridItem'.
+src/app/studio/workspace/StudioCategoryGrid.tsx(88,43): error TS2345: Argument of type '(this: undefined, tileKey: StudioCategoryGridTileKey) => { kind: "upload"; key: "upload"; }[] | { kind: "category"; key: InviteCategory; category: StudioCategoryTileDefinition; }[]' is not assignable to parameter of type '(this: undefined, value: StudioCategoryGridTileKey, index: number, array: StudioCategoryGridTileKey[]) => { kind: "upload"; key: "upload"; } | readonly { ...; }[]'.
+  Type '{ kind: "upload"; key: "upload"; }[] | { kind: "category"; key: InviteCategory; category: StudioCategoryTileDefinition; }[]' is not assignable to type '{ kind: "upload"; key: "upload"; } | readonly { kind: "upload"; key: "upload"; }[]'.
+    Type '{ kind: "category"; key: InviteCategory; category: StudioCategoryTileDefinition; }[]' is not assignable to type '{ kind: "upload"; key: "upload"; } | readonly { kind: "upload"; key: "upload"; }[]'.
+      Type '{ kind: "category"; key: InviteCategory; category: StudioCategoryTileDefinition; }[]' is not assignable to type 'readonly { kind: "upload"; key: "upload"; }[]'.
+        Type '{ kind: "category"; key: InviteCategory; category: StudioCategoryTileDefinition; }' is not assignable to type '{ kind: "upload"; key: "upload"; }'.
+          Types of property 'kind' are incompatible.
+            Type '"category"' is not assignable to type '"upload"'.
+src/components/BirthdaySkin.tsx(964,22): error TS2339: Property 'startsWith' does not exist on type 'never'.
+src/components/BirthdaySkin.tsx(965,19): error TS2339: Property 'startsWith' does not exist on type 'never'.
+src/components/MapEmbed.tsx(87,27): error TS2304: Cannot find name 'address'.
+src/components/OpenHouseSkin.tsx(798,20): error TS2339: Property 'startsWith' does not exist on type 'never'.
+src/components/OpenHouseSkin.tsx(799,17): error TS2339: Property 'startsWith' does not exist on type 'never'.
+src/components/studio/StudioLiveCardActionSurface.tsx(1278,19): error TS2367: This comparison appears to be unintentional because the types '"location" | "rsvp" | "registry" | "details" | "calendar" | "logo"' and '"share"' have no overlap.
+src/components/studio/StudioLiveCardActionSurface.tsx(1281,35): error TS2367: This comparison appears to be unintentional because the types '"location" | "rsvp" | "registry" | "details" | "calendar" | "logo"' and '"share"' have no overlap.
+src/components/studio/StudioLiveCardActionSurface.tsx(1303,37): error TS2367: This comparison appears to be unintentional because the types '"location" | "rsvp" | "registry" | "details" | "calendar" | "logo"' and '"share"' have no overlap.
+src/components/studio/StudioLiveCardActionSurface.tsx(1342,33): error TS2367: This comparison appears to be unintentional because the types '"location" | "rsvp" | "registry" | "details" | "calendar" | "logo"' and '"share"' have no overlap.
+src/components/weddings/WeddingRenderer.tsx(130,32): error TS2339: Property 'accent' does not exist on type '{ primary: string; secondary: string; background: string; }'.
+src/components/weddings/WeddingRenderer.tsx(131,30): error TS2339: Property 'text' does not exist on type '{ primary: string; secondary: string; background: string; }'.
+src/config/navigation-config.sports.test.tsx(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/lib/concierge/fallback.test.ts(1581,5): error TS2322: Type '{ rsvpEnabled: boolean; numberOfGuests: number; rsvpName: string; rsvpContact: string; currentQuestion: null; missingFields: never[]; draftStatus: string; titleConfirmed?: boolean; intent: ConciergeIntent; ... 34 more ...; source: ConciergeSource; }' is not assignable to type 'ConciergeEventDraft'.
+  Types of property 'draftStatus' are incompatible.
+    Type 'string' is not assignable to type 'CreationDraftStatus'.
+src/lib/concierge/fallback.test.ts(2464,16): error TS18046: 'payload.data.studioCard.invitationData.eventDetails' is of type 'unknown'.
+src/lib/concierge/fallback.test.ts(2629,5): error TS18046: 'payload.data.studioCard.invitationData.eventDetails' is of type 'unknown'.
+src/lib/discovery-browser.ts(178,60): error TS2339: Property 'innerText' does not exist on type 'Element'.
+src/lib/discovery-browser.ts(389,36): error TS2339: Property 'waitForEvent' does not exist on type 'PlaywrightPage'.
+src/lib/google-calendar-oauth.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/lib/meet-discovery/core.ts(831,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(837,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(850,11): error TS2304: Cannot find name 'ScheduleColorTarget'.
+src/lib/meet-discovery/core.ts(1084,54): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(1098,18): error TS2552: Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+src/lib/meet-discovery/core.ts(1099,4): error TS2552: Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+src/lib/meet-discovery/core.ts(1107,54): error TS2304: Cannot find name 'ScheduleColorTarget'.
+src/lib/meet-discovery/core.ts(1149,52): error TS2552: Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+src/lib/meet-discovery/core.ts(1171,11): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(1182,11): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(1199,16): error TS2552: Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+src/lib/meet-discovery/core.ts(1639,51): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(1640,51): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(2471,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(2491,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(2493,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(2816,7): error TS2322: Type '{ kind: DiscoveryResourceKind; status: DiscoveryResourceStatus; label: string; url: string; sourceUrl: string; origin: DiscoveryResourceOrigin; ... 6 more ...; matchReason: string | null; }[]' is not assignable to type 'DiscoveryResourceLink[]'.
+  Type '{ kind: DiscoveryResourceKind; status: DiscoveryResourceStatus; label: string; url: string; sourceUrl: string; origin: DiscoveryResourceOrigin; ... 6 more ...; matchReason: string | null; }' is not assignable to type 'DiscoveryResourceLink'.
+    Types of property 'discoveryMethod' are incompatible.
+      Type 'string' is not assignable to type '"http" | "playwright"'.
+src/lib/meet-discovery/core.ts(3198,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3214,30): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3263,31): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3332,39): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3466,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3467,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3469,11): error TS7006: Parameter 'session' implicitly has an 'any' type.
+src/lib/meet-discovery/core.ts(3484,14): error TS7006: Parameter 'session' implicitly has an 'any' type.
+src/lib/meet-discovery/core.ts(3490,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3495,27): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3496,31): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(3554,13): error TS7006: Parameter 'day' implicitly has an 'any' type.
+src/lib/meet-discovery/core.ts(3558,16): error TS7006: Parameter 'day' implicitly has an 'any' type.
+src/lib/meet-discovery/core.ts(3827,51): error TS2345: Argument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.
+  Types of property 'stage' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/meet-discovery/core.ts(3880,51): error TS2345: Argument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.
+  Types of property 'stage' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/meet-discovery/core.ts(4364,51): error TS2345: Argument of type '{ mimeType: string; workflow?: DiscoveryWorkflow | null; stage?: string | undefined; page?: number | null; }' is not assignable to parameter of type 'DiscoveryAiImageArtifact'.
+  Types of property 'stage' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/meet-discovery/core.ts(5918,3): error TS2322: Type '{ followed: boolean; contentType: string | null; score: number; url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to type 'CrawlCandidate'.
+  Type '{ followed: boolean; contentType: string | null; score: number; url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to type 'DiscoveredLink'.
+    Types of property 'kind' are incompatible.
+      Type 'string' is not assignable to type 'DiscoveryLinkKind'.
+src/lib/meet-discovery/core.ts(5922,36): error TS2345: Argument of type '{ url: string; label: string; sourceUrl: string; contextText: string | null; sectionHeading: null; depth: 0 | 1; kind: string; sameHost: boolean; }' is not assignable to parameter of type 'Omit<CrawlCandidate, "score" | "followed">'.
+  Types of property 'kind' are incompatible.
+    Type 'string' is not assignable to type 'DiscoveryLinkKind'.
+src/lib/meet-discovery/core.ts(6377,3): error TS2741: Property 'collectBrowserData' is missing in type '{ fetchWithLimit: (url: string, options?: { timeoutMs?: number; signal?: AbortSignal; }) => Promise<{ contentType: string; buffer: Buffer; text: string; }>; extractTextFromPdf: ((buffer: Buffer, options?: { budgetMs?: number; performance?: DiscoveryPerformance; cache?: DiscoveryRequestCache; mode?: DiscoveryMode; si...' but required in type 'Required<UrlDiscoveryTestHooks>'.
+src/lib/meet-discovery/core.ts(8179,3): error TS2322: Type 'string[]' is not assignable to type 'ParsePromptProfile[]'.
+  Type 'string' is not assignable to type 'ParsePromptProfile'.
+src/lib/meet-discovery/core.ts(9595,4): error TS2552: Cannot find name 'ScheduleColorLegendEntry'. Did you mean 'ScheduleColorPageLegendEntry'?
+src/lib/meet-discovery/core.ts(9607,18): error TS2304: Cannot find name 'ScheduleColorLegendEntry'.
+src/lib/meet-discovery/core.ts(9678,12): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(9842,49): error TS2304: Cannot find name 'ScheduleColorTarget'.
+src/lib/meet-discovery/core.ts(9941,4): error TS2304: Cannot find name 'ScheduleColorLegendEntry'.
+src/lib/meet-discovery/core.ts(9976,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(9980,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10008,42): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(10009,39): error TS2304: Cannot find name 'ScheduleColorRef'.
+src/lib/meet-discovery/core.ts(10011,32): error TS2304: Cannot find name 'ScheduleColorLegendEntry'.
+src/lib/meet-discovery/core.ts(10075,34): error TS2339: Property 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'.
+src/lib/meet-discovery/core.ts(10146,33): error TS2304: Cannot find name 'ScheduleColorLegendEntry'.
+src/lib/meet-discovery/core.ts(10258,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10328,39): error TS2345: Argument of type '"scheduleVisual"' is not assignable to parameter of type 'DiscoveryUsageStage'.
+src/lib/meet-discovery/core.ts(10335,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10398,27): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10444,31): error TS2339: Property 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'.
+src/lib/meet-discovery/core.ts(10464,27): error TS2339: Property 'scheduleVisionCalls' does not exist on type 'DiscoveryPerformance'.
+src/lib/meet-discovery/core.ts(10585,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10587,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10652,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10688,22): error TS2304: Cannot find name 'GYMNASTICS_SCHEDULE_JSON_SCHEMA'.
+src/lib/meet-discovery/core.ts(10706,39): error TS2345: Argument of type '"scheduleText"' is not assignable to parameter of type 'DiscoveryUsageStage'.
+src/lib/meet-discovery/core.ts(10714,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10725,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10742,35): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10796,33): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10811,29): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10812,33): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10841,77): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10988,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10989,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(10990,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(11194,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(11195,16): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(11237,24): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(11238,25): error TS2339: Property 'schedule' does not exist on type 'ParseResult'.
+src/lib/meet-discovery/core.ts(13751,32): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type '{ label?: string | undefined; url: string; }' is not assignable to type '{ label: string; url: string; }'.
+    Types of property 'label' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/lib/meet-discovery/core.ts(13752,17): error TS18047: 'item' is possibly 'null'.
+src/lib/profile-avatar.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/lib/scan-event-page.ts(222,3): error TS2322: Type '({ label: string | null; venue: string | null; location: string; address: string | null; timeText: string | null; description: string | null; } | null)[]' is not assignable to type 'OcrSecondaryLocation[]'.
+  Type '{ label: string | null; venue: string | null; location: string; address: string | null; timeText: string | null; description: string | null; } | null' is not assignable to type 'OcrSecondaryLocation'.
+    Type 'null' is not assignable to type 'OcrSecondaryLocation'.
+src/lib/scan-event-page.ts(236,29): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'OcrSecondaryLocation' is not assignable to type '{ label: string | null; venue: string | null; location: string; address: string | null; timeText: string | null; description: string | null; }'.
+    Types of property 'venue' are incompatible.
+      Type 'string | null | undefined' is not assignable to type 'string | null'.
+        Type 'undefined' is not assignable to type 'string | null'.
+src/lib/sports-discovery/adapters.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/lib/sports-discovery/detect.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/lib/sports-discovery/profiles.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/lib/sports-preferences.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/lib/studio/gemini.edit-source.test.ts(2,10): error TS2305: Module '"node:module"' has no exported member 'registerHooks'.
+src/lib/studio/gemini.edit-source.test.ts(8,11): error TS7006: Parameter 'specifier' implicitly has an 'any' type.
+src/lib/studio/gemini.edit-source.test.ts(8,22): error TS7006: Parameter 'context' implicitly has an 'any' type.
+src/lib/studio/gemini.edit-source.test.ts(8,31): error TS7006: Parameter 'nextResolve' implicitly has an 'any' type.
+src/lib/studio/generate.edit-mode.test.ts(2,10): error TS2305: Module '"node:module"' has no exported member 'registerHooks'.
+src/lib/studio/generate.edit-mode.test.ts(8,11): error TS7006: Parameter 'specifier' implicitly has an 'any' type.
+src/lib/studio/generate.edit-mode.test.ts(8,22): error TS7006: Parameter 'context' implicitly has an 'any' type.
+src/lib/studio/generate.edit-mode.test.ts(8,31): error TS7006: Parameter 'nextResolve' implicitly has an 'any' type.
+src/lib/studio/generate.edit-mode.test.ts(41,77): error TS7006: Parameter 'prompt' implicitly has an 'any' type.
+src/lib/studio/generate.edit-mode.test.ts(41,85): error TS7006: Parameter 'source' implicitly has an 'any' type.
+src/lib/studio/generate.edit-mode.test.ts(190,77): error TS7006: Parameter 'prompt' implicitly has an 'any' type.
+src/lib/studio/generate.edit-mode.test.ts(190,85): error TS7006: Parameter 'source' implicitly has an 'any' type.
+src/lib/studio/generate.edit-mode.test.ts(277,81): error TS7006: Parameter 'prompt' implicitly has an 'any' type.
+src/lib/studio/prompts.theme-framing.test.ts(2,10): error TS2305: Module '"node:module"' has no exported member 'registerHooks'.
+src/lib/studio/prompts.theme-framing.test.ts(8,11): error TS7006: Parameter 'specifier' implicitly has an 'any' type.
+src/lib/studio/prompts.theme-framing.test.ts(8,22): error TS7006: Parameter 'context' implicitly has an 'any' type.
+src/lib/studio/prompts.theme-framing.test.ts(8,31): error TS7006: Parameter 'nextResolve' implicitly has an 'any' type.
+src/lib/studio/source-image.test.ts(9,26): error TS2345: Argument of type 'Buffer<ArrayBufferLike>' is not assignable to parameter of type 'BodyInit | null | undefined'.
+  Type 'Buffer<ArrayBufferLike>' is missing the following properties from type 'URLSearchParams': size, append, delete, get, and 2 more.
+src/lib/studio/source-image.ts(154,21): error TS2339: Property 'startsWith' does not exist on type 'never'.
+src/lib/theme-color.ts(143,40): error TS2322: Type 'undefined' is not assignable to type 'string | null'.
+src/lib/travel-accommodation-discovery.ts(657,29): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'TravelAccommodationHotel'.
+src/lib/travel-accommodation-discovery.ts(657,55): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'TravelAccommodationHotel'.
+src/lib/travel-accommodation-enrichment.test.ts(168,5): error TS2353: Object literal may only specify known properties, and 'traceId' does not exist in type 'EnrichParams'.
+src/lib/travel-accommodation-enrichment.test.ts(190,13): error TS2339: Property 'hotelSource' does not exist on type 'TravelAccommodationResult'.
+src/lib/travel-accommodation-enrichment.test.ts(193,38): error TS2339: Property 'url' does not exist on type 'string'.
+src/lib/travel-accommodation-enrichment.test.ts(283,5): error TS2353: Object literal may only specify known properties, and 'traceId' does not exist in type 'EnrichParams'.
+src/lib/travel-accommodation-enrichment.test.ts(334,5): error TS2353: Object literal may only specify known properties, and 'traceId' does not exist in type 'EnrichParams'.
+src/lib/travel-accommodation-enrichment.test.ts(348,24): error TS2339: Property 'hotelSource' does not exist on type 'TravelAccommodationResult'.
+src/lib/travel-accommodation-providers/playwright.ts(282,16): error TS7006: Parameter 'hotel' implicitly has an 'any' type.
+src/lib/travel-accommodation-providers/playwright.ts(285,49): error TS7006: Parameter 'hotel' implicitly has an 'any' type.
+src/utils/event-product-route.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.

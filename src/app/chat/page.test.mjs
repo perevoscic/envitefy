@@ -66,15 +66,16 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /STUDIO_CATEGORY_TILES/);
   assert.match(client, /CHAT_STARTER_PROMPTS/);
   assert.match(client, /CELEBRATION_STARTER_TILES/);
-  assert.match(client, /I can't post to Facebook/);
-  assert.match(client, /Envitefy event link/);
+  assert.match(client, /I can't post to your social accounts/);
+  assert.match(client, /prepare the event link and message/);
   assert.doesNotMatch(client, /short video brief/);
   assert.doesNotMatch(client, /Upload or snap an invite/);
   assert.match(snapPage, /AuthenticatedSnapUploadStart/);
   assert.match(snapPage, /SnapLaunchCards/);
   assert.match(snapLaunchCards, /Snap flyer/);
   assert.match(snapLaunchCards, /Upload file/);
-  assert.match(client, /Or just start typing and let's get going/);
+  assert.match(client, /Tell me what you're planning/);
+  assert.match(client, /Ask a question or change a detail/);
   assert.doesNotMatch(client, /Describe what you're planning/);
   assert.doesNotMatch(client, /Choose a format or describe what you need/);
   assert.match(client, /\[&::placeholder\]:text-\[0\.82rem\]/);
@@ -150,7 +151,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(preview, /publicActionLabelForOutput/);
   assert.match(preview, /selectedOutput === "event_page"\) return "Open Event Page"/);
   assert.doesNotMatch(preview, /Placeholder preview/);
-  assert.match(preview, /Generated draft: review it here, then save\/publish when ready\./);
+  assert.match(preview, /Draft preview: review the design here, then choose Publish event when ready\./);
   assert.match(preview, /Published preview: open the link to review what guests will see\./);
   assert.doesNotMatch(preview, /isCategoryMenuOpen/);
   assert.doesNotMatch(preview, /title=\{`Category: \$\{categoryLabel\}`\}/);
@@ -197,7 +198,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /const \[isComposerFocused, setIsComposerFocused\]/);
   assert.match(client, /const isCompactEmptyComposer =/);
   assert.match(client, /isEmptyState && !input\.trim\(\) && !isComposerFocused && !isListening/);
-  assert.match(client, /"Type instead\.\.\."/);
+  assert.match(client, /"Tell me what you're planning\.\.\."/);
   assert.match(client, /onFocus=\{\(\) => setIsComposerFocused\(true\)\}/);
   assert.match(client, /onBlur=\{\(\) => setIsComposerFocused\(false\)\}/);
   assert.match(client, /max-md:min-h-\[34px\]/);
@@ -494,13 +495,13 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /shouldShowReceivedInviteActions \? \(/);
   assert.match(client, /Event details stay locked to the upload/);
   assert.match(client, /Save invite/);
-  assert.match(client, /Keep editing/);
+  assert.doesNotMatch(client, /ChatDraftReview|Review saved event details|Event planning details/);
   assert.match(client, /disabled=\{isGeneratingCard \|\| !canGenerateProduct\}/);
   assert.match(client, /<Loader2 className="size-4 shrink-0 animate-spin"/);
-  assert.match(client, /isGeneratingCard \? "Generating" : "Generate now"/);
+  assert.match(client, /isGeneratingCard \? "Generating" : "Generate draft preview"/);
   assert.match(
     client,
-    /shouldShowGiftRegistryActions \|\|[\s\S]{0,80}shouldShowReceivedInviteActions \|\|[\s\S]{0,80}shouldShowReadyActions[\s\S]{0,80}\? readyActions[\s\S]{0,80}: composer/,
+    /shouldShowGiftRegistryActions \|\|[\s\S]{0,80}shouldShowReceivedInviteActions \|\|[\s\S]{0,80}shouldShowReadyActions[\s\S]{0,80}\? readyActions[\s\S]{0,80}: null\}[\s\S]{0,80}\{composer\}/,
   );
   assert.doesNotMatch(preview, /w-auto max-w-full/);
   assert.doesNotMatch(preview, /top-\[calc\(100%\+0\.5rem\)\]/);

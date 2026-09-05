@@ -1,0 +1,31 @@
+{
+  "campaignId": "host-mode",
+  "updatedAt": "2026-09-05",
+  "pathBase": "studio-root",
+  "exports": [
+    {
+      "format": "9:16",
+      "compositionId": "EnvitefyHostMode",
+      "revision": "v3",
+      "path": "out/envitefy-tiktok-host-mode-v3.mp4",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "videoDurationSeconds": 22,
+      "reviewStatus": "assistant-reviewed-and-delivered",
+      "notes": "Includes corrected first frames, single-hand bowl shot, Envitefy demo contact/label, and card-action captions."
+    },
+    {
+      "format": "1:1",
+      "compositionId": "EnvitefyHostModeSquare",
+      "revision": "square-v1",
+      "path": "out/envitefy-instagram-square.mp4",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30,
+      "videoDurationSeconds": 22,
+      "reviewStatus": "assistant-reviewed-and-delivered",
+      "notes": "Adapts vertical v3 with shot-specific framing, side-by-side card/headline layout, and repositioned action captions and CTA."
+    }
+  ]
+}

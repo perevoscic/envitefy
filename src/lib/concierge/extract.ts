@@ -1,4 +1,11 @@
+import { CONCIERGE_EXTRACTION_SCHEMA, CONCIERGE_EXTRACTION_INSTRUCTION, parseConciergeEdits } from "./extraction-contract.ts";
+import { attachCreationReadiness, validCalendarDate } from "./readiness.ts";
+import { creationModelBudget, creationTimeoutMs, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import OpenAI from "openai";
+import { hasRequiredCopyLanguages, provisionalInvitationCopy, requestsInvitationCopy } from "./copy-workflow.ts";
+import { normalizeHostBrief } from "./host-brief.ts";
+import { applyHostPrivacy } from "./host-privacy.ts";
+import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasExplicitEventSchedule, hasStalePreviewFacts, pairedHonorees } from "./conversation-edits.ts";
 import {
   createCreationSessionId,
   deriveCreationStatus,
@@ -6,7 +13,6 @@ import {
   isNonCreationRequest,
   normalizeCreationEventType,
   normalizeCreationIntent,
-  normalizeRequestedOutputs,
   rsvpTrackingEnabled,
   toLegacyOutputs,
 } from "./creation-intent.ts";
@@ -15,16 +21,16 @@ import {
   buildSuggestedReplies,
   canSaveConciergeDraft,
   fallbackExtractConciergeDraft,
+  parseChrono,
   rescueOcrDateRangeAndDoorsOpen,
 } from "./fallback.ts";
 import { updateConversationState } from "./conversation-state.ts";
 import { shouldSkipOpenAiForCreationRequest } from "./fast-paths.ts";
 import {
-  openAiChatTemperatureParam,
   resolveConciergeOpenAiExtractionModel,
   runWithConciergeOpenAiTimeout,
 } from "./openai-config.ts";
-import { sanitizeConciergePreviewCopy } from "./public-copy.ts";
+import { sanitizeConciergePreviewCopy, sanitizeGuestCopy, sanitizeGuestTitle } from "./public-copy.ts";
 import type {
   ConciergeAdditionalLocation,
   ConciergeEventDraft,
@@ -190,6 +196,7 @@ function normalizeAdditionalLocations(
 function validIsoOrNull(value: unknown): string | null {
   const raw = cleanString(value);
   if (!raw) return null;
+  if (!validCalendarDate(raw)) return null;
   const date = new Date(raw);
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString();
@@ -224,7 +231,7 @@ function normalizePreviewCopy(value: unknown, fallback: ConciergeEventDraft["pre
   return {
     headline: cleanString(record.headline) || fallback.headline,
     subheadline: cleanString(record.subheadline) || fallback.subheadline,
-    body: cleanString(record.body) || fallback.body,
+    body: typeof record.body === "string" && record.body.trim() ? record.body.trim() : fallback.body,
     scheduleLine: cleanString(record.scheduleLine) || fallback.scheduleLine,
     locationLine: cleanString(record.locationLine) || fallback.locationLine,
     cta: cleanString(record.cta) || fallback.cta,
@@ -279,14 +286,13 @@ function reconciledMissingFields(
 export function normalizeConciergeDraft(
   value: unknown,
   fallback: ConciergeEventDraft,
-  options: { message?: string | null } = {},
+  options: { message?: string | null; previousDraft?: ConciergeEventDraft | null } = {},
 ): ConciergeEventDraft {
   const record = asRecord(value);
   const eventData = asRecord(record.eventData);
-  let requestedOutputs = normalizeRequestedOutputs(record.requestedOutputs ?? record.outputs, {
-    previous: fallback,
-    defaultOutput: fallback.requestedOutputs.length ? undefined : null,
-  });
+  // Output selection is resolved from the customer's request, never a model's
+  // incidental mention of a format in generated copy.
+  let requestedOutputs = [...fallback.requestedOutputs];
   if (fallback.rsvpEnabled === false && requestedOutputs.includes("rsvp_page")) {
     requestedOutputs = requestedOutputs.filter((output) => output !== "rsvp_page");
   }
@@ -333,8 +339,14 @@ export function normalizeConciergeDraft(
   const eventPurpose =
     firstDraftString(record.eventPurpose, eventData.eventPurpose, eventData.purpose) ||
     fallback.eventPurpose;
-  const title =
-    firstDraftString(record.title, eventData.title, eventData.headlineTitle) || fallback.title;
+  const explicitTitle = extractExplicitEventTitle(options.message || "");
+  const statedNameAndAge = extractNamedAge(options.message || "", { allowBareAge: fallback.eventType === "birthday" });
+  const recoveredNameAndAge = !options.previousDraft?.titleConfirmed && !options.previousDraft?.honoreeName && /\b\d{1,3}\s+years?\s+old\b/i.test(options.previousDraft?.title || "")
+    ? extractNamedAge(options.previousDraft?.title || "") : null;
+  const sourceNameAndAge = statedNameAndAge || recoveredNameAndAge;
+  const preferUserSchedule = Boolean(statedNameAndAge || recoveredNameAndAge && hasExplicitEventSchedule(options.message || ""));
+  const title = explicitTitle || (fallback.titleConfirmed || sourceNameAndAge || /\s(?:and|&)\s/.test(fallback.honoreeName || "") ? fallback.title : null)
+    || sanitizeGuestTitle(firstDraftString(record.title, eventData.title, eventData.headlineTitle)) || sanitizeGuestTitle(fallback.title);
   if (
     eventType === "general" &&
     fallback.eventType === "unknown" &&
@@ -344,15 +356,15 @@ export function normalizeConciergeDraft(
   ) {
     eventType = "unknown";
   }
-  const dateText =
+  const dateText = preferUserSchedule ? fallback.dateText :
     sourceGroundedSchedule?.dateText ||
     firstDraftString(record.dateText, eventData.dateText, eventData.date) ||
     fallback.dateText;
-  const timeText =
+  const timeText = preferUserSchedule ? fallback.timeText :
     sourceGroundedSchedule?.timeText ||
     firstDraftString(record.timeText, eventData.timeText, eventData.time) ||
     fallback.timeText;
-  const startISO =
+  const startISO = preferUserSchedule ? fallback.startISO :
     sourceGroundedSchedule?.startISO ||
     validIsoOrNull(record.startISO) ||
     validIsoOrNull(record.startAt) ||
@@ -361,7 +373,7 @@ export function normalizeConciergeDraft(
     validIsoOrNull(eventData.startAt) ||
     validIsoOrNull(eventData.start) ||
     fallback.startISO;
-  const endISO =
+  const endISO = preferUserSchedule ? fallback.endISO :
     sourceGroundedSchedule?.endISO ||
     validIsoOrNull(record.endISO) ||
     validIsoOrNull(record.endAt) ||
@@ -372,8 +384,9 @@ export function normalizeConciergeDraft(
     fallback.endISO;
   const location = firstDraftString(record.location, eventData.location, eventData.address);
   const venue = firstDraftString(record.venue, eventData.venue, eventData.placeName);
-  const resolvedLocation = location || fallback.location || venue || fallback.venue;
-  const resolvedVenue = venue || fallback.venue || location || fallback.location;
+  const explicitLocation = extractExplicitEventLocation(options.message || "");
+  const resolvedLocation = explicitLocation || location || fallback.location || venue || fallback.venue;
+  const resolvedVenue = explicitLocation || venue || fallback.venue || location || fallback.location;
   const additionalLocations = normalizeAdditionalLocations(
     [
       record.additionalLocations,
@@ -387,9 +400,13 @@ export function normalizeConciergeDraft(
     { venue: resolvedVenue || null, location: resolvedLocation || null },
   );
   const honoreeName =
+    pairedHonorees(explicitTitle || "") ||
+    sourceNameAndAge?.name ||
+    (fallback.honoreeName && /\s(?:and|&)\s/.test(fallback.honoreeName) ? fallback.honoreeName : null) ||
     firstDraftString(record.honoreeName, eventData.honoreeName, eventData.birthdayName) ||
     fallback.honoreeName;
   const ageOrMilestone =
+    sourceNameAndAge?.age ||
     firstDraftString(record.ageOrMilestone, eventData.ageOrMilestone, eventData.age) ||
     fallback.ageOrMilestone;
   const ageOrMilestoneSkipped =
@@ -419,7 +436,7 @@ export function normalizeConciergeDraft(
     eventData.rsvp && typeof eventData.rsvp === "object" && !Array.isArray(eventData.rsvp)
       ? (eventData.rsvp as Record<string, unknown>)
       : {};
-  const rsvpEnabled =
+  const rsvpEnabled = extractExplicitRsvpEnabled(message) ?? (
     fallback.rsvpEnabled === false
       ? false
       : (booleanOrNull(
@@ -431,17 +448,15 @@ export function normalizeConciergeDraft(
           eventData.isRsvpEnabled,
           eventRsvpRecord.enabled,
           eventRsvpRecord.isEnabled,
-        ) ?? fallback.rsvpEnabled);
-  const numberOfGuests =
-    rsvpEnabled === false
-      ? null
-      : positiveNumberOrNull(
+        ) ?? fallback.rsvpEnabled));
+  const numberOfGuests = rsvpEnabled === false ? fallback.numberOfGuests :
+    positiveNumberOrNull(
           record.numberOfGuests,
           eventData.numberOfGuests,
           eventData.guestCount,
         ) || fallback.numberOfGuests;
   const rsvpDeadline =
-    firstDraftString(
+    rsvpEnabled === false ? null : firstDraftString(
       record.rsvpDeadline,
       eventData.rsvpDeadline,
       rsvpRecord.deadline,
@@ -450,11 +465,11 @@ export function normalizeConciergeDraft(
     fallback.rsvpDeadline ||
     null;
   const rsvpName =
-    firstDraftString(record.rsvpName, eventData.rsvpName, rsvpRecord.name, eventRsvpRecord.name) ||
+    rsvpEnabled === false ? null : firstDraftString(record.rsvpName, eventData.rsvpName, rsvpRecord.name, eventRsvpRecord.name) ||
     fallback.rsvpName ||
     null;
   const rsvpContact =
-    firstDraftString(
+    rsvpEnabled === false ? null : firstDraftString(
       record.rsvpContact,
       eventData.rsvpContact,
       rsvpRecord.contact,
@@ -518,6 +533,10 @@ export function normalizeConciergeDraft(
     eventPurpose,
     eventType,
     title,
+    titleConfirmed: Boolean(explicitTitle || fallback.titleConfirmed),
+    hostBrief: normalizeHostBrief(record.hostBrief, fallback.hostBrief, options.message || ""),
+    copyStatus: fallback.copyStatus,
+    pendingReply: fallback.pendingReply || null,
     ownership:
       record.ownership === "invited" || fallback.ownership === "invited"
         ? "invited"
@@ -579,6 +598,27 @@ export function normalizeConciergeDraft(
     source: normalizeSource(record.source, fallback.source),
   };
 
+  if (draft.titleConfirmed && draft.title) draft.previewCopy.headline = draft.title;
+  draft.previewCopy.scheduleLine = [draft.dateText, /\b(?:am|pm)\b/i.test(draft.dateText || "") ? null : draft.timeText].filter(Boolean).join(" · ") || "TBC / Por confirmar";
+  draft.previewCopy.locationLine = draft.location || draft.venue || "TBC / Por confirmar";
+  const modelCopy = asRecord(record.previewCopy ?? eventData.previewCopy ?? eventData.liveCard);
+  const modelBody = sanitizeGuestCopy(modelCopy.body);
+  if (fallback.copyStatus === "ready" && !requestsInvitationCopy(options.message || "")) {
+    draft.previewCopy.body = fallback.previewCopy.body;
+  } else if (modelBody && hasRequiredCopyLanguages(modelBody, draft)) draft.copyStatus = "ready";
+  else if (requestsInvitationCopy(options.message || "") || fallback.copyStatus === "needs_update") {
+    const provisional = provisionalInvitationCopy(draft);
+    if (provisional) draft.previewCopy = provisional;
+    draft.copyStatus = provisional ? "provisional" : "needs_update";
+  }
+  if (explicitLocation) draft.previewCopy.locationLine = explicitLocation;
+  if (rsvpEnabled === false && /\brsvp\b/i.test(draft.previewCopy.cta)) draft.previewCopy.cta = "View details";
+  if (options.previousDraft && hasStalePreviewFacts(draft.previewCopy.body, options.previousDraft, draft)) {
+    draft.previewCopy.body = hasStalePreviewFacts(fallback.previewCopy.body, options.previousDraft, draft)
+      ? sanitizeConciergePreviewCopy(null, draft).body
+      : fallback.previewCopy.body;
+    draft.copyStatus = "needs_update";
+  }
   draft.missingFields = reconciledMissingFields(
     Array.from(new Set([...status.missingFields, ...draft.missingFields])),
     draft,
@@ -595,7 +635,11 @@ export function normalizeConciergeDraft(
     previous: fallback,
     message: options.message || "",
   });
-  return draft;
+  const privateDraft = applyHostPrivacy(draft, options.previousDraft);
+  if (privateDraft.hostBrief?.privacyPreferences?.some((note) => note.kind === "contact_private") && !privateDraft.sourceContext.boundary && privateDraft.currentQuestion !== "date_confirmation") {
+    Object.assign(privateDraft, deriveCreationStatus({ ...privateDraft, tone: privateDraft.tone || privateDraft.theme }));
+  }
+  return privateDraft;
 }
 
 function parseAiJson(content: string | null | undefined) {
@@ -625,74 +669,77 @@ async function extractWithOpenAi(
     override: deps.openAiModel,
     premium: shouldUsePremiumExtractionModel(request),
   });
+  const startedAt = Date.now();
   const response = await runWithConciergeOpenAiTimeout((signal) =>
     client.chat.completions.create(
       {
         model,
-        ...openAiChatTemperatureParam(model, 0.1),
-        response_format: { type: "json_object" },
-        max_completion_tokens: 650,
+        ...creationModelBudget(model, "correction"),
+        response_format: { type: "json_schema", json_schema: { name: "creation_edits_v2", strict: true, schema: CONCIERGE_EXTRACTION_SCHEMA } },
         messages: [
           {
             role: "system",
-            content: [
-              "You are Envitefy's event creation concierge.",
-              "Only handle event, flyer invitation, RSVP, and event asset creation or editing.",
-              "Return one JSON object matching the draft shape. Do not include markdown.",
-              "Return extracted event fields at the top level: title, eventPurpose, eventType, dateText, timeText, startISO, endISO, timezone, location, venue, additionalLocations, honoreeName, ageOrMilestone, ageOrMilestoneSkipped, rsvpEnabled, rsvpDeadline, rsvpName, rsvpContact, numberOfGuests, registryLink, giftNote, giftPreferenceNote, theme, tone, requestedOutputs, sourceContext, missingFields, draftStatus, and currentQuestion.",
-              "Also include conversationState when useful: track inferredFields, confirmedFields, lowConfidenceFields, alreadyAskedFields, registrySkipped, locationTentative, finalSummaryShown, readyToGenerate, and role-specific names such as momToBe, parentsToBe, graduateName, birthdayPerson, and coupleNames.",
-              "Infer obvious roles from natural phrases: 'Mia baby shower' likely means Mia is the mom-to-be or featured shower name; 'Leo class of 2026 graduation party' means Leo is the graduate; 'Taylor and Morgan gender reveal' means Taylor and Morgan are the parents-to-be; 'John and Sarah wedding' means John and Sarah are the couple. Use high confidence for these but mark needsConfirmation when the displayed role could vary.",
-              "When RSVP is enabled for an owned event, collect the host or organizer display name in rsvpName and a phone number or email for RSVP follow-up in rsvpContact. Do not invent either value.",
-              "If you include nested eventData for convenience, duplicate the same extracted fields at the top level.",
-              "Separate requested output from event details: live cards, flyer invitations, RSVP pages, printable flyers, stories, WhatsApp, and text copy are outputs.",
-              "Never copy the user's whole creation request into title, eventPurpose, headline, theme, or tone; distill guest-facing names like matchups, honorees, couples, venues, or concise event labels.",
-              "Event pages are full guest-facing websites with navigation/menu, detail sections, RSVP form when enabled, calendar/location actions, and registry or gift-list sections when supplied.",
-              "For birthdays, weddings, baby showers, gender reveals, bridal showers, housewarmings, anniversaries, and graduations, preserve any registry, gift-list, wishlist, gift preference, or no-gifts note.",
-              "Resolve 'this' only from supplied activeContext. If no context exists, ask what source or event to use.",
-              "When activeContext.selectedCategory is supplied, preserve it as the event category unless the uploaded or typed content clearly conflicts; mention the conflict instead of silently switching.",
-              "When activeContext.selectedProduct is supplied, preserve it as the requested output unless the user explicitly changes the product.",
-              "Use eventType unknown until the user or source gives a real category. Supported eventType values are unknown, birthday, wedding, baby_shower, gender_reveal, bridal_shower, graduation, gym_meet, game_day, football, sport_event, field_trip, open_house, housewarming, appointment, workshop, special_event, smart_signup, and general. Do not use general as a fallback.",
-              "Prioritize eventPurpose/title before strict event type. Do not ask for date/time before event purpose/source.",
-              "When the previous draft is asking for a specific missing field, treat a short user reply as the answer to that field unless it clearly changes topics.",
-              "Treat venue as satisfying the location requirement; if only one of venue or location is known, return it in both fields.",
-              "If the user gives multiple event places, preserve the primary place in venue/location and put every other place in additionalLocations as objects with label, venue, location/address, optional timeText, and optional description. Examples include ceremony and reception venues, dinner then after-party, check-in then main event, or pickup/dropoff places. Do not drop secondary locations from event pages, live cards, or final products.",
-              "If the previous draft asks whether Envitefy should collect RSVPs, set rsvpEnabled true for yes/include/collect/track replies and false for no/skip/not needed replies.",
-              "If the previous draft asks for RSVP guest count or RSVP choice, a numeric or yes/no reply must not satisfy theme or tone. Visual products still need a later vibe/image direction question unless the user already supplied concrete visual direction.",
-              "Do not mark drafts ready when event purpose/source is missing. Do not classify uploads as invited based only on event category.",
-              "When the user says they received, got, or were sent an invite and wants to save it, set sourceContext.detectedSourceIntent to received_invite and ownership to invited.",
-              "If that received-invite request has no invite image/text or concrete event details, ask for an upload or pasted invite text before asking host-authoring questions.",
-              "Ask for the minimum missing fields. Produce preview copy even when details are missing.",
-              "Theme, tone, style, vibe, and edit instructions are internal creative direction. Never put raw user vibe/prompt/instruction text into guest-facing title, previewCopy.headline, previewCopy.subheadline, previewCopy.body, liveCard, or publicEvent copy.",
-              "Preview copy must read like polished guest-facing invitation text. Do not include product phrases such as live card of, event page for, complete Envitefy product, guest-facing call to action, or repeated prompt fragments.",
-              "Never choose a user id, owner id, or fetch private user data.",
-            ].join(" "),
+            content: CONCIERGE_EXTRACTION_INSTRUCTION,
           },
           {
             role: "user",
             content: JSON.stringify({
               message: request.message || "",
+              retryReply: Boolean(request.retryReply),
+              retryInstruction: request.retryReply ? "Finish the requested answer or invitation wording using fallbackDraft as the current truth. Return only previewCopy if writing is requested; do not reapply any old date, location, title, RSVP or hostBrief instructions from the original message." : null,
               starterCategory: request.starterCategory || null,
               previousDraft: request.draft || null,
               ocrContext: request.ocrContext || null,
               activeContext: request.activeContext || null,
               fallbackDraft: fallback,
+              recentConversation: request.chatMessages?.filter((item) => item.role === "user" || item.role === "assistant").slice(-24).map((item) => ({ role: item.role, text: item.text.slice(0, 2000) })) || [],
             }),
           },
         ],
       } as any,
       { signal } as any,
-    ),
+    ), creationTimeoutMs("correction"),
   );
-  const content = response.choices?.[0]?.message?.content;
+  const choice = response.choices?.[0];
+  const outcome = choice?.message?.refusal ? "refused" : choice?.finish_reason !== "stop" ? "incomplete" : "success";
+  recordCreationModelRun({ workload: "correction", model, startedAt, outcome, usage: response.usage });
+  if (outcome !== "success") return null;
+  const content = choice?.message?.content;
   const parsed = parseAiJson(content);
   if (!parsed) return null;
-  return normalizeConciergeDraft(parsed.draft || parsed, fallback, {
-    message: request.message || "",
+  const edits = parseConciergeEdits(parsed, request);
+  if (!edits) return null;
+  const parsedDraft = edits.patch;
+  if (!request.retryReply && (typeof parsedDraft.dateText === "string" || typeof parsedDraft.timeText === "string")) {
+    const schedule = parseChrono([parsedDraft.dateText ?? fallback.dateText, parsedDraft.timeText ?? fallback.timeText].filter(Boolean).join(" "), { ...fallback, startISO: null, endISO: null, currentQuestion: null });
+    parsedDraft.startISO = schedule.startISO;
+    parsedDraft.endISO = schedule.endISO;
+  }
+  const retryCopy = asRecord(parsedDraft.previewCopy);
+  const normalized = normalizeConciergeDraft(request.retryReply ? { previewCopy: { body: retryCopy.body, subheadline: retryCopy.subheadline } } : parsedDraft, fallback, {
+    message: request.retryReply ? "" : request.message || "",
+    previousDraft: request.draft,
   });
+  if (!request.retryReply) {
+    for (const field of edits.cleared) Object.assign(normalized, { [field]: field === "additionalLocations" ? [] : null });
+    if (edits.cleared.includes("dateText")) Object.assign(normalized, { startISO: null, endISO: null });
+    if (edits.cleared.includes("location") || edits.cleared.includes("venue")) Object.assign(normalized, { location: null, venue: null });
+    Object.assign(normalized, deriveCreationStatus(normalized));
+    if (edits.cleared.length) {
+      normalized.previewCopy.scheduleLine = [normalized.dateText, normalized.timeText].filter(Boolean).join(" · ");
+      normalized.previewCopy.locationLine = normalized.location || normalized.venue || "";
+      normalized.copyStatus = "needs_update";
+    }
+  }
+  return attachCreationReadiness(applyHostPrivacy(normalized, request.draft), request.draft, request.retryReply ? "" : request.message);
 }
 
 function shouldUsePremiumExtractionModel(request: ConciergeMessageRequest): boolean {
-  if (request.ocrContext) return true;
+  const fields = request.ocrContext?.sourceEvidence?.fields || request.draft?.sourceMaterial?.sourceEvidence?.fields;
+  if (fields && Object.values(fields).some((field) => field.status === "conflicting" || field.status === "inferred")) return true;
+  if (request.ocrContext && !fields) return true;
+  if (request.draft?.conversationState?.lowConfidenceFields?.length) return true;
+  if (/\b(?:actually|instead|correction|bilingual|translate|both languages)\b/i.test(request.message || "")) return true;
   const message = cleanString(request.message) || "";
   return PREMIUM_EXTRACTION_HINT.test(message);
 }
@@ -707,7 +754,7 @@ export async function extractConciergeDraft(
       ? "mixed"
       : "upload"
     : request.draft?.source || "text";
-  const fallback = fallbackExtractConciergeDraft({
+  const fallback = request.retryReply && request.draft ? { ...request.draft } : fallbackExtractConciergeDraft({
     message,
     draft: request.draft || null,
     ocrContext: request.ocrContext || null,
@@ -719,7 +766,7 @@ export async function extractConciergeDraft(
   });
 
   const shouldUseDeterministicFastPath =
-    fallback.sourceContext.boundary === "envitefy_question" ||
+    (fallback.sourceContext.boundary === "envitefy_question" && !requestsInvitationCopy(message)) ||
     fallback.sourceContext.boundary === "non_creation" ||
     fallback.sourceContext.boundary === "off_domain" ||
     fallback.sourceContext.boundary === "external_action" ||
@@ -729,7 +776,7 @@ export async function extractConciergeDraft(
     fallback.currentQuestion === "invite_source" ||
     isNonCreationRequest(message) ||
     (isGreetingMessage(message) && !request.draft && !request.ocrContext) ||
-    shouldSkipOpenAiForCreationRequest({ request, fallbackDraft: fallback });
+    (shouldSkipOpenAiForCreationRequest({ request, fallbackDraft: fallback }) && !requestsInvitationCopy(message));
 
   if (shouldUseDeterministicFastPath) {
     return {

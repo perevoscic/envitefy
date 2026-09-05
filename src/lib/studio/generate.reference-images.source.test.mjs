@@ -39,13 +39,9 @@ test("studio generation fails image creation when any attached reference photo c
 test("studio image generation passes background-only image prompt options without poster text flags", () => {
   const source = readSource("src/lib/studio/generate.ts");
 
-  assert.match(
-    source,
-    /const imagePrompt = editingExistingImage\s*\?\s*buildExistingInvitationImageEditPrompt\(normalizedRequest\.imageEdit\?\.editInstruction\)\s*:\s*buildInvitationImagePrompt\(\s*normalizedRequest\.event,\s*normalizedRequest\.guidance,\s*liveCard,\s*\{/s,
-  );
-  assert.match(source, /surface,/);
-  assert.match(source, /editingExistingImage: false,/);
-  assert.match(source, /referenceImageCount: referenceImages\.length,/);
+  assert.match(source, /buildProductArtworkPrompt\(normalizedRequest\.event, normalizedRequest\.guidance, liveCard, product, referenceImages\.length\)/);
+  assert.match(source, /buildExistingInvitationImageEditPrompt\(normalizedRequest\.imageEdit\?\.editInstruction\)/);
+  assert.match(source, /resolveStudioProduct\(request\.product, surface\)/);
   assert.match(source, /mode === "both"/);
   assert.match(
     source,
@@ -72,11 +68,11 @@ test("studio generation normalizes risky themes before prompt building and retur
   );
   assert.match(
     source,
-    /buildLiveCardPrompt\(normalizedRequest\.event, normalizedRequest\.guidance\)/,
+    /buildProductCopyPrompt\(normalizedRequest\.event, normalizedRequest\.guidance, product\)/,
   );
   assert.match(
     source,
-    /buildInvitationImagePrompt\(\s*normalizedRequest\.event,\s*normalizedRequest\.guidance,\s*liveCard,/s,
+    /buildProductArtworkPrompt\(\s*normalizedRequest\.event,\s*normalizedRequest\.guidance,\s*liveCard,/s,
   );
   assert.match(source, /themeNormalization,/);
   assert.match(source, /code: "policy_blocked"/);

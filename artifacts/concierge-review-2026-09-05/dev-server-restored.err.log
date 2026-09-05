@@ -1,0 +1,464 @@
+[concierge] OpenAI extraction failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async runWithConciergeOpenAiTimeout (src\lib\concierge\openai-config.ts:145:12)
+    at async extractWithOpenAi (src\lib\concierge\extract.ts:638:20)
+    at async extractConciergeDraft (src\lib\concierge\extract.ts:764:23)
+    at async resolveCreationIntakeDraft (src\lib\concierge\intake.ts:316:7)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:87:26)
+  143 |
+  144 |   try {
+> 145 |     return await Promise.race([work(controller.signal), timeoutPromise]);
+      |            ^
+  146 |   } finally {
+  147 |     if (timeout) clearTimeout(timeout);
+  148 |   } {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_f2e102c883a24fbeb92f202b1650efb4',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+[concierge] OpenAI persona stream failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async streamConciergePersona (src\lib\concierge\persona.ts:216:20)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:101:33)
+  214 |
+  215 |   try {
+> 216 |     const stream = await client.chat.completions.create(
+      |                    ^
+  217 |       {
+  218 |         model,
+  219 |         stream: true, {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_faa30db35d8d434f928ce61dcd95b005',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/chat'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/chat'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/icon.png'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/chat'
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[concierge] OpenAI extraction failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async runWithConciergeOpenAiTimeout (src\lib\concierge\openai-config.ts:145:12)
+    at async extractWithOpenAi (src\lib\concierge\extract.ts:654:20)
+    at async extractConciergeDraft (src\lib\concierge\extract.ts:785:23)
+    at async resolveCreationIntakeDraft (src\lib\concierge\intake.ts:316:7)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:88:26)
+  143 |
+  144 |   try {
+> 145 |     return await Promise.race([work(controller.signal), timeoutPromise]);
+      |            ^
+  146 |   } finally {
+  147 |     if (timeout) clearTimeout(timeout);
+  148 |   } {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_5db793f38029487ab8b0ec9771adefff',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+[concierge] OpenAI persona stream failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async streamConciergePersona (src\lib\concierge\persona.ts:224:20)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:102:33)
+  222 |
+  223 |   try {
+> 224 |     const stream = await client.chat.completions.create(
+      |                    ^
+  225 |       {
+  226 |         model,
+  227 |         stream: true, {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_e14ee3ff5d7e455eb9f862abf6b5bd23',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/chat'
+}
+[concierge] OpenAI extraction failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async runWithConciergeOpenAiTimeout (src\lib\concierge\openai-config.ts:145:12)
+    at async extractWithOpenAi (src\lib\concierge\extract.ts:654:20)
+    at async extractConciergeDraft (src\lib\concierge\extract.ts:785:23)
+    at async resolveCreationIntakeDraft (src\lib\concierge\intake.ts:316:7)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:88:26)
+  143 |
+  144 |   try {
+> 145 |     return await Promise.race([work(controller.signal), timeoutPromise]);
+      |            ^
+  146 |   } finally {
+  147 |     if (timeout) clearTimeout(timeout);
+  148 |   } {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_25a1cf0d25c44bb184bf2d5371cdc632',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+[concierge] OpenAI persona stream failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async streamConciergePersona (src\lib\concierge\persona.ts:224:20)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:102:33)
+  222 |
+  223 |   try {
+> 224 |     const stream = await client.chat.completions.create(
+      |                    ^
+  225 |       {
+  226 |         model,
+  227 |         stream: true, {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_9287583b2a4447a1984ecdcece610961',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/chat'
+}
+[concierge] OpenAI extraction failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async runWithConciergeOpenAiTimeout (src\lib\concierge\openai-config.ts:145:12)
+    at async extractWithOpenAi (src\lib\concierge\extract.ts:661:20)
+    at async extractConciergeDraft (src\lib\concierge\extract.ts:793:23)
+    at async resolveCreationIntakeDraft (src\lib\concierge\intake.ts:316:7)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:88:26)
+  143 |
+  144 |   try {
+> 145 |     return await Promise.race([work(controller.signal), timeoutPromise]);
+      |            ^
+  146 |   } finally {
+  147 |     if (timeout) clearTimeout(timeout);
+  148 |   } {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_67c02a144e0d456db845138543721feb',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+[concierge] OpenAI persona stream failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async streamConciergePersona (src\lib\concierge\persona.ts:224:20)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:102:33)
+  222 |
+  223 |   try {
+> 224 |     const stream = await client.chat.completions.create(
+      |                    ^
+  225 |       {
+  226 |         model,
+  227 |         stream: true, {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_fbe418aff5554e979adb52068b8cd645',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/chat'
+}
+[concierge] OpenAI extraction failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async runWithConciergeOpenAiTimeout (src\lib\concierge\openai-config.ts:145:12)
+    at async extractWithOpenAi (src\lib\concierge\extract.ts:661:20)
+    at async extractConciergeDraft (src\lib\concierge\extract.ts:793:23)
+    at async resolveCreationIntakeDraft (src\lib\concierge\intake.ts:316:7)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:88:26)
+  143 |
+  144 |   try {
+> 145 |     return await Promise.race([work(controller.signal), timeoutPromise]);
+      |            ^
+  146 |   } finally {
+  147 |     if (timeout) clearTimeout(timeout);
+  148 |   } {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_eb6cdb0daa504f5daae770c19fb221b6',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+[concierge] OpenAI persona stream failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async streamConciergePersona (src\lib\concierge\persona.ts:224:20)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:102:33)
+  222 |
+  223 |   try {
+> 224 |     const stream = await client.chat.completions.create(
+      |                    ^
+  225 |       {
+  226 |         model,
+  227 |         stream: true, {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_e18e2f76bda14b52b122d701d4603b0f',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/chat'
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ ./src/app/chat/ConciergeChatClient.tsx
+Error:   [31mx[0m Expected '</', got ';'
+     ,-[[36;1;4mD:\Develop_local\envitefy\src\app\chat\ConciergeChatClient.tsx[0m:506:1]
+ [2m503[0m |         {renderHighlightedAssistantLine(line, detailsDraft)}
+ [2m504[0m |       </span>
+ [2m505[0m |     );
+ [2m506[0m |   });
+     : [35;1m    ^[0m
+ [2m507[0m | }
+ [2m508[0m | 
+ [2m509[0m | function parseConciergeStreamEvent(rawEvent: string) {
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/chat/ConciergeChatClient.tsx
+./src/app/chat/page.tsx
+ ⨯ ./src/app/chat/ConciergeChatClient.tsx
+Error:   [31mx[0m Expected '</', got ';'
+     ,-[[36;1;4mD:\Develop_local\envitefy\src\app\chat\ConciergeChatClient.tsx[0m:506:1]
+ [2m503[0m |         {renderHighlightedAssistantLine(line, detailsDraft)}
+ [2m504[0m |       </span>
+ [2m505[0m |     );
+ [2m506[0m |   });
+     : [35;1m    ^[0m
+ [2m507[0m | }
+ [2m508[0m | 
+ [2m509[0m | function parseConciergeStreamEvent(rawEvent: string) {
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/chat/ConciergeChatClient.tsx
+./src/app/chat/page.tsx
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ ./src/app/chat/ConciergeChatClient.tsx
+Error:   [31mx[0m Expected '</', got ';'
+     ,-[[36;1;4mD:\Develop_local\envitefy\src\app\chat\ConciergeChatClient.tsx[0m:506:1]
+ [2m503[0m |         {renderHighlightedAssistantLine(line, detailsDraft)}
+ [2m504[0m |       </span>
+ [2m505[0m |     );
+ [2m506[0m |   });
+     : [35;1m    ^[0m
+ [2m507[0m | }
+ [2m508[0m | 
+ [2m509[0m | function parseConciergeStreamEvent(rawEvent: string) {
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/chat/ConciergeChatClient.tsx
+./src/app/chat/page.tsx
+ ⨯ ./src/app/chat/ConciergeChatClient.tsx
+Error:   [31mx[0m Expected '</', got ';'
+     ,-[[36;1;4mD:\Develop_local\envitefy\src\app\chat\ConciergeChatClient.tsx[0m:506:1]
+ [2m503[0m |         {renderHighlightedAssistantLine(line, detailsDraft)}
+ [2m504[0m |       </span>
+ [2m505[0m |     );
+ [2m506[0m |   });
+     : [35;1m    ^[0m
+ [2m507[0m | }
+ [2m508[0m | 
+ [2m509[0m | function parseConciergeStreamEvent(rawEvent: string) {
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/chat/ConciergeChatClient.tsx
+./src/app/chat/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ ./src/app/chat/ConciergeChatClient.tsx
+Error:   [31mx[0m Expected '</', got ';'
+     ,-[[36;1;4mD:\Develop_local\envitefy\src\app\chat\ConciergeChatClient.tsx[0m:506:1]
+ [2m503[0m |         {renderHighlightedAssistantLine(line, detailsDraft)}
+ [2m504[0m |       </span>
+ [2m505[0m |     );
+ [2m506[0m |   });
+     : [35;1m    ^[0m
+ [2m507[0m | }
+ [2m508[0m | 
+ [2m509[0m | function parseConciergeStreamEvent(rawEvent: string) {
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/chat/ConciergeChatClient.tsx
+./src/app/chat/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ ./src/app/chat/ConciergeChatClient.tsx
+Error:   [31mx[0m Expression expected
+      ,-[[36;1;4mD:\Develop_local\envitefy\src\app\chat\ConciergeChatClient.tsx[0m:1835:1]
+ [2m1832[0m |     layoutHeightVariable: "--envitefy-chat-layout-height",
+ [2m1833[0m |     lockPageScroll: true,
+ [2m1834[0m |       })}
+ [2m1835[0m |     </p>
+      : [35;1m    ^[0m
+ [2m1836[0m |   ));
+ [2m1837[0m | 
+ [2m1837[0m |   useEffect(() => {
+      `----
+  [31mx[0m Unterminated regexp literal
+      ,-[[36;1;4mD:\Develop_local\envitefy\src\app\chat\ConciergeChatClient.tsx[0m:1835:1]
+ [2m1832[0m |     layoutHeightVariable: "--envitefy-chat-layout-height",
+ [2m1833[0m |     lockPageScroll: true,
+ [2m1834[0m |       })}
+ [2m1835[0m |     </p>
+      : [35;1m     ^^^[0m
+ [2m1836[0m |   ));
+ [2m1837[0m | 
+ [2m1837[0m |   useEffect(() => {
+      `----
+  [31mx[0m Expression expected
+      ,-[[36;1;4mD:\Develop_local\envitefy\src\app\chat\ConciergeChatClient.tsx[0m:1835:1]
+ [2m1832[0m |     layoutHeightVariable: "--envitefy-chat-layout-height",
+ [2m1833[0m |     lockPageScroll: true,
+ [2m1834[0m |       })}
+ [2m1835[0m |     </p>
+      : [35;1m      ^^[0m
+ [2m1836[0m |   ));
+ [2m1837[0m | 
+ [2m1837[0m |   useEffect(() => {
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/chat/ConciergeChatClient.tsx
+./src/app/chat/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ [TypeError: frame.join is not a function] { digest: '760471311' }
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[concierge] OpenAI persona stream failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async streamConciergePersona (src\lib\concierge\persona.ts:224:20)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:102:33)
+  222 |
+  223 |   try {
+> 224 |     const stream = await client.chat.completions.create(
+      |                    ^
+  225 |       {
+  226 |         model,
+  227 |         stream: true, {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_73449bfb11d941d4873133368c9045c5',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+[concierge] OpenAI extraction failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async runWithConciergeOpenAiTimeout (src\lib\concierge\openai-config.ts:145:12)
+    at async extractWithOpenAi (src\lib\concierge\extract.ts:668:20)
+    at async extractConciergeDraft (src\lib\concierge\extract.ts:800:23)
+    at async resolveCreationIntakeDraft (src\lib\concierge\intake.ts:316:7)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:88:26)
+  143 |
+  144 |   try {
+> 145 |     return await Promise.race([work(controller.signal), timeoutPromise]);
+      |            ^
+  146 |   } finally {
+  147 |     if (timeout) clearTimeout(timeout);
+  148 |   } {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_6b1cc88982f945988e4f86fd3b887c2f',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+[concierge] OpenAI persona stream failed; using fallback Error: 429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+    at async streamConciergePersona (src\lib\concierge\persona.ts:224:20)
+    at async Object.start (src\app\api\creation\intake\stream\route.ts:102:33)
+  222 |
+  223 |   try {
+> 224 |     const stream = await client.chat.completions.create(
+      |                    ^
+  225 |       {
+  226 |         model,
+  227 |         stream: true, {
+  status: 429,
+  headers: [Object],
+  request_id: 'req_d0a54c16572b4645a3999b23228ce485',
+  error: [Object],
+  code: 'credit_balance_exhausted',
+  param: null,
+  type: 'insufficient_quota'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/icon.png'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/icon.png'
+}
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/icon.png'
+}
+ ⚠ Found a change in next.config.ts. Restarting the server to apply the changes...

@@ -470,6 +470,7 @@ export function requirementFieldSatisfied(
     | "numberOfGuests"
     | "rsvpName"
     | "rsvpContact"
+    | "hostBrief"
     | "tone"
   >,
 ): boolean {
@@ -496,7 +497,7 @@ export function requirementFieldSatisfied(
     return draft.rsvpEnabled !== true || Boolean(cleanString(draft.rsvpName));
   }
   if (field === "rsvpContact") {
-    return draft.rsvpEnabled !== true || Boolean(cleanString(draft.rsvpContact));
+    return draft.rsvpEnabled !== true || Boolean(cleanString(draft.rsvpContact)) || draft.hostBrief?.privacyPreferences?.some((note) => note.kind === "contact_private") === true;
   }
   if (field === "tone") return Boolean(cleanString(draft.tone));
   return false;

@@ -14,7 +14,7 @@ test("studio live-card builders preserve local invitation data and default gener
     source,
     /export function buildStudioRequest\(\s*details: EventDetails,\s*mode: StudioGenerateMode,\s*surface: StudioGenerateSurface,/s,
   );
-  assert.match(source, /return \{\s*mode,\s*surface,\s*event:/s);
+  assert.match(source, /return \{\s*mode,\s*surface,\s*product,\s*event:/s);
   assert.match(source, /export function resolveStudioGenerationSurface\(/);
   assert.match(
     source,

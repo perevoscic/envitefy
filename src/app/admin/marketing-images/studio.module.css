@@ -1,0 +1,6 @@
+/* The app-wide editorial heading rule is unlayered, so scope the studio's
+   working typography explicitly rather than competing through utilities. */
+.studio :is(h1, h2, h3, h4, h5) {
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  letter-spacing: -0.02em;
+}

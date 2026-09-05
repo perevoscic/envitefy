@@ -15,7 +15,16 @@ test("GPT-5.6 Sol keeps its medium reasoning default", () => {
   assert.deepEqual(openAiChatCompatibilityParams("gpt-5.6-sol", { temperature: 0.6 }), {});
 });
 
-test("non-GPT-5 models retain supported temperature settings", () => {
+test("Astra preserves premium reasoning and omits unsupported sampling parameters", () => {
+  for (const model of ["gpt-6-astra", "gpt-6-astra-2026-09-03", " GPT-6-ASTRA "]) {
+    assert.deepEqual(openAiChatCompatibilityParams(model, { temperature: 0.6 }), {
+      reasoning_effort: "medium",
+    });
+    assert.deepEqual(openAiChatCompatibilityParams(model), { reasoning_effort: "medium" });
+  }
+});
+
+test("older models retain supported temperature settings", () => {
   assert.deepEqual(openAiChatCompatibilityParams("gpt-4.1-mini", { temperature: 0.2 }), {
     temperature: 0.2,
   });

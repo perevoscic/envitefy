@@ -3,6 +3,7 @@ import {
   getRequirementPlan,
   requirementFieldSatisfied,
 } from "./requirements.ts";
+import { extractNamedAge, isProductAdviceQuestion, requestedProductEdits } from "./conversation-edits.ts";
 import type {
   ConciergeActiveContext,
   ConciergeEventDraft,
@@ -343,7 +344,16 @@ export function normalizeRequestedOutputs(
   options.previous?.requestedOutputs?.forEach(add);
   options.previous?.outputs?.forEach(add);
 
-  const text = options.text || "";
+  const message = options.text || "";
+  const edits = requestedProductEdits(message);
+  if (edits.replace) found.clear();
+  edits.selected.forEach(add);
+  const adviceOnly = isProductAdviceQuestion(message) && !edits.selected.length;
+  const inferMentions = !adviceOnly && (
+    !found.size || asksForCoreProductBundle(message) ||
+    /\b(?:also (?:make|create|write)|add (?:an?|the)|make both|create both)\b/i.test(message)
+  );
+  const text = inferMentions ? message : "";
   if (asksForCoreProductBundle(text)) {
     found.add("live_card");
     found.add("digital_flyer");
@@ -389,7 +399,8 @@ export function normalizeRequestedOutputs(
   if (/\bwelcome\s+sign\b/i.test(text)) found.add("welcome_sign");
   if (/\bevent\s+page\b/i.test(text)) found.add("event_page");
 
-  if (!found.size && options.defaultOutput !== null) {
+  for (const output of edits.removed) found.delete(output);
+  if (!found.size && !adviceOnly && !edits.removed.length && options.defaultOutput !== null) {
     found.add(options.defaultOutput || "live_card");
   }
   return Array.from(found);
@@ -746,22 +757,15 @@ export function isExternalPlatformActionRequest(text: string) {
     "(?:facebook|instagram|tiktok|tik\\s*tok|x|twitter|linkedin|youtube|whats\\s*app|whatsapp|messenger)";
   const audience =
     "(?:everyone|everybody|anyone|people|guests?|attendees?|contacts?|friends?|followers?|group)";
-  return (
-    new RegExp(
-      `\\b(?:post|publish|upload|share)\\b[\\s\\S]{0,80}\\b(?:on|to|through|via)?\\s*${platform}\\b`,
-      "i",
-    ).test(cleaned) ||
-    new RegExp(
-      `\\b(?:send|message|dm|text|email|invite|notify|contact|forward|distribute)\\b[\\s\\S]{0,100}\\b(?:${audience}|${platform})\\b`,
-      "i",
-    ).test(cleaned) ||
-    new RegExp(`\\b${platform}\\b[\\s\\S]{0,80}\\b${audience}\\b`, "i").test(cleaned) ||
-    new RegExp(
-      `\\b(?:create|make|set\\s+up|put)\\b[\\s\\S]{0,60}\\b${platform}\\b[\\s\\S]{0,30}\\b(?:event|event\\s+page|page|post)\\b`,
-      "i",
-    ).test(cleaned) ||
-    new RegExp(`\\b${platform}\\b[\\s\\S]{0,40}\\b(?:event\\s+page|event)\\b`, "i").test(cleaned)
-  );
+  // Scope the requested actor to a clause. Mentioning a platform, asking what to
+  // share, or saying "I'll send it myself" is not an instruction to contact guests.
+  return cleaned.split(/[.!?;\n]|,\s*(?:but|and then)\s*/i).some((clause) => {
+    if (/\b(?:don['’]?t|do not|wasn['’]?t|not asking|instead of|without|what to|how (?:can|do|should) I|I(?:['’]ll| will| can)|we(?:['’]ll| will| can))\b/i.test(clause)) return false;
+    const direct = clause.trim().replace(/^(?:and\s+|then\s+|please\s+|(?:can|could|would|will)\s+you\s+(?:please\s+)?|I\s+(?:want|need)\s+you\s+to\s+)/i, "");
+    return new RegExp(`^(?:post|publish|upload|share|put)\\b.{0,100}\\b${platform}\\b`, "i").test(direct)
+      || new RegExp(`^(?:send|message|dm|text|email|invite|notify|contact|forward|distribute)\\b.{0,100}\\b(?:${audience}|${platform})\\b`, "i").test(direct)
+      || new RegExp(`^(?:create|make|set\\s+up|put)\\b.{0,60}\\b${platform}\\b.{0,30}\\b(?:event|page|post)\\b`, "i").test(direct);
+  });
 }
 
 export function isAmbiguousEditRequest(
@@ -800,9 +804,9 @@ export function isOffDomainRequest(text: string) {
       cleaned,
     );
   const offTopicRequest =
-    /\b(jokes?|toasts?|speeches?|vows?|recipe|cake recipe|homework|essay|resume|tax(?:es)?|spreadsheet|printer|wifi|wi-fi|router|computer|laptop|phone|code|bug|debug|script|database)\b/i.test(
+    /\b(jokes?|toasts?|speeches?|vows?|recipe|cake recipe|homework|essay|resume|tax(?:es)?|spreadsheet|printer|wifi|wi-fi|router|computer|laptop|code|bug|debug|script|database)\b/i.test(
       cleaned,
-    );
+    ) || /\b(?:fix|repair|debug|troubleshoot)\s+(?:(?:my|the|a)\s+)?phone\b/i.test(cleaned);
   if (eventAdjacent && offTopicRequest && !asksForEnvitefyProductOrEdit(cleaned)) return true;
   if (
     /\b(envitefy|event|invite|invitation|rsvp|guest|guests|calendar|upload|snap|ocr|flyer|live\s*card|event\s+page|sign[-\s]?up|signup|registry|gift\s*list|wishlist|birthday|wedding|shower|party|graduation|open\s+house|housewarming|game\s+day|football|gym\s+meet|gymnastics|workshop|appointment)\b/i.test(
@@ -844,6 +848,7 @@ export function hasClearCreationSignal(text: string) {
   const cleaned = cleanCreationString(text);
   if (!cleaned || isGreetingMessage(cleaned)) return false;
   if (hasReceivedInviteLanguage(cleaned)) return true;
+  if (extractNamedAge(cleaned)) return true;
   if (
     /\b(birthday|bday|turning|turns|wedding|baby\s+shower|gender\s+reveal|bridal\s+shower|graduation|graduate|gymnastics|gym\s+meet|meet\s+schedule|invitational|game\s+day|gameday|football|sports?\s+event|field\s+trip|field\s+day|open\s+house|housewarming|appointment|consultation|workshop|class|seminar|training|party|celebration|ceremony|reception|fundraiser|dinner|brunch|luncheon|breakfast|potluck|book\s+club|teacher\s+appreciation|meeting|event)\b/i.test(
       cleaned,
@@ -860,6 +865,7 @@ export function hasClearCreationSignal(text: string) {
 }
 
 export function deriveCreationStatus(args: {
+  hostBrief?: import("./host-brief.ts").HostBrief;
   sourceContext: CreationSourceContext;
   eventPurpose: string | null;
   title: string | null;

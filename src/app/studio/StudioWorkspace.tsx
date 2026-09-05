@@ -293,6 +293,7 @@ async function persistStudioLibraryImageUrl(
   try {
     const persisted = await persistImageMediaValue({
       value: u,
+      preferOriginal: item.type === "image" || item.details?.product === "digital_flyer" || item.details?.product === "printable_flyer",
       fileName: `${buildEventSlug(getStudioShareTitle(item)) || "studio-asset"}.png`,
       fallbackValue: u,
     });

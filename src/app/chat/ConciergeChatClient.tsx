@@ -1,5 +1,7 @@
 "use client";
 
+import { getCreationReadiness } from "@/lib/concierge/readiness";
+import { resolveStudioProduct } from "@/lib/studio/product-contract";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUp,
@@ -9,9 +11,9 @@ import {
   Globe,
   IdCard,
   Loader2,
-  MessageCircle,
   Mic,
   Sparkles,
+  Square,
   Trophy,
   Upload,
   X,
@@ -49,6 +51,7 @@ import {
 } from "@/components/ui/ai-prompt-box";
 import BottomNavBar, { type BottomNavItem } from "@/components/ui/bottom-nav-bar";
 import { useVisualViewportInsets } from "@/hooks/useVisualViewportInsets";
+import { isExternalPlatformActionRequest as isUnsupportedExternalConciergeRequest } from "@/lib/concierge/creation-intent";
 import { skinLabelForCategoryName, skinLabelForConciergeDraft } from "@/lib/concierge/skins";
 import type {
   ConciergeActiveContext,
@@ -376,6 +379,7 @@ type FailedConciergeRequest = {
   starterCategory?: string | null;
   echo?: string;
   suppressUserEcho?: boolean;
+  retryReply?: boolean;
   error: string;
 };
 
@@ -390,40 +394,15 @@ function withConciergeTiming(url: string) {
   return `${url}${url.includes("?") ? "&" : "?"}timing=1`;
 }
 
-function isUnsupportedExternalConciergeRequest(message: string) {
-  const cleaned = message.replace(/\s+/g, " ").trim();
-  if (!cleaned) return false;
-  const platform =
-    "(?:facebook|instagram|tiktok|tik\\s*tok|x|twitter|linkedin|youtube|whats\\s*app|whatsapp|messenger)";
-  const audience =
-    "(?:everyone|everybody|anyone|people|guests?|attendees?|contacts?|friends?|followers?|group)";
-  return (
-    new RegExp(
-      `\\b(?:post|publish|upload|share)\\b[\\s\\S]{0,80}\\b(?:on|to|through|via)?\\s*${platform}\\b`,
-      "i",
-    ).test(cleaned) ||
-    new RegExp(
-      `\\b(?:send|message|dm|text|email|invite|notify|contact|forward|distribute)\\b[\\s\\S]{0,100}\\b(?:${audience}|${platform})\\b`,
-      "i",
-    ).test(cleaned) ||
-    new RegExp(`\\b${platform}\\b[\\s\\S]{0,80}\\b${audience}\\b`, "i").test(cleaned) ||
-    new RegExp(
-      `\\b(?:create|make|set\\s+up|put)\\b[\\s\\S]{0,60}\\b${platform}\\b[\\s\\S]{0,30}\\b(?:event|event\\s+page|page|post)\\b`,
-      "i",
-    ).test(cleaned) ||
-    new RegExp(`\\b${platform}\\b[\\s\\S]{0,40}\\b(?:event\\s+page|event)\\b`, "i").test(cleaned)
-  );
-}
-
 const UNSUPPORTED_EXTERNAL_CONCIERGE_MESSAGE =
-  "I can help with that, but I can't post to Facebook, create social media event pages, or contact people for you.\nI can write the post copy or help create an Envitefy event link you can share yourself.";
+  "I can prepare the event link and message for you to share. I can't post to your social accounts or contact guests from this chat.";
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function publicizeAssistantBubbleText(text: string) {
-  return Object.entries(OUTPUT_LABELS).reduce(
+  return Object.entries(OUTPUT_LABELS).filter(([output]) => output.includes("_")).reduce(
     (current, [output, label]) =>
       current.replace(new RegExp(`\\b${escapeRegExp(output)}\\b`, "g"), label),
     text,
@@ -507,24 +486,19 @@ function renderHighlightedAssistantLine(
 
 function formatAssistantBubbleText(text: string, detailsDraft?: ConciergeEventDraft | null) {
   const sanitized = sanitizeAssistantBubbleText(text, detailsDraft);
-  const lines = (optionalGiftQuestionText(sanitized) || sanitized).split(/\n/);
-  return lines.map((line, index) => {
-    if (!line.trim()) return <br key={`break-${index}`} />;
-    const detail = line.match(DETAIL_CONFIRMATION_LINE);
-    if (detail) {
-      return (
-        <span key={`${line}-${index}`} className="block">
-          <span className="font-medium text-[#5f5289]">{detail[1]}:</span>{" "}
-          <strong className="font-semibold text-[#150d2b]">{detail[2]}</strong>
-        </span>
-      );
-    }
-    return (
-      <span key={`${line}-${index}`} className="block">
-        {renderHighlightedAssistantLine(line, detailsDraft)}
-      </span>
-    );
-  });
+  const paragraphs = (optionalGiftQuestionText(sanitized) || sanitized).trim().split(/\n\s*\n/);
+  return paragraphs.map((paragraph, paragraphIndex) => (
+    <p key={`${paragraphIndex}-${paragraph}`} className={paragraphIndex ? "mt-2.5" : undefined}>
+      {paragraph.split("\n").map((line, index) => {
+        const detail = line.match(DETAIL_CONFIRMATION_LINE);
+        return (
+          <span key={`${line}-${index}`} className="block">
+            {detail ? <><span className="font-medium text-[#5f5289]">{detail[1]}:</span>{" "}<strong className="font-semibold text-[#150d2b]">{detail[2]}</strong></> : renderHighlightedAssistantLine(line, detailsDraft)}
+          </span>
+        );
+      })}
+    </p>
+  ));
 }
 
 function parseConciergeStreamEvent(rawEvent: string) {
@@ -839,6 +813,7 @@ function buildChatOcrContext(
 ): ConciergeOcrContext {
   return {
     ocrText: result.ocrText || null,
+    sourceEvidence: result.sourceEvidence || null,
     fieldsGuess: buildChatFieldsGuess(result),
     category: result.category || null,
     birthdayTemplateHint: result.birthdayTemplateHint ?? null,
@@ -898,7 +873,7 @@ function isReceivedInviteDraft(draft: ConciergeEventDraft | null) {
 }
 
 function isReadyReceivedInviteDraft(draft: ConciergeEventDraft | null) {
-  return isReceivedInviteDraft(draft) && isReadyCreationDraft(draft);
+  return isReceivedInviteDraft(draft) && getCreationReadiness(draft).canPublish;
 }
 
 function isGenerateConfirmationMessage(value: string) {
@@ -909,10 +884,7 @@ function isGenerateConfirmationMessage(value: string) {
 
 function isReadyCreationDraft(draft: ConciergeEventDraft | null) {
   return Boolean(
-    draft?.requestedOutputs.length &&
-      draft.draftStatus === "preview_ready" &&
-      !draft.currentQuestion &&
-      draft.missingFields.length === 0,
+    getCreationReadiness(draft).canPreview,
   );
 }
 
@@ -1515,6 +1487,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const composerCardRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const shouldRefocusComposerRef = useRef(false);
+  const responseAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => {
+    responseAbortRef.current?.abort();
+    responseAbortRef.current = null;
+  }, []);
   const [input, setInput] = useState("");
   const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput | null>(null);
   const [selectedStarterCategory, setSelectedStarterCategory] =
@@ -1662,10 +1639,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const selectedProductOption = selectedProductOutput
     ? PRODUCT_OPTIONS.find((option) => option.output === selectedProductOutput) || null
     : null;
-  const selectedProductPillOption =
-    selectedProductOption && (isEmptyState || selectedStarterCategory)
-      ? selectedProductOption
-      : null;
+  const selectedProductPillOption = selectedProductOption;
+  const canStopResponse = isSending && Boolean(responseAbortRef.current);
   const hasComposerSelection = Boolean(selectedStarterCategory || selectedProductOutput);
   const canSubmitComposer = Boolean(input.trim() || hasComposerSelection);
   const selectedSkinLabel =
@@ -1700,10 +1675,13 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     const restoredOutput = nextDraft.requestedOutputs
       .map(visibleProductOutput)
       .find((output) => PRODUCT_OPTIONS.some((option) => option.output === output));
-    if (restoredOutput) setSelectedProductOutput(restoredOutput);
+    setSelectedProductOutput(restoredOutput || null);
   }
 
   function resetConversation() {
+    responseAbortRef.current?.abort();
+    responseAbortRef.current = null;
+    setIsSending(false);
     setInput("");
     setError(null);
     setDraft(null);
@@ -1826,6 +1804,10 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   function removeSelectedProductOutput() {
     if (isBusy || !selectedProductOutput) return;
+    if (draft?.requestedOutputs.includes(selectedProductOutput)) {
+      void sendToConcierge({ message: `Remove the ${OUTPUT_LABELS[selectedProductOutput]}.` });
+      return;
+    }
     updateComposerSelection();
     setSelectedProductOutput(null);
   }
@@ -2030,7 +2012,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       previousDraft?: ConciergeEventDraft | null;
     } = {},
   ): Promise<GeneratedInvitePayload> {
-    const details = buildStudioDetailsFromDraft(draftToGenerate);
+    const details = { ...buildStudioDetailsFromDraft(draftToGenerate),
+      product: resolveStudioProduct(draftToGenerate.requestedOutputs.find((output) => ["live_card", "digital_flyer", "printable_flyer", "event_page", "invitation"].includes(output))),
+      approvedWording: draftToGenerate.copyStatus === "ready" ? draftToGenerate.previewCopy.body : undefined,
+      rsvpEnabled: draftToGenerate.rsvpEnabled === true,
+      timezone: draftToGenerate.timezone,
+    };
     const sourceImageUrl = stringValue(options.sourceImageUrl);
     const editPrompt = stringValue(options.editPrompt);
     const previousDetails = options.previousDraft
@@ -2039,7 +2026,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     const response = await requestStudioGeneration(
       details,
       sourceImageUrl ? "image" : "both",
-      "page",
+      details.product === "digital_flyer" || details.product === "printable_flyer" ? "image" : "page",
       editPrompt || undefined,
       sourceImageUrl || undefined,
       previousDetails,
@@ -2053,6 +2040,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     const fileName = `${buildEventSlug(draftHeadline(draftToGenerate)) || "envitefy-invite"}.png`;
     const imageUrl = await persistImageMediaValue({
       value: rawImageUrl,
+      preferOriginal: details.product === "digital_flyer" || details.product === "printable_flyer",
       fileName,
     });
     if (!imageUrl) {
@@ -2113,7 +2101,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   async function publishGeneratedDraft() {
     if (isBusy || !draft || !draftStudioInvite) return;
     const productDraft = normalizeDraftProductOutputs(draft);
-    if (!isReadyProductDraft(productDraft)) {
+    if (!getCreationReadiness(productDraft).canPublish) {
       setError("Add the missing event details before publishing the invite.");
       return;
     }
@@ -2334,6 +2322,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     starterCategory?: string | null;
     echo?: string;
     suppressUserEcho?: boolean;
+    retryReply?: boolean;
   }): Promise<ConciergeStreamStatePayload | null> {
     const message = params.message.trim();
     if (!message && !params.ocrContext) return null;
@@ -2350,22 +2339,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setMessages((prev) => (userMessage ? [...prev, userMessage] : prev));
     }
     setSelectedStarterCategory(null);
-    if (isUnsupportedExternalConciergeRequest(message)) {
-      setMessages((prev) => [
-        ...prev,
-        newMessage("assistant", UNSUPPORTED_EXTERNAL_CONCIERGE_MESSAGE),
-      ]);
-      setPhase(
-        draft
-          ? isReadyProductDraft(draft)
-            ? "ready_to_generate"
-            : "collecting_details"
-          : "intake_empty",
-      );
-      setIsSending(false);
-      refocusComposerAfterResponse();
-      return null;
-    }
+    const responseController = new AbortController();
     let streamAssistantId: string | null = null;
     let streamedAssistantText = "";
     try {
@@ -2423,6 +2397,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         requestedOutputs,
         starterCategory: params.starterCategory || null,
         action,
+        retryReply: params.retryReply === true,
         chatMessages: chatMessagesForPersistence(messages, userMessage ? [userMessage] : []),
       };
       const isExplicitProductChoice =
@@ -2431,15 +2406,17 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       const isDateConfirmationReply = draft?.currentQuestion === "date_confirmation";
       const shouldStream =
         !params.ocrContext &&
-        !isDateConfirmationReply &&
+        (!isDateConfirmationReply || params.retryReply) &&
         !isExplicitProductChoice &&
         (action === "message" || action === "chip" || action === "starter_category");
 
       if (shouldStream) {
+        responseAbortRef.current = responseController;
         const assistantPlaceholder = newMessage("assistant", "");
         streamAssistantId = assistantPlaceholder.id;
         setMessages((prev) => [...prev, assistantPlaceholder]);
         const response = await fetch(withConciergeTiming(CREATION_INTAKE_STREAM_URL), {
+          signal: responseController.signal,
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -2451,6 +2428,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         }
         const finalState = await readConciergeIntakeStream(response, {
           onDelta: (text) => {
+            if (responseController.signal.aborted) return;
             streamedAssistantText += text;
             setIsStreamingAssistant(true);
             setMessages((prev) =>
@@ -2460,6 +2438,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             );
           },
           onAssistantDone: (assistantMessage) => {
+            if (responseController.signal.aborted) return;
             streamedAssistantText = assistantMessage;
             setMessages((prev) =>
               prev.map((item) =>
@@ -2468,6 +2447,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             );
           },
           onState: (json) => {
+            if (responseController.signal.aborted) return;
             setDraft(json.draft);
             selectProductOutputForDraft(json.draft);
             setWeatherContext(json.weatherContext || null);
@@ -2518,6 +2498,15 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       if (!json.chatMessages?.length) setMessages((prev) => [...prev, assistantMessage]);
       return json;
     } catch (err) {
+      if (responseController.signal.aborted) {
+        if (responseAbortRef.current !== responseController) return null;
+        setMessages((prev) => [
+          ...prev.filter((item) => item.id !== streamAssistantId),
+          newMessage("system", "Response stopped. You can edit your message or continue chatting."),
+        ]);
+        setPhase(draft && isReadyProductDraft(draft) ? "ready_to_generate" : draft ? "collecting_details" : "intake_empty");
+        return null;
+      }
       const errorMessage = conciergeClientErrorMessage(err, "Concierge request failed.");
       setPhase(draft ? "collecting_details" : "intake_empty");
       if (streamAssistantId) {
@@ -2527,9 +2516,12 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setFailedRequest({ ...params, error: errorMessage });
       return null;
     } finally {
-      setIsStreamingAssistant(false);
-      setIsSending(false);
-      refocusComposerAfterResponse();
+      if (!responseController.signal.aborted || responseAbortRef.current === responseController) {
+        if (responseAbortRef.current === responseController) responseAbortRef.current = null;
+        setIsStreamingAssistant(false);
+        setIsSending(false);
+        refocusComposerAfterResponse();
+      }
     }
   }
 
@@ -2537,6 +2529,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     if (!failedRequest || isBusy) return;
     await sendToConcierge({
       message: failedRequest.message,
+      retryReply: failedRequest.retryReply,
       action: failedRequest.action,
       ocrContext: failedRequest.ocrContext,
       activeContext: failedRequest.activeContext,
@@ -2966,7 +2959,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             ) : (
               <div className="flex max-w-[94%] items-start gap-2 sm:max-w-[88%]">
                 <ConciergeChatAvatar />
-                <div className="min-w-0 whitespace-pre-line rounded-3xl rounded-tl-md border border-[#eadfff] bg-white/88 px-4 py-3 text-sm leading-6 text-[#24183e] shadow-sm">
+                <div className="min-w-0 break-words rounded-3xl rounded-tl-md border border-[#eadfff] bg-white/88 px-4 py-3 text-sm leading-6 text-[#24183e] shadow-sm">
                   {message.role === "assistant"
                     ? formatAssistantBubbleText(message.text, draft)
                     : message.text}
@@ -2976,6 +2969,19 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           </motion.div>
         ))}
       </AnimatePresence>
+
+      {draft?.pendingReply && !failedRequest ? (
+        <button
+          type="button"
+          disabled={isBusy}
+          className="ml-10 min-h-11 self-start rounded-lg px-3 text-sm font-semibold text-[#5c5be5] hover:bg-[#eee7ff] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+          onClick={() => {
+            if (draft.pendingReply) void sendToConcierge({ message: draft.pendingReply.message, retryReply: true, suppressUserEcho: true });
+          }}
+        >
+          Try answer again
+        </button>
+      ) : null}
 
       {failedRequest ? (
         <motion.div
@@ -3213,7 +3219,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       )}
     >
       <div ref={composerCardRef} className="pointer-events-auto w-full">
-        {isEmptyState ? emptyProductFormatSelector : null}
+        {isEmptyState ? (
+          <>
+            {emptyProductFormatSelector}
+            <p className="mb-3 px-2 text-center text-xs leading-relaxed text-[#625579]">
+              {selectedProductOption?.description || "Live Card: a compact invitation. Flyer: a shareable image. Event Page: more room for schedules and details."}
+            </p>
+          </>
+        ) : null}
         <form onSubmit={handleSubmit}>
           <input
             ref={fileInputRef}
@@ -3230,7 +3243,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             onValueChange={handleComposerValueChange}
             isLoading={isBusy}
             onSubmit={() => void submitComposerInput()}
-            disabled={isBusy}
+            disabled={isUploading || isGeneratingCard || isPublishingCard}
             className={cn(
               "w-full border-[#d8caff] bg-[#fbf9ff] p-2 text-[#25183a] shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur transition-all duration-300",
               isCompactEmptyComposer && "max-md:rounded-[1.4rem] max-md:p-1.5",
@@ -3250,9 +3263,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                   placeholder={
                     liveCardEventId
                       ? "Tell me what to change..."
-                      : isCompactEmptyComposer
-                        ? "Type instead..."
-                        : "Or just start typing and let's get going..."
+                      : draft
+                        ? "Ask a question or change a detail..."
+                        : "Tell me what you're planning..."
                   }
                   aria-label={liveCardEventId ? "Refine invite" : "Start planning from scratch"}
                   onFocus={() => setIsComposerFocused(true)}
@@ -3266,7 +3279,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                 <PromptInputActions className="ml-auto shrink-0 justify-end gap-2">
                   <PromptInputAction
                     tooltip={
-                      isBusy
+                      canStopResponse
+                        ? "Stop response"
+                        : isBusy
                         ? busyLabel
                         : canSubmitComposer
                           ? "Send message"
@@ -3276,9 +3291,14 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                     }
                   >
                     <button
-                      type={canSubmitComposer ? "submit" : "button"}
-                      disabled={isBusy || (!canSubmitComposer && isListening)}
+                      type={!canStopResponse && canSubmitComposer ? "submit" : "button"}
+                      disabled={!canStopResponse && (isBusy || (!canSubmitComposer && isListening))}
                       onClick={(event) => {
+                        if (canStopResponse) {
+                          event.preventDefault();
+                          responseAbortRef.current?.abort();
+                          return;
+                        }
                         if (canSubmitComposer) return;
                         event.preventDefault();
                         void handleVoiceInput();
@@ -3287,9 +3307,11 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                         "inline-flex h-11 w-11 items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] hover:text-[#5c5be5] disabled:pointer-events-none disabled:opacity-50",
                         (canSubmitComposer || isListening) && "text-[#5c5be5]",
                       )}
-                      aria-label={canSubmitComposer ? "Send" : "Use voice input"}
+                      aria-label={canStopResponse ? "Stop response" : canSubmitComposer ? "Send" : "Use voice input"}
                     >
-                      {isBusy ? (
+                      {canStopResponse ? (
+                        <Square className="size-4 fill-current" aria-hidden="true" />
+                      ) : isBusy ? (
                         <Loader2
                           className={cn(
                             "size-5 animate-spin text-[#5c5be5]",
@@ -3329,7 +3351,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   );
 
   const readyActions = (
-    <div className="pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.75rem)] pt-4 sm:px-6 sm:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+2rem)]">
+    <div className="pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pt-2 sm:px-6">
       <div className="pointer-events-auto w-full">
         {shouldShowGiftRegistryPrompt ? (
           <div className="mb-2 rounded-[1.35rem] border border-[#ded2f5] bg-white/96 p-3 text-[#4f3a73] shadow-[0_14px_34px_rgba(93,63,155,0.12)] ring-1 ring-white/80 backdrop-blur">
@@ -3384,16 +3406,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           </div>
         ) : null}
         {!shouldShowGiftRegistryPrompt && !shouldShowReceivedInviteActions ? (
-          <div className="mx-auto grid w-full max-w-[22rem] grid-cols-2 gap-1.5 rounded-2xl border border-[#d8caff] bg-[#fbf9ff]/96 p-1.5 shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur">
-            <button
-              type="button"
-              onClick={() => setIsReadyChatComposerOpen(true)}
-              disabled={isGeneratingCard}
-              className="inline-flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[#ded2f5] bg-white px-2.5 text-sm font-bold text-[#4f3a73] transition hover:border-[#c7b4ee] hover:bg-[#f5f0ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55"
-            >
-              <MessageCircle className="size-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">Keep editing</span>
-            </button>
+          <div className="w-full rounded-2xl border border-[#d8caff] bg-[#fbf9ff]/96 p-3 text-sm text-[#4f3a73]">
             <button
               type="button"
               onClick={() => {
@@ -3404,7 +3417,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               aria-label={
                 isGeneratingCard
                   ? `Generating ${effectiveSelectedProductLabel.toLowerCase()}`
-                  : `Generate now: ${effectiveSelectedProductLabel.toLowerCase()}`
+                  : `Generate draft preview: ${effectiveSelectedProductLabel.toLowerCase()}`
               }
             >
               {isGeneratingCard ? (
@@ -3412,8 +3425,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               ) : (
                 <Sparkles className="size-4 shrink-0" aria-hidden="true" />
               )}
-              <span className="truncate">{isGeneratingCard ? "Generating" : "Generate now"}</span>
+              <span className="truncate">{isGeneratingCard ? "Generating" : "Generate draft preview"}</span>
             </button>
+            <p className="mt-2 text-xs">Review the design first. Publish is a separate step.</p>
           </div>
         ) : null}
         {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
@@ -3435,7 +3449,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       rsvpDashboardHref={rsvpDashboardHref}
       hasDraftProduct={hasGeneratedDraftProduct || hasReadyReceivedInvite}
       isReceivedInviteDraft={isReceivedInviteDraft(draft)}
-      publishActionLabel={hasReadyReceivedInvite ? "Save invite" : "Save / Publish"}
+      publishActionLabel={hasReadyReceivedInvite ? "Save invite" : "Publish event"}
       publishBusyLabel={hasReadyReceivedInvite ? "Saving..." : "Publishing..."}
       skinLabel={selectedSkinLabel}
       isPublishing={isPublishingCard}
@@ -3473,7 +3487,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
           <section className="flex min-h-0 flex-1 flex-col">
             {shouldShowProductPanel ? (
-              <div className="shrink-0 border-b border-[#eee8f6] bg-white pb-2 pl-14 pr-3 pt-[max(0.35rem,env(safe-area-inset-top))] md:hidden">
+              <div className="shrink-0 border-b border-[#eee8f6] bg-white pb-2 pl-14 pr-3 pt-[max(0.35rem,env(safe-area-inset-top))] lg:hidden">
                 <div className="grid grid-cols-2 rounded-lg bg-[#f1edf7] p-1">
                   <button
                     type="button"
@@ -3501,8 +3515,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             <div
               className={`grid h-full min-h-0 ${
                 shouldShowProductPanel
-                  ? "md:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)]"
-                  : "md:grid-cols-1"
+                  ? "lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]"
+                  : "grid-cols-1"
               }`}
             >
               <div
@@ -3510,9 +3524,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                 className={cn(
                   "min-h-0 w-full flex-col overflow-hidden",
                   isEmptyState ? "bg-transparent" : "bg-white/28 backdrop-blur-sm",
-                  shouldShowProductPanel && "md:border-r md:border-[#e5dff0]",
-                  mobileView === "chat" ? "flex" : "hidden md:flex",
-                  !shouldShowProductPanel && "md:border-r-0",
+                  mobileView === "chat" ? "flex" : "hidden lg:flex",
                 )}
               >
                 <div
@@ -3531,7 +3543,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                         What are we celebrating?
                       </motion.h1>
                       <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-[#6f608c] sm:mt-3 sm:text-base max-md:mt-1.5 max-md:text-xs max-md:leading-5 max-h-[620px]:max-md:hidden">
-                        Choose a category, pick a product, or describe the event in your own words.
+                    Tell me who it's for and what you have in mind. I'll help with the details and format.
                       </p>
                       <nav
                         className="mx-auto mt-6 grid w-full max-w-[39rem] flex-1 grid-cols-2 content-center justify-items-center gap-8 text-center sm:mt-8 sm:gap-12 md:grid-cols-3 max-md:mt-2.5 max-md:gap-[clamp(0.7rem,1.8dvh,1.1rem)] max-h-[700px]:max-md:mt-1.5"
@@ -3617,7 +3629,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
                 shouldShowReceivedInviteActions ||
                 shouldShowReadyActions
                   ? readyActions
-                  : composer}
+                  : null}
+                {composer}
               </div>
               {shouldShowProductPanel ? productPanel : null}
             </div>

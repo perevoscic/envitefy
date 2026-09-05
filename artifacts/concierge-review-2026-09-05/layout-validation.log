@@ -1,0 +1,67 @@
+bun test v1.3.11 (af24e281)
+
+src\lib\concierge\copy-workflow.test.mjs:
+(pass) a later invitation request remembers both languages and produces useful TBC copy without AI [31.00ms]
+(pass) an incomplete model translation cannot replace the bilingual starting copy
+(pass) unrelated model extraction cannot rewrite approved invitation prose [16.00ms]
+(pass) a new language preference refreshes starting copy and marks approved prose for revision
+(pass) a bare date response never becomes the missing venue [16.00ms]
+(pass) model language blocks must be complete and cannot retain a removed language
+(pass) unfinished writing survives unrelated replies and clears only when completed or cancelled
+(pass) retrying an interrupted answer uses current facts rather than reapplying the original edits
+(pass) an AI retry cannot overwrite current logistics with stale preview fields
+(pass) the chat appends the exact canonical wording after contextual planning advice [15.00ms]
+(pass) a provider outage keeps useful starting copy and makes the interruption recoverable
+
+src\lib\concierge\host-service.test.mjs:
+(pass) bilingual guest prose keeps readable paragraph breaks
+(pass) copy sanitation preserves single line breaks without inflating paragraph spacing
+(pass) an overwhelmed host receives a manageable provisional plan during an AI timeout [16.00ms]
+(pass) later fallback help respects the saved budget and access needs
+(pass) a host can remove contact details and review a bilingual invitation without an off-topic refusal [15.00ms]
+(pass) stale model values cannot undo an exact location, title or RSVP privacy correction
+(pass) unavailable AI still offers a concrete manual-reply plan after the host accepts a limitation
+(pass) moving on to invitation wording does not repeat the previous manual-reply plan
+(pass) model prose cannot restore a contact removed in the current correction [16.00ms]
+(pass) capability facts ground a contextual response instead of short-circuiting the host's request
+[concierge] OpenAI persona stream failed; using fallback warn: provider unavailable
+      at create (D:\Develop_local\envitefy\src\lib\concierge\host-service.test.mjs:117:89)
+      at streamConciergePersona (D:\Develop_local\envitefy\src\lib\concierge\persona.ts:224:50)
+      at <anonymous> (D:\Develop_local\envitefy\src\lib\concierge\host-service.test.mjs:113:24)
+      at fn (node:test:210:18)
+
+(pass) a failed AI response is transparent and still gives the host a practical next step
+
+src\lib\concierge\natural-corrections.test.mjs:
+(pass) a worried host's introduction becomes event facts rather than the whole draft title [16.00ms]
+(pass) unknown events never use a long conversational introduction as a canonical title
+(pass) exact titles support natural imperative wording, punctuation and apostrophes
+(pass) one natural correction independently updates title, schedule, location and RSVP [15.00ms]
+(pass) moving the date does not overwrite the venue even when a later clause mentions location
+(pass) location changes stop at the next instruction and allow exact quoted names [16.00ms]
+(pass) a date or title correction preserves approved bilingual guest prose
+(pass) explicit RSVP toggles take precedence over stale extracted values and remain reversible [16.00ms]
+(pass) removing host contact information clears previously saved contact fields
+(pass) saved prose cannot retain a removed host contact or the superseded event date [15.00ms]
+(pass) the factual guard accepts corrected prose and unrelated dates and bilingual style [16.00ms]
+(pass) stale copy checks project ISO facts into the event timezone rather than server time
+
+src\lib\concierge\persona.test.mjs:
+(pass) persona streams deterministic fallback when no OpenAI key exists
+(pass) persona does not force a product-format prompt for starter categories
+(pass) persona reaches normal Envitefy side questions when OpenAI is configured
+(pass) persona uses deterministic fallback for date confirmation prompts
+(pass) persona uses deterministic fallback for private account-data boundaries
+(pass) persona reaches ready drafts with optional gift prompts
+(pass) persona preserves streamed token spacing
+(pass) persona strips markdown emphasis and star separators from confirmations
+(pass) persona prompt and sanitizer keep streamed tone polished
+(pass) persona publicizes product labels instead of raw output keys
+(pass) persona does not expose default timezone copy
+(pass) persona receives bounded weather context for forecast questions
+(pass) persona keeps missing-location weather prompt exact
+(pass) persona explains an unavailable tailored reply when first token times out [16.00ms]
+
+ 48 pass
+ 0 fail
+Ran 48 tests across 4 files. [426.00ms]

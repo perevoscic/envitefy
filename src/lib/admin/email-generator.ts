@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { resolveEmailEmbedAssetUrl, uploadPublicBinaryAsset } from "../media-upload.ts";
+import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import {
   ADMIN_EMAIL_GENERATION_GUIDE,
   bannedAdminEmailTextLinkPattern,
@@ -78,7 +79,7 @@ type GenerateAdminEmailDraftDeps = {
   }>;
 };
 
-const DEFAULT_ADMIN_EMAIL_GENERATOR_MODEL = "gpt-5.6-sol";
+const DEFAULT_ADMIN_EMAIL_GENERATOR_MODEL = "gpt-6-astra";
 const DEFAULT_ADMIN_EMAIL_IMAGE_MODEL = "gpt-image-2";
 const DEFAULT_ENVITEFY_CTA_URL = ADMIN_EMAIL_GENERATION_GUIDE.ctaDefaults.buttonUrl;
 const MAX_PROMPT_LENGTH = 5000;
@@ -1762,6 +1763,7 @@ export async function generateAdminEmailDraft(
     for (let attempt = 1; attempt <= MAX_DRAFT_FIDELITY_ATTEMPTS; attempt += 1) {
       const completion = await client.chat.completions.create({
         model,
+        ...openAiChatCompatibilityParams(model),
         response_format: {
           type: "json_schema",
           json_schema: {

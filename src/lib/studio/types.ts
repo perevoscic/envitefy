@@ -1,3 +1,5 @@
+import { CREATIVE_PLAN_SCHEMA, resolveStudioProduct, type StudioProduct, type StudioCreativePlan } from "./product-contract.ts";
+import { matchesSchema } from "../creation/source-evidence.ts";
 export type StudioGenerateMode = "text" | "image" | "both";
 export type StudioGenerateSurface = "page" | "image";
 export type StudioProvider = "gemini" | "openai";
@@ -7,6 +9,9 @@ export type StudioVisualStyleMode = "photoreal" | "editorial_cinematic" | "playf
 export type StudioThemeNormalizationRisk = "safe" | "rewrite" | "block";
 
 export type StudioEventDetails = {
+  approvedWording?: string | null;
+  rsvpEnabled?: boolean | null;
+  additionalLocations?: Array<{ label?: string | null; venue?: string | null; location?: string | null; address?: string | null; timeText?: string | null; description?: string | null }>;
   title: string;
   category?: string | null;
   occasion?: string | null;
@@ -89,6 +94,7 @@ export type StudioLiveCardInteractiveMetadata = {
 };
 
 export type StudioGenerateRequest = {
+  product?: StudioProduct;
   mode?: StudioGenerateMode;
   surface?: StudioGenerateSurface;
   event: StudioEventDetails;
@@ -112,6 +118,7 @@ export type StudioInvitationText = {
 };
 
 export type StudioLiveCardMetadata = {
+  creativePlan?: StudioCreativePlan;
   title: string;
   description: string;
   palette: StudioLiveCardPalette;
@@ -129,6 +136,8 @@ export type StudioGenerationError = {
 };
 
 export type StudioGenerateResponse = {
+  product?: StudioProduct;
+  qualityCheck?: "passed" | "failed" | "unavailable";
   ok: boolean;
   mode: StudioGenerateMode;
   liveCard: StudioLiveCardMetadata | null;
@@ -215,6 +224,9 @@ function normalizeEvent(value: unknown): StudioEventDetails | null {
   if (!title) return null;
   return {
     title,
+    approvedWording: safeNullableString((value as any).approvedWording),
+    rsvpEnabled: typeof (value as any).rsvpEnabled === "boolean" ? (value as any).rsvpEnabled : null,
+    additionalLocations: normalizeAdditionalEventLocations((value as any).additionalLocations),
     category: safeNullableString((value as any).category),
     occasion: safeNullableString((value as any).occasion),
     eventYear: safeNullableString((value as any).eventYear),
@@ -317,6 +329,7 @@ export function parseStudioGenerateRequest(input: unknown): ParseSuccess | Parse
     value: {
       mode,
       surface,
+      product: resolveStudioProduct((input as Record<string, unknown>).product, surface),
       event,
       guidance: normalizeGuidance((input as any).guidance),
       imageEdit: normalizeImageEdit((input as any).imageEdit),
@@ -346,16 +359,7 @@ function normalizeInvitationTextObject(value: unknown): StudioInvitationText | n
     .filter((tag) => tag.length > 0)
     .slice(0, 8);
 
-  if (
-    !title ||
-    !subtitle ||
-    !openingLine ||
-    !scheduleLine ||
-    !locationLine ||
-    !detailsLine ||
-    !callToAction ||
-    !socialCaption
-  ) {
+  if (!title) {
     return null;
   }
 
@@ -427,14 +431,13 @@ export function normalizeLiveCardMetadata(value: unknown): StudioLiveCardMetadat
   }
 
   if (
-    !interactiveMetadata.rsvpMessage ||
-    !interactiveMetadata.ctaLabel ||
-    !interactiveMetadata.shareNote
+    !interactiveMetadata.ctaLabel
   ) {
     return null;
   }
 
   return {
+    creativePlan: matchesSchema((value as Record<string, unknown>).creativePlan, CREATIVE_PLAN_SCHEMA) ? (value as { creativePlan: StudioCreativePlan }).creativePlan : undefined,
     title,
     description,
     palette,
@@ -447,4 +450,11 @@ export function normalizeLiveCardMetadata(value: unknown): StudioLiveCardMetadat
     },
     invitation,
   };
+}
+
+function normalizeAdditionalEventLocations(value: unknown): NonNullable<StudioEventDetails["additionalLocations"]> {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is Record<string, unknown> => item !== null && typeof item === "object" && !Array.isArray(item)).slice(0, 12).map((item) => ({
+    label: safeNullableString(item.label), venue: safeNullableString(item.venue), location: safeNullableString(item.location), address: safeNullableString(item.address), timeText: safeNullableString(item.timeText), description: safeNullableString(item.description),
+  }));
 }

@@ -1,0 +1,112 @@
+bun test v1.3.11 (af24e281)
+
+src\lib\concierge\conversation-golden.test.mjs:
+(pass) conversation 1: greeting stays warm and does not create a draft [16.00ms]
+(pass) conversation 2: birthday live card reaches a ready owned draft [31.00ms]
+(pass) conversation 3: received invite without source asks for upload or pasted text
+(pass) conversation 4: received invite with concrete details is ready as invited
+(pass) conversation 5: non-invite upload becomes an owned My Events draft
+(pass) conversation 6: output-only RSVP request asks for event context first
+(pass) conversation 7: ambiguous this asks which source to use
+(pass) conversation 8: weather question with missing location asks for city
+(pass) conversation 9: future weather question explains forecast-window limits
+(pass) conversation 10: unrelated private-data mutation is not an event detail
+(pass) conversation 11: Envitefy product questions are answered instead of becoming drafts
+(pass) conversation 12: generate requests with missing details explain the blocker
+(pass) conversation 13: unsafe or unrelated prompts do not become drafts
+
+src\lib\concierge\conversation-repair.test.mjs:
+(pass) the recorded customers' sharing questions do not ask us to contact guests
+(pass) format comparisons do not order products; choices and removals replace the selection [15.00ms]
+(pass) extract exact title corrections without copying complaints or dropping a twin
+(pass) explicit requests for two products still work while comparative questions stay unchanged
+(pass) a ready draft acknowledges a real correction instead of claiming nothing changed
+(pass) title and output corrections reach the draft and survive unrelated follow-ups and stale model output [16.00ms]
+(pass) capability answers distinguish supported RSVP fields, planning counts and the publish step
+(pass) persona still corrects unsupported promises when a model is unavailable
+(pass) a past refusal does not remain attached to an otherwise usable event source [15.00ms]
+(pass) cancelled persona replies do not emit a fallback or finish the response
+
+src\lib\concierge\copy-workflow.test.mjs:
+(pass) a later invitation request remembers both languages and produces useful TBC copy without AI
+(pass) an incomplete model translation cannot replace the bilingual starting copy [16.00ms]
+(pass) unrelated model extraction cannot rewrite approved invitation prose
+(pass) a new language preference refreshes starting copy and marks approved prose for revision
+(pass) a bare date response never becomes the missing venue
+(pass) model language blocks must be complete and cannot retain a removed language [16.00ms]
+(pass) unfinished writing survives unrelated replies and clears only when completed or cancelled
+(pass) retrying an interrupted answer uses current facts rather than reapplying the original edits
+(pass) an AI retry cannot overwrite current logistics with stale preview fields
+(pass) the chat appends the exact canonical wording after contextual planning advice
+(pass) a provider outage keeps useful starting copy and makes the interruption recoverable
+
+src\lib\concierge\host-brief.test.mjs:
+(pass) Elena's stated priorities persist independently of a short chat history
+(pass) the saved-priorities review does not repeat superseded facts from source citations
+(pass) explicit privacy and manual reply requests stay attached to the host brief
+(pass) a wedding host's access and food needs can be individually corrected
+(pass) an English-only correction removes Spanish and survives unrelated edits
+(pass) budget revisions preserve scope while line items cannot replace the whole budget
+(pass) questions, possibilities and assistant suggestions never become confirmed requirements
+(pass) model normalization cannot introduce unsupported facts or strip a source's negation
+(pass) negated hazards remain needs and an explicit change can end a privacy or manual plan
+
+src\lib\concierge\host-privacy.test.mjs:
+(pass) a privacy instruction protects canonical fields even if the preview was already masked [16.00ms]
+(pass) an intentional coarse location survives but adding 'private' cannot conceal a street address
+(pass) additional stops retain their sequence and time but lose private address and map fields
+(pass) removed private address paragraphs cannot survive in approved bilingual guest prose
+(pass) confirmed contact privacy removes saved and stale prose contacts while keeping schedule facts
+(pass) missing privacy preferences and explicit retractions do not redact public event details
+(pass) all-private guest prose becomes empty and needs review rather than invented replacement wording
+(pass) privacy is enforced through fallback and AI normalization, including stale model fields
+(pass) online RSVP can stay enabled without repeatedly demanding a hidden host contact
+
+src\lib\concierge\host-service.test.mjs:
+(pass) bilingual guest prose keeps readable paragraph breaks
+(pass) copy sanitation preserves single line breaks without inflating paragraph spacing
+(pass) an overwhelmed host receives a manageable provisional plan during an AI timeout
+(pass) later fallback help respects the saved budget and access needs
+(pass) a host can remove contact details and review a bilingual invitation without an off-topic refusal
+(pass) stale model values cannot undo an exact location, title or RSVP privacy correction [15.00ms]
+(pass) unavailable AI still offers a concrete manual-reply plan after the host accepts a limitation
+(pass) moving on to invitation wording does not repeat the previous manual-reply plan
+(pass) model prose cannot restore a contact removed in the current correction
+(pass) capability facts ground a contextual response instead of short-circuiting the host's request
+[concierge] OpenAI persona stream failed; using fallback warn: provider unavailable
+      at create (D:\Develop_local\envitefy\src\lib\concierge\host-service.test.mjs:117:89)
+      at streamConciergePersona (D:\Develop_local\envitefy\src\lib\concierge\persona.ts:224:50)
+      at <anonymous> (D:\Develop_local\envitefy\src\lib\concierge\host-service.test.mjs:113:24)
+      at fn (node:test:210:18)
+
+(pass) a failed AI response is transparent and still gives the host a practical next step
+
+src\lib\concierge\name-age-date.test.mjs:
+(pass) the reported Livia reply supplies a name and age while the misspelled month supplies the date
+(pass) ordinary name-age-date variations do not turn the age into a clock time
+(pass) an age by itself never fabricates a date
+(pass) a stated party time remains distinct from the birthday age
+(pass) event durations and anniversary counts are not honoree ages or event dates [15.00ms]
+(pass) stale model values cannot turn explicit age and date facts back into a title or duration
+(pass) the next date correction can recover an already contaminated unsaved draft
+(pass) reopening or a complaint can recover the original facts without retyping or mutating storage
+(pass) narrow recovery preserves authored invitation wording when only the structured name was missing
+(pass) a generated title does not silently restore a deliberately cleared name
+
+src\lib\concierge\natural-corrections.test.mjs:
+(pass) a worried host's introduction becomes event facts rather than the whole draft title [16.00ms]
+(pass) unknown events never use a long conversational introduction as a canonical title
+(pass) exact titles support natural imperative wording, punctuation and apostrophes
+(pass) one natural correction independently updates title, schedule, location and RSVP
+(pass) moving the date does not overwrite the venue even when a later clause mentions location
+(pass) location changes stop at the next instruction and allow exact quoted names [16.00ms]
+(pass) a date or title correction preserves approved bilingual guest prose
+(pass) explicit RSVP toggles take precedence over stale extracted values and remain reversible [15.00ms]
+(pass) removing host contact information clears previously saved contact fields
+(pass) saved prose cannot retain a removed host contact or the superseded event date [16.00ms]
+(pass) the factual guard accepts corrected prose and unrelated dates and bilingual style
+(pass) stale copy checks project ISO facts into the event timezone rather than server time
+
+ 85 pass
+ 0 fail
+Ran 85 tests across 8 files. [450.00ms]

@@ -405,11 +405,11 @@ export const PromptInputTextarea: React.FC<PromptInputTextareaProps> = ({
   }, [value, maxHeight, disableAutosize]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    onKeyDown?.(event);
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && !event.defaultPrevented) {
       event.preventDefault();
       onSubmit?.();
     }
-    onKeyDown?.(event);
   };
 
   return (

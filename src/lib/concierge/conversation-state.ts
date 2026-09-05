@@ -203,6 +203,13 @@ function stateFieldNames(state: ConciergeConversationState) {
 
 export function updateConversationState(args: ConversationStateArgs): ConciergeConversationState {
   const previousState = args.previous?.conversationState || null;
+  const reviewFields = (draft: ConciergeEventDraft | null | undefined) => draft && [
+    draft.title, draft.honoreeName, draft.dateText, draft.timeText, draft.location, draft.venue,
+    draft.rsvpEnabled, draft.rsvpDeadline, draft.rsvpName, draft.rsvpContact, draft.numberOfGuests,
+    draft.theme, draft.tone, draft.giftPreferenceNote, draft.giftNote, draft.registryLink,
+    draft.requestedOutputs,
+  ];
+  const detailsChanged = JSON.stringify(reviewFields(args.previous)) !== JSON.stringify(reviewFields(args.draft));
   const role = inferEventRole(args.draft.eventType, args.draft.title, args.message);
   const honoree = extractedField(args.draft.honoreeName, {
     sourceText: args.message,
@@ -214,7 +221,7 @@ export function updateConversationState(args: ConversationStateArgs): ConciergeC
   let state: ConciergeConversationState = {
     eventType: args.draft.eventType,
     productType: args.draft.requestedOutputs[0],
-    title: extractedField(args.draft.title, { sourceText: args.message, confidence: 0.88 }),
+    title: extractedField(args.draft.title, { sourceText: args.message, confidence: args.draft.titleConfirmed ? 1 : 0.88, confirmed: args.draft.titleConfirmed }),
     date: extractedField(args.draft.dateText || args.draft.startISO, {
       sourceText: args.message,
       confidence: 0.9,
@@ -290,7 +297,7 @@ export function updateConversationState(args: ConversationStateArgs): ConciergeC
     state = markQuestionAsked(state, args.draft.currentQuestion || args.draft.missingFields[0]);
   }
   if (state.registrySkipped) state.lastCompletedAction = "skip_gift_link";
-  if (state.readyToGenerate && !previousState?.finalSummaryShown) {
+  if (state.readyToGenerate && (!previousState?.finalSummaryShown || detailsChanged)) {
     state = { ...state, finalSummaryShown: true, currentStep: "ready_first" };
   }
 

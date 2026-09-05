@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@source "../../src/components/branding/EnvitefyWordmark.tsx";
+
+:root {
+  --font-josefin-slab: "Josefin Slab";
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}

@@ -67,7 +67,8 @@ test("date confirmation replies bypass streaming and object errors are normalize
   assert.match(source, /function conciergeClientErrorMessage\(value: unknown, fallback: string\)/);
   assert.match(source, /cleaned !== "\[object Object\]"/);
   assert.match(source, /const isDateConfirmationReply = draft\?\.currentQuestion === "date_confirmation"/);
-  assert.match(source, /!isDateConfirmationReply &&/);
+  assert.match(source, /\(!isDateConfirmationReply \|\| params\.retryReply\) &&/);
+  assert.match(source, /retryReply: failedRequest\.retryReply/);
   assert.doesNotMatch(source, /throw new Error\(payload\?\.error \|\| "Concierge request failed\."\)/);
 });
 

@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions, resolveSessionUserId } from "@/lib/auth";
 import { conciergeApiErrorMessage } from "@/lib/concierge/api-errors";
 import { buildAssistantMessage } from "@/lib/concierge/fallback";
+import { nextPendingReply } from "@/lib/concierge/copy-workflow";
 import { finalizeCreationIntake, resolveCreationIntakeDraft } from "@/lib/concierge/intake";
 import { streamConciergePersona } from "@/lib/concierge/persona";
 import type {
@@ -70,17 +71,25 @@ export async function POST(req: Request) {
       action,
     };
     const encoder = new TextEncoder();
+    const abortController = new AbortController();
+    const abort = () => abortController.abort();
+    req.signal.addEventListener("abort", abort, { once: true });
+    if (req.signal.aborted) abort();
+    let cancelled = false;
     const stream = new ReadableStream({
       async start(controller) {
         const send = (event: string, payload: Record<string, unknown>) => {
+          if (cancelled || abortController.signal.aborted) return;
           controller.enqueue(encoder.encode(ssePayload(event, payload)));
         };
 
         try {
+          abortController.signal.throwIfAborted();
           const result = await resolveCreationIntakeDraft({
             request,
             timing,
           });
+          abortController.signal.throwIfAborted();
           const responseDraft = result.draft;
           const fallbackMessage = buildAssistantMessage(responseDraft);
           const weatherContext = await timing.time("weather_context", () =>
@@ -97,9 +106,15 @@ export async function POST(req: Request) {
               draft: responseDraft,
               fallbackMessage,
               weatherContext,
+              signal: abortController.signal,
               onDelta: (text) => send("assistant_delta", { text }),
             }),
           );
+          abortController.signal.throwIfAborted();
+          result.draft.pendingReply = nextPendingReply(result.draft.pendingReply, {
+            message, retryReply: request.retryReply, unavailable: personaResult.unavailable,
+            copyStatus: result.draft.copyStatus,
+          });
           send("assistant_done", {
             assistantMessage: personaResult.assistantMessage,
             usedAi: personaResult.usedAi,
@@ -123,8 +138,13 @@ export async function POST(req: Request) {
             error: conciergeApiErrorMessage(error, "Creation intake stream failed."),
           });
         } finally {
-          controller.close();
+          req.signal.removeEventListener("abort", abort);
+          if (!cancelled) controller.close();
         }
+      },
+      cancel() {
+        cancelled = true;
+        abort();
       },
     });
 

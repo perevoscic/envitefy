@@ -86,7 +86,9 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           ...result,
-          imageUrl: uploaded.stored.display?.url || uploaded.stored.source?.url || null,
+          imageUrl: result.product === "digital_flyer" || result.product === "printable_flyer"
+            ? uploaded.stored.source?.url || null
+            : uploaded.stored.display?.url || uploaded.stored.source?.url || null,
           imageDataUrl: null,
         },
         { status: 200 },

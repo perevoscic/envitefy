@@ -32,6 +32,10 @@ export type StudioLikenessStrength = "strict" | "balanced" | "creative";
 export type StudioVisualStyleMode = "photoreal" | "editorial_cinematic" | "playful_stylized";
 
 export type EventDetails = {
+  product?: import("@/lib/studio/product-contract").StudioProduct;
+  approvedWording?: string;
+  rsvpEnabled?: boolean;
+  timezone?: string;
   category: InviteCategory;
   sourceMediaMode: "none" | "flyer" | "subjectPhotos";
   sourceFlyerUrl: string;
@@ -149,6 +153,7 @@ export type ButtonPosition = {
 };
 
 export type InvitationData = {
+  creativePlan?: import("@/lib/studio/product-contract").StudioCreativePlan;
   title: string;
   subtitle: string;
   description: string;

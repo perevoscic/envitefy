@@ -1,0 +1,355 @@
+(node:42372) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  workload: 'correction',
+  model: 'gpt-5.6-terra',
+  durationMs: 0,
+  outcome: 'incomplete',
+  inputTokens: null,
+  outputTokens: null,
+  reasoningTokens: null
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  workload: 'correction',
+  model: 'gpt-5.6-terra',
+  durationMs: 0,
+  outcome: 'incomplete',
+  inputTokens: null,
+  outputTokens: null,
+  reasoningTokens: null
+}
+✔ fallback extracts a partial birthday draft from a relationship sentence (57.215ms)
+✔ birthday category starts with an oriented intake prompt (27.5293ms)
+✔ starter category uses the selected/default product and asks for event details (3.1797ms)
+✔ starter category and product text asks for event details immediately (0.9129ms)
+✔ starter category and product text skips OpenAI extraction (7ms)
+✔ structured starter category can skip OpenAI when the message only names the product (0.8604ms)
+✔ main-page category/product selection suppresses the format question (0.9228ms)
+✔ visible starter categories map to first-class concierge event types (4.3169ms)
+✔ wedding event pages require couple names before ready (3.2395ms)
+✔ category intake prompts stay short (2.4063ms)
+✔ received birthday invite request asks for invite source instead of host authoring (0.8489ms)
+✔ received invite with concrete details stays invited and can become ready (1.3658ms)
+✔ bare afternoon-style time is normalized to PM (0.8103ms)
+✔ birthday turns phrasing fills honoree and age (0.9186ms)
+✔ received invite follow-up details preserve invited ownership (1.7298ms)
+✔ greeting does not default into live card creation flow (0.6803ms)
+✔ greeting short-circuits AI extraction and stays conversational (0.7903ms)
+✔ source-only received invite request short-circuits AI extraction (0.8002ms)
+✔ fast action flag lets OCR creation intake skip AI extraction (1.2714ms)
+✔ obvious starter creation prompt skips AI extraction (0.968ms)
+✔ core product bundle expands only to visible primary products (2.0536ms)
+✔ source flyer wording does not force a digital flyer product (1.1944ms)
+✔ No RSVP disables RSVP without adding an RSVP page (0.9274ms)
+✔ RSVP guest-count phrasing fills number of guests (5.1781ms)
+✔ wedding invitation phrasing captures both partner names (1.9658ms)
+✔ output-only live card prompt without context asks for purpose before date (0.7987ms)
+✔ output-specific prompt asks what a digital flyer promotes (0.7792ms)
+✔ output-specific flyer slash invitation prompt asks for event context first (0.6106ms)
+✔ purpose reply after output-only shell stays drafting until preview details exist (2.0763ms)
+✔ purpose plus concrete preview details can become preview ready (1.3056ms)
+✔ fallback asks RSVP guest count before vibe and stores both replies (6.4966ms)
+✔ birthday live cards ask whether to collect RSVPs before vibe (2.2886ms)
+✔ birthday live cards can skip RSVP collection and continue to vibe (2.2362ms)
+✔ RSVP intent replies are not stored as vibe answers (3.3717ms)
+✔ game day event-page prompt becomes guest-facing matchup copy (2.24ms)
+✔ baby shower event-page product prompt stays no-RSVP and guest-facing (2.0944ms)
+✔ baby shower details capture honoree instead of repeating shower question (1.59ms)
+✔ graduation details capture honoree after product-only start (1.6637ms)
+✔ duplicate event input does not repeat the same missing question (1.1644ms)
+✔ tentative location comments preserve the address and mark location flexible (1.2452ms)
+✔ skip gift link on non-gift products stays concise and dismissed (2.4029ms)
+✔ gift-friendly ready drafts ask for registry details only as an optional step (1.0727ms)
+✔ birthday ready drafts use gift-list language instead of pushing a registry (1.0075ms)
+✔ bridal shower ready drafts use registry optional language (1.7824ms)
+✔ registry optional prompt accepts a pasted URL-only reply (1.603ms)
+✔ registry optional prompt can be skipped without blocking generation (1.2559ms)
+✔ no-gifts replies become guest-facing gift notes (1.3492ms)
+✔ gift-card replies become guest-facing gift notes (1.3802ms)
+✔ theme and tone label is not captured as event theme copy (0.823ms)
+✔ private token trick questions refuse while preserving the current draft (0.8749ms)
+✔ lowercase location reply fills location instead of repeating the question (1.1889ms)
+✔ bare location reply fills the active location slot instead of repeating the question (1.6157ms)
+✔ labeled invitation details fill when and where before creative prompt prose (1.4443ms)
+✔ birthday invitation prompt accepts curly possessives and labeled for field (13.6486ms)
+✔ short birthday follow-ups fill name and age slots (2.4511ms)
+✔ birthday name and turning age shorthand fills both slots (0.8994ms)
+✔ birthday OCR hint fills honoree and age when text extraction is sparse (0.9158ms)
+✔ vibe replies do not satisfy missing honoree names (3.4664ms)
+✔ typo-like date replies are confirmed before moving to location (1.9858ms)
+✔ date confirmation renders ISO candidates as readable dates (1.0428ms)
+✖ OCR date ranges with doors-open times survive past-date confirmation (2.811ms)
+✔ source OCR doors-open time wins over AI-normalized shifted time (1.6706ms)
+✔ date-only drafts keep asking for time instead of treating startISO as explicit time (1.4518ms)
+✔ output-only RSVP page prompt stays unsaved until an event/source exists (0.698ms)
+✔ output capability matrix gives output-specific first questions and CTAs (0.0488ms)
+✔ source intent resolver returns confidence and confirmation flags (0.0509ms)
+✔ purpose can progress a draft while event type remains unknown (0.418ms)
+✔ active context resolves this when exactly one source exists (0.4262ms)
+✔ ambiguous active context asks which source to use (0.4399ms)
+✔ fallback updates birthday honoree, age, and theme from a short reply (0.8892ms)
+✔ new create request replaces restored draft details (1.7465ms)
+✔ birthday live-card prompt aggregates inline name age venue and interests (1.151ms)
+✔ birthday live-card context uses activities and interests as image direction (3.1481ms)
+✔ birthday live-card prompt reads name after product label without for (0.7983ms)
+✔ birthday live-card prompt keeps itinerary locations separate from visual scene props (0.955ms)
+✔ OpenAI normalization treats fallback theme as visual direction (1.0097ms)
+✔ OpenAI normalization preserves fallback scene details when AI shortens tone (1.2281ms)
+✔ birthday live-card prompt tolerates a mistyped for before name and age (0.4763ms)
+✔ time-only edit keeps the existing event date (1.9991ms)
+✔ fallback fills birthday honoree from a name reply (1.4516ms)
+✔ fallback extracts graduation date text from natural language (0.5959ms)
+✔ fallback infers gym meet category from chat-first prompt (0.4597ms)
+✔ birthday prompts infer the named child before asking follow-up fields (3.5309ms)
+✔ command replies do not become birthday honoree names (3.8815ms)
+✔ birthday clarification can resolve pronoun back to prior event subject (1.2055ms)
+✖ product and time corrections preserve the existing event title (1.7334ms)
+✔ RSVP side replies are acknowledged while birthday age is still missing (2.2773ms)
+✔ birthday age can be explicitly skipped without polluting display copy (1.2793ms)
+✔ birthday clarification updates stale event purpose (1.1519ms)
+✖ past explicit dates require confirmation before ready state (0.785ms)
+✔ registry link acknowledgement keeps asking for missing birthday details (1.22ms)
+✔ gym invitational prompt is treated as a gym meet (0.685ms)
+✔ upload OCR context can seed a draft (0.4558ms)
+✖ OpenAI extraction path normalizes to the same draft shape (1.7912ms)
+✔ OpenAI normalization treats nested eventData venue as satisfying location (0.9286ms)
+✔ OpenAI normalization does not turn an RSVP deadline into an RSVP page product (1.6458ms)
+✖ OpenAI normalization cannot override an explicit no-RSVP request (0.9962ms)
+✔ OpenAI normalization cannot treat RSVP guest count as visual direction (1.7145ms)
+✖ conversation repair messages preserve draft details and bypass extraction (3.9308ms)
+✔ standalone frustrated detail replies acknowledge missing session context (0.5922ms)
+✖ frustrated detail replies can still fill the active draft slot (1.5577ms)
+✖ unclear replies rephrase the missing detail instead of repeating the same question (4.4128ms)
+✔ RSVP guest count accepts natural collect-for shorthand (2.2562ms)
+✔ RSVP decision reply can include guest count, host name, and phone (1.9564ms)
+✔ RSVP decision reply accepts informal peoples wording with contact recipient (1.4609ms)
+✔ initial birthday live-card prompt consumes RSVP host and contact from same message (0.9454ms)
+✔ RSVP contact repair splits host name and phone number (1.8253ms)
+✔ tone reply preserves full creative direction without changing event type (3.9446ms)
+✔ off-domain help requests stay bounded and do not become event drafts (0.896ms)
+✔ weather side questions preserve the active draft details (1.0529ms)
+✔ unsafe and unrelated standalone prompts do not become event drafts (4.118ms)
+✔ event-adjacent content words still allow explicit Envitefy product creation (0.9145ms)
+✔ unsafe boundaries bypass OpenAI extraction (1.3881ms)
+✖ OpenAI readiness is downgraded when source and purpose are missing (1.1252ms)
+✖ save payload stores generated concierge products as owned My Events rows (0.8864ms)
+✔ save payload keeps vibe prompt text out of guest-facing event copy (1.2792ms)
+✔ save payload strips product prompt prefixes from live-card titles (1.8088ms)
+✔ save payload preserves event page as the primary product (0.983ms)
+✔ save payload preserves upload source details on event pages (13.6923ms)
+✔ save payload preserves flyer invite as the primary product (1.086ms)
+✔ save payload splits combined venue and address for public live cards (0.9632ms)
+✔ chat concierge preserves secondary locations in saved products (0.9466ms)
+✔ guest count phrasing is not swallowed into location (0.7237ms)
+ℹ tests 123
+ℹ suites 0
+ℹ pass 113
+ℹ fail 10
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3024.9698
+
+✖ failing tests:
+
+test at src\lib\concierge\fallback.test.ts:1211:1
+✖ OCR date ranges with doors-open times survive past-date confirmation (2.811ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + null
+  - 'date_confirmation'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts:1238:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: 'date_confirmation',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\concierge\fallback.test.ts:1681:1
+✖ product and time corrections preserve the existing event title (1.7334ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + null
+  - 'date_confirmation'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts:1692:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: 'date_confirmation',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\concierge\fallback.test.ts:1758:1
+✖ past explicit dates require confirmation before ready state (0.785ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'tone'
+  - 'date_confirmation'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts:1763:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'tone',
+    expected: 'date_confirmation',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\concierge\fallback.test.ts:1814:1
+✖ OpenAI extraction path normalizes to the same draft shape (1.7912ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts:1851:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\concierge\fallback.test.ts:1897:1
+✖ OpenAI normalization cannot override an explicit no-RSVP request (0.9962ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  40 !== null
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts:1916:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 40,
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\concierge\fallback.test.ts:1952:1
+✖ conversation repair messages preserve draft details and bypass extraction (3.9308ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  null !== true
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts:1964:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\concierge\fallback.test.ts:2042:1
+✖ frustrated detail replies can still fill the active draft slot (1.5577ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'time' !== 'location'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts:2051:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'time',
+    expected: 'location',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\concierge\fallback.test.ts:2058:1
+✖ unclear replies rephrase the missing detail instead of repeating the same question (4.4128ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'time'
+  - 'numberOfGuests'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts:2080:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'time',
+    expected: 'numberOfGuests',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\concierge\fallback.test.ts:2381:1
+✖ OpenAI readiness is downgraded when source and purpose are missing (1.1252ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts:2420:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src\lib\concierge\fallback.test.ts:2428:1
+✖ save payload stores generated concierge products as owned My Events rows (0.8864ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'TBC / Por confirmar'
+  - 'Date TBD'
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts:2463:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'TBC / Por confirmar',
+    expected: 'Date TBD',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

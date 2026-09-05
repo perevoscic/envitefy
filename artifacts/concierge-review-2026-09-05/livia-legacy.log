@@ -1,0 +1,654 @@
+bun test v1.3.11 (af24e281)
+
+src\lib\concierge\fallback.test.ts:
+(pass) fallback extracts a partial birthday draft from a relationship sentence [16.00ms]
+(pass) birthday category starts with an oriented intake prompt [15.00ms]
+(pass) starter category uses the selected/default product and asks for event details
+(pass) starter category and product text asks for event details immediately
+(pass) starter category and product text skips OpenAI extraction [16.00ms]
+(pass) structured starter category can skip OpenAI when the message only names the product
+(pass) main-page category/product selection suppresses the format question
+(pass) visible starter categories map to first-class concierge event types
+(pass) wedding event pages require couple names before ready
+(pass) category intake prompts stay short [16.00ms]
+(pass) received birthday invite request asks for invite source instead of host authoring
+(pass) received invite with concrete details stays invited and can become ready
+(pass) bare afternoon-style time is normalized to PM
+(pass) birthday turns phrasing fills honoree and age
+(pass) received invite follow-up details preserve invited ownership
+(pass) greeting does not default into live card creation flow
+(pass) greeting short-circuits AI extraction and stays conversational
+(pass) source-only received invite request short-circuits AI extraction
+(pass) fast action flag lets OCR creation intake skip AI extraction
+(pass) obvious starter creation prompt skips AI extraction
+(pass) core product bundle expands only to visible primary products
+(pass) source flyer wording does not force a digital flyer product [15.00ms]
+(pass) No RSVP disables RSVP without adding an RSVP page
+492 |       currentQuestion: "numberOfGuests",
+493 |     },
+494 |   });
+495 | 
+496 |   assert.equal(draft.numberOfGuests, 20);
+497 |   assert.equal(draft.currentQuestion, "rsvpName");
+               ^
+AssertionError: Expected values to be strictly equal:
++ actual - expected
+
++ 'date_confirmation'
+- 'rsvpName'
+
+ generatedMessage: true,
+     actual: "date_confirmation",
+   expected: "rsvpName",
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:497:10
+      at fn (node:test:210:18)
+(fail) RSVP guest-count phrasing fills number of guests
+(pass) wedding invitation phrasing captures both partner names
+(pass) output-only live card prompt without context asks for purpose before date
+(pass) output-specific prompt asks what a digital flyer promotes
+(pass) output-specific flyer slash invitation prompt asks for event context first
+(pass) purpose reply after output-only shell stays drafting until preview details exist
+(pass) purpose plus concrete preview details can become preview ready [16.00ms]
+(pass) fallback asks RSVP guest count before vibe and stores both replies
+(pass) birthday live cards ask whether to collect RSVPs before vibe
+(pass) birthday live cards can skip RSVP collection and continue to vibe [15.00ms]
+(pass) RSVP intent replies are not stored as vibe answers
+(pass) game day event-page prompt becomes guest-facing matchup copy
+718 |   assert.equal(draft.rsvpEnabled, false);
+719 |   assert.equal(draft.numberOfGuests, null);
+720 |   assert.equal(draft.registryLink, "https://example.com/qa-registry-12");
+721 |   assert.equal(draft.giftPreferenceNote, "gifts are optional");
+722 |   assert.equal(draft.previewCopy.cta, "View details");
+723 |   assert.equal(draft.currentQuestion, null);
+               ^
+AssertionError: Expected values to be strictly equal:
++ actual - expected
+
++ 'date_confirmation'
+- null
+
+ generatedMessage: true,
+     actual: "date_confirmation",
+   expected: null,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:723:10
+      at fn (node:test:210:18)
+(fail) baby shower event-page product prompt stays no-RSVP and guest-facing
+744 |   const assistant = buildAssistantMessage(draft);
+745 | 
+746 |   assert.equal(draft.eventType, "baby_shower");
+747 |   assert.equal(draft.honoreeName, "Mia");
+748 |   assert.equal(draft.title, "Mia's baby shower");
+749 |   assert.equal(draft.currentQuestion, null);
+               ^
+AssertionError: Expected values to be strictly equal:
++ actual - expected
+
++ 'date_confirmation'
+- null
+
+ generatedMessage: true,
+     actual: "date_confirmation",
+   expected: null,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:749:10
+      at fn (node:test:210:18)
+(fail) baby shower details capture honoree instead of repeating shower question
+763 |   const assistant = buildAssistantMessage(draft);
+764 | 
+765 |   assert.equal(draft.eventType, "graduation");
+766 |   assert.equal(draft.honoreeName, "Leo");
+767 |   assert.equal(draft.title, "Leo's graduation");
+768 |   assert.equal(draft.currentQuestion, null);
+               ^
+AssertionError: Expected values to be strictly equal:
++ actual - expected
+
++ 'date_confirmation'
+- null
+
+ generatedMessage: true,
+     actual: "date_confirmation",
+   expected: null,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:768:10
+      at fn (node:test:210:18)
+(fail) graduation details capture honoree after product-only start [16.00ms]
+782 |     requestedOutputs: ["event_page"],
+783 |   });
+784 |   const assistant = buildAssistantMessage(repeated);
+785 | 
+786 |   assert.equal(repeated.honoreeName, "Leo");
+787 |   assert.equal(repeated.currentQuestion, "rsvpEnabled");
+               ^
+AssertionError: Expected values to be strictly equal:
++ actual - expected
+
++ 'date_confirmation'
+- 'rsvpEnabled'
+
+ generatedMessage: true,
+     actual: "date_confirmation",
+   expected: "rsvpEnabled",
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:787:10
+      at fn (node:test:210:18)
+(fail) duplicate event input does not repeat the same missing question
+(pass) tentative location comments preserve the address and mark location flexible
+(pass) skip gift link on non-gift products stays concise and dismissed
+840 |       "Create a baby shower event page for Elena on Sunday July 19 2026 at 1:00 PM at Olive Room, 212 Harbor Avenue, Tampa, FL. Theme and tone: soft blue balloons and warm family tone. No RSVP.",
+841 |   });
+842 |   const message = buildAssistantMessage(draft);
+843 | 
+844 |   assert.equal(draft.eventType, "baby_shower");
+845 |   assert.equal(canSaveConciergeDraft(draft), true);
+               ^
+AssertionError: Expected values to be strictly equal:
+
+false !== true
+
+ generatedMessage: true,
+     actual: false,
+   expected: true,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:845:10
+      at fn (node:test:210:18)
+(fail) gift-friendly ready drafts ask for registry details only as an optional step
+861 |       "Create a live card for Ava's 7th birthday party on Saturday May 23 2026 at 3:00 PM at Sky Zone, 100 Main Street, Destin, FL. Hosted by Ava's parents. RSVPs for 20 guests. RSVP contact: host@example.com. Theme and tone: fun and colorful.",
+862 |   });
+863 |   const message = buildAssistantMessage(draft);
+864 | 
+865 |   assert.equal(draft.eventType, "birthday");
+866 |   assert.equal(canSaveConciergeDraft(draft), true);
+               ^
+AssertionError: Expected values to be strictly equal:
+
+false !== true
+
+ generatedMessage: true,
+     actual: false,
+   expected: true,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:866:10
+      at fn (node:test:210:18)
+(fail) birthday ready drafts use gift-list language instead of pushing a registry
+877 |       "Create Maya's bridal shower event page on Sunday June 7 2026 at 2:00 PM at The Garden Room, 9 Rose Street, Austin, TX. Theme and tone: polished brunch florals. No RSVP.",
+878 |   });
+879 |   const message = buildAssistantMessage(draft);
+880 | 
+881 |   assert.equal(draft.eventType, "bridal_shower");
+882 |   assert.equal(canSaveConciergeDraft(draft), true);
+               ^
+AssertionError: Expected values to be strictly equal:
+
+false !== true
+
+ generatedMessage: true,
+     actual: false,
+   expected: true,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:882:10
+      at fn (node:test:210:18)
+(fail) bridal shower ready drafts use registry optional language
+896 |     draft,
+897 |   });
+898 |   const message = buildAssistantMessage(withRegistry);
+899 | 
+900 |   assert.equal(withRegistry.registryLink, "https://www.amazon.com/baby-reg/example");
+901 |   assert.equal(canSaveConciergeDraft(withRegistry), true);
+               ^
+AssertionError: Expected values to be strictly equal:
+
+false !== true
+
+ generatedMessage: true,
+     actual: false,
+   expected: true,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:901:10
+      at fn (node:test:210:18)
+(fail) registry optional prompt accepts a pasted URL-only reply [16.00ms]
+909 |       "Create a housewarming event page for Maya on Friday August 14 2026 at 6:00 PM at 42 Cedar Lane, Austin, TX. Theme and tone: modern casual dinner. No RSVP.",
+910 |   });
+911 |   const skipped = fallbackExtractConciergeDraft({ message: "Skip gift link", draft });
+912 | 
+913 |   assert.equal(skipped.giftPromptDismissed, true);
+914 |   assert.equal(canSaveConciergeDraft(skipped), true);
+               ^
+AssertionError: Expected values to be strictly equal:
+
+false !== true
+
+ generatedMessage: true,
+     actual: false,
+   expected: true,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:914:10
+      at fn (node:test:210:18)
+(fail) registry optional prompt can be skipped without blocking generation
+(pass) no-gifts replies become guest-facing gift notes
+936 |   });
+937 |   const giftCards = fallbackExtractConciergeDraft({ message: "Gift cards are welcome", draft });
+938 |   const message = buildAssistantMessage(giftCards);
+939 | 
+940 |   assert.equal(giftCards.giftPreferenceNote, "Gift cards are welcome");
+941 |   assert.equal(canSaveConciergeDraft(giftCards), true);
+               ^
+AssertionError: Expected values to be strictly equal:
+
+false !== true
+
+ generatedMessage: true,
+     actual: false,
+   expected: true,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:941:10
+      at fn (node:test:210:18)
+(fail) gift-card replies become guest-facing gift notes
+(pass) theme and tone label is not captured as event theme copy
+(pass) private token trick questions refuse while preserving the current draft
+(pass) lowercase location reply fills location instead of repeating the question
+(pass) bare location reply fills the active location slot instead of repeating the question [15.00ms]
+(pass) labeled invitation details fill when and where before creative prompt prose
+(pass) birthday invitation prompt accepts curly possessives and labeled for field
+(pass) short birthday follow-ups fill name and age slots
+(pass) birthday name and turning age shorthand fills both slots
+(pass) birthday OCR hint fills honoree and age when text extraction is sparse [16.00ms]
+1154 |       missingFields: ["honoreeName"],
+1155 |       currentQuestion: "honoreeName",
+1156 |     },
+1157 |   });
+1158 | 
+1159 |   assert.equal(vibe.honoreeName, null);
+                ^
+AssertionError: Expected values to be strictly equal:
+
+'Mia' !== null
+
+ generatedMessage: true,
+     actual: "Mia",
+   expected: null,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:1159:10
+      at fn (node:test:210:18)
+(fail) vibe replies do not satisfy missing honoree names
+(pass) typo-like date replies are confirmed before moving to location
+(pass) date confirmation renders ISO candidates as readable dates
+(pass) OCR date ranges with doors-open times survive past-date confirmation
+(pass) source OCR doors-open time wins over AI-normalized shifted time
+(pass) date-only drafts keep asking for time instead of treating startISO as explicit time
+(pass) output-only RSVP page prompt stays unsaved until an event/source exists
+(pass) output capability matrix gives output-specific first questions and CTAs
+(pass) source intent resolver returns confidence and confirmation flags
+(pass) purpose can progress a draft while event type remains unknown [16.00ms]
+(pass) active context resolves this when exactly one source exists
+(pass) ambiguous active context asks which source to use
+(pass) fallback updates birthday honoree, age, and theme from a short reply
+(pass) new create request replaces restored draft details
+(pass) birthday live-card prompt aggregates inline name age venue and interests
+(pass) birthday live-card context uses activities and interests as image direction
+1465 |     message:
+1466 |       "Birthday Live Card Lara, 7, we will go to see Sheep Detective at 5PM Thursday at AMC Destin Commons 14, then we are going to have pizza at Pazzo Destin. She likes cats and plushes",
+1467 |   });
+1468 |   const message = buildAssistantMessage(draft);
+1469 | 
+1470 |   assert.equal(draft.honoreeName, "Lara");
+                ^
+AssertionError: Expected values to be strictly equal:
++ actual - expected
+
++ 'Live Card Lara'
+- 'Lara'
+
+ generatedMessage: true,
+     actual: "Live Card Lara",
+   expected: "Lara",
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:1470:10
+      at fn (node:test:210:18)
+(fail) birthday live-card prompt reads name after product label without for
+(pass) birthday live-card prompt keeps itinerary locations separate from visual scene props [15.00ms]
+(pass) OpenAI normalization treats fallback theme as visual direction
+(pass) OpenAI normalization preserves fallback scene details when AI shortens tone
+1550 |   });
+1551 |   const message = buildAssistantMessage(draft);
+1552 | 
+1553 |   assert.deepEqual(draft.requestedOutputs, ["live_card"]);
+1554 |   assert.equal(draft.eventType, "birthday");
+1555 |   assert.equal(draft.honoreeName, "Lara");
+                ^
+AssertionError: Expected values to be strictly equal:
+
+'Fro Lara' !== 'Lara'
+
+ generatedMessage: true,
+     actual: "Fro Lara",
+   expected: "Lara",
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:1555:10
+      at fn (node:test:210:18)
+(fail) birthday live-card prompt tolerates a mistyped for before name and age
+1581 |     draft: ready,
+1582 |   });
+1583 | 
+1584 |   assert.equal(draft.dateText, first.dateText);
+1585 |   assert.equal(draft.timeText, "1:00 PM");
+1586 |   assert.match(draft.startISO || "", /^2026-05-23T/);
+                ^
+AssertionError: The input did not match the regular expression /^2026-05-23T/. Input:
+
+'2027-05-23T13:00:00.000Z'
+
+ generatedMessage: true,
+     actual: "2027-05-23T13:00:00.000Z",
+   expected: /^2026-05-23T/,
+   operator: "match",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:1586:10
+      at fn (node:test:210:18)
+(fail) time-only edit keeps the existing event date
+(pass) fallback fills birthday honoree from a name reply
+(pass) fallback extracts graduation date text from natural language
+(pass) fallback infers gym meet category from chat-first prompt
+(pass) birthday prompts infer the named child before asking follow-up fields [16.00ms]
+(pass) command replies do not become birthday honoree names
+(pass) birthday clarification can resolve pronoun back to prior event subject
+(pass) product and time corrections preserve the existing event title
+1706 |   const noRsvp = fallbackExtractConciergeDraft({ message: "No RSVP needed.", draft: first });
+1707 |   const noRsvpMessage = buildAssistantMessage(noRsvp);
+1708 | 
+1709 |   assert.equal(noRsvp.rsvpEnabled, false);
+1710 |   assert.match(noRsvpMessage, /RSVPs are off/i);
+1711 |   assert.match(noRsvpMessage, /What age or birthday milestone/i);
+                ^
+AssertionError: The input did not match the regular expression /What age or birthday milestone/i. Input:
+
+'Got it - RSVPs are off. Just to confirm, did you mean July 18 2026, 3:00 PM, or another date?'
+
+ generatedMessage: true,
+     actual: "Got it - RSVPs are off. Just to confirm, did you mean July 18 2026, 3:00 PM, or another date?",
+   expected: /What age or birthday milestone/i,
+   operator: "match",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:1711:10
+      at fn (node:test:210:18)
+(fail) RSVP side replies are acknowledged while birthday age is still missing
+1729 |     message: "Maya birthday party on July 2 2026 at 4 PM at Bounce House.",
+1730 |   });
+1731 |   draft = fallbackExtractConciergeDraft({ message: "No age shown.", draft });
+1732 | 
+1733 |   assert.equal(draft.ageOrMilestone, null);
+1734 |   assert.equal(draft.ageOrMilestoneSkipped, true);
+                ^
+AssertionError: Expected values to be strictly equal:
+
+false !== true
+
+ generatedMessage: true,
+     actual: false,
+   expected: true,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:1734:10
+      at fn (node:test:210:18)
+(fail) birthday age can be explicitly skipped without polluting display copy
+(pass) birthday clarification updates stale event purpose [15.00ms]
+(pass) past explicit dates require confirmation before ready state
+1771 |     draft: first,
+1772 |   });
+1773 | 
+1774 |   assert.equal(draft.honoreeName, "Emma");
+1775 |   assert.equal(draft.registryLink, "https://amazon.com/registry/abc");
+1776 |   assert.match(buildAssistantMessage(draft), /What age or birthday milestone/i);
+                ^
+AssertionError: The input did not match the regular expression /What age or birthday milestone/i. Input:
+
+'Got it — Registry: https://amazon.com/registry/abc. Just to confirm, did you mean June 10 2026, 2:00 PM, or another date?'
+
+ generatedMessage: true,
+     actual: "Got it — Registry: https://amazon.com/registry/abc. Just to confirm, did you mean June 10 2026, 2:00 PM, or another date?",
+   expected: /What age or birthday milestone/i,
+   operator: "match",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:1776:10
+      at fn (node:test:210:18)
+(fail) registry link acknowledgement keeps asking for missing birthday details
+(pass) gym invitational prompt is treated as a gym meet
+(pass) upload OCR context can seed a draft
+1846 | 
+1847 |   assert.equal(result.usedAi, true);
+1848 |   assert.equal(result.draft.eventType, "baby_shower");
+1849 |   // The model cannot add a product the customer never selected.
+1850 |   assert.deepEqual(result.draft.outputs, ["live_card"]);
+1851 |   assert.equal(result.draft.previewCopy.locationLine, "Location TBD");
+                ^
+AssertionError: Expected values to be strictly equal:
++ actual - expected
+
++ 'TBC / Por confirmar'
+- 'Location TBD'
+
+ generatedMessage: true,
+     actual: "TBC / Por confirmar",
+   expected: "Location TBD",
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:1851:10
+      at processTicksAndRejections (native:7:39)
+(fail) OpenAI extraction path normalizes to the same draft shape
+(pass) OpenAI normalization treats nested eventData venue as satisfying location
+(pass) OpenAI normalization does not turn an RSVP deadline into an RSVP page product
+1905 |     },
+1906 |     fallback,
+1907 |   );
+1908 | 
+1909 |   assert.equal(fallback.rsvpEnabled, false);
+1910 |   assert.equal(fallback.currentQuestion, null);
+                ^
+AssertionError: Expected values to be strictly equal:
++ actual - expected
+
++ 'date_confirmation'
+- null
+
+ generatedMessage: true,
+     actual: "date_confirmation",
+   expected: null,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:1910:10
+      at fn (node:test:210:18)
+(fail) OpenAI normalization cannot override an explicit no-RSVP request
+(pass) OpenAI normalization cannot treat RSVP guest count as visual direction [16.00ms]
+1954 |   draft = fallbackExtractConciergeDraft({ message: "yes", draft });
+1955 |   draft = fallbackExtractConciergeDraft({ message: "10", draft });
+1956 |   draft = fallbackExtractConciergeDraft({ message: "Lara's family", draft });
+1957 |   draft = fallbackExtractConciergeDraft({ message: "lara-host@example.com", draft });
+1958 | 
+1959 |   assert.equal(draft.honoreeName, "Lara");
+                ^
+AssertionError: Expected values to be strictly equal:
+
+'Fro Lara' !== 'Lara'
+
+ generatedMessage: true,
+     actual: "Fro Lara",
+   expected: "Lara",
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:1959:10
+      at fn (node:test:210:18)
+(fail) conversation repair messages preserve draft details and bypass extraction
+(pass) standalone frustrated detail replies acknowledge missing session context
+2042 |   const reply = fallbackExtractConciergeDraft({
+2043 |     message: "You already asked me that. It is at 5 PM at the library.",
+2044 |     draft: first,
+2045 |   });
+2046 | 
+2047 |   assert.equal(first.currentQuestion, "location");
+                ^
+AssertionError: Expected values to be strictly equal:
++ actual - expected
+
++ 'date_confirmation'
+- 'location'
+
+ generatedMessage: true,
+     actual: "date_confirmation",
+   expected: "location",
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:2047:10
+      at fn (node:test:210:18)
+(fail) frustrated detail replies can still fill the active draft slot
+2071 |   rsvpDraft = fallbackExtractConciergeDraft({ message: "yes", draft: rsvpDraft });
+2072 | 
+2073 |   const rsvpReply = fallbackExtractConciergeDraft({ message: "sure", draft: rsvpDraft });
+2074 |   const rsvpMessage = buildAssistantMessage(rsvpReply);
+2075 | 
+2076 |   assert.equal(rsvpReply.currentQuestion, "numberOfGuests");
+                ^
+AssertionError: Expected values to be strictly equal:
++ actual - expected
+
++ 'time'
+- 'numberOfGuests'
+
+ generatedMessage: true,
+     actual: "time",
+   expected: "numberOfGuests",
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:2076:10
+      at fn (node:test:210:18)
+(fail) unclear replies rephrase the missing detail instead of repeating the same question [16.00ms]
+(pass) RSVP guest count accepts natural collect-for shorthand
+(pass) RSVP decision reply can include guest count, host name, and phone
+(pass) RSVP decision reply accepts informal peoples wording with contact recipient
+(pass) initial birthday live-card prompt consumes RSVP host and contact from same message
+(pass) RSVP contact repair splits host name and phone number
+(pass) tone reply preserves full creative direction without changing event type [15.00ms]
+(pass) off-domain help requests stay bounded and do not become event drafts
+(pass) weather side questions preserve the active draft details
+(pass) unsafe and unrelated standalone prompts do not become event drafts
+2343 |   assert.notEqual(draft.sourceContext.boundary, "off_domain");
+2344 |   assert.equal(draft.eventType, "birthday");
+2345 |   assert.deepEqual(draft.requestedOutputs, ["digital_flyer"]);
+2346 |   assert.equal(draft.honoreeName, "Ava");
+2347 |   assert.equal(draft.rsvpEnabled, false);
+2348 |   assert.equal(canSaveConciergeDraft(draft), true);
+                ^
+AssertionError: Expected values to be strictly equal:
+
+false !== true
+
+ generatedMessage: true,
+     actual: false,
+   expected: true,
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:2348:10
+      at fn (node:test:210:18)
+(fail) event-adjacent content words still allow explicit Envitefy product creation
+(pass) unsafe boundaries bypass OpenAI extraction
+(pass) OpenAI readiness is downgraded when source and purpose are missing
+2454 |   assert.equal(payload.data.coverImageUrl, "/studio/birthday.webp");
+2455 |   assert.equal(payload.data.heroTextMode, "image");
+2456 |   assert.equal(payload.data.rsvp.direct, false);
+2457 |   assert.equal(payload.data.publicEvent.renderer, "live_card");
+2458 |   assert.equal(payload.data.publicEvent.primaryOutput, "live_card");
+2459 |   assert.equal(payload.data.liveCard.scheduleLine, "Date TBD");
+                ^
+AssertionError: Expected values to be strictly equal:
++ actual - expected
+
++ 'TBC / Por confirmar'
+- 'Date TBD'
+
+ generatedMessage: true,
+     actual: "TBC / Por confirmar",
+   expected: "Date TBD",
+   operator: "strictEqual",
+       code: "ERR_ASSERTION"
+
+      at D:\Develop_local\envitefy\src\lib\concierge\fallback.test.ts:2459:10
+      at fn (node:test:210:18)
+(fail) save payload stores generated concierge products as owned My Events rows
+(pass) save payload keeps vibe prompt text out of guest-facing event copy [16.00ms]
+(pass) save payload strips product prompt prefixes from live-card titles
+(pass) save payload preserves event page as the primary product
+(pass) save payload preserves upload source details on event pages [16.00ms]
+(pass) save payload preserves flyer invite as the primary product
+(pass) save payload splits combined venue and address for public live cards
+(pass) chat concierge preserves secondary locations in saved products
+(pass) guest count phrasing is not swallowed into location
+
+25 tests failed:
+(fail) RSVP guest-count phrasing fills number of guests
+(fail) baby shower event-page product prompt stays no-RSVP and guest-facing
+(fail) baby shower details capture honoree instead of repeating shower question
+(fail) graduation details capture honoree after product-only start [16.00ms]
+(fail) duplicate event input does not repeat the same missing question
+(fail) gift-friendly ready drafts ask for registry details only as an optional step
+(fail) birthday ready drafts use gift-list language instead of pushing a registry
+(fail) bridal shower ready drafts use registry optional language
+(fail) registry optional prompt accepts a pasted URL-only reply [16.00ms]
+(fail) registry optional prompt can be skipped without blocking generation
+(fail) gift-card replies become guest-facing gift notes
+(fail) vibe replies do not satisfy missing honoree names
+(fail) birthday live-card prompt reads name after product label without for
+(fail) birthday live-card prompt tolerates a mistyped for before name and age
+(fail) time-only edit keeps the existing event date
+(fail) RSVP side replies are acknowledged while birthday age is still missing
+(fail) birthday age can be explicitly skipped without polluting display copy
+(fail) registry link acknowledgement keeps asking for missing birthday details
+(fail) OpenAI extraction path normalizes to the same draft shape
+(fail) OpenAI normalization cannot override an explicit no-RSVP request
+(fail) conversation repair messages preserve draft details and bypass extraction
+(fail) frustrated detail replies can still fill the active draft slot
+(fail) unclear replies rephrase the missing detail instead of repeating the same question [16.00ms]
+(fail) event-adjacent content words still allow explicit Envitefy product creation
+(fail) save payload stores generated concierge products as owned My Events rows
+
+ 98 pass
+ 25 fail
+Ran 123 tests across 1 file. [467.00ms]

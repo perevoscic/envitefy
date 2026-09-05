@@ -1,3 +1,6 @@
+import type { SourceEvidence } from "../creation/source-evidence.ts";
+import type { HostBrief } from "./host-brief.ts";
+
 export type CreationIntent =
   | "create_output"
   | "create_event"
@@ -289,6 +292,7 @@ export type ConciergeAdditionalLocation = {
 
 export type ConciergeSourceMaterial = {
   ocrText?: string | null;
+  sourceEvidence?: SourceEvidence | null;
   fieldsGuess?: Record<string, unknown> | null;
   category?: string | null;
 };
@@ -313,6 +317,14 @@ export type ConciergeWeatherContext = {
 };
 
 export type ConciergeEventDraft = {
+  readiness?: import("./readiness.ts").CreationReadiness;
+  /** Latest explicit corrections, kept separately from the immutable upload evidence. */
+  sourceResolutions?: Record<string, string>;
+  hostBrief?: HostBrief;
+  copyStatus?: "provisional" | "ready" | "needs_update";
+  pendingReply?: { message: string } | null;
+  /** An explicit customer title must survive subsequent extraction and copy edits. */
+  titleConfirmed?: boolean;
   intent: ConciergeIntent;
   creationSessionId: string;
   requestedOutputs: RequestedOutput[];
@@ -394,6 +406,7 @@ export type CreationThreadSummary = {
 
 export type ConciergeOcrContext = {
   ocrText?: string | null;
+  sourceEvidence?: SourceEvidence | null;
   fieldsGuess?: Record<string, unknown> | null;
   category?: string | null;
   birthdayTemplateHint?: unknown;
@@ -404,6 +417,8 @@ export type ConciergeOcrContext = {
 export type ConciergeAction = "message" | "chip" | "starter_category" | "ocr_result" | "save";
 
 export type ConciergeMessageRequest = {
+  retryReply?: boolean;
+  chatMessages?: CreationChatMessageSnapshot[] | null;
   message?: string;
   draft?: ConciergeEventDraft | null;
   ocrContext?: ConciergeOcrContext | null;
@@ -416,7 +431,6 @@ export type ConciergeMessageRequest = {
 export type CreationIntakeRequest = ConciergeMessageRequest & {
   creationSessionId?: string | null;
   persistSession?: boolean;
-  chatMessages?: CreationChatMessageSnapshot[] | null;
   studioInvite?: ConciergeStudioInvite | null;
 };
 

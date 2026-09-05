@@ -1,3 +1,5 @@
+import { EVENT_EXTRACTION_SCHEMA, EXTRACTION_EVIDENCE_INSTRUCTION, parseEventExtraction } from "./extraction-contract.ts";
+import { creationModelBudget, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import { OPENAI_TIMEOUT_MS, resolveOcrModel } from "./constants";
 import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import {
@@ -163,6 +165,7 @@ function buildChatPayload({
     model,
     ...openAiChatCompatibilityParams(model, { temperature }),
     ...(responseFormat ? { response_format: responseFormat } : {}),
+    ...(responseFormat?.type === "json_schema" ? creationModelBudget(model, "extraction") : {}),
     messages,
   };
 }
@@ -186,6 +189,7 @@ export async function llmExtractEventFromImage(
   log(">>> Using OpenAI model:", model);
 
   const base64 = imageBytes.toString("base64");
+  const startedAt = Date.now();
   const todayIso = new Date().toISOString().slice(0, 10);
   const prompt = buildEventExtractionPrompt(todayIso);
 
@@ -200,9 +204,9 @@ export async function llmExtractEventFromImage(
           buildChatPayload({
             model,
             temperature: 0.1,
-            responseFormat: { type: "json_object" },
+            responseFormat: { type: "json_schema", json_schema: { name: "event_source_v2", strict: true, schema: EVENT_EXTRACTION_SCHEMA } },
             messages: [
-              { role: "system", content: prompt.system },
+              { role: "system", content: `${prompt.system}\n${EXTRACTION_EVIDENCE_INSTRUCTION}` },
               {
                 role: "user",
                 content: [
@@ -218,8 +222,7 @@ export async function llmExtractEventFromImage(
     );
     log(">>> OpenAI API response status:", res.status);
     if (!res.ok) {
-      const errorBody = await res.text();
-      console.error(">>> OpenAI API error:", { status: res.status, body: errorBody });
+      console.error(">>> OpenAI API error:", { status: res.status });
       throw new OpenAiOcrError(`OpenAI API returned ${res.status}`, {
         code: "OPENAI_HTTP_ERROR",
         status: res.status,
@@ -227,26 +230,29 @@ export async function llmExtractEventFromImage(
     }
     const j: any = await res.json();
     log(">>> OpenAI API response received");
-    const text = j?.choices?.[0]?.message?.content || "";
+    const choice = j?.choices?.[0];
+    const outcome = choice?.message?.refusal ? "refused" : choice?.finish_reason !== "stop" ? "incomplete" : "success";
+    recordCreationModelRun({ workload: "extraction", model, startedAt, outcome, usage: j?.usage });
+    if (outcome !== "success") return null;
+    const text = choice?.message?.content || "";
     if (!text) {
       console.warn(">>> OpenAI returned no content");
       return null;
     }
     try {
-      const parsed = JSON.parse(text) as EventOcrLlmResult;
-      log(">>> OpenAI extracted data:", parsed);
-      log(">>> OpenAI title:", parsed.title);
-      log(">>> OpenAI description:", parsed.description);
+      const parsed = parseEventExtraction(JSON.parse(text));
+      if (!parsed) return null;
       if (
         parsed.title &&
+        parsed.birthdayAge != null &&
         /birthday/i.test(parsed.title) &&
         !/\d{1,2}(st|nd|rd|th)/i.test(parsed.title)
       ) {
         log(">>> ⚠️ WARNING: Birthday title is missing age ordinal:", parsed.title);
       }
       return parsed;
-    } catch (parseErr) {
-      console.error(">>> Failed to parse OpenAI JSON:", parseErr, "Raw:", text);
+    } catch {
+      console.error(">>> Invalid structured OCR response");
       return null;
     }
   } catch (err) {

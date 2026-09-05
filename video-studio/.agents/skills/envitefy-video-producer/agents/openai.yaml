@@ -1,0 +1,4 @@
+interface:
+  display_name: "Envitefy Video Producer"
+  short_description: "Produce Envitefy videos with saved brand preferences"
+  default_prompt: "Use $envitefy-video-producer to create a 30-second TikTok for parents planning birthday parties, with a funny hook and a real RSVP demo."

@@ -1,0 +1,105 @@
+bun test v1.3.11 (af24e281)
+
+src\app\chat\ConciergeChatClient.snap-upload.test.mjs:
+(pass) chat snap upload scans in chat instead of routing through dashboard upload action
+(pass) chat snap upload exposes retry controls on failure
+(pass) chat upload queues the picked file before product selection
+(pass) chat upload status renders as a concierge bubble
+(pass) date confirmation replies bypass streaming and object errors are normalized
+(pass) chat live-card uploads can drive the preview image
+
+src\lib\concierge\conversation-golden.test.mjs:
+(pass) conversation 1: greeting stays warm and does not create a draft [31.00ms]
+(pass) conversation 2: birthday live card reaches a ready owned draft [16.00ms]
+(pass) conversation 3: received invite without source asks for upload or pasted text
+(pass) conversation 4: received invite with concrete details is ready as invited [16.00ms]
+(pass) conversation 5: non-invite upload becomes an owned My Events draft
+(pass) conversation 6: output-only RSVP request asks for event context first
+(pass) conversation 7: ambiguous this asks which source to use
+(pass) conversation 8: weather question with missing location asks for city
+(pass) conversation 9: future weather question explains forecast-window limits
+(pass) conversation 10: unrelated private-data mutation is not an event detail
+(pass) conversation 11: Envitefy product questions are answered instead of becoming drafts [15.00ms]
+(pass) conversation 12: generate requests with missing details explain the blocker
+(pass) conversation 13: unsafe or unrelated prompts do not become drafts
+
+src\lib\concierge\conversation-repair.test.mjs:
+(pass) the recorded customers' sharing questions do not ask us to contact guests
+(pass) format comparisons do not order products; choices and removals replace the selection [15.00ms]
+(pass) extract exact title corrections without copying complaints or dropping a twin
+(pass) explicit requests for two products still work while comparative questions stay unchanged
+(pass) a ready draft acknowledges a real correction instead of claiming nothing changed
+(pass) title and output corrections reach the draft and survive unrelated follow-ups and stale model output [16.00ms]
+(pass) capability answers distinguish supported RSVP fields, planning counts and the publish step
+(pass) persona still corrects unsupported promises when a model is unavailable
+(pass) a past refusal does not remain attached to an otherwise usable event source
+(pass) cancelled persona replies do not emit a fallback or finish the response [16.00ms]
+
+src\lib\concierge\fast-paths.test.mjs:
+(pass) event assistant fast path covers deterministic asset, RSVP deadline, and tone requests
+(pass) creation intake fast path covers greetings, starter chips, output chips, and OCR results
+
+src\lib\concierge\host-service.test.mjs:
+(pass) bilingual guest prose keeps readable paragraph breaks
+(pass) an overwhelmed host receives a manageable provisional plan during an AI timeout [15.00ms]
+(pass) a host can remove contact details and review a bilingual invitation without an off-topic refusal
+(pass) stale model values cannot undo an exact location, title or RSVP privacy correction [16.00ms]
+(pass) unavailable AI still offers a concrete manual-reply plan after the host accepts a limitation
+(pass) moving on to invitation wording does not repeat the previous manual-reply plan
+(pass) model prose cannot restore a contact removed in the current correction
+(pass) capability facts ground a contextual response instead of short-circuiting the host's request
+[concierge] OpenAI persona stream failed; using fallback warn: provider unavailable
+      at create (D:\Develop_local\envitefy\src\lib\concierge\host-service.test.mjs:103:89)
+      at streamConciergePersona (D:\Develop_local\envitefy\src\lib\concierge\persona.ts:216:50)
+      at <anonymous> (D:\Develop_local\envitefy\src\lib\concierge\host-service.test.mjs:99:24)
+      at fn (node:test:210:18)
+
+(pass) a failed AI response is transparent and still gives the host a practical next step [16.00ms]
+
+src\lib\concierge\natural-corrections.test.mjs:
+(pass) a worried host's introduction becomes event facts rather than the whole draft title
+(pass) unknown events never use a long conversational introduction as a canonical title
+(pass) exact titles support natural imperative wording, punctuation and apostrophes
+(pass) one natural correction independently updates title, schedule, location and RSVP
+(pass) moving the date does not overwrite the venue even when a later clause mentions location [15.00ms]
+(pass) location changes stop at the next instruction and allow exact quoted names
+(pass) a date or title correction preserves approved bilingual guest prose
+(pass) explicit RSVP toggles take precedence over stale extracted values and remain reversible [16.00ms]
+(pass) removing host contact information clears previously saved contact fields
+(pass) saved prose cannot retain a removed host contact or the superseded event date [15.00ms]
+(pass) the factual guard accepts corrected prose and unrelated dates and bilingual style [16.00ms]
+(pass) stale copy checks project ISO facts into the event timezone rather than server time
+
+src\lib\concierge\openai-config.test.mjs:
+(pass) concierge extraction/planning base model defaults to GPT-5.6 Terra
+(pass) concierge fast model flag uses GPT-5.6 Luna
+(pass) explicit concierge model wins over fast model flag
+(pass) configured fast model wins when fast model flag is enabled
+(pass) concierge chat model defaults to GPT-5.6 Luna and supports a separate override
+(pass) concierge premium model defaults to Astra and supports a separate override
+(pass) concierge extraction routes normal work to Terra and premium work to Astra
+(pass) concierge planner routes simple work to Luna, base work to Terra, and premium work to Astra
+(pass) concierge timeout defaults to 10000ms and accepts bounded overrides
+(pass) chat requests preserve role-specific reasoning and omit unsupported temperature
+(pass) concierge persona model defaults to base reasoning model
+(pass) concierge persona streaming timeouts leave room for reasoning and accept overrides
+
+src\lib\concierge\persona.test.mjs:
+(pass) persona streams deterministic fallback when no OpenAI key exists [15.00ms]
+(pass) persona does not force a product-format prompt for starter categories
+(pass) persona reaches normal Envitefy side questions when OpenAI is configured
+(pass) persona uses deterministic fallback for date confirmation prompts
+(pass) persona uses deterministic fallback for private account-data boundaries
+(pass) persona reaches ready drafts with optional gift prompts
+(pass) persona preserves streamed token spacing
+(pass) persona strips markdown emphasis and star separators from confirmations
+(pass) persona prompt and sanitizer keep streamed tone polished
+(pass) persona publicizes product labels instead of raw output keys
+(pass) persona does not expose default timezone copy
+(pass) persona receives bounded weather context for forecast questions
+(pass) persona keeps missing-location weather prompt exact
+(pass) persona explains an unavailable tailored reply when first token times out [16.00ms]
+
+ 78 pass
+ 0 fail
+Ran 78 tests across 8 files. [460.00ms]

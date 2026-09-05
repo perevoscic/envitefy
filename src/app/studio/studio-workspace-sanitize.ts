@@ -1,3 +1,5 @@
+import { CREATIVE_PLAN_SCHEMA, resolveStudioProduct, type StudioCreativePlan } from "@/lib/studio/product-contract";
+import { matchesSchema } from "@/lib/creation/source-evidence";
 import {
   normalizeInvitationText,
   normalizeLiveCardMetadata,
@@ -226,7 +228,11 @@ export function sanitizeEventDetails(value: unknown): EventDetails {
   const details: any = createInitialDetails();
   if (!isRecord(value)) return details;
 
+  details.product = value.product ? resolveStudioProduct(value.product) : undefined;
+  details.rsvpEnabled = typeof value.rsvpEnabled === "boolean" ? value.rsvpEnabled : undefined;
   const stringKeys: Array<keyof EventDetails> = [
+    "approvedWording",
+    "timezone",
     "sourceFlyerUrl",
     "sourceFlyerName",
     "sourceFlyerPreviewUrl",
@@ -437,6 +443,7 @@ export function sanitizeInvitationData(
 
   return {
     title: readString(value.title) || getDisplayTitle(fallbackDetails),
+    creativePlan: matchesSchema(value.creativePlan, CREATIVE_PLAN_SCHEMA) ? value.creativePlan as StudioCreativePlan : undefined,
     subtitle: readString(value.subtitle) || buildStudioSubtitleFallback(fallbackDetails),
     description:
       readString(value.description) ||
@@ -838,6 +845,8 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
   return {
     ok: true,
     mode,
+    product: resolveStudioProduct(value.product),
+    qualityCheck: value.qualityCheck === "passed" || value.qualityCheck === "failed" ? value.qualityCheck : "unavailable",
     liveCard,
     invitation: invitation || liveCard?.invitation || null,
     imageDataUrl,

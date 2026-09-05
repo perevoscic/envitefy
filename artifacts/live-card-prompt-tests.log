@@ -1,0 +1,208 @@
+TAP version 13
+# (node:50424) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/generate.edit-mode.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to D:\\Develop_local\\envitefy\\package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generateStudioInvitation uses edit mode when imageEdit carries an app-owned blob proxy url
+ok 1 - generateStudioInvitation uses edit mode when imageEdit carries an app-owned blob proxy url
+  ---
+  duration_ms: 2.3167
+  type: 'test'
+  ...
+# Subtest: generateStudioInvitation dispatches live-card text and fresh images through OpenAI
+ok 2 - generateStudioInvitation dispatches live-card text and fresh images through OpenAI
+  ---
+  duration_ms: 6.9253
+  type: 'test'
+  ...
+# Subtest: generateStudioInvitation dispatches existing-image edits through OpenAI
+ok 3 - generateStudioInvitation dispatches existing-image edits through OpenAI
+  ---
+  duration_ms: 0.4935
+  type: 'test'
+  ...
+# Subtest: generateStudioInvitation strips Design Idea-only terms before approving visible image copy
+ok 4 - generateStudioInvitation strips Design Idea-only terms before approving visible image copy
+  ---
+  duration_ms: 2.8809
+  type: 'test'
+  ...
+# Subtest: studio generation fails image creation when any attached reference photo cannot be resolved
+ok 5 - studio generation fails image creation when any attached reference photo cannot be resolved
+  ---
+  duration_ms: 1.0612
+  type: 'test'
+  ...
+# Subtest: studio image generation passes background-only image prompt options without poster text flags
+ok 6 - studio image generation passes background-only image prompt options without poster text flags
+  ---
+  duration_ms: 0.4749
+  type: 'test'
+  ...
+# Subtest: studio generation normalizes risky themes before prompt building and returns metadata
+ok 7 - studio generation normalizes risky themes before prompt building and returns metadata
+  ---
+  duration_ms: 0.4743
+  type: 'test'
+  ...
+# (node:4368) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/prompts.theme-framing.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to D:\\Develop_local\\envitefy\\package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: studio live-card prompt keeps birthday themes tied to the celebration type
+ok 8 - studio live-card prompt keeps birthday themes tied to the celebration type
+  ---
+  duration_ms: 4.3833
+  type: 'test'
+  ...
+# Subtest: studio invitation image prompt keeps custom themes invitation-ready
+ok 9 - studio invitation image prompt keeps custom themes invitation-ready
+  ---
+  duration_ms: 1.9223
+  type: 'test'
+  ...
+# Subtest: studio prompts treat raw design-idea fragments as visual direction instead of printed copy
+ok 10 - studio prompts treat raw design-idea fragments as visual direction instead of printed copy
+  ---
+  duration_ms: 3.3104
+  type: 'test'
+  ...
+# Subtest: studio image prompts drop malformed generated opening lines before approving raster text
+ok 11 - studio image prompts drop malformed generated opening lines before approving raster text
+  ---
+  duration_ms: 0.52
+  type: 'test'
+  ...
+# Subtest: studio baked-text invitation prompts give every non-birthday-wedding category explicit invitation guidance
+ok 12 - studio baked-text invitation prompts give every non-birthday-wedding category explicit invitation guidance
+  ---
+  duration_ms: 2.4017
+  type: 'test'
+  ...
+# Subtest: studio open house image prompts describe premium property collage and keep realtor photos in the app tab
+ok 13 - studio open house image prompts describe premium property collage and keep realtor photos in the app tab
+  ---
+  duration_ms: 0.9371
+  type: 'test'
+  ...
+# Subtest: studio prompts keep game day themes tied to the sports invitation type
+ok 14 - studio prompts keep game day themes tied to the sports invitation type
+  ---
+  duration_ms: 0.2431
+  type: 'test'
+  ...
+# Subtest: studio invitation image prompt keeps the bottom action zone safe without forcing a footer strip
+ok 15 - studio invitation image prompt keeps the bottom action zone safe without forcing a footer strip
+  ---
+  duration_ms: 0.3032
+  type: 'test'
+  ...
+# Subtest: studio invitation image prompt applies selected image finish presets to standalone images
+ok 16 - studio invitation image prompt applies selected image finish presets to standalone images
+  ---
+  duration_ms: 0.2614
+  type: 'test'
+  ...
+# Subtest: studio invitation image prompt applies selected image finish presets to live-card rasters only when present
+ok 17 - studio invitation image prompt applies selected image finish presets to live-card rasters only when present
+  ---
+  duration_ms: 0.3217
+  type: 'test'
+  ...
+# Subtest: studio invitation image prompt keeps game day imagery grounded in provided sports context
+ok 18 - studio invitation image prompt keeps game day imagery grounded in provided sports context
+  ---
+  duration_ms: 0.227
+  type: 'test'
+  ...
+# Subtest: page live-card prompts require baked-in raster text and preserve a clear bottom action zone
+ok 19 - page live-card prompts require baked-in raster text and preserve a clear bottom action zone
+  ---
+  duration_ms: 0.1755
+  type: 'test'
+  ...
+# Subtest: page live-card image edit prompts preserve baked-in text and logos
+ok 20 - page live-card image edit prompts preserve baked-in text and logos
+  ---
+  duration_ms: 0.1212
+  type: 'test'
+  ...
+# Subtest: birthday image prompts keep only the subject title while protecting the button zone
+ok 21 - birthday image prompts keep only the subject title while protecting the button zone
+  ---
+  duration_ms: 0.8158
+  type: 'test'
+  ...
+# Subtest: live-card generation excludes logistics hidden in titles in both generation surfaces
+ok 22 - live-card generation excludes logistics hidden in titles in both generation surfaces
+  ---
+  duration_ms: 1.3137
+  type: 'test'
+  ...
+# Subtest: poster-first live-card text prompts omit visible year and require poster-like copy
+ok 23 - poster-first live-card text prompts omit visible year and require poster-like copy
+  ---
+  duration_ms: 0.2702
+  type: 'test'
+  ...
+# Subtest: studio live-card prompts keep birthday copy centered on honoree name and age before theme
+ok 24 - studio live-card prompts keep birthday copy centered on honoree name and age before theme
+  ---
+  duration_ms: 0.194
+  type: 'test'
+  ...
+# Subtest: studio invitation image prompts use subject-photo makeover rules instead of cutout behavior
+ok 25 - studio invitation image prompts use subject-photo makeover rules instead of cutout behavior
+  ---
+  duration_ms: 0.2012
+  type: 'test'
+  ...
+# Subtest: studio prompts keep visible non-open-house location copy on the venue name
+ok 26 - studio prompts keep visible non-open-house location copy on the venue name
+  ---
+  duration_ms: 1.1256
+  type: 'test'
+  ...
+# (node:283776) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/provider.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to D:\\Develop_local\\envitefy\\package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: studio provider resolution defaults production to openai and non-production to gemini
+ok 27 - studio provider resolution defaults production to openai and non-production to gemini
+  ---
+  duration_ms: 1.3478
+  type: 'test'
+  ...
+# Subtest: resolveStudioProvider honors explicit providers
+ok 28 - resolveStudioProvider honors explicit providers
+  ---
+  duration_ms: 0.3325
+  type: 'test'
+  ...
+# Subtest: resolveStudioProvider defaults by runtime environment
+ok 29 - resolveStudioProvider defaults by runtime environment
+  ---
+  duration_ms: 0.2068
+  type: 'test'
+  ...
+# Subtest: resolveStudioProvider rejects invalid explicit provider
+ok 30 - resolveStudioProvider rejects invalid explicit provider
+  ---
+  duration_ms: 0.4843
+  type: 'test'
+  ...
+# Subtest: studio generation dispatches text and image calls through the resolved provider
+ok 31 - studio generation dispatches text and image calls through the resolved provider
+  ---
+  duration_ms: 0.7789
+  type: 'test'
+  ...
+1..31
+# tests 31
+# suites 0
+# pass 31
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7674.4666

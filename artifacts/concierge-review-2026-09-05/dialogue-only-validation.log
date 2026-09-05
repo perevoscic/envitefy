@@ -1,0 +1,607 @@
+✔ chat snap upload scans in chat instead of routing through dashboard upload action (1.4459ms)
+✔ chat snap upload exposes retry controls on failure (0.8155ms)
+✔ chat upload queues the picked file before product selection (1.6381ms)
+✔ chat upload status renders as a concierge bubble (0.8673ms)
+✔ date confirmation replies bypass streaming and object errors are normalized (0.7179ms)
+✔ chat live-card uploads can drive the preview image (0.7385ms)
+✔ /chat redirects signed-out visitors to the main page (0.9627ms)
+✖ /chat is the OpenAI-backed concierge creator (63.9061ms)
+✖ /chat live-card preview preserves RSVP and registry action metadata (1.466ms)
+✔ /chat preview updates reuse the preview progress overlay (0.8273ms)
+✔ /cht typo route is not present (0.174ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 9
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 171.4627
+
+✖ failing tests:
+
+test at src\app\chat\page.test.mjs:17:1
+✖ /chat is the OpenAI-backed concierge creator (63.9061ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /function ChatOutputPreviewSurface/. Input:
+  
+  '"use client";\n' +
+    '\n' +
+    'import {\n' +
+    '  CalendarDays,\n' +
+    '  CheckCircle2,\n' +
+    '  CloudSun,\n' +
+    '  Copy,\n' +
+    '  ExternalLink,\n' +
+    '  Gift,\n' +
+    '  LayoutDashboard,\n' +
+    '  Loader2,\n' +
+    '  MapPin,\n' +
+    '  Pencil,\n' +
+    '  Share2,\n' +
+    '  Users,\n' +
+    '} from "lucide-react";\n' +
+    'import { useState, type ReactNode } from "react";\n' +
+    'import type {\n' +
+    '  ConciergeEventDraft,\n' +
+    '  ConciergeWeatherContext,\n' +
+    '  RequestedOutput,\n' +
+    '} from "@/lib/concierge/types";\n' +
+    'import type { ChatPreviewSummary } from "./chat-preview-adapters";\n' +
+    '\r\n' +
+    'type RsvpPreviewBadge = {\r\n' +
+    '  count: number;\r\n' +
+    '  isLoading: boolean;\r\n' +
+    '  error: string | null;\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'type ChatProductPreviewProps = {\n' +
+    '  draft: ConciergeEventDraft | null;\r\n' +
+    '  summary: ChatPreviewSummary;\r\n' +
+    '  selectedOutput: RequestedOutput;\r\n' +
+    '  previewImageUrl: string;\r\n' +
+    '  isGenerating: boolean;\r\n' +
+    '  buildProgress: number;\r\n' +
+    '  currentBuildStep: string;\r\n' +
+    '  liveEventId: string | null;\r\n' +
+    '  publicHref: string | null;\r\n' +
+    '  rsvpDashboardHref: string | null;\r\n' +
+    '  hasDraftProduct: boolean;\r\n' +
+    '  isReceivedInviteDraft?: boolean;\r\n' +
+    '  publishActionLabel?: string;\r\n' +
+    '  publishBusyLabel?: string;\r\n' +
+    '  skinLabel: string | null;\n' +
+    '  isPublishing: boolean;\n' +
+    '  onPublish: () => void;\n' +
+    '  onEdit: () => void;\n' +
+    '  rsvp: RsvpPreviewBadge;\n' +
+    '  weatherContext: ConciergeWeatherContext | null;\n' +
+    '  mobileView: "chat" | "preview";\n' +
+    '};\n' +
+    '\r\n' +
+    'function cleanPreviewText(value: unknown): string {\r\n' +
+    '  return typeof value === "string" ? value.replace(/\\s+/g, " ").trim() : "";\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function previewBodyText(draft: ConciergeEventDraft | null, summary: ChatPreviewSummary) {\r\n' +
+    '  return (\r\n' +
+    '    cleanPreviewText(draft?.previewCopy.body) ||\r\n' +
+    '    cleanPreviewText(draft?.eventPurpose) ||\r\n' +
+    '    summary.subheadline ||\r\n' +
+    '    "Details coming together"\r\n' +
+    '  );\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function previewCategoryText(draft: ConciergeEventDraft | null) {\r\n' +
+    '  const raw = cleanPreviewText(draft?.eventType);\r\n' +
+    '  if (!raw || raw === "unknown") return "Celebration";\r\n' +
+    '  if (raw === "baby_shower") return "Baby Shower";\r\n' +
+    '  if (raw === "gender_reveal") return "Gender Reveal";\r\n' +
+    '  if (raw === "bridal_shower") return "Bridal Shower";\r\n' +
+    '  if (["gym_meet", "game_day", "football", "sport_event"].includes(raw)) return "Game Day";\r\n' +
+    '  if (raw === "field_trip") return "Field Trip/Day";\r\n' +
+    '  if (raw === "open_house") return "Open House";\r\n' +
+    '  if (raw === "smart_signup") return "Smart Sign-up";\r\n' +
+    '  return raw\r\n' +
+    '    .split("_")\r\n' +
+    '    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))\r\n' +
+    '    .join(" ");\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function publicActionLabelForOutput(selectedOutput: RequestedOutput) {\n' +
+    '  if (selectedOutput === "live_card") return "Open Live Card";\r\n' +
+    '  if (selectedOutput === "event_page") return "Open Event Page";\r\n' +
+    '  if (selectedOutput === "signup_form") return "Open Sign-up";\r\n' +
+    '  if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {\r\n' +
+    '    return "Open Flyer/Invitation";\r\n' +
+    '  }\r\n' +
+    '  if (selectedOutput === "invitation") return "Open Flyer/Invitation";\r\n' +
+    '  return "Open Product";\n' +
+    '}\n' +
+    '\n' +
+    'function outputLabelForPanel(selectedOutput: RequestedOutput) {\n' +
+    '  if (selectedOutput === "live_card") return "Live card";\n' +
+    '  if (selectedOutput === "event_page") return "Event page";\n' +
+    '  if (selectedOutput === "signup_form") return "Smart sign-up";\n' +
+    '  if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {\n' +
+    '    return "Flyer/invitation";\n' +
+    '  }\n' +
+    '  if (selectedOutput === "invitation") return "Flyer/invitation";\n' +
+    '  return "Event product";\n' +
+    '}\n' +
+    '\r\n' +
+    'function previewProcessStatusText({\r\n' +
+    '  hasDraftProduct,\r\n' +
+    '  publicHref,\r\n' +
+    '  isReceivedInviteDraft,\r\n' +
+    '}: {\r\n' +
+    '  hasDraftProduct: boolean;\r\n' +
+    '  publicHref: string | null;\r\n' +
+    '  isReceivedInviteDraft?: boolean;\r\n' +
+    '}) {\r\n' +
+    '  if (publicHref && isReceivedInviteDraft) {\r\n' +
+    '    return "Saved invite: open the link to review it in Invited events.";\r\n' +
+    '  }\r\n' +
+    '  if (publicHref) return "Published preview: open the link to review what guests will see.";\r\n' +
+    '  if (isReceivedInviteDraft && hasDraftProduct) {\r\n' +
+    '    return "Received invite review: details are locked to the upload. Save it to Invited events when it looks right.";\r\n' +
+    '  }\r\n' +
+    '  return "Draft preview: review the design here, then choose Publish event when ready.";\n' +
+    '}\n' +
+    '\n' +
+    'function rsvpStatusText({\n' +
+    '  draft,\n' +
+    '  rsvp,\n' +
+    '}: {\n' +
+    '  draft: ConciergeEventDraft | null;\n' +
+    '  rsvp: RsvpPreviewBadge;\n' +
+    '}) {\n' +
+    '  if (rsvp.isLoading) return "Checking responses";\n' +
+    '  if (rsvp.error) return "RSVP status unavailable";\n' +
+    '  if (rsvp.count > 0) return `${rsvp.count} response${rsvp.count === 1 ? "" : "s"}`;\n' +
+    '  if (draft?.rsvpEnabled === true) {\n' +
+    '    return draft.numberOfGuests ? `Tracking up to ${draft.numberOfGuests} guests` : "RSVP is on";\n' +
+    '  }\n' +
+    '  return "RSVP is off";\n' +
+    '}\n' +
+    '\n' +
+    'function weatherStatusText(weatherContext: ConciergeWeatherContext | null) {\n' +
+    '  if (!weatherContext) return "Forecast not checked";\n' +
+    '  if (weatherContext.status === "available") {\n' +
+    '    const temp = typeof weatherContext.tempF === "number" ? `${Math.round(weatherContext.tempF)}F` : "";\n' +
+    '    return [weatherContext.summary, temp].filter(Boolean).join(" - ") || "Forecast available";\n' +
+    '  }\n' +
+    '  return weatherContext.message || "Forecast unavailable";\n' +
+    '}\n' +
+    '\n' +
+    'type DetailRowProps = {\n' +
+    '  icon: ReactNode;\n' +
+    '  label: string;\n' +
+    '  value: string;\n' +
+    '};\n' +
+    '\n' +
+    'function DetailRow({ icon, label, value }: DetailRowProps) {\n' +
+    '  return (\n' +
+    '    <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-[#e6e1ee] bg-white/78 px-4 py-3 shadow-[0_10px_28px_rgba(35,24,72,0.06)]">\n' +
+    '      <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f3effb] text-[#5c4cd5]">\n' +
+    '        {icon}\n' +
+    '      </span>\n' +
+    '      <span className="min-w-0">\n' +
+    '        <span className="block text-[0.64rem] font-black uppercase tracking-[0.16em] text-[#8a819b]">\n' +
+    '          {label}\n' +
+    '        </span>\n' +
+    '        <span className="mt-1 block break-words text-sm font-bold leading-5 text-[#24183e]">\n' +
+    '          {value}\n' +
+    '        </span>\n' +
+    '      </span>\n' +
+    '    </div>\n' +
+    '  );\n' +
+    '}\n' +
+    '\r\n' +
+    'export default function ChatProductPreview({\n' +
+    '  draft,\r\n' +
+    '  summary,\r\n' +
+    '  selectedOutput,\r\n' +
+    '  previewImageUrl,\r\n' +
+    '  isGenerating,\r\n' +
+    '  buildProgress,\r\n' +
+    '  currentBuildStep,\r\n' +
+    '  liveEventId,\r\n' +
+    '  publicHref,\r\n' +
+    '  rsvpDashboardHref,\r\n' +
+    '  hasDraftProduct,\r\n' +
+    '  isReceivedInviteDraft = false,\r\n' +
+    '  publishActionLabel = "Publish event",\n' +
+    '  publishBusyLabel = "Publishing...",\r\n' +
+    '  isPublishing,\r\n' +
+    '  onPublish,\r\n' +
+    '  mobileView,\n' +
+    '  skinLabel,\n' +
+    '  rsvp,\n' +
+    '  weatherContext,\n' +
+    '  onEdit,\n' +
+    '}: ChatProductPreviewProps) {\n' +
+    '  const [shareState, setShareState] = useState<"idle" | "copied">("idle");\n' +
+    '  const hasGeneratedProduct = Boolean(liveEventId || hasDraftProduct);\n' +
+    '  const publicActionLabel = publicActionLabelForOutput(selectedOutput);\n' +
+    '  const panelOutputLabel = outputLabelForPanel(selectedOutput);\n' +
+    '  const previewProcessStatus = previewProcessStatusText({\n' +
+    '    hasDraftProduct,\n' +
+    '    publicHref,\n' +
+    '    isReceivedInviteDraft,\n' +
+    '  });\n' +
+    '  const shouldShowDraftActions = hasDraftProduct && !publicHref;\n' +
+    '  const hasShareAction = Boolean(publicHref);\n' +
+    '  const body = previewBodyText(draft, summary);\n' +
+    '  const category = previewCategoryText(draft);\n' +
+    '  const registryLink = cleanPreviewText(draft?.registryLink || draft?.giftRegistryLink);\n' +
+    '\n' +
+    '  async function handleShare() {\n' +
+    '    if (!publicHref || typeof window === "undefined") return;\n' +
+    '    const url = new URL(publicHref, window.location.origin).toString();\n' +
+    '    const sharePayload = {\n' +
+    '      title: summary.headline,\n' +
+    '      text: body,\n' +
+    '      url,\n' +
+    '    };\n' +
+    '\n' +
+    '    try {\n' +
+    '      if (navigator.share) {\n' +
+    '        await navigator.share(sharePayload);\n' +
+    '      } else if (navigator.clipboard?.writeText) {\n' +
+    '        await navigator.clipboard.writeText(url);\n' +
+    '      } else {\n' +
+    '        window.prompt("Copy this link", url);\n' +
+    '      }\n' +
+    '      setShareState("copied");\n' +
+    '      window.setTimeout(() => setShareState("idle"), 1600);\n' +
+    '    } catch (error) {\n' +
+    '      if (error instanceof DOMException && error.name === "AbortError") return;\n' +
+    '      setShareState("idle");\n' +
+    '    }\n' +
+    '  }\n' +
+    '\n' +
+    '  return (\n' +
+    '    <aside\n' +
+    '      className={`min-h-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl lg:static lg:border-l lg:border-[#e5dff0] lg:bg-white/58 ${\n' +
+    '        mobileView === "preview"\n' +
+    '          ? "fixed inset-x-0 bottom-0 top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 flex rounded-t-[1.75rem] shadow-[0_-24px_70px_rgba(35,24,72,0.18)] lg:rounded-none lg:shadow-none"\n' +
+    '          : "hidden lg:flex"\n' +
+    '      }`}\n' +
+    '    >\n' +
+    '      <div className="flex h-full min-h-0 flex-col">\n' +
+    '        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-28 pt-4 sm:px-6 md:pb-7 md:pt-6">\n' +
+    '          <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-4">\n' +
+    '            <header className="rounded-[1.45rem] border border-white/80 bg-white/78 p-4 shadow-[0_18px_52px_rgba(35,24,72,0.08)] ring-1 ring-[#f2eefb]">\n' +
+    '              <div className="flex items-start justify-between gap-3">\n' +
+    '                <div className="min-w-0">\n' +
+    '                  <div className="flex flex-wrap items-center gap-2">\n' +
+    '                    <span className="inline-flex h-7 items-center rounded-full bg-[#eaf8f2] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#167453]">\n' +
+    '                      Draft ready\n' +
+    '                    </span>\n' +
+    '                    <span className="inline-flex h-7 max-w-full items-center rounded-full bg-[#f0eefb] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#5c4cd5]">\n' +
+    '                      <span className="truncate">{panelOutputLabel}</span>\n' +
+    '                    </span>\n' +
+    '                  </div>\n' +
+    '                  <h2 className="mt-3 text-xl font-black leading-tight tracking-normal text-[#1f1735] sm:text-2xl">\n' +
+    '                    {summary.headline}\n' +
+    '                  </h2>\n' +
+    '                </div>\n' +
+    '                <button\n' +
+    '                  type="button"\n' +
+    '                  onClick={onEdit}\n' +
+    '                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl border border-[#ded6ef] bg-white text-[#4f416a] shadow-sm transition hover:border-[#c9bbed] hover:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"\n' +
+    '                  aria-label="Edit in chat"\n' +
+    '                  title="Edit in chat"\n' +
+    '                >\n' +
+    '                  <Pencil className="size-4" aria-hidden="true" />\n' +
+    '                </button>\n' +
+    '              </div>\n' +
+    '              <p className="mt-3 text-sm leading-6 text-[#675b7b'... 8939 more characters
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/app/chat/page.test.mjs:139:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '"use client";\n\nimport {\n  CalendarDays,\n  CheckCircle2,\n  CloudSun,\n  Copy,\n  ExternalLink,\n  Gift,\n  LayoutDashboard,\n  Loader2,\n  MapPin,\n  Pencil,\n  Share2,\n  Users,\n} from "lucide-react";\nimport { useState, type ReactNode } from "react";\nimport type {\n  ConciergeEventDraft,\n  ConciergeWeatherContext,\n  RequestedOutput,\n} from "@/lib/concierge/types";\nimport type { ChatPreviewSummary } from "./chat-preview-adapters";\n\r\ntype RsvpPreviewBadge = {\r\n  count: number;\r\n  isLoading: boolean;\r\n  error: string | null;\r\n};\r\n\r\ntype ChatProductPreviewProps = {\n  draft: ConciergeEventDraft | null;\r\n  summary: ChatPreviewSummary;\r\n  selectedOutput: RequestedOutput;\r\n  previewImageUrl: string;\r\n  isGenerating: boolean;\r\n  buildProgress: number;\r\n  currentBuildStep: string;\r\n  liveEventId: string | null;\r\n  publicHref: string | null;\r\n  rsvpDashboardHref: string | null;\r\n  hasDraftProduct: boolean;\r\n  isReceivedInviteDraft?: boolean;\r\n  publishActionLabel?: string;\r\n  publishBusyLabel?: string;\r\n  skinLabel: string | null;\n  isPublishing: boolean;\n  onPublish: () => void;\n  onEdit: () => void;\n  rsvp: RsvpPreviewBadge;\n  weatherContext: ConciergeWeatherContext | null;\n  mobileView: "chat" | "preview";\n};\n\r\nfunction cleanPreviewText(value: unknown): string {\r\n  return typeof value === "string" ? value.replace(/\\s+/g, " ").trim() : "";\r\n}\r\n\r\nfunction previewBodyText(draft: ConciergeEventDraft | null, summary: ChatPreviewSummary) {\r\n  return (\r\n    cleanPreviewText(draft?.previewCopy.body) ||\r\n    cleanPreviewText(draft?.eventPurpose) ||\r\n    summary.subheadline ||\r\n    "Details coming together"\r\n  );\r\n}\r\n\r\nfunction previewCategoryText(draft: ConciergeEventDraft | null) {\r\n  const raw = cleanPreviewText(draft?.eventType);\r\n  if (!raw || raw === "unknown") return "Celebration";\r\n  if (raw === "baby_shower") return "Baby Shower";\r\n  if (raw === "gender_reveal") return "Gender Reveal";\r\n  if (raw === "bridal_shower") return "Bridal Shower";\r\n  if (["gym_meet", "game_day", "football", "sport_event"].includes(raw)) return "Game Day";\r\n  if (raw === "field_trip") return "Field Trip/Day";\r\n  if (raw === "open_house") return "Open House";\r\n  if (raw === "smart_signup") return "Smart Sign-up";\r\n  return raw\r\n    .split("_")\r\n    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))\r\n    .join(" ");\r\n}\r\n\r\nfunction publicActionLabelForOutput(selectedOutput: RequestedOutput) {\n  if (selectedOutput === "live_card") return "Open Live Card";\r\n  if (selectedOutput === "event_page") return "Open Event Page";\r\n  if (selectedOutput === "signup_form") return "Open Sign-up";\r\n  if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {\r\n    return "Open Flyer/Invitation";\r\n  }\r\n  if (selectedOutput === "invitation") return "Open Flyer/Invitation";\r\n  return "Open Product";\n}\n\nfunction outputLabelForPanel(selectedOutput: RequestedOutput) {\n  if (selectedOutput === "live_card") return "Live card";\n  if (selectedOutput === "event_page") return "Event page";\n  if (selectedOutput === "signup_form") return "Smart sign-up";\n  if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {\n    return "Flyer/invitation";\n  }\n  if (selectedOutput === "invitation") return "Flyer/invitation";\n  return "Event product";\n}\n\r\nfunction previewProcessStatusText({\r\n  hasDraftProduct,\r\n  publicHref,\r\n  isReceivedInviteDraft,\r\n}: {\r\n  hasDraftProduct: boolean;\r\n  publicHref: string | null;\r\n  isReceivedInviteDraft?: boolean;\r\n}) {\r\n  if (publicHref && isReceivedInviteDraft) {\r\n    return "Saved invite: open the link to review it in Invited events.";\r\n  }\r\n  if (publicHref) return "Published preview: open the link to review what guests will see.";\r\n  if (isReceivedInviteDraft && hasDraftProduct) {\r\n    return "Received invite review: details are locked to the upload. Save it to Invited events when it looks right.";\r\n  }\r\n  return "Draft preview: review the design here, then choose Publish event when ready.";\n}\n\nfunction rsvpStatusText({\n  draft,\n  rsvp,\n}: {\n  draft: ConciergeEventDraft | null;\n  rsvp: RsvpPreviewBadge;\n}) {\n  if (rsvp.isLoading) return "Checking responses";\n  if (rsvp.error) return "RSVP status unavailable";\n  if (rsvp.count > 0) return `${rsvp.count} response${rsvp.count === 1 ? "" : "s"}`;\n  if (draft?.rsvpEnabled === true) {\n    return draft.numberOfGuests ? `Tracking up to ${draft.numberOfGuests} guests` : "RSVP is on";\n  }\n  return "RSVP is off";\n}\n\nfunction weatherStatusText(weatherContext: ConciergeWeatherContext | null) {\n  if (!weatherContext) return "Forecast not checked";\n  if (weatherContext.status === "available") {\n    const temp = typeof weatherContext.tempF === "number" ? `${Math.round(weatherContext.tempF)}F` : "";\n    return [weatherContext.summary, temp].filter(Boolean).join(" - ") || "Forecast available";\n  }\n  return weatherContext.message || "Forecast unavailable";\n}\n\ntype DetailRowProps = {\n  icon: ReactNode;\n  label: string;\n  value: string;\n};\n\nfunction DetailRow({ icon, label, value }: DetailRowProps) {\n  return (\n    <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-[#e6e1ee] bg-white/78 px-4 py-3 shadow-[0_10px_28px_rgba(35,24,72,0.06)]">\n      <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f3effb] text-[#5c4cd5]">\n        {icon}\n      </span>\n      <span className="min-w-0">\n        <span className="block text-[0.64rem] font-black uppercase tracking-[0.16em] text-[#8a819b]">\n          {label}\n        </span>\n        <span className="mt-1 block break-words text-sm font-bold leading-5 text-[#24183e]">\n          {value}\n        </span>\n      </span>\n    </div>\n  );\n}\n\r\nexport default function ChatProductPreview({\n  draft,\r\n  summary,\r\n  selectedOutput,\r\n  previewImageUrl,\r\n  isGenerating,\r\n  buildProgress,\r\n  currentBuildStep,\r\n  liveEventId,\r\n  publicHref,\r\n  rsvpDashboardHref,\r\n  hasDraftProduct,\r\n  isReceivedInviteDraft = false,\r\n  publishActionLabel = "Publish event",\n  publishBusyLabel = "Publishing...",\r\n  isPublishing,\r\n  onPublish,\r\n  mobileView,\n  skinLabel,\n  rsvp,\n  weatherContext,\n  onEdit,\n}: ChatProductPreviewProps) {\n  const [shareState, setShareState] = useState<"idle" | "copied">("idle");\n  const hasGeneratedProduct = Boolean(liveEventId || hasDraftProduct);\n  const publicActionLabel = publicActionLabelForOutput(selectedOutput);\n  const panelOutputLabel = outputLabelForPanel(selectedOutput);\n  const previewProcessStatus = previewProcessStatusText({\n    hasDraftProduct,\n    publicHref,\n    isReceivedInviteDraft,\n  });\n  const shouldShowDraftActions = hasDraftProduct && !publicHref;\n  const hasShareAction = Boolean(publicHref);\n  const body = previewBodyText(draft, summary);\n  const category = previewCategoryText(draft);\n  const registryLink = cleanPreviewText(draft?.registryLink || draft?.giftRegistryLink);\n\n  async function handleShare() {\n    if (!publicHref || typeof window === "undefined") return;\n    const url = new URL(publicHref, window.location.origin).toString();\n    const sharePayload = {\n      title: summary.headline,\n      text: body,\n      url,\n    };\n\n    try {\n      if (navigator.share) {\n        await navigator.share(sharePayload);\n      } else if (navigator.clipboard?.writeText) {\n        await navigator.clipboard.writeText(url);\n      } else {\n        window.prompt("Copy this link", url);\n      }\n      setShareState("copied");\n      window.setTimeout(() => setShareState("idle"), 1600);\n    } catch (error) {\n      if (error instanceof DOMException && error.name === "AbortError") return;\n      setShareState("idle");\n    }\n  }\n\n  return (\n    <aside\n      className={`min-h-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl lg:static lg:border-l lg:border-[#e5dff0] lg:bg-white/58 ${\n        mobileView === "preview"\n          ? "fixed inset-x-0 bottom-0 top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 flex rounded-t-[1.75rem] shadow-[0_-24px_70px_rgba(35,24,72,0.18)] lg:rounded-none lg:shadow-none"\n          : "hidden lg:flex"\n      }`}\n    >\n      <div className="flex h-full min-h-0 flex-col">\n        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-28 pt-4 sm:px-6 md:pb-7 md:pt-6">\n          <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-4">\n            <header className="rounded-[1.45rem] border border-white/80 bg-white/78 p-4 shadow-[0_18px_52px_rgba(35,24,72,0.08)] ring-1 ring-[#f2eefb]">\n              <div className="flex items-start justify-between gap-3">\n                <div className="min-w-0">\n                  <div className="flex flex-wrap items-center gap-2">\n                    <span className="inline-flex h-7 items-center rounded-full bg-[#eaf8f2] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#167453]">\n                      Draft ready\n                    </span>\n                    <span className="inline-flex h-7 max-w-full items-center rounded-full bg-[#f0eefb] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#5c4cd5]">\n                      <span className="truncate">{panelOutputLabel}</span>\n                    </span>\n                  </div>\n                  <h2 className="mt-3 text-xl font-black leading-tight tracking-normal text-[#1f1735] sm:text-2xl">\n                    {summary.headline}\n                  </h2>\n                </div>\n                <button\n                  type="button"\n                  onClick={onEdit}\n                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl border border-[#ded6ef] bg-white text-[#4f416a] shadow-sm transition hover:border-[#c9bbed] hover:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"\n                  aria-label="Edit in chat"\n                  title="Edit in chat"\n                >\n                  <Pencil className="size-4" aria-hidden="true" />\n                </button>\n              </div>\n              <p className="mt-3 text-sm leading-6 text-[#675b7b'... 8939 more characters,
+    expected: /function ChatOutputPreviewSurface/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at src\app\chat\page.test.mjs:638:1
+✖ /chat live-card preview preserves RSVP and registry action metadata (1.466ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /const hasRsvp = draft\?\.rsvpEnabled === true;/. Input:
+  
+  '"use client";\n' +
+    '\n' +
+    'import {\n' +
+    '  CalendarDays,\n' +
+    '  CheckCircle2,\n' +
+    '  CloudSun,\n' +
+    '  Copy,\n' +
+    '  ExternalLink,\n' +
+    '  Gift,\n' +
+    '  LayoutDashboard,\n' +
+    '  Loader2,\n' +
+    '  MapPin,\n' +
+    '  Pencil,\n' +
+    '  Share2,\n' +
+    '  Users,\n' +
+    '} from "lucide-react";\n' +
+    'import { useState, type ReactNode } from "react";\n' +
+    'import type {\n' +
+    '  ConciergeEventDraft,\n' +
+    '  ConciergeWeatherContext,\n' +
+    '  RequestedOutput,\n' +
+    '} from "@/lib/concierge/types";\n' +
+    'import type { ChatPreviewSummary } from "./chat-preview-adapters";\n' +
+    '\r\n' +
+    'type RsvpPreviewBadge = {\r\n' +
+    '  count: number;\r\n' +
+    '  isLoading: boolean;\r\n' +
+    '  error: string | null;\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'type ChatProductPreviewProps = {\n' +
+    '  draft: ConciergeEventDraft | null;\r\n' +
+    '  summary: ChatPreviewSummary;\r\n' +
+    '  selectedOutput: RequestedOutput;\r\n' +
+    '  previewImageUrl: string;\r\n' +
+    '  isGenerating: boolean;\r\n' +
+    '  buildProgress: number;\r\n' +
+    '  currentBuildStep: string;\r\n' +
+    '  liveEventId: string | null;\r\n' +
+    '  publicHref: string | null;\r\n' +
+    '  rsvpDashboardHref: string | null;\r\n' +
+    '  hasDraftProduct: boolean;\r\n' +
+    '  isReceivedInviteDraft?: boolean;\r\n' +
+    '  publishActionLabel?: string;\r\n' +
+    '  publishBusyLabel?: string;\r\n' +
+    '  skinLabel: string | null;\n' +
+    '  isPublishing: boolean;\n' +
+    '  onPublish: () => void;\n' +
+    '  onEdit: () => void;\n' +
+    '  rsvp: RsvpPreviewBadge;\n' +
+    '  weatherContext: ConciergeWeatherContext | null;\n' +
+    '  mobileView: "chat" | "preview";\n' +
+    '};\n' +
+    '\r\n' +
+    'function cleanPreviewText(value: unknown): string {\r\n' +
+    '  return typeof value === "string" ? value.replace(/\\s+/g, " ").trim() : "";\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function previewBodyText(draft: ConciergeEventDraft | null, summary: ChatPreviewSummary) {\r\n' +
+    '  return (\r\n' +
+    '    cleanPreviewText(draft?.previewCopy.body) ||\r\n' +
+    '    cleanPreviewText(draft?.eventPurpose) ||\r\n' +
+    '    summary.subheadline ||\r\n' +
+    '    "Details coming together"\r\n' +
+    '  );\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function previewCategoryText(draft: ConciergeEventDraft | null) {\r\n' +
+    '  const raw = cleanPreviewText(draft?.eventType);\r\n' +
+    '  if (!raw || raw === "unknown") return "Celebration";\r\n' +
+    '  if (raw === "baby_shower") return "Baby Shower";\r\n' +
+    '  if (raw === "gender_reveal") return "Gender Reveal";\r\n' +
+    '  if (raw === "bridal_shower") return "Bridal Shower";\r\n' +
+    '  if (["gym_meet", "game_day", "football", "sport_event"].includes(raw)) return "Game Day";\r\n' +
+    '  if (raw === "field_trip") return "Field Trip/Day";\r\n' +
+    '  if (raw === "open_house") return "Open House";\r\n' +
+    '  if (raw === "smart_signup") return "Smart Sign-up";\r\n' +
+    '  return raw\r\n' +
+    '    .split("_")\r\n' +
+    '    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))\r\n' +
+    '    .join(" ");\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function publicActionLabelForOutput(selectedOutput: RequestedOutput) {\n' +
+    '  if (selectedOutput === "live_card") return "Open Live Card";\r\n' +
+    '  if (selectedOutput === "event_page") return "Open Event Page";\r\n' +
+    '  if (selectedOutput === "signup_form") return "Open Sign-up";\r\n' +
+    '  if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {\r\n' +
+    '    return "Open Flyer/Invitation";\r\n' +
+    '  }\r\n' +
+    '  if (selectedOutput === "invitation") return "Open Flyer/Invitation";\r\n' +
+    '  return "Open Product";\n' +
+    '}\n' +
+    '\n' +
+    'function outputLabelForPanel(selectedOutput: RequestedOutput) {\n' +
+    '  if (selectedOutput === "live_card") return "Live card";\n' +
+    '  if (selectedOutput === "event_page") return "Event page";\n' +
+    '  if (selectedOutput === "signup_form") return "Smart sign-up";\n' +
+    '  if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {\n' +
+    '    return "Flyer/invitation";\n' +
+    '  }\n' +
+    '  if (selectedOutput === "invitation") return "Flyer/invitation";\n' +
+    '  return "Event product";\n' +
+    '}\n' +
+    '\r\n' +
+    'function previewProcessStatusText({\r\n' +
+    '  hasDraftProduct,\r\n' +
+    '  publicHref,\r\n' +
+    '  isReceivedInviteDraft,\r\n' +
+    '}: {\r\n' +
+    '  hasDraftProduct: boolean;\r\n' +
+    '  publicHref: string | null;\r\n' +
+    '  isReceivedInviteDraft?: boolean;\r\n' +
+    '}) {\r\n' +
+    '  if (publicHref && isReceivedInviteDraft) {\r\n' +
+    '    return "Saved invite: open the link to review it in Invited events.";\r\n' +
+    '  }\r\n' +
+    '  if (publicHref) return "Published preview: open the link to review what guests will see.";\r\n' +
+    '  if (isReceivedInviteDraft && hasDraftProduct) {\r\n' +
+    '    return "Received invite review: details are locked to the upload. Save it to Invited events when it looks right.";\r\n' +
+    '  }\r\n' +
+    '  return "Draft preview: review the design here, then choose Publish event when ready.";\n' +
+    '}\n' +
+    '\n' +
+    'function rsvpStatusText({\n' +
+    '  draft,\n' +
+    '  rsvp,\n' +
+    '}: {\n' +
+    '  draft: ConciergeEventDraft | null;\n' +
+    '  rsvp: RsvpPreviewBadge;\n' +
+    '}) {\n' +
+    '  if (rsvp.isLoading) return "Checking responses";\n' +
+    '  if (rsvp.error) return "RSVP status unavailable";\n' +
+    '  if (rsvp.count > 0) return `${rsvp.count} response${rsvp.count === 1 ? "" : "s"}`;\n' +
+    '  if (draft?.rsvpEnabled === true) {\n' +
+    '    return draft.numberOfGuests ? `Tracking up to ${draft.numberOfGuests} guests` : "RSVP is on";\n' +
+    '  }\n' +
+    '  return "RSVP is off";\n' +
+    '}\n' +
+    '\n' +
+    'function weatherStatusText(weatherContext: ConciergeWeatherContext | null) {\n' +
+    '  if (!weatherContext) return "Forecast not checked";\n' +
+    '  if (weatherContext.status === "available") {\n' +
+    '    const temp = typeof weatherContext.tempF === "number" ? `${Math.round(weatherContext.tempF)}F` : "";\n' +
+    '    return [weatherContext.summary, temp].filter(Boolean).join(" - ") || "Forecast available";\n' +
+    '  }\n' +
+    '  return weatherContext.message || "Forecast unavailable";\n' +
+    '}\n' +
+    '\n' +
+    'type DetailRowProps = {\n' +
+    '  icon: ReactNode;\n' +
+    '  label: string;\n' +
+    '  value: string;\n' +
+    '};\n' +
+    '\n' +
+    'function DetailRow({ icon, label, value }: DetailRowProps) {\n' +
+    '  return (\n' +
+    '    <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-[#e6e1ee] bg-white/78 px-4 py-3 shadow-[0_10px_28px_rgba(35,24,72,0.06)]">\n' +
+    '      <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f3effb] text-[#5c4cd5]">\n' +
+    '        {icon}\n' +
+    '      </span>\n' +
+    '      <span className="min-w-0">\n' +
+    '        <span className="block text-[0.64rem] font-black uppercase tracking-[0.16em] text-[#8a819b]">\n' +
+    '          {label}\n' +
+    '        </span>\n' +
+    '        <span className="mt-1 block break-words text-sm font-bold leading-5 text-[#24183e]">\n' +
+    '          {value}\n' +
+    '        </span>\n' +
+    '      </span>\n' +
+    '    </div>\n' +
+    '  );\n' +
+    '}\n' +
+    '\r\n' +
+    'export default function ChatProductPreview({\n' +
+    '  draft,\r\n' +
+    '  summary,\r\n' +
+    '  selectedOutput,\r\n' +
+    '  previewImageUrl,\r\n' +
+    '  isGenerating,\r\n' +
+    '  buildProgress,\r\n' +
+    '  currentBuildStep,\r\n' +
+    '  liveEventId,\r\n' +
+    '  publicHref,\r\n' +
+    '  rsvpDashboardHref,\r\n' +
+    '  hasDraftProduct,\r\n' +
+    '  isReceivedInviteDraft = false,\r\n' +
+    '  publishActionLabel = "Publish event",\n' +
+    '  publishBusyLabel = "Publishing...",\r\n' +
+    '  isPublishing,\r\n' +
+    '  onPublish,\r\n' +
+    '  mobileView,\n' +
+    '  skinLabel,\n' +
+    '  rsvp,\n' +
+    '  weatherContext,\n' +
+    '  onEdit,\n' +
+    '}: ChatProductPreviewProps) {\n' +
+    '  const [shareState, setShareState] = useState<"idle" | "copied">("idle");\n' +
+    '  const hasGeneratedProduct = Boolean(liveEventId || hasDraftProduct);\n' +
+    '  const publicActionLabel = publicActionLabelForOutput(selectedOutput);\n' +
+    '  const panelOutputLabel = outputLabelForPanel(selectedOutput);\n' +
+    '  const previewProcessStatus = previewProcessStatusText({\n' +
+    '    hasDraftProduct,\n' +
+    '    publicHref,\n' +
+    '    isReceivedInviteDraft,\n' +
+    '  });\n' +
+    '  const shouldShowDraftActions = hasDraftProduct && !publicHref;\n' +
+    '  const hasShareAction = Boolean(publicHref);\n' +
+    '  const body = previewBodyText(draft, summary);\n' +
+    '  const category = previewCategoryText(draft);\n' +
+    '  const registryLink = cleanPreviewText(draft?.registryLink || draft?.giftRegistryLink);\n' +
+    '\n' +
+    '  async function handleShare() {\n' +
+    '    if (!publicHref || typeof window === "undefined") return;\n' +
+    '    const url = new URL(publicHref, window.location.origin).toString();\n' +
+    '    const sharePayload = {\n' +
+    '      title: summary.headline,\n' +
+    '      text: body,\n' +
+    '      url,\n' +
+    '    };\n' +
+    '\n' +
+    '    try {\n' +
+    '      if (navigator.share) {\n' +
+    '        await navigator.share(sharePayload);\n' +
+    '      } else if (navigator.clipboard?.writeText) {\n' +
+    '        await navigator.clipboard.writeText(url);\n' +
+    '      } else {\n' +
+    '        window.prompt("Copy this link", url);\n' +
+    '      }\n' +
+    '      setShareState("copied");\n' +
+    '      window.setTimeout(() => setShareState("idle"), 1600);\n' +
+    '    } catch (error) {\n' +
+    '      if (error instanceof DOMException && error.name === "AbortError") return;\n' +
+    '      setShareState("idle");\n' +
+    '    }\n' +
+    '  }\n' +
+    '\n' +
+    '  return (\n' +
+    '    <aside\n' +
+    '      className={`min-h-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl lg:static lg:border-l lg:border-[#e5dff0] lg:bg-white/58 ${\n' +
+    '        mobileView === "preview"\n' +
+    '          ? "fixed inset-x-0 bottom-0 top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 flex rounded-t-[1.75rem] shadow-[0_-24px_70px_rgba(35,24,72,0.18)] lg:rounded-none lg:shadow-none"\n' +
+    '          : "hidden lg:flex"\n' +
+    '      }`}\n' +
+    '    >\n' +
+    '      <div className="flex h-full min-h-0 flex-col">\n' +
+    '        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-28 pt-4 sm:px-6 md:pb-7 md:pt-6">\n' +
+    '          <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-4">\n' +
+    '            <header className="rounded-[1.45rem] border border-white/80 bg-white/78 p-4 shadow-[0_18px_52px_rgba(35,24,72,0.08)] ring-1 ring-[#f2eefb]">\n' +
+    '              <div className="flex items-start justify-between gap-3">\n' +
+    '                <div className="min-w-0">\n' +
+    '                  <div className="flex flex-wrap items-center gap-2">\n' +
+    '                    <span className="inline-flex h-7 items-center rounded-full bg-[#eaf8f2] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#167453]">\n' +
+    '                      Draft ready\n' +
+    '                    </span>\n' +
+    '                    <span className="inline-flex h-7 max-w-full items-center rounded-full bg-[#f0eefb] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#5c4cd5]">\n' +
+    '                      <span className="truncate">{panelOutputLabel}</span>\n' +
+    '                    </span>\n' +
+    '                  </div>\n' +
+    '                  <h2 className="mt-3 text-xl font-black leading-tight tracking-normal text-[#1f1735] sm:text-2xl">\n' +
+    '                    {summary.headline}\n' +
+    '                  </h2>\n' +
+    '                </div>\n' +
+    '                <button\n' +
+    '                  type="button"\n' +
+    '                  onClick={onEdit}\n' +
+    '                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl border border-[#ded6ef] bg-white text-[#4f416a] shadow-sm transition hover:border-[#c9bbed] hover:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"\n' +
+    '                  aria-label="Edit in chat"\n' +
+    '                  title="Edit in chat"\n' +
+    '                >\n' +
+    '                  <Pencil className="size-4" aria-hidden="true" />\n' +
+    '                </button>\n' +
+    '              </div>\n' +
+    '              <p className="mt-3 text-sm leading-6 text-[#675b7b'... 8939 more characters
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/app/chat/page.test.mjs:653:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '"use client";\n\nimport {\n  CalendarDays,\n  CheckCircle2,\n  CloudSun,\n  Copy,\n  ExternalLink,\n  Gift,\n  LayoutDashboard,\n  Loader2,\n  MapPin,\n  Pencil,\n  Share2,\n  Users,\n} from "lucide-react";\nimport { useState, type ReactNode } from "react";\nimport type {\n  ConciergeEventDraft,\n  ConciergeWeatherContext,\n  RequestedOutput,\n} from "@/lib/concierge/types";\nimport type { ChatPreviewSummary } from "./chat-preview-adapters";\n\r\ntype RsvpPreviewBadge = {\r\n  count: number;\r\n  isLoading: boolean;\r\n  error: string | null;\r\n};\r\n\r\ntype ChatProductPreviewProps = {\n  draft: ConciergeEventDraft | null;\r\n  summary: ChatPreviewSummary;\r\n  selectedOutput: RequestedOutput;\r\n  previewImageUrl: string;\r\n  isGenerating: boolean;\r\n  buildProgress: number;\r\n  currentBuildStep: string;\r\n  liveEventId: string | null;\r\n  publicHref: string | null;\r\n  rsvpDashboardHref: string | null;\r\n  hasDraftProduct: boolean;\r\n  isReceivedInviteDraft?: boolean;\r\n  publishActionLabel?: string;\r\n  publishBusyLabel?: string;\r\n  skinLabel: string | null;\n  isPublishing: boolean;\n  onPublish: () => void;\n  onEdit: () => void;\n  rsvp: RsvpPreviewBadge;\n  weatherContext: ConciergeWeatherContext | null;\n  mobileView: "chat" | "preview";\n};\n\r\nfunction cleanPreviewText(value: unknown): string {\r\n  return typeof value === "string" ? value.replace(/\\s+/g, " ").trim() : "";\r\n}\r\n\r\nfunction previewBodyText(draft: ConciergeEventDraft | null, summary: ChatPreviewSummary) {\r\n  return (\r\n    cleanPreviewText(draft?.previewCopy.body) ||\r\n    cleanPreviewText(draft?.eventPurpose) ||\r\n    summary.subheadline ||\r\n    "Details coming together"\r\n  );\r\n}\r\n\r\nfunction previewCategoryText(draft: ConciergeEventDraft | null) {\r\n  const raw = cleanPreviewText(draft?.eventType);\r\n  if (!raw || raw === "unknown") return "Celebration";\r\n  if (raw === "baby_shower") return "Baby Shower";\r\n  if (raw === "gender_reveal") return "Gender Reveal";\r\n  if (raw === "bridal_shower") return "Bridal Shower";\r\n  if (["gym_meet", "game_day", "football", "sport_event"].includes(raw)) return "Game Day";\r\n  if (raw === "field_trip") return "Field Trip/Day";\r\n  if (raw === "open_house") return "Open House";\r\n  if (raw === "smart_signup") return "Smart Sign-up";\r\n  return raw\r\n    .split("_")\r\n    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))\r\n    .join(" ");\r\n}\r\n\r\nfunction publicActionLabelForOutput(selectedOutput: RequestedOutput) {\n  if (selectedOutput === "live_card") return "Open Live Card";\r\n  if (selectedOutput === "event_page") return "Open Event Page";\r\n  if (selectedOutput === "signup_form") return "Open Sign-up";\r\n  if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {\r\n    return "Open Flyer/Invitation";\r\n  }\r\n  if (selectedOutput === "invitation") return "Open Flyer/Invitation";\r\n  return "Open Product";\n}\n\nfunction outputLabelForPanel(selectedOutput: RequestedOutput) {\n  if (selectedOutput === "live_card") return "Live card";\n  if (selectedOutput === "event_page") return "Event page";\n  if (selectedOutput === "signup_form") return "Smart sign-up";\n  if (selectedOutput === "digital_flyer" || selectedOutput === "printable_flyer") {\n    return "Flyer/invitation";\n  }\n  if (selectedOutput === "invitation") return "Flyer/invitation";\n  return "Event product";\n}\n\r\nfunction previewProcessStatusText({\r\n  hasDraftProduct,\r\n  publicHref,\r\n  isReceivedInviteDraft,\r\n}: {\r\n  hasDraftProduct: boolean;\r\n  publicHref: string | null;\r\n  isReceivedInviteDraft?: boolean;\r\n}) {\r\n  if (publicHref && isReceivedInviteDraft) {\r\n    return "Saved invite: open the link to review it in Invited events.";\r\n  }\r\n  if (publicHref) return "Published preview: open the link to review what guests will see.";\r\n  if (isReceivedInviteDraft && hasDraftProduct) {\r\n    return "Received invite review: details are locked to the upload. Save it to Invited events when it looks right.";\r\n  }\r\n  return "Draft preview: review the design here, then choose Publish event when ready.";\n}\n\nfunction rsvpStatusText({\n  draft,\n  rsvp,\n}: {\n  draft: ConciergeEventDraft | null;\n  rsvp: RsvpPreviewBadge;\n}) {\n  if (rsvp.isLoading) return "Checking responses";\n  if (rsvp.error) return "RSVP status unavailable";\n  if (rsvp.count > 0) return `${rsvp.count} response${rsvp.count === 1 ? "" : "s"}`;\n  if (draft?.rsvpEnabled === true) {\n    return draft.numberOfGuests ? `Tracking up to ${draft.numberOfGuests} guests` : "RSVP is on";\n  }\n  return "RSVP is off";\n}\n\nfunction weatherStatusText(weatherContext: ConciergeWeatherContext | null) {\n  if (!weatherContext) return "Forecast not checked";\n  if (weatherContext.status === "available") {\n    const temp = typeof weatherContext.tempF === "number" ? `${Math.round(weatherContext.tempF)}F` : "";\n    return [weatherContext.summary, temp].filter(Boolean).join(" - ") || "Forecast available";\n  }\n  return weatherContext.message || "Forecast unavailable";\n}\n\ntype DetailRowProps = {\n  icon: ReactNode;\n  label: string;\n  value: string;\n};\n\nfunction DetailRow({ icon, label, value }: DetailRowProps) {\n  return (\n    <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-[#e6e1ee] bg-white/78 px-4 py-3 shadow-[0_10px_28px_rgba(35,24,72,0.06)]">\n      <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f3effb] text-[#5c4cd5]">\n        {icon}\n      </span>\n      <span className="min-w-0">\n        <span className="block text-[0.64rem] font-black uppercase tracking-[0.16em] text-[#8a819b]">\n          {label}\n        </span>\n        <span className="mt-1 block break-words text-sm font-bold leading-5 text-[#24183e]">\n          {value}\n        </span>\n      </span>\n    </div>\n  );\n}\n\r\nexport default function ChatProductPreview({\n  draft,\r\n  summary,\r\n  selectedOutput,\r\n  previewImageUrl,\r\n  isGenerating,\r\n  buildProgress,\r\n  currentBuildStep,\r\n  liveEventId,\r\n  publicHref,\r\n  rsvpDashboardHref,\r\n  hasDraftProduct,\r\n  isReceivedInviteDraft = false,\r\n  publishActionLabel = "Publish event",\n  publishBusyLabel = "Publishing...",\r\n  isPublishing,\r\n  onPublish,\r\n  mobileView,\n  skinLabel,\n  rsvp,\n  weatherContext,\n  onEdit,\n}: ChatProductPreviewProps) {\n  const [shareState, setShareState] = useState<"idle" | "copied">("idle");\n  const hasGeneratedProduct = Boolean(liveEventId || hasDraftProduct);\n  const publicActionLabel = publicActionLabelForOutput(selectedOutput);\n  const panelOutputLabel = outputLabelForPanel(selectedOutput);\n  const previewProcessStatus = previewProcessStatusText({\n    hasDraftProduct,\n    publicHref,\n    isReceivedInviteDraft,\n  });\n  const shouldShowDraftActions = hasDraftProduct && !publicHref;\n  const hasShareAction = Boolean(publicHref);\n  const body = previewBodyText(draft, summary);\n  const category = previewCategoryText(draft);\n  const registryLink = cleanPreviewText(draft?.registryLink || draft?.giftRegistryLink);\n\n  async function handleShare() {\n    if (!publicHref || typeof window === "undefined") return;\n    const url = new URL(publicHref, window.location.origin).toString();\n    const sharePayload = {\n      title: summary.headline,\n      text: body,\n      url,\n    };\n\n    try {\n      if (navigator.share) {\n        await navigator.share(sharePayload);\n      } else if (navigator.clipboard?.writeText) {\n        await navigator.clipboard.writeText(url);\n      } else {\n        window.prompt("Copy this link", url);\n      }\n      setShareState("copied");\n      window.setTimeout(() => setShareState("idle"), 1600);\n    } catch (error) {\n      if (error instanceof DOMException && error.name === "AbortError") return;\n      setShareState("idle");\n    }\n  }\n\n  return (\n    <aside\n      className={`min-h-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl lg:static lg:border-l lg:border-[#e5dff0] lg:bg-white/58 ${\n        mobileView === "preview"\n          ? "fixed inset-x-0 bottom-0 top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 flex rounded-t-[1.75rem] shadow-[0_-24px_70px_rgba(35,24,72,0.18)] lg:rounded-none lg:shadow-none"\n          : "hidden lg:flex"\n      }`}\n    >\n      <div className="flex h-full min-h-0 flex-col">\n        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-28 pt-4 sm:px-6 md:pb-7 md:pt-6">\n          <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-4">\n            <header className="rounded-[1.45rem] border border-white/80 bg-white/78 p-4 shadow-[0_18px_52px_rgba(35,24,72,0.08)] ring-1 ring-[#f2eefb]">\n              <div className="flex items-start justify-between gap-3">\n                <div className="min-w-0">\n                  <div className="flex flex-wrap items-center gap-2">\n                    <span className="inline-flex h-7 items-center rounded-full bg-[#eaf8f2] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#167453]">\n                      Draft ready\n                    </span>\n                    <span className="inline-flex h-7 max-w-full items-center rounded-full bg-[#f0eefb] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#5c4cd5]">\n                      <span className="truncate">{panelOutputLabel}</span>\n                    </span>\n                  </div>\n                  <h2 className="mt-3 text-xl font-black leading-tight tracking-normal text-[#1f1735] sm:text-2xl">\n                    {summary.headline}\n                  </h2>\n                </div>\n                <button\n                  type="button"\n                  onClick={onEdit}\n                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl border border-[#ded6ef] bg-white text-[#4f416a] shadow-sm transition hover:border-[#c9bbed] hover:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"\n                  aria-label="Edit in chat"\n                  title="Edit in chat"\n                >\n                  <Pencil className="size-4" aria-hidden="true" />\n                </button>\n              </div>\n              <p className="mt-3 text-sm leading-6 text-[#675b7b'... 8939 more characters,
+    expected: /const hasRsvp = draft\?\.rsvpEnabled === true;/,
+    operator: 'match',
+    diff: 'simple'
+  }

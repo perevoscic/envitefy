@@ -1,3 +1,6 @@
+import { EVENT_ACTION_SCHEMA, parseEventActionContract } from "./action-contract.ts";
+import { resolveScheduleCorrection } from "../creation/calendar-validation.ts";
+import { creationModelBudget, creationTimeoutMs, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import OpenAI from "openai";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { normalizeCanonicalStartFields } from "@/lib/dashboard-data";
@@ -12,13 +15,11 @@ import { buildEventAssetContent } from "./assets.ts";
 import { isExternalPlatformActionRequest } from "./creation-intent.ts";
 import {
   createEventAsset,
-  isEventAssetType,
   listEventAssets,
   updateEventAsset,
 } from "./event-storage.ts";
 import { isConciergeFastActionsEnabled, shouldSkipOpenAiForEventAction } from "./fast-paths.ts";
 import {
-  openAiChatTemperatureParam,
   resolveConciergeOpenAiPlannerModel,
   runWithConciergeOpenAiTimeout,
 } from "./openai-config.ts";
@@ -57,7 +58,6 @@ const ALLOWED_EVENT_PATCH_FIELDS = new Set([
   "venue",
   "address",
   "category",
-  "status",
   "theme",
   "tone",
   "rsvpEnabled",
@@ -115,18 +115,6 @@ function parseAiJson(content: string | null | undefined): unknown {
   }
 }
 
-function normalizeAssetType(value: unknown): EventAssetType | null {
-  if (isEventAssetType(value)) return value;
-  const text = cleanString(value)
-    ?.toLowerCase()
-    .replace(/[\s-]+/g, "_");
-  if (isEventAssetType(text)) return text;
-  if (text === "story") return "instagram_story";
-  if (text === "printable") return "printable_flyer";
-  if (text === "reminder") return "reminder_message";
-  return null;
-}
-
 function normalizePatch(value: unknown): Record<string, unknown> {
   const patch = asRecord(value);
   const out: Record<string, unknown> = {};
@@ -146,48 +134,10 @@ function normalizeAssetPatch(value: unknown): {
   const patch = asRecord(value);
   return {
     title: cleanString(patch.title) || undefined,
-    status: cleanString(patch.status) || undefined,
     content: Object.keys(asRecord(patch.content)).length ? asRecord(patch.content) : undefined,
     design: Object.keys(asRecord(patch.design)).length ? asRecord(patch.design) : undefined,
     metadata: Object.keys(asRecord(patch.metadata)).length ? asRecord(patch.metadata) : undefined,
   };
-}
-
-function normalizeActions(value: unknown): ConciergeEventAction[] {
-  const rawActions = Array.isArray(value)
-    ? value
-    : Array.isArray(asRecord(value).actions)
-      ? (asRecord(value).actions as unknown[])
-      : [];
-  const actions: ConciergeEventAction[] = [];
-  for (const raw of rawActions) {
-    const action = asRecord(raw);
-    const type = cleanString(action.type);
-    if (type === "update_event") {
-      const patch = normalizePatch(action.patch);
-      if (Object.keys(patch).length) actions.push({ type, patch });
-    } else if (type === "create_asset") {
-      const assetType = normalizeAssetType(action.assetType ?? action.asset_type);
-      if (assetType) {
-        actions.push({
-          type,
-          assetType,
-          brief: cleanString(action.brief) || `Create a ${assetType} for this event.`,
-        });
-      }
-    } else if (type === "update_asset") {
-      const assetId = cleanString(action.assetId ?? action.asset_id);
-      const patch = asRecord(action.patch);
-      if (assetId && Object.keys(patch).length) actions.push({ type, assetId, patch });
-    } else if (type === "ask_question") {
-      const question = cleanString(action.question);
-      const suggestedReplies = Array.isArray(action.suggestedReplies)
-        ? action.suggestedReplies.map(cleanString).filter((item): item is string => Boolean(item))
-        : [];
-      if (question) actions.push({ type, question, suggestedReplies });
-    }
-  }
-  return actions.slice(0, 6);
 }
 
 function inferAssetTypeFromMessage(message: string): EventAssetType | null {
@@ -565,13 +515,13 @@ async function planWithOpenAi(params: {
   const simple = shouldSkipOpenAiForEventAction(params.message);
   const premium = shouldUsePremiumPlannerModel(params);
   const model = resolveConciergeOpenAiPlannerModel({ simple, premium });
+  const startedAt = Date.now();
   const response = await runWithConciergeOpenAiTimeout((signal) =>
     client.chat.completions.create(
       {
         model,
-        ...openAiChatTemperatureParam(model, 0.1),
-        response_format: { type: "json_object" },
-        max_completion_tokens: 650,
+        ...creationModelBudget(model, "correction"),
+        response_format: { type: "json_schema", json_schema: { name: "event_actions_v2", strict: true, schema: EVENT_ACTION_SCHEMA } },
         messages: [
           {
             role: "system",
@@ -581,8 +531,8 @@ async function planWithOpenAi(params: {
               "Return JSON with actions, assistantMessage, and suggestedReplies.",
               "Allowed action types: update_event, create_asset, update_asset, ask_question.",
               "Never choose or accept user_id. Never modify ownership.",
-              "Only patch event fields relevant to event details, RSVP, copy, status, and design tone.",
-              "For event pages, think in structured Event Page Blueprint JSON and theme intent. Do not generate raw React, HTML, scripts, or arbitrary CSS. If the user asks for an event page, prefer create_asset with assetType event_page or patch eventPageBlueprint with supported sections and safe theme tokens.",
+              "Propose update_event edits using field, operation set or clear, typed value and an exact sourceText span of the latest message. Never edit status, ownership, permission, publishing or arbitrary JSON. Preserve unrelated fields. clear requires an explicit retraction and null value. startISO/endISO require an explicit ISO timestamp; otherwise return dateText/timeText for application parsing. Asset creation and editing also require a quoted sourceText; updates may change only title or guest body copy.",
+              "For event pages, think in structured Event Page Blueprint JSON and theme intent. Do not generate raw React, HTML, scripts, or arbitrary CSS. If the user asks for an event page, use create_asset with assetType event_page and a brief referencing supported sections.",
               "Use concise, warm, professional language. Never use markdown, bullets, numbered lists, star separators, or raw snake_case identifiers. Ask at most two short questions. Do not use slang, emojis, excessive exclamation, or over-familiar compliments.",
               "Do not claim an action was completed unless it is represented in the returned actions.",
               "Do not execute destructive guest response changes; ask the host to use RSVP tools or clarify a supported event setting.",
@@ -608,10 +558,14 @@ async function planWithOpenAi(params: {
         ],
       } as any,
       { signal } as any,
-    ),
+    ), creationTimeoutMs("correction"),
   );
-  const parsed = asRecord(parseAiJson(response.choices?.[0]?.message?.content));
-  const actions = normalizeActions(parsed.actions);
+  const choice = response.choices?.[0];
+  const outcome = choice?.message?.refusal ? "refused" : choice?.finish_reason !== "stop" ? "incomplete" : "success";
+  recordCreationModelRun({ model, workload: "correction", startedAt, outcome, usage: response.usage });
+  if (outcome !== "success") return null;
+  const parsed = asRecord(parseAiJson(choice?.message?.content));
+  const actions = parseEventActionContract(parsed, params.message, params.assets);
   if (!actions.length) return null;
   return {
     actions,
@@ -685,6 +639,21 @@ export async function applyEventActions(params: {
     if (action.type === "update_event") {
       const patch = normalizePatch(action.patch);
       if (!Object.keys(patch).length) continue;
+      const current = asRecord(event.data);
+      if (Object.hasOwn(patch, "dateText") || Object.hasOwn(patch, "timeText")) {
+        if (patch.dateText === null || patch.timeText === null) {
+          for (const field of ["startISO", "startAt", "start", "endISO", "endAt", "end"]) patch[field] = null;
+        } else {
+          const schedule = resolveScheduleCorrection({
+            dateText: cleanString(patch.dateText), timeText: cleanString(patch.timeText),
+            previousStart: cleanString(current.startISO || current.startAt || current.start),
+            previousEnd: cleanString(current.endISO || current.endAt || current.end),
+            timezone: cleanString(patch.timezone || current.timezone || current.tz) || "America/Chicago",
+          });
+          if (!schedule) throw new Error("Please provide an unambiguous event date and time before applying this schedule change.");
+          Object.assign(patch, { startISO: schedule.startISO, startAt: schedule.startISO, start: schedule.startISO, endISO: schedule.endISO, endAt: schedule.endISO, end: schedule.endISO });
+        }
+      }
       const nextData = { ...asRecord(event.data), ...patch };
       normalizeCanonicalStartFields(nextData);
       syncLiveCardCopyFromPatch(nextData, patch);

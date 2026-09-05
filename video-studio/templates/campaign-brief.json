@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "",
+  "title": "",
+  "createdAt": "",
+  "request": "",
+  "audience": "",
+  "objective": "",
+  "platforms": [],
+  "targetDurationSeconds": null,
+  "formats": [],
+  "concept": "",
+  "tone": "",
+  "artDirection": {
+    "cast": "",
+    "setting": "",
+    "wardrobe": "",
+    "visualTreatment": "",
+    "continuityNotes": "",
+    "differenceFromRecentCampaigns": ""
+  },
+  "audio": {
+    "direction": "",
+    "narration": "",
+    "voiceSelectionNotes": "",
+    "music": "",
+    "soundEffects": ""
+  },
+  "productProof": [],
+  "scenes": [],
+  "cta": {
+    "text": "",
+    "url": "https://envitefy.com"
+  },
+  "budgetLimit": null,
+  "assumptions": [],
+  "status": "draft"
+}

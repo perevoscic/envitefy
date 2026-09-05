@@ -6,18 +6,21 @@ export function buildEventExtractionPrompt(todayIso: string) {
   • Treat large cursive/handwritten/script text as real text (often names). Resolve ambiguous letters using surrounding context and repeated occurrences. Do not drop names because they are cursive.
 
   BIRTHDAY ENHANCEMENTS (apply only when the flyer is a birthday):
-  • VISUAL SCAN FIRST for a large decorative number anywhere on the card; that number is the AGE.
-  • Convert the age to an ORDINAL (e.g., 7th, 10th, 5th) and include it in the title.
-  • If an age is visually present but missing from your title, recompute the title to include the age before returning JSON.
+  • Inspect decorative numbers, but size, styling, or prominence alone is NOT evidence of the honoree's age.
+  • Set birthdayAge only when birthday context clearly identifies the number as the honoree's age: e.g., "Ava turns 7", "7th birthday", "7 years old", or a decorative 7 unambiguously paired with Ava's birthday headline.
+  • Distinguish age from dates, years, times, prices, addresses, phone numbers, jersey numbers, and guest age ranges. Never choose an age merely because a number is large or appears near the word "party".
+  • If the age is absent, ambiguous, or conflicting, return birthdayAge=null and omit age from the title and description. Do not guess or choose between conflicting numbers.
+  • Only convert a supported birthdayAge to an ORDINAL (e.g., 7th, 10th, 5th) and include it in the title. Keep birthdayAge, title, and description consistent.
+  • Examples: "Ava's Birthday / October 24 / 3 PM / $7 admission" → birthdayAge=null; "Ava turns 7 / October 24 / 3 PM" → birthdayAge=7.
   • Never put months/dates/times in the title.
   • Also classify birthdayAudience as "girl", "boy", or "neutral" from text/theme cues only. Use "girl" for cues like ballerina, ballet, tutu, princess, bows, tea party, she/her. Use "boy" for cues like all-star, sports, mvp, superhero, trucks, he/him. If unclear, use "neutral".
-  • Return birthdaySignals as a short array of the exact cues you used, birthdayName when you can see the honoree, and birthdayAge when visible.
+  • Return birthdaySignals as a short array of the exact cues you used, birthdayName when you can see the honoree, and birthdayAge only when supported by the birthday context above.
   
   TITLE (never include date/time or location; keep under 120 chars):
   • Always include the occasion and honoree(s) when present.
   • Baby Shower: "<FullName> Baby Shower" (prefer this), or "Baby Shower for <FullName>" if needed.
   • Weddings: "<Name A> & <Name B> Wedding".
-  • Birthdays: When age is visible use "<Name>'s <AgeOrdinal> Birthday" plus any **printed party headline or theme** from the flyer (large colorful title, e.g. "BACKYARD POOL & WATER SLIDE BASH", "Superhero Party", "Unicorn Bash"). Put them together, e.g. "<Name>'s <AgeOrdinal> Birthday — <PartyTheme>" or "<PartyTheme> — <Name>'s <AgeOrdinal> Birthday". Do **not** drop the flyer’s party name in favor of only "Birthday Party" when a distinct theme line exists. If there is no separate theme headline, "<Name>'s <AgeOrdinal> Birthday Party" or "<Name>'s Birthday Party" is fine.
+  • Birthdays: When age is supported by birthday context use "<Name>'s <AgeOrdinal> Birthday" plus any **printed party headline or theme** from the flyer (large colorful title, e.g. "BACKYARD POOL & WATER SLIDE BASH", "Superhero Party", "Unicorn Bash"). Put them together, e.g. "<Name>'s <AgeOrdinal> Birthday — <PartyTheme>" or "<PartyTheme> — <Name>'s <AgeOrdinal> Birthday". Do **not** drop the flyer’s party name in favor of only "Birthday Party" when a distinct theme line exists. If there is no separate theme headline, "<Name>'s <AgeOrdinal> Birthday Party" or "<Name>'s Birthday Party" is fine. When birthdayAge is null, use the version without AgeOrdinal.
   • Appointments: "<Appointment Type>" optionally "with Dr <Name>" when printed.
   • Generic cases: "<Occasion> — <Name/Group>" or "<Name/Group> <Occasion>".
   • Never reduce to a generic title (e.g., "Baby Shower") if a name is visible.
@@ -99,7 +102,7 @@ export function buildEventExtractionPrompt(todayIso: string) {
 
   const user = `
   Return exactly one event as strict JSON {title,start,end,address,venueName,description,category,rsvp,rsvpUrl,rsvpDeadline,hostName,activities,attire,registryUrl,ocrFacts,yearVisible,birthdayAudience,birthdaySignals,birthdayName,birthdayAge,goodToKnow,thumbnailFocus,openHouse}.
-  If the image is a birthday flyer, apply the Birthday Enhancements: visually detect large decorative age numbers, convert to ordinal, and include it in the title. If the flyer has a big headline naming the party (pool party, bash, theme), keep it in the title together with the child’s name and age (see TITLE rules). Do not include dates/times in the title.
+  If the image is a birthday flyer, apply the Birthday Enhancements: identify age only from clear birthday context, never from a decorative number's size alone. If age is absent, ambiguous, or conflicting, set birthdayAge=null and omit age from the title and description. If the flyer has a big headline naming the party (pool party, bash, theme), keep it in the title together with the honoree's name and supported age, if any (see TITLE rules). Do not include dates/times in the title.
   For birthdayAudience, use text/theme cues only. Do not infer from a face or from the honoree name alone.
   Pay special attention to cursive/handwritten names; never reduce the title to a generic occasion if a name is visible.
   The description must NOT repeat the title; make it a standalone, single sentence that begins with a capital letter, and prefer venue names over street addresses.
@@ -157,6 +160,7 @@ export function buildBirthdayRewritePrompt(title: string, location: string, desc
       `TITLE: ${title || ""}\nLOCATION: ${location || ""}\nNOTES: ${description || ""}\n\n` +
       "Task: If this is a birthday party, write ONE friendly, inviting sentence. " +
       "Extract the person's name and age ordinal from the TITLE (e.g. Gemma, 7th). " +
+      "Include an age only when it is explicitly present as the birthday age in TITLE. If no age is supplied, omit the age wording; never infer it from dates, times, addresses, prices, or other numbers in LOCATION or NOTES. " +
       "If the TITLE also names a party theme or headline after an em dash, parentheses, or as a leading phrase (e.g. 'Backyard Pool & Water Slide Bash', 'Superhero Party'), **include that theme** in the sentence naturally — e.g. 'Join us for Declan's backyard pool and water slide bash — celebrating his 9th birthday at Declan's Backyard' or 'Join us to celebrate Gemma's 7th birthday gymnastics party at US Gym'. " +
       "If there is no separate theme in the TITLE, use: 'Join us to celebrate <Name>'s <AgeOrdinal> Birthday at <Location>'. " +
       "Prefer a concise venue/business name over a street address. If LOCATION looks like a street address but NOTES include a venue name, use the venue name. If no location is known, omit the 'at …' clause. Use a straight apostrophe. Do not include dates, times, or RSVP details. Return only the sentence.",

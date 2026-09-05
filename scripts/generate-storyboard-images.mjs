@@ -172,6 +172,7 @@ function resolveJsonObject(text) {
 }
 
 function openAiChatCompatibilityParams(model, temperature) {
+  if (/^gpt-6-astra(?:-|$)/i.test(model)) return { reasoning_effort: "medium" };
   if (/^gpt-5\.6-(?:terra|luna)(?:-|$)/i.test(model)) return { reasoning_effort: "none" };
   if (/^gpt-5(?:[.-]|$)/i.test(model)) return {};
   return { temperature };

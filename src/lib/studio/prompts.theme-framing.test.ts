@@ -95,7 +95,7 @@ test("studio invitation image prompt keeps custom themes invitation-ready", () =
   );
   assert.match(
     prompt,
-    /Let supporting event details sharpen specificity and approved wording, but do not let them replace the private visual direction\./,
+    /Supporting context may inform imagery and mood only; it never authorizes extra visible wording or logistical details\./,
   );
   assert.match(
     prompt,
@@ -214,8 +214,8 @@ test("studio prompts treat raw design-idea fragments as visual direction instead
     { surface: "page" },
   );
 
-  assert.match(imagePromptWithGeneratedCopy, /Opening Line: Join us for popcorn, pizza, and fun!/);
-  assert.match(imagePromptWithGeneratedCopy, /Details Line: Pizza after the movie/);
+  assert.doesNotMatch(imagePromptWithGeneratedCopy, /Opening Line: Join us for popcorn, pizza, and fun!/);
+  assert.doesNotMatch(imagePromptWithGeneratedCopy, /Details Line: Pizza after the movie/);
   assert.doesNotMatch(imagePromptWithGeneratedCopy, /Opening Line:.*robots/i);
   assert.doesNotMatch(imagePromptWithGeneratedCopy, /ShareNote:.*robots/i);
   assert.match(
@@ -274,7 +274,7 @@ test("studio image prompts drop malformed generated opening lines before approvi
   assert.match(prompt, /Approved invitation copy to use verbatim if visible text appears/);
   assert.doesNotMatch(prompt, /Opening Line:/);
   assert.doesNotMatch(prompt, /Join us for fun with, pizza!/);
-  assert.match(prompt, /Details Line: Then pizza at Pazzo Destin/);
+  assert.doesNotMatch(prompt, /Details Line: Then pizza at Pazzo Destin/);
 });
 
 test("studio baked-text invitation prompts give every non-birthday-wedding category explicit invitation guidance", () => {
@@ -333,7 +333,7 @@ test("studio baked-text invitation prompts give every non-birthday-wedding categ
       copyRule:
         /For Open House, make Open House, property address, date\/time, price, and strongest supplied features the main invitation hierarchy first\./,
       imageRule:
-        /For Open House, make the theme read as premium real-estate listing marketing with property photography, architecture, clean listing facts, and logo-free premium real-estate editorial styling\./,
+        /For Open House, focus the artwork on property photography, architecture, and logo-free premium real-estate editorial styling\./,
     },
     {
       category: "Field Trip/Day",
@@ -589,7 +589,7 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
   );
   assert.match(
     prompt,
-    /Edge-safe composition: keep all essential text, faces, candles, balloons, gifts, cakes, addresses, dates, times, and other focal objects comfortably inset from every canvas edge and rounded corner\./,
+    /Edge-safe composition: keep all essential text, faces, candles, balloons, gifts, cakes, and other focal objects comfortably inset from every canvas edge and rounded corner\./,
   );
   assert.match(
     prompt,
@@ -597,7 +597,7 @@ test("studio invitation image prompt keeps the bottom action zone safe without f
   );
   assert.match(
     prompt,
-    /Use at most one short supporting line beyond the title and event details\. Do not create body-paragraph blocks, prose descriptions, or multi-sentence copy sections\./,
+    /Use only the approved title; no supporting information lines\. Do not create body-paragraph blocks, prose descriptions, or multi-sentence copy sections\./,
   );
   assert.match(
     prompt,
@@ -747,11 +747,11 @@ test("studio invitation image prompt keeps game day imagery grounded in provided
     prompt,
     /Do not invent team logos, branded uniforms, scoreboard text, mascots, jersey numbers, sponsor marks, or venue signage\./,
   );
-  assert.match(prompt, /Broadcast \/ Stream: ESPN\+/);
-  assert.match(prompt, /Parking \/ Arrival: Lot C/);
+  assert.doesNotMatch(prompt, /Broadcast \/ Stream: ESPN\+/);
+  assert.doesNotMatch(prompt, /Parking \/ Arrival: Lot C/);
   assert.match(
     prompt,
-    /Visible invitation text is required in the final raster for page\/live-card images, but keep it sparse, readable, and intentionally designed\./,
+    /Only the approved subject\/title is permitted as visible invitation text in page\/live-card images; keep it sparse, readable, and intentionally designed\./,
   );
 });
 
@@ -772,11 +772,11 @@ test("page live-card prompts require baked-in raster text and preserve a clear b
   assert.match(prompt, /finished live-card invitation raster/);
   assert.match(
     prompt,
-    /Visible event wording belongs in the raster for this live card, but it must feel like part of one designed invitation composition rather than detached overlay text/,
+    /Only the approved subject\/title belongs in the raster for this live card, but it must feel like part of one designed invitation composition rather than detached overlay text/,
   );
   assert.match(
     prompt,
-    /Visible invitation text is required in the final raster for page\/live-card images, but keep it sparse, readable, and intentionally designed\./,
+    /Only the approved subject\/title is permitted as visible invitation text in page\/live-card images; keep it sparse, readable, and intentionally designed\./,
   );
   assert.match(prompt, /resolve the final visible text line well above the bottom action buttons/);
   assert.match(prompt, /Approved invitation copy to use verbatim/);
@@ -806,7 +806,7 @@ test("page live-card image edit prompts preserve baked-in text and logos", () =>
   );
 });
 
-test("birthday image prompts bake approved invitation copy into the image while protecting the button zone", () => {
+test("birthday image prompts keep only the subject title while protecting the button zone", () => {
   const prompt = buildInvitationImagePrompt(
     {
       title: "Ava After Dark",
@@ -815,6 +815,10 @@ test("birthday image prompts bake approved invitation copy into the image while 
       eventYear: "2030",
       honoreeName: "Ava",
       venueName: "Moonlight Hall",
+      venueAddress: "1420 Juniper Lane",
+      date: "2030-05-10",
+      startTime: "7:00 PM",
+      rsvpContact: "ava-host@example.com",
       userIdea: "cinematic garden party",
       links: [],
     },
@@ -886,11 +890,11 @@ test("birthday image prompts bake approved invitation copy into the image while 
     /Approved invitation copy to use verbatim if visible text appears in the artwork:/,
   );
   assert.match(prompt, /Main Title: Ava After Dark/);
-  assert.match(prompt, /Subtitle \/ Theme Line: Birthday in Bloom/);
-  assert.match(prompt, /Opening Line: Meet us under the lights\./);
-  assert.match(prompt, /Schedule Line: Friday May 10th at 7:00 PM/);
-  assert.match(prompt, /Location Line: Moonlight Hall/);
-  assert.match(prompt, /Details Line: Cocktail attire/);
+  assert.doesNotMatch(prompt, /Subtitle \/ Theme Line: Birthday in Bloom/);
+  assert.doesNotMatch(prompt, /Opening Line: Meet us under the lights\./);
+  assert.doesNotMatch(prompt, /Schedule Line: Friday May 10th at 7:00 PM/);
+  assert.doesNotMatch(prompt, /Location Line: Moonlight Hall/);
+  assert.doesNotMatch(prompt, /Details Line: Cocktail attire/);
   assert.match(prompt, /Theme Style: cinematic garden/);
   assert.match(prompt, /Palette: #101828, #f5d0fe, #f59e0b/);
   assert.match(
@@ -926,7 +930,48 @@ test("birthday image prompts bake approved invitation copy into the image while 
     prompt,
     /Use only the approved invitation copy below for visible wording in the artwork\. Preserve spelling exactly and do not duplicate lines\./,
   );
-  assert.match(prompt, /Event Year: 2030/);
+  assert.doesNotMatch(prompt, /Event Year: 2030/);
+  assert.doesNotMatch(prompt, /1420 Juniper Lane|ava-host@example\.com|2030-05-10/);
+  assert.doesNotMatch(prompt, /Event-title info chip treatment|(?:Date|Time|Place) chip value/);
+  assert.match(prompt, /Event information is available through the live-card buttons/);
+});
+
+test("live-card generation excludes logistics hidden in titles in both generation surfaces", () => {
+  for (const surface of ["page", "image"] as const) {
+    for (const title of [
+      "Open House at 1420 Juniper Lane",
+      "Open House — RSVP agent@example.com",
+      "Open House — call (312) 555-0189",
+    ]) {
+      const event = {
+        title,
+        category: "Open House",
+        occasion: "Open House",
+        venueAddress: "1420 Juniper Lane",
+        date: "2030-05-10",
+        startTime: "7:00 PM",
+        propertyPrice: "$850,000",
+        bedrooms: "4",
+        bathrooms: "3",
+        squareFootage: "2,800",
+        realtorName: "Casey Morgan",
+        rsvpContact: "agent@example.com",
+        links: [{ label: "Listing", url: "https://example.com/listing" }],
+      };
+      const prompt = buildInvitationImagePrompt(event, undefined, null, { surface });
+      assert.match(prompt, /Main Title: Open House\n/);
+      assert.doesNotMatch(prompt, /1420 Juniper Lane|agent@example\.com|312|2030-05-10|7:00 PM/);
+      assert.doesNotMatch(prompt, /\$850,000|2,800|Casey Morgan|https:\/\/example\.com\/listing/);
+      assert.doesNotMatch(prompt, /^(?:Bedrooms|Bathrooms|Property Price|Square Feet):/m);
+      assert.doesNotMatch(prompt, /Build visible hierarchy around Open House, the property address/);
+
+      // Guest details still go to the text/interactive metadata generator.
+      const metadataPrompt = buildLiveCardPrompt(event);
+      assert.match(metadataPrompt, /Venue Address: 1420 Juniper Lane/);
+      assert.match(metadataPrompt, /RSVP Contact: agent@example\.com/);
+      assert.match(metadataPrompt, /Property Price: \$850,000/);
+    }
+  }
 });
 
 test("poster-first live-card text prompts omit visible year and require poster-like copy", () => {

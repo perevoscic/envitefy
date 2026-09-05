@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/admin/marketing-studio/reconcile",
+      "schedule": "* * * * *"
+    }
+  ]
+}

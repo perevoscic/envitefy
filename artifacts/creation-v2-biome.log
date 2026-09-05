@@ -1,0 +1,48 @@
+src\lib\concierge\event-actions.ts:156:10 lint/correctness/noUnusedVariables  FIXABLE  ━━━━━━━━━━━━━
+
+  ! This function normalizeActions is unused.
+  
+    154 │ }
+    155 │ 
+  > 156 │ function normalizeActions(value: unknown): ConciergeEventAction[] {
+        │          ^^^^^^^^^^^^^^^^
+    157 │   const rawActions = Array.isArray(value)
+    158 │     ? value
+  
+  i Unused variables are often the result of typos, incomplete refactors, or other sources of bugs.
+  
+  i Unsafe fix: If this is intentional, prepend normalizeActions with an underscore.
+  
+    154 154 │   }
+    155 155 │   
+    156     │ - function·normalizeActions(value:·unknown):·ConciergeEventAction[]·{
+        156 │ + function·_normalizeActions(value:·unknown):·ConciergeEventAction[]·{
+    157 157 │     const rawActions = Array.isArray(value)
+    158 158 │       ? value
+  
+
+src\lib\ocr\openai.ts:254:14 lint/correctness/noUnusedVariables  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! This variable parseErr is unused.
+  
+    252 │       }
+    253 │       return parsed;
+  > 254 │     } catch (parseErr) {
+        │              ^^^^^^^^
+    255 │       console.error(">>> Invalid structured OCR response");
+    256 │       return null;
+  
+  i Unused variables are often the result of typos, incomplete refactors, or other sources of bugs.
+  
+  i Unsafe fix: If this is intentional, prepend parseErr with an underscore.
+  
+    252 252 │         }
+    253 253 │         return parsed;
+    254     │ - ····}·catch·(parseErr)·{
+        254 │ + ····}·catch·(_parseErr)·{
+    255 255 │         console.error(">>> Invalid structured OCR response");
+    256 256 │         return null;
+  
+
+Checked 30 files in 311ms. No fixes applied.
+Found 2 warnings.

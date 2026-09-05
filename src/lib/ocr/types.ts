@@ -1,7 +1,9 @@
+import type { SourceEvidence } from "../creation/source-evidence.ts";
 import type { OcrFact } from "@/lib/ocr/facts";
 import type { ThumbnailFocus } from "@/lib/thumbnail-focus";
 
 export type EventOcrLlmResult = {
+  sourceEvidence?: SourceEvidence;
   title?: string;
   start?: string | null;
   end?: string | null;

@@ -1,0 +1,5 @@
+
+> envitefy@0.1.0 lint:vscode
+> node scripts/vscode-lint.mjs src/lib/concierge/public-copy.ts src/lib/concierge/persona.ts src/lib/concierge/extract.ts
+
+Could not find a Chat to CLI linter bridge. Reload Cursor/VS Code and ensure chatToCli.enableDiagnosticsLinter is enabled.

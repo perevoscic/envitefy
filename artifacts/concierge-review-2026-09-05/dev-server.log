@@ -1,0 +1,56 @@
+   ▲ Next.js 15.5.9
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.10.245:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 8.1s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 546ms (217 modules)
+ ○ Compiling /chat ...
+ ✓ Compiled /chat in 16.4s (2807 modules)
+ ✓ Compiled in 2.2s (1118 modules)
+ GET /chat?thread=session_mtoetvz5 200 in 18885ms
+ ○ Compiling /icon.png ...
+ ✓ Compiled /icon.png in 995ms (1706 modules)
+ GET /icon.png?v=v10 200 in 1185ms
+ GET /icon.png?v=v10 200 in 41ms
+ GET /icon.png?v=v10 200 in 34ms
+ ✓ Compiled in 1012ms (1118 modules)
+ ✓ Compiled in 1090ms (1118 modules)
+ GET /chat?thread=session_mtoetvz5 200 in 1901ms
+ ✓ Compiled in 900ms (1118 modules)
+ GET /chat?thread=session_mtoetvz5 200 in 314ms
+ GET /chat?thread=session_mtoetvz5 200 in 91ms
+ ○ Compiling /api/creation/intake ...
+ ✓ Compiled /api/creation/intake in 2.9s (3018 modules)
+ GET /api/calendars 200 in 4071ms
+ GET /api/user/profile 401 in 4101ms
+ GET /api/user/profile 401 in 4107ms
+ GET /api/creation/threads?limit=20 401 in 4111ms
+ GET /api/user/feature-visibility 401 in 4095ms
+ GET /api/creation/intake?threadId=session_mtoetvz5 401 in 4097ms
+ GET /api/calendars 200 in 154ms
+ ○ Compiling /api/history ...
+ ✓ Compiled /api/history in 512ms (3025 modules)
+ GET /icon.png?v=v10 200 in 639ms
+ PUT /api/user/profile 401 in 776ms
+ GET /icon.png?v=v10 200 in 130ms
+ GET /api/history?view=sidebar&limit=200&time=all 200 in 804ms
+ ✓ Compiled in 949ms (1119 modules)
+ GET /chat?thread=session_mtoetvz5 200 in 204ms
+ GET /icon.png?v=v10 200 in 56ms
+ GET /icon.png?v=v10 200 in 56ms
+ GET /icon.png?v=v10 200 in 44ms
+ GET /icon.png?v=v10 200 in 41ms
+ GET /icon.png?v=v10 200 in 36ms
+ GET /icon.png?v=v10 200 in 43ms
+ ✓ Compiled in 790ms (1119 modules)
+ GET /chat?thread=session_mtoetvz5 200 in 98ms
+ GET /icon.png?v=v10 200 in 49ms
+ GET /icon.png?v=v10 200 in 39ms
+ GET /icon.png?v=v10 200 in 34ms
+ GET /icon.png?v=v10 200 in 42ms
+ GET /icon.png?v=v10 200 in 47ms
+ GET /icon.png?v=v10 200 in 42ms
+ GET /icon.png?v=v10 200 in 44ms

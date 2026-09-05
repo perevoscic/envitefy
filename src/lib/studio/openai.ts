@@ -1,6 +1,7 @@
+import type { StudioProduct } from "./product-contract.ts";
+import { creationModelBudget, creationTimeoutMs, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
-import { openAiChatCompatibilityParams } from "../openai-chat-params.ts";
 import { STUDIO_LIVE_CARD_RESPONSE_SCHEMA } from "@/lib/studio/live-card-schema";
 import {
   resolveStudioSourceImage,
@@ -62,7 +63,7 @@ function getOpenAiApiKey(): string {
 }
 
 function resolveTextModel(): string {
-  return process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-5.6-sol";
+  return process.env.STUDIO_OPENAI_TEXT_MODEL || "gpt-6-astra";
 }
 
 function resolveImageModel(): string {
@@ -158,9 +159,10 @@ async function postStructuredOpenAiContent(
 > {
   try {
     const client = getOpenAiClient();
+    const startedAt = Date.now();
     const completion = await client.chat.completions.create({
       model,
-      ...openAiChatCompatibilityParams(model, { temperature: 0.6 }),
+      ...creationModelBudget(model, "creative_plan"),
       response_format: OPENAI_LIVE_CARD_RESPONSE_FORMAT as any,
       messages: [
         {
@@ -173,8 +175,12 @@ async function postStructuredOpenAiContent(
           content: prompt,
         },
       ],
-    });
-    const raw = completion.choices?.[0]?.message?.content || "";
+    }, { signal: AbortSignal.timeout(creationTimeoutMs("creative_plan")), maxRetries: 0 });
+    const choice = completion.choices?.[0];
+    const outcome = choice?.message?.refusal ? "refused" : choice?.finish_reason !== "stop" ? "incomplete" : "success";
+    recordCreationModelRun({ model, workload: "creative_plan", startedAt, outcome, usage: completion.usage });
+    if (outcome !== "success") return { ok: false, error: buildError(outcome, "Invitation planning did not complete. Please try again."), warnings: [] };
+    const raw = choice?.message?.content || "";
     return { ok: true, raw, warnings: [] };
   } catch (error: any) {
     const message = error instanceof Error ? error.message : "OpenAI request failed";
@@ -197,6 +203,7 @@ async function postOpenAiImageGeneration(
   model: string,
   prompt: string,
   referenceImages?: StudioResolvedSourceImage[],
+  product?: StudioProduct,
 ): Promise<
   | { ok: true; imageDataUrl: string; warnings: string[] }
   | { ok: false; error: StudioGenerationError; warnings: string[] }
@@ -218,7 +225,7 @@ async function postOpenAiImageGeneration(
         model,
         image: uploadables,
         prompt,
-        size: resolveImageSize(),
+        size: product === "event_page" ? "1536x1024" : resolveImageSize(),
         quality: resolveImageQuality(),
         background: resolveImageBackground(model),
         n: 1,
@@ -261,7 +268,7 @@ async function postOpenAiImageGeneration(
     const response = await client.images.generate({
       model,
       prompt,
-      size: resolveImageSize(),
+      size: product === "event_page" ? "1536x1024" : resolveImageSize(),
       quality: resolveImageQuality(),
       background: resolveImageBackground(model),
       output_format: "png",
@@ -420,8 +427,9 @@ export async function generateInvitationTextWithOpenAi(prompt: string): Promise<
 export async function generateInvitationImageWithOpenAi(
   prompt: string,
   referenceImages?: StudioResolvedSourceImage[],
+  product?: StudioProduct,
 ): Promise<OpenAiImageResult> {
-  return postOpenAiImageGeneration(resolveImageModel(), prompt, referenceImages);
+  return postOpenAiImageGeneration(resolveImageModel(), prompt, referenceImages, product);
 }
 
 export async function editInvitationImageWithOpenAi(

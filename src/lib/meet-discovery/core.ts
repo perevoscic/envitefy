@@ -2916,7 +2916,7 @@ function resolveOpenAiMiniModel(): string {
 }
 
 function resolveDiscoveryParseModel(): string {
-  return safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) || "gpt-5.6-sol";
+  return safeString(process.env.OPENAI_DISCOVERY_PARSE_MODEL) || "gpt-6-astra";
 }
 
 function resolveDiscoveryVisionModel(): string {
@@ -10682,6 +10682,7 @@ async function _callOpenAiScheduleParse(
     });
     const completion = await client.chat.completions.create({
       model: resolveDiscoveryParseModel(),
+      ...openAiChatCompatibilityParams(resolveDiscoveryParseModel()),
       response_format: {
         type: "json_schema",
         json_schema: GYMNASTICS_SCHEDULE_JSON_SCHEMA,
@@ -11565,6 +11566,7 @@ async function _callOpenAiParse(
   });
   const completion = await client.chat.completions.create({
     model: resolveDiscoveryParseModel(),
+    ...openAiChatCompatibilityParams(resolveDiscoveryParseModel()),
     response_format: {
       type: "json_schema",
       json_schema: GYMNASTICS_PARSE_JSON_SCHEMA,
@@ -11608,6 +11610,7 @@ async function callOpenAiClassification(
   });
   const completion = await client.chat.completions.create({
     model: resolveDiscoveryParseModel(),
+    ...openAiChatCompatibilityParams(resolveDiscoveryParseModel()),
     response_format: {
       type: "json_schema",
       json_schema: GYMNASTICS_CLASSIFIER_JSON_SCHEMA,
@@ -11658,6 +11661,7 @@ async function callOpenAiTargetedParse(
   });
   const completion = await client.chat.completions.create({
     model: resolveDiscoveryParseModel(),
+    ...openAiChatCompatibilityParams(resolveDiscoveryParseModel()),
     response_format: {
       type: "json_schema",
       json_schema: GYMNASTICS_PARSE_JSON_SCHEMA,

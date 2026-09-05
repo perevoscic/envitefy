@@ -1,4 +1,10 @@
+import { attachCreationReadiness, getCreationReadiness } from "./readiness.ts";
 import * as chrono from "chrono-node";
+import { extractExplicitEventLocation, extractExplicitEventTitle, extractExplicitRsvpEnabled, extractNamedAge, hasStalePreviewFacts, normalizeEventScheduleText, pairedHonorees, possessiveBirthdayMilestone } from "./conversation-edits.ts";
+import { conciergeCapabilityAnswer } from "./capabilities.ts";
+import { copyRequirementsChanged, provisionalInvitationCopy, requestsInvitationCopy } from "./copy-workflow.ts";
+import { updateHostBrief } from "./host-brief.ts";
+import { applyHostPrivacy } from "./host-privacy.ts";
 import {
   classifyCreationBoundary,
   cleanCreationString,
@@ -18,6 +24,7 @@ import {
   guestSubheadlineForEvent,
   looksLikeInternalCreativeDirection,
   sanitizeConciergePreviewCopy,
+  sanitizeGuestTitle,
 } from "./public-copy.ts";
 import {
   detectDuplicateAction,
@@ -323,6 +330,7 @@ function detectEventType(text: string, previous?: ConciergeEventDraft | null): C
   }
   const haystack = text.toLowerCase();
   if (/\b(birthday|turning|turns|bday)\b/.test(haystack)) return "birthday";
+  if (possessiveBirthdayMilestone(text)) return "birthday";
   if (/\b(wedding|married|marriage|bride|groom)\b/.test(haystack)) return "wedding";
   if (/\bbridal\s+shower\b/.test(haystack)) return "bridal_shower";
   if (/\b(baby shower|sprinkle|baby\s+boy|baby\s+girl)\b/.test(haystack)) {
@@ -353,17 +361,22 @@ function detectEventType(text: string, previous?: ConciergeEventDraft | null): C
   }
   if (/\bspecial\s+event\b/.test(haystack)) return "special_event";
   if (/\bgeneral\s+event\b|\bjust\s+an\s+event\b/.test(haystack)) return "general";
+  if ((!previous?.eventType || previous.eventType === "unknown") && extractNamedAge(text)) return "birthday";
   return previous?.eventType || "unknown";
 }
 
 function detectRelationship(text: string, previous?: ConciergeEventDraft | null) {
   const match = text.match(
-    /\b(my|our)\s+(daughter|son|kid|child|mom|mother|dad|father|sister|brother|friend|wife|husband|partner)\b/i,
+    /\b(my|our)\s+(daughter|son|kid|child|mom|mum|mother|dad|father|sister|brother|friend|wife|husband|partner)\b/i,
   );
   return match?.[2]?.toLowerCase() || previous?.relationship || null;
 }
 
 function detectAge(text: string, previous?: ConciergeEventDraft | null) {
+  const stated = extractNamedAge(text, { allowBareAge: previous?.eventType === "birthday" || /\bbirthday\b/i.test(text) });
+  if (stated) return stated.age;
+  const milestone = possessiveBirthdayMilestone(text);
+  if (milestone) return milestone.age;
   const expectsAge =
     previous?.eventType === "birthday" &&
     (previous.currentQuestion === "ageOrMilestone" ||
@@ -403,6 +416,16 @@ function detectAgeOrMilestoneSkipped(message: string, previous?: ConciergeEventD
 }
 
 function detectHonoreeName(text: string, previous?: ConciergeEventDraft | null) {
+  const pair = pairedHonorees(text);
+  if (pair) return pair;
+  const stated = extractNamedAge(text, { allowBareAge: previous?.eventType === "birthday" || /\bbirthday\b/i.test(text) });
+  if (stated) return stated.name;
+  const milestone = possessiveBirthdayMilestone(text);
+  if (milestone) return milestone.name;
+  if (previous?.honoreeName && /\s(?:and|&)\s/.test(previous.honoreeName)
+    && !/\b(?:rename|name is|names are|only|instead|replace)\b/i.test(text)) {
+    return previous.honoreeName;
+  }
   if (
     previous?.eventType === "wedding" ||
     /\b(wedding|reception|ceremony|married|marriage)\b/i.test(text)
@@ -691,6 +714,8 @@ function detectRsvpEnabled(
   requestedOutputs: RequestedOutput[],
   fieldsGuess: Record<string, unknown>,
 ): boolean | null {
+  const explicitChoice = extractExplicitRsvpEnabled(text);
+  if (explicitChoice !== null) return explicitChoice;
   const nestedRsvp =
     fieldsGuess.rsvp && typeof fieldsGuess.rsvp === "object" && !Array.isArray(fieldsGuess.rsvp)
       ? (fieldsGuess.rsvp as Record<string, unknown>)
@@ -1011,10 +1036,27 @@ function withConversationState(
   previous: ConciergeEventDraft | null | undefined,
   message: string,
 ): ConciergeEventDraft {
-  return {
+  const next: ConciergeEventDraft = {
     ...draft,
+    hostBrief: draft.sourceContext.boundary && draft.sourceContext.boundary !== "envitefy_question"
+      ? previous?.hostBrief : updateHostBrief(draft.hostBrief || previous?.hostBrief, message),
+    copyStatus: previous?.copyStatus,
+    pendingReply: previous?.pendingReply || null,
     conversationState: conversationStateFor(draft, previous, message),
   };
+  if (previous?.copyStatus && cleanString(draft.previewCopy.body) !== cleanString(previous.previewCopy.body)) next.copyStatus = "needs_update";
+  const changedCopyRequirements = previous?.copyStatus && copyRequirementsChanged(previous, next);
+  if (changedCopyRequirements) next.copyStatus = "needs_update";
+  if ((!draft.sourceContext.boundary || draft.sourceContext.boundary === "envitefy_question") && (requestsInvitationCopy(message) || changedCopyRequirements && previous.copyStatus === "provisional")) {
+    const provisional = provisionalInvitationCopy(next);
+    if (provisional) { next.previewCopy = provisional; next.copyStatus = "provisional"; }
+    else next.copyStatus = "needs_update";
+  }
+  const privateDraft = applyHostPrivacy(next, previous);
+  if (privateDraft.hostBrief?.privacyPreferences?.some((note) => note.kind === "contact_private") && !privateDraft.sourceContext.boundary && privateDraft.currentQuestion !== "date_confirmation") {
+    Object.assign(privateDraft, deriveCreationStatus({ ...privateDraft, tone: privateDraft.tone || privateDraft.theme }));
+  }
+  return attachCreationReadiness(privateDraft, previous, message);
 }
 
 function missingDetailForUser(field: string | null | undefined) {
@@ -1277,6 +1319,8 @@ function buildStatePreservingConversationAnswer(message: string, previous: Conci
 }
 
 function buildEnvitefyKnowledgeAnswer(message: string, previous?: ConciergeEventDraft | null) {
+  const verifiedAnswer = conciergeCapabilityAnswer(message);
+  if (verifiedAnswer) return verifiedAnswer;
   const text = cleanString(message) || "";
   const lower = text.toLowerCase();
   let answer: string;
@@ -1580,15 +1624,21 @@ function detectLabeledInviteDetails(text: string): LabeledInviteDetails {
 }
 
 function isLocationCorrectionMessage(text: string) {
-  return /\b(?:actually|instead|correction|change|update|move|switch)\b[\s\S]{0,120}\b(?:location|venue|place|address|where)\b/i.test(text) || /\b(?:correction|actually|instead)\b[\s\S]{0,40}\b(?:move|switch|change|update)\s+it\s+(?:to|at|@)\b/i.test(text);
+  return Boolean(extractExplicitEventLocation(text)) || /\b(?:set|change|update|move|switch)\s+(?:the\s+)?(?:location|venue|place|address|where)\b/i.test(text) || /\bmove\s+it\s+(?:to|at|@)\b/i.test(text) || /\b(?:correction|actually|instead)\b[^.;]{0,40}\b(?:move|switch|change|update)\s+it\s+(?:to|at|@)\b/i.test(text);
 }
 
 function detectLocationCorrection(text: string) {
+  const quoted = extractExplicitEventLocation(text);
+  if (quoted) return quoted;
   if (!isLocationCorrectionMessage(text)) return null;
   const cleaned = cleanString(text?.replace(/[.!?]+$/g, "")) || "";
-  const direct = cleaned.match(/\b(?:change|update|move|switch)\s+(?:the\s+)?(?:location|venue|place|address|where)\s+(?:to|as)\s+(.+)$/i)?.[1] || cleaned.match(/\b(?:location|venue|place|address)\s+(?:should\s+be|is|will\s+be)\s+(.+)$/i)?.[1] || cleaned.match(/\b(?:move|switch|change|update)\s+it\s+(?:to|at|@)\s+(.+)$/i)?.[1] ||
-    cleaned.match(/\b(?:instead|actually)\s+(?:make\s+it\s+)?(?:at|@|to)\s+(.+)$/i)?.[1];
-  const fallback = direct || detectVenueOrLocation(cleaned);
+  const direct = cleaned.match(/\b(?:set|change|update|move|switch)\s+(?:the\s+)?(?:location|venue|place|address|where)\s+(?:to|as)\s+(.+)/i)?.[1] || cleaned.match(/\b(?:location|venue|place|address)\s+(?:should\s+be|is|will\s+be)\s+(.+)/i)?.[1] || cleaned.match(/\b(?:move|switch|change|update)\s+it\s+(?:to|at|@)\s+(.+)/i)?.[1] ||
+    cleaned.match(/\b(?:instead|actually)\s+(?:make\s+it\s+)?(?:at|@|to)\s+(.+)/i)?.[1];
+  const value = direct?.split(/[.;!?]\s*|\s+(?:and\s+)?(?:keep|turn|disable|enable|set|change)\s+(?:the|online|rsvp|it)\b/i)[0]?.trim();
+  // “Move it to Saturday at four” edits the schedule, even if another clause mentions the venue.
+  const startsWithTime = value && chrono.parse(value, new Date(), { forwardDate: true })[0]?.index === 0;
+  if (startsWithTime || /^(?:unchanged|the same|same as before)$/i.test(value || "")) return null;
+  const fallback = value || detectVenueOrLocation(cleaned);
   return stripLeadingTimeFromLocation(fallback || null);
 }
 
@@ -1765,6 +1815,10 @@ function detectLocationFollowUp(text: string, previous?: ConciergeEventDraft | n
   if (!cleaned || cleaned.length > 140) return null;
   if (/^(yes|no|ok|okay|thanks?|not sure)$/i.test(cleaned)) return null;
   if (/^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?$/i.test(cleaned)) return null;
+  if (requestsInvitationCopy(cleaned) || /^(?:(?:actually|please)\s*[,—-]?\s*)?(?:(?:the\s+)?(?:date|time|title|budget|RSVP|invitation|wording)\b|(?:change|move|switch|set|keep|turn|write|draft|translate)\b)/i.test(cleaned)) return null;
+  const temporal = chrono.parse(cleaned)[0];
+  if (temporal && /^(?:(?:it'?s|it is|on|at)\s+)?$/i.test(cleaned.slice(0, temporal.index).trim())
+    && /^[\s,.:;!?-]*$/.test(cleaned.slice(temporal.index + temporal.text.length))) return null;
   const stripped = cleaned
     .replace(/^(?:it'?s|it is|they should go to|guests should go to)\s+/i, "")
     .replace(/^(?:the\s+)?(?:location|venue|place|address)\s+(?:is|will be|should be)\s+/i, "")
@@ -1900,7 +1954,7 @@ function combinePreviousDateWithParsedTime(args: {
   };
 }
 
-function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
+export function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
   const cleaned = cleanString(text?.replace(/[.!?]+$/g, "")) || "";
   if (previous?.currentQuestion === "date_confirmation") {
     if (isDateConfirmationAffirmation(cleaned)) {
@@ -1926,8 +1980,12 @@ function parseChrono(text: string, previous?: ConciergeEventDraft | null) {
   const ambiguousDate = detectAmbiguousDateConfirmation(text, previous);
   if (ambiguousDate) return ambiguousDate;
 
-  const parsed = chrono.parse(text, new Date(), { forwardDate: true });
-  const first = parsed[0];
+  // An instruction to write or generate "now" does not schedule the event for now.
+  const eventScheduleText = normalizeEventScheduleText(text, { allowBareAge: previous?.eventType === "birthday" || /\bbirthday\b/i.test(text) });
+  const scheduleText = !/\b(?:starts?|begins?|happening|event is|party is)\s+now\b/i.test(eventScheduleText) && !/^\s*(?:right\s+)?now[.!?]?\s*$/i.test(eventScheduleText)
+    ? eventScheduleText.replace(/\bnow\b/gi, "") : eventScheduleText;
+  const parsed = chrono.parse(scheduleText, new Date(), { forwardDate: true });
+  const first = parsed.find((result) => !result.tags().has("result/relativeDate")) || parsed[0];
   if (!first) {
     return {
       dateText: previous?.dateText || null,
@@ -2066,13 +2124,23 @@ function buildTitle(args: {
   sourceText?: string | null;
   previous?: ConciergeEventDraft | null;
 }) {
-  const previousTitle = cleanString(args.previous?.title);
+  const previousTitle = args.previous?.titleConfirmed
+    ? cleanString(args.previous.title)
+    : sanitizeGuestTitle(args.previous?.title);
+  const eventPurposeTitle = sanitizeGuestTitle(args.eventPurpose);
+  const explicitTitle = extractExplicitEventTitle(args.sourceText || "");
+  if (explicitTitle) return explicitTitle;
+  if (args.previous?.titleConfirmed && previousTitle) return previousTitle;
+  if (previousTitle && args.previous?.honoreeName === args.honoreeName
+    && args.previous?.ageOrMilestone === args.ageOrMilestone
+    && previousTitle !== "Event draft" && !/ draft$/i.test(previousTitle)
+    && !looksLikeCreationPrompt(previousTitle) && !/\byears?\s+old\b/i.test(previousTitle)) return previousTitle;
   const label = getEventTypeLabel(args.eventType);
   const genericTitle = `${label[0].toUpperCase()}${label.slice(1)} draft`;
   const sportTitle = deriveSportEventTitle(args.sourceText || "", args.eventType);
   if (sportTitle) return sportTitle;
   if (args.eventType === "birthday" && args.honoreeName && args.ageOrMilestone) {
-    return `${args.honoreeName} is turning ${args.ageOrMilestone}`;
+    return `${args.honoreeName} ${/\s(?:and|&)\s/i.test(args.honoreeName) ? "are" : "is"} turning ${args.ageOrMilestone}`;
   }
   if (args.eventType === "birthday" && args.honoreeName) return `${args.honoreeName}'s birthday`;
   if (args.eventType === "wedding" && args.honoreeName) return `${args.honoreeName} wedding`;
@@ -2089,7 +2157,7 @@ function buildTitle(args: {
     !looksLikeCreationPrompt(args.eventPurpose) &&
     (!previousTitle || previousTitle === genericTitle || looksLikeCreationPrompt(previousTitle))
   ) {
-    return args.eventPurpose;
+    return eventPurposeTitle || genericTitle;
   }
   if (
     previousTitle &&
@@ -2099,12 +2167,12 @@ function buildTitle(args: {
   ) {
     return previousTitle;
   }
-  if (args.eventPurpose && !looksLikeCreationPrompt(args.eventPurpose)) return args.eventPurpose;
+  if (eventPurposeTitle && !looksLikeCreationPrompt(args.eventPurpose)) return eventPurposeTitle;
   if (isSportEventType(args.eventType)) {
     if (args.eventType === "football") return "Football Game Day";
     return "Game Day";
   }
-  if (args.eventPurpose && !looksLikeCreationPrompt(args.eventPurpose)) return args.eventPurpose;
+  if (eventPurposeTitle && !looksLikeCreationPrompt(args.eventPurpose)) return eventPurposeTitle;
   if (args.eventType === "unknown") return null;
   return genericTitle;
 }
@@ -2432,7 +2500,7 @@ export function buildAssistantMessage(draft: ConciergeEventDraft): string {
     return "I can help with Envitefy event products, RSVP, uploads, guest pages, and event edits. Tell me what you're creating or choose a category.";
   }
   if (draft.sourceContext.boundary === "external_action") {
-    return "I can help with that, but I can't post to Facebook, create social media event pages, or contact people for you. I can write the post copy or help create an Envitefy event link you can share yourself.";
+    return "I can prepare the event link and message for you to share. I can't post to your social accounts or contact guests from this chat.";
   }
   if (draft.sourceContext.boundary === "private_data") {
     return "I can't change owners, user IDs, or private account data here. I can help with event details, RSVP, copy, design, or weather planning.";
@@ -2554,7 +2622,47 @@ export function buildSuggestedReplies(draft: ConciergeEventDraft): string[] {
 }
 
 export function canSaveConciergeDraft(draft: ConciergeEventDraft): boolean {
-  return Boolean(draft.canPersist && !draft.currentQuestion && draft.missingFields.length === 0);
+  return getCreationReadiness(draft).canPublish;
+}
+
+/** Repair only the legacy name/age sentence failure, using stored source text without writing a session. */
+export function repairMisparsedBirthdayDraft(draft: ConciergeEventDraft): ConciergeEventDraft {
+  if (draft.titleConfirmed || !["birthday", "unknown", "general"].includes(draft.eventType)) return draft;
+  const source = [draft.title, draft.eventPurpose].find((value) => value && /\b\d{1,3}\s+years?\s+old\b/i.test(value) && extractNamedAge(value));
+  if (!source) return draft;
+  const facts = extractNamedAge(source);
+  if (!facts) return draft;
+  const ageBecameDate = /^\s*\d{1,3}\s+(?:years?|yrs?)(?:\s+old)?\s*[.!]?\s*$/i.test(draft.dateText || "");
+  if (!ageBecameDate && draft.honoreeName && draft.ageOrMilestone) return draft;
+  const recoveredSchedule = ageBecameDate || !draft.startISO
+    ? parseChrono(source, { ...draft, eventType: "birthday", currentQuestion: null, missingFields: [], dateText: null, timeText: null, startISO: null, endISO: null })
+    : { dateText: draft.dateText, timeText: draft.timeText, startISO: draft.startISO, endISO: draft.endISO };
+  const generatedTitle = buildTitle({ eventType: "birthday", honoreeName: facts.name, ageOrMilestone: facts.age, eventPurpose: null });
+  const title = draft.title === source ? generatedTitle : draft.title || generatedTitle;
+  const eventPurpose = draft.eventPurpose === source ? generatedTitle : draft.eventPurpose;
+  const recovered = {
+    ...draft,
+    ...recoveredSchedule,
+    eventType: "birthday" as const,
+    title,
+    eventPurpose,
+    honoreeName: draft.honoreeName || facts.name,
+    ageOrMilestone: draft.ageOrMilestone || facts.age,
+    ageOrMilestoneSkipped: false,
+  };
+  const previewCopy = buildPreviewCopy({ ...recovered, title: title || "Birthday invitation" });
+  const placeholderHonoree = /^Join us to celebrate the guest of honor(?: turning \d{1,3})?\.$/.test(draft.previewCopy.body.trim());
+  if (draft.previewCopy.body && !placeholderHonoree && !draft.previewCopy.body.includes(source) && !hasStalePreviewFacts(draft.previewCopy.body, draft, recovered)) {
+    previewCopy.body = draft.previewCopy.body;
+  }
+  return {
+    ...recovered,
+    ...deriveCreationStatus(recovered),
+    previewCopy,
+    assistantGuidance: null,
+    knowledgeAnswer: null,
+    copyStatus: draft.copyStatus && previewCopy.body !== draft.previewCopy.body ? "needs_update" : draft.copyStatus,
+  };
 }
 
 export function fallbackExtractConciergeDraft(args: {
@@ -2582,7 +2690,8 @@ export function fallbackExtractConciergeDraft(args: {
       .join("\n") || text;
   const labeledDetails = detectLabeledInviteDetails(detailText);
   const sessionDraft = args.draft || null;
-  const previous = shouldStartFreshEvent(message, sessionDraft) ? null : sessionDraft;
+  const previous = shouldStartFreshEvent(message, sessionDraft) ? null : sessionDraft ? repairMisparsedBirthdayDraft(sessionDraft) : null;
+  const explicitTitle = extractExplicitEventTitle(message);
   const privateDataMutationRequest = isPrivateDataMutationRequest(message);
   const classifiedBoundary = classifyCreationBoundary(message, {
     activeContext: args.activeContext || null,
@@ -2671,7 +2780,7 @@ export function fallbackExtractConciergeDraft(args: {
   });
   const sourceContext = blockingBoundary
     ? { ...resolvedSourceContext, boundary: blockingBoundary }
-    : resolvedSourceContext;
+    : { ...resolvedSourceContext, boundary: null };
   if (!previous && !privateDataMutationRequest && isStandaloneLostContextReply(message)) {
     return buildEmptyConversationDraft({
       sessionDraft,
@@ -2725,9 +2834,9 @@ export function fallbackExtractConciergeDraft(args: {
   if (
     !blockingBoundary &&
     !privateDataMutationRequest &&
-    isStatePreservingConversationMessage(message, previous)
+    !explicitTitle && isStatePreservingConversationMessage(message, previous)
   ) {
-    return {
+    return withConversationState({
       ...previous!,
       sourceContext: {
         ...previous!.sourceContext,
@@ -2735,12 +2844,13 @@ export function fallbackExtractConciergeDraft(args: {
       },
       knowledgeAnswer: buildStatePreservingConversationAnswer(message, previous!),
       assistantGuidance: null,
-    };
+    }, previous, message);
   }
-  if (!blockingBoundary && !privateDataMutationRequest && asksEnvitefyKnowledgeQuestion(message)) {
+  const hasNewEventDetails = Boolean(explicitTitle || extractExplicitEventLocation(message) || pairedHonorees(message)) || extractExplicitRsvpEnabled(message) !== null || /\b(?:turning|turns|rsvp (?:by|deadline)|on (?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)|(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}|\d{1,2}:\d{2}|\d{1,2}\s*(?:am|pm))\b/i.test(message);
+  if (!hasNewEventDetails && !blockingBoundary && !privateDataMutationRequest && asksEnvitefyKnowledgeQuestion(message)) {
     const knowledgeAnswer = buildEnvitefyKnowledgeAnswer(message, previous);
     if (previous) {
-      return {
+      return withConversationState({
         ...previous,
         sourceContext: {
           ...previous.sourceContext,
@@ -2748,7 +2858,7 @@ export function fallbackExtractConciergeDraft(args: {
         },
         knowledgeAnswer,
         assistantGuidance: null,
-      };
+      }, previous, message);
     }
     return buildEmptyConversationDraft({
       sessionDraft,
@@ -2779,12 +2889,14 @@ export function fallbackExtractConciergeDraft(args: {
   const sourceMaterial = args.ocrContext
     ? {
         ocrText: args.ocrContext.ocrText || null,
+        sourceEvidence: args.ocrContext.sourceEvidence || null,
         fieldsGuess: args.ocrContext.fieldsGuess || null,
         category: args.ocrContext.category || null,
       }
     : previous?.sourceMaterial || null;
   const birthdayTemplateHint = recordValue(args.ocrContext?.birthdayTemplateHint);
   const honoreeName =
+    (explicitTitle ? pairedHonorees(explicitTitle) || previous?.honoreeName : null) ||
     detectHonoreeName(text, previous) ||
     labeledDetails.honoreeName ||
     detectHonoreeFollowUp(message, previous) ||
@@ -2876,6 +2988,8 @@ export function fallbackExtractConciergeDraft(args: {
         clarifiedBirthdayEventPurpose ||
         previousEventPurpose;
   const titleCandidate =
+    explicitTitle ||
+    (previous?.titleConfirmed ? previous.title : null) ||
     firstString(fieldsGuess.title) ||
     buildTitle({
       eventType,
@@ -2888,7 +3002,7 @@ export function fallbackExtractConciergeDraft(args: {
   const title =
     blocksCreation || (receivedInviteWithoutSource && !hasConcreteReceivedInviteDetails)
       ? null
-      : titleCandidate;
+      : explicitTitle || (previous?.titleConfirmed ? previous.title : null) || sanitizeGuestTitle(titleCandidate);
   const dateText =
     rescuedOcrSchedule?.dateText ||
     chronoResult.dateText ||
@@ -2901,9 +3015,10 @@ export function fallbackExtractConciergeDraft(args: {
   const endISO = rescuedOcrSchedule?.endISO || fieldEndIso || chronoResult.endISO;
   const numberOfGuests = detectGuestCount(message, previous);
   const rsvpEnabled = detectRsvpEnabled(message, previous, requestedOutputs, fieldsGuess);
-  const rsvpDeadline = detectRsvpDeadline(text, previous);
-  const rsvpName = detectRsvpName(text, fieldsGuess, previous);
-  const rsvpContact = detectRsvpContact(text, fieldsGuess, previous);
+  const removingHostContact = /\b(?:no|without|remove|hide|don['’]?t include|do not include)\s+(?:the\s+)?(?:host(?:['’]s)?\s+)?(?:phone|email|contact)\b/i.test(message);
+  const rsvpDeadline = rsvpEnabled === false ? null : detectRsvpDeadline(text, previous);
+  const rsvpName = removingHostContact ? null : detectRsvpName(text, fieldsGuess, previous);
+  const rsvpContact = removingHostContact ? null : detectRsvpContact(text, fieldsGuess, previous);
   const giftPromptSkip = Boolean(
     previous && shouldOfferGiftRegistryPrompt(previous) && isGiftPromptSkipReply(message),
   );
@@ -2977,6 +3092,31 @@ export function fallbackExtractConciergeDraft(args: {
         previous,
       }),
   );
+  const previewCopy = buildPreviewCopy({
+    eventType,
+    title: title || eventPurpose || "Event draft",
+    honoreeName,
+    ageOrMilestone,
+    dateText,
+    timeText,
+    location,
+    theme,
+    tone,
+    rsvpEnabled,
+  });
+  if (
+    previous?.previewCopy.body &&
+    previous.eventType === eventType &&
+    previous.honoreeName === honoreeName &&
+    previous.ageOrMilestone === ageOrMilestone &&
+    !hasStalePreviewFacts(previous.previewCopy.body, previous, {
+      startISO, endISO, timezone: firstString(fieldsGuess.timezone) || previous?.timezone || DEFAULT_TIMEZONE,
+      location, venue: location, rsvpContact, rsvpDeadline, rsvpEnabled,
+    })
+  ) {
+    // Schedule, place and headline have their own fields; editing them should not erase approved prose.
+    previewCopy.body = previous.previewCopy.body;
+  }
   const base = {
     creationSessionId: createCreationSessionId(sessionDraft),
     intent: blocksCreation
@@ -2988,6 +3128,7 @@ export function fallbackExtractConciergeDraft(args: {
     eventPurpose,
     eventType,
     title,
+    titleConfirmed: Boolean(explicitTitle || previous?.titleConfirmed),
     ownership:
       sourceContext.detectedSourceIntent === "received_invite"
         ? "invited"
@@ -3023,18 +3164,7 @@ export function fallbackExtractConciergeDraft(args: {
     assistantGuidance: null,
     outputs: toLegacyOutputs(requestedOutputs),
     previewCopy: sanitizeConciergePreviewCopy(
-      buildPreviewCopy({
-        eventType,
-        title: title || eventPurpose || "Event draft",
-        honoreeName,
-        ageOrMilestone,
-        dateText,
-        timeText,
-        location,
-        theme,
-        tone,
-        rsvpEnabled,
-      }),
+      previewCopy,
       {
         eventType,
         title,

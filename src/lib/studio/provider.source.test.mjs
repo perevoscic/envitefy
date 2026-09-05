@@ -81,15 +81,9 @@ test("studio generation dispatches text and image calls through the resolved pro
   const source = readSource("src/lib/studio/generate.ts");
 
   assert.match(source, /const provider = studioGenerationDeps\.resolveStudioProvider\(\);/);
-  assert.match(source, /buildInvitationImagePrompt,\s*buildLiveCardPrompt,/);
-  assert.match(
-    source,
-    /const textPrompt = buildLiveCardPrompt\(normalizedRequest\.event, normalizedRequest\.guidance\);/,
-  );
-  assert.match(
-    source,
-    /const imagePrompt = editingExistingImage\s*\?\s*buildExistingInvitationImageEditPrompt\(normalizedRequest\.imageEdit\?\.editInstruction\)\s*:\s*buildInvitationImagePrompt\(\s*normalizedRequest\.event,\s*normalizedRequest\.guidance,\s*liveCard,\s*\{/s,
-  );
+  assert.match(source, /buildProductCopyPrompt/);
+  assert.match(source, /buildProductArtworkPrompt/);
+  assert.match(source, /buildExistingInvitationImageEditPrompt/);
   assert.match(source, /provider === "openai"/);
   assert.match(source, /generateStudioLiveCardWithOpenAi/);
   assert.match(source, /generateInvitationImageWithOpenAi/);

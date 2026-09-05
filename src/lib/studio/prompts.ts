@@ -170,7 +170,6 @@ function renderCoreCreativeInputs(event: StudioEventDetails): string {
 }
 
 function renderImageCreativeInputs(event: StudioEventDetails): string {
-  const openHouse = getOccasionType(event) === "open_house";
   return [
     "Core creative inputs (internal, not visible copy):",
     line("Selected Event Type", event.category || event.occasion),
@@ -181,16 +180,6 @@ function renderImageCreativeInputs(event: StudioEventDetails): string {
     line("Team / Host", event.teamName),
     line("Opponent", event.opponentName),
     line("Age or Milestone", event.ageOrMilestone),
-    line("Property Price", event.propertyPrice),
-    line("Bedrooms", event.bedrooms),
-    line("Bathrooms", event.bathrooms),
-    line("Square Feet", event.squareFootage),
-    line("Neighborhood", event.neighborhood),
-    line("Property Highlights", event.propertyHighlights),
-    ...(openHouse
-      ? []
-      : [line("Realtor", event.realtorName), line("Brokerage", event.brokerageName)]),
-    line("Event Year", event.eventYear),
   ].join("\n");
 }
 
@@ -389,7 +378,7 @@ function isPosterFirstLiveCardOccasion(event: StudioEventDetails): boolean {
   return getOccasionType(event) !== "general";
 }
 
-function buildOccasionThemeGuardrails(event: StudioEventDetails): string[] {
+function buildOccasionThemeGuardrails(event: StudioEventDetails, artworkOnly = false): string[] {
   const occasionType = getOccasionType(event);
 
   const common = [
@@ -420,9 +409,15 @@ function buildOccasionThemeGuardrails(event: StudioEventDetails): string[] {
   if (occasionType === "open_house") {
     return [
       ...common,
-      "- For Open House, make the theme read as premium real-estate listing marketing with property photography, architecture, clean listing facts, and logo-free premium real-estate editorial styling.",
+      artworkOnly
+        ? "- For Open House, focus the artwork on property photography, architecture, and logo-free premium real-estate editorial styling. Listing facts belong in the app details."
+        : "- For Open House, make the theme read as premium real-estate listing marketing with property photography, architecture, clean listing facts, and logo-free premium real-estate editorial styling.",
       "- themeStyle should describe the open-house listing flyer concept, not a housewarming party or generic home interior.",
-      "- Treat supplied address, price, beds, baths, square footage, and neighborhood as factual. Use only what is provided; omit missing facts instead of inventing them.",
+      ...(artworkOnly
+        ? []
+        : [
+            "- Treat supplied address, price, beds, baths, square footage, and neighborhood as factual. Use only what is provided; omit missing facts instead of inventing them.",
+          ]),
       "- If property photos are supplied, use them as the primary visual system and design a premium realtor poster/flyer around them.",
     ];
   }
@@ -722,7 +717,7 @@ export function buildLiveCardPrompt(
     "- Make the description feel like a polished live card summary.",
     "- Use a palette with three valid hex colors.",
     "- Keep themeStyle short, vivid, and layout-friendly.",
-    "- `funFacts` should contain 2-4 short, useful guest-facing notes.",
+    "- `funFacts` should contain 0-4 short, useful guest-facing notes grounded in supplied facts; use an empty array when none are supplied.",
     "- `hashtags` should be 1-6 short tags.",
     "- The user's visual direction is the highest-priority creative instruction.",
     "- Do not replace a realistic or photorealistic request with cute, cartoon, mascot, illustrated, or anthropomorphic styling unless the user explicitly asks for that.",
@@ -1191,133 +1186,52 @@ export function sanitizeStudioLiveCardVisibleCopy(
   };
 }
 
-function buildApprovedVisibleCopySection(
+function resolveArtworkSubjectTitle(
   event: StudioEventDetails,
   liveCard?: StudioLiveCardMetadata | null,
 ): string {
+  // Generated titles can repeat logistics (especially open-house addresses).
+  // Keep those out of the raster even when a text provider returns them as a title.
+  const detailValues = [
+    event.venueName,
+    event.venueAddress,
+    event.date,
+    event.startTime,
+    event.endTime,
+    event.rsvpContact,
+    event.realtorName,
+    event.brokerageName,
+    event.propertyPrice,
+  ]
+    .map((value) => normalizeLocationComparable(trimOrEmpty(value)))
+    .filter((value) => value.length >= 4);
   const visibleLiveCard = liveCard ? sanitizeStudioLiveCardVisibleCopy(event, liveCard) : null;
-  const mainTitle =
-    sanitizeGuestTitle(visibleLiveCard?.title) ||
-    sanitizeGuestTitle(visibleLiveCard?.invitation?.title) ||
-    sanitizeGuestTitle(event.title);
-  const invitationOpeningLine = trimOrEmpty(visibleLiveCard?.invitation?.openingLine);
-  const shortOpeningLine =
-    invitationOpeningLine &&
-    invitationOpeningLine.split(/\s+/).length <= 8 &&
-    invitationOpeningLine.length <= 64
-      ? invitationOpeningLine
-      : "";
-  const lines = [
-    line("Main Title", mainTitle),
-    line("Subtitle / Theme Line", trimOrEmpty(visibleLiveCard?.invitation?.subtitle)),
-    line("Opening Line", shortOpeningLine),
-    line("Schedule Line", trimOrEmpty(visibleLiveCard?.invitation?.scheduleLine)),
-    line("Location Line", trimOrEmpty(visibleLiveCard?.invitation?.locationLine)),
-    line("Details Line", trimOrEmpty(visibleLiveCard?.invitation?.detailsLine)),
-  ].filter(
-    (item) =>
-      !item.endsWith("Not provided") && !containsOpenHouseRasterForbiddenAgentCopy(event, item),
+  const candidates = [visibleLiveCard?.title, visibleLiveCard?.invitation.title, event.title];
+  for (const candidate of candidates) {
+    const title = sanitizeGuestTitle(candidate);
+    if (!title) continue;
+    const normalized = normalizeLocationComparable(title);
+    if (detailValues.some((value) => normalized.includes(value))) continue;
+    if (/https?:|www\.|@|\bRSVP\b|(?:\+?\d[\s().-]*){7,}/i.test(title)) continue;
+    if (
+      /\b\d{1,6}\s+(?:[\w.-]+\s+){1,5}(?:street|st|road|rd|avenue|ave|drive|dr|lane|ln|boulevard|blvd|court|ct|way)\b/i.test(
+        title,
+      )
+    ) continue;
+    return title;
+  }
+  return sanitizeGuestTitle(event.occasion || event.category) || "You're invited";
+}
+
+function buildApprovedVisibleCopySection(event: StudioEventDetails, subjectTitle: string): string {
+  const lines = [line("Main Title", subjectTitle)].filter(
+    (item) => !containsOpenHouseRasterForbiddenAgentCopy(event, item),
   );
-
   if (lines.length === 0) return "";
-
   return [
     "Approved invitation copy to use verbatim if visible text appears in the artwork:",
     ...lines,
   ].join("\n");
-}
-
-function formatDetailPillDate(event: StudioEventDetails): string {
-  const rawDate = trimOrEmpty(event.date);
-  if (!rawDate) return "";
-
-  const eventYear = trimOrEmpty(event.eventYear);
-  const isoMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  const numericMonthDayMatch = rawDate.match(/^(\d{1,2})\/(\d{1,2})$/);
-  const numericMonthDayYearMatch = rawDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-
-  let year = "";
-  let month = "";
-  let day = "";
-  if (isoMatch) {
-    year = isoMatch[1] || "";
-    month = isoMatch[2] || "";
-    day = isoMatch[3] || "";
-  } else if (numericMonthDayYearMatch) {
-    const rawYear = numericMonthDayYearMatch[3] || "";
-    year = rawYear.length === 2 ? `20${rawYear}` : rawYear;
-    month = numericMonthDayYearMatch[1] || "";
-    day = numericMonthDayYearMatch[2] || "";
-  } else if (numericMonthDayMatch && eventYear) {
-    year = eventYear;
-    month = numericMonthDayMatch[1] || "";
-    day = numericMonthDayMatch[2] || "";
-  }
-
-  if (year && month && day) {
-    const date = new Date(
-      Date.UTC(Number.parseInt(year, 10), Number.parseInt(month, 10) - 1, Number.parseInt(day, 10)),
-    );
-    if (!Number.isNaN(date.getTime())) {
-      return new Intl.DateTimeFormat("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        timeZone: "UTC",
-      }).format(date);
-    }
-  }
-
-  return rawDate;
-}
-
-function formatDetailPillTime(value: string | null | undefined): string {
-  const raw = trimOrEmpty(value).replace(/\s+/g, " ");
-  if (!raw) return "";
-
-  const twelveHour = raw.match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])$/);
-  if (twelveHour) {
-    const hour = Number.parseInt(twelveHour[1] || "", 10);
-    const minute = twelveHour[2] || "00";
-    if (Number.isFinite(hour)) return `${hour}:${minute} ${(twelveHour[3] || "").toUpperCase()}`;
-  }
-
-  const twentyFourHour = raw.match(/^(\d{1,2}):(\d{2})$/);
-  if (twentyFourHour) {
-    const hour = Number.parseInt(twentyFourHour[1] || "", 10);
-    const minute = Number.parseInt(twentyFourHour[2] || "", 10);
-    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-      return new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-        timeZone: "UTC",
-      }).format(new Date(Date.UTC(2000, 0, 1, hour, minute)));
-    }
-  }
-
-  return raw;
-}
-
-function buildEventTitleInfoChipPromptSection(event: StudioEventDetails): string {
-  const date = formatDetailPillDate(event);
-  const time = formatDetailPillTime(event.startTime);
-  const place = trimOrEmpty(event.venueName) || trimOrEmpty(event.venueAddress);
-  if (!date && !time && !place) return "";
-
-  return [
-    "Event-title info chip treatment:",
-    "- When date, time, or place appears near the main title, render it as compact rounded white invitation detail chips with subtle shadows, matching polished mobile invite styling.",
-    "- Use separate chips, not one combined bubble: date chip, time chip, and place chip when those values are supplied.",
-    "- Each chip should include one tiny colorful decorative icon: purple calendar for date, teal clock for time, warm amber map pin for place.",
-    "- These chips are invitation typography, not app controls. Do not place them in the bottom action-button area.",
-    date ? line("Date chip value", date) : "",
-    time ? line("Time chip value", time) : "",
-    place ? line("Place chip value", place) : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
 }
 
 export function buildExistingInvitationImageEditPrompt(editInstruction?: string | null): string {
@@ -1354,11 +1268,11 @@ export function buildInvitationImagePrompt(
   const fieldTrip = isFieldTripOccasion(event);
   const realismRequested = hasRealismIntent(event, guidance);
   const visualExclusions = extractVisualExclusions(event.userIdea, guidance?.style);
-  const occasionThemeGuardrails = buildOccasionThemeGuardrails(event);
+  const occasionThemeGuardrails = buildOccasionThemeGuardrails(event, true);
   const pageSurface = surface === "page";
   const gameDay = isGameDayOccasion(event);
-  const approvedVisibleCopy = buildApprovedVisibleCopySection(event, liveCard);
-  const eventTitleInfoChipPrompt = buildEventTitleInfoChipPromptSection(event);
+  const subjectTitle = resolveArtworkSubjectTitle(event, liveCard);
+  const approvedVisibleCopy = buildApprovedVisibleCopySection(event, subjectTitle);
   const imageFinishPreset = resolveStudioImageFinishPreset(
     event.category || event.occasion,
     guidance?.imageFinishPreset,
@@ -1407,21 +1321,25 @@ export function buildInvitationImagePrompt(
     "- Bake the invitation text directly into the image itself so it feels like part of the printed or designed artwork, not a separate overlay.",
     "- Treat all visible text as integrated invitation typography inside the scene, not as interface chrome or floating app labels.",
     "- Form labels, section headings, prompt labels, and instruction text are internal only. Never print them anywhere in the image.",
-    "- For non-Open-House events with both a venue name and street address, visible place text must use the venue name only. Do not print the street address in the artwork.",
-    "- Edge-safe composition: keep all essential text, faces, candles, balloons, gifts, cakes, addresses, dates, times, and other focal objects comfortably inset from every canvas edge and rounded corner.",
+    "- SUBJECT-FIRST LIVE CARD: make the person, couple, celebration, activity, or property the dominant visual subject. Use the artwork for atmosphere and identity.",
+    "- Event information is available through the live-card buttons and detail panels below the image. Do not repeat it in the artwork, including in signs, labels, captions, or decorative typography.",
+    "- Do not print addresses, venue names, dates, times, schedules, descriptions, guest instructions, RSVP details, contact names, phone numbers, email addresses, URLs, prices, property statistics, or feature lists anywhere in the image.",
+    "- Visible text is limited to the approved subject/title. A honoree name or age/milestone may appear only as part of that title. Do not add subtitles, opening lines, detail lines, or other informational copy.",
+    "- Do not draw date/time/place chips, information badges, or detail icons anywhere in the artwork.",
+    "- Edge-safe composition: keep all essential text, faces, candles, balloons, gifts, cakes, and other focal objects comfortably inset from every canvas edge and rounded corner.",
     "- Treat the outer 7% of the canvas as full-bleed background/decor only, so mild preview fill or rounded-corner clipping never cuts off important content.",
     "- Keep lighting, perspective, depth, and environment continuous across the full card.",
     "- Do not split the composition into separate top and bottom scenes.",
     "- Do not create a collage, stacked sections, framed panels, segmented card design, or a horizontal text band dividing two scenes.",
     "- Never compose the image as top scene plus text band plus bottom scene.",
-    "- Use a restrained premium invitation hierarchy: one clear headline, optional short subtitle or opening line, and short event-detail lines only when supported by the event details.",
-    "- Use at most one short supporting line beyond the title and event details. Do not create body-paragraph blocks, prose descriptions, or multi-sentence copy sections.",
+    "- Use a restrained premium invitation hierarchy: one clear subject/title with generous space for the main visual.",
+    "- Use only the approved title; no supporting information lines. Do not create body-paragraph blocks, prose descriptions, or multi-sentence copy sections.",
     "- Do not repeat or duplicate any visible words or phrases in the image.",
     "- Do not generate extra paragraphs, filler copy, repeated titles, duplicated names, duplicated schedule lines, or decorative nonsense typography.",
     "- Do not duplicate or mirror scene elements. Avoid repeated tables, repeated floral arrangements, repeated gazebos, repeated desserts, repeated arches, repeated portraits, or second copies of the main scene stacked elsewhere in the card.",
     "- Do not create an unrelated solid bar, footer slab, color block, green strip, dark strip, or banner panel near the bottom of the card.",
     "- Treat all visible text as post-production-grade invitation copy, not generic placeholder wording.",
-    "- Do not generate any UI elements, interface overlays, app controls, buttons, icons, badges, arrows, floating controls, share symbols, chat symbols, phone symbols, plus buttons, camera buttons, circular controls, watermarks, or screenshot-style overlays. The only allowed icons are the tiny decorative date/time/place icons inside approved event-title info chips.",
+    "- Do not generate any UI elements, interface overlays, app controls, buttons, icons, badges, arrows, floating controls, share symbols, chat symbols, phone symbols, plus buttons, camera buttons, circular controls, watermarks, or screenshot-style overlays.",
     "- Keep the top edge free of faux phone UI: no carrier names, clock text, battery icons, signal icons, status icons, notches, camera cutouts, or device chrome.",
     "- Keep the bottom action-button zone art-only and completely free of information. End the final visible text line well above the bottom controls area.",
     "- Compose with the bottom action controls in mind: the lower 24-30% should be decorative continuation only, with no essential subject matter that would be hidden behind app buttons.",
@@ -1440,7 +1358,7 @@ export function buildInvitationImagePrompt(
           "- The approved invitation copy is the complete visible-text whitelist. Do not add extra visible words from Private Visual Direction, Theme Style, Style guidance, or other internal art-direction fields.",
         ]
       : [
-          "- If visible copy is needed, use only directly supported event details from this prompt. Do not invent unsupported slogans, RSVP lines, footer labels, or extra wording.",
+          "- If no approved title is available, create subject-focused artwork without visible text. Do not invent unsupported slogans, RSVP lines, footer labels, or extra wording.",
           "- Private Visual Direction may influence imagery, props, styling, and mood, but it is not a source for visible invitation words.",
         ]),
     ...(refCount > 0 && propertyImageCount === 0
@@ -1456,9 +1374,9 @@ export function buildInvitationImagePrompt(
           ]
         : [
             "- This image is a finished live-card invitation raster, not a blank background.",
-            "- Visible event wording belongs in the raster for this live card, but it must feel like part of one designed invitation composition rather than detached overlay text.",
+            "- Only the approved subject/title belongs in the raster for this live card, but it must feel like part of one designed invitation composition rather than detached overlay text.",
             "- Keep the text concentrated in the upper and middle portions of the card and resolve the final visible text line well above the bottom action buttons.",
-            "- Do not draw interface elements in the raster: no buttons, icons, circular controls, pill-shaped bars, chat inputs, nav bars, status bars, carrier labels, clock readouts, battery indicators, notches, home indicators, camera cutouts, or device chrome. Small decorative date/time/place chips near the event title are allowed when supplied above.",
+            "- Do not draw interface elements in the raster: no buttons, icons, circular controls, pill-shaped bars, chat inputs, nav bars, status bars, carrier labels, clock readouts, battery indicators, notches, home indicators, camera cutouts, or device chrome.",
             "- Keep the typography elegant, readable, and invitation-first, not like a flyer app screenshot or a dense poster wall of text.",
           ]
       : [
@@ -1512,8 +1430,8 @@ export function buildInvitationImagePrompt(
       : []),
     ...(getOccasionType(event) === "open_house"
       ? [
-          "- Open House / real-estate flyer: treat the result as premium property marketing created by a realtor, with buyer-facing hierarchy, architectural photography, listing details, and logo-free premium real-estate editorial styling.",
-          "- Build visible hierarchy around Open House, the property address, date/time, price, and strongest supplied features. Omit any missing listing fact instead of inventing it.",
+          "- Open House / real-estate flyer: treat the result as premium property marketing created by a realtor, with architectural photography as the focal point and logo-free premium real-estate editorial styling.",
+          "- Build the composition around the property itself, with only the approved Open House title. Keep the address, date/time, price, statistics, and features in the app details, never in the raster.",
           "- Do not invent MLS numbers, prices, amenities, square footage, bed/bath counts, brokerages, license numbers, phone numbers, logos, or property claims.",
           "- Use flyer/poster-grade typography that remains readable at mobile-card size. Avoid dense paragraph blocks and tiny legal-style microtype.",
         ]
@@ -1534,7 +1452,7 @@ export function buildInvitationImagePrompt(
       : []),
     "- Build the artwork around the selected event type first, then express the private visual direction through that celebration type.",
     "- Treat the private visual direction as the main visual concept when one is provided.",
-    "- Let supporting event details sharpen specificity and approved wording, but do not let them replace the private visual direction.",
+    "- Supporting context may inform imagery and mood only; it never authorizes extra visible wording or logistical details.",
     "- The private visual direction is art direction only, not default visible invitation copy in the artwork.",
     "- Never print raw private visual direction wording or prompt fragments in the artwork unless the user explicitly requested that exact phrase as visible copy.",
     "- If the private visual direction includes a noun or motif that is absent from the approved invitation copy and event details, show it visually only; do not print that noun or motif as text.",
@@ -1564,7 +1482,7 @@ export function buildInvitationImagePrompt(
             "- Treat existing raster typography and signage as locked: when repainting nearby pixels, keep text sharp, legible, and faithful to the source unless the edit explicitly targets that text.",
           ]
         : [
-            "- Visible invitation text is required in the final raster for page/live-card images, but keep it sparse, readable, and intentionally designed.",
+            "- Only the approved subject/title is permitted as visible invitation text in page/live-card images; keep it sparse, readable, and intentionally designed.",
             "- Do not scatter text across the entire card. Use a clear hierarchy in the upper and middle zones and keep the lower action-button zone free of visible wording.",
             "- Do not embed faux footer microtype, button labels, RSVP instructions, or UI-like labels anywhere in the image.",
             "- For live-card images, reserve the entire lower button area for app controls: no property facts, agent names, prices, addresses, feature lists, contact details, or decorative labels may appear there.",
@@ -1602,43 +1520,19 @@ export function buildInvitationImagePrompt(
     "",
     renderImageCreativeInputs(event),
     ...(approvedVisibleCopy ? ["", approvedVisibleCopy] : []),
-    ...(eventTitleInfoChipPrompt ? ["", eventTitleInfoChipPrompt] : []),
     "",
     "Event details to influence visual style:",
     line("Category", event.category),
-    line("Title", sanitizeGuestTitle(event.title)),
+    line("Title", subjectTitle),
     line("Occasion", event.occasion),
-    line("Event Year", event.eventYear),
-    ...(openHouse
-      ? []
-      : [line("Host Name", event.hostName), line("Honoree Name", event.honoreeName)]),
+    ...(openHouse ? [] : [line("Honoree Name", event.honoreeName)]),
     line("Sport", event.sportType),
     line("Team / Host", event.teamName),
     line("Opponent", event.opponentName),
     line("League / Division", event.leagueDivision),
     line("Age or Milestone", event.ageOrMilestone),
-    line("Property Price", event.propertyPrice),
-    line("Bedrooms", event.bedrooms),
-    line("Bathrooms", event.bathrooms),
-    line("Square Feet", event.squareFootage),
-    line("Neighborhood", event.neighborhood),
-    line("Property Highlights", event.propertyHighlights),
-    ...(openHouse
-      ? []
-      : [
-          line("Realtor", event.realtorName),
-          line("Realtor Title", event.realtorTitle),
-          line("Brokerage", event.brokerageName),
-          line("License", event.realtorLicense),
-        ]),
     line("Private Visual Direction", sanitizeImagePromptBriefText(event.userIdea)),
     line("Supporting Context", sanitizeImagePromptBriefText(event.description)),
-    line("Date", event.date),
-    line("Venue", event.venueName),
-    line("Broadcast / Stream", event.broadcastInfo),
-    line("Parking / Arrival", event.parkingInfo),
-    line("Dress Code", event.dressCode),
-    renderLinks(event.links),
     "",
     liveCard
       ? [

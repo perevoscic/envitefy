@@ -57,12 +57,12 @@ test("meet discovery classifier and schema only model the surviving attendee-fir
   );
 });
 
-test("meet discovery routes staged parsing to Sol and vision extraction to Luna", () => {
+test("meet discovery routes staged parsing to Astra and vision extraction to Luna", () => {
   const source = readSource("src/lib/meet-discovery/core.ts");
 
   assert.match(
     source,
-    /return safeString\(process\.env\.OPENAI_DISCOVERY_PARSE_MODEL\) \|\| "gpt-5\.6-sol";/,
+    /return safeString\(process\.env\.OPENAI_DISCOVERY_PARSE_MODEL\) \|\| "gpt-6-astra";/,
   );
   assert.match(
     source,

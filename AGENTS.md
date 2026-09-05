@@ -112,3 +112,8 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 - Every launched customer-facing feature must add or update its catalog entry in the same change. Include the customer promise, concrete proof points, availability (`core`, `event-dependent`, or `specialized`), and when the marketing team should sell it.
 - Do not duplicate the complete feature inventory inside `src/lib/admin/email-generation-guide.ts`; keep that file focused on campaign behavior and let it consume the shared catalog so future feature updates reach email generation automatically.
 - Do not add admin-only, disabled, feature-flagged, experimental, or unverified capabilities to the marketing catalog.
+
+## Envitefy Video Studio
+
+- Video production lives in `video-studio/`. For video creation, revisions, aspect-ratio adaptations, or copy accompanying a studio video, read `video-studio/AGENTS.md` and use `video-studio/.agents/skills/envitefy-video-producer/SKILL.md`.
+- Standing video preferences are in `video-studio/STUDIO-GUIDE.md`; campaign history is indexed in `video-studio/projects/README.md`. Update these records when relevant feedback arrives so fresh tasks do not need the conversation repeated.

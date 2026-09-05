@@ -81,7 +81,12 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           proofPoints: [
             "Starts from the host's words or uploaded context and helps collect missing event details.",
             "Drafts event-specific guest copy and a polished live page for the host to review and edit before sharing.",
-            "Can shape relevant RSVP, calendar, directions, registry, reminder, update, and sign-up experiences when the event calls for them.",
+            "Hosts can review saved event details, correct titles and format choices in conversation, and generate a draft preview before a separate publish step.",
+            "Hosts can preview an invitation while optional styling and RSVP details are unfinished; publishing checks the required event facts separately.",
+            "Hosts can ask for planning suggestions and invitation wording before every detail is decided, and choose to collect guest replies themselves.",
+            "A saved host brief keeps budget, language, accessibility, dietary and privacy preferences available throughout the conversation. Hosts can review and correct those planning notes.",
+            "Simple English and Spanish invitation drafts can use TBC details; interrupted tailored replies can be retried using the latest saved event details.",
+            "Chat-created RSVP supports guest name, email, and yes/no/maybe responses alongside calendar, directions, and registry links. Specialized household and sign-up flows use their own builders.",
           ],
           sellWhen: [
             "The brief says create, plan, draft, write, or build an invitation/event from an idea or description.",
@@ -98,6 +103,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Template and manual creation remain available alongside Envitefy Snap and Envitefy Concierge.",
             "Hosts can choose event-specific layouts, edit wording and details, and review the guest experience before publishing.",
             "Studio supports polished invitation design for birthdays, weddings, showers, game days, field trips, open houses, housewarmings, anniversaries, and custom occasions.",
+            "Generated live-card artwork focuses on the subject and title, while addresses, schedules, contact information, and other details stay in the buttons and detail panels below.",
           ],
           sellWhen: [
             "The customer wants creative control, a specific theme, or a known event structure.",

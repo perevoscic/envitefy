@@ -15,7 +15,7 @@ test("event actions preserve event_history as source of truth and invalidate cac
   assert.match(source, /"start"/);
   assert.match(source, /"location"/);
   assert.match(source, /"category"/);
-  assert.match(source, /"status"/);
+  assert.doesNotMatch(source.match(/const ALLOWED_EVENT_PATCH_FIELDS = new Set\(\[([\s\S]*?)\]\)/)?.[1] || "", /"status"|"ownership"|"user_id"/);
   assert.match(source, /normalizeCanonicalStartFields\(nextData\)/);
   assert.match(source, /syncLiveCardCopyFromPatch\(nextData, patch\)/);
   assert.match(source, /sanitizeConciergePublicEventData\(nextData\)/);

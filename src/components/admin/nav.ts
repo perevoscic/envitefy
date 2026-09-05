@@ -57,9 +57,9 @@ export const adminNavItems: AdminNavItem[] = [
   },
   {
     id: "marketing-assets",
-    label: "Marketing Assets",
+    label: "Content Studio",
     href: "/admin/marketing-images",
-    description: "Storyboard runs and generated media",
+    description: "Ideas, prompts, images, and videos",
   },
   {
     id: "ad-studio",

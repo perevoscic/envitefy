@@ -1,0 +1,63 @@
+(node:366784) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/creation/source-evidence.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ OCR preserves verbatim transcript separately from normalized facts and rejects unsupported evidence (0.9206ms)
+✔ conflicting or missing birthday age remains null despite a decorative numeral (0.1938ms)
+✔ strict edits enforce typed values, exact evidence, allowlisted fields and explicit clears (0.5859ms)
+✔ uploads cannot overwrite existing user facts or clear them (88.1381ms)
+✔ preview and draft save work before logistics; publication still requires them (27.7856ms)
+✔ publication rejects impossible dates, end-before-start, invalid timezone and source conflicts (1.7145ms)
+✔ saved-event actions reject model status changes and out-of-scope assets (0.3309ms)
+✔ Astra budgets preserve reasoning headroom and never send unsupported temperature (0.2203ms)
+✔ calendar conversion uses event timezone and rejects missing or repeated DST times (1.9102ms)
+(node:95988) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/product-prompts.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ product routes remain distinct with backwards compatible page/image defaults (0.8985ms)
+✔ Astra plans and writes once with fact/private/output/wording boundaries (0.6706ms)
+✖ artwork contract selects exactly one composition and correct text policy (0.9342ms)
+✔ standalone flyer typesets exact facts, multiple stops and print density (1017.2432ms)
+✔ flyer rejects overflow rather than truncating approved wording (143.0104ms)
+✔ one targeted repair is verified, then the complete flyer is returned (99.1208ms)
+✔ repeated image failure cannot return success from the text-only half (0.7668ms)
+✔ unavailable quality check is reported honestly without claiming a passed image (0.4593ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 16
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2893.5421
+
+✖ failing tests:
+
+test at src\lib\studio\product-generation.test.mjs:29:1
+✖ artwork contract selects exactly one composition and correct text policy (0.9342ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /bottom 30% free/. Input:
+  
+  'Create premium event invitation artwork following this output contract. Priority: source accuracy and privacy; explicit wording; product layout; user visual direction; category defaults.\n' +
+    'Self-contained downloadable invitation. The server typesets event wording and logistics; generate text-free artwork with no app-button zone.\n' +
+    'No visible words, letters, numbers, signage, logos or typography anywhere. The application typesets the supplied event copy separately.\n' +
+    'Place the main artwork in the upper 45% and continue its atmosphere through a quiet lower background. No fake blank form fields or drawn text panels.\n' +
+    'Use one continuous scene; no collage, duplicate subjects, stacked scenes or segmented panels.\n' +
+    '0 reference photos are supplied. When present, feature those people or property prominently, preserve likeness, architecture, rooms and finishes. Realtor photos are UI assets only. Never substitute stock people or unrelated property.\n' +
+    "Honor photorealism, negative visual instructions and the user's selected subject treatment. Celebrate the actual event type. Do not invent sports scores, sponsor marks or logos. No screenshot, device frame, interface buttons, icons, QR codes or watermarks.\n" +
+    `{"version":"creation-v2-2026-09-05","PUBLIC_FACTS":{"title":"Elena's 30th Birthday","category":"Birthday","honoreeName":"Elena","date":"October 24, 2099","startTime":"4 PM","venueName":"Garden Hall","venueAddress":"123 Oak Street","timezone":"America/Chicago","rsvpEnabled":false},"PRIVATE_DIRECTION":{"userIdea":"Botanical editorial, no balloons","referencePhotoCount":0,"propertyPhotoCount":0,"agentPhotosForUiOnly":0},"OUTPUT_CONTRACT":{"product":"digital_flyer","width":1200,"height":1800,"dpi":144,"safeMargin":84,"imageText":"none","description":"Self-contained downloadable invitation. The server typesets event wording and logistics; generate text-free artwork with no app-button zone."},"APPROVED_WORDING":null,"creativePlan":{"concept":"Botanical editorial, no balloons","focalSubject":"Elena","layout":"single_scene","textPlacement":"Live card: only the approved subject/title in artwork. Keep the bottom 30% free of essential text and subjects for app actions; logistics live in the detail panels.","sections":[],"exclusions":[]},"palette":{"primary":"#202A36","secondary":"#B9CFC5","accent":"#BF8C5A"}}`
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/studio/product-generation.test.mjs:31:49)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: `Create premium event invitation artwork following this output contract. Priority: source accuracy and privacy; explicit wording; product layout; user visual direction; category defaults.\nSelf-contained downloadable invitation. The server typesets event wording and logistics; generate text-free artwork with no app-button zone.\nNo visible words, letters, numbers, signage, logos or typography anywhere. The application typesets the supplied event copy separately.\nPlace the main artwork in the upper 45% and continue its atmosphere through a quiet lower background. No fake blank form fields or drawn text panels.\nUse one continuous scene; no collage, duplicate subjects, stacked scenes or segmented panels.\n0 reference photos are supplied. When present, feature those people or property prominently, preserve likeness, architecture, rooms and finishes. Realtor photos are UI assets only. Never substitute stock people or unrelated property.\nHonor photorealism, negative visual instructions and the user's selected subject treatment. Celebrate the actual event type. Do not invent sports scores, sponsor marks or logos. No screenshot, device frame, interface buttons, icons, QR codes or watermarks.\n{"version":"creation-v2-2026-09-05","PUBLIC_FACTS":{"title":"Elena's 30th Birthday","category":"Birthday","honoreeName":"Elena","date":"October 24, 2099","startTime":"4 PM","venueName":"Garden Hall","venueAddress":"123 Oak Street","timezone":"America/Chicago","rsvpEnabled":false},"PRIVATE_DIRECTION":{"userIdea":"Botanical editorial, no balloons","referencePhotoCount":0,"propertyPhotoCount":0,"agentPhotosForUiOnly":0},"OUTPUT_CONTRACT":{"product":"digital_flyer","width":1200,"height":1800,"dpi":144,"safeMargin":84,"imageText":"none","description":"Self-contained downloadable invitation. The server typesets event wording and logistics; generate text-free artwork with no app-button zone."},"APPROVED_WORDING":null,"creativePlan":{"concept":"Botanical editorial, no balloons","focalSubject":"Elena","layout":"single_scene","textPlacement":"Live card: only the approved subject/title in artwork. Keep the bottom 30% free of essential text and subjects for app actions; logistics live in the detail panels.","sections":[],"exclusions":[]},"palette":{"primary":"#202A36","secondary":"#B9CFC5","accent":"#BF8C5A"}}`,
+    expected: /bottom 30% free/,
+    operator: 'doesNotMatch',
+    diff: 'simple'
+  }

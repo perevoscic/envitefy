@@ -12,7 +12,35 @@ import {
   SOCIAL_COPY_SYSTEM_PROMPT,
   SOCIAL_IMAGE_COORDINATOR_SYSTEM_PROMPT,
   SOCIAL_IMAGE_COPY_SYSTEM_PROMPT,
+  runBriefAgent,
 } from "./lib/campaign-agents.mjs";
+
+test("campaign requests support Astra overrides while retaining structured output", async () => {
+  for (const [model, expected] of [
+    ["gpt-6-astra", { reasoning_effort: "medium" }],
+    ["gpt-5.6-luna", { reasoning_effort: "none" }],
+    ["gpt-4.1", { temperature: 0.4 }],
+  ]) {
+    let requested;
+    const client = {
+      chat: {
+        completions: {
+          create: async (request) => {
+            requested = request;
+            return { choices: [{ message: { content: '{"singleAudience":"event hosts"}' } }] };
+          },
+        },
+      },
+    };
+
+    const result = await runBriefAgent({ client, model, campaignInput: { criteria: "Event hosts" } });
+    assert.equal(requested.model, model);
+    assert.equal(requested.reasoning_effort, expected.reasoning_effort);
+    assert.equal(requested.temperature, expected.temperature);
+    assert.equal(requested.response_format, BRIEF_RESPONSE_FORMAT);
+    assert.equal(result.singleAudience, "event hosts");
+  }
+});
 
 test("brief prompt requires one audience, one pain, one promise, and one proof moment", () => {
   assert.match(BRIEF_SYSTEM_PROMPT, /one audience, one pain, one product promise, and one proof moment/i);

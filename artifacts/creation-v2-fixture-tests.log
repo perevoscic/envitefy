@@ -1,0 +1,185 @@
+(node:172636) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  workload: 'correction',
+  model: 'gpt-5.6-terra',
+  durationMs: 0,
+  outcome: 'success',
+  inputTokens: null,
+  outputTokens: null,
+  reasoningTokens: null
+}
+creation_model_run {
+  version: 'creation-v2-2026-09-05',
+  workload: 'correction',
+  model: 'gpt-5.6-terra',
+  durationMs: 0,
+  outcome: 'success',
+  inputTokens: null,
+  outputTokens: null,
+  reasoningTokens: null
+}
+✔ fallback extracts a partial birthday draft from a relationship sentence (59.684ms)
+✔ birthday category starts with an oriented intake prompt (26.3591ms)
+✔ starter category uses the selected/default product and asks for event details (1.991ms)
+✔ starter category and product text asks for event details immediately (1.1107ms)
+✔ starter category and product text skips OpenAI extraction (7.0831ms)
+✔ structured starter category can skip OpenAI when the message only names the product (1.06ms)
+✔ main-page category/product selection suppresses the format question (0.9949ms)
+✔ visible starter categories map to first-class concierge event types (5.4093ms)
+✔ wedding event pages require couple names before ready (3.3898ms)
+✔ category intake prompts stay short (2.6452ms)
+✔ received birthday invite request asks for invite source instead of host authoring (0.9178ms)
+✔ received invite with concrete details stays invited and can become ready (1.3413ms)
+✔ bare afternoon-style time is normalized to PM (0.9474ms)
+✔ birthday turns phrasing fills honoree and age (0.8993ms)
+✔ received invite follow-up details preserve invited ownership (1.7553ms)
+✔ greeting does not default into live card creation flow (0.7073ms)
+✔ greeting short-circuits AI extraction and stays conversational (0.7214ms)
+✔ source-only received invite request short-circuits AI extraction (0.7943ms)
+✔ fast action flag lets OCR creation intake skip AI extraction (1.4724ms)
+✔ obvious starter creation prompt skips AI extraction (1.1358ms)
+✔ core product bundle expands only to visible primary products (2.275ms)
+✔ source flyer wording does not force a digital flyer product (1.3473ms)
+✔ No RSVP disables RSVP without adding an RSVP page (1.0987ms)
+✔ RSVP guest-count phrasing fills number of guests (6.2692ms)
+✔ wedding invitation phrasing captures both partner names (1.8503ms)
+✔ output-only live card prompt without context asks for purpose before date (0.9532ms)
+✔ output-specific prompt asks what a digital flyer promotes (0.7711ms)
+✔ output-specific flyer slash invitation prompt asks for event context first (0.6194ms)
+✔ purpose reply after output-only shell stays drafting until preview details exist (2.1069ms)
+✔ purpose plus concrete preview details can become preview ready (1.3303ms)
+✔ fallback asks RSVP guest count before vibe and stores both replies (6.3157ms)
+✔ birthday live cards ask whether to collect RSVPs before vibe (2.3503ms)
+✔ birthday live cards can skip RSVP collection and continue to vibe (2.2406ms)
+✔ RSVP intent replies are not stored as vibe answers (3.4122ms)
+✔ game day event-page prompt becomes guest-facing matchup copy (2.3841ms)
+✔ baby shower event-page product prompt stays no-RSVP and guest-facing (2.1371ms)
+✔ baby shower details capture honoree instead of repeating shower question (1.5226ms)
+✔ graduation details capture honoree after product-only start (1.5727ms)
+✔ duplicate event input does not repeat the same missing question (1.8874ms)
+✔ tentative location comments preserve the address and mark location flexible (1.346ms)
+✔ skip gift link on non-gift products stays concise and dismissed (2.3453ms)
+✔ gift-friendly ready drafts ask for registry details only as an optional step (0.9877ms)
+✔ birthday ready drafts use gift-list language instead of pushing a registry (0.9859ms)
+✔ bridal shower ready drafts use registry optional language (1.0323ms)
+✖ registry optional prompt accepts a pasted URL-only reply (2.2872ms)
+✔ registry optional prompt can be skipped without blocking generation (1.5366ms)
+✔ no-gifts replies become guest-facing gift notes (1.6047ms)
+✔ gift-card replies become guest-facing gift notes (1.5528ms)
+✔ theme and tone label is not captured as event theme copy (0.9325ms)
+✔ private token trick questions refuse while preserving the current draft (0.9724ms)
+✔ lowercase location reply fills location instead of repeating the question (1.5714ms)
+✔ bare location reply fills the active location slot instead of repeating the question (1.9832ms)
+✔ labeled invitation details fill when and where before creative prompt prose (1.4738ms)
+✔ birthday invitation prompt accepts curly possessives and labeled for field (12.9228ms)
+✔ short birthday follow-ups fill name and age slots (2.4804ms)
+✔ birthday name and turning age shorthand fills both slots (1.0224ms)
+✔ birthday OCR hint fills honoree and age when text extraction is sparse (1.7103ms)
+✔ vibe replies do not satisfy missing honoree names (3.761ms)
+✔ typo-like date replies are confirmed before moving to location (1.7318ms)
+✔ date confirmation renders ISO candidates as readable dates (1.1327ms)
+✔ OCR date ranges with doors-open times survive past-date confirmation (2.7984ms)
+✔ source OCR doors-open time wins over AI-normalized shifted time (2.0685ms)
+✔ date-only drafts keep asking for time instead of treating startISO as explicit time (0.7112ms)
+✔ output-only RSVP page prompt stays unsaved until an event/source exists (0.7994ms)
+✔ output capability matrix gives output-specific first questions and CTAs (0.0934ms)
+✔ source intent resolver returns confidence and confirmation flags (0.0809ms)
+✔ purpose can progress a draft while event type remains unknown (0.4864ms)
+✔ active context resolves this when exactly one source exists (0.4983ms)
+✔ ambiguous active context asks which source to use (0.5462ms)
+✔ fallback updates birthday honoree, age, and theme from a short reply (0.8865ms)
+✔ new create request replaces restored draft details (1.682ms)
+✔ birthday live-card prompt aggregates inline name age venue and interests (1.0727ms)
+✔ birthday live-card context uses activities and interests as image direction (3.2094ms)
+✔ birthday live-card prompt reads name after product label without for (0.857ms)
+✔ birthday live-card prompt keeps itinerary locations separate from visual scene props (1.0369ms)
+✔ OpenAI normalization treats fallback theme as visual direction (1.1091ms)
+✔ OpenAI normalization preserves fallback scene details when AI shortens tone (1.3701ms)
+✔ birthday live-card prompt tolerates a mistyped for before name and age (0.6297ms)
+✔ time-only edit keeps the existing event date (2.922ms)
+✔ fallback fills birthday honoree from a name reply (1.3624ms)
+✔ fallback extracts graduation date text from natural language (0.743ms)
+✔ fallback infers gym meet category from chat-first prompt (0.5082ms)
+✔ birthday prompts infer the named child before asking follow-up fields (3.4022ms)
+✔ command replies do not become birthday honoree names (3.0985ms)
+✔ birthday clarification can resolve pronoun back to prior event subject (1.2866ms)
+✔ product and time corrections preserve the existing event title (3.3882ms)
+✔ RSVP side replies are acknowledged while birthday age is still missing (2.4053ms)
+✔ birthday age can be explicitly skipped without polluting display copy (1.2577ms)
+✔ birthday clarification updates stale event purpose (1.2295ms)
+✔ past explicit dates require confirmation before ready state (0.7849ms)
+✔ registry link acknowledgement keeps asking for missing birthday details (1.3304ms)
+✔ gym invitational prompt is treated as a gym meet (0.8019ms)
+✔ upload OCR context can seed a draft (0.5465ms)
+✔ OpenAI extraction path normalizes to the same draft shape (2.1114ms)
+✔ OpenAI normalization treats nested eventData venue as satisfying location (1.8484ms)
+✔ OpenAI normalization does not turn an RSVP deadline into an RSVP page product (1.2084ms)
+✔ OpenAI normalization cannot override an explicit no-RSVP request (1.0397ms)
+✔ OpenAI normalization cannot treat RSVP guest count as visual direction (2.282ms)
+✔ conversation repair messages preserve draft details and bypass extraction (5.1538ms)
+✔ standalone frustrated detail replies acknowledge missing session context (0.57ms)
+✔ frustrated detail replies can still fill the active draft slot (1.3757ms)
+✔ unclear replies rephrase the missing detail instead of repeating the same question (3.64ms)
+✔ RSVP guest count accepts natural collect-for shorthand (2.4618ms)
+✔ RSVP decision reply can include guest count, host name, and phone (2.1611ms)
+✔ RSVP decision reply accepts informal peoples wording with contact recipient (1.7348ms)
+✔ initial birthday live-card prompt consumes RSVP host and contact from same message (1.2952ms)
+✔ RSVP contact repair splits host name and phone number (2.2271ms)
+✔ tone reply preserves full creative direction without changing event type (5.3386ms)
+✔ off-domain help requests stay bounded and do not become event drafts (0.9618ms)
+✔ weather side questions preserve the active draft details (1.2151ms)
+✔ unsafe and unrelated standalone prompts do not become event drafts (4.19ms)
+✔ event-adjacent content words still allow explicit Envitefy product creation (1.0522ms)
+✔ unsafe boundaries bypass OpenAI extraction (1.4566ms)
+✔ OpenAI readiness is downgraded when source and purpose are missing (1.4245ms)
+✔ save payload stores generated concierge products as owned My Events rows (0.9821ms)
+✔ save payload keeps vibe prompt text out of guest-facing event copy (1.3209ms)
+✔ save payload strips product prompt prefixes from live-card titles (1.1348ms)
+✔ save payload preserves event page as the primary product (1.1824ms)
+✔ save payload preserves upload source details on event pages (13.9005ms)
+✔ save payload preserves flyer invite as the primary product (1.3219ms)
+✔ save payload splits combined venue and address for public live cards (1.3169ms)
+✔ chat concierge preserves secondary locations in saved products (1.8252ms)
+✔ guest count phrasing is not swallowed into location (0.9324ms)
+(node:35224) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Develop_local/envitefy/src/lib/studio/provider.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Develop_local\envitefy\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ studio provider resolution defaults production to openai and non-production to gemini (1.2339ms)
+✔ resolveStudioProvider honors explicit providers (0.1911ms)
+✔ resolveStudioProvider defaults by runtime environment (0.1465ms)
+✔ resolveStudioProvider rejects invalid explicit provider (0.323ms)
+✔ studio generation dispatches text and image calls through the resolved provider (0.8586ms)
+ℹ tests 128
+ℹ suites 0
+ℹ pass 127
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 672.7274
+
+✖ failing tests:
+
+test at src\lib\concierge\fallback.test.ts:893:1
+✖ registry optional prompt accepts a pasted URL-only reply (2.2872ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///D:/Develop_local/envitefy/src/lib/concierge/fallback.test.ts:905:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

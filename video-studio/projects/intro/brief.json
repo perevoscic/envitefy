@@ -1,0 +1,34 @@
+{
+  "id": "intro",
+  "title": "More being there",
+  "audience": "Hosts, families, and event organizers",
+  "format": "vertical",
+  "targetDurationSeconds": 30,
+  "fps": 30,
+  "voiceId": "EXAVITQu4vr4xnSDxMaL",
+  "voiceName": "Sarah — Mature, Reassuring, Confident",
+  "modelId": "eleven_multilingual_v2",
+  "voiceSettings": { "stability": 0.48, "similarity_boost": 0.75, "style": 0.18, "speed": 1.05 },
+  "artDirection": "Warm editorial garden party; cream, violet, apricot, candid original people; generous typography and calm motion. Choose a new cast, setting, and visual direction for each future campaign.",
+  "claimSource": "src/lib/product-marketing-catalog.ts",
+  "heroImage": "images/garden-party.png",
+  "scenes": [
+    {
+      "id": "hook",
+      "narration": "Good plans deserve more than a screenshot buried in a group chat."
+    },
+    {
+      "id": "create",
+      "narration": "With Envitefy, start with your idea, or upload an invitation. Bring the details together."
+    },
+    {
+      "id": "share",
+      "narration": "Give guests one beautiful event page, with the time, place, and actions they need."
+    },
+    {
+      "id": "updates",
+      "narration": "Share one link. Update the details. Everyone knows where to look."
+    },
+    { "id": "payoff", "narration": "Less chasing details. More being there. Create with Envitefy." }
+  ]
+}

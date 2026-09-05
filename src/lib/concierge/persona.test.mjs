@@ -639,7 +639,7 @@ test("persona keeps missing-location weather prompt exact", async () => {
   assert.equal(result.assistantMessage, "Sure, what city should I check?");
 });
 
-test("persona falls back when first token times out", async () => {
+test("persona explains an unavailable tailored reply when first token times out", async () => {
   const deltas = [];
   const result = await withEnv(
     {
@@ -671,6 +671,7 @@ test("persona falls back when first token times out", async () => {
       ),
   );
 
-  assert.deepEqual(deltas, ["When should this happen?"]);
+  assert.match(deltas.join(""), /couldn't finish the tailored reply/);
+  assert.doesNotMatch(deltas.join(""), /When should this happen/);
   assert.equal(result.usedAi, false);
 });

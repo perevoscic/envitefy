@@ -5,6 +5,7 @@ import sharp from "sharp";
 import { authOptions } from "@/lib/auth";
 import { normalizeBirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { corsJson } from "@/lib/cors";
+import { resolveOcrBirthdayTitle } from "@/lib/ocr/birthday-age";
 import {
   clampTimeoutMs,
   OCR_SKIN_TIMEOUT_MS,
@@ -468,8 +469,18 @@ export async function handleOcrRequest(request: Request) {
       timeoutMs: number,
       model: string,
     ) => {
-      const llm = await llmExtractEventFromImage(imageBytes, mimeType, timeoutMs, model);
-      const rawText = llmEventToRawText(llm);
+      let llm = await llmExtractEventFromImage(imageBytes, mimeType, timeoutMs, model);
+      const hasConflictingEvidence = Object.values(llm?.sourceEvidence?.fields || {}).some((field) => field.status === "conflicting");
+      const premiumTimeout = Math.min(30_000, remainingBudgetMs(startedAt, totalBudgetMs, 5_000));
+      if (hasConflictingEvidence && !fastMode && !/^gpt-6-astra/.test(model) && premiumTimeout >= 8_000) {
+        try {
+          const reviewed = await llmExtractEventFromImage(colorBuffer, colorMime, premiumTimeout, process.env.OCR_PREMIUM_MODEL || "gpt-6-astra");
+          if (reviewed?.sourceEvidence?.sourceText) llm = reviewed;
+        } catch {
+          // Keep the first transcript and its unresolved conflicts when escalation cannot finish.
+        }
+      }
+      const rawText = llm?.sourceEvidence?.sourceText ?? llmEventToRawText(llm);
       if (!llm || !rawText) throw new Error("OPENAI_EMPTY");
       if (!hasUsableOcrResult(llm, rawText)) throw new Error("OPENAI_GENERIC");
       return { rawText, llm };
@@ -964,34 +975,6 @@ export async function handleOcrRequest(request: Request) {
           ? llmImage.description.trim()
           : cleanDescription;
 
-      if (/birthday/i.test(finalTitle) && !/\b\d{1,2}(st|nd|rd|th)\b/i.test(finalTitle)) {
-        const agePattern = /\b([1-9]|1[0-9])\b/g;
-        const ageMatches = [...raw.matchAll(agePattern)];
-        const candidateAges = ageMatches
-          .map((match) => ({ num: parseInt(match[1], 10), pos: match.index! }))
-          .filter(({ pos }) => {
-            const context = raw.substring(Math.max(0, pos - 20), Math.min(raw.length, pos + 20));
-            return !/\b(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|20\d{2})\b/i.test(context);
-          });
-        if (candidateAges.length) {
-          const age = candidateAges[0].num;
-          const suffix =
-            age % 100 >= 11 && age % 100 <= 13
-              ? "th"
-              : age % 10 === 1
-                ? "st"
-                : age % 10 === 2
-                  ? "nd"
-                  : age % 10 === 3
-                    ? "rd"
-                    : "th";
-          finalTitle = finalTitle.replace(
-            /(\w+['’]s)\s+(Birthday\s+Party)/i,
-            `$1 ${age}${suffix} $2`,
-          );
-        }
-      }
-
       if (typeof llmImage.rsvp === "string" && llmImage.rsvp.trim()) {
         deferredRsvp = llmImage.rsvp.trim();
       }
@@ -1004,65 +987,13 @@ export async function handleOcrRequest(request: Request) {
     }
 
     const isBirthdayTitle = /birthday/i.test(finalTitle);
-    let ageOrdinal = "";
-    if (isBirthdayTitle) {
-      const ageMatch = finalTitle.match(/\b(\d{1,2})(st|nd|rd|th)\s+(Birthday|Party)/i);
-      if (ageMatch) {
-        ageOrdinal = `${ageMatch[1]}${ageMatch[2]}`;
-      } else {
-        const agePatterns = [
-          /\b(\d{1,2})(st|nd|rd|th)\b/i,
-          /\b(turning|age|aged)\s+(\d{1,2})\b/i,
-          /\b(\d{1,2})\s+(years?\s+old|years?)\b/i,
-        ];
-        const standaloneNumber = /\b([1-9]|1[0-9]|20)\b/g;
-        const matches = [...raw.matchAll(standaloneNumber)];
-        let extractedAge: number | null = null;
-        for (const pattern of agePatterns) {
-          const match = raw.match(pattern);
-          if (!match) continue;
-          if (match[1] && match[2]) {
-            if (/^(st|nd|rd|th)$/i.test(match[2])) extractedAge = parseInt(match[1], 10);
-            else if (/^(turning|age|aged)$/i.test(match[1]) && match[2])
-              extractedAge = parseInt(match[2], 10);
-            else if (/^years?/i.test(match[2])) extractedAge = parseInt(match[1], 10);
-          }
-          if (extractedAge) break;
-        }
-        if (!extractedAge && matches.length > 0) {
-          const candidateNumbers = matches
-            .map((match) => parseInt(match[1], 10))
-            .filter((value) => value >= 1 && value <= 20 && value !== 20)
-            .filter(
-              (value) =>
-                !raw.match(
-                  new RegExp(
-                    `\\b${value}\\s*(Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|December|January|February|March|April|May|June|July|August|September|October|November|202[0-9]|203[0-9])`,
-                    "i",
-                  ),
-                ),
-            );
-          if (candidateNumbers.length > 0) extractedAge = candidateNumbers.sort((a, b) => a - b)[0];
-        }
-        if (extractedAge && extractedAge >= 1 && extractedAge <= 19) {
-          const suffix =
-            extractedAge % 100 >= 11 && extractedAge % 100 <= 13
-              ? "th"
-              : extractedAge % 10 === 1
-                ? "st"
-                : extractedAge % 10 === 2
-                  ? "nd"
-                  : extractedAge % 10 === 3
-                    ? "rd"
-                    : "th";
-          ageOrdinal = `${extractedAge}${suffix}`;
-          finalTitle = finalTitle.replace(
-            /(\w+['']s)\s+(Birthday\s+Party)/i,
-            `$1 ${ageOrdinal} $2`,
-          );
-        }
-      }
-    }
+    const birthdayTitle = resolveOcrBirthdayTitle({
+      title: finalTitle,
+      text: raw,
+      birthdayAge: llmImage?.birthdayAge,
+    });
+    finalTitle = birthdayTitle.title;
+    const ageOrdinal = birthdayTitle.ageOrdinal;
 
     for (const pattern of [
       /\b(December|January|February|March|April|May|June|July|August|September|October|November)\b/gi,
@@ -2026,6 +1957,7 @@ export async function handleOcrRequest(request: Request) {
       const skinStartedAt = Date.now();
       const skinResult = await withFallbackTimeout(
         inferOcrSkinSelection({
+          signal: AbortSignal.timeout(skinTimeoutMs),
           category: ocrSkinCategory || "general",
           sportKind: ocrSkinSportKind,
           imageBytes: colorBuffer,
@@ -2134,6 +2066,7 @@ export async function handleOcrRequest(request: Request) {
     const responseBody: any = {
       intakeId: null,
       ocrText: raw,
+      sourceEvidence: llmImage?.sourceEvidence || null,
       fieldsGuess,
       practiceSchedule,
       schedule,

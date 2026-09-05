@@ -309,6 +309,6 @@ test("generateStudioInvitation strips Design Idea-only terms before approving vi
   assert.equal(result.liveCard?.invitation.openingLine, "Join us for popcorn, pizza, and fun!");
   assert.equal(result.liveCard?.invitation.socialCaption, "Join Lara for movies.");
   assert.deepEqual(result.liveCard?.invitation.hashtags, []);
-  assert.match(capturedPrompt, /Opening Line: Join us for popcorn, pizza, and fun!/);
+  assert.doesNotMatch(capturedPrompt, /Opening Line: Join us for popcorn, pizza, and fun!/);
   assert.doesNotMatch(capturedPrompt, /Opening Line:.*robots/i);
 });

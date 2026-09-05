@@ -1,8 +1,10 @@
+import { CREATIVE_PLAN_SCHEMA } from "./product-contract.ts";
 export const STUDIO_LIVE_CARD_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["title", "description", "palette", "themeStyle", "interactiveMetadata", "invitation"],
+  required: ["creativePlan", "title", "description", "palette", "themeStyle", "interactiveMetadata", "invitation"],
   properties: {
+    creativePlan: CREATIVE_PLAN_SCHEMA,
     title: { type: "string" },
     description: { type: "string" },
     palette: {

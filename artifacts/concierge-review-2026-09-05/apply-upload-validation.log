@@ -1,0 +1,23 @@
+✔ chat snap upload scans in chat instead of routing through dashboard upload action (2.9033ms)
+✔ chat snap upload exposes retry controls on failure (1.0242ms)
+✔ chat upload queues the picked file before product selection (2.0075ms)
+✔ chat upload status renders as a concierge bubble (0.8184ms)
+✔ date confirmation replies bypass streaming and object errors are normalized (0.7621ms)
+✔ chat live-card uploads can drive the preview image (0.7469ms)
+✔ dashboard upload action reads durable pending uploads before reopening the picker (2.0098ms)
+✔ dashboard snap pickers click synchronously without setTimeout wrappers (0.5984ms)
+✔ dashboard scan preview uses object URLs instead of base64 before OCR (0.4303ms)
+✔ dashboard sends scan attempt ids through OCR, media upload, and history (0.3354ms)
+✔ dashboard prepares oversized image scans before OCR upload (1.3667ms)
+✔ dashboard validates RSVP against the actual OCR source text and separates create state (0.637ms)
+✔ dashboard scan overlay avoids full-viewport mobile backdrop blur (0.5144ms)
+✔ dashboard snap processing mode suppresses the home dashboard behind OCR (0.7278ms)
+✔ snap upload OCR prepares large/mobile images before posting to OCR (1.0144ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 145.6732

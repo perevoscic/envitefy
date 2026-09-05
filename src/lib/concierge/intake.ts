@@ -316,6 +316,8 @@ export async function resolveCreationIntakeDraft(params: {
     : await (params.timing?.time("model_extraction", () =>
         extractConciergeDraft({
           message: request.message || "",
+          retryReply: request.retryReply,
+          chatMessages: normalizeChatMessages(request.chatMessages),
           draft: request.draft || null,
           ocrContext: request.ocrContext || null,
           activeContext: request.activeContext || null,
@@ -326,6 +328,8 @@ export async function resolveCreationIntakeDraft(params: {
       ) ??
         extractConciergeDraft({
           message: request.message || "",
+          retryReply: request.retryReply,
+          chatMessages: normalizeChatMessages(request.chatMessages),
           draft: request.draft || null,
           ocrContext: request.ocrContext || null,
           activeContext: request.activeContext || null,

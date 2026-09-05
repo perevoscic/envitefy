@@ -1,4 +1,5 @@
 import { query } from "@/lib/db";
+import { repairMisparsedBirthdayDraft } from "./fallback.ts";
 import type {
   ConversationMessage,
   ConversationMessageRole,
@@ -111,14 +112,22 @@ export async function ensureEventManageTables(): Promise<void> {
 }
 
 function mapCreationSession(row: any): CreationSession {
+  const metadata = asJsonRecord(row.metadata);
+  const storedDraft = asJsonRecord(row.draft) as CreationSession["draft"];
+  const status = String(row.status || "needs_event_details");
+  // Repair the legacy age-as-date draft on reads, including the sidebar title.
+  // The next normal edit persists the correction; published events stay intact.
+  const draft = metadata.savedEventId || ["published", "publishing"].includes(status)
+    ? storedDraft
+    : repairMisparsedBirthdayDraft(storedDraft);
   return {
     id: String(row.id),
     user_id: String(row.user_id),
-    status: String(row.status || "needs_event_details"),
-    draft: asJsonRecord(row.draft) as any,
+    status,
+    draft,
     active_context: asJsonRecord(row.active_context),
     source_context: asJsonRecord(row.source_context),
-    metadata: asJsonRecord(row.metadata),
+    metadata,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
