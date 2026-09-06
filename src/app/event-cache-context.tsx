@@ -89,6 +89,7 @@ type EventCacheContextValue = {
   historyLoading: boolean;
   dashboardData: DashboardPayload | null;
   dashboardLoading: boolean;
+  dashboardError: string | null;
   isHydrated: boolean;
   refreshHistory: (opts?: { force?: boolean }) => Promise<void>;
   refreshDashboard: (opts?: { force?: boolean }) => Promise<void>;
@@ -98,7 +99,6 @@ type EventCacheContextValue = {
 };
 
 const EventCacheContext = createContext<EventCacheContextValue | null>(null);
-const dashboardRefreshInflight = new Map<string, Promise<void>>();
 
 function sortHistoryRows(rows: HistoryRow[]): HistoryRow[] {
   return [...rows].sort((a, b) => {
@@ -163,6 +163,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     null,
   );
   const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   const historyRef = useRef<HistoryRow[]>([]);
@@ -212,6 +213,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     setDashboardData(null);
     setHistoryLoading(false);
     setDashboardLoading(false);
+    setDashboardError(null);
     setIsHydrated(false);
   }, []);
 
@@ -257,16 +259,12 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
 
   const refreshDashboard = useCallback(async (opts?: { force?: boolean }) => {
     const revision = cacheRevisionRef.current;
-    const inflightKey = sessionIdentityKey || "__anonymous__";
-    const sharedInflight = dashboardRefreshInflight.get(inflightKey);
-    if (sharedInflight) {
-      return await sharedInflight;
-    }
     if (dashboardRefreshPromiseRef.current) {
       return await dashboardRefreshPromiseRef.current;
     }
     const refreshPromise = (async () => {
       setDashboardLoading(true);
+      setDashboardError(null);
       try {
         const params = new URLSearchParams();
         if (opts?.force) params.set("refresh", "1");
@@ -274,54 +272,50 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
         const qs = params.toString();
         const res = await fetch(`/api/dashboard${qs ? `?${qs}` : ""}`, {
           credentials: "include",
+          cache: "no-store",
           headers: { Accept: "application/json" },
         });
+        if (revision !== cacheRevisionRef.current) return;
         if (res.status === 401) {
           const latestSession = await updateSession().catch(() => null);
           if (!latestSession?.user) {
             resetCacheState();
           } else if (!dashboardRef.current) {
-            setDashboardData(null);
+            setDashboardError("We couldn't load your events. Please try again.");
           }
           return;
         }
         if (!res.ok) {
-          if (!dashboardRef.current) {
-            setDashboardData(null);
-          }
+          setDashboardError("We couldn't load your events. Please try again.");
           return;
         }
         const json = await res.json().catch(() => null);
         if (revision !== cacheRevisionRef.current) return;
         if (isDashboardResponsePayload(json)) {
           const degraded = Boolean((json as DashboardPayload).degraded);
-          if (degraded && dashboardRef.current?.nextEvent) {
-            setDashboardData({
-              ...dashboardRef.current,
-              metricsCache:
-                json.metricsCache ?? dashboardRef.current.metricsCache ?? null,
-            });
+          if (degraded) {
+            setDashboardError("Your events are taking longer to load. Please try again.");
             return;
           }
           setDashboardData(json);
-        } else if (!dashboardRef.current) {
-          setDashboardData(null);
+        } else {
+          setDashboardError("We couldn't load your events. Please try again.");
         }
       } catch {
-        if (!dashboardRef.current) {
-          setDashboardData(null);
+        if (revision === cacheRevisionRef.current) {
+          setDashboardError("We couldn't load your events. Please try again.");
         }
       } finally {
         setDashboardLoading(false);
       }
     })();
     dashboardRefreshPromiseRef.current = refreshPromise;
-    dashboardRefreshInflight.set(inflightKey, refreshPromise);
     try {
       await refreshPromise;
     } finally {
-      dashboardRefreshPromiseRef.current = null;
-      dashboardRefreshInflight.delete(inflightKey);
+      if (dashboardRefreshPromiseRef.current === refreshPromise) {
+        dashboardRefreshPromiseRef.current = null;
+      }
     }
   }, [resetCacheState, sessionIdentityKey, updateSession]);
 
@@ -502,6 +496,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
       historyLoading,
       dashboardData,
       dashboardLoading,
+      dashboardError,
       isHydrated,
       refreshHistory,
       refreshDashboard,
@@ -512,6 +507,7 @@ export function EventCacheProvider({ children }: { children: ReactNode }) {
     [
       dashboardData,
       dashboardLoading,
+      dashboardError,
       historyDiagnostics,
       historyLoading,
       historySidebarItems,

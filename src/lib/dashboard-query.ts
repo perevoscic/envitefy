@@ -10,7 +10,7 @@ import {
   type EventHistoryRow,
 } from "@/lib/db";
 
-const DASHBOARD_HISTORY_ROW_CAP = 40;
+const DASHBOARD_HISTORY_ROW_CAP = 200;
 
 export type DashboardEventQueryDiagnostics = {
   sourceRowCount: number;
@@ -72,35 +72,8 @@ export async function listDashboardEventsForUser(
     const rows = await listDashboardHistoryWindowForUser(userId, rowLimit);
     const windowResult = rowsToDashboardEvents(rows);
     const events = windowResult.events;
-    const { nextEvent, upcoming } = buildDashboardCollections(events);
-    const hasInvitedUpcoming = upcoming.some(
-      (event) => event.ownership === "invited"
-    );
-
-    // The hot path intentionally scans only a recent created_at window. If that
-    // window is full but either has no upcoming event or has not surfaced any
-    // invited upcoming rows yet, broaden the scan so older-created invites can
-    // still populate Home.
-    if (rows.length >= rowLimit && (!nextEvent || !hasInvitedUpcoming)) {
-      const fallbackRows = await listDashboardHistoryFallbackForUser(
-        userId,
-        safeLimit,
-        safeLimit
-      );
-      const fallbackResult = rowsToDashboardEvents(fallbackRows);
-      return {
-        events: fallbackResult.events,
-        diagnostics: {
-          sourceRowCount: fallbackRows.length,
-          returnedEventCount: fallbackResult.events.length,
-          droppedMissingStartCount: fallbackResult.droppedMissingStartCount,
-          fallbackUsed: true,
-          fallbackReason: nextEvent
-            ? "no-invited-upcoming-in-window"
-            : "no-next-event-in-window",
-        },
-      };
-    }
+    // The database orders the user's full event history by event date before
+    // limiting the result, so older-created upcoming events are included here.
 
     return {
       events,

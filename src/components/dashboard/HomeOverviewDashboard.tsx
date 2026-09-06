@@ -117,6 +117,8 @@ type HomeOverviewDashboardProps = {
   enrichMeta: DashboardEnrichMeta | null;
   metricsLoading: boolean;
   loading: boolean;
+  error: string | null;
+  onRetry: () => void;
   onForceTravel: () => void;
 };
 
@@ -727,7 +729,8 @@ function buildInvitationActions(
 
 function LoadingDashboardState() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pt-20 md:pt-10" role="status" aria-live="polite">
+      <p className="text-base font-medium text-slate-600">Loading your events…</p>
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div className="space-y-3">
           <div className="h-3 w-40 animate-pulse rounded-full bg-indigo-100" />
@@ -758,6 +761,8 @@ export default function HomeOverviewDashboard({
   enrichMeta,
   metricsLoading,
   loading,
+  error,
+  onRetry,
   onForceTravel,
 }: HomeOverviewDashboardProps) {
   const [now, setNow] = useState(() => Date.now());
@@ -847,8 +852,26 @@ export default function HomeOverviewDashboard({
     },
   ];
 
-  if (loading && !data) {
+  if (!data && (loading || !error)) {
     return <LoadingDashboardState />;
+  }
+
+  if (!data && error) {
+    return (
+      <div className="pt-20 md:pt-10">
+        <section className="rounded-[32px] border border-slate-100 bg-white p-6 shadow-xl sm:p-10">
+          <h1 className="text-2xl font-bold text-slate-900">Your events couldn’t load</h1>
+          <p role="alert" className="mt-3 text-base text-slate-600">{error}</p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-2xl bg-indigo-600 px-6 py-3 font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600"
+          >
+            Try again
+          </button>
+        </section>
+      </div>
+    );
   }
 
   return (

@@ -3956,6 +3956,9 @@ export async function listEventHistoryByUser(
 }
 
 function buildDashboardFastHistoryQuery(includeShared: boolean): string {
+  // Select across the user's history before applying the result limit. A recent
+  // created_at window can be filled by drafts and hide older-created future events.
+  // Materialize parsed dates once so sorting does not repeatedly parse the JSON.
   const ownDataSql = "coalesce(eh.data, '{}'::jsonb)";
   const ownStartRawSql = buildHistoryEventStartRawSql(ownDataSql);
   const ownStatusSql = buildHistoryStatusSql(ownDataSql);
@@ -3972,10 +3975,8 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
         from event_history eh
         where eh.user_id = $1
           and ${buildOwnedHistoryStudioVisibilitySql(ownDataSql)}
-        order by eh.created_at desc nulls last, eh.id desc
-        limit $2
       ),
-      own_rows as (
+      own_rows as materialized (
         select
           eh.id,
           eh.created_at,
@@ -4019,10 +4020,8 @@ function buildDashboardFastHistoryQuery(includeShared: boolean): string {
       from event_history eh
       where eh.user_id = $1
         and ${buildOwnedHistoryStudioVisibilitySql(ownDataSql)}
-      order by eh.created_at desc nulls last, eh.id desc
-      limit $2
     ),
-    own_rows as (
+    own_rows as materialized (
       select
         eh.id,
         eh.created_at,

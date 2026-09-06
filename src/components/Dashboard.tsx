@@ -335,6 +335,8 @@ export default function Dashboard({
   const {
     dashboardData: cachedDashboardData,
     dashboardLoading,
+    dashboardError,
+    isHydrated: eventCacheHydrated,
     refreshDashboard,
     setDashboardMetricsCache,
   } = useEventCache();
@@ -345,9 +347,14 @@ export default function Dashboard({
   }, [scanStatus]);
 
   useEffect(() => {
-    if (snapProcessingMode || !isSignedIn || dashboardData || dashboardLoading) return;
+    // The provider resets its cache when the signed-in identity is established.
+    // Starting before hydration can discard this request during that reset.
+    if (
+      snapProcessingMode || !isSignedIn || !eventCacheHydrated ||
+      dashboardData || dashboardLoading || dashboardError
+    ) return;
     void refreshDashboard();
-  }, [dashboardData, dashboardLoading, isSignedIn, refreshDashboard, snapProcessingMode]);
+  }, [dashboardData, dashboardLoading, dashboardError, eventCacheHydrated, isSignedIn, refreshDashboard, snapProcessingMode]);
 
   useEffect(() => {
     if (!isSignedIn) {
@@ -2174,6 +2181,8 @@ export default function Dashboard({
               enrichMeta={enrichMeta}
               metricsLoading={metricsLoading}
               loading={dashboardLoading}
+              error={dashboardError}
+              onRetry={() => void refreshDashboard({ force: true })}
               onForceTravel={forceRecalculateTravel}
             />
           )}
