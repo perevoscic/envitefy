@@ -18,7 +18,7 @@ test("football builder shell uses the gym template selector pipeline and keeps s
   const themeAdapterSource = readSource(
     "src/app/event/football-season/customize/footballSeasonTemplateTheme.ts"
   );
-  const registrySource = readSource("src/components/gym-meet-templates/registry.ts");
+  const registrySource = readSource("src/components/football-season-templates/registry.ts");
 
   assert.match(templateSource, /menuTitle:\s*"Attendance"/);
   assert.match(templateSource, /menuDesc:\s*"Track attendance and commitments\."/);

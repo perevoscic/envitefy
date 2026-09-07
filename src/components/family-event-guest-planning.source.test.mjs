@@ -12,7 +12,12 @@ for (const [route, view] of [
     assert.match(editor, /guestPlanning: normalizeEventGuestPlanning\(existing\.guestPlanning\)/);
     assert.match(editor, /guestPlanning: data\.guestPlanning/);
     assert.match(editor, /<EventGuestPlanningEditor/);
-    assert.match(editor, /<EventGuestPlanningNotes value=\{data\.guestPlanning\}/);
+    if (route === "gender-reveal") {
+      assert.match(editor, /<GenderRevealTemplateView/);
+      assert.match(editor, /\.\.\.data,/);
+    } else {
+      assert.match(editor, /<EventGuestPlanningNotes value=\{data\.guestPlanning\}/);
+    }
     assert.match(viewer, /<EventGuestPlanningNotes value=\{normalizeEventGuestPlanning\(eventData\.guestPlanning\)\}/);
   });
   test(`${route} uses explicit end time without manufacturing party duration`, () => {
@@ -24,11 +29,10 @@ for (const [route, view] of [
     assert.doesNotMatch(editor, /setHours\(end\.getHours\(\) \+ 3\)|60 \* 60 \* 1000/);
     assert.match(viewer, /endLabel/);
   });
-  test(`${route} preview actions are accessible before the image and never share an editor URL`, () => {
-    assert.ok(editor.indexOf("<EventGuestActions") < editor.indexOf('<div className="relative w-full aspect-video">'));
-    assert.match(editor, /\n                preview\n/);
-    assert.doesNotMatch(editor, /window\.location\.href|Share & Add to Calendar/);
-    assert.match(viewer, /<EventGuestActions/);
+  test(`${route} omits the standalone guest action row from the editor and viewer`, () => {
+    assert.doesNotMatch(editor, /EventGuestActions/);
+    assert.doesNotMatch(viewer, /EventGuestActions/);
+    assert.match(viewer, /<EventActions/);
     assert.match(viewer, /shareUrl=\{shareUrl\}/);
   });
 }

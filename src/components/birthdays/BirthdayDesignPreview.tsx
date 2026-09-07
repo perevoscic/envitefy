@@ -2,6 +2,7 @@ import { BIRTHDAY_SAMPLES, birthdaySampleHeadline } from "@/data/birthday-sample
 import BirthdayExperienceBody from "@/components/birthdays/BirthdayExperienceBody";
 import BirthdayExperienceHero from "@/components/birthdays/BirthdayExperienceHero";
 import type { BirthdayCatalogDesign } from "@/data/birthday-design-catalog";
+import { TemplateThumbnailPreview } from "@/components/events/TemplateThumbnail";
 
 type BirthdayDesignPreviewProps = {
   design: BirthdayCatalogDesign;
@@ -49,15 +50,9 @@ export default function BirthdayDesignPreview({
   };
 
   return (
-    <div
-      aria-hidden="true"
-      inert
-      className={`relative isolate aspect-[7/4] w-full overflow-hidden bg-white ${className}`}
-    >
-      <div className="pointer-events-none absolute left-0 top-0 w-[400%] origin-top-left scale-25 select-none">
-        <BirthdayExperienceHero preview theme={previewTheme} event={previewEvent} />
-        <BirthdayExperienceBody theme={previewTheme} event={previewEvent} />
-      </div>
-    </div>
+    <TemplateThumbnailPreview className={className}>
+      <BirthdayExperienceHero preview theme={previewTheme} event={previewEvent} />
+      <BirthdayExperienceBody theme={previewTheme} event={previewEvent} />
+    </TemplateThumbnailPreview>
   );
 }

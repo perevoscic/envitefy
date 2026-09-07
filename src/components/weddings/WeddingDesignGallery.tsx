@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Gem, Sparkles } from "lucide-react";
 import WeddingDesignPreview from "@/components/weddings/WeddingDesignPreview";
+import { TemplateThumbnailFrame } from "@/components/events/TemplateThumbnail";
 import WeddingTemplateRunway from "@/components/weddings/WeddingTemplateRunway";
 import {
   type WeddingDesign,
@@ -172,12 +173,9 @@ export default function WeddingDesignGallery() {
                 >
                   <span className="sr-only">Customize {design.name}</span>
                 </Link>
-                <div className="relative overflow-hidden rounded-[1.35rem] border border-[#ddd4ca] bg-white p-2 shadow-[0_18px_50px_rgba(59,45,33,0.08)] transition duration-500 group-hover:-translate-y-1 group-hover:shadow-[0_28px_70px_rgba(59,45,33,0.16)]">
-                  <WeddingDesignPreview
-                    design={design}
-                    className="overflow-hidden rounded-[1rem]"
-                  />
-                </div>
+                <TemplateThumbnailFrame>
+                  <WeddingDesignPreview design={design} />
+                </TemplateThumbnailFrame>
                 <div className="px-2 pt-5">
                   {design.family === "atelier" && (
                     <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#84653e]">

@@ -13,6 +13,7 @@ export async function GET(request: Request) {
   const description = searchParams.get("description") || "";
   const timezone = searchParams.get("timezone") || null;
   const floating = searchParams.get("floating") === "1";
+  const allDay = searchParams.get("allDay") === "true";
   const recurrence = searchParams.get("recurrence");
   const remindersStr = searchParams.get("reminders");
   const disposition = (searchParams.get("disposition") || "attachment").toLowerCase();
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
     id: (globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
     start: new Date(start),
     end: new Date(end),
+    allDay,
     summary: title,
     location,
     description,
@@ -70,5 +72,4 @@ export async function GET(request: Request) {
   // No side-effect update
   return response;
 }
-
 

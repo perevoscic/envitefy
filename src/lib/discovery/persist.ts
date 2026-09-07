@@ -1,3 +1,4 @@
+import { resolveGymDiscoveryTemplateSelection } from "@/lib/discovery/template-selection";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
@@ -51,6 +52,7 @@ export function buildDiscoveryShellEventData(params: {
   pipeline: DiscoveryPipelineState;
   activityProfile?: string | null;
   eventArchetype?: string | null;
+  pageTemplateId?: string | null;
 }) {
   const isFootball = params.workflow === "football";
   const isSports = params.workflow === "sports";
@@ -83,7 +85,7 @@ export function buildDiscoveryShellEventData(params: {
       ? DEFAULT_GYM_MEET_TEMPLATE_ID
       : isSports
         ? sportPreset?.themeIds?.[0] || "stadium_nights"
-        : DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
+        : resolveGymDiscoveryTemplateSelection(params.pageTemplateId),
     builderDraft:
       isFootball || isSports ? buildEmptyDiscoveryBuilderDraft() : buildEmptyGymBuilderDraft(),
     publicArtifacts:
@@ -104,6 +106,7 @@ export async function createDiscoveryShell(params: {
   title: string;
   source: DiscoverySourceRecord;
   pipeline: DiscoveryPipelineState;
+  pageTemplateId?: string | null;
 }) {
   const historyRow = await insertEventHistory({
     userId: params.userId,
@@ -115,6 +118,7 @@ export async function createDiscoveryShell(params: {
       pipeline: params.pipeline,
       activityProfile: params.source.activityProfile,
       eventArchetype: params.source.eventArchetype,
+      pageTemplateId: params.pageTemplateId,
     }),
   });
   try {
@@ -135,6 +139,7 @@ export async function createDiscoveryShell(params: {
       pipeline: params.pipeline,
       activityProfile: params.source.activityProfile,
       eventArchetype: params.source.eventArchetype,
+      pageTemplateId: params.pageTemplateId,
     });
     await updateEventHistoryData(historyRow.id, shellData);
     return {
@@ -256,6 +261,9 @@ export async function persistDiscoveryEventSnapshot(params: {
   const builderEvent = (params.builderDraft.event || {}) as Record<string, any>;
   const builderVenue = (params.builderDraft.venue || {}) as Record<string, any>;
   const nextTitle = safeString(params.title || builderEvent.title || row.title);
+  const gymPageTemplateId = params.workflow === "gymnastics"
+    ? resolveGymDiscoveryTemplateSelection(safeString(current.pageTemplateId), safeString(params.pageTemplateId) || safeString(builderEvent.pageTemplateId))
+    : null;
   const nextData = {
     ...current,
     title: nextTitle,
@@ -294,6 +302,7 @@ export async function persistDiscoveryEventSnapshot(params: {
       (isFootball ? "football-season" : isSports ? "sport-event-football" : "gymnastics-schedule"),
     templateKey: isFootball ? "football" : isSports ? "sport-events" : "gymnastics",
     pageTemplateId:
+      gymPageTemplateId ||
       safeString(params.pageTemplateId) ||
       safeString(builderEvent.pageTemplateId) ||
       safeString(current.pageTemplateId) ||
@@ -302,7 +311,7 @@ export async function persistDiscoveryEventSnapshot(params: {
         : isSports
           ? "stadium_nights"
           : DEFAULT_NEW_GYM_MEET_TEMPLATE_ID),
-    builderDraft: params.builderDraft,
+    builderDraft: gymPageTemplateId ? { ...params.builderDraft, event: { ...params.builderDraft.event, pageTemplateId: gymPageTemplateId } } : params.builderDraft,
     publicArtifacts: params.publicArtifacts,
     pipelineSummary: buildDiscoveryPipelineSummary({
       discoveryId: params.discoveryId,

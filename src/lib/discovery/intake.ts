@@ -1,3 +1,4 @@
+import { isGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
 import { upsertEventHistoryInputBlob } from "@/lib/db";
 import { createDiscoveryShell } from "@/lib/discovery/persist";
 import { createDiscoveryPipelineState } from "@/lib/discovery/shared";
@@ -59,10 +60,13 @@ export async function intakeDiscovery(params: {
   let source: DiscoverySourceRecord | null = null;
   let fileBuffer: Buffer | null = null;
   let activityProfile: string | null = null;
+  let pageTemplateId: string | null = null;
   let eventArchetype: ReturnType<typeof normalizeSportEventArchetype> = null;
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await params.request.formData();
+    const requestedTemplate = formData.get("pageTemplateId");
+    if (isGymMeetTemplateId(requestedTemplate)) pageTemplateId = requestedTemplate;
     workflow = normalizeWorkflow(formData.get("workflow") || workflow);
     activityProfile = normalizeSportActivityKey(formData.get("activityProfile"));
     eventArchetype = normalizeSportEventArchetype(formData.get("eventArchetype"));
@@ -91,6 +95,7 @@ export async function intakeDiscovery(params: {
     fileBuffer = prepared.buffer;
   } else {
     const body = await parseJsonRequestBody(params.request);
+    if (isGymMeetTemplateId(body?.pageTemplateId)) pageTemplateId = body.pageTemplateId;
     workflow = normalizeWorkflow(body?.workflow || workflow);
     activityProfile = normalizeSportActivityKey(body?.activityProfile);
     eventArchetype = normalizeSportEventArchetype(body?.eventArchetype);
@@ -130,6 +135,7 @@ export async function intakeDiscovery(params: {
     title,
     source,
     pipeline,
+    pageTemplateId: workflow === "gymnastics" ? pageTemplateId : null,
   });
 
   if (fileBuffer && source.type === "file") {

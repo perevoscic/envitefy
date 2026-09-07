@@ -30,10 +30,10 @@ test("gymnastics launcher reports server stages and opens as soon as the core dr
 test("gymnastics launcher clearly explains and prioritizes its three creation paths", () => {
   const source = readSource("src/components/event-create/GymnasticsLauncher.tsx");
 
-  assert.match(source, /Create your meet page\./);
+  assert.match(source, /Make it your meet\./);
   assert.match(source, /Upload a meet packet/);
   assert.match(source, /Sync a live meet URL/);
-  assert.match(source, /Start with a template/);
+  assert.match(source, /Enter details manually/);
   assert.match(source, /Recommended/);
   assert.match(source, /Nothing publishes automatically/);
   assert.match(source, /Every detail stays editable/);

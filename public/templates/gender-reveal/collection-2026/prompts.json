@@ -1,0 +1,372 @@
+{
+  "generator": "Built-in image_gen",
+  "created": "2026-09-07",
+  "encoding": {
+    "encoder": "FFmpeg libwebp",
+    "quality": 85,
+    "compressionLevel": 6,
+    "preserveDimensions": true
+  },
+  "artworks": [
+    {
+      "id": "petal-post",
+      "name": "Petal Post",
+      "path": "/templates/gender-reveal/collection-2026/petal-post.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. An open handmade peach envelope overflowing with pressed anemones and a single ivory ribbon, botanical still life on rose paper, soft side light, editorial film photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "moonlit-menagerie",
+      "name": "Moonlit Menagerie",
+      "path": "/templates/gender-reveal/collection-2026/moonlit-menagerie.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A tiny sleeping fawn and rabbit beneath a silver crescent in a midnight woodland, intricate gouache storybook illustration, indigo foliage, golden fireflies. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "citrus-secret",
+      "name": "Citrus Secret",
+      "path": "/templates/gender-reveal/collection-2026/citrus-secret.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A lush lemon branch laden with fruit above a striped linen picnic on a Mediterranean terrace, cobalt ceramic bowl, sunlit editorial still life. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "velvet-curtain",
+      "name": "Velvet Curtain",
+      "path": "/templates/gender-reveal/collection-2026/velvet-curtain.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A miniature theater with burgundy velvet curtains parted around an unmarked pearl gift box on a polished stage, dramatic warm spotlight, refined cinematic photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "pearl-in-the-tide",
+      "name": "Pearl in the Tide",
+      "path": "/templates/gender-reveal/collection-2026/pearl-in-the-tide.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A giant sculptural mother-of-pearl shell cradling one luminous pearl at the edge of an aqua tide, pearlescent macro photography, wet sand and glancing sunlight. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "paper-kite-parade",
+      "name": "Paper Kite Parade",
+      "path": "/templates/gender-reveal/collection-2026/paper-kite-parade.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Handmade folded coral saffron and teal paper kites with long ribbon tails ascending over miniature paper hills, tactile paper-cut diorama, cream sky. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "fig-garden-gathering",
+      "name": "Fig Garden Gathering",
+      "path": "/templates/gender-reveal/collection-2026/fig-garden-gathering.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Ripe purple figs split on a stone pedestal with huge velvety fig leaves in a Tuscan courtyard, warm analog editorial photography, no tablescape. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "stardust-telegram",
+      "name": "Stardust Telegram",
+      "path": "/templates/gender-reveal/collection-2026/stardust-telegram.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A vintage brass telescope aimed through a circular observatory opening into a dense sapphire star field, theatrical cyan light, fine-grain cinematic still. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "gingham-goose",
+      "name": "Gingham Goose",
+      "path": "/templates/gender-reveal/collection-2026/gingham-goose.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A gentle white goose wearing a sage gingham neckerchief beside speckled eggs in a straw nest, warm colored-pencil and watercolor illustration on cream. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "cherry-soda-surprise",
+      "name": "Cherry Soda Surprise",
+      "path": "/templates/gender-reveal/collection-2026/cherry-soda-surprise.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Two old-fashioned cherry soda floats in fluted glasses beside glossy cherries on a mint diner counter, punchy flash food photography, frothy cream. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "desert-lullaby",
+      "name": "Desert Lullaby",
+      "path": "/templates/gender-reveal/collection-2026/desert-lullaby.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A single blooming desert cactus at dawn with distant layered terracotta mesas and apricot sky, painterly Southwest landscape, matte gouache texture. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "porcelain-wishes",
+      "name": "Porcelain Wishes",
+      "path": "/templates/gender-reveal/collection-2026/porcelain-wishes.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A beautiful cobalt and white handpainted porcelain teacup with a closed tiny ivory parcel on its saucer, overhead photograph on embroidered white cloth, blue florals. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "firefly-meadow",
+      "name": "Firefly Meadow",
+      "path": "/templates/gender-reveal/collection-2026/firefly-meadow.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Golden fireflies hovering over a field of white daisies at blue hour, dreamy close low-angle meadow photograph, olive stems against luminous forest bokeh. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "little-lunar-landing",
+      "name": "Little Lunar Landing",
+      "path": "/templates/gender-reveal/collection-2026/little-lunar-landing.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A whimsical tiny cream lunar lander on a mint moon with copper craters and Earth in the distance, retro-futurist handcrafted model photography, soft shadows. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "apricot-atelier",
+      "name": "Apricot Atelier",
+      "path": "/templates/gender-reveal/collection-2026/apricot-atelier.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A sculptural loop of apricot silk and a polished peach glass sphere balanced on pale plaster plinths, contemporary gallery still life, directional sun. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "otterly-awaited",
+      "name": "Otterly Awaited",
+      "path": "/templates/gender-reveal/collection-2026/otterly-awaited.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Two small river otters floating together holding a smooth river stone, lily pads and reflected willow leaves, delicate handpainted children's book watercolor. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "wildflower-press",
+      "name": "Wildflower Press",
+      "path": "/templates/gender-reveal/collection-2026/wildflower-press.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. An artist's botanical flower press opened to tiny pressed cornflowers poppies and chamomile on deckled paper, overhead natural-light museum-quality still life. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "carousel-whisper",
+      "name": "Carousel Whisper",
+      "path": "/templates/gender-reveal/collection-2026/carousel-whisper.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. One ivory wooden carousel horse with faded blush saddle and antique brass pole, empty historic carousel in soft morning light, romantic film photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "seasalt-letter",
+      "name": "Seasalt Letter",
+      "path": "/templates/gender-reveal/collection-2026/seasalt-letter.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A clear sea-glass bottle with rolled blank paper inside lying among pebbles at the waterline, sunlit ripples through glass, coastal travel photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "plum-orbit",
+      "name": "Plum Orbit",
+      "path": "/templates/gender-reveal/collection-2026/plum-orbit.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A plum velvet planet encircled by a brushed brass ring surrounded by tiny peach ceramic moons, tactile surreal sculpture against pale lavender studio space. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "marigold-courtyard",
+      "name": "Marigold Courtyard",
+      "path": "/templates/gender-reveal/collection-2026/marigold-courtyard.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Rich marigold garlands hanging over a pale sandstone courtyard with an antique wooden door and woven floor cushions, warm celebratory architectural photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "tiny-ticket",
+      "name": "Tiny Ticket",
+      "path": "/templates/gender-reveal/collection-2026/tiny-ticket.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. An old-fashioned miniature carnival Ferris wheel in faded coral blue and butter yellow with empty gondolas, playful clay model photographed against ivory. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "origami-crane-club",
+      "name": "Origami Crane Club",
+      "path": "/templates/gender-reveal/collection-2026/origami-crane-club.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Three large handcrafted origami cranes in rust cream and indigo hovering above textured handmade paper, strong graphic shadows, minimalist paper sculpture photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "maple-mitten",
+      "name": "Maple Mitten",
+      "path": "/templates/gender-reveal/collection-2026/maple-mitten.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A pair of tiny ochre knitted baby mittens beside a fallen maple leaf on a weathered wooden bench, cozy autumn lifestyle macro photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "lavender-lantern",
+      "name": "Lavender Lantern",
+      "path": "/templates/gender-reveal/collection-2026/lavender-lantern.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A delicate lavender paper lantern suspended among flowering wisteria, a stone garden path at dusk, romantic medium-format photograph with gentle glowing light. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "confetti-confidant",
+      "name": "Confetti Confidant",
+      "path": "/templates/gender-reveal/collection-2026/confetti-confidant.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Sculptural curled confetti ribbons in tomato red butter yellow mint and cornflower exploding from a tiny cream cylinder, crisp playful stop-motion still life. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "bluebell-burrow",
+      "name": "Bluebell Burrow",
+      "path": "/templates/gender-reveal/collection-2026/bluebell-burrow.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A miniature hedgehog curled beside a mossy door in an old tree root with bluebells overhead, rich needle-felted storybook diorama, soft forest light. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "saffron-supper",
+      "name": "Saffron Supper",
+      "path": "/templates/gender-reveal/collection-2026/saffron-supper.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A terracotta bowl of saffron pears on a long linen supper table with a sculptural amber vase, intimate candlelight food editorial, Mediterranean warmth. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "rainbow-ribbons",
+      "name": "Rainbow Ribbons",
+      "path": "/templates/gender-reveal/collection-2026/rainbow-ribbons.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Long flowing satin ribbons in seven muted rainbow hues draped like a waterfall over a cream wooden spool, tactile craft studio photograph, clean white light. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "snowdrop-secret",
+      "name": "Snowdrop Secret",
+      "path": "/templates/gender-reveal/collection-2026/snowdrop-secret.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Three small snowdrop flowers pushing through soft white snow beside a fallen feather, intimate winter botanical macro photograph, pale sage reflections. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "rocket-pocket",
+      "name": "Rocket Pocket",
+      "path": "/templates/gender-reveal/collection-2026/rocket-pocket.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A charming red tin toy rocket trailing a billowing cotton cloud across a powder-blue backdrop, nostalgic 1950s product photograph, polished metal details. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "rooftop-reverie",
+      "name": "Rooftop Reverie",
+      "path": "/templates/gender-reveal/collection-2026/rooftop-reverie.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A sunset city rooftop with blush linen draped over a cocktail-height pedestal and a cluster of amber glass candle holders, sophisticated urban editorial photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "pistachio-patisserie",
+      "name": "Pistachio Patisserie",
+      "path": "/templates/gender-reveal/collection-2026/pistachio-patisserie.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A tower of pistachio cream puffs topped with delicate sugar flowers on a scalloped pink cake stand, charming Parisian patisserie food photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "whale-song",
+      "name": "Whale Song",
+      "path": "/templates/gender-reveal/collection-2026/whale-song.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A majestic gentle whale and tiny calf swimming through deep blue sunbeams with drifting seaweed, richly textured watercolor and ink marine illustration. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "secret-greenhouse",
+      "name": "Secret Greenhouse",
+      "path": "/templates/gender-reveal/collection-2026/secret-greenhouse.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Inside a Victorian glasshouse lush fern fronds frame one tiny white wicker bassinet with folded linen, botanical editorial photograph, warm diffused sunlight. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "sunbeam-studio",
+      "name": "Sunbeam Studio",
+      "path": "/templates/gender-reveal/collection-2026/sunbeam-studio.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A large ochre pleated paper sun sculpture casting radial shadows on creamy plaster, small ivory ceramic orb below, modern craft art photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "balloon-cartographer",
+      "name": "Balloon Cartographer",
+      "path": "/templates/gender-reveal/collection-2026/balloon-cartographer.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A vintage hot-air balloon with patchwork cream ochre and slate canopy gliding above handpainted imaginary islands, antique storybook travel illustration without map lettering. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "rosewater-ripple",
+      "name": "Rosewater Ripple",
+      "path": "/templates/gender-reveal/collection-2026/rosewater-ripple.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A floating damask rose reflected in rippled rosewater with a pale pink glass bowl and scattered single petals, fine-art macro still life, iridescent sunlight. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "little-acorn-almanac",
+      "name": "Little Acorn Almanac",
+      "path": "/templates/gender-reveal/collection-2026/little-acorn-almanac.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. One carved wooden squirrel holding an acorn beside oak leaves and a small mushroom, charming handmade forest toy still life on oat linen. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "midnight-macaron",
+      "name": "Midnight Macaron",
+      "path": "/templates/gender-reveal/collection-2026/midnight-macaron.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Lavender macarons stacked on a dark plum ceramic platter beside one silver star charm, sumptuous midnight food photograph with narrow theatrical light. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "coral-cove",
+      "name": "Coral Cove",
+      "path": "/templates/gender-reveal/collection-2026/coral-cove.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A peach coral sculpture under glass with small turquoise tide-pool stones and a sea fan, museum-inspired coastal still life, cream background and soft ocean light. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "storybook-suitcase",
+      "name": "Storybook Suitcase",
+      "path": "/templates/gender-reveal/collection-2026/storybook-suitcase.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. An open miniature vintage caramel suitcase holding a knitted ivory baby blanket and a tiny wooden airplane, tactile storybook set photograph, warm travel nostalgia. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "dahlia-daydream",
+      "name": "Dahlia Daydream",
+      "path": "/templates/gender-reveal/collection-2026/dahlia-daydream.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. One magnificent dinner-plate dahlia in dusty coral photographed from the side with curling petals against deep sage foliage, floral fine-art photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "terracotta-tidings",
+      "name": "Terracotta Tidings",
+      "path": "/templates/gender-reveal/collection-2026/terracotta-tidings.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Handmade terracotta and cream ceramic tiles arranged in a stepped sculptural wall with a little olive sprig, Mediterranean architectural still life, raking sun. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "juniper-cabin",
+      "name": "Juniper Cabin",
+      "path": "/templates/gender-reveal/collection-2026/juniper-cabin.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A tiny cedar cabin under snow-dusted juniper trees with warm amber windows and a wool blanket on a porch chair, peaceful painted winter landscape. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "little-record",
+      "name": "Little Record",
+      "path": "/templates/gender-reveal/collection-2026/little-record.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A translucent peach vinyl record resting halfway out of a blank seafoam sleeve beside a tiny retro turntable, clean nostalgic product photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "butterfly-conservatory",
+      "name": "Butterfly Conservatory",
+      "path": "/templates/gender-reveal/collection-2026/butterfly-conservatory.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. One delicate copper and cream butterfly resting on a pale lilac scabiosa flower inside a sunlit conservatory, intimate natural macro photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "honeyed-horizon",
+      "name": "Honeyed Horizon",
+      "path": "/templates/gender-reveal/collection-2026/honeyed-horizon.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A golden rolling wheat field beneath a giant soft apricot sun with a winding narrow path, contemporary gouache landscape with visible brush strokes. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "cloud-nine-cinema",
+      "name": "Cloud Nine Cinema",
+      "path": "/templates/gender-reveal/collection-2026/cloud-nine-cinema.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A miniature open-air cinema with a blank ivory screen floating among sculpted white clouds and a striped popcorn carton, whimsical handcrafted model photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "raspberry-rendezvous",
+      "name": "Raspberry Rendezvous",
+      "path": "/templates/gender-reveal/collection-2026/raspberry-rendezvous.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A raspberry galette with folded flaky pastry on a cherry-red gingham picnic cloth, small bowl of fresh berries, bright summer food photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "waterlily-wonder",
+      "name": "Waterlily Wonder",
+      "path": "/templates/gender-reveal/collection-2026/waterlily-wonder.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A creamy waterlily opening among broad lily pads with a single dragonfly and mirrored pastel sky, serene Japanese-inspired gouache painting. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "brass-compass",
+      "name": "Brass Compass",
+      "path": "/templates/gender-reveal/collection-2026/brass-compass.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. An antique brass compass opened on folded unmarked linen charts with a tiny cedar keepsake box, elegant exploration-themed still-life photograph. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "plush-panda-promise",
+      "name": "Plush Panda Promise",
+      "path": "/templates/gender-reveal/collection-2026/plush-panda-promise.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A hand-sewn linen panda holding one fresh bamboo shoot beside a tiny cream woven basket, premium plush-toy still life, pistachio studio backdrop. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "golden-ginkgo",
+      "name": "Golden Ginkgo",
+      "path": "/templates/gender-reveal/collection-2026/golden-ginkgo.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A single fan-shaped golden ginkgo leaf with intricate veins suspended above a textured ivory stone, minimalist autumn macro photograph, sharp elegant shadow. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "sherbet-skies",
+      "name": "Sherbet Skies",
+      "path": "/templates/gender-reveal/collection-2026/sherbet-skies.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Soft apricot lavender and rose clouds swirling around a tiny silver star like scoops of sherbet, dreamy oil-painted celestial landscape, luminous creamy texture. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "storybook-swan",
+      "name": "Storybook Swan",
+      "path": "/templates/gender-reveal/collection-2026/storybook-swan.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A graceful white swan with a tiny cygnet on a lake of pale pink water framed by reeds, exquisite cut-paper storybook illustration with layered shadows. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "olive-branch-oath",
+      "name": "Olive Branch Oath",
+      "path": "/templates/gender-reveal/collection-2026/olive-branch-oath.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. An ancient olive branch with silvery leaves and dark olives resting across an ivory travertine urn, Mediterranean fine-art still life, gentle morning light. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "velvet-mushroom",
+      "name": "Velvet Mushroom",
+      "path": "/templates/gender-reveal/collection-2026/velvet-mushroom.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A cluster of fantastical velvet mushrooms in dusty rose copper and cream beneath fern fronds, handmade textile woodland diorama, softly glowing spores. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "prism-keepsake",
+      "name": "Prism Keepsake",
+      "path": "/templates/gender-reveal/collection-2026/prism-keepsake.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. A faceted clear glass keepsake box tied with thin ivory silk casting a rainbow prism on chalk-white stone, luxury object still life with crisp sunlight. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    },
+    {
+      "id": "first-light-fable",
+      "name": "First Light Fable",
+      "path": "/templates/gender-reveal/collection-2026/first-light-fable.webp",
+      "prompt": "Use case: illustration-story / photorealistic-natural as specified. Asset type: original premium gender reveal invitation artwork. Create ONE polished original artwork, landscape 1536x1024. Two small cranes standing in a misty wetland as the first copper sun rises above pale mountains, delicate Japanese woodblock-inspired landscape with textured paper. Composition: a complete beautiful scene with clear focal subject and generous breathing room around it, usable as a large invitation image. No text, letters, numbers, typography, logos, watermarks, UI, borders, collage grids, or invitation mockups. No pink/blue split background, gender stereotypes, smoke bombs, fireworks, or people. Preserve tactile material detail and sophisticated restrained colors."
+    }
+  ]
+}

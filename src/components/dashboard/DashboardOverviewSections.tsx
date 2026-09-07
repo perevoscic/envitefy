@@ -224,7 +224,7 @@ export function DashboardPlanningPanels({ overview }: { overview?: DashboardOver
   const [allDrafts, setAllDrafts] = useState(false);
   if (!overview) return null;
   return (
-    <div className="grid items-start gap-5 lg:grid-cols-2">
+    <div className="grid items-stretch gap-5 lg:grid-cols-2">
       {overview.guests.length ? (
         <section id="dashboard-guests" className={panel} aria-labelledby="guests-heading">
           <h2 id="guests-heading" className="text-lg font-bold text-slate-900">

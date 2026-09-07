@@ -29,6 +29,7 @@ import {
   CalendarIconOutlook,
 } from "@/components/CalendarIcons";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
+import { buildLiveCardCalendarLinks } from "@/lib/live-card-calendar";
 import { buildLiveCardDetailsWelcomeMessage } from "@/lib/live-card-event-details";
 import {
   buildLiveCardDirectionsHref,
@@ -42,7 +43,6 @@ import {
   parseLiveCardRsvpContact,
   shouldShowLiveCardDescriptionSection,
 } from "@/lib/live-card-rsvp";
-import { buildCalendarLinks } from "@/utils/calendar-links";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import {
   formatTimeLabelEn,
@@ -244,68 +244,6 @@ function getOpenHouseRealtorLogoUrl(details: LiveCardEventDetails | null | undef
   return readString(urls[0]);
 }
 
-function resolveLiveCardCalendarMeta(invitationData?: LiveCardInvitationData | null): {
-  startIso: string;
-  endIso: string;
-  location: string;
-  description: string;
-} | null {
-  const details = invitationData?.eventDetails;
-  const eventDate = readString(details?.eventDate);
-  if (!eventDate) return null;
-
-  const calendarStartISO = readString(details?.calendarStartISO);
-  if (calendarStartISO) {
-    const start = new Date(calendarStartISO);
-    if (Number.isNaN(start.getTime())) return null;
-    const suppliedEnd = new Date(readString(details?.calendarEndISO));
-    const end = !Number.isNaN(suppliedEnd.getTime()) && suppliedEnd > start
-      ? suppliedEnd : new Date(start.getTime() + 2 * 60 * 60 * 1000);
-    return {
-      startIso: start.toISOString(),
-      endIso: end.toISOString(),
-      location: readString(details?.location) || readString(details?.venueName),
-      description: readString(invitationData?.description) || readString(details?.detailsDescription),
-    };
-  }
-
-  let start = readString(details?.startTime)
-    ? new Date(`${eventDate}T${readString(details?.startTime)}`)
-    : new Date(`${eventDate}T14:00`);
-
-  if (Number.isNaN(start.getTime())) {
-    start = new Date(eventDate);
-  }
-  if (Number.isNaN(start.getTime())) return null;
-
-  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
-  const location = readString(details?.location) || readString(details?.venueName);
-  const description =
-    readString(invitationData?.description) || readString(details?.detailsDescription);
-
-  return {
-    startIso: start.toISOString(),
-    endIso: end.toISOString(),
-    location,
-    description,
-  };
-}
-
-function buildLiveCardCalendarLinks(title: string, invitationData?: LiveCardInvitationData | null) {
-  const calendarMeta = resolveLiveCardCalendarMeta(invitationData);
-  if (!calendarMeta) return null;
-  return buildCalendarLinks({
-    title: title || "Event",
-    description: calendarMeta.description,
-    location: calendarMeta.location,
-    startIso: calendarMeta.startIso,
-    endIso: calendarMeta.endIso,
-    allDay: false,
-    reminders: null,
-    recurrence: null,
-  });
-}
-
 function openDefaultCalendarApp(href: string) {
   if (typeof window === "undefined" || !href) return;
 
@@ -493,9 +431,13 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const reducedMotion = useReducedMotion();
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
+  const [calendarTimeZone, setCalendarTimeZone] = useState<string | null>(null);
+  useEffect(() => {
+    setCalendarTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  }, []);
   const calendarLinks = useMemo(
-    () => buildLiveCardCalendarLinks(props.title, invitationData),
-    [props.title, invitationData],
+    () => buildLiveCardCalendarLinks(props.title, invitationData, calendarTimeZone),
+    [props.title, invitationData, calendarTimeZone],
   );
   const posterFirstHeroCard = isPosterFirstHeroCard(invitationData);
   const categorySupportsRsvp = supportsStudioCategoryRsvp(readString(details?.category));
@@ -733,7 +675,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         key: "calendar" as const,
         label: "Calendar",
         icon: CalendarDays,
-        visible: Boolean(readString(details?.eventDate)) && (!props.previewMode || Boolean(readString(details?.calendarStartISO))),
+        visible: Boolean(calendarLinks),
         onClick: () =>
           props.onActiveTabChange(props.activeTab === "calendar" ? "none" : "calendar"),
       },
@@ -749,7 +691,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   }, [
     props.activeTab,
     props.onActiveTabChange,
-    props.previewMode,
+    calendarLinks,
     categorySupportsRsvp,
     details,
     directRsvpHref,

@@ -72,9 +72,26 @@ test("Home keeps loaded events visible during a refresh failure and lists the re
     data: { ...emptyData, nextEvent: nearest, upcoming: [nearest, later] },
     error: "Refresh failed", loading: true,
   });
-  assert.ok(html.indexOf("Nearest wedding") < html.indexOf("Upcoming Events"));
-  assert.ok(html.indexOf("Upcoming Events") < html.indexOf("Later birthday"));
+  assert.ok(html.indexOf("Nearest wedding") < html.indexOf("Filter upcoming events"));
+  assert.ok(html.indexOf("Filter upcoming events") < html.indexOf("Later birthday"));
+  assert.doesNotMatch(html, /upcoming-events-heading|>Upcoming Events</);
   assert.doesNotMatch(html, /Nothing is scheduled yet|Your events couldn’t load/);
+});
+
+test("event filter bubbles count the complete list by ownership, excluding the spotlight", () => {
+  const event = (id, ownership) => ({ id, title: id, ownership, startAt: "2030-09-25T12:00:00Z" });
+  const spotlight = event("spotlight", "invited");
+  const remaining = Array.from({ length: 9 }, (_, index) => event(`event-${index}`, index < 4 ? "invited" : index < 8 ? "owned" : undefined));
+  const html = render({ data: { ...emptyData, nextEvent: spotlight, upcoming: [spotlight, ...remaining] } });
+  assert.match(html, /aria-pressed="true" aria-label="All, 9 events"/);
+  assert.match(html, /aria-label="My events, 5 events"/);
+  assert.match(html, /aria-label="Invited events, 4 events"/);
+  assert.match(html, /Show all 9 events/);
+  assert.doesNotMatch(html, /upcoming-events-heading|>Upcoming Events</);
+  const ownOnly = render({ data: { ...emptyData, nextEvent: spotlight, upcoming: [spotlight, event("own", "owned")] } });
+  assert.match(ownOnly, /aria-label="All, 1 event"/);
+  assert.match(ownOnly, /aria-label="My events, 1 event"/);
+  assert.match(ownOnly, /aria-label="Invited events, 0 events"/);
 });
 
 test("Home renders actionable sections, accurate replies, and known sign-up needs", () => {

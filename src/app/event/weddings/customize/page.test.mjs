@@ -146,7 +146,11 @@ test("wedding creation starts with the design gallery and preserves the selected
     /<article key=\{design\.id\}[\s\S]*?<Link[\s\S]*?<\/Link>[\s\S]*?<WeddingDesignPreview/,
     "the card link must be a sibling of the rendered template so template links are never nested",
   );
-  assert.match(previewSource, /aria-hidden="true"[\s\S]*?inert/);
+  assert.match(previewSource, /<TemplateThumbnailPreview/);
+  assert.match(
+    readSource("src/components/events/TemplateThumbnail.tsx"),
+    /aria-hidden="true"[\s\S]*?inert/,
+  );
 
   for (const design of catalog) {
     assert.match(

@@ -24,8 +24,8 @@ import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   getGymMeetTemplateMeta,
   isGymMeetTemplateId,
-} from "@/components/gym-meet-templates/registry";
-import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
+} from "@/components/football-season-templates/registry";
+import TemplateSelector from "@/components/football-season-templates/TemplateSelector";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";

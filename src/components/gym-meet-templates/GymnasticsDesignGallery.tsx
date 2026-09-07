@@ -1,7 +1,5 @@
 "use client";
 
-import { Upload } from "lucide-react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import EventDesignGallery from "@/components/events/EventDesignGallery";
 import GymMeetTemplateRenderer from "./GymMeetTemplateRenderer";
@@ -24,18 +22,11 @@ const designs = GYM_MEET_TEMPLATE_LIBRARY.filter((design) => design.id !== "elit
 export default function GymnasticsDesignGallery() {
   const search = useSearchParams();
   const date = search?.get("d");
-  const importParams = new URLSearchParams({ mode: "import" });
-  if (date) importParams.set("d", date);
   return (
     <EventDesignGallery
       title="Gymnastics"
-      description="Give your meet a home. Choose a design, then bring your schedule, team details, and meet-day plans together in one link."
+      description="First, find your meet’s style. Then upload a packet, paste a meet link, or add your details by hand. We’ll bring it all together in your chosen design."
       designs={designs}
-      action={
-        <Link href={`/event/gymnastics?${importParams.toString()}`} className="inline-flex items-center gap-2 rounded-full border border-[#dcd0dc] bg-white px-5 py-3 text-sm font-semibold text-[#59405c] hover:bg-[#f2eaf2]">
-          <Upload className="h-4 w-4" aria-hidden="true" /> Import a meet packet or link
-        </Link>
-      }
       getHref={(design) => {
         const params = new URLSearchParams({ templateId: design.id });
         if (date) params.set("d", date);

@@ -2,7 +2,6 @@
 "use client";
 
 import { familyTemplateDate, getFamilyTemplateDesign } from "@/lib/family-template-designs";
-import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import { parseEventGuestDate, normalizeEventGuestPlanning, type EventGuestPlanning } from "@/lib/event-guest-planning";
@@ -1489,14 +1488,6 @@ export default function BabyShowerTemplateCustomizePage() {
                 </div>
               </div>
 
-              <EventGuestActions
-                title={`${data.babyName}'s Baby Shower`}
-                start={data.date && data.time ? `${data.date}T${data.time}:00` : undefined}
-                end={data.endTime && data.date ? `${data.endDate || data.date}T${data.endTime}:00` : undefined}
-                location={[data.address, data.city, data.state].filter(Boolean).join(", ")}
-                preview
-                inverse={isDarkBackground}
-              />
               <EventGuestPlanningNotes value={data.guestPlanning} inverse={isDarkBackground} />
 
               <div className="relative w-full aspect-video">

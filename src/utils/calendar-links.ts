@@ -63,6 +63,7 @@ export function buildCalendarLinks(args: CalendarLinkArgs): CalendarLinkSet {
     location,
     startIso,
     endIso,
+    allDay,
     reminders: args.reminders,
     recurrence: args.recurrence,
   });
@@ -125,8 +126,8 @@ function buildOutlookComposeUrl({
     rru: "addevent",
     allday: String(Boolean(allDay)),
     subject: title || "Event",
-    startdt: toOutlookParam(startIso),
-    enddt: toOutlookParam(endIso),
+    startdt: allDay ? startIso.slice(0, 10) : toOutlookParam(startIso),
+    enddt: allDay ? endIso.slice(0, 10) : toOutlookParam(endIso),
     location: location || "",
     body: description || "",
     path: "/calendar/view/Month",
@@ -140,6 +141,7 @@ function buildIcsLinks({
   location,
   startIso,
   endIso,
+  allDay,
   reminders,
   recurrence,
 }: {
@@ -148,6 +150,7 @@ function buildIcsLinks({
   location: string;
   startIso: string;
   endIso: string;
+  allDay: boolean;
   reminders: number[] | null;
   recurrence: string | null;
 }): { downloadUrl: string; inlineUrl: string } {
@@ -158,7 +161,9 @@ function buildIcsLinks({
     location: location || "",
     description: description || "",
     timezone: "",
-    floating: "1",
+    // Keep the instant's offset so calendar apps can display it in their local zone.
+    floating: "0",
+    allDay: String(allDay),
   });
   if (reminders?.length) {
     params.set("reminders", reminders.join(","));
@@ -212,16 +217,8 @@ function toOutlookParam(iso: string): string {
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) throw new Error("Invalid date");
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return (
-      `${d.getFullYear()}-` +
-      `${pad(d.getMonth() + 1)}-` +
-      `${pad(d.getDate())}T` +
-      `${pad(d.getHours())}:` +
-      `${pad(d.getMinutes())}:` +
-      `${pad(d.getSeconds())}`
-    );
+    return d.toISOString();
   } catch {
-    return iso.replace(/\.\d{3}Z$/, "");
+    return iso;
   }
 }

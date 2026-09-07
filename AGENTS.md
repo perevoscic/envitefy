@@ -8,8 +8,16 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - Anonymous `/` is not the real landing route. `src/middleware.ts` rewrites signed-out users to `/landing`; signed-in users stay on `/`.
 - `npm run dev` does not run plain `next dev`. It goes through `scripts/dev-single.js`, defaults to port `3000`, writes to `.next-dev`, and uses `.next-dev.lock` to block a second dev server.
 - Dashboard preference (September 7, 2026): keep the original image-led `InvitationEventCard` design for Upcoming Events, including its event details and action buttons. The user prefers these cards to a compact agenda/list; preserve the cards when adding dashboard data or filters.
+- Upcoming cards use left-aligned All, My events, and Invited events filters with count bubbles in place of the visible Upcoming Events heading/count. Counts reflect the complete card list before filtering or pagination, excluding the spotlight event.
 - Dashboard Drive tile preference (September 7, 2026): show total route distance in miles and drive duration in hours/minutes. Keep departure times, arrival buffers, traffic notes, and drive update timestamps out of this tile.
 - Dashboard panel preference (September 7, 2026): keep Guest responses beside Continue creating. Do not restore the large Needs attention panel; use separate compact Schedule conflicts (second summary tile) and Needs attention tiles with clickable details.
+
+## Template Gallery Standard
+
+- Standing preference (September 7, 2026): use the wedding gallery's square thumbnails for all event template lists and design pickers, including birthdays, anniversaries, weddings, baby showers, gender reveals, and gymnastics.
+- Reuse `TemplateThumbnailFrame` and `TemplateThumbnailPreview` from `src/components/events/TemplateThumbnail.tsx`: square viewport, 8px white inset, 1.35rem outer corners, 1rem inner corners, warm neutral border, and the shared soft hover shadow. Render actual event layouts at quarter scale when available; use `scaled={false}` for image or swatch previews.
+- Keep thumbnail content inert and hidden from assistive technology; the surrounding link/button supplies the accessible design name and selection action. Keep favorites and selection controls outside the inert preview.
+- The decorative wedding hero runway can retain its compact ratio. Full template lists must use the default square preview. Color/font swatches and saved user event cards are separate controls and do not use this gallery standard.
 
 ## Envitefy Logo Brand Lock
 

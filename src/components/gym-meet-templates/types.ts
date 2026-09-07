@@ -4,43 +4,66 @@ import React from "react";
 import type { EventGuestPlanning } from "@/lib/event-guest-planning";
 
 export type GymMeetTemplateId =
-  | "launchpad-editorial"
-  | "elite-athlete"
-  | "bento-box"
-  | "parent-command"
-  | "varsity-classic"
-  | "weekend-journey"
-  | "scouting-report"
-  | "cyber-athlete"
-  | "paper-proto"
-  | "sunset-arena"
-  | "pop-art"
-  | "swiss-grid"
-  | "art-deco"
-  | "concrete-gym"
-  | "midnight-frost"
-  | "eco-motion"
-  | "holo-elite"
-  | "glitch-sport"
-  | "organic-flow"
-  | "pixel-arena"
-  | "architect-clean"
-  | "noir-silhouette"
-  | "vaporwave-grid"
-  | "heavy-impact"
-  | "blueprint-tech"
-  | "toxic-kinetic"
-  | "luxe-magazine"
-  | "chalk-strike"
-  | "podium-lights"
-  | "judges-sheet"
-  | "spring-energy"
-  | "club-classic"
-  | "aurora-lift"
-  | "ribbon-editorial"
-  | "medal-poster"
-  | "vault-grid"
-  | "travel-briefing";
+  | "airborne-atlas"
+  | "neon-runway"
+  | "petal-poise"
+  | "copper-grip"
+  | "tidal-tumble"
+  | "crimson-collegiate"
+  | "moonbeam-balance"
+  | "citrus-springboard"
+  | "monochrome-flight"
+  | "desert-dismount"
+  | "prism-routine"
+  | "maple-medal"
+  | "electric-orchid"
+  | "porcelain-podium"
+  | "rally-pennants"
+  | "rose-quartz-rise"
+  | "velocity-blueprint"
+  | "jungle-cartwheel"
+  | "saffron-salute"
+  | "silver-apparatus"
+  | "aurora-chalk"
+  | "peach-practice"
+  | "grandstand-gold"
+  | "indigo-ink"
+  | "coral-clubhouse"
+  | "alpine-ascent"
+  | "confetti-kip"
+  | "midnight-marquee"
+  | "willow-warmup"
+  | "studio-arc"
+  | "cherry-blossom-vault"
+  | "oceanic-rings"
+  | "flame-focus"
+  | "lilac-leap"
+  | "court-of-champions"
+  | "papaya-pop"
+  | "obsidian-precision"
+  | "bluebird-morning"
+  | "terrazzo-team"
+  | "amethyst-arena"
+  | "golden-hour-gym"
+  | "aqua-acrobat"
+  | "red-clay-rotation"
+  | "starfall-session"
+  | "daisy-daybreak"
+  | "metro-motion"
+  | "velvet-victory"
+  | "mint-condition"
+  | "sunflower-salute"
+  | "polar-parallel"
+  | "sienna-scorebook"
+  | "bubblegum-bounce"
+  | "evergreen-elevation"
+  | "cobalt-circuit"
+  | "ruby-ribbonline"
+  | "sandstone-spring"
+  | "lavender-locker"
+  | "solar-somersault"
+  | "blackberry-beam"
+  | "skyline-sendoff";
 
 export type GymMeetTemplateGroup =
   | "current"
@@ -86,6 +109,18 @@ export type GymMeetPageTemplateMeta = {
   previewAccentClassName: string;
   titleTypographyId?: GymMeetTitleTypographyId;
   previewTitleClassName?: string;
+  artwork: string;
+  artworkAlt: string;
+  background: string;
+  foreground: string;
+  accent: string;
+  displayFont: string;
+  sampleVenue: string;
+  sampleLocation: string;
+  sampleHost: string;
+  sampleNote: string;
+  composition: string;
+  bodyStyle: "schedule" | "notebook" | "rail" | "tiles" | "ticket" | "club";
 };
 
 export type GymMeetNavItem = {

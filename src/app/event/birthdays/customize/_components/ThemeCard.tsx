@@ -1,5 +1,4 @@
-
-
+import { TemplateThumbnailFrame, TemplateThumbnailPreview } from "@/components/events/TemplateThumbnail";
 export function BirthdayThemeCard({
   theme,
   selected,
@@ -86,7 +85,7 @@ export function BirthdayThemeCard({
     <button
       onClick={onSelect}
       disabled={disabled}
-      className={`rounded-xl overflow-hidden transition-all duration-200 relative group text-left flex flex-col h-40 shadow-sm hover:shadow-md border ${selected ? 'ring-2 ring-offset-2' : ''}`}
+      className={`rounded-[1.4rem] transition-all duration-200 relative group text-left flex flex-col ${selected ? 'ring-2 ring-offset-2' : ''}`}
       style={{
         borderColor: selected ? secondary : "#e2e8f0",
         ["--secondary-color" as string]: secondary,
@@ -95,8 +94,10 @@ export function BirthdayThemeCard({
         outlineColor: secondary,
       }}
     >
-      <div className="w-full h-28 relative">
-        <PreviewContent />
+      <TemplateThumbnailFrame>
+        <TemplateThumbnailPreview scaled={false}>
+          <PreviewContent />
+        </TemplateThumbnailPreview>
         
        {/* Selection checkmark */}
        {selected && (
@@ -106,7 +107,7 @@ export function BirthdayThemeCard({
              </svg>
          </div>
        )}
-      </div>
+      </TemplateThumbnailFrame>
       
       <div className="px-3 py-2 bg-white flex-1 w-full border-t border-slate-50 flex flex-col justify-center">
         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">

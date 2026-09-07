@@ -1,5 +1,6 @@
 import { Check, Gem } from "lucide-react";
 import WeddingDesignPreview from "@/components/weddings/WeddingDesignPreview";
+import { TemplateThumbnailFrame } from "@/components/events/TemplateThumbnail";
 import type { WeddingDesign } from "@/lib/wedding-designs";
 
 export default function ThemeCard({
@@ -29,7 +30,7 @@ export default function ThemeCard({
         cursor: disabled ? "not-allowed" : "pointer",
       }}
     >
-      <div className="relative m-2 overflow-hidden rounded-xl">
+      <TemplateThumbnailFrame>
         <WeddingDesignPreview design={theme} />
         {selected ? (
           <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-[#2f2925] px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white shadow-lg">
@@ -37,7 +38,7 @@ export default function ThemeCard({
             Selected
           </div>
         ) : null}
-      </div>
+      </TemplateThumbnailFrame>
       <div className="px-4 pb-4 pt-2">
         <div className="flex items-start justify-between gap-3">
           <div>

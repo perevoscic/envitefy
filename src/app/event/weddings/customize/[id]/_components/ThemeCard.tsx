@@ -1,3 +1,5 @@
+import { TemplateThumbnailFrame, TemplateThumbnailPreview } from "@/components/events/TemplateThumbnail";
+
 export default function ThemeCard({
   theme,
   selected,
@@ -29,17 +31,21 @@ export default function ThemeCard({
   return (
     <button
       onClick={onSelect}
-      className={`border rounded-md overflow-hidden transition 
+      className={`group border rounded-[1.4rem] overflow-hidden transition
         ${selected ? "border-[var(--accent-color)] ring-2 ring-[var(--accent-color)]/40" : "border-gray-200"}`}
       style={{
         ["--accent-color" as string]: textColor,
       }}
     >
-      <img
-        src={theme.thumbnail}
-        alt={theme.name}
-        className="w-full h-20 object-cover"
-      />
+      <TemplateThumbnailFrame>
+        <TemplateThumbnailPreview scaled={false}>
+          <img
+            src={theme.thumbnail}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        </TemplateThumbnailPreview>
+      </TemplateThumbnailFrame>
       <div className="p-2 text-left">
         <div className="text-sm font-medium" style={{ color: textColor }}>
           {theme.name}

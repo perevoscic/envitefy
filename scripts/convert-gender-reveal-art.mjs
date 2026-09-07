@@ -1,0 +1,21 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import sharp from 'sharp';
+
+const [id, original] = process.argv.slice(2);
+const catalog = JSON.parse(fs.readFileSync('src/data/gender-reveal-templates.json','utf8'));
+const design = catalog.find(d=>d.id===id);
+if (!design || !original?.startsWith('/Users/rj/.codex/generated_images/') || !/\.(png|jpe?g)$/.test(original)) throw new Error('Invalid artwork input');
+const target = path.join('public',design.heroImage);
+execFileSync('/opt/homebrew/bin/ffmpeg',['-v','error','-y','-i',original,'-c:v','libwebp','-quality','85','-compression_level','6',target]);
+const before = await sharp(original).metadata();
+const after = await sharp(target).metadata();
+await sharp(target).raw().toBuffer();
+if (after.format!=='webp' || after.width!==before.width || after.height!==before.height || Boolean(after.hasAlpha)!==Boolean(before.hasAlpha)) throw new Error('Artwork validation failed');
+const data = fs.readFileSync(target);
+const record={id,original,webp:design.heroImage,width:after.width,height:after.height,bytes:data.length,sha256:createHash('sha256').update(data).digest('hex'),verified:true};
+fs.mkdirSync('tmp/gender-reveal-conversions',{recursive:true});
+fs.writeFileSync(`tmp/gender-reveal-conversions/${id}.json`,JSON.stringify(record,null,2)+'\n');
+console.log(JSON.stringify(record));

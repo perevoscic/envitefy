@@ -33,7 +33,7 @@ import FirstScanCalendarPrompt from "@/components/FirstScanCalendarPrompt";
 import FootballSkin from "@/components/FootballSkin";
 import GenericEventSkin from "@/components/GenericEventSkin";
 import GraduationSkin from "@/components/GraduationSkin";
-import { isGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
+import { isGymMeetTemplateId } from "@/components/football-season-templates/registry";
 import LocationLink from "@/components/LocationLink";
 import OpenHouseSkin from "@/components/OpenHouseSkin";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";

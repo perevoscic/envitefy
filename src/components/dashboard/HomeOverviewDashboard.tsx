@@ -227,7 +227,7 @@ function InfoCard({
   review,
 }: InfoCardProps) {
   const toneStyles = CARD_TONE_STYLES[tone];
-  const className = `group block rounded-[32px] border border-slate-100 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.06)] transition-all duration-500 hover:-translate-y-1 hover:border-indigo-100 ${toneStyles.shadowClassName}`;
+  const className = `group flex flex-col rounded-[32px] border border-slate-100 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.06)] transition-all duration-500 hover:-translate-y-1 hover:border-indigo-100 ${toneStyles.shadowClassName}`;
   const content = (
     <>
       <div className="mb-4 flex items-start justify-between">
@@ -1018,7 +1018,7 @@ export default function HomeOverviewDashboard({
         )}
       </section>
 
-      <section aria-label="Dashboard summary" className={`grid grid-cols-2 gap-4 md:gap-6 ${infoCards.length === 5 ? "xl:grid-cols-5" : infoCards.length === 4 ? "xl:grid-cols-4" : infoCards.length === 3 ? "xl:grid-cols-3" : ""}`}>
+      <section aria-label="Dashboard summary" className={`grid grid-cols-2 gap-4 md:gap-6 ${infoCards.length === 5 ? "xl:grid-cols-5 [&>:last-child]:col-span-2 xl:[&>:last-child]:col-span-1" : infoCards.length === 4 ? "xl:grid-cols-4" : infoCards.length === 3 ? "xl:grid-cols-3" : ""}`}>
         {infoCards.map((card) => (
           <InfoCard key={card.label} {...card} />
         ))}
@@ -1030,25 +1030,29 @@ export default function HomeOverviewDashboard({
         {(() => {
           const upcomingRest = (data?.upcoming ?? []).filter((event) => event.id !== nextEvent?.id);
           if (!upcomingRest.length) return null;
+          const invitedCount = upcomingRest.filter((event) => event.ownership === "invited").length;
+          const filterOptions = [
+            { value: "all", label: "All", count: upcomingRest.length },
+            { value: "owned", label: "My events", count: upcomingRest.length - invitedCount },
+            { value: "invited", label: "Invited events", count: invitedCount },
+          ] as const;
           const filteredUpcoming = upcomingRest.filter((event) => upcomingFilter === "all" || (event.ownership || "owned") === upcomingFilter);
           const visibleUpcoming = showAllUpcoming ? filteredUpcoming : filteredUpcoming.slice(0, 3);
           return (
-            <section className="flex flex-col gap-4" aria-labelledby="upcoming-events-heading">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <h2 id="upcoming-events-heading" className="text-lg font-black tracking-tight text-slate-900">Upcoming Events</h2>
-                  <span className="text-xs font-bold text-slate-400">{filteredUpcoming.length} event{filteredUpcoming.length === 1 ? "" : "s"}</span>
-                </div>
-                <div role="group" aria-label="Filter upcoming events" className="flex flex-wrap rounded-2xl border border-slate-100 bg-white p-1">
-                  {([{ value: "all", label: "All" }, { value: "owned", label: "My events" }, { value: "invited", label: "Invited events" }] as const).map((option) => (
+            <section className="flex flex-col gap-4" aria-label="Upcoming events">
+                <div role="group" aria-label="Filter upcoming events" className="inline-flex max-w-full flex-wrap self-start rounded-2xl border border-slate-100 bg-white p-1">
+                  {filterOptions.map((option) => (
                     <button type="button" key={option.value} aria-pressed={upcomingFilter === option.value}
+                      aria-label={`${option.label}, ${option.count} ${option.count === 1 ? "event" : "events"}`}
                       onClick={() => { setUpcomingFilter(option.value); setShowAllUpcoming(false); }}
-                      className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-indigo-600 ${upcomingFilter === option.value ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:bg-indigo-50"}`}>
-                      {option.label}
+                      className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-indigo-600 sm:gap-2 sm:px-3 sm:text-sm ${upcomingFilter === option.value ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:bg-indigo-50"}`}>
+                      <span>{option.label}</span>
+                      <span aria-hidden="true" className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums sm:h-[22px] sm:min-w-[22px] sm:text-[11px] ${upcomingFilter === option.value ? "bg-white text-indigo-600" : "bg-slate-100 text-slate-600"}`}>
+                        {option.count}
+                      </span>
                     </button>
                   ))}
                 </div>
-              </div>
               <div className="flex flex-col gap-6">
                 {visibleUpcoming.map((ev) => {
                   const actions = buildInvitationActions(ev);

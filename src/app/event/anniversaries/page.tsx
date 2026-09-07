@@ -4,6 +4,7 @@ import { ArrowRight, HeartHandshake } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import BirthdayDesignPreview from "@/components/birthdays/BirthdayDesignPreview";
+import { TemplateThumbnailFrame } from "@/components/events/TemplateThumbnail";
 import { ANNIVERSARY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import AnniversaryCustomizePage from "./customize/page";
 
@@ -44,17 +45,17 @@ export default function AnniversariesPage() {
       <section aria-label="Anniversary designs" className="mx-auto max-w-[1500px] px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
         <div className="grid grid-cols-1 gap-x-7 gap-y-11 md:grid-cols-2 xl:grid-cols-3">
           {ANNIVERSARY_DESIGN_CATALOG.map((design) => (
-            <article key={design.id} className="group relative rounded-3xl">
+            <article key={design.id} className="group relative rounded-[1.4rem]">
               <Link
                 href={customizeHref(design.id)}
                 aria-label={`Customize ${design.name}`}
-                className="absolute inset-0 z-20 rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-[#9b5268] focus-visible:ring-offset-4 focus-visible:ring-offset-[#fff9f1]"
+                className="absolute inset-0 z-20 rounded-[1.4rem] outline-none focus-visible:ring-2 focus-visible:ring-[#9b5268] focus-visible:ring-offset-4 focus-visible:ring-offset-[#fff9f1]"
               >
                 <span className="sr-only">Customize {design.name}</span>
               </Link>
-              <div className="overflow-hidden rounded-3xl border border-[#ead5c2] bg-white p-2 shadow-sm transition duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
-                <BirthdayDesignPreview design={design} className="rounded-2xl" />
-              </div>
+              <TemplateThumbnailFrame>
+                <BirthdayDesignPreview design={design} />
+              </TemplateThumbnailFrame>
               <div className="px-2 pt-5">
                 <div className="flex items-start justify-between gap-4">
                   <h2 className='text-2xl font-normal tracking-tight [font-family:var(--font-playfair),_"Times_New_Roman",_serif]'>

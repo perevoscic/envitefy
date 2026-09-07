@@ -2,11 +2,10 @@
 
 import { useSearchParams } from "next/navigation";
 import GymnasticsDesignGallery from "@/components/gym-meet-templates/GymnasticsDesignGallery";
-import GymnasticsLauncher from "@/components/event-create/GymnasticsLauncher";
 import SportCreationGate from "@/components/event-create/SportCreationGate";
 
 export default function GymnasticsCreationPageClient({
-  forwardQueryString,
+  forwardQueryString: _forwardQueryString,
 }: {
   forwardQueryString?: string;
 }) {
@@ -17,7 +16,7 @@ export default function GymnasticsCreationPageClient({
       surface="gymnastics"
       unavailableSport={search?.get("unavailableSport")}
     >
-      {() => search?.get("mode") === "import" ? <GymnasticsLauncher forwardQueryString={forwardQueryString} /> : <GymnasticsDesignGallery />}
+      {() => <GymnasticsDesignGallery />}
     </SportCreationGate>
   );
 }

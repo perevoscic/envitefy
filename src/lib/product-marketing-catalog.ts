@@ -137,7 +137,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           customerPromise:
             "See what is next, pick up unfinished events, and act on invitations and planning gaps from one home dashboard.",
           proofPoints: [
-            "Shows upcoming event counts for the next 7 and 30 days, with the original image-led Upcoming Events cards, filtered by All, My events, or Invited events.",
+            "Shows upcoming event counts for the next 7 and 30 days, with the original image-led event cards. Left-aligned All, My events, and Invited events filters show count bubbles for the complete card list below the spotlight.",
             "Separate compact Schedule conflicts and Needs attention tiles count overlapping event times and invitation or event-detail actions. Each opens the relevant details and event links; drafts and declined invitations stay out of the active agenda.",
             "Resume recent saved event drafts, including drafts without a date, in the appropriate editor.",
             "For eligible hosted events, shows recorded going, maybe, and declined replies, plus shared invitations awaiting a reply when those recipients are known.",
@@ -243,6 +243,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Let guests save the event instead of relying on the invitation to remember it.",
           proofPoints: [
             "Live pages support Google Calendar, Apple Calendar/ICS, and Outlook calendar actions.",
+            "Live Cards interpret times without a timezone in the guest's local browser timezone; calendar links preserve the resolved date and time across Google, Apple, and Outlook.",
             ...(CONNECTED_CALENDAR_SYNC_ENABLED
               ? [
                   "Signed-in owners can connect or disconnect Google Calendar and Outlook background sync from Settings; Apple Calendar uses a one-event ICS handoff.",
@@ -471,7 +472,9 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Birthday hosts can set an explicit end time and add optional drop-off/pickup, sibling, parking/arrival, and food/allergy guidance that appears on the guest invitation.",
             "Birthday invitations integrate calendar saves into the date, directions into the venue, and sharing into each design’s invitation controls. Host guidance uses the theme’s existing notes layout; category-specific Envitefy branding and official social links remain in the footer.",
             "Baby shower and gender reveal creation open with searchable design galleries. Choose a template to carry its artwork and starting style into the editor, then personalize the celebration details.",
-            "Baby and bridal shower pages can combine RSVP, registry links, host notes, guest questions, reminders, maps, and calendar saves.",
+            "Wedding, birthday, anniversary, baby shower, gender reveal, and gymnastics galleries use consistent square previews of the event layouts, helping hosts compare designs before choosing one.",
+            "Baby and bridal shower pages can combine RSVP, registry links, host notes, guest questions, reminders, and maps.",
+            "Gender reveals include 60 individually composed designs with original artwork, distinct names, locally loaded typefaces, and matching gallery, editor, and published invitations.",
             "Gender reveal pages can combine RSVP, Team Pink or Team Blue guesses, optional tally behavior, gift links, reminders, and updates.",
           ],
           sellWhen: [
@@ -485,7 +488,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           customerPromise:
             "Turn dense meet flyers, screenshots, schedules, and PDF packets into a parent-friendly meet information hub.",
           proofPoints: [
-            "Gymnastics creation starts with a searchable meet template gallery. Select a layout to customize, or import an existing meet packet or link through the discovery flow.",
+            "Gymnastics creation starts with a searchable meet template gallery. Choosing a design opens it directly in the editor. Hosts can upload a meet packet or paste a public meet link from the Add your details panel, or enter the details manually; the selected layout carries into the draft.",
             "Organizes sessions, levels, warmups, march-in, competition, awards, venues, maps, admission, parking, and coach notes.",
             "Supports calendar actions, parent responses, athlete availability, volunteer needs, and live changes where configured.",
             "Families can use one team link instead of repeatedly searching the original meet packet.",

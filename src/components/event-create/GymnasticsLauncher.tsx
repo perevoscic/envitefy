@@ -12,7 +12,9 @@ import {
   Upload,
   WandSparkles,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getGymMeetTemplateMeta, isGymMeetTemplateId } from "@/components/gym-meet-templates/registry";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import CopyButton from "@/components/CopyButton";
@@ -33,6 +35,7 @@ import { resolveDiscoveryClientParseTimeoutMs } from "@/lib/discovery-budget";
 type GymnasticsLauncherProps = {
   forwardQueryString?: string;
   defaultDateParam?: string;
+  variant?: "page" | "panel";
 };
 
 type DiscoveryInput = { file?: File; url?: string };
@@ -101,8 +104,15 @@ function GradientCardBorder({
 export default function GymnasticsLauncher({
   forwardQueryString,
   defaultDateParam,
+  variant = "page",
 }: GymnasticsLauncherProps) {
   const router = useRouter();
+  const requestedTemplateId = new URLSearchParams(forwardQueryString || "").get("templateId");
+  const selectedTemplate = isGymMeetTemplateId(requestedTemplateId) ? getGymMeetTemplateMeta(requestedTemplateId) : null;
+  const galleryParams = new URLSearchParams();
+  const selectedDate = new URLSearchParams(forwardQueryString || "").get("d") || defaultDateParam;
+  if (selectedDate) galleryParams.set("d", selectedDate);
+  const galleryHref = `/event/gymnastics/customize${galleryParams.size ? `?${galleryParams.toString()}` : ""}`;
   const { status } = useSession();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedPath, setSelectedPath] = useState<"upload" | "url" | "scratch">("upload");
@@ -287,6 +297,7 @@ export default function GymnasticsLauncher({
     const formData = new FormData();
     if (file) formData.append("file", file);
     if (url) formData.append("url", url);
+    if (selectedTemplate) formData.append("pageTemplateId", selectedTemplate.id);
 
     let ingestJson: { eventId?: string; discoveryId?: string; error?: string } = {};
     cancelRequestedRef.current = false;
@@ -355,7 +366,7 @@ export default function GymnasticsLauncher({
         ingestRes = await fetch("/api/discovery/intake", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
+          body: JSON.stringify({ url, pageTemplateId: selectedTemplate?.id }),
           credentials: "include",
           signal: ingestAbortRef.current.signal,
         });
@@ -446,7 +457,10 @@ export default function GymnasticsLauncher({
     await new Promise((resolve) => setTimeout(resolve, 350));
     throwIfCancelled();
     currentDiscoveryEventIdRef.current = null;
-    const baseUrl = `/event/gymnastics/customize?edit=${encodeURIComponent(eventId)}&new=1`;
+    const builderParams = new URLSearchParams({ edit: eventId, new: "1" });
+    if (selectedTemplate) builderParams.set("templateId", selectedTemplate.id);
+    if (selectedDate) builderParams.set("d", selectedDate);
+    const baseUrl = `/event/gymnastics/customize?${builderParams.toString()}`;
     if (status === "authenticated") {
       router.push(baseUrl);
       return;
@@ -553,9 +567,46 @@ export default function GymnasticsLauncher({
     if (!forwardQueryString && defaultDateParam) {
       params.set("d", defaultDateParam);
     }
+    params.set("step", "edit");
+    params.delete("mode");
     const qs = params.toString();
     router.push(`/event/gymnastics/customize${qs ? `?${qs}` : ""}`);
   };
+
+  if (variant === "panel") {
+    return (
+      <section aria-label="Import meet details" className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 p-4 text-left">
+        <p className="text-sm font-semibold text-slate-800">Have your meet details already?</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">Fill this design from a packet or public meet link.</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={discoveryBusy} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50">
+            <Upload className="h-4 w-4" aria-hidden="true" /> Upload packet
+          </button>
+          <button type="button" onClick={() => setSelectedPath("url")} disabled={discoveryBusy} aria-expanded={selectedPath === "url"} aria-controls="gym-meet-import-url" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50">
+            <Globe className="h-4 w-4" aria-hidden="true" /> Paste URL
+          </button>
+        </div>
+        <input ref={fileInputRef} type="file" aria-label="Meet packet" accept=".pdf,image/png,image/jpeg,image/jpg" className="hidden" onChange={(event) => { const file = event.target.files?.[0] || null; event.target.value = ""; void handleUploadPick(file); }} />
+        {selectedPath === "url" ? (
+          <form id="gym-meet-import-url" className="mt-3 space-y-3" onSubmit={(event) => { event.preventDefault(); void handleUrlSync(); }}>
+            <label className="block text-xs font-semibold text-slate-600">
+              Public meet URL
+              <input type="url" value={meetUrl} onChange={(event) => setMeetUrl(event.target.value)} placeholder="https://meet-site.com/event" disabled={discoveryBusy} className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:ring-2 focus:ring-violet-400" />
+            </label>
+            {!urlBusy ? <button type="submit" disabled={discoveryBusy} className="min-h-11 w-full rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50">Fill from this link</button> : null}
+          </form>
+        ) : null}
+        {discoveryBusy ? (
+          <div className="mt-3">
+            <DiscoveryProgressPanel cancelLabel={uploadBusy ? "Cancel upload" : "Cancel import"} label={uploadBusy ? uploadStageLabel : urlStageLabel} progress={uploadBusy ? uploadProgress : urlProgress} onCancel={cancelDiscovery} showDetails={false} theme={GYM_DISCOVERY_PROGRESS_THEME} />
+          </div>
+        ) : null}
+        {uploadFileName ? <p className="mt-2 truncate text-xs text-slate-500">{uploadFileName}</p> : null}
+        {renderDiscoveryError(uploadError)}
+        {renderDiscoveryError(urlError)}
+      </section>
+    );
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#f5f5fa] px-4 pb-5 pt-24 sm:px-6 sm:pb-10 sm:pt-24 lg:px-10 lg:pt-10">
@@ -564,17 +615,23 @@ export default function GymnasticsLauncher({
 
       <div className="relative mx-auto w-full max-w-7xl">
         <header className="max-w-4xl">
+          {selectedTemplate ? (
+            <div className="mb-5 flex flex-wrap items-center gap-3 text-sm">
+              <span className="rounded-full border border-[#ded6f5] bg-white px-4 py-2 font-semibold text-[#6240ad]">Selected design: {selectedTemplate.name}</span>
+              {!discoveryBusy ? <Link href={galleryHref} className="rounded-sm font-semibold text-[#6240ad] underline underline-offset-4 focus-visible:outline-2">Change design</Link> : null}
+            </div>
+          ) : null}
           <div className="hidden items-center gap-2 rounded-full border border-[#ded6f5] bg-white/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#6240ad] shadow-sm backdrop-blur sm:inline-flex">
             <Sparkles className="h-3.5 w-3.5" />
-            Gymnastics meet builder
+            Step 2 · Meet details
           </div>
           <h1 className="mt-1 text-[1.75rem] font-black leading-[1.08] tracking-[-0.03em] text-[#17112f] sm:mt-5 sm:text-5xl sm:leading-[1.02] sm:tracking-[-0.035em] lg:text-6xl">
-            Create your meet page.
-            <span className="mt-1.5 block text-[#6d35f5] sm:mt-0">Choose how to start.</span>
+            Make it your meet.
+            <span className="mt-1.5 block text-[#6d35f5] sm:mt-0">Add your event details.</span>
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#66677f] sm:mt-4 sm:text-lg">
-            Bring a packet or public link and we’ll build an editable first draft—or start with a
-            blank canvas for full control.
+            Upload a packet or paste a public meet link and we’ll fill your chosen design with
+            an editable first draft. You can also enter the details yourself.
           </p>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] font-semibold text-[#68677d] sm:mt-4 sm:gap-x-5 sm:gap-y-2 sm:text-xs">
             <span className="inline-flex items-center gap-1.5">
@@ -852,14 +909,14 @@ export default function GymnasticsLauncher({
               Full creative control
             </p>
             <h2 className="mt-1.5 text-xl font-black tracking-tight text-[#17112f] sm:mt-2 sm:text-3xl">
-              Start with a template
+              Enter details manually
             </h2>
             <p className="mt-2 text-[13px] leading-relaxed text-[#66677f] sm:mt-3 sm:text-[15px]">
-              Pick a polished layout and build the page section by section.
+              Keep your chosen design and add the meet details section by section.
             </p>
             <ul className="mt-5 hidden space-y-2.5 text-sm text-[#52526a] lg:block">
               {[
-                "Choose a visual theme",
+                "Your selected design is ready",
                 "Edit every page section",
                 "Add your own images & details",
               ].map((item) => (
@@ -879,7 +936,7 @@ export default function GymnasticsLauncher({
                 disabled={discoveryBusy}
                 className={`${LIGHT_RAISED_BUTTON_CLASS} text-[#33705b] hover:bg-[#eaf4ef]`}
               >
-                Browse templates
+                Enter details
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
               </button>
             </div>

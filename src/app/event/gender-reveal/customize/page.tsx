@@ -1,12 +1,11 @@
 // @ts-nocheck
 "use client";
 
+import GenderRevealTemplateView from "@/components/GenderRevealTemplateView";
+import { genderRevealDesigns, getGenderRevealDesign, genderRevealFont } from "@/lib/gender-reveal-designs";
 import { familyTemplateDate, getFamilyTemplateDesign } from "@/lib/family-template-designs";
-import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
-import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
-import { parseEventGuestDate, normalizeEventGuestPlanning, type EventGuestPlanning } from "@/lib/event-guest-planning";
-import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import { normalizeEventGuestPlanning, type EventGuestPlanning } from "@/lib/event-guest-planning";
 import {
   useRef,
   useState,
@@ -15,7 +14,6 @@ import {
   useEffect,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import {
   ChevronLeft,
   ChevronRight,
@@ -28,8 +26,6 @@ import {
   Gift,
   Upload,
   Trash2,
-  Check,
-  X as XIcon,
   WandSparkles,
 } from "lucide-react";
 import {
@@ -54,6 +50,9 @@ function getTemplateById(id?: string | null): GenderRevealTemplateDefinition {
 }
 
 const FONTS = {
+  ...Object.fromEntries(genderRevealDesigns.map((design) => [design.font, {
+    name: design.font.replace(/([a-z])([A-Z])/g, "$1 $2"), preview: genderRevealFont(design),
+  }])) ,
   playfair: { name: "Playfair Display", preview: "var(--font-playfair)" },
   montserrat: { name: "Montserrat", preview: "var(--font-montserrat)" },
   poppins: { name: "Poppins", preview: "var(--font-poppins)" },
@@ -382,15 +381,14 @@ export default function GenderRevealTemplateCustomizePage() {
   const template = getTemplateById(templateId);
 
   const [activeView, setActiveView] = useState("main");
+  const [loadedTemplateId, setLoadedTemplateId] = useState<string | null>(null);
+  const resolvedTemplateId = loadedTemplateId || template.id;
   const designDefaults = getFamilyTemplateDesign("gender-reveal", template.id);
   const [data, setData] = useState(() => ({
     ...INITIAL_DATA,
     date: familyTemplateDate(defaultDate, INITIAL_DATA.date),
     theme: editEventId ? INITIAL_DATA.theme : { ...INITIAL_DATA.theme, themeId: designDefaults.themeId, font: designDefaults.font },
   }));
-  const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
-  const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
-  const [rsvpGuess, setRsvpGuess] = useState<"pink" | "blue" | null>(null);
   const {
     mobileMenuOpen,
     openMobileMenu,
@@ -426,6 +424,7 @@ export default function GenderRevealTemplateCustomizePage() {
         }
         const json = await res.json();
         const existing = json?.data || {};
+        if (typeof existing.templateId === "string") setLoadedTemplateId(existing.templateId);
 
         const startIso =
           existing.startISO || existing.start || existing.startIso || null;
@@ -445,7 +444,7 @@ export default function GenderRevealTemplateCustomizePage() {
           existing.theme?.id ||
           INITIAL_DATA.theme.themeId;
         const resolvedFont =
-          existing.theme?.font || existing.fontId || INITIAL_DATA.theme.font;
+          existing.theme?.font || existing.fontId || getGenderRevealDesign(existing.templateId).font;
         const resolvedFontSize =
           existing.theme?.fontSize ||
           existing.fontSize ||
@@ -622,45 +621,24 @@ export default function GenderRevealTemplateCustomizePage() {
     if (data.theme?.text && (data.theme?.bg || data.theme?.bgStyle)) {
       return data.theme;
     }
+    const collectionDesign = genderRevealDesigns.find((design) => design.id === data.theme.themeId);
+    if (collectionDesign) return {
+      id: collectionDesign.id,
+      name: collectionDesign.name,
+      bg: "",
+      text: "",
+      accent: "",
+      bgStyle: { backgroundColor: collectionDesign.paper, color: collectionDesign.ink },
+      previewStyle: { backgroundColor: collectionDesign.paper },
+    };
     // Otherwise, look it up by themeId
     return (
       DESIGN_THEMES.find((c) => c.id === data.theme.themeId) || DESIGN_THEMES[0]
     );
   }, [data.theme]);
   const currentFont = FONTS[data.theme.font] || FONTS.playfair;
-  const currentSize = FONT_SIZES[data.theme.fontSize] || FONT_SIZES.medium;
 
-  // Detect dark background for title color
-  const isDarkBackground = useMemo(() => {
-    if (typeof currentTheme?.isDark === "boolean") return currentTheme.isDark;
-    const bg = currentTheme?.bg?.toLowerCase() ?? "";
-    const darkTokens = [
-      "black",
-      "slate-9",
-      "stone-9",
-      "neutral-9",
-      "gray-9",
-      "grey-9",
-      "indigo-9",
-      "purple-9",
-      "violet-9",
-      "emerald-9",
-      "teal-9",
-      "blue-9",
-      "navy",
-      "midnight",
-    ];
-    const hasDarkToken = darkTokens.some((token) => bg.includes(token));
-    const hasDarkHex =
-      /#0[0-9a-f]{5,}/i.test(bg) ||
-      /#1[0-3][0-9a-f]{4}/i.test(bg) ||
-      /#2[0-3][0-9a-f]{4}/i.test(bg);
-    return hasDarkToken || hasDarkHex;
-  }, [currentTheme]);
-
-  const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
-
-  const heroImageSrc = editEventId ? "/templates/hero-images/gender reveal-hero.jpeg" : designDefaults.heroImage;
+  const heroImageSrc = getGenderRevealDesign(resolvedTemplateId).heroImage;
 
   const handlePublish = useCallback(async () => {
     if (submitting) return;
@@ -731,7 +709,7 @@ export default function GenderRevealTemplateCustomizePage() {
           rsvpEnabled: data.rsvp.isEnabled,
           rsvpDeadline: data.rsvp.deadline || undefined,
           numberOfGuests: Number(data.rsvp.expectedGuests) || 0,
-          templateId: template.id,
+          templateId: resolvedTemplateId,
           date: data.date,
           time: data.time,
           address: data.address || undefined,
@@ -855,7 +833,7 @@ export default function GenderRevealTemplateCustomizePage() {
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, data, template.id, editEventId, router, heroImageSrc]);
+  }, [submitting, data, resolvedTemplateId, editEventId, router, heroImageSrc]);
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
@@ -1585,425 +1563,28 @@ export default function GenderRevealTemplateCustomizePage() {
           overscrollBehavior: "contain",
         }}
       >
-        <div className="w-full min-w-0 mb-4 md:mb-8 transition-all duration-500 ease-in-out">
-          <div
-            className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
-              currentTheme.bg || "bg-white"
-            } ${
-              currentFont.preview
-            } transition-colors duration-500 relative z-0`}
-            style={currentTheme.bgStyle}
-          >
-            <div className="relative z-10">
-              <div
-                className={`p-6 md:p-8 border-b border-white/10 flex justify-between items-start ${currentTheme.text}`}
-              >
-                <div className="flex-1">
-                  <h1
-                    className={`${currentSize.h1} mb-2 leading-tight`}
-                    style={{
-                      fontFamily: currentFont.preview,
-                      ...(titleColor || {}),
-                    }}
-                  >
-                    {data.eventTitle}
-                  </h1>
-                  <div
-                    className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 ${currentSize.body} font-medium opacity-90 tracking-wide`}
-                  >
-                    <span>
-                      {parseEventGuestDate(data.date).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                    <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
-                    <span>{data.time}{data.endTime ? ` – ${data.endDate && data.endDate !== data.date ? `${data.endDate} ` : ""}${data.endTime}` : ""}</span>
-                    {(data.city || data.state) && (
-                      <>
-                        <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
-                        <span className="md:truncate">
-                          {[data.city, data.state].filter(Boolean).join(", ")}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  {data.rsvp.isEnabled ? (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold">
-                        54 coming
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold">
-                        8 pending
-                      </span>
-                      {data.genderReveal.guessesEnabled &&
-                      data.genderReveal.tallyVisibility !== "hidden" ? (
-                        <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold">
-                          49 guesses
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Navigation Pills */}
-              {(() => {
-                const previewNavItems = [
-                  {
-                    id: "details",
-                    label: "Details",
-                    enabled: Boolean(data.eventDetails.notes),
-                  },
-                  {
-                    id: "hosts",
-                    label: "Hosted By",
-                    enabled: data.hosts.length > 0,
-                  },
-                  {
-                    id: "location",
-                    label: "Location",
-                    enabled: Boolean(data.address || data.city || data.state),
-                  },
-                  {
-                    id: "registry",
-                    label: "Registry",
-                    enabled: data.registries.length > 0,
-                  },
-                  { id: "rsvp", label: "RSVP", enabled: data.rsvp.isEnabled },
-                ].filter((item) => item.enabled);
-
-                return previewNavItems.length > 1 ? (
-                  <nav className="border-t border-white/10 bg-white/80 px-4 py-3 backdrop-blur-lg">
-                    <div className="flex flex-wrap items-center justify-center gap-3">
-                      {previewNavItems.map((item) => (
-                        <a
-                          key={item.id}
-                          href={`#${item.id}`}
-                          className="rounded-full border border-white/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] opacity-80 transition hover:border-white/80 hover:opacity-100"
-                          style={{ fontFamily: currentFont.preview }}
-                        >
-                          {item.label}
-                        </a>
-                      ))}
-                    </div>
-                  </nav>
-                ) : null;
-              })()}
-
-              <EventGuestActions
-                title={data.eventTitle || "Gender Reveal Party"}
-                start={data.date && data.time ? `${data.date}T${data.time}:00` : undefined}
-                end={data.endTime && data.date ? `${data.endDate || data.date}T${data.endTime}:00` : undefined}
-                location={[data.venue, data.address, data.city, data.state].filter(Boolean).join(", ")}
-                preview
-                inverse={isDarkBackground}
-              />
-              <EventGuestPlanningNotes value={data.guestPlanning} inverse={isDarkBackground} />
-
-              <div className="relative w-full aspect-video">
-                {data.images.hero ? (
-                  <img
-                    src={data.images.hero}
-                    alt="Hero"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Image
-                    src={heroImageSrc}
-                    alt="Hero"
-                    fill
-                    className="object-cover"
-                    sizes="100vw"
-                  />
-                )}
-              </div>
-
-              {data.hosts.length > 0 && (
-                <section className="text-center py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-6 ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    Hosted By
-                  </h2>
-                  <div className="flex flex-wrap justify-center gap-6">
-                    {data.hosts.map((host) => (
-                      <div key={host.id} className="text-center">
-                        <div className="font-semibold text-lg mb-1">
-                          {host.name}
-                        </div>
-                        {host.role && (
-                          <div className="text-sm opacity-70">{host.role}</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {(data.address || data.city || data.state) && (
-                <section className="text-center py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-4 ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    Location
-                  </h2>
-                  {(data.address || data.city || data.state) && (
-                    <div className="opacity-80">
-                      {[data.address, data.city, data.state]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </div>
-                  )}
-                </section>
-              )}
-
-              {data.eventDetails.notes && (
-                <section className="max-w-2xl mx-auto text-center p-6 md:p-8">
-                  <h2
-                    className={`${currentSize.h2} mb-4 ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    About the Reveal
-                  </h2>
-                  <p
-                    className={`${currentSize.body} leading-relaxed opacity-90 whitespace-pre-wrap`}
-                  >
-                    {data.eventDetails.notes}
-                  </p>
-                </section>
-              )}
-
-              {data.gallery.length > 0 && (
-                <section className="py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-6 text-center ${currentTheme.accent}`}
-                  >
-                    Photo Gallery
-                  </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto px-4">
-                    {data.gallery.map((img) => (
-                      <div key={img.id} className="relative aspect-square">
-                        <img
-                          src={img.url}
-                          alt={img.caption || "Gallery"}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                        {img.caption && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg">
-                            {img.caption}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {data.registries.length > 0 && (
-                <section className="text-center py-12 border-t border-white/10">
-                  <h2
-                    className={`text-2xl mb-6 ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    Registry
-                  </h2>
-                  <div className="flex flex-wrap justify-center gap-4">
-                    {data.registries.map((registry) => (
-                      <a
-                        key={registry.id}
-                        href={registry.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block px-6 py-3 bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors"
-                      >
-                        <span className="uppercase tracking-widest text-sm font-semibold">
-                          {registry.label || "Registry"}
-                        </span>
-                      </a>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {data.rsvp.isEnabled && (
-                <section className="max-w-3xl mx-auto text-center p-6 md:p-10">
-                  <h2
-                    className={`${currentSize.h2} mb-6 ${currentTheme.accent}`}
-                    style={titleColor}
-                  >
-                    RSVP
-                  </h2>
-                  <div className="bg-white/5 border border-white/10 p-8 md:p-10 rounded-xl text-left">
-                    {!rsvpSubmitted ? (
-                      <div className="space-y-6">
-                        <div className="text-center mb-4">
-                          <p className="opacity-80">
-                            {data.rsvp.deadline
-                              ? `Kindly respond by ${parseEventGuestDate(
-                                  data.rsvp.deadline
-                                ).toLocaleDateString()}`
-                              : "Please RSVP"}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-2">
-                            Full Name
-                          </label>
-                          <input
-                            className="w-full p-4 rounded-lg bg-white/10 border border-white/20 focus:border-white/50 outline-none transition-colors text-inherit placeholder:text-inherit/30"
-                            placeholder="Guest Name"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
-                            Will you be attending?
-                          </label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <label className="group relative cursor-pointer">
-                              <input
-                                type="radio"
-                                name="gender-rsvp"
-                                className="peer sr-only"
-                                checked={rsvpAttending === true}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  setRsvpAttending(true);
-                                }}
-                              />
-                              <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
-                                <div className="mt-0.5">
-                                  <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
-                                    <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                  </div>
-                                </div>
-                                <div className="text-left">
-                                  <div className="flex items-center gap-2 font-semibold text-base">
-                                    <Check size={18} className="text-current" />
-                                    Yes, I'll be there!
-                                  </div>
-                                  <p className="text-sm opacity-70">
-                                    Count us in for the reveal.
-                                  </p>
-                                </div>
-                              </div>
-                            </label>
-                            <label className="group relative cursor-pointer">
-                              <input
-                                type="radio"
-                                name="gender-rsvp"
-                                className="peer sr-only"
-                                checked={rsvpAttending === false}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  setRsvpAttending(false);
-                                }}
-                              />
-                              <div className="p-5 rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 transition-all flex items-start gap-3 peer-checked:border-current peer-checked:bg-white/25">
-                                <div className="mt-0.5">
-                                  <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
-                                    <div className="w-3 h-3 rounded-full bg-current opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                  </div>
-                                </div>
-                                <div className="text-left">
-                                  <div className="flex items-center gap-2 font-semibold text-base">
-                                    <XIcon size={18} className="text-current" />
-                                    Sorry, can't make it
-                                  </div>
-                                  <p className="text-sm opacity-70">
-                                    We’ll be cheering from afar.
-                                  </p>
-                                </div>
-                              </div>
-                            </label>
-                          </div>
-                        </div>
-                        {data.genderReveal.guessesEnabled && rsvpAttending === true ? (
-                          <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider opacity-70 mb-3">
-                              Team Pink or Team Blue?
-                            </label>
-                            <div className="grid grid-cols-2 gap-3">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setRsvpGuess("pink");
-                                }}
-                                className={`rounded-xl border-2 px-4 py-3 text-left ${
-                                  rsvpGuess === "pink"
-                                    ? "border-pink-400 bg-pink-50 text-pink-700"
-                                    : "border-white/20 bg-white/10"
-                                }`}
-                              >
-                                <div className="font-semibold">Team Pink</div>
-                                <p className="text-xs opacity-70">She's on the way.</p>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setRsvpGuess("blue");
-                                }}
-                                className={`rounded-xl border-2 px-4 py-3 text-left ${
-                                  rsvpGuess === "blue"
-                                    ? "border-sky-400 bg-sky-50 text-sky-700"
-                                    : "border-white/20 bg-white/10"
-                                }`}
-                              >
-                                <div className="font-semibold">Team Blue</div>
-                                <p className="text-xs opacity-70">He's on the way.</p>
-                              </button>
-                            </div>
-                          </div>
-                        ) : null}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (rsvpAttending !== null) {
-                              setRsvpSubmitted(true);
-                            }
-                          }}
-                          disabled={rsvpAttending === null}
-                          className={`w-full py-4 mt-2 font-bold uppercase tracking-widest text-sm rounded-lg transition-colors shadow-lg ${
-                            rsvpAttending !== null
-                              ? "bg-white text-slate-900 hover:bg-slate-200"
-                              : "bg-white/20 text-white/50 cursor-not-allowed"
-                          }`}
-                        >
-                          Send RSVP
-                        </button>
-
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <div className="text-4xl mb-4">🎉</div>
-                        <h3 className="text-2xl font-serif mb-2">Thank you!</h3>
-                        <p className="opacity-70">Preview response recorded. Publish your invitation to receive guest RSVPs.</p>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setRsvpSubmitted(false);
-                            setRsvpAttending(null);
-                          }}
-                          className="text-sm underline mt-6 opacity-50 hover:opacity-100"
-                        >
-                          Send another response
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </section>
-              )}
-
-              <footer className="text-center py-8 border-t border-white/10 mt-1">
-                <EnvitefyEventBranding category="Gender Reveals" inverse={isDarkBackground} />
-              </footer>
-            </div>
-          </div>
+        <div className="w-full min-w-0 mb-4 md:mb-8">
+          <GenderRevealTemplateView
+            eventId=""
+            eventTitle={data.eventTitle || "Our little surprise"}
+            eventData={{
+              ...data,
+              templateId: resolvedTemplateId,
+              heroImage: data.images.hero || heroImageSrc,
+              fontFamily: currentFont.preview,
+              fontSize: data.theme.fontSize,
+              theme: { ...currentTheme, fontFamily: currentFont.preview },
+              rsvpEnabled: data.rsvp.isEnabled,
+              rsvpDeadline: data.rsvp.deadline,
+              numberOfGuests: Number(data.rsvp.expectedGuests) || 0,
+              endISO: data.endTime && data.date ? `${data.endDate || data.date}T${data.endTime}:00` : undefined,
+            }}
+            shareUrl=""
+            isOwner={false}
+            isReadOnly
+            editHref=""
+            preview
+          />
         </div>
       </div>
 

@@ -1,0 +1,43 @@
+.page { container-type: inline-size; container-name: baby; color: var(--baby-ink); background: var(--baby-paper); font-family: var(--font-montserrat), Arial, sans-serif; }
+.shell { width: 100%; margin: 0 auto; overflow: hidden; color: var(--baby-ink); background: var(--baby-paper); }
+.hero { display: grid; grid-template-areas: "copy art" "facts art"; grid-template-columns: 1fr 1.1fr; min-height: 660px; position: relative; gap: 28px; padding: 52px; isolation: isolate; }
+.art { grid-area: art; min-width: 0; min-height: 320px; overflow: hidden; position: relative; }
+.image { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.copy { grid-area: copy; align-self: center; position: relative; min-width: 0; z-index: 1; }
+.eyebrow { text-transform: uppercase; font-size: 11px; letter-spacing: .22em; line-height: 1.8; margin: 0 0 24px; font-weight: 600; }
+.headline { font-size: 15px; line-height: 1.65; max-width: 32ch; margin: 0 0 20px; }
+.title { font-family: var(--baby-font); font-size: clamp(42px, 6.5cqi, 76px); font-weight: 400; line-height: 1.06; margin: 0; overflow-wrap: anywhere; text-wrap: balance; }
+.title span { font-size: 1.18em; }
+.dedication { font-size: 13px; line-height: 1.8; max-width: 32ch; margin: 25px 0 0; }
+.facts { grid-area: facts; align-self: end; position: relative; z-index: 1; min-width: 0; font-size: 13px; line-height: 1.8; }
+.when { font-weight: 600; }
+.where { margin-top: 8px; }
+.actions { margin-top: 14px; }
+.actions > div { justify-content: inherit; padding: 0; margin: 0; background: transparent; border: 0; }
+.ownerActions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+.body { padding: 16px 7% 44px; color: var(--baby-ink); }
+.body > section { width: 100%; max-width: none; margin: 0; padding: 42px 5%; border-color: color-mix(in srgb, var(--baby-ink) 18%, transparent); }
+.body h2 { font-family: var(--baby-font) !important; color: var(--baby-ink); font-size: 34px; font-weight: 400; line-height: 1.2; }
+.body input { border-color: color-mix(in srgb, var(--baby-ink) 25%, transparent); }
+.body a { border-color: color-mix(in srgb, var(--baby-ink) 25%, transparent); }
+.body nav { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; padding: 22px 0; border-block: 1px solid color-mix(in srgb, var(--baby-ink) 20%, transparent); }
+.body nav a { font-size: 12px; text-underline-offset: 5px; }
+.body[data-style="Woodland"] { background: color-mix(in srgb, var(--baby-accent) 8%, var(--baby-paper)); }
+.body[data-style="Woodland"] > section:nth-of-type(2n) { width: 86%; margin-inline: auto; border: 1px dashed var(--baby-accent); border-radius: 48% 48% 12px 12px / 20% 20% 12px 12px; }
+.body[data-style="Botanical"] > section { text-align: left; border-left: 1px solid var(--baby-accent); margin-top: 22px; }
+.body[data-style="Botanical"] > section:nth-of-type(2n) { margin-left: 10%; width: 90%; }
+.body[data-style="Coastal"] > section { border-top: 3px double var(--baby-accent); }
+.body[data-style="Coastal"] > section:nth-of-type(2n) { background: color-mix(in srgb, var(--baby-accent) 8%, transparent); border-radius: 50% 50% 0 0 / 30px 30px 0 0; }
+.body[data-style="Celestial"] { border-top: 1px solid var(--baby-accent); }
+.body[data-style="Celestial"] > section { max-width: 750px; margin-inline: auto; border-bottom: 1px solid var(--baby-accent); }
+.body[data-style="Artisan"] > section { border: 1px dashed var(--baby-accent); margin-top: 24px; padding: 36px; }
+.body[data-style="Artisan"] > section:nth-of-type(2n) { width: 85%; margin-inline: auto; box-shadow: 10px 10px 0 color-mix(in srgb, var(--baby-accent) 13%, transparent); }
+.body[data-style="Food & Fun"] > section { border-block: 2px solid var(--baby-accent); margin-top: 20px; }
+.body[data-style="Food & Fun"] h2 { display: inline-block; padding-inline: 22px; border-inline: 2px solid var(--baby-accent); }
+.body[data-style="Elegant"] > section { border: 1px solid var(--baby-accent); outline: 1px solid color-mix(in srgb, var(--baby-accent) 35%, transparent); outline-offset: -8px; margin-top: 24px; }
+.body[data-style="Modern"] > section { text-align: left; border-left: 10px solid var(--baby-accent); background: color-mix(in srgb, var(--baby-accent) 8%, transparent); margin-top: 18px; }
+.body[data-style="Playful"] > section { border: 2px solid var(--baby-accent); border-radius: 32px; margin-top: 26px; box-shadow: 6px 6px 0 color-mix(in srgb, var(--baby-accent) 18%, transparent); }
+.body[data-style="Seasonal"] > section:nth-of-type(2n) { border-inline: 1px solid var(--baby-accent); width: 88%; margin: 20px auto; }
+.body[data-style="Farm & Garden"] > section { border-block: 2px dashed var(--baby-accent); margin-top: 20px; }
+
+/* Individual scene compositions follow. Shared primitives do not select a layout. */

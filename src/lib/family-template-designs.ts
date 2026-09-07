@@ -1,3 +1,5 @@
+import { getGenderRevealDesign } from "@/lib/gender-reveal-designs";
+
 export type FamilyTemplateCategory = "baby-showers" | "gender-reveal";
 
 type FamilyTemplateDesign = {
@@ -33,29 +35,14 @@ const babyThemes: Record<string, string> = {
   "botanical-bump-celebration": "sage_green",
 };
 
-const revealDesigns: Record<string, [string, string, string]> = {
-  "pink-or-blue-classic": ["celebration", "pink_blue", "playfair"],
-  "what-will-it-be-clouds": ["anticipation", "lavender_dream", "parisienne"],
-  "neutral-mystery": ["details", "neutral_gold", "allura"],
-  "boots-or-bows": ["gather", "mint_peach", "playfair"],
-  "touchdowns-or-tutus": ["moment", "pink_blue", "montserrat"],
-  "bee-theme-reveal": ["table", "neutral_gold", "poppins"],
-  "staches-or-lashes": ["plan", "mint_peach", "montserrat"],
-  "prince-or-princess": ["arrival", "lavender_dream", "allura"],
-};
-
 /** The same starting artwork and styling are used by the gallery and editor. */
 export function getFamilyTemplateDesign(
   category: FamilyTemplateCategory,
   templateId: string | null | undefined,
 ): FamilyTemplateDesign {
   if (category === "gender-reveal") {
-    const [image, themeId, font] = revealDesigns[templateId || ""] || revealDesigns["pink-or-blue-classic"];
-    return {
-      heroImage: `/images/landing/gender-reveal/gender-reveal-editorial-${image}.webp`,
-      themeId,
-      font,
-    };
+    const design = getGenderRevealDesign(templateId);
+    return { heroImage: design.heroImage, themeId: design.id, font: design.font };
   }
   const id = templateId && babyThemes[templateId] ? templateId : "soft-neutrals-shower";
   // These two original entries share the existing neutral and botanical artwork.

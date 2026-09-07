@@ -1,6 +1,5 @@
 "use client";
 
-import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import { parseEventGuestDate, normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -145,20 +144,16 @@ function formatDate(value?: string | null): string | null {
 function isDarkBackground(bg?: string): boolean {
   if (!bg) return false;
   const lower = bg.toLowerCase();
-  const darkTokens = [
-    "black",
-    "navy",
-    "midnight",
-    "slate",
-    "stone",
-    "neutral",
-    "gray",
-    "indigo",
-    "purple",
-  ];
+  const darkTokens = ["black", "navy", "midnight"];
   if (darkTokens.some((token) => lower.includes(token))) return true;
-  if (/#0[0-9a-f]{5,}/i.test(bg)) return true;
-  if (/[0-9a-f]{6}/i.test(bg) && parseInt(bg.replace("#", "").slice(0, 2), 16) < 50) return true;
+  if (/bg-(?:slate|stone|neutral|gray|indigo|purple)-(?:[789]00|950)\b/.test(lower)) return true;
+  const hex = lower.match(/#([0-9a-f]{6})\b/)?.[1];
+  if (hex) {
+    const red = Number.parseInt(hex.slice(0, 2), 16);
+    const green = Number.parseInt(hex.slice(2, 4), 16);
+    const blue = Number.parseInt(hex.slice(4, 6), 16);
+    return 0.299 * red + 0.587 * green + 0.114 * blue < 128;
+  }
   return false;
 }
 
@@ -346,15 +341,6 @@ export default function BabyShowerTemplateView({
               </nav>
             )}
 
-            <EventGuestActions
-              title={eventTitle}
-              start={startDate && !Number.isNaN(startDate.getTime()) ? startDate.toISOString() : undefined}
-              end={eventData.endISO || eventData.end || eventData.endAt}
-              location={locationLabel || undefined}
-              shareUrl={shareUrl}
-              eventId={eventId}
-              inverse={isDarkBackground(theme?.bg)}
-            />
             <EventGuestPlanningNotes value={normalizeEventGuestPlanning(eventData.guestPlanning)} inverse={isDarkBackground(theme?.bg)} />
 
             {/* Hosted By Section */}

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { TemplateThumbnailFrame, TemplateThumbnailPreview } from "@/components/events/TemplateThumbnail";
 import styles from "./TemplateGallery.module.css";
 import {
   getFontToken,
@@ -210,91 +211,93 @@ export default function TemplateGallery({
         return (
           <article
             key={template.id}
-            className={styles.templateCard}
+            className={`group ${styles.templateCard}`}
             data-selected={isSelected ? "true" : undefined}
           >
             <div className={styles.cardBody}>
-              <div className={styles.previewFrame}>
-                {useTemplateThumbnailOnly ? (
-                  <Image
-                    src={heroImageSrc}
-                    alt={
-                      previewHeroImageUrl
-                        ? `Uploaded preview for ${template.name}`
-                        : `${template.name} placeholder`
-                    }
-                    width={640}
-                    height={360}
-                    className={styles.previewPhotoImage}
-                    priority={false}
-                    unoptimized={Boolean(previewHeroImageUrl)}
-                  />
-                ) : (
-                  <>
-                    <div
-                      className={styles.previewHeader}
-                      style={headerBackgroundStyle}
-                      data-birthday={isBirthdayTemplate ? "true" : undefined}
-                    >
-                      <p
-                        className={styles.previewNames}
-                        style={{
-                          color: previewTextColor,
-                          fontFamily: previewFontFamily,
-                          fontWeight:
-                            activeVariation.titleWeight === "bold"
-                              ? 700
-                              : activeVariation.titleWeight === "semibold"
-                              ? 600
-                              : 400,
-                        }}
-                      >
-                        {(previewInfo as any).birthdayName
-                          ? `${(previewInfo as any).birthdayName}'s Birthday`
-                          : previewInfo.coupleName || "Event"}
-                      </p>
-                      <p
-                        className={styles.previewMeta}
-                        style={{ color: previewTextColor }}
-                      >
-                        {previewInfo.dateLabel}
-                        {previewInfo.timeLabel
-                          ? ` • ${previewInfo.timeLabel}`
-                          : ""}
-                      </p>
+              <TemplateThumbnailFrame>
+                <TemplateThumbnailPreview scaled={false}>
+                  {useTemplateThumbnailOnly ? (
+                    <Image
+                      src={heroImageSrc}
+                      alt={
+                        previewHeroImageUrl
+                          ? `Uploaded preview for ${template.name}`
+                          : `${template.name} placeholder`
+                      }
+                      width={640}
+                      height={360}
+                      className={styles.previewPhotoImage}
+                      priority={false}
+                      unoptimized={Boolean(previewHeroImageUrl)}
+                    />
+                  ) : (
+                    <div className="flex h-full flex-col">
                       <div
-                        className={styles.previewNav}
-                        style={{ color: previewTextColor }}
+                        className={styles.previewHeader}
+                        style={headerBackgroundStyle}
+                        data-birthday={isBirthdayTemplate ? "true" : undefined}
                       >
-                        {template.menu.slice(0, 7).map((item) => (
-                          <span
-                            key={item}
-                            className={styles.previewNavItem}
-                            style={{ color: previewTextColor }}
-                          >
-                            {item}
-                          </span>
-                        ))}
+                        <p
+                          className={styles.previewNames}
+                          style={{
+                            color: previewTextColor,
+                            fontFamily: previewFontFamily,
+                            fontWeight:
+                              activeVariation.titleWeight === "bold"
+                                ? 700
+                                : activeVariation.titleWeight === "semibold"
+                                ? 600
+                                : 400,
+                          }}
+                        >
+                          {(previewInfo as any).birthdayName
+                            ? `${(previewInfo as any).birthdayName}'s Birthday`
+                            : previewInfo.coupleName || "Event"}
+                        </p>
+                        <p
+                          className={styles.previewMeta}
+                          style={{ color: previewTextColor }}
+                        >
+                          {previewInfo.dateLabel}
+                          {previewInfo.timeLabel
+                            ? ` • ${previewInfo.timeLabel}`
+                            : ""}
+                        </p>
+                        <div
+                          className={styles.previewNav}
+                          style={{ color: previewTextColor }}
+                        >
+                          {template.menu.slice(0, 7).map((item) => (
+                            <span
+                              key={item}
+                              className={styles.previewNavItem}
+                              style={{ color: previewTextColor }}
+                            >
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className={styles.previewPhoto}>
+                        <Image
+                          src={heroImageSrc}
+                          alt={
+                            previewHeroImageUrl
+                              ? `Uploaded preview for ${template.name}`
+                              : `${template.name} placeholder`
+                          }
+                          width={640}
+                          height={360}
+                          className={styles.previewPhotoImage}
+                          priority={false}
+                          unoptimized={Boolean(previewHeroImageUrl)}
+                        />
                       </div>
                     </div>
-                    <div className={styles.previewPhoto}>
-                      <Image
-                        src={heroImageSrc}
-                        alt={
-                          previewHeroImageUrl
-                            ? `Uploaded preview for ${template.name}`
-                            : `${template.name} placeholder`
-                        }
-                        width={640}
-                        height={360}
-                        className={styles.previewPhotoImage}
-                        priority={false}
-                        unoptimized={Boolean(previewHeroImageUrl)}
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
+                  )}
+                </TemplateThumbnailPreview>
+              </TemplateThumbnailFrame>
               <div className={styles.cardHeader}>
                 <div>
                   <p className={styles.cardTitle}>{template.name}</p>

@@ -19,9 +19,11 @@ import AuthModal from "@/components/auth/AuthModal";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
+  getGymMeetTemplateMeta,
   isGymMeetTemplateId,
   resolveGymMeetTemplateId,
 } from "@/components/gym-meet-templates/registry";
+import GymnasticsLauncher from "@/components/event-create/GymnasticsLauncher";
 import GymnasticsDesignGallery from "@/components/gym-meet-templates/GymnasticsDesignGallery";
 import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
 import SimpleTemplateView from "@/components/SimpleTemplateView";
@@ -2279,49 +2281,25 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const renderMainMenu = () => (
       <div className="space-y-4 animate-fade-in pb-8 flex flex-col items-center">
         <div className="mb-2 w-full max-w-sm text-center">
+          {!editEventId ? (
+            <button type="button" onClick={() => router.push(`/event/gymnastics/customize?${new URLSearchParams({ ...(data.date ? { d: data.date } : {}), ...(demoMode ? { demo: "1" } : {}) }).toString()}`)} className="mb-5 inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-full border border-violet-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-violet-700 shadow-sm transition hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2">
+              <ChevronLeft size={15} aria-hidden="true" /> All gymnastics designs
+            </button>
+          ) : null}
           <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">
-            {useParseDrivenSections ? "Edit your meet" : "Build Your Meet Page"}
+            Add your details
           </h2>
           <p className="text-slate-500 text-sm">
-            {useParseDrivenSections
-              ? "Update details and sections from your uploaded source."
-              : "Complete the essentials first, then add operations and parent communications."}
+            Customize your gymnastics meet page.
           </p>
         </div>
 
         {!useParseDrivenSections && (
-          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-              Starter Mode
-            </div>
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => setActiveView("discover")}
-                className="w-full rounded-lg border border-indigo-600 bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 flex items-center justify-center gap-2"
-              >
-                Upload & Prefill
-                <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
-                  Recommended
-                </span>
-              </button>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={resetToBlank}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
-                >
-                  Start Blank
-                </button>
-                <button
-                  type="button"
-                  onClick={applySampleData}
-                  className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
-                >
-                  Load Sample Meet
-                </button>
-              </div>
-            </div>
+          <div className="w-full max-w-sm">
+            <GymnasticsLauncher
+              variant="panel"
+              forwardQueryString={new URLSearchParams({ templateId: resolveGymMeetTemplateId(data), ...(data.date ? { d: data.date } : {}), ...(demoMode ? { demo: "1" } : {}) }).toString()}
+            />
           </div>
         )}
 
@@ -2329,6 +2307,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">
             Essentials
           </p>
+          <MenuCard
+            title="Design"
+            desc={getGymMeetTemplateMeta(resolveGymMeetTemplateId(data)).name}
+            icon={<Type size={18} />}
+            status="ready"
+            onClick={() => setActiveView("design")}
+            showsOnEvent={SECTION_SHOWS_ON_EVENT.design}
+          />
           <MenuCard
             title="Event Basics"
             desc="Title, date, time, host, and venue."
@@ -2476,7 +2462,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       setData((prev) => ({
         ...prev,
         title: "",
-        pageTemplateId: DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
+        pageTemplateId: prev.pageTemplateId || DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
         hostGym: "",
         city: "",
         state: "",
@@ -2627,6 +2613,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             value={resolveGymMeetTemplateId(data)}
             onChange={handleTemplateSelection}
           />
+          {!useParseDrivenSections ? (
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={resetToBlank} className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">Clear sample details</button>
+              <button type="button" onClick={applySampleData} className="min-h-11 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700">Load sample meet</button>
+            </div>
+          ) : null}
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -2794,6 +2786,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       try {
         const formData = new FormData();
         formData.append("file", discoverFile);
+        formData.append("pageTemplateId", resolveGymMeetTemplateId(data));
         log("starting discovery upload", {
           fileName: discoverFile.name,
           sizeBytes: discoverFile.size,
@@ -2851,7 +2844,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       } finally {
         setDiscoverBusy(false);
       }
-    }, [discoverBusy, discoverFile, router]);
+    }, [data.pageTemplateId, discoverBusy, discoverFile, router]);
 
     const renderDiscoverEditor = () => (
       <GymnasticsEditorLayout
@@ -3058,6 +3051,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           loadedDiscoveryPipelineSummary &&
           loadedDiscoverySource?.pipelineVersion === "gym-public-v3",
       );
+      const previewDetails = data.details || (isDiscoveryPreview
+        ? undefined
+        : "Your meet details will appear here. Upload a packet, paste a meet link, or add the details in the editor.");
 
       return {
         category: config.category,
@@ -3092,8 +3088,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         hostGym: data.hostGym || undefined,
         city: data.city || undefined,
         state: data.state || undefined,
-        details: data.details || undefined,
-        description: data.details || undefined,
+        details: previewDetails,
+        description: previewDetails,
         rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
         rsvpEnabled: data.rsvpEnabled,
         rsvpDeadline: data.rsvpDeadline || undefined,
@@ -3277,15 +3273,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             style={{ pointerEvents: "auto" }}
           >
             {discoveryEnrichmentBanner}
-            {activeView === "main" &&
-              (editEventId && loadingExisting ? (
+            <div hidden={activeView !== "main"}>
+              {editEventId && loadingExisting ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <p className="text-sm font-medium text-slate-600">Loading event…</p>
                   <p className="mt-1 text-xs text-slate-400">Preparing edit sidebar</p>
                 </div>
               ) : (
                 renderMainMenu()
-              ))}
+              )}
+            </div>
             {activeView === "headline" && renderHeadlineEditor}
             {activeView === "images" && renderImagesEditor()}
             {activeView === "design" && renderDesignEditor()}

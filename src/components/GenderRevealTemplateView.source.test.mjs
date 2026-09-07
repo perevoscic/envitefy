@@ -9,7 +9,8 @@ const source = fs.readFileSync(
 );
 
 test("gender reveal live page keeps the hero image and posts Team Pink/Blue with RSVP", () => {
-  assert.match(source, /\/templates\/hero-images\/gender reveal-hero\.jpeg/);
+  assert.match(source, /<GenderRevealScene/);
+  assert.match(source, /design\.heroImage/);
   assert.match(source, /Team Pink or Team Blue\?/);
   assert.match(source, /fetch\(`\/api\/events\/\$\{eventId\}\/rsvp`/);
   assert.match(source, /answersJson/);
@@ -18,6 +19,6 @@ test("gender reveal live page keeps the hero image and posts Team Pink/Blue with
   assert.match(source, /pending/);
   assert.match(source, /guesses/);
   assert.match(source, /Reveal girl/);
-  assert.match(source, /<EventGuestActions/);
-  assert.match(source, /calendarLinks=\{storedEnd \? calendarLinks : undefined\}/);
+  assert.doesNotMatch(source, /EventGuestActions/);
+  assert.match(source, /<EventActions/);
 });

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import BirthdayGalleryHero from "@/components/birthdays/BirthdayGalleryHero";
 import BirthdayDesignPreview from "@/components/birthdays/BirthdayDesignPreview";
+import { TemplateThumbnailFrame } from "@/components/events/TemplateThumbnail";
 import { BIRTHDAY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import { BIRTHDAY_GALLERY_BATCH_SIZE, BIRTHDAY_FAVORITES_KEY, parseBirthdayFavorites, toggleBirthdayFavorite } from "@/lib/birthday-gallery-preferences";
 import type { BirthdayDesignTemplate } from "@/data/birthday-template-data";
@@ -299,11 +300,9 @@ export default function BirthdayDesignGallery() {
                   >
                     <span className="sr-only">Customize {design.name}</span>
                   </Link>
-                  <div className="relative overflow-hidden rounded-[1.35rem] border border-[#ead5c2] bg-white p-2 shadow-[0_18px_50px_rgba(87,48,29,0.08)] transition duration-500 group-hover:-translate-y-1 group-hover:shadow-[0_28px_70px_rgba(87,48,29,0.16)]">
-                    <div className="overflow-hidden rounded-[1rem]">
-                      <BirthdayDesignPreview design={design} />
-                    </div>
-                  </div>
+                  <TemplateThumbnailFrame>
+                    <BirthdayDesignPreview design={design} />
+                  </TemplateThumbnailFrame>
                   <div className="px-2 pt-5">
                     <div className="flex items-start justify-between gap-4">
                       <div>

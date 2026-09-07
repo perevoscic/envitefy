@@ -3,6 +3,7 @@
 import { ArrowRight, Search, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
+import { TemplateThumbnailFrame, TemplateThumbnailPreview } from "./TemplateThumbnail";
 
 export type EventGalleryDesign = {
   id: string;
@@ -72,17 +73,15 @@ export default function EventDesignGallery<Design extends EventGalleryDesign>({
       </section>
       <section aria-label={`${title} templates`} className="mx-auto max-w-[1500px] px-5 py-9 sm:px-8 lg:px-12">
         {filtered.length ? (
-          <div className="grid grid-cols-1 gap-x-7 gap-y-10 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-x-7 gap-y-11 md:grid-cols-2 xl:grid-cols-3">
             {filtered.slice(0, visibleCount).map((design) => (
-              <article key={design.id} className="group relative rounded-3xl">
-                <Link prefetch={false} href={getHref(design)} aria-label={`Customize ${design.name}`} className="absolute inset-0 z-20 rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-[#926e93] focus-visible:ring-offset-4">
+              <article key={design.id} className="group relative rounded-[1.4rem]">
+                <Link prefetch={false} href={getHref(design)} aria-label={`Customize ${design.name}`} className="absolute inset-0 z-20 rounded-[1.4rem] outline-none focus-visible:ring-2 focus-visible:ring-[#926e93] focus-visible:ring-offset-4">
                   <span className="sr-only">Customize {design.name}</span>
                 </Link>
-                <div className="overflow-hidden rounded-3xl border border-[#e3d8df] bg-white p-2 shadow-sm transition duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
-                  <div aria-hidden="true" inert className="relative isolate aspect-[7/5] overflow-hidden rounded-2xl bg-[#f5f0f4]">
-                    <div className="pointer-events-none absolute left-0 top-0 w-[400%] origin-top-left scale-25 select-none">{renderPreview(design)}</div>
-                  </div>
-                </div>
+                <TemplateThumbnailFrame>
+                  <TemplateThumbnailPreview>{renderPreview(design)}</TemplateThumbnailPreview>
+                </TemplateThumbnailFrame>
                 <div className="px-2 pt-5">
                   <p className="mb-2 text-xs font-semibold text-[#886488]">{design.style}</p>
                   <div className="flex items-start justify-between gap-4">

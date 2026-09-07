@@ -1,6 +1,5 @@
 "use client";
 
-import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import { parseEventGuestDate, normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
@@ -29,9 +28,11 @@ import {
   type GenderRevealGuessCounts,
   type GenderRevealLiveStrip,
 } from "@/lib/gender-reveal";
+import GenderRevealScene, { genderRevealPageStyle, genderRevealStyles } from "@/components/gender-reveal/GenderRevealScene";
+import { getGenderRevealDesign, genderRevealFont } from "@/lib/gender-reveal-designs";
 import type { CalendarLinkSet } from "@/utils/calendar-links";
 
-const DEFAULT_HERO_IMAGE = "/templates/hero-images/gender reveal-hero.jpeg";
+// Existing uploaded and saved hero images take precedence over catalog defaults.
 
 type RsvpChoice = "yes" | "no" | "maybe";
 
@@ -153,7 +154,7 @@ function LiveStrip({
         </span>
       ))}
       {revealed && memoryLine ? (
-        <span className="w-full text-center text-sm font-medium text-white/90 drop-shadow">
+        <span className="w-full text-center text-sm font-medium text-current">
           {memoryLine}
         </span>
       ) : null}
@@ -282,7 +283,6 @@ export default function GenderRevealTemplateView({
   canEdit: canEditProp,
   isReadOnly,
   editHref,
-  calendarLinks,
   preview = false,
 }: Props) {
   const canEdit = canEditProp ?? isOwner;
@@ -347,16 +347,17 @@ export default function GenderRevealTemplateView({
     };
   }, [preview, refreshStats]);
 
+  const design = getGenderRevealDesign(readString(eventData.templateId));
   const savedTheme = asTheme(eventData.theme);
   const textClass = readString(savedTheme.text) || "text-slate-900";
   const accentClass = readString(savedTheme.accent) || "text-pink-600";
   const headingFont =
-    readString(eventData.fontFamily) || readString(savedTheme.fontFamily) || "var(--font-playfair)";
+    readString(eventData.fontFamily) || readString(savedTheme.fontFamily) || genderRevealFont(design);
   const heroImage =
     readString(eventData.heroImage) ||
     readString(eventData.customHeroImage) ||
     readString(asRecord(eventData.images)?.hero) ||
-    DEFAULT_HERO_IMAGE;
+    design.heroImage;
   const parentsName = readString(eventData.parentsName) || readString(eventData.eventTitle);
   const hosts = Array.isArray(eventData.hosts) ? eventData.hosts : [];
   const gallery = Array.isArray(eventData.gallery) ? eventData.gallery : [];
@@ -423,11 +424,7 @@ export default function GenderRevealTemplateView({
     counts: stats.guesses || { pink: 0, blue: 0, total: 0 },
   });
   const revealed = liveConfig.revealed && liveConfig.revealedResult;
-  const overlayClass = revealed
-    ? liveConfig.revealedResult === "pink"
-      ? "from-pink-700/55 via-pink-500/35 to-rose-900/55"
-      : "from-sky-800/55 via-sky-500/35 to-indigo-900/55"
-    : "from-[#2b1748]/45 via-pink-500/25 to-sky-700/40";
+
 
   const detailItems = [
     liveConfig.revealMethod ? { label: "Reveal", value: liveConfig.revealMethod } : null,
@@ -479,6 +476,11 @@ export default function GenderRevealTemplateView({
     }
     if (guessRequired && !genderGuess) {
       setRsvpError("Team Pink or Team Blue?");
+      return;
+    }
+    if (preview) {
+      setRsvpError(null);
+      setRsvpSubmitted(true);
       return;
     }
     setRsvpSubmitting(true);
@@ -544,86 +546,26 @@ export default function GenderRevealTemplateView({
             />
           ) : null}
 
-          <div className={`relative overflow-hidden rounded-[32px] shadow-[0_35px_120px_rgba(15,23,42,0.25)] ${textClass}`}>
-            <section className="relative min-h-[520px] overflow-hidden">
-              <img
-                src={heroImage}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-              <div className={`absolute inset-0 bg-gradient-to-br ${overlayClass}`} />
-              {!revealed ? (
-                <div className="pointer-events-none absolute inset-0 flex">
-                  <div className="w-1/2 bg-pink-400/15" />
-                  <div className="w-1/2 bg-sky-400/15" />
-                </div>
-              ) : null}
-
-              <div className="relative z-10 flex min-h-[520px] flex-col justify-between px-6 py-8 text-white md:px-10 md:py-12">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-xs font-black uppercase tracking-[0.28em] text-white/80">
-                    {revealed
-                      ? `It's a ${genderRevealResultLabel(liveConfig.revealedResult)}`
-                      : "He or she?"}
-                  </p>
-                  {!isReadOnly && (canEdit || isOwner) ? (
-                    <div className="flex items-center gap-2">
-                      {canEdit ? (
-                        <Link
-                          href={editHref}
-                          className="rounded-full border border-white/50 bg-white/85 px-4 py-1.5 text-sm font-semibold text-slate-800"
-                        >
-                          Edit
-                        </Link>
-                      ) : null}
-                      {isOwner ? <EventDeleteModal eventId={eventId} eventTitle={eventTitle} /> : null}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="space-y-4 text-center">
-                  <h1 className="text-4xl font-semibold leading-tight md:text-6xl" style={titleStyle}>
-                    {eventTitle}
-                  </h1>
-                  {parentsName ? (
-                    <p className="text-lg font-medium text-white/90 md:text-2xl">{parentsName}</p>
-                  ) : null}
-                  <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm font-semibold uppercase tracking-[0.22em] text-white/85">
-                    {dateLabel ? <span>{dateLabel}</span> : null}
-                    {timeLabel ? <span>{timeLabel}{endLabel ? ` – ${endLabel}` : ""}</span> : null}
-                    {locationLabel ? <span>{locationLabel}</span> : null}
-                  </div>
-                  <LiveStrip
-                    strip={strip}
-                    showGuesses={showGuestTally || isOwner}
-                    revealed={Boolean(revealed)}
-                    memoryLine={memoryLine}
-                  />
-                </div>
-
-                <div className="mx-auto flex w-full max-w-xl flex-col gap-3 sm:flex-row">
-                  {rsvpEnabled ? (
-                    <a
-                      href="#rsvp"
-                      className="inline-flex flex-1 items-center justify-center rounded-full bg-white px-5 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-slate-900"
-                    >
-                      RSVP
-                    </a>
-                  ) : null}
-                </div>
-              </div>
-            </section>
-
-            <EventGuestActions
+          <div className={`${genderRevealStyles.page} ${readString(savedTheme.bg)}`} style={{ ...genderRevealPageStyle(design), ...(asRecord(savedTheme.bgStyle) || {}) }} data-reveal-body={design.style}>
+            <GenderRevealScene
+              design={design}
               title={eventTitle}
-              start={startDate && !Number.isNaN(startDate.getTime()) ? startDate.toISOString() : undefined}
-              end={readString(eventData.endISO) || readString(eventData.end) || readString(eventData.endAt)}
-              location={locationLabel || undefined}
-              shareUrl={shareUrl}
-              eventId={eventId}
-              calendarLinks={storedEnd ? calendarLinks : undefined}
-              inverse={textClass.includes("text-white")}
+              parents={parentsName}
+              image={heroImage}
+              fontFamily={headingFont}
+              fontSize={readString(eventData.fontSize) || readString(savedTheme.fontSize)}
+              date={dateLabel}
+              time={timeLabel ? `${timeLabel}${endLabel ? ` – ${endLabel}` : ""}` : null}
+              location={locationLabel}
+              announcement={revealed ? `It's a ${genderRevealResultLabel(liveConfig.revealedResult)}` : undefined}
+              controls={!isReadOnly && (canEdit || isOwner) ? <>
+                {canEdit ? <Link href={editHref} className="rounded-full border border-current/30 px-4 py-2 text-sm font-semibold">Edit</Link> : null}
+                {isOwner ? <EventDeleteModal eventId={eventId} eventTitle={eventTitle} /> : null}
+              </> : null}
+              status={!preview ? <LiveStrip strip={strip} showGuesses={showGuestTally || isOwner} revealed={Boolean(revealed)} memoryLine={memoryLine} /> : null}
+              actions={rsvpEnabled ? <a href="#rsvp">RSVP</a> : null}
             />
+
             <EventGuestPlanningNotes value={normalizeEventGuestPlanning(eventData.guestPlanning)} inverse={textClass.includes("text-white")} />
 
             {detailItems.length > 0 ? (

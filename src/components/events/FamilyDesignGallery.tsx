@@ -1,5 +1,6 @@
 "use client";
 
+import { getGenderRevealDesign, genderRevealFont } from "@/lib/gender-reveal-designs";
 import { useSearchParams } from "next/navigation";
 import BabyShowerTemplateView from "@/components/BabyShowerTemplateView";
 import GenderRevealTemplateView from "@/components/GenderRevealTemplateView";
@@ -28,6 +29,7 @@ export default function FamilyDesignGallery({ category }: { category: FamilyTemp
       renderPreview={(design) => {
         const defaults = getFamilyTemplateDesign(category, design.id);
         const eventData = {
+          templateId: design.id,
           babyName: "Emma",
           momName: "Sarah",
           parentsName: "Sarah & Michael",
@@ -39,12 +41,12 @@ export default function FamilyDesignGallery({ category }: { category: FamilyTemp
           location: "The Garden House",
           heroImage: defaults.heroImage,
           themeId: defaults.themeId,
-          theme: { themeId: defaults.themeId, fontFamily: `var(--font-${defaults.font})` },
+          theme: { themeId: defaults.themeId, fontFamily: isBaby ? `var(--font-${defaults.font})` : genderRevealFont(getGenderRevealDesign(design.id)) },
           rsvpEnabled: false,
           hosts: [{ name: "Family & friends", role: "Your hosts" }],
           babyDetails: { notes: "Join us for an afternoon of little wishes, sweet treats, and so much love." },
         };
-        const props = { eventId: "", eventTitle: design.name, eventData, shareUrl: "", isOwner: false, isReadOnly: true, editHref: "" };
+        const props = { eventId: "", eventTitle: isBaby ? design.name : "Our little surprise", eventData, shareUrl: "", isOwner: false, isReadOnly: true, editHref: "" };
         return isBaby ? <BabyShowerTemplateView {...props} /> : <GenderRevealTemplateView {...props} preview />;
       }}
     />

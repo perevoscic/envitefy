@@ -3,14 +3,14 @@ import type { CSSProperties } from "react";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   getGymMeetTemplateMeta,
-} from "@/components/gym-meet-templates/registry";
+} from "@/components/football-season-templates/registry";
 import {
   SHOWCASE_THEMES,
   type ShowcaseThemeConfig,
-} from "@/components/gym-meet-templates/showcaseThemes";
-import { getGymMeetTitleTypography } from "@/components/gym-meet-templates/titleTypography";
-import type { GymMeetTitleTypographySpec } from "@/components/gym-meet-templates/titleTypography";
-import type { GymMeetTemplateId } from "@/components/gym-meet-templates/types";
+} from "@/components/football-season-templates/showcaseThemes";
+import { getGymMeetTitleTypography } from "@/components/football-season-templates/titleTypography";
+import type { GymMeetTitleTypographySpec } from "@/components/football-season-templates/titleTypography";
+import type { GymMeetTemplateId } from "@/components/football-season-templates/types";
 
 export type FootballSeasonTemplateTheme = {
   id: GymMeetTemplateId;

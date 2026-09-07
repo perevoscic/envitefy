@@ -1,4 +1,5 @@
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
+import { TemplateThumbnailPreview } from "@/components/events/TemplateThumbnail";
 import type { WeddingDesign } from "@/lib/wedding-designs";
 
 type WeddingDesignPreviewProps = {
@@ -66,17 +67,14 @@ export default function WeddingDesignPreview({
   };
 
   return (
-    <div
-      aria-hidden="true"
-      inert
+    <TemplateThumbnailPreview
       data-wedding-design={design.id}
       data-wedding-layout={design.layout}
-      className={`relative isolate ${design.family === "atelier" && !compact ? "aspect-square" : "aspect-[16/10]"} w-full overflow-hidden bg-white ${className}`}
+      className={className}
+      compact={compact}
       style={{ backgroundColor: design.primaryColor }}
     >
-      <div className="pointer-events-none absolute left-0 top-0 h-[400%] w-[400%] origin-top-left scale-[0.25] select-none">
-        <WeddingRenderer template={template} event={previewEvent} hideGuestTools />
-      </div>
-    </div>
+      <WeddingRenderer template={template} event={previewEvent} hideGuestTools />
+    </TemplateThumbnailPreview>
   );
 }
