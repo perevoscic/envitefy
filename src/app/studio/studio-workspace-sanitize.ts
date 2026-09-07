@@ -846,7 +846,7 @@ export function sanitizeStudioGenerateResponse(value: unknown): StudioGenerateAp
     ok: true,
     mode,
     product: resolveStudioProduct(value.product),
-    qualityCheck: value.qualityCheck === "passed" || value.qualityCheck === "failed" ? value.qualityCheck : "unavailable",
+    qualityCheck: value.qualityCheck === "passed" || value.qualityCheck === "failed" || value.qualityCheck === "needs_review" ? value.qualityCheck : "unavailable",
     liveCard,
     invitation: invitation || liveCard?.invitation || null,
     imageDataUrl,

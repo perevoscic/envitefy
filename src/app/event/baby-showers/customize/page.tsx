@@ -1,8 +1,13 @@
 // @ts-nocheck
 "use client";
 
-import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
-import React, {
+import { familyTemplateDate, getFamilyTemplateDesign } from "@/lib/family-template-designs";
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import { parseEventGuestDate, normalizeEventGuestPlanning, type EventGuestPlanning } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import {
   useRef,
   useState,
   useCallback,
@@ -20,7 +25,6 @@ import {
   Users,
   Image as ImageIcon,
   Type,
-  Palette,
   CheckSquare,
   Gift,
   Upload,
@@ -28,7 +32,6 @@ import {
   Baby,
   Check,
   X as XIcon,
-  Share2,
 } from "lucide-react";
 import {
   type BabyShowerTemplateDefinition,
@@ -37,7 +40,6 @@ import {
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
-import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 
 // Import constants from wedding page (we'll reuse FONTS, FONT_SIZES, DESIGN_THEMES)
@@ -184,6 +186,9 @@ const INITIAL_DATA = {
     return date.toISOString().split("T")[0];
   })(),
   time: "14:00",
+  endDate: "",
+  endTime: "",
+  guestPlanning: {} as EventGuestPlanning,
   city: "Chicago",
   state: "IL",
   address: "123 Main Street",
@@ -307,6 +312,7 @@ const InputGroup = ({
       {label}
     </label>
     <input
+      aria-label={label}
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -319,7 +325,7 @@ const InputGroup = ({
 export default function BabyShowerTemplateCustomizePage() {
   const search = useSearchParams();
   const router = useRouter();
-  const _defaultDate = search?.get("d") ?? undefined;
+  const defaultDate = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
   const templateId = search?.get("templateId");
   const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>(
@@ -331,7 +337,12 @@ export default function BabyShowerTemplateCustomizePage() {
   );
 
   const [activeView, setActiveView] = useState("main");
-  const [data, setData] = useState(INITIAL_DATA);
+  const designDefaults = getFamilyTemplateDesign("baby-showers", template.id);
+  const [data, setData] = useState(() => ({
+    ...INITIAL_DATA,
+    date: familyTemplateDate(defaultDate, INITIAL_DATA.date),
+    theme: editEventId ? INITIAL_DATA.theme : { ...INITIAL_DATA.theme, themeId: designDefaults.themeId, font: designDefaults.font },
+  }));
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
   const {
@@ -347,127 +358,6 @@ export default function BabyShowerTemplateCustomizePage() {
   const [newHost, setNewHost] = useState({ name: "", role: "" });
   const [newRegistry, setNewRegistry] = useState({ label: "", url: "" });
   const [_loadingExisting, setLoadingExisting] = useState(false);
-  const buildCalendarDetails = () => {
-    const title = data.title || "Baby Shower";
-    let start: Date | null = null;
-    if (data.date) {
-      const tentative = new Date(`${data.date}T${data.time || "14:00"}`);
-      if (!Number.isNaN(tentative.getTime())) start = tentative;
-    }
-    if (!start) start = new Date();
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
-    const location = [data.address, data.city, data.state]
-      .filter(Boolean)
-      .join(", ");
-    const description = data.details || "";
-    return { title, start, end, location, description };
-  };
-
-  const toGoogleDate = (d: Date) =>
-    d
-      .toISOString()
-      .replace(/[-:]/g, "")
-      .replace(/\.\d{3}Z$/, "Z");
-
-  const buildIcsUrl = (details: ReturnType<typeof buildCalendarDetails>) => {
-    const params = new URLSearchParams();
-    params.set("title", details.title);
-    params.set("start", details.start.toISOString());
-    params.set("end", details.end.toISOString());
-    if (details.location) params.set("location", details.location);
-    if (details.description) params.set("description", details.description);
-    params.set("disposition", "inline");
-    return `/api/ics?${params.toString()}`;
-  };
-
-  const openWithAppFallback = (appUrl: string, webUrl: string) => {
-    if (typeof window === "undefined") return;
-    const timer = setTimeout(() => {
-      window.open(webUrl, "_blank", "noopener,noreferrer");
-    }, 700);
-    const clear = () => {
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", clear);
-    };
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") clear();
-    });
-    try {
-      window.location.href = appUrl;
-    } catch {
-      clearTimeout(timer);
-      window.open(webUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const handleShare = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const details = buildCalendarDetails();
-    const shareUrl =
-      typeof window !== "undefined" ? window.location.href : undefined;
-    if (
-      typeof navigator !== "undefined" &&
-      (navigator as any).share &&
-      shareUrl
-    ) {
-      (navigator as any)
-        .share({
-          title: details.title,
-          text: details.description || details.location || details.title,
-          url: shareUrl,
-        })
-        .catch(() => {
-          window.open(shareUrl, "_blank", "noopener,noreferrer");
-        });
-    } else if (shareUrl) {
-      window.open(shareUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const handleGoogleCalendar = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const details = buildCalendarDetails();
-    const start = toGoogleDate(details.start);
-    const end = toGoogleDate(details.end);
-    const query = `action=TEMPLATE&text=${encodeURIComponent(
-      details.title
-    )}&dates=${start}/${end}&location=${encodeURIComponent(
-      details.location
-    )}&details=${encodeURIComponent(details.description || "")}`;
-    const webUrl = `https://calendar.google.com/calendar/render?${query}`;
-    const appUrl = `comgooglecalendar://?${query}`;
-    openWithAppFallback(appUrl, webUrl);
-  };
-
-  const handleOutlookCalendar = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const details = buildCalendarDetails();
-    const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
-      details.title
-    )}&body=${encodeURIComponent(
-      details.description || ""
-    )}&location=${encodeURIComponent(
-      details.location
-    )}&startdt=${encodeURIComponent(
-      details.start.toISOString()
-    )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
-    const appUrl = `ms-outlook://events/new?subject=${encodeURIComponent(
-      details.title
-    )}&body=${encodeURIComponent(
-      details.description || ""
-    )}&location=${encodeURIComponent(
-      details.location
-    )}&startdt=${encodeURIComponent(
-      details.start.toISOString()
-    )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
-    openWithAppFallback(appUrl, webUrl);
-  };
-
-  const handleAppleCalendar = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    openAppleCalendarIcs(buildIcsUrl(buildCalendarDetails()));
-  };
-
   const updateData = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
   };
@@ -562,7 +452,7 @@ export default function BabyShowerTemplateCustomizePage() {
 
   const titleColor = isDarkBackground ? { color: "#f5e6d3" } : undefined;
 
-  const heroImageSrc = "/templates/hero-images/baby-shower-hero.jpeg";
+  const heroImageSrc = editEventId ? "/templates/hero-images/baby-shower-hero.jpeg" : designDefaults.heroImage;
 
   // Keep template selection in sync with URL when not editing
   useEffect(() => {
@@ -596,7 +486,7 @@ export default function BabyShowerTemplateCustomizePage() {
           const d = new Date(startIso);
           if (!Number.isNaN(d.getTime())) {
             loadedDate = d.toISOString().split("T")[0];
-            loadedTime = d.toISOString().slice(11, 16);
+            loadedTime = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
           }
         }
 
@@ -662,12 +552,21 @@ export default function BabyShowerTemplateCustomizePage() {
               }))
             : INITIAL_DATA.registries;
 
+        const storedEnd = existing.endISO || existing.end || existing.endAt;
+        const parsedEnd = storedEnd ? new Date(storedEnd) : null;
+        const validEnd = parsedEnd && !Number.isNaN(parsedEnd.getTime()) ? parsedEnd : null;
+        const restoredEndDate = validEnd ? `${validEnd.getFullYear()}-${String(validEnd.getMonth() + 1).padStart(2, "0")}-${String(validEnd.getDate()).padStart(2, "0")}` : "";
+        const restoredEndTime = validEnd ? `${String(validEnd.getHours()).padStart(2, "0")}:${String(validEnd.getMinutes()).padStart(2, "0")}` : "";
+
         setData((prev) => ({
           ...prev,
           babyName: existing.babyName || prev.babyName,
           momName: existing.momName || prev.momName,
-          date: loadedDate || prev.date,
-          time: loadedTime || prev.time,
+          date: existing.date || loadedDate || prev.date,
+          time: existing.time || loadedTime || prev.time,
+          endDate: existing.endDate ?? restoredEndDate,
+          endTime: existing.endTime ?? restoredEndTime,
+          guestPlanning: normalizeEventGuestPlanning(existing.guestPlanning),
           city: existing.city || prev.city,
           state: existing.state || prev.state,
           address: existing.address || existing.location || prev.address,
@@ -736,12 +635,16 @@ export default function BabyShowerTemplateCustomizePage() {
     try {
       let startISO: string | null = null;
       let endISO: string | null = null;
+      if (!data.date || !data.time) throw new Error("Enter an event date and start time before publishing.");
       if (data.date) {
-        const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-        const end = new Date(start);
-        end.setHours(end.getHours() + 3);
+        const start = new Date(`${data.date}T${data.time}:00`);
+        if (Number.isNaN(start.getTime())) throw new Error("Enter a valid event date and start time.");
         startISO = start.toISOString();
-        endISO = end.toISOString();
+        if (data.endTime) {
+          const end = new Date(`${data.endDate || data.date}T${data.endTime}:00`);
+          if (Number.isNaN(end.getTime()) || end <= start) throw new Error("End time must be after the start time. Choose an end date for an overnight event.");
+          endISO = end.toISOString();
+        }
       }
 
       const location =
@@ -793,8 +696,17 @@ export default function BabyShowerTemplateCustomizePage() {
           category: "Baby Showers",
           createdVia: "template",
           createdManually: true,
+          date: data.date,
+          time: data.time,
+          startAt: startISO,
+          start: startISO,
           startISO,
+          endAt: endISO,
+          end: endISO,
           endISO,
+          endDate: data.endDate,
+          endTime: data.endTime,
+          guestPlanning: data.guestPlanning,
           location,
           address: data.address || undefined,
           city: data.city || undefined,
@@ -927,12 +839,6 @@ export default function BabyShowerTemplateCustomizePage() {
           onClick={() => setActiveView("headline")}
         />
         <MenuCard
-          title="Design"
-          icon={<Palette size={18} />}
-          desc="Theme, fonts, colors."
-          onClick={() => setActiveView("design")}
-        />
-        <MenuCard
           title="Images"
           icon={<ImageIcon size={18} />}
           desc="Hero & background photos."
@@ -1007,6 +913,12 @@ export default function BabyShowerTemplateCustomizePage() {
             onChange={(v) => updateData("time", v)}
           />
         </div>
+        <div className="grid grid-cols-2 gap-4">
+          <InputGroup label="End Date (optional)" type="date" value={data.endDate} onChange={(v) => updateData("endDate", v)} />
+          <InputGroup label="End Time (optional)" type="time" value={data.endTime} onChange={(v) => updateData("endTime", v)} />
+        </div>
+        <p className="text-xs text-slate-500">Leave the end date blank for the same day. Leave the end time blank if it is not confirmed.</p>
+        <EventGuestPlanningEditor category="baby-showers" value={data.guestPlanning} onChange={(value) => updateData("guestPlanning", value)} />
         <InputGroup
           label="Address"
           value={data.address}
@@ -1530,7 +1442,7 @@ export default function BabyShowerTemplateCustomizePage() {
           overscrollBehavior: "contain",
         }}
       >
-        <div className="w-full min-w-0 my-4 md:my-8 transition-all duration-500 ease-in-out">
+        <div className="w-full min-w-0 mb-4 md:mb-8 transition-all duration-500 ease-in-out">
           <div
             className={`min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${
               currentTheme.bg || "bg-white"
@@ -1557,14 +1469,14 @@ export default function BabyShowerTemplateCustomizePage() {
                     className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 ${currentSize.body} font-medium opacity-90 tracking-wide`}
                   >
                     <span>
-                      {new Date(data.date).toLocaleDateString("en-US", {
+                      {parseEventGuestDate(data.date).toLocaleDateString("en-US", {
                         month: "long",
                         day: "numeric",
                         year: "numeric",
                       })}
                     </span>
                     <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
-                    <span>{data.time}</span>
+                    <span>{data.time}{data.endTime ? ` – ${data.endDate && data.endDate !== data.date ? `${data.endDate} ` : ""}${data.endTime}` : ""}</span>
                     {(data.city || data.state) && (
                       <>
                         <span className="hidden md:inline-block w-1 h-1 rounded-full bg-current opacity-50"></span>
@@ -1576,6 +1488,16 @@ export default function BabyShowerTemplateCustomizePage() {
                   </div>
                 </div>
               </div>
+
+              <EventGuestActions
+                title={`${data.babyName}'s Baby Shower`}
+                start={data.date && data.time ? `${data.date}T${data.time}:00` : undefined}
+                end={data.endTime && data.date ? `${data.endDate || data.date}T${data.endTime}:00` : undefined}
+                location={[data.address, data.city, data.state].filter(Boolean).join(", ")}
+                preview
+                inverse={isDarkBackground}
+              />
+              <EventGuestPlanningNotes value={data.guestPlanning} inverse={isDarkBackground} />
 
               <div className="relative w-full aspect-video">
                 {data.images.hero ? (
@@ -1735,7 +1657,7 @@ export default function BabyShowerTemplateCustomizePage() {
                         <div className="text-center mb-4">
                           <p className="opacity-80">
                             {data.rsvp.deadline
-                              ? `Kindly respond by ${new Date(
+                              ? `Kindly respond by ${parseEventGuestDate(
                                   data.rsvp.deadline
                                 ).toLocaleDateString()}`
                               : "Please RSVP"}
@@ -1830,71 +1752,12 @@ export default function BabyShowerTemplateCustomizePage() {
                           Send RSVP
                         </button>
 
-                        <div className="mt-4">
-                          <div className="text-sm font-semibold uppercase tracking-wide opacity-80 mb-3">
-                            Share & Add to Calendar
-                          </div>
-                          <div className="flex flex-wrap gap-3 justify-center">
-                            <button
-                              onClick={handleShare}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <Share2 size={16} />
-                              <span className="hidden sm:inline">
-                                Share link
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleGoogleCalendar}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <Image
-                                src="/brands/google-white.svg"
-                                alt="Google"
-                                width={16}
-                                height={16}
-                                className="w-4 h-4"
-                              />
-                              <span className="hidden sm:inline">
-                                Google Cal
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleAppleCalendar}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <Image
-                                src="/brands/apple-white.svg"
-                                alt="Apple"
-                                width={16}
-                                height={16}
-                                className="w-4 h-4"
-                              />
-                              <span className="hidden sm:inline">
-                                Apple Cal
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleOutlookCalendar}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <Image
-                                src="/brands/microsoft-white.svg"
-                                alt="Microsoft"
-                                width={16}
-                                height={16}
-                                className="w-4 h-4"
-                              />
-                              <span className="hidden sm:inline">Outlook</span>
-                            </button>
-                          </div>
-                        </div>
                       </div>
                     ) : (
                       <div className="text-center py-12">
                         <div className="text-4xl mb-4">🎉</div>
                         <h3 className="text-2xl font-serif mb-2">Thank you!</h3>
-                        <p className="opacity-70">Your RSVP has been sent.</p>
+                        <p className="opacity-70">Preview response recorded. Publish your invitation to receive guest RSVPs.</p>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1912,18 +1775,7 @@ export default function BabyShowerTemplateCustomizePage() {
               )}
 
               <footer className="text-center py-8 border-t border-white/10 mt-1">
-                <a
-                  href="https://envitefy.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="space-y-1 inline-block no-underline"
-                >
-                  <p className="text-sm opacity-60">
-                    Powered By Envitefy. Creat. Share. Enjoy.
-                  </p>
-                  <p className="text-xs opacity-50">Create yours now.</p>
-                </a>
-                <EnvitefySocialLinks placement="event" />
+                <EnvitefyEventBranding category="Baby Showers" inverse={isDarkBackground} />
               </footer>
             </div>
           </div>

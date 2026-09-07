@@ -29,6 +29,7 @@ import EventDeleteModal from "@/components/EventDeleteModal";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
 import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileTopbarSuppressor";
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
+import { changedCardEditFields } from "@/lib/studio/card-edit-fields";
 import { hasActionableRsvp } from "@/lib/dashboard-data";
 import {
   getPrimaryEventProductOutput,
@@ -734,7 +735,21 @@ export default function EventOwnerTools({
     useState<Partial<ProductPreviewModel> | null>(null);
   const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
   const [publicUrlOverride, setPublicUrlOverride] = useState<string | null>(null);
-  const preview = useMemo(() => buildProductPreviewModel(eventData), [eventData]);
+  const serverPreview = useMemo(() => buildProductPreviewModel(eventData), [eventData]);
+  const [savedPreview, setSavedPreview] = useState<{
+    eventId: string;
+    sourceImageUrl: string | null;
+    preview: Partial<ProductPreviewModel>;
+  } | null>(null);
+  // A router refresh can briefly retain the pre-save props. Keep the confirmed
+  // save as the baseline until the server supplies a different image revision.
+  const preview = useMemo(
+    () => savedPreview?.eventId === eventId &&
+      savedPreview.sourceImageUrl === serverPreview.imageUrl
+      ? { ...serverPreview, ...savedPreview.preview }
+      : serverPreview,
+    [eventId, savedPreview, serverPreview],
+  );
   const effectivePreview = useMemo(
     () => (designPreviewOverride ? { ...preview, ...designPreviewOverride } : preview),
     [designPreviewOverride, preview],
@@ -780,11 +795,12 @@ export default function EventOwnerTools({
   const openMobilePreview = () => setIsMobilePreviewOpen(true);
   const closeMobilePreview = () => setIsMobilePreviewOpen(false);
 
+  const persistedEventKey = JSON.stringify({ eventId, eventTitle, eventData });
   useEffect(() => {
     setCurrentEventTitle(eventTitle);
     setDesignPreviewOverride(null);
     setPublicUrlOverride(null);
-  }, [eventData, eventId, eventTitle, preview]);
+  }, [persistedEventKey]);
 
   useEffect(() => {
     setSelectedEventId(eventId);
@@ -890,6 +906,9 @@ export default function EventOwnerTools({
               if (typeof next.title === "string") setCurrentEventTitle(next.title);
               setDesignPreviewOverride(next.preview);
               if (next.persisted) {
+                if (next.preview) {
+                  setSavedPreview({ eventId, sourceImageUrl: serverPreview.imageUrl, preview: next.preview });
+                }
                 window.dispatchEvent(
                   new CustomEvent("history:updated", { detail: { id: eventId } }),
                 );
@@ -899,7 +918,7 @@ export default function EventOwnerTools({
           />
         </section>
 
-        <aside className="hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)] lg:translate-x-6 lg:items-center lg:justify-end lg:self-start xl:translate-x-10">
+        <aside className="hidden min-w-0 lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)] lg:translate-x-6 lg:items-start lg:justify-end lg:self-start xl:translate-x-10">
           <EventProductPreview
             eventId={eventId}
             eventTitle={currentEventTitle}
@@ -1576,6 +1595,7 @@ function OwnerDesignPanel({
     buildDesignFormState(eventTitle, eventData, preview),
   );
   const [candidate, setCandidate] = useState<DesignPreviewCandidate | null>(null);
+  const [previewNotice, setPreviewNotice] = useState("");
   const [status, setStatus] = useState<"idle" | "previewing" | "ready" | "saving" | "saved">(
     "idle",
   );
@@ -1585,6 +1605,7 @@ function OwnerDesignPanel({
   const canCancelDesignChanges =
     !isBusy && (hasDesignChanges || Boolean(candidate) || Boolean(error));
 
+  const persistedDesignKey = JSON.stringify({ eventId, eventData });
   useEffect(() => {
     const nextForm = buildDesignFormState(eventTitle, eventData, preview);
     setForm(nextForm);
@@ -1595,7 +1616,7 @@ function OwnerDesignPanel({
     setCandidate(null);
     setStatus("idle");
     setError("");
-  }, [eventData, eventId]);
+  }, [persistedDesignKey]);
 
   function updateField(key: keyof DesignFormState, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -1648,7 +1669,7 @@ function OwnerDesignPanel({
         credentials: "include",
         body: JSON.stringify({
           action: "preview",
-          fields,
+          fields: changedCardEditFields(fields, buildDesignEditFields(baselineForm)),
         }),
       });
       const json = await response.json().catch(() => null);
@@ -1705,6 +1726,7 @@ function OwnerDesignPanel({
         timeLine: nextTimeLine,
         locationLine: nextLocationLine,
       });
+      setPreviewNotice(Array.isArray(json?.warnings) ? json.warnings.filter((item: unknown): item is string => typeof item === "string").join(" ") : "");
       setStatus("ready");
       onDesignUpdated({
         title: nextTitle,
@@ -1737,7 +1759,7 @@ function OwnerDesignPanel({
         credentials: "include",
         body: JSON.stringify({
           action: "save",
-          fields: candidate.fields,
+          fields: changedCardEditFields(candidate.fields, buildDesignEditFields(baselineForm)),
           imageDataUrl: candidate.imageDataUrl,
         }),
       });
@@ -1949,6 +1971,9 @@ function OwnerDesignPanel({
             </button>
           </div>
 
+          {candidate && previewNotice && !error ? (
+            <p role="status" className="text-sm text-slate-600">{previewNotice}</p>
+          ) : null}
           {error ? (
             <p
               role="alert"

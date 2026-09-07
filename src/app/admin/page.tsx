@@ -48,7 +48,7 @@ export default async function AdminDashboardPage() {
       <AdminPageHeader
         eyebrow="Operations"
         title="Admin Dashboard"
-        description="A first-party view of Envitefy growth, event creation, share activity, AI Concierge usage, and tracking readiness."
+        description="A first-party view of Envitefy growth, event creation, share activity, Envitefy Concierge usage, and tracking readiness."
       />
 
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -258,7 +258,7 @@ export default async function AdminDashboardPage() {
           </AdminPanel>
 
           <AdminPanel
-            title="AI Concierge"
+            title="Envitefy Concierge"
             description="Draft session health"
             action={
               <Link href="/admin/concierge" className="text-sm font-semibold text-violet-700">

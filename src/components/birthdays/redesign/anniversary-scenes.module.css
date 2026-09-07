@@ -1,0 +1,678 @@
+.scene {
+  overflow: hidden;
+  --rule: color-mix(in srgb, var(--anniversary-ink) 26%, transparent);
+}
+.scene * {
+  min-width: 0;
+}
+.art {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+}
+.title {
+  font-size: clamp(2.2rem, 6.7cqw, 6.25rem);
+  line-height: 1.02;
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+.story {
+  font-size: clamp(0.95rem, 1.65cqw, 1.125rem);
+  line-height: 1.75;
+  max-width: 42em;
+}
+.eyebrow {
+  font-size: clamp(0.6rem, 1.05cqw, 0.78rem);
+  line-height: 1.8;
+  letter-spacing: 0.23em;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+.details {
+  margin-top: 2rem;
+}
+.facts {
+  align-items: flex-start;
+  gap: 1rem 1.5rem;
+  line-height: 1.7;
+}
+.facts a {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.rsvp {
+  margin-top: 1.8rem;
+}
+.rsvp button,
+.rsvp a {
+  max-width: 100%;
+}
+.rule {
+  height: 1px;
+  background: var(--rule);
+  margin-block: 2rem;
+}
+.center {
+  text-align: center;
+}
+.center p {
+  margin-inline: auto;
+}
+.caption {
+  display: block;
+  margin-top: 1rem;
+  text-align: center;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.5rem;
+  font-style: italic;
+}
+.letter {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 4cqw;
+  padding: 6cqw;
+  align-items: center;
+}
+.letterPaper {
+  padding: 4cqw;
+  background: color-mix(in srgb, var(--anniversary-paper) 80%, white);
+  box-shadow: 0 8px 28px #6143400e;
+  border-top: 3px double var(--rule);
+}
+.letterPhoto {
+  padding: 1.25rem 1.25rem 0.5rem;
+  background: #fffaf5;
+  transform: rotate(3deg);
+}
+.letterPhoto img {
+  aspect-ratio: 3 / 4;
+}
+.passport {
+  padding: 5cqw;
+}
+.passportHeading {
+  max-width: 85%;
+  padding-bottom: 4cqw;
+}
+.passportSpread {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  border: 1px solid var(--rule);
+}
+.passportSpread > img {
+  height: 100%;
+  min-height: 380px;
+}
+.passportPage {
+  border-left: 2px dashed var(--rule);
+  padding: 3cqw;
+}
+.stamp {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  padding: 1rem;
+  border: 2px solid var(--rule);
+  border-radius: 50%;
+  text-align: center;
+  transform: rotate(-10deg);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  margin: 3rem 0 0 auto;
+}
+.linen {
+  padding: 5cqw 7cqw;
+  text-align: center;
+}
+.linenPhoto {
+  aspect-ratio: 2 / 1;
+  margin-top: 3rem;
+  border-radius: 50% 50% 0 0 / 12% 12% 0 0;
+}
+.linenDetails {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  padding-top: 2rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  text-align: left;
+}
+.linenDetails .rsvp {
+  margin: 0;
+  justify-content: flex-end;
+}
+.iron {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6cqw;
+  padding: 6cqw;
+  align-items: center;
+}
+.ironArch {
+  border-radius: 50% 50% 0 0 / 30% 30% 0 0;
+  padding: 10px;
+  border: 1px solid var(--rule);
+  overflow: hidden;
+}
+.ironArch img {
+  border-radius: inherit;
+  aspect-ratio: 3 / 4;
+}
+.ironWords {
+  padding-block: 2rem;
+}
+.flourish {
+  display: block;
+  font-size: 3rem;
+  margin-top: 1rem;
+}
+.copper {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+}
+.copper > img {
+  height: 100%;
+  min-height: 680px;
+}
+.copperWords {
+  padding: 7cqw 5cqw;
+  border-left: 1px solid var(--rule);
+}
+.bronze {
+  padding: 5cqw;
+}
+.bronzeTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 3rem;
+}
+.bronzeTop span {
+  font-size: 3rem;
+}
+.bronzeGrid {
+  display: grid;
+  grid-template-columns: 0.7fr 1.3fr;
+  gap: 5cqw;
+  align-items: end;
+  margin-top: 4rem;
+}
+.bronzeGrid img {
+  aspect-ratio: 6 / 5;
+  border-radius: 50% 0 0 0;
+}
+.pottery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4cqw;
+  padding: 6cqw;
+  align-items: center;
+}
+.potteryWords {
+  padding-right: 1rem;
+}
+.handwritten {
+  font-family: "Satisfy", cursive;
+  font-size: 1.75rem;
+  margin-top: 2rem;
+}
+.potteryPhoto {
+  aspect-ratio: 4 / 5;
+  border-radius: 40% 10% 35% 10%;
+}
+.potteryFooter {
+  grid-column: 1 / -1;
+  border-top: 3px double var(--rule);
+}
+.skylineImage {
+  position: relative;
+}
+.skylineImage img {
+  aspect-ratio: 2.3 / 1;
+}
+.skylineLabel {
+  position: absolute;
+  top: 2rem;
+  left: 5cqw;
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  color: #fff;
+  text-shadow: 0 1px 10px #000;
+}
+.skylineWords {
+  padding: 4cqw 6cqw 6cqw;
+}
+.skylineFooter {
+  border-top: 1px solid var(--rule);
+  margin-top: 3rem;
+}
+.moon {
+  padding: 5cqw 8cqw;
+  text-align: center;
+}
+.moonPortrait {
+  width: 58%;
+  margin: 0 auto 3rem;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  padding: 12px;
+}
+.moonPortrait img {
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+.moon .facts,
+.moon .rsvp,
+.sapphire .facts,
+.sapphire .rsvp {
+  justify-content: center;
+}
+.lace {
+  padding: 4cqw;
+  background-image: radial-gradient(var(--rule) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+.laceFrame {
+  padding: 5cqw;
+  border: 6px double var(--rule);
+  background: var(--anniversary-paper);
+  text-align: center;
+}
+.lace .title {
+  font-size: clamp(3rem, 8cqw, 7rem);
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+.laceSpread {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4cqw;
+  align-items: center;
+  margin-top: 3rem;
+  text-align: left;
+}
+.laceSpread img {
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+.orchid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  min-height: 660px;
+}
+.orchidWords {
+  padding: 7cqw 5cqw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.orchidPhoto {
+  height: 100%;
+}
+.orchid .details {
+  margin-top: 3rem;
+}
+.sapphire {
+  padding: 6cqw;
+  border: 12px double var(--rule);
+  text-align: center;
+}
+.sapphirePicture {
+  padding: 1rem;
+  border: 1px solid var(--rule);
+  margin: 3rem auto 0;
+  max-width: 80%;
+}
+.sapphirePicture img {
+  aspect-ratio: 2 / 1;
+}
+.emerald {
+  position: relative;
+  padding: 5cqw;
+}
+.emeraldImage img {
+  aspect-ratio: 2 / 1;
+  border-radius: 45% 45% 0 0 / 60% 60% 0 0;
+}
+.emeraldInvitation {
+  position: relative;
+  margin: -5cqw 5cqw 0;
+  padding: 5cqw;
+  border: 1px solid var(--rule);
+  background: var(--anniversary-paper);
+}
+.diamond {
+  padding: 6cqw;
+}
+.diamondTop {
+  border-left: 3px solid var(--rule);
+  padding-left: 3cqw;
+}
+.diamondBottom {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 5cqw;
+  align-items: center;
+  margin-top: 3rem;
+}
+.diamondBottom img {
+  aspect-ratio: 1;
+  clip-path: polygon(25% 0, 75% 0, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0 75%, 0 25%);
+}
+.hydrangea {
+  padding: 5cqw;
+  border: 14px double var(--rule);
+}
+.hydrangeaHeader {
+  padding: 1rem 4cqw 3rem;
+  text-align: center;
+}
+.hydrangea > img {
+  aspect-ratio: 2 / 1;
+  mix-blend-mode: multiply;
+}
+.hydrangeaFooter {
+  max-width: 80%;
+  margin: auto;
+  border-top: 1px solid var(--rule);
+}
+.hydrangea .facts,
+.hydrangea .rsvp {
+  justify-content: center;
+}
+.amalfi {
+  padding-bottom: 5cqw;
+}
+.amalfiStripes {
+  height: 2rem;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--anniversary-ink) 0 24px,
+    transparent 24px 48px
+  );
+}
+.amalfiSpread {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5cqw;
+  padding: 5cqw;
+  align-items: center;
+}
+.amalfiPhoto {
+  padding: 1rem;
+  background: #fffaf0;
+  transform: rotate(-3deg);
+  box-shadow: 4px 5px 0 var(--rule);
+}
+.amalfiPhoto img {
+  aspect-ratio: 4 / 5;
+}
+.amalfiPhoto p {
+  font-family: "Satisfy", cursive;
+  text-align: center;
+  font-size: 2rem;
+  margin-top: 1rem;
+}
+.amalfiWords {
+  border-left: 1px solid var(--rule);
+  padding-left: 4cqw;
+}
+.stargazer {
+  padding: 5cqw;
+}
+.stargazerHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.stargazerHeader span {
+  font-size: 1.5rem;
+  white-space: nowrap;
+}
+.stargazerPhoto {
+  aspect-ratio: 2 / 1;
+  border-radius: 50% 50% 0 0 / 70% 70% 0 0;
+}
+.stargazerWords {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr;
+  gap: 4cqw;
+  padding-top: 4cqw;
+}
+.stargazerWords .details {
+  margin: 0;
+  border-left: 1px solid var(--rule);
+  padding-left: 3cqw;
+}
+.vinyl {
+  padding: 5cqw;
+}
+.vinylTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  border-bottom: 3px solid currentColor;
+  margin-bottom: 3rem;
+}
+.vinylTop > span {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.vinylSleeve {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5cqw;
+  align-items: center;
+}
+.vinylSleeve > img {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1rem solid var(--anniversary-ink);
+}
+.vinyl .title {
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+.vinylTrack {
+  border-top: 1px solid var(--rule);
+  margin-top: 2rem;
+}
+.desert {
+  padding: 6cqw;
+}
+.desertHeading {
+  max-width: 85%;
+  padding-bottom: 3rem;
+}
+.desertLandscape {
+  position: relative;
+}
+.desertLandscape > img {
+  aspect-ratio: 2 / 1;
+  border-radius: 8rem 0 0 0;
+}
+.desertCard {
+  position: relative;
+  background: var(--anniversary-paper);
+  border: 1px solid var(--rule);
+  margin: -4cqw 0 0 25%;
+  padding: 2rem 3cqw;
+}
+.desertCard .details {
+  margin-top: 0;
+}
+.champagne {
+  padding: 5cqw;
+}
+.champagneHeading {
+  text-align: center;
+  padding-bottom: 3rem;
+}
+.champagne .title {
+  font-size: clamp(3rem, 9cqw, 8rem);
+  text-transform: uppercase;
+  line-height: 0.95;
+}
+.champagnePhoto {
+  position: relative;
+  padding: 0 6cqw;
+}
+.champagnePhoto > img {
+  aspect-ratio: 2 / 1;
+}
+.champagnePhoto > span {
+  position: absolute;
+  right: 0;
+  bottom: -3cqw;
+  font-size: 12cqw;
+  line-height: 1;
+}
+.champagneFooter {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 3px double var(--rule);
+}
+
+@container (max-width: 640px) {
+  .title {
+    font-size: clamp(2rem, 8.5cqw, 3.4rem);
+  }
+  .letter,
+  .passportSpread,
+  .linenDetails,
+  .iron,
+  .copper,
+  .bronzeGrid,
+  .pottery,
+  .laceSpread,
+  .orchid,
+  .diamondBottom,
+  .amalfiSpread,
+  .stargazerWords,
+  .vinylSleeve {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .letter,
+  .iron,
+  .pottery,
+  .amalfiSpread {
+    gap: 2rem;
+    padding: 7cqw;
+  }
+  .letterPaper {
+    padding: 1.5rem;
+  }
+  .letterPhoto {
+    max-width: 88%;
+    margin: auto;
+  }
+  .passportHeading,
+  .desertHeading {
+    max-width: 100%;
+  }
+  .passportSpread > img {
+    min-height: 0;
+    aspect-ratio: 3 / 2;
+  }
+  .passportPage {
+    border-left: 0;
+    padding: 1.5rem;
+  }
+  .linenDetails .rsvp {
+    justify-content: center;
+  }
+  .linenDetails .facts {
+    justify-content: center;
+  }
+  .ironArch {
+    width: 85%;
+    margin: auto;
+  }
+  .copper > img {
+    min-height: 0;
+    max-height: 360px;
+    aspect-ratio: 3 / 2;
+  }
+  .copperWords {
+    padding: 2rem 7cqw;
+    border-left: 0;
+  }
+  .bronzeGrid {
+    gap: 2rem;
+    margin-top: 2rem;
+  }
+  .bronzeGrid > img {
+    grid-row: 1;
+  }
+  .potteryPhoto {
+    max-width: 90%;
+    margin: auto;
+  }
+  .moonPortrait {
+    width: 85%;
+  }
+  .laceFrame {
+    padding: 6cqw;
+  }
+  .laceSpread img {
+    width: 80%;
+    margin: auto;
+  }
+  .orchidPhoto {
+    max-height: 460px;
+    aspect-ratio: 4 / 5;
+  }
+  .sapphirePicture {
+    max-width: 100%;
+    padding: 0.5rem;
+  }
+  .emerald {
+    padding: 7cqw;
+  }
+  .emeraldImage img {
+    aspect-ratio: 4 / 3;
+  }
+  .emeraldInvitation {
+    margin: -1.5rem 0.5rem 0;
+    padding: 1.5rem;
+  }
+  .hydrangea {
+    border-width: 7px;
+  }
+  .hydrangeaFooter {
+    max-width: 100%;
+  }
+  .amalfiWords {
+    border-left: 0;
+    padding: 1rem 0 0;
+  }
+  .amalfiPhoto {
+    max-width: 90%;
+    margin: auto;
+  }
+  .stargazerWords {
+    padding-top: 2rem;
+    gap: 2rem;
+  }
+  .stargazerWords .details {
+    border-left: 0;
+    padding-left: 0;
+  }
+  .vinylSleeve > img {
+    width: 85%;
+    margin: auto;
+  }
+  .desertLandscape > img {
+    aspect-ratio: 4 / 3;
+    border-radius: 5rem 0 0 0;
+  }
+  .desertCard {
+    margin: -1rem 0.5rem 0;
+    padding: 1.5rem;
+  }
+  .champagnePhoto {
+    padding: 0;
+  }
+}

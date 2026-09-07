@@ -1,0 +1,22 @@
+{
+  "id": "riviera-stripes",
+  "name": "Riviera Stripes",
+  "category": "coastal",
+  "family": "atelier",
+  "layout": "riviera-stripes",
+  "thumbnail": "/templates/weddings/generated-heroes/riviera-stripes-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#fff9ec",
+      "secondary": "#176a84",
+      "background": "#fff9ec"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/riviera-stripes-hero.webp"
+    }
+  }
+}

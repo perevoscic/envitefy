@@ -7,6 +7,9 @@ This is the stuff that was not obvious on first read and is worth keeping in one
 - The repo still has rename drift. `package.json` says `snap-my-date`, and `README.md` still frames the product as OCR-to-calendar first, but the current app is broader: multi-vertical event creation, public event sites, RSVP/sign-up flows, registry links, and admin campaign tooling.
 - Anonymous `/` is not the real landing route. `src/middleware.ts` rewrites signed-out users to `/landing`; signed-in users stay on `/`.
 - `npm run dev` does not run plain `next dev`. It goes through `scripts/dev-single.js`, defaults to port `3000`, writes to `.next-dev`, and uses `.next-dev.lock` to block a second dev server.
+- Dashboard preference (September 7, 2026): keep the original image-led `InvitationEventCard` design for Upcoming Events, including its event details and action buttons. The user prefers these cards to a compact agenda/list; preserve the cards when adding dashboard data or filters.
+- Dashboard Drive tile preference (September 7, 2026): show total route distance in miles and drive duration in hours/minutes. Keep departure times, arrival buffers, traffic notes, and drive update timestamps out of this tile.
+- Dashboard panel preference (September 7, 2026): keep Guest responses beside Continue creating. Do not restore the large Needs attention panel; use separate compact Schedule conflicts (second summary tile) and Needs attention tiles with clickable details.
 
 ## Envitefy Logo Brand Lock
 
@@ -25,6 +28,17 @@ The lowercase `envitefy` wordmark is a locked brand asset. Do not change any of 
 - Keep `/fonts/` and the font extensions `woff`, `woff2`, `ttf`, and `otf` excluded from authentication middleware so the real typeface loads instead of falling back to Georgia.
 - Placement-specific font sizes may remain responsive, but do not alter the canonical typeface, weight, tracking, scale, line height, padding, colors, gradient stops, or font-loading path without an explicit user request.
 - `src/app/landing/page.test.mjs` and `src/middleware.auth-routing.test.mjs` intentionally guard this contract. Treat failures as brand regressions, not tests to weaken casually.
+
+## Generated Image Delivery And Cleanup
+
+Standing user rule (September 7, 2026): after generating new raster artwork for Envitefy, convert it to **WebP with FFmpeg**, then **delete the PNG/JPG/JPEG originals** once the replacements are verified. Complete this workflow in the same task, before reporting the images finished.
+
+1. Encode directly from the generated original using FFmpeg's `libwebp` encoder, with quality `85` and compression level `6` by default. Preserve dimensions, aspect ratio, and transparency unless the user requests a change. Save the final `.webp` in the appropriate project asset directory.
+2. Verify that every output is an actual WebP file, decodes successfully, and preserves the intended image quality and dimensions. Update application, template, and manifest references to the final WebP paths and check that those paths exist.
+3. After verification, delete the corresponding generated PNG/JPG/JPEG originals, including copies in the generator output directory and temporary or project folders. Delete only the exact originals matched to verified WebP replacements; never use a broad deletion glob. If conversion or verification fails, retain that original until a working replacement is ready.
+4. Keep prompt/provenance records and final WebP paths accurate, and confirm that the originals are gone while the WebPs remain intact.
+
+This is standing authorization for that cleanup; do not ask the user again for each generation batch. Follow any later explicit request to retain an original or deliver another format. This rule concerns newly generated artwork, not unrelated existing assets or user-supplied reference files.
 
 ## My events vs Invited events (product language)
 

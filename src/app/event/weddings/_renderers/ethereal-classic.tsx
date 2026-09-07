@@ -1,3 +1,4 @@
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useEffect, useState } from "react";
 import {
   Heart,
@@ -290,6 +291,8 @@ export default function EtherealClassic({ theme, event }: Props) {
         </div>
       </section>
 
+      {event.guestTools}
+
       <footer className="bg-slate-900 text-slate-400 py-12 text-center">
         <h2
           className="text-2xl font-serif italic text-white mb-4"
@@ -300,6 +303,7 @@ export default function EtherealClassic({ theme, event }: Props) {
         <p className="text-xs uppercase tracking-widest">
           {event.footer || "Est. 2025"}
         </p>
+      <EnvitefyEventBranding category="Weddings" inverse />
       </footer>
 
       {rsvpOpen && (

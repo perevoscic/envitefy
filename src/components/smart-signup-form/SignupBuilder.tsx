@@ -1,5 +1,7 @@
 "use client";
 
+import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import React from "react";
 import { useSession } from "next-auth/react";
 import type {
@@ -3745,6 +3747,13 @@ const SignupBuilder: React.FC<Props> = ({
             }}
             className="hidden"
           />
+          <div className="sm:col-span-2">
+            <EventGuestPlanningEditor
+              category="sign-up"
+              value={form.guestPlanning}
+              onChange={(guestPlanning) => onChange({ ...form, guestPlanning })}
+            />
+          </div>
           {/* Preview (bottom of Basics) */}
           <div className="sm:col-span-2 min-w-0 max-w-full">
             <div className="relative z-10 w-full max-w-[720px] min-w-0">
@@ -4570,6 +4579,7 @@ const SignupBuilder: React.FC<Props> = ({
                         </h3>
                       </div>
                     </div>
+                    <EventGuestPlanningNotes value={form.guestPlanning} />
                     {form.description && (
                       <p
                         className="mt-3 text-[0.95rem] max-w-2xl opacity-90"

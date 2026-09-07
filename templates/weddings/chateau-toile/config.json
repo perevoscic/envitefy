@@ -1,0 +1,22 @@
+{
+  "id": "chateau-toile",
+  "name": "Chateau Toile",
+  "category": "classic",
+  "family": "atelier",
+  "layout": "chateau-toile",
+  "thumbnail": "/templates/weddings/generated-heroes/chateau-toile-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#fff6eb",
+      "secondary": "#732e40",
+      "background": "#fff6eb"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/chateau-toile-hero.webp"
+    }
+  }
+}

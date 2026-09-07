@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import { Anchor, MapPin, Coffee, Wine, Utensils } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
@@ -45,7 +47,7 @@ const buildNames = (event: EventData) => {
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "August 24th";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const months = [
       "January",
       "February",
@@ -177,7 +179,7 @@ export default function EuropeCoastalWedding({ theme, event }: Props) {
   const travelInfo = event.travel || "";
   const rsvpUrl = event.rsvp?.url || "#rsvp";
   const rsvpDeadline = event.rsvp?.deadline
-    ? new Date(event.rsvp.deadline).toLocaleDateString("en-US", {
+    ? parseEventGuestDate(event.rsvp.deadline).toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
       })
@@ -351,8 +353,11 @@ export default function EuropeCoastalWedding({ theme, event }: Props) {
         </section>
       )}
 
+      {event.guestTools}
+
       <footer className="bg-[#004B8D] text-white py-12 text-center text-xs font-bold uppercase tracking-[0.2em]">
         <p>Made with Amore • {new Date().getFullYear()}</p>
+      <EnvitefyEventBranding category="Weddings" inverse />
       </footer>
     </div>
   );

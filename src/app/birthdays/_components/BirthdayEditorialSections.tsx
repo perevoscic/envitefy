@@ -35,7 +35,7 @@ function PromptCreation({ primaryHref }: { primaryHref: string }) {
         <BirthdaySectionIntro
           eyebrow="From words to wow"
           title="Describe the birthday. See the invitation take shape."
-          body="Start with a featured mix from 104 complete event designs, filter by age, recipient, milestone, or style, then personalize it for the person you are celebrating. You can also describe what they love and let Envitefy shape the direction from your prompt."
+          body="Explore 120 complete birthday designs, filter by age, recipient, milestone, or style, then personalize it for the person you are celebrating. You can also describe what they love and let Envitefy shape the direction from your prompt."
         />
         <BirthdayPromptStudio primaryHref={primaryHref} />
       </div>

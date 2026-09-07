@@ -1,3 +1,5 @@
+import { invalidateUserHistory } from "@/lib/history-cache";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { absoluteUrl } from "@/lib/absolute-url";
@@ -55,6 +57,7 @@ type RsvpTarget = {
 };
 
 type EventDetailsRow = {
+  user_id: string | null;
   title: string;
   data: Record<string, unknown> | null;
   public_slug: string | null;
@@ -422,7 +425,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const eventRes = await timing.time("event_details", () =>
       query<EventDetailsRow>(
-        `SELECT title, data, public_slug FROM event_history WHERE id = $1 LIMIT 1`,
+        `SELECT user_id, title, data, public_slug FROM event_history WHERE id = $1 LIMIT 1`,
         [eventId],
       ),
     );
@@ -577,6 +580,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           ],
         ),
       );
+    }
+
+    for (const affectedId of [eventRow.user_id, userId]) {
+      if (affectedId) { invalidateUserHistory(affectedId); invalidateUserDashboard(affectedId); }
     }
 
     const publicSlug = firstString(eventRow.public_slug, eventRow.data?.publicSlug);
@@ -797,6 +804,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       );
     }
 
+    for (const affectedId of [ownerCheck.rows[0]?.id, tUserId]) {
+      if (typeof affectedId === "string" && affectedId) { invalidateUserHistory(affectedId); invalidateUserDashboard(affectedId); }
+    }
+
     return jsonWithTiming(timing, { ok: true });
   } catch (err: unknown) {
     return jsonWithTiming(timing, { error: errorMessage(err, "Failed update") }, { status: 500 });
@@ -860,6 +871,10 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         ),
       );
       resultCount = res.rowCount || 0;
+    }
+
+    for (const affectedId of [ownerCheck.rows[0]?.id, tUserId]) {
+      if (typeof affectedId === "string" && affectedId) { invalidateUserHistory(affectedId); invalidateUserDashboard(affectedId); }
     }
 
     return jsonWithTiming(timing, { ok: true, deleted: resultCount });

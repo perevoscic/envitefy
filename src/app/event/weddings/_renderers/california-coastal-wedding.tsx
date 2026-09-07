@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import { Waves, Mountain, Sun, Wind, ArrowDown, Map as MapIcon } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
@@ -45,7 +47,7 @@ const buildNames = (event: EventData) => {
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "09.14.25";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     const year = String(d.getFullYear()).slice(-2);
@@ -340,10 +342,13 @@ export default function CaliforniaCoastalWedding({ theme, event }: Props) {
         </section>
       )}
 
+      {event.guestTools}
+
       <footer className="py-12 text-center text-[#999] text-xs uppercase tracking-widest">
         <p>
           {event.headlineTitle || "Maya & Kieran"} • {location}
         </p>
+      <EnvitefyEventBranding category="Weddings" />
       </footer>
     </div>
   );

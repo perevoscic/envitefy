@@ -1,3 +1,4 @@
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import React from "react";
 import { ArrowRight, Calendar, MapPin, Heart } from "lucide-react";
 import { buildWeddingLocationHref, type EventData, type ThemeConfig } from "./content-sections";
@@ -297,6 +298,10 @@ export default function ModernEditorial({ theme, event }: Props) {
           animation: marquee 20s linear infinite;
         }
       `}</style>
+      {event.guestTools}
+      <footer className="relative z-10 py-8 text-center bg-neutral-950">
+        <EnvitefyEventBranding category="Weddings" inverse />
+      </footer>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 export type EventCategory =
   | "Birthdays"
   | "Weddings"
+  | "Anniversaries"
   | "Baby Showers"
   | "Sports"
   | "Meetings"
@@ -43,6 +44,15 @@ const COLOR_MAP: Record<string, EventColor> = {
     dot: "bg-blue-500 dark:bg-blue-400",
     tint: "bg-blue-50 dark:bg-blue-900/20",
     tile: "#DBEAFE",
+  },
+  Anniversaries: {
+    key: "rose",
+    bg: "bg-rose-100 dark:bg-rose-900/30",
+    text: "text-rose-700 dark:text-rose-200",
+    border: "border-rose-300/60 dark:border-rose-700/60",
+    dot: "bg-rose-500 dark:bg-rose-400",
+    tint: "bg-rose-50 dark:bg-rose-900/20",
+    tile: "#FFE4E6",
   },
   "Baby Showers": {
     key: "pink", // Pink per screenshot
@@ -144,6 +154,7 @@ export function getEventColor(input?: string | null): EventColor {
   if (COLOR_MAP[input]) return COLOR_MAP[input];
   
   const key = input.toLowerCase();
+  if (/anniversar/.test(key)) return COLOR_MAP.Anniversaries;
   if (/birthday|bday|cake|party/.test(key)) return COLOR_MAP.Birthdays;
   if (/wedding|marriage|bride|groom/.test(key)) return COLOR_MAP.Weddings;
   if (/baby|shower|gender|reveal/.test(key)) return COLOR_MAP["Baby Showers"];
@@ -166,6 +177,7 @@ export function getColorByCategory(category?: string | null): EventColor {
 export function getCategoryIcon(category: string): string {
   const lower = category.toLowerCase();
   // Life Milestones & Celebrations
+  if (lower.includes("anniversar")) return "💕";
   if (lower.includes("birthday")) return "🎂";
   if (lower.includes("wedding")) return "💍";
   if (lower.includes("baby") || lower.includes("gender")) return "🍼";

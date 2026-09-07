@@ -118,6 +118,10 @@ export const buildEditLink = (eventId: string, eventData: any, eventTitle: strin
 
     if (directWorkspaceHref) return directWorkspaceHref;
 
+    if (/anniversar/.test(normalizedCategory) || eventData?.occasion === "anniversary" || templateId?.endsWith("-anniversary") || variationId?.endsWith("-anniversary")) {
+      return resolveEditHref(eventId, eventData, eventTitle);
+    }
+
     // Weddings - use event page URL format
     // Check category (case-insensitive) or if templateId is "wedding" or title contains "wedding"
     const isWedding =
@@ -195,6 +199,13 @@ export const resolveEditHref = (eventId: string, eventData: any, eventTitle: str
     // Discovery-generated gymnastics events: edit on the event page with a right sidebar (same URL + ?edit=).
     if (createdVia === "meet-discovery" || Boolean((eventData as any)?.discoverySource?.input)) {
       return buildEventPath(eventId, eventTitle, { edit: eventId });
+    }
+
+    if (/anniversar/.test(normalizedCategory) || eventData?.occasion === "anniversary" || templateId?.endsWith("-anniversary") || variationId?.endsWith("-anniversary")) {
+      const params = new URLSearchParams({ edit: eventId });
+      if (templateId) params.set("templateId", templateId);
+      if (variationId) params.set("variationId", variationId);
+      return `/event/anniversaries/customize?${params.toString()}`;
     }
 
     // Birthdays

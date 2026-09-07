@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SIDEBAR_WIDTH_REM } from "@/app/left-sidebar.model";
 import { EVENT_SKIN_TOP_OFFSET_VAR } from "@/components/event-skin-layout";
+import { isCreateEventRoute } from "@/config/navigation-config";
 import { GradientBackgroundLayer } from "@/components/ui/gradient-backgrounds";
 
 /** Must match the mobile <header> in left-sidebar.tsx:
@@ -30,7 +31,7 @@ export function MainContentWrapper({
   const normalizedPath = (pathname || "").replace(/\/+$/, "");
   const pathSegments = normalizedPath.split("/").filter(Boolean);
   const isStudioCardShare = pathSegments.length === 2 && pathSegments[0] === "card";
-  const isEventSharePage = pathSegments.length === 2 && pathSegments[0] === "event";
+  const isEventSharePage = pathSegments.length === 2 && pathSegments[0] === "event" && !isCreateEventRoute(normalizedPath);
   const isChatRoute = normalizedPath === "/chat";
   const usesOwnLandingBackground =
     normalizedPath === "/gymnastics" || (normalizedPath === "/snap" && !isAuthenticated);

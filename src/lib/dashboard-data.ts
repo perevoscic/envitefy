@@ -45,6 +45,7 @@ type HistoryRow = {
 };
 
 function parseFiniteNumber(value: unknown): number | null {
+  if ((typeof value !== "number" && typeof value !== "string") || (typeof value === "string" && !value.trim())) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
@@ -437,7 +438,7 @@ export function extractHomeOrigin(featureVisibility: unknown): {
     if (!candidate || typeof candidate !== "object") continue;
     const lat = parseFiniteNumber(candidate.lat ?? candidate.latitude);
     const lng = parseFiniteNumber(candidate.lng ?? candidate.longitude ?? candidate.lon);
-    if (lat == null || lng == null) continue;
+    if (lat == null || lng == null || Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
     return {
       lat,
       lng,

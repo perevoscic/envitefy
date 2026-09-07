@@ -18,6 +18,7 @@ import {
 } from "@/components/snap/SnapProcessingCard";
 import type { BirthdayTemplateHint } from "@/lib/birthday-ocr-template";
 import { resolveSourceIntent } from "@/lib/concierge/creation-intent";
+import { resolveDashboardBrowserOrigin } from "@/lib/dashboard-origin";
 import { normalizeOcrLocationFields, normalizeOcrRsvpFields } from "@/lib/ocr/field-normalization";
 import { normalizeOcrFacts, type OcrFact } from "@/lib/ocr/facts";
 import {
@@ -161,6 +162,7 @@ type DashboardMetricsCache = {
   travelMinutes: number | null;
   travelDistanceKm: number | null;
   travelUpdatedAt: string | null;
+  travelOriginLabel?: string | null;
   weatherSummary: string | null;
   weatherTemp: number | null;
   weatherUpdatedAt: string | null;
@@ -221,11 +223,10 @@ type DashboardEnrichMeta = {
   originSource?: "request" | "profile" | "profile-geocoded" | "none" | string;
   travelWindowEligible?: boolean;
   weatherWindowEligible?: boolean;
+  travelStatus?: "ready" | "needs-origin" | "needs-destination" | "unavailable";
   travelUsedCache?: boolean;
   weatherUsedCache?: boolean;
 };
-
-const DASHBOARD_ORIGIN_STORAGE_KEY = "envitefy:dashboard:last-origin:v1";
 
 type OwnerRsvpRow = {
   id: string;
@@ -300,6 +301,7 @@ export default function Dashboard({
   const activeEventTab = initialEventContext?.activeEventTab ?? sidebarActiveEventTab;
   const selectedEventNumberOfGuests = getRsvpDashboardGuestCount(initialEventContext);
   const isSignedIn = Boolean(session?.user);
+  const originIdentity = session?.user?.email?.trim().toLowerCase() || "";
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [, setLoading] = useState(false);
@@ -328,8 +330,11 @@ export default function Dashboard({
   const previewLoadIdRef = useRef(0);
   const scanStartedAtRef = useRef<number | null>(null);
   const scanStatusRef = useRef<SnapProcessingStatus>("idle");
+  const metricsRequestRef = useRef(0);
+  const metricsFocusRef = useRef("");
   const [nextEventMetrics, setNextEventMetrics] = useState<DashboardMetricsCache | null>(null);
   const [enrichMeta, setEnrichMeta] = useState<DashboardEnrichMeta | null>(null);
+  const [travelError, setTravelError] = useState<string | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [ownerDashboardData, setOwnerDashboardData] = useState<OwnerDashboardData | null>(null);
   const {
@@ -357,6 +362,14 @@ export default function Dashboard({
   }, [dashboardData, dashboardLoading, dashboardError, eventCacheHydrated, isSignedIn, refreshDashboard, snapProcessingMode]);
 
   useEffect(() => {
+    const focus = `${originIdentity}:${dashboardData?.nextEvent?.id || ""}`;
+    const sameFocus = metricsFocusRef.current === focus;
+    if (!sameFocus) {
+      metricsFocusRef.current = focus;
+      metricsRequestRef.current += 1;
+      setEnrichMeta(null);
+      setTravelError(null);
+    }
     if (!isSignedIn) {
       setNextEventMetrics(null);
       setEnrichMeta(null);
@@ -368,8 +381,15 @@ export default function Dashboard({
       setEnrichMeta(null);
       return;
     }
-    setNextEventMetrics(dashboardData?.metricsCache ?? null);
-  }, [dashboardData, isSignedIn]);
+    const incoming = dashboardData?.metricsCache ?? null;
+    setNextEventMetrics((current) => {
+      const age = current?.travelUpdatedAt ? Date.now() - Date.parse(current.travelUpdatedAt) : Number.POSITIVE_INFINITY;
+      if (sameFocus && current?.eventId === nextEventId && current.travelMinutes != null && age >= 0 && age < 60 * 60 * 1000 && incoming?.travelMinutes == null) {
+        return { ...current, weatherSummary: incoming?.weatherSummary ?? current.weatherSummary, weatherTemp: incoming?.weatherTemp ?? current.weatherTemp, weatherUpdatedAt: incoming?.weatherUpdatedAt ?? current.weatherUpdatedAt };
+      }
+      return incoming;
+    });
+  }, [dashboardData, isSignedIn, originIdentity]);
 
   const clearScanTimers = useCallback(() => {
     if (uploadIntervalRef.current) {
@@ -532,74 +552,6 @@ export default function Dashboard({
     [],
   );
 
-  useEffect(() => {
-    if (!isSignedIn) return;
-    if (!dashboardData?.nextEvent?.id) return;
-    let cancelled = false;
-    const enrich = async () => {
-      setMetricsLoading(true);
-      try {
-        let storedOrigin: { lat: number; lng: number } | null = null;
-        try {
-          if (typeof window !== "undefined") {
-            const raw = window.localStorage.getItem(DASHBOARD_ORIGIN_STORAGE_KEY);
-            if (raw) {
-              const parsed = JSON.parse(raw) as {
-                lat?: unknown;
-                lng?: unknown;
-              };
-              const lat = Number(parsed?.lat);
-              const lng = Number(parsed?.lng);
-              if (
-                Number.isFinite(lat) &&
-                Number.isFinite(lng) &&
-                lat >= -90 &&
-                lat <= 90 &&
-                lng >= -180 &&
-                lng <= 180
-              ) {
-                storedOrigin = { lat, lng };
-              }
-            }
-          }
-        } catch {}
-        const res = await fetch("/api/dashboard/enrich-next-event", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            eventId: dashboardData.nextEvent?.id,
-            ...(storedOrigin
-              ? {
-                  originLat: storedOrigin.lat,
-                  originLng: storedOrigin.lng,
-                  originLabel: "Saved location",
-                }
-              : {}),
-          }),
-        });
-        const json = await res.json().catch(() => null);
-        if (cancelled) return;
-        if (json?.metrics) {
-          const metrics = json.metrics as DashboardMetricsCache;
-          setNextEventMetrics(metrics);
-          setDashboardMetricsCache(metrics);
-        }
-        setEnrichMeta((json?.meta || null) as DashboardEnrichMeta | null);
-      } catch {
-        // keep fallback UI state
-      } finally {
-        if (!cancelled) setMetricsLoading(false);
-      }
-    };
-    const timer = window.setTimeout(() => {
-      void enrich();
-    }, 80);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [isSignedIn, dashboardData?.nextEvent?.id]);
 
   useEffect(() => {
     if (!selectedEventId || selectedEventNumberOfGuests <= 0) {
@@ -672,77 +624,85 @@ export default function Dashboard({
   }, [selectedEventId, selectedEventNumberOfGuests, selectedEventTitle]);
 
   const router = useRouter();
-  const readStoredOrigin = useCallback((): {
-    lat: number;
-    lng: number;
-  } | null => {
+  const resolveCurrentPosition = useCallback(async (requestPermission = true) => {
     if (typeof window === "undefined") return null;
-    try {
-      const raw = window.localStorage.getItem(DASHBOARD_ORIGIN_STORAGE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as { lat?: unknown; lng?: unknown };
-      const lat = Number(parsed?.lat);
-      const lng = Number(parsed?.lng);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-      return { lat, lng };
-    } catch {
-      return null;
-    }
-  }, []);
+    let storage: Storage | undefined;
+    try { storage = window.localStorage; } catch { /* Browser storage may be restricted. */ }
+    return resolveDashboardBrowserOrigin(originIdentity, {
+      storage, geolocation: navigator.geolocation, permissions: navigator.permissions,
+    }, requestPermission);
+  }, [originIdentity]);
 
-  const persistOrigin = useCallback((origin: { lat: number; lng: number }) => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(
-        DASHBOARD_ORIGIN_STORAGE_KEY,
-        JSON.stringify({
-          lat: origin.lat,
-          lng: origin.lng,
-          savedAt: new Date().toISOString(),
-        }),
-      );
-    } catch {}
-  }, []);
-
-  const resolveCurrentPosition = useCallback(async () => {
-    if (typeof window === "undefined" || !("geolocation" in navigator)) {
-      return readStoredOrigin();
-    }
-    const livePosition = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
-      const timeout = window.setTimeout(() => resolve(null), 10500);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          window.clearTimeout(timeout);
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        () => {
-          window.clearTimeout(timeout);
-          resolve(null);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 5 * 60 * 1000,
-        },
-      );
-    });
-    if (livePosition) {
-      persistOrigin(livePosition);
-      return livePosition;
-    }
-    return readStoredOrigin();
-  }, [persistOrigin, readStoredOrigin]);
+  useEffect(() => {
+    if (!isSignedIn) return;
+    if (!dashboardData?.nextEvent?.id) return;
+    let cancelled = false;
+    const enrich = async () => {
+      const requestId = ++metricsRequestRef.current;
+      setTravelError(null);
+      setMetricsLoading(true);
+      try {
+        const storedOrigin = await resolveCurrentPosition(false);
+        if (cancelled || requestId !== metricsRequestRef.current) return;
+        const res = await fetch("/api/dashboard/enrich-next-event", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventId: dashboardData.nextEvent?.id,
+            ...(storedOrigin
+              ? {
+                  originLat: storedOrigin.lat,
+                  originLng: storedOrigin.lng,
+                  originLabel: storedOrigin.label,
+                }
+              : {}),
+          }),
+        });
+        const json = await res.json().catch(() => null);
+        if (cancelled || requestId !== metricsRequestRef.current) return;
+        if (json?.metrics) {
+          const metrics = json.metrics as DashboardMetricsCache;
+          setNextEventMetrics(metrics);
+          setDashboardMetricsCache(metrics);
+        }
+        setEnrichMeta((json?.meta || null) as DashboardEnrichMeta | null);
+        if (!res.ok || json?.meta?.travelStatus === "unavailable") setTravelError("A drive estimate is unavailable right now. You can still open directions.");
+        else if (json?.meta?.travelStatus === "needs-destination") setTravelError("We couldn’t find this venue’s location. Check the event address.");
+      } catch {
+        if (!cancelled && requestId === metricsRequestRef.current) setTravelError("Couldn’t load the drive estimate. Please try again.");
+      } finally {
+        if (!cancelled && requestId === metricsRequestRef.current) setMetricsLoading(false);
+      }
+    };
+    const timer = window.setTimeout(() => {
+      void enrich();
+    }, 80);
+    return () => {
+      cancelled = true;
+      metricsRequestRef.current += 1;
+      window.clearTimeout(timer);
+    };
+  }, [
+    isSignedIn,
+    dashboardData?.nextEvent?.id,
+    dashboardData?.nextEvent?.startAt,
+    dashboardData?.nextEvent?.locationLat,
+    dashboardData?.nextEvent?.locationLng,
+    dashboardData?.nextEvent?.locationText,
+    resolveCurrentPosition,
+    setDashboardMetricsCache,
+  ]);
 
   const forceRecalculateTravel = useCallback(async () => {
     const eventId = dashboardData?.nextEvent?.id;
     if (!eventId) return;
+    const requestId = ++metricsRequestRef.current;
+    setTravelError(null);
     setMetricsLoading(true);
     try {
       const currentOrigin = await resolveCurrentPosition();
+      if (requestId !== metricsRequestRef.current) return;
       const res = await fetch("/api/dashboard/enrich-next-event", {
         method: "POST",
         credentials: "include",
@@ -754,24 +714,30 @@ export default function Dashboard({
             ? {
                 originLat: currentOrigin.lat,
                 originLng: currentOrigin.lng,
-                originLabel: "Current location",
+                originLabel: currentOrigin.label,
               }
             : {}),
         }),
       });
       const json = await res.json().catch(() => null);
+      if (requestId !== metricsRequestRef.current) return;
       if (json?.metrics) {
         const metrics = json.metrics as DashboardMetricsCache;
         setNextEventMetrics(metrics);
         setDashboardMetricsCache(metrics);
       }
       setEnrichMeta((json?.meta || null) as DashboardEnrichMeta | null);
+      if (json?.metrics?.travelMinutes == null) {
+        setTravelError(json?.meta?.hasOrigin === false
+          ? "Couldn’t get your starting location. Allow location access in your browser, then try again."
+          : "A drive estimate is unavailable right now. You can still open directions.");
+      }
     } catch {
-      // keep existing state
+      if (requestId === metricsRequestRef.current) setTravelError("Couldn’t update the drive estimate. Please try again.");
     } finally {
-      setMetricsLoading(false);
+      if (requestId === metricsRequestRef.current) setMetricsLoading(false);
     }
-  }, [dashboardData?.nextEvent?.id, resolveCurrentPosition]);
+  }, [dashboardData?.nextEvent?.id, resolveCurrentPosition, setDashboardMetricsCache]);
 
   const isEventRoute = (pathname?.startsWith("/event/") ?? false) || Boolean(initialEventContext);
   const hasEventContextOnPage = Boolean(selectedEventId) && isEventRoute;
@@ -2179,6 +2145,7 @@ export default function Dashboard({
               data={dashboardData}
               metrics={nextEventMetrics}
               enrichMeta={enrichMeta}
+              travelError={travelError}
               metricsLoading={metricsLoading}
               loading={dashboardLoading}
               error={dashboardError}

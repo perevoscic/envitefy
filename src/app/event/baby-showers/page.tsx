@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import BabyShowersCreate from "@/components/event-create/BabyShowersCreate";
-import BabyShowersCreateTemplate from "@/components/event-create/BabyShowersCreateTemplate";
+import FamilyDesignGallery from "@/components/events/FamilyDesignGallery";
 
 export default function NewBabyShowerEventPage() {
   const search = useSearchParams();
@@ -25,7 +25,7 @@ export default function NewBabyShowerEventPage() {
   const variationId = search?.get("variationId") ?? undefined;
 
   if (!editEventId && !templateId) {
-    return <BabyShowersCreateTemplate defaultDate={defaultDate} />;
+    return <FamilyDesignGallery category="baby-showers" />;
   }
 
   return (

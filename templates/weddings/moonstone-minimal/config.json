@@ -1,0 +1,22 @@
+{
+  "id": "moonstone-minimal",
+  "name": "Moonstone Minimal",
+  "category": "soft minimal",
+  "family": "atelier",
+  "layout": "moonstone-minimal",
+  "thumbnail": "/templates/weddings/generated-heroes/moonstone-minimal-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#efeeeb",
+      "secondary": "#50545d",
+      "background": "#efeeeb"
+    },
+    "fonts": {
+      "headline": "Arial, sans-serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/moonstone-minimal-hero.webp"
+    }
+  }
+}

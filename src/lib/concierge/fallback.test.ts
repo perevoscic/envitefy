@@ -1563,7 +1563,7 @@ test("birthday live-card prompt tolerates a mistyped for before name and age", (
   assert.equal(draft.currentQuestion, "date");
   assert.doesNotMatch(draft.missingFields.join(","), /honoreeName|ageOrMilestone/);
   assert.doesNotMatch(message, /Who is the birthday for/i);
-  assert.match(message, /When should this happen/i);
+  assert.match(message, /What date is Lara’s birthday celebration/i);
 });
 
 test("time-only edit keeps the existing event date", () => {

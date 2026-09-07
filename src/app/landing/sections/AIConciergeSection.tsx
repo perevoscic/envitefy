@@ -13,7 +13,7 @@ import {
 
 type ChatMessage = {
   id: string;
-  speaker: "Host" | "AI Concierge";
+  speaker: "Host" | "Envitefy Concierge";
   text: string;
 };
 
@@ -41,7 +41,7 @@ const chatMessages: ChatMessage[] = [
   },
   {
     id: "create-card",
-    speaker: "AI Concierge",
+    speaker: "Envitefy Concierge",
     text: "Beautiful! I can help you create a live baby shower card. Who is hosting the event?",
   },
   {
@@ -51,7 +51,7 @@ const chatMessages: ChatMessage[] = [
   },
   {
     id: "options",
-    speaker: "AI Concierge",
+    speaker: "Envitefy Concierge",
     text: "Perfect. Would you like to add RSVP, registry, and gift options?",
   },
   {
@@ -61,7 +61,7 @@ const chatMessages: ChatMessage[] = [
   },
   {
     id: "done",
-    speaker: "AI Concierge",
+    speaker: "Envitefy Concierge",
     text: "Done. I'll create a live card with RSVP tracking, registry access, guest reminders, and event details.",
   },
 ];
@@ -232,7 +232,7 @@ function PhoneConversation() {
 
             <ol
               className="mt-auto space-y-2 sm:space-y-3"
-              aria-label="Sample AI Concierge conversation"
+              aria-label="Sample Envitefy Concierge conversation"
             >
               {chatMessages.map((message, index) => {
                 const isHost = message.speaker === "Host";
@@ -308,7 +308,7 @@ export default function AIConciergeSection({ onPrimaryAction }: AIConciergeSecti
         >
           <p className="inline-flex items-center gap-2 rounded-md border border-[#d8c9f2] bg-white/82 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#6557cf] shadow-[0_14px_34px_rgba(86,70,158,0.08)] ring-1 ring-white/80 backdrop-blur">
             <Sparkles className="h-4 w-4" />
-            Envitefy AI Concierge
+            Envitefy Concierge
           </p>
           <h2
             className="mt-5 max-w-[13em] text-4xl font-light leading-[1.04] text-[#201a23] sm:text-5xl lg:text-6xl"
@@ -317,7 +317,7 @@ export default function AIConciergeSection({ onPrimaryAction }: AIConciergeSecti
             Create Beautiful Event Cards by Simply Chatting
           </h2>
           <p className="mt-6 max-w-2xl text-base leading-8 text-[#65586c] sm:text-lg">
-            Tell Envitefy what you're planning, and your AI Concierge will help build a polished
+            Tell Envitefy what you're planning, and your Envitefy Concierge will help build a polished
             live event card complete with RSVP, gift links, registry details, reminders, and guest
             tracking.
           </p>
@@ -329,7 +329,7 @@ export default function AIConciergeSection({ onPrimaryAction }: AIConciergeSecti
                 onClick={onPrimaryAction}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#241b35] px-6 text-sm font-semibold text-white shadow-[0_18px_44px_rgba(56,44,84,0.24)] ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#5d4ebb] focus:outline-none focus:ring-2 focus:ring-[#8b7be8] focus:ring-offset-2"
               >
-                Try the AI Concierge
+                Try the Envitefy Concierge
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>

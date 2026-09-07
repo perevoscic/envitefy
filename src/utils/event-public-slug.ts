@@ -5,6 +5,7 @@ const RESERVED_EVENT_PUBLIC_SLUGS = new Set([
   "appointments",
   "baby-showers",
   "birthdays",
+  "anniversaries",
   "cheerleading",
   "dance-ballet",
   "football",

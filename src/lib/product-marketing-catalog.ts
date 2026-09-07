@@ -81,11 +81,13 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Turn a plain-language event idea into an editable invitation and guest-ready live page without starting from a blank form.",
           proofPoints: [
             "Starts from the host's words or uploaded context and helps collect missing event details.",
+            "A centered chat composer offers uploads and occasion suggestions through a plus menu, with product choices before the conversation starts and a compact Generate preview option beneath the latest reply when event details are ready.",
             "Prefills names, age, venue, and theme from messages containing several details, and keeps those facts through follow-up replies.",
             "Drafts event-specific guest copy and a polished live page for the host to review and edit before sharing.",
             "Hosts can review saved event details, correct titles and format choices in conversation, and generate a draft preview before a separate publish step.",
+            "Generated draft previews and subsequent design edits are saved with the conversation, so hosts can reopen a draft with the same artwork without regenerating it.",
             "Hosts can preview an invitation while optional styling and RSVP details are unfinished; publishing checks the required event facts separately.",
-            "Live-card draft previews include tappable overview, directions, calendar, and configured RSVP or gift-list actions on phones and larger screens. Hosts can try the RSVP form without submitting a guest response.",
+            "Hosts can open a full-screen draft preview from the Preview action before publishing, while continuing edits in Concierge. Live-card draft previews include tappable overview, directions, calendar, and configured RSVP or gift-list actions on phones and larger screens. Hosts can try the RSVP form without submitting a guest response.",
             "Hosts can ask for planning suggestions and invitation wording before every detail is decided, and choose to collect guest replies themselves.",
             "A saved host brief keeps budget, language, accessibility, dietary and privacy preferences available throughout the conversation. Hosts can review and correct those planning notes.",
             "Simple English and Spanish invitation drafts can use TBC details; interrupted tailored replies can be retried using the latest saved event details.",
@@ -126,6 +128,25 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           ],
           sellWhen: [
             "The pain point is lost invitations, scattered screenshots, fridge clutter, or remembering whether the customer is hosting or attending.",
+          ],
+        },
+        {
+          id: "home-planning-dashboard",
+          name: "Personal event planning dashboard",
+          availability: "core",
+          customerPromise:
+            "See what is next, pick up unfinished events, and act on invitations and planning gaps from one home dashboard.",
+          proofPoints: [
+            "Shows upcoming event counts for the next 7 and 30 days, with the original image-led Upcoming Events cards, filtered by All, My events, or Invited events.",
+            "Separate compact Schedule conflicts and Needs attention tiles count overlapping event times and invitation or event-detail actions. Each opens the relevant details and event links; drafts and declined invitations stay out of the active agenda.",
+            "Resume recent saved event drafts, including drafts without a date, in the appropriate editor.",
+            "For eligible hosted events, shows recorded going, maybe, and declined replies, plus shared invitations awaiting a reply when those recipients are known.",
+            "Enabled hosted sign-up forms show confirmed filled spots, remaining capacity, and section-level needs; waitlisted and canceled claims do not fill spots.",
+            "The highlighted event presents Venue, Drive, and Weather in three responsive tiles, with directions, total route mileage, estimated drive time in hours and minutes, and an available event forecast. Drive estimates load automatically from an available profile location, recent saved location, or browser location already allowed by the user, including for events more than 3 days away. A clear Use my location prompt explains the drive estimate and requests browser permission when needed; it also lets users update a saved or home-based estimate from their current location.",
+          ],
+          sellWhen: [
+            "Families or hosts need one place to check upcoming plans, unfinished invitations, guest replies, and volunteer or potluck needs.",
+            "Sell weather, travel, response tracking, and sign-up summaries only when the event has the required details and enabled features.",
           ],
         },
         {
@@ -408,6 +429,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Put the useful next actions beside the event details so guests can act while the context is in front of them.",
           proofPoints: [
             "Depending on the event, guests can RSVP, save to calendar, open directions, view schedules, visit registries, claim sign-up slots, and share the page.",
+            "Template builders can publish optional arrival, parking, accessibility, preparation, and category-specific guest guidance beside the guest actions. Hosts can set an explicit end time or leave it unset.",
             "The same link remains useful before the event and when guests need to reopen details later.",
           ],
           sellWhen: [
@@ -422,14 +444,15 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
       features: [
         {
           id: "wedding-suites",
-          name: "Wedding invitation suites",
+          name: "Wedding websites and invitation suites",
           availability: "specialized",
           customerPromise:
-            "Create a polished wedding guest experience that can carry the invitation, itinerary, RSVP, registry, and logistics together.",
+            "Create a wedding website that brings the invitation, itinerary, RSVP, registry, and guest logistics together in one shareable link.",
           proofPoints: [
-            "Wedding themes and renderer-specific designs support distinct visual directions.",
+            "The wedding design gallery includes 60 designs, with filters for style, color, season, and the new collection. Its 20 newest designs each include original generated artwork and a distinct website composition, from illustrated botanicals and destination settings to modern editorial and evening celebrations.",
             "Wedding flows can support multi-event itineraries, RSVP tracking, registry/fund links, maps, travel details, and calendar actions.",
             "Configured wedding experiences can collect meal choices, dietary information, guest messages, and seating-related details.",
+            "Wedding hosts can publish arrival, parking, dress code, accessibility, additional-guest, shuttle, and accommodation notes, with an optional explicit event end time.",
             "Guest-list import and direct share-ready delivery are available in supported wedding workflows.",
           ],
           sellWhen: [
@@ -438,13 +461,16 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
         },
         {
           id: "family-celebrations",
-          name: "Birthdays, showers, gender reveals, and family celebrations",
+          name: "Birthdays, anniversaries, showers, gender reveals, and family celebrations",
           availability: "specialized",
           customerPromise:
             "Use guest and logistics tools shaped for family events rather than a generic event page.",
           proofPoints: [
-            "Birthday creation starts with 104 filterable, compositionally distinct designs: the original 24, 30 new kids events, 40 adult birthday themes, and 10 anniversary celebrations. Every design has a non-repeating full-page signature across its hero, body composition, fact treatment, gallery rhythm, typography, media framing, and gallery preview; the original 24 use 24 different body compositions.",
-            "Birthday pages can combine household RSVP, adult/kid counts, allergies, directions, pickup/drop-off, gifts, calendar, and updates.",
+            "Birthday creation includes 120 individually composed designs: the original 24, 56 additional kids themes, and 40 adult birthdays. The latest 26 cover hands-on crafts, sports, gaming, fantasy, animals, food workshops, and cozy gatherings, with original artwork, distinct layouts, and practical sample host notes. The 30 anniversary designs form a separate Anniversaries collection, including 20 new romantic, artisan, botanical, coastal, celestial, retro, and formal styles from cotton to diamond milestones and any year together, with couple names, years together, anniversary wording, photos, registry links, and RSVP features. Each has new generated artwork and an explicit hero layout, supported by locally bundled display fonts and theme-specific party details, notes, photo, and RSVP layouts. Gallery previews render the actual invitation design with distinct sample names, headlines, age-appropriate details, and venues for every birthday design. The full birthday collection is available by default, with progressive loading, a Load more fallback, and heart favorites saved in the current browser with a Favorites filter.",
+            "Birthday websites can combine household RSVP, adult/kid counts, allergies, directions, pickup/drop-off, gifts, calendar, and updates.",
+            "Birthday hosts can set an explicit end time and add optional drop-off/pickup, sibling, parking/arrival, and food/allergy guidance that appears on the guest invitation.",
+            "Birthday invitations integrate calendar saves into the date, directions into the venue, and sharing into each design’s invitation controls. Host guidance uses the theme’s existing notes layout; category-specific Envitefy branding and official social links remain in the footer.",
+            "Baby shower and gender reveal creation open with searchable design galleries. Choose a template to carry its artwork and starting style into the editor, then personalize the celebration details.",
             "Baby and bridal shower pages can combine RSVP, registry links, host notes, guest questions, reminders, maps, and calendar saves.",
             "Gender reveal pages can combine RSVP, Team Pink or Team Blue guesses, optional tally behavior, gift links, reminders, and updates.",
           ],
@@ -459,6 +485,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
           customerPromise:
             "Turn dense meet flyers, screenshots, schedules, and PDF packets into a parent-friendly meet information hub.",
           proofPoints: [
+            "Gymnastics creation starts with a searchable meet template gallery. Select a layout to customize, or import an existing meet packet or link through the discovery flow.",
             "Organizes sessions, levels, warmups, march-in, competition, awards, venues, maps, admission, parking, and coach notes.",
             "Supports calendar actions, parent responses, athlete availability, volunteer needs, and live changes where configured.",
             "Families can use one team link instead of repeatedly searching the original meet packet.",

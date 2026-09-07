@@ -1,46 +1,14 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { Pool } from "pg";
 import {
   ADMIN_USER_METRICS_CTE_SQL,
   ADMIN_USER_METRICS_SELECT_SQL,
 } from "@/lib/admin-user-metrics-sql";
 import { authOptions } from "@/lib/auth";
-import { getIsAdminByEmail } from "@/lib/db";
+import { getIsAdminByEmail, query } from "@/lib/db";
 
-const g = global as any;
-
-function getPool(): Pool {
-  if (!g.__pgPool_admin_filter) {
-    const DATABASE_URL = process.env.DATABASE_URL;
-    if (!DATABASE_URL) {
-      throw new Error("DATABASE_URL not configured");
-    }
-
-    let sslConfig: any = false;
-    const disableVerify = process.env.PGSSL_DISABLE_VERIFY === "true";
-    const ca64 = process.env.PGSSL_CA_BASE64;
-
-    if (disableVerify) {
-      sslConfig = { rejectUnauthorized: false };
-    } else if (ca64) {
-      const ca = Buffer.from(ca64, "base64").toString("utf8");
-      sslConfig = { ca, rejectUnauthorized: true };
-    }
-
-    const url = new URL(DATABASE_URL);
-    url.searchParams.delete("sslmode");
-
-    g.__pgPool_admin_filter = new Pool({
-      connectionString: url.toString(),
-      ssl: sslConfig,
-      max: 5,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-    });
-  }
-  return g.__pgPool_admin_filter as Pool;
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
@@ -110,8 +78,7 @@ export async function GET(req: Request) {
       limit ${limit + 1}
     `;
 
-    const pool = getPool();
-    const res = await pool.query(sql, values);
+    const res = await query(sql, values);
     const rows = res.rows || [];
     let nextCursor: string | null = null;
     let items = rows;

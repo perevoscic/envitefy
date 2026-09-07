@@ -28,263 +28,449 @@ export type WeddingDesign = WeddingCatalogEntry &
   };
 
 const DESIGN_DETAILS: Record<string, WeddingDesignDetail> = {
+  "tuscan-lemon-grove": {
+    style: "Destination",
+    color: "Lemon & Olive",
+    season: "Summer",
+    description: "Three sunlit windows, olive rules, and a leisurely countryside itinerary.",
+    signature: "Lemon grove triptych",
+  },
+  "delft-blue-estate": {
+    style: "Old World",
+    color: "Porcelain & Blue",
+    season: "Any season",
+    description: "A porcelain oval, crisp blue borders, and a formal estate programme.",
+    signature: "Porcelain medallion",
+  },
+  "meadow-reverie": {
+    style: "Botanical",
+    color: "Buttercream & Lilac",
+    season: "Spring",
+    description:
+      "A full meadow panorama with a floating note and a botanical field-guide schedule.",
+    signature: "Wildflower field notes",
+  },
+  "desert-modernism": {
+    style: "Modern Art",
+    color: "Adobe & Ink",
+    season: "Fall",
+    description: "An oversized type column, offset desert image, and sculptural sandstone panels.",
+    signature: "Adobe offset blocks",
+  },
+  "chateau-toile": {
+    style: "Classic",
+    color: "Bordeaux & Cream",
+    season: "Any season",
+    description:
+      "A framed estate illustration opens into paired stationery panels and a ribbon programme.",
+    signature: "Toile invitation gatefold",
+  },
+  "riviera-stripes": {
+    style: "Coastal",
+    color: "Riviera Blue & Cream",
+    season: "Summer",
+    description: "Cabana stripes, a tilted coastal postcard, and a breezy weekend board.",
+    signature: "Striped beach-club postcard",
+  },
+  "japanese-ink": {
+    style: "Soft Minimal",
+    color: "Ink & Rice Paper",
+    season: "Any season",
+    description: "A quiet ink landscape, slender vertical rule, and spacious ceremony ledger.",
+    signature: "Ink scroll diptych",
+  },
+  "disco-afterglow": {
+    style: "Retro Luxe",
+    color: "Berry & Electric Pink",
+    season: "Any season",
+    description:
+      "A circular disco portrait, bold stacked names, and ticket-style celebration details.",
+    signature: "Afterparty spotlight",
+  },
+  "palm-springs-mod": {
+    style: "Modern Art",
+    color: "Coral & Pool Blue",
+    season: "Summer",
+    description: "Pool-blue geometry, a rounded resort window, and playful modernist timing cards.",
+    signature: "Poolside color blocks",
+  },
+  "highland-romance": {
+    style: "Destination",
+    color: "Heather & Forest",
+    season: "Fall",
+    description:
+      "An expansive mountain photograph, a compact invitation inset, and a walking-path timeline.",
+    signature: "Highland panorama",
+  },
+  "terracotta-courtyard": {
+    style: "Bohemian",
+    color: "Clay & Agave",
+    season: "Fall",
+    description: "A sculpted courtyard window, clay bands, and an intimate lantern-lit programme.",
+    signature: "Courtyard keyhole",
+  },
+  "lake-como-letter": {
+    style: "Destination",
+    color: "Sage & Lake Blue",
+    season: "Summer",
+    description:
+      "A panoramic letterhead, handwritten-style salutation, and a travel-journal itinerary.",
+    signature: "Lakeside correspondence",
+  },
+  "cherry-blossom-silk": {
+    style: "Romantic Floral",
+    color: "Petal & Plum",
+    season: "Spring",
+    description: "A fan-shaped floral image, plum typography, and softly folded detail panels.",
+    signature: "Blossom silk fan",
+  },
+  "french-patisserie": {
+    style: "Romantic",
+    color: "Pistachio & Raspberry",
+    season: "Spring",
+    description: "Pistachio stripes, a scalloped cake portrait, and raspberry menu-style details.",
+    signature: "Patisserie scalloped oval",
+  },
+  "ocean-cyanotype": {
+    style: "Coastal Minimal",
+    color: "Prussian Blue & Salt",
+    season: "Summer",
+    description:
+      "White-on-blue botanical artwork, specimen captions, and clean tide-table details.",
+    signature: "Cyanotype specimen print",
+  },
+  "art-deco-soiree": {
+    style: "Black Tie",
+    color: "Jet & Brass",
+    season: "Winter",
+    description: "Stepped geometric frames, brass lines, and a formal evening programme.",
+    signature: "Deco stepped marquee",
+  },
+  "prairie-wildflower": {
+    style: "Organic",
+    color: "Ochre & Chambray",
+    season: "Summer",
+    description:
+      "A sun-washed floral patchwork, western serif type, and stitched keepsake details.",
+    signature: "Prairie patchwork quilt",
+  },
+  "red-thread": {
+    style: "Editorial",
+    color: "Vermilion & Ivory",
+    season: "Any season",
+    description:
+      "A vermilion rule links an expressive still life, oversized names, and numbered chapters.",
+    signature: "Red-thread editorial",
+  },
+  "moonstone-minimal": {
+    style: "Soft Minimal",
+    color: "Stone & Silver",
+    season: "Winter",
+    description: "A circular stone still life, tiny editorial labels, and calm modular details.",
+    signature: "Moonstone sculptural circle",
+  },
+  "tropical-afterdark": {
+    style: "Tropical Luxe",
+    color: "Jungle & Orchid",
+    season: "Summer",
+    description:
+      "Oversized tropical leaves frame orchid typography and a lantern-lit celebration ledger.",
+    signature: "Midnight botanical shutters",
+  },
   "gilded-wedding": {
     style: "Black Tie",
     color: "Ivory & Gold",
     season: "Any season",
-    description: "A grand-hotel composition with gilded frames, editorial serif type, and heirloom details.",
+    description:
+      "A grand-hotel composition with gilded frames, editorial serif type, and heirloom details.",
     signature: "Gilded portrait arch",
   },
   "modern-editorial": {
     style: "Editorial",
     color: "Black & Lime",
     season: "Any season",
-    description: "Bold magazine typography, asymmetric image crops, and a fashion-forward acid accent.",
+    description:
+      "Bold magazine typography, asymmetric image crops, and a fashion-forward acid accent.",
     signature: "Oversized editorial grid",
   },
   "rustic-boho": {
     style: "Bohemian",
     color: "Warm Neutral",
     season: "Fall",
-    description: "Sunset warmth, tactile paper surfaces, and relaxed botanical details for an elevated outdoor affair.",
+    description:
+      "Sunset warmth, tactile paper surfaces, and relaxed botanical details for an elevated outdoor affair.",
     signature: "Vineyard story panels",
   },
   "cinematic-wedding": {
     style: "Cinematic",
     color: "Midnight",
     season: "Any season",
-    description: "A dramatic widescreen love story with film-title typography and immersive photography.",
+    description:
+      "A dramatic widescreen love story with film-title typography and immersive photography.",
     signature: "Full-bleed film frames",
   },
   "celestial-wedding": {
     style: "Celestial",
     color: "Navy & Gold",
     season: "Winter",
-    description: "Moonlit arches, constellation accents, and luminous gold type beneath a midnight sky.",
+    description:
+      "Moonlit arches, constellation accents, and luminous gold type beneath a midnight sky.",
     signature: "Star-map ceremony arch",
   },
   "ethereal-classic": {
     style: "Classic",
     color: "Ivory",
     season: "Any season",
-    description: "Quiet European luxury with balanced typography, generous white space, and timeless portraiture.",
+    description:
+      "Quiet European luxury with balanced typography, generous white space, and timeless portraiture.",
     signature: "Formal centered monogram",
   },
   "museum-wedding": {
     style: "Gallery",
     color: "White & Black",
     season: "Any season",
-    description: "A modern gallery system with exhibition labels, architectural spacing, and curated image walls.",
+    description:
+      "A modern gallery system with exhibition labels, architectural spacing, and curated image walls.",
     signature: "Museum exhibition grid",
   },
   "ethereal-wedding": {
     style: "Romantic",
     color: "Champagne Blush",
     season: "Spring",
-    description: "Soft-focus photography, floating cards, and delicate serif flourishes in a champagne palette.",
+    description:
+      "Soft-focus photography, floating cards, and delicate serif flourishes in a champagne palette.",
     signature: "Floating champagne layers",
   },
   "noir-luxury": {
     style: "Black Tie",
     color: "Black & Gold",
     season: "Winter",
-    description: "Velvet-black surfaces, fine gold rules, and formal typography for an evening celebration.",
+    description:
+      "Velvet-black surfaces, fine gold rules, and formal typography for an evening celebration.",
     signature: "Noir invitation suite",
   },
   "retro-70s": {
     style: "Retro Luxe",
     color: "Ochre & Terracotta",
     season: "Summer",
-    description: "Sculptural curves and sun-washed tones reinterpreted with polished modern spacing.",
+    description:
+      "Sculptural curves and sun-washed tones reinterpreted with polished modern spacing.",
     signature: "Sculpted sunset geometry",
   },
   "newspaper-wedding": {
     style: "Editorial",
     color: "Monochrome",
     season: "Any season",
-    description: "A bespoke wedding gazette with masthead drama, column rhythm, and documentary photography.",
+    description:
+      "A bespoke wedding gazette with masthead drama, column rhythm, and documentary photography.",
     signature: "Wedding-day front page",
   },
   "bauhaus-wedding": {
     style: "Modern Art",
     color: "Primary Color",
     season: "Any season",
-    description: "Museum-grade geometry, crisp sans serif type, and playful color blocking with a luxe finish.",
+    description:
+      "Museum-grade geometry, crisp sans serif type, and playful color blocking with a luxe finish.",
     signature: "Geometric art composition",
   },
   "europe-coastal-wedding": {
     style: "Destination",
     color: "Cobalt & Gold",
     season: "Summer",
-    description: "A Mediterranean editorial with postcard layering, cobalt details, and sunlit coastal imagery.",
+    description:
+      "A Mediterranean editorial with postcard layering, cobalt details, and sunlit coastal imagery.",
     signature: "Riviera postcard collage",
   },
   "florida-coastal-wedding": {
     style: "Tropical Luxe",
     color: "Emerald & Pink",
     season: "Summer",
-    description: "Palm Beach glamour with emerald structure, playful pink accents, and resort-style photography.",
+    description:
+      "Palm Beach glamour with emerald structure, playful pink accents, and resort-style photography.",
     signature: "Palm Beach resort arch",
   },
   "california-coastal-wedding": {
     style: "Coastal",
     color: "Sand & Clay",
     season: "Summer",
-    description: "Airy West Coast minimalism with warm sand tones, organic forms, and horizon-led imagery.",
+    description:
+      "Airy West Coast minimalism with warm sand tones, organic forms, and horizon-led imagery.",
     signature: "Pacific horizon split",
   },
   "winter-wedding": {
     style: "Seasonal Luxe",
     color: "Evergreen & Copper",
     season: "Winter",
-    description: "Alpine refinement with evergreen depth, copper accents, and a warm chalet atmosphere.",
+    description:
+      "Alpine refinement with evergreen depth, copper accents, and a warm chalet atmosphere.",
     signature: "Evergreen chalet frame",
   },
   "industrial-wedding": {
     style: "Industrial Luxe",
     color: "Charcoal & Copper",
     season: "Fall",
-    description: "Architectural grids, burnished metal, and modern typography softened by candlelit imagery.",
+    description:
+      "Architectural grids, burnished metal, and modern typography softened by candlelit imagery.",
     signature: "Copper architectural grid",
   },
   "library-wedding": {
     style: "Old World",
     color: "Oxblood & Parchment",
     season: "Fall",
-    description: "A literary invitation inspired by private libraries, leather bindings, and engraved bookplates.",
+    description:
+      "A literary invitation inspired by private libraries, leather bindings, and engraved bookplates.",
     signature: "Private-library bookplate",
   },
   "garden-wedding": {
     style: "Romantic",
     color: "Blush & Green",
     season: "Spring",
-    description: "A botanical conservatory brought to life with layered florals, glasshouse light, and graceful script.",
+    description:
+      "A botanical conservatory brought to life with layered florals, glasshouse light, and graceful script.",
     signature: "Conservatory floral arch",
   },
   "skyline-wedding": {
     style: "City Luxe",
     color: "Navy & Amber",
     season: "Any season",
-    description: "A rooftop-night composition with panoramic photography, luminous type, and metropolitan polish.",
+    description:
+      "A rooftop-night composition with panoramic photography, luminous type, and metropolitan polish.",
     signature: "Illuminated skyline stage",
   },
   "midnight-elegance": {
     style: "Black Tie",
     color: "Midnight & Champagne",
     season: "Any season",
-    description: "A midnight salon with a dramatic split portrait, champagne rules, and restrained formal typography.",
+    description:
+      "A midnight salon with a dramatic split portrait, champagne rules, and restrained formal typography.",
     signature: "Midnight split portrait",
   },
   "wild-rose-halo": {
     style: "Romantic",
     color: "Wine & Rose",
     season: "Spring",
-    description: "A rich floral portrait framed by wild roses, painterly shadows, and softly engraved type.",
+    description:
+      "A rich floral portrait framed by wild roses, painterly shadows, and softly engraved type.",
     signature: "Wild-rose portrait halo",
   },
   "golden-hour-promise": {
     style: "Modern Rustic",
     color: "Amber & Cream",
     season: "Fall",
-    description: "A sunlit two-column story balancing vineyard photography with warm editorial typography.",
+    description:
+      "A sunlit two-column story balancing vineyard photography with warm editorial typography.",
     signature: "Golden-hour story split",
   },
   "ivory-lace-crest": {
     style: "Classic",
     color: "Ivory & Pewter",
     season: "Any season",
-    description: "An heirloom crest, lace-like borders, and symmetrical stationery styling for a timeless ceremony.",
+    description:
+      "An heirloom crest, lace-like borders, and symmetrical stationery styling for a timeless ceremony.",
     signature: "Heirloom lace crest",
   },
   "emerald-garden-vignette": {
     style: "Botanical",
     color: "Emerald & Mist",
     season: "Spring",
-    description: "Deep garden greens and architectural botanical borders surround a refined central vignette.",
+    description:
+      "Deep garden greens and architectural botanical borders surround a refined central vignette.",
     signature: "Emerald botanical border",
   },
   "blush-linen-romance": {
     style: "Soft Minimal",
     color: "Blush & Linen",
     season: "Spring",
-    description: "A tactile pastel composition with cloud-soft photography, modern spacing, and quiet romance.",
+    description:
+      "A tactile pastel composition with cloud-soft photography, modern spacing, and quiet romance.",
     signature: "Blush linen portrait",
   },
   "sapphire-moonlit-arch": {
     style: "Evening Luxe",
     color: "Sapphire & Silver",
     season: "Winter",
-    description: "A luminous moonlit arch set in deep sapphire with silver detailing and sweeping serif type.",
+    description:
+      "A luminous moonlit arch set in deep sapphire with silver detailing and sweeping serif type.",
     signature: "Sapphire moon arch",
   },
   "rustic-oak-storybook": {
     style: "Storybook",
     color: "Oak & Parchment",
     season: "Fall",
-    description: "A hand-bound storybook treatment with parchment textures, oak tones, and chapter-like details.",
+    description:
+      "A hand-bound storybook treatment with parchment textures, oak tones, and chapter-like details.",
     signature: "Parchment storybook cover",
   },
   "champagne-velvet": {
     style: "Grand Luxury",
     color: "Champagne & Bronze",
     season: "Any season",
-    description: "A full-width ballroom statement with velvet depth, metallic accents, and couture-scale typography.",
+    description:
+      "A full-width ballroom statement with velvet depth, metallic accents, and couture-scale typography.",
     signature: "Champagne ballroom stage",
   },
   "celestial-whisper": {
     style: "Celestial Minimal",
     color: "Indigo & Ice",
     season: "Winter",
-    description: "A quieter night-sky design with star trails, airy type, and an intimate celestial atmosphere.",
+    description:
+      "A quieter night-sky design with star trails, airy type, and an intimate celestial atmosphere.",
     signature: "Whispered star field",
   },
   "pearl-tide-horizon": {
     style: "Coastal Minimal",
     color: "Pearl & Tide Blue",
     season: "Summer",
-    description: "A centered ocean-horizon composition with pearl space, tidal blue, and gallery-like restraint.",
+    description:
+      "A centered ocean-horizon composition with pearl space, tidal blue, and gallery-like restraint.",
     signature: "Pearl horizon window",
   },
   "crimson-orchard": {
     style: "Dramatic Floral",
     color: "Crimson & Petal",
     season: "Fall",
-    description: "A deep orchard palette with split textures, sculptural florals, and ceremonial drama.",
+    description:
+      "A deep orchard palette with split textures, sculptural florals, and ceremonial drama.",
     signature: "Crimson orchard banner",
   },
   "opaline-crest": {
     style: "Regency",
     color: "Opal & Slate",
     season: "Any season",
-    description: "A centered crest and ribbon system inspired by engraved stationery and Regency-era polish.",
+    description:
+      "A centered crest and ribbon system inspired by engraved stationery and Regency-era polish.",
     signature: "Opaline ribbon crest",
   },
   "velvet-midnight-lily": {
     style: "Nocturne",
     color: "Midnight & Antique Gold",
     season: "Winter",
-    description: "A velvet-dark photographic overlay with lily-like curves and warm antique-gold details.",
+    description:
+      "A velvet-dark photographic overlay with lily-like curves and warm antique-gold details.",
     signature: "Velvet lily overlay",
   },
   "lavender-mist-cascade": {
     style: "Romantic Floral",
     color: "Lavender & Pearl",
     season: "Spring",
-    description: "Cascading lavender florals drift into a light-filled ceremony composition with graceful type.",
+    description:
+      "Cascading lavender florals drift into a light-filled ceremony composition with graceful type.",
     signature: "Lavender floral cascade",
   },
   "coral-sands-keepsake": {
     style: "Coastal Keepsake",
     color: "Coral & Shell",
     season: "Summer",
-    description: "An airy horizontal keepsake with shell-toned paper, coral accents, and relaxed coastal imagery.",
+    description:
+      "An airy horizontal keepsake with shell-toned paper, coral accents, and relaxed coastal imagery.",
     signature: "Coral keepsake panorama",
   },
   "eternal-marble": {
     style: "Neoclassical",
     color: "Marble & Silver",
     season: "Any season",
-    description: "A sculptural marble slab, cool silver typography, and neoclassical symmetry create enduring grandeur.",
+    description:
+      "A sculptural marble slab, cool silver typography, and neoclassical symmetry create enduring grandeur.",
     signature: "Neoclassical marble slab",
   },
   "willow-fern-embrace": {
@@ -298,19 +484,41 @@ const DESIGN_DETAILS: Record<string, WeddingDesignDetail> = {
     style: "Winter Gala",
     color: "Silver & Frost",
     season: "Winter",
-    description: "A crystalline gradient, mirrored details, and gala typography evoke a polished winter evening.",
+    description:
+      "A crystalline gradient, mirrored details, and gala typography evoke a polished winter evening.",
     signature: "Silver frost gradient",
   },
   "autumn-ember-waltz": {
     style: "Autumn Romance",
     color: "Ember & Rosewood",
     season: "Fall",
-    description: "Warm leaves, ember tones, and a dance-like header create a richly layered autumn celebration.",
+    description:
+      "Warm leaves, ember tones, and a dance-like header create a richly layered autumn celebration.",
     signature: "Ember leaf waltz",
   },
 };
 
 const PREVIEW_NAMES: Record<string, string> = {
+  "tuscan-lemon-grove": "Lucia & Gabriel",
+  "delft-blue-estate": "Annelise & Hugo",
+  "meadow-reverie": "Poppy & Kit",
+  "desert-modernism": "Reese & Jordan",
+  "chateau-toile": "Colette & Louis",
+  "riviera-stripes": "Chiara & Matteo",
+  "japanese-ink": "Aiko & Ren",
+  "disco-afterglow": "Frankie & Alex",
+  "palm-springs-mod": "Cleo & Max",
+  "highland-romance": "Fiona & Ewan",
+  "terracotta-courtyard": "Paloma & Diego",
+  "lake-como-letter": "Alba & Luca",
+  "cherry-blossom-silk": "Hana & Theo",
+  "french-patisserie": "Amelie & Jules",
+  "ocean-cyanotype": "Maren & Sam",
+  "art-deco-soiree": "Josephine & Felix",
+  "prairie-wildflower": "June & Wyatt",
+  "red-thread": "Alex & Morgan",
+  "moonstone-minimal": "Ellis & Quinn",
+  "tropical-afterdark": "Nia & Rafael",
   "gilded-wedding": "Amara & Julian",
   "modern-editorial": "Sloane & Ellis",
   "rustic-boho": "Maya & Theo",

@@ -14,7 +14,7 @@ test("feature visibility is clamped to launched template keys", () => {
 
   assert.match(
     source,
-    /export const ENABLED_TEMPLATE_KEYS: TemplateKey\[] = \[\s*"birthdays",\s*"weddings",\s*"baby_showers",\s*"gender_reveal",\s*"sport_events",\s*"gymnastics",\s*\];/s
+    /export const ENABLED_TEMPLATE_KEYS: TemplateKey\[] = \[\s*"birthdays",\s*"weddings",\s*"anniversaries",\s*"baby_showers",\s*"gender_reveal",\s*"sport_events",\s*"gymnastics",\s*\];/s
   );
   assert.match(
     source,

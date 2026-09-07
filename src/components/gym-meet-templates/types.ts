@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
 // @ts-nocheck
 import React from "react";
+import type { EventGuestPlanning } from "@/lib/event-guest-planning";
 
 export type GymMeetTemplateId =
   | "launchpad-editorial"
@@ -316,6 +317,7 @@ export type GymMeetDiscoveryContent = {
 export type GymMeetTitleSize = "small" | "medium" | "large";
 
 export type GymMeetRenderModel = {
+  guestPlanning?: EventGuestPlanning;
   pageTemplateId: GymMeetTemplateId;
   title: string;
   titleSize: GymMeetTitleSize;

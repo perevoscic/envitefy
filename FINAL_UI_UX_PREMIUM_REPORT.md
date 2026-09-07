@@ -7,7 +7,7 @@ Date: 2026-06-04
 ## 1. Pages Audited
 
 - Dashboard `/`
-- AI Concierge `/concierge-v2`
+- Envitefy Concierge `/concierge-v2`
 - Event workspace Hub `/concierge-v2/events/[id]/hub`
 - Schedule Hub `/concierge-v2/events/[id]/schedule`
 - RSVP Board `/concierge-v2/events/[id]/rsvp`
@@ -39,7 +39,7 @@ Review board: `docs/implementation/PREMIUM_UI_REVIEW.md`
 - RSVP Board: host dashboard framing, Yes/Maybe/No/Pending/Kids/Adults metrics, clearer search/filter shell, no-result guidance, and detail empty state.
 - Imports/OCR: five-step review workflow, flyer/file wording, found-detail cards, clearer accept/apply actions, and import readiness panel.
 - Team/Class/Parent Hub: shared header, mode badge, clearer metrics, and roster/upcoming empty states.
-- AI Concierge: primary CTA/copy changed toward reviewing the event draft and creating the event page.
+- Envitefy Concierge: primary CTA/copy changed toward reviewing the event draft and creating the event page.
 
 ## 4. Components Created/Updated
 

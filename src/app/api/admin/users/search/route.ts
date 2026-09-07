@@ -1,50 +1,14 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { Pool } from "pg";
 import {
   ADMIN_USER_METRICS_CTE_SQL,
   ADMIN_USER_METRICS_SELECT_SQL,
 } from "@/lib/admin-user-metrics-sql";
 import { authOptions } from "@/lib/auth";
-import { getIsAdminByEmail } from "@/lib/db";
+import { getIsAdminByEmail, query } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function getPool(): Pool {
-  // Reuse the same pooling logic as db.ts without importing internals
-  // Minimal safe pool for this isolated route
-  const g = global as any;
-  if (!g.__pgPool_admin_search) {
-    const { Pool } = require("pg");
-    const databaseUrl = process.env.DATABASE_URL as string;
-    if (!databaseUrl) throw new Error("DATABASE_URL is not set");
-    const disableVerify = (process.env.PGSSL_DISABLE_VERIFY || "").toLowerCase();
-    const caBase64 = process.env.PGSSL_CA_BASE64 as string | undefined;
-    let ssl: any | undefined;
-    if (disableVerify === "1" || disableVerify === "true") {
-      ssl = { rejectUnauthorized: false };
-    } else if (caBase64 && caBase64.trim().length > 0) {
-      try {
-        const ca = Buffer.from(caBase64, "base64").toString("utf8");
-        ssl = { rejectUnauthorized: true, ca };
-      } catch {}
-    }
-    let connectionStringToUse: string = databaseUrl;
-    if (ssl) {
-      try {
-        const u = new URL(databaseUrl);
-        u.searchParams.delete("sslmode");
-        u.searchParams.delete("ssl");
-        connectionStringToUse = u.toString();
-      } catch {}
-    }
-    const config: any = { connectionString: connectionStringToUse, max: 5 };
-    if (ssl) config.ssl = ssl;
-    g.__pgPool_admin_search = new Pool(config);
-  }
-  return g.__pgPool_admin_search as Pool;
-}
 
 export async function GET(req: Request) {
   try {
@@ -95,8 +59,7 @@ export async function GET(req: Request) {
       limit ${limit + 1}
     `;
 
-    const pool = getPool();
-    const res = await pool.query(sql, values);
+    const res = await query(sql, values);
     const rows = res.rows || [];
     let nextCursor: string | null = null;
     let items = rows;

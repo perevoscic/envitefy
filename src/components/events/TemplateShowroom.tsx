@@ -25,7 +25,7 @@ export default function TemplateShowroom({
             key={item.label}
             href={item.href}
             aria-label={`View the ${item.label} complete event-page design: ${item.alt}`}
-            className="group relative isolate aspect-[8/5] min-w-0 overflow-hidden rounded-[0.9rem] border border-white/20 bg-[#2d1726] shadow-[0_16px_38px_rgba(20,8,16,0.34)] outline-none transition duration-300 ease-out hover:z-10 hover:-translate-y-1 focus-visible:z-10 focus-visible:-translate-y-1 focus-visible:ring-2 focus-visible:ring-[#ffd18f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#2d1726] motion-reduce:transition-none sm:rounded-[1.1rem]"
+            className="group relative isolate aspect-[8/5] min-w-0 overflow-hidden rounded-[0.9rem] border border-[#e4d3ce] bg-[#fff8f5] shadow-[0_12px_30px_rgba(91,58,70,0.12)] outline-none transition duration-300 ease-out hover:z-10 hover:-translate-y-1 focus-visible:z-10 focus-visible:-translate-y-1 focus-visible:ring-2 focus-visible:ring-[#9b5268] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8f5] motion-reduce:transition-none sm:rounded-[1.1rem]"
           >
             <Image
               src={item.src}

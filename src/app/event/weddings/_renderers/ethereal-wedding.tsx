@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useEffect, useState } from "react";
 import {
   ChevronDown,
@@ -48,7 +50,7 @@ const buildNames = (event: EventData) => {
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "September 14, 2025";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const months = [
       "January",
       "February",
@@ -118,7 +120,7 @@ export default function EtherealWedding({ theme, event }: Props) {
     "/templates/wedding-placeholders/marble-whisper-hero.jpeg";
   const rsvpUrl = event.rsvp?.url || "#rsvp";
   const rsvpDeadline = event.rsvp?.deadline
-    ? new Date(event.rsvp.deadline).toLocaleDateString("en-US", {
+    ? parseEventGuestDate(event.rsvp.deadline).toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
       })
@@ -451,10 +453,13 @@ export default function EtherealWedding({ theme, event }: Props) {
         </section>
       )}
 
+      {event.guestTools}
+
       <footer className="bg-white py-12 text-center text-slate-400 text-xs uppercase tracking-widest border-t border-slate-100">
         <p>
           {names} • {new Date().getFullYear()}
         </p>
+      <EnvitefyEventBranding category="Weddings" />
       </footer>
     </div>
   );

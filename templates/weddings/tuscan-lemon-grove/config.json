@@ -1,0 +1,22 @@
+{
+  "id": "tuscan-lemon-grove",
+  "name": "Tuscan Lemon Grove",
+  "category": "destination",
+  "family": "atelier",
+  "layout": "tuscan-lemon-grove",
+  "thumbnail": "/templates/weddings/generated-heroes/tuscan-lemon-grove-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#fffbed",
+      "secondary": "#344c30",
+      "background": "#fffbed"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/tuscan-lemon-grove-hero.webp"
+    }
+  }
+}

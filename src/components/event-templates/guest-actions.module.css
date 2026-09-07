@@ -1,0 +1,85 @@
+.actions {
+  position: relative;
+  z-index: 10;
+  padding: 1.5rem 0;
+  color: inherit;
+  font-family: inherit;
+  text-align: center;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.15rem;
+  border: 1px solid var(--guest-action-border, color-mix(in srgb, currentColor 35%, transparent));
+  border-radius: var(--guest-action-radius, 999px);
+  background: var(--guest-action-fill, color-mix(in srgb, currentColor 12%, transparent));
+  color: var(--guest-action-text, inherit);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+  text-transform: none;
+  letter-spacing: normal;
+  transition: filter 150ms ease;
+}
+
+.button:hover {
+  filter: brightness(0.94);
+}
+.button:focus-visible,
+.menu a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+
+.menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  width: 13rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  transform: translateX(-50%);
+  border: 1px solid var(--guest-action-border, color-mix(in srgb, currentColor 25%, transparent));
+  border-radius: min(var(--guest-action-radius, 1rem), 1rem);
+  background: var(--guest-action-surface, var(--surface, Canvas));
+  color: var(--guest-action-ink, CanvasText);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: left;
+  box-shadow: 0 12px 28px #0002;
+}
+
+.menu a {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: inherit;
+}
+.menu a:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.note {
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: min(var(--guest-action-radius, 1rem), 1rem);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+.copyInput {
+  width: 100%;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background: var(--guest-action-surface, var(--surface, Canvas));
+  color: var(--guest-action-ink, CanvasText);
+  font-size: 0.875rem;
+}

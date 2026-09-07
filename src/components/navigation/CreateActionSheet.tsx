@@ -29,7 +29,7 @@ type CreateActionSheetProps = {
 
 const createActionItems: CreateAction[] = [
   {
-    label: "Create with AI Concierge",
+    label: "Create with Envitefy Concierge",
     description: "Start from the signed-out Concierge demo.",
     icon: Sparkles,
     href: "#concierge",

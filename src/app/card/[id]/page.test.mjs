@@ -138,8 +138,11 @@ test("shared card page keeps public shares in a centered live-card frame", () =>
   assert.match(pageSource, /buildOwnerPreviewSearch\(returnHref\)/);
   assert.match(sharedPageSource, /returnHref\?: string \| null;/);
   assert.match(sharedPageSource, /aria-label="Close preview"/);
-  assert.match(sharedPageSource, /inline-flex h-11 w-11 items-center justify-center rounded-full/);
-  assert.match(sharedPageSource, /lg:left-\[calc\(20rem\+/);
+  assert.match(sharedPageSource, /inline-flex h-12 w-12 items-center justify-center rounded-full/);
+  assert.match(sharedPageSource, /absolute right-3 top-5/);
+  assert.match(sharedPageSource, /max-md:h-\[100dvh\]/);
+  assert.match(sharedPageSource, /max-md:!h-auto max-md:!w-full max-md:flex-1/);
+  assert.match(sharedPageSource, /onClose=\{handleClose\}/);
   assert.doesNotMatch(sharedPageSource, /Back to dashboard/);
   assert.match(sharedPageSource, /export function SharedStudioCardFrame/);
   assert.match(sharedPageSource, /relative flex min-h-\[100dvh\] w-full flex-col bg-neutral-950/);

@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useState, useEffect } from "react";
 import {
   Snowflake,
@@ -65,7 +67,7 @@ const buildNames = (event: EventData) => {
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "December 21, 2025";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const months = [
       "January",
       "February",
@@ -188,7 +190,7 @@ export default function WinterWedding({ theme, event }: Props) {
   const registry = event.registry || [];
   const rsvpUrl = event.rsvp?.url || "#rsvp";
   const rsvpDeadline = event.rsvp?.deadline
-    ? new Date(event.rsvp.deadline).toLocaleDateString("en-US", {
+    ? parseEventGuestDate(event.rsvp.deadline).toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
       })
@@ -422,10 +424,13 @@ export default function WinterWedding({ theme, event }: Props) {
         </section>
       )}
 
+      {event.guestTools}
+
       <footer className="bg-[#0F1C15] py-12 text-center text-xs text-gray-500 uppercase tracking-widest border-t border-white/5">
         <p>
           Est. {new Date().getFullYear()} • {location.split(",")[0] || "Aspen"}
         </p>
+      <EnvitefyEventBranding category="Weddings" inverse />
       </footer>
     </div>
   );

@@ -1,3 +1,6 @@
+import { BIRTHDAY_ORIGINAL_ART, BIRTHDAY_ORIGINAL_DIRECTION } from "./birthday-original-art";
+import { BIRTHDAY_KIDS_ART, BIRTHDAY_KIDS_DIRECTION } from "./birthday-kids-art";
+import { BIRTHDAY_ADULT_ART, BIRTHDAY_ADULT_DIRECTION } from "./birthday-adult-art";
 import { birthdayTemplateCatalog } from "@/components/event-create/BirthdayTemplateGallery";
 import {
   buildBirthdayExperienceProfiles,
@@ -244,11 +247,28 @@ export const ORIGINAL_BIRTHDAY_DESIGNS: BirthdayDesignTemplate[] = birthdayTempl
     };
   });
 
-export const BIRTHDAY_DESIGN_CATALOG: BirthdayCatalogDesign[] = buildBirthdayExperienceProfiles([
+const redesignedArt: Record<string, string> = { ...BIRTHDAY_ORIGINAL_ART, ...BIRTHDAY_KIDS_ART, ...BIRTHDAY_ADULT_ART };
+const redesignedDirection: Record<string, { primaryColor: string; secondaryColor: string; headlineFont?: string; description: string; style: string }> = { ...BIRTHDAY_ORIGINAL_DIRECTION, ...BIRTHDAY_KIDS_DIRECTION, ...BIRTHDAY_ADULT_DIRECTION };
+
+export const CELEBRATION_DESIGN_CATALOG: BirthdayCatalogDesign[] = buildBirthdayExperienceProfiles([
   ...ORIGINAL_BIRTHDAY_DESIGNS,
   ...NEW_BIRTHDAY_DESIGNS,
-]);
+].map((design) => ({
+  ...design,
+  ...redesignedDirection[design.id],
+  style: design.source === "Original" ? redesignedDirection[design.id]?.style || design.style : design.style,
+  heroImage: redesignedArt[design.id] || design.heroImage,
+})));
 
+export const BIRTHDAY_DESIGN_CATALOG = CELEBRATION_DESIGN_CATALOG.filter(
+  (design) => design.occasion === "Birthday",
+);
+
+export const ANNIVERSARY_DESIGN_CATALOG = CELEBRATION_DESIGN_CATALOG.filter(
+  (design) => design.occasion === "Anniversary",
+);
+
+// Keep every existing design ID resolvable for previously published invitations.
 export const BIRTHDAY_DESIGN_BY_ID = new Map(
-  BIRTHDAY_DESIGN_CATALOG.map((design) => [design.id, design] as const),
+  CELEBRATION_DESIGN_CATALOG.map((design) => [design.id, design] as const),
 );

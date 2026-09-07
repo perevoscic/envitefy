@@ -198,7 +198,7 @@ const DEFAULT_FIELD_QUESTIONS: Partial<Record<RequirementField, string>> = {
   eventPurpose: "What are we creating this for?",
   honoreeName: "Whose name should be featured?",
   ageOrMilestone: "What age or milestone should be shown?",
-  date: "When should this happen?",
+  date: "What date should the event take place?",
   time: "What time should it start?",
   location: "Where should guests go?",
   rsvpEnabled:

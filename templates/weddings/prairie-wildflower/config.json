@@ -1,0 +1,22 @@
+{
+  "id": "prairie-wildflower",
+  "name": "Prairie Wildflower",
+  "category": "organic",
+  "family": "atelier",
+  "layout": "prairie-wildflower",
+  "thumbnail": "/templates/weddings/generated-heroes/prairie-wildflower-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#fff1d8",
+      "secondary": "#73503a",
+      "background": "#fff1d8"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/prairie-wildflower-hero.webp"
+    }
+  }
+}

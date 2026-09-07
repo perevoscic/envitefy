@@ -14,7 +14,7 @@ import {
   Gauge,
   GraduationCap,
   HeartPulse,
-  Heart,
+  HeartHandshake,
   Home,
   Info,
   LayoutDashboard,
@@ -120,6 +120,33 @@ const SIDEBAR_FB_MASK_STYLE = (size: number): CSSProperties => ({
   maskRepeat: "no-repeat",
   maskPosition: "center",
 });
+
+function SidebarWeddingMenuIcon({
+  size = 16,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="8" cy="15" r="6" />
+      <circle cx="16" cy="15" r="6" />
+      <path d="m16 2 3 3-3 3-3-3Z" />
+    </svg>
+  );
+}
 
 function SidebarGymnasticsMenuIcon({
   size = 22,
@@ -260,12 +287,13 @@ const sidebarIconLookup = createSidebarIconLookup({
   FileEdit,
   Footprints,
   GraduationCap,
-  Heart,
+  HeartHandshake,
   Home,
   Music,
   PartyPopper,
   SidebarFootballMenuIcon,
   SidebarGymnasticsMenuIcon,
+  SidebarWeddingMenuIcon,
   Stethoscope,
   WandSparkles,
   Trophy,
@@ -492,7 +520,7 @@ function RootNavigationPanel({
               isChatActive ? rootActiveTextClass : `${rootInactiveTextClass} ${rootHoverTextClass}`
             }`}
           >
-            AI Concierge
+            Envitefy Concierge
           </span>
         </button>
 
@@ -1070,7 +1098,7 @@ function AiThreadsPanel({
       <div className={SUBPAGE_STICKY_HEADER_CLASS}>
         <PanelBackButton onClick={onBack} />
         <div className="px-2 pb-1 pt-1">
-          <p className={SIDEBAR_SUBPAGE_TITLE_CLASS}>AI Concierge</p>
+          <p className={`${SIDEBAR_SUBPAGE_TITLE_CLASS} !text-[1.1rem] !tracking-[0.06em]`}>Envitefy Concierge</p>
         </div>
       </div>
 

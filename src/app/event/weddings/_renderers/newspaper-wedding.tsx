@@ -1,3 +1,4 @@
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import { Camera } from "lucide-react";
 import { EventData, ThemeConfig } from "./content-sections";
@@ -120,6 +121,10 @@ export default function NewspaperWedding({ theme, event }: Props) {
           </div>
         </div>
       </div>
+      {event.guestTools}
+      <footer className="relative z-10 py-8 text-center">
+        <EnvitefyEventBranding category="Weddings" />
+      </footer>
     </div>
   );
 }

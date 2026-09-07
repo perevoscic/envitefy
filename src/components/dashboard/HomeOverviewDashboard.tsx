@@ -2,21 +2,27 @@
 
 import {
   Calendar,
+  CalendarClock,
   Camera,
   CheckCircle2,
   ChevronDown,
-  ChevronRight,
   ChevronUp,
+  ChevronRight,
   Clock,
-  CloudSun,
   type LucideIcon,
   MapPin,
   Navigation,
   WandSparkles,
+  ListChecks,
+  Users,
+  PenLine,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { DashboardOverview } from "@/lib/dashboard-overview";
+import { DashboardPlanningPanels, NextEventPlanning } from "./DashboardOverviewSections";
+import { DashboardReviewDialog } from "./DashboardReviewDialog";
 import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import { FlipClock } from "@/components/ui/flip-clock";
@@ -51,6 +57,7 @@ type DashboardMetricsCache = {
   travelMinutes: number | null;
   travelDistanceKm: number | null;
   travelUpdatedAt: string | null;
+  travelOriginLabel?: string | null;
   weatherSummary: string | null;
   weatherTemp: number | null;
   weatherUpdatedAt: string | null;
@@ -101,6 +108,8 @@ type DashboardResponse = {
     weatherEligible: boolean;
     travelWindowEligible: boolean;
   };
+  overview?: DashboardOverview;
+  eventWindowLimited?: boolean;
   diagnostics?: Record<string, unknown> | null;
   timings?: Record<string, unknown> | null;
 };
@@ -115,6 +124,7 @@ type HomeOverviewDashboardProps = {
   data: DashboardResponse | null;
   metrics: DashboardMetricsCache | null;
   enrichMeta: DashboardEnrichMeta | null;
+  travelError?: string | null;
   metricsLoading: boolean;
   loading: boolean;
   error: string | null;
@@ -178,6 +188,8 @@ type InfoCardProps = {
   tone: CardTone;
   href?: string | null;
   external?: boolean;
+  description?: string;
+  review?: { kind: "conflicts" | "attention"; overview: DashboardOverview };
 };
 
 type InvitationCardStat = {
@@ -201,6 +213,7 @@ type InvitationEventCardProps = {
   stats: InvitationCardStat[];
   primaryAction: InvitationAction;
   secondaryAction?: InvitationAction | null;
+  planning?: ReactNode;
 };
 
 function InfoCard({
@@ -210,6 +223,8 @@ function InfoCard({
   tone,
   href,
   external = false,
+  description,
+  review,
 }: InfoCardProps) {
   const toneStyles = CARD_TONE_STYLES[tone];
   const className = `group block rounded-[32px] border border-slate-100 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.06)] transition-all duration-500 hover:-translate-y-1 hover:border-indigo-100 ${toneStyles.shadowClassName}`;
@@ -228,8 +243,19 @@ function InfoCard({
       <p className="text-[1.35rem] font-black leading-none tracking-tight text-slate-900 sm:text-2xl">
         {value}
       </p>
+      {description ? <p className="mt-2 text-xs leading-5 text-slate-500">{description}</p> : null}
     </>
   );
+
+  if (review) {
+    return (
+      <DashboardReviewDialog {...review}>
+        <button type="button" className={`${className} w-full text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600`}>
+          {content}
+        </button>
+      </DashboardReviewDialog>
+    );
+  }
 
   if (href) {
     return (
@@ -255,6 +281,7 @@ function InvitationEventCard({
   stats,
   primaryAction,
   secondaryAction,
+  planning,
 }: InvitationEventCardProps) {
   const relationLabel = eventRelationLabel(item);
   const statusLabel = getEventStatusLabel(item);
@@ -424,6 +451,7 @@ function InvitationEventCard({
               </div>
             </div>
 
+            {!planning ? (
             <div
               className={`my-8 grid gap-3 ${
                 stats.length === 1 ? "grid-cols-1" : "grid-cols-2"
@@ -451,6 +479,9 @@ function InvitationEventCard({
                 );
               })}
             </div>
+            ) : null}
+
+            {planning ? <div className="mt-6">{planning}</div> : null}
 
             {isScannedOrUploaded ? (
               <div
@@ -554,6 +585,10 @@ function getViewerLabel(viewerName: string): string {
 
 function getEventStatusLabel(item: DashboardEventItem | null): string {
   if (!item) return "Ready";
+  const currentTime = Date.now();
+  if (Date.parse(item.startAt) <= currentTime && item.endAt && Date.parse(item.endAt) > currentTime) {
+    return "Happening now";
+  }
   if (item.ownership === "invited") {
     if (item.shareStatus === "pending") return "Pending";
     const rsvp = item.userRsvpResponse;
@@ -667,13 +702,12 @@ function buildInvitationStats(
 
 function buildInvitationActions(
   item: DashboardEventItem,
-  onForceTravel: () => void,
+  onForceTravel?: () => void,
 ): {
   primaryAction: InvitationAction;
   secondaryAction: InvitationAction | null;
 } {
-  const statusLabel = getEventStatusLabel(item);
-  const isInvitedWithoutResponse = statusLabel === "Invited";
+  const isInvitedWithoutResponse = item.ownership === "invited" && !item.userRsvpResponse && item.shareStatus !== "pending";
   const eventHref = `/event/${item.id}`;
 
   if (!item.hasRsvp) {
@@ -701,7 +735,7 @@ function buildInvitationActions(
   if (isInvitedWithoutResponse && item.hasRsvp) {
     return {
       primaryAction: { href: eventHref, label: "RSVP Now" },
-      secondaryAction: item.mapsUrl
+      secondaryAction: item.mapsUrl || !onForceTravel
         ? {
             href: eventHref,
             label: "View details",
@@ -759,6 +793,7 @@ export default function HomeOverviewDashboard({
   data,
   metrics,
   enrichMeta,
+  travelError,
   metricsLoading,
   loading,
   error,
@@ -767,6 +802,7 @@ export default function HomeOverviewDashboard({
 }: HomeOverviewDashboardProps) {
   const [now, setNow] = useState(() => Date.now());
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const [upcomingFilter, setUpcomingFilter] = useState<"all" | "owned" | "invited">("all");
   const nextEvent = data?.nextEvent ?? null;
 
   useEffect(() => {
@@ -777,11 +813,6 @@ export default function HomeOverviewDashboard({
 
   const viewerLabel = getViewerLabel(viewerName);
   const relationLabel = eventRelationLabel(nextEvent);
-  const hasTravelMetrics =
-    metrics?.travelMinutes != null || metrics?.travelDistanceKm != null;
-  const travelMissingOrigin =
-    enrichMeta?.hasDestination && enrichMeta?.hasOrigin === false;
-  const weatherEligible = Boolean(data?.metricsEligibility.weatherEligible);
   const topKicker = nextEvent
     ? nextEvent.ownership === "invited"
       ? "Upcoming Invitation"
@@ -803,52 +834,50 @@ export default function HomeOverviewDashboard({
     [data?.rsvp, metrics, metricsLoading, nextEvent],
   );
   const nextEventActions = useMemo(
-    () => (nextEvent ? buildInvitationActions(nextEvent, onForceTravel) : null),
+    () => {
+      if (!nextEvent) return null;
+      const actions = buildInvitationActions(nextEvent, onForceTravel);
+      if (actions.primaryAction.external) return { primaryAction: { href: `/event/${encodeURIComponent(nextEvent.id)}`, label: "View details" }, secondaryAction: null };
+      return { ...actions, secondaryAction: actions.secondaryAction?.external ? null : actions.secondaryAction };
+    },
     [nextEvent, onForceTravel],
   );
 
+  const overview = data?.overview;
+  const attentionCount = overview?.attention.length || 0;
+  const conflictCount = overview?.conflicts.length || 0;
+  const replies = overview?.guests.reduce((total, guest) => total + guest.going + guest.maybe + guest.declined, 0) || 0;
+  const openSignupSpots = overview?.signups.reduce((total, form) => total + form.remaining, 0) || 0;
+  const hasUnlimitedSignup = overview?.signups.some((form) => form.unlimitedSlots > 0) || false;
   const infoCards: InfoCardProps[] = [
     {
-      label: "Upcoming",
-      value: `${data?.snapshot.upcomingCount30Days ?? 0} Events`,
-      icon: Calendar,
-      tone: "pink",
+      label: "Next 7 days", value: `${data?.snapshot.upcomingCount7Days ?? 0} Events`,
+      description: `${data?.snapshot.upcomingCount30Days ?? 0} in the next 30 days`,
+      icon: Calendar, tone: "pink", href: "#dashboard-agenda",
     },
     {
-      label: "Travel Time",
-      value: metricsLoading
-        ? "Refreshing"
-        : hasTravelMetrics
-          ? `${metrics?.travelMinutes ?? "--"} min`
-          : travelMissingOrigin
-            ? "Add Origin"
-            : "Estimate",
-      icon: Navigation,
-      tone: "sky",
+      label: "Schedule conflicts", value: overview ? `${conflictCount} ${conflictCount === 1 ? "conflict" : "conflicts"}` : "Not available",
+      description: !overview ? "Refresh to load your schedule" : conflictCount ? "Review overlapping event times" : "No overlapping event times", icon: CalendarClock, tone: "amber",
+      review: overview ? { kind: "conflicts", overview } : undefined,
+      href: overview ? undefined : "#dashboard-agenda",
     },
+    ...(overview?.guests.length ? [{
+      label: "Guest responses", value: `${replies} ${replies === 1 ? "Reply" : "Replies"}`,
+      description: `Across ${overview.guests.length} of your events`, icon: Users, tone: "sky" as const, href: "#dashboard-guests",
+    }] : []),
+    ...(overview?.drafts.count ? [{
+      label: "Drafts", value: `${overview.drafts.count} to finish`, description: "Pick up where you left off",
+      icon: PenLine, tone: "indigo" as const, href: "#dashboard-drafts",
+    }] : []),
+    ...(!overview?.drafts.count && overview?.signups.length ? [{
+      label: "Sign-up spots", value: openSignupSpots ? `${openSignupSpots} open` : hasUnlimitedSignup ? "Open sign-ups" : "All covered",
+      description: "See coverage for your events", icon: Users, tone: "indigo" as const, href: "#dashboard-signups",
+    }] : []),
     {
-      label: "Weather",
-      value: metricsLoading
-        ? "Refreshing"
-        : metrics?.weatherTemp != null
-          ? `${Math.round(metrics.weatherTemp)}°F`
-          : weatherEligible
-            ? "Pending"
-            : "72h Window",
-      icon: CloudSun,
-      tone: "amber",
-    },
-    {
-      label: "Directions",
-      value: nextEvent?.mapsUrl
-        ? "Open Route"
-        : nextEvent
-          ? "Add Venue"
-          : "No Event",
-      icon: MapPin,
-      tone: "indigo",
-      href: nextEvent?.mapsUrl || null,
-      external: true,
+      label: "Needs attention", value: overview && !overview.unavailable.includes("event details") ? (attentionCount ? `${attentionCount} to review` : "All caught up") : "Not available",
+      description: "Invitations and event details", icon: ListChecks, tone: "indigo",
+      review: overview ? { kind: "attention", overview } : undefined,
+      href: overview ? undefined : "#dashboard-agenda",
     },
   ];
 
@@ -893,7 +922,13 @@ export default function HomeOverviewDashboard({
             </p>
           ) : null}
         </div>
+        <button type="button" onClick={onRetry} disabled={loading} aria-busy={loading}
+          className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-60">
+          {loading ? "Refreshing…" : "Refresh dashboard"}
+        </button>
       </header>
+
+      {error ? <p role="status" className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">Your latest refresh didn’t finish. Showing your previously loaded events.</p> : null}
 
       <section>
         {nextEvent && nextEventActions ? (
@@ -904,6 +939,9 @@ export default function HomeOverviewDashboard({
             stats={nextEventStats}
             primaryAction={nextEventActions.primaryAction}
             secondaryAction={nextEventActions.secondaryAction}
+            planning={<NextEventPlanning event={nextEvent} metrics={metrics?.eventId === nextEvent.id ? metrics : null}
+              loading={metricsLoading} hasOrigin={enrichMeta?.hasOrigin} onTravel={onForceTravel} error={travelError}
+              editHref={overview?.editLinks[nextEvent.id]} now={now} />}
           />
         ) : (
           <article className="relative overflow-hidden rounded-[40px] border border-slate-100 bg-white shadow-xl">
@@ -980,71 +1018,59 @@ export default function HomeOverviewDashboard({
         )}
       </section>
 
-      <section className="grid grid-cols-2 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4">
+      <section aria-label="Dashboard summary" className={`grid grid-cols-2 gap-4 md:gap-6 ${infoCards.length === 5 ? "xl:grid-cols-5" : infoCards.length === 4 ? "xl:grid-cols-4" : infoCards.length === 3 ? "xl:grid-cols-3" : ""}`}>
         {infoCards.map((card) => (
           <InfoCard key={card.label} {...card} />
         ))}
       </section>
 
-      {(() => {
-        const upcomingRest = (data?.upcoming ?? []).filter(
-          (e) => e.id !== nextEvent?.id,
-        );
-        if (upcomingRest.length === 0) return null;
-        const visibleUpcoming = showAllUpcoming ? upcomingRest : upcomingRest.slice(0, 3);
-        return (
-          <section className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black tracking-tight text-slate-900">
-                Upcoming Events
-              </h2>
-              <span className="text-xs font-bold text-slate-400">
-                {upcomingRest.length} event
-                {upcomingRest.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <div className="flex flex-col gap-6">
-              {visibleUpcoming.map((ev) => {
-                const actions = buildInvitationActions(ev, onForceTravel);
-                return (
-                  <InvitationEventCard
-                    key={ev.id}
-                    item={ev}
-                    now={now}
-                    primary={false}
-                    stats={buildInvitationStats(ev, {
-                      isPrimary: false,
-                      rsvp: null,
-                      metrics: null,
-                      metricsLoading: false,
-                    })}
-                    primaryAction={actions.primaryAction}
-                    secondaryAction={actions.secondaryAction}
-                  />
-                );
-              })}
-            </div>
-            {upcomingRest.length > 3 ? (
-              <button
-                type="button"
-                aria-expanded={showAllUpcoming}
-                onClick={() => setShowAllUpcoming((current) => !current)}
-                className="mobile-touch-target mx-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
-              >
-                {showAllUpcoming ? (
-                  <>
-                    Show fewer events <ChevronUp className="h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    Show all {upcomingRest.length} events <ChevronDown className="h-4 w-4" />
-                  </>
-                )}
-              </button>
-            ) : null}
-          </section>
-        );
-      })()}
+      {overview?.unavailable.length ? <p role="status" className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">Some details couldn’t load: {overview.unavailable.join(", ")}. <button type="button" onClick={onRetry} className="min-h-11 font-semibold underline underline-offset-4">Try again</button></p> : null}
+      <DashboardPlanningPanels overview={overview} />
+      <div id="dashboard-agenda" className="scroll-mt-24">
+        {(() => {
+          const upcomingRest = (data?.upcoming ?? []).filter((event) => event.id !== nextEvent?.id);
+          if (!upcomingRest.length) return null;
+          const filteredUpcoming = upcomingRest.filter((event) => upcomingFilter === "all" || (event.ownership || "owned") === upcomingFilter);
+          const visibleUpcoming = showAllUpcoming ? filteredUpcoming : filteredUpcoming.slice(0, 3);
+          return (
+            <section className="flex flex-col gap-4" aria-labelledby="upcoming-events-heading">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <h2 id="upcoming-events-heading" className="text-lg font-black tracking-tight text-slate-900">Upcoming Events</h2>
+                  <span className="text-xs font-bold text-slate-400">{filteredUpcoming.length} event{filteredUpcoming.length === 1 ? "" : "s"}</span>
+                </div>
+                <div role="group" aria-label="Filter upcoming events" className="flex flex-wrap rounded-2xl border border-slate-100 bg-white p-1">
+                  {([{ value: "all", label: "All" }, { value: "owned", label: "My events" }, { value: "invited", label: "Invited events" }] as const).map((option) => (
+                    <button type="button" key={option.value} aria-pressed={upcomingFilter === option.value}
+                      onClick={() => { setUpcomingFilter(option.value); setShowAllUpcoming(false); }}
+                      className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-indigo-600 ${upcomingFilter === option.value ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:bg-indigo-50"}`}>
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col gap-6">
+                {visibleUpcoming.map((ev) => {
+                  const actions = buildInvitationActions(ev);
+                  return (
+                    <InvitationEventCard key={ev.id} item={ev} now={now} primary={false}
+                      stats={buildInvitationStats(ev, { isPrimary: false, rsvp: null, metrics: null, metricsLoading: false })}
+                      primaryAction={actions.primaryAction} secondaryAction={actions.secondaryAction} />
+                  );
+                })}
+              </div>
+              {!filteredUpcoming.length ? <p className="rounded-2xl border border-slate-100 bg-white p-5 text-sm text-slate-500">No other upcoming {upcomingFilter === "invited" ? "invited events" : "events you own"}.</p> : null}
+              {filteredUpcoming.length > 3 ? (
+                <button type="button" aria-expanded={showAllUpcoming} onClick={() => setShowAllUpcoming((current) => !current)}
+                  className="mobile-touch-target mx-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
+                  {showAllUpcoming ? <>Show fewer events <ChevronUp className="h-4 w-4" /></> : <>Show all {filteredUpcoming.length} events <ChevronDown className="h-4 w-4" /></>}
+                </button>
+              ) : null}
+              {data?.eventWindowLimited ? <p className="text-xs text-slate-500">Showing the nearest saved events. Your event list has the rest.</p> : null}
+            </section>
+          );
+        })()}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { eventLocalDateParts, normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
 import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import Link from "next/link";
@@ -66,7 +67,48 @@ import skylineWedding from "../../templates/weddings/skyline-wedding/config.json
   type: "json",
 };
 
+import tuscanLemonGrove from "../../templates/weddings/tuscan-lemon-grove/config.json" with { type: "json" };
+import delftBlueEstate from "../../templates/weddings/delft-blue-estate/config.json" with { type: "json" };
+import meadowReverie from "../../templates/weddings/meadow-reverie/config.json" with { type: "json" };
+import desertModernism from "../../templates/weddings/desert-modernism/config.json" with { type: "json" };
+import chateauToile from "../../templates/weddings/chateau-toile/config.json" with { type: "json" };
+import rivieraStripes from "../../templates/weddings/riviera-stripes/config.json" with { type: "json" };
+import japaneseInk from "../../templates/weddings/japanese-ink/config.json" with { type: "json" };
+import discoAfterglow from "../../templates/weddings/disco-afterglow/config.json" with { type: "json" };
+import palmSpringsMod from "../../templates/weddings/palm-springs-mod/config.json" with { type: "json" };
+import highlandRomance from "../../templates/weddings/highland-romance/config.json" with { type: "json" };
+import terracottaCourtyard from "../../templates/weddings/terracotta-courtyard/config.json" with { type: "json" };
+import lakeComoLetter from "../../templates/weddings/lake-como-letter/config.json" with { type: "json" };
+import cherryBlossomSilk from "../../templates/weddings/cherry-blossom-silk/config.json" with { type: "json" };
+import frenchPatisserie from "../../templates/weddings/french-patisserie/config.json" with { type: "json" };
+import oceanCyanotype from "../../templates/weddings/ocean-cyanotype/config.json" with { type: "json" };
+import artDecoSoiree from "../../templates/weddings/art-deco-soiree/config.json" with { type: "json" };
+import prairieWildflower from "../../templates/weddings/prairie-wildflower/config.json" with { type: "json" };
+import redThread from "../../templates/weddings/red-thread/config.json" with { type: "json" };
+import moonstoneMinimal from "../../templates/weddings/moonstone-minimal/config.json" with { type: "json" };
+import tropicalAfterdark from "../../templates/weddings/tropical-afterdark/config.json" with { type: "json" };
+
 const TEMPLATE_CONFIGS: Record<string, any> = {
+  "tuscan-lemon-grove": tuscanLemonGrove,
+  "delft-blue-estate": delftBlueEstate,
+  "meadow-reverie": meadowReverie,
+  "desert-modernism": desertModernism,
+  "chateau-toile": chateauToile,
+  "riviera-stripes": rivieraStripes,
+  "japanese-ink": japaneseInk,
+  "disco-afterglow": discoAfterglow,
+  "palm-springs-mod": palmSpringsMod,
+  "highland-romance": highlandRomance,
+  "terracotta-courtyard": terracottaCourtyard,
+  "lake-como-letter": lakeComoLetter,
+  "cherry-blossom-silk": cherryBlossomSilk,
+  "french-patisserie": frenchPatisserie,
+  "ocean-cyanotype": oceanCyanotype,
+  "art-deco-soiree": artDecoSoiree,
+  "prairie-wildflower": prairieWildflower,
+  "red-thread": redThread,
+  "moonstone-minimal": moonstoneMinimal,
+  "tropical-afterdark": tropicalAfterdark,
   "ethereal-classic": etherealClassic,
   "modern-editorial": modernEditorial,
   "rustic-boho": rusticBoho,
@@ -795,7 +837,8 @@ export default function WeddingTemplateView({
     const schedule = Array.isArray(weddingData.schedule)
       ? weddingData.schedule.map((item: any) => ({
           title: item.title || "",
-          time: item.time || item.date || "",
+          time: item.time || "",
+          date: item.date || "",
           location: item.location || "",
         }))
       : [];
@@ -851,6 +894,12 @@ export default function WeddingTemplateView({
         partner2: weddingData.partner2 || "",
       },
       date: weddingData.date || "",
+      time: weddingData.time || "",
+      endTime: weddingData.endTime || eventLocalDateParts(weddingData.endISO).time,
+      endDate: weddingData.endDate || eventLocalDateParts(weddingData.endISO).date,
+      startISO: weddingData.startISO || null,
+      endISO: weddingData.endISO || null,
+      guestPlanning: normalizeEventGuestPlanning(weddingData.guestPlanning),
       location,
       story:
         weddingData.story || (typeof weddingData.story === "object" ? weddingData.story?.text : ""),
@@ -893,7 +942,7 @@ export default function WeddingTemplateView({
         <div className="relative w-full max-w-[100%] md:max-w-[calc(100%-40px)] xl:max-w-[1000px] mx-auto my-4 md:my-8">
           {/* Edit/Delete buttons overlay */}
           {!isReadOnly && (canEdit || isOwner) && (
-            <div className="absolute top-4 right-4 z-50 hidden md:flex items-center gap-2">
+            <div className="mb-3 hidden items-center justify-end gap-2 md:flex">
               {canEdit && (
                 <Link
                   href={buildEditLink(eventId, eventData, eventTitle)}
@@ -922,16 +971,16 @@ export default function WeddingTemplateView({
 
           {/* Render the template using WeddingRenderer (same as preview) */}
           <div className="shadow-2xl md:rounded-xl overflow-hidden">
-            <WeddingRenderer template={selectedTemplate} event={event} />
+            <WeddingRenderer
+              template={selectedTemplate}
+              event={event}
+              shareUrl={shareUrl}
+              eventId={eventId}
+              preview={false}
+            />
           </div>
         </div>
 
-        {/* Event Actions */}
-        {!isReadOnly && (
-          <div className="max-w-3xl mx-auto px-5 sm:px-10 py-6 hidden md:block">
-            <EventActions shareUrl={shareUrl} historyId={eventId} event={shareEventPayload} />
-          </div>
-        )}
       </div>
       {!isReadOnly && (
         <div className="event-modern-mobile-bar md:hidden">

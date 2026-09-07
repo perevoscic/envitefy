@@ -2,6 +2,9 @@
 // @ts-nocheck
 "use client";
 
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+
 import { Calendar, Check, Clock, Trophy } from "lucide-react";
 import React from "react";
 import { joinUniqueDisplayParts } from "../displayText";
@@ -206,6 +209,7 @@ export default function DashboardGymMeetTemplate({
               </div>
             </div>
           </header>
+          <EventGuestPlanningNotes value={model.guestPlanning} />
 
           <div className="relative z-20 -mt-6 px-3 sm:px-5">
             {!suppressActionStrip ? (
@@ -471,9 +475,7 @@ export default function DashboardGymMeetTemplate({
               </div>
             ) : null}
 
-            <footer className="px-2 py-6 text-center text-xs font-semibold uppercase tracking-[0.22em] opacity-50">
-              Envitefy Gymnastics Meet Page
-            </footer>
+            <footer className="rounded-2xl bg-white px-2 py-6 text-center"><EnvitefyEventBranding category="Gymnastics" /></footer>
           </main>
         </div>
       </div>

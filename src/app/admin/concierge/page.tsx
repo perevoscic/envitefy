@@ -23,8 +23,8 @@ export default async function AdminConciergePage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        eyebrow="AI Concierge"
-        title="AI Concierge"
+        eyebrow="Envitefy Concierge"
+        title="Envitefy Concierge"
         description="Creation sessions, draft statuses, conversation threads, and message volume."
       />
 

@@ -1,3 +1,4 @@
+import { normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
 import {
   SignupForm,
   SignupFormSection,
@@ -370,6 +371,7 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
       enabled: false,
       title: (form.title || "").trim() || "Sign-up sheet",
       description: form.description?.trim() ? form.description.trim() : null,
+      guestPlanning: normalizeEventGuestPlanning(form.guestPlanning),
       venue: (form as any).venue?.trim ? ((form as any).venue as string).trim() || null : (form as any).venue ?? null,
       location: (form as any).location?.trim ? ((form as any).location as string).trim() || null : (form as any).location ?? null,
       room: (form as any).room?.trim ? ((form as any).room as string).trim() || null : (form as any).room ?? null,
@@ -424,6 +426,7 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
     enabled: Boolean(form.enabled),
     title: (form.title || "").trim() || "Sign-up sheet",
     description: form.description?.trim() ? form.description.trim() : null,
+      guestPlanning: normalizeEventGuestPlanning(form.guestPlanning),
     venue: (form as any).venue?.trim ? ((form as any).venue as string).trim() || null : (form as any).venue ?? null,
     location: (form as any).location?.trim ? ((form as any).location as string).trim() || null : (form as any).location ?? null,
     room: (form as any).room?.trim ? ((form as any).room as string).trim() || null : (form as any).room ?? null,

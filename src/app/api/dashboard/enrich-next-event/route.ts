@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { extractHomeOrigin } from "@/lib/dashboard-data";
+import { cacheDashboardDriveEstimate, dashboardTravelCacheKey, getDashboardDriveEstimate } from "@/lib/dashboard-travel-cache";
 import {
   buildDashboardCollections,
   listDashboardEventsForUser,
@@ -15,7 +16,6 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const TRAVEL_TTL_MS = 1 * 60 * 60 * 1000;
 const WEATHER_TTL_MS = 3 * 60 * 60 * 1000;
 const WEATHER_FORECAST_WINDOW_HOURS = 24 * 3; // WeatherAPI free-tier 3-day forecast window.
 const EXTERNAL_FETCH_TIMEOUT_MS = 4_500;
@@ -27,9 +27,6 @@ const WEATHERAPI_KEY =
 
 type MetricsRow = {
   event_id: string;
-  travel_minutes: number | null;
-  travel_distance_km: number | null;
-  travel_updated_at: string | null;
   weather_summary: string | null;
   weather_temp: number | null;
   weather_updated_at: string | null;
@@ -54,6 +51,7 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 function parseFinite(value: unknown): number | null {
+  if ((typeof value !== "number" && typeof value !== "string") || (typeof value === "string" && !value.trim())) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
@@ -147,7 +145,7 @@ async function ensureMetricsCacheTable() {
 
 async function getMetrics(eventId: string): Promise<MetricsRow | null> {
   const res = await query<MetricsRow>(
-    `select event_id, travel_minutes, travel_distance_km, travel_updated_at, weather_summary, weather_temp, weather_updated_at
+    `select event_id, weather_summary, weather_temp, weather_updated_at
      from event_metrics_cache
      where event_id = $1
      limit 1`,
@@ -156,62 +154,13 @@ async function getMetrics(eventId: string): Promise<MetricsRow | null> {
   return res.rows[0] || null;
 }
 
-async function upsertMetrics(
-  eventId: string,
-  patch: {
-    travelMinutes?: number | null;
-    travelDistanceKm?: number | null;
-    travelUpdatedAt?: string | null;
-    weatherSummary?: string | null;
-    weatherTemp?: number | null;
-    weatherUpdatedAt?: string | null;
-  },
-  existing?: MetricsRow | null
-) {
-  const base = existing === undefined ? await getMetrics(eventId) : existing;
-  const travelMinutes =
-    patch.travelMinutes !== undefined ? patch.travelMinutes : base?.travel_minutes ?? null;
-  const travelDistanceKm =
-    patch.travelDistanceKm !== undefined
-      ? patch.travelDistanceKm
-      : base?.travel_distance_km ?? null;
-  const travelUpdatedAt =
-    patch.travelUpdatedAt !== undefined
-      ? patch.travelUpdatedAt
-      : base?.travel_updated_at ?? null;
-  const weatherSummary =
-    patch.weatherSummary !== undefined
-      ? patch.weatherSummary
-      : base?.weather_summary ?? null;
-  const weatherTemp =
-    patch.weatherTemp !== undefined ? patch.weatherTemp : base?.weather_temp ?? null;
-  const weatherUpdatedAt =
-    patch.weatherUpdatedAt !== undefined
-      ? patch.weatherUpdatedAt
-      : base?.weather_updated_at ?? null;
-
+async function upsertWeatherMetrics(eventId: string, summary: string | null, temp: number | null, updatedAt: string) {
   await query(
-    `insert into event_metrics_cache (
-      event_id, travel_minutes, travel_distance_km, travel_updated_at, weather_summary, weather_temp, weather_updated_at, updated_at
-    ) values ($1, $2, $3, $4, $5, $6, $7, now())
-    on conflict (event_id)
-    do update set
-      travel_minutes = excluded.travel_minutes,
-      travel_distance_km = excluded.travel_distance_km,
-      travel_updated_at = excluded.travel_updated_at,
-      weather_summary = excluded.weather_summary,
-      weather_temp = excluded.weather_temp,
-      weather_updated_at = excluded.weather_updated_at,
-      updated_at = now()`,
-    [
-      eventId,
-      travelMinutes,
-      travelDistanceKm,
-      travelUpdatedAt,
-      weatherSummary,
-      weatherTemp,
-      weatherUpdatedAt,
-    ]
+    `insert into event_metrics_cache (event_id, weather_summary, weather_temp, weather_updated_at, updated_at)
+     values ($1, $2, $3, $4, now())
+     on conflict (event_id) do update set weather_summary = excluded.weather_summary,
+       weather_temp = excluded.weather_temp, weather_updated_at = excluded.weather_updated_at, updated_at = now()`,
+    [eventId, summary, temp, updatedAt],
   );
 }
 
@@ -295,12 +244,12 @@ async function fetchTravelMinutesAndDistance(params: {
   if (!res?.ok) return { minutes: null, distanceKm: null };
   const payload = await res.json().catch(() => null);
   const route = payload?.routes?.[0];
-  const durationSeconds = Number(route?.duration);
-  const distanceMeters = Number(route?.distance);
-  const minutes = Number.isFinite(durationSeconds)
+  const durationSeconds = parseFinite(route?.duration);
+  const distanceMeters = parseFinite(route?.distance);
+  const minutes = durationSeconds != null && durationSeconds >= 0
     ? Math.max(1, Math.round(durationSeconds / 60))
     : null;
-  const distanceKm = Number.isFinite(distanceMeters)
+  const distanceKm = distanceMeters != null && distanceMeters >= 0
     ? Math.round((distanceMeters / 1000) * 10) / 10
     : null;
   return { minutes, distanceKm };
@@ -401,7 +350,12 @@ export async function POST(req: Request) {
       listDashboardEventsForUser(userId, 200)
     );
     const events = eventResult.events;
-    const { nextEvent } = buildDashboardCollections(events);
+    const { upcoming } = buildDashboardCollections(events);
+    // Home excludes declined invitations after loading RSVP responses. Honor
+    // its selected event, while restricting enrichment to this user's events.
+    const nextEvent = requestedEventId
+      ? upcoming.find((event) => event.id === requestedEventId) ?? null
+      : upcoming[0] ?? null;
 
     if (!nextEvent) {
       const payload: Record<string, unknown> = {
@@ -438,7 +392,7 @@ export async function POST(req: Request) {
     const homeLabel = resolveHomeLabel(featureVisibility);
 
     const originGeocodePromise =
-      !homeOrigin && homeLabel
+      !requestOrigin && !homeOrigin && homeLabel
         ? geocodeWithMapbox(homeLabel).catch(() => null)
         : Promise.resolve(null);
     const destinationPromise =
@@ -463,14 +417,16 @@ export async function POST(req: Request) {
     const hoursToStart = (startMs - nowMs) / (1000 * 60 * 60);
     const hasDestination = Boolean(destinationCoords);
 
-    const travelFresh = isCacheFresh(cached?.travel_updated_at || null, TRAVEL_TTL_MS);
+    const travelKey = origin && destinationCoords
+      ? dashboardTravelCacheKey(userId, nextEvent.id, origin, destinationCoords) : null;
+    const cachedTravel = travelKey ? getDashboardDriveEstimate(travelKey) : null;
+    const travelFresh = Boolean(cachedTravel);
     const weatherFresh = isCacheFresh(cached?.weather_updated_at || null, WEATHER_TTL_MS);
 
     const canCallTravel =
       hasDestination &&
       !!origin &&
       !!MAPBOX_ACCESS_TOKEN &&
-      (hoursToStart <= 72 || forceTravel) &&
       (forceTravel || !travelFresh);
     const canCallWeather =
       hasDestination &&
@@ -478,9 +434,9 @@ export async function POST(req: Request) {
       hoursToStart <= WEATHER_FORECAST_WINDOW_HOURS &&
       !weatherFresh;
 
-    let travelMinutes = cached?.travel_minutes ?? null;
-    let travelDistanceKm = cached?.travel_distance_km ?? null;
-    let travelUpdatedAt = cached?.travel_updated_at ?? null;
+    let travelMinutes = cachedTravel?.minutes ?? null;
+    let travelDistanceKm = cachedTravel?.distanceKm ?? null;
+    let travelUpdatedAt = cachedTravel?.updatedAt ?? null;
     let weatherSummary = cached?.weather_summary ?? null;
     let weatherTemp = cached?.weather_temp ?? null;
     let weatherUpdatedAt = cached?.weather_updated_at ?? null;
@@ -514,37 +470,19 @@ export async function POST(req: Request) {
       return Promise.all([travelPromise, weatherPromise]);
     });
 
-    const metricsPatch: {
-      travelMinutes?: number | null;
-      travelDistanceKm?: number | null;
-      travelUpdatedAt?: string | null;
-      weatherSummary?: string | null;
-      weatherTemp?: number | null;
-      weatherUpdatedAt?: string | null;
-    } = {};
-
-    if (travelResult.minutes != null || travelResult.distanceKm != null) {
+    if (travelResult.minutes != null && travelKey) {
       travelMinutes = travelResult.minutes;
       travelDistanceKm = travelResult.distanceKm;
       travelUpdatedAt = new Date().toISOString();
-      metricsPatch.travelMinutes = travelMinutes;
-      metricsPatch.travelDistanceKm = travelDistanceKm;
-      metricsPatch.travelUpdatedAt = travelUpdatedAt;
+      cacheDashboardDriveEstimate(travelKey, { minutes: travelMinutes, distanceKm: travelDistanceKm, updatedAt: travelUpdatedAt });
     }
 
     if (weatherResult.summary != null || weatherResult.temp != null) {
       weatherSummary = weatherResult.summary;
       weatherTemp = weatherResult.temp;
-      weatherUpdatedAt = new Date().toISOString();
-      metricsPatch.weatherSummary = weatherSummary;
-      metricsPatch.weatherTemp = weatherTemp;
-      metricsPatch.weatherUpdatedAt = weatherUpdatedAt;
-    }
-
-    if (Object.keys(metricsPatch).length > 0) {
-      await timing.time("metrics_upsert", () =>
-        upsertMetrics(nextEvent.id, metricsPatch, cached)
-      );
+      const updatedAt = new Date().toISOString();
+      weatherUpdatedAt = updatedAt;
+      await timing.time("metrics_upsert", () => upsertWeatherMetrics(nextEvent.id, weatherSummary, weatherTemp, updatedAt));
     }
 
     const payload: Record<string, unknown> = {
@@ -555,6 +493,7 @@ export async function POST(req: Request) {
         travelMinutes,
         travelDistanceKm,
         travelUpdatedAt,
+        travelOriginLabel: requestOrigin ? requestOrigin.label || "selected location" : origin ? "home" : null,
         weatherSummary,
         weatherTemp,
         weatherUpdatedAt,
@@ -569,9 +508,10 @@ export async function POST(req: Request) {
           : geocodedOrigin
           ? "profile-geocoded"
           : "none",
-        travelWindowEligible: hoursToStart <= 72,
+        travelWindowEligible: true,
+        travelStatus: !MAPBOX_ACCESS_TOKEN ? "unavailable" : !origin ? "needs-origin" : !hasDestination ? "needs-destination" : travelMinutes != null ? "ready" : "unavailable",
         weatherWindowEligible: hoursToStart <= WEATHER_FORECAST_WINDOW_HOURS,
-        travelUsedCache: travelFresh,
+        travelUsedCache: travelFresh && !forceTravel,
         weatherUsedCache: weatherFresh,
       },
     };

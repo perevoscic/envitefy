@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import {
   Moon,
@@ -58,7 +60,7 @@ const formatDate = (dateStr?: string) => {
   if (!dateStr)
     return { month: "Oct", day: "14th", year: "2025", weekday: "Sunday" };
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const months = [
       "Jan",
       "Feb",
@@ -460,6 +462,10 @@ export default function CelestialWedding({ theme, event }: Props) {
           </section>
         )}
       </main>
+      {event.guestTools}
+      <footer className="relative z-10 py-8 text-center">
+        <EnvitefyEventBranding category="Weddings" inverse />
+      </footer>
     </div>
   );
 }

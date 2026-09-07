@@ -1,7 +1,11 @@
 // @ts-nocheck
 "use client";
 
-import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import { type EventGuestPlanning, getEventEndLocal, normalizeEventGuestPlanning, eventLocalDateParts, parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import React, {
   useCallback,
   useMemo,
@@ -19,11 +23,9 @@ import {
   Edit2,
   Image as ImageIcon,
   Menu,
-  Palette,
   Type,
   Upload,
   CheckSquare,
-  Share2,
   MapPin,
   Clock,
   Users,
@@ -625,7 +627,13 @@ export default function SpecialEventsCustomizePage() {
     }
   }, [defaultDate]);
 
+  const [savedEventData, setSavedEventData] = useState<Record<string, any>>({});
+  const [loadingExisting, setLoadingExisting] = useState(Boolean(editEventId));
+  const [loadError, setLoadError] = useState("");
   const [data, setData] = useState(() => ({
+      guestPlanning: {} as EventGuestPlanning,
+      endTime: "",
+      endDate: "",
     title: "Father-Daughter Dance",
     date: initialDate,
     time: "18:00",
@@ -659,6 +667,51 @@ export default function SpecialEventsCustomizePage() {
       fontSize: "medium",
     },
   }));
+
+  useEffect(() => {
+    if (!editEventId) { setLoadingExisting(false); return; }
+    let cancelled = false;
+    setLoadingExisting(true);
+    setLoadError("");
+    void (async () => {
+      try {
+        const response = await fetch(`/api/history/${editEventId}`, { credentials: "include", cache: "no-store" });
+        if (!response.ok) throw new Error("Could not load this event. Reload the page before making changes.");
+        const row = await response.json();
+        if (cancelled) return;
+        const existing = row.data || {};
+        const start = eventLocalDateParts(existing.startISO || existing.startAt || existing.start);
+        const end = eventLocalDateParts(existing.endISO || existing.endAt || existing.end);
+        setSavedEventData(existing);
+        setData((prev) => ({
+          ...prev,
+          title: row.title ?? existing.title ?? prev.title,
+          date: existing.date ?? start.date,
+          time: existing.time ?? start.time,
+          endTime: existing.endTime ?? end.time,
+          endDate: existing.endDate ?? end.date,
+          guestPlanning: normalizeEventGuestPlanning(existing.guestPlanning),
+          city: existing.city ?? "",
+          state: existing.state ?? "",
+          venue: existing.venue ?? existing.location ?? "",
+          details: existing.description ?? existing.details ?? "",
+          hero: existing.heroImage ?? existing.hero ?? "",
+          rsvpEnabled: typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : typeof existing.rsvp?.isEnabled === "boolean" ? existing.rsvp.isEnabled : Boolean(existing.rsvp),
+          rsvpDeadline: existing.rsvpDeadline ?? (typeof existing.rsvp === "string" ? existing.rsvp : existing.rsvp?.deadline) ?? "",
+
+            address: existing.address ?? "",
+            extra: { ...prev.extra, ...(existing.customFields || {}) },
+            sponsors: Array.isArray(existing.sponsors) ? existing.sponsors : [],
+            theme: { ...prev.theme, ...(existing.theme || {}) },
+        }));
+      } catch (error) {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : "Could not load this event.");
+      } finally {
+        if (!cancelled) setLoadingExisting(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editEventId]);
 
   // Load Google Fonts dynamically
   useEffect(() => {
@@ -709,7 +762,8 @@ export default function SpecialEventsCustomizePage() {
       if (!Number.isNaN(tentative.getTime())) start = tentative;
     }
     if (!start) start = new Date();
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+          const end = endLocal ? new Date(endLocal) : start;
     const location = [data.venue, data.city, data.state]
       .filter(Boolean)
       .join(", ");
@@ -754,7 +808,7 @@ export default function SpecialEventsCustomizePage() {
     }
   };
 
-  const handleShare = (e?: React.MouseEvent) => {
+  const _handleShare = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     const details = buildCalendarDetails();
     const shareUrl =
@@ -778,7 +832,7 @@ export default function SpecialEventsCustomizePage() {
     }
   };
 
-  const handleGoogleCalendar = (e?: React.MouseEvent) => {
+  const _handleGoogleCalendar = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     const details = buildCalendarDetails();
     const start = toGoogleDate(details.start);
@@ -793,7 +847,7 @@ export default function SpecialEventsCustomizePage() {
     openWithAppFallback(appUrl, webUrl);
   };
 
-  const handleOutlookCalendar = (e?: React.MouseEvent) => {
+  const _handleOutlookCalendar = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     const details = buildCalendarDetails();
     const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
@@ -817,7 +871,7 @@ export default function SpecialEventsCustomizePage() {
     openWithAppFallback(appUrl, webUrl);
   };
 
-  const handleAppleCalendar = (e?: React.MouseEvent) => {
+  const _handleAppleCalendar = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     openAppleCalendarIcs(buildIcsUrl(buildCalendarDetails()));
   };
@@ -1024,7 +1078,7 @@ export default function SpecialEventsCustomizePage() {
   const rsvpButtonBg = isDarkBackground
     ? "bg-white text-slate-900 hover:bg-slate-200"
     : "bg-slate-900 text-white hover:bg-slate-800";
-  const shareButtonBg = isDarkBackground
+  const _shareButtonBg = isDarkBackground
     ? "border-white/20 bg-white/10 hover:bg-white/20"
     : "border-slate-300/50 bg-slate-900/10 hover:bg-slate-900/20";
 
@@ -1033,17 +1087,21 @@ export default function SpecialEventsCustomizePage() {
     .join(", ");
 
   const handlePublish = useCallback(async () => {
-    if (submitting) return;
+    if (submitting || loadingExisting || loadError) return;
     setSubmitting(true);
     try {
+        if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
+          throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
+        }
+
       let startISO: string | null = null;
       let endISO: string | null = null;
       if (data.date) {
         const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-        const end = new Date(start);
-        end.setHours(end.getHours() + 2);
+        const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+          const end = endLocal ? new Date(endLocal) : null;
         startISO = start.toISOString();
-        endISO = end.toISOString();
+        endISO = end?.toISOString() || null;
       }
 
       const heroImageToSave =
@@ -1067,17 +1125,31 @@ export default function SpecialEventsCustomizePage() {
       const payload: any = {
         title: data.title || "Special Event",
         data: {
+            ...savedEventData,
           category: "special_events",
           createdVia: "template",
           createdManually: true,
           startISO,
+          startAt: startISO,
+          start: startISO,
+          date: data.date,
+          time: data.time,
+          city: data.city,
+          state: data.state,
           endISO,
-          location: locationParts || undefined,
+          endAt: endISO,
+          end: endISO,
+          endTime: data.endTime,
+          endDate: data.endDate,
+          guestPlanning: data.guestPlanning,
+          location: editEventId && data.venue === (savedEventData.venue ?? savedEventData.location ?? "") && data.city === (savedEventData.city ?? "") && data.state === (savedEventData.state ?? "") && data.address === (savedEventData.address ?? "") ? savedEventData.location || locationParts : locationParts || undefined,
           venue: data.venue || undefined,
           address: data.address || undefined,
           description: data.details || undefined,
-          rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
-          numberOfGuests: 0,
+          rsvp: data.rsvpEnabled ? data.rsvpDeadline || null : null,
+            rsvpEnabled: data.rsvpEnabled,
+            rsvpDeadline: data.rsvpDeadline,
+          numberOfGuests: savedEventData.numberOfGuests ?? 0,
           templateId: "special-event",
           customFields: data.extra,
           sponsors: sponsorsToSave,
@@ -1154,7 +1226,7 @@ export default function SpecialEventsCustomizePage() {
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, data, editEventId, router, locationParts]);
+  }, [submitting, data, editEventId, router, locationParts, savedEventData, loadingExisting, loadError]);
 
   // Filter out unwanted categories and get flat list of themes
   const availableThemes = useMemo(() => {
@@ -1181,12 +1253,6 @@ export default function SpecialEventsCustomizePage() {
           icon={<Type size={18} />}
           desc="Title, date, location."
           onClick={() => setActiveView("headline")}
-        />
-        <MenuCard
-          title="Design"
-          icon={<Palette size={18} />}
-          desc="Theme, fonts, colors."
-          onClick={() => setActiveView("design")}
         />
         <MenuCard
           title="Images"
@@ -1445,6 +1511,21 @@ export default function SpecialEventsCustomizePage() {
   const renderDetailsEditor = () => (
     <EditorLayout title="Details" onBack={() => setActiveView("main")}>
       <div className="space-y-6 pb-8">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm font-medium text-slate-700">
+              End time (optional)
+              <input type="time" value={data.endTime} onChange={(event) => setData((prev) => ({ ...prev, endTime: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+            <label className="block text-sm font-medium text-slate-700">
+              End date (if different)
+              <input type="date" min={data.date || undefined} value={data.endDate} onChange={(event) => setData((prev) => ({ ...prev, endDate: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+          </div>
+          {data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate) ? (
+            <p role="alert" className="text-sm text-red-700">End time must be after the start. For an overnight event, choose the next end date.</p>
+          ) : null}
+          <EventGuestPlanningEditor category="special-events" value={data.guestPlanning} onChange={(guestPlanning) => setData((prev) => ({ ...prev, guestPlanning }))} />
+
         <InputGroup
           label="Event Description"
           type="textarea"
@@ -1711,7 +1792,7 @@ export default function SpecialEventsCustomizePage() {
         <div className="flex items-center gap-2">
           <Clock size={16} className="opacity-70" />
           <span>
-            {new Date(data.date).toLocaleDateString("en-US", {
+            {parseEventGuestDate(data.date).toLocaleDateString("en-US", {
               month: "long",
               day: "numeric",
               year: "numeric",
@@ -1762,6 +1843,12 @@ export default function SpecialEventsCustomizePage() {
     </div>
   );
 
+  if (loadingExisting || loadError) return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-slate-700">
+      <p role={loadError ? "alert" : "status"}>{loadError || "Loading your event…"}</p>
+    </div>
+  );
+
   return (
     <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
       <div
@@ -1772,7 +1859,7 @@ export default function SpecialEventsCustomizePage() {
           overscrollBehavior: "contain",
         }}
       >
-        <div className="w-full min-w-0 my-4 md:my-8 transition-all duration-500 ease-in-out">
+        <div className="w-full min-w-0 mb-4 md:mb-8 transition-all duration-500 ease-in-out">
           <div
             key={currentTheme?.id}
             className="min-h-[800px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col transition-colors duration-500 relative z-0"
@@ -1860,7 +1947,17 @@ export default function SpecialEventsCustomizePage() {
                 >
                   Details
                 </h2>
-                {data.details ? (
+                
+                  <EventGuestActions
+                    title={data.title}
+                    start={data.date ? `${data.date}T${data.time || "14:00"}` : undefined}
+                    end={getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)}
+                    description={data.details}
+                    location={[data.venue, data.city, data.state].filter(Boolean).join(", ")}
+                    preview
+                  />
+                  <EventGuestPlanningNotes value={data.guestPlanning} />
+                  {data.details ? (
                   <p
                     className={`${currentSize.body} leading-relaxed opacity-90 whitespace-pre-wrap ${textClass} mb-8`}
                   >
@@ -2023,7 +2120,7 @@ export default function SpecialEventsCustomizePage() {
                         <div className="text-center mb-4">
                           <p className={`opacity-80 ${textClass}`}>
                             {data.rsvpDeadline
-                              ? `Kindly respond by ${new Date(
+                              ? `Kindly respond by ${parseEventGuestDate(
                                   data.rsvpDeadline
                                 ).toLocaleDateString()}`
                               : "Please RSVP"}
@@ -2117,68 +2214,6 @@ export default function SpecialEventsCustomizePage() {
                         >
                           Send RSVP
                         </button>
-
-                        <div className="mt-4">
-                          <div
-                            className={`text-sm font-semibold uppercase tracking-wide opacity-80 mb-3 ${textClass}`}
-                          >
-                            Share & Add to Calendar
-                          </div>
-                          <div className="flex flex-wrap gap-3 justify-center">
-                            <button
-                              onClick={handleShare}
-                              className={`flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border ${shareButtonBg} rounded-md transition-colors ${textClass}`}
-                            >
-                              <Share2 size={16} />
-                              <span className="hidden sm:inline">
-                                Share link
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleGoogleCalendar}
-                              className={`flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border ${shareButtonBg} rounded-md transition-colors ${textClass}`}
-                            >
-                              <Image
-                                src="/brands/google-white.svg"
-                                alt="Google"
-                                width={16}
-                                height={16}
-                                className="w-4 h-4"
-                              />
-                              <span className="hidden sm:inline">
-                                Google Cal
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleAppleCalendar}
-                              className={`flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border ${shareButtonBg} rounded-md transition-colors ${textClass}`}
-                            >
-                              <Image
-                                src="/brands/apple-white.svg"
-                                alt="Apple"
-                                width={16}
-                                height={16}
-                                className="w-4 h-4"
-                              />
-                              <span className="hidden sm:inline">
-                                Apple Cal
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleOutlookCalendar}
-                              className={`flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border ${shareButtonBg} rounded-md transition-colors ${textClass}`}
-                            >
-                              <Image
-                                src="/brands/microsoft-white.svg"
-                                alt="Microsoft"
-                                width={16}
-                                height={16}
-                                className="w-4 h-4"
-                              />
-                              <span className="hidden sm:inline">Outlook</span>
-                            </button>
-                          </div>
-                        </div>
                       </div>
                     ) : (
                       <div className="text-center py-12">
@@ -2187,10 +2222,10 @@ export default function SpecialEventsCustomizePage() {
                           className={`${currentSize.h2} mb-2 ${textClass}`}
                           style={{ fontFamily: currentFont.title }}
                         >
-                          Thank you!
+                          RSVP preview
                         </h3>
                         <p className={`opacity-70 ${textClass}`}>
-                          Your RSVP has been sent.
+                          This is a preview. Publish your event to collect guest responses.
                         </p>
                         <button
                           onClick={(e) => {
@@ -2252,20 +2287,7 @@ export default function SpecialEventsCustomizePage() {
               <footer
                 className={`text-center py-8 border-t ${sectionBorder} mt-1`}
               >
-                <a
-                  href="https://envitefy.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="space-y-1 inline-block no-underline"
-                >
-                  <p className={`${currentSize.body} opacity-60 ${textClass}`}>
-                    Powered By Envitefy. Creat. Share. Enjoy.
-                  </p>
-                  <p className={`text-xs opacity-50 ${textClass}`}>
-                    Create yours now.
-                  </p>
-                </a>
-                <EnvitefySocialLinks placement="event" />
+                <EnvitefyEventBranding category="Special Events" inverse={isDarkBackground} />
               </footer>
             </div>
           </div>

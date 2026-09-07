@@ -18,6 +18,7 @@ export type DashboardLayout = "default" | "sports_focused";
 export type TemplateKey =
   | "birthdays"
   | "weddings"
+  | "anniversaries"
   | "baby_showers"
   | "gender_reveal"
   | "appointments"
@@ -57,6 +58,7 @@ export type TemplateDef = {
 export const ENABLED_TEMPLATE_KEYS: TemplateKey[] = [
   "birthdays",
   "weddings",
+  "anniversaries",
   "baby_showers",
   "gender_reveal",
   "sport_events",
@@ -81,16 +83,23 @@ const ALL_TEMPLATE_DEFINITIONS: TemplateDef[] = [
     section: "milestones",
   },
   {
+    key: "anniversaries",
+    label: "Anniversaries",
+    href: "/event/anniversaries",
+    icon: "💕",
+    section: "milestones",
+  },
+  {
     key: "baby_showers",
     label: "Baby Showers",
-    href: "/event/baby-showers/customize",
+    href: "/event/baby-showers",
     icon: "🍼",
     section: "milestones",
   },
   {
     key: "gender_reveal",
     label: "Gender Reveal",
-    href: "/event/gender-reveal/customize",
+    href: "/event/gender-reveal",
     icon: "🎈",
     section: "milestones",
   },
@@ -195,6 +204,7 @@ export const QUICK_ACCESS_DEFAULT: QuickAccessKey[] = [
 export const PERSONA_PRESETS: Record<UserPersona, TemplateKey[]> = {
   parents_moms: [
     "birthdays",
+    "anniversaries",
     "baby_showers",
     "gender_reveal",
     "appointments",
@@ -211,10 +221,12 @@ export const PERSONA_PRESETS: Record<UserPersona, TemplateKey[]> = {
     "sport_events",
     "birthdays",
     "weddings",
+    "anniversaries",
     "baby_showers",
   ],
   couples: [
     "weddings",
+    "anniversaries",
     "birthdays",
     "general",
     "special_events",
@@ -273,6 +285,20 @@ export function normalizeTemplateKeys(keys: unknown): TemplateKey[] {
     out.push(key);
   }
   return out;
+}
+
+// Anniversaries used to live inside Birthdays. Expand older saved preferences
+// once; version 3 preserves an explicit choice to hide the new category.
+export function migrateAnniversaryTemplateKeys(keys: unknown, version: unknown): TemplateKey[] {
+  const normalized = normalizeTemplateKeys(keys);
+  if (
+    !(typeof version === "number" && version >= 3) &&
+    normalized.includes("birthdays") &&
+    !normalized.includes("anniversaries")
+  ) {
+    normalized.push("anniversaries");
+  }
+  return normalized;
 }
 
 export function normalizePersona(value: unknown): UserPersona | null {
@@ -377,6 +403,7 @@ export function mapEventCategoryKeyToTemplateKey(
   const map: Record<string, TemplateKey> = {
     birthdays: "birthdays",
     weddings: "weddings",
+    anniversaries: "anniversaries",
     baby_showers: "baby_showers",
     gender_reveal: "gender_reveal",
     appointments: "appointments",
@@ -395,6 +422,7 @@ export function inferTemplateKeyFromEventData(input: {
   const title = String(input.title || "").toLowerCase();
   const text = `${cat} ${title}`;
 
+  if (text.includes("anniversar")) return "anniversaries";
   if (text.includes("birthday")) return "birthdays";
   if (text.includes("wedding")) return "weddings";
   if (text.includes("baby shower")) return "baby_showers";

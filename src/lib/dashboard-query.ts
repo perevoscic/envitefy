@@ -134,7 +134,10 @@ export function buildDashboardCollections(
   const upcoming = events
     .filter((event) => {
       const startMs = new Date(event.startAt).getTime();
-      return startMs > nowMs && !isArchivedOrCanceled(event.status);
+      const endMs = event.endAt ? new Date(event.endAt).getTime() : startMs;
+      return (startMs > nowMs || endMs > nowMs) &&
+        !isArchivedOrCanceled(event.status) && !isDraftStatus(event.status) &&
+        event.userRsvpResponse !== "no";
     })
     .sort((a, b) => {
       const startDiff = new Date(a.startAt).getTime() - new Date(b.startAt).getTime();

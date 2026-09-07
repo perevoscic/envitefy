@@ -137,7 +137,7 @@ export type StudioGenerationError = {
 
 export type StudioGenerateResponse = {
   product?: StudioProduct;
-  qualityCheck?: "passed" | "failed" | "unavailable";
+  qualityCheck?: "passed" | "failed" | "unavailable" | "needs_review";
   ok: boolean;
   mode: StudioGenerateMode;
   liveCard: StudioLiveCardMetadata | null;

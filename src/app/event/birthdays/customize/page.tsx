@@ -1,6 +1,10 @@
 // @ts-nocheck
 "use client";
 
+import { BIRTHDAY_SAMPLES, birthdaySampleHeadline } from "@/data/birthday-samples";
+
+import { resolveBirthdayTemplateHero } from "@/lib/birthday-hero-asset";
+
 import {
   Cake,
   CheckSquare,
@@ -9,21 +13,21 @@ import {
   Gift,
   Image as ImageIcon,
   Menu,
-  Palette,
   Trash2,
   Type,
   Upload,
   Users,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { BIRTHDAY_GUEST_NOTE_FIELDS, birthdayLocalDateParts, getBirthdayEndLocal } from "@/lib/birthday-party-details";
 import BirthdayRenderer from "@/components/birthdays/BirthdayRenderer";
 import {
   type BirthdayTemplateDefinition,
   birthdayTemplateCatalog,
 } from "@/components/event-create/BirthdayTemplateGallery";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
-import { BIRTHDAY_DESIGN_BY_ID, BIRTHDAY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
+import { ANNIVERSARY_DESIGN_CATALOG, BIRTHDAY_DESIGN_BY_ID, BIRTHDAY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { buildEventPath } from "@/utils/event-url";
@@ -107,6 +111,7 @@ const FONT_SIZES = {
 
 const PROFESSIONAL_THEMES = [
   ...BIRTHDAY_DESIGN_CATALOG,
+  ...ANNIVERSARY_DESIGN_CATALOG,
   ...BIRTHDAY_THEMES.filter(
     (legacyTheme) => !BIRTHDAY_DESIGN_CATALOG.some((design) => design.id === legacyTheme.id),
   ),
@@ -181,11 +186,17 @@ const INITIAL_DATA = {
     return date.toISOString().split("T")[0];
   })(),
   time: "14:00",
+  endTime: "",
+  endDate: "",
   city: "Chicago",
   state: "IL",
   address: "123 Main Street",
   venue: "Fun Zone Playground",
   partyDetails: {
+    dropOff: "",
+    siblings: "",
+    parking: "",
+    allergies: "",
     theme: "Princess Party",
     activities: "Face painting, bouncy castle, magic show, piñata, arts & crafts",
     notes:
@@ -290,6 +301,7 @@ const InputGroup = ({ label, value, onChange, type = "text", placeholder = "" })
       {label}
     </label>
     <input
+      aria-label={label}
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -380,7 +392,20 @@ export default function BirthdayTemplateCustomizePage() {
   const router = useRouter();
   const defaultDateParam = search?.get("d") ?? undefined;
   const editEventId = search?.get("edit") ?? undefined;
-  const templateIdParam = search?.get("templateId");
+  const pathname = usePathname();
+  const isAnniversaryRoute = pathname?.startsWith("/event/anniversaries") === true;
+  const requestedTemplateId = search?.get("templateId");
+  const templateIdParam = isAnniversaryRoute
+    ? (BIRTHDAY_DESIGN_BY_ID.get(requestedTemplateId || "")?.occasion === "Anniversary"
+      ? requestedTemplateId
+      : ANNIVERSARY_DESIGN_CATALOG[0]?.id)
+    : requestedTemplateId;
+
+  useEffect(() => {
+    if (!isAnniversaryRoute && BIRTHDAY_DESIGN_BY_ID.get(requestedTemplateId || "")?.occasion === "Anniversary") {
+      router.replace(`/event/anniversaries/customize?${search?.toString() || ""}`);
+    }
+  }, [isAnniversaryRoute, requestedTemplateId, router, search]);
   const variationIdParam = search?.get("variationId") ?? undefined;
   const selectedThemeId = PROFESSIONAL_THEMES.find((theme) => theme.id === templateIdParam)?.id;
   const catalogTemplateId = birthdayTemplateCatalog.find(
@@ -403,22 +428,27 @@ export default function BirthdayTemplateCustomizePage() {
       defaultDateParam && /^\d{4}-\d{2}-\d{2}$/.test(defaultDateParam)
         ? defaultDateParam
         : INITIAL_DATA.date;
+    const sample = selectedDesign ? BIRTHDAY_SAMPLES[selectedDesign.id] : undefined;
     const isAnniversary = selectedDesign?.occasion === "Anniversary";
     const isAdultBirthday =
       selectedDesign?.occasion === "Birthday" && selectedDesign.audience === "Adults";
 
     return {
       ...INITIAL_DATA,
-      childName: isAnniversary
+      childName: sample?.name || (isAnniversary
         ? "Alex & Jordan"
         : isAdultBirthday
           ? "Jordan"
-          : INITIAL_DATA.childName,
-      age: selectedDesign?.milestone || (isAdultBirthday ? 40 : INITIAL_DATA.age),
+          : INITIAL_DATA.childName),
+      age: sample?.age || selectedDesign?.milestone || (isAdultBirthday ? 40 : INITIAL_DATA.age),
       date: selectedDate,
+      ...(isAdultBirthday || isAnniversary ? { time: "18:00", venue: "", address: "", city: "", state: "", hosts: [], gallery: [], registries: [] } : {}),
+      ...(sample ? { venue: sample.venue, address: "", city: "", state: "", hosts: [], gallery: [], registries: [] } : {}),
       partyDetails: {
         ...INITIAL_DATA.partyDetails,
         theme: selectedDesign?.name || INITIAL_DATA.partyDetails.theme,
+        ...(isAdultBirthday || isAnniversary ? { activities: "", notes: isAnniversary ? "Join us to celebrate our story, the years we’ve shared, and the people who make them special." : "Good company, a special occasion, and plenty to celebrate. We’d love to have you with us." } : {}),
+        ...(sample ? { activities: sample.activities, notes: sample.notes } : {}),
       },
       theme: {
         ...INITIAL_DATA.theme,
@@ -462,10 +492,10 @@ export default function BirthdayTemplateCustomizePage() {
     const params = new URLSearchParams();
     if (data.date) params.set("d", data.date);
     const query = params.toString();
-    return `/event/birthdays${query ? `?${query}` : ""}`;
-  }, [data.date]);
+    return `/event/${isAnniversaryRoute ? "anniversaries" : "birthdays"}${query ? `?${query}` : ""}`;
+  }, [data.date, isAnniversaryRoute]);
   const buildCalendarDetails = () => {
-    const title = data.title || "Birthday Event";
+    const title = data.title || (isAnniversaryRoute ? `${data.childName}’s Anniversary` : "Birthday Event");
     let start: Date | null = null;
     if (data.date) {
       const tentative = new Date(`${data.date}T${data.time || "17:00"}`);
@@ -575,7 +605,11 @@ export default function BirthdayTemplateCustomizePage() {
   };
 
   const updateData = (field, value) => {
-    setData((prev) => ({ ...prev, [field]: value }));
+    setData((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === "date" && prev.endDate === prev.date ? { endDate: value } : {}),
+    }));
   };
 
   const updateTheme = (field, value) => {
@@ -585,6 +619,21 @@ export default function BirthdayTemplateCustomizePage() {
       setActiveVariationId(value);
       setData((prev) => ({
         ...prev,
+        ...(!editEventId && BIRTHDAY_SAMPLES[value] ? (() => {
+          const before = BIRTHDAY_SAMPLES[prev.theme.professionalThemeId];
+          const after = BIRTHDAY_SAMPLES[value];
+          return {
+            childName: prev.childName === before?.name ? after.name : prev.childName,
+            age: prev.age === before?.age ? after.age : prev.age,
+            venue: prev.venue === before?.venue ? after.venue : prev.venue,
+            partyDetails: {
+              ...prev.partyDetails,
+              theme: BIRTHDAY_DESIGN_BY_ID.get(value)?.name || prev.partyDetails.theme,
+              activities: prev.partyDetails.activities === before?.activities ? after.activities : prev.partyDetails.activities,
+              notes: prev.partyDetails.notes === before?.notes ? after.notes : prev.partyDetails.notes,
+            },
+          };
+        })() : {}),
         theme: { ...prev.theme, [field]: value },
         // themePalette: match?.recommendedColorPalette || prev.themePalette, // No longer used this way
       }));
@@ -879,11 +928,7 @@ export default function BirthdayTemplateCustomizePage() {
   }, [activeVariationId]);
 
   const _heroImageSrc =
-    template?.heroImageName &&
-    typeof template.heroImageName === "string" &&
-    template.heroImageName.trim()
-      ? `/templates/birthdays/${template.heroImageName}`
-      : "/templates/birthdays/rainbow-bash.webp";
+    resolveBirthdayTemplateHero(template?.heroImageName) || "/templates/birthdays/rainbow-bash.webp";
   const activeRenderTheme =
     PROFESSIONAL_THEMES.find((theme) => theme.id === data.theme.professionalThemeId) ||
     PROFESSIONAL_THEMES[0];
@@ -891,7 +936,7 @@ export default function BirthdayTemplateCustomizePage() {
     BIRTHDAY_DESIGN_BY_ID.get(activeTemplateId || "") ||
     BIRTHDAY_DESIGN_BY_ID.get(data.theme.professionalThemeId || "") ||
     null;
-  const isAnniversaryDesign = activeDesign?.occasion === "Anniversary";
+  const isAnniversaryDesign = isAnniversaryRoute || activeDesign?.occasion === "Anniversary";
   const isAdultBirthdayDesign =
     activeDesign?.occasion === "Birthday" && activeDesign.audience === "Adults";
   const celebrationNameLabel = isAnniversaryDesign
@@ -938,15 +983,8 @@ export default function BirthdayTemplateCustomizePage() {
 
         // Infer date/time from startISO/start/startIso
         const startIso = existing.start || existing.startISO || existing.startIso || null;
-        let loadedDate: string | undefined;
-        let loadedTime: string | undefined;
-        if (startIso) {
-          const d = new Date(startIso);
-          if (!Number.isNaN(d.getTime())) {
-            loadedDate = d.toISOString().split("T")[0];
-            loadedTime = d.toISOString().slice(11, 16);
-          }
-        }
+        const { date: loadedDate, time: loadedTime } = birthdayLocalDateParts(startIso);
+        const loadedEnd = birthdayLocalDateParts(existing.endISO || existing.end || null);
 
         const templateIdFromData =
           existing.templateId || existing.template?.id || existing.variationId;
@@ -989,11 +1027,13 @@ export default function BirthdayTemplateCustomizePage() {
             age: typeof existing.age === "number" ? existing.age : prev.age,
             date: existing.date || loadedDate || prev.date,
             time: existing.time || loadedTime || prev.time,
+            endTime: existing.endTime ?? loadedEnd.time,
+            endDate: existing.endDate ?? loadedEnd.date,
             city: existing.city || prev.city,
             state: existing.state || prev.state,
             address: existing.address || prev.address,
             venue: existing.venue || existing.location || prev.venue,
-            partyDetails: existing.partyDetails || prev.partyDetails,
+            partyDetails: { ...prev.partyDetails, ...(existing.partyDetails || existing.party || {}) },
             hosts: existing.hosts || prev.hosts,
             images: {
               ...prev.images,
@@ -1056,13 +1096,15 @@ export default function BirthdayTemplateCustomizePage() {
       let endISO: string | null = null;
       if (data.date) {
         const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-        const end = new Date(start);
-        end.setHours(end.getHours() + 3);
+        const endLocal = getBirthdayEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+        if (data.endTime && !endLocal) {
+          throw new Error("End time must be after the start. For an overnight party, choose the next day's end date.");
+        }
         startISO = start.toISOString();
-        endISO = end.toISOString();
+        endISO = endLocal ? new Date(endLocal).toISOString() : null;
       }
 
-      const locationParts = [data.venue, data.city, data.state].filter(Boolean);
+      const locationParts = [data.venue, data.address, data.city, data.state].filter(Boolean);
       const location = locationParts.length > 0 ? locationParts.join(", ") : undefined;
 
       // Convert hero/background/gallery uploads so they persist
@@ -1072,7 +1114,7 @@ export default function BirthdayTemplateCustomizePage() {
           eventId: editEventId || undefined,
           uploadToken: editEventId ? undefined : assetUploadTokenRef.current,
           fileName: "birthday-hero.png",
-        })) || (template?.heroImageName ? `/templates/birthdays/${template.heroImageName}` : null);
+        })) || resolveBirthdayTemplateHero(template?.heroImageName) || null;
       const headlineBgToSave = await persistImageMediaValue({
         value: data.images.headlineBg,
         eventId: editEventId || undefined,
@@ -1111,20 +1153,30 @@ export default function BirthdayTemplateCustomizePage() {
         PROFESSIONAL_THEME_CLASSES[data.theme?.professionalThemeId || ""] ||
         null;
 
-      const celebrationTitle = isAnniversaryDesign
+      const celebrationTitle = data.headlineTitle || (!editEventId ? birthdaySampleHeadline(data.theme.professionalThemeId, data.childName, data.age) : undefined) || (isAnniversaryDesign
         ? `${data.childName}'s ${data.age}${getAgeSuffix(data.age)} Anniversary`
-        : `${data.childName}'s ${data.age}${getAgeSuffix(data.age)} Birthday`;
+        : `${data.childName}'s ${data.age}${getAgeSuffix(data.age)} Birthday`);
       const payload: any = {
         title: celebrationTitle,
         data: {
-          category: "Birthdays",
+          category: isAnniversaryDesign ? "Anniversaries" : "Birthdays",
+          ownership: "owned",
           createdVia: "birthday-renderer",
           status: "published",
           draftStatus: "published",
           occasion: isAnniversaryDesign ? "anniversary" : "birthday",
           createdManually: true,
           startISO,
+          startAt: startISO,
+          start: startISO,
           endISO,
+          endAt: endISO,
+          end: endISO,
+          date: data.date,
+          time: data.time,
+          endTime: data.endTime,
+          endDate: data.endTime ? data.endDate || data.date : "",
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           location,
           venue: data.venue || undefined,
           address: data.address || undefined,
@@ -1279,7 +1331,7 @@ export default function BirthdayTemplateCustomizePage() {
             className="mb-5 inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-full border border-[#e4cdb6] bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#725744] shadow-sm transition hover:border-[#d87338] hover:text-[#a74920] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d87338]/40"
           >
             <ChevronLeft size={15} aria-hidden="true" />
-            All celebration designs
+            {isAnniversaryDesign ? "All anniversary designs" : "All birthday designs"}
           </button>
         )}
         <h2 className="text-2xl font-serif font-semibold text-slate-800 mb-1">Add your details</h2>
@@ -1302,12 +1354,6 @@ export default function BirthdayTemplateCustomizePage() {
                 : "Child's name, age, date, location."
           }
           onClick={() => setActiveView("headline")}
-        />
-        <MenuCard
-          title="Design"
-          icon={<Palette size={18} />}
-          desc="Theme, fonts, colors."
-          onClick={() => setActiveView("design")}
         />
         <MenuCard
           title="Images"
@@ -1379,6 +1425,12 @@ export default function BirthdayTemplateCustomizePage() {
             onChange={(v) => updateData("time", v)}
           />
         </div>
+        <div className="grid grid-cols-2 gap-4">
+          <InputGroup label="End Time (optional)" type="time" value={data.endTime} onChange={(v) => updateData("endTime", v)} />
+          {data.endTime ? <InputGroup label="End Date" type="date" value={data.endDate || data.date} onChange={(v) => updateData("endDate", v)} /> : null}
+        </div>
+        <p className="text-xs text-slate-500">Add an end time so guests can plan pickup. For an overnight party, set the end date to the following day.</p>
+        {data.endTime && !getBirthdayEndLocal(data.date, data.time, data.endTime, data.endDate) ? <p role="alert" className="text-sm text-red-700">End time must be after the start time. Check the end date for overnight parties.</p> : null}
         <InputGroup
           label="Venue"
           value={data.venue}
@@ -1488,6 +1540,7 @@ export default function BirthdayTemplateCustomizePage() {
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-500 uppercase">Choose a Theme</h4>
             <BirthdayDesignThemes
+              occasion={isAnniversaryDesign ? "Anniversary" : "Birthday"}
               selectedTemplateId={data.theme.professionalThemeId}
               onSelect={(id) => updateTheme("professionalThemeId", id)}
             />
@@ -1500,6 +1553,16 @@ export default function BirthdayTemplateCustomizePage() {
   const renderPartyDetailsEditor = () => (
     <EditorLayout title="Party Details" onBack={() => setActiveView("main")}>
       <div className="space-y-4">
+        <fieldset className="space-y-4 rounded-xl border border-slate-200 p-4">
+          <legend className="px-2 text-sm font-semibold text-slate-800">Before guests arrive</legend>
+          <p className="text-xs text-slate-500">Optional guidance shown on your invitation. Leave a field blank to hide it.</p>
+          {BIRTHDAY_GUEST_NOTE_FIELDS.map(({ key, label, placeholder }) => (
+            <label key={key} className="block text-sm font-medium text-slate-700">
+              {label}
+              <textarea className="mt-2 min-h-[96px] w-full rounded-lg border border-slate-200 p-3 text-sm font-normal focus:ring-2 focus:ring-indigo-500" value={data.partyDetails[key] || ""} onChange={(e) => updatePartyDetails(key, e.target.value)} placeholder={placeholder} />
+            </label>
+          ))}
+        </fieldset>
         <InputGroup
           label="Party Theme"
           value={data.partyDetails.theme}
@@ -1740,7 +1803,7 @@ export default function BirthdayTemplateCustomizePage() {
   if (editEventId && loadingExisting) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-sm text-slate-500">Loading your birthday...</p>
+        <p className="text-sm text-slate-500">Loading your {isAnniversaryDesign ? "anniversary" : "birthday"}...</p>
       </div>
     );
   }
@@ -1756,13 +1819,15 @@ export default function BirthdayTemplateCustomizePage() {
           overscrollBehavior: "contain",
         }}
       >
-        <div className="w-full min-w-0 my-4 md:my-8 transition-all duration-500 ease-in-out">
+        <div className="w-full min-w-0 mb-4 md:mb-8 transition-all duration-500 ease-in-out">
           <div className="shadow-2xl md:rounded-xl overflow-hidden relative z-0">
             <BirthdayRenderer
               template={activeRenderTheme}
+              heroImageUrl={data.images.hero || null}
               event={{
-                headlineTitle: data.headlineTitle,
+                headlineTitle: data.headlineTitle || (!editEventId ? birthdaySampleHeadline(data.theme.professionalThemeId, data.childName, data.age) : undefined),
                 date: data.date && data.time ? `${data.date}T${data.time}` : data.date,
+                end: getBirthdayEndLocal(data.date, data.time, data.endTime, data.endDate),
                 location:
                   data.location ||
                   [data.venue, data.address, data.city, data.state].filter(Boolean).join(", "),
@@ -1771,7 +1836,7 @@ export default function BirthdayTemplateCustomizePage() {
                 registries: data.registries,
                 rsvpEnabled: data.rsvp.isEnabled,
                 rsvpLink: "#rsvp",
-                birthdayName: data.childName || "Birthday Star",
+                birthdayName: data.childName || (isAnniversaryDesign ? "The Happy Couple" : "Birthday Star"),
                 age: data.age,
                 party: data.partyDetails,
                 thingsToDo: data.partyDetails.activities,

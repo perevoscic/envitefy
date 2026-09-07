@@ -36,12 +36,14 @@ test("dashboard invitation actions gate RSVP on actionable RSVP data", () => {
   );
 });
 
-test("dashboard overview includes a directions info tile for the next event", () => {
+test("dashboard puts travel and directions with the spotlight and gives summary cards action targets", () => {
   const source = readFileSync(new URL("./HomeOverviewDashboard.tsx", import.meta.url), "utf8");
-
-  assert.match(source, /label: "Directions"/);
-  assert.match(source, /href: nextEvent\?\.mapsUrl \|\| null/);
-  assert.match(source, /value: nextEvent\?\.mapsUrl[\s\S]*"Open Route"/);
+  const planning = readFileSync(new URL("./DashboardOverviewSections.tsx", import.meta.url), "utf8");
+  assert.match(source, /planning=\{<NextEventPlanning/);
+  assert.match(source, /href: "#dashboard-agenda"/);
+  assert.match(planning, /href=\{event.mapsUrl\}/);
+  assert.match(planning, /onClick=\{onTravel\}/);
+  assert.doesNotMatch(source, /72h Window|Open Route/);
 });
 
 test("dashboard empty state offers studio and snap upload routes", () => {

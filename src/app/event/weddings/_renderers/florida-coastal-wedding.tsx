@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import {
   Palmtree,
@@ -52,7 +54,7 @@ const buildNames = (event: EventData) => {
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return { month: "April", day: "12", year: "2025" };
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const months = [
       "January",
       "February",
@@ -226,7 +228,7 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
   const travelInfo = event.travel || "";
   const rsvpUrl = event.rsvp?.url || "#rsvp";
   const rsvpDeadline = event.rsvp?.deadline
-    ? new Date(event.rsvp.deadline).toLocaleDateString("en-US", {
+    ? parseEventGuestDate(event.rsvp.deadline).toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
       })
@@ -456,8 +458,11 @@ export default function FloridaCoastalWedding({ theme, event }: Props) {
         </section>
       )}
 
+      {event.guestTools}
+
       <footer className="bg-pink-500 text-white py-12 text-center text-xs font-bold uppercase tracking-[0.2em]">
         <p>See you in the Sunshine State</p>
+      <EnvitefyEventBranding category="Weddings" inverse />
       </footer>
     </div>
   );

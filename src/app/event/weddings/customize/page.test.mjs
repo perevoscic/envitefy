@@ -88,7 +88,7 @@ test("wedding customize preview renders each selected design's real layout", () 
 
   const layouts = catalog.map((design) => design.layout);
   const heroImages = catalog.map((design) => design.heroImage);
-  assert.equal(catalog.length, 40, "the wedding gallery should offer 40 designs");
+  assert.equal(catalog.length, 60, "the wedding gallery should offer 60 designs");
   assert.equal(new Set(layouts).size, layouts.length, "every listed wedding design needs a unique layout");
   assert.equal(
     new Set(heroImages).size,
@@ -267,7 +267,7 @@ test("California wedding navigation points to real preview sections", () => {
   }
 });
 
-test("all 40 wedding designs load CTAs with real destinations", () => {
+test("all wedding designs load CTAs with real destinations", () => {
   const dedicatedRenderers = [
     "gilded-wedding",
     "modern-editorial",

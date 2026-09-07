@@ -1,5 +1,10 @@
 "use client";
 
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import { parseEventGuestDate, normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+
 import Link from "next/link";
 import { useState } from "react";
 import type { CSSProperties } from "react";
@@ -125,7 +130,7 @@ const detailSections = [
 function formatDate(value?: string | null): string | null {
   if (!value) return null;
   try {
-    const parsed = new Date(value);
+    const parsed = parseEventGuestDate(value);
     if (Number.isNaN(parsed.getTime())) return null;
     return parsed.toLocaleDateString("en-US", {
       month: "long",
@@ -247,7 +252,7 @@ export default function BabyShowerTemplateView({
       : null;
   const startDate =
     typeof startIso === "string" && startIso
-      ? new Date(startIso)
+      ? parseEventGuestDate(startIso)
       : eventData?.date
         ? new Date(`${eventData.date}T${eventData?.time || "14:00"}:00`)
         : null;
@@ -263,6 +268,11 @@ export default function BabyShowerTemplateView({
         hour: "numeric",
         minute: "2-digit",
       })
+    : null;
+  const endDate = eventData.endISO || eventData.end || eventData.endAt;
+  const parsedEnd = typeof endDate === "string" ? new Date(endDate) : null;
+  const endLabel = parsedEnd && !Number.isNaN(parsedEnd.getTime())
+    ? parsedEnd.toLocaleString("en-US", { ...(startDate && parsedEnd.toDateString() !== startDate.toDateString() ? { month: "short", day: "numeric" } : {}), hour: "numeric", minute: "2-digit" })
     : null;
 
   const navItems = detailSections
@@ -292,7 +302,7 @@ export default function BabyShowerTemplateView({
                   </h1>
                   <div className="flex flex-wrap gap-3 text-sm font-semibold uppercase tracking-[0.4em] opacity-80">
                     {dateLabel && <span>{dateLabel}</span>}
-                    {timeLabel && <span>{timeLabel}</span>}
+                    {timeLabel && <span>{timeLabel}{endLabel ? ` – ${endLabel}` : ""}</span>}
                     {locationLabel && <span>{locationLabel}</span>}
                   </div>
                 </div>
@@ -336,20 +346,16 @@ export default function BabyShowerTemplateView({
               </nav>
             )}
 
-            {/* Share Actions */}
-            <div className="absolute bottom-4 right-4 hidden md:block">
-              <div className="flex items-center gap-2 rounded-full bg-white/80 px-2 py-1 shadow-xl">
-                <EventActions
-                  shareUrl={shareUrl}
-                  event={eventData}
-                  calendarTitle={eventTitle}
-                  historyId={!isReadOnly ? eventId : undefined}
-                  className=""
-                  variant="compact"
-                  tone={"default" as any}
-                />
-              </div>
-            </div>
+            <EventGuestActions
+              title={eventTitle}
+              start={startDate && !Number.isNaN(startDate.getTime()) ? startDate.toISOString() : undefined}
+              end={eventData.endISO || eventData.end || eventData.endAt}
+              location={locationLabel || undefined}
+              shareUrl={shareUrl}
+              eventId={eventId}
+              inverse={isDarkBackground(theme?.bg)}
+            />
+            <EventGuestPlanningNotes value={normalizeEventGuestPlanning(eventData.guestPlanning)} inverse={isDarkBackground(theme?.bg)} />
 
             {/* Hosted By Section */}
             {hosts.length > 0 && (
@@ -644,10 +650,9 @@ export default function BabyShowerTemplateView({
 
             {/* Footer */}
             <footer
-              className={`text-center text-xs uppercase tracking-[0.4em] px-6 md:px-10 py-8 border-t border-white/10 opacity-60 ${textClass}`}
+              className={`text-center text-xs uppercase tracking-[0.4em] px-6 md:px-10 py-8 border-t border-white/10  ${textClass}`}
             >
-              <p>Powered by Envitefy</p>
-              <p>Create. Share. Enjoy.</p>
+              <EnvitefyEventBranding category="Baby Showers" inverse={isDarkBackground(theme?.bg)} />
             </footer>
           </div>
         </div>

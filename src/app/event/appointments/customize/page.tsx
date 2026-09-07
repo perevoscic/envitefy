@@ -1,8 +1,12 @@
 // @ts-nocheck
 "use client";
 
-import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
-import React, { useCallback, useMemo, useState, } from "react";
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import { type EventGuestPlanning, getEventEndLocal, normalizeEventGuestPlanning, eventLocalDateParts, parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import React, { useCallback, useEffect, useMemo, useState, } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -16,7 +20,6 @@ import {
   Type,
   CheckSquare,
   ChevronRight,
-  Share2,
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
@@ -225,7 +228,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [defaultDate]);
 
+    const [savedEventData, setSavedEventData] = useState<Record<string, any>>({});
+    const [loadingExisting, setLoadingExisting] = useState(Boolean(editEventId));
+    const [loadError, setLoadError] = useState("");
     const [data, setData] = useState(() => ({
+      guestPlanning: {} as EventGuestPlanning,
+      endTime: "",
+      endDate: "",
       title: config.prefill?.title || `${config.displayName}`,
       date: config.prefill?.date || initialDate,
       time: config.prefill?.time || "14:00",
@@ -287,8 +296,57 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       });
     }, []);
 
-    const currentTheme =
-      config.themes.find((t) => t.id === themeId) || config.themes[0];
+  useEffect(() => {
+    if (!editEventId) { setLoadingExisting(false); return; }
+    let cancelled = false;
+    setLoadingExisting(true);
+    setLoadError("");
+    void (async () => {
+      try {
+        const response = await fetch(`/api/history/${editEventId}`, { credentials: "include", cache: "no-store" });
+        if (!response.ok) throw new Error("Could not load this event. Reload the page before making changes.");
+        const row = await response.json();
+        if (cancelled) return;
+        const existing = row.data || {};
+        const start = eventLocalDateParts(existing.startISO || existing.startAt || existing.start);
+        const end = eventLocalDateParts(existing.endISO || existing.endAt || existing.end);
+        setSavedEventData(existing);
+        setData((prev) => ({
+          ...prev,
+          title: row.title ?? existing.title ?? prev.title,
+          date: existing.date ?? start.date,
+          time: existing.time ?? start.time,
+          endTime: existing.endTime ?? end.time,
+          endDate: existing.endDate ?? end.date,
+          guestPlanning: normalizeEventGuestPlanning(existing.guestPlanning),
+          city: existing.city ?? "",
+          state: existing.state ?? "",
+          venue: existing.venue ?? existing.location ?? "",
+          details: existing.description ?? existing.details ?? "",
+          hero: existing.heroImage ?? existing.hero ?? "",
+          rsvpEnabled: typeof existing.rsvpEnabled === "boolean" ? existing.rsvpEnabled : typeof existing.rsvp?.isEnabled === "boolean" ? existing.rsvp.isEnabled : Boolean(existing.rsvp),
+          rsvpDeadline: existing.rsvpDeadline ?? (typeof existing.rsvp === "string" ? existing.rsvp : existing.rsvp?.deadline) ?? "",
+
+            fontSize: existing.fontSize ?? prev.fontSize,
+            extra: { ...prev.extra, ...(existing.customFields || {}) },
+        }));
+          setAdvancedState(existing.advancedSections || existing.customFields?.advancedSections || {});
+          setThemeId(existing.themeId || existing.theme?.id || existing.theme?.themeId || config.themes[0]?.id);
+      } catch (error) {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : "Could not load this event.");
+      } finally {
+        if (!cancelled) setLoadingExisting(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editEventId]);
+
+    const currentTheme = useMemo(() => {
+      const base = config.themes.find((theme) => theme.id === themeId) || config.themes[0];
+      return (savedEventData.themeId || savedEventData.theme?.id || savedEventData.theme?.themeId) === themeId
+        ? { ...base, ...(savedEventData.theme || {}) }
+        : base;
+    }, [themeId, savedEventData]);
 
     const isDarkBackground = useMemo(() => {
       const bg = currentTheme?.bg?.toLowerCase() ?? "";
@@ -392,9 +450,13 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, []);
 
     const handlePublish = useCallback(async () => {
-      if (submitting) return;
+      if (submitting || loadingExisting || loadError) return;
       setSubmitting(true);
       try {
+        if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
+          throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
+        }
+
         const heroImageUrl =
           (await persistImageMediaValue({
             value: data.hero,
@@ -405,25 +467,39 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         let endISO: string | null = null;
         if (data.date) {
           const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-          const end = new Date(start);
-          end.setHours(end.getHours() + 2);
+          const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+          const end = endLocal ? new Date(endLocal) : null;
           startISO = start.toISOString();
-          endISO = end.toISOString();
+          endISO = end?.toISOString() || null;
         }
 
         const payload: any = {
           title: data.title || config.displayName,
           data: {
+            ...savedEventData,
             category: config.category,
             createdVia: "template",
             createdManually: true,
             startISO,
+            startAt: startISO,
+            start: startISO,
+            date: data.date,
+            time: data.time,
+            city: data.city,
+            state: data.state,
             endISO,
-            location: locationParts || undefined,
+            endAt: endISO,
+            end: endISO,
+            endTime: data.endTime,
+            endDate: data.endDate,
+            guestPlanning: data.guestPlanning,
+            location: editEventId && data.venue === (savedEventData.venue ?? savedEventData.location ?? "") && data.city === (savedEventData.city ?? "") && data.state === (savedEventData.state ?? "") ? savedEventData.location || locationParts : locationParts || undefined,
             venue: data.venue || undefined,
             description: data.details || undefined,
-            rsvp: data.rsvpEnabled ? data.rsvpDeadline || undefined : undefined,
-            numberOfGuests: 0,
+            rsvp: data.rsvpEnabled ? data.rsvpDeadline || null : null,
+            rsvpEnabled: data.rsvpEnabled,
+            rsvpDeadline: data.rsvpDeadline,
+            numberOfGuests: savedEventData.numberOfGuests ?? 0,
             templateId: config.slug,
             customFields: {
               ...data.extra,
@@ -432,21 +508,24 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             advancedSections: advancedState,
             heroImage: heroImageUrl,
             fontSize: data.fontSize,
+            themeId,
+            theme: (savedEventData.themeId || savedEventData.theme?.id || savedEventData.theme?.themeId) === themeId ? savedEventData.theme || currentTheme : currentTheme,
           },
         };
 
-        const res = await fetch("/api/history", {
-          method: "POST",
+        const res = await fetch(editEventId ? `/api/history/${editEventId}` : "/api/history", {
+          method: editEventId ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(payload),
         });
         const json = await res.json().catch(() => ({}));
-        const id = (json as any)?.id as string | undefined;
+        if (!res.ok) throw new Error(json?.error || "Failed to save event");
+        const id = editEventId || (json as any)?.id as string | undefined;
         if (!id) throw new Error("Failed to create event");
         if (typeof window !== "undefined") {
           window.dispatchEvent(
-            new CustomEvent("history:created", {
+            new CustomEvent(editEventId ? "history:updated" : "history:created", {
               detail: {
                 id,
                 title: payload.title,
@@ -456,7 +535,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             })
           );
         }
-        router.push(buildEventPath(id, payload.title, { created: true }));
+        router.push(buildEventPath(id, payload.title, editEventId ? { updated: true } : { created: true }));
       } catch (err: any) {
         alert(String(err?.message || err || "Failed to create event"));
       } finally {
@@ -464,10 +543,19 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     }, [
       submitting,
+      editEventId,
+      savedEventData,
+      loadingExisting,
+      loadError,
+      themeId,
+      currentTheme,
       data.date,
       data.time,
       data.title,
       data.details,
+      data.guestPlanning,
+      data.endTime,
+      data.endDate,
       data.venue,
       data.hero,
       data.rsvpEnabled,
@@ -502,7 +590,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (!Number.isNaN(tentative.getTime())) start = tentative;
       }
       if (!start) start = new Date();
-      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+          const end = endLocal ? new Date(endLocal) : start;
       const location = [data.venue, data.city, data.state]
         .filter(Boolean)
         .join(", ");
@@ -547,7 +636,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     };
 
-    const handleShare = () => {
+    const _handleShare = () => {
       const details = buildEventDetails();
       const shareUrl =
         typeof window !== "undefined" ? window.location.href : undefined;
@@ -570,7 +659,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     };
 
-    const handleGoogleCalendar = () => {
+    const _handleGoogleCalendar = () => {
       const details = buildEventDetails();
       const start = toGoogleDate(details.start);
       const end = toGoogleDate(details.end);
@@ -584,7 +673,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       openWithAppFallback(appUrl, webUrl);
     };
 
-    const handleOutlookCalendar = () => {
+    const _handleOutlookCalendar = () => {
       const details = buildEventDetails();
       const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
         details.title
@@ -607,7 +696,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       openWithAppFallback(appUrl, webUrl);
     };
 
-    const handleAppleCalendar = () => {
+    const _handleAppleCalendar = () => {
       const details = buildEventDetails();
       openAppleCalendarIcs(buildIcsUrl(details));
     };
@@ -630,12 +719,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             desc="Title, date, location."
             icon={<Type size={18} />}
             onClick={() => setActiveView("headline")}
-          />
-          <MenuCard
-            title="Design"
-            desc="Theme presets."
-            icon={<Palette size={18} />}
-            onClick={() => setActiveView("design")}
           />
           <MenuCard
             title="Images"
@@ -847,6 +930,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         showBack
       >
         <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm font-medium text-slate-700">
+              End time (optional)
+              <input type="time" value={data.endTime} onChange={(event) => setData((prev) => ({ ...prev, endTime: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+            <label className="block text-sm font-medium text-slate-700">
+              End date (if different)
+              <input type="date" min={data.date || undefined} value={data.endDate} onChange={(event) => setData((prev) => ({ ...prev, endDate: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+          </div>
+          {data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate) ? (
+            <p role="alert" className="text-sm text-red-700">End time must be after the start. For an overnight event, choose the next end date.</p>
+          ) : null}
+          <EventGuestPlanningEditor category="appointments" value={data.guestPlanning} onChange={(guestPlanning) => setData((prev) => ({ ...prev, guestPlanning }))} />
+
           <InputGroup
             label="Description"
             type="textarea"
@@ -943,7 +1041,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         style={bodyShadow}
       >
         <span>
-          {new Date(data.date).toLocaleDateString("en-US", {
+          {parseEventGuestDate(data.date).toLocaleDateString("en-US", {
             month: "long",
             day: "numeric",
             year: "numeric",
@@ -960,6 +1058,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       </div>
     );
 
+    if (loadingExisting || loadError) return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-slate-700">
+        <p role={loadError ? "alert" : "status"}>{loadError || "Loading your event…"}</p>
+      </div>
+    );
+
     return (
       <div className="relative flex min-h-screen h-[100dvh] w-full bg-slate-100 overflow-hidden font-sans text-slate-900">
         <div
@@ -970,7 +1074,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             overscrollBehavior: "contain",
           }}
         >
-          <div className="w-full min-w-0 my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
+          <div className="w-full min-w-0 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
             <div
               className={`min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden flex flex-col ${currentTheme.bg} ${textClass} transition-all duration-500 relative z-0`}
             >
@@ -1018,6 +1122,16 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                   >
                     Details
                   </h2>
+                  
+                  <EventGuestActions
+                    title={data.title}
+                    start={data.date ? `${data.date}T${data.time || "14:00"}` : undefined}
+                    end={getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)}
+                    description={data.details}
+                    location={[data.venue, data.city, data.state].filter(Boolean).join(", ")}
+                    preview
+                  />
+                  <EventGuestPlanningNotes value={data.guestPlanning} />
                   {data.details ? (
                     <p
                       className={`text-base leading-relaxed opacity-90 whitespace-pre-wrap ${textClass}`}
@@ -1091,7 +1205,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                           <div className="text-center mb-4">
                             <p className="opacity-80">
                               {data.rsvpDeadline
-                                ? `Kindly respond by ${new Date(
+                                ? `Kindly respond by ${parseEventGuestDate(
                                     data.rsvpDeadline
                                   ).toLocaleDateString()}`
                                 : "Please RSVP"}
@@ -1182,9 +1296,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         <div className="text-center py-12">
                           <div className="text-4xl mb-4">🎉</div>
                           <h3 className="text-2xl font-serif mb-2">
-                            Thank you!
+                            RSVP preview
                           </h3>
-                          <p className="opacity-70">Your RSVP has been sent.</p>
+                          <p className="opacity-70">This is a preview. Publish your event to collect guest responses.</p>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1198,74 +1312,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         </div>
                       )}
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-3 justify-center">
-                      <button
-                        onClick={() => handleShare()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Share2 size={16} />
-                        <span className="hidden sm:inline">Share link</span>
-                      </button>
-                      <button
-                        onClick={() => handleGoogleCalendar()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Image
-                          src="/brands/google-white.svg"
-                          alt="Google"
-                          width={16}
-                          height={16}
-                          className="w-4 h-4"
-                        />
-                        <span className="hidden sm:inline">Google Cal</span>
-                      </button>
-                      <button
-                        onClick={() => handleAppleCalendar()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Image
-                          src="/brands/apple-white.svg"
-                          alt="Apple"
-                          width={16}
-                          height={16}
-                          className="w-4 h-4"
-                        />
-                        <span className="hidden sm:inline">Apple Cal</span>
-                      </button>
-                      <button
-                        onClick={() => handleOutlookCalendar()}
-                        className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <Image
-                          src="/brands/microsoft-white.svg"
-                          alt="Microsoft"
-                          width={16}
-                          height={16}
-                          className="w-4 h-4"
-                        />
-                        <span className="hidden sm:inline">Outlook</span>
-                      </button>
-                    </div>
+
                   </section>
                 )}
 
                 <footer
                   className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}
                 >
-                  <a
-                    href="https://envitefy.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="space-y-1 inline-block no-underline"
-                  >
-                    <p className="text-sm opacity-60" style={bodyShadow}>
-                      Powered By Envitefy. Create. Share. Enjoy.
-                    </p>
-                    <p className="text-xs opacity-50" style={bodyShadow}>
-                      Create yours now.
-                    </p>
-                  </a>
-                  <EnvitefySocialLinks placement="event" />
+                  <EnvitefyEventBranding category="Appointments" inverse={isDarkBackground} />
                 </footer>
               </div>
             </div>

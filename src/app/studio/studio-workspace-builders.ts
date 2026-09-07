@@ -948,7 +948,7 @@ function buildExistingImageEditInstruction(
       "The returned image must visibly reflect that requested edit; do not return the source image unchanged.",
     );
     instructions.push(
-      "If the target is ambiguous, choose the most visually matching subject or prop and keep the edit localized there.",
+      "For a theme or style request, apply the visual change across the card while preserving event wording and facts. For a localized edit with an ambiguous target, choose the most visually matching subject or prop.",
     );
   }
 
@@ -957,10 +957,10 @@ function buildExistingImageEditInstruction(
   }
 
   instructions.push(
-    "Do not redesign, recompose, regenerate, crop, zoom, restyle, or rewrite any other part of the image.",
+    "Do not redesign, recompose, regenerate, crop, zoom, restyle, or rewrite any unrelated part of the image. A requested theme change permits changes to background, decorative imagery, palette, and lighting.",
   );
   instructions.push(
-    "Keep all other visible text, photos, listing facts, icons, logos, stats, bottom image strips, layout, lighting, colors, and spacing unchanged.",
+    "Keep unrelated visible text, photos, listing facts, icons, logos, stats, bottom image strips, layout, lighting, colors, and spacing unchanged. Preserve the existing wording during a theme change unless a wording change was also requested.",
   );
 
   return instructions.join(" ");

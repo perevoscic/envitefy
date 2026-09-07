@@ -18,5 +18,6 @@ test("gender reveal live page keeps the hero image and posts Team Pink/Blue with
   assert.match(source, /pending/);
   assert.match(source, /guesses/);
   assert.match(source, /Reveal girl/);
-  assert.match(source, /Add to calendar/);
+  assert.match(source, /<EventGuestActions/);
+  assert.match(source, /calendarLinks=\{storedEnd \? calendarLinks : undefined\}/);
 });

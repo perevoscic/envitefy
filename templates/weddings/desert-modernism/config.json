@@ -1,0 +1,22 @@
+{
+  "id": "desert-modernism",
+  "name": "Desert Modernism",
+  "category": "modern art",
+  "family": "atelier",
+  "layout": "desert-modernism",
+  "thumbnail": "/templates/weddings/generated-heroes/desert-modernism-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#eee5d8",
+      "secondary": "#4b332b",
+      "background": "#eee5d8"
+    },
+    "fonts": {
+      "headline": "Arial, sans-serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/desert-modernism-hero.webp"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "meadow-reverie",
+  "name": "Meadow Reverie",
+  "category": "botanical",
+  "family": "atelier",
+  "layout": "meadow-reverie",
+  "thumbnail": "/templates/weddings/generated-heroes/meadow-reverie-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#fffbed",
+      "secondary": "#655182",
+      "background": "#fffbed"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/meadow-reverie-hero.webp"
+    }
+  }
+}

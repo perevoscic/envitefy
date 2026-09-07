@@ -1240,9 +1240,11 @@ export function buildExistingInvitationImageEditPrompt(editInstruction?: string 
   return [
     "You are editing the attached existing live-card raster image.",
     instruction || "Preserve the existing image exactly.",
-    "Make only the explicitly requested localized change.",
-    "Return the full image with that edit applied, but do not regenerate or redesign the card.",
+    "Interpret corrective feedback in context: 'that is X, NOT Y' or 'you gave me X instead of Y' reports that X is the wrong existing subject and requests Y. Replace X and its associated names, logos, album/song titles, and imagery with Y. Do not interpret the NOT as a request to exclude the intended Y. By contrast, 'use X, not Y' requests X. A subject correction requires a visible replacement, even without the word redo. Preservation rules do not apply to the rejected subject or its associated text. Do not merely relabel the rejected artist while retaining their album covers or song titles. Rebuild the requested music display around the intended artist; remove rejected catalog items entirely. If you cannot confidently identify an accurate replacement title, omit that item instead of retaining the wrong title or inventing one. Use explicitly supplied replacement titles when available.",
+    "Match the scope of the requested change: a text correction is localized; a theme or style change may redesign the background, imagery, palette, lighting, and decorative elements across the card.",
+    "Return the full image with the requested edit applied. For localized edits, do not regenerate or redesign the card. For a requested theme change, preserve the event wording and facts while applying the new visual theme.",
     "Preserve all unrelated visible text, numbers, punctuation, typography, photos, room/property images, bottom image strips, icons, logos, stats, layout, crop, perspective, lighting, colors, and spacing.",
+    "Keep newly added focal subjects and readable labels above the bottom 30% of the image and inset from the edges, leaving room for the live-card action buttons. Do not invent product packaging, taglines, or tiny decorative lettering; express themes through recognizable imagery. Preserve the original birthday wording unless its change was requested.",
     "If replacing text, use the requested replacement text exactly and do not convert month names to numeric date format.",
     "Do not add new words, dates, facts, symbols, panels, footers, watermarks, QR codes, or interface elements unless the requested localized edit explicitly asks for that specific text, icon, or info-chip treatment.",
   ].join("\n");

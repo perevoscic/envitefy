@@ -11,6 +11,6 @@ export async function GET() {
     const concierge = await getAdminConciergeData();
     return NextResponse.json({ ok: true, concierge });
   } catch (error) {
-    return adminErrorResponse(error, "Failed to load AI Concierge admin data");
+    return adminErrorResponse(error, "Failed to load Envitefy Concierge admin data");
   }
 }

@@ -1,0 +1,22 @@
+{
+  "id": "red-thread",
+  "name": "Red Thread",
+  "category": "editorial",
+  "family": "atelier",
+  "layout": "red-thread",
+  "thumbnail": "/templates/weddings/generated-heroes/red-thread-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#fff8ef",
+      "secondary": "#ac332f",
+      "background": "#fff8ef"
+    },
+    "fonts": {
+      "headline": "Arial, sans-serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/red-thread-hero.webp"
+    }
+  }
+}

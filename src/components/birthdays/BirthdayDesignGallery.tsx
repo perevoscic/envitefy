@@ -1,97 +1,22 @@
 "use client";
 
-import { ArrowRight, Check, Search, Sparkles, X } from "lucide-react";
+import { ArrowRight, Check, Heart, Search, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import BirthdayGalleryHero from "@/components/birthdays/BirthdayGalleryHero";
 import BirthdayDesignPreview from "@/components/birthdays/BirthdayDesignPreview";
-import { BIRTHDAY_DESIGN_CATALOG, ORIGINAL_BIRTHDAY_DESIGNS } from "@/data/birthday-design-catalog";
+import { BIRTHDAY_DESIGN_CATALOG } from "@/data/birthday-design-catalog";
+import { BIRTHDAY_GALLERY_BATCH_SIZE, BIRTHDAY_FAVORITES_KEY, parseBirthdayFavorites, toggleBirthdayFavorite } from "@/lib/birthday-gallery-preferences";
 import type { BirthdayDesignTemplate } from "@/data/birthday-template-data";
 
-type GalleryView = "Featured" | "All designs";
 type CollectionFilter =
   | "All collections"
   | "Original 24"
   | "New kids"
-  | "Adult birthdays"
-  | "Anniversaries";
+  | "Adult birthdays";
 
-const FEATURED_COUNT = 15;
-const FEATURED_ORIGINAL_KIDS_COUNT = 3;
-const FEATURED_NEW_KIDS_COUNT = 3;
-const originalDesignIds = new Set(ORIGINAL_BIRTHDAY_DESIGNS.map((design) => design.id));
-
-const createSeededRandom = (seed: number) => {
-  let value = seed >>> 0;
-  return () => {
-    value += 0x6d2b79f5;
-    let result = value;
-    result = Math.imul(result ^ (result >>> 15), result | 1);
-    result ^= result + Math.imul(result ^ (result >>> 7), result | 61);
-    return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
-  };
-};
-
-const pickFromPool = (
-  pool: BirthdayDesignTemplate[],
-  count: number,
-  random: () => number,
-  selectedIds: Set<string>,
-) => {
-  const available = pool.filter((design) => !selectedIds.has(design.id));
-  for (let index = available.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(random() * (index + 1));
-    [available[index], available[swapIndex]] = [available[swapIndex], available[index]];
-  }
-  return available.slice(0, count);
-};
-
-const selectFeaturedIds = (seed: number) => {
-  const random = createSeededRandom(seed);
-  const selectedIds = new Set<string>();
-  const selected: BirthdayDesignTemplate[] = [];
-  const add = (pool: BirthdayDesignTemplate[], count: number) => {
-    for (const design of pickFromPool(pool, count, random, selectedIds)) {
-      selectedIds.add(design.id);
-      selected.push(design);
-    }
-  };
-
-  add(
-    BIRTHDAY_DESIGN_CATALOG.filter(
-      (design) => originalDesignIds.has(design.id) && design.audience === "Kids",
-    ),
-    FEATURED_ORIGINAL_KIDS_COUNT,
-  );
-  add(
-    BIRTHDAY_DESIGN_CATALOG.filter(
-      (design) => design.source === "New" && design.audience === "Kids",
-    ),
-    FEATURED_NEW_KIDS_COUNT,
-  );
-  add(
-    BIRTHDAY_DESIGN_CATALOG.filter((design) => design.recipient === "Women"),
-    3,
-  );
-  add(
-    BIRTHDAY_DESIGN_CATALOG.filter((design) => design.recipient === "Men"),
-    2,
-  );
-  add(
-    BIRTHDAY_DESIGN_CATALOG.filter((design) => design.recipient === "Anyone"),
-    2,
-  );
-  add(
-    BIRTHDAY_DESIGN_CATALOG.filter((design) => design.occasion === "Anniversary"),
-    2,
-  );
-  add(BIRTHDAY_DESIGN_CATALOG, FEATURED_COUNT - selected.length);
-
-  return selected.map((design) => design.id);
-};
-
-const defaultFeaturedIds = selectFeaturedIds(20260831);
+const validDesignIds = new Set(BIRTHDAY_DESIGN_CATALOG.map((design) => design.id));
 
 const formatMilestone = (design: BirthdayDesignTemplate) => {
   if (!design.milestone) return null;
@@ -138,8 +63,13 @@ function FilterSelect({
 
 export default function BirthdayDesignGallery() {
   const searchParams = useSearchParams();
-  const [view, setView] = useState<GalleryView>("Featured");
-  const [featuredIds, setFeaturedIds] = useState(defaultFeaturedIds);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [favoritesReady, setFavoritesReady] = useState(false);
+  const [favoriteMessage, setFavoriteMessage] = useState("");
+  const [visibleCount, setVisibleCount] = useState(BIRTHDAY_GALLERY_BATCH_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const storageAvailable = useRef(true);
   const [collection, setCollection] = useState<CollectionFilter>("All collections");
   const [recipient, setRecipient] = useState("Everyone");
   const [milestone, setMilestone] = useState("Any milestone");
@@ -147,18 +77,26 @@ export default function BirthdayDesignGallery() {
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    const storageKey = "envitefy:birthday-featured-seed";
-    let seed = Date.now();
-    try {
-      const storedSeed = window.sessionStorage.getItem(storageKey);
-      if (storedSeed) {
-        seed = Number.parseInt(storedSeed, 10) || seed;
-      } else {
-        window.sessionStorage.setItem(storageKey, String(seed));
-      }
-    } catch {}
-    setFeaturedIds(selectFeaturedIds(seed));
+    const readSaved = () => {
+      try { setFavorites(parseBirthdayFavorites(window.localStorage.getItem(BIRTHDAY_FAVORITES_KEY), validDesignIds)); } catch { /* Hearts still work for this visit. */ }
+    };
+    readSaved();
+    setFavoritesReady(true);
+    const sync = (event: StorageEvent) => { if (event.key === BIRTHDAY_FAVORITES_KEY || event.key === null) readSaved(); };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
   }, []);
+
+  const saveFavorite = (id: string, name: string) => {
+    let current = favorites;
+    let canPersist = storageAvailable.current;
+    try { if (canPersist) current = parseBirthdayFavorites(window.localStorage.getItem(BIRTHDAY_FAVORITES_KEY), validDesignIds); } catch { canPersist = false; }
+    const next = toggleBirthdayFavorite(current, id);
+    setFavorites(next);
+    try { if (canPersist) window.localStorage.setItem(BIRTHDAY_FAVORITES_KEY, JSON.stringify(next)); } catch { canPersist = false; }
+    storageAvailable.current = canPersist;
+    setFavoriteMessage(`${name} ${next.includes(id) ? "saved to" : "removed from"} favorites.${canPersist ? "" : " Changes are available for this visit only."}`);
+  };
 
   const styleOptions = useMemo(
     () => [
@@ -182,12 +120,12 @@ export default function BirthdayDesignGallery() {
     ],
     [],
   );
-  const featuredIdSet = useMemo(() => new Set(featuredIds), [featuredIds]);
+  const favoriteIds = useMemo(() => new Set(favorites), [favorites]);
 
   const visibleDesigns = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return BIRTHDAY_DESIGN_CATALOG.filter((design) => {
-      if (view === "Featured" && !featuredIdSet.has(design.id)) return false;
+      if (favoritesOnly && !favoriteIds.has(design.id)) return false;
       if (collection === "Original 24" && design.source !== "Original") return false;
       if (collection === "New kids" && !(design.source === "New" && design.collection === "Kids")) {
         return false;
@@ -195,7 +133,6 @@ export default function BirthdayDesignGallery() {
       if (collection === "Adult birthdays" && design.collection !== "Adult birthdays") {
         return false;
       }
-      if (collection === "Anniversaries" && design.collection !== "Anniversaries") return false;
       if (recipient !== "Everyone" && design.recipient !== recipient) return false;
       if (milestone !== "Any milestone" && design.milestone !== Number(milestone)) return false;
       if (style !== "All styles" && design.style !== style) return false;
@@ -209,7 +146,7 @@ export default function BirthdayDesignGallery() {
       }
       return true;
     });
-  }, [collection, featuredIdSet, milestone, query, recipient, style, view]);
+  }, [collection, favoriteIds, favoritesOnly, milestone, query, recipient, style]);
 
   const activeFilterCount = [
     collection !== "All collections",
@@ -217,16 +154,35 @@ export default function BirthdayDesignGallery() {
     milestone !== "Any milestone",
     style !== "All styles",
     Boolean(query.trim()),
+    favoritesOnly,
   ].filter(Boolean).length;
 
-  const showAllForFilter = () => setView("All designs");
   const resetFilters = () => {
     setCollection("All collections");
     setRecipient("Everyone");
     setMilestone("Any milestone");
     setStyle("All styles");
     setQuery("");
+    setFavoritesOnly(false);
   };
+
+  useEffect(() => {
+    setVisibleCount(BIRTHDAY_GALLERY_BATCH_SIZE);
+  }, [collection, recipient, milestone, style, query, favoritesOnly]);
+
+  const hasMore = visibleCount < visibleDesigns.length;
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasMore || !("IntersectionObserver" in window)) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        observer.disconnect();
+        setVisibleCount((count) => Math.min(count + BIRTHDAY_GALLERY_BATCH_SIZE, visibleDesigns.length));
+      }
+    }, { rootMargin: "500px 0px" });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, visibleCount, visibleDesigns.length]);
 
   const buildCustomizeHref = (templateId: string) => {
     const params = new URLSearchParams();
@@ -238,34 +194,21 @@ export default function BirthdayDesignGallery() {
 
   return (
     <main className="min-h-screen bg-[#fff9f1] text-[#35251d]">
-      <BirthdayGalleryHero buildCustomizeHref={buildCustomizeHref} />
+      <BirthdayGalleryHero />
 
       <section className="z-20 border-b border-[#efd8c2] bg-[#fff9f1]/95 px-5 py-5 backdrop-blur-xl sm:px-8 lg:px-12 xl:sticky xl:top-0">
         <div className="mx-auto max-w-[1500px] space-y-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="inline-flex w-fit rounded-full border border-[#e4cdb6] bg-white p-1 shadow-sm">
-              {(["Featured", "All designs"] as GalleryView[]).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setView(option)}
-                  className={`rounded-full px-4 py-2 text-xs font-bold transition ${
-                    view === option
-                      ? "bg-[#482f23] text-white shadow-sm"
-                      : "text-[#725b4e] hover:text-[#482f23]"
-                  }`}
-                >
-                  {option === "Featured" ? "Featured mix" : "All 104 designs"}
-                </button>
-              ))}
+            <div>
+              <p className="flex items-center gap-2 text-sm font-semibold text-[#482f23]">
+                <Sparkles className="h-4 w-4 text-[#d87338]" aria-hidden="true" />
+                Explore all {BIRTHDAY_DESIGN_CATALOG.length} birthday designs
+              </p>
+              <p className="mt-1 text-xs text-[#80695c]">Save your favorites with a heart. Saved on this browser.</p>
             </div>
-            <div
-              className="flex items-center gap-2 text-sm font-semibold text-[#482f23]"
-              aria-live="polite"
-            >
-              <Sparkles className="h-4 w-4 text-[#d87338]" aria-hidden="true" />
-              {visibleDesigns.length} {visibleDesigns.length === 1 ? "design" : "designs"}
-            </div>
+            <button type="button" disabled={!favoritesReady} aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly((value) => !value)} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-5 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 disabled:opacity-50 ${favoritesOnly ? "border-[#482f23] bg-[#482f23] text-white" : "border-[#e4cdb6] bg-white text-[#482f23] hover:border-[#d87338]"}`}>
+              <Heart className="h-4 w-4" aria-hidden="true" fill={favoritesOnly ? "currentColor" : "none"} /> Favorites ({favorites.length})
+            </button>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
@@ -282,7 +225,6 @@ export default function BirthdayDesignGallery() {
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value);
-                  showAllForFilter();
                 }}
                 placeholder="Try rooftop, soccer, 50th…"
                 className="h-11 w-full rounded-xl border border-[#e4cdb6] bg-white pl-10 pr-3 text-sm font-semibold text-[#3e2b20] outline-none transition placeholder:font-normal placeholder:text-[#a58d7e] focus:border-[#d87338] focus:ring-2 focus:ring-[#d87338]/20"
@@ -296,20 +238,17 @@ export default function BirthdayDesignGallery() {
                 "Original 24",
                 "New kids",
                 "Adult birthdays",
-                "Anniversaries",
               ]}
               onChange={(value) => {
                 setCollection(value as CollectionFilter);
-                showAllForFilter();
               }}
             />
             <FilterSelect
               label="For"
               value={recipient}
-              options={["Everyone", "Kids", "Women", "Men", "Anyone", "Couples"]}
+              options={["Everyone", "Kids", "Women", "Men", "Anyone"]}
               onChange={(value) => {
                 setRecipient(value);
-                showAllForFilter();
               }}
             />
             <FilterSelect
@@ -318,7 +257,6 @@ export default function BirthdayDesignGallery() {
               options={milestoneOptions}
               onChange={(value) => {
                 setMilestone(value);
-                showAllForFilter();
               }}
             />
             <FilterSelect
@@ -327,7 +265,6 @@ export default function BirthdayDesignGallery() {
               options={styleOptions}
               onChange={(value) => {
                 setStyle(value);
-                showAllForFilter();
               }}
             />
           </div>
@@ -348,10 +285,13 @@ export default function BirthdayDesignGallery() {
       <section className="mx-auto max-w-[1500px] px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
         {visibleDesigns.length > 0 ? (
           <div className="grid grid-cols-1 gap-x-7 gap-y-11 md:grid-cols-2 xl:grid-cols-3">
-            {visibleDesigns.map((design) => {
+            {visibleDesigns.slice(0, visibleCount).map((design) => {
               const milestoneLabel = formatMilestone(design);
               return (
                 <article key={design.id} className="group relative rounded-[1.4rem]">
+                  <button type="button" disabled={!favoritesReady} aria-pressed={favoriteIds.has(design.id)} aria-label={`${favoriteIds.has(design.id) ? "Remove" : "Save"} ${design.name} ${favoriteIds.has(design.id) ? "from" : "to"} favorites`} onClick={() => saveFavorite(design.id, design.name)} className={`absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full border bg-white/95 shadow-sm transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 ${favoriteIds.has(design.id) ? "border-rose-300 text-rose-600" : "border-[#e4cdb6] text-[#725b4e] hover:text-rose-600"}`}>
+                    <Heart className="h-5 w-5" fill={favoriteIds.has(design.id) ? "currentColor" : "none"} aria-hidden="true" />
+                  </button>
                   <Link
                     href={buildCustomizeHref(design.id)}
                     className="absolute inset-0 z-20 rounded-[1.4rem] outline-none focus-visible:ring-2 focus-visible:ring-[#d87338] focus-visible:ring-offset-4 focus-visible:ring-offset-[#fff9f1]"
@@ -383,7 +323,6 @@ export default function BirthdayDesignGallery() {
                         design.recipient,
                         milestoneLabel,
                         design.style,
-                        design.experience.compositionLabel,
                       ]
                         .filter((label): label is string => Boolean(label))
                         .map((label) => (
@@ -404,20 +343,25 @@ export default function BirthdayDesignGallery() {
         ) : (
           <div className="rounded-[2rem] border border-dashed border-[#dfc3aa] bg-white/60 px-6 py-16 text-center">
             <h2 className='[font-family:var(--font-playfair),_"Times_New_Roman",_serif] text-3xl'>
-              No designs match
+              {favoritesOnly && favorites.length === 0 ? "Save a few favorites" : "No designs match"}
             </h2>
             <p className="mt-2 text-sm text-[#80695c]">
-              Try another milestone or clear the filters.
+              {favoritesOnly && favorites.length === 0 ? "Tap the heart on any birthday design to keep it here." : "Try another milestone or clear the filters."}
             </p>
             <button
               type="button"
               onClick={resetFilters}
               className="mt-6 rounded-full bg-[#482f23] px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white"
             >
-              Clear filters
+              {favoritesOnly && favorites.length === 0 ? "Browse all designs" : "Clear filters"}
             </button>
           </div>
         )}
+        {visibleDesigns.length > 0 ? <div ref={loadMoreRef} className="mt-12 flex flex-col items-center gap-4 text-center">
+          <p role="status" className="text-sm text-[#725b4e]">Showing {Math.min(visibleCount, visibleDesigns.length)} of {visibleDesigns.length} {favoritesOnly ? "favorite " : ""}designs{activeFilterCount > 0 ? " matching your filters" : ""}</p>
+          {hasMore ? <button type="button" onClick={() => setVisibleCount((count) => Math.min(count + BIRTHDAY_GALLERY_BATCH_SIZE, visibleDesigns.length))} className="min-h-11 rounded-full border border-[#482f23] bg-white px-7 py-3 text-sm font-semibold text-[#482f23] hover:bg-[#482f23] hover:text-white focus-visible:outline focus-visible:outline-2">Load more designs</button> : <p className="text-xs text-[#80695c]">You’ve seen every {favoritesOnly ? "favorite " : ""}design{activeFilterCount > 0 ? " matching these filters" : " in the collection"}.</p>}
+        </div> : null}
+        <p role="status" className="sr-only">{favoriteMessage}</p>
       </section>
     </main>
   );

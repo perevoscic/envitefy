@@ -1,6 +1,8 @@
 // @ts-nocheck
 "use client";
 
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+
 import React, { useEffect, useState } from "react";
 import {
   Calendar as CalendarIcon,
@@ -2100,7 +2102,7 @@ const logisticsSection = {
                   className={`text-sm opacity-70 ${textClass}`}
                   style={bodyShadow}
                 >
-                  Due: {new Date(logistics.feeDueDate).toLocaleDateString()}
+                  Due: {parseEventGuestDate(logistics.feeDueDate).toLocaleDateString()}
                 </div>
               )}
             </div>

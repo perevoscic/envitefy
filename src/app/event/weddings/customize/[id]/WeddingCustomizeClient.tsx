@@ -9,7 +9,6 @@ import {
   Heart,
   Image as ImageIcon,
   MapPin,
-  Palette,
   Type,
   Users,
 } from "lucide-react";
@@ -24,7 +23,6 @@ type WeddingCustomizeClientProps = {
 
 const MENU_ITEMS = [
   { key: "headline", title: "Headline", icon: <Type size={18} />, desc: "Names, date, location." },
-  { key: "design", title: "Design", icon: <Palette size={18} />, desc: "Theme, fonts, colors." },
   { key: "images", title: "Images", icon: <ImageIcon size={18} />, desc: "Hero & background photos." },
   { key: "schedule", title: "Schedule", icon: <CalendarIcon size={18} />, desc: "Events, times, and locations." },
   { key: "story", title: "Our Story", icon: <Heart size={18} />, desc: "How you met." },

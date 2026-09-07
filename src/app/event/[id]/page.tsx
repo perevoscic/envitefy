@@ -2196,7 +2196,7 @@ export default async function EventPage({
   const calendarEndIso = calendarStartIso
     ? ensureEndIso(
         calendarStartIso,
-        hideMissingOcrStartTime ? null : normalizeIso(rawEndIso),
+        hideMissingOcrStartTime ? null : normalizeIso(rawEndIso) || (data?.createdVia === "birthday-renderer" && !calendarAllDay ? calendarStartIso : null),
         calendarAllDay,
       )
     : null;
@@ -2335,11 +2335,12 @@ export default async function EventPage({
   const isBirthdayTemplate =
     templateId &&
     variationId &&
-    categoryNormalized === "birthdays" &&
+    (categoryNormalized === "birthdays" || categoryNormalized === "anniversaries") &&
     createdVia !== "simple-template" &&
     !isBirthdaySkinEvent;
   const isBirthdayRendererEvent =
-    categoryNormalized === "birthdays" && createdVia === "birthday-renderer";
+    (categoryNormalized === "birthdays" || categoryNormalized === "anniversaries") &&
+    createdVia === "birthday-renderer";
   const isWeddingTemplate = templateId && variationId && categoryNormalized === "weddings";
   const isScannedWeddingInviteEvent =
     categoryNormalized === "weddings" &&
@@ -2580,7 +2581,7 @@ export default async function EventPage({
       <BirthdayRenderer
         template={birthdayTheme}
         eventId={row.id}
-        heroImageUrl={null}
+        heroImageUrl={data.customHeroImage || data.images?.hero || data.heroImage || null}
         event={{
           headlineTitle: title || data.headlineTitle,
           date: data.startISO || (data.date && data.time ? `${data.date}T${data.time}` : data.date),
@@ -2604,7 +2605,7 @@ export default async function EventPage({
           shareUrl,
           birthdayName: data.birthdayName || data.childName || "Birthday Star",
           age: data.age,
-          party: data.party || data.partyDetails,
+          party: { ...data.party, ...data.partyDetails },
           goodToKnow: typeof data.goodToKnow === "string" ? data.goodToKnow.trim() : undefined,
           thingsToDo: data.thingsToDo || data.partyDetails?.activities,
           hosts: data.hosts,

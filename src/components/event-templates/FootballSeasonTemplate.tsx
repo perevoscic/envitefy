@@ -1,6 +1,8 @@
 // @ts-nocheck
 "use client";
 
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+
 import React, { useEffect, useState } from "react";
 import {
   Users,
@@ -506,7 +508,7 @@ const gameScheduleSection = {
 
     const formatDate = (d: string) => {
       if (!d) return "";
-      return new Date(d).toLocaleDateString("en-US", {
+      return parseEventGuestDate(d).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
       });
@@ -2065,7 +2067,7 @@ const volunteersSection = {
                     style={bodyShadow}
                   >
                     {slot.gameDate
-                      ? new Date(slot.gameDate).toLocaleDateString("en-US", {
+                      ? parseEventGuestDate(slot.gameDate).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                         })

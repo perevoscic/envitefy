@@ -1,0 +1,22 @@
+{
+  "id": "disco-afterglow",
+  "name": "Disco Afterglow",
+  "category": "retro luxe",
+  "family": "atelier",
+  "layout": "disco-afterglow",
+  "thumbnail": "/templates/weddings/generated-heroes/disco-afterglow-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#30132c",
+      "secondary": "#ffd1e9",
+      "background": "#30132c"
+    },
+    "fonts": {
+      "headline": "Arial, sans-serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/disco-afterglow-hero.webp"
+    }
+  }
+}

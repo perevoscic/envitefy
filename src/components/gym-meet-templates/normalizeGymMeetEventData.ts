@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
 // @ts-nocheck
+import { normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
 import { resolveGymMeetTemplateId } from "./registry";
 import { GymMeetRenderModel } from "./types";
 import { buildGymMeetDiscoveryContent } from "./buildGymMeetDiscoveryContent";
@@ -430,6 +431,7 @@ export const normalizeGymMeetEventData = ({
   const quickLinks = isDiscoveryEvent ? buildPublicQuickAccessLinks(discovery) : baseQuickLinks;
 
   return {
+    guestPlanning: normalizeEventGuestPlanning(eventData?.guestPlanning),
     pageTemplateId: resolveGymMeetTemplateId(eventData),
     title: safeString(eventData?.eventTitle || eventTitle || "Gymnastics Meet"),
     titleSize: normalizeGymMeetTitleSize(eventData?.fontSize),

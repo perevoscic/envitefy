@@ -1,6 +1,10 @@
 "use client";
 
+import type { BirthdayPartyDetails } from "@/lib/birthday-party-details";
 import React, { useState, useEffect, useContext, createContext } from "react";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import BirthdayGuestActionsProvider from "./BirthdayGuestActions";
+import { resolveBirthdayHeroAsset } from "@/lib/birthday-hero-asset";
 import BirthdayExperienceBody from "@/components/birthdays/BirthdayExperienceBody";
 import BirthdayExperienceHero from "@/components/birthdays/BirthdayExperienceHero";
 import { BIRTHDAY_DESIGN_BY_ID } from "@/data/birthday-design-catalog";
@@ -131,16 +135,8 @@ export type EventData = {
     phone?: string;
   }>;
   gallery?: string[];
-  party?: {
-    theme?: string;
-    activities?: string;
-    notes?: string;
-  };
-  partyDetails?: {
-    theme?: string;
-    activities?: string;
-    notes?: string;
-  };
+  party?: BirthdayPartyDetails;
+  partyDetails?: BirthdayPartyDetails;
   numberOfGuests?: number;
 };
 
@@ -191,6 +187,7 @@ export default function BirthdayRenderer({
 }: Props) {
   const { layout } = template;
   const [isRsvpModalOpen, setIsRsvpModalOpen] = useState(false);
+  const [previewRsvpMessage, setPreviewRsvpMessage] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState<RsvpIntent | null>(null);
   const [userRsvpResponse, setUserRsvpResponse] = useState<string | null>(null);
   const [lightboxImageUrl, setLightboxImageUrl] = useState<string | null>(null);
@@ -238,6 +235,8 @@ export default function BirthdayRenderer({
 
   const catalogDesign = BIRTHDAY_DESIGN_BY_ID.get(template.id);
 
+  const effectiveHero = resolveBirthdayHeroAsset({ customHero: heroImageUrl, savedHero: template.decorations?.heroImage || template.heroImage, catalogHero: catalogDesign?.heroImage });
+
   // Normalize theme config from the template object. Catalog profiles are also
   // resolved by ID so birthday pages saved before the profile launch upgrade in place.
   const theme: ThemeConfig = {
@@ -245,25 +244,26 @@ export default function BirthdayRenderer({
     name: template.name,
     defaultHeadline: template.defaultHeadline,
     colors: {
-      primary: template.primaryColor,
-      secondary: template.secondaryColor,
+      primary: catalogDesign?.primaryColor || template.primaryColor,
+      secondary: catalogDesign?.secondaryColor || template.secondaryColor,
       background: template.primaryColor, // Default
     },
     fonts: {
-      headline: template.headlineFont,
+      headline: catalogDesign?.headlineFont || template.headlineFont,
       body: "Inter", // Default body font
     },
     decorations: {
-      heroImage: template.heroImage,
       graphicType: template.decorations?.graphicType,
       ...template.decorations,
+      heroImage: effectiveHero,
     },
-    heroImage: template.heroImage,
-    experience: template.experience || catalogDesign?.experience,
+    heroImage: effectiveHero,
+    experience: catalogDesign?.experience || template.experience,
   };
 
   return (
     <UserRsvpContext.Provider value={userRsvpResponse}>
+      <BirthdayGuestActionsProvider event={event} eventId={eventId} calendarLinks={calendarLinks} location={locationText || event.location}>
       <div
         className="relative w-full min-h-screen flex flex-col"
         style={{
@@ -283,6 +283,10 @@ export default function BirthdayRenderer({
           userRsvpResponse
             ? undefined
             : (response) => {
+                if (!eventId) {
+                  setPreviewRsvpMessage(true);
+                  return;
+                }
                 setSelectedResponse((response as RsvpIntent | null) || null);
                 setIsRsvpModalOpen(true);
               },
@@ -295,6 +299,13 @@ export default function BirthdayRenderer({
             userRsvpResponse,
             onHeroImageOpen: setLightboxImageUrl,
           },
+        )}
+
+        {previewRsvpMessage && !eventId && (
+          <div role="status" className="fixed bottom-6 left-1/2 z-[150] flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-4 rounded-2xl border border-violet-200 bg-white p-5 text-sm text-slate-800 shadow-xl">
+            <p>This is a preview. Publish your invitation so guests can RSVP.</p>
+            <button type="button" aria-label="Dismiss preview message" onClick={() => setPreviewRsvpMessage(false)} className="shrink-0 rounded-full p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button>
+          </div>
         )}
 
         {showHostDashboard && eventId && (
@@ -351,6 +362,7 @@ export default function BirthdayRenderer({
           </div>
         ) : null}
       </div>
+      </BirthdayGuestActionsProvider>
     </UserRsvpContext.Provider>
   );
 }
@@ -2371,19 +2383,8 @@ function EditorialFeatureLayout({
           </div>
         </section>
 
-        <footer className="border-t border-white/70 px-1 pt-6 text-center text-sm text-slate-500">
-          <p>Snapped with Envitefy.</p>
-          <p>
-            Snap your now.{" "}
-            <a
-              href="https://envitefy.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold underline decoration-2 underline-offset-2"
-            >
-              envitefy.com
-            </a>
-          </p>
+        <footer className="border-t border-white/70 px-5 py-8">
+          <EnvitefyEventBranding category={BIRTHDAY_DESIGN_BY_ID.get(theme.id)?.occasion === "Anniversary" ? "Anniversaries" : "Birthdays"} />
         </footer>
       </main>
     </div>
@@ -2436,40 +2437,8 @@ function Footer({
   const textColor = darkMode ? "#94a3b8" : "#64748b";
 
   return (
-    <footer className="text-center py-12 mt-auto" style={{ backgroundColor: bg, color: textColor }}>
-      <div className="flex flex-wrap gap-4 justify-center mb-8">
-        <button
-          className={`px-4 py-2 rounded-md text-sm font-medium ${
-            darkMode
-              ? "bg-white/10 hover:bg-white/20"
-              : "bg-white hover:bg-slate-50 border border-slate-200"
-          }`}
-        >
-          Share Link
-        </button>
-        <button
-          className={`px-4 py-2 rounded-md text-sm font-medium ${
-            darkMode
-              ? "bg-white/10 hover:bg-white/20"
-              : "bg-white hover:bg-slate-50 border border-slate-200"
-          }`}
-        >
-          Add to Calendar
-        </button>
-      </div>
-
-      <p className="text-sm opacity-60">Snapped with Envitefy.</p>
-      <p className="text-sm opacity-60">
-        Snap your now.{" "}
-        <a
-          href="https://envitefy.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-semibold underline decoration-2 underline-offset-2"
-        >
-          envitefy.com
-        </a>
-      </p>
+    <footer className="mt-auto px-5 py-8" style={{ backgroundColor: bg, color: textColor }}>
+      <EnvitefyEventBranding category={BIRTHDAY_DESIGN_BY_ID.get(theme.id)?.occasion === "Anniversary" ? "Anniversaries" : "Birthdays"} inverse={darkMode} />
     </footer>
   );
 }

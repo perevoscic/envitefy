@@ -548,7 +548,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(showcasePage, /<SignedOutPageChrome/);
   assert.match(showcasePage, /activeBottomNavLabel="Examples"/);
   assert.match(showcasePage, /topNavVariant="transparent-light"/);
-  assert.match(createActionSheet, /Create with AI Concierge/);
+  assert.match(createActionSheet, /Create with Envitefy Concierge/);
   assert.match(createActionSheet, /Start from Template/);
   assert.match(createActionSheet, /href: "#examples"/);
   assert.doesNotMatch(createActionSheet, /href: "\/templates"/);
@@ -665,7 +665,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(landingExperience, /mobileNavLinks=\{\[...signedOutMobileMenuLinks\]\}/);
   assert.match(landingExperience, /showMobileMenuAuthActions=\{false\}/);
   assert.match(landingExperience, /brandHref="\/"/);
-  assert.match(landingExperience, /Try the AI Concierge/);
+  assert.match(landingExperience, /Try the Envitefy Concierge/);
   assert.match(landingExperience, /openConciergeDemo/);
   assert.match(landingExperience, /<AIConciergeSection \/>/);
   assert.match(landingExperience, /<CategoryDirectory \/>/);

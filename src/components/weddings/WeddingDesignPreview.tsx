@@ -5,12 +5,14 @@ type WeddingDesignPreviewProps = {
   design: WeddingDesign;
   className?: string;
   names?: string;
+  compact?: boolean;
 };
 
 export default function WeddingDesignPreview({
   design,
   className = "",
   names,
+  compact = false,
 }: WeddingDesignPreviewProps) {
   const resolvedNames = names || design.previewNames;
   const [partner1 = "Partner One", partner2 = "Partner Two"] = resolvedNames
@@ -69,11 +71,11 @@ export default function WeddingDesignPreview({
       inert
       data-wedding-design={design.id}
       data-wedding-layout={design.layout}
-      className={`relative isolate aspect-[16/10] w-full overflow-hidden bg-white ${className}`}
+      className={`relative isolate ${design.family === "atelier" && !compact ? "aspect-square" : "aspect-[16/10]"} w-full overflow-hidden bg-white ${className}`}
       style={{ backgroundColor: design.primaryColor }}
     >
       <div className="pointer-events-none absolute left-0 top-0 h-[400%] w-[400%] origin-top-left scale-[0.25] select-none">
-        <WeddingRenderer template={template} event={previewEvent} />
+        <WeddingRenderer template={template} event={previewEvent} hideGuestTools />
       </div>
     </div>
   );

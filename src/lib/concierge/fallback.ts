@@ -1544,6 +1544,9 @@ function questionForMissingField(
   ) {
     return followUpForUnresolvedField(field, plan);
   }
+  if (field === "date" && draft.eventType === "birthday" && draft.honoreeName) {
+    return `What date is ${draft.honoreeName}’s birthday celebration?`;
+  }
   return questionForRequirementField(field as RequirementField, plan);
 }
 
@@ -2729,7 +2732,7 @@ export function fallbackExtractConciergeDraft(args: {
       ...previous,
       giftPromptDismissed: true,
       knowledgeAnswer: null,
-      assistantGuidance: "Already skipped — we’re good there.",
+      assistantGuidance: `Already skipped — we’re good there.${previous.currentQuestion || previous.missingFields.length ? ` ${nextActionSentence(previous)}` : ""}`,
     };
     return withConversationState(next, previous, message);
   }
@@ -3228,7 +3231,7 @@ export function fallbackExtractConciergeDraft(args: {
       ? "Create the list on Amazon, then paste the public or shareable link here and I’ll add it. You can also generate now and add the link later."
       : giftPromptSkip || repeatedGiftPromptSkip || irrelevantGiftPromptSkip
         ? repeatedGiftPromptSkip
-          ? "Already skipped — we’re good there."
+          ? `Already skipped — we’re good there.${draft.currentQuestion || draft.missingFields.length ? ` ${nextActionSentence(draft)}` : ""}`
           : `Got it — no gift link added. ${nextActionSentence(draft)}`
         : addedRegistryLink
           ? `Got it — Registry: ${registryLink}. ${nextActionSentence(draft)}`

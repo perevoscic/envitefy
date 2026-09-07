@@ -1,0 +1,22 @@
+{
+  "id": "lake-como-letter",
+  "name": "Lake Como Letter",
+  "category": "destination",
+  "family": "atelier",
+  "layout": "lake-como-letter",
+  "thumbnail": "/templates/weddings/generated-heroes/lake-como-letter-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#f3f5ed",
+      "secondary": "#355c66",
+      "background": "#f3f5ed"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/lake-como-letter-hero.webp"
+    }
+  }
+}

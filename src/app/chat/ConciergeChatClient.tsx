@@ -1,5 +1,6 @@
 "use client";
 
+import { isArtworkRedesignRequest } from "@/lib/concierge/artwork-redesign-intent";
 import { getCreationReadiness } from "@/lib/concierge/readiness";
 import { resolveStudioProduct } from "@/lib/studio/product-contract";
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,6 +13,7 @@ import {
   IdCard,
   Loader2,
   Mic,
+  Plus,
   Sparkles,
   Square,
   Trophy,
@@ -33,7 +35,7 @@ import {
   buildInvitationData,
   refreshLiveCardInvitationData,
 } from "@/app/studio/studio-workspace-builders";
-import { createInitialDetails } from "@/app/studio/studio-workspace-sanitize";
+import { createInitialDetails, sanitizeInvitationData } from "@/app/studio/studio-workspace-sanitize";
 import type {
   EventDetails,
   InvitationData,
@@ -62,6 +64,7 @@ import type {
   ConciergeOcrContext,
   ConciergeWeatherContext,
   CreationChatMessageSnapshot,
+  CreationPreviewSaveRequest,
   CreationSessionResumeResponse,
   RequestedOutput,
 } from "@/lib/concierge/types";
@@ -78,6 +81,7 @@ import {
 } from "@/utils/media-upload-client";
 import { getAmazonRegistryCreateUrlForCategory } from "@/utils/registry-links";
 import ChatProductPreview from "./ChatProductPreview";
+import { persistDraftPreview } from "./draft-preview-storage";
 
 type ChatMessage = {
   id: string;
@@ -919,7 +923,9 @@ function draftHasGiftDetails(draft: ConciergeEventDraft | null) {
 function shouldOfferGiftRegistryForDraft(draft: ConciergeEventDraft | null) {
   return Boolean(
     draft &&
-      isReadyCreationDraft(draft) &&
+      getCreationReadiness(draft).canPublish &&
+      !draft.currentQuestion &&
+      draft.missingFields.length === 0 &&
       draft.ownership !== "invited" &&
       GIFT_FRIENDLY_DRAFT_EVENT_TYPES.has(draft.eventType) &&
       draft.requestedOutputs.some((output) => GIFT_REGISTRY_DRAFT_OUTPUTS.has(output)) &&
@@ -1379,17 +1385,7 @@ function refreshGeneratedDraftInviteMetadata(
 }
 
 function isGeneratedDraftFullRedesignRequest(message: string): boolean {
-  const text = message.trim().toLowerCase();
-  if (!text) return false;
-  if (/\b(?:keep|preserve|reuse|use)\s+(?:the\s+)?same\s+image\b/.test(text)) return false;
-
-  return [
-    /\b(?:new|nme|fresh|different|another|alternate|alternative)\s+(?:design|image|invite|invitation|card|look|layout|style|version)\b/,
-    /\b(?:completely|totally|entirely|brand)\s+(?:new|different)\b/,
-    /\b(?:from scratch|start over|start again|redo|redesign|re[-\s]?design|regenerate|re[-\s]?generate|remake|rebuild)\b/,
-    /\b(?:nothing|nothin|not)\s+(?:the\s+)?same\b/,
-    /\bsame\s+image\b/,
-  ].some((pattern) => pattern.test(text));
+  return isArtworkRedesignRequest(message);
 }
 
 function buildGeneratedDraftFullRedesignPrompt(userMessage: string): string {
@@ -1484,13 +1480,26 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const chatPaneRef = useRef<HTMLDivElement | null>(null);
+  const suggestionsRef = useRef<HTMLDetailsElement | null>(null);
   const composerCardRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const shouldRefocusComposerRef = useRef(false);
   const responseAbortRef = useRef<AbortController | null>(null);
+  const conversationVersionRef = useRef(0);
   useEffect(() => () => {
+    conversationVersionRef.current += 1;
     responseAbortRef.current?.abort();
     responseAbortRef.current = null;
+  }, []);
+  useEffect(() => {
+    const dismissSuggestions = (event: PointerEvent) => {
+      const panel = suggestionsRef.current;
+      if (panel?.open && event.target instanceof Node && !panel.contains(event.target)) {
+        panel.open = false;
+      }
+    };
+    document.addEventListener("pointerdown", dismissSuggestions);
+    return () => document.removeEventListener("pointerdown", dismissSuggestions);
   }, []);
   const [input, setInput] = useState("");
   const [selectedProductOutput, setSelectedProductOutput] = useState<RequestedOutput | null>(null);
@@ -1511,6 +1520,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   const [liveCardSummary, setLiveCardSummary] = useState<LiveCardSummary | null>(null);
   const [generatedInviteImageUrl, setGeneratedInviteImageUrl] = useState<string | null>(null);
   const [draftStudioInvite, setDraftStudioInvite] = useState<GeneratedInvitePayload | null>(null);
+  const [failedPreviewSave, setFailedPreviewSave] = useState<CreationPreviewSaveRequest | null>(null);
+  const [isSavingPreview, setIsSavingPreview] = useState(false);
   const [uploadedPreviewImageUrl, setUploadedPreviewImageUrl] = useState<string | null>(null);
   const [uploadedPreviewFileName, setUploadedPreviewFileName] = useState<string | null>(null);
   const [pendingChatUpload, setPendingChatUpload] = useState<PendingChatUpload | null>(null);
@@ -1573,7 +1584,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       isOpeningAssistantPrompt(message.text, initialAssistantPrompt)
     );
   });
-  const isBusy = isSending || isUploading || isGeneratingCard || isPublishingCard;
+  const isBusy = isSending || isUploading || isGeneratingCard || isPublishingCard || isSavingPreview;
   const busyLabel = isUploading
     ? chatUploadStage === "creating_event"
       ? "Creating event"
@@ -1636,13 +1647,9 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     previewImageForDraft(draft);
   const selectedCategoryLabel =
     starterSelectionLabel(selectedStarterCategory) || categoryLabelForDraft(draft);
-  const selectedProductOption = selectedProductOutput
-    ? PRODUCT_OPTIONS.find((option) => option.output === selectedProductOutput) || null
-    : null;
-  const selectedProductPillOption = selectedProductOption;
   const canStopResponse = isSending && Boolean(responseAbortRef.current);
   const hasComposerSelection = Boolean(selectedStarterCategory || selectedProductOutput);
-  const canSubmitComposer = Boolean(input.trim() || hasComposerSelection);
+  const canSubmitComposer = Boolean(input.trim() || hasComposerSelection || pendingChatUpload);
   const selectedSkinLabel =
     skinLabelForCategoryName(selectedCategoryLabel) || skinLabelForDraft(draft);
   const hasInitialEventContext =
@@ -1666,11 +1673,19 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     rsvpPreview.stats.yes + rsvpPreview.stats.no + rsvpPreview.stats.maybe ||
     rsvpResponseNames.length ||
     rsvpPreview.filled;
-  const shouldShowReadyActions =
-    ((hasReadyDraftProduct && !shouldShowGiftRegistryPrompt) || isGeneratingCard) &&
-    (!isReadyChatComposerOpen || isGeneratingCard);
   const shouldShowReceivedInviteActions = hasReadyReceivedInvite && !isReadyChatComposerOpen;
-  const shouldShowGiftRegistryActions = shouldShowGiftRegistryPrompt && !isReadyChatComposerOpen;
+  const shouldShowGiftRegistryActions = shouldShowGiftRegistryPrompt && !isReadyChatComposerOpen &&
+    !hasGeneratedDraftProduct && !isGeneratingCard && !liveCardEventId;
+  const shouldShowGenerateReply = Boolean(
+    hasReadyDraftProduct &&
+      (canGenerateProduct || isGeneratingCard) &&
+      draft &&
+      getCreationReadiness(draft).canPublish &&
+      !draft.pendingReply &&
+      !failedRequest &&
+      !failedSnapUpload &&
+      visibleMessages[visibleMessages.length - 1]?.role === "assistant",
+  );
   function selectProductOutputForDraft(nextDraft: ConciergeEventDraft) {
     const restoredOutput = nextDraft.requestedOutputs
       .map(visibleProductOutput)
@@ -1679,6 +1694,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   }
 
   function resetConversation() {
+    conversationVersionRef.current += 1;
     responseAbortRef.current?.abort();
     responseAbortRef.current = null;
     setIsSending(false);
@@ -1692,6 +1708,8 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     setLiveCardSummary(null);
     setGeneratedInviteImageUrl(null);
     setDraftStudioInvite(null);
+    setFailedPreviewSave(null);
+    setIsSavingPreview(false);
     setUploadedPreviewImageUrl(null);
     setUploadedPreviewFileName(null);
     setPendingChatUpload(null);
@@ -1736,15 +1754,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   async function handleSkipGiftRegistry() {
     if (isBusy || !draft) return;
-    if (draft.giftPromptDismissed || draft.conversationState?.registrySkipped) {
-      setIsReadyChatComposerOpen(false);
-      setMessages((prev) => [
-        ...prev,
-        newMessage("user", "Skip gift link"),
-        newMessage("assistant", "Already skipped — we’re good there."),
-      ]);
-      return;
-    }
     const draftBeforeSkip = draft;
     setDraft((current) =>
       current?.creationSessionId === draftBeforeSkip.creationSessionId
@@ -1845,6 +1854,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   useEffect(() => {
     let cancelled = false;
+    conversationVersionRef.current += 1;
 
     if (!threadId) {
       resetConversation();
@@ -1869,8 +1879,15 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           .catch(() => null)) as CreationSessionResumeResponse | null;
         if (cancelled || !response.ok || !json?.ok || !json.draft) return;
 
-        const restoredDraft = json.draft;
+        const restoredDraft = normalizeDraftProductOutputs(json.draft);
         const savedEventId = json.savedEventId || null;
+        const invitationData = json.studioInvite
+          ? sanitizeInvitationData(json.studioInvite.invitationData, buildStudioDetailsFromDraft(restoredDraft))
+          : undefined;
+        const restoredPreview = json.studioInvite && invitationData
+          ? { imageUrl: json.studioInvite.imageUrl, invitationData }
+          : null;
+        const hasPreview = Boolean(savedEventId || restoredPreview);
         const restoredOutput =
           restoredDraft.requestedOutputs
             .map(visibleProductOutput)
@@ -1878,19 +1895,21 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
         setDraft(restoredDraft);
         setSelectedProductOutput(restoredOutput);
         setSelectedStarterCategory(null);
-        setDraftStudioInvite(null);
-        setGeneratedInviteImageUrl(null);
+        setDraftStudioInvite(savedEventId ? null : restoredPreview);
+        setGeneratedInviteImageUrl(restoredPreview?.imageUrl || null);
+        setFailedPreviewSave(null);
+        setIsSavingPreview(false);
         setLiveCardEventId(savedEventId);
-        setLiveCardTitle(savedEventId ? draftHeadline(restoredDraft) : null);
+        setLiveCardTitle(hasPreview ? draftHeadline(restoredDraft) : null);
         setLiveCardSummary(
           liveCardSummaryFromDraft(restoredDraft, restoredOutput || effectiveSelectedProductOutput),
         );
-        setBuildProgress(savedEventId ? 100 : 0);
-        setMobileView(savedEventId ? "preview" : "chat");
+        setBuildProgress(hasPreview ? 100 : 0);
+        setMobileView(hasPreview ? "preview" : "chat");
         setWeatherContext(json.weatherContext || null);
         setIsReadyChatComposerOpen(false);
         setPhase(
-          savedEventId
+          hasPreview
             ? "card_ready"
             : isReadyProductDraft(restoredDraft)
               ? "ready_to_generate"
@@ -1902,7 +1921,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             : [
                 newMessage(
                   "assistant",
-                  savedEventId
+                  hasPreview
                     ? "Thread opened. Your generated invite is ready to refine."
                     : "Thread opened. We can keep collecting the details from here.",
                 ),
@@ -2061,7 +2080,25 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     });
   }
 
+  async function saveGeneratedPreview(
+    snapshot: CreationPreviewSaveRequest,
+    conversationVersion = conversationVersionRef.current,
+  ) {
+    if (conversationVersion === conversationVersionRef.current) setIsSavingPreview(true);
+    try {
+      await persistDraftPreview(snapshot);
+      if (conversationVersion === conversationVersionRef.current) setFailedPreviewSave(null);
+      notifyCreationThreadsChanged();
+    } catch {
+      // Keep the generated image available so saving can be retried without regenerating it.
+      if (conversationVersion === conversationVersionRef.current) setFailedPreviewSave(snapshot);
+    } finally {
+      if (conversationVersion === conversationVersionRef.current) setIsSavingPreview(false);
+    }
+  }
+
   async function generateProductForDraft(draftToGenerate: ConciergeEventDraft) {
+    const conversationVersion = conversationVersionRef.current;
     const productDraft = normalizeDraftProductOutputs(draftToGenerate);
     if (!isReadyProductDraft(productDraft)) {
       setError("Add the missing event details before generating the invite.");
@@ -2079,7 +2116,13 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       const studioInvite = await generateStudioInviteForDraft(productDraft, {
         sourceImageUrl,
       });
+      await saveGeneratedPreview({
+        creationSessionId: productDraft.creationSessionId,
+        studioInvite,
+        chatMessages: chatMessagesForPersistence(messages, [generatedMessage]),
+      }, conversationVersion);
       await preloadGeneratedPreviewImage(studioInvite.imageUrl);
+      if (conversationVersion !== conversationVersionRef.current) return;
       setDraft(productDraft);
       setDraftStudioInvite(studioInvite);
       setGeneratedInviteImageUrl(studioInvite.imageUrl);
@@ -2092,6 +2135,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setMessages((prev) => [...prev, generatedMessage]);
       notifyCreationThreadsChanged();
     } catch (err) {
+      if (conversationVersion !== conversationVersionRef.current) return;
       setBuildProgress(0);
       setPhase(draftToGenerate.canPersist ? "ready_to_generate" : "collecting_details");
       setError(err instanceof Error ? err.message : "Unable to generate invite.");
@@ -2131,6 +2175,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       }
       const savedEventId = json.savedEventId;
       if (!savedEventId) throw new Error("Invite was published without an event id.");
+      setFailedPreviewSave(null);
       setBuildProgress(100);
       setDraft(json.draft);
       setLiveCardEventId(savedEventId);
@@ -2162,6 +2207,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   async function sendGeneratedDraftEdit(message: string) {
     const trimmed = message.trim();
     if (!trimmed || !draft) return;
+    const conversationVersion = conversationVersionRef.current;
 
     const fullRedesign = isGeneratedDraftFullRedesignRequest(trimmed);
     const userMessage = newMessage("user", trimmed);
@@ -2226,9 +2272,23 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               sourceImageUrl: fullRedesign ? null : existingDraftImageUrl,
               previousDraft: fullRedesign ? null : draft,
             });
+      const updatedMessage = newMessage(
+        "assistant",
+        fullRedesign
+          ? "I generated a completely new draft design from scratch. Review it in the preview, then keep chatting or save/publish when it looks right."
+          : canReuseCurrentImage
+            ? "I updated the event details. The artwork is unchanged."
+            : "I updated the artwork in the draft preview. Review it, then keep chatting or save/publish when it looks right.",
+      );
+      await saveGeneratedPreview({
+        creationSessionId: updatedDraft.creationSessionId,
+        studioInvite,
+        chatMessages: chatMessagesForPersistence(messages, [userMessage, updatedMessage]),
+      }, conversationVersion);
       if (!canReuseCurrentImage) {
         await preloadGeneratedPreviewImage(studioInvite.imageUrl);
       }
+      if (conversationVersion !== conversationVersionRef.current) return;
       setDraft(updatedDraft);
       setDraftStudioInvite(studioInvite);
       setGeneratedInviteImageUrl(studioInvite.imageUrl);
@@ -2239,23 +2299,18 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       setBuildProgress(100);
       setPhase("card_ready");
       setMobileView("preview");
-      setMessages((prev) => [
-        ...prev,
-        newMessage(
-          "assistant",
-          fullRedesign
-            ? "I generated a completely new draft design from scratch. Review it in the preview, then keep chatting or save/publish when it looks right."
-            : "I updated that part of the draft preview. Keep chatting or save/publish when it looks right.",
-        ),
-      ]);
+      setMessages((prev) => [...prev, updatedMessage]);
       notifyCreationThreadsChanged();
     } catch (err) {
+      if (conversationVersion !== conversationVersionRef.current) return;
       setBuildProgress(0);
       setPhase("card_ready");
       setError(err instanceof Error ? err.message : "Draft update failed.");
     } finally {
-      setIsSending(false);
-      refocusComposerAfterResponse();
+      if (conversationVersion === conversationVersionRef.current) {
+        setIsSending(false);
+        refocusComposerAfterResponse();
+      }
     }
   }
 
@@ -2637,6 +2692,13 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
   async function submitComposerInput() {
     if (isBusy) return;
     const typedValue = input.trim();
+    if (pendingChatUpload) {
+      const upload = pendingChatUpload;
+      setPendingChatUpload(null);
+      setInput("");
+      await routeSelectedSnapFile(upload.file, upload.source, selectedProductOutput || undefined, typedValue, typedValue || undefined);
+      return;
+    }
     const value = typedValue || selectionPrefix(selectedCategoryLabel, selectedProductOutput);
     if (!value) return;
 
@@ -2921,7 +2983,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
 
   const chatThread = (
     <div
-      className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-end gap-5 px-4 py-8 sm:px-6"
+      className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-start gap-5 px-4 py-8 sm:px-6"
       role="log"
       aria-live="polite"
       aria-relevant="additions text"
@@ -2969,6 +3031,46 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
           </motion.div>
         ))}
       </AnimatePresence>
+
+      {shouldShowGenerateReply ? (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="-mt-3 ml-10 self-start"
+        >
+          <button
+            type="button"
+            disabled={!canGenerateProduct}
+            onClick={() => {
+              if (!draft || !canGenerateProduct) return;
+              setIsReadyChatComposerOpen(false);
+              void generateProductForDraft(draft);
+            }}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#c8b8fb] bg-[#eee7ff] px-4 py-2 text-sm font-semibold text-[#5c5be5] shadow-sm transition hover:border-[#b29bed] hover:bg-[#e5dbff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
+          >
+            {isGeneratingCard ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Sparkles className="size-4" aria-hidden="true" />
+            )}
+            {isGeneratingCard ? "Generating preview…" : "Generate preview"}
+          </button>
+        </motion.div>
+      ) : null}
+
+      {failedPreviewSave ? (
+        <div role="alert" className="ml-10 self-start rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p>Your preview is ready, but it couldn’t be saved to this draft. Retry before leaving.</p>
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={() => void saveGeneratedPreview(failedPreviewSave)}
+            className="mt-2 min-h-11 rounded-full border border-amber-300 bg-white px-4 font-semibold hover:bg-amber-100 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          >
+            {isSavingPreview ? "Saving preview…" : "Retry saving preview"}
+          </button>
+        </div>
+      ) : null}
 
       {draft?.pendingReply && !failedRequest ? (
         <button
@@ -3099,96 +3201,23 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
     </div>
   );
 
-  const emptyProductFormatSelector = (
-    <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="mx-auto mb-8 flex w-full max-w-3xl justify-center sm:mb-10 sm:max-w-4xl"
-    >
-      <div className="flex w-full justify-center sm:hidden">
-        <BottomNavBar
-          items={PRODUCT_OPTIONS.map(chatProductNavItem)}
-          activeValue={selectedProductOutput}
-          defaultIndex={-1}
-          spreadItems
-          autoOpenOnMount
-          autoOpenIntervalMs={2000}
-          autoOpenCycles={3}
-          ariaLabel={
-            selectedStarterCategory
-              ? `Choose product format for ${selectedStarterCategory.label}`
-              : "Choose product format"
-          }
-          className="w-[calc((clamp(5.65rem,16dvh,7.5rem)*2)+clamp(0.7rem,1.8dvh,1.1rem))] !min-w-0 !max-w-full !border !border-white/70 !bg-white/62 !shadow-[0_18px_46px_rgba(92,91,229,0.12)] !backdrop-blur-xl"
-          onValueChange={(value) => {
-            const option = PRODUCT_OPTIONS.find((item) => item.output === value);
-            if (option) handleStarterProductChoice(option);
-          }}
-        />
-      </div>
-      <div
-        className="hidden max-w-full items-center justify-center gap-2 rounded-full border border-white/70 bg-white/62 p-2 shadow-[0_18px_46px_rgba(92,91,229,0.12)] backdrop-blur-xl sm:flex"
-        aria-label={
-          selectedStarterCategory
-            ? `Choose product format for ${selectedStarterCategory.label}`
-            : "Choose product format"
-        }
-        role="group"
-      >
-        {PRODUCT_OPTIONS.map((option) => {
-          const Icon = option.icon;
-          const isSelected = selectedProductOutput === option.output;
-          const productLabel = selectedStarterCategory
-            ? `${selectedStarterCategory.label} ${option.label}`
-            : option.label;
-          return (
-            <button
-              key={option.output}
-              type="button"
-              onClick={() => handleStarterProductChoice(option)}
-              disabled={isBusy}
-              aria-label={`Use ${productLabel}`}
-              aria-pressed={isSelected}
-              className={cn(
-                "group relative inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-55 sm:px-8 sm:py-4 sm:text-sm",
-                isSelected
-                  ? "bg-white/72 text-[#5c5be5] shadow-[0_10px_24px_rgba(92,91,229,0.1)]"
-                  : "text-[#747684] hover:text-[#5d6070]",
-              )}
-            >
-              <Icon
-                size={18}
-                strokeWidth={2}
-                aria-hidden="true"
-                className={cn(
-                  "transition-transform duration-300",
-                  isSelected ? "scale-110" : "group-hover:scale-105",
-                )}
-              />
-              <span className="whitespace-nowrap transition-colors">{option.label}</span>
-              {isSelected ? (
-                <motion.span
-                  layoutId="chatProductActiveUnderline"
-                  className="absolute bottom-2 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-[#5c5be5] opacity-40"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 0.4 }}
-                />
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
-    </motion.div>
-  );
-
   const selectionPills =
-    selectedStarterCategory || selectedProductPillOption ? (
+    selectedStarterCategory || pendingChatUpload ? (
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         className="flex min-w-0 max-w-full flex-wrap items-center gap-2"
         aria-label="Selected chat filters"
       >
+        {pendingChatUpload ? (
+          <ChatSelectionPill
+            label={pendingChatUpload.file.name}
+            onRemove={() => setPendingChatUpload(null)}
+            disabled={isBusy}
+            ariaLabel="Remove attached file"
+            textClassName="text-[#5c5be5]"
+          />
+        ) : null}
         {selectedStarterCategory ? (
           <ChatSelectionPill
             label={selectedStarterCategory.label}
@@ -3196,15 +3225,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             disabled={isBusy}
             ariaLabel={`Remove ${selectedStarterCategory.label} category`}
             textClassName={selectedStarterCategory.color}
-          />
-        ) : null}
-        {selectedProductPillOption ? (
-          <ChatSelectionPill
-            label={selectedProductPillOption.label}
-            onRemove={removeSelectedProductOutput}
-            disabled={isBusy}
-            ariaLabel={`Remove ${selectedProductPillOption.label} product`}
-            textClassName="text-[#5c5be5]"
           />
         ) : null}
       </motion.div>
@@ -3215,17 +3235,44 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       className={cn(
         "pointer-events-none z-30 mx-auto flex w-full max-w-3xl shrink-0 flex-col items-stretch px-2 pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.75rem)] pt-4 sm:px-6 sm:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+2rem)]",
         isEmptyState &&
-          "max-md:px-3 max-md:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.45rem)] max-md:pt-2 max-h-[700px]:max-md:pb-[calc(env(safe-area-inset-bottom)+var(--envitefy-chat-keyboard-inset,0px)+0.3rem)] max-h-[700px]:max-md:pt-1",
+          "mb-auto !pb-6 !pt-0",
       )}
     >
-      <div ref={composerCardRef} className="pointer-events-auto w-full">
+      <div ref={composerCardRef} className="pointer-events-auto relative w-full">
         {isEmptyState ? (
-          <>
-            {emptyProductFormatSelector}
-            <p className="mb-3 px-2 text-center text-xs leading-relaxed text-[#625579]">
-              {selectedProductOption?.description || "Live Card: a compact invitation. Flyer: a shareable image. Event Page: more room for schedules and details."}
-            </p>
-          </>
+          <div
+            role="group"
+            aria-label="Choose product format"
+            className="mb-3 flex flex-wrap items-center justify-center gap-2"
+          >
+            {PRODUCT_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              const isSelected = selectedProductOutput === option.output;
+              return (
+                <button
+                  key={option.output}
+                  type="button"
+                  disabled={isBusy}
+                  aria-pressed={isSelected}
+                  title={option.description}
+                  onClick={() => {
+                    if (isSelected) removeSelectedProductOutput();
+                    else handleStarterProductChoice(option);
+                    focusComposerAtEnd();
+                  }}
+                  className={cn(
+                    "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4 sm:text-sm",
+                    isSelected
+                      ? "border-[#c8b8fb] bg-[#eee7ff] text-[#5c5be5] shadow-sm"
+                      : "border-white/80 bg-white/65 text-[#746589] hover:border-[#d8caff] hover:bg-white/90 hover:text-[#5c5be5]",
+                  )}
+                >
+                  <Icon size={14} aria-hidden="true" className="shrink-0" />
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
         ) : null}
         <form onSubmit={handleSubmit}>
           <input
@@ -3247,18 +3294,79 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             className={cn(
               "w-full border-[#d8caff] bg-[#fbf9ff] p-2 text-[#25183a] shadow-[0_18px_46px_rgba(93,63,155,0.18),inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-white/75 backdrop-blur transition-all duration-300",
               isCompactEmptyComposer && "max-md:rounded-[1.4rem] max-md:p-1.5",
+              isBusy && "!border-[#c4b5fd]",
               isListening &&
                 "border-[#8b5cf6] shadow-[0_18px_46px_rgba(124,77,255,0.24),inset_0_1px_0_rgba(255,255,255,0.95)]",
             )}
           >
             <div
               className={cn(
-                "flex min-h-[52px] flex-col gap-2",
+                "flex min-h-[52px] flex-col justify-center gap-2",
                 isCompactEmptyComposer && "max-md:min-h-[42px]",
               )}
             >
               {selectionPills}
               <div className="flex min-w-0 items-center gap-2">
+                <details
+                  ref={suggestionsRef}
+                  className="group/suggestions shrink-0"
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      event.currentTarget.open = false;
+                      event.currentTarget.querySelector("summary")?.focus();
+                    }
+                  }}
+                >
+                  <summary
+                    aria-label="Add an upload or choose suggestions"
+                    title="Uploads and suggestions"
+                    className="flex size-11 cursor-pointer list-none items-center justify-center rounded-full text-[#76648f] transition hover:bg-[#f1ebff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] group-open/suggestions:bg-[#eee7ff] [&::-webkit-details-marker]:hidden"
+                  >
+                    <Plus className="size-5 transition-transform group-open/suggestions:rotate-45" aria-hidden="true" />
+                  </summary>
+                  <div className="absolute bottom-[calc(100%+0.75rem)] left-0 z-50 max-h-[min(25rem,42dvh)] w-[min(22rem,100%)] overflow-y-auto rounded-2xl border border-[#e6dff0] bg-white p-2 text-left shadow-[0_16px_48px_rgba(55,35,90,0.16)]">
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => {
+                        if (suggestionsRef.current) suggestionsRef.current.open = false;
+                        openSnapUploadPicker();
+                      }}
+                      className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-[#413653] hover:bg-[#f5f1fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:opacity-50"
+                    >
+                      <Upload className="size-4" aria-hidden="true" />
+                      Upload a file or invitation
+                      {pendingChatUpload ? <span className="ml-auto text-[#5c5be5]">+1</span> : null}
+                    </button>
+                    <p className="px-3 pb-2 pt-3 text-xs font-medium text-[#8b7ca6]">Start with an occasion</p>
+                    <div className="grid grid-cols-2 gap-1" role="group" aria-label="Choose celebration category">
+                      {CELEBRATION_STARTER_TILES.filter((tile) => !("action" in tile && tile.action === "upload")).map((tile) => {
+                        const Icon = tile.icon;
+                        return (
+                          <button
+                            key={tile.label}
+                            type="button"
+                            disabled={isBusy}
+                            aria-pressed={selectedStarterCategory?.label === tile.label}
+                            onClick={() => {
+                              handleStarterPrompt(tile);
+                              if (suggestionsRef.current) suggestionsRef.current.open = false;
+                              focusComposerAtEnd();
+                            }}
+                            className="flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm text-[#625579] hover:bg-[#f5f1fb] aria-pressed:bg-[#eee7ff] aria-pressed:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:opacity-50"
+                          >
+                            <Icon className="size-4 shrink-0" />
+                            {tile.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </details>
                 <PromptInputTextarea
                   placeholder={
                     liveCardEventId
@@ -3405,31 +3513,6 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
             </button>
           </div>
         ) : null}
-        {!shouldShowGiftRegistryPrompt && !shouldShowReceivedInviteActions ? (
-          <div className="w-full rounded-2xl border border-[#d8caff] bg-[#fbf9ff]/96 p-3 text-sm text-[#4f3a73]">
-            <button
-              type="button"
-              onClick={() => {
-                if (draft) void generateProductForDraft(draft);
-              }}
-              className="inline-flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl bg-[#5c5be5] px-2.5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(92,91,229,0.24)] transition hover:bg-[#4f4ed2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isGeneratingCard || !canGenerateProduct}
-              aria-label={
-                isGeneratingCard
-                  ? `Generating ${effectiveSelectedProductLabel.toLowerCase()}`
-                  : `Generate draft preview: ${effectiveSelectedProductLabel.toLowerCase()}`
-              }
-            >
-              {isGeneratingCard ? (
-                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
-              ) : (
-                <Sparkles className="size-4 shrink-0" aria-hidden="true" />
-              )}
-              <span className="truncate">{isGeneratingCard ? "Generating" : "Generate draft preview"}</span>
-            </button>
-            <p className="mt-2 text-xs">Review the design first. Publish is a separate step.</p>
-          </div>
-        ) : null}
         {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
       </div>
     </div>
@@ -3449,7 +3532,7 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
       rsvpDashboardHref={rsvpDashboardHref}
       hasDraftProduct={hasGeneratedDraftProduct || hasReadyReceivedInvite}
       isReceivedInviteDraft={isReceivedInviteDraft(draft)}
-      publishActionLabel={hasReadyReceivedInvite ? "Save invite" : "Publish event"}
+      publishActionLabel={hasReadyReceivedInvite ? "Save invite" : "Publish"}
       publishBusyLabel={hasReadyReceivedInvite ? "Saving..." : "Publishing..."}
       skinLabel={selectedSkinLabel}
       isPublishing={isPublishingCard}
@@ -3529,105 +3612,28 @@ export default function ConciergeChatClient({ userInitials = null }: ConciergeCh
               >
                 <div
                   className={cn(
-                    "min-h-0 flex-1 overflow-y-auto [overscroll-behavior-y:contain] [touch-action:pan-y] [-webkit-overflow-scrolling:touch]",
-                    isEmptyState && "max-md:overflow-y-auto",
+                    "min-h-0 [overscroll-behavior-y:contain] [touch-action:pan-y] [-webkit-overflow-scrolling:touch]",
+                    isEmptyState ? "mt-auto shrink-0" : "flex-1 overflow-y-auto",
                   )}
                 >
                   {isEmptyState ? (
-                    <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col justify-start px-4 pb-3 pt-[calc(max(0.35rem,env(safe-area-inset-top))+1.5rem)] text-center sm:px-6 sm:pt-[calc(max(0.35rem,env(safe-area-inset-top))+2.75rem)] lg:pt-12 max-md:min-h-full max-md:overflow-visible max-md:px-3 max-md:pb-1 max-md:pt-[calc(max(0.35rem,env(safe-area-inset-top))+0.7rem)] max-h-[700px]:max-md:pt-[calc(max(0.35rem,env(safe-area-inset-top))+0.45rem)]">
+                    <div className="mx-auto w-full max-w-3xl px-6 pb-7 pt-12 text-center sm:pb-9">
                       <motion.h1
-                        initial={{ opacity: 0, y: 16 }}
+                        initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mx-auto max-w-3xl text-2xl font-medium leading-tight tracking-normal text-[#2d1b36] sm:text-4xl lg:text-5xl max-h-[700px]:max-md:text-[1.45rem]"
+                        className="text-3xl font-medium leading-tight tracking-tight text-[#2d1b36] sm:text-4xl"
                       >
                         What are we celebrating?
                       </motion.h1>
-                      <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-[#6f608c] sm:mt-3 sm:text-base max-md:mt-1.5 max-md:text-xs max-md:leading-5 max-h-[620px]:max-md:hidden">
-                    Tell me who it's for and what you have in mind. I'll help with the details and format.
+                      <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#6f608c] sm:text-base">
+                        Tell me what you have in mind. We'll bring it to life together.
                       </p>
-                      <nav
-                        className="mx-auto mt-6 grid w-full max-w-[39rem] flex-1 grid-cols-2 content-center justify-items-center gap-8 text-center sm:mt-8 sm:gap-12 md:grid-cols-3 max-md:mt-2.5 max-md:gap-[clamp(0.7rem,1.8dvh,1.1rem)] max-h-[700px]:max-md:mt-1.5"
-                        aria-label="Choose celebration category"
-                      >
-                        {CELEBRATION_STARTER_TILES.map((tile) => {
-                          const Icon = tile.icon;
-                          const isUploadTile = "action" in tile && tile.action === "upload";
-                          const isSelected =
-                            selectedStarterCategory?.label === tile.label ||
-                            Boolean(isUploadTile && pendingChatUpload);
-                          return (
-                            <button
-                              key={tile.label}
-                              type="button"
-                              onClick={() => handleStarterPrompt(tile)}
-                              disabled={isBusy}
-                              aria-label={
-                                isUploadTile && pendingChatUpload
-                                  ? "Choose Upload, 1 upload selected"
-                                  : `Choose ${tile.label}`
-                              }
-                              aria-pressed={isSelected}
-                              className={cn(
-                                "group relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl border border-white/70 bg-white/58 backdrop-blur-xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff] focus-visible:ring-offset-4 focus-visible:ring-offset-transparent disabled:cursor-not-allowed disabled:opacity-55 sm:h-40 sm:w-40 sm:rounded-[2.5rem] max-md:h-[clamp(5.65rem,16dvh,7.5rem)] max-md:w-[clamp(5.65rem,16dvh,7.5rem)]",
-                                isSelected &&
-                                  cn(
-                                    "scale-95 shadow-[inset_0_0_0_999px_rgba(255,255,255,0.18),0_16px_38px_rgba(92,91,229,0.12)]",
-                                    tile.color,
-                                  ),
-                                !isSelected &&
-                                  "text-[#807a96] shadow-[0_16px_38px_rgba(92,91,229,0.1)] hover:bg-white/72 hover:text-[#5c5be5] active:scale-95",
-                              )}
-                            >
-                              {isSelected && !(isUploadTile && pendingChatUpload) ? (
-                                <span className="absolute right-3 top-3 opacity-40 sm:right-4 sm:top-4">
-                                  <X size={14} aria-hidden="true" />
-                                </span>
-                              ) : null}
-                              {isUploadTile && pendingChatUpload ? (
-                                <span
-                                  className="absolute right-3 top-3 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-[#5c5be5] px-2 text-[11px] font-black leading-none text-white shadow-[0_10px_20px_rgba(92,91,229,0.24)] sm:right-4 sm:top-4"
-                                  aria-hidden="true"
-                                >
-                                  +1
-                                </span>
-                              ) : null}
-                              <Icon
-                                className={cn(
-                                  "h-8 w-8 transition-transform duration-300 sm:h-10 sm:w-10 max-h-[620px]:max-md:h-7 max-h-[620px]:max-md:w-7",
-                                  isSelected ? "scale-110" : "group-hover:scale-105",
-                                )}
-                              />
-                              <span className="relative mt-2 flex max-w-[6.75rem] justify-center sm:mt-4 sm:max-w-[8.5rem] max-h-[620px]:max-md:mt-1.5">
-                                <span
-                                  className={cn(
-                                    "text-center text-[10px] font-bold uppercase leading-[1.35] tracking-widest transition-colors sm:text-xs",
-                                    isSelected ? "text-current" : "text-[#9a9daa]",
-                                  )}
-                                >
-                                  {tile.label}
-                                </span>
-                                {isSelected ? (
-                                  <motion.span
-                                    layoutId="chatStarterActiveUnderline"
-                                    className="absolute -bottom-1 left-0 right-0 h-[2px] rounded-full bg-current"
-                                    initial={{ opacity: 0, scaleX: 0 }}
-                                    animate={{ opacity: 1, scaleX: 1 }}
-                                    transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                                  />
-                                ) : null}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </nav>
                     </div>
                   ) : (
                     chatThread
                   )}
                 </div>
-                {shouldShowGiftRegistryActions ||
-                shouldShowReceivedInviteActions ||
-                shouldShowReadyActions
+                {shouldShowGiftRegistryActions || shouldShowReceivedInviteActions
                   ? readyActions
                   : null}
                 {composer}

@@ -1,0 +1,22 @@
+{
+  "id": "cherry-blossom-silk",
+  "name": "Cherry Blossom Silk",
+  "category": "romantic floral",
+  "family": "atelier",
+  "layout": "cherry-blossom-silk",
+  "thumbnail": "/templates/weddings/generated-heroes/cherry-blossom-silk-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#fff2f1",
+      "secondary": "#714454",
+      "background": "#fff2f1"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/cherry-blossom-silk-hero.webp"
+    }
+  }
+}

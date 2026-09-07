@@ -20,6 +20,7 @@ registerHooks({
     return next(specifier, context);
   },
 });
+const { buildExistingInvitationImageEditPrompt } = await import("./prompts.ts");
 const { generateStudioInvitation, studioGenerationDeps } = await import("./generate.ts");
 const event = {
   title: "Elena's 30th Birthday",
@@ -198,4 +199,81 @@ test("unavailable quality check is reported honestly without claiming a passed i
   assert.equal(result.ok, true);
   assert.equal(result.qualityCheck, "unavailable");
   assert.ok(result.warnings.some((item) => item.includes("verification was unavailable")));
+});
+
+test("movie theme edits allow visual redesign while preserving event wording", () => {
+  const instruction = "add forgotten islan movie theme to the card";
+  const prompt = buildExistingInvitationImageEditPrompt(instruction);
+  assert.ok(prompt.includes(instruction));
+  assert.match(prompt, /theme or style change may redesign the background/);
+  assert.match(prompt, /preserve the event wording and facts/);
+  assert.match(prompt, /For localized edits, do not regenerate or redesign/);
+});
+
+test("card repair uses original artwork and concrete corrections instead of editing damaged text", async () => {
+  stub();
+  const source = "data:image/png;base64,T1JJR0lOQUw=";
+  const correction = 'Restore the heading to exactly "Livia’s 10th Birthday"; the failed attempt changed the age to 16.';
+  let attempts = 0;
+  let checks = 0;
+  mock.method(studioGenerationDeps, "verifyStudioArtwork", async () =>
+    ++checks === 1
+      ? { status: "failed", issues: ["incorrect_title"], repairInstructions: [correction] }
+      : { status: "passed", issues: [], repairInstructions: [] },
+  );
+  mock.method(studioGenerationDeps, "editInvitationImageWithOpenAi", async (prompt, input) => {
+    attempts++;
+    assert.equal(input, source);
+    if (attempts === 2) {
+      assert.ok(prompt.includes(correction));
+      assert.match(prompt, /original approved card/);
+      assert.match(prompt, /Forgotten Island movie theme/);
+    }
+    return { ok: true, imageDataUrl: image, warnings: [] };
+  });
+  const result = await generateStudioInvitation({
+    event, mode: "image", product: "live_card",
+    imageEdit: { sourceImageDataUrl: source, editInstruction: "Add a Forgotten Island movie theme." },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.qualityCheck, "passed");
+  assert.equal(attempts, 2);
+  assert.equal(checks, 2);
+});
+
+test("existing card verification protects words and faces without rejecting decorative overflow", async () => {
+  const { artworkCheckContract } = await import("./output-checks.ts");
+  const edit = artworkCheckContract("live_card", true);
+  assert.equal(edit.imageText, "preserve_source_except_requested_changes");
+  assert.match(edit.description, /Decorative toys.*may extend below/);
+  assert.match(edit.description, /essential text and faces above the bottom 30%/);
+  assert.equal(artworkCheckContract("live_card", false).imageText, "title");
+  assert.equal(artworkCheckContract("digital_flyer", true).imageText, "none");
+});
+
+test("live-card layout concerns return a reviewable preview without regeneration", async () => {
+  stub();
+  let edits = 0;
+  mock.method(studioGenerationDeps, "verifyStudioArtwork", async () => ({ status: "failed", issues: ["unsafe_placement"] }));
+  mock.method(studioGenerationDeps, "editInvitationImageWithOpenAi", async () => {
+    edits++;
+    return { ok: true, imageDataUrl: image, warnings: [] };
+  });
+  const result = await generateStudioInvitation({ event, mode: "image", product: "live_card", imageEdit: { sourceImageDataUrl: image, editInstruction: "Add katseye and needohs" } });
+  assert.equal(result.ok, true);
+  assert.equal(result.imageDataUrl, image);
+  assert.equal(result.qualityCheck, "needs_review");
+  assert.equal(edits, 1);
+  assert.equal(result.errors, undefined);
+  assert.ok(result.warnings.some((warning) => warning.includes("before saving")));
+});
+
+test("layout warnings do not override corrupted event text", async () => {
+  stub();
+  mock.method(studioGenerationDeps, "verifyStudioArtwork", async () => ({ status: "failed", issues: ["unsafe_placement", "incorrect_title"] }));
+  mock.method(studioGenerationDeps, "editInvitationImageWithOpenAi", async () => ({ ok: true, imageDataUrl: image, warnings: [] }));
+  const result = await generateStudioInvitation({ event, mode: "image", product: "live_card", imageEdit: { sourceImageDataUrl: image, editInstruction: "Add toys" } });
+  assert.equal(result.ok, false);
+  assert.equal(result.imageDataUrl, null);
+  assert.equal(result.errors.image.code, "image_quality_failed");
 });

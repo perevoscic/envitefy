@@ -37,6 +37,7 @@ type DashboardMetricsCache = {
   travelMinutes: number | null;
   travelDistanceKm: number | null;
   travelUpdatedAt: string | null;
+  travelOriginLabel?: string | null;
   weatherSummary: string | null;
   weatherTemp: number | null;
   weatherUpdatedAt: string | null;

@@ -1,3 +1,4 @@
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 
 export default function MidnightEleganceRenderer({
@@ -163,6 +164,7 @@ export default function MidnightEleganceRenderer({
         style={{ backgroundColor: theme.colors.primary, color: "#ffffff" }}
       >
         © {new Date().getFullYear()} {event.headlineTitle || "Your Names"}
+      <EnvitefyEventBranding category="Weddings" inverse />
       </footer>
     </div>
   );

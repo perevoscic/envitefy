@@ -1,3 +1,5 @@
+import type { EventGuestPlanning } from "@/lib/event-guest-planning";
+
 export type SignupFormSlot = {
   id: string;
   label: string;
@@ -76,6 +78,7 @@ export type SignupSafetyFlags = {
 };
 
 export type SignupForm = {
+  guestPlanning?: EventGuestPlanning;
   version: 1;
   enabled: boolean;
   title: string;

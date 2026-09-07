@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useEffect, useState } from "react";
 import {
   Play,
@@ -27,7 +29,7 @@ const buildNames = (event: EventData) => {
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "12.14.2025";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     const year = d.getFullYear();
@@ -432,10 +434,13 @@ export default function CinematicWedding({ theme, event }: Props) {
         </section>
       )}
 
+      {event.guestTools}
+
       <footer className="py-12 border-t border-neutral-900 text-center">
         <div className="text-[10px] font-bold tracking-[0.5em] text-gray-400 uppercase">
           Start A Life Production • Est {new Date().getFullYear()}
         </div>
+      <EnvitefyEventBranding category="Weddings" inverse />
       </footer>
     </div>
   );

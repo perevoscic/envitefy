@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  migrateAnniversaryTemplateKeys,
   normalizePersona,
   normalizePersonas,
   normalizeTemplateKeys,
@@ -21,6 +22,7 @@ import {
 } from "@/lib/sports-preferences";
 
 type FeatureVisibilityPayload = {
+  v?: unknown;
   persona?: unknown;
   personas?: unknown;
   visibleTemplateKeys?: unknown;
@@ -55,7 +57,9 @@ function buildResponse(
   const visibility = resolveVisibility({
     persona: metadata.persona,
     personas: metadata.personas,
-    visibleTemplateKeys: metadata.visibleTemplateKeys,
+    visibleTemplateKeys: Array.isArray(metadata.visibleTemplateKeys)
+      ? migrateAnniversaryTemplateKeys(metadata.visibleTemplateKeys, metadata.v)
+      : metadata.visibleTemplateKeys,
     defaultCreateIntent: normalizeSignupIntent(metadata.defaultCreateIntent),
   });
 
@@ -128,7 +132,9 @@ export async function PUT(req: Request) {
     personas: hasPersonas ? normalizePersonas(body.personas) : existingMetadata?.personas,
     visibleTemplateKeys: hasVisibleTemplateKeys
       ? normalizeTemplateKeys(body.visibleTemplateKeys)
-      : existingMetadata?.visibleTemplateKeys,
+      : Array.isArray(existingMetadata?.visibleTemplateKeys)
+        ? migrateAnniversaryTemplateKeys(existingMetadata.visibleTemplateKeys, existingMetadata.v)
+        : existingMetadata?.visibleTemplateKeys,
     defaultCreateIntent: hasDefaultCreateIntent
       ? normalizeSignupIntent(body.defaultCreateIntent)
       : normalizeSignupIntent(existingMetadata?.defaultCreateIntent),

@@ -1,7 +1,11 @@
 // @ts-nocheck
 "use client";
 
-import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDateParts, getEventEndLocal } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import {
   CheckSquare,
   ChevronLeft,
@@ -11,12 +15,9 @@ import {
   Link as LinkIcon,
   MapPin,
   Menu,
-  Palette,
-  Share2,
   Type,
   Upload,
 } from "lucide-react";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -475,6 +476,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     }, [defaultDate]);
 
     const [data, setData] = useState(() => ({
+      guestPlanning: {} as EventGuestPlanning,
+      endTime: "",
+      endDate: "",
       title: config.prefill?.title || `${config.displayName}`,
       date: config.prefill?.date || initialDate,
       time: config.prefill?.time || "14:00",
@@ -575,8 +579,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           if (startIso) {
             const d = new Date(startIso);
             if (!Number.isNaN(d.getTime())) {
-              loadedDate = d.toISOString().split("T")[0];
-              loadedTime = d.toISOString().slice(11, 16);
+              loadedDate = eventLocalDateParts(d.toISOString()).date;
+              loadedTime = eventLocalDateParts(d.toISOString()).time;
             }
           }
 
@@ -588,6 +592,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           setData((prev) => ({
             ...prev,
             title: json?.title || existing.title || prev.title,
+            guestPlanning: normalizeEventGuestPlanning(existing.guestPlanning),
+            endTime: existing.endTime || eventLocalDateParts(existing.endISO || existing.endAt || existing.end).time,
+            endDate: existing.endDate || eventLocalDateParts(existing.endISO || existing.endAt || existing.end).date,
             date: existing.date || loadedDate,
             time: existing.time || loadedTime,
             city: existing.city || prev.city,
@@ -665,6 +672,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               title: data.title,
               description: data.details,
               details: data.details,
+              guestPlanning: data.guestPlanning,
+              endTime: data.endTime,
+              endDate: data.endDate,
               heroImage: data.hero || undefined,
               hero: data.hero || undefined,
               venue: data.venue || data.extra?.stadium || data.extra?.stadiumAddress,
@@ -698,6 +708,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       advancedState,
       data.date,
       data.details,
+      data.guestPlanning,
+      data.endTime,
+      data.endDate,
       data.extra,
       data.fontSize,
       data.hero,
@@ -957,14 +970,18 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       if (submitting) return;
       setSubmitting(true);
       try {
+        if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
+          throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
+        }
+
         let startISO: string | null = null;
         let endISO: string | null = null;
         if (data.date) {
           const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-          const end = new Date(start);
-          end.setHours(end.getHours() + 2);
+          const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+          const end = endLocal ? new Date(endLocal) : null;
           startISO = start.toISOString();
-          endISO = end.toISOString();
+          endISO = end?.toISOString() || null;
         }
 
         const heroToSave =
@@ -1012,6 +1029,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             createdManually: !isDiscoveryUpdate,
             startISO,
             endISO,
+            endAt: endISO,
+            end: endISO,
+            endTime: data.endTime,
+            endDate: data.endDate,
+            guestPlanning: data.guestPlanning,
             date: data.date,
             time: data.time,
             city: data.city,
@@ -1139,6 +1161,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.time,
       data.title,
       data.details,
+      data.guestPlanning,
+      data.endTime,
+      data.endDate,
       data.venue,
       data.city,
       data.state,
@@ -1174,7 +1199,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (!Number.isNaN(tentative.getTime())) start = tentative;
       }
       if (!start) start = new Date();
-      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+          const end = endLocal ? new Date(endLocal) : start;
       const location = [data.venue, data.city, data.state].filter(Boolean).join(", ");
       const description = data.details || "";
       return { title, start, end, location, description };
@@ -1217,7 +1243,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     };
 
-    const handleShare = () => {
+    const _handleShare = () => {
       const details = buildEventDetails();
       const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
       if (typeof navigator !== "undefined" && (navigator as any).share && shareUrl) {
@@ -1235,7 +1261,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       }
     };
 
-    const handleGoogleCalendar = () => {
+    const _handleGoogleCalendar = () => {
       const details = buildEventDetails();
       const start = toGoogleDate(details.start);
       const end = toGoogleDate(details.end);
@@ -1249,7 +1275,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       openWithAppFallback(appUrl, webUrl);
     };
 
-    const handleOutlookCalendar = () => {
+    const _handleOutlookCalendar = () => {
       const details = buildEventDetails();
       const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
         details.title,
@@ -1268,7 +1294,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       openWithAppFallback(appUrl, webUrl);
     };
 
-    const handleAppleCalendar = () => {
+    const _handleAppleCalendar = () => {
       const details = buildEventDetails();
       openAppleCalendarIcs(buildIcsUrl(details));
     };
@@ -1320,12 +1346,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             desc="Title, date, location."
             icon={<Type size={18} />}
             onClick={() => setActiveView("headline")}
-          />
-          <MenuCard
-            title="Design"
-            desc="Gym page templates and title size."
-            icon={<Palette size={18} />}
-            onClick={() => setActiveView("design")}
           />
           <MenuCard
             title="Images"
@@ -1504,6 +1524,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const renderDetailsEditor = () => (
       <EditorLayout title="Details" onBack={() => setActiveView("main")} showBack>
         <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm font-medium text-slate-700">
+              End time (optional)
+              <input type="time" value={data.endTime} onChange={(event) => setData((prev) => ({ ...prev, endTime: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+            <label className="block text-sm font-medium text-slate-700">
+              End date (if different)
+              <input type="date" min={data.date || undefined} value={data.endDate} onChange={(event) => setData((prev) => ({ ...prev, endDate: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+          </div>
+          {data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate) ? (
+            <p role="alert" className="text-sm text-red-700">End time must be after the start. For an overnight event, choose the next end date.</p>
+          ) : null}
+          <EventGuestPlanningEditor category="football-season" value={data.guestPlanning} onChange={(guestPlanning) => setData((prev) => ({ ...prev, guestPlanning }))} />
+
           <InputGroup
             label="Description"
             type="textarea"
@@ -1776,8 +1811,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               overscrollBehavior: "contain",
             }}
           >
-            <div className="w-full min-w-0 my-4 md:my-8 mb-20 md:mb-24 pb-8 transition-all duration-500 ease-in-out">
-              <div className="mt-4 md:mt-6">
+            <div className="w-full min-w-0 mb-20 md:mb-24 pb-8 transition-all duration-500 ease-in-out">
+              <div>
                 <FootballSeasonPreviewFrame theme={templateTheme}>
                   <FootballSeasonHeader
                     theme={templateTheme}
@@ -1809,7 +1844,17 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                     >
                       Details
                     </h2>
-                    {data.details ? (
+                    
+                  <EventGuestActions
+                    title={data.title}
+                    start={data.date ? `${data.date}T${data.time || "14:00"}` : undefined}
+                    end={getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)}
+                    description={data.details}
+                    location={[data.venue, data.city, data.state].filter(Boolean).join(", ")}
+                    preview
+                  />
+                  <EventGuestPlanningNotes value={data.guestPlanning} />
+                  {data.details ? (
                       <p
                         className={`whitespace-pre-wrap text-base leading-relaxed opacity-90 ${textClass}`}
                         style={bodyShadow}
@@ -1898,9 +1943,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                         ) : (
                           <div className="py-12 text-center">
                             <div className="mb-4 text-4xl">🎉</div>
-                            <h3 className={`mb-2 text-2xl font-serif ${textClass}`}>Thank you!</h3>
+                            <h3 className={`mb-2 text-2xl font-serif ${textClass}`}>RSVP preview</h3>
                             <p className={`opacity-70 ${textClass}`}>
-                              Your attendance response has been sent.
+                              This is a preview. Publish your event to collect attendance responses.
                             </p>
                             <button
                               onClick={(e) => {
@@ -1915,72 +1960,12 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                           </div>
                         )}
                       </div>
-                      <div className="mt-4 flex flex-wrap justify-center gap-3">
-                        <button
-                          onClick={() => handleShare()}
-                          className="flex items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm transition-colors hover:bg-white/20"
-                        >
-                          <Share2 size={16} />
-                          <span className="hidden sm:inline">Share link</span>
-                        </button>
-                        <button
-                          onClick={() => handleGoogleCalendar()}
-                          className="flex items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm transition-colors hover:bg-white/20"
-                        >
-                          <Image
-                            src="/brands/google-white.svg"
-                            alt="Google"
-                            width={16}
-                            height={16}
-                            className="h-4 w-4"
-                          />
-                          <span className="hidden sm:inline">Google Cal</span>
-                        </button>
-                        <button
-                          onClick={() => handleAppleCalendar()}
-                          className="flex items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm transition-colors hover:bg-white/20"
-                        >
-                          <Image
-                            src="/brands/apple-white.svg"
-                            alt="Apple"
-                            width={16}
-                            height={16}
-                            className="h-4 w-4"
-                          />
-                          <span className="hidden sm:inline">Apple Cal</span>
-                        </button>
-                        <button
-                          onClick={() => handleOutlookCalendar()}
-                          className="flex items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm transition-colors hover:bg-white/20"
-                        >
-                          <Image
-                            src="/brands/microsoft-white.svg"
-                            alt="Microsoft"
-                            width={16}
-                            height={16}
-                            className="h-4 w-4"
-                          />
-                          <span className="hidden sm:inline">Outlook</span>
-                        </button>
-                      </div>
+
                     </FootballSeasonPreviewSection>
                   )}
 
                   <footer className={`mt-1 border-t border-white/10 py-8 text-center ${textClass}`}>
-                    <a
-                      href="https://envitefy.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block space-y-1 no-underline"
-                    >
-                      <p className="text-sm opacity-60" style={bodyShadow}>
-                        Powered By Envitefy. Create. Share. Enjoy.
-                      </p>
-                      <p className="text-xs opacity-50" style={bodyShadow}>
-                        Create yours now.
-                      </p>
-                    </a>
-                    <EnvitefySocialLinks placement="event" />
+                    <EnvitefyEventBranding category="Football" inverse={isDarkBackground} />
                   </footer>
                 </FootballSeasonPreviewFrame>
               </div>

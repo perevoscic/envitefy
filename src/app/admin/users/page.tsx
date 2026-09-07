@@ -63,6 +63,7 @@ export default function AdminUsersPage() {
   const { data: session, status } = useSession();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
   const [q, setQ] = useState("");
   const [users, setUsers] = useState<any[]>([]);
   const [usersCursor, setUsersCursor] = useState<string | null>(null);
@@ -71,23 +72,37 @@ export default function AdminUsersPage() {
   const [hasSearched, setHasSearched] = useState(false);
   const [activeStatView, setActiveStatView] = useState<StatView>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const isAdmin = Boolean((session?.user as { isAdmin?: boolean } | undefined)?.isAdmin);
+  const adminEmail = session?.user?.email;
 
   useEffect(() => {
-    if (status !== "authenticated") return;
-    const isAdmin = (session?.user as any)?.isAdmin;
-    if (!isAdmin) return;
+    if (status !== "authenticated" || !isAdmin) return;
+    const controller = new AbortController();
     const fetchStats = async () => {
+      setError(null);
       try {
-        const res = await fetch("/api/admin/stats", { cache: "no-store" });
-        if (!res.ok) throw new Error(`Failed: ${res.status}`);
+        const res = await fetch("/api/admin/stats", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          const detail = readAdminDebugError(await res.json().catch(() => null));
+          throw new Error(
+            `Could not load platform overview (${res.status}). ${detail ? `${detail} — ` : ""}Please retry.`,
+          );
+        }
         const json = await res.json();
+        if (controller.signal.aborted) return;
         setOverview(json.overview);
-      } catch (e: any) {
-        setError(e?.message || String(e));
+        setError(null);
+      } catch (e) {
+        if (controller.signal.aborted) return;
+        setError(e instanceof Error ? e.message : "Could not load platform overview. Please retry.");
       }
     };
-    fetchStats();
-  }, [status, session]);
+    void fetchStats();
+    return () => controller.abort();
+  }, [status, isAdmin, adminEmail, overviewRefreshKey]);
 
   if (status === "loading") {
     return <div className="p-6">Loading…</div>;
@@ -101,7 +116,6 @@ export default function AdminUsersPage() {
     );
   }
 
-  const isAdmin = (session?.user as any)?.isAdmin;
   if (!isAdmin) {
     return (
       <div className="p-6">
@@ -214,13 +228,7 @@ export default function AdminUsersPage() {
     try {
       await deleteAdminUser(user.id);
       setUsers((prev) => prev.filter((entry) => entry.id !== user.id));
-
-      try {
-        const res = await fetch("/api/admin/stats", { cache: "no-store" });
-        if (!res.ok) throw new Error(`Failed: ${res.status}`);
-        const json = await res.json();
-        setOverview(json.overview);
-      } catch {}
+      setOverviewRefreshKey((key) => key + 1);
     } catch (e: any) {
       setUsersError(e?.message || String(e));
     } finally {
@@ -249,6 +257,7 @@ export default function AdminUsersPage() {
 
         {error && (
           <div
+            role="alert"
             className="rounded-lg border border-error/30 bg-error/10 text-error p-4"
             suppressHydrationWarning
           >
@@ -260,7 +269,14 @@ export default function AdminUsersPage() {
                   clipRule="evenodd"
                 />
               </svg>
-              <div>{error}</div>
+              <div className="flex-1">{error}</div>
+              <button
+                type="button"
+                className="shrink-0 font-semibold underline underline-offset-4"
+                onClick={() => setOverviewRefreshKey((key) => key + 1)}
+              >
+                Retry overview
+              </button>
             </div>
           </div>
         )}
@@ -270,7 +286,9 @@ export default function AdminUsersPage() {
           <h2 className="text-xl font-semibold mb-3 text-[#43366f]" suppressHydrationWarning>
             Platform Overview
           </h2>
-          {!overview ? (
+          {!overview && error ? (
+            <div className="py-12 text-center text-muted-foreground">Overview unavailable.</div>
+          ) : !overview ? (
             <div className="flex items-center justify-center py-12">
               <div
                 className="flex items-center gap-3 text-muted-foreground"

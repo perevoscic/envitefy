@@ -29,6 +29,7 @@ type SharedStudioCardProps = {
 type SharedStudioCardFrameProps = SharedStudioCardProps & {
   className?: string;
   frameClassName?: string;
+  onClose?: () => void;
   style?: CSSProperties;
 };
 
@@ -93,6 +94,16 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
           className="absolute inset-0 h-full w-full object-cover object-center"
           referrerPolicy="no-referrer"
         />
+        {props.onClose ? (
+          <button
+            type="button"
+            onClick={props.onClose}
+            aria-label="Close preview"
+            className="absolute right-3 top-5 z-[60] inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white shadow-lg backdrop-blur-md transition hover:bg-white/22 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-5 sm:top-6 md:right-8 md:top-8"
+          >
+            <X size={22} aria-hidden="true" />
+          </button>
+        ) : null}
         <LiveCardHeroTextOverlay invitationData={invitationData} />
         <StudioLiveCardActionSurface
           title={props.title}
@@ -102,6 +113,7 @@ export function SharedStudioCardFrame(props: SharedStudioCardFrameProps) {
           positions={props.positions}
           shareUrl={props.shareUrl}
           fallbackShareUrlToWindowLocation
+          sharePosition={props.onClose ? "left" : "right"}
           onShare={() => void handleShare()}
           shareState={shareState}
         />
@@ -128,16 +140,9 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
   }, [props.returnHref]);
 
   return (
-    <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950">
+    <div className="relative flex min-h-[100dvh] w-full flex-col bg-neutral-950 max-md:h-[100dvh] max-md:pt-[env(safe-area-inset-top)]">
       {props.celebrationKind ? <EventCelebrationOverlay kind={props.celebrationKind} /> : null}
-      <button
-        type="button"
-        onClick={handleClose}
-        aria-label="Close preview"
-        className="fixed right-[max(0.75rem,env(safe-area-inset-right))] top-[max(0.75rem,calc(env(safe-area-inset-top)+0.75rem))] z-[7001] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/92 text-slate-950 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:bg-white lg:left-[calc(20rem+1rem)] lg:right-auto lg:top-[max(1rem,env(safe-area-inset-top))]"
-      >
-        <X size={18} aria-hidden="true" />
-      </button>
+
 
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
         <img
@@ -151,13 +156,18 @@ export default function SharedStudioCardPage(props: SharedStudioCardProps) {
       </div>
 
       <main className="relative z-0 flex min-h-0 flex-1 flex-col">
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-4 md:py-6">
-          <SharedStudioCardFrame {...props} />
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-0 pt-2 md:py-6">
+          <SharedStudioCardFrame
+            {...props}
+            onClose={handleClose}
+            className="max-md:flex max-md:min-h-0 max-md:w-full max-md:flex-1"
+            frameClassName="max-md:!h-auto max-md:!w-full max-md:flex-1 max-md:!aspect-auto"
+          />
         </div>
       </main>
 
       {posterFirstHeroCard ? (
-        <div className="shrink-0 px-4 py-3 text-center">
+        <div className="shrink-0 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 text-center md:py-3">
           <Link
             href="/studio"
             className="inline-flex rounded-full border border-white/14 bg-white/8 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.24em] text-white/70 backdrop-blur-md transition hover:border-white/22 hover:bg-white/12 hover:text-white/88"

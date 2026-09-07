@@ -1,3 +1,4 @@
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import { Music, Sun, Heart, MapPin } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
@@ -247,11 +248,14 @@ export default function Retro70s({ theme, event }: Props) {
         </div>
       </section>
 
+      {event.guestTools}
+
       <footer className="bg-[#386641] text-[#FEFAE0] py-12 text-center font-black uppercase">
         <p className="text-2xl mb-2">Catch you on the flip side</p>
         <p className="text-sm opacity-70">
           © {new Date().getFullYear()} {names}
         </p>
+      <EnvitefyEventBranding category="Weddings" inverse />
       </footer>
 
       <style>{`

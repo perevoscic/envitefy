@@ -1,0 +1,22 @@
+{
+  "id": "french-patisserie",
+  "name": "French Patisserie",
+  "category": "romantic",
+  "family": "atelier",
+  "layout": "french-patisserie",
+  "thumbnail": "/templates/weddings/generated-heroes/french-patisserie-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#eef2df",
+      "secondary": "#794352",
+      "background": "#eef2df"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/french-patisserie-hero.webp"
+    }
+  }
+}

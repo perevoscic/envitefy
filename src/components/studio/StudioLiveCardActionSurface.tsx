@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
 import {
   CalendarIconApple,
@@ -125,6 +125,7 @@ type StudioLiveCardActionSurfaceProps = {
   shareUrl?: string | null;
   fallbackShareUrlToWindowLocation?: boolean;
   onShare?: () => void;
+  sharePosition?: "left" | "right";
   shareState?: LiveCardShareState;
   isDesignMode?: boolean;
   showcaseMode?: boolean;
@@ -461,19 +462,29 @@ function LiveCardPreviewPanel({ children, enabled, onClose }: {
   onClose: () => void;
 }) {
   const [trigger] = useState(() => typeof document !== "undefined" ? document.activeElement : null);
+  const shouldRestoreFocus = useRef(true);
   if (!enabled) return children;
   return (
-    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/35 backdrop-blur-sm" />
-        <Dialog.Content
-          aria-describedby={undefined}
-          onCloseAutoFocus={(event) => { event.preventDefault(); if (trigger instanceof HTMLElement) trigger.focus(); }}
-          className="pointer-events-none fixed inset-0 z-[90] flex items-center justify-center p-4 outline-none"
-        >
-          {children}
-        </Dialog.Content>
-      </Dialog.Portal>
+    <Dialog.Root open modal={false} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <Dialog.Close asChild>
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label="Close card popup"
+          className="pointer-events-auto absolute inset-0 z-[80] bg-black/35 backdrop-blur-sm"
+        />
+      </Dialog.Close>
+      <Dialog.Content
+        aria-describedby={undefined}
+        onInteractOutside={() => { shouldRestoreFocus.current = false; }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          if (shouldRestoreFocus.current && trigger instanceof HTMLElement) trigger.focus();
+        }}
+        className="pointer-events-none absolute inset-0 z-[90] flex min-h-0 items-center justify-center p-3 outline-none"
+      >
+        {children}
+      </Dialog.Content>
     </Dialog.Root>
   );
 }
@@ -791,7 +802,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     : shareActionPressed
       ? "border-white/85 bg-white shadow-[0_14px_28px_rgba(0,0,0,0.42),0_0_18px_rgba(255,255,255,0.24),inset_0_1px_0_rgba(255,255,255,0.78),inset_0_-4px_10px_rgba(15,23,42,0.12)]"
       : "border-white/30 bg-black/30 shadow-[0_10px_24px_rgba(0,0,0,0.34),0_0_12px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] hover:border-white/45 hover:bg-white/22";
-  const shareActionPositionClassName = useCompactActionButtons
+  const shareActionPositionClassName = props.sharePosition === "left"
+    ? "left-3 top-5 sm:left-5 sm:top-6 md:left-8 md:top-8"
+    : useCompactActionButtons
     ? "right-3 top-[-2.35rem] sm:right-5 sm:top-[-2.2rem] md:right-8 md:top-[-2rem]"
     : "right-3 top-5 sm:right-5 sm:top-6 md:right-8 md:top-8";
   const shareActionIconClassName = `${
@@ -848,8 +861,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               role="region"
               aria-label={`${props.activeTab} details`}
               className={`pointer-events-auto z-50 border border-neutral-200 bg-white/95 shadow-2xl backdrop-blur-2xl ${props.previewMode
-                ? "relative max-h-[calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-[24rem] overflow-y-auto rounded-2xl p-4 [&_button]:min-h-11 [&_button]:min-w-11 [&_a]:min-h-11 [&_a]:min-w-11 [&_input]:min-h-11 [&_input]:text-base [&_label]:text-xs [&_label]:text-neutral-600"
-                : "absolute bottom-32 left-1/2 w-[calc(100%-1rem)] max-w-[22rem] -translate-x-1/2 rounded-3xl p-6 sm:w-[calc(100%-2rem)]"}`}
+                ? "relative min-h-0 max-h-full w-full max-w-[24rem] overflow-y-auto overscroll-contain rounded-2xl p-4 [&_button]:min-h-11 [&_button]:min-w-11 [&_a]:min-h-11 [&_a]:min-w-11 [&_input]:min-h-11 [&_input]:text-base [&_label]:text-xs [&_label]:text-neutral-600"
+                : "absolute bottom-32 left-1/2 h-auto max-h-[calc(100%-9rem)] w-[calc(100%-1rem)] max-w-[22rem] -translate-x-1/2 overflow-y-auto rounded-3xl p-6 sm:w-[calc(100%-2rem)]"}`}
             >
               {props.previewMode ? <Dialog.Title className="sr-only">{props.activeTab} details</Dialog.Title> : null}
               <div className="mb-4 flex items-start justify-between">
@@ -1155,7 +1168,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 ) : null}
 
                 {props.activeTab === "details" ? (
-                  <div className="max-h-[300px] space-y-4 overflow-y-auto pr-2">
+                  <div className="h-auto space-y-4">
                     {hasOverviewSummary ? (
                       <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-sm">
                         <OverviewDetailRow label="Title" value={overviewTitle} emphasized />

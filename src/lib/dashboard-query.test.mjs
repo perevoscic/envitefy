@@ -70,6 +70,20 @@ test("dashboard reads the requested event window once even for accounts with onl
   assert.equal(result.diagnostics.fallbackUsed, false);
 });
 
+test("active agenda keeps ongoing events and excludes drafts and declined invitations from counts", () => {
+  const { buildDashboardCollections } = loadQuery({});
+  const rows = [
+    eventRow("ongoing", "2030-01-01T11:00:00Z", { endAt: "2030-01-01T13:00:00Z" }),
+    eventRow("draft", "2030-01-02T12:00:00Z", { status: "draft" }),
+    eventRow("declined", "2030-01-02T12:00:00Z", { ownership: "invited" }),
+  ].map(dashboardData.toDashboardEvent);
+  rows[2].userRsvpResponse = "no";
+  const result = buildDashboardCollections(rows, Date.parse("2030-01-01T12:00:00Z"));
+  assert.equal(result.nextEvent.id, "ongoing");
+  assert.equal(result.upcomingIn7DaysCount, 1);
+  assert.equal(result.allDrafts.length, 1);
+});
+
 test("dashboard retries a statement timeout and returns the recovered events", async () => {
   const { listDashboardEventsForUser } = loadQuery({
     listDashboardHistoryWindowForUser: async () => {

@@ -57,6 +57,7 @@ const RESERVED_EVENT_PATHS = new Set([
   "appointments",
   "baby-showers",
   "birthdays",
+  "anniversaries",
   "sport-events",
   "weddings",
 ]);
@@ -122,6 +123,7 @@ const ADMIN_ONLY_CREATE_EVENT_SEGMENTS = new Set([
   "appointments",
   "baby-showers",
   "birthdays",
+  "anniversaries",
   "cheerleading",
   "dance-ballet",
   "football",

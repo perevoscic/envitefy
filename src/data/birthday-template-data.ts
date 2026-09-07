@@ -1,4 +1,6 @@
+import { NEXT26_BIRTHDAY_DESIGNS } from "./birthday-next26-designs";
 import type { BirthdayExperienceProfile } from "@/data/birthday-experience-profiles.mjs";
+import { ANNIVERSARY_COLLECTION_DESIGNS } from "./anniversary-template-data";
 
 export type BirthdayDesignAudience = "Kids" | "Adults";
 export type BirthdayDesignOccasion = "Birthday" | "Anniversary";
@@ -1591,6 +1593,8 @@ export const NEW_ANNIVERSARY_DESIGNS: BirthdayDesignTemplate[] = [
 
 export const NEW_BIRTHDAY_DESIGNS: BirthdayDesignTemplate[] = [
   ...NEW_KIDS_BIRTHDAY_DESIGNS,
+  ...NEXT26_BIRTHDAY_DESIGNS,
   ...NEW_ADULT_BIRTHDAY_DESIGNS,
   ...NEW_ANNIVERSARY_DESIGNS,
+  ...ANNIVERSARY_COLLECTION_DESIGNS,
 ];

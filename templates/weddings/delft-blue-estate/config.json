@@ -1,0 +1,22 @@
+{
+  "id": "delft-blue-estate",
+  "name": "Delft Blue Estate",
+  "category": "old world",
+  "family": "atelier",
+  "layout": "delft-blue-estate",
+  "thumbnail": "/templates/weddings/generated-heroes/delft-blue-estate-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#f7f9ff",
+      "secondary": "#254d8f",
+      "background": "#f7f9ff"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/delft-blue-estate-hero.webp"
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useState } from "react";
 import {
   Leaf,
@@ -274,6 +275,10 @@ export default function RusticBoho({ theme, event }: Props) {
           ))}
         </div>
       </div>
+      {event.guestTools}
+      <footer className="relative z-10 py-8 text-center pb-28">
+        <EnvitefyEventBranding category="Weddings" />
+      </footer>
     </div>
   );
 }

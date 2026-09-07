@@ -1,6 +1,7 @@
 "use client";
 
 import Script from "next/script";
+import { ShieldCheck } from "lucide-react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { useCallback, useEffect, useState } from "react";
 import { GOOGLE_ANALYTICS_MEASUREMENT_ID } from "@/lib/google-analytics";
@@ -74,28 +75,45 @@ export default function PrivacyControls() {
       {(showInitialNotice || isOpen) && (
         <section
           aria-labelledby="privacy-choices-title"
-          className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-2xl rounded-2xl border border-[#d7c5a5] bg-[#fcfbf7] p-5 text-[#241c2b] shadow-[0_24px_70px_rgba(33,26,35,0.24)] sm:bottom-5 sm:p-6"
+          aria-describedby="privacy-choices-description"
+          className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[100] mx-auto max-h-[calc(100dvh-2rem)] max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 font-sans text-slate-900 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.2)] sm:bottom-6 sm:p-6"
         >
-          <h2 id="privacy-choices-title" className="text-lg font-semibold">
-            Your privacy choices
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-[#665d68]">
-            Envitefy uses necessary storage for login, security, and core features. Optional analytics
-            helps us measure product performance and stays off unless you allow it. Analytics page
-            paths exclude URL query strings.
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+              <ShieldCheck aria-hidden="true" className="size-5" strokeWidth={1.75} />
+            </span>
+            <h2
+              id="privacy-choices-title"
+              className="!font-sans text-base font-semibold tracking-tight sm:text-lg"
+            >
+              Your privacy choices
+            </h2>
+          </div>
+          <p id="privacy-choices-description" className="mt-4 text-sm leading-6 text-slate-600">
+            We use essential storage to keep you signed in and Envitefy running securely.
+            Optional analytics helps us improve your experience and is off unless you allow it.
           </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            You can update your choice anytime.{" "}
+            <a
+              href="/privacy"
+              className="rounded-sm font-medium text-slate-600 underline decoration-slate-300 underline-offset-4 transition hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
+            >
+              Privacy policy
+            </a>
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-slate-100 pt-4">
             <button
               type="button"
               onClick={() => choose(false)}
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#203137] bg-white px-5 text-sm font-semibold text-[#203137] transition hover:bg-[#edf9f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f6f64] focus-visible:ring-offset-2"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-xs font-semibold sm:px-5 sm:text-sm text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
             >
-              Use necessary only
+              Essential only
             </button>
             <button
               type="button"
               onClick={() => choose(true)}
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#203137] bg-[#203137] px-5 text-sm font-semibold text-white transition hover:bg-[#2b4148] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f6f64] focus-visible:ring-offset-2"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-violet-600 bg-violet-600 px-2 text-xs font-semibold sm:px-5 sm:text-sm text-white transition hover:border-violet-700 hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
             >
               Allow analytics
             </button>
@@ -104,7 +122,7 @@ export default function PrivacyControls() {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="mt-4 text-sm font-semibold text-[#52605c] underline underline-offset-4"
+              className="mt-4 rounded-sm text-xs font-medium text-slate-600 underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
             >
               Keep current choice
             </button>

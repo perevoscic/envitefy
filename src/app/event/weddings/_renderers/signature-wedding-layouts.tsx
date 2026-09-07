@@ -301,6 +301,7 @@ function Supplemental({
       style={{ backgroundColor: background, color }}
     >
       <div className="mx-auto max-w-6xl">
+        {event.guestTools}
         {extras.length > 0 && (
           <div className="grid gap-5 md:grid-cols-3">
             {extras.map((extra, index) => (

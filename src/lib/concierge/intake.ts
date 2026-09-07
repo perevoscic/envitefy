@@ -10,9 +10,11 @@ import {
   listEventAssets,
   markCreationSessionSaved,
   releaseCreationSessionSaveFailure,
+  saveCreationSessionPreview,
   upsertCreationSession,
 } from "./event-storage.ts";
 import { extractConciergeDraft } from "./extract.ts";
+import { parseCreationGeneratedPreview } from "./generated-preview.ts";
 import {
   buildAssistantMessage,
   buildSuggestedReplies,
@@ -28,6 +30,8 @@ import type {
   CreationIntakeRequest,
   CreationSession,
   CreationSessionResumeResponse,
+  CreationPreviewSaveRequest,
+  CreationPreviewSaveResponse,
   EventAssetType,
   RequestedOutput,
 } from "./types.ts";
@@ -221,6 +225,24 @@ function chatMessagesMetadata(messages: CreationChatMessageSnapshot[]): Record<s
   return messages.length ? { chatMessages: messages } : {};
 }
 
+export async function saveCreationPreview(params: {
+  userId: string;
+  request: CreationPreviewSaveRequest;
+}): Promise<CreationPreviewSaveResponse> {
+  const studioInvite = parseCreationGeneratedPreview(params.request.studioInvite);
+  if (!studioInvite) return { ok: false, error: "A saved preview image is required." };
+  const session = await saveCreationSessionPreview({
+    userId: params.userId,
+    sessionId: params.request.creationSessionId,
+    studioInvite,
+    chatMessages: normalizeChatMessages(params.request.chatMessages),
+  });
+  if (!session) {
+    return { ok: false, error: "This draft is no longer available for preview updates." };
+  }
+  return { ok: true, studioInvite };
+}
+
 export async function resumeLatestCreationSession(params: {
   userId: string;
   timing?: TimingRecorder;
@@ -249,6 +271,7 @@ export async function resumeLatestCreationSession(params: {
     ok: true,
     draft,
     creationSession,
+    studioInvite: parseCreationGeneratedPreview(creationSession.metadata.generatedPreview),
     assistantMessage: savedEventId ? "Your invite is ready." : buildAssistantMessage(draft),
     suggestedReplies: savedEventId ? ["View invite"] : buildSuggestedReplies(draft),
     canSave: savedEventId ? false : canSaveConciergeDraft(draft),
@@ -286,6 +309,7 @@ export async function resumeCreationSession(params: {
     ok: true,
     draft,
     creationSession,
+    studioInvite: parseCreationGeneratedPreview(creationSession.metadata.generatedPreview),
     assistantMessage: savedEventId ? "Your invite is ready." : buildAssistantMessage(draft),
     suggestedReplies: savedEventId ? ["View invite"] : buildSuggestedReplies(draft),
     canSave: savedEventId ? false : canSaveConciergeDraft(draft),
@@ -484,19 +508,20 @@ export async function finalizeCreationIntake(params: {
       ...draft,
       draftStatus: "published",
     };
+    const studioInvite = request.studioInvite || parseCreationGeneratedPreview(creationSession.metadata.generatedPreview);
     let saved: { eventId: string };
     try {
       saved = await (params.timing?.time("db_write", () =>
         persistCreationAsEvent({
           userId: params.userId,
           draft,
-          studioInvite: request.studioInvite,
+          studioInvite,
         }),
       ) ??
         persistCreationAsEvent({
           userId: params.userId,
           draft,
-          studioInvite: request.studioInvite,
+          studioInvite,
         }));
       creationSession = await (params.timing?.time("db_write", () =>
         markCreationSessionSaved({

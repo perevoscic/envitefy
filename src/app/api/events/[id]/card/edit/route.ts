@@ -165,7 +165,7 @@ function buildExplicitEditPrompt(params: {
   nextDetails: EventDetails;
 }) {
   const preserveExistingArtwork =
-    "Make only the requested edit. Keep the rest of the card artwork, layout, style, colors, imagery, and existing text unchanged.";
+    "Make only the requested edit. Keep the rest of the card artwork, layout, style, colors, imagery, and existing text unchanged. When the requested edit is a theme or style change, update the imagery, background, colors, and decoration as needed to express that theme; preserve existing event wording and facts unless a text change is requested.";
   const instructions = params.changedFields
     .map((field) => {
       if (!field.editLabel) return "";
@@ -270,6 +270,9 @@ async function previewCardEdit(item: MediaItem, fields: Record<string, unknown>)
     item.url,
     item.details,
   );
+  // This route has already identified the explicitly changed fields. Do not let
+  // the generic builder infer additional edits from reformatted metadata.
+  if (request.imageEdit) request.imageEdit.editInstruction = editPrompt;
   const result = await generateStudioInvitation(request);
   if (!result.ok || !result.imageDataUrl) {
     return NextResponse.json(

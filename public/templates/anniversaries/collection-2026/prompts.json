@@ -1,0 +1,105 @@
+{
+  "mode": "built-in image_gen",
+  "assets": [
+    {
+      "id": "cotton-letter-second-anniversary",
+      "name": "Cotton Love Letters",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: Cotton stationery folded with a pale blush silk ribbon, two tiny ivory envelopes with absolutely blank surfaces, soft cream cotton fabric, delicate pressed pink cosmos flowers. Intimate overhead still life, warm natural side light, fine visible cotton fibers.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "leather-passport-third-anniversary",
+      "name": "Our Next Adventure",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: Two elegantly weathered cognac leather travel journals without any text, a brass compass and small olive sprig on warm limestone, a serene hazy Mediterranean sea in the distance. Luxury travel editorial still life, warm afternoon light.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "linen-sunday-fourth-anniversary",
+      "name": "Sunday in Linen",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: An intimate orchard lunch table for two, billowing oatmeal linen, ripe pears in a handmade ceramic bowl, slender taper candles, creamy roses. Fresh sage foliage, effortless European countryside editorial photography.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "iron-rose-sixth-anniversary",
+      "name": "Iron & Roses",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: An elegant wrought iron garden gate curved into an arch, climbing dusty pink roses and a warm stone path beyond. Romantic fine art photograph with a soft misty early morning, charcoal iron, rose petals, stone ivory.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "copper-glow-seventh-anniversary",
+      "name": "Copper Afterglow",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: Sculptural copper candlesticks with lit ivory candles, apricot ranunculus and a folded terracotta linen napkin on dark walnut. Rich copper reflections and intimate late evening light. Refined editorial still life, restrained warm palette.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "bronze-hour-eighth-anniversary",
+      "name": "The Bronze Hour",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: A brushed bronze sun disc sculpture reflected in a shallow pool on pale travertine, a single sculptural dried palm nearby. Minimal luxury architecture editorial photo at sunset, caramel bronze and warm sand tones.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "pottery-studio-ninth-anniversary",
+      "name": "Made for Each Other",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: Two hand thrown ceramic vessels leaning together, one soft terracotta and one warm ivory, beside an airy flowering branch in a sunlit pottery atelier. Chalky tactile ceramics, blush clay dust, natural soft light, refined still life photography.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "steel-skyline-eleventh-anniversary",
+      "name": "City, After Dark",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: A cinematic city rooftop at blue hour, brushed steel cocktail table for two, candlelit glassware, cool silver skyline reflections, deep navy buildings, no people. Sophisticated high contrast architectural editorial photograph.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "silk-moon-twelfth-anniversary",
+      "name": "Silk Moon",
+      "prompt": "Use case: illustration-story\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: Flowing pale lavender silk draped under a luminous oversized pearl moon above calm indigo water, dreamy atmospheric luxury art direction, hand painted gouache and soft pastel texture, sophisticated editorial illustration.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "lace-heirloom-thirteenth-anniversary",
+      "name": "Lace & Heirlooms",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: Antique ivory floral lace laid on warm parchment beside delicate mauve hellebore flowers and an oval empty brass locket. Close detailed museum quality still life, soft nostalgic natural light, no photographs or text.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "ivory-orchid-fourteenth-anniversary",
+      "name": "Ivory Orchid",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: A dramatic curved white orchid stem in a sculptural matte ivory vessel on a creamy plaster pedestal, deep olive green background and soft directional shadows. Modern luxury floral still life with real botanical detail.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "sapphire-evening-anniversary",
+      "name": "Sapphire Soirée",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: Rich sapphire blue silk tablecloth, luminous cut crystal glasses and white delphinium flowers against a midnight blue ballroom, warm scattered candlelight. Elegant evening editorial photograph, precious jewel blue, no people.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "emerald-conservatory-anniversary",
+      "name": "Emerald Conservatory",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: Victorian glass conservatory filled with graceful ferns and climbing green vines, intimate marble table set with white orchids and brass candles, filtered sunlight through green glass. Lush elegant botanical editorial photography.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "diamond-light-sixtieth-anniversary",
+      "name": "Diamond Light",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: Architectural clear cut crystal sculpture refracting tiny rainbow glints onto white silk and pale grey marble, a single white gardenia, luminous platinum light, refined minimal editorial still life. No jewelry branding.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "hydrangea-house-anniversary",
+      "name": "Hydrangea House",
+      "prompt": "Use case: illustration-story\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: A dreamy country house entrance framed by abundant blue hydrangeas, white wooden porch, soft sage shutters and a welcoming garden path. Loose sophisticated watercolor on textured ivory paper, visible pigment blooms, elegant blue and green palette.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "amalfi-postcard-anniversary",
+      "name": "Amalfi, With Love",
+      "prompt": "Use case: illustration-story\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: Painterly view of a sun drenched Amalfi coastline from a tiled terrace with two yellow lemons and a blue striped parasol, cobalt sea and terracotta rooftops. Sophisticated travel poster illustration with gouache grain, no typography or borders.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "stargazer-vows-anniversary",
+      "name": "Written in the Stars",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: A serene observatory terrace under a sweeping midnight constellation sky, brass telescope, delicate warm lanterns and distant mountain silhouettes. Dreamy realistic astrophotography with restrained tiny stars, deep navy and antique gold, no zodiac symbols or text.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "vinyl-love-song-anniversary",
+      "name": "Our Favorite Record",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: A burgundy vinyl record on a walnut turntable beside coral anthurium and a smoky amber glass vase, warm listening lounge light. Sophisticated retro editorial still life, oxblood, warm peach, cream and dark walnut. Completely blank record label, no brand or lettering.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "desert-sunrise-anniversary",
+      "name": "Desert, Together",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: An adobe arch opening onto a tranquil desert sunrise, sculptural agave, pale peach sky and terracotta mountain layers. Fine art architectural photograph, restrained rust, sand and blush palette, cinematic warm light, intimate romantic mood.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    },
+    {
+      "id": "champagne-midnight-anniversary",
+      "name": "Midnight Champagne",
+      "prompt": "Use case: photorealistic-natural\nAsset type: hero artwork for a premium anniversary invitation website, landscape 1536x1024.\nPrimary request: Two tall elegant champagne coupes beside a cascade of tiny golden confetti and one antique gold ribbon on a deep black lacquer table, dramatic glowing bokeh in the distance. Festive luxury still life photograph, black and gold, refined and celebratory.\nComposition: a complete standalone image with a strong focal subject and balanced surroundings, beautiful at both full width and portrait crops.\nConstraints: no words, letters, numbers, captions, logos, watermark, UI, invitation cards with writing, collage or contact sheet. No people. Artwork only, with nuanced natural textures and a distinct editorial composition."
+    }
+  ]
+}

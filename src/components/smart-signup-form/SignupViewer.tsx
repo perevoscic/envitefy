@@ -1,5 +1,6 @@
 "use client";
 
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import React, { useEffect, useMemo, useRef, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import EventDeleteModal from "@/components/EventDeleteModal";
@@ -712,6 +713,7 @@ const SignupViewer: React.FC<Props> = ({
           real time for everyone invited.
         </p>
       </header>
+      <EventGuestPlanningNotes value={form.guestPlanning} />
 
       {feedback && (
         <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600">

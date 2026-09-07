@@ -1,0 +1,22 @@
+{
+  "id": "tropical-afterdark",
+  "name": "Tropical Afterdark",
+  "category": "tropical luxe",
+  "family": "atelier",
+  "layout": "tropical-afterdark",
+  "thumbnail": "/templates/weddings/generated-heroes/tropical-afterdark-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#102f2b",
+      "secondary": "#f5ccda",
+      "background": "#102f2b"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/tropical-afterdark-hero.webp"
+    }
+  }
+}

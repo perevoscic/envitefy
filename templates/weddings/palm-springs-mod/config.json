@@ -1,0 +1,22 @@
+{
+  "id": "palm-springs-mod",
+  "name": "Palm Springs Mod",
+  "category": "modern art",
+  "family": "atelier",
+  "layout": "palm-springs-mod",
+  "thumbnail": "/templates/weddings/generated-heroes/palm-springs-mod-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#ffeadc",
+      "secondary": "#943d33",
+      "background": "#ffeadc"
+    },
+    "fonts": {
+      "headline": "Arial, sans-serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/palm-springs-mod-hero.webp"
+    }
+  }
+}

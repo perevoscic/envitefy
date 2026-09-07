@@ -1,0 +1,22 @@
+{
+  "id": "art-deco-soiree",
+  "name": "Art Deco Soiree",
+  "category": "black tie",
+  "family": "atelier",
+  "layout": "art-deco-soiree",
+  "thumbnail": "/templates/weddings/generated-heroes/art-deco-soiree-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#182627",
+      "secondary": "#e7c588",
+      "background": "#182627"
+    },
+    "fonts": {
+      "headline": "Arial, sans-serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/art-deco-soiree-hero.webp"
+    }
+  }
+}

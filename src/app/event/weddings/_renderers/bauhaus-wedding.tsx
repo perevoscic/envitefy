@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import type { EventData, ThemeConfig } from "./content-sections";
 
@@ -33,7 +35,7 @@ const buildDate = (event: EventData) => {
   if (event.date) {
     // Try to format date as MM.DD.YY
     try {
-      const d = new Date(event.date);
+      const d = parseEventGuestDate(event.date);
       const month = String(d.getMonth() + 1).padStart(2, "0");
       const day = String(d.getDate()).padStart(2, "0");
       const year = String(d.getFullYear()).slice(-2);
@@ -137,6 +139,10 @@ export default function BauhausWedding({ theme, event }: Props) {
           </div>
         </div>
       )}
+      {event.guestTools}
+      <footer className="relative z-10 py-8 text-center">
+        <EnvitefyEventBranding category="Weddings" />
+      </footer>
     </div>
   );
 }

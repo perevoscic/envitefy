@@ -1,3 +1,4 @@
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import { useEffect, useState } from "react";
 import { Star, GlassWater, Music, Utensils } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
@@ -221,8 +222,11 @@ export default function NoirLuxury({ theme, event }: Props) {
         </div>
       </section>
 
+      {event.guestTools}
+
       <footer className="text-center py-12 border-t border-[#D4AF37]/20 text-neutral-600 text-xs tracking-widest uppercase">
         <p>{event.footer || "Est. 2025 • New York City"}</p>
+      <EnvitefyEventBranding category="Weddings" inverse />
       </footer>
     </div>
   );

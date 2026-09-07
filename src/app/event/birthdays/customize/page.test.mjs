@@ -13,6 +13,6 @@ test("birthday publish payload clears draft status", () => {
 
   assert.match(
     source,
-    /category: "Birthdays",\s+createdVia: "birthday-renderer",\s+status: "published",\s+draftStatus: "published",/,
+    /category: isAnniversaryDesign \? "Anniversaries" : "Birthdays",\s+ownership: "owned",\s+createdVia: "birthday-renderer",\s+status: "published",\s+draftStatus: "published",/,
   );
 });

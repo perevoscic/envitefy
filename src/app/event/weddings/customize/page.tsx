@@ -1,15 +1,16 @@
 // @ts-nocheck
 "use client";
+import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
+import { parseEventGuestDate, eventLocalDateParts, normalizeEventGuestPlanning, type EventGuestPlanning } from "@/lib/event-guest-planning";
 
-import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
-import React, {
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import {
   useMemo,
   useRef,
   useState,
   useCallback,
   useEffect,
 } from "react";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
@@ -33,12 +34,10 @@ import {
   X as XIcon,
   Calendar as CalendarIcon,
   Bus,
-  Share2,
 } from "lucide-react";
 import ScrollHandoffContainer from "@/components/ScrollHandoffContainer";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
 import { buildEventPath } from "@/utils/event-url";
-import { openAppleCalendarIcs } from "@/utils/calendar-open";
 import { normalizeUrlValue } from "@/utils/contact";
 import { persistImageMediaValue } from "@/utils/media-upload-client";
 import WeddingRenderer from "@/components/weddings/WeddingRenderer";
@@ -151,7 +150,48 @@ const NAV_VISIBILITY_CHECKS: Record<
 
 // --- Constants & Data ---
 
+import tuscanLemonGrove from "../../../../../templates/weddings/tuscan-lemon-grove/config.json" with { type: "json" };
+import delftBlueEstate from "../../../../../templates/weddings/delft-blue-estate/config.json" with { type: "json" };
+import meadowReverie from "../../../../../templates/weddings/meadow-reverie/config.json" with { type: "json" };
+import desertModernism from "../../../../../templates/weddings/desert-modernism/config.json" with { type: "json" };
+import chateauToile from "../../../../../templates/weddings/chateau-toile/config.json" with { type: "json" };
+import rivieraStripes from "../../../../../templates/weddings/riviera-stripes/config.json" with { type: "json" };
+import japaneseInk from "../../../../../templates/weddings/japanese-ink/config.json" with { type: "json" };
+import discoAfterglow from "../../../../../templates/weddings/disco-afterglow/config.json" with { type: "json" };
+import palmSpringsMod from "../../../../../templates/weddings/palm-springs-mod/config.json" with { type: "json" };
+import highlandRomance from "../../../../../templates/weddings/highland-romance/config.json" with { type: "json" };
+import terracottaCourtyard from "../../../../../templates/weddings/terracotta-courtyard/config.json" with { type: "json" };
+import lakeComoLetter from "../../../../../templates/weddings/lake-como-letter/config.json" with { type: "json" };
+import cherryBlossomSilk from "../../../../../templates/weddings/cherry-blossom-silk/config.json" with { type: "json" };
+import frenchPatisserie from "../../../../../templates/weddings/french-patisserie/config.json" with { type: "json" };
+import oceanCyanotype from "../../../../../templates/weddings/ocean-cyanotype/config.json" with { type: "json" };
+import artDecoSoiree from "../../../../../templates/weddings/art-deco-soiree/config.json" with { type: "json" };
+import prairieWildflower from "../../../../../templates/weddings/prairie-wildflower/config.json" with { type: "json" };
+import redThread from "../../../../../templates/weddings/red-thread/config.json" with { type: "json" };
+import moonstoneMinimal from "../../../../../templates/weddings/moonstone-minimal/config.json" with { type: "json" };
+import tropicalAfterdark from "../../../../../templates/weddings/tropical-afterdark/config.json" with { type: "json" };
+
 const TEMPLATE_CONFIGS: Record<string, any> = {
+  "tuscan-lemon-grove": tuscanLemonGrove,
+  "delft-blue-estate": delftBlueEstate,
+  "meadow-reverie": meadowReverie,
+  "desert-modernism": desertModernism,
+  "chateau-toile": chateauToile,
+  "riviera-stripes": rivieraStripes,
+  "japanese-ink": japaneseInk,
+  "disco-afterglow": discoAfterglow,
+  "palm-springs-mod": palmSpringsMod,
+  "highland-romance": highlandRomance,
+  "terracotta-courtyard": terracottaCourtyard,
+  "lake-como-letter": lakeComoLetter,
+  "cherry-blossom-silk": cherryBlossomSilk,
+  "french-patisserie": frenchPatisserie,
+  "ocean-cyanotype": oceanCyanotype,
+  "art-deco-soiree": artDecoSoiree,
+  "prairie-wildflower": prairieWildflower,
+  "red-thread": redThread,
+  "moonstone-minimal": moonstoneMinimal,
+  "tropical-afterdark": tropicalAfterdark,
   "ethereal-classic": etherealClassic,
   "modern-editorial": modernEditorial,
   "rustic-boho": rusticBoho,
@@ -1027,6 +1067,9 @@ const INITIAL_DATA = {
   partner2: "Mason",
   date: "2028-09-21",
   time: "16:30",
+  endTime: "",
+  endDate: "",
+  guestPlanning: {} as EventGuestPlanning,
   city: "New York",
   state: "NY",
   story:
@@ -1599,7 +1642,11 @@ const App = () => {
               coupleNames: getCoupleNames(draftCouple.partner1, draftCouple.partner2),
               partner1: draftCouple.partner1,
               partner2: draftCouple.partner2,
-              theme: { ...INITIAL_DATA.theme, themeId: draftThemeId },
+              theme: {
+                ...INITIAL_DATA.theme,
+                themeId: draftThemeId,
+                font: TEMPLATE_CONFIGS[draftThemeId]?.family === "atelier" ? "template" : INITIAL_DATA.theme.font,
+              },
             },
           }),
         });
@@ -1656,6 +1703,9 @@ const App = () => {
           partner2: payload.partner2 ?? prev.partner2,
           date: payload.date ?? prev.date,
           time: payload.time ?? prev.time,
+          endTime: payload.endTime ?? eventLocalDateParts(payload.endISO).time,
+          endDate: payload.endDate ?? eventLocalDateParts(payload.endISO).date,
+          guestPlanning: normalizeEventGuestPlanning(payload.guestPlanning),
           city: payload.city ?? prev.city,
           state: payload.state ?? prev.state,
           story: payload.story ?? prev.story,
@@ -1747,12 +1797,17 @@ const App = () => {
           data.partner2 ? ` & ${data.partner2}` : ""
         }`.trim() || "Your Names",
       date: data.date || "",
+      time: data.time || "",
+      endTime: data.endTime || "",
+      endDate: data.endDate || "",
+      guestPlanning: data.guestPlanning,
       location,
       story: data.story || "",
       schedule: Array.isArray(data.schedule)
         ? data.schedule.map((item) => ({
             title: item.title,
-            time: item.time || item.date || "",
+            time: item.time || "",
+            date: item.date || "",
             location: item.location || "",
           }))
         : [],
@@ -1853,7 +1908,11 @@ const App = () => {
           ? { ...item, label: `Zola – ${previewCouple.partner1} & ${previewCouple.partner2}` }
           : item,
       ),
-      theme: { ...previous.theme, themeId: templateIdParam },
+      theme: {
+        ...previous.theme,
+        themeId: templateIdParam,
+        font: TEMPLATE_CONFIGS[templateIdParam]?.family === "atelier" ? "template" : previous.theme.font,
+      },
     }));
   }, [editEventId, templateIdParam]);
 
@@ -1892,133 +1951,6 @@ const App = () => {
       ...prev,
       travel: { ...prev.travel, [field]: value },
     }));
-  };
-
-  const buildCalendarDetails = useCallback(() => {
-    const title = data.title || "Wedding Event";
-    let start: Date | null = null;
-    if (data.date) {
-      const tentative = new Date(`${data.date}T${data.time || "16:00"}`);
-      if (!Number.isNaN(tentative.getTime())) start = tentative;
-    }
-    if (!start) start = new Date();
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
-    const location = [data.city, data.state].filter(Boolean).join(", ");
-    const description = data.story || data.headline || "";
-    return { title, start, end, location, description };
-  }, [
-    data.city,
-    data.date,
-    data.headline,
-    data.state,
-    data.story,
-    data.time,
-    data.title,
-  ]);
-
-  const toGoogleDate = (d: Date) =>
-    d
-      .toISOString()
-      .replace(/[-:]/g, "")
-      .replace(/\.\d{3}Z$/, "Z");
-
-  const buildIcsUrl = (details: ReturnType<typeof buildCalendarDetails>) => {
-    const params = new URLSearchParams();
-    params.set("title", details.title);
-    params.set("start", details.start.toISOString());
-    params.set("end", details.end.toISOString());
-    if (details.location) params.set("location", details.location);
-    if (details.description) params.set("description", details.description);
-    params.set("disposition", "inline");
-    return `/api/ics?${params.toString()}`;
-  };
-
-  const openWithAppFallback = (appUrl: string, webUrl: string) => {
-    if (typeof window === "undefined") return;
-    const timer = setTimeout(() => {
-      window.open(webUrl, "_blank", "noopener,noreferrer");
-    }, 700);
-    const clear = () => {
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", clear);
-    };
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") clear();
-    });
-    try {
-      window.location.href = appUrl;
-    } catch {
-      clearTimeout(timer);
-      window.open(webUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const handleShare = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const details = buildCalendarDetails();
-    const shareUrl =
-      typeof window !== "undefined" ? window.location.href : undefined;
-    if (
-      typeof navigator !== "undefined" &&
-      (navigator as any).share &&
-      shareUrl
-    ) {
-      (navigator as any)
-        .share({
-          title: details.title,
-          text: details.description || details.location || details.title,
-          url: shareUrl,
-        })
-        .catch(() => {
-          window.open(shareUrl, "_blank", "noopener,noreferrer");
-        });
-    } else if (shareUrl) {
-      window.open(shareUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const handleGoogleCalendar = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const details = buildCalendarDetails();
-    const start = toGoogleDate(details.start);
-    const end = toGoogleDate(details.end);
-    const query = `action=TEMPLATE&text=${encodeURIComponent(
-      details.title
-    )}&dates=${start}/${end}&location=${encodeURIComponent(
-      details.location
-    )}&details=${encodeURIComponent(details.description || "")}`;
-    const webUrl = `https://calendar.google.com/calendar/render?${query}`;
-    const appUrl = `comgooglecalendar://?${query}`;
-    openWithAppFallback(appUrl, webUrl);
-  };
-
-  const handleOutlookCalendar = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const details = buildCalendarDetails();
-    const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
-      details.title
-    )}&body=${encodeURIComponent(
-      details.description || ""
-    )}&location=${encodeURIComponent(
-      details.location
-    )}&startdt=${encodeURIComponent(
-      details.start.toISOString()
-    )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
-    const appUrl = `ms-outlook://events/new?subject=${encodeURIComponent(
-      details.title
-    )}&body=${encodeURIComponent(
-      details.description || ""
-    )}&location=${encodeURIComponent(
-      details.location
-    )}&startdt=${encodeURIComponent(
-      details.start.toISOString()
-    )}&enddt=${encodeURIComponent(details.end.toISOString())}`;
-    openWithAppFallback(appUrl, webUrl);
-  };
-
-  const handleAppleCalendar = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    openAppleCalendarIcs(buildIcsUrl(buildCalendarDetails()));
   };
 
   const handleImageUpload = (field, e) => {
@@ -2122,10 +2054,15 @@ const App = () => {
       let endISO: string | null = null;
       if (data.date) {
         const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-        const end = new Date(start);
-        end.setHours(end.getHours() + 3);
+        if (Number.isNaN(start.getTime())) throw new Error("Please enter a valid wedding date and start time.");
         startISO = start.toISOString();
-        endISO = end.toISOString();
+        if (data.endTime) {
+          const end = new Date(`${data.endDate || data.date}T${data.endTime}:00`);
+          if (Number.isNaN(end.getTime()) || end <= start) {
+            throw new Error("The wedding end must be after its start. Set the end date for celebrations after midnight.");
+          }
+          endISO = end.toISOString();
+        }
       }
 
       const location =
@@ -2168,7 +2105,11 @@ const App = () => {
           createdManually: true,
           status,
           startISO,
+          startAt: startISO,
+          start: startISO,
           endISO,
+          endAt: endISO,
+          end: endISO,
           location,
           description: data.story?.text || undefined,
           rsvp: data.rsvp?.isEnabled
@@ -2190,6 +2131,9 @@ const App = () => {
           partner2: data.partner2,
           date: data.date,
           time: data.time,
+          endTime: data.endTime,
+          endDate: data.endDate,
+          guestPlanning: data.guestPlanning,
           city: data.city,
           state: data.state,
           story: data.story,
@@ -2491,6 +2435,11 @@ const App = () => {
             onChange={(v) => updateData("time", v)}
           />
         </div>
+        <div className="grid grid-cols-2 gap-4">
+          <InputGroup label="End Time (optional)" type="time" value={data.endTime} onChange={(v) => updateData("endTime", v)} />
+          <InputGroup label="End Date (if next day)" type="date" value={data.endDate} onChange={(v) => updateData("endDate", v)} />
+        </div>
+        <EventGuestPlanningEditor category="Weddings" value={data.guestPlanning} onChange={(value) => setData((prev) => ({ ...prev, guestPlanning: value }))} />
       </div>
     </EditorLayout>
   );
@@ -2619,6 +2568,13 @@ const App = () => {
                 </label>
               </div>
               <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => updateTheme("font", "template")}
+                  aria-pressed={data.theme.font === "template"}
+                  className={`border rounded-lg p-3 text-left transition-colors ${data.theme.font === "template" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 hover:border-indigo-300"}`}
+                >
+                  <span className="text-base font-semibold">Design typography</span>
+                </button>
                 {Object.entries(FONTS).map(([key, font]) => (
                   <button
                     key={key}
@@ -3321,7 +3277,7 @@ const App = () => {
           overscrollBehavior: "contain",
         }}
       >
-        <div className="w-full min-w-0 my-4 md:my-8 transition-all duration-500 ease-in-out">
+        <div className="w-full min-w-0 mb-4 md:mb-8 transition-all duration-500 ease-in-out">
           <div
             data-wedding-preview
             className="pointer-events-auto relative isolate z-0 mb-6 overflow-hidden shadow-2xl md:rounded-xl"
@@ -3365,7 +3321,7 @@ const App = () => {
                     className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 ${currentSize.body} font-medium opacity-90 ${currentFont.body} tracking-wide`}
                   >
                     <span>
-                      {new Date(data.date).toLocaleDateString("en-US", {
+                      {parseEventGuestDate(data.date).toLocaleDateString("en-US", {
                         month: "long",
                         day: "numeric",
                         year: "numeric",
@@ -3733,7 +3689,7 @@ const App = () => {
                             {hotel.deadline && (
                               <div className="inline-block bg-white/10 text-xs px-2 py-1 rounded mb-4">
                                 Book by{" "}
-                                {new Date(hotel.deadline).toLocaleDateString()}
+                                {parseEventGuestDate(hotel.deadline).toLocaleDateString()}
                               </div>
                             )}
                           </div>
@@ -3857,7 +3813,7 @@ const App = () => {
                           <div className="text-center mb-4">
                             <p className="opacity-80">
                               Kindly respond by{" "}
-                              {new Date(
+                              {parseEventGuestDate(
                                 data.rsvp.deadline
                               ).toLocaleDateString()}
                             </p>
@@ -3958,60 +3914,7 @@ const App = () => {
                             Send RSVP
                           </button>
 
-                          <div className="mt-4 flex flex-wrap gap-3 justify-center">
-                            <button
-                              onClick={handleShare}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <Share2 size={16} />
-                              <span className="hidden sm:inline">
-                                Share link
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleGoogleCalendar}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <Image
-                                src="/brands/google-white.svg"
-                                alt="Google"
-                                width={16}
-                                height={16}
-                                className="w-4 h-4"
-                              />
-                              <span className="hidden sm:inline">
-                                Google Cal
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleAppleCalendar}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <Image
-                                src="/brands/apple-white.svg"
-                                alt="Apple"
-                                width={16}
-                                height={16}
-                                className="w-4 h-4"
-                              />
-                              <span className="hidden sm:inline">
-                                Apple Cal
-                              </span>
-                            </button>
-                            <button
-                              onClick={handleOutlookCalendar}
-                              className="flex items-center justify-center gap-2 sm:gap-2 px-3 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                            >
-                              <Image
-                                src="/brands/microsoft-white.svg"
-                                alt="Microsoft"
-                                width={16}
-                                height={16}
-                                className="w-4 h-4"
-                              />
-                              <span className="hidden sm:inline">Outlook</span>
-                            </button>
-                          </div>
+                          <p className="mt-4 text-center text-sm opacity-70">Use the calendar and sharing controls at the top of your invitation.</p>
                         </div>
                       ) : (
                         <div className="text-center py-12">
@@ -4043,18 +3946,7 @@ const App = () => {
                 </section>
 
                 <footer className="text-center py-8 border-t border-white/10 mt-1">
-                  <a
-                    href="https://envitefy.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="space-y-1 inline-block no-underline"
-                  >
-                    <p className="text-sm opacity-60">
-                      Powered By Envitefy. Creat. Share. Enjoy.
-                    </p>
-                    <p className="text-xs opacity-50">Create yours now.</p>
-                  </a>
-                  <EnvitefySocialLinks placement="event" />
+                  <EnvitefyEventBranding category="Weddings" inverse={isDarkBackground} />
                 </footer>
               </div>
             </div>

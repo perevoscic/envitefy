@@ -1,0 +1,1170 @@
+.website {
+  container-type: inline-size;
+  width: 100%;
+  min-width: 0;
+  background: var(--paper, #fffbed);
+  color: var(--ink, #344c30);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 1.5rem;
+  padding: 1rem 5%;
+  border-bottom: 1px solid currentColor;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.navLabel {
+  flex-basis: 100%;
+  text-align: center;
+  font-weight: 700;
+}
+
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: inherit;
+}
+
+.nav a:hover,
+.textLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+.website a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 5px;
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-items: center;
+  gap: 2rem;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: clamp(2rem, 6cqi, 6rem) 6%;
+}
+
+.hero > *,
+.details > *,
+.storyAndSchedule > *,
+.practical > * {
+  min-width: 0;
+}
+
+.invitation {
+  position: relative;
+  z-index: 1;
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0 0 1.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.names {
+  margin: 0;
+  color: inherit;
+  font-family: var(--display, Georgia, serif);
+  font-size: clamp(2.6rem, 7cqi, 6.75rem);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.ampersand {
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+
+.meta {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 1.75rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+}
+
+.meta p,
+.tagline,
+.caption,
+.time,
+.place {
+  margin: 0;
+}
+
+.tagline {
+  max-width: 30rem;
+  margin: 1.5rem auto 0;
+  font-family: var(--display, Georgia, serif);
+  font-size: 1rem;
+  font-style: italic;
+}
+
+.art {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 8%, var(--paper));
+}
+
+.art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.triptych {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  align-items: end;
+  gap: 2%;
+}
+
+.triptych .art {
+  aspect-ratio: 3 / 5;
+  border-radius: 50% 50% 0 0;
+}
+
+.triptych .art:nth-child(2) {
+  aspect-ratio: 3 / 5.5;
+}
+
+.website[data-atelier-layout="tuscan-lemon-grove"] .hero {
+  border-bottom: 3px double currentColor;
+}
+
+.medallion {
+  width: min(65%, 25rem);
+  margin: 0 auto;
+  padding: 0.6rem;
+  border: 3px double currentColor;
+  border-radius: 50%;
+}
+
+.medallion .art {
+  aspect-ratio: 4 / 3;
+  border-radius: 50%;
+}
+
+.ornament {
+  text-align: center;
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.website[data-atelier-layout="delft-blue-estate"] .hero {
+  outline: 1px solid currentColor;
+  outline-offset: -1rem;
+}
+
+.website[data-atelier-layout="meadow-reverie"] .hero {
+  padding: 0;
+  gap: 0;
+}
+
+.website[data-atelier-layout="meadow-reverie"] .hero > .art {
+  aspect-ratio: 16 / 9;
+}
+
+.floatingNote {
+  z-index: 1;
+  width: 88%;
+  margin: -2rem auto 2rem;
+  padding: 2rem;
+  background: var(--paper);
+  box-shadow: 0 8px 32px #0000000d;
+}
+
+.edition {
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.2em;
+}
+
+.offsetImage {
+  margin: 0 1rem 1rem 0;
+  box-shadow: 1rem 1rem 0 color-mix(in srgb, var(--ink) 25%, var(--paper));
+}
+
+.website[data-atelier-layout="desert-modernism"] .names,
+.website[data-atelier-layout="disco-afterglow"] .names,
+.website[data-atelier-layout="red-thread"] .names {
+  font-weight: 700;
+}
+
+.gatefold {
+  display: grid;
+  padding: 0.75rem;
+  border: 3px double currentColor;
+}
+
+.stationery {
+  display: grid;
+  align-items: center;
+  padding: 2rem 1rem;
+  border: 1px solid currentColor;
+}
+
+.website[data-atelier-layout="riviera-stripes"] .hero,
+.website[data-atelier-layout="french-patisserie"] .hero {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 2rem,
+    color-mix(in srgb, var(--ink) 8%, var(--paper)) 2rem 4rem
+  );
+}
+
+.postcard {
+  margin: 1rem;
+  padding: 0.8rem;
+  background: var(--paper);
+  box-shadow: 0 8px 24px #0000001a;
+  transform: rotate(-4deg);
+}
+
+.caption {
+  padding-top: 0.8rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.scrollArt .art {
+  aspect-ratio: 4 / 5;
+}
+
+.scrollNote {
+  padding: 1.5rem;
+  border-top: 1px solid currentColor;
+}
+
+.spotlight {
+  position: relative;
+  width: min(100%, 36rem);
+  margin: 0 auto;
+}
+
+.spotlight .art,
+.stoneCircle .art {
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.star {
+  position: absolute;
+  right: 0;
+  bottom: -0.15em;
+  font-size: clamp(4rem, 12cqi, 10rem);
+  line-height: 1;
+}
+
+.poolPanel {
+  padding: 1.5rem;
+  background: #9bd2cf;
+  border-radius: 8rem 8rem 0 0;
+}
+
+.poolPanel .art {
+  aspect-ratio: 4 / 5;
+  border-radius: 7rem 7rem 0 0;
+}
+
+.sun {
+  position: absolute;
+  z-index: -1;
+  top: 2rem;
+  right: 4%;
+  width: 18%;
+  aspect-ratio: 1;
+  background: #efa96e;
+  border-radius: 50%;
+}
+
+.website[data-atelier-layout="highland-romance"] .hero {
+  padding: 0;
+  gap: 0;
+}
+
+.website[data-atelier-layout="highland-romance"] .hero > .art {
+  aspect-ratio: 16 / 9;
+}
+
+.landscapeNote {
+  margin: 0 6%;
+  padding: 2rem 0;
+  background: var(--paper);
+}
+
+.landscapeCaption {
+  margin: 0;
+  padding: 1rem 6%;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+}
+
+.keyhole {
+  padding: 1rem;
+  border: 1px solid currentColor;
+  border-radius: 50% 50% 0 0;
+}
+
+.keyhole .art {
+  aspect-ratio: 4 / 5;
+  border-radius: 50% 50% 0 0;
+}
+
+.letterhead .art {
+  aspect-ratio: 5 / 2;
+}
+
+.letter {
+  position: relative;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  border-top: 3px double currentColor;
+}
+
+.letter .names {
+  font-style: italic;
+}
+
+.letterSeal {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 1rem auto 0;
+  border: 3px double currentColor;
+  border-radius: 50%;
+  font-family: Georgia, serif;
+  font-size: 1.5rem;
+  font-style: italic;
+}
+
+.fan {
+  overflow: hidden;
+  border-radius: 50% 50% 5% 5%;
+  transform: rotate(-5deg);
+}
+
+.fan .art {
+  aspect-ratio: 5 / 4;
+}
+
+.confection {
+  width: min(90%, 34rem);
+  margin: 0 auto;
+  padding: 1rem;
+  border: 6px double currentColor;
+  border-radius: 45%;
+  background: var(--paper);
+}
+
+.confection .art {
+  aspect-ratio: 4 / 5;
+  border-radius: 45%;
+}
+
+.specimen {
+  padding: 1rem;
+  border: 1px solid currentColor;
+}
+
+.specimen .art {
+  aspect-ratio: 4 / 5;
+}
+
+.marquee {
+  position: relative;
+  margin: 1rem;
+  padding: 2rem 1rem;
+  border: 3px double currentColor;
+}
+
+.marquee::before {
+  position: absolute;
+  z-index: -1;
+  inset: 1rem -1rem;
+  border: 1px solid currentColor;
+  content: "";
+}
+
+.decoPortal {
+  padding: 0.6rem;
+  border: 3px double currentColor;
+  clip-path: polygon(12% 0, 88% 0, 100% 12%, 100% 100%, 0 100%, 0 12%);
+}
+
+.decoPortal .art {
+  aspect-ratio: 4 / 5;
+  clip-path: inherit;
+}
+
+.patchwork {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px dashed currentColor;
+}
+
+.patchwork .art {
+  aspect-ratio: 1;
+}
+
+.patchwork .art:last-child {
+  grid-column: 1 / -1;
+  aspect-ratio: 2 / 1;
+}
+
+.quiltSquare {
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: clamp(3rem, 10cqi, 8rem);
+}
+
+.threadImage {
+  padding: 1rem 0 1rem 1rem;
+  border-top: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+}
+
+.runningTitle {
+  margin: 0;
+  padding: 1rem 0;
+  border-block: 2px solid currentColor;
+  font-family: var(--display, Arial, sans-serif);
+  font-size: clamp(1.5rem, 4cqi, 3.5rem);
+  letter-spacing: -0.04em;
+}
+
+.cornerNote {
+  margin: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.stoneCircle {
+  width: min(75%, 28rem);
+  margin: 0 auto;
+}
+
+.shutters {
+  display: grid;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.shutters > .art {
+  aspect-ratio: 3 / 1;
+}
+
+.shutters > .art:last-child {
+  transform: scaleX(-1);
+}
+
+.details {
+  display: grid;
+  gap: clamp(3rem, 7cqi, 7rem);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(3rem, 7cqi, 7rem) 6%;
+}
+
+.details section {
+  scroll-margin-top: 2rem;
+}
+
+.details h2 {
+  margin: 0 0 1.5rem;
+  color: inherit;
+  font-family: var(--display, Georgia, serif);
+  font-size: clamp(1.8rem, 3.5cqi, 3rem);
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.details h3 {
+  margin: 0;
+  color: inherit;
+  font-family: var(--display, Georgia, serif);
+  font-size: 1.3rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.storyAndSchedule,
+.practical {
+  display: grid;
+  gap: 3rem;
+}
+
+.story,
+.program {
+  padding-top: 1.5rem;
+  border-top: 1px solid currentColor;
+}
+
+.prose {
+  max-width: 65ch;
+  margin: 0;
+  white-space: pre-line;
+  font-size: 0.95rem;
+  line-height: 1.9;
+}
+
+.schedule,
+.party {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schedule li {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
+}
+
+.number {
+  font-family: var(--display, Georgia, serif);
+  font-size: 1.5rem;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.time {
+  padding-bottom: 0.4rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.place {
+  padding-top: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.photoSection {
+  text-align: center;
+}
+
+.photos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem;
+}
+
+.photos img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.photos img:nth-child(even) {
+  margin-top: 2rem;
+}
+
+.practical {
+  padding-top: 2rem;
+  border-top: 1px solid currentColor;
+}
+
+.party li + li {
+  margin-top: 1.5rem;
+}
+
+.party p {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+}
+
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  margin-top: 1rem;
+  border-bottom: 1px solid currentColor;
+  color: inherit;
+  font-size: 0.85rem;
+}
+
+.guestActions {
+  padding: clamp(2rem, 5cqi, 4rem) 1.5rem;
+  border-block: 3px double currentColor;
+  text-align: center;
+}
+
+.guestActions .prose {
+  margin: 0 auto 1.5rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 1.5rem;
+  padding: 0.8rem 3rem;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+}
+
+.button:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.website .button:focus-visible {
+  outline-color: var(--ink);
+}
+
+.registry {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem 2rem;
+  margin-top: 1rem;
+}
+
+.website[data-atelier-layout="disco-afterglow"] .schedule li {
+  grid-template-columns: 3rem minmax(0, 1fr);
+  margin-top: 1rem;
+  padding: 1.5rem;
+  border: 1px dashed currentColor;
+}
+
+.website[data-atelier-layout="highland-romance"] .schedule {
+  padding-left: 1.5rem;
+  border-left: 1px solid currentColor;
+}
+
+.website[data-atelier-layout="prairie-wildflower"] .guestActions,
+.website[data-atelier-layout="prairie-wildflower"] .practical {
+  border-style: dashed;
+}
+
+.website[data-atelier-layout="french-patisserie"] .program {
+  padding: 2rem;
+  border: 3px double currentColor;
+}
+
+/* Respond to the rendered page width, including editor and gallery previews. */
+@container (min-width: 720px) {
+  .navLabel {
+    flex-basis: auto;
+    margin-right: auto;
+  }
+
+  .hero {
+    gap: 3rem;
+  }
+
+  .storyAndSchedule {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4rem;
+  }
+
+  .storyAndSchedule > :only-child {
+    grid-column: 1 / -1;
+  }
+
+  .practical {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .photos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .website[data-atelier-layout="desert-modernism"] .hero,
+  .website[data-atelier-layout="riviera-stripes"] .hero,
+  .website[data-atelier-layout="japanese-ink"] .hero,
+  .website[data-atelier-layout="disco-afterglow"] .hero,
+  .website[data-atelier-layout="palm-springs-mod"] .hero,
+  .website[data-atelier-layout="terracotta-courtyard"] .hero,
+  .website[data-atelier-layout="cherry-blossom-silk"] .hero,
+  .website[data-atelier-layout="french-patisserie"] .hero,
+  .website[data-atelier-layout="ocean-cyanotype"] .hero,
+  .website[data-atelier-layout="art-deco-soiree"] .hero,
+  .website[data-atelier-layout="prairie-wildflower"] .hero,
+  .website[data-atelier-layout="red-thread"] .hero {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: 640px;
+  }
+
+  .edition,
+  .runningTitle {
+    grid-column: 1 / -1;
+  }
+
+  .website[data-atelier-layout="desert-modernism"] .invitation,
+  .website[data-atelier-layout="red-thread"] .invitation {
+    text-align: left;
+  }
+
+  .website[data-atelier-layout="desert-modernism"] .names span,
+  .website[data-atelier-layout="disco-afterglow"] .names span {
+    display: block;
+  }
+
+  .website[data-atelier-layout="meadow-reverie"] .hero > .art,
+  .floatingNote {
+    grid-area: 1 / 1;
+  }
+
+  .website[data-atelier-layout="meadow-reverie"] .hero > .art {
+    height: 100%;
+    min-height: 680px;
+  }
+
+  .floatingNote {
+    width: min(65%, 44rem);
+    margin: 5rem auto;
+    padding: 3rem;
+  }
+
+  .gatefold {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gatefold > .art {
+    height: 100%;
+    min-height: 560px;
+  }
+
+  .scrollNote {
+    border-top: 0;
+    border-left: 1px solid currentColor;
+  }
+
+  .landscapeNote {
+    z-index: 1;
+    width: 56%;
+    margin: -8rem 6% 0 auto;
+    padding: 2rem;
+  }
+
+  .shutters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .shutters > .art {
+    height: 100%;
+    min-height: 560px;
+    aspect-ratio: auto;
+  }
+
+  .website[data-atelier-layout="tropical-afterdark"] .hero {
+    padding-inline: 2%;
+  }
+}
+
+/* The programme and supporting sections carry each design beyond the hero. */
+.website[data-atelier-layout="tuscan-lemon-grove"] .program {
+  text-align: center;
+  border-block: 3px double;
+  padding: 2rem 0;
+}
+.website[data-atelier-layout="tuscan-lemon-grove"] .schedule li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 0;
+}
+.website[data-atelier-layout="delft-blue-estate"] .storyAndSchedule {
+  border: 4px double;
+  padding: 2rem;
+}
+.website[data-atelier-layout="delft-blue-estate"] .schedule li {
+  border-bottom: 1px solid;
+}
+.website[data-atelier-layout="delft-blue-estate"] .photos img {
+  border-radius: 50% 50% 0 0;
+}
+.website[data-atelier-layout="meadow-reverie"] .story {
+  padding: 3rem 2rem 2rem;
+  background: #eee6f3;
+  border: 0;
+  border-radius: 50% 50% 4px 4px;
+  text-align: center;
+}
+.website[data-atelier-layout="meadow-reverie"] .schedule li {
+  border: 1px solid;
+  border-radius: 35px 0 35px 0;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+.website[data-atelier-layout="desert-modernism"] .story {
+  padding: 2rem;
+  background: #d9c5b1;
+  border: 0;
+}
+.website[data-atelier-layout="desert-modernism"] .schedule li {
+  grid-template-columns: 55px 1fr;
+  border-top: 3px solid;
+  border-bottom: 0;
+}
+.website[data-atelier-layout="desert-modernism"] .number {
+  font-family: monospace;
+  font-size: 40px;
+}
+.website[data-atelier-layout="chateau-toile"] .program {
+  padding: 2rem;
+  border: 1px solid;
+}
+.website[data-atelier-layout="chateau-toile"] .schedule li {
+  border-bottom: 0;
+  border-left: 3px double;
+  padding-left: 1.5rem;
+}
+.website[data-atelier-layout="chateau-toile"] .practical {
+  border-block: 4px double;
+  padding: 2rem;
+}
+.website[data-atelier-layout="riviera-stripes"] .story {
+  padding: 2rem;
+  border: 1px solid;
+  transform: rotate(1deg);
+}
+.website[data-atelier-layout="riviera-stripes"] .schedule li {
+  padding: 1.5rem;
+  border: 1px dashed;
+  margin-top: 1rem;
+}
+.website[data-atelier-layout="riviera-stripes"] .photos img {
+  padding: 10px 10px 30px;
+  background: white;
+  box-shadow: 0 4px 12px #0001;
+  transform: rotate(-2deg);
+}
+.website[data-atelier-layout="japanese-ink"] .program {
+  border: 0;
+  border-left: 1px solid;
+  padding-left: 2rem;
+}
+.website[data-atelier-layout="japanese-ink"] .schedule li {
+  border: 0;
+  gap: 2rem;
+}
+.website[data-atelier-layout="japanese-ink"] .number {
+  font-size: 14px;
+}
+.website[data-atelier-layout="disco-afterglow"] .story {
+  background: #e8a3c6;
+  color: #30132c;
+  padding: 2rem;
+  border-radius: 45px 0;
+  border: 0;
+}
+.website[data-atelier-layout="disco-afterglow"] .schedule li {
+  border-radius: 15px;
+}
+.website[data-atelier-layout="disco-afterglow"] .number {
+  border-right: 1px dashed;
+  padding-right: 15px;
+}
+.website[data-atelier-layout="palm-springs-mod"] .story {
+  text-align: center;
+  background: #91c9ce;
+  padding: 3rem 2rem 2rem;
+  color: #244a52;
+  border-radius: 100px 100px 0 0;
+  border: 0;
+}
+.website[data-atelier-layout="palm-springs-mod"] .schedule li {
+  border: 0;
+  border-radius: 0 40px 0 40px;
+  padding: 1.5rem;
+  background: #f7c3a3;
+  margin-top: 1rem;
+}
+.website[data-atelier-layout="highland-romance"] .story {
+  border-top: 5px solid;
+  padding-top: 2rem;
+}
+.website[data-atelier-layout="highland-romance"] .schedule li {
+  position: relative;
+  border: 0;
+}
+.website[data-atelier-layout="highland-romance"] .schedule li::before {
+  content: "";
+  position: absolute;
+  left: -29px;
+  top: 32px;
+  width: 9px;
+  height: 9px;
+  border: 1px solid;
+  background: var(--paper);
+  border-radius: 50%;
+}
+.website[data-atelier-layout="highland-romance"] .photos img {
+  aspect-ratio: 16 / 9;
+}
+.website[data-atelier-layout="terracotta-courtyard"] .program {
+  border: 0;
+  text-align: center;
+}
+.website[data-atelier-layout="terracotta-courtyard"] .schedule li {
+  border: 1px solid;
+  border-radius: 100px 100px 0 0;
+  padding: 3rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.website[data-atelier-layout="terracotta-courtyard"] .practical {
+  border-top: 12px solid #c28263;
+}
+.website[data-atelier-layout="lake-como-letter"] .story {
+  padding: 2rem;
+  border-top: 0;
+  border-left: 1px solid;
+}
+.website[data-atelier-layout="lake-como-letter"] .program {
+  background: repeating-linear-gradient(transparent 0 31px, #355c6610 31px 32px);
+  padding: 2rem;
+  border: 0;
+}
+.website[data-atelier-layout="lake-como-letter"] .schedule li {
+  border: 0;
+}
+.website[data-atelier-layout="cherry-blossom-silk"] .story {
+  border-block: 1px solid;
+  padding-block: 2rem;
+}
+.website[data-atelier-layout="cherry-blossom-silk"] .schedule li {
+  padding: 1.5rem;
+  border: 0;
+  background: #f0dce3;
+  border-radius: 0 50px 50px 0;
+  margin-top: 1rem;
+}
+.website[data-atelier-layout="cherry-blossom-silk"] .photos img {
+  border-radius: 50% 50% 0 0;
+}
+.website[data-atelier-layout="french-patisserie"] .program {
+  background: #fbe6e7;
+  text-align: center;
+}
+.website[data-atelier-layout="french-patisserie"] .schedule li {
+  display: block;
+  border-top: 1px dotted;
+  border-bottom: 0;
+}
+.website[data-atelier-layout="french-patisserie"] .number {
+  display: none;
+}
+.website[data-atelier-layout="ocean-cyanotype"] .schedule li {
+  border: 1px solid;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+.website[data-atelier-layout="ocean-cyanotype"] .number {
+  font: 14px monospace;
+}
+.website[data-atelier-layout="ocean-cyanotype"] .photos img {
+  border: 10px solid var(--ink);
+}
+.website[data-atelier-layout="art-deco-soiree"] .program {
+  border: 5px double;
+  padding: 2rem;
+}
+.website[data-atelier-layout="art-deco-soiree"] .schedule li {
+  grid-template-columns: 44px 1fr;
+}
+.website[data-atelier-layout="art-deco-soiree"] .number {
+  font-size: 16px;
+  border: 1px solid;
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+  transform: rotate(45deg);
+}
+.website[data-atelier-layout="prairie-wildflower"] .storyAndSchedule {
+  border: 1px dashed;
+  padding: 2rem;
+}
+.website[data-atelier-layout="prairie-wildflower"] .schedule li {
+  border: 1px dashed;
+  padding: 1.5rem;
+  background: #e6d4ad;
+  margin-top: 1rem;
+}
+.website[data-atelier-layout="prairie-wildflower"] .photos img {
+  padding: 12px;
+  border: 1px dashed;
+}
+.website[data-atelier-layout="red-thread"] .story {
+  border-top: 0;
+  border-left: 4px solid;
+  padding-left: 2rem;
+}
+.website[data-atelier-layout="red-thread"] .schedule li {
+  border-top: 3px solid;
+  border-bottom: 0;
+  grid-template-columns: 55px 1fr;
+}
+.website[data-atelier-layout="red-thread"] .number {
+  font-weight: 700;
+  font-size: 40px;
+}
+.website[data-atelier-layout="moonstone-minimal"] .schedule li {
+  border: 0;
+  background: #e0dfdd;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+.website[data-atelier-layout="moonstone-minimal"] .number {
+  font-family: monospace;
+  font-size: 12px;
+}
+.website[data-atelier-layout="moonstone-minimal"] .guestActions {
+  border: 0;
+  background: #e0dfdd;
+}
+.website[data-atelier-layout="tropical-afterdark"] .story {
+  border-radius: 180px 180px 0 0;
+  border: 1px solid;
+  padding: 4rem 2rem 2rem;
+  text-align: center;
+}
+.website[data-atelier-layout="tropical-afterdark"] .schedule li {
+  border-bottom: 1px solid;
+  padding-block: 2rem;
+}
+.website[data-atelier-layout="tropical-afterdark"] .number {
+  color: #e3a2ba;
+  font-size: 36px;
+}
+
+@container (min-width: 720px) {
+  .website[data-atelier-layout="tuscan-lemon-grove"] .storyAndSchedule,
+  .website[data-atelier-layout="terracotta-courtyard"] .storyAndSchedule {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .website[data-atelier-layout="tuscan-lemon-grove"] .story,
+  .website[data-atelier-layout="terracotta-courtyard"] .story {
+    max-width: 650px;
+    margin: auto;
+  }
+  .website[data-atelier-layout="tuscan-lemon-grove"] .schedule,
+  .website[data-atelier-layout="terracotta-courtyard"] .schedule {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .website[data-atelier-layout="meadow-reverie"] .storyAndSchedule {
+    grid-template-columns: 0.8fr 1.2fr;
+    align-items: start;
+  }
+  .website[data-atelier-layout="desert-modernism"] .storyAndSchedule {
+    grid-template-columns: 1fr 1.4fr;
+  }
+  .website[data-atelier-layout="chateau-toile"] .storyAndSchedule {
+    align-items: center;
+  }
+  .website[data-atelier-layout="riviera-stripes"] .storyAndSchedule {
+    grid-template-columns: 0.8fr 1.2fr;
+  }
+  .website[data-atelier-layout="japanese-ink"] .storyAndSchedule {
+    gap: 6rem;
+  }
+  .website[data-atelier-layout="disco-afterglow"] .storyAndSchedule {
+    grid-template-columns: 1fr 1.2fr;
+    align-items: start;
+  }
+  .website[data-atelier-layout="palm-springs-mod"] .storyAndSchedule {
+    grid-template-columns: 0.9fr 1.1fr;
+  }
+  .website[data-atelier-layout="highland-romance"] .storyAndSchedule {
+    grid-template-columns: 1fr 1.2fr;
+    gap: 5rem;
+  }
+  .website[data-atelier-layout="lake-como-letter"] .storyAndSchedule {
+    grid-template-columns: 1fr 1.2fr;
+  }
+  .website[data-atelier-layout="cherry-blossom-silk"] .storyAndSchedule {
+    grid-template-columns: 0.85fr 1.15fr;
+    align-items: start;
+  }
+  .website[data-atelier-layout="french-patisserie"] .storyAndSchedule {
+    align-items: center;
+  }
+  .website[data-atelier-layout="ocean-cyanotype"] .storyAndSchedule {
+    grid-template-columns: 1fr 1.3fr;
+  }
+  .website[data-atelier-layout="art-deco-soiree"] .storyAndSchedule {
+    grid-template-columns: 0.8fr 1.2fr;
+    align-items: center;
+  }
+  .website[data-atelier-layout="prairie-wildflower"] .storyAndSchedule {
+    grid-template-columns: 0.8fr 1.2fr;
+  }
+  .website[data-atelier-layout="red-thread"] .storyAndSchedule {
+    grid-template-columns: 1fr 1.35fr;
+  }
+  .website[data-atelier-layout="moonstone-minimal"] .storyAndSchedule {
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 5rem;
+  }
+  .website[data-atelier-layout="tropical-afterdark"] .storyAndSchedule {
+    grid-template-columns: 1fr 1.2fr;
+    gap: 4.5rem;
+  }
+}
+
+@container (max-width: 440px) {
+  .hero {
+    padding-inline: 1.25rem;
+  }
+  .details {
+    padding-inline: 1.25rem;
+  }
+  .floatingNote {
+    padding: 1.5rem;
+  }
+  .medallion {
+    width: 80%;
+  }
+  .website[data-atelier-layout="delft-blue-estate"] .storyAndSchedule,
+  .website[data-atelier-layout="prairie-wildflower"] .storyAndSchedule {
+    padding: 1.25rem;
+  }
+}

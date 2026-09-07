@@ -1,5 +1,6 @@
 "use client";
 
+import { HeartHandshake } from "lucide-react";
 import type { ReactNode } from "react";
 import Image from "next/image";
 
@@ -153,6 +154,12 @@ export const EVENT_CATEGORIES: EventCategoryConfig[] = [
     label: "Weddings",
     hint: "Registry supported",
     icon: ringIcon,
+  },
+  {
+    key: "anniversaries",
+    label: "Anniversaries",
+    hint: "Celebrate your years together",
+    icon: <HeartHandshake size={32} aria-hidden="true" />,
   },
   {
     key: "baby_showers",

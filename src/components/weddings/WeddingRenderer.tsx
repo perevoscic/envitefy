@@ -1,3 +1,8 @@
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import type { CSSProperties } from "react";
+import { getEventEndLocal } from "@/lib/event-guest-planning";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import AtelierWeddingLayout from "@/app/event/weddings/_renderers/atelier-wedding-layouts";
 import SignatureWeddingLayout from "@/app/event/weddings/_renderers/signature-wedding-layouts";
 import EtherealClassic from "@/app/event/weddings/_renderers/ethereal-classic";
 import ModernEditorial from "@/app/event/weddings/_renderers/modern-editorial";
@@ -27,6 +32,7 @@ import {
   Footer,
   type EventData,
   type ThemeConfig,
+  getLuminance,
 } from "@/app/event/weddings/_renderers/content-sections";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import { buildWeddingScanSchedule } from "@/lib/wedding-scan";
@@ -44,6 +50,10 @@ interface Props {
   template: TemplateConfig;
   event: EventData;
   renderMode?: "default" | "scanned-invite-preview";
+  shareUrl?: string;
+  eventId?: string;
+  preview?: boolean;
+  hideGuestTools?: boolean;
 }
 
 function buildPreviewRegistryCards(
@@ -86,7 +96,7 @@ function withAmazonAffiliateRegistryLinks(event: EventData): EventData {
   };
 }
 
-export default function WeddingRenderer({ template, event, renderMode = "default" }: Props) {
+export default function WeddingRenderer({ template, event, renderMode = "default", shareUrl, eventId, preview = true, hideGuestTools = false }: Props) {
   const { layout, theme } = template;
   const eventWithAffiliateRegistries = withAmazonAffiliateRegistryLinks(event);
 
@@ -143,6 +153,45 @@ export default function WeddingRenderer({ template, event, renderMode = "default
     );
   }
 
+  const readableText = (background: string) => {
+    const luminance = getLuminance(background);
+    const darkContrast = (luminance + 0.05) / 0.05;
+    const lightContrast = 1.05 / (luminance + 0.05);
+    return darkContrast >= lightContrast ? "#000000" : "#ffffff";
+  };
+  const surface = theme.colors.primary;
+  const fill = theme.colors.secondary;
+  const contrast = (Math.max(getLuminance(surface), getLuminance(fill)) + 0.05) /
+    (Math.min(getLuminance(surface), getLuminance(fill)) + 0.05);
+  const guestStyle = {
+    "--guest-action-fill": fill,
+    "--guest-action-border": fill,
+    "--guest-action-text": contrast >= 4.5 ? surface : readableText(fill),
+    "--guest-action-surface": surface,
+    "--guest-action-ink": contrast >= 4.5 ? fill : readableText(surface),
+    "--guest-action-radius": /editorial|newspaper|bauhaus|gilded|deco|japanese|cyanotype|red-thread/.test(layout) ? "0.25rem" : "999px",
+    fontFamily: theme.fonts.body,
+  } as CSSProperties;
+  const themedEvent: EventData = {
+    ...eventWithAffiliateRegistries,
+    guestTools: hideGuestTools ? null : (
+      <div className="mx-auto w-full max-w-5xl px-5 py-4 normal-case tracking-normal" style={guestStyle}>
+        {event.time && <p className="text-center text-sm font-medium">{event.time}{event.endTime ? ` – ${event.endTime}${event.endDate && event.endDate !== event.date ? ` (${event.endDate})` : ""}` : ""}</p>}
+        <EventGuestActions
+          title={event.headlineTitle}
+          start={event.startISO || (event.date ? `${event.date}${event.time ? `T${event.time}` : ""}` : undefined)}
+          end={event.endISO || getEventEndLocal(event.date || "", event.time || "", event.endTime || "", event.endDate)}
+          description={event.story}
+          location={event.venue?.address || event.location}
+          shareUrl={shareUrl}
+          eventId={eventId}
+          preview={preview}
+        />
+        <EventGuestPlanningNotes value={event.guestPlanning} themed />
+      </div>
+    ),
+  };
+
   return (
     <div
       className="w-full min-h-screen flex flex-col"
@@ -151,13 +200,34 @@ export default function WeddingRenderer({ template, event, renderMode = "default
         backgroundColor: "transparent",
       }}
     >
-      {renderLayout(layout, theme, eventWithAffiliateRegistries)}
+      {renderLayout(layout, theme, themedEvent)}
     </div>
   );
 }
 
 function renderLayout(layout: string, theme: ThemeConfig, event: EventData) {
   switch (layout) {
+    case "tuscan-lemon-grove":
+    case "delft-blue-estate":
+    case "meadow-reverie":
+    case "desert-modernism":
+    case "chateau-toile":
+    case "riviera-stripes":
+    case "japanese-ink":
+    case "disco-afterglow":
+    case "palm-springs-mod":
+    case "highland-romance":
+    case "terracotta-courtyard":
+    case "lake-como-letter":
+    case "cherry-blossom-silk":
+    case "french-patisserie":
+    case "ocean-cyanotype":
+    case "art-deco-soiree":
+    case "prairie-wildflower":
+    case "red-thread":
+    case "moonstone-minimal":
+    case "tropical-afterdark":
+      return <AtelierWeddingLayout layout={layout} theme={theme} event={event} />;
     case "split-hero":
       return <SignatureWeddingLayout layout={layout} theme={theme} event={event} />;
     case "floral-frame":

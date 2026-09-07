@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { normalizeConciergeDraft } from "./extract.ts";
-import { fallbackExtractConciergeDraft, repairMisparsedBirthdayDraft } from "./fallback.ts";
+import { buildAssistantMessage, fallbackExtractConciergeDraft, repairMisparsedBirthdayDraft } from "./fallback.ts";
 
 const screenshotMessage = "Livia, 10 years old, on septmeber 25th.";
 function expectSeptember25(draft) {
@@ -54,6 +54,31 @@ test("an age by itself never fabricates a date", () => {
   assert.equal(draft.dateText, null);
   assert.equal(draft.startISO, null);
   assert.equal(draft.timeText, null);
+});
+
+test("the movie birthday message captures the facts despite turnig and asks specifically for the event date", () => {
+  const message = "Livia is turnig 10. the are going to watch Forgotten islan at amc grand boulevard. she like katseyes and needoh. no rsvp";
+  for (const requestedOutputs of [null, ["live_card"]]) {
+    let draft = fallbackExtractConciergeDraft({ message, requestedOutputs });
+    assert.equal(draft.eventType, "birthday");
+    assert.equal(draft.honoreeName, "Livia");
+    assert.equal(draft.ageOrMilestone, "10");
+    assert.equal(draft.location, "amc grand boulevard");
+    assert.match(draft.theme, /Forgotten islan.*katseyes and needoh/);
+    assert.equal(draft.rsvpEnabled, false);
+    assert.equal(draft.dateText, null);
+    assert.equal(draft.startISO, null);
+    assert.equal(draft.timeText, null);
+    assert.equal(draft.currentQuestion, "date");
+    assert.equal(buildAssistantMessage(draft), "What date is Livia’s birthday celebration?");
+
+    draft = fallbackExtractConciergeDraft({ message: "September 26 2099", draft });
+    assert.equal(draft.currentQuestion, "time");
+    assert.match(buildAssistantMessage(draft), /What time should it start/);
+    assert.equal(draft.honoreeName, "Livia");
+    assert.equal(draft.ageOrMilestone, "10");
+    assert.equal(draft.location, "amc grand boulevard");
+  }
 });
 
 test("a stated party time remains distinct from the birthday age", () => {

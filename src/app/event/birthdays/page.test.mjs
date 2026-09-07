@@ -12,7 +12,7 @@ const walkFiles = (directory) =>
     return entry.isDirectory() ? walkFiles(absolutePath) : [absolutePath];
   });
 
-test("birthday creation starts with a rotating, filterable 104-design gallery", () => {
+test("birthday creation starts with a rotating, filterable 94-design birthday gallery", () => {
   const pageSource = readSource("src/app/event/birthdays/page.tsx");
   const gallerySource = readSource("src/components/birthdays/BirthdayDesignGallery.tsx");
   const heroSource = readSource("src/components/birthdays/BirthdayGalleryHero.tsx");
@@ -31,7 +31,7 @@ test("birthday creation starts with a rotating, filterable 104-design gallery", 
   assert.match(gallerySource, /Original 24/);
   assert.match(gallerySource, /New kids/);
   assert.match(gallerySource, /Adult birthdays/);
-  assert.match(gallerySource, /Anniversaries/);
+  assert.doesNotMatch(gallerySource, /Anniversaries/);
   assert.match(gallerySource, /label="Milestone"/);
   assert.match(gallerySource, /label="Style"/);
   assert.match(gallerySource, /params\.set\("templateId", templateId\)/);
@@ -75,7 +75,7 @@ test("the original 24 designs remain first and new selections reach the birthday
   assert.match(galleryCatalogSource, /\.\.\.generatedBirthdayTemplateCatalog/);
   assert.match(customizeSource, /\.\.\.BIRTHDAY_DESIGN_CATALOG/);
   assert.match(customizeSource, /professionalThemeId: selectedTheme\?\.id/);
-  assert.match(customizeSource, /All celebration designs/);
+  assert.match(customizeSource, /All birthday designs/);
 });
 
 test("primary birthday creation links open the gallery", () => {

@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import { BookOpen, PenTool, Feather, Bookmark } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
@@ -51,7 +53,7 @@ const buildNames = (event: EventData) => {
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "October 28, 2025";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const months = [
       "January",
       "February",
@@ -113,7 +115,7 @@ export default function LibraryWedding({ theme, event }: Props) {
   const scheduleDetails = getScheduleDetails(event.schedule);
   const rsvpUrl = event.rsvp?.url || "#rsvp";
   const rsvpDeadline = event.rsvp?.deadline
-    ? new Date(event.rsvp.deadline).toLocaleDateString("en-US", {
+    ? parseEventGuestDate(event.rsvp.deadline).toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
       })
@@ -281,6 +283,10 @@ export default function LibraryWedding({ theme, event }: Props) {
           </div>
         </section>
       )}
+      {event.guestTools}
+      <footer className="relative z-10 py-8 text-center">
+        <EnvitefyEventBranding category="Weddings" inverse />
+      </footer>
     </div>
   );
 }

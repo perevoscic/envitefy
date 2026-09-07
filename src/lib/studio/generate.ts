@@ -29,6 +29,11 @@ import type {
   StudioProvider,
 } from "@/lib/studio/types";
 
+function isLayoutReview(check: ArtworkCheck, product: StudioGenerateResponse["product"]): boolean {
+  return product === "live_card" && check.status === "failed" &&
+    check.issues.length > 0 && check.issues.every((issue) => issue === "unsafe_placement");
+}
+
 function uniqueWarnings(list: string[]): string[] {
   return Array.from(new Set(list.map((item) => item.trim()).filter(Boolean)));
 }
@@ -95,7 +100,7 @@ export async function generateStudioInvitation(
   const mode = request.mode || "both";
   const surface = request.surface || (mode === "both" || mode === "text" ? "page" : "image");
   const product = resolveStudioProduct(request.product, surface);
-  let qualityCheck: ArtworkCheck["status"] = "unavailable";
+  let qualityCheck: StudioGenerateResponse["qualityCheck"] = "unavailable";
   const themeNormalization = await studioGenerationDeps.normalizeStudioTheme({
     provider,
     event: request.event,
@@ -191,11 +196,19 @@ export async function generateStudioInvitation(
         let artwork = imageResult.imageDataUrl;
         const checkContext = { imageEdit: normalizedRequest.imageEdit, references: referenceImages };
         let checked: ArtworkCheck = await studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product, checkContext);
-        if (checked.status === "failed") {
-          const repairPrompt = [imagePrompt, `Targeted quality repair: ${checked.issues.join(", ")}. Fix only these observed defects, retaining the approved facts, subject and design.`].join("\n");
+        if (checked.status === "failed" && !isLayoutReview(checked, product)) {
+          const repairPrompt = [
+            imagePrompt,
+            `Targeted quality repair: ${checked.issues.join(", ")}.`,
+            ...(checked.repairInstructions || []),
+            editingExistingImage
+              ? "The attached image is the original approved card. Apply the requested edit again, avoiding the defects observed in the previous attempt as described above. Preserve original wording unless its change was requested."
+              : "Fix only these observed defects, retaining the approved facts, subject and design.",
+          ].join("\n");
+          const repairSource = normalizedRequest.imageEdit?.sourceImageDataUrl || artwork;
           const repaired = provider === "openai"
-            ? await studioGenerationDeps.editInvitationImageWithOpenAi(repairPrompt, artwork)
-            : await studioGenerationDeps.editInvitationImageWithGemini(repairPrompt, artwork);
+            ? await studioGenerationDeps.editInvitationImageWithOpenAi(repairPrompt, repairSource)
+            : await studioGenerationDeps.editInvitationImageWithGemini(repairPrompt, repairSource);
           if (repaired.ok) {
             artwork = repaired.imageDataUrl;
             checked = await studioGenerationDeps.verifyStudioArtwork(artwork, normalizedRequest.event, product, checkContext);
@@ -203,9 +216,11 @@ export async function generateStudioInvitation(
             if (checked.status === "unavailable") checked = { status: "failed", issues: ["repair_unverified"] };
           }
         }
-        qualityCheck = checked.status;
-        if (checked.status === "failed") {
-          errors.image = { code: "image_quality_failed", message: "The artwork did not pass its text and layout checks after one repair. Please regenerate it.", provider, retryable: true };
+        const layoutReview = isLayoutReview(checked, product);
+        qualityCheck = layoutReview ? "needs_review" : checked.status;
+        if (layoutReview) warnings.push("Preview ready. Check that the artwork sits well around the card buttons before saving.");
+        if (checked.status === "failed" && !layoutReview) {
+          errors.image = { code: "image_quality_failed", message: editingExistingImage ? "We couldn't finish your card change while keeping its text readable and correctly placed. Your original card is unchanged. Try Preview again." : "We couldn't create the artwork with readable, correctly placed text. Please try again.", provider, retryable: true };
         } else {
           if (checked.status === "unavailable") warnings.push("Automatic artwork verification was unavailable; review the preview before sharing.");
           try {

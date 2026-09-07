@@ -1,0 +1,22 @@
+{
+  "id": "japanese-ink",
+  "name": "Japanese Ink",
+  "category": "soft minimal",
+  "family": "atelier",
+  "layout": "japanese-ink",
+  "thumbnail": "/templates/weddings/generated-heroes/japanese-ink-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#f4f1e9",
+      "secondary": "#282f29",
+      "background": "#f4f1e9"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/japanese-ink-hero.webp"
+    }
+  }
+}

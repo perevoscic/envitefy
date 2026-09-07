@@ -1,3 +1,5 @@
+import { invalidateUserHistory } from "@/lib/history-cache";
+import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import type { NextAuthOptions, Session } from "next-auth";
@@ -384,6 +386,7 @@ export async function POST(
       // Update both stores; if normalized table fails, log error but continue
       // The legacy JSON is authoritative for backward compatibility
       const updatedRow = await updateEventHistoryData(id, mergedData);
+      if (ownerId) { invalidateUserHistory(ownerId); invalidateUserDashboard(ownerId); }
       let normalizedUpdateSuccess = false;
       try {
         const normalizedResult = await upsertSignupForm(id, normalizedNext);
@@ -513,6 +516,7 @@ export async function POST(
         signupForm: normalizedNext,
       };
       const updatedRow = await updateEventHistoryData(id, cancelMerged);
+      if (ownerId) { invalidateUserHistory(ownerId); invalidateUserDashboard(ownerId); }
       try {
         await upsertSignupForm(id, normalizedNext);
       } catch {}

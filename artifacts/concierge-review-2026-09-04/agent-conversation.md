@@ -134,7 +134,7 @@ The Flyer/Invitation will mention pizza, cake, and a craft table; “At least on
 
 ## Separate entry observation
 
-A signed-out isolated browser visiting `/chat` redirected to `/`. The landing “Try the AI Concierge” click left the browser on the landing page with no visible chat or login dialog; the distinct Login button did open a login dialog. The main conversation above used the existing authenticated local Chrome profile and was unaffected by this access issue.
+A signed-out isolated browser visiting `/chat` redirected to `/`. The landing “Try the Envitefy Concierge” click left the browser on the landing page with no visible chat or login dialog; the distinct Login button did open a login dialog. The main conversation above used the existing authenticated local Chrome profile and was unaffected by this access issue.
 
 ## Execution note
 

@@ -1,7 +1,10 @@
+import BirthdayScene, { hasBirthdayScene } from "./redesign/BirthdayScene";
+import { BirthdayCalendarDate, BirthdayVenueLink, BirthdayShareControl } from "./BirthdayGuestActions";
 import type { CSSProperties, ReactNode } from "react";
 import {
   ArrowRight,
   CalendarDays,
+  Clock,
   CakeSlice,
   MapPin,
   PartyPopper,
@@ -32,6 +35,7 @@ export type BirthdayExperienceTheme = {
 export type BirthdayExperienceEvent = {
   headlineTitle?: string;
   date?: string;
+  end?: string;
   location?: string;
   birthdayName?: string;
   age?: number | string;
@@ -217,17 +221,31 @@ function ExperienceFacts({
   event: BirthdayExperienceEvent;
   inverse?: boolean;
 }) {
+  const formatClock = (value?: string) => {
+    if (!value || !value.includes("T") || Number.isNaN(Date.parse(value))) return "";
+    return new Date(value).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  };
+  const endOnAnotherDay = event.date && event.end &&
+    new Date(event.date).toDateString() !== new Date(event.end).toDateString();
+  const endLabel = formatClock(event.end);
+  const timeRange = [
+    formatClock(event.date),
+    endLabel && endOnAnotherDay
+      ? `${endLabel} (${new Date(event.end!).toLocaleDateString("en-US", { month: "short", day: "numeric" })})`
+      : endLabel,
+  ].filter(Boolean).join(" – ");
   const colorClass = inverse ? "text-white/88" : "text-[var(--birthday-ink)]/80";
   return (
     <div className={`flex flex-wrap gap-x-5 gap-y-3 text-sm font-semibold ${colorClass}`}>
-      <span className="inline-flex items-center gap-2">
+      <BirthdayCalendarDate>
         <CalendarDays className="h-4 w-4" aria-hidden="true" />
         {formatHeroDate(event.date)}
-      </span>
-      <span className="inline-flex items-center gap-2">
+      </BirthdayCalendarDate>
+      {timeRange ? <span className="inline-flex items-center gap-2"><Clock className="h-4 w-4" aria-hidden="true" />{timeRange}</span> : null}
+      <BirthdayVenueLink>
         <MapPin className="h-4 w-4" aria-hidden="true" />
         {event.location || "Location to be announced"}
-      </span>
+      </BirthdayVenueLink>
     </div>
   );
 }
@@ -272,13 +290,18 @@ function HeroCopy({
   inverse?: boolean;
   onRsvpClick?: () => void;
 }) {
-  const title = event.headlineTitle || theme.defaultHeadline || theme.name;
+  const birthdayTitle = event.birthdayName
+    ? event.age
+      ? `${event.birthdayName} is turning ${event.age}`
+      : `${event.birthdayName}’s birthday`
+    : undefined;
+  const title = event.headlineTitle || birthdayTitle || theme.defaultHeadline || theme.name;
   const titleColor = inverse ? "#FFFFFF" : "var(--birthday-ink)";
   return (
     <div className={`relative z-10 space-y-6 ${inverse ? "text-white" : "text-[var(--birthday-ink)]"}`}>
       <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.24em] opacity-70">
         <PartyPopper className="h-4 w-4" aria-hidden="true" />
-        {theme.experience.eyebrow} · {theme.experience.ornament.replaceAll("-", " ")}
+        {theme.experience.eyebrow}
       </div>
       <ExperienceTitle
         profile={theme.experience}
@@ -293,12 +316,10 @@ function HeroCopy({
         </p>
       ) : null}
       <ExperienceFacts event={event} inverse={inverse} />
-      <ExperienceCta
-        profile={theme.experience}
-        enabled={event.rsvpEnabled}
-        onClick={onRsvpClick}
-        inverse={inverse}
-      />
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+        <ExperienceCta profile={theme.experience} enabled={event.rsvpEnabled} onClick={onRsvpClick} inverse={inverse} />
+        <BirthdayShareControl className={`inline-flex min-h-12 items-center gap-2 border border-current px-5 py-3 text-sm font-semibold transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 ${CTA_CLASSES[theme.experience.ctaTreatment] || CTA_CLASSES.pill}`} />
+      </div>
     </div>
   );
 }
@@ -321,7 +342,7 @@ function HeroMedia({ theme, className = "" }: { theme: BirthdayExperienceTheme; 
       <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-white/10" />
       <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
         <CakeSlice className="h-3.5 w-3.5" aria-hidden="true" />
-        {profile.compositionLabel}
+        Let’s celebrate
       </div>
     </div>
   );
@@ -334,6 +355,7 @@ export default function BirthdayExperienceHero({
   onRsvpClick,
   preview = false,
 }: BirthdayExperienceHeroProps) {
+  if (hasBirthdayScene(theme.id)) return <BirthdayScene theme={theme} event={event} actions={actions} onRsvpClick={onRsvpClick} preview={preview} />;
   const profile = theme.experience;
   const isDark = profile.tone === "dark";
   const style = {
@@ -450,8 +472,7 @@ export default function BirthdayExperienceHero({
           <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-12">
             <div className="rounded-[2.5rem] bg-white/78 p-8 shadow-xl backdrop-blur sm:p-12 lg:col-span-7"><HeroCopy theme={theme} event={event} onRsvpClick={onRsvpClick} /></div>
             <HeroMedia theme={theme} className="min-h-[420px] lg:col-span-5" />
-            <div className="flex min-h-28 items-center justify-between rounded-[2rem] bg-[var(--birthday-secondary)] px-8 text-white lg:col-span-5"><Ticket className="h-8 w-8" aria-hidden="true" /><span className="text-right text-sm font-black uppercase tracking-[0.2em]">One remarkable celebration</span></div>
-            <div className="min-h-28 rounded-[2rem] border-2 border-[var(--birthday-secondary)]/35 bg-white/45 lg:col-span-7" />
+            <div className="flex min-h-28 items-center justify-between rounded-[2rem] bg-[var(--birthday-secondary)] px-8 text-white lg:col-span-12"><Ticket className="h-8 w-8" aria-hidden="true" /><span className="text-right text-sm font-black uppercase tracking-[0.2em]">One remarkable celebration</span></div>
           </div>
         </section>
       );

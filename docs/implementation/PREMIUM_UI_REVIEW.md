@@ -23,7 +23,7 @@ Every major screen was reviewed against the requested board roles: Product Strat
 - Mobile improvements: Manual QA required.
 - Accessibility improvements: Manual QA required.
 
-## AI Concierge
+## Envitefy Concierge
 
 - Current problems: The current flow works, but it feels like a parser/debugger rather than the premium creation moment.
 - Product Strategist: Make value visible in 5 seconds: describe the event, review the draft, create the page.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import GymnasticsDesignGallery from "@/components/gym-meet-templates/GymnasticsDesignGallery";
 import GymnasticsLauncher from "@/components/event-create/GymnasticsLauncher";
 import SportCreationGate from "@/components/event-create/SportCreationGate";
 
@@ -16,7 +17,7 @@ export default function GymnasticsCreationPageClient({
       surface="gymnastics"
       unavailableSport={search?.get("unavailableSport")}
     >
-      {() => <GymnasticsLauncher forwardQueryString={forwardQueryString} />}
+      {() => search?.get("mode") === "import" ? <GymnasticsLauncher forwardQueryString={forwardQueryString} /> : <GymnasticsDesignGallery />}
     </SportCreationGate>
   );
 }

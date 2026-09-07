@@ -1,12 +1,14 @@
 // @ts-nocheck
 "use client";
 
-import EnvitefySocialLinks from "@/components/branding/EnvitefySocialLinks";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import { getEventEndLocal, normalizeEventGuestPlanning, resolvePublicEventShareUrl } from "@/lib/event-guest-planning";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { attachAmazonAffiliateTag } from "@/lib/affiliate/amazon";
 import {
-  Share2,
   Calendar as CalendarIcon,
   MapPin,
   Clock,
@@ -857,24 +859,19 @@ export default function SimpleTemplateView({
       .replace(/[-:]/g, "")
       .replace(/\.\d{3}Z$/, "Z");
 
+  const guestStart = currentData?.startISO || currentData?.startAt || currentData?.start ||
+    (date ? `${date}T${time || "00:00"}` : undefined);
+  const guestEnd = currentData?.endISO || currentData?.endAt || currentData?.end ||
+    getEventEndLocal(date, time, currentData?.endTime || "", currentData?.endDate || "");
+  const guestPlanning = normalizeEventGuestPlanning(currentData?.guestPlanning);
   const buildEventDetails = () => {
-    let start: Date | null = null;
-    if (date) {
-      const tentative = new Date(`${date}T${time || "14:00"}`);
-      if (!Number.isNaN(tentative.getTime())) start = tentative;
-    }
-    if (!start) start = new Date();
-    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
-    return {
-      title: eventTitle,
-      start,
-      end,
-      location: fullLocation,
-      description,
-    };
+    if (!guestStart || Number.isNaN(Date.parse(guestStart))) return null;
+    const start = new Date(guestStart);
+    const end = guestEnd && Date.parse(guestEnd) > start.getTime() ? new Date(guestEnd) : new Date(start);
+    return { title: eventTitle, start, end, location: fullLocation, description };
   };
 
-  const buildIcsUrl = (details: ReturnType<typeof buildEventDetails>) => {
+  const buildIcsUrl = (details: NonNullable<ReturnType<typeof buildEventDetails>>) => {
     const params = new URLSearchParams();
     params.set("title", details.title);
     if (details.start) params.set("start", details.start.toISOString());
@@ -905,35 +902,41 @@ export default function SimpleTemplateView({
     }
   };
 
-  const buildAbsoluteIcsUrl = (details: ReturnType<typeof buildEventDetails>) => {
+  const buildAbsoluteIcsUrl = (details: NonNullable<ReturnType<typeof buildEventDetails>>) => {
     const icsPath = buildIcsUrl(details);
     return typeof window !== "undefined" ? `${window.location.origin}${icsPath}` : icsPath;
   };
 
-  const buildWebcalUrl = (details: ReturnType<typeof buildEventDetails>) => {
+  const buildWebcalUrl = (details: NonNullable<ReturnType<typeof buildEventDetails>>) => {
     const absoluteIcs = buildAbsoluteIcsUrl(details);
     return absoluteIcs.replace(/^https?/i, "webcal");
   };
 
-  const handleShare = () => {
-    const details = buildEventDetails();
-    if (typeof navigator !== "undefined" && (navigator as any).share && shareUrl) {
-      (navigator as any)
-        .share({
-          title: details.title,
-          text: details.description || details.location || details.title,
-          url: shareUrl,
-        })
-        .catch(() => {
-          window.open(shareUrl, "_blank", "noopener,noreferrer");
-        });
-    } else if (shareUrl) {
-      window.open(shareUrl, "_blank", "noopener,noreferrer");
+  const handleShare = async () => {
+    const publicShareUrl = resolvePublicEventShareUrl({ shareUrl, eventId, origin: window.location.origin, preview: eventId === "preview" });
+    if (!publicShareUrl) {
+      alert("Publish your event to get a shareable link.");
+      return;
+    }
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: eventTitle, url: publicShareUrl });
+        return;
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(publicShareUrl);
+      alert("Event link copied.");
+    } catch {
+      window.prompt("Copy your event link:", publicShareUrl);
     }
   };
 
   const handleGoogleCalendar = () => {
     const details = buildEventDetails();
+    if (!details) { alert("The host has not set the event date yet."); return; }
     const start = toGoogleDate(details.start);
     const end = toGoogleDate(details.end);
     const query = `action=TEMPLATE&text=${encodeURIComponent(
@@ -950,6 +953,7 @@ export default function SimpleTemplateView({
 
   const handleOutlookCalendar = () => {
     const details = buildEventDetails();
+    if (!details) { alert("The host has not set the event date yet."); return; }
     const webUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
       details.title,
     )}&body=${encodeURIComponent(details.description || "")}&location=${encodeURIComponent(
@@ -971,6 +975,7 @@ export default function SimpleTemplateView({
 
   const handleAppleCalendar = () => {
     const details = buildEventDetails();
+    if (!details) { alert("The host has not set the event date yet."); return; }
     openAppleCalendarIcs(buildIcsUrl(details));
   };
 
@@ -998,6 +1003,7 @@ export default function SimpleTemplateView({
 
     if (isWindows) {
       const details = buildEventDetails();
+    if (!details) { alert("The host has not set the event date yet."); return; }
       const webcalUrl = buildWebcalUrl(details);
       openWithFallback(webcalUrl, handleOutlookCalendar);
       return;
@@ -3986,6 +3992,10 @@ export default function SimpleTemplateView({
             </div>
           )}
 
+          {!isLocked ? <>
+            <EventGuestActions title={eventTitle} start={guestStart} end={guestEnd} description={description} location={fullLocation} shareUrl={shareUrl} eventId={eventId} preview={!shareUrl || eventId === "preview"} />
+            <EventGuestPlanningNotes value={guestPlanning} />
+          </> : null}
           <div className="relative mb-8 md:mb-10">
             <div className="sticky top-0 z-30 -mx-1 rounded-[24px] border border-[color:var(--border,#E2E8F0)] bg-[color:var(--surface,#FFFFFF)]/96 px-1.5 py-2 shadow-sm backdrop-blur-md md:static md:mx-0 md:border md:border-[color:var(--border,#E2E8F0)] md:bg-[color:var(--surface,#FFFFFF)] md:px-1.5 md:py-2 md:backdrop-blur-0">
               <div
@@ -4765,6 +4775,7 @@ export default function SimpleTemplateView({
       <div
         ref={templateRootRef}
         className="event-modern-container flex justify-center py-3 md:py-8"
+        style={neutralPreview ? { paddingTop: 0 } : undefined}
       >
         <div className="w-full">
           <div
@@ -4890,6 +4901,11 @@ export default function SimpleTemplateView({
                   {renderHeaderWidget()}
                 </div>
               </div>
+
+              {!isLocked ? <>
+                <EventGuestActions title={eventTitle} start={guestStart} end={guestEnd} description={description} location={fullLocation} shareUrl={shareUrl} eventId={eventId} preview={!shareUrl || eventId === "preview"} inverse={isDarkBackground} timezone={currentData?.timezone} />
+                <EventGuestPlanningNotes value={guestPlanning} inverse={isDarkBackground} />
+              </> : null}
 
               {/* Hero Image */}
               <div className="relative w-full h-64 md:h-96">
@@ -5281,58 +5297,6 @@ export default function SimpleTemplateView({
                 </section>
               )}
 
-              {/* Calendar buttons */}
-              <section className="py-6 px-6 md:px-10 border-t border-white/10">
-                <div className="flex flex-wrap gap-3 justify-center">
-                  <button
-                    onClick={handleShare}
-                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                  >
-                    <Share2 size={16} />
-                    Share
-                  </button>
-                  <button
-                    onClick={handleGoogleCalendar}
-                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                  >
-                    <Image
-                      src="/brands/google-white.svg"
-                      alt="Google"
-                      width={16}
-                      height={16}
-                      className="w-4 h-4"
-                    />
-                    Google Calendar
-                  </button>
-                  <button
-                    onClick={handleAppleCalendar}
-                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                  >
-                    <Image
-                      src="/brands/apple-white.svg"
-                      alt="Apple"
-                      width={16}
-                      height={16}
-                      className="w-4 h-4"
-                    />
-                    Apple Calendar
-                  </button>
-                  <button
-                    onClick={handleOutlookCalendar}
-                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm border border-white/20 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-                  >
-                    <Image
-                      src="/brands/microsoft-white.svg"
-                      alt="Microsoft"
-                      width={16}
-                      height={16}
-                      className="w-4 h-4"
-                    />
-                    Outlook
-                  </button>
-                </div>
-              </section>
-
               {/* Location map preview */}
               {mapAddress && (
                 <section className="py-8 px-6 md:px-10 border-t border-white/10">
@@ -5347,20 +5311,7 @@ export default function SimpleTemplateView({
 
               {/* Footer */}
               <footer className={`text-center py-8 border-t border-white/10 mt-1 ${textClass}`}>
-                <a
-                  href="https://envitefy.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="space-y-1 inline-block no-underline"
-                >
-                  <p className="text-sm opacity-60" style={bodyShadow}>
-                    Powered By Envitefy. Create. Share. Enjoy.
-                  </p>
-                  <p className="text-xs opacity-50" style={bodyShadow}>
-                    Create yours now.
-                  </p>
-                </a>
-                <EnvitefySocialLinks placement="event" inverse />
+                <EnvitefyEventBranding category={normalizedCategory} inverse={isDarkBackground} />
               </footer>
             </div>
           </div>

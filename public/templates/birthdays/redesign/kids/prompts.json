@@ -1,0 +1,155 @@
+{
+  "tool": "built-in image_gen",
+  "assets": [
+    {
+      "id": "backyard-bug-explorer",
+      "prompt": "Use case: illustration-story. Asset type: kids birthday website hero art. Create a richly detailed vintage naturalist watercolor illustration of an adventurous backyard beetle expedition: friendly ladybug, beetle and grasshopper, giant clover leaves, specimen journal, little magnifying glass, sun-dappled cream paper. Landscape composition with generous airy pale green upper space, objects along bottom corners. Tactile pigment and pencil, sophisticated children\u2019s book illustration. No text, logos, balloons, party room or frames. Save final project asset.",
+      "file": "backyard-bug-explorer.webp"
+    },
+    {
+      "id": "junior-baker-studio",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A joyful patisserie still life in soft hand-molded clay: cherry cupcakes, eggs, rolling pin, butter, piping bag, striped pink tea towel. Overhead on warm butter yellow. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "junior-baker-studio.webp"
+    },
+    {
+      "id": "little-firehouse",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A bold cut-paper red vintage fire engine racing along a winding cobalt road, little firehouse and friendly Dalmatian, cream sky, graphic modern picture book. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "little-firehouse.webp"
+    },
+    {
+      "id": "dinosaur-dig-lab",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A richly textured fossil excavation cross-section, terracotta sandstone strata and dinosaur skeleton, small brush and fern leaves. Museum-quality gouache illustration in ochre teal cream. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "dinosaur-dig-lab.webp"
+    },
+    {
+      "id": "enchanted-forest-tea",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A tiny magical woodland tea table under a giant red mushroom, teacups, moss, ferns and fireflies, dreamy watercolor dark emerald and pink. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "enchanted-forest-tea.webp"
+    },
+    {
+      "id": "outer-space-mission-control",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A spectacular toy-like retro space mission with orange rocket, indigo planet, ringed Saturn and tiny moon base. Screenprinted midnight blue, silver and orange, dramatic vertical trajectory. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "outer-space-mission-control.webp"
+    },
+    {
+      "id": "rainbow-art-studio",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. An exuberant abstract paint studio still life, rainbow thick impasto brush strokes, crayon scraps, paint brushes and pigment tubes on creamy paper, tactile cobalt coral yellow. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "rainbow-art-studio.webp"
+    },
+    {
+      "id": "construction-crew-yard",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. An intricate isometric toy construction world, yellow excavator moving soft sand, cones and plywood blocks, teal shadows, graphic clay 3D aesthetic. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "construction-crew-yard.webp"
+    },
+    {
+      "id": "undersea-mermaid-cove",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A delicate iridescent shell palace under the sea, coral gardens, tiny seahorses, bubbles and pearl arches, handpainted aqua lavender peach, enchanting full landscape. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "undersea-mermaid-cove.webp"
+    },
+    {
+      "id": "soccer-goal-celebration",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A vintage sports risograph illustration of a soccer ball flying into white goal net, green pitch from bird eye, dynamic lime cream black geometry. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "soccer-goal-celebration.webp"
+    },
+    {
+      "id": "ballet-rehearsal-party",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A delicate painterly ballet still life with blush pink pointe shoes hanging by long ribbons beside a tulle skirt, lavender shadows and ivory background, dreamy fine art. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "ballet-rehearsal-party.webp"
+    },
+    {
+      "id": "superhero-training-hq",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. An original comic city rooftop adventure, bright red cape and silver mask on skyline, energetic cobalt halftone sunburst, no recognizable branded characters, graphic comic inks. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "superhero-training-hq.webp"
+    },
+    {
+      "id": "race-car-pit-stop",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A toy red racing car on looping checkered racetrack, powder blue ground and yellow curves, dynamic retro Monaco poster illustration without lettering. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "race-car-pit-stop.webp"
+    },
+    {
+      "id": "woodland-camping-night",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A cozy glowing orange tent beneath magnificent indigo starry pine forest, campfire, marshmallow sticks and crescent moon, textured blockprint adventure. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "woodland-camping-night.webp"
+    },
+    {
+      "id": "ice-cream-parlor",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. Three sculptural ice cream sundaes with strawberry cherry pistachio scoops, chrome dessert dishes and pastel striped awning, mid-century food illustration mint coral vanilla. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "ice-cream-parlor.webp"
+    },
+    {
+      "id": "farmyard-harvest",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A charming illustrated red barn with friendly calf, chicks and pumpkin patch, rolling mustard wheat fields and gingham picnic cloth, naive folk gouache. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "farmyard-harvest.webp"
+    },
+    {
+      "id": "science-lab-spark",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A whimsical science still life of glass flasks with glowing cyan lime violet bubbling liquids, orbital models and sparkles on ultramarine, crisp dimensional editorial 3D. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "science-lab-spark.webp"
+    },
+    {
+      "id": "pirate-treasure-port",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A beautifully weathered parchment treasure island map with miniature pirate sailboat, compass, palm island and jewel chest, watercolor ink, ochre navy tropical green. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "pirate-treasure-port.webp"
+    },
+    {
+      "id": "princess-garden-ball",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A dreamy pink palace amid a spectacular climbing rose garden, swans and crown-shaped golden gate, soft watercolor in blush cream dusty blue, no people. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "princess-garden-ball.webp"
+    },
+    {
+      "id": "monster-truck-arena",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. An enormous lime green toy monster truck leaping over crushed orange toy cars in a dusty midnight arena, dramatic comic foreshortening, black neon lime orange. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "monster-truck-arena.webp"
+    },
+    {
+      "id": "mini-golf-clubhouse",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A playful bird-eye pastel miniature golf course with looping pink track, mint turf, tiny windmill and blue flag, miniature architectural model aesthetic. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "mini-golf-clubhouse.webp"
+    },
+    {
+      "id": "teddy-bear-picnic",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A tender colored pencil illustration of two soft teddy bears sharing strawberries on a red gingham picnic blanket under a peach tree, warm ivory sage palette. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "teddy-bear-picnic.webp"
+    },
+    {
+      "id": "safari-expedition-camp",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A beautifully cut-paper savannah with giraffe, elephant, zebra and acacia tree around a tiny safari tent, layered ochre terracotta olive cardstock. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "safari-expedition-camp.webp"
+    },
+    {
+      "id": "glow-dance-party",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A dazzling iridescent disco ball hovering above a liquid neon dance floor, ultraviolet magenta laser arcs and cyan stars, futuristic playful 3D art. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "glow-dance-party.webp"
+    },
+    {
+      "id": "train-station-adventure",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A nostalgic gouache toy steam train crossing an arched viaduct through rolling sage countryside, red locomotive, billowing cream smoke, travel storybook landscape. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "train-station-adventure.webp"
+    },
+    {
+      "id": "airplane-travel-club",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A bright red vintage propeller plane flying among huge fluffy ivory clouds, pale blue sky and tiny geometric landscape below, paper sculpture travel illustration. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "airplane-travel-club.webp"
+    },
+    {
+      "id": "comic-book-creator",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A tactile tabletop of blank comic paper, thick brush pen, colorful markers, expressive blank speech balloons and explosive graphic star shapes, primary comic collage. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "comic-book-creator.webp"
+    },
+    {
+      "id": "puppy-adoption-party",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A delightful scruffy golden puppy peeking out of a peach pet carrier with blue bandana, dog biscuits and tennis ball, soft dimensional children's book illustration. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "puppy-adoption-party.webp"
+    },
+    {
+      "id": "beach-surf-shack",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A sunbleached retro surf shack with striped surfboards, towering palm trees, turquoise curling wave and warm peach sunset, grainy California screenprint. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "beach-surf-shack.webp"
+    },
+    {
+      "id": "winter-snow-lodge",
+      "prompt": "Use case: illustration-story. Asset type: unique kids birthday website hero artwork. A tiny red alpine chalet amid snowy blue spruce forest, steaming cocoa, wooden sled and enormous delicate snowflakes, warm folk art gouache winter scene. Landscape artwork, professional art direction, rich tactile details, coherent composition. NO words, letters, logos, watermarks, picture frames, balloons, generic party room, people or UI. Beautiful finished original artwork.",
+      "file": "winter-snow-lodge.webp"
+    }
+  ]
+}

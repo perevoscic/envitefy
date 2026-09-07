@@ -16,7 +16,7 @@ Updated September 6, 2026. Current `/chat` was verified against production. The 
 | Studio | `/studio` | Separate customer editor |
 | Retired V2 pages | `/concierge-v2` and every nested page | Middleware redirects permanently to `/chat`, dropping old draft IDs and invitation tokens. |
 
-Production `/chat` displays “What are we celebrating?”, celebration choices, Live Card / Flyer/Invitation / Event Page choices, and the AI Concierge sidebar. Historical June 2026 documents that identify V2 as the primary creator are obsolete.
+Production `/chat` displays “What are we celebrating?”, celebration choices, Live Card / Flyer/Invitation / Event Page choices, and the Envitefy Concierge sidebar. Historical June 2026 documents that identify V2 as the primary creator are obsolete.
 
 ## Removal
 

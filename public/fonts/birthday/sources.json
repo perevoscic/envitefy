@@ -1,0 +1,194 @@
+[
+  {
+    "font": "Amita",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Amita&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/amita/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/amita/v20/HhyaU5si9Om7PQlv.ttf"
+    ]
+  },
+  {
+    "font": "Anton",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Anton&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/anton/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/anton/v27/1Ptgg87LROyAm0K0.ttf"
+    ]
+  },
+  {
+    "font": "Arizonia",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Arizonia&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/arizonia/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/arizonia/v23/neIIzCemt4A5qa7mv6WG.ttf"
+    ]
+  },
+  {
+    "font": "Bangers",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Bangers&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/bangers/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/bangers/v25/FeVQS0BTqb0h60ACL5k.ttf"
+    ]
+  },
+  {
+    "font": "Bebas Neue",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/bebasneue/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/bebasneue/v16/JTUSjIg69CK48gW7PXooxW4.ttf"
+    ]
+  },
+  {
+    "font": "Bree Serif",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Bree+Serif&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/breeserif/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/breeserif/v18/4UaHrEJCrhhnVA3DgluAx60.ttf"
+    ]
+  },
+  {
+    "font": "Cormorant",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Cormorant&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/cormorant/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/cormorant/v24/H4c2BXOCl9bbnla_nHIA47NMUjsNbCVrFhFTQ7Q.ttf"
+    ]
+  },
+  {
+    "font": "Cormorant Garamond",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Cormorant+Garamond&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/cormorantgaramond/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_v86GnM.ttf"
+    ]
+  },
+  {
+    "font": "DM Serif Display",
+    "cssSource": "https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/dmserifdisplay/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/dmserifdisplay/v17/-nFnOHM81r4j6k0gjAW3mujVU2B2K_c.ttf"
+    ]
+  },
+  {
+    "font": "Fredoka",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Fredoka&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/fredoka/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/fredoka/v17/X7nP4b87HvSqjb_WIi2yDCRwoQ_k7367_B-i2yQag0-mac3O8SLMFg.ttf"
+    ]
+  },
+  {
+    "font": "Great Vibes",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/greatvibes/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/greatvibes/v21/RWmMoKWR9v4ksMfaWd_JN-XC.ttf"
+    ]
+  },
+  {
+    "font": "Inter",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Inter&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf"
+    ]
+  },
+  {
+    "font": "Kaushan Script",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Kaushan+Script&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/kaushanscript/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/kaushanscript/v19/vm8vdRfvXFLG3OLnsO15WYS5DF7_.ttf"
+    ]
+  },
+  {
+    "font": "Libre Baskerville",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Libre+Baskerville&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/librebaskerville/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/librebaskerville/v24/kmKUZrc3Hgbbcjq75U4uslyuy4kn0olVQ-LglH6T17uj8Q4SCQ.ttf"
+    ]
+  },
+  {
+    "font": "Lobster",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Lobster&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/lobster/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/lobster/v32/neILzCirqoswsqX9_oU.ttf"
+    ]
+  },
+  {
+    "font": "Monoton",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Monoton&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/monoton/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/monoton/v22/5h1aiZUrOngCibe4fkY.ttf"
+    ]
+  },
+  {
+    "font": "Montserrat",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Montserrat&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Ew-.ttf"
+    ]
+  },
+  {
+    "font": "Orbitron",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Orbitron&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/orbitron/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/orbitron/v35/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyGy6xpg.ttf"
+    ]
+  },
+  {
+    "font": "Pacifico",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Pacifico&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/pacifico/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/pacifico/v23/FwZY7-Qmy14u9lezJ96A.ttf"
+    ]
+  },
+  {
+    "font": "Pirata One",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Pirata+One&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/pirataone/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/pirataone/v23/I_urMpiDvgLdLh0fAtoftig.ttf"
+    ]
+  },
+  {
+    "font": "Playfair Display",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvUDQ.ttf"
+    ]
+  },
+  {
+    "font": "Quicksand",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Quicksand&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/quicksand/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/quicksand/v37/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkP8o18E.ttf"
+    ]
+  },
+  {
+    "font": "Space Grotesk",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/spacegrotesk/OFL.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7oUUsj.ttf"
+    ]
+  },
+  {
+    "font": "Satisfy",
+    "cssSource": "https://fonts.googleapis.com/css2?family=Satisfy&display=swap",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/apache/satisfy/LICENSE.txt",
+    "assets": [
+      "https://fonts.gstatic.com/s/satisfy/v22/rP2Hp2yn6lkG50LoOZQ.ttf"
+    ]
+  }
+]

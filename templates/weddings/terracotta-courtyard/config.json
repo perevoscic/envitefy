@@ -1,0 +1,22 @@
+{
+  "id": "terracotta-courtyard",
+  "name": "Terracotta Courtyard",
+  "category": "bohemian",
+  "family": "atelier",
+  "layout": "terracotta-courtyard",
+  "thumbnail": "/templates/weddings/generated-heroes/terracotta-courtyard-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#f9e6d6",
+      "secondary": "#854331",
+      "background": "#f9e6d6"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/terracotta-courtyard-hero.webp"
+    }
+  }
+}

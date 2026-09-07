@@ -127,6 +127,7 @@ export const SIDEBAR_FOOTER_TRIGGER_CLASS =
 export const CATEGORY_DEFAULT_COLOR_MAP: Record<string, string> = {
   Birthdays: "pink",
   Weddings: "purple",
+  Anniversaries: "rose",
   "Baby Showers": "fuchsia",
   "DR Appointments": "red",
   Appointments: "amber",
@@ -244,7 +245,8 @@ export function createSidebarIconLookup(icons: Record<string, any>) {
     "Smart sign-up forms": icons.FileEdit,
     "Sign up": icons.FileEdit,
     Birthdays: icons.Cake,
-    Weddings: icons.Heart,
+    Weddings: icons.SidebarWeddingMenuIcon,
+    Anniversaries: icons.HeartHandshake,
     "Baby Showers": icons.Baby,
     "Gender Reveal": icons.PartyPopper,
     "Football Season": icons.SidebarFootballMenuIcon,
@@ -293,6 +295,7 @@ export function normalizeCategoryLabel(raw: string | null | undefined): string |
 
   const override = CATEGORY_LABEL_OVERRIDES[lowered];
   if (override) return override;
+  if (/anniversar/.test(lowered)) return "Anniversaries";
   if (/^wedding(s)?$/.test(lowered)) return "Weddings";
   if (/^birthday(s)?$/.test(lowered) || /birthday\s*party/.test(lowered)) {
     return "Birthdays";
@@ -333,6 +336,7 @@ export function normalizeCategoryLabel(raw: string | null | undefined): string |
 export function guessCategoryFromText(text: string): string | null {
   const source = String(text || "").toLowerCase();
   if (!source) return null;
+  if (/anniversar/.test(source)) return "Anniversaries";
   if (/birthday|b-day|turns\s+\d+|party for/.test(source)) {
     return "Birthdays";
   }
@@ -878,6 +882,7 @@ function sortGroupedSections(source: Map<string, GroupedEventItem[]>) {
     ["birthdays", 1],
     ["general events", 2],
     ["weddings", 3],
+    ["anniversaries", 4],
   ]);
 
   return Array.from(source.entries())

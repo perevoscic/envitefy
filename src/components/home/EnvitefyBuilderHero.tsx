@@ -29,13 +29,13 @@ const QUICK_START_CARDS: BuilderCard[] = [
     label: "Baby Shower",
     icon: "baby-carriage",
     copy: "Soft palettes, registry panels, RSVP cues.",
-    href: "/event/baby-showers/customize",
+    href: "/event/baby-showers",
   },
   {
     label: "Gender Reveal",
     icon: "gender-reveal-icon",
     copy: "Confetti, balloons, and countdown moments.",
-    href: "/event/gender-reveal/customize",
+    href: "/event/gender-reveal",
   },
 ];
 

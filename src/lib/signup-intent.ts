@@ -65,7 +65,7 @@ const CREATE_ACTION_BY_INTENT: Record<
   baby_showers: {
     label: "Baby Shower",
     ctaLabel: "+ Baby Shower",
-    href: "/event/baby-showers/customize",
+    href: "/event/baby-showers",
   },
   gymnastics: {
     label: "Gymnastics Meet",
@@ -85,7 +85,7 @@ const CREATE_ACTION_BY_INTENT: Record<
   gender_reveal: {
     label: "Gender Reveal",
     ctaLabel: "+ Gender Reveal",
-    href: "/event/gender-reveal/customize",
+    href: "/event/gender-reveal",
   },
   birthdays: {
     label: "Birthday Party",

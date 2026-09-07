@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import { ArrowRight, CornerDownRight } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
@@ -76,7 +78,7 @@ const buildNames = (event: EventData) => {
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "10.14.25";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     const year = String(d.getFullYear()).slice(-2);
@@ -89,7 +91,7 @@ const formatDate = (dateStr?: string) => {
 const formatDateLong = (dateStr?: string) => {
   if (!dateStr) return "October 14th";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const months = [
       "January",
       "February",
@@ -389,6 +391,10 @@ export default function IndustrialWedding({ theme, event }: Props) {
           animation: marquee 30s linear infinite;
         }
       `}</style>
+      {event.guestTools}
+      <footer className="relative z-10 py-8 text-center bg-neutral-950">
+        <EnvitefyEventBranding category="Weddings" inverse />
+      </footer>
     </div>
   );
 }

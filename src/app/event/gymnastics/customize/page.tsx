@@ -1,6 +1,8 @@
 // @ts-nocheck
 "use client";
 
+import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
+import { type EventGuestPlanning, normalizeEventGuestPlanning, eventLocalDateParts, getEventEndLocal } from "@/lib/event-guest-planning";
 import {
   CheckSquare,
   ChevronLeft,
@@ -9,7 +11,6 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
   Menu,
-  Palette,
   Type,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -18,8 +19,10 @@ import AuthModal from "@/components/auth/AuthModal";
 import {
   DEFAULT_GYM_MEET_TEMPLATE_ID,
   DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
+  isGymMeetTemplateId,
   resolveGymMeetTemplateId,
 } from "@/components/gym-meet-templates/registry";
+import GymnasticsDesignGallery from "@/components/gym-meet-templates/GymnasticsDesignGallery";
 import TemplateSelector from "@/components/gym-meet-templates/TemplateSelector";
 import SimpleTemplateView from "@/components/SimpleTemplateView";
 import { useMobileDrawer } from "@/hooks/useMobileDrawer";
@@ -765,6 +768,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     const search = useSearchParams();
     const router = useRouter();
     const editEventId = search?.get("edit") ?? undefined;
+    const selectedTemplateId = search?.get("templateId");
     const demoMode = search?.get("demo") === "1";
     const isEmbed = search?.get("embed") === "1";
     const isNewDraft = search?.get("new") === "1";
@@ -793,6 +797,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
     );
 
     const [data, setData] = useState(() => ({
+      guestPlanning: {} as EventGuestPlanning,
+      endTime: "",
+      endDate: "",
       title: "",
       date: initialDate,
       time: "14:00",
@@ -816,7 +823,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               return d.toISOString().split("T")[0];
             })()
           : "",
-      pageTemplateId: editEventId ? undefined : DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
+      pageTemplateId: editEventId ? undefined : isGymMeetTemplateId(selectedTemplateId) ? selectedTemplateId : DEFAULT_NEW_GYM_MEET_TEMPLATE_ID,
       fontId: (config as any)?.prefill?.fontId || GYM_FONTS[0]?.id || "inter",
       fontSize: (config as any)?.prefill?.fontSize || "medium",
       passcodeRequired: false,
@@ -1441,6 +1448,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           setData((prev) => ({
             ...prev,
             title: json?.title || effectiveExisting.title || prev.title,
+            guestPlanning: normalizeEventGuestPlanning(effectiveExisting.guestPlanning),
+            endTime: effectiveExisting.endTime || eventLocalDateParts(effectiveExisting.endISO || effectiveExisting.endAt || effectiveExisting.end).time,
+            endDate: effectiveExisting.endDate || eventLocalDateParts(effectiveExisting.endISO || effectiveExisting.endAt || effectiveExisting.end).date,
             date: resolvedDate || (isExistingDiscoveryEvent ? "" : prev.date),
             time: resolvedTime || (isExistingDiscoveryEvent ? "" : prev.time),
             timezone: effectiveExisting.timezone || prev.timezone,
@@ -1785,6 +1795,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       if (submitting) return;
       setSubmitting(true);
       try {
+        if (data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate)) {
+          throw new Error("End time must be after the start. For an overnight event, choose the next end date.");
+        }
+
         const {
           advancedSections: _ignoredAdvancedSections,
           designTokens: _ignoredDesignTokens,
@@ -1794,10 +1808,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         let endISO: string | null = null;
         if (data.date && data.time) {
           const start = new Date(`${data.date}T${data.time || "14:00"}:00`);
-          const end = new Date(start);
-          end.setHours(end.getHours() + 2);
+          const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+          const end = endLocal ? new Date(endLocal) : null;
           startISO = start.toISOString();
-          endISO = end.toISOString();
+          endISO = end?.toISOString() || null;
         }
 
         const heroToSave =
@@ -1828,6 +1842,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             title: data.title || config.displayName,
             startISO,
             endISO,
+            endAt: endISO,
+            end: endISO,
+            endTime: data.endTime,
+            endDate: data.endDate,
+            guestPlanning: data.guestPlanning,
             timezone: data.timezone || undefined,
             location: locationParts || undefined,
             address: data.address || undefined,
@@ -1938,6 +1957,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
               }),
             startISO,
             endISO,
+            endAt: endISO,
+            end: endISO,
+            endTime: data.endTime,
+            endDate: data.endDate,
+            guestPlanning: data.guestPlanning,
             location: locationParts || undefined,
             address: data.address || undefined,
             venue: data.venue || undefined,
@@ -2087,6 +2111,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.time,
       data.title,
       data.details,
+      data.guestPlanning,
+      data.endTime,
+      data.endDate,
       data.venue,
       data.address,
       data.timezone,
@@ -2145,7 +2172,8 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         if (!Number.isNaN(tentative.getTime())) start = tentative;
       }
       if (!start) start = new Date();
-      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+          const end = endLocal ? new Date(endLocal) : start;
       const location = data.venue || "";
       const description = data.details || "";
       return { title, start, end, location, description };
@@ -2316,14 +2344,6 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             status={detailsStatus}
             onClick={() => setActiveView("details")}
             showsOnEvent={SECTION_SHOWS_ON_EVENT.details}
-          />
-          <MenuCard
-            title="Design"
-            desc="Choose a page template."
-            icon={<Palette size={18} />}
-            status={data.pageTemplateId ? "ready" : "not-started"}
-            onClick={() => setActiveView("design")}
-            showsOnEvent={SECTION_SHOWS_ON_EVENT.design}
           />
           <MenuCard
             title="Images"
@@ -2653,6 +2673,21 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
         showBack
       >
         <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm font-medium text-slate-700">
+              End time (optional)
+              <input type="time" value={data.endTime} onChange={(event) => setData((prev) => ({ ...prev, endTime: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+            <label className="block text-sm font-medium text-slate-700">
+              End date (if different)
+              <input type="date" min={data.date || undefined} value={data.endDate} onChange={(event) => setData((prev) => ({ ...prev, endDate: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900" />
+            </label>
+          </div>
+          {data.endTime && !getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate) ? (
+            <p role="alert" className="text-sm text-red-700">End time must be after the start. For an overnight event, choose the next end date.</p>
+          ) : null}
+          <EventGuestPlanningEditor category="gymnastics" value={data.guestPlanning} onChange={(guestPlanning) => setData((prev) => ({ ...prev, guestPlanning }))} />
+
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
               Assigned Gym (Manual)
@@ -3006,10 +3041,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       if (data.date && data.time) {
         const start = new Date(`${data.date}T${data.time}:00`);
         if (!Number.isNaN(start.getTime())) {
-          const end = new Date(start);
-          end.setHours(end.getHours() + 2);
+          const endLocal = getEventEndLocal(data.date, data.time || "14:00", data.endTime, data.endDate);
+          const end = endLocal ? new Date(endLocal) : null;
           startISO = start.toISOString();
-          endISO = end.toISOString();
+          endISO = end?.toISOString() || null;
         }
       }
 
@@ -3045,6 +3080,11 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
           : {}),
         startISO,
         endISO,
+        endAt: endISO,
+        end: endISO,
+        endTime: data.endTime,
+        endDate: data.endDate,
+        guestPlanning: data.guestPlanning,
         location: locationParts || undefined,
         address: data.address || undefined,
         venue: data.venue || undefined,
@@ -3115,6 +3155,9 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       data.city,
       data.date,
       data.details,
+      data.guestPlanning,
+      data.endTime,
+      data.endDate,
       data.extra,
       data.hero,
       data.pageTemplateId,
@@ -3461,7 +3504,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             overscrollBehavior: "contain",
           }}
         >
-          <div className="w-full min-w-0 my-4 md:my-8 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
+          <div className="w-full min-w-0 mb-12 md:mb-16 transition-all duration-500 ease-in-out">
             <div
               id="guide-preview-root"
               className="min-h-[780px] w-full shadow-2xl md:rounded-xl overflow-hidden transition-all duration-500 relative z-0"
@@ -3529,5 +3572,14 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
 import { config } from "@/components/event-templates/GymnasticsTemplate";
 
-const Page = createSimpleCustomizePage(config);
-export default Page;
+const GymnasticsEditor = createSimpleCustomizePage(config);
+
+export default function GymnasticsCustomizePage() {
+  const search = useSearchParams();
+  const templateId = search?.get("templateId");
+  const hasExistingContext = Boolean(search?.get("edit")?.trim()) || search?.get("embed") === "1";
+  if (!hasExistingContext && !isGymMeetTemplateId(templateId)) {
+    return <GymnasticsDesignGallery />;
+  }
+  return <GymnasticsEditor key={search?.get("edit") || templateId || "embedded"} />;
+}

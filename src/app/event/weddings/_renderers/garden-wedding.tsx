@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import {
   Flower,
@@ -56,7 +58,7 @@ const buildNames = (event: EventData) => {
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "May 15th";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const months = [
       "January",
       "February",
@@ -89,7 +91,7 @@ const formatDate = (dateStr?: string) => {
 const getSeason = (dateStr?: string) => {
   if (!dateStr) return "Spring 2025";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const month = d.getMonth();
     const year = d.getFullYear();
     let season = "Spring";
@@ -443,8 +445,11 @@ export default function GardenWedding({ theme, event }: Props) {
         </section>
       )}
 
+      {event.guestTools}
+
       <footer className="py-12 text-center text-slate-400 text-sm italic relative z-10">
         <p>With love, {event.headlineTitle || "Flora & Henry"}</p>
+      <EnvitefyEventBranding category="Weddings" />
       </footer>
     </div>
   );

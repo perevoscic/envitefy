@@ -86,12 +86,12 @@ test("left sidebar omits Studio and Snap Event from the always-open navigation",
   assert.doesNotMatch(source, /Snap Event/);
 });
 
-test("left sidebar exposes signed-in AI Concierge entry", () => {
+test("left sidebar exposes signed-in Envitefy Concierge entry", () => {
   const source = readSource("src/app/left-sidebar.tsx");
   const controllerSource = readSource("src/app/left-sidebar.controller.ts");
   const modelSource = readSource("src/app/left-sidebar.model.ts");
 
-  assert.match(source, /onClick=\{onAiThreads\}[\s\S]*?AI Concierge/s);
+  assert.match(source, /onClick=\{onAiThreads\}[\s\S]*?Envitefy Concierge/s);
   assert.match(source, /@\/assets\/concierge-menu-icon\.png/);
   assert.doesNotMatch(source, /Create with AI/);
   assert.match(

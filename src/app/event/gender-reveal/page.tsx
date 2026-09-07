@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import GenderRevealCreateTemplate from "@/components/event-create/GenderRevealCreateTemplate";
+import FamilyDesignGallery from "@/components/events/FamilyDesignGallery";
 import GenderRevealCreate from "@/components/event-create/GenderRevealCreate";
 
 export default function NewGenderRevealEventPage() {
@@ -28,5 +28,5 @@ export default function NewGenderRevealEventPage() {
     );
   }
 
-  return <GenderRevealCreateTemplate defaultDate={defaultDate} />;
+  return <FamilyDesignGallery category="gender-reveal" />;
 }

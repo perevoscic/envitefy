@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import { ArrowRight, MapPin, Coffee, } from "lucide-react";
 import { buildWeddingLocationHref, type EventData, type ThemeConfig } from "./content-sections";
@@ -29,7 +31,7 @@ const buildInitials = (event: EventData) => {
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "09.21.25";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     const year = String(d.getFullYear()).slice(-2);
@@ -339,7 +341,7 @@ export default function MuseumWedding({ theme, event }: Props) {
             <p className="font-mono mb-12 max-w-md mx-auto">
               Attendance is mandatory. Just kidding. But please let us know by{" "}
               {event.rsvp?.deadline
-                ? new Date(event.rsvp.deadline).toLocaleDateString("en-US", {
+                ? parseEventGuestDate(event.rsvp.deadline).toLocaleDateString("en-US", {
                     month: "long",
                     day: "numeric",
                   })
@@ -363,6 +365,10 @@ export default function MuseumWedding({ theme, event }: Props) {
           </section>
         )}
       </main>
+      {event.guestTools}
+      <footer className="bg-white py-8 text-center">
+        <EnvitefyEventBranding category="Weddings" />
+      </footer>
     </div>
   );
 }

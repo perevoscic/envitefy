@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import { Clock, Users, MapPin, Coffee, Gift, } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
@@ -61,7 +63,7 @@ const formatDate = (dateStr?: string) => {
     };
   }
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const weekdays = [
       "Sunday",
       "Monday",
@@ -539,6 +541,10 @@ export default function GildedWedding({ theme, event }: Props) {
           </div>
         )}
       </div>
+      {event.guestTools}
+      <footer className="relative z-10 py-8 text-center">
+        <EnvitefyEventBranding category="Weddings" />
+      </footer>
     </div>
   );
 }

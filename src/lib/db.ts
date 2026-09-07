@@ -1095,7 +1095,7 @@ export async function updateFeatureVisibilityByEmail(params: {
   await ensureUsersHasFeatureVisibilityColumn();
   const lower = params.email.toLowerCase();
   const payload: Record<string, unknown> = {
-    v: 2,
+    v: 3,
     persona: params.persona || null,
     personas: Array.isArray(params.personas)
       ? params.personas

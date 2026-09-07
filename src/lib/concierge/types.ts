@@ -399,6 +399,21 @@ export type ConciergeStudioInvite = {
   positions?: Record<string, unknown> | null;
 };
 
+export type CreationGeneratedPreview = {
+  imageUrl: string;
+  invitationData: Record<string, unknown>;
+};
+
+export type CreationPreviewSaveRequest = {
+  creationSessionId: string;
+  studioInvite: CreationGeneratedPreview;
+  chatMessages: CreationChatMessageSnapshot[];
+};
+
+export type CreationPreviewSaveResponse =
+  | { ok: true; studioInvite: CreationGeneratedPreview }
+  | { ok: false; error: string };
+
 export type CreationThreadSummary = {
   id: string;
   title: string;
@@ -462,6 +477,7 @@ export type CreationSessionResumeResponse =
       ok: true;
       draft: ConciergeEventDraft | null;
       creationSession: CreationSession | null;
+      studioInvite?: CreationGeneratedPreview | null;
       assistantMessage: string;
       suggestedReplies: string[];
       canSave: boolean;

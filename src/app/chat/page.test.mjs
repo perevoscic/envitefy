@@ -478,10 +478,7 @@ test("/chat is the OpenAI-backed concierge creator", () => {
     /const hasReadyDraftProduct =[\s\S]{0,100}isReadyProductDraft\(draft\)[\s\S]{0,120}!liveCardEventId[\s\S]{0,120}!hasGeneratedDraftProduct/,
   );
   assert.match(client, /const canGenerateProduct =\s*hasReadyDraftProduct && !isBusy;/);
-  assert.match(
-    client,
-    /const shouldShowReadyActions =[\s\S]{0,180}hasReadyDraftProduct && !shouldShowGiftRegistryPrompt[\s\S]{0,160}!isReadyChatComposerOpen \|\| isGeneratingCard/,
-  );
+  assert.doesNotMatch(client, /shouldShowReadyActions/);
   assert.match(client, /const shouldShowGiftRegistryActions = shouldShowGiftRegistryPrompt/);
   assert.match(
     client,
@@ -496,12 +493,11 @@ test("/chat is the OpenAI-backed concierge creator", () => {
   assert.match(client, /Event details stay locked to the upload/);
   assert.match(client, /Save invite/);
   assert.doesNotMatch(client, /ChatDraftReview|Review saved event details|Event planning details/);
-  assert.match(client, /disabled=\{isGeneratingCard \|\| !canGenerateProduct\}/);
   assert.match(client, /<Loader2 className="size-4 shrink-0 animate-spin"/);
-  assert.match(client, /isGeneratingCard \? "Generating" : "Generate draft preview"/);
+  assert.doesNotMatch(client, /Generate draft preview|Review the design first/);
   assert.match(
     client,
-    /shouldShowGiftRegistryActions \|\|[\s\S]{0,80}shouldShowReceivedInviteActions \|\|[\s\S]{0,80}shouldShowReadyActions[\s\S]{0,80}\? readyActions[\s\S]{0,80}: null\}[\s\S]{0,80}\{composer\}/,
+    /shouldShowGiftRegistryActions \|\| shouldShowReceivedInviteActions[\s\S]{0,80}\? readyActions[\s\S]{0,80}: null\}[\s\S]{0,80}\{composer\}/,
   );
   assert.doesNotMatch(preview, /w-auto max-w-full/);
   assert.doesNotMatch(preview, /top-\[calc\(100%\+0\.5rem\)\]/);

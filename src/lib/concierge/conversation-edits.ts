@@ -152,7 +152,7 @@ export function extractNamedAge(message: string, options: { allowBareAge?: boole
   const name = "([\\p{L}][\\p{L}'’-]{1,30}(?:\\s+[\\p{Lu}][\\p{L}'’-]{1,30}){0,2})";
   const patterns = [
     new RegExp(`(?<![\\p{L}])${name}\\s*,?\\s*(?:is\\s+)?(\\d{1,3})\\s*(?:[- ]\\s*)?(?:years?|yrs?)\\s*(?:[- ]\\s*)?old\\b`, "gu"),
-    new RegExp(`(?<![\\p{L}])${name}\\s*,?\\s+(?:(?:is\\s+)?turning|turns|aged?|age is)\\s*:?\\s*(\\d{1,3})\\b`, "gu"),
+    new RegExp(`(?<![\\p{L}])${name}\\s*,?\\s+(?:(?:is\\s+)?turn(?:ing|ig)|turns|aged?|age is)\\s*:?\\s*(\\d{1,3})\\b`, "gu"),
     ...(options.allowBareAge ? [new RegExp(`(?<![\\p{L}])${name}\\s*,\\s*(\\d{1,3})(?=\\s*(?:,|on\\b|$))`, "gu")] : []),
   ];
   const matches = patterns.flatMap((pattern) => [...message.matchAll(pattern)]).sort((a, b) => (a.index || 0) - (b.index || 0));
@@ -184,7 +184,7 @@ export function normalizeEventScheduleText(message: string, options: { allowBare
   });
   text = text
     .replace(/\b\d{1,3}\s*(?:[- ]\s*)?(?:years?|yrs?)\s*(?:[- ]\s*)?old\b/gi, "")
-    .replace(/\b(?:(?:is\s+)?turning|turns|aged?|age is)\s*:?\s*\d{1,3}\b/gi, "")
+    .replace(/\b(?:(?:is\s+)?turn(?:ing|ig)|turns|aged?|age is)\s*:?\s*\d{1,3}\b/gi, "")
     .replace(/\b\d{1,3}(?:st|nd|rd|th)?(?:[- ]+years?)?[- ]+(?=(?:birthday|anniversary)\b)/gi, "")
     .replace(/\b(?:lasts?|lasting|duration(?: of)?|runs? for|for)\s+\d+(?:\.\d+)?[- ]*(?:hours?|hrs?|minutes?|mins?|days?|weeks?|months?|years?)\b/gi, "");
   if (options.allowBareAge) text = text.replace(/\b([\p{L}][\p{L}'’-]{1,30})\s*,\s*\d{1,3}(?=\s*(?:,|on\b|$))/gu, "$1");

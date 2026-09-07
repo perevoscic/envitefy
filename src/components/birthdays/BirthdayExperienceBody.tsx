@@ -1,6 +1,9 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
+import BirthdayArtDirectedBody from "./redesign/BirthdayArtDirectedBody";
+import { BIRTHDAY_BODY_DIRECTIONS } from "./redesign/body-directions";
+import { getBirthdayGuestNotes, type BirthdayPartyDetails } from "@/lib/birthday-party-details";
 import {
   BookOpen,
   CalendarDays,
@@ -24,6 +27,7 @@ import { formatMonthDayOrdinalEn } from "@/utils/format-month-day-ordinal";
 import { getRegistrySectionCopyForCategory } from "@/utils/registry-links";
 
 type ExperienceTheme = {
+  id?: string;
   colors: { primary: string; secondary: string };
   fonts: { headline: string; body?: string };
   experience: BirthdayExperienceProfile;
@@ -43,8 +47,8 @@ type ExperienceEvent = {
   hosts?: Array<{ name?: string; email?: string; phone?: string }>;
   registry?: Array<{ label?: string; url: string }>;
   registries?: Array<{ label?: string; url: string }>;
-  party?: { theme?: string; activities?: string; notes?: string };
-  partyDetails?: { theme?: string; activities?: string; notes?: string };
+  party?: BirthdayPartyDetails;
+  partyDetails?: BirthdayPartyDetails;
   rsvpEnabled?: boolean;
   rsvpDeadline?: string;
 };
@@ -372,7 +376,10 @@ function ExperienceHosts({
               {host.name || "Your host"}
             </p>
             {host.email || host.phone ? (
-              <p className="mt-1 text-xs opacity-60">{[host.email, host.phone].filter(Boolean).join(" · ")}</p>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                {host.email ? <a href={`mailto:${host.email}`} className="underline underline-offset-4 focus-visible:outline focus-visible:outline-2">Email your host</a> : null}
+                {host.phone ? <a href={`tel:${host.phone.replace(/[^+\d]/g, "")}`} className="underline underline-offset-4 focus-visible:outline focus-visible:outline-2">Call your host</a> : null}
+              </div>
             ) : null}
           </div>
         ))}
@@ -793,23 +800,26 @@ export default function BirthdayExperienceBody({
   onRsvpClick,
 }: BirthdayExperienceBodyProps) {
   const profile = theme.experience;
+  const artDirected = Boolean(theme.id && BIRTHDAY_BODY_DIRECTIONS[theme.id]);
   const darkMode = profile.tone === "dark";
   const childName =
     event.birthdayName ||
     (event.headlineTitle?.includes("'s") ? event.headlineTitle.split("'s")[0] : "");
   const partyTheme = event.party?.theme || event.partyDetails?.theme || "";
-  const goodToKnow =
+  const guestInfo =
     event.goodToKnow ||
     event.thingsToDo ||
     event.party?.activities ||
     event.partyDetails?.activities ||
     event.party?.notes ||
     event.partyDetails?.notes;
+  const goodToKnow = guestInfo?.trim() === event.story?.trim() ? undefined : guestInfo;
+  const guestNotes = getBirthdayGuestNotes({ ...event.partyDetails, ...event.party });
   const facts: Fact[] = [
     childName ? { label: "Guest of honor", value: childName } : null,
     event.age ? { label: "Turning", value: formatAge(event.age) } : null,
     formatEventTime(event.date, event.end)
-      ? { label: "Starts at", value: formatEventTime(event.date, event.end) }
+      ? { label: event.end ? "Party time" : "Starts at", value: formatEventTime(event.date, event.end) }
       : null,
     partyTheme ? { label: "Party theme", value: partyTheme } : null,
   ].filter((fact): fact is Fact => Boolean(fact));
@@ -840,13 +850,14 @@ export default function BirthdayExperienceBody({
         <p>{event.story}</p>
       </StoryCard>
     ) : null,
-    notes: goodToKnow ? (
+    notes: goodToKnow || guestNotes.length ? (
       <StoryCard
         title="Good to know"
         icon={<Lightbulb className="h-6 w-6" aria-hidden="true" />}
         profile={profile}
       >
-        <p>{goodToKnow}</p>
+        {goodToKnow ? <p>{goodToKnow}</p> : null}
+        {guestNotes.length ? <dl className="mt-5 space-y-5">{guestNotes.map(({ key, label, value }) => <div key={key}><dt className="font-bold">{label}</dt><dd className="mt-1 whitespace-pre-line break-words">{value}</dd></div>)}</dl> : null}
       </StoryCard>
     ) : null,
     schedule: (
@@ -872,22 +883,24 @@ export default function BirthdayExperienceBody({
       data-birthday-body-composition={profile.bodyComposition}
       data-birthday-body-experience={profile.bodySignature}
       data-birthday-section-order={profile.sectionOrder}
-      className="w-full px-5 py-12 sm:px-8 lg:px-12 lg:py-16"
+      className={artDirected ? "w-full px-5 sm:px-8 lg:px-12" : "w-full px-5 py-12 sm:px-8 lg:px-12 lg:py-16"}
       style={bodyStyle}
     >
       <div className="mx-auto max-w-7xl">
+        {artDirected ? <BirthdayArtDirectedBody id={theme.id!} blocks={blocks} /> : <>
         <div className="mb-9 flex items-center justify-between gap-5 border-b border-[var(--birthday-body-ink)]/14 pb-4">
           <div className="flex items-center gap-3">
             <Sparkles className="h-5 w-5 text-[var(--birthday-body-accent)]" aria-hidden="true" />
             <p className="text-[10px] font-black uppercase tracking-[0.24em] opacity-58">
-              {profile.bodyCompositionLabel}
+              The celebration
             </p>
           </div>
           <div className="hidden items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] opacity-45 sm:flex">
-            <Users className="h-4 w-4" aria-hidden="true" /> Guest experience
+            <Users className="h-4 w-4" aria-hidden="true" /> You’re invited
           </div>
         </div>
         {renderBodyComposition(profile, blocks)}
+        </>}
       </div>
     </main>
   );

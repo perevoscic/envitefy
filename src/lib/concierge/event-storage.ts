@@ -5,6 +5,8 @@ import type {
   ConversationMessageRole,
   ConversationThread,
   CreationSession,
+  CreationGeneratedPreview,
+  CreationChatMessageSnapshot,
   EventAsset,
   EventAssetStatus,
   EventAssetType,
@@ -180,6 +182,33 @@ export async function getCreationSession(params: {
      where id = $1 and user_id = $2
      limit 1`,
     [params.sessionId, params.userId],
+  );
+  return res.rows[0] ? mapCreationSession(res.rows[0]) : null;
+}
+
+export async function saveCreationSessionPreview(params: {
+  userId: string;
+  sessionId: string;
+  studioInvite: CreationGeneratedPreview;
+  chatMessages: CreationChatMessageSnapshot[];
+}): Promise<CreationSession | null> {
+  await ensureEventManageTables();
+  const res = await query(
+    `update creation_sessions
+     set metadata = metadata || $3::jsonb,
+         updated_at = now()
+     where id = $1 and user_id = $2
+       and status not in ('published', 'publishing')
+       and not (metadata ? 'savedEventId')
+     returning id, user_id, status, draft, active_context, source_context, metadata, created_at, updated_at`,
+    [
+      params.sessionId,
+      params.userId,
+      JSON.stringify({
+        generatedPreview: params.studioInvite,
+        ...(params.chatMessages.length ? { chatMessages: params.chatMessages } : {}),
+      }),
+    ],
   );
   return res.rows[0] ? mapCreationSession(res.rows[0]) : null;
 }

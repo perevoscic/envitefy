@@ -1,3 +1,5 @@
+import { parseEventGuestDate } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 
 import { ArrowUpRight, Martini, Building2 } from "lucide-react";
 import type { EventData, ThemeConfig } from "./content-sections";
@@ -27,7 +29,7 @@ const buildCityLine = (event: EventData) => {
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "09.18.2025";
   try {
-    const d = new Date(dateStr);
+    const d = parseEventGuestDate(dateStr);
     const month = `${d.getMonth() + 1}`.padStart(2, "0");
     const day = `${d.getDate()}`.padStart(2, "0");
     const year = d.getFullYear();
@@ -176,7 +178,7 @@ export default function SkylineWedding({ theme, event }: Props) {
           </h2>
           <p className="text-slate-400 mb-12">
             {event.rsvp?.deadline
-              ? `Kindly respond by ${new Date(
+              ? `Kindly respond by ${parseEventGuestDate(
                   event.rsvp.deadline
                 ).toLocaleDateString("en-US", {
                   month: "long",
@@ -202,10 +204,13 @@ export default function SkylineWedding({ theme, event }: Props) {
         </section>
       )}
 
+      {event.guestTools}
+
       <footer className="py-8 text-center text-slate-600 text-xs uppercase font-bold tracking-widest">
         <p>
           {names} • {new Date().getFullYear()}
         </p>
+      <EnvitefyEventBranding category="Weddings" />
       </footer>
     </div>
   );

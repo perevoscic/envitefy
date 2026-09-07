@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { getServerSession } from "next-auth";
 import { cache } from "react";
-import EventActions from "@/components/EventActions";
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
 import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
@@ -399,7 +400,10 @@ export default async function SignupPage({
               Sign in / Sign up
             </a>
           </div>
-        </main>
+          <footer className="border-t border-gray-200 py-8 text-center">
+          <EnvitefyEventBranding category="Smart Sign-up" />
+        </footer>
+      </main>
       </div>
     );
   }
@@ -548,24 +552,18 @@ export default async function SignupPage({
                 </p>
               </div>
             )}
-            {/* Guest share actions inside header footer */}
+            {/* Guest tools beside the form details; slot schedules remain independent. */}
             <div className="mt-4 pt-3 border-t border-border/60">
-              <EventActions
+              <EventGuestActions
                 shareUrl={`/smart-signup-form/${canonicalSegment}`}
-                historyId={row.id}
-                event={
-                  {
-                    title: (row.title as string) || (signupForm.title as string) || "Event",
-                    start:
-                      (data?.startISO as string | null) || (data?.start as string | null) || null,
-                    end: (data?.endISO as string | null) || (data?.end as string | null) || null,
-                    location: (data?.location as string | null) || null,
-                    venue: (data?.venue as string | null) || null,
-                    description: (data?.description as string | null) || null,
-                    timezone: (data?.timezone as string | null) || null,
-                    rsvp: (data?.rsvp as string | null) || null,
-                  } as any
-                }
+                eventId={row.id}
+                title={signupForm.title || row.title || "Sign-up form"}
+                start={signupForm.start || data?.startISO || data?.start || null}
+                end={signupForm.end || data?.endISO || data?.end || null}
+                location={[signupForm.venue, signupForm.location].filter(Boolean).join(", ") || data?.location || ""}
+                description={signupForm.description || ""}
+                timezone={signupForm.timezone || data?.timezone || undefined}
+                allDay={signupForm.allDay ?? undefined}
               />
             </div>
           </div>

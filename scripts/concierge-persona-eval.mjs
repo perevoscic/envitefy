@@ -24,7 +24,7 @@ if (!liveAi) {
   process.env.OPENAI_CONCIERGE_TIMEOUT_MS = "1000";
 }
 
-const USER_SIMULATOR_PROMPT = `You are acting as a realistic user testing an event-building AI concierge.
+const USER_SIMULATOR_PROMPT = `You are acting as a realistic user testing an event-building Envitefy Concierge.
 
 You are NOT the assistant. You are the human user.
 

@@ -1,0 +1,22 @@
+{
+  "id": "ocean-cyanotype",
+  "name": "Ocean Cyanotype",
+  "category": "coastal minimal",
+  "family": "atelier",
+  "layout": "ocean-cyanotype",
+  "thumbnail": "/templates/weddings/generated-heroes/ocean-cyanotype-hero.webp",
+  "theme": {
+    "colors": {
+      "primary": "#0e4266",
+      "secondary": "#f4f5e9",
+      "background": "#0e4266"
+    },
+    "fonts": {
+      "headline": "Georgia, serif",
+      "body": "Arial, sans-serif"
+    },
+    "decorations": {
+      "heroImage": "/templates/weddings/generated-heroes/ocean-cyanotype-hero.webp"
+    }
+  }
+}

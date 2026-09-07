@@ -16,6 +16,7 @@ import {
   getDashboardResponseCache,
 } from "@/lib/dashboard-cache";
 import { canShowOwnerRsvpDashboard } from "@/lib/owner-rsvp-dashboard";
+import { loadDashboardOverview } from "@/lib/dashboard-overview-query";
 import {
   createServerTimingTracker,
   isTimingRequested,
@@ -167,14 +168,11 @@ async function getCachedMetrics(
     if (!metricsCacheTableExists) return null;
     const res = await query<{
       event_id: string;
-      travel_minutes: number | null;
-      travel_distance_km: number | null;
-      travel_updated_at: string | null;
       weather_summary: string | null;
       weather_temp: number | null;
       weather_updated_at: string | null;
     }>(
-      `select event_id, travel_minutes, travel_distance_km, travel_updated_at, weather_summary, weather_temp, weather_updated_at
+      `select event_id, weather_summary, weather_temp, weather_updated_at
        from event_metrics_cache
        where event_id = $1
        limit 1`,
@@ -184,9 +182,11 @@ async function getCachedMetrics(
     if (!row) return null;
     return {
       eventId: row.event_id,
-      travelMinutes: row.travel_minutes,
-      travelDistanceKm: row.travel_distance_km,
-      travelUpdatedAt: row.travel_updated_at,
+      // The persisted event cache is shared by hosts and guests. A drive
+      // estimate is filled by enrichment using this viewer's actual origin.
+      travelMinutes: null,
+      travelDistanceKm: null,
+      travelUpdatedAt: null,
       weatherSummary: row.weather_summary,
       weatherTemp: row.weather_temp,
       weatherUpdatedAt: row.weather_updated_at,
@@ -241,9 +241,6 @@ async function computeDashboardPayload(
     drafts,
     upcoming,
     nextEvent,
-    upcomingIn30DaysCount,
-    upcomingIn7DaysCount,
-    nextEventInDays,
   } = buildDashboardCollections(events, now);
   const emptyReason = buildDashboardEmptyReason({
     sourceRowCount: eventResult.diagnostics.sourceRowCount,
@@ -405,9 +402,14 @@ async function computeDashboardPayload(
     ev.userRsvpResponse = userRsvpMap.get(ev.id) ?? null;
   }
 
+  // Responses load separately from history. Rebuild after applying them so a
+  // declined invitation cannot remain in the spotlight or inflate counts.
+  const visible = buildDashboardCollections(events, now);
+  const overview = await loadDashboardOverview(userId, visible.upcoming);
+
   const setupHealthFlags = buildSetupHealth(
-    nextEvent,
-    rsvp.going + rsvp.maybe + rsvp.declined
+    visible.nextEvent,
+    visible.nextEvent?.id === nextEvent?.id ? rsvp.going + rsvp.maybe + rsvp.declined : 0
   );
   const derivedChecklist = nextEvent
     ? setupHealthFlags.map((flag) => ({
@@ -426,18 +428,20 @@ async function computeDashboardPayload(
         dueAt: nextEvent.startAt,
       }))
     : [];
-  const nextEventHours = nextEvent ? hoursUntil(nextEvent.startAt) : null;
+  const nextEventHours = visible.nextEvent ? hoursUntil(visible.nextEvent.startAt) : null;
 
   return {
     ok: true,
-    nextEvent,
+    nextEvent: visible.nextEvent,
     snapshot: {
-      upcomingCount30Days: upcomingIn30DaysCount,
-      upcomingCount7Days: upcomingIn7DaysCount,
-      nextEventInDays,
+      upcomingCount30Days: visible.upcomingIn30DaysCount,
+      upcomingCount7Days: visible.upcomingIn7DaysCount,
+      nextEventInDays: visible.nextEventInDays,
     },
-    upcoming: upcoming.slice(0, 12),
-    rsvp: shouldLoadOwnerRsvp ? rsvp : null,
+    upcoming: visible.upcoming,
+    overview,
+    eventWindowLimited: eventResult.diagnostics.sourceRowCount >= DASHBOARD_EVENT_QUERY_LIMIT,
+    rsvp: shouldLoadOwnerRsvp && visible.nextEvent?.id === nextEvent?.id ? rsvp : null,
     setupHealth: {
       flags: setupHealthFlags,
     },
@@ -454,19 +458,19 @@ async function computeDashboardPayload(
         startAt: event.startAt,
       })),
     },
-    metricsCache,
+    metricsCache: visible.nextEvent?.id === nextEvent?.id ? metricsCache : null,
     metricsEligibility: {
       weatherEligible: Boolean(
-        nextEvent &&
-          (nextEvent.locationLat != null && nextEvent.locationLng != null
+        visible.nextEvent &&
+          (visible.nextEvent.locationLat != null && visible.nextEvent.locationLng != null
             ? true
-            : Boolean(nextEvent.locationText)) &&
+            : Boolean(visible.nextEvent.locationText)) &&
           nextEventHours != null &&
           nextEventHours <= WEATHER_FORECAST_WINDOW_HOURS &&
           WEATHERAPI_KEY
       ),
       travelWindowEligible: Boolean(
-        nextEvent && nextEventHours != null && nextEventHours <= 72
+        visible.nextEvent && (visible.nextEvent.locationText || (visible.nextEvent.locationLat != null && visible.nextEvent.locationLng != null))
       ),
     },
     diagnostics,

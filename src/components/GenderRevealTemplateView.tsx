@@ -1,10 +1,14 @@
 "use client";
 
+import EventGuestActions from "@/components/event-templates/EventGuestActions";
+import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import { parseEventGuestDate, normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
+import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
-import { CalendarPlus, Check, Gift, MapPin } from "lucide-react";
-import AppleCalendarLink from "@/components/AppleCalendarLink";
+import { Check, Gift, MapPin } from "lucide-react";
 import EventActions from "@/components/EventActions";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import StaticMap from "@/components/StaticMap";
@@ -41,6 +45,7 @@ type Props = {
   isReadOnly: boolean;
   editHref: string;
   calendarLinks?: CalendarLinkSet | null;
+  preview?: boolean;
 };
 
 type RsvpStatsPayload = {
@@ -67,7 +72,7 @@ function readString(value: unknown): string {
 
 function formatDate(value?: string | null): string | null {
   if (!value) return null;
-  const parsed = new Date(value);
+  const parsed = parseEventGuestDate(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleDateString("en-US", {
     weekday: "long",
@@ -278,6 +283,7 @@ export default function GenderRevealTemplateView({
   isReadOnly,
   editHref,
   calendarLinks,
+  preview = false,
 }: Props) {
   const canEdit = canEditProp ?? isOwner;
   const config = useMemo(() => parseGenderRevealConfig(eventData), [eventData]);
@@ -306,7 +312,6 @@ export default function GenderRevealTemplateView({
   const [rsvpError, setRsvpError] = useState<string | null>(null);
   const [rsvpSubmitting, setRsvpSubmitting] = useState(false);
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
-  const [calendarOpen, setCalendarOpen] = useState(false);
   const [revealing, setRevealing] = useState(false);
 
   const refreshStats = useCallback(async () => {
@@ -329,6 +334,7 @@ export default function GenderRevealTemplateView({
   }, [eventData.numberOfGuests, eventId]);
 
   useEffect(() => {
+    if (preview) return;
     void refreshStats();
     const onSubmit = () => {
       window.setTimeout(() => void refreshStats(), 400);
@@ -339,7 +345,7 @@ export default function GenderRevealTemplateView({
       window.removeEventListener("rsvp-submitted", onSubmit);
       window.clearInterval(interval);
     };
-  }, [refreshStats]);
+  }, [preview, refreshStats]);
 
   const savedTheme = asTheme(eventData.theme);
   const textClass = readString(savedTheme.text) || "text-slate-900";
@@ -368,12 +374,17 @@ export default function GenderRevealTemplateView({
     (typeof eventData.rsvp === "string" ? eventData.rsvp : "");
   const startIso = readString(eventData.startISO) || readString(eventData.start);
   const startDate = startIso
-    ? new Date(startIso)
+    ? parseEventGuestDate(startIso)
     : eventData.date
       ? new Date(`${String(eventData.date)}T${readString(eventData.time) || "14:00"}:00`)
       : null;
   const dateLabel = startDate ? formatDate(startDate.toISOString()) : formatDate(readString(eventData.date));
   const timeLabel = formatTime(startDate) || readString(eventData.time) || null;
+  const storedEnd = readString(eventData.endISO) || readString(eventData.end) || readString(eventData.endAt);
+  const parsedEnd = storedEnd ? new Date(storedEnd) : null;
+  const endLabel = parsedEnd && !Number.isNaN(parsedEnd.getTime())
+    ? parsedEnd.toLocaleString("en-US", { ...(startDate && parsedEnd.toDateString() !== startDate.toDateString() ? { month: "short", day: "numeric" } : {}), hour: "numeric", minute: "2-digit" })
+    : null;
   const locationLabel = [
     readString(eventData.address),
     readString(eventData.venue),
@@ -579,7 +590,7 @@ export default function GenderRevealTemplateView({
                   ) : null}
                   <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm font-semibold uppercase tracking-[0.22em] text-white/85">
                     {dateLabel ? <span>{dateLabel}</span> : null}
-                    {timeLabel ? <span>{timeLabel}</span> : null}
+                    {timeLabel ? <span>{timeLabel}{endLabel ? ` – ${endLabel}` : ""}</span> : null}
                     {locationLabel ? <span>{locationLabel}</span> : null}
                   </div>
                   <LiveStrip
@@ -599,47 +610,21 @@ export default function GenderRevealTemplateView({
                       RSVP
                     </a>
                   ) : null}
-                  {calendarLinks ? (
-                    <div className="relative flex-1">
-                      <button
-                        type="button"
-                        onClick={() => setCalendarOpen((open) => !open)}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/70 bg-white/15 px-5 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-white backdrop-blur"
-                      >
-                        <CalendarPlus size={16} />
-                        Add to calendar
-                      </button>
-                      {calendarOpen ? (
-                        <div className="absolute bottom-full left-0 right-0 z-20 mb-2 overflow-hidden rounded-2xl bg-white text-slate-800 shadow-xl">
-                          <AppleCalendarLink
-                            href={calendarLinks.appleInline}
-                            className="block px-4 py-3 text-sm font-semibold hover:bg-slate-50"
-                          >
-                            Apple Calendar
-                          </AppleCalendarLink>
-                          <a
-                            href={calendarLinks.google}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block px-4 py-3 text-sm font-semibold hover:bg-slate-50"
-                          >
-                            Google Calendar
-                          </a>
-                          <a
-                            href={calendarLinks.outlook}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block px-4 py-3 text-sm font-semibold hover:bg-slate-50"
-                          >
-                            Outlook
-                          </a>
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
                 </div>
               </div>
             </section>
+
+            <EventGuestActions
+              title={eventTitle}
+              start={startDate && !Number.isNaN(startDate.getTime()) ? startDate.toISOString() : undefined}
+              end={readString(eventData.endISO) || readString(eventData.end) || readString(eventData.endAt)}
+              location={locationLabel || undefined}
+              shareUrl={shareUrl}
+              eventId={eventId}
+              calendarLinks={storedEnd ? calendarLinks : undefined}
+              inverse={textClass.includes("text-white")}
+            />
+            <EventGuestPlanningNotes value={normalizeEventGuestPlanning(eventData.guestPlanning)} inverse={textClass.includes("text-white")} />
 
             {detailItems.length > 0 ? (
               <section id="details" className="border-t border-white/10 px-6 py-10 md:px-10">
@@ -933,9 +918,8 @@ export default function GenderRevealTemplateView({
               </section>
             ) : null}
 
-            <footer className="border-t border-white/10 px-6 py-8 text-center text-xs uppercase tracking-[0.28em] opacity-60">
-              <p>Powered by Envitefy</p>
-              <p>Create. Share. Enjoy.</p>
+            <footer className="border-t border-white/10 px-6 py-8 text-center text-xs uppercase tracking-[0.28em] ">
+              <EnvitefyEventBranding category="Gender Reveals" inverse={textClass.includes("text-white")} />
             </footer>
           </div>
         </div>
