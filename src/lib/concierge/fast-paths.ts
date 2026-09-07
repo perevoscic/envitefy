@@ -79,16 +79,6 @@ function hasToneOrStyleIntent(text: string): boolean {
   );
 }
 
-function hasObviousStarterCreationIntent(text: string): boolean {
-  return (
-    /\b(create|make|build|draft|design)\b/i.test(text) &&
-    /\b(birthday|wedding|baby\s+shower|gender\s+reveal|bridal\s+shower|game|football|field\s+trip|open\s+house|housewarming|graduation|gymnastics|gym\s+meet)\b/i.test(
-      text,
-    ) &&
-    /\b(live\s*card|flyer|invite|invitation|event\s+page|sign[-\s]?up|signup|rsvp)\b/i.test(text)
-  );
-}
-
 function stripRequestedOutputLabels(text: string, requestedOutputs: RequestedOutput[]): string {
   let stripped = text;
   for (const output of requestedOutputs) {
@@ -103,27 +93,6 @@ function isStarterCategoryProductSelection(text: string, requestedOutputs: Reque
   if (!requestedOutputs.length) return false;
   const categoryOnly = normalizedMessage(stripRequestedOutputLabels(text, requestedOutputs));
   return Boolean(categoryOnly && STARTER_CHIPS.has(categoryOnly));
-}
-
-function hasKnownStarterCategoryContext(args: {
-  text: string;
-  requestedOutputs: RequestedOutput[];
-  starterCategory?: string | null;
-}) {
-  if (!args.requestedOutputs.length) return false;
-  const categoryText = normalizedMessage(
-    stripRequestedOutputLabels(args.text, args.requestedOutputs),
-  );
-  if (!categoryText) return false;
-
-  const structuredCategory = normalizedMessage(args.starterCategory);
-  if (structuredCategory && STARTER_CHIPS.has(structuredCategory)) {
-    return categoryText === structuredCategory || categoryText.startsWith(`${structuredCategory} `);
-  }
-
-  return Array.from(STARTER_CHIPS).some(
-    (category) => categoryText === category || categoryText.startsWith(`${category} `),
-  );
 }
 
 export function isConciergeFastActionsEnabled(): boolean {
@@ -147,9 +116,6 @@ export function shouldSkipOpenAiForCreationRequest(args: {
       ? `${starterCategory} ${message}`.trim()
       : message;
   if (isGreetingMessage(message)) return true;
-  if (!args.request.draft && !args.request.ocrContext && hasObviousStarterCreationIntent(message)) {
-    return true;
-  }
 
   const action = args.request.action || "message";
   const requestedOutputs: RequestedOutput[] = args.fallbackDraft?.requestedOutputs?.length
@@ -171,18 +137,9 @@ export function shouldSkipOpenAiForCreationRequest(args: {
     return true;
   }
   if (
-    action === "starter_category" &&
-    !args.request.draft &&
-    !args.request.ocrContext &&
-    hasKnownStarterCategoryContext({
-      text: selectionMessage,
-      requestedOutputs,
-      starterCategory,
-    })
+    (action === "chip" || action === "starter_category") && hasAssetIntent(message) &&
+    !isMeaningfulEventText(message, requestedOutputs)
   ) {
-    return true;
-  }
-  if ((action === "chip" || action === "starter_category") && hasAssetIntent(message)) {
     return true;
   }
 

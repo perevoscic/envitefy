@@ -611,6 +611,14 @@ function detectTheme(text: string, previous?: ConciergeEventDraft | null) {
   const labeledTheme = findLabeledDetailValue(text, ["theme"]);
   if (labeledTheme && !isInstructionFragment(labeledTheme)) return labeledTheme;
 
+  const compactParts = text.split(/[,;\n]+/);
+  const compactTheme = compactParts.length > 1 ? compactParts.map((part) => part.trim()).find((part) =>
+    /^[^:!?]{2,100}\s+(?:theme|style|vibe)[.!]?$/i.test(part) &&
+    !/\b(?:not|no|maybe|instead|change|remove|skip)\b/i.test(part) &&
+    !isInstructionFragment(part)
+  ) : null;
+  if (compactTheme) return compactTheme.replace(/[.!]+$/g, "");
+
   const themeAndTone = text.match(/\btheme\s+and\s+tone\s*:\s*([^.\n;]{2,160})/i);
   const themeAndToneValue = cleanString(themeAndTone?.[1]?.replace(/[.!?]+$/g, ""));
   if (themeAndToneValue && !isInstructionFragment(themeAndToneValue)) {
@@ -1674,6 +1682,17 @@ function detectVenueOrLocation(text: string, ocrContext?: ConciergeOcrContext | 
   return null;
 }
 
+function detectCompactVenue(text: string) {
+  const details = text.split(/[,;\n]+/).map((value) => value.trim()).filter(Boolean);
+  if (details.length < 2) return null;
+  const venues = details.filter((value) =>
+    value.length <= 120 &&
+    /\b(?:amc|regal|cinemark|cinema|theat(?:er|re)|hall|park|cafe|café|restaurant|center|centre|museum|hotel|resort|bowling|lanes|church|chapel|library|arena|stadium)\b/i.test(value) &&
+    !/\b(?:theme|themed|style|inspired|vibe|movie|film|title|headline|maybe|perhaps|consider|suggest|prefer|like|love|not|instead|or)\b|\?/i.test(value),
+  );
+  return venues.length === 1 ? stripLeadingTimeFromLocation(venues[0]) : null;
+}
+
 const MULTI_LOCATION_LABELS =
   "ceremony|reception|cocktail\\s+hour|after[-\\s]?party|dinner|lunch|brunch|breakfast|pizza|meal|check[-\\s]?in|registration|pickup|drop[-\\s]?off|photos?";
 
@@ -1814,6 +1833,7 @@ function detectLocationFollowUp(text: string, previous?: ConciergeEventDraft | n
   const cleaned = cleanString(text?.replace(/[.!?]+$/g, ""));
   if (!cleaned || cleaned.length > 140) return null;
   if (/^(yes|no|ok|okay|thanks?|not sure)$/i.test(cleaned)) return null;
+  if (/^(?:skip(?:\s+(?:it|gift\s+link|registry))?|no\s+(?:gift\s+link|registry|gifts(?:\s+please)?|thanks))$/i.test(cleaned)) return null;
   if (/^\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?$/i.test(cleaned)) return null;
   if (requestsInvitationCopy(cleaned) || /^(?:(?:actually|please)\s*[,—-]?\s*)?(?:(?:the\s+)?(?:date|time|title|budget|RSVP|invitation|wording)\b|(?:change|move|switch|set|keep|turn|write|draft|translate)\b)/i.test(cleaned)) return null;
   const temporal = chrono.parse(cleaned)[0];
@@ -2924,6 +2944,7 @@ export function fallbackExtractConciergeDraft(args: {
       detectPrimaryLabeledLocation(locationFactText) ||
       detectLocationCorrection(message) ||
       detectVenueOrLocation(inferenceLocationText, args.ocrContext) ||
+      detectCompactVenue(locationFactText) ||
       detectLocationFollowUp(message, previous) ||
       previous?.location ||
       previous?.venue ||
@@ -3129,6 +3150,10 @@ export function fallbackExtractConciergeDraft(args: {
     eventType,
     title,
     titleConfirmed: Boolean(explicitTitle || previous?.titleConfirmed),
+    explicitlyClearedFields: previous?.explicitlyClearedFields || [],
+    contextStartMessage: previous
+      ? previous.contextStartMessage
+      : sessionDraft ? args.message.slice(0, 2000) : undefined,
     ownership:
       sourceContext.detectedSourceIntent === "received_invite"
         ? "invited"

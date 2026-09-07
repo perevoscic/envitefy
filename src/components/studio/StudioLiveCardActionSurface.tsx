@@ -1,7 +1,8 @@
 "use client";
 
 import type { PanInfo } from "framer-motion";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   CalendarDays,
   CheckCircle2,
@@ -19,7 +20,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import type { FormEvent } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { supportsStudioCategoryRsvp } from "@/app/studio/studio-workspace-field-config";
 import {
@@ -74,6 +75,8 @@ export type LiveCardEventDetails = {
   eventDate?: string;
   startTime?: string;
   endTime?: string;
+  calendarStartISO?: string;
+  calendarEndISO?: string;
   venueName?: string;
   location?: string;
   eventTitle?: string;
@@ -125,6 +128,8 @@ type StudioLiveCardActionSurfaceProps = {
   shareState?: LiveCardShareState;
   isDesignMode?: boolean;
   showcaseMode?: boolean;
+  /** Try guest controls without submitting responses; keep panels within the card frame. */
+  previewMode?: boolean;
   buttonChromeSize?: "default" | "compact";
   onDragEnd?: (key: LiveCardButtonKey, position: LiveCardButtonPosition) => void;
   showExtendedDetails?: boolean;
@@ -247,6 +252,21 @@ function resolveLiveCardCalendarMeta(invitationData?: LiveCardInvitationData | n
   const details = invitationData?.eventDetails;
   const eventDate = readString(details?.eventDate);
   if (!eventDate) return null;
+
+  const calendarStartISO = readString(details?.calendarStartISO);
+  if (calendarStartISO) {
+    const start = new Date(calendarStartISO);
+    if (Number.isNaN(start.getTime())) return null;
+    const suppliedEnd = new Date(readString(details?.calendarEndISO));
+    const end = !Number.isNaN(suppliedEnd.getTime()) && suppliedEnd > start
+      ? suppliedEnd : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    return {
+      startIso: start.toISOString(),
+      endIso: end.toISOString(),
+      location: readString(details?.location) || readString(details?.venueName),
+      description: readString(invitationData?.description) || readString(details?.detailsDescription),
+    };
+  }
 
   let start = readString(details?.startTime)
     ? new Date(`${eventDate}T${readString(details?.startTime)}`)
@@ -435,7 +455,31 @@ function OverviewDetailRow(props: { label: string; value: string; emphasized?: b
   );
 }
 
+function LiveCardPreviewPanel({ children, enabled, onClose }: {
+  children: ReactNode;
+  enabled: boolean;
+  onClose: () => void;
+}) {
+  const [trigger] = useState(() => typeof document !== "undefined" ? document.activeElement : null);
+  if (!enabled) return children;
+  return (
+    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/35 backdrop-blur-sm" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          onCloseAutoFocus={(event) => { event.preventDefault(); if (trigger instanceof HTMLElement) trigger.focus(); }}
+          className="pointer-events-none fixed inset-0 z-[90] flex items-center justify-center p-4 outline-none"
+        >
+          {children}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 export default function StudioLiveCardActionSurface(props: StudioLiveCardActionSurfaceProps) {
+  const reducedMotion = useReducedMotion();
   const invitationData = props.invitationData || null;
   const details = invitationData?.eventDetails || null;
   const calendarLinks = useMemo(
@@ -453,7 +497,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   const directRsvpHref = normalizeLiveCardActionHref(details?.rsvpUrl);
   const directRsvpEventId = readString(details?.eventId);
   const hasDirectEnvitefyRsvp = Boolean(
-    directRsvpEventId &&
+    (directRsvpEventId || props.previewMode && details?.rsvpEnabled === true) &&
       (details?.rsvpEnabled === true ||
         readString(details?.rsvpMode).toLowerCase() === "envitefy" ||
         directRsvpHref),
@@ -545,7 +589,14 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     };
 
     document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") props.onActiveTabChange("none");
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [props.activeTab, props.onActiveTabChange]);
 
   useEffect(() => {
@@ -580,7 +631,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
 
   const submitDirectRsvp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!directRsvpEventId || !directRsvpChoice) return;
+    // Preview controls are interactive, but must never submit a real guest response.
+    if (props.previewMode || !directRsvpEventId || !directRsvpChoice) return;
 
     const name = directRsvpName.trim();
     if (!name) {
@@ -670,7 +722,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
         key: "calendar" as const,
         label: "Calendar",
         icon: CalendarDays,
-        visible: Boolean(readString(details?.eventDate)),
+        visible: Boolean(readString(details?.eventDate)) && (!props.previewMode || Boolean(readString(details?.calendarStartISO))),
         onClick: () =>
           props.onActiveTabChange(props.activeTab === "calendar" ? "none" : "calendar"),
       },
@@ -686,6 +738,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   }, [
     props.activeTab,
     props.onActiveTabChange,
+    props.previewMode,
     categorySupportsRsvp,
     details,
     directRsvpHref,
@@ -709,7 +762,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
     buttonCount: buttonConfigs.length,
   });
   const defaultActionRailClassName = `grid w-full min-w-0 grid-flow-col auto-cols-fr items-stretch ${
-    props.showcaseMode ? "gap-2 px-2" : useCompactActionButtons ? "gap-1.5 px-2.5" : "gap-3 px-1"
+    props.previewMode ? "gap-2 px-1" : props.showcaseMode ? "gap-2 px-2" : useCompactActionButtons ? "gap-1.5 px-2.5" : "gap-3 px-1"
   }`;
   const actionRailWrapperClassName =
     showcaseRailLayout === "cluster" ? "flex w-full justify-center px-2" : "w-full";
@@ -760,7 +813,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
   }`;
 
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2">
+    <div className={`pointer-events-none absolute inset-0 flex flex-col ${props.previewMode ? "px-0 pb-1 pt-6" : "px-0 pb-1 pt-6 sm:px-4 sm:pt-7 md:p-8 md:pb-2"}`}>
       {props.onShare ? (
         <button
           type="button"
@@ -786,13 +839,19 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
       <div className="flex h-full min-h-0 flex-col justify-end">
         <AnimatePresence initial={false}>
           {props.activeTab !== "none" && props.activeTab !== "share" ? (
+            <LiveCardPreviewPanel enabled={Boolean(props.previewMode)} onClose={() => props.onActiveTabChange("none")}>
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.94 }}
+              initial={reducedMotion ? false : { opacity: 0, y: 10, scale: 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.96 }}
+              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.96 }}
               data-live-card-panel
-              className="pointer-events-auto absolute bottom-32 left-1/2 z-50 w-[calc(100%-1rem)] max-w-[22rem] -translate-x-1/2 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl sm:w-[calc(100%-2rem)]"
+              role="region"
+              aria-label={`${props.activeTab} details`}
+              className={`pointer-events-auto z-50 border border-neutral-200 bg-white/95 shadow-2xl backdrop-blur-2xl ${props.previewMode
+                ? "relative max-h-[calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-[24rem] overflow-y-auto rounded-2xl p-4 [&_button]:min-h-11 [&_button]:min-w-11 [&_a]:min-h-11 [&_a]:min-w-11 [&_input]:min-h-11 [&_input]:text-base [&_label]:text-xs [&_label]:text-neutral-600"
+                : "absolute bottom-32 left-1/2 w-[calc(100%-1rem)] max-w-[22rem] -translate-x-1/2 rounded-3xl p-6 sm:w-[calc(100%-2rem)]"}`}
             >
+              {props.previewMode ? <Dialog.Title className="sr-only">{props.activeTab} details</Dialog.Title> : null}
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-neutral-100 p-2 text-neutral-900">
@@ -831,7 +890,8 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 <button
                   type="button"
                   onClick={() => props.onActiveTabChange("none")}
-                  className="rounded-full p-1 text-neutral-500 hover:bg-neutral-100"
+                  aria-label="Close card details"
+                  className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -935,6 +995,11 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       </div>
                       {hasDirectEnvitefyRsvp ? (
                         <div className="mt-auto space-y-3 border-t border-neutral-100 pt-4">
+                          {props.previewMode ? (
+                            <p className="rounded-xl bg-violet-50 px-3 py-2 text-sm leading-5 text-violet-900">
+                              Try the RSVP form. Responses are not sent from this preview.
+                            </p>
+                          ) : null}
                           {directRsvpStatus === "success" ? (
                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-5 text-center">
                               <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-700" />
@@ -1002,10 +1067,10 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                   ) : null}
                                   <button
                                     type="submit"
-                                    disabled={directRsvpStatus === "submitting"}
+                                    disabled={props.previewMode || directRsvpStatus === "submitting"}
                                     className="inline-flex w-full items-center justify-center rounded-xl bg-neutral-900 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-neutral-800 disabled:cursor-wait disabled:opacity-70"
                                   >
-                                    {directRsvpStatus === "submitting" ? "Sending..." : "Send RSVP"}
+                                    {props.previewMode ? "Preview only" : directRsvpStatus === "submitting" ? "Sending..." : "Send RSVP"}
                                   </button>
                                 </form>
                               ) : (
@@ -1247,6 +1312,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                 ) : null}
               </div>
             </motion.div>
+            </LiveCardPreviewPanel>
           ) : null}
         </AnimatePresence>
 
@@ -1274,11 +1340,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
               {buttonConfigs.map((button) => {
                 const Icon = button.icon;
                 const position = props.positions?.[button.key] || EMPTY_POSITIONS[button.key];
-                const isPressed =
-                  button.key === "share"
-                    ? shareState === "success"
-                    : props.activeTab === button.key;
-                const isPending = button.key === "share" && shareState === "pending";
+                const isPressed = props.activeTab === button.key;
                 return (
                   <motion.div
                     key={button.key}
@@ -1299,8 +1361,7 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       onClick={() => {
                         if (!props.isDesignMode) button.onClick();
                       }}
-                      disabled={isPending}
-                      aria-pressed={button.key === "share" ? undefined : isPressed}
+                      aria-pressed={isPressed}
                       data-live-card-trigger
                       className={`group flex min-w-0 flex-col items-center justify-start ${
                         useCompactActionButtons ? "gap-0.5 py-0 md:gap-0.5" : "gap-1 py-1 md:gap-2"
@@ -1310,7 +1371,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                     >
                       <div
                         className={`rounded-full border backdrop-blur-md transition-all duration-200 ${
-                          useCompactActionButtons
+                          props.previewMode
+                            ? "p-2.5"
+                            : useCompactActionButtons
                             ? "p-2 md:p-2.5"
                             : useExpandedActionButtons
                               ? "p-3 md:p-4"
@@ -1329,7 +1392,9 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                       >
                         <Icon
                           className={`${
-                            useCompactActionButtons
+                            props.previewMode
+                              ? "h-5 w-5"
+                              : useCompactActionButtons
                               ? "h-4 w-4 md:h-5 md:w-5"
                               : useExpandedActionButtons
                                 ? "h-6 w-6 md:h-7 md:w-7"
@@ -1337,21 +1402,17 @@ export default function StudioLiveCardActionSurface(props: StudioLiveCardActionS
                                   ? "h-4 w-4 md:h-5 md:w-5"
                                   : "h-5 w-5 md:h-6 md:w-6"
                           } ${
-                            isPending
-                              ? "animate-spin text-white"
-                              : button.key === "share" && shareState === "success"
-                                ? "text-emerald-600"
-                                : isPressed
-                                  ? "text-neutral-950"
-                                  : "text-white"
+                            isPressed ? "text-neutral-950" : "text-white"
                           }`}
                         />
                       </div>
                       <span
-                        className={`max-w-full truncate text-center font-bold uppercase leading-tight tracking-[0.14em] text-white drop-shadow-md ${
-                          useCompactActionButtons
-                            ? "text-[6px] sm:text-[7px] md:text-[8px]"
-                            : "text-[8px] sm:text-[9px] md:text-[10px]"
+                        className={`max-w-full text-center font-bold leading-tight text-white drop-shadow-md ${
+                          props.previewMode
+                            ? "text-xs tracking-normal"
+                            : useCompactActionButtons
+                              ? "truncate text-[6px] uppercase tracking-[0.14em] sm:text-[7px] md:text-[8px]"
+                              : "truncate text-[8px] uppercase tracking-[0.14em] sm:text-[9px] md:text-[10px]"
                         } ${shouldHideClosedRailLabels ? "hidden" : "inline"}`}
                       >
                         {button.label}

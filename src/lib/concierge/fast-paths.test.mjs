@@ -61,3 +61,16 @@ test("creation intake fast path covers greetings, starter chips, output chips, a
     false,
   );
 });
+
+test("first messages with event details always reach extraction regardless of category or product selection", () => {
+  for (const action of ["message", "starter_category", "chip"]) {
+    for (const message of [
+      "Create a birthday live card for Livia, 10, grand Boulevard amc, the forgotten island movie theme",
+      "Livia, 10, grand Boulevard amc, the forgotten island movie theme",
+    ]) {
+      assert.equal(shouldSkipOpenAiForCreationRequest({ request: {
+        message, action, starterCategory: "Birthday", requestedOutputs: ["live_card"],
+      } }), false, `${action}: ${message}`);
+    }
+  }
+});

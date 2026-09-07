@@ -43,7 +43,7 @@ import ThumbnailModal from "@/components/ThumbnailModal";
 import { absoluteUrl, sanitizePersistedMediaUrl } from "@/lib/absolute-url";
 import { authOptions } from "@/lib/auth";
 import { sanitizeGuestCopy, sanitizeGuestTitle } from "@/lib/concierge/public-copy";
-import { extractConciergeV2PublicSections } from "@/lib/concierge-v2/public-event";
+import { extractEventWebsiteSchedule } from "@/lib/event-website-schedule";
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import { isScannedInviteCreatedVia, normalizeDashboardEventOwnership } from "@/lib/dashboard-data";
 import {
@@ -1959,7 +1959,7 @@ export default async function EventPage({
       };
     })
     .filter((item) => item.venue || item.location || item.address);
-  const conciergeV2Sections = extractConciergeV2PublicSections(data as Record<string, any>);
+  const eventWebsiteSchedule = extractEventWebsiteSchedule(data);
   const publicSourceSections = Array.isArray(publicEventRecord.sourceSections)
     ? publicEventRecord.sourceSections
         .map((item) => {
@@ -2463,12 +2463,7 @@ export default async function EventPage({
         rsvpEmail={rsvpEmail}
         rsvpUrl={publicRsvpUrl}
         registryLinks={registryCards}
-        scheduleItems={conciergeV2Sections.scheduleItems}
-        checklistItems={conciergeV2Sections.checklistItems}
-        forms={conciergeV2Sections.forms}
-        volunteerSlots={conciergeV2Sections.volunteerSlots}
-        paymentItems={conciergeV2Sections.paymentItems}
-        reminders={conciergeV2Sections.reminders}
+        scheduleItems={eventWebsiteSchedule}
       />,
     );
   }

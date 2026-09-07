@@ -1,5 +1,7 @@
 # Envitefy Premium UI/UX Audit
 
+> Historical June 2026 audit. Concierge V2 and its records were removed on September 6, 2026. V2 route recommendations below are obsolete. The current creator is `/chat`; see [the route map](../concierge-route-map.md).
+
 Date: 2026-06-04
 
 ## Audit Scope

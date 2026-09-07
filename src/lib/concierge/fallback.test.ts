@@ -65,8 +65,8 @@ test("starter category and product text asks for event details immediately", asy
   assert.match(result.assistantMessage, /Who is the birthday for/i);
 });
 
-test("starter category and product text skips OpenAI extraction", async () => {
-  for (const { message, requestedOutputs, eventType } of [
+test("starter selections skip extraction only when they contain no event details", async () => {
+  for (const { message, requestedOutputs, eventType, expectedAiCalls = 0 } of [
     {
       message: "Birthday Live Card",
       requestedOutputs: ["live_card"] as const,
@@ -86,6 +86,7 @@ test("starter category and product text skips OpenAI extraction", async () => {
       message: "Birthday Live Card for Ava turning 7 Saturday at 3 at Sky Zone",
       requestedOutputs: ["live_card"] as const,
       eventType: "birthday",
+      expectedAiCalls: 1,
     },
   ] as const) {
     let aiCalls = 0;
@@ -111,7 +112,7 @@ test("starter category and product text skips OpenAI extraction", async () => {
       },
     );
 
-    assert.equal(aiCalls, 0, message);
+    assert.equal(aiCalls, expectedAiCalls, message);
     assert.equal(result.usedAi, false, message);
     assert.equal(result.draft.eventType, eventType, message);
     assert.deepEqual(result.draft.requestedOutputs, [...requestedOutputs], message);
@@ -415,7 +416,7 @@ test("fast action flag lets OCR creation intake skip AI extraction", async () =>
   }
 });
 
-test("obvious starter creation prompt skips AI extraction", async () => {
+test("a first creation prompt with RSVP intent reaches extraction before asking for missing details", async () => {
   let aiCalls = 0;
   const result = await extractConciergeDraft(
     { message: "Create a birthday live card with RSVP." },
@@ -435,7 +436,7 @@ test("obvious starter creation prompt skips AI extraction", async () => {
     },
   );
 
-  assert.equal(aiCalls, 0);
+  assert.equal(aiCalls, 1);
   assert.equal(result.usedAi, false);
   assert.equal(result.draft.eventType, "birthday");
   assert.deepEqual(result.draft.requestedOutputs, ["live_card"]);

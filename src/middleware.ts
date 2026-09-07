@@ -251,6 +251,13 @@ export async function middleware(req: NextRequest) {
     return redirectWithMarker(url, 308);
   }
 
+  // All V2 screens are retired; discard old session IDs and invitation tokens.
+  // Keep this page-only prefix: /api/concierge/.../message serves the current creator.
+  if (normalizedPathname === "/concierge-v2" || normalizedPathname.startsWith("/concierge-v2/")) {
+    const url = new URL("/chat", req.nextUrl.origin);
+    return redirectWithMarker(url, 308);
+  }
+
   const queryAuthMode = req.nextUrl.searchParams.get("auth");
   const marketingSignupIntent = signupIntentForMarketingPath(normalizedPathname);
   const categorySignupIntent = normalizedPathname === "/snap" ? null : marketingSignupIntent;

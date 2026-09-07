@@ -325,6 +325,10 @@ export type ConciergeEventDraft = {
   pendingReply?: { message: string } | null;
   /** An explicit customer title must survive subsequent extraction and copy edits. */
   titleConfirmed?: boolean;
+  /** Prevent context recovery from restoring facts the host deliberately removed. */
+  explicitlyClearedFields?: string[];
+  /** First user message after switching events within the same chat thread. */
+  contextStartMessage?: string;
   intent: ConciergeIntent;
   creationSessionId: string;
   requestedOutputs: RequestedOutput[];

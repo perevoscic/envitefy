@@ -19,7 +19,7 @@
 - Lint: `npm run lint -- <paths>` when scoped, or `npm run lint`
 - Typecheck: `node_modules\\.bin\\tsc.cmd --noEmit`
 - Targeted tests: `node --test path/to/file.test.mjs`
-- Concierge V2 tests: `node --test src/lib/concierge-v2/core.test.mjs`
+- Concierge retirement checks: `node --test src/middleware.concierge-retirement.test.mjs src/lib/event-website-schedule.test.mjs scripts/retire-concierge-v2.test.mjs`
 - Existing dev server note: `npm run dev` uses `scripts/dev-single.js`, defaults to port `3000`, writes `.next-dev`, and uses `.next-dev.lock`.
 
 ## Relevant Existing Tables

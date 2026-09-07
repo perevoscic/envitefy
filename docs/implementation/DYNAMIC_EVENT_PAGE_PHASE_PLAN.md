@@ -1,5 +1,7 @@
 # Dynamic Event Page Phase Plan
 
+> September 6, 2026: Concierge V2 and its stored records were removed. The earlier V2 integration described below is historical; current creation uses `/chat`. The independent blueprint engine, APIs, and dynamic storage remain. See [the route map](../concierge-route-map.md).
+
 ## Phase 1: Legacy Map
 
 Source file: `docs/implementation/DYNAMIC_EVENT_PAGE_LEGACY_MAP.md`
@@ -34,13 +36,12 @@ Remaining:
 
 Source file: `docs/implementation/DYNAMIC_EVENT_PAGES_HANDOFF.md`
 
-Goal: wire Concierge v2 into dynamic event pages and document the production handoff.
+Goal: document the independent dynamic event page APIs and their production handoff.
 
 Completed:
 
-- Concierge v2 apply now creates and publishes a dynamic blueprint page.
-- Apply result returns `/e/[slug]` as the guest-facing event path.
-- Legacy `/event/[slug]` remains available as `legacyEventPath`.
+- Blueprint APIs create, update, and publish a dynamic page at `/e/[slug]`.
+- The former V2 apply integration was removed during retirement.
 
 Remaining:
 

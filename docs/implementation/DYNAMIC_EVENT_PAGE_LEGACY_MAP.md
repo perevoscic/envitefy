@@ -4,7 +4,7 @@
 
 Phase 1: inventory and collision prevention.
 
-Status: completed. This phase maps the legacy surfaces and protects existing Concierge v2 operational storage while the dynamic page renderer is introduced.
+Status: completed. September 6, 2026 update: V2 was removed, including its records. Dynamic pages remain independent; see [the route map](../concierge-route-map.md).
 
 ## Current Route Impact
 
@@ -12,7 +12,7 @@ Status: completed. This phase maps the legacy surfaces and protects existing Con
 - `src/app/event/*/customize/page.tsx` contains event-type-specific creation/customization flows for birthdays, weddings, gymnastics, football, sport events, gender reveal, baby showers, dance/ballet, cheerleading, soccer, appointments, workshops, and general events.
 - `src/app/smart-signup-form/[id]/page.tsx` is a separate public smart signup renderer.
 - New additive route: `src/app/e/[slug]/page.tsx` renders dynamic Event Page Blueprints and falls back to an event-history-derived blueprint when no stored dynamic page exists.
-- Existing Concierge v2 operations already own a table named `event_pages`. Dynamic blueprint storage now uses `dynamic_event_pages` and `dynamic_event_page_versions` to avoid schema collision.
+- Dynamic blueprint storage uses `dynamic_event_pages` and `dynamic_event_page_versions`. The empty historical V2 table `event_pages` is retired.
 
 ## Files To Keep
 
@@ -23,8 +23,7 @@ Status: completed. This phase maps the legacy surfaces and protects existing Con
 
 ## Files To Refactor
 
-- `src/lib/concierge/event-actions.ts` should eventually create/update `event_pages` records directly instead of only creating `event_page` assets or patching event JSON.
-- `src/lib/concierge-v2/system-templates.ts` should shift from event-type templates to blueprint presets and classification hints.
+- `src/lib/concierge/event-actions.ts` may eventually create/update `dynamic_event_pages` records directly instead of only creating `event_page` assets or patching event JSON.
 - `src/components/concierge/ConciergeEventWebsite.tsx` can be retired or converted into dynamic sections once the new renderer covers all current Concierge public operations.
 - `src/app/event/[id]/page.tsx` should become a compatibility dispatcher that hands eligible events to the dynamic renderer.
 
@@ -49,7 +48,7 @@ Do not delete in this phase. Candidates after parity:
 - Added manual migration `prisma/manual_sql/20260606_add_dynamic_event_pages.sql`.
 - Added runtime-safe schema creation in `src/lib/db.ts`.
 - New tables: `dynamic_event_pages` and `dynamic_event_page_versions`.
-- Existing Concierge v2 operational table `event_pages` remains unchanged and continues to power hubs, schedules, RSVP boards, resources, imports, and reminders.
+- The old V2 `event_pages` records and runtime were removed; do not use that table for new features.
 - Existing `event_history` remains authoritative for base event data and public slugs.
 
 ## Risks

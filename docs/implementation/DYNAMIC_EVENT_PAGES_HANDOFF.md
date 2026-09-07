@@ -2,9 +2,9 @@
 
 ## Phase
 
-Phase 3: Concierge v2 dynamic publish wiring.
+Dynamic blueprint event pages remain an independent feature.
 
-Status: in progress. Concierge v2 now creates the existing operational event page and also publishes a dynamic blueprint-backed guest page at `/e/[slug]`.
+Status as of September 6, 2026: Concierge V2 and its records were removed at the user's request. Its publish integration is removed. The blueprint APIs, `/e/[slug]`, and dynamic storage remain. Current creation uses `/chat`; see [the route map](../concierge-route-map.md).
 
 ## What Changed
 
@@ -13,13 +13,13 @@ Status: in progress. Concierge v2 now creates the existing operational event pag
 - Added safe theme-token to CSS-variable conversion.
 - Added a bounded React renderer with section registry behavior.
 - Added `/e/[slug]` public dynamic event page route.
-- Added `event_pages` and `event_page_versions` storage helpers plus manual SQL migration.
+- Added `dynamic_event_pages` and `dynamic_event_page_versions` storage helpers plus manual SQL migration.
 - Added API endpoints for draft creation, blueprint update, publish, and slug fetch.
 - Updated middleware to allow public `/e/[slug]` access.
 - Updated Concierge planner guardrails to prefer structured blueprint JSON and reject raw React/CSS generation.
 - Corrected dynamic storage to `dynamic_event_pages` / `dynamic_event_page_versions` so it does not collide with existing Concierge v2 `event_pages`.
 - Added blueprint presets for the main legacy migration verticals.
-- Wired Concierge v2 apply to publish a dynamic blueprint page and return `/e/[slug]` as the guest-facing event path, while preserving `legacyEventPath` for compatibility.
+- Removed the former V2 apply integration during retirement; use the independent event-page APIs below.
 
 ## Files Added
 
@@ -41,8 +41,6 @@ Status: in progress. Concierge v2 now creates the existing operational event pag
 ## Files Modified
 
 - `src/lib/db.ts`
-- `src/lib/concierge-v2/storage.ts`
-- `src/app/concierge-v2/ConciergeV2Client.tsx`
 - `src/lib/concierge/event-actions.ts`
 - `src/middleware.ts`
 
@@ -63,7 +61,7 @@ Apply `prisma/manual_sql/20260606_add_dynamic_event_pages.sql` in environments t
 - Run `node --test src/features/event-pages/event-page-engine.source.test.mjs`.
 - Run `npm run lint -- src/features/event-pages src/app/e src/app/api/event-pages src/lib/db.ts src/lib/concierge/event-actions.ts src/middleware.ts`.
 - Create a draft with `POST /api/event-pages` using an owned `eventId`.
-- Use Concierge v2 to apply a draft; the returned `eventPath` should point at `/e/[slug]`.
+- Update and publish the owned draft through `/api/event-pages/[id]`.
 - Visit `/e/[slug]` for a stored dynamic page.
 - Visit `/e/[existing-public-event-slug]` to exercise deterministic fallback rendering from `event_history`.
 
@@ -76,4 +74,4 @@ Apply `prisma/manual_sql/20260606_add_dynamic_event_pages.sql` in environments t
 
 ## Recommended Next Phase
 
-Add Concierge v2 revision controls that call `PUT /api/event-pages/[id]` before publish and expose version restore from `dynamic_event_page_versions`.
+Consider revision controls in the current creator that call `PUT /api/event-pages/[id]` before publish and expose version restore from `dynamic_event_page_versions`. Do not restore the removed V2 creator.

@@ -64,6 +64,7 @@ If you upload something **outside** those invite-card cases, treat it as **My ev
 
 ## Feature Maps
 
+- Concierge V2 was fully removed on September 6, 2026 at the user's request, including its stored records. The current creator is `/chat` (`ConciergeChatClient` -> `ChatProductPreview`, `/api/creation/intake` -> `src/lib/concierge/intake.ts`); published Live Cards use `/card/[id]`. All `/concierge-v2` page paths redirect to `/chat`. Do not restore V2 drafts, APIs, tools, flags, seed scripts, or schema setup. The shared `event-website-schedule.ts` preserves current event schedules independently. `/api/concierge/message` and `/api/concierge/events/[id]/message` belong to the current creator and remain active. See `docs/concierge-route-map.md` for the deletion scope. Verify the full `/chat` UI, not only an isolated preview fixture.
 - Weddings are split between static theme data and renderer code.
   - Catalog and metadata: `templates/weddings/index.json`
   - Per-theme configs/assets: `templates/weddings/*/config.json`

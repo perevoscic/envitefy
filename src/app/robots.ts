@@ -18,7 +18,6 @@ export default function robots(): MetadataRoute.Robots {
         "/calendar",
         "/events/",
         "/settings",
-        "/concierge-v2/events/",
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,

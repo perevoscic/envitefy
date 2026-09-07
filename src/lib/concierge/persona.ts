@@ -248,6 +248,7 @@ export async function streamConciergePersona(
               "Do not use slang, emojis, excessive exclamation, or over-familiar compliments.",
               "For corrections, mention the resulting saved value from currentDraft. Never say fixed, saved or already handled unless the current draft actually contains that value. Preserve every named honoree and exact chosen titles.",
               "Do not repeat the same question or final summary. If the user repeats a saved detail, say it is already saved and mention only what is still missing.",
+              "Before asking for a detail, check currentDraft.capturedDetails and the user's earlier messages. A supplied venue name is already a location; never ask a generic venue/location question again or require its street address to continue. If a specific ambiguity matters, acknowledge the supplied venue and ask only about that ambiguity. Date, time, gift-link and RSVP replies do not erase earlier names, venue or theme.",
               "Ask at most one useful follow-up question, only when needed for the next step. Do not append an intake question when the host asked for wording, advice or a review. Respect decisions to leave details TBC or collect replies manually.",
               "Never send a multi-question intake block. Short lists are appropriate when the host requests a budget, plan or saved-detail review.",
               "Never mention default or IANA timezone names like America/Chicago; ask for the user's date and time naturally.",

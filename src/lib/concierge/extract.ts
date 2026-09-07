@@ -1,4 +1,4 @@
-import { CONCIERGE_EXTRACTION_SCHEMA, CONCIERGE_EXTRACTION_INSTRUCTION, parseConciergeEdits } from "./extraction-contract.ts";
+import { CONCIERGE_EXTRACTION_SCHEMA, CONCIERGE_EXTRACTION_INSTRUCTION, conciergeExtractionConversation, parseConciergeEdits } from "./extraction-contract.ts";
 import { attachCreationReadiness, validCalendarDate } from "./readiness.ts";
 import { creationModelBudget, creationTimeoutMs, recordCreationModelRun } from "../creation/openai-workloads.ts";
 import OpenAI from "openai";
@@ -534,6 +534,8 @@ export function normalizeConciergeDraft(
     eventType,
     title,
     titleConfirmed: Boolean(explicitTitle || fallback.titleConfirmed),
+    explicitlyClearedFields: fallback.explicitlyClearedFields || [],
+    contextStartMessage: fallback.contextStartMessage,
     hostBrief: normalizeHostBrief(record.hostBrief, fallback.hostBrief, options.message || ""),
     copyStatus: fallback.copyStatus,
     pendingReply: fallback.pendingReply || null,
@@ -692,7 +694,7 @@ async function extractWithOpenAi(
               ocrContext: request.ocrContext || null,
               activeContext: request.activeContext || null,
               fallbackDraft: fallback,
-              recentConversation: request.chatMessages?.filter((item) => item.role === "user" || item.role === "assistant").slice(-24).map((item) => ({ role: item.role, text: item.text.slice(0, 2000) })) || [],
+              recentConversation: conciergeExtractionConversation(request, fallback),
             }),
           },
         ],
@@ -707,7 +709,7 @@ async function extractWithOpenAi(
   const content = choice?.message?.content;
   const parsed = parseAiJson(content);
   if (!parsed) return null;
-  const edits = parseConciergeEdits(parsed, request);
+  const edits = parseConciergeEdits(parsed, request, fallback);
   if (!edits) return null;
   const parsedDraft = edits.patch;
   if (!request.retryReply && (typeof parsedDraft.dateText === "string" || typeof parsedDraft.timeText === "string")) {
@@ -721,10 +723,21 @@ async function extractWithOpenAi(
     previousDraft: request.draft,
   });
   if (!request.retryReply) {
+    const explicitlyClearedFields = new Set(fallback.explicitlyClearedFields || []);
+    for (const field of edits.accepted) {
+      if (edits.cleared.includes(field)) explicitlyClearedFields.add(field);
+      else explicitlyClearedFields.delete(field);
+    }
+    if (edits.cleared.includes("location") || edits.cleared.includes("venue")) {
+      explicitlyClearedFields.add("location");
+      explicitlyClearedFields.add("venue");
+    }
+    normalized.explicitlyClearedFields = [...explicitlyClearedFields];
     for (const field of edits.cleared) Object.assign(normalized, { [field]: field === "additionalLocations" ? [] : null });
     if (edits.cleared.includes("dateText")) Object.assign(normalized, { startISO: null, endISO: null });
     if (edits.cleared.includes("location") || edits.cleared.includes("venue")) Object.assign(normalized, { location: null, venue: null });
     Object.assign(normalized, deriveCreationStatus(normalized));
+    if (normalized.currentQuestion !== fallback.currentQuestion) normalized.assistantGuidance = null;
     if (edits.cleared.length) {
       normalized.previewCopy.scheduleLine = [normalized.dateText, normalized.timeText].filter(Boolean).join(" · ");
       normalized.previewCopy.locationLine = normalized.location || normalized.venue || "";

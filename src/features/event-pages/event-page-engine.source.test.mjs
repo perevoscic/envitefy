@@ -7,7 +7,6 @@ const renderer = readFileSync("src/features/event-pages/renderer/SectionRenderer
 const route = readFileSync("src/app/e/[slug]/page.tsx", "utf8");
 const db = readFileSync("src/lib/db.ts", "utf8");
 const prompt = readFileSync("src/features/event-pages/ai/generateEventBlueprint.ts", "utf8");
-const conciergeV2Storage = readFileSync("src/lib/concierge-v2/storage.ts", "utf8");
 const presets = readFileSync("src/features/event-pages/ai/blueprintPresets.ts", "utf8");
 
 test("dynamic event page schema includes required section and action registries", () => {
@@ -62,14 +61,6 @@ test("AI blueprint prompt bans raw React and arbitrary CSS", () => {
   assert.match(prompt, /Do not return React/);
   assert.match(prompt, /raw CSS/);
   assert.match(prompt, /strict JSON/);
-});
-
-test("Concierge V2 apply publishes dynamic event page blueprints", () => {
-  assert.match(conciergeV2Storage, /generateDeterministicEventBlueprint/);
-  assert.match(conciergeV2Storage, /upsertEventPageDraft/);
-  assert.match(conciergeV2Storage, /publishEventPage/);
-  assert.match(conciergeV2Storage, /const eventPath = `\/e\/\$\{encodeURIComponent/);
-  assert.match(conciergeV2Storage, /legacyEventPath/);
 });
 
 test("legacy verticals migrate through blueprint presets instead of React templates", () => {

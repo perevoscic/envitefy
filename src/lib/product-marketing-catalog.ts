@@ -81,9 +81,11 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Turn a plain-language event idea into an editable invitation and guest-ready live page without starting from a blank form.",
           proofPoints: [
             "Starts from the host's words or uploaded context and helps collect missing event details.",
+            "Prefills names, age, venue, and theme from messages containing several details, and keeps those facts through follow-up replies.",
             "Drafts event-specific guest copy and a polished live page for the host to review and edit before sharing.",
             "Hosts can review saved event details, correct titles and format choices in conversation, and generate a draft preview before a separate publish step.",
             "Hosts can preview an invitation while optional styling and RSVP details are unfinished; publishing checks the required event facts separately.",
+            "Live-card draft previews include tappable overview, directions, calendar, and configured RSVP or gift-list actions on phones and larger screens. Hosts can try the RSVP form without submitting a guest response.",
             "Hosts can ask for planning suggestions and invitation wording before every detail is decided, and choose to collect guest replies themselves.",
             "A saved host brief keeps budget, language, accessibility, dietary and privacy preferences available throughout the conversation. Hosts can review and correct those planning notes.",
             "Simple English and Spanish invitation drafts can use TBC details; interrupted tailored replies can be retried using the latest saved event details.",
@@ -158,6 +160,7 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
             "Public event pages open in phone and desktop browsers.",
             "Guests do not need to install an app or create an account just to use a shared event page.",
             "The page keeps the latest event details and available actions together.",
+            "Owners can open the current saved card or event from a labeled workspace action, then return to editing. Proposed card changes have a separate view before saving.",
           ],
           sellWhen: [
             "The brief mentions a live card, event site, invitation page, mobile experience, or one place for guests.",

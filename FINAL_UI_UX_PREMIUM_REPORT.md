@@ -1,5 +1,7 @@
 # Final UI/UX Premium Report
 
+> Historical June 2026 report. Concierge V2, its APIs, and its database records were removed on September 6, 2026. V2 routes and recommendations below are obsolete. The current creator is `/chat`; see [the route map](docs/concierge-route-map.md).
+
 Date: 2026-06-04
 
 ## 1. Pages Audited

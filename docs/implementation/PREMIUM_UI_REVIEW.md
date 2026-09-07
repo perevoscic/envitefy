@@ -1,5 +1,7 @@
 # Premium UI Review Board
 
+> Historical June 2026 review. Concierge V2 and its records were removed on September 6, 2026. V2 workspace recommendations below are obsolete; use `/chat` and [the current route map](../concierge-route-map.md).
+
 Date: 2026-06-04
 
 ## Review Standard

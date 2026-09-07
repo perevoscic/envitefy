@@ -24,12 +24,21 @@ function isoDate(value: unknown): string {
   return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
 }
 
-function timeTextFromIso(value: unknown): string {
+function timeTextFromIso(value: unknown, timezone?: string): string {
   const raw = cleanString(value);
   if (!raw) return "";
   const date = new Date(raw);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: timezone || "America/Chicago" });
+}
+
+function eventDateFromIso(value: string | null | undefined, timezone: string | undefined) {
+  if (!value || Number.isNaN(new Date(value).getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    year: "numeric", month: "2-digit", day: "2-digit", timeZone: timezone || "America/Chicago",
+  }).formatToParts(new Date(value));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value || "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
 function normalizeAdditionalLocations(draft: ConciergeEventDraft | null) {
@@ -120,9 +129,11 @@ export function buildChatShowcasePreview(args: {
       category,
       occasion: cleanString(draft?.eventPurpose) || category,
       eventTitle: title,
-      eventDate: isoDate(draft?.startISO || draft?.dateText),
-      startTime: cleanString(draft?.timeText) || timeTextFromIso(draft?.startISO),
-      endTime: timeTextFromIso(draft?.endISO),
+      eventDate: eventDateFromIso(draft?.startISO, draft?.timezone) || isoDate(draft?.dateText),
+      startTime: draft?.timeText ? timeTextFromIso(draft.startISO, draft.timezone) || cleanString(draft.timeText) || "" : "",
+      endTime: timeTextFromIso(draft?.endISO, draft?.timezone),
+      calendarStartISO: draft?.timeText ? cleanString(draft.startISO) || "" : "",
+      calendarEndISO: cleanString(draft?.endISO) || "",
       venueName: cleanString(draft?.venue) || "",
       location: cleanString(draft?.location) || cleanString(draft?.venue) || "",
       additionalLocations,

@@ -15,12 +15,13 @@ import {
   Users,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import StudioShowcaseLiveCard from "@/components/studio/StudioShowcaseLiveCard";
 import type {
   ConciergeEventDraft,
   ConciergeWeatherContext,
   RequestedOutput,
 } from "@/lib/concierge/types";
-import type { ChatPreviewSummary } from "./chat-preview-adapters";
+import { buildChatShowcasePreview, type ChatPreviewSummary } from "./chat-preview-adapters";
 
 type RsvpPreviewBadge = {
   count: number;
@@ -141,7 +142,8 @@ function rsvpStatusText({
 function weatherStatusText(weatherContext: ConciergeWeatherContext | null) {
   if (!weatherContext) return "Forecast not checked";
   if (weatherContext.status === "available") {
-    const temp = typeof weatherContext.tempF === "number" ? `${Math.round(weatherContext.tempF)}F` : "";
+    const temp =
+      typeof weatherContext.tempF === "number" ? `${Math.round(weatherContext.tempF)}F` : "";
     return [weatherContext.summary, temp].filter(Boolean).join(" - ") || "Forecast available";
   }
   return weatherContext.message || "Forecast unavailable";
@@ -208,6 +210,16 @@ export default function ChatProductPreview({
   const body = previewBodyText(draft, summary);
   const category = previewCategoryText(draft);
   const registryLink = cleanPreviewText(draft?.registryLink || draft?.giftRegistryLink);
+  // Hosted drafts use the guest card controls; received invites retain their source review.
+  const isLiveCard = selectedOutput === "live_card" && !isReceivedInviteDraft;
+  const liveCardPreview = buildChatShowcasePreview({
+    draft,
+    summary,
+    selectedOutput,
+    imageUrl: previewImageUrl,
+    sharePath: publicHref,
+    eventId: liveEventId,
+  });
 
   async function handleShare() {
     if (!publicHref || typeof window === "undefined") return;
@@ -236,6 +248,7 @@ export default function ChatProductPreview({
 
   return (
     <aside
+      aria-label={`${panelOutputLabel} preview`}
       className={`min-h-0 flex-col overflow-hidden bg-[#f8f7fb]/96 backdrop-blur-xl lg:static lg:border-l lg:border-[#e5dff0] lg:bg-white/58 ${
         mobileView === "preview"
           ? "fixed inset-x-0 bottom-0 top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 flex rounded-t-[1.75rem] shadow-[0_-24px_70px_rgba(35,24,72,0.18)] lg:rounded-none lg:shadow-none"
@@ -243,104 +256,153 @@ export default function ChatProductPreview({
       }`}
     >
       <div className="flex h-full min-h-0 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-28 pt-4 sm:px-6 md:pb-7 md:pt-6">
-          <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-4">
-            <header className="rounded-[1.45rem] border border-white/80 bg-white/78 p-4 shadow-[0_18px_52px_rgba(35,24,72,0.08)] ring-1 ring-[#f2eefb]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-5 pt-3 sm:px-6 lg:pt-6">
+          <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-3">
+            <header className="rounded-[1.45rem] border border-white/80 bg-white/78 p-3 shadow-[0_18px_52px_rgba(35,24,72,0.08)] ring-1 ring-[#f2eefb]">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex h-7 items-center rounded-full bg-[#eaf8f2] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#167453]">
-                      Draft ready
+                      {isGenerating
+                        ? "Building preview"
+                        : publicHref
+                          ? "Published"
+                          : hasGeneratedProduct
+                            ? "Draft ready"
+                            : "Draft"}
                     </span>
                     <span className="inline-flex h-7 max-w-full items-center rounded-full bg-[#f0eefb] px-3 text-[0.66rem] font-black uppercase tracking-[0.14em] text-[#5c4cd5]">
                       <span className="truncate">{panelOutputLabel}</span>
                     </span>
                   </div>
-                  <h2 className="mt-3 text-xl font-black leading-tight tracking-normal text-[#1f1735] sm:text-2xl">
+                  <h2
+                    className={
+                      isLiveCard
+                        ? "sr-only"
+                        : "mt-3 text-xl font-black leading-tight tracking-normal text-[#1f1735] sm:text-2xl"
+                    }
+                  >
                     {summary.headline}
                   </h2>
                 </div>
-                <button
-                  type="button"
-                  onClick={onEdit}
-                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl border border-[#ded6ef] bg-white text-[#4f416a] shadow-sm transition hover:border-[#c9bbed] hover:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
-                  aria-label="Edit in chat"
-                  title="Edit in chat"
-                >
-                  <Pencil className="size-4" aria-hidden="true" />
-                </button>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-[#675b7b]">{body}</p>
-              <div className="mt-4 flex flex-wrap gap-2 text-[0.68rem] font-black uppercase tracking-[0.13em] text-[#675b7b]">
-                <span className="rounded-full bg-[#f6f2ea] px-3 py-1.5 text-[#81622d]">
-                  {category}
-                </span>
-                {skinLabel ? (
-                  <span className="rounded-full bg-[#eef6ff] px-3 py-1.5 text-[#2f6690]">
-                    {skinLabel}
-                  </span>
-                ) : null}
-                {registryLink ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#fff0f5] px-3 py-1.5 text-[#9a4267]">
-                    <Gift className="size-3" aria-hidden="true" />
-                    Registry
-                  </span>
+                {!isLiveCard ? (
+                  <button
+                    type="button"
+                    onClick={onEdit}
+                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl border border-[#ded6ef] bg-white text-[#4f416a] shadow-sm transition hover:border-[#c9bbed] hover:text-[#5c5be5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+                    aria-label="Edit in chat"
+                    title="Edit in chat"
+                  >
+                    <Pencil className="size-4" aria-hidden="true" />
+                  </button>
                 ) : null}
               </div>
+              {!isLiveCard ? (
+                <>
+                  <p className="mt-3 text-sm leading-6 text-[#675b7b]">{body}</p>
+                  <div className="mt-4 flex flex-wrap gap-2 text-[0.68rem] font-black uppercase tracking-[0.13em] text-[#675b7b]">
+                    <span className="rounded-full bg-[#f6f2ea] px-3 py-1.5 text-[#81622d]">
+                      {category}
+                    </span>
+                    {skinLabel ? (
+                      <span className="rounded-full bg-[#eef6ff] px-3 py-1.5 text-[#2f6690]">
+                        {skinLabel}
+                      </span>
+                    ) : null}
+                    {registryLink ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#fff0f5] px-3 py-1.5 text-[#9a4267]">
+                        <Gift className="size-3" aria-hidden="true" />
+                        Registry
+                      </span>
+                    ) : null}
+                  </div>
+                </>
+              ) : null}
             </header>
 
-            <section className="relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-white/78 p-3 shadow-[0_22px_60px_rgba(35,24,72,0.09)] ring-1 ring-[#edf0f7]">
-              <div className="grid gap-4 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:items-center">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-[#eee8f6] shadow-[0_16px_36px_rgba(35,24,72,0.12)]">
-                  <img
-                    src={previewImageUrl}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 h-full w-full object-cover"
+            {isLiveCard ? (
+              <section aria-label="Interactive guest preview" className="relative">
+                <div
+                  className="mx-auto w-full max-w-[min(100%,max(16rem,calc((100svh-16rem)*2/3)))] lg:max-w-[26rem]"
+                  inert={isGenerating}
+                >
+                  <StudioShowcaseLiveCard
+                    preview={liveCardPreview}
+                    previewMode
+                    imageLoading="eager"
+                    className="!rounded-[1.5rem]"
                   />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(20,15,35,0.08),rgba(20,15,35,0.48))]" />
-                  <div className="absolute inset-x-3 bottom-3">
-                    <p className="line-clamp-2 text-sm font-black leading-4 text-white drop-shadow">
-                      {summary.headline}
-                    </p>
-                  </div>
                 </div>
                 {isGenerating ? (
-                  <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-white/82 text-[#8b8298] backdrop-blur-[3px]">
-                    <Loader2 className="size-10 animate-spin text-[#5c5be5]" aria-hidden="true" />
-                    <div className="w-full max-w-[17rem] px-4 text-center">
-                      <p className="text-sm font-bold text-[#2d1b36]">{currentBuildStep}</p>
-                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eadfff]">
-                        <div
-                          className="h-full rounded-full bg-[#5c5be5] transition-[width] duration-300"
-                          style={{ width: `${buildProgress}%` }}
-                        />
-                      </div>
-                    </div>
+                  <div
+                    role="status"
+                    className="absolute inset-0 flex items-center justify-center gap-3 rounded-[1.5rem] bg-white/85 p-6 text-sm font-bold text-[#3b2468] backdrop-blur-sm"
+                  >
+                    <Loader2
+                      className="size-6 animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                    {currentBuildStep}
                   </div>
                 ) : null}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    {hasGeneratedProduct ? (
-                      <CheckCircle2 className="size-5 text-[#18956f]" aria-hidden="true" />
-                    ) : null}
-                    <p className="text-[0.65rem] font-black uppercase tracking-[0.18em] text-[#8a819b]">
-                      Generated artwork
+                <p className="mt-2 text-center text-xs leading-5 text-[#5d5174]">
+                  Tap the card buttons to try the guest experience.
+                </p>
+              </section>
+            ) : (
+              <section className="relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-white/78 p-3 shadow-[0_22px_60px_rgba(35,24,72,0.09)] ring-1 ring-[#edf0f7]">
+                <div className="grid gap-4 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:items-center">
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-[#eee8f6] shadow-[0_16px_36px_rgba(35,24,72,0.12)]">
+                    <img
+                      src={previewImageUrl}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(20,15,35,0.08),rgba(20,15,35,0.48))]" />
+                    <div className="absolute inset-x-3 bottom-3">
+                      <p className="line-clamp-2 text-sm font-black leading-4 text-white drop-shadow">
+                        {summary.headline}
+                      </p>
+                    </div>
+                  </div>
+                  {isGenerating ? (
+                    <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-white/82 text-[#8b8298] backdrop-blur-[3px]">
+                      <Loader2 className="size-10 animate-spin text-[#5c5be5]" aria-hidden="true" />
+                      <div className="w-full max-w-[17rem] px-4 text-center">
+                        <p className="text-sm font-bold text-[#2d1b36]">{currentBuildStep}</p>
+                        <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eadfff]">
+                          <div
+                            className="h-full rounded-full bg-[#5c5be5] transition-[width] duration-300"
+                            style={{ width: `${buildProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      {hasGeneratedProduct ? (
+                        <CheckCircle2 className="size-5 text-[#18956f]" aria-hidden="true" />
+                      ) : null}
+                      <p className="text-[0.65rem] font-black uppercase tracking-[0.18em] text-[#8a819b]">
+                        Generated artwork
+                      </p>
+                    </div>
+                    <p className="mt-2 text-sm font-bold leading-6 text-[#24183e]">
+                      Visual is ready. Use the event details below as the source of truth before
+                      saving or sharing.
+                    </p>
+                    <p className="mt-3 text-xs font-semibold leading-5 text-[#7a708b]">
+                      Want different colors, layout, copy, or imagery? Tap Edit and tell the
+                      concierge what to change.
                     </p>
                   </div>
-                  <p className="mt-2 text-sm font-bold leading-6 text-[#24183e]">
-                    Visual is ready. Use the event details below as the source of truth before
-                    saving or sharing.
-                  </p>
-                  <p className="mt-3 text-xs font-semibold leading-5 text-[#7a708b]">
-                    Want different colors, layout, copy, or imagery? Tap Edit and tell the
-                    concierge what to change.
-                  </p>
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
 
-            <section className="grid gap-3">
+            <section className="grid gap-3" aria-label="Saved event details">
               <DetailRow
                 icon={<CalendarDays className="size-4" aria-hidden="true" />}
                 label="When"
@@ -363,14 +425,14 @@ export default function ChatProductPreview({
               />
             </section>
 
-            <p className="px-2 text-center text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#5d5174]">
+            <p className="px-2 text-center text-xs leading-5 text-[#5d5174]">
               {previewProcessStatus}
             </p>
           </div>
         </div>
 
-        <div className="sticky bottom-0 z-40 border-t border-[#e6e1ee] bg-white/92 px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-3 shadow-[0_-16px_44px_rgba(35,24,72,0.1)] backdrop-blur-xl sm:px-6 md:static md:pb-5">
-          <div className="mx-auto grid w-full max-w-[34rem] grid-cols-2 gap-2">
+        <div className="z-40 shrink-0 border-t border-[#e6e1ee] bg-white/92 px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-3 shadow-[0_-16px_44px_rgba(35,24,72,0.1)] backdrop-blur-xl sm:px-6">
+          <div className="mx-auto grid w-full max-w-[34rem] grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2">
             <button
               type="button"
               onClick={onEdit}
@@ -382,24 +444,24 @@ export default function ChatProductPreview({
             {publicHref ? (
               <a
                 href={publicHref}
-                className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#24183e] px-4 text-sm font-black text-white shadow-lg shadow-[#24183e]/20 transition hover:bg-[#180f2d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+                className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#24183e] px-4 py-2 text-sm font-black text-white shadow-lg shadow-[#24183e]/20 transition hover:bg-[#180f2d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
               >
                 <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
-                <span className="truncate">{publicActionLabel}</span>
+                <span className="min-w-0 break-words text-center">{publicActionLabel}</span>
               </a>
             ) : shouldShowDraftActions ? (
               <button
                 type="button"
                 onClick={onPublish}
                 disabled={isPublishing}
-                className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#24183e] px-4 text-sm font-black text-white shadow-lg shadow-[#24183e]/20 transition hover:bg-[#180f2d] disabled:cursor-wait disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
+                className="inline-flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#24183e] px-4 py-2 text-sm font-black text-white shadow-lg shadow-[#24183e]/20 transition hover:bg-[#180f2d] disabled:cursor-wait disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98dff]"
               >
                 {isPublishing ? (
                   <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
                 ) : (
                   <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
                 )}
-                <span className="truncate">
+                <span className="min-w-0 break-words text-center">
                   {isPublishing ? publishBusyLabel : publishActionLabel}
                 </span>
               </button>
@@ -419,7 +481,9 @@ export default function ChatProductPreview({
                 ) : (
                   <Share2 className="size-4 shrink-0" aria-hidden="true" />
                 )}
-                <span className="truncate">{shareState === "copied" ? "Link copied" : "Share"}</span>
+                <span className="truncate">
+                  {shareState === "copied" ? "Link copied" : "Share"}
+                </span>
               </button>
             ) : null}
             {rsvpDashboardHref ? (
