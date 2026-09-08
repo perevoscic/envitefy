@@ -76,14 +76,15 @@ test("event customize drawers overlay mobile and reserve one desktop column", ()
   );
 });
 
-test("legacy wedding edit route also uses the full responsive page", () => {
+test("legacy wedding edit route verifies ownership before opening the current editor", () => {
   const page = readFileSync(new URL("./weddings/customize/[id]/page.tsx", import.meta.url), "utf8");
   const client = readFileSync(
     new URL("./weddings/customize/[id]/WeddingCustomizeClient.tsx", import.meta.url),
     "utf8",
   );
 
-  assert.match(page, /className="min-h-screen w-full bg-slate-100"/);
+  assert.match(page, /event\.user_id !== userId/);
+  assert.match(page, /redirect\(resolveEditHref\(event\.id, event\.data, event\.title\)\)/);
   assert.doesNotMatch(page, /max-w-6xl/);
   assert.match(client, /lg:grid-cols-\[minmax\(0,1fr\)_400px\]/);
 });

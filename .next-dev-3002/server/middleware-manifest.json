@@ -54,35 +54,6 @@
         "__NEXT_PREVIEW_MODE_SIGNING_KEY": "8045a4a16e4598d84a943d77803239baf7631782bf9b0cfae4c65cd5382a0f78",
         "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "0d04d27f7f0a69c0824d8f311b5b3b1888da842d290298e2187be1406114e386"
       }
-    },
-    "/api/maps/static/route": {
-      "files": [
-        "server/server-reference-manifest.js",
-        "server/app/api/maps/static/route_client-reference-manifest.js",
-        "server/middleware-build-manifest.js",
-        "server/middleware-react-loadable-manifest.js",
-        "server/next-font-manifest.js",
-        "server/interception-route-rewrite-manifest.js",
-        "server/edge-runtime-webpack.js",
-        "server/app/api/maps/static/route.js"
-      ],
-      "name": "app/api/maps/static/route",
-      "page": "/api/maps/static/route",
-      "matchers": [
-        {
-          "regexp": "^/api/maps/static$",
-          "originalSource": "/api/maps/static"
-        }
-      ],
-      "wasm": [],
-      "assets": [],
-      "env": {
-        "__NEXT_BUILD_ID": "development",
-        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "zJHRt71R98ltd18uUmG5v1ocF1irdVUysJvxVDxnTaQ=",
-        "__NEXT_PREVIEW_MODE_ID": "2400625d4decd450930e60dfe0e50df6",
-        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "8045a4a16e4598d84a943d77803239baf7631782bf9b0cfae4c65cd5382a0f78",
-        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "0d04d27f7f0a69c0824d8f311b5b3b1888da842d290298e2187be1406114e386"
-      }
     }
   },
   "sortedMiddleware": [

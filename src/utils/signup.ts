@@ -1,4 +1,5 @@
 import { normalizeEventGuestPlanning } from "@/lib/event-guest-planning";
+import { normalizeSignupAppearance } from "@/lib/signup-themes";
 import {
   SignupForm,
   SignupFormSection,
@@ -306,6 +307,13 @@ const sanitizeSignupHeaderImage = (raw: unknown): SignupHeaderImageAsset | null 
 };
 
 export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
+  const presentation = {
+    appearance: normalizeSignupAppearance(form.appearance),
+    starterId: typeof form.starterId === "string" ? form.starterId.slice(0, 80) : null,
+    locationMode: form.locationMode === "online" || form.locationMode === "tba" ? form.locationMode : "in-person" as const,
+    revision: typeof form.revision === "number" && Number.isFinite(form.revision) ? Math.max(0, Math.floor(form.revision)) : 0,
+    ...(Array.isArray(form.availability) ? { availability: form.availability } : {}),
+  };
   const sections = sanitizeSections(form.sections || []);
   const settings = sanitizeSettings(form.settings || DEFAULT_SIGNUP_SETTINGS);
   const responses: SignupResponse[] = Array.isArray(form.responses)
@@ -367,6 +375,7 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
 
   if (!sections.length) {
     return {
+      ...presentation,
       version: SIGNUP_FORM_VERSION,
       enabled: false,
       title: (form.title || "").trim() || "Sign-up sheet",
@@ -422,6 +431,7 @@ export const sanitizeSignupForm = (form: SignupForm): SignupForm => {
   }
 
   return {
+    ...presentation,
     version: SIGNUP_FORM_VERSION,
     enabled: Boolean(form.enabled),
     title: (form.title || "").trim() || "Sign-up sheet",
@@ -529,6 +539,11 @@ const countForSlotByStatus = (
   excludeResponseId?: string | null
 ): number => {
   const key = makeSlotKey(sectionId, slotId);
+  const total = form.availability?.find((entry) => entry.sectionId === sectionId && entry.slotId === slotId);
+  if (total && (status === "confirmed" || status === "waitlisted")) {
+    const excluded = excludeResponseId ? form.responses.find((response) => response.id === excludeResponseId && response.status === status)?.slots.find((slot) => slot.sectionId === sectionId && slot.slotId === slotId)?.quantity || 0 : 0;
+    return Math.max(0, total[status] - excluded);
+  }
   return form.responses.reduce((total, response) => {
     if (excludeResponseId && response.id === excludeResponseId) return total;
     if (response.status !== status) return total;

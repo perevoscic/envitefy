@@ -77,6 +77,14 @@ export function templateCategoryForPath(path: string) {
 export function templateEditorHref(category: TemplateCategory, templateId: string) {
   return `/${category}/templates/${encodeURIComponent(templateId)}/customize`;
 }
+export function isEnabledTemplateEditorPath(path: string) {
+  return (
+    TEMPLATE_CATEGORIES.some(
+      (category) =>
+        path === category.editor || path === category.editor.replace(/\/customize$/, ""),
+    ) || /^\/event\/weddings\/customize\/[^/]+$/.test(path)
+  );
+}
 export function templateSignupIntent(category: TemplateCategory): SignupIntent {
   return getTemplateCategory(category)!.intent;
 }

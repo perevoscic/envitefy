@@ -84,6 +84,14 @@ These are proposed directions, not finished or contrast-validated palettes. Star
 
 Keep the locked Envitefy wordmark unchanged. Scope all form-theme styles to the signup page so they cannot alter dashboard cards, app navigation, or other event designs.
 
+### New artwork production — approved September 7, 2026
+
+Generate an original cover for each of the six theme families. The visual direction is quiet editorial photography: natural light, believable still lifes, matte ceramics, linen, paper, wood, and restrained palettes. Use small, purposeful arrangements with breathing room and ordinary imperfections. Avoid glossy 3D objects, excessive bokeh, oversaturated colors, artificial lighting, implausible objects, crowded fantasy scenes, and embedded text. Typography remains editable HTML.
+
+The first collection covers a creative workshop table (Clean & Clear), a modest potluck spread (Harvest Table), classroom materials (School Days), a neighborhood sports bench (Game Day), community gardening supplies (Community Garden), and a small flower-and-linen gathering table (Celebrate Together). Generate each separately with the built-in image tool, inspect at full size and in wide/square crops, and regenerate any image with visual artifacts. Store the exact prompts and generation provenance with the final paths. These are generated illustrations of activities, not photographs documenting real events.
+
+Encode approved originals directly with FFmpeg `libwebp`, quality 85, compression level 6, preserving dimensions and aspect ratio. Verify format and decoding, then remove only the exact corresponding generated originals, including generator-output copies. Wire the final assets into theme presets and the gallery before calling the artwork complete. Existing artwork remains available.
+
 ## 4. Improved organizer workflow
 
 ```mermaid
@@ -204,7 +212,7 @@ Effort ranges are planning estimates for one experienced engineer with timely de
 
 Total planning range: **21–33 working days**, approximately **4–7 weeks** sequentially. A reviewable first theme slice should be possible after Phases 0–1, approximately 7–11 working days. If the first release needs to be smaller, ship Phases 0–2 with three themes and retain invite-only participation; deliver the remaining themes and expanded participation afterward.
 
-Avoid adding AI generation, a free-position page editor, payment collection, conditional question logic, or a new scheduling/date model to the first theme release. Each deserves its own scope and validation.
+Original generated cover artwork is included in the theme release. A customer-facing image-generation feature, free-position page editor, payment collection, conditional question logic, and a new scheduling/date model remain separate extensions.
 
 ## 8. Acceptance checks and measurement
 

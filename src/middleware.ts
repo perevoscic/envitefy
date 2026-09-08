@@ -1,4 +1,4 @@
-import { isPublicTemplatePath, templateCategoryForPath } from "@/lib/template-categories";
+import { isEnabledTemplateEditorPath, isPublicTemplatePath, templateCategoryForPath } from "@/lib/template-categories";
 // src/middleware.ts
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -342,7 +342,7 @@ export async function middleware(req: NextRequest) {
 
   if (isAdminOnlyCreateEventPath(normalizedPathname)) {
     const authState = await resolveAuthState();
-    const enabledEditor = /^\/event\/(weddings|birthdays|anniversaries|baby-showers|gender-reveal|gymnastics|sport-events)(?:\/customize)?$/.test(normalizedPathname);
+    const enabledEditor = isEnabledTemplateEditorPath(normalizedPathname);
     if (!authState.hasSession || (!enabledEditor && !isAdminToken(authState.token))) {
       const url = req.nextUrl.clone();
       url.pathname = "/";

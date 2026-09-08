@@ -1,83 +1,44 @@
 import type { ReactNode } from "react";
 import type { SignupForm } from "@/types/signup";
+import { resolveSignupThemeStyle } from "@/lib/signup-themes";
+import styles from "./signup-theme.module.css";
 
-/** The public form header, shared with template previews. */
-export default function SignupTemplateHeader({
-  form,
-  fallbackTitle,
-  children,
-  actions,
-}: {
-  form: SignupForm;
-  fallbackTitle?: string;
-  children?: ReactNode;
-  actions?: ReactNode;
+export default function SignupTemplateHeader({ form, fallbackTitle, children, actions }: {
+  form: SignupForm; fallbackTitle?: string; children?: ReactNode; actions?: ReactNode;
 }) {
   const header = form.header;
-  const layout = header?.templateId || "header-1";
-  const side = layout === "header-1" || layout === "header-2" || layout === "header-4";
-  const gallery = layout === "header-5" || layout === "header-6";
-  const images = gallery
-    ? (header?.images || []).slice(0, layout === "header-6" ? 3 : 2)
-    : header?.backgroundImage
-      ? [header.backgroundImage]
-      : [];
-  return (
-    <section
-      className="overflow-hidden rounded-xl border"
-      style={{
-        backgroundColor: header?.backgroundColor || undefined,
-        backgroundImage: header?.backgroundCss || undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="px-5 py-6">
-        <div
-          className={`grid items-start gap-4 ${side ? (layout === "header-2" ? "md:grid-cols-[1fr_325px]" : "md:grid-cols-[325px_1fr]") : "grid-cols-1"}`}
-        >
-          {!!images.length && (
-            <div
-              className={`${layout === "header-2" ? "md:order-2" : ""} ${gallery ? (layout === "header-6" ? "grid grid-cols-3 gap-3" : "grid grid-cols-2 gap-3") : ""}`}
-            >
-              {images.map((image, index) => (
-                <img
-                  key={`${image.dataUrl}-${index}`}
-                  src={image.dataUrl}
-                  alt=""
-                  className={`w-full rounded-xl border object-cover ${side ? "max-h-[325px] max-w-[325px]" : gallery ? "h-36" : "max-h-80"}`}
-                />
-              ))}
-            </div>
-          )}
-          <div className="flex flex-col gap-2">
-            {header?.groupName && (
-              <p
-                className="text-sm font-semibold"
-                style={{ color: header.textColor1 || undefined }}
-              >
-                {header.groupName}
-              </p>
-            )}
-            <h1
-              className="text-2xl font-semibold"
-              style={{ color: header?.textColor2 || undefined }}
-            >
-              {form.title || fallbackTitle || "Smart sign-up"}
-            </h1>
-            {children}
-          </div>
-        </div>
-        {form.description && (
-          <p
-            className="mt-3 text-sm leading-relaxed"
-            style={{ color: header?.textColor1 || undefined }}
-          >
-            {form.description}
-          </p>
-        )}
-        {actions && <div className="mt-4 border-t border-border/60 pt-3">{actions}</div>}
-      </div>
-    </section>
-  );
+  const layout = form.appearance?.headerLayout || header?.templateId || "header-1";
+  const gallery = header?.images || [];
+  const cover = gallery[0] || header?.backgroundImage;
+  const portrait = layout === "header-4" ? gallery[1] : header?.backgroundImage;
+  const position = form.appearance?.imagePosition;
+  const imageStyle = { objectPosition: position ? `${position.x}% ${position.y}%` : "center" };
+  const split = (layout === "header-1" || layout === "header-2" || layout === "header-4") && portrait;
+  const date = (() => {
+    if (!form.start) return "Date to be announced";
+    try {
+      const local = /^\d{4}-\d{2}-\d{2}$/.test(form.start);
+      const value = new Date(local ? `${form.start}T12:00:00` : form.start);
+      return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", ...(!local && !form.allDay ? { hour: "numeric", minute: "2-digit" } as const : {}), ...(!local && form.timezone ? { timeZone: form.timezone } : {}) }).format(value);
+    } catch { return form.start; }
+  })();
+  const content = <div className={styles.headerContent}>
+    {header?.groupName && <p className={styles.eyebrow} style={!form.appearance ? { color: header.textColor1 || undefined } : undefined}>{header.groupName}</p>}
+    <h1 className={styles.heading} style={!form.appearance ? { color: header?.textColor2 || undefined } : undefined}>{form.title || fallbackTitle || "Your signup"}</h1>
+    {form.description && <p className={styles.description} style={!form.appearance ? { color: header?.textColor1 || undefined } : undefined}>{form.description}</p>}
+    <div className={styles.metadata}>
+      <span>{date}</span>
+      {form.locationMode === "tba" ? <span>Location to be announced</span> : form.location && <span>{form.venue ? `${form.venue} · ` : ""}{form.locationMode === "online" && /^https?:\/\//i.test(form.location) ? <a href={form.location} target="_blank" rel="noopener noreferrer">Join online</a> : form.location}</span>}
+      {header?.creatorName && <span>Hosted by {header.creatorName}</span>}
+    </div>
+    {children}
+    {actions && <div className={styles.actions}>{actions}</div>}
+  </div>;
+  return <section className={styles.header} style={{ ...resolveSignupThemeStyle(form), ...(!form.appearance ? { backgroundColor: header?.backgroundColor || undefined, backgroundImage: header?.backgroundCss || undefined } : {}) }}>
+    {(layout === "header-3" || layout === "header-4") && cover && <img className={styles.cover} src={cover.dataUrl} alt="" style={imageStyle} width={cover.width || 1536} height={cover.height || 1024} />}
+    {(layout === "header-5" || layout === "header-6") && !!(gallery.length || header?.backgroundImage) && <div className={`${styles.gallery} ${layout === "header-6" ? styles.three : ""}`}>
+      {(gallery.length ? gallery : header?.backgroundImage ? [header.backgroundImage] : []).slice(0, layout === "header-6" ? 3 : 2).map((img, i) => <img key={`${img.dataUrl}-${i}`} src={img.dataUrl} alt="" style={imageStyle} />)}
+    </div>}
+    {split ? <div className={`${styles.split} ${layout === "header-2" ? styles.right : ""}`}><img className={styles.portrait} src={portrait.dataUrl} alt="" style={imageStyle} />{content}</div> : content}
+  </section>;
 }

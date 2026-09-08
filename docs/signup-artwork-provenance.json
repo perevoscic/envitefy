@@ -1,0 +1,60 @@
+{
+  "createdAt": "2026-09-08",
+  "direction": "Restrained editorial still life; natural light and ordinary tactile materials.",
+  "assets": [
+    {
+      "id": "clean-clear",
+      "prompt": "Use case: photorealistic-natural. Asset: original cover artwork for an Envitefy signup form theme, landscape 3:2 composition. Create one restrained editorial still-life photograph with believable objects and natural window light, matte surfaces, quiet colors, subtle analog grain, modest depth of field, asymmetry, and ordinary tactile imperfections. Beautiful independent magazine art direction, candid and understated rather than a staged stock ad. No people, hands, faces, readable text, typography, logos, watermarks, UI, collage, borders, plastic shine, CGI, excessive bokeh, exaggerated lighting, hyper-detail, or surreal geometry. The image must work as a wide cover and a square center crop. Scene: a small creative workshop table in a sunlit studio. An open blank ivory notebook, two well-used graphite pencils, one handmade pale gray ceramic cup, a small muted indigo cotton swatch, and a delicate branch casting a soft shadow on warm off-white linen. Compose a sparse, relaxed arrangement with breathing room and nothing perfectly aligned. Warm ivory, soft stone, ink blue. Camera slightly above the table, honest afternoon daylight.",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-4e83c56f-3439-4dc8-9050-289af013670b.png",
+      "output": "public/templates/signup/editorial/clean-clear.webp",
+      "generator": "built-in image_gen",
+      "quality": 85,
+      "compressionLevel": 6
+    },
+    {
+      "id": "harvest-table",
+      "prompt": "Use case: photorealistic-natural. Asset: original cover artwork for an Envitefy signup form theme, landscape 3:2 composition. Create one restrained editorial still-life photograph with believable objects and natural window light, matte surfaces, quiet colors, subtle analog grain, modest depth of field, asymmetry, and ordinary tactile imperfections. Beautiful independent magazine art direction, candid and understated rather than a staged stock ad. No people, hands, faces, readable text, typography, logos, watermarks, UI, collage, borders, plastic shine, CGI, excessive bokeh, exaggerated lighting, hyper-detail, or surreal geometry. The image must work as a wide cover and a square center crop. Scene: a real community potluck table before guests arrive. One simple shallow cream ceramic bowl of small ripe pears and apples, a modest torn loaf of bread on a wood board, folded oatmeal linen, a tiny sprig of olive leaves and a terracotta serving bowl partly in frame. No abundant fantasy banquet. Warm ivory, terracotta and olive. Side window light, subtle shadow, inviting tactile editorial food photograph.",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-7ceeadc1-0cc7-409e-8d12-73ae3e3a5490.png",
+      "output": "public/templates/signup/editorial/harvest-table.webp",
+      "generator": "built-in image_gen",
+      "quality": 85,
+      "compressionLevel": 6
+    },
+    {
+      "id": "game-day",
+      "prompt": "Use case: photorealistic-natural. Asset: original cover artwork for an Envitefy signup form theme, landscape 3:2 composition. Create one restrained editorial still-life photograph with believable objects and natural window light, matte surfaces, quiet colors, subtle analog grain, modest depth of field, asymmetry, and ordinary tactile imperfections. Beautiful independent magazine art direction, candid and understated rather than a staged stock ad. No people, hands, faces, readable text, typography, logos, watermarks, UI, collage, borders, plastic shine, CGI, excessive bokeh, exaggerated lighting, hyper-detail, or surreal geometry. The image must work as a wide cover and a square center crop. Scene: team snack break beside a quiet neighborhood playing field. A navy canvas equipment bag, one realistically worn soccer ball, an enamel bowl with a few orange wedges and a folded off-white cotton towel on a simple weathered bench. A softly out of focus natural green playing field in the distance, no painted writing. Muted navy, cream and field green, gentle overcast morning light. Plausible equipment proportions, relaxed candid sports magazine photograph.",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-306bd372-ea86-4779-b475-91295614e183.png",
+      "output": "public/templates/signup/editorial/game-day.webp",
+      "generator": "built-in image_gen",
+      "quality": 85,
+      "compressionLevel": 6
+    },
+    {
+      "id": "school-days",
+      "prompt": "Use case: photorealistic-natural. Asset: original cover artwork for an Envitefy signup form theme, landscape 3:2 composition. Create one restrained editorial still-life photograph with believable objects and natural light, matte surfaces, quiet colors, subtle analog grain, modest depth of field, asymmetry, and ordinary tactile imperfections. Beautiful independent magazine art direction, candid and understated rather than a staged stock ad. No people, hands, faces, readable text, typography, logos, watermarks, UI, collage, borders, plastic shine, CGI, excessive bokeh, exaggerated lighting, hyper-detail, or surreal geometry. The image must work as a wide cover and a square center crop. Scene: an everyday elementary classroom table before a craft activity. A short stack of blank cream drawing paper, a small cup with realistically sized colored pencils, a few wooden building blocks, one closed blue notebook with no writing and child-safe scissors resting on a pale wooden desk. Muted ink blue, ochre yellow, soft cream. Simple carefully observed still life, gentle daylight, nothing shiny, objects slightly used, relaxed framing.",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-24074eb7-da7b-476b-9b9c-b048f9c39bfd.png",
+      "output": "public/templates/signup/editorial/school-days.webp",
+      "generator": "built-in image_gen",
+      "quality": 85,
+      "compressionLevel": 6
+    },
+    {
+      "id": "community-garden",
+      "prompt": "Use case: photorealistic-natural. Asset: original cover artwork for an Envitefy signup form theme, landscape 3:2 composition. Create one restrained editorial still-life photograph with believable objects and natural light, matte surfaces, quiet colors, subtle analog grain, modest depth of field, asymmetry, and ordinary tactile imperfections. Beautiful independent magazine art direction, candid and understated rather than a staged stock ad. No people, hands, faces, readable text, typography, logos, watermarks, UI, collage, borders, plastic shine, CGI, excessive bokeh, exaggerated lighting, hyper-detail, or surreal geometry. The image must work as a wide cover and a square center crop. Scene: supplies for a small neighborhood gardening morning. A worn terracotta pot with a little rosemary plant, folded natural canvas gardening gloves, an ordinary hand trowel, and a small kraft paper packet with no writing on a modest weathered wooden potting table. A few crumbs of earth, subtle shadows, softly suggested garden behind. Forest green, sage and parchment. Honest quiet editorial photo, overcast natural daylight.",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-e6530afe-e7b4-41a6-999b-ba1d8ca8a903.png",
+      "output": "public/templates/signup/editorial/community-garden.webp",
+      "generator": "built-in image_gen",
+      "quality": 85,
+      "compressionLevel": 6
+    },
+    {
+      "id": "celebrate-together",
+      "prompt": "Use case: photorealistic-natural. Asset: original cover artwork for an Envitefy signup form theme, landscape 3:2 composition. Create one restrained editorial still-life photograph with believable objects and natural light, matte surfaces, quiet colors, subtle analog grain, modest depth of field, asymmetry, and ordinary tactile imperfections. Beautiful independent magazine art direction, candid and understated rather than a staged stock ad. No people, hands, faces, readable text, typography, logos, watermarks, UI, collage, borders, plastic shine, CGI, excessive bokeh, exaggerated lighting, hyper-detail, or surreal geometry. The image must work as a wide cover and a square center crop. Scene: a small gathering table being prepared at home. A short clear glass vase with a few loosely arranged seasonal cosmos and tiny daisies, a casually folded muted dusty pink linen napkin, two simple cream ceramic side plates, and a small lilac ribbon on a warm pale table. Believable stem and petal anatomy, restrained flowers rather than a huge perfect bouquet. Warm ivory, dusty blush, muted plum. Soft lateral window light, lived-in, unpretentious editorial still life.",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-a675e0d3-b432-4bf0-a2ad-755287cd60ca.png",
+      "output": "public/templates/signup/editorial/celebrate-together.webp",
+      "generator": "built-in image_gen",
+      "quality": 85,
+      "compressionLevel": 6
+    }
+  ]
+}

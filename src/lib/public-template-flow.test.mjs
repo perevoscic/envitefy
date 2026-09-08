@@ -81,6 +81,13 @@ test("all nine catalogs expose unique valid template/editor identities and exist
     }
     assert.equal(catalog.getPublicTemplate(category.slug, "does-not-exist"), undefined);
   }
+  for (const category of categories.TEMPLATE_CATEGORIES)
+    assert.equal(categories.isEnabledTemplateEditorPath(category.editor), true);
+  assert.equal(
+    categories.isEnabledTemplateEditorPath(`/event/weddings/customize/${draftId}`),
+    true,
+  );
+  assert.equal(categories.isEnabledTemplateEditorPath("/event/appointments/customize"), false);
   assert.equal(categories.getTemplateCategory("sports").slug, "sport-events");
   assert.equal(categories.getTemplateCategory("football").slug, "sport-events");
   for (const value of [

@@ -78,6 +78,11 @@ export type SignupSafetyFlags = {
 };
 
 export type SignupForm = {
+  appearance?: SignupAppearance | null;
+  starterId?: string | null;
+  locationMode?: "in-person" | "online" | "tba";
+  revision?: number;
+  availability?: SignupSlotAvailability[];
   guestPlanning?: EventGuestPlanning;
   version: 1;
   enabled: boolean;
@@ -111,6 +116,29 @@ export type SignupForm = {
   safetyNotes?: string | null;
   requirements?: string | null;
   safetyFlags?: SignupSafetyFlags | null;
+};
+
+export type SignupSlotAvailability = {
+  sectionId: string;
+  slotId: string;
+  confirmed: number;
+  waitlisted: number;
+};
+
+export type SignupThemeId = "clean-clear" | "harvest-table" | "school-days" | "game-day" | "community-garden" | "celebrate-together";
+export type SignupHeaderLayout = "header-1" | "header-2" | "header-3" | "header-4" | "header-5" | "header-6" | "none";
+export type SignupFontPair = "editorial" | "modern" | "friendly";
+export type SignupAppearance = {
+  version: 1;
+  themeId: SignupThemeId;
+  themeRevision: 1;
+  palette: "original" | "soft" | "ink";
+  fontPair: SignupFontPair;
+  headerLayout: SignupHeaderLayout;
+  slotLayout: "cards" | "rows";
+  density: "comfortable" | "compact";
+  accent?: string;
+  imagePosition: { x: number; y: number };
 };
 
 export type SignupHeaderImageAsset = {

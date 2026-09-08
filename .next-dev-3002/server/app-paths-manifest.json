@@ -1,6 +1,5 @@
 {
   "/api/templates/signup/route": "app/api/templates/signup/route.js",
-  "/api/maps/static/route": "app/api/maps/static/route.js",
   "/icon.png/route": "app/icon.png/route.js",
   "/[category]/templates/page": "app/[category]/templates/page.js",
   "/[category]/templates/[templateId]/customize/page": "app/[category]/templates/[templateId]/customize/page.js",
