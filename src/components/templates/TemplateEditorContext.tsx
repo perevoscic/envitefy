@@ -139,6 +139,7 @@ export default function TemplateEditorProvider({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   const [storageReady, setStorageReady] = useState(true);
   const [generation, setGeneration] = useState(0);
@@ -518,30 +519,7 @@ export default function TemplateEditorProvider({
                 type="button"
                 disabled={busy || !initial}
                 className="text-xs underline"
-                onClick={async () => {
-                  if (
-                    !confirm("Start over? This will discard the temporary draft in this browser.")
-                  )
-                    return;
-                  if (timer.current) clearTimeout(timer.current);
-                  await writeQueue.current.catch(() => {});
-                  if (draft.current) await deleteTemplateDraft(draft.current.id).catch(() => {});
-                  draft.current = {
-                    version: 1,
-                    id: crypto.randomUUID(),
-                    category,
-                    templateId,
-                    updatedAt: Date.now(),
-                    snapshot: {},
-                    assets: {},
-                  };
-                  window.history.replaceState(null, "", templateEditorHref(category, templateId));
-                  remoteMedia.current = {};
-                  setEditorReady(false);
-                  setInitial({});
-                  setGeneration((n) => n + 1);
-                  setMessage("");
-                }}
+                onClick={() => setResetOpen(true)}
               >
                 Start over
               </button>
@@ -561,6 +539,57 @@ export default function TemplateEditorProvider({
                 ? "Temporary browser drafts expire 7 days after your last edit."
                 : "Browser storage is unavailable. Keep this tab open until your draft is saved to your account."}
             </p>
+          )}
+          {resetOpen && (
+            <div
+              role="group"
+              aria-label="Confirm start over"
+              className="mx-auto mt-3 max-w-[1500px] rounded-xl border border-[#ded5ca] bg-white p-4"
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setResetOpen(false);
+              }}
+            >
+              <p className="text-sm">Discard this temporary browser draft and start again?</p>
+              <div className="mt-3 flex flex-wrap gap-4">
+                <button
+                  type="button"
+                  className="rounded-full border px-4 py-2 text-sm"
+                  onClick={() => setResetOpen(false)}
+                >
+                  Keep editing
+                </button>
+                <button
+                  type="button"
+                  className="rounded-full bg-[#59405c] px-4 py-2 text-sm text-white"
+                  onClick={async () => {
+                    if (timer.current) clearTimeout(timer.current);
+                    await writeQueue.current.catch(() => {});
+                    if (draft.current) await deleteTemplateDraft(draft.current.id).catch(() => {});
+                    draft.current = {
+                      version: 1,
+                      id: crypto.randomUUID(),
+                      category,
+                      templateId,
+                      updatedAt: Date.now(),
+                      snapshot: {},
+                      assets: {},
+                    };
+                    window.history.replaceState(null, "", templateEditorHref(category, templateId));
+                    remoteMedia.current = {};
+                    setEditorReady(false);
+                    setInitial({});
+                    setGeneration((n) => n + 1);
+                    setMessage("");
+                    setError("");
+                    firstEdit.current = false;
+                    pendingHandled.current = false;
+                    setResetOpen(false);
+                  }}
+                >
+                  Discard browser draft
+                </button>
+              </div>
+            </div>
           )}
           {error && (
             <p role="alert" className="mx-auto mt-2 max-w-[1500px] text-sm text-red-700">
@@ -588,7 +617,7 @@ export default function TemplateEditorProvider({
           <div
             className={styles.workspace}
             key={generation}
-            inert={busy || authOpen ? true : undefined}
+            inert={busy || authOpen || resetOpen ? true : undefined}
           >
             {children}
           </div>

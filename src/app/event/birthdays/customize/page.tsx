@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import { BIRTHDAY_SAMPLES, birthdaySampleHeadline } from "@/data/birthday-samples";
@@ -1356,7 +1357,8 @@ export default function BirthdayTemplateCustomizePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
-        <MenuCard
+        {templateEditor && <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />}
+          <MenuCard
           title="Headline"
           icon={<Type size={18} />}
           desc={
@@ -1912,6 +1914,7 @@ export default function BirthdayTemplateCustomizePage() {
                 Cancel
               </button>
             )}
+            {!templateEditor && <LegacyTemplateDraftButton category={isAnniversaryDesign ? "anniversaries" : "birthdays"} templateId={data.theme.professionalThemeId} eventId={editEventId} snapshot={{ data, activeView, activeTemplateId, activeVariationId, activeSection, newHost, newRegistry }} disabled={submitting} />}
             <button
               onClick={handlePublish}
               disabled={submitting || uploadingAssets}

@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import GenderRevealTemplateView from "@/components/GenderRevealTemplateView";
@@ -867,7 +868,8 @@ export default function GenderRevealTemplateCustomizePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
-        <MenuCard
+        {templateEditor && <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />}
+          <MenuCard
           title="Headline"
           icon={<Type size={18} />}
           desc="Event title, date, location."
@@ -1659,6 +1661,7 @@ export default function GenderRevealTemplateCustomizePage() {
                 Cancel
               </button>
             )}
+            {!templateEditor && <LegacyTemplateDraftButton category={"gender-reveal"} templateId={resolvedTemplateId} eventId={editEventId} snapshot={{ data, activeView, newHost, newRegistry }} disabled={submitting} />}
             <button
               onClick={handlePublish}
               disabled={submitting}

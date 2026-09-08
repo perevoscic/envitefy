@@ -102,17 +102,21 @@ export const ENVITEFY_PRODUCT_MARKETING_CATALOG = {
         },
         {
           id: "templates-manual-studio",
-          name: "Templates and manual creation",
+          name: "Public templates and guest customization",
           availability: "core",
           customerPromise:
-            "Choose a structured event type or design direction, enter details manually, and customize the invitation and live card.",
+            "Browse real templates and make an invitation your own before creating an account; sign in when you want to save and keep editing.",
           proofPoints: [
             "Template and manual creation remain available alongside Envitefy Snap and Envitefy Concierge.",
+            "Public landing pages and searchable template galleries cover weddings, birthdays, anniversaries, baby showers, bridal showers, gender reveals, gymnastics, sports, and signup forms.",
+            "Visitors can edit manual details and preview their own photos. Temporary drafts stay in the same browser for seven days after the last edit, with a clear recovery message if browser storage fails.",
+            "Save and continue opens signup or login. Account saves create a private draft that the owner can reopen from My events and Continue creating; publishing is a separate action.",
             "Category pages such as /weddings and /birthdays offer templates; creation CTAs for Envitefy Concierge open /chat, while introductions link to /envitefy-concierge.",
             "Hosts can choose event-specific layouts, edit wording and details, and review the guest experience before publishing.",
             "Generated live-card artwork focuses on the subject and title, while addresses, schedules, contact information, and other details stay in the buttons and detail panels below.",
           ],
           sellWhen: [
+            "A visitor wants to try an actual design and enter event details before registering.",
             "The customer wants creative control, a specific theme, or a known event structure.",
             "The brief is about designing a new invitation rather than importing an existing one.",
           ],

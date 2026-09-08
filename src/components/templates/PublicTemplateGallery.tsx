@@ -15,8 +15,6 @@ import GymnasticsPreview from "@/components/gym-meet-templates/GymnasticsPreview
 import { GYM_MEET_TEMPLATE_LIBRARY } from "@/components/gym-meet-templates/registry";
 import { config as sportsConfig } from "@/components/event-templates/SportEventsTemplate";
 import { readTemplateDraft, type TemplateDraft } from "@/lib/template-draft-storage";
-import SignupTemplateHeader from "@/components/smart-signup-form/SignupTemplateHeader";
-import SignupViewer from "@/components/smart-signup-form/SignupViewer";
 import { weddingDesignCatalog } from "@/lib/wedding-designs";
 import { BIRTHDAY_DESIGN_BY_ID } from "@/data/birthday-design-catalog";
 import { getPublicTemplates, type PublicTemplate } from "@/lib/public-template-catalog";
@@ -27,7 +25,6 @@ import {
 } from "@/lib/template-categories";
 import { getFamilyTemplateDesign } from "@/lib/family-template-designs";
 import { getSportEventPreset, getSportStyleThemeIds } from "@/lib/sport-event-presets";
-import { createDefaultSignupForm } from "@/utils/signup";
 import { trackTemplateEvent } from "./TemplateEditorContext";
 import BridalShowerPreview from "./BridalShowerPreview";
 
@@ -100,20 +97,12 @@ export function PublicTemplatePreview({
       </TemplateThumbnailPreview>
     );
   }
-  if (category === "signup-forms") {
-    const form = createDefaultSignupForm();
-    form.title = template.name;
-    form.header = {
-      ...form.header,
-      templateId: "header-1",
-      backgroundImage: { name: template.name, type: "image/webp", dataUrl: template.heroImage },
-    };
+  if (category === "signup-forms")
     return (
-      <TemplateThumbnailPreview>
-        <div className="mx-auto max-w-3xl space-y-4 px-4 py-6"><SignupTemplateHeader form={form} /><SignupViewer eventId="preview" initialForm={form} viewerKind="readonly" /></div>
+      <TemplateThumbnailPreview scaled={false}>
+        <img src={template.heroImage} alt="" className="h-full w-full object-cover" />
       </TemplateThumbnailPreview>
     );
-  }
   if (category === "gymnastics")
     return (
       <TemplateThumbnailPreview>
@@ -289,7 +278,7 @@ export default function PublicTemplateGallery({
               </label>
             ))}
             <p aria-live="polite" className="text-sm text-[#746775]">
-              {filtered.length} templates
+              {filtered.length} {filtered.length === 1 ? "template" : "templates"}
             </p>
           </div>
         )}

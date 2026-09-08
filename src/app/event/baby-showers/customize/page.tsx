@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { BRIDAL_PRESETS } from "@/lib/public-template-catalog";
 import TemplateGalleryBackLink from "@/components/templates/TemplateGalleryBackLink";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
@@ -365,7 +366,7 @@ export default function BabyShowerTemplateCustomizePage() {
       rsvp: { isEnabled: true, deadline: "" },
     } : {}),
 
-    ...(isBridal ? { babyName: "", momName: "Sophia", eventTitle: "A toast to the bride", babyDetails: { expectingDate: "", gender: "", notes: "Join us for an afternoon of love, laughter, and a toast to the bride." }, momDetails: { notes: "" }, registries: [], hosts: [], images: { ...INITIAL_DATA.images, hero: bridalPreset.heroImage } } : {}),
+    ...(isBridal ? { babyName: "", momName: "Sophia", eventTitle: "A toast to the bride", babyDetails: { expectingDate: "", gender: "", notes: "Join us for an afternoon of love, laughter, and a toast to the bride." }, momDetails: { notes: "" }, registries: [], hosts: [], gallery: [], images: { ...INITIAL_DATA.images, hero: bridalPreset.heroImage } } : {}),
     date: familyTemplateDate(defaultDate, editEventId || isBridal ? INITIAL_DATA.date : selectedDesign.sample.date),
     theme: editEventId ? INITIAL_DATA.theme : { ...INITIAL_DATA.theme, themeId: designDefaults.themeId, font: designDefaults.font },
   }));
@@ -838,7 +839,8 @@ export default function BabyShowerTemplateCustomizePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
-        <MenuCard
+        {templateEditor && <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />}
+          <MenuCard
           title="Headline"
           icon={<Type size={18} />}
           desc={isBridal ? "Bride’s name, date, location." : "Baby’s name, date, location."}
@@ -852,7 +854,7 @@ export default function BabyShowerTemplateCustomizePage() {
         />
         <MenuCard
           title={isBridal ? "Celebration details" : "About Baby"}
-          icon={<Baby size={18} />}
+          icon={isBridal ? <Heart size={18} /> : <Baby size={18} />}
           desc={isBridal ? "Plans and host notes." : "Expecting date, gender, notes."}
           onClick={() => setActiveView("babyDetails")}
         />
@@ -1526,6 +1528,7 @@ export default function BabyShowerTemplateCustomizePage() {
                 Cancel
               </button>
             )}
+            {!templateEditor && <LegacyTemplateDraftButton category={isBridal ? "bridal-showers" : "baby-showers"} templateId={activeTemplateId} eventId={editEventId} snapshot={{ data, activeView, activeTemplateId, newHost, newRegistry }} disabled={submitting} />}
             <button
               onClick={handlePublish}
               disabled={submitting}

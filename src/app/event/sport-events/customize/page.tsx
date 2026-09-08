@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
@@ -1045,6 +1046,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
         </div>
 
         <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
+          {templateEditor && <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />}
           <MenuCard
             title="Headline"
             desc="Title, date, location."
@@ -1708,7 +1710,8 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
                   Cancel
                 </button>
               )}
-              <button
+              {!templateEditor && <LegacyTemplateDraftButton category={"sport-events"} templateId={`${data.extra.sport || "football"}--${search?.get("style") || "stadium"}`} eventId={editEventId} snapshot={{ data, activeView, advancedState, themeId, activeSection }} disabled={submitting} />}
+            <button
                 onClick={handlePublish}
                 disabled={submitting}
                 className={`${

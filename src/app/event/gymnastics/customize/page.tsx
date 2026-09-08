@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState, useTemplateSearchParams } from "@/components/templates/TemplateEditorContext";
 
 import EventGuestPlanningEditor from "@/components/event-templates/EventGuestPlanningEditor";
@@ -3386,6 +3387,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
                 Cancel
               </button>
             )}
+            {!templateEditor && <LegacyTemplateDraftButton category={"gymnastics"} templateId={data.pageTemplateId} eventId={editEventId} snapshot={{ data, activeView, advancedState, themeId, activeSection }} disabled={submitting} />}
             <button
               onClick={handlePublish}
               disabled={submitting || (!(templateEditor && !templateEditor.authenticated) && missingEssentials.length > 0)}

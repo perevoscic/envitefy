@@ -2117,7 +2117,7 @@ const App = () => {
           endAt: endISO,
           end: endISO,
           location,
-          description: data.story?.text || undefined,
+          description: (typeof data.story === "string" ? data.story : data.story?.text) || undefined,
           rsvp: data.rsvp?.isEnabled
             ? {
                 ...data.rsvp,
@@ -2296,7 +2296,7 @@ const App = () => {
     } finally {
       setSavingDraft(false);
     }
-  }, [buildHistoryPayload, editEventId, router, savingDraft, search, submitting]);
+  }, [templateEditor, buildHistoryPayload, editEventId, router, savingDraft, search, submitting]);
 
   // Render helpers instead of nested components so inputs keep focus across state updates.
   const renderMainMenu = () => (
@@ -2304,7 +2304,7 @@ const App = () => {
       <div className="mb-6 w-full max-w-sm flex-shrink-0">
         <button
           type="button"
-          onClick={() => router.push(designGalleryHref)}
+          onClick={() => router.push(templateEditor ? "/weddings/templates" : designGalleryHref)}
           className="mb-5 inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-full border border-[#d9d0c6] bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#65584e] shadow-sm transition hover:border-[#a98553] hover:text-[#76562e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a98553]/40"
         >
           <ChevronLeft size={15} aria-hidden="true" />
@@ -2322,6 +2322,7 @@ const App = () => {
 
       <div className="flex-1 overflow-y-auto w-full max-w-sm min-h-0">
         <div className="grid grid-cols-1 gap-3 pb-4">
+          {templateEditor && <MenuCard title="Design" icon={<Type size={18} />} desc="Choose your design and theme." onClick={() => setActiveView("design")} />}
           <MenuCard
             title="Headline"
             icon={<Type size={18} />}

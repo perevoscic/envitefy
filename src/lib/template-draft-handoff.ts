@@ -1,4 +1,5 @@
 import { getTemplateCategory, type TemplateCategory } from "./template-categories";
+import { buildTemplateDraftPayload } from "./template-draft-payload";
 import {
   replaceDraftMedia,
   retainDraftMedia,
@@ -54,10 +55,16 @@ export async function saveTemplateDraftToAccount({
   }
   const savedSnapshot = replaceDraftMedia(snapshot, remoteMedia);
   const data = replaceDraftMedia(payload.data as EditorSnapshot, remoteMedia);
+  const canonical = buildTemplateDraftPayload(
+    savedSnapshot,
+    category,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+  );
   const body = {
     title: payload.title,
     clientDraftId: draft.id,
     data: {
+      ...canonical.data,
       ...data,
       category: data.category || getTemplateCategory(category)!.historyCategory,
       ownership: "owned",

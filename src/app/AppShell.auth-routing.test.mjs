@@ -22,9 +22,11 @@ test("AppShell hides app chrome on marketing and full live-card routes", () => {
   assert.match(appShell, /showAppChrome/);
   assert.match(
     appShell,
-    /const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare;/,
+    /const showAppChrome = isAuthenticated && !onMarketing && !isStudioCardShare && !isConciergeLanding;/,
   );
-  assert.match(appShell, /isRedirectingFromMarketing/);
+  assert.match(appShell, /const isRedirectingFromMarketing = pathname === "\/landing" && isAuthenticated/);
+  assert.match(appShell, /templateCategoryForPath\(pathname\)/);
+  assert.match(appShell, /isPublicTemplatePath\(pathname\)/);
   assert.match(appShell, /getCreateActionForSignupIntent\(signupIntentForMarketingPath\(pathname\)\)/);
   assert.match(appShell, /router\.replace\(pathname === "\/landing" \|\| !createAction \? "\/" : createAction\.href\)/);
   assert.match(appShell, /z-\[14000\]/);

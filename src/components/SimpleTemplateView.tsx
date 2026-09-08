@@ -2,6 +2,7 @@
 "use client";
 
 import EnvitefyEventBranding from "@/components/branding/EnvitefyEventBranding";
+import { parseCalendarDateTimeToIso } from "@/lib/calendar-date-time";
 import EventGuestActions from "@/components/event-templates/EventGuestActions";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
 import { getEventEndLocal, normalizeEventGuestPlanning, resolvePublicEventShareUrl } from "@/lib/event-guest-planning";
@@ -642,7 +643,7 @@ export default function SimpleTemplateView({
       return new Intl.DateTimeFormat("en-US", {
         timeZone: eventTimeZone || "UTC",
         ...(options || {}),
-      }).format(new Date(value));
+      }).format(new Date(parseCalendarDateTimeToIso(value, eventTimeZone || "UTC") || value));
     } catch {
       return value;
     }

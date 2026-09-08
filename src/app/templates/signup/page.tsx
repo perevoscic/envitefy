@@ -1,4 +1,5 @@
 "use client";
+import LegacyTemplateDraftButton from "@/components/templates/LegacyTemplateDraftButton";
 import { useTemplateEditor, useTemplateState } from "@/components/templates/TemplateEditorContext";
 import { getPublicTemplate } from "@/lib/public-template-catalog";
 
@@ -51,6 +52,7 @@ export default function SignupTemplatesPage() {
       <header className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Signup templates</h1>
       </header>
+      {!templateEditor && <LegacyTemplateDraftButton category="signup-forms" snapshot={{ form }} disabled={submitting} />}
       <SmartSignupWizard
         form={form}
         onChange={setForm}

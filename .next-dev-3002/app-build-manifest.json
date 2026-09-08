@@ -32,6 +32,60 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/templates/signup/route.js"
+    ],
+    "/weddings/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/weddings/page.css",
+      "static/chunks/app/weddings/page.js"
+    ],
+    "/birthdays/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/birthdays/page.css",
+      "static/chunks/app/birthdays/page.js"
+    ],
+    "/anniversaries/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/anniversaries/page.css",
+      "static/chunks/app/anniversaries/page.js"
+    ],
+    "/baby-showers/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/baby-showers/page.css",
+      "static/chunks/app/baby-showers/page.js"
+    ],
+    "/bridal-showers/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/bridal-showers/page.css",
+      "static/chunks/app/bridal-showers/page.js"
+    ],
+    "/gender-reveal/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/gender-reveal/page.css",
+      "static/chunks/app/gender-reveal/page.js"
+    ],
+    "/gymnastics/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/gymnastics/page.css",
+      "static/chunks/app/gymnastics/page.js"
+    ],
+    "/sport-events/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/sport-events/page.css",
+      "static/chunks/app/sport-events/page.js"
+    ],
+    "/signup-forms/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/signup-forms/page.css",
+      "static/chunks/app/signup-forms/page.js"
     ]
   }
 }

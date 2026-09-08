@@ -388,13 +388,35 @@ test("incomplete drafts retain canonical dates, timezone, and signup fields", ()
   const empty = buildTemplateDraftPayload({}, "weddings", "America/Chicago");
   assert.equal(empty.data.startAt, null);
   assert.equal(empty.data.endAt, null);
-  const scheduled = buildTemplateDraftPayload({ data: { date: "2028-09-21", time: "14:00", endTime: "16:00", timezone: "America/Chicago", hosts: [{ name: "Family" }] } }, "bridal-showers", "UTC");
+  const scheduled = buildTemplateDraftPayload(
+    {
+      data: {
+        date: "2028-09-21",
+        time: "14:00",
+        endTime: "16:00",
+        timezone: "America/Chicago",
+        hosts: [{ name: "Family" }],
+      },
+    },
+    "bridal-showers",
+    "UTC",
+  );
   assert.equal(scheduled.data.startAt, "2028-09-21T19:00:00.000Z");
   assert.equal(scheduled.data.endAt, "2028-09-21T21:00:00.000Z");
   assert.equal(scheduled.data.startAt, scheduled.data.startISO);
   assert.equal(scheduled.data.tz, "America/Chicago");
   assert.deepEqual(scheduled.data.hosts, [{ name: "Family" }]);
-  const signup = buildTemplateDraftPayload({ form: { title: "Field trip", start: "2028-09-21T09:00", sections: [{ title: "Drivers", slots: [] }] } }, "signup-forms", "America/Chicago");
+  const signup = buildTemplateDraftPayload(
+    {
+      form: {
+        title: "Field trip",
+        start: "2028-09-21T09:00",
+        sections: [{ title: "Drivers", slots: [] }],
+      },
+    },
+    "signup-forms",
+    "America/Chicago",
+  );
   assert.equal(signup.data.start, "2028-09-21T14:00:00.000Z");
   assert.deepEqual(signup.data.signupForm.sections, [{ title: "Drivers", slots: [] }]);
 });
@@ -405,19 +427,39 @@ test("history updates require ownership, with explicit legacy intake claiming pr
   let mutations = 0;
   const route = loadTs("src/app/api/history/[id]/route.ts", {
     "next/headers": {},
-    "next/server": { NextResponse: { json: (body, options) => json(body, options?.status || 200) } },
-    "next-auth": { getServerSession: async () => userId ? { user: { id: userId } } : null },
+    "next/server": {
+      NextResponse: { json: (body, options) => json(body, options?.status || 200) },
+    },
+    "next-auth": { getServerSession: async () => (userId ? { user: { id: userId } } : null) },
     "@/lib/auth": { authOptions: {}, resolveSessionUserId: async () => userId },
-    "@/lib/db": { getEventHistoryById: async () => saved, claimEventHistoryById: async () => (saved = { ...saved, user_id: userId }), updateEventHistoryDataMerge: async (id, data) => { mutations++; saved = { ...saved, data: { ...saved.data, ...data } }; return saved; }, listShareRecipientUserIdsForEvent: async () => [] },
+    "@/lib/db": {
+      getEventHistoryById: async () => saved,
+      claimEventHistoryById: async () => (saved = { ...saved, user_id: userId }),
+      updateEventHistoryDataMerge: async (id, data) => {
+        mutations++;
+        saved = { ...saved, data: { ...saved.data, ...data } };
+        return saved;
+      },
+      listShareRecipientUserIdsForEvent: async () => [],
+    },
     "@/lib/dashboard-cache": { invalidateUserDashboard() {} },
     "@/lib/history-cache": { invalidateUserHistory() {} },
     "@/lib/event-access": {},
-    "@/lib/event-cleanup": { deleteEventHistoryWithCleanup: async () => { mutations++; return {}; } },
+    "@/lib/event-cleanup": {
+      deleteEventHistoryWithCleanup: async () => {
+        mutations++;
+        return {};
+      },
+    },
     "@/lib/event-media": { findTransientEventMedia: () => [] },
     "@/lib/discovery-public-redact": {},
   });
   const context = { params: Promise.resolve({ id: draftId }) };
-  const request = (body = { data: { status: "published", draftStatus: "published" } }) => new Request("https://envitefy.test/api/history/" + draftId, { method: "PATCH", body: JSON.stringify(body) });
+  const request = (body = { data: { status: "published", draftStatus: "published" } }) =>
+    new Request(`https://envitefy.test/api/history/${draftId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
   assert.equal((await route.PATCH(request(), context)).status, 401);
   userId = "another";
   assert.equal((await route.PATCH(request(), context)).status, 403);
