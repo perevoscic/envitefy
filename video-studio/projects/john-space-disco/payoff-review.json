@@ -1,0 +1,43 @@
+```json
+{
+  "spoken_phrases": [
+    {
+      "start_second": 0.0,
+      "end_second": 3.0,
+      "transcription": "My birthday needs dinosaurs in space"
+    },
+    {
+      "start_second": 3.0,
+      "end_second": 5.0,
+      "transcription": "with a disco!"
+    },
+    {
+      "start_second": 5.0,
+      "end_second": 8.0,
+      "transcription": "That's my kind of birthday."
+    }
+  ],
+  "speech_cut_off": false,
+  "visual_evaluation": {
+    "character_design_rating": 4,
+    "motion_smoothness_rating": 4,
+    "continuity_rating": 4,
+    "details": "The 3D Pixar-style character design is highly consistent. Hands and fingers are rendered accurately. The transition from the bedroom to the space theme is smooth, with minor background flickering during the shift.",
+    "artifacts_present": "Minimal morphing artifacts during the background transition."
+  },
+  "key_events": {
+    "hook": {
+      "dinosaur_arrival": "00:01",
+      "planet_arrival": "00:02",
+      "disco_drop": "00:03",
+      "serious_dance": "00:04"
+    },
+    "update": {
+      "complete_parent_line": "None present"
+    },
+    "payoff": {
+      "complete_john_line": "00:00 - 00:08"
+    }
+  }
+}
+```
