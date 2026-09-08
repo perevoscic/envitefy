@@ -99,6 +99,9 @@ export function resolveArtworkEditHref(eventId: string, eventData: unknown): str
  */
 export const buildEditLink = (eventId: string, eventData: any, eventTitle: string): string => {
   try {
+    const editor = eventData?.templateEditor;
+    const templateCategory = getTemplateCategory(editor?.category);
+    if (templateCategory && typeof editor?.templateId === "string") return `${templateEditorHref(templateCategory.slug, editor.templateId)}?edit=${encodeURIComponent(eventId)}`;
     const normalizedCategory = String(eventData?.category || "")
       .toLowerCase()
       .trim();

@@ -532,7 +532,7 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
     signedOutPageChrome,
     /const successRedirectUrl = authMode === "signup" \? signupSuccessRedirectUrl : loginSuccessRedirectUrl/,
   );
-  assert.match(signedOutPageChrome, /const primaryCreateHref = createAction\?\.href \|\| "\/chat"/);
+  assert.match(signedOutPageChrome, /const primaryCreateHref = templateCategory \? `\/\$\{templateCategory\.slug\}\/templates` : createAction\?\.href \|\| "\/chat"/);
   assert.match(
     signedOutPageChrome,
     /const loginSuccessRedirectUrl = createAction\?\.href \|\| "\/"/,

@@ -1859,6 +1859,7 @@ function buildHistoryDataProjectionSql(params: {
       'ownership', ${ownershipSql},
       'invitedFromScan', ${invitedFromScanSql},
       'shareStatus', ${shareStatusSql},
+      'templateEditor', (${dataSql}->'templateEditor' - 'snapshot'),
       'status', ${dataSql}->'status',
       'description', ${dataSql}->'description',
       'startAt', ${dataSql}->'startAt',
@@ -2089,7 +2090,8 @@ function _buildDashboardDataProjectionSql(
       `${dataSql}->'heroImage'`,
       `${dataSql}->>'heroImage'`,
     )},
-    'status', ${dataSql}->'status',
+    'templateEditor', (${dataSql}->'templateEditor' - 'snapshot'),
+      'status', ${dataSql}->'status',
     'category', ${dataSql}->'category',
     'updatedAt', ${dataSql}->'updatedAt',
     'numberOfGuests', ${dataSql}->'numberOfGuests',
@@ -2149,6 +2151,7 @@ function _buildDashboardDataProjectionSql(
 }
 
 type DashboardProjectionQueryRow = {
+  template_editor: { category: string; templateId: string } | null;
   id: string;
   user_id?: string | null;
   title: string;
@@ -2210,6 +2213,7 @@ type DashboardProjectionQueryRow = {
 };
 
 type SidebarProjectionQueryRow = {
+  template_editor: { category: string; templateId: string } | null;
   id: string;
   user_id?: string | null;
   title: string;
@@ -2297,6 +2301,7 @@ function mapDashboardProjectionRowToEventHistoryRow(
       thumbnailFocus: row.thumbnail_focus ?? null,
       thumbnail: row.thumbnail ?? null,
       heroImage: row.hero_image ?? null,
+      templateEditor: row.template_editor ?? null,
       status: row.status ?? null,
       category: row.category ?? null,
       updatedAt: row.updated_at ?? null,
@@ -2356,6 +2361,7 @@ function mapSidebarProjectionRowToEventHistoryRow(row: SidebarProjectionQueryRow
       ownership: row.ownership ?? null,
       invitedFromScan: row.invited_from_scan ?? null,
       shareStatus: row.share_status ?? null,
+      templateEditor: row.template_editor ?? null,
       status: row.status ?? null,
       description: row.description ?? null,
       startAt: row.start_at ?? null,
@@ -2513,6 +2519,7 @@ async function listProjectedDashboardHistoryRowsByIds(
          "coalesce(eh.data, '{}'::jsonb)->'heroImage'",
          "coalesce(eh.data, '{}'::jsonb)->>'heroImage'",
        )} as hero_image,
+       (coalesce(eh.data, '{}'::jsonb)->'templateEditor' - 'snapshot') as template_editor,
        coalesce(eh.data, '{}'::jsonb)->'status' as status,
        coalesce(eh.data, '{}'::jsonb)->'category' as category,
        coalesce(eh.data, '{}'::jsonb)->'updatedAt' as updated_at,
@@ -2615,6 +2622,7 @@ async function listProjectedSidebarHistoryRowsByIds(
          when r.requested_shared then to_jsonb('Shared events'::text)
          else coalesce(eh.data, '{}'::jsonb)->'category'
        end as category,
+       (coalesce(eh.data, '{}'::jsonb)->'templateEditor' - 'snapshot') as template_editor,
        coalesce(eh.data, '{}'::jsonb)->'status' as status,
        coalesce(eh.data, '{}'::jsonb)->'description' as description,
        coalesce(eh.data, '{}'::jsonb)->'startAt' as start_at,

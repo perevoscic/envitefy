@@ -22,6 +22,16 @@
       "static/chunks/main-app.js",
       "static/css/app/[category]/templates/[templateId]/customize/page.css",
       "static/chunks/app/[category]/templates/[templateId]/customize/page.js"
+    ],
+    "/api/maps/static/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/maps/static/route.js"
+    ],
+    "/api/templates/signup/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/templates/signup/route.js"
     ]
   }
 }

@@ -723,7 +723,7 @@ function createSimpleCustomizePage(baseConfig: SimpleTemplateConfig) {
       const file = e.target.files?.[0];
       if (file) {
         const url = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
-        setData((prev) => ({ ...prev, hero: url }));
+        if (url) setData((prev) => ({ ...prev, hero: url }));
       }
     };
 

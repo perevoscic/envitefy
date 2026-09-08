@@ -593,6 +593,7 @@ export default function GenderRevealTemplateCustomizePage() {
     const file = e.target.files[0];
     if (file) {
       const imageUrl = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
+      if (!imageUrl) return;
       setData((prev) => ({
         ...prev,
         images: { ...prev.images, [field]: imageUrl },
@@ -606,7 +607,7 @@ export default function GenderRevealTemplateCustomizePage() {
     const newImages = files.map((file) => ({
       id: `${file.name}-${Date.now()}`,
       url: (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file)),
-    }));
+    })).filter((image) => image.url);
     setData((prev) => ({
       ...prev,
       gallery: [...prev.gallery, ...newImages],

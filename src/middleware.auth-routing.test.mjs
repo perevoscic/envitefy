@@ -21,17 +21,11 @@ test("login form supports redirect targets passed by the caller", () => {
   assert.match(conciergePage, /successRedirectUrl="\/chat"/);
 });
 
-test("middleware redirects signed-in category marketing visits to their default create route", () => {
+test("middleware leaves category landings and galleries public for signed-in visitors", () => {
   const middleware = readSource("src/middleware.ts");
-
-  assert.match(middleware, /normalizedPathname === "\/landing"/);
-  assert.match(middleware, /categorySignupIntent/);
-  assert.match(middleware, /getCreateActionForSignupIntent\(categorySignupIntent\)/);
-  assert.match(middleware, /if \(authState\.hasSession\) \{/);
-  assert.match(middleware, /url\.pathname = "\/"/);
-  assert.match(middleware, /url\.pathname = target\.pathname;/);
-  assert.match(middleware, /url\.search = target\.search;/);
-  assert.match(middleware, /return redirectWithMarker\(url, 302\);/);
+  assert.match(middleware, /categorySignupIntent && templateCategoryForPath\(normalizedPathname\)/);
+  assert.match(middleware, /return attachSignupSourceCookie\(ok\(\), signupSourceForIntent\(categorySignupIntent\), categorySignupIntent\)/);
+  assert.match(middleware, /isPublicTemplatePath\(normalized\)/);
 });
 
 test("middleware lets authenticated users open /snap for the app launch cards", () => {
@@ -87,7 +81,7 @@ test("middleware redirects disabled event builders to gymnastics", () => {
   );
   assert.match(middleware, /url\.pathname = "\/event\/gymnastics";/);
   assert.match(featureVisibility, /href: "\/event\/weddings"/);
-  assert.match(featureVisibility, /href: "\/event\/birthdays\/customize"/);
+  assert.match(featureVisibility, /href: "\/event\/birthdays"/);
 });
 
 test("wedding launch routes open the design gallery before the customize studio", () => {
@@ -109,7 +103,7 @@ test("wedding launch routes open the design gallery before the customize studio"
   );
 });
 
-test("middleware gates event creation routes to admins", () => {
+test("middleware gives enabled category editors signed-in access and keeps other admin gates", () => {
   const middleware = readSource("src/middleware.ts");
 
   assert.match(middleware, /const ADMIN_ONLY_CREATE_EVENT_SEGMENTS = new Set\(\[/);
@@ -123,7 +117,7 @@ test("middleware gates event creation routes to admins", () => {
   assert.match(middleware, /if \(normalized === "\/event"\) return true;/);
   assert.match(middleware, /return segments\[2\] === "customize";/);
   assert.match(middleware, /if \(isAdminOnlyCreateEventPath\(normalizedPathname\)\) \{/);
-  assert.match(middleware, /!authState\.hasSession \|\| !isAdminToken\(authState\.token\)/);
+  assert.match(middleware, /!authState\.hasSession \|\| \(!enabledEditor && !isAdminToken\(authState\.token\)\)/);
   assert.match(middleware, /url\.pathname = "\/";/);
   assert.match(middleware, /!createAction \|\|\s*!isAdminToken\(authState\.token\)/s);
 });

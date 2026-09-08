@@ -296,7 +296,7 @@ export default function BabyShowerTemplateView({
             className={design ? babyStyles.shell : `relative overflow-hidden rounded-[32px] shadow-[0_35px_120px_rgba(15,23,42,0.25)] ${backgroundClass}`}
             style={backgroundStyle}
           >
-            {isBridal ? <BridalShowerPreview headerOnly templateId={eventData.templateId} data={{ ...eventData, images: { hero: heroImage } }} /> : design ? (
+            {isBridal ? <BridalShowerPreview headerOnly templateId={eventData.templateId} data={{ ...eventData, theme, images: { hero: heroImage } }} /> : design ? (
               <BabyShowerDesignHero
                 design={design}
                 babyName={eventData?.babyName}

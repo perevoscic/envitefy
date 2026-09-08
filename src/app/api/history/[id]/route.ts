@@ -162,7 +162,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   const body = await req.json().catch(() => ({}));
   const existing = await getEventHistoryById(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (existing.user_id && existing.user_id !== userId) {
+  if (existing.user_id !== userId && !(existing.user_id === null && body?.claim === true)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const claimRequested = body?.claim === true;
@@ -295,7 +295,7 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   const existing = await getEventHistoryById(id);
   if (!existing) return NextResponse.json({ ok: true });
-  if (existing.user_id && existing.user_id !== userId) {
+  if (existing.user_id !== userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const affectedRecipients = await listShareRecipientUserIdsForEvent(id).catch(() => []);

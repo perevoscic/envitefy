@@ -1783,7 +1783,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
       const file = e.target.files?.[0];
       if (file) {
         const url = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
-        setData((prev) => ({ ...prev, hero: url }));
+        if (url) setData((prev) => ({ ...prev, hero: url }));
       }
     };
 
@@ -2305,10 +2305,10 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
 
         {!useParseDrivenSections && (
           <div className="w-full max-w-sm">
-            <GymnasticsLauncher
+            {templateEditor && !templateEditor.authenticated ? <section aria-label="Import meet details" className="rounded-xl border border-violet-200 bg-violet-50 p-4"><p className="text-sm font-semibold">Have your meet details already?</p><p className="mt-1 text-xs text-slate-600">Sign in to import a packet or meet link. Your edits will be saved first.</p><button type="button" className="mt-3 rounded-full bg-violet-700 px-4 py-2 text-sm font-semibold text-white" onClick={() => void templateEditor.requestSave()}>Sign in to import meet details</button></section> : <GymnasticsLauncher
               variant="panel"
               forwardQueryString={new URLSearchParams({ templateId: resolveGymMeetTemplateId(data), ...(data.date ? { d: data.date } : {}), ...(demoMode ? { demo: "1" } : {}) }).toString()}
-            />
+            />}
           </div>
         )}
 
@@ -3388,7 +3388,7 @@ function createSimpleCustomizePage(config: SimpleTemplateConfig) {
             )}
             <button
               onClick={handlePublish}
-              disabled={submitting || missingEssentials.length > 0}
+              disabled={submitting || (!(templateEditor && !templateEditor.authenticated) && missingEssentials.length > 0)}
               className={`${
                 editEventId ? "flex-1" : "w-full"
               } min-h-11 rounded-lg bg-slate-900 py-3 text-sm font-medium tracking-wide text-white shadow-lg transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60`}

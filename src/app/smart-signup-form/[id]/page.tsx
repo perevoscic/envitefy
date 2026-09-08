@@ -1,3 +1,4 @@
+import SignupTemplateHeader from "@/components/smart-signup-form/SignupTemplateHeader";
 import { isEventDraft } from "@/lib/event-draft-access";
 import { resolveEditHref } from "@/utils/event-edit-route";
 import { notFound, redirect } from "next/navigation";
@@ -435,41 +436,19 @@ export default async function SignupPage({
         </Script>
       ) : null}
       <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-4">
-        <section
-          className="rounded-xl overflow-hidden border"
-          style={{
-            backgroundColor: header?.backgroundColor || undefined,
-            backgroundImage: header?.backgroundCss || undefined,
-            backgroundSize: header?.backgroundCss ? "cover" : undefined,
-            backgroundPosition: header?.backgroundCss ? "center" : undefined,
-          }}
-        >
-          <div className="px-5 py-6">
-            <div className="grid gap-4 md:grid-cols-[325px_1fr] items-start">
-              <div>
-                {header?.backgroundImage?.dataUrl ? (
-                  <img
-                    src={header.backgroundImage.dataUrl}
-                    alt="header"
-                    className="w-full max-w-[325px] max-h-[325px] rounded-xl border border-border object-cover"
-                  />
-                ) : null}
-              </div>
-              <div className="flex flex-col gap-2">
-                {header?.groupName ? (
-                  <div
-                    className="text-[0.9rem] sm:text-sm font-semibold opacity-85"
-                    style={{ color: header?.textColor1 || undefined }}
-                  >
-                    {header.groupName}
-                  </div>
-                ) : null}
-                <h1
-                  className="text-2xl sm:text-[1.6rem] font-semibold"
-                  style={{ color: header?.textColor2 || undefined }}
-                >
-                  {signupForm.title || row.title || "Smart sign-up"}
-                </h1>
+        <SignupTemplateHeader form={signupForm} fallbackTitle={row.title} actions={
+              <EventGuestActions
+                shareUrl={`/smart-signup-form/${canonicalSegment}`}
+                eventId={row.id}
+                title={signupForm.title || row.title || "Sign-up form"}
+                start={signupForm.start || data?.startISO || data?.start || null}
+                end={signupForm.end || data?.endISO || data?.end || null}
+                location={[signupForm.venue, signupForm.location].filter(Boolean).join(", ") || data?.location || ""}
+                description={signupForm.description || ""}
+                timezone={signupForm.timezone || data?.timezone || undefined}
+                allDay={signupForm.allDay ?? undefined}
+              />
+        }>
                 {(session?.user?.name as string | undefined) && (
                   <div
                     className="flex items-start gap-2 text-[0.95rem] opacity-85"
@@ -543,34 +522,7 @@ export default async function SignupPage({
                     </a>
                   );
                 })()}
-              </div>
-            </div>
-            {signupForm.description && (
-              <div className="mt-3">
-                <p
-                  className="leading-relaxed text-sm"
-                  style={{ color: header?.textColor1 || undefined }}
-                >
-                  {signupForm.description}
-                </p>
-              </div>
-            )}
-            {/* Guest tools beside the form details; slot schedules remain independent. */}
-            <div className="mt-4 pt-3 border-t border-border/60">
-              <EventGuestActions
-                shareUrl={`/smart-signup-form/${canonicalSegment}`}
-                eventId={row.id}
-                title={signupForm.title || row.title || "Sign-up form"}
-                start={signupForm.start || data?.startISO || data?.start || null}
-                end={signupForm.end || data?.endISO || data?.end || null}
-                location={[signupForm.venue, signupForm.location].filter(Boolean).join(", ") || data?.location || ""}
-                description={signupForm.description || ""}
-                timezone={signupForm.timezone || data?.timezone || undefined}
-                allDay={signupForm.allDay ?? undefined}
-              />
-            </div>
-          </div>
-        </section>
+        </SignupTemplateHeader>
 
         <section>
           <SignupViewer

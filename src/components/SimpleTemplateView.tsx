@@ -1188,7 +1188,7 @@ export default function SimpleTemplateView({
   }, [selectedAthleteId, rosterAthletes]);
 
   useEffect(() => {
-    if (!navItems.length) return;
+    if (!navItems.length || eventId === "preview") return;
 
     const updateActiveFromHash = () => {
       const hash = window.location.hash.replace("#", "");
@@ -1235,7 +1235,7 @@ export default function SimpleTemplateView({
       observer.disconnect();
       window.removeEventListener("hashchange", updateActiveFromHash);
     };
-  }, [navItems]);
+  }, [navItems, eventId]);
 
   useEffect(() => {
     setGearChecklist({});

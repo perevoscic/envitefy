@@ -42,8 +42,7 @@ export function CandyDreamsLayout({
 
   const borderStyle: CSSProperties = {
     backgroundImage: sprinkleBackground,
-    WebkitMask:
-      "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+    WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
     mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
     WebkitMaskComposite: "xor",
     maskComposite: "exclude",
@@ -51,9 +50,7 @@ export function CandyDreamsLayout({
   };
 
   const alignmentClass =
-    align === "top"
-      ? "items-start justify-center pt-10"
-      : "items-center justify-center";
+    align === "top" ? "items-start justify-center pt-10" : "items-center justify-center";
 
   const Wrapper = as === "div" ? "div" : "main";
 

@@ -696,10 +696,12 @@ export default function BirthdayTemplateCustomizePage() {
       const file = e.target.files?.[0];
       if (!file) return;
       const previewUrl = (templateEditor ? templateEditor.previewPhoto(file) : URL.createObjectURL(file));
+      if (!previewUrl) return;
       setData((prev) => ({
         ...prev,
         images: { ...prev.images, [field]: previewUrl },
       }));
+      if (templateEditor) return;
       const uploadedUrl = await uploadBirthdayAsset(file);
       if (!uploadedUrl) return;
       setData((prev) => {
@@ -727,7 +729,7 @@ export default function BirthdayTemplateCustomizePage() {
           id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
           previewUrl,
         };
-      });
+      }).filter((entry) => entry.previewUrl);
       setData((prev) => ({
         ...prev,
         gallery: [
@@ -735,6 +737,7 @@ export default function BirthdayTemplateCustomizePage() {
           ...entries.map(({ id, previewUrl }) => ({ id, url: previewUrl })),
         ],
       }));
+      if (templateEditor) return;
       for (const entry of entries) {
         const uploadedUrl = await uploadBirthdayAsset(entry.file);
         if (!uploadedUrl) continue;
