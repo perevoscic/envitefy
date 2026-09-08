@@ -16,6 +16,12 @@
       "width": 1080,
       "height": 1920,
       "fps": 30
+    },
+    {
+      "aspectRatio": "1:1",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30
     }
   ],
   "concept": "Dinosaur party admin overwhelms Dad. One Envitefy link handles guest logistics. His child requests a new theme just as he sits down.",
@@ -106,6 +112,20 @@
       "notes": "Full Live Card ratio, stable capture frames, smoother child transition, wide ending reaction, centered enlarged final icon, no duplicate black URL.",
       "reviewStatus": "assistant-reviewed",
       "export": "out/birthday-second-job/birthday-second-job-9x16-v3.mp4"
+    }
+  ],
+  "adaptations": [
+    {
+      "aspectRatio": "1:1",
+      "version": 1,
+      "requestedAt": "2026-09-08",
+      "basedOn": "vertical v4",
+      "status": "complete",
+      "layout": "Split opening, parent dialogue and sharing layout with the full portrait footage; full-square guest/family crops; complete 2:3 Live Card beside captions; centered square CTA.",
+      "audio": "Unchanged final-mix-v4.wav",
+      "durationSeconds": 30,
+      "reviewStatus": "assistant-reviewed",
+      "export": "out/birthday-second-job/birthday-second-job-1x1-v1.mp4"
     }
   ]
 }

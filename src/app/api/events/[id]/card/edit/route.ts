@@ -21,11 +21,13 @@ import {
 } from "@/lib/db";
 import { invalidateUserHistory } from "@/lib/history-cache";
 import { processBufferUpload } from "@/lib/media-upload";
+import { prepareCardEditPreviewImage, streamCardEditPreview } from "@/lib/studio/card-edit-preview";
 import { generateStudioInvitation } from "@/lib/studio/generate";
 import { parseDataUrlBase64 } from "@/utils/data-url";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 type DesignFieldMapping = {
   inputKey: string;
@@ -282,11 +284,12 @@ async function previewCardEdit(item: MediaItem, fields: Record<string, unknown>)
   }
 
   const invitationData = buildUpdatedInvitationData(nextDetails, item);
+  const imageDataUrl = await prepareCardEditPreviewImage(result.imageDataUrl);
   return NextResponse.json({
     ok: true,
     action: "preview",
     title: readString(nextDetails.eventTitle) || "Untitled event",
-    imageDataUrl: result.imageDataUrl,
+    imageDataUrl,
     invitationData,
     positions: item.positions || null,
     details: nextDetails,
@@ -396,7 +399,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       });
     }
 
-    return await previewCardEdit(item, fields);
+    return streamCardEditPreview(() => previewCardEdit(item, fields));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json({ error: message || "Internal server error" }, { status: 500 });

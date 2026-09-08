@@ -1,12 +1,13 @@
 "use client";
 
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   AlertCircle,
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
   Clock3,
-  ExternalLink,
+  Eye,
   LayoutDashboard,
   Link2,
   Loader2,
@@ -23,7 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { type EventContextTab, useSidebar } from "@/app/sidebar-context";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventResponseDashboard from "@/components/EventResponseDashboard";
@@ -31,6 +32,7 @@ import OwnerPreviewMobileTopbarSuppressor from "@/components/OwnerPreviewMobileT
 import { SharedStudioCardFrame } from "@/components/studio/SharedStudioCardPage";
 import { changedCardEditFields } from "@/lib/studio/card-edit-fields";
 import { hasActionableRsvp } from "@/lib/dashboard-data";
+import { requestCardEdit } from "@/lib/card-edit-client";
 import {
   getPrimaryEventProductOutput,
   isCardFirstEventProduct,
@@ -733,7 +735,12 @@ export default function EventOwnerTools({
   const [currentEventTitle, setCurrentEventTitle] = useState(eventTitle);
   const [designPreviewOverride, setDesignPreviewOverride] =
     useState<Partial<ProductPreviewModel> | null>(null);
-  const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
+  const [productViewerMode, setProductViewerMode] = useState<"current" | "changes" | null>(null);
+  const [savedProductOverride, setSavedProductOverride] = useState<{
+    title?: string;
+    preview: Partial<ProductPreviewModel> | null;
+  } | null>(null);
+  const productViewerTrigger = useRef<HTMLElement | null>(null);
   const [publicUrlOverride, setPublicUrlOverride] = useState<string | null>(null);
   const serverPreview = useMemo(() => buildProductPreviewModel(eventData), [eventData]);
   const [savedPreview, setSavedPreview] = useState<{
@@ -790,15 +797,23 @@ export default function EventOwnerTools({
     [rsvpEnabled],
   );
   const ownerReturnHref = buildOwnerTabHref(ownerHref, eventId, activeOwnerTab);
-  const previewHref = buildOwnerPreviewHref(publicUrl, ownerReturnHref);
   const embeddedPreviewHref = buildOwnerEmbeddedPreviewHref(publicUrl, ownerReturnHref);
-  const openMobilePreview = () => setIsMobilePreviewOpen(true);
-  const closeMobilePreview = () => setIsMobilePreviewOpen(false);
+  const currentProduct = savedProductOverride?.preview
+    ? { ...preview, ...savedProductOverride.preview }
+    : preview;
+  const productName = preview.surface === "studio-card" ? "card" : "event";
+  const openProductViewer = (mode: "current" | "changes") => {
+    productViewerTrigger.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    setProductViewerMode(mode);
+  };
 
   const persistedEventKey = JSON.stringify({ eventId, eventTitle, eventData });
   useEffect(() => {
     setCurrentEventTitle(eventTitle);
     setDesignPreviewOverride(null);
+    setSavedProductOverride(null);
     setPublicUrlOverride(null);
   }, [persistedEventKey]);
 
@@ -859,9 +874,7 @@ export default function EventOwnerTools({
   return (
     <main className="min-h-[100dvh] w-full px-3 pb-5 pt-[calc(var(--app-mobile-topbar-offset,4rem)+1.35rem)] text-slate-950 sm:px-6 lg:px-8 lg:py-5">
       <div
-        className={`mx-auto grid w-full max-w-[1380px] gap-4 transition-transform duration-300 ease-out motion-reduce:transition-none lg:translate-x-0 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px] ${
-          isMobilePreviewOpen ? "-translate-x-10" : "translate-x-0"
-        }`}
+        className="mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,410px)] xl:grid-cols-[minmax(0,1fr)_430px]"
       >
         <section className="min-w-0 space-y-3 sm:space-y-4">
           <OwnerWorkspaceHeader
@@ -870,10 +883,10 @@ export default function EventOwnerTools({
             dateLine={effectivePreview.dateLine}
             timeLine={effectivePreview.timeLine}
             locationLine={effectivePreview.locationLine}
-            previewHref={previewHref}
+            viewCurrentLabel={`View current ${productName}`}
             editHref={primaryEditHref}
             detailsEditHref={resolvedArtworkEditHref ? resolvedEditHref : null}
-            onPreview={openMobilePreview}
+            onViewCurrent={() => openProductViewer("current")}
             onShare={sharePublicLink}
           />
           {ownerWorkspaceTabs.length > 1 ? (
@@ -902,6 +915,7 @@ export default function EventOwnerTools({
             rsvpEnabled={rsvpEnabled}
             editHref={resolvedEditHref}
             preview={preview}
+            onViewChanges={() => openProductViewer("changes")}
             onDesignUpdated={(next) => {
               if (typeof next.title === "string") setCurrentEventTitle(next.title);
               setDesignPreviewOverride(next.preview);
@@ -909,6 +923,7 @@ export default function EventOwnerTools({
                 if (next.preview) {
                   setSavedPreview({ eventId, sourceImageUrl: serverPreview.imageUrl, preview: next.preview });
                 }
+                setSavedProductOverride({ title: next.title, preview: next.preview });
                 window.dispatchEvent(
                   new CustomEvent("history:updated", { detail: { id: eventId } }),
                 );
@@ -928,16 +943,20 @@ export default function EventOwnerTools({
           />
         </aside>
       </div>
-      <MobileOwnerPreviewDrawer
-        open={isMobilePreviewOpen}
+      <OwnerProductViewer
+        open={productViewerMode !== null}
+        heading={productViewerMode === "changes" ? "Proposed changes" : `Current ${productName}`}
+        description={productViewerMode === "changes" ? "Review your changes before saving." : "The saved version your guests can open."}
+        returnLabel={activeOwnerTab === "design" ? "Back to editing" : "Back to dashboard"}
         eventId={eventId}
-        eventTitle={currentEventTitle}
-        preview={effectivePreview}
+        eventTitle={productViewerMode === "changes" ? currentEventTitle : savedProductOverride?.title || eventTitle}
+        preview={productViewerMode === "changes" ? effectivePreview : currentProduct}
         publicUrl={publicUrl}
         embeddedPreviewUrl={embeddedPreviewHref}
-        onClose={closeMobilePreview}
+        onClose={() => setProductViewerMode(null)}
+        onReturnFocus={() => productViewerTrigger.current?.focus()}
       />
-      {isMobilePreviewOpen ? <OwnerPreviewMobileTopbarSuppressor /> : null}
+      {productViewerMode !== null ? <OwnerPreviewMobileTopbarSuppressor /> : null}
     </main>
   );
 }
@@ -1183,10 +1202,10 @@ function OwnerWorkspaceHeader({
   dateLine,
   timeLine,
   locationLine,
-  previewHref,
+  viewCurrentLabel,
   editHref,
   detailsEditHref,
-  onPreview,
+  onViewCurrent,
   onShare,
 }: {
   eventId: string;
@@ -1194,14 +1213,12 @@ function OwnerWorkspaceHeader({
   dateLine: string;
   timeLine: string;
   locationLine: string;
-  previewHref: string;
+  viewCurrentLabel: string;
   editHref: string;
   detailsEditHref: string | null;
-  onPreview: () => void;
+  onViewCurrent: () => void;
   onShare: () => void;
 }) {
-  const actionButtonClassName =
-    "h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 sm:w-auto sm:gap-1.5 sm:px-3";
   const deleteButtonClassName =
     "inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 sm:w-auto sm:gap-1.5 sm:px-3";
 
@@ -1239,25 +1256,6 @@ function OwnerWorkspaceHeader({
               <Share2 size={21} strokeWidth={2.3} aria-hidden="true" />
               <span className="hidden sm:inline">Share</span>
             </button>
-            <button
-              type="button"
-              onClick={onPreview}
-              aria-label="Preview"
-              title="Preview"
-              className={`inline-flex ${actionButtonClassName} lg:hidden`}
-            >
-              <ExternalLink size={20} strokeWidth={2.2} aria-hidden="true" />
-              <span className="hidden sm:inline">Preview</span>
-            </button>
-            <Link
-              href={previewHref}
-              aria-label="Preview"
-              title="Preview"
-              className={`hidden ${actionButtonClassName} lg:inline-flex`}
-            >
-              <ExternalLink size={20} strokeWidth={2.2} aria-hidden="true" />
-              <span className="hidden sm:inline">Preview</span>
-            </Link>
           </div>
         </div>
         <div className="min-w-0">
@@ -1289,6 +1287,15 @@ function OwnerWorkspaceHeader({
             ) : null}
           </div>
         </div>
+        <button
+          type="button"
+          onClick={onViewCurrent}
+          aria-haspopup="dialog"
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-violet-700 px-4 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(109,40,217,0.16)] transition hover:bg-violet-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300 sm:w-auto sm:px-6"
+        >
+          <Eye size={20} strokeWidth={2.2} aria-hidden="true" />
+          <span>{viewCurrentLabel}</span>
+        </button>
       </div>
     </header>
   );
@@ -1444,6 +1451,7 @@ function OwnerTabContent({
   rsvpEnabled,
   editHref,
   preview,
+  onViewChanges,
   onDesignUpdated,
 }: {
   activeTab: EventContextTab;
@@ -1454,6 +1462,7 @@ function OwnerTabContent({
   rsvpEnabled: boolean;
   editHref: string;
   preview: ProductPreviewModel;
+  onViewChanges: () => void;
   onDesignUpdated: (next: {
     title?: string;
     preview: Partial<ProductPreviewModel> | null;
@@ -1467,6 +1476,7 @@ function OwnerTabContent({
         eventTitle={eventTitle}
         eventData={eventData}
         preview={preview}
+        onViewChanges={onViewChanges}
         detailsEditHref={editHref}
         onDesignUpdated={onDesignUpdated}
       />
@@ -1486,83 +1496,68 @@ function OwnerTabContent({
   );
 }
 
-function MobileOwnerPreviewDrawer({
+function OwnerProductViewer({
   open,
+  heading,
+  description,
+  returnLabel,
   eventId,
   eventTitle,
   preview,
   publicUrl,
   embeddedPreviewUrl,
   onClose,
+  onReturnFocus,
 }: {
   open: boolean;
+  heading: string;
+  description: string;
+  returnLabel: string;
   eventId: string;
   eventTitle: string;
   preview: ProductPreviewModel;
   publicUrl: string;
   embeddedPreviewUrl: string;
   onClose: () => void;
+  onReturnFocus: () => void;
 }) {
-  useEffect(() => {
-    if (!open) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, open]);
-
   return (
-    <div
-      className={`fixed inset-0 z-[7000] lg:hidden ${
-        open ? "pointer-events-auto" : "pointer-events-none"
-      }`}
-      aria-hidden={!open}
-    >
-      <button
-        type="button"
-        className={`absolute inset-0 bg-slate-950/20 transition-opacity duration-300 motion-reduce:transition-none ${
-          open ? "opacity-100" : "opacity-0"
-        }`}
-        aria-label="Close preview"
-        onClick={onClose}
-        tabIndex={open ? 0 : -1}
-      />
-      <section
-        className={`owner-workspace-glass absolute inset-y-0 right-0 flex w-full flex-col bg-white/95 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+1rem)] shadow-[-28px_0_70px_rgba(15,23,42,0.22)] backdrop-blur-xl transition-transform duration-300 ease-out motion-reduce:transition-none ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
-        aria-label="Preview"
-      >
-        <div className="flex h-12 shrink-0 items-center justify-start">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Back to dashboard"
-            title="Back to dashboard"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-bold text-slate-700 transition hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200"
-          >
-            <ArrowLeft size={20} strokeWidth={2.4} aria-hidden="true" />
-            <span>Dashboard</span>
-          </button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
-          <div className="flex min-h-full items-center justify-center">
-            <EventProductPreview
-              eventId={eventId}
-              eventTitle={eventTitle}
-              preview={preview}
-              publicUrl={publicUrl}
-              embeddedPreviewUrl={embeddedPreviewUrl}
-              className="mx-auto w-full max-w-[430px]"
-              heightMode="auto"
-            />
+    <Dialog.Root open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[7000] bg-slate-950/40 backdrop-blur-sm" />
+        <Dialog.Content
+          className="fixed inset-0 z-[7001] flex flex-col bg-[#f5f3ff] pt-[env(safe-area-inset-top)] shadow-2xl outline-none sm:inset-x-auto sm:inset-y-4 sm:left-1/2 sm:w-[min(560px,calc(100%-2rem))] sm:-translate-x-1/2 sm:rounded-[28px]"
+          onCloseAutoFocus={(event) => { event.preventDefault(); onReturnFocus(); }}
+        >
+          <div className="shrink-0 border-b border-violet-100 px-4 pb-4 pt-2">
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="-ml-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-bold text-violet-700 transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+              >
+                <ArrowLeft size={20} strokeWidth={2.4} aria-hidden="true" />
+                <span>{returnLabel}</span>
+              </button>
+            </Dialog.Close>
+            <Dialog.Title className="mt-1 text-xl font-semibold text-slate-950">{heading}</Dialog.Title>
+            <Dialog.Description className="mt-1 text-sm text-slate-600">{description}</Dialog.Description>
           </div>
-        </div>
-      </section>
-    </div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+            <div className="flex min-h-full items-center justify-center">
+              <EventProductPreview
+                eventId={eventId}
+                eventTitle={eventTitle}
+                preview={preview}
+                publicUrl={publicUrl}
+                embeddedPreviewUrl={embeddedPreviewUrl}
+                className="mx-auto w-full max-w-[430px]"
+                heightMode="auto"
+              />
+            </div>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
@@ -1571,6 +1566,7 @@ function OwnerDesignPanel({
   eventTitle,
   eventData,
   preview,
+  onViewChanges,
   detailsEditHref,
   onDesignUpdated,
 }: {
@@ -1578,6 +1574,7 @@ function OwnerDesignPanel({
   eventTitle: string;
   eventData: Record<string, unknown> | null;
   preview: ProductPreviewModel;
+  onViewChanges: () => void;
   detailsEditHref: string;
   onDesignUpdated: (next: {
     title?: string;
@@ -1663,19 +1660,10 @@ function OwnerDesignPanel({
     setError("");
 
     try {
-      const response = await fetch(`/api/events/${encodeURIComponent(eventId)}/card/edit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          action: "preview",
-          fields: changedCardEditFields(fields, buildDesignEditFields(baselineForm)),
-        }),
+      const json = await requestCardEdit(eventId, {
+        action: "preview",
+        fields: changedCardEditFields(fields, buildDesignEditFields(baselineForm)),
       });
-      const json = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(readString(json?.error) || "The card could not be updated.");
-      }
 
       const details = asRecord(json?.details);
       const nextImageDataUrl = firstString(json?.imageDataUrl);
@@ -1753,20 +1741,11 @@ function OwnerDesignPanel({
     setError("");
 
     try {
-      const response = await fetch(`/api/events/${encodeURIComponent(eventId)}/card/edit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          action: "save",
-          fields: changedCardEditFields(candidate.fields, buildDesignEditFields(baselineForm)),
-          imageDataUrl: candidate.imageDataUrl,
-        }),
+      const json = await requestCardEdit(eventId, {
+        action: "save",
+        fields: changedCardEditFields(candidate.fields, buildDesignEditFields(baselineForm)),
+        imageDataUrl: candidate.imageDataUrl,
       });
-      const json = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(readString(json?.error) || "The card changes could not be saved.");
-      }
 
       const details = asRecord(json?.details) || candidate.details;
       const nextImageUrl = firstString(json?.imageUrl, candidate.imageDataUrl);
@@ -1924,10 +1903,15 @@ function OwnerDesignPanel({
 
           <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-end">
             {status === "ready" ? (
-              <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
-                <CheckCircle2 size={16} aria-hidden="true" />
-                Preview ready
-              </p>
+              <button
+                type="button"
+                onClick={onViewChanges}
+                aria-haspopup="dialog"
+                className="col-span-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-700 transition hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+              >
+                <Eye size={18} aria-hidden="true" />
+                View changes
+              </button>
             ) : null}
             {status === "saved" ? (
               <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
@@ -1954,7 +1938,7 @@ function OwnerDesignPanel({
               ) : (
                 <WandSparkles size={16} aria-hidden="true" />
               )}
-              {status === "previewing" ? "Previewing" : "Preview"}
+              <span>{status === "previewing" ? "Previewing" : "Preview changes"}</span>
             </button>
             <button
               type="button"
@@ -1971,6 +1955,11 @@ function OwnerDesignPanel({
             </button>
           </div>
 
+          {status === "previewing" ? (
+            <p role="status" className="text-sm font-medium text-slate-600">
+              Updating your card artwork. This can take a few minutes. Keep this page open.
+            </p>
+          ) : null}
           {candidate && previewNotice && !error ? (
             <p role="status" className="text-sm text-slate-600">{previewNotice}</p>
           ) : null}

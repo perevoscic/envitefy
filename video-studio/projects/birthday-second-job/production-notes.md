@@ -108,3 +108,25 @@ Do not rerun generation for reproduction: use the saved selected media. Evidence
 4. node scripts/verify-birthday-v4.mjs
 
 Evidence: export-verification-v4.json, local-media-qa-v4.json, audio-loudness-v4.log, out/birthday-second-job/birthday-v4-opening.jpg, and out/birthday-second-job/birthday-v4-final-proof.jpg.
+
+## Social copy — September 8, 2026
+
+Prepared Facebook, Instagram, TikTok, and Reddit drafts with hashtags in social-posts-2026-09-08.md. Claims limited to one invitation, RSVP, and calendar actions. Reddit copy identifies the brand affiliation. No social posting was performed.
+
+## Square 1:1 adaptation — September 8, 2026
+
+- User requested a square version of the latest video. New composition: EnvitefyBirthdaySecondJobSquare, 1080 × 1080, 30 fps, 900 frames. Based on the reviewed vertical V4 footage and timing. Vertical source scenes were preserved.
+- Opening and parent dialogue use the complete portrait footage in the left 610 pixels. The right column holds the exact three-row hook, timed messages, dialogue captions, and sharing copy. The smaller square type is prevented from wrapping the hook or solution into extra rows. The parent’s mouth remains unobstructed.
+- Guests and family use deliberate full-square framing with readable lower captions. The Live Card is displayed at 592 × 888, retaining its full 2:3 ratio, complete popup and bottom controls. Branding, action text and confirmation sit beside it. The centered square end card keeps the exact supplied icon and domain wordmark.
+- Product and spoken-action timings are unchanged. The final end-card overlap remains at 25.4–25.7 seconds; the child scene uses the continuous V4 source without the rejected ending closeup.
+- The final AAC audio stream is copied directly from vertical V4 and hash-verified identical. No new video/audio generation or external review was needed.
+- Final reviewed export: out/birthday-second-job/birthday-second-job-1x1-v1.mp4; 8,480,237 bytes; 1080 × 1080; H.264/AAC, 48 kHz stereo, faststart; exactly 30 seconds in both streams and container. 900 evenly spaced frames and complete decode pass.
+- Actual rendered opening, parent close shot, sharing phone action, both guest crops, RSVP submit/success, calendar popup/success, child line, wide reaction and intermediate end-card fade inspected. ESLint/TypeScript and Biome passed. The configured VS Code/Chat to CLI bridge was attempted but unavailable.
+- Supporting output stays under out/birthday-second-job/: birthday-square-v1-layout-review.jpg, birthday-square-v1-proof.jpg, birthday-square-v1-boundaries.jpg. Technical verification: export-verification-square-v1.json. Assistant-reviewed; not user-approved.
+
+### Reproduce square V1
+
+1. npx remotion render EnvitefyBirthdaySecondJobSquare out/birthday-second-job/birthday-second-job-1x1-v1-render.mp4 --concurrency=2 --timeout=120000 --log=error
+2. node scripts/package-birthday-square.mjs
+
+The square composition’s calculateMetadata defaultOutName targets birthday-second-job/birthday-second-job-1x1-v1.

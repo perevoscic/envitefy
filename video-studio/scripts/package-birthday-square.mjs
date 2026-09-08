@@ -1,0 +1,21 @@
+import fs from 'node:fs';
+import {spawnSync} from 'node:child_process';
+const base='out/birthday-second-job/';
+const file=base+'birthday-second-job-1x1-v1.mp4';
+const vertical=base+'birthday-second-job-9x16-v4.mp4';
+function run(command,args){const r=spawnSync(command,args,{encoding:'utf8',maxBuffer:8e6});if(r.status!==0)throw new Error(r.stderr||command+' failed');return r.stdout;}
+run('ffmpeg',['-y','-hide_banner','-loglevel','error','-i',base+'birthday-second-job-1x1-v1-render.mp4','-i',vertical,'-map','0:v:0','-map','1:a:0','-c','copy','-t','30','-movflags','+faststart',file]);
+const info=JSON.parse(run('ffprobe',['-v','error','-show_entries','stream=codec_name,width,height,r_frame_rate,avg_frame_rate,duration,nb_frames,sample_rate,channels','-show_entries','format=duration,size','-of','json',file]));
+if(info.format.duration!=='30.000000'||info.streams[0].nb_frames!=='900'||info.streams[0].width!==1080||info.streams[0].height!==1080)throw new Error('Square export specification mismatch');
+run('ffmpeg',['-v','error','-i',file,'-f','null','NUL']);
+const frames=JSON.parse(run('ffprobe',['-v','error','-select_streams','v','-show_frames','-show_entries','frame=best_effort_timestamp_time','-of','json',file])).frames.map(f=>Number(f.best_effort_timestamp_time));
+const gaps=frames.flatMap((t,i)=>i&&Math.abs(t-frames[i-1]-1/30)>0.0001?[i]:[]);if(frames.length!==900||gaps.length)throw new Error('Final frame timing gaps');
+const audioHash=p=>run('ffmpeg',['-v','error','-i',p,'-map','0:a:0','-c','copy','-f','hash','-hash','SHA256','pipe:1']).trim();
+const squareAudioHash=audioHash(file),originalAudioHash=audioHash(vertical);if(squareAudioHash!==originalAudioHash)throw new Error('Soundtrack mismatch');
+const proof=[0,90,120,180,250,312,356,395,450,500,560,601,665,715,767,840];
+run('ffmpeg',['-y','-hide_banner','-loglevel','error','-i',file,'-vf',`select='${proof.map(n=>'eq(n,'+n+')').join('+')}',scale=216:216,tile=4x4`,'-frames:v','1',base+'birthday-square-v1-proof.jpg']);
+const cuts=[114,115,231,232,299,300,329,330,446,447,470,471,599,600,659,660,761,762,770,771,772];
+run('ffmpeg',['-y','-hide_banner','-loglevel','error','-i',file,'-vf',`select='${cuts.map(n=>'eq(n,'+n+')').join('+')}',scale=180:180,tile=7x3`,'-frames:v','1',base+'birthday-square-v1-boundaries.jpg']);
+const report={...info,frameTimingGaps:gaps,decodedFrames:frames.length,audioMatchesVerticalV4:true,audioSha256:squareAudioHash,decode:'pass'};
+fs.writeFileSync('projects/birthday-second-job/export-verification-square-v1.json',JSON.stringify(report,null,2));
+console.log(JSON.stringify({path:file,bytes:info.format.size,duration:info.format.duration,frames:frames.length,frameTimingGaps:gaps,audioMatchesVerticalV4:true,decode:'pass'}));

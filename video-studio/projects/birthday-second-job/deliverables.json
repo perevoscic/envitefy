@@ -1,6 +1,6 @@
 {
   "campaignId": "birthday-second-job",
-  "updatedAt": "2026-09-05",
+  "updatedAt": "2026-09-08",
   "latest": [
     {
       "composition": "EnvitefyBirthdaySecondJob",
@@ -19,6 +19,25 @@
       "userApproved": false,
       "reviewNotes": "Opening verified as three distinct rows. Child entrance recut on Dad turning, native dialogue preserved, normal-speed wide reaction. Final CTA fades over retained reaction frame with no empty intermediate frame. All 900 final timestamps and 172 ending-source timestamps verified at 30 fps with no gaps. Full decode and exact 30-second video/audio/container verified. Local audio measurement: -16.4 LUFS, -1.5 dBFS true peak. No external uploads for this revision.",
       "captions": "burned-in; editable scene captions and campaign SRT retained"
+    },
+    {
+      "composition": "EnvitefyBirthdaySecondJobSquare",
+      "aspectRatio": "1:1",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30,
+      "durationSeconds": 30,
+      "frames": 900,
+      "version": 1,
+      "path": "out/birthday-second-job/birthday-second-job-1x1-v1.mp4",
+      "bytes": 8480237,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "basedOn": "vertical V4",
+      "reviewStatus": "assistant-reviewed",
+      "userApproved": false,
+      "reviewNotes": "Reviewed opening three-row text, parent dialogue beside full portrait footage, guest crops, full 2:3 RSVP/calendar card and confirmations, child dialogue, reaction and final fade. Exact 30-second video/audio/container; 900 evenly spaced frames; complete decode passed. AAC soundtrack matches vertical V4 byte-for-byte.",
+      "captions": "burned-in; editable square scene captions retained"
     }
   ],
   "previous": [

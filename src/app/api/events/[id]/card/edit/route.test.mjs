@@ -28,7 +28,9 @@ test("card edit route is owner-only and previews existing live-card artwork", ()
   assert.match(source, /item\.url,\s*item\.details,/s);
   assert.match(source, /generateStudioInvitation\(request\)/);
   assert.match(source, /action: "preview"/);
-  assert.match(source, /imageDataUrl: result\.imageDataUrl/);
+  assert.match(source, /prepareCardEditPreviewImage\(result\.imageDataUrl\)/);
+  assert.match(source, /export const maxDuration = 300/);
+  assert.match(source, /return streamCardEditPreview\(\(\) => previewCardEdit\(item, fields\)\)/);
 
   const previewBlock = source.match(
     /async function previewCardEdit[\s\S]*?(?=\nasync function saveCardEdit)/,

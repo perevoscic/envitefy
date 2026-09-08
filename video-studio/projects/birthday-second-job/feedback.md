@@ -61,3 +61,11 @@ V2 was reviewed by the user; their requested revisions are recorded below. No us
 - Final rendered opening and scene-boundary proof inspected. The reaction remains visible during the CTA fade; no isolated blank card frame.
 - Final export: out/birthday-second-job/birthday-second-job-9x16-v4.mp4; 14,169,476 bytes; exactly 30 seconds; 1080 × 1920 at 30 fps, 900 frames. Both final and ending-source frame timestamps are continuous. Full decode passed.
 - Soundtrack: -16.4 LUFS integrated, -1.5 dBFS true peak, 3.9 LU range. ESLint/TypeScript and Biome passed. All work for V4 stayed local.
+
+## Square adaptation — September 8, 2026
+
+User requested a square 1:1 version of the latest video. Kept the 30-second V4 story, speech, music, three-row opening wording, supplied wordmark, complete card controls, and clean ending. The square composition uses a split opening/sharing layout, a full-square dialogue and family crop, side-by-side card/caption layout, and a centered square end card. Final square export review is complete.
+
+Square review refinements: preserved the exact three-row hook by preventing text wrapping; placed the parent dialogue beside the complete portrait footage so captions do not cover his mouth; raised the guest framing to preserve the hairline. The final soundtrack is copied directly from the reviewed vertical V4 export.
+
+Square final verification: 1080 × 1080, 30 seconds, 900 frames, no timing gaps, complete decode passed. AAC soundtrack is identical to V4. Opening, speech, phone actions, complete popups/confirmations, and end-card transition were visually reviewed. Latest square export: out/birthday-second-job/birthday-second-job-1x1-v1.mp4 (8,480,237 bytes). ESLint/TypeScript and Biome passed; the optional editor diagnostics bridge was unavailable.

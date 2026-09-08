@@ -25,7 +25,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.match(source, /flex flex-wrap items-center justify-between gap-3/);
   assert.match(source, /flex shrink-0 flex-wrap items-center justify-end gap-2/);
   assert.match(source, /aria-label="Share"/);
-  assert.match(source, /aria-label="Preview"/);
+  assert.match(source, /viewCurrentLabel=\{`View current \$\{productName\}`\}/);
   assert.match(source, /aria-label="Edit"/);
   assert.match(
     source,
@@ -35,19 +35,19 @@ test("owner workspace keeps public actions in the header and not duplicated unde
     source,
     /className="inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full px-0 text-sm font-semibold text-slate-950/,
   );
-  assert.match(source, /className=\{`hidden \$\{actionButtonClassName\} lg:inline-flex`\}/);
-  assert.match(source, /<ExternalLink size=\{20\}/);
+  assert.match(source, /<Eye size=\{20\}/);
   assert.match(source, /<Share2 size=\{21\}/);
   assert.match(
     source,
-    /const \[isMobilePreviewOpen, setIsMobilePreviewOpen\] = useState\(false\);/,
+    /const \[productViewerMode, setProductViewerMode\] = useState<"current" \| "changes" \| null>\(null\);/,
   );
-  assert.match(source, /onPreview=\{openMobilePreview\}/);
-  assert.match(source, /function MobileOwnerPreviewDrawer/);
-  assert.match(source, /isMobilePreviewOpen \? "-translate-x-10" : "translate-x-0"/);
-  assert.match(source, /open \? "translate-x-0" : "translate-x-full"/);
+  assert.match(source, /onViewCurrent=\{\(\) => openProductViewer\("current"\)\}/);
+  assert.match(source, /function OwnerProductViewer/);
+  assert.match(source, /<Dialog\.Root open=\{open\}/);
+  assert.match(source, /onCloseAutoFocus=/);
+  assert.match(source, /preview=\{productViewerMode === "changes" \? effectivePreview : currentProduct\}/);
   assert.match(source, /<span className="hidden sm:inline">Share<\/span>/);
-  assert.match(source, /<span className="hidden sm:inline">Preview<\/span>/);
+  assert.match(source, /<span>\{viewCurrentLabel\}<\/span>/);
   assert.doesNotMatch(source, /<span className="hidden sm:inline">Edit<\/span>/);
   const headerBlock = source.match(
     /function OwnerWorkspaceHeader[\s\S]*?(?=\nfunction OwnerTabContent)/,
@@ -55,7 +55,7 @@ test("owner workspace keeps public actions in the header and not duplicated unde
   assert.ok(headerBlock, "expected OwnerWorkspaceHeader block");
   assert.match(
     headerBlock[0],
-    /href=\{editHref\}[\s\S]*onClick=\{onShare\}[\s\S]*onClick=\{onPreview\}[\s\S]*href=\{previewHref\}/,
+    /href=\{editHref\}[\s\S]*onClick=\{onShare\}[\s\S]*onClick=\{onViewCurrent\}/,
   );
   assert.doesNotMatch(headerBlock[0], /rounded-2xl border border-slate-200 bg-white/);
   assert.doesNotMatch(headerBlock[0], /rounded-2xl bg-slate-950 text-white/);
@@ -266,15 +266,17 @@ test("owner Design tab previews card edits before saving them", () => {
   assert.match(source, /setBaselineForm\(nextForm\)/);
   assert.match(source, /persisted: true/);
   assert.match(source, /import OwnerPreviewMobileTopbarSuppressor/);
-  assert.match(source, /isMobilePreviewOpen \? <OwnerPreviewMobileTopbarSuppressor \/> : null/);
-  assert.match(source, /fixed inset-0 z-\[7000\] lg:hidden/);
-  assert.match(source, /aria-label="Back to dashboard"/);
+  assert.match(source, /productViewerMode !== null \? <OwnerPreviewMobileTopbarSuppressor \/> : null/);
+  assert.match(source, /fixed inset-0 z-\[7001\]/);
+  assert.match(source, /"Back to editing" : "Back to dashboard"/);
   assert.match(source, /<ArrowLeft size=\{20\}/);
   assert.match(source, /grid grid-cols-2 gap-3 md:grid-cols-3/);
   assert.match(source, /text-slate-500 md:col-span-3/);
   assert.match(source, /text-slate-500 md:col-span-2/);
   assert.match(source, /block min-w-0 text-xs font-black uppercase/);
-  assert.match(source, /\{status === "previewing" \? "Previewing" : "Preview"\}/);
+  assert.match(source, /\{status === "previewing" \? "Previewing" : "Preview changes"\}/);
+  assert.match(source, /onViewChanges=\{\(\) => openProductViewer\("changes"\)\}/);
+  assert.match(source, /setSavedProductOverride\(\{ title: next\.title, preview: next\.preview \}\)/);
   assert.match(source, /\{status === "saving" \? "Saving" : "Save"\}/);
   assert.match(source, /grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-end/);
   assert.match(source, /min-h-12 min-w-0 items-center justify-center/);
