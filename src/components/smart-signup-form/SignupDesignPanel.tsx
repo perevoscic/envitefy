@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { SIGNUP_TEMPLATES } from "@/assets/signup-templates";
 import {
@@ -7,6 +8,7 @@ import {
   TemplateThumbnailPreview,
 } from "@/components/events/TemplateThumbnail";
 import { useTemplateEditor } from "@/components/templates/TemplateEditorContext";
+import { getSignupDesign, SIGNUP_DESIGN_PALETTES } from "@/lib/signup-designs";
 import {
   applySignupTheme,
   createSignupAppearance,
@@ -42,6 +44,10 @@ export default function SignupDesignPanel({
   const [category, setCategory] = useState("");
   const [mobilePreview, setMobilePreview] = useState(false);
   const current = getSignupTheme(form.appearance?.themeId);
+  const currentDesign = getSignupDesign(form.appearance?.designId);
+  const currentColors = currentDesign ? SIGNUP_DESIGN_PALETTES[currentDesign.palette] : current;
+  const selectedTheme = (id: SignupThemeId) =>
+    currentDesign ? currentDesign.id === `editorial--${id}` : current?.id === id;
   const appearance = form.appearance || {
     ...createSignupAppearance("clean-clear"),
     headerLayout: ["header-1", "header-2", "header-3", "header-4", "header-5", "header-6"].includes(
@@ -134,13 +140,22 @@ export default function SignupDesignPanel({
             <p className={styles.help}>
               A complete design, from the first hello to the final signup.
             </p>
+            {currentDesign && (
+              <p className="mt-3 text-sm font-semibold">Your design: {currentDesign.name}</p>
+            )}
+            <Link
+              href="/signup-forms/templates"
+              className="mt-2 inline-block text-sm underline underline-offset-4"
+            >
+              Explore all 150 designs
+            </Link>
           </div>
           <div className={styles.themeGrid}>
             {SIGNUP_THEMES.map((theme) => (
               <div
                 className={styles.themeChoice}
                 key={theme.id}
-                data-selected={current?.id === theme.id}
+                data-selected={selectedTheme(theme.id)}
               >
                 <TemplateThumbnailFrame>
                   <SignupTemplatePreview
@@ -155,12 +170,12 @@ export default function SignupDesignPanel({
                   className={styles.themeSelect}
                   type="button"
                   aria-label={`Use ${theme.name} theme`}
-                  aria-pressed={current?.id === theme.id}
+                  aria-pressed={selectedTheme(theme.id)}
                   onClick={() => choose(theme.id)}
                 >
                   <span className={styles.themeName}>
                     {theme.name}
-                    <span aria-hidden="true">{current?.id === theme.id ? "✓" : ""}</span>
+                    <span aria-hidden="true">{selectedTheme(theme.id) ? "✓" : ""}</span>
                   </span>
                 </button>
               </div>
@@ -193,10 +208,10 @@ export default function SignupDesignPanel({
                     style={{
                       background:
                         palette === "ink"
-                          ? current?.ink || "#222D40"
+                          ? currentColors?.ink || "#222D40"
                           : palette === "soft"
-                            ? current?.soft || "#E8ECF2"
-                            : current?.accent || "#354B72",
+                            ? currentColors?.soft || "#E8ECF2"
+                            : currentColors?.accent || "#354B72",
                     }}
                   />
                   {palette === "original" ? "Original" : palette === "soft" ? "Soft" : "Ink"}
@@ -375,8 +390,8 @@ export default function SignupDesignPanel({
                   change({ slotLayout: event.target.value as SignupAppearance["slotLayout"] })
                 }
               >
-                <option value="cards">Rounded cards</option>
-                <option value="rows">Simple rows</option>
+                <option value="cards">Cards</option>
+                <option value="rows">Rows</option>
               </select>
             </div>
             <div className={styles.field}>
@@ -384,7 +399,11 @@ export default function SignupDesignPanel({
               <input
                 id="signup-accent"
                 type="color"
-                value={appearance.accent || current?.accent || "#354B72"}
+                value={
+                  appearance.accent ||
+                  (appearance.palette === "ink" ? currentColors?.ink : currentColors?.accent) ||
+                  "#354B72"
+                }
                 onChange={(event) => {
                   const accent = event.target.value;
                   if (signupContrast(accent, "#FFFFFF") < 4.5) {
@@ -409,7 +428,7 @@ export default function SignupDesignPanel({
         <div className={`${styles.preview} ${!mobilePreview ? styles.hideMobile : ""}`}>
           <div className={styles.previewLabel}>
             <span>Live page preview</span>
-            <span>{current?.name || "Your design"}</span>
+            <span>{currentDesign?.name || current?.name || "Your design"}</span>
           </div>
           <SignupPageRenderer form={form} />
         </div>

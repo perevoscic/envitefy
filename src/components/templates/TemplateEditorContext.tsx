@@ -291,7 +291,9 @@ export default function TemplateEditorProvider({
           const form = current.snapshot.form;
           if (form && typeof form === "object" && !Array.isArray(form)) {
             const theme = getSignupTemplateTheme(selected);
-            form.appearance = JSON.parse(JSON.stringify(createSignupAppearance(theme.id)));
+            form.appearance = JSON.parse(
+              JSON.stringify(createSignupAppearance(theme.id, selected.id)),
+            );
             const header = form.header;
             form.header = {
               ...(header && typeof header === "object" && !Array.isArray(header) ? header : {}),

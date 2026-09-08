@@ -167,10 +167,8 @@ export default function HeroTopNav({
   const useDarkMobileMenu = isDarkGlass;
   const showMobileGuestActions = status !== "authenticated" && !mobileLoginExpanded;
   const resolvedMobileNavLinks = mobileNavLinks ?? navLinks;
-  const pathActiveHref = useMemo(
-    () => getActivePathHref(pathname, navLinks),
-    [pathname, navLinks],
-  );
+  const hasWideNavigation = navLinks.length > 6;
+  const pathActiveHref = useMemo(() => getActivePathHref(pathname, navLinks), [pathname, navLinks]);
   const mobilePathActiveHref = useMemo(
     () => getActivePathHref(pathname, resolvedMobileNavLinks),
     [pathname, resolvedMobileNavLinks],
@@ -445,7 +443,10 @@ export default function HeroTopNav({
         >
           <div
             className={cx(
-              "flex items-center justify-between gap-4 xl:grid xl:grid-cols-[auto_minmax(0,1fr)_auto] xl:items-center",
+              "flex items-center justify-between gap-4",
+              hasWideNavigation
+                ? "2xl:grid 2xl:grid-cols-[auto_minmax(0,1fr)_auto] 2xl:items-center"
+                : "xl:grid xl:grid-cols-[auto_minmax(0,1fr)_auto] xl:items-center",
               isTransparentOverHero ? "xl:gap-5 2xl:gap-8" : "xl:gap-5 2xl:gap-6",
             )}
           >
@@ -469,8 +470,10 @@ export default function HeroTopNav({
 
             <nav
               className={cx(
-                "hidden min-w-0 flex-nowrap items-center justify-center xl:flex",
-                isTransparentOverHero ? "gap-4 2xl:gap-7" : "gap-3 2xl:gap-5",
+                "hidden min-w-0 flex-nowrap items-center justify-center",
+                hasWideNavigation ? "gap-1 2xl:flex 2xl:gap-2" : "xl:flex",
+                !hasWideNavigation &&
+                  (isTransparentOverHero ? "gap-4 2xl:gap-7" : "gap-3 2xl:gap-5"),
               )}
               aria-label="Hero navigation"
             >
@@ -488,7 +491,8 @@ export default function HeroTopNav({
                         link.href.startsWith("#") ? handleHashLinkClick(link.href) : undefined
                       }
                       className={cx(
-                        "nav-chrome-motion relative whitespace-nowrap text-sm font-semibold transition",
+                        "nav-chrome-motion relative whitespace-nowrap font-semibold transition",
+                        hasWideNavigation ? "text-[13px]" : "text-sm",
                         isTransparentOverHero
                           ? cx(
                               "px-1 py-2",
@@ -501,7 +505,8 @@ export default function HeroTopNav({
                                   : "text-white/82 hover:text-white",
                             )
                           : cx(
-                              "rounded-full px-2.5 py-2 xl:px-3",
+                              "rounded-full py-2",
+                              hasWideNavigation ? "px-1.5" : "px-2.5 xl:px-3",
                               isActive
                                 ? isDarkGlass
                                   ? "text-white"
@@ -529,7 +534,12 @@ export default function HeroTopNav({
               })}
             </nav>
 
-            <div className="hidden shrink-0 items-center gap-3 justify-self-end xl:flex">
+            <div
+              className={cx(
+                "hidden shrink-0 items-center gap-3 justify-self-end",
+                hasWideNavigation ? "2xl:flex" : "xl:flex",
+              )}
+            >
               {status === "authenticated" ? (
                 <Link
                   href={dashboardHref}
@@ -608,7 +618,8 @@ export default function HeroTopNav({
               type="button"
               className={cx(
                 mobileLogoOnly ? "hidden" : "inline-flex",
-                "nav-chrome-motion h-11 w-11 items-center justify-center shadow-sm xl:hidden",
+                "nav-chrome-motion h-11 w-11 items-center justify-center shadow-sm",
+                hasWideNavigation ? "2xl:hidden" : "xl:hidden",
                 isTransparentOverHero && isTransparentLight
                   ? "rounded-full border border-[#25172d]/10 bg-[#25172d]/8 text-[#25172d]"
                   : isDarkGlass
@@ -645,7 +656,8 @@ export default function HeroTopNav({
                   }
                 }}
                 className={cx(
-                  "!fixed inset-0 z-[1000] h-dvh w-screen touch-pan-y !overflow-y-auto overscroll-y-contain px-4 pb-6 pt-[max(0.9rem,env(safe-area-inset-top))] transition-[transform,opacity] duration-300 ease-out will-change-transform [-webkit-overflow-scrolling:touch] xl:hidden",
+                  "!fixed inset-0 z-[1000] h-dvh w-screen touch-pan-y !overflow-y-auto overscroll-y-contain px-4 pb-6 pt-[max(0.9rem,env(safe-area-inset-top))] transition-[transform,opacity] duration-300 ease-out will-change-transform [-webkit-overflow-scrolling:touch]",
+                  hasWideNavigation ? "2xl:hidden" : "xl:hidden",
                   mobileMenuOpen
                     ? "pointer-events-auto translate-x-0 opacity-100"
                     : "pointer-events-none translate-x-full opacity-0",
@@ -698,13 +710,9 @@ export default function HeroTopNav({
                     aria-label="Hero navigation"
                   >
                     {resolvedMobileNavLinks.map((link) => {
-                      const isActive =
-                        (activeNavHref ?? mobilePathActiveHref) === link.href;
+                      const isActive = (activeNavHref ?? mobilePathActiveHref) === link.href;
                       return (
-                        <span
-                          key={`${link.label}:${link.href}:mobile`}
-                          className="relative w-full"
-                        >
+                        <span key={`${link.label}:${link.href}:mobile`} className="relative w-full">
                           <NavLinkItem
                             href={link.href}
                             label={link.label}

@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { templateCategoryForPath } from "@/lib/template-categories";
 import AuthModal from "@/components/auth/AuthModal";
 import BottomNav from "@/components/navigation/BottomNav";
 import ConciergeSheet from "@/components/navigation/ConciergeSheet";
@@ -14,6 +13,7 @@ import {
   signupIntentForMarketingPath,
   signupSourceForIntent,
 } from "@/lib/signup-intent";
+import { templateCategoryForPath } from "@/lib/template-categories";
 
 type SignedOutPageChromeProps = {
   activeBottomNavLabel?: string;
@@ -21,9 +21,7 @@ type SignedOutPageChromeProps = {
   topNavVariant?: "default" | "glass-dark" | "transparent-dark" | "transparent-light";
 };
 
-const signedOutPageNavLinks = [
-  ...publicUseCasePrimaryNavLinks,
-];
+const signedOutPageNavLinks = [...publicUseCasePrimaryNavLinks];
 
 export default function SignedOutPageChrome({
   activeBottomNavLabel = "Concierge",
@@ -42,17 +40,17 @@ export default function SignedOutPageChrome({
     setAuthMode(mode);
     setAuthModalOpen(true);
   }, []);
-  const signupIntent = useMemo(
-    () => signupIntentForMarketingPath(pathname || ""),
-    [pathname],
-  );
+  const signupIntent = useMemo(() => signupIntentForMarketingPath(pathname || ""), [pathname]);
   const signupSource = signupIntent ? signupSourceForIntent(signupIntent) : undefined;
   const createAction = getCreateActionForSignupIntent(signupIntent);
   const templateCategory = templateCategoryForPath(pathname || "");
-  const primaryCreateHref = templateCategory ? `/${templateCategory.slug}/templates` : createAction?.href || "/chat";
+  const primaryCreateHref = templateCategory
+    ? `/${templateCategory.slug}/templates`
+    : createAction?.href || "/chat";
   const loginSuccessRedirectUrl = createAction?.href || "/";
   const signupSuccessRedirectUrl = createAction?.href || "/chat";
-  const successRedirectUrl = authMode === "signup" ? signupSuccessRedirectUrl : loginSuccessRedirectUrl;
+  const successRedirectUrl =
+    authMode === "signup" ? signupSuccessRedirectUrl : loginSuccessRedirectUrl;
 
   useEffect(() => {
     const auth = searchParams?.get("auth");
@@ -67,7 +65,7 @@ export default function SignedOutPageChrome({
   return (
     <>
       <HeroTopNav
-        navLinks={signedOutPageNavLinks.filter((link) => ["/birthdays", "/weddings", "/sport-events"].includes(link.href))}
+        navLinks={signedOutPageNavLinks}
         mobileNavLinks={[...signedOutMobileMenuLinks]}
         primaryCtaLabel={templateCategory ? "Browse templates" : "Let's create"}
         authenticatedPrimaryHref={primaryCreateHref}
@@ -75,7 +73,9 @@ export default function SignedOutPageChrome({
         variant={topNavVariant}
         loginSuccessRedirectUrl={loginSuccessRedirectUrl}
         onGuestLoginAction={() => openAuth("login")}
-        onGuestPrimaryAction={() => templateCategory ? router.push(primaryCreateHref) : openAuth("signup")}
+        onGuestPrimaryAction={() =>
+          templateCategory ? router.push(primaryCreateHref) : openAuth("signup")
+        }
       />
 
       <div className="fixed inset-x-0 bottom-0 z-50 md:hidden">

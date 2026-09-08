@@ -1,10 +1,12 @@
 .page {
+  container: signup-page / inline-size;
   background: var(--signup-page, #f3f2ee);
   color: var(--signup-text, #222d40);
   font-family: var(--signup-body-font, system-ui, sans-serif);
   padding: clamp(1rem, 3vw, 2.5rem);
   min-width: 0;
 }
+
 .sheet {
   max-width: 960px;
   margin: 0 auto;
@@ -187,4 +189,756 @@
   .board [data-signup-slots][data-layout="cards"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+/* Complete page compositions. Container queries make the exact same layout
+   work in a full page, an editor pane, and the quarter-scale gallery. */
+.page[data-signup-design] {
+  padding: 28px;
+}
+.page[data-signup-design] .sheet {
+  max-width: 1100px;
+  gap: 28px;
+}
+.page[data-signup-design].thumbnailPage {
+  padding: 36px;
+}
+.page[data-signup-design].thumbnailPage .sheet {
+  max-width: none;
+}
+.composition {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: 24px;
+  padding: 32px;
+  background: var(--signup-surface);
+  color: var(--signup-text);
+  min-width: 0;
+}
+.composition .headerContent {
+  padding: 0;
+  min-width: 0;
+}
+.composition .heading {
+  font-size: clamp(2.15rem, 5.6cqi, 5.2rem);
+  font-weight: 500;
+  line-height: 1.03;
+  letter-spacing: -0.045em;
+}
+.composition .description {
+  font-size: clamp(0.95rem, 1.35cqi, 1.15rem);
+}
+.composition .metadata {
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.composition:is([data-composition="poster"], [data-composition="marquee"])
+  :is(a, button):focus-visible {
+  outline: 2px solid var(--signup-on-accent);
+  outline-offset: 4px;
+}
+.artwork {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+.artwork img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.ornament {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  color: var(--signup-accent);
+  top: 16px;
+  right: 20px;
+  pointer-events: none;
+  z-index: -1;
+}
+.ornament svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Newspaper: masthead, horizontal rules, editorial image and narrow columns. */
+.composition[data-composition="gazette"] {
+  border-block: 6px double var(--signup-text);
+  background: transparent;
+  padding: 28px 0;
+}
+.composition[data-composition="gazette"] .headerContent {
+  grid-row: 1;
+}
+.composition[data-composition="gazette"] .eyebrow {
+  border-block: 1px solid var(--signup-text);
+  padding: 10px 0;
+  text-align: center;
+  color: var(--signup-text);
+}
+.composition[data-composition="gazette"] .heading {
+  font-weight: 800;
+}
+.composition[data-composition="gazette"] .description {
+  max-width: none;
+}
+.composition[data-composition="gazette"] .metadata {
+  padding-top: 12px;
+  border-top: 1px solid var(--signup-text);
+}
+.composition[data-composition="gazette"] .artwork {
+  aspect-ratio: 3 / 1;
+}
+.composition[data-composition="gazette"] .ornament {
+  display: none;
+}
+
+/* Supper menu: ruled stationery, small oval photograph, centered type. */
+.composition[data-composition="menu"] {
+  border: 1px solid var(--signup-accent);
+  outline: 1px solid var(--signup-accent);
+  outline-offset: -9px;
+  text-align: center;
+  padding: 42px;
+}
+.composition[data-composition="menu"] .artwork {
+  border-radius: 50%;
+  aspect-ratio: 2 / 1;
+  width: 68%;
+  margin: auto;
+  border: 6px solid var(--signup-page);
+}
+.composition[data-composition="menu"] .heading {
+  font-style: italic;
+}
+.composition[data-composition="menu"] .description {
+  margin-inline: auto;
+}
+.composition[data-composition="menu"] .metadata {
+  justify-content: center;
+}
+.composition[data-composition="menu"] .ornament {
+  z-index: 0;
+  width: 38px;
+}
+
+/* Botanical: arch-shaped photo and an airy invitation panel. */
+.composition[data-composition="botanical"] {
+  background: transparent;
+  border-bottom: 1px solid var(--signup-accent);
+}
+.composition[data-composition="botanical"] .artwork {
+  border-radius: 48% 48% 0 0;
+  border: 8px solid var(--signup-surface);
+  aspect-ratio: 5 / 4;
+}
+.composition[data-composition="botanical"] .headerContent {
+  align-self: center;
+}
+.composition[data-composition="botanical"] .ornament {
+  z-index: 0;
+  width: 65px;
+  height: 65px;
+  position: relative;
+  top: auto;
+  right: auto;
+}
+
+/* Club poster: huge uppercase type, a color block and graphic circular crop. */
+.composition[data-composition="poster"] {
+  background: var(--signup-accent);
+  border: 8px solid var(--signup-text);
+  color: var(--signup-on-accent);
+  gap: 32px;
+}
+.composition[data-composition="poster"] .heading {
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: clamp(2.5rem, 6.4cqi, 6.3rem);
+}
+.composition[data-composition="poster"] .headerContent {
+  grid-row: 1;
+}
+.composition[data-composition="poster"] .eyebrow,
+.composition[data-composition="poster"] .description,
+.composition[data-composition="poster"] .metadata {
+  color: var(--signup-on-accent);
+}
+.composition[data-composition="poster"] .eyebrow {
+  color: var(--signup-on-accent);
+}
+.composition[data-composition="poster"] .artwork {
+  border-radius: 50% 50% 3px 3px;
+  aspect-ratio: 2 / 1;
+  border: 6px solid var(--signup-secondary);
+}
+.composition[data-composition="poster"] .ornament {
+  display: none;
+}
+
+/* Ticket: perforated edges and a contrasting admission stub. */
+.composition[data-composition="ticket"] {
+  border-radius: 22px;
+  border: 2px solid var(--signup-accent);
+  padding: 0;
+  overflow: hidden;
+  gap: 0;
+}
+.composition[data-composition="ticket"] .artwork {
+  aspect-ratio: 2 / 1;
+}
+.composition[data-composition="ticket"] .headerContent {
+  border-top: 3px dashed var(--signup-accent);
+  padding: 32px;
+}
+.composition[data-composition="ticket"] .heading {
+  font-weight: 700;
+}
+.composition[data-composition="ticket"] .metadata {
+  padding-top: 18px;
+  border-top: 1px dashed var(--signup-border);
+}
+.composition[data-composition="ticket"] .ornament {
+  display: none;
+}
+
+/* Field journal: offset print, a slim binding and expedition notes. */
+.composition[data-composition="journal"] {
+  border-left: 14px solid var(--signup-accent);
+  background: var(--signup-surface);
+  box-shadow: 8px 8px 0 var(--signup-soft);
+  padding: 34px;
+}
+.composition[data-composition="journal"] .artwork {
+  transform: rotate(-2deg);
+  border: 10px solid var(--signup-page);
+  aspect-ratio: 16 / 8;
+}
+.composition[data-composition="journal"] .metadata {
+  display: grid;
+  border-top: 1px solid var(--signup-border);
+  padding-top: 14px;
+  font-family: ui-monospace, monospace;
+}
+.composition[data-composition="journal"] .ornament {
+  z-index: 0;
+  top: 25px;
+  right: 30px;
+}
+
+/* Invitation: delicate frame with a circular portrait and restrained flourishes. */
+.composition[data-composition="invitation"] {
+  text-align: center;
+  border: 1px solid var(--signup-accent);
+  border-radius: 180px 180px 8px 8px / 75px 75px 8px 8px;
+  padding: 44px 30px 32px;
+  box-shadow:
+    inset 0 0 0 8px var(--signup-page),
+    inset 0 0 0 9px var(--signup-border);
+}
+.composition[data-composition="invitation"] .artwork {
+  width: 180px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  margin: auto;
+  outline: 1px solid var(--signup-accent);
+  outline-offset: 7px;
+}
+.composition[data-composition="invitation"] .heading {
+  font-style: italic;
+  font-size: clamp(2.3rem, 5.2cqi, 5rem);
+}
+.composition[data-composition="invitation"] .description {
+  margin-inline: auto;
+}
+.composition[data-composition="invitation"] .metadata {
+  justify-content: center;
+}
+.composition[data-composition="invitation"] .ornament {
+  z-index: 0;
+  right: 32px;
+  top: 44px;
+  width: 36px;
+}
+
+/* Scrapbook: mounted photograph, paper tape, stitched edges and colored cards. */
+.composition[data-composition="scrapbook"] {
+  background: transparent;
+  border: 2px dashed var(--signup-accent);
+  border-radius: 16px;
+}
+.composition[data-composition="scrapbook"] .artwork {
+  border: 12px solid var(--signup-surface);
+  border-bottom-width: 30px;
+  transform: rotate(2deg);
+  box-shadow: 3px 5px 0 var(--signup-border);
+  overflow: visible;
+}
+.composition[data-composition="scrapbook"] .artwork::after {
+  content: "";
+  position: absolute;
+  width: 30%;
+  height: 28px;
+  background: var(--signup-secondary);
+  opacity: 0.85;
+  top: -24px;
+  left: 34%;
+  transform: rotate(-5deg);
+}
+.composition[data-composition="scrapbook"] .heading {
+  line-height: 1.12;
+}
+.composition[data-composition="scrapbook"] .ornament {
+  z-index: 0;
+  top: auto;
+  bottom: 16px;
+  opacity: 0.55;
+  width: 38px;
+}
+
+/* Studio: generous white space, gallery title and a tall rounded artwork. */
+.composition[data-composition="studio"] {
+  padding: 0;
+  background: transparent;
+  gap: 32px;
+}
+.composition[data-composition="studio"] .headerContent {
+  padding: 18px 0;
+  grid-row: 1;
+}
+.composition[data-composition="studio"] .heading {
+  font-weight: 350;
+}
+.composition[data-composition="studio"] .eyebrow {
+  border-left: 3px solid var(--signup-accent);
+  padding-left: 12px;
+}
+.composition[data-composition="studio"] .artwork {
+  border-radius: 120px 0 0 0;
+}
+.composition[data-composition="studio"] .ornament {
+  display: none;
+}
+
+/* Marquee: dark event poster, an offset photograph and marquee-style rules. */
+.page[data-signup-composition="marquee"] {
+  background: var(--signup-text);
+}
+.composition[data-composition="marquee"] {
+  color: var(--signup-on-accent);
+  background: var(--signup-accent);
+  border: 1px solid var(--signup-secondary);
+}
+.composition[data-composition="marquee"] .headerContent {
+  grid-row: 1;
+}
+.composition[data-composition="marquee"] .heading {
+  text-transform: uppercase;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+}
+.composition[data-composition="marquee"] .eyebrow {
+  color: var(--signup-on-accent);
+  border-block: 1px solid var(--signup-secondary);
+  padding: 10px 0;
+}
+.composition[data-composition="marquee"] .description,
+.composition[data-composition="marquee"] .metadata {
+  color: var(--signup-on-accent);
+}
+.composition[data-composition="marquee"] .artwork {
+  aspect-ratio: 5 / 2;
+  border: 1px solid var(--signup-secondary);
+}
+.composition[data-composition="marquee"] .ornament {
+  display: none;
+}
+
+/* Panorama: uninterrupted landscape, with a solid floating title card. */
+.composition[data-composition="panorama"] {
+  padding: 0;
+  background: transparent;
+  gap: 0;
+}
+.composition[data-composition="panorama"] .artwork {
+  aspect-ratio: 16 / 8;
+  border-radius: 10px;
+}
+.composition[data-composition="panorama"] .headerContent {
+  position: relative;
+  margin: -48px 24px 0;
+  background: var(--signup-surface);
+  border-top: 7px solid var(--signup-accent);
+  padding: 28px;
+}
+.composition[data-composition="panorama"] .ornament {
+  display: none;
+}
+
+/* Agenda: a structured heading, separate photo column and a bold index rail. */
+.composition[data-composition="ledger"] {
+  padding: 0;
+  border-block: 4px solid var(--signup-accent);
+  gap: 0;
+}
+.composition[data-composition="ledger"] .headerContent {
+  padding: 30px;
+  grid-row: 1;
+}
+.composition[data-composition="ledger"] .heading {
+  font-size: clamp(2.2rem, 5cqi, 4.7rem);
+  font-weight: 650;
+}
+.composition[data-composition="ledger"] .eyebrow {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--signup-border);
+}
+.composition[data-composition="ledger"] .artwork {
+  aspect-ratio: 3 / 1;
+}
+.composition[data-composition="ledger"] .metadata {
+  display: grid;
+}
+.composition[data-composition="ledger"] .ornament {
+  display: none;
+}
+
+.composition[data-reverse="true"] .artwork {
+  transform: none;
+}
+.composition[data-reverse="true"][data-composition="scrapbook"] .artwork {
+  transform: rotate(-2deg);
+}
+.composition[data-reverse="true"][data-composition="journal"] .artwork {
+  transform: rotate(2deg);
+}
+.composition[data-reverse="true"][data-composition="gazette"] .heading {
+  text-align: center;
+}
+.composition[data-reverse="true"][data-composition="menu"] .artwork {
+  width: 50%;
+  aspect-ratio: 3 / 1;
+}
+.composition[data-reverse="true"][data-composition="invitation"] {
+  border-radius: 8px;
+}
+.composition[data-reverse="true"][data-composition="panorama"] .headerContent {
+  margin-inline: 0 48px;
+}
+
+/* The board remains the same functional component, with a design-specific
+   visual language for section headings, quantities, and selection states. */
+.slotNumber {
+  display: none;
+}
+.board[data-signup-board] {
+  border-radius: 0;
+  box-shadow: none;
+  border-color: var(--signup-border);
+}
+.board[data-signup-board] > header {
+  border-bottom: 1px solid var(--signup-border);
+  padding-bottom: 18px;
+}
+.board[data-signup-board] [data-signup-section] > div:first-child h3 {
+  font-size: 1.2rem;
+}
+.board[data-signup-board="ledger"] {
+  border: 0;
+  border-top: 4px solid var(--signup-accent);
+}
+.board[data-signup-board="ledger"] [data-signup-slot] {
+  border: 0;
+  border-bottom: 1px solid var(--signup-border);
+  border-radius: 0;
+  background: transparent;
+}
+.board[data-signup-board="ledger"] .slotNumber {
+  display: block;
+  color: var(--signup-accent);
+  font:
+    650 0.8rem ui-monospace,
+    monospace;
+}
+.board[data-signup-board="menu"] {
+  border: 1px solid var(--signup-accent);
+  outline: 1px solid var(--signup-accent);
+  outline-offset: -7px;
+  padding: 30px;
+}
+.board[data-signup-board="menu"] > header,
+.board[data-signup-board="menu"] [data-signup-section] > div:first-child {
+  text-align: center;
+}
+.board[data-signup-board="menu"] > header > div {
+  justify-content: center;
+}
+.board[data-signup-board="menu"] [data-signup-slot] {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dotted var(--signup-accent);
+  border-radius: 0;
+}
+.board[data-signup-board="tickets"] {
+  background: var(--signup-soft);
+  border: 0;
+  border-radius: 16px;
+}
+.board[data-signup-board="tickets"] [data-signup-slot] {
+  background: var(--signup-surface);
+  border: 1px dashed var(--signup-accent);
+  border-left: 5px solid var(--signup-accent);
+  border-radius: 12px;
+}
+.board[data-signup-board="tickets"] .slotNumber {
+  display: block;
+  color: var(--signup-accent);
+  font:
+    650 0.8rem ui-monospace,
+    monospace;
+  letter-spacing: 0.12em;
+}
+.board[data-signup-board="tiles"] {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.board[data-signup-board="tiles"] [data-signup-slot] {
+  background: var(--signup-surface);
+  border: 1px solid var(--signup-accent);
+  border-radius: 0;
+  border-top-width: 5px;
+}
+.board[data-signup-board="tiles"] [data-signup-slot]:nth-child(even) {
+  background: var(--signup-soft);
+}
+.board[data-signup-board="outline"] {
+  border-radius: 24px;
+  background: var(--signup-surface);
+}
+.board[data-signup-board="outline"] [data-signup-slot] {
+  border-radius: 12px;
+  background: transparent;
+}
+.board[data-signup-board] [data-signup-select] {
+  border-color: var(--signup-accent);
+  border-radius: 0;
+  color: var(--signup-accent);
+}
+.board[data-signup-board="outline"] [data-signup-select],
+.board[data-signup-board="menu"] [data-signup-select] {
+  border-radius: 999px;
+}
+.board[data-signup-board] [data-selected="true"] {
+  background: var(--signup-soft);
+  outline: 2px solid var(--signup-accent);
+  outline-offset: -2px;
+}
+.board[data-signup-board] [data-selected="true"] [data-signup-select] {
+  color: var(--signup-on-accent);
+  background: var(--signup-accent);
+}
+
+@container signup-page (min-width: 740px) {
+  .composition[data-composition="botanical"],
+  .composition[data-composition="journal"],
+  .composition[data-composition="scrapbook"],
+  .composition[data-composition="studio"],
+  .composition[data-composition="ledger"],
+  .composition[data-composition="ticket"],
+  .composition[data-composition="poster"] {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    align-items: center;
+    min-height: 470px;
+  }
+  .composition[data-composition="studio"],
+  .composition[data-composition="ledger"],
+  .composition[data-composition="poster"] {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  }
+  .composition[data-composition="studio"] .headerContent,
+  .composition[data-composition="ledger"] .headerContent,
+  .composition[data-composition="poster"] .headerContent {
+    grid-row: 1;
+    grid-column: 1;
+  }
+  .composition[data-composition="studio"] .artwork,
+  .composition[data-composition="ledger"] .artwork,
+  .composition[data-composition="poster"] .artwork {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .composition[data-composition="botanical"] .artwork,
+  .composition[data-composition="studio"] .artwork,
+  .composition[data-composition="ledger"] .artwork,
+  .composition[data-composition="ticket"] .artwork {
+    height: 100%;
+    aspect-ratio: auto;
+    min-height: 470px;
+  }
+  .composition[data-composition="poster"] .artwork {
+    aspect-ratio: 1;
+    border-radius: 50%;
+  }
+  .composition[data-composition="journal"] .artwork,
+  .composition[data-composition="scrapbook"] .artwork {
+    aspect-ratio: 4 / 5;
+  }
+  .composition[data-composition="ticket"] .headerContent {
+    border-top: 0;
+    border-left: 3px dashed var(--signup-accent);
+  }
+  .composition[data-composition="ticket"] .artwork {
+    align-self: stretch;
+  }
+  .composition[data-composition="botanical"] .ornament {
+    position: absolute;
+    bottom: 10px;
+    top: auto;
+    right: 32px;
+  }
+  .composition[data-composition="marquee"] {
+    grid-template-columns: 1.2fr 0.8fr;
+    align-items: center;
+  }
+  .composition[data-composition="marquee"] .artwork {
+    grid-column: 2;
+    grid-row: 1;
+    height: 100%;
+    min-height: 440px;
+    aspect-ratio: auto;
+  }
+  .composition[data-composition="marquee"] .headerContent {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .composition[data-composition="gazette"] .description {
+    columns: 2;
+    column-gap: 28px;
+  }
+  .composition[data-composition="menu"] {
+    grid-template-columns: 0.7fr 1.3fr;
+    align-items: center;
+    gap: 40px;
+    min-height: 450px;
+  }
+  .composition[data-composition="menu"] .artwork {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+  }
+  .composition[data-composition="invitation"] .artwork {
+    width: 200px;
+  }
+  .composition[data-composition="panorama"] .artwork {
+    aspect-ratio: 3 / 1;
+  }
+  .composition[data-composition="panorama"] .headerContent {
+    width: 78%;
+    margin-left: auto;
+  }
+  .composition[data-reverse="true"]:is(
+      [data-composition="botanical"],
+      [data-composition="journal"],
+      [data-composition="scrapbook"],
+      [data-composition="ticket"],
+      [data-composition="menu"]
+    ) {
+    grid-template-columns: 1.15fr 0.85fr;
+  }
+  .composition[data-reverse="true"]:is(
+      [data-composition="botanical"],
+      [data-composition="journal"],
+      [data-composition="scrapbook"],
+      [data-composition="ticket"],
+      [data-composition="menu"]
+    )
+    .artwork {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .composition[data-reverse="true"]:is(
+      [data-composition="studio"],
+      [data-composition="ledger"],
+      [data-composition="poster"],
+      [data-composition="marquee"]
+    )
+    .artwork {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .composition[data-reverse="true"]:is(
+      [data-composition="studio"],
+      [data-composition="ledger"],
+      [data-composition="poster"],
+      [data-composition="marquee"]
+    )
+    .headerContent {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .composition[data-reverse="true"][data-composition="ticket"] .headerContent {
+    border-left: 0;
+    border-right: 3px dashed var(--signup-accent);
+  }
+  .board[data-signup-board="ledger"] [data-signup-slot] > div > div:first-child {
+    position: relative;
+    padding-left: 42px;
+  }
+  .board[data-signup-board="ledger"] .slotNumber {
+    position: absolute;
+    left: 0;
+    top: 4px;
+  }
+}
+@container signup-page (max-width: 520px) {
+  .composition {
+    padding: 24px;
+    gap: 24px;
+  }
+  .composition .heading {
+    font-size: 2.3rem;
+  }
+  .composition[data-composition="gazette"],
+  .composition[data-composition="panorama"],
+  .composition[data-composition="studio"],
+  .composition[data-composition="ledger"],
+  .composition[data-composition="ticket"] {
+    padding: 0;
+  }
+  .composition[data-composition="menu"] .artwork {
+    width: 85%;
+  }
+  .composition[data-composition="panorama"] .headerContent {
+    margin: -20px 10px 0;
+    padding: 22px;
+  }
+  .composition[data-composition="invitation"] {
+    padding-top: 40px;
+  }
+  .composition[data-composition="invitation"] .artwork {
+    width: 140px;
+  }
+  .composition .metadata {
+    display: grid;
+    text-align: inherit;
+  }
+  .board[data-signup-board] [data-signup-slots][data-layout="cards"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ornament {
+    display: none;
+  }
+}
+.composition[data-without-image="true"] {
+  display: block;
+  min-height: 0;
+}
+.composition[data-without-image="true"] .headerContent {
+  margin: 0;
+  width: 100%;
+  border: 0;
 }

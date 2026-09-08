@@ -1,5 +1,5 @@
 import { getSignupDemoContent } from "@/lib/signup-demo-content";
-import { applySignupTheme, getSignupTheme } from "@/lib/signup-themes";
+import { applySignupTheme, createSignupAppearance, getSignupTheme } from "@/lib/signup-themes";
 import type { SignupForm, SignupThemeId } from "@/types/signup";
 import { createDefaultSignupForm, generateSignupId } from "@/utils/signup";
 
@@ -126,6 +126,7 @@ export function createSignupTemplateForm(template: {
   return {
     ...form,
     title: demo.title,
+    appearance: createSignupAppearance(theme.id, template.id),
     description: demo.welcome,
     locationMode: "in-person",
     venue: demo.venue,

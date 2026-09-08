@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 import SignedOutPageChrome from "@/components/navigation/SignedOutPageChrome";
+import PublicTemplateGallery from "@/components/templates/PublicTemplateGallery";
 import { getTemplateCategory } from "@/lib/template-categories";
 
 type Props = { params: Promise<{ category: string }> };
@@ -20,7 +20,11 @@ export default async function TemplatesPage({ params }: Props) {
   if (slug !== category.slug) redirect(`/${category.slug}/templates`);
   return (
     <>
-      <SignedOutPageChrome brandHref={`/${category.slug}`} />
+      <SignedOutPageChrome
+        activeBottomNavLabel="Templates"
+        brandHref="/"
+        topNavVariant="transparent-light"
+      />
       <main className="pt-24">
         <PublicTemplateGallery category={category.slug} />
       </main>

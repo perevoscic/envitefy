@@ -44,6 +44,102 @@ const baseMocks = {
 };
 const { createSignupThemeForm } = load("src/lib/signup-starters.ts", baseMocks);
 
+test("all 150 templates retain a distinct curated design through saving and rendering", () => {
+  const { getPublicTemplates } = load("src/lib/public-template-catalog.ts", baseMocks);
+  const { SIGNUP_DESIGNS, SIGNUP_DESIGN_PALETTES } = load("src/lib/signup-designs.ts", baseMocks);
+  const { createSignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
+  const { sanitizeSignupForm } = load("src/utils/signup.ts", baseMocks);
+  const { signupContrast } = load("src/lib/signup-themes.ts", baseMocks);
+  const Header = load(
+    "src/components/smart-signup-form/SignupTemplateHeader.tsx",
+    baseMocks,
+  ).default;
+  const templates = getPublicTemplates("signup-forms");
+  assert.equal(SIGNUP_DESIGNS.length, templates.length);
+  assert.equal(new Set(SIGNUP_DESIGNS.map((design) => design.composition)).size, 12);
+  const signatures = new Set();
+  for (const template of templates) {
+    const design = SIGNUP_DESIGNS.find((design) => design.id === template.id);
+    assert.ok(design, template.id);
+    const signature = JSON.stringify([
+      design.composition,
+      design.palette,
+      ["menu", "botanical", "journal", "invitation", "scrapbook"].includes(design.composition)
+        ? design.motif
+        : null,
+      design.reverse,
+    ]);
+    assert.ok(!signatures.has(signature), `Duplicate art direction: ${template.id}`);
+    signatures.add(signature);
+    const form = createSignupTemplateForm(template);
+    const saved = sanitizeSignupForm(JSON.parse(JSON.stringify(form)));
+    assert.equal(saved.appearance.designId, template.id);
+    assert.equal(saved.appearance.headerLayout, "designed");
+    assert.deepEqual(
+      saved.sections.map((section) => ({
+        id: section.id,
+        title: section.title,
+        description: section.description,
+        slots: section.slots.map(({ id, label, capacity, notes }) => ({
+          id,
+          label,
+          capacity,
+          notes,
+        })),
+      })),
+      form.sections.map((section) => ({
+        id: section.id,
+        title: section.title,
+        description: section.description,
+        slots: section.slots.map(({ id, label, capacity, notes }) => ({
+          id,
+          label,
+          capacity,
+          notes,
+        })),
+      })),
+    );
+    const html = renderToStaticMarkup(React.createElement(Header, { form: saved }));
+    assert.ok(html.includes(`data-composition="${design.composition}"`), template.id);
+    assert.ok(html.includes(template.heroImage), template.id);
+    assert.equal((html.match(/<h1\b/g) || []).length, 1, template.id);
+    for (const colors of [SIGNUP_DESIGN_PALETTES[design.palette]]) {
+      assert.ok(signupContrast(colors.accent, "#FFFFFF") >= 4.5, `${template.id}: CTA`);
+      assert.ok(signupContrast(colors.ink, colors.page) >= 7, `${template.id}: body`);
+      assert.ok(signupContrast(colors.ink, colors.surface) >= 7, `${template.id}: form`);
+    }
+  }
+});
+
+test("designed headers retain empty-image and legacy-layout choices", () => {
+  const { createSignupTemplateForm } = load("src/lib/signup-starters.ts", baseMocks);
+  const { normalizeSignupAppearance } = load("src/lib/signup-themes.ts", baseMocks);
+  const Header = load(
+    "src/components/smart-signup-form/SignupTemplateHeader.tsx",
+    baseMocks,
+  ).default;
+  const form = createSignupTemplateForm({
+    id: "editorial--harvest-table",
+    name: "Harvest Table",
+    heroImage: "/templates/signup/editorial/harvest-table.webp",
+  });
+  form.header.backgroundImage = null;
+  let html = renderToStaticMarkup(React.createElement(Header, { form }));
+  assert.ok(html.includes('data-without-image="true"'));
+  assert.ok(!html.includes("<img"));
+  form.appearance.headerLayout = "none";
+  html = renderToStaticMarkup(React.createElement(Header, { form }));
+  assert.ok(!html.includes("data-composition"));
+  assert.ok(!html.includes("<img"));
+  const legacy = { ...form.appearance, designId: undefined, headerLayout: "header-2" };
+  assert.equal(normalizeSignupAppearance(legacy).designId, undefined);
+  assert.equal(normalizeSignupAppearance(legacy).headerLayout, "header-2");
+  assert.equal(
+    normalizeSignupAppearance({ ...legacy, designId: "unrecognized" }).designId,
+    undefined,
+  );
+});
+
 test("every signup catalog item renders a square inert full-page preview with demo content", () => {
   const { getPublicTemplates } = load("src/lib/public-template-catalog.ts", baseMocks);
   const Preview = load(

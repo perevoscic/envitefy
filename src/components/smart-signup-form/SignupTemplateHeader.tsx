@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { parseCalendarDateTimeToIso } from "@/lib/calendar-date-time";
+import { getSignupDesign } from "@/lib/signup-designs";
 import { resolveSignupThemeStyle } from "@/lib/signup-themes";
 import type { SignupForm } from "@/types/signup";
+import SignupDesignOrnament from "./SignupDesignOrnament";
 import styles from "./signup-theme.module.css";
 
 export default function SignupTemplateHeader({
@@ -18,7 +20,9 @@ export default function SignupTemplateHeader({
   imageLoading?: "eager" | "lazy";
 }) {
   const header = form.header;
-  const layout = form.appearance?.headerLayout || header?.templateId || "header-1";
+  const design = getSignupDesign(form.appearance?.designId);
+  const requestedLayout = form.appearance?.headerLayout || header?.templateId || "header-1";
+  const layout = requestedLayout === "designed" && !design ? "header-3" : requestedLayout;
   const gallery = (header?.images || []).filter(Boolean);
   const cover = gallery[0] || header?.backgroundImage;
   const portrait = layout === "header-4" ? gallery[1] : gallery[0] || header?.backgroundImage;
@@ -94,6 +98,34 @@ export default function SignupTemplateHeader({
       {actions && <div className={styles.actions}>{actions}</div>}
     </div>
   );
+  if (layout === "designed" && design) {
+    return (
+      <section
+        className={styles.composition}
+        style={resolveSignupThemeStyle(form)}
+        data-composition={design.composition}
+        data-reverse={design.reverse || undefined}
+        data-without-image={!cover || undefined}
+      >
+        {cover && (
+          <div className={styles.artwork}>
+            <img
+              src={cover.dataUrl}
+              alt=""
+              loading={imageLoading}
+              style={imageStyle}
+              width={cover.width || 1536}
+              height={cover.height || 1024}
+            />
+          </div>
+        )}
+        {content}
+        <div className={styles.ornament}>
+          <SignupDesignOrnament motif={design.motif} />
+        </div>
+      </section>
+    );
+  }
   return (
     <section
       className={styles.header}

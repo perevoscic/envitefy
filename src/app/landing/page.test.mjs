@@ -394,10 +394,7 @@ test("landing keeps auth-aware nav and the live card gallery", () => {
     landingShowcase,
     /data-showcase-active=\{activeIndex === index \? "true" : "false"\}/,
   );
-  assert.match(
-    landingShowcase,
-    /Math\.abs\(index - activeIndex\) <= 2/,
-  );
+  assert.match(landingShowcase, /Math\.abs\(index - activeIndex\) <= 2/);
   assert.match(
     landingShowcase,
     /<StudioShowcaseLiveCard\s+preview=\{item\.preview\}\s+compactChrome\s+showcaseMode\s+interactive=\{activeIndex === index\}\s+imageLoading=\{activeIndex === index \? "eager" : "lazy"\}\s+imageFetchPriority=\{activeIndex === index \? "high" : "auto"\}\s+showcaseOverlay=/,
@@ -530,9 +527,12 @@ test("landing uses scroll-aware signed-out mobile bottom navigation", () => {
   assert.match(signedOutPageChrome, /<AuthModal/);
   assert.match(
     signedOutPageChrome,
-    /const successRedirectUrl = authMode === "signup" \? signupSuccessRedirectUrl : loginSuccessRedirectUrl/,
+    /const successRedirectUrl =\s*authMode === "signup" \? signupSuccessRedirectUrl : loginSuccessRedirectUrl/,
   );
-  assert.match(signedOutPageChrome, /const primaryCreateHref = templateCategory \? `\/\$\{templateCategory\.slug\}\/templates` : createAction\?\.href \|\| "\/chat"/);
+  assert.match(
+    signedOutPageChrome,
+    /const primaryCreateHref = templateCategory\s*\? `\/\$\{templateCategory\.slug\}\/templates`\s*: createAction\?\.href \|\| "\/chat"/,
+  );
   assert.match(
     signedOutPageChrome,
     /const loginSuccessRedirectUrl = createAction\?\.href \|\| "\/"/,

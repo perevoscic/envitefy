@@ -578,7 +578,19 @@
       "legacyPath": "/templates/signup/sports-and-recreation/swim-team.webp",
       "output": "public/templates/signup/photographic/sports-and-recreation/swim-team.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Swim Team. Scene: A swimming team practice pool with blue lane ropes, a pair of plain goggles and folded team towels on the poolside bench. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-0d761244-aa23-4a23-9bd4-10925d91369e.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 155084,
+      "sha256": "65a189d6a71e5753224a91379bceea5a8a467087d9b9fcc95df4597ff1240cec",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "sports-and-recreation--cheer-squad",
@@ -587,7 +599,19 @@
       "legacyPath": "/templates/signup/sports-and-recreation/cheer-squad.webp",
       "output": "public/templates/signup/photographic/sports-and-recreation/cheer-squad.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Cheer Squad. Scene: A pair of softly worn cheer shoes, matte fabric pom-poms in deep blue and ivory, a folded warm-up jacket on a gym bench. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-8accaae2-aeff-4323-add1-98fbda8e7e36.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 125048,
+      "sha256": "40cb6418cf544eebf1b0af51a3c4654caa487213f1170a0cc6122eaf10ae2000",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "sports-and-recreation--track-meet",
@@ -596,7 +620,19 @@
       "legacyPath": "/templates/signup/sports-and-recreation/track-meet.webp",
       "output": "public/templates/signup/photographic/sports-and-recreation/track-meet.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Track Meet. Scene: A red running track at a small school field, starting blocks in the center lane and a simple stopwatch resting beside them. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-d6c9f5d9-212b-4c17-8416-0112a291a9be.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 213158,
+      "sha256": "ac5721cf30d55930df49cc1dfb9e3823c5b83e631d322387a53fbdf8cbf7b392",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "sports-and-recreation--baseball-team",
@@ -605,7 +641,19 @@
       "legacyPath": "/templates/signup/sports-and-recreation/baseball-team.webp",
       "output": "public/templates/signup/photographic/sports-and-recreation/baseball-team.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Baseball Team. Scene: A well-used leather baseball glove holding a ball, a wooden bat leaning against a dugout bench, green field beyond. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-2ec668fc-3748-4a1f-a4f7-0b62b880b6a0.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 147824,
+      "sha256": "eb6d3fb3f23e06ae1b4f85f1674acb085252c85668947faf692066670dc54742",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "sports-and-recreation--sports-banquet",
@@ -614,7 +662,19 @@
       "legacyPath": "/templates/signup/sports-and-recreation/sports-banquet.webp",
       "output": "public/templates/signup/photographic/sports-and-recreation/sports-banquet.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Sports Banquet. Scene: A modest sports-team banquet table set with plain napkins, small greenery, a simple trophy and team balls on a sideboard. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-733232d3-aa91-4512-9133-a2984e1637ca.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 108366,
+      "sha256": "0d880cc90cb00dc021303a2d366ca637038950765ca506261121b2db13eb3eba",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "sports-and-recreation--gymnastics",
@@ -623,7 +683,19 @@
       "legacyPath": "/templates/signup/sports-and-recreation/gymnastics.webp",
       "output": "public/templates/signup/photographic/sports-and-recreation/gymnastics.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Gymnastics. Scene: A quiet gymnastics practice hall with a balance beam, chalk bowl and folded wrist grips, natural rooflight and neutral mats. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-2c1de864-cd2d-452a-9b31-d9f3dd9ccc47.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 126032,
+      "sha256": "b4e25f4a680afeac4784a1de959bf2edb2c102b546b8f35ff17a5588c8d4e5f8",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "sports-and-recreation--fitness-class",
@@ -632,7 +704,19 @@
       "legacyPath": "/templates/signup/sports-and-recreation/fitness-class.webp",
       "output": "public/templates/signup/photographic/sports-and-recreation/fitness-class.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Fitness Class. Scene: A bright community fitness studio with a few exercise mats, modest hand weights and neatly folded cotton towels. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-2c4f1ec3-b1bf-42e3-b4c3-3a77f7f3044b.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 207158,
+      "sha256": "64db584d1a083222402b486724155f28d3fdf5a3b204ea133f2e6e7a36f26816",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "sports-and-recreation--soccer-game",
@@ -641,7 +725,19 @@
       "legacyPath": "/templates/signup/sports-and-recreation/soccer-game.webp",
       "output": "public/templates/signup/photographic/sports-and-recreation/soccer-game.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Soccer Game. Scene: A worn soccer ball beside white touchline paint on a local grass field, boots and water bottles on a low bench beyond. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-0d873b1b-398f-4c22-973c-74087d33f9ed.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 299326,
+      "sha256": "ce5a8f2d851afb1ee955e73364aec1b9bcd0b3d6f9f6280a9b0ce9917ab3d9d2",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "sports-and-recreation--basketball-practice",
@@ -650,7 +746,19 @@
       "legacyPath": "/templates/signup/sports-and-recreation/basketball-practice.webp",
       "output": "public/templates/signup/photographic/sports-and-recreation/basketball-practice.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Basketball Practice. Scene: A basketball resting on a naturally scuffed wooden gym floor, a rack of spare balls and simple hoop in the background. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-7fc2d9fa-484a-4dec-aca5-2620b92d4bbc.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 90922,
+      "sha256": "34246106bd24930d035cf7915cfd0d619f1b3194caee29220444c270178e1ad9",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "sports-and-recreation--golf-tournament",
@@ -659,7 +767,19 @@
       "legacyPath": "/templates/signup/sports-and-recreation/golf-tournament.webp",
       "output": "public/templates/signup/photographic/sports-and-recreation/golf-tournament.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Golf Tournament. Scene: A golf bag with a few used clubs beside a grassy tee, one white ball and a quiet tree-lined fairway in morning light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-6f7d170e-07df-44e8-a843-406a12bd00a5.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 283644,
+      "sha256": "3059ea8e6c1928cc89907baa82f107979299db90231ec68436c83513c8fe97e7",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "fundraising-and-food--car-wash",
@@ -668,7 +788,19 @@
       "legacyPath": "/templates/signup/fundraising-and-food/car-wash.webp",
       "output": "public/templates/signup/photographic/fundraising-and-food/car-wash.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Car Wash. Scene: A neighborhood car-wash setup with two ordinary buckets, soft sponges, cotton cloths and a coiled hose beside a parked car, soft daylight. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-fb74b605-5c5b-4c0c-ac0a-6d64566894bf.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 287808,
+      "sha256": "ab930eba7e7384e17fa97123e889130aee73696e9fc08d246c6359283eea5cd2",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "fundraising-and-food--bake-sale",
@@ -677,7 +809,19 @@
       "legacyPath": "/templates/signup/fundraising-and-food/bake-sale.webp",
       "output": "public/templates/signup/photographic/fundraising-and-food/bake-sale.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Bake Sale. Scene: A homemade bake-sale spread on a simple table: imperfect muffins, slices of loaf cake and paper-wrapped cookies, blank small card stands. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-85533c53-194e-4662-9123-9c83521758cb.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 132872,
+      "sha256": "4cb163ce3eaeadacb2cd4dceb187efbdc01f379ec512ea03519862bb792b66fb",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "fundraising-and-food--charity-gala",
@@ -686,7 +830,19 @@
       "legacyPath": "/templates/signup/fundraising-and-food/charity-gala.webp",
       "output": "public/templates/signup/photographic/fundraising-and-food/charity-gala.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Charity Gala. Scene: A restrained charity gala table setting with pale linens, low seasonal flowers, glassware and simple brass candleholders in a historic hall. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-33be9b65-a3a8-4416-8b60-ed40a448a448.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 173820,
+      "sha256": "8aed6df7ce83d476601d0bb014605f3f7b5670326e7d51e03c52e16a699a7bfd",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "fundraising-and-food--restaurant-night",
@@ -695,7 +851,19 @@
       "legacyPath": "/templates/signup/fundraising-and-food/restaurant-night.webp",
       "output": "public/templates/signup/photographic/fundraising-and-food/restaurant-night.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Restaurant Night. Scene: A welcoming small restaurant table before a neighborhood fundraiser dinner, shared bread, olive oil and folded cloth napkins, window light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-93660ebc-a8e3-46ca-9270-f1849648b04f.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 138642,
+      "sha256": "9bd710f7b23542e2ae72abe7322cedc96a0213b574af7e3f338b98e5ea0ae95b",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "fundraising-and-food--food-pantry",
@@ -704,7 +872,19 @@
       "legacyPath": "/templates/signup/fundraising-and-food/food-pantry.webp",
       "output": "public/templates/signup/photographic/fundraising-and-food/food-pantry.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Food Pantry. Scene: A community pantry shelf with baskets of potatoes, carrots, rice in plain bags and orderly unlabeled canned goods, a wooden worktable nearby. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-3a3317e2-6f5d-44de-aaa5-5cf0487d21b3.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 241858,
+      "sha256": "13df16ae108999864fe22b6b9079eb3cddfab97299b2554dd02027dbf2ceca27",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "fundraising-and-food--auction-event",
@@ -713,7 +893,19 @@
       "legacyPath": "/templates/signup/fundraising-and-food/auction-event.webp",
       "output": "public/templates/signup/photographic/fundraising-and-food/auction-event.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Auction Event. Scene: A silent-auction display of handmade ceramics, a woven basket and a landscape painting on a community hall table, blank bid cards. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-2ee34634-4d19-4763-b0f8-29c2c4aa4f61.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 173892,
+      "sha256": "1bf2be40ae01ad35834c88d4aee9151490369d9ed1f0974fe68939989091eed7",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "fundraising-and-food--donation-drive",
@@ -722,7 +914,19 @@
       "legacyPath": "/templates/signup/fundraising-and-food/donation-drive.webp",
       "output": "public/templates/signup/photographic/fundraising-and-food/donation-drive.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Donation Drive. Scene: A donation-drive station with folded blankets, sealed plain toiletries, cotton tote bags and sturdy boxes on a long wooden table. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-a5d4c6ed-5c93-4730-8f9b-d57d3b9acc38.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 146878,
+      "sha256": "b5e9fcad8c2f1e287b79ed31121556ce6b132f19bdeffb9f4c743e75d2694479",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "fundraising-and-food--vendor-fair",
@@ -731,7 +935,19 @@
       "legacyPath": "/templates/signup/fundraising-and-food/vendor-fair.webp",
       "output": "public/templates/signup/photographic/fundraising-and-food/vendor-fair.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Vendor Fair. Scene: A small local maker fair before opening, wooden stalls with ceramics, woven goods and potted plants, simple canvas awnings with no signage. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-67d49b96-909d-4191-bd31-dcef5a2d766f.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 235214,
+      "sha256": "f5273a3931caa6e2fed247be822130e7b115e48e8b5845e507837da9ef1c7e6a",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "fundraising-and-food--raffle",
@@ -740,7 +956,19 @@
       "legacyPath": "/templates/signup/fundraising-and-food/raffle.webp",
       "output": "public/templates/signup/photographic/fundraising-and-food/raffle.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Raffle. Scene: A classic clear raffle drum with unprinted folded paper slips, a modest gift basket and simple ceramic vase on a community table. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-c0d35d59-f526-47a3-a30b-d7dbec529f56.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 155374,
+      "sha256": "4c97cf7b92d5cb3629bcae538ac5f634b7dd719e5e69d93018e0f30b4faa9d70",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "fundraising-and-food--potluck-dinner",
@@ -749,7 +977,19 @@
       "legacyPath": "/templates/signup/fundraising-and-food/potluck-dinner.webp",
       "output": "public/templates/signup/photographic/fundraising-and-food/potluck-dinner.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Potluck Dinner. Scene: A welcoming potluck buffet with a pasta bake, green salad, homemade loaf and serving spoons, mismatched bowls and warm kitchen daylight. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-974265c4-cfa5-4911-80f6-dcdf33c4d9ab.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 229340,
+      "sha256": "61d624d16cc06a2afba41faba1cd0aaa7e209b1efab8c5c7e3c1fdf486ca0094",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "family-and-personal--anniversary-celebration",
@@ -758,7 +998,19 @@
       "legacyPath": "/templates/signup/family-and-personal/anniversary-celebration.webp",
       "output": "public/templates/signup/photographic/family-and-personal/anniversary-celebration.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Anniversary Celebration. Scene: An intimate anniversary table for two at home, a modest bouquet of garden roses, two coupe glasses and a small homemade cake without writing. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-41d68b4e-6583-46d2-9a04-5adb3ab3f658.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 132712,
+      "sha256": "65fd2055314155ed0f50eddf86943cf8dcf19c5dc80cfcd761abdd573f26a338",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "family-and-personal--family-event",
@@ -767,7 +1019,19 @@
       "legacyPath": "/templates/signup/family-and-personal/family-event.webp",
       "output": "public/templates/signup/photographic/family-and-personal/family-event.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Family Event. Scene: A family backyard picnic ready to begin, a round table with fresh fruit, a pitcher of water, linen napkins and a board game box without lettering. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-981a3580-fc99-4eba-891f-01cfa348e674.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 242182,
+      "sha256": "99111007f7e6837c437dc4f82069c98f5e21092505ed578739561d9b3d86be5e",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "family-and-personal--housewarming",
@@ -776,7 +1040,19 @@
       "legacyPath": "/templates/signup/family-and-personal/housewarming.webp",
       "output": "public/templates/signup/photographic/family-and-personal/housewarming.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Housewarming. Scene: A bright lived-in home entry with a houseplant, a basket of bread, keys on a shallow handmade dish and fresh flowers beside moving boxes. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-c603fd5d-4bbc-4be8-b489-73b2d492e093.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 163984,
+      "sha256": "4bd283f6e80b2fe626fdf8f70ca5d66a7775995502880826fe603308846c6e15",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "family-and-personal--birthday-party",
@@ -785,7 +1061,19 @@
       "legacyPath": "/templates/signup/family-and-personal/birthday-party.webp",
       "output": "public/templates/signup/photographic/family-and-personal/birthday-party.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Birthday Party. Scene: A small homemade birthday cake with a few plain candles on a kitchen table, simple paper garland and unwrapped strawberries, warm natural light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-601484ea-41e0-48d3-af80-7dae7e369ec1.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 114300,
+      "sha256": "a5d3f4f37f008ab1901048aa2424829a0678b155a1afc1a841bab13011d3966d",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "family-and-personal--block-party",
@@ -794,7 +1082,19 @@
       "legacyPath": "/templates/signup/family-and-personal/block-party.webp",
       "output": "public/templates/signup/photographic/family-and-personal/block-party.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Block Party. Scene: A neighborhood block-party setup with folding tables, simple checked tablecloths, lemonade pitchers and yard games beneath leafy street trees. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-a7bf2013-51b7-45b3-80a8-550184e23584.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 356478,
+      "sha256": "9b9e99725aa56181b15fa71a944dc1727d27132787eba2c2b82cb5bac41285e1",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "family-and-personal--wedding",
@@ -803,7 +1103,19 @@
       "legacyPath": "/templates/signup/family-and-personal/wedding.webp",
       "output": "public/templates/signup/photographic/family-and-personal/wedding.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Wedding. Scene: An intimate garden wedding table with wildflower bud vases, ivory linens, simple rings on a ceramic dish and a small bouquet. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-17d06be8-1342-4ba3-a17a-03aa674b02f8.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 191492,
+      "sha256": "82a91cfb42eb863c2ea8d682d59886d63e26e6824a1119abb27a4708c857f79a",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "family-and-personal--baby-shower",
@@ -812,7 +1124,19 @@
       "legacyPath": "/templates/signup/family-and-personal/baby-shower.webp",
       "output": "public/templates/signup/photographic/family-and-personal/baby-shower.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Baby Shower. Scene: A gentle baby-shower still life with a folded knitted baby blanket, tiny cotton booties, cream flowers and a small gift in plain paper. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-dd54ddf1-2af4-4fbb-9f6c-9a5b81306cb3.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 177942,
+      "sha256": "b1cce2e68990a3464eb15699c7760b58374ce73ac8104bd8002106b44432525b",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "family-and-personal--game-night",
@@ -821,7 +1145,19 @@
       "legacyPath": "/templates/signup/family-and-personal/game-night.webp",
       "output": "public/templates/signup/photographic/family-and-personal/game-night.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Game Night. Scene: A family game-night table with a wooden board game, plain playing cards face down, two bowls of popcorn and mugs in a cozy living room. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-28d0e851-9455-4712-ba6f-c4d6cf6a43f0.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 131596,
+      "sha256": "0e0f3fca383ec4f0300feed35c00446b9f936c36ca84f62df0a4e37a25f42196",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "family-and-personal--bridal-shower",
@@ -830,7 +1166,19 @@
       "legacyPath": "/templates/signup/family-and-personal/bridal-shower.webp",
       "output": "public/templates/signup/photographic/family-and-personal/bridal-shower.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Bridal Shower. Scene: A home bridal-shower tea table with mismatched china, small pastries, blush garden roses and a pale linen runner. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-4f9f7dce-07ab-4b23-b67a-1644bc9b8191.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 211050,
+      "sha256": "26185b934f3651a5c927bf173be5a1880b46fdb760e4d18ea86c3f7bd8b4cbb7",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "family-and-personal--family-holiday",
@@ -839,7 +1187,19 @@
       "legacyPath": "/templates/signup/family-and-personal/family-holiday.webp",
       "output": "public/templates/signup/photographic/family-and-personal/family-holiday.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Family Holiday. Scene: A cozy family holiday breakfast table with evergreen sprigs, oranges, cinnamon rolls, soft red napkins and natural winter window light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-34f6fbb2-d2ae-4470-9159-6ee55eade4e2.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 175412,
+      "sha256": "33d5c17acc3532cc1db6e6215bbcd7e3378c21101d663aa0207afe309e7e4f5a",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "business-and-professional--conference-schedule",
@@ -848,7 +1208,19 @@
       "legacyPath": "/templates/signup/business-and-professional/conference-schedule.webp",
       "output": "public/templates/signup/photographic/business-and-professional/conference-schedule.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Conference Schedule. Scene: A thoughtful small-conference welcome desk with plain fabric lanyards, blank notebooks, pencils and a carafe of water, airy meeting hall behind. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-e34f96a9-8373-4304-ae7d-e85bea5f2cb5.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 184986,
+      "sha256": "dbdf69719bfe04445a2c3a2b0cc7caf2e8e60d9ad3ee7f51e08626abcb495915",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "business-and-professional--client-meeting",
@@ -857,7 +1229,19 @@
       "legacyPath": "/templates/signup/business-and-professional/client-meeting.webp",
       "output": "public/templates/signup/photographic/business-and-professional/client-meeting.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Client Meeting. Scene: A calm professional meeting table for two, closed laptops, blank cream notebooks, two ceramic cups and a small branch in a glass vase. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-88cb2f3d-60bb-4e41-8c29-757410882d02.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 83138,
+      "sha256": "ba187121c0a1823006331b1524d4eed76d67cf4f52d146b37091c3ca3b8330a5",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "business-and-professional--team-lunch",
@@ -866,7 +1250,19 @@
       "legacyPath": "/templates/signup/business-and-professional/team-lunch.webp",
       "output": "public/templates/signup/photographic/business-and-professional/team-lunch.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Team Lunch. Scene: A relaxed office team lunch in a light-filled shared kitchen, bowls of salad, fresh bread, ceramic plates and a big pitcher of water. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-868a6870-8609-471a-ae95-f44bf5f3e480.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 180008,
+      "sha256": "f6d7c88074053f7f13cb782fd7913af84ea611831ce739c7f32c63398920af11",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "business-and-professional--corporate-event",
@@ -875,7 +1271,19 @@
       "legacyPath": "/templates/signup/business-and-professional/corporate-event.webp",
       "output": "public/templates/signup/photographic/business-and-professional/corporate-event.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Corporate Event. Scene: A polished but modest corporate gathering in a warm modern venue, round tables with low green centerpieces and understated cream linens. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-e3e4cbc0-f7eb-4759-a1a0-7576cedcac55.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 169324,
+      "sha256": "67961ca79783c9fe9982e1be5dec3470357bce65c8bd09bffb6029e4ae27db97",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "business-and-professional--workshop",
@@ -884,7 +1292,19 @@
       "legacyPath": "/templates/signup/business-and-professional/workshop.webp",
       "output": "public/templates/signup/photographic/business-and-professional/workshop.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Workshop. Scene: A practical creative workshop table with blank sketchbooks, measuring tools, fabric samples and a few well-used pencils in ceramic cups. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-54b41b64-cd73-4739-9101-2a4af8d9b061.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 174128,
+      "sha256": "d075e279ea0c41819c3d3546f495786c5cdfea7b6a17bba85dba913062f0c176",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "business-and-professional--networking-night",
@@ -893,7 +1313,19 @@
       "legacyPath": "/templates/signup/business-and-professional/networking-night.webp",
       "output": "public/templates/signup/photographic/business-and-professional/networking-night.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Networking Night. Scene: An inviting evening networking space with small cafe tables, plain glassware, simple flowers and warm wall lights, no event signage. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-a41c888a-f8a9-45f7-b36e-7dec5958df98.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 106468,
+      "sha256": "ee62b4b8b1fe82da854ad14ce630cf39ef95f0bf69247615da8a889b7bb00c5a",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "business-and-professional--professional-gathering",
@@ -902,7 +1334,19 @@
       "legacyPath": "/templates/signup/business-and-professional/professional-gathering.webp",
       "output": "public/templates/signup/photographic/business-and-professional/professional-gathering.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Professional Gathering. Scene: A welcoming coworking lounge ready for a professional gathering, upholstered chairs, a low table, notebooks and coffee cups, afternoon light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-06fd6125-2199-4d48-981b-4a75e3e0ab33.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 158996,
+      "sha256": "3f768571509dc0f19065f9ba7aa503617b15fc2ca75081c9e377bbbb537b2889",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "business-and-professional--office-meeting",
@@ -911,7 +1355,19 @@
       "legacyPath": "/templates/signup/business-and-professional/office-meeting.webp",
       "output": "public/templates/signup/photographic/business-and-professional/office-meeting.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Office Meeting. Scene: A real office meeting room with a wooden table, neatly placed blank notepads, water glasses and a simple whiteboard with no writing. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-d67c7583-e712-4756-b463-84be5c7936ba.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 118876,
+      "sha256": "cbceb0839d4a966204b7eb0d4f6f2b945a65f80fc31963272d695b44b148e2d9",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "business-and-professional--training-session",
@@ -920,7 +1376,19 @@
       "legacyPath": "/templates/signup/business-and-professional/training-session.webp",
       "output": "public/templates/signup/photographic/business-and-professional/training-session.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Training Session. Scene: A small training room with pairs of workbooks closed and unmarked, pencils, laptops with dark screens and simple reusable water bottles. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-dbdde47d-8154-4dc3-9382-576702d42ff0.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 111746,
+      "sha256": "808b48897c01b7e028e36d15700b25e9d1629604767294638b7bae748599d122",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "other-special-interest--tech-event",
@@ -929,7 +1397,19 @@
       "legacyPath": "/templates/signup/other-special-interest/tech-event.webp",
       "output": "public/templates/signup/photographic/other-special-interest/tech-event.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Tech Event. Scene: A small technology meetup demo table with an unbranded laptop screen turned dark, compact circuit boards, neat cables and a plain notebook. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-dfc6a2f4-8c2c-4fcc-8255-a167eb26afa4.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 129100,
+      "sha256": "063c677b4f21f36187b68c9b8ec04b38c4bc948754249b6509c256d4df36f92e",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "other-special-interest--political-campaign",
@@ -938,7 +1418,19 @@
       "legacyPath": "/templates/signup/other-special-interest/political-campaign.webp",
       "output": "public/templates/signup/photographic/other-special-interest/political-campaign.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Political Campaign. Scene: A neutral civic volunteer preparation table with blank clipboards, plain canvas bags, pencils and a stack of unprinted postcards, no party symbols. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-f6079ba6-61ee-493e-b0f0-3cbd2cd2f62f.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 143412,
+      "sha256": "049f1c4bf4bba575b475fd84563703e53b609fd8300419e4272d0f507820d4b8",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "other-special-interest--gaming-tournament",
@@ -947,7 +1439,19 @@
       "legacyPath": "/templates/signup/other-special-interest/gaming-tournament.webp",
       "output": "public/templates/signup/photographic/other-special-interest/gaming-tournament.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Gaming Tournament. Scene: A modest gaming tournament setup with two unbranded controllers, plain headsets and screens turned dark in a softly lit community games room. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-e1d72f10-be4b-43b6-828c-5b5dfa523372.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 107394,
+      "sha256": "3ec87f296ba6ed34009ad2597f4f41c759049d878b32ac4346dbfca2346c7c36",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "other-special-interest--environment-and-cleanup",
@@ -956,7 +1460,19 @@
       "legacyPath": "/templates/signup/other-special-interest/environment-and-cleanup.webp",
       "output": "public/templates/signup/photographic/other-special-interest/environment-and-cleanup.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Environment & Cleanup. Scene: A park cleanup meeting point with reusable gloves, litter pickers, plain refuse sacks and a metal water bottle beside a tree-lined path. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-a6425b4a-319f-446b-a7b2-13a29e7d6b21.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 276226,
+      "sha256": "7eb5088c163800ffe395fd40adbdd4df728cfc8735eb170fa995d1e502ced60e",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "other-special-interest--senior-services",
@@ -965,7 +1481,19 @@
       "legacyPath": "/templates/signup/other-special-interest/senior-services.webp",
       "output": "public/templates/signup/photographic/other-special-interest/senior-services.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Senior Services. Scene: A warm community-center activity table with large plain playing cards face down, a cup of tea, simple flowers and comfortable chairs nearby. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-9e47e1eb-973a-4eaf-9ee1-ca82a7a65da6.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 169618,
+      "sha256": "76fb6cf6cf5a9b10a0c495c10493e936ada32442ed145aebdba800edaad73721",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "other-special-interest--travel-group",
@@ -974,7 +1502,19 @@
       "legacyPath": "/templates/signup/other-special-interest/travel-group.webp",
       "output": "public/templates/signup/photographic/other-special-interest/travel-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Travel Group. Scene: A travel-planning still life with two canvas weekend bags, a closed blank notebook, a simple map turned to its unprinted reverse and binoculars. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-c69ccc5d-7e30-4bad-ad3c-76b4937d6bae.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 130070,
+      "sha256": "36847eee9ab6bd02a4f9c3a17d4034f03ada5b6683b831480f2938a4e70ed2d4",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "other-special-interest--real-estate-open-house",
@@ -983,7 +1523,19 @@
       "legacyPath": "/templates/signup/other-special-interest/real-estate-open-house.webp",
       "output": "public/templates/signup/photographic/other-special-interest/real-estate-open-house.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Real Estate Open House. Scene: A sunlit welcoming house entry and living room ready for an open house, a small vase of flowers, a key dish and natural linen furniture. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-efb68c42-da07-4d95-aeb4-6d983e5dd1e7.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 140238,
+      "sha256": "6a8ea88fe21f249dee4a42670752fbe8bfd29a58f46c8c12e2e801effa4fbba1",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "other-special-interest--arts-and-culture",
@@ -992,7 +1544,19 @@
       "legacyPath": "/templates/signup/other-special-interest/arts-and-culture.webp",
       "output": "public/templates/signup/photographic/other-special-interest/arts-and-culture.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Arts & Culture. Scene: A small local arts exhibition with a clay sculpture, abstract paintings without text and a simple gallery bench in soft natural light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-31e2c970-8db0-4f0a-96f0-dab0d9a955f5.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 123488,
+      "sha256": "9cc9f379d879670b6aa1fd1ca386de9a8d745f0378fbfe9a553cd13181b23b1e",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "other-special-interest--pets-and-animals",
@@ -1001,7 +1565,19 @@
       "legacyPath": "/templates/signup/other-special-interest/pets-and-animals.webp",
       "output": "public/templates/signup/photographic/other-special-interest/pets-and-animals.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Pets & Animals. Scene: A friendly shelter adoption-day corner with a calm mixed-breed dog on a cotton blanket, a water bowl, a basket of plain toys and soft daylight. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-ee0cc0e6-4ed3-4451-bb17-014f781930ac.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 173096,
+      "sha256": "ac8fb06022ad99b9a7d8ac4d1d2044f526b0e26c90aa97330db0a0ed3a85a221",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--hoa-meeting",
@@ -1010,7 +1586,19 @@
       "legacyPath": "/templates/signup/general/hoa-meeting.webp",
       "output": "public/templates/signup/photographic/general/hoa-meeting.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: HOA Meeting. Scene: A welcoming neighborhood meeting room with a round table, blank notepads, house keys in a ceramic dish and a small pot of greenery. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-5de5f0b5-0948-4dd4-b354-55a3ebf5d08f.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 138166,
+      "sha256": "cfd0a23c41eaec407e948feec17980892d46c9b09f6902f85eef7b7c47c700bd",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--ad-hoc-meeting",
@@ -1019,7 +1607,19 @@
       "legacyPath": "/templates/signup/general/ad-hoc-meeting.webp",
       "output": "public/templates/signup/photographic/general/ad-hoc-meeting.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Ad Hoc Meeting. Scene: A small spontaneous working meeting setup: three chairs around a cafe table, closed notebooks, a laptop with dark screen and coffee cups. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-568abf05-2c31-4cba-94d9-13f1359c08d9.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 160962,
+      "sha256": "9f03f597a885bf62eef46bb31ee2e31b8057ec63019e3ca328bcb725ada43999",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--board-meeting",
@@ -1028,7 +1628,19 @@
       "legacyPath": "/templates/signup/general/board-meeting.webp",
       "output": "public/templates/signup/photographic/general/board-meeting.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Board Meeting. Scene: A modest boardroom with a long oak table, plain folders, water glasses, pencils and soft daylight through tall windows. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-88db6f7c-9088-4928-a3eb-9b608ea42d22.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 135736,
+      "sha256": "a890ee56ac078f8dbe9f23c28241512a97ffeacdaa76fffde4ae78be4b635348",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--team-planning-session",
@@ -1037,7 +1649,19 @@
       "legacyPath": "/templates/signup/general/team-planning-session.webp",
       "output": "public/templates/signup/photographic/general/team-planning-session.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Team Planning Session. Scene: A collaborative planning table with unmarked colored paper squares, blank sketch pads, wooden pencils and a few ceramic mugs. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-9bd2c1b0-faac-4b99-a0af-e9824222a91d.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 185894,
+      "sha256": "308d23e86ded89b064bc269ad1563f15972e8471272beb803b09a3d24de01932",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--volunteer-orientation",
@@ -1046,7 +1670,19 @@
       "legacyPath": "/templates/signup/general/volunteer-orientation.webp",
       "output": "public/templates/signup/photographic/general/volunteer-orientation.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Volunteer Orientation. Scene: A volunteer-orientation welcome station with plain cotton tote bags, blank name badges, pencils and a small vase of field flowers. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-9d83c4c6-08fd-4b97-9a3a-b63da6b28795.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 126490,
+      "sha256": "4822e27facef5029ecb3912458663cd64a2b2215291968a5934fcc425ec138a7",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--town-hall-meeting",
@@ -1055,7 +1691,19 @@
       "legacyPath": "/templates/signup/general/town-hall-meeting.webp",
       "output": "public/templates/signup/photographic/general/town-hall-meeting.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Town Hall Meeting. Scene: A historic town-hall interior with rows of simple wooden chairs, an unmarked lectern and tall windows, quiet before a community meeting. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-69494e42-7886-450a-afdb-cfe6be660601.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 161814,
+      "sha256": "d5a6864280f996ac305402e3e9b31a2961a2d7c3be426bd6cb5d95a3989c18a6",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--community-discussion",
@@ -1064,7 +1712,19 @@
       "legacyPath": "/templates/signup/general/community-discussion.webp",
       "output": "public/templates/signup/photographic/general/community-discussion.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Community Discussion. Scene: A circle of comfortable chairs in a community room with tea mugs, a low table and fresh branches, welcoming and unpretentious. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-777f3d28-6550-4695-8417-f6c508ab5b84.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 180214,
+      "sha256": "ce6b3446fb41d1007aa19507e64f5c043bebee8daea66bf7d2b3234b9bd9ebc1",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--staff-training",
@@ -1073,7 +1733,19 @@
       "legacyPath": "/templates/signup/general/staff-training.webp",
       "output": "public/templates/signup/photographic/general/staff-training.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Staff Training. Scene: A bright staff-training table with plain manuals, pencils, a reusable bottle and a laptop with an unlit screen, classroom chairs beyond. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-e1463ad5-48e6-45f1-bf99-9b8f16337f6d.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 80814,
+      "sha256": "2f72cbd869b6867fa5bf3f18cedd63bf9b4d2732ec7d44f5f0e296b35c6592ac",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--committee-meeting",
@@ -1082,7 +1754,19 @@
       "legacyPath": "/templates/signup/general/committee-meeting.webp",
       "output": "public/templates/signup/photographic/general/committee-meeting.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Committee Meeting. Scene: A small committee meeting in a library room, round wooden table, tidy unmarked folders, pens and a shared carafe of water. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-0e7b3ef0-52e9-4aee-b189-39022ccbc5b0.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 127066,
+      "sha256": "db2f7aea8f24b0f295d8c85acd5e440578fb7ac3fecd07f1a3e249832aed70c0",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--monthly-meetup",
@@ -1091,7 +1775,19 @@
       "legacyPath": "/templates/signup/general/monthly-meetup.webp",
       "output": "public/templates/signup/photographic/general/monthly-meetup.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Monthly Meetup. Scene: A cozy cafe corner prepared for a monthly meetup, mismatched chairs, simple mugs, a small vase and late-afternoon window light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-47878fd5-84c6-433a-aa8e-9281f6a6539e.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 113304,
+      "sha256": "70c41ef9af70ce50631ed49f07362f0525ad68c6cdd8e014838dab37bfec0c72",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--project-kickoff",
@@ -1100,7 +1796,19 @@
       "legacyPath": "/templates/signup/general/project-kickoff.webp",
       "output": "public/templates/signup/photographic/general/project-kickoff.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Project Kickoff. Scene: A fresh project-kickoff worktable with blank sketch pads, material swatches, neat pencils and a small plant, generous bright daylight. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-b541be15-282b-460d-92a4-22ceb0c8e260.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 171716,
+      "sha256": "2e2cfec43bc55f19c91139ee96c97f2f65edd3f3af4cb9c3d50ded94e0e3664b",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "general--workshop-registration",
@@ -1109,7 +1817,19 @@
       "legacyPath": "/templates/signup/general/workshop-registration.webp",
       "output": "public/templates/signup/photographic/general/workshop-registration.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Workshop Registration. Scene: A workshop registration desk with blank folded cards, neatly stacked notebooks, pencils in a pottery cup and a modest canvas tote. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-493e8ba6-1b7e-43a0-9411-c0ae5ce9b01f.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 119234,
+      "sha256": "7c1f3e1f720ab2122b395bdd013e3940173b6b6ba3a80c81a722a567d3bbbf82",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "parties-and-events--birthday-party",
@@ -1118,7 +1838,19 @@
       "legacyPath": "/templates/signup/parties-and-events/birthday-party.webp",
       "output": "public/templates/signup/photographic/parties-and-events/birthday-party.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Birthday Party. Scene: A cheerful garden birthday setup with a simple frosted cake, matte paper decorations, garden flowers and a few plain candles, no lettering. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-dfcfcbc1-dacc-461c-9119-750e6e3e6576.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 209668,
+      "sha256": "31ed34e1087b0c929a665bc482902d38829e9683ce0ef1b0fcfba2cee0c241f3",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "parties-and-events--wedding",
@@ -1127,7 +1859,19 @@
       "legacyPath": "/templates/signup/parties-and-events/wedding.webp",
       "output": "public/templates/signup/photographic/parties-and-events/wedding.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Wedding. Scene: An outdoor wedding reception table in a quiet courtyard, ivory cloth, olive branches, handmade plates and soft peach flowers. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-2ac0798f-1cc1-4e9c-8f40-5fa539d50df7.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 227564,
+      "sha256": "7a640fe63ef55927a108c49354067dbf3f5cbf00f7ac597927cff156216443c2",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "parties-and-events--baby-shower",
@@ -1136,7 +1880,19 @@
       "legacyPath": "/templates/signup/parties-and-events/baby-shower.webp",
       "output": "public/templates/signup/photographic/parties-and-events/baby-shower.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Baby Shower. Scene: A garden baby-shower table with a small tier of pastries, folded ivory cotton, daisies and a plain wrapped gift with a sage ribbon. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-b14b8ae5-7780-4a1a-b0eb-79c2d9dfeda8.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 206840,
+      "sha256": "c1092fde94eb0fcffbb8410ca3a7fc1574845c80afbe012116d01bb011bd51c5",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "parties-and-events--game-night",
@@ -1145,7 +1901,19 @@
       "legacyPath": "/templates/signup/parties-and-events/game-night.webp",
       "output": "public/templates/signup/photographic/parties-and-events/game-night.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Game Night. Scene: A neighborhood board-game evening prepared on a long wooden table, chess pieces, dominoes, plain cards face down and simple snacks. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-5828a237-f74b-4d0c-b0f5-30dc2cdc6964.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 159050,
+      "sha256": "0f7b17b504ca89f56ead203ce6780605c926571ef4729f39e9af18fe5797fedb",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "parties-and-events--bridal-shower",
@@ -1154,7 +1922,19 @@
       "legacyPath": "/templates/signup/parties-and-events/bridal-shower.webp",
       "output": "public/templates/signup/photographic/parties-and-events/bridal-shower.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Bridal Shower. Scene: An airy bridal-shower brunch table with croissants, blush ranunculus, handmade cream plates and a clear glass pitcher of citrus water. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-d0a1ea24-ed6b-4206-acef-ce2773333d18.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 189382,
+      "sha256": "8cde6d3924ebf926c69b0686ba6a436c81a7437cf1c33c50d63504b911be633f",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "parties-and-events--family-holiday",
@@ -1163,7 +1943,19 @@
       "legacyPath": "/templates/signup/parties-and-events/family-holiday.webp",
       "output": "public/templates/signup/photographic/parties-and-events/family-holiday.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Family Holiday. Scene: A family holiday supper table with a plaid runner, pine branches, a homemade tart and warm candles against a winter window. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-ca05b2f4-8b38-4b1a-ac84-324def1c35f4.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 215810,
+      "sha256": "802da7dbf35d2167394f39defccd6628f362ba846f8f9186e3992c3b9138537c",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "parties-and-events--holiday-party",
@@ -1172,7 +1964,19 @@
       "legacyPath": "/templates/signup/parties-and-events/holiday-party.webp",
       "output": "public/templates/signup/photographic/parties-and-events/holiday-party.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Holiday Party. Scene: An understated winter holiday party corner with evergreen branches, ceramic mugs, oranges and a small tray of spiced cookies. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-ea8a7d13-d4f1-4e43-bcb1-d6ab10353732.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 182852,
+      "sha256": "c7fa5090795e2c6606b0d4ce9eadf8b8df557df22be755ea053a1b687672a20d",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "parties-and-events--graduation-party",
@@ -1181,7 +1985,19 @@
       "legacyPath": "/templates/signup/parties-and-events/graduation-party.webp",
       "output": "public/templates/signup/photographic/parties-and-events/graduation-party.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Graduation Party. Scene: A graduation gathering still life with a simple navy graduation cap, an unmarked rolled paper tied with twine, garden flowers and a small cake. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-22c8118e-a024-4d4c-b24d-b90f7bc15130.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 122056,
+      "sha256": "5d71ba426f1e2b1892fbc325def1347f999267bb6166452e812e87ee3c1f33f7",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "parties-and-events--retirement-party",
@@ -1190,7 +2006,19 @@
       "legacyPath": "/templates/signup/parties-and-events/retirement-party.webp",
       "output": "public/templates/signup/photographic/parties-and-events/retirement-party.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Retirement Party. Scene: A relaxed retirement celebration table with a homemade cake without writing, a bouquet of seasonal flowers, a blank journal and two teacups. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-5074fc5b-106a-44d3-9c73-10412ef1fe8d.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 164426,
+      "sha256": "01ee8c662d319aa187f11851b0afd5496d0619c771fcc5d47452bea07dcec6dd",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "parties-and-events--engagement-party",
@@ -1199,7 +2027,19 @@
       "legacyPath": "/templates/signup/parties-and-events/engagement-party.webp",
       "output": "public/templates/signup/photographic/parties-and-events/engagement-party.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Engagement Party. Scene: An intimate engagement celebration table with a small open ring box, soft garden roses, simple glasses and pale linen in evening window light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-ee8a1c89-2f6c-45c6-9f9d-bad320755bc9.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 179588,
+      "sha256": "3c8cbbd4a753bc7ef9fc0a4a7907c3fe96637ef56426c58d028a643eac8ebc5d",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--fitness-class",
@@ -1208,7 +2048,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/fitness-class.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/fitness-class.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Fitness Class. Scene: A calm neighborhood movement studio with three textured yoga mats, small dumbbells, water bottles and a folded towel in bright soft daylight. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-7a22dced-392e-4f61-b72b-7b664a1a4f17.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 159026,
+      "sha256": "ee5bd2684278fae973f4fac62daf29d56a34e3ae737e41c7f6826830f21b910f",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--yoga-class",
@@ -1217,7 +2069,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/yoga-class.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/yoga-class.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Yoga Class. Scene: A quiet yoga room with a worn natural-rubber mat, cork blocks, a folded cotton blanket and warm morning light across wood floors. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-89a166fc-5274-4654-aa6a-206dbcb686ff.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 129890,
+      "sha256": "25e8ec8c828ae656b759e5ef93cf12db602ecde69065493e04505cf97586f317",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--pilates-class",
@@ -1226,7 +2090,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/pilates-class.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/pilates-class.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Pilates Class. Scene: A real Pilates studio with one reformer, neatly placed straps, a small exercise ball and folded towels, clean but gently lived-in. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-a500da7b-d5d2-4873-b690-42155811da05.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 113708,
+      "sha256": "f1fe273f92f29a5c72ea2e975bdcd2197a39c457b0528a101a4aa0b1d8ceb22a",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--spin-class",
@@ -1235,7 +2111,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/spin-class.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/spin-class.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Spin Class. Scene: An airy spin studio with a few ordinary stationary bikes, one towel draped over a handlebar and reusable bottles, soft side light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-b9acc112-7f5a-45be-bf60-7b6395ff4a41.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 122136,
+      "sha256": "50fb4220f69fe229bc072c23564484dc4987506c9ba20ae286ce965463090156",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--zumba-class",
@@ -1244,7 +2132,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/zumba-class.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/zumba-class.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Zumba Class. Scene: A lively but empty community dance-fitness room with clean sneakers, a bright folded towel and simple colored floor markers. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-2f431e96-1f00-46a4-8c5a-9f8057385722.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 124882,
+      "sha256": "40e89fce593e2ac2950b1d82d33877a339cbf5596ea1f047e2e4e828c18cbc5d",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--bootcamp-class",
@@ -1253,7 +2153,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/bootcamp-class.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/bootcamp-class.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Bootcamp Class. Scene: A park bootcamp station with a kettlebell, medicine ball, exercise mat and rope arranged casually on short grass at morning. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-c6f38010-9b4c-469e-8a0c-2bfb204cf996.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 370346,
+      "sha256": "35291fb7a303cea1657fa61d2c6f1d8fd68cec537e9729f376e82c1c2a49fad0",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--dance-class",
@@ -1262,7 +2174,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/dance-class.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/dance-class.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Dance Class. Scene: A welcoming dance studio with a wooden barre, plain practice shoes, a folded warm-up sweater and clear natural reflections. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-863a075d-115a-4153-80d5-5e858b322aa2.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 129360,
+      "sha256": "6f4a3040a88a01720d2d89876da4ed3bd7f5a93cf79a5da26eac4829ab7246b7",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--morning-run",
@@ -1271,7 +2195,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/morning-run.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/morning-run.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Morning Run. Scene: A pair of lightly worn running shoes beside a park path, a modest water bottle and soft dawn light on dew-covered grass. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-42e0053d-349f-45bc-a851-7b9ad4c33f66.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 259538,
+      "sha256": "b2d74df2f5d71b1e1e8cf4cb26a0fe2718d6d522094639e2e44925695738f682",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--cycling-club",
@@ -1280,7 +2216,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/cycling-club.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/cycling-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Cycling Club. Scene: A road bicycle leaned against a low stone wall, a plain helmet and bottle, a quiet country lane beyond in fresh morning light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-e396aada-b48a-487c-905e-a5198eaa0127.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 292792,
+      "sha256": "545e14dda372342d9146c6ab6f88ce417d3945ed1ad52e26413e815530114543",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--crossfit-session",
@@ -1289,7 +2237,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/crossfit-session.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/crossfit-session.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: CrossFit Session. Scene: A practical strength-training corner with a rubber mat, a kettlebell, a wooden plyometric box and neatly stored weight plates. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-16a24d56-8f8d-4779-86eb-e345c4b7a032.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 109446,
+      "sha256": "f12317f9349c3cda363c0780dfe1d2dd3a2a3448102ab9f2d6a7b5124bfb5bc0",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--martial-arts-class",
@@ -1298,7 +2258,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/martial-arts-class.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/martial-arts-class.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Martial Arts Class. Scene: A quiet martial arts dojo with a folded plain white uniform, a simple belt and floor mats, warm natural side lighting. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-b1b567a7-779e-4e14-a8ac-8066022af45c.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 143210,
+      "sha256": "83571c41717f606e883ecf7e6ca2577c2a85902f4133c8eedded91d7a1fe0728",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--boxing-class",
@@ -1307,7 +2279,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/boxing-class.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/boxing-class.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Boxing Class. Scene: A pair of worn leather boxing gloves and cotton hand wraps on a wooden bench beside a heavy bag in an ordinary gym. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-765e8a2a-9cc2-4b7b-a233-0d9ff07dd49b.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 119420,
+      "sha256": "e3ffb00c16a69d4ce64617fe76a7da765a28e29e34402c13745b31625ac4aa24",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--swimming-lessons",
@@ -1316,7 +2300,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/swimming-lessons.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/swimming-lessons.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Swimming Lessons. Scene: A calm teaching pool with a floating kickboard, a child-size pair of plain goggles and bright folded towels on the safe pool edge. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-b7743ef8-55a9-4a0d-b4c8-40dac5b4331f.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 188406,
+      "sha256": "d8f9381e30f5b9805838e1d27a37473e763a9556a7e2062ec8eb1fcea995205c",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--tennis-club",
@@ -1325,7 +2321,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/tennis-club.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/tennis-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Tennis Club. Scene: A tennis racket and two naturally scuffed balls on a clay court bench, net and soft green trees in the background. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-25d67c77-06e2-46f6-9273-0caaf1cdd56e.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 183118,
+      "sha256": "309d60ee47dca2edab803697e0fba9de05946b26d9b9c00aa5a0d34b5f0c7c50",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--basketball-league",
@@ -1334,7 +2342,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/basketball-league.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/basketball-league.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Basketball League. Scene: A basketball league practice gym with a ball on the polished but worn floor, plain practice bibs on a bench and a distant hoop. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-8a30a1ff-1f5d-435a-9d04-30fe286dca36.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 92580,
+      "sha256": "a5792dcb44e88d5a41dfe6943a7710d975063f3929a154784963f7b18d569617",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--volleyball-league",
@@ -1343,7 +2363,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/volleyball-league.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/volleyball-league.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Volleyball League. Scene: A community volleyball court with a properly strung net, a ball resting on the sideline and a row of plain water bottles. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-8d08665d-69b5-4e08-b0b1-f7381207dddc.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 291844,
+      "sha256": "055ec5a36ac514b3d3ed34e298589ee75a48fdd472a3be61be2f965b2600304a",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "health-and-fitness--wellness-workshop",
@@ -1352,7 +2384,19 @@
       "legacyPath": "/templates/signup/health-and-fitness/wellness-workshop.webp",
       "output": "public/templates/signup/photographic/health-and-fitness/wellness-workshop.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Wellness Workshop. Scene: A simple wellness workshop table with a blank journal, herbal tea, a folded soft blanket and a bowl of citrus fruit, gentle daylight. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-d1a4fa3a-6147-4ce8-8ab5-92379b290ce9.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 137048,
+      "sha256": "26f2a9d812025f33921fb3ff48e6b014802b8db6f0baf99758dfd7279b96f165",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--book-club",
@@ -1361,7 +2405,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/book-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/book-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Book Club. Scene: A cozy reading circle in a small library, a stack of books with unmarked spines, ceramic tea mugs and a single branch in a vase. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-1347fbb2-e0dd-461e-b6ef-1037a455f18c.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 146866,
+      "sha256": "139ce476816149e3df6dd99b9cbc3f0739db6fda9a7ed69468f5e56264550410",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--running-club",
@@ -1370,7 +2426,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/running-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/running-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Running Club. Scene: A local running club meeting spot with three pairs of worn running shoes, plain water bottles and a park bench beside a shaded path. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-bf438882-ae45-4158-ae69-3f26a90a0220.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 269424,
+      "sha256": "9efe43da7d4d1df713d4345f305bdd498ffb150a6ed1831353504c02ca96aec9",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--bike-club",
@@ -1379,7 +2447,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/bike-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/bike-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Bike Club. Scene: Two everyday bicycles leaning against a cafe wall, plain helmets and a metal bottle on a low bench, warm morning light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-62e9d6ac-84d0-4a59-af9d-87adfb5c66ba.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 223080,
+      "sha256": "b54a0cf91bb074b1e4fb392c79b859ba2c86123cf2a1affd356e766ec8f8b03e",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--hiking-club.png",
@@ -1388,7 +2468,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/hiking-club.png",
       "output": "public/templates/signup/photographic/clubs-and-groups/hiking-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Hiking Club. Scene: A canvas hiking backpack with a rolled light jacket, simple walking poles and a water bottle on a rock beside a wooded trail. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-cc582296-427e-41c6-8535-bf6a862847a6.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 283230,
+      "sha256": "95a076d21b842b6e6353dfe58a0274d937436dcc951b8391a8ed47af0d877c77",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--rock-climbing-club",
@@ -1397,7 +2489,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/rock-climbing-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/rock-climbing-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Rock Climbing Club. Scene: A real climbing rope loosely coiled on a canvas tarp beside a chalk bag and worn climbing shoes at the base of a natural rock wall. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-59dc692a-b8fd-4ae0-8f4c-f3e2f686fee9.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 252824,
+      "sha256": "b3a02dffdacfafc609996b2ad49a84b81a1d254e2b2c46a17cecce969def7de6",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--swim-club",
@@ -1406,7 +2510,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/swim-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/swim-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Swim Club. Scene: A quiet outdoor lap pool with lane ropes, plain goggles and two folded towels on a weathered wooden bench, early morning. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-adf5630d-fb1e-4903-8d89-9037405c3a93.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 214926,
+      "sha256": "b4c82e38021cd9d1d2f81fed7da08b4b76fe20fbb7a519c79129faa1f9e9ef6d",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--soccer-club",
@@ -1415,7 +2531,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/soccer-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/soccer-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Soccer Club. Scene: A grassroots soccer training kit with a ball, practice cones and plain bibs on a green community field. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-f6744070-3901-4662-b122-3ae6f449446a.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 220540,
+      "sha256": "e4a340cc62cd52ea5b8e8e5218b8e46598a6b507c846222af4a5cd01bd736889",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--baseball-club",
@@ -1424,7 +2552,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/baseball-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/baseball-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Baseball Club. Scene: A baseball clubhouse bench with worn gloves, two wooden bats, scuffed baseballs and a folded neutral practice jersey. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-bcfe082e-82cf-460e-9bb0-1a9130f48c98.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 209882,
+      "sha256": "a326ce2036e1589acf03b1f4be5544259288a0bc4cbc2feaeebd83061d8eda05",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--basketball-club",
@@ -1433,7 +2573,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/basketball-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/basketball-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Basketball Club. Scene: A neighborhood basketball court with a ball near the painted free-throw line and a plain gym bag on the sideline. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-09991f7d-fb1d-4cd6-bdf6-52b23faaae70.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 340668,
+      "sha256": "06e2cabebff916537afa6f80f586649db95c0722130d0ac33238fd6fa349cc69",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--football-club",
@@ -1442,7 +2594,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/football-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/football-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Football Club. Scene: A simple American football resting beside a pair of cleats and plain practice jerseys on a school field bench. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-a879bb44-4916-43b5-b0d3-78ecb84bf183.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 136234,
+      "sha256": "8779ec64a118b5491672c09e0abf7c1c72dd378ea8b5afc622128eff31fc2493",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--tennis-club",
@@ -1451,7 +2615,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/tennis-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/tennis-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Tennis Club. Scene: Two tennis rackets crossed casually on a weathered bench with a cotton towel and a tin of unbranded tennis balls. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-8d5d88db-9c62-4ab6-a663-6865c9de5bd6.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 223900,
+      "sha256": "467903d5ded543b0ac982bbfcd104f140980c50f19f8561b633e3f77843c59cd",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--volleyball-club",
@@ -1460,7 +2636,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/volleyball-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/volleyball-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Volleyball Club. Scene: A beach volleyball meeting point with a net, a ball on clean sand and plain cotton towels over a low fence. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-c4cb11e7-5790-46c2-8973-3c7afda5ea1a.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 225292,
+      "sha256": "0cf688734503bd3fa907be41a302a375f61b0e60e568a487faaa64d557ce854e",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--golf-club",
@@ -1469,7 +2657,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/golf-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/golf-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Golf Club. Scene: A quiet local golf clubhouse terrace with a worn golf bag, a few clubs, plain scorecards turned blank-side up and morning light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-a4939bc0-eda7-4894-a951-e602abd9f4ab.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 168860,
+      "sha256": "c511272b638f072ce6f3992457c5980df0e044a96a8fba06a62c98ac1266c3cb",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--cheerleading-club",
@@ -1478,7 +2678,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/cheerleading-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/cheerleading-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Cheerleading Club. Scene: A cheerful cheerleading practice corner with matte fabric pom-poms, plain white practice shoes and a folded warm-up sweater. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-398b468e-14bf-4f03-a67d-db01d8515ccc.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 127292,
+      "sha256": "1df8569c7a82cec4ea837c7ba1a4ce6230d0b5ecf9811983867f493186b68f91",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--dance-club",
@@ -1487,7 +2699,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/dance-club.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/dance-club.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Dance Club. Scene: A community dance rehearsal studio with plain practice shoes, a water bottle, a soft sweater over a barre and natural window light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-52ca8626-a9b4-4e71-b108-cb63e59ca9ef.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 148554,
+      "sha256": "e262bb66d0ec07c073715144fbc5d33916619f811028962b3af70fed7a0ebc00",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--drive-group",
@@ -1496,7 +2720,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/drive-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/drive-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Drive Group. Scene: A classic unbranded car parked by a country overlook, driving gloves and a folded road atlas with no legible text on a picnic table. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-17e47969-6239-4b99-8747-fef24c2826b6.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 190968,
+      "sha256": "72b62becfbe1393675d5242eaf579568c6f84ff1739d274d5f8d5418561ba97c",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--fisherman-group",
@@ -1505,7 +2741,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/fisherman-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/fisherman-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Fisherman Group. Scene: A simple fishing rod resting beside a wicker creel and plain tackle box on a quiet lakeside wooden jetty at dawn. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-aea4fb4d-0eaa-4c1c-8759-ee23803bc2b3.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 139184,
+      "sha256": "05f403c47696fa58aa6e96a96ee75f5ee1e270321ba1e7d22cec654e008c89ce",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--horseback-riding-group",
@@ -1514,7 +2762,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/horseback-riding-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/horseback-riding-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Horseback Riding Group. Scene: A calm chestnut horse beside a wooden paddock fence, a well-used leather saddle on a stand nearby, honest morning farm light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-621871c6-bfff-48db-a73a-dcf86d4aa83b.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 279768,
+      "sha256": "198765823c964e36d9895f28a2e29d9534b406d41315a7eb371fcb30232db718",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--bird-watching-group.png",
@@ -1523,7 +2783,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/bird-watching-group.png",
       "output": "public/templates/signup/photographic/clubs-and-groups/bird-watching-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Bird Watching Group. Scene: A pair of plain binoculars, an unmarked field notebook and a canvas bag on a weathered bench overlooking a peaceful reed bed. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-afaea6af-625e-4915-874d-9ee99eb3be27.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 230096,
+      "sha256": "d3542e756a16eedacc4ab570d919a1b5c38a75cdbf16cecd9fb58ca371adc6f8",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--gardening-group",
@@ -1532,7 +2804,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/gardening-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/gardening-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Gardening Group. Scene: A gardening club workbench with terracotta seedling pots, soil, a trowel and cotton gloves beside a modest raised bed. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-44768a22-2ae9-45ec-a98f-dfc1d27d6c41.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 254700,
+      "sha256": "0782b143a79285cb07dfed18bd39a226b995ab5ab30ab2af6a3aff3ac11fc911",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--reading-group",
@@ -1541,7 +2825,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/reading-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/reading-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Reading Group. Scene: A quiet neighborhood reading-group tea table with closed books, plain bookmarks, linen napkins and a small vase of flowers. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-115f80b3-422c-45fd-aade-3c9faeff3d12.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 135234,
+      "sha256": "8aa918a6f1e9853e316d05818624468d072e0b4b39fc761165e91b83a2d0d9f0",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--writing-group",
@@ -1550,7 +2846,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/writing-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/writing-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Writing Group. Scene: A writing group table with blank open notebooks, graphite pencils, one old typewriter without readable lettering and ceramic coffee cups. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-0b2aadd3-7248-454e-893a-68181a8a7831.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 132534,
+      "sha256": "62797917894d21e9569bbef794f03f20ce3c6cb1f53286a158bf8456cea91afc",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--cooking-group",
@@ -1559,7 +2867,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/cooking-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/cooking-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Cooking Group. Scene: A shared cooking lesson prep table with a wooden chopping board, tomatoes, fresh herbs, a chef's knife laid safely flat and a linen apron. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-25e4672c-0379-4020-aab6-b881900b487e.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 202616,
+      "sha256": "2edb88e130cef9b46faf65eedcf7e093e5f556564625dfba5c61f9fe274c87a3",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--baking-group",
@@ -1568,7 +2888,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/baking-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/baking-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Baking Group. Scene: A baking group worktable with a ceramic mixing bowl, a wooden spoon, flour dust, a homemade loaf and linen tea towel. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-8d3a7220-a2d8-4c7d-91b0-aad0a88a0035.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 182330,
+      "sha256": "9c7dce4a49147891b253be58794411a9ff8a3ce2637f838aa97284d295f78447",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--painting-group",
@@ -1577,7 +2909,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/painting-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/painting-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Painting Group. Scene: A community painting studio table with well-used brushes, a muted watercolor palette, blank cotton paper and a glass jar of water. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-a87f038f-4c99-4a4d-9cb2-324b53791a8f.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 188658,
+      "sha256": "48b920cb68c327e905fd40680b11dedbf377c4014eb8109207f2acb9c448b1da",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--pottery-group",
@@ -1586,7 +2930,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/pottery-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/pottery-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Pottery Group. Scene: A working pottery studio with a freshly thrown clay bowl, simple wooden tools, a damp sponge and natural clay marks on a workbench. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-731a741a-7e40-43c4-b9f0-317102353ed0.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 130676,
+      "sha256": "18c9495b1e22341792b3a783afa61a33790b152475a8042793a5af4286e4ef1d",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--knitting-group",
@@ -1595,7 +2951,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/knitting-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/knitting-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Knitting Group. Scene: A knitting circle still life with soft sage and cream wool, a half-finished scarf on wooden needles and two tea mugs. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-8d8db767-856e-4fea-b18e-b985a616d49f.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 225888,
+      "sha256": "93f297df902fbeca36f4530b0b6d15bb8829f11636573c27a87eeb0cbaf8fdb5",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--crocheting-group",
@@ -1604,7 +2972,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/crocheting-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/crocheting-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Crocheting Group. Scene: A crochet group table with cotton yarn, simple wooden crochet hooks and a half-made granny-square blanket in muted natural colors. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-d168e529-538e-4a11-83df-b7d2966e08c7.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 288406,
+      "sha256": "82609e339567bd2352af82e18ea3cf406bc1ebf12d2e7b0fd9d1c010fa98aa09",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--sewing-group",
@@ -1613,7 +2993,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/sewing-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/sewing-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Sewing Group. Scene: A sewing workshop table with a plain sewing machine, folded linen, small metal scissors and wooden thread spools, warm window light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-caff3bf0-c317-4547-94b7-de868c214603.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 127962,
+      "sha256": "b041d620a3f72e8f5af00ee16b76039660e3f75d402f372f73f9fc42cc68d1d6",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     },
     {
       "id": "clubs-and-groups--quilting-group",
@@ -1622,7 +3014,19 @@
       "legacyPath": "/templates/signup/clubs-and-groups/quilting-group.webp",
       "output": "public/templates/signup/photographic/clubs-and-groups/quilting-group.webp",
       "prompt": "Use case: photorealistic-natural. Asset: original Envitefy signup event cover. Make one landscape 3:2 editorial photograph, ideally 1536x1024. Template subject: Quilting Group. Scene: A quilting group worktable with an unfinished patchwork quilt, cotton fabric squares, a ruler and a pincushion in soft afternoon light. Natural practical light, believable materials and perspective, tactile imperfections, understated colors, subtle fine grain, inviting independent lifestyle magazine art direction. A complete scene with the main subject near the center that works in both a wide header and a square crop. No people, hands, faces, readable text, lettering, logos, watermark, UI, borders, collage, illustration, cartoon, CGI, glossy rendering, plastic-looking materials, excessive bokeh or surreal geometry.",
-      "status": "pending"
+      "status": "generated",
+      "source": "/Users/rj/.codex/generated_images/01a07e7b-f2c7-7261-9f84-f5a4d4379424/exec-d4731363-5e2f-4a9d-b9de-a1dfb077ae50.png",
+      "verifiedDimensions": [
+        1536,
+        1024
+      ],
+      "verifiedDecode": true,
+      "bytes": 194712,
+      "sha256": "ca72fbd1c6bc420148c2742b84a33031fb045937ff06a87f55da77c8c7c5c3d7",
+      "quality": 85,
+      "compressionLevel": 6,
+      "originalDeleted": true,
+      "visuallyReviewed": true
     }
   ]
 }

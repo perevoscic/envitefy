@@ -100,7 +100,7 @@ export type SignupForm = {
   arrivalInstructions?: string | null;
   dropoffNotes?: string | null;
   start?: string | null; // ISO (local clock preserved)
-  end?: string | null;   // ISO (local clock preserved)
+  end?: string | null; // ISO (local clock preserved)
   setupTime?: string | null;
   earliestDropoff?: string | null;
   arrivalWindow?: string | null;
@@ -125,13 +125,34 @@ export type SignupSlotAvailability = {
   waitlisted: number;
 };
 
-export type SignupThemeId = "clean-clear" | "harvest-table" | "school-days" | "game-day" | "community-garden" | "celebrate-together";
-export type SignupHeaderLayout = "header-1" | "header-2" | "header-3" | "header-4" | "header-5" | "header-6" | "none";
-export type SignupFontPair = "editorial" | "modern" | "friendly";
+export type SignupThemeId =
+  | "clean-clear"
+  | "harvest-table"
+  | "school-days"
+  | "game-day"
+  | "community-garden"
+  | "celebrate-together";
+export type SignupHeaderLayout =
+  | "designed"
+  | "header-1"
+  | "header-2"
+  | "header-3"
+  | "header-4"
+  | "header-5"
+  | "header-6"
+  | "none";
+export type SignupFontPair =
+  | "editorial"
+  | "modern"
+  | "friendly"
+  | "classic"
+  | "literary"
+  | "display";
 export type SignupAppearance = {
   version: 1;
   themeId: SignupThemeId;
   themeRevision: 1;
+  designId?: string;
   palette: "original" | "soft" | "ink";
   fontPair: SignupFontPair;
   headerLayout: SignupHeaderLayout;
@@ -178,7 +199,7 @@ export type SignupFormHeader = {
   textColor2?: string | null;
   buttonColor?: string | null;
   buttonTextColor?: string | null;
-  images?: Array<(SignupHeaderImageAsset & { id: string })> | null;
+  images?: Array<SignupHeaderImageAsset & { id: string }> | null;
   designTheme?: SignupDesignTheme | null;
 };
 

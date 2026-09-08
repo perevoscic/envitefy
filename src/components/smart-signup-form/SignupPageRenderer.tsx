@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { getSignupDesign } from "@/lib/signup-designs";
 import { resolveSignupThemeStyle } from "@/lib/signup-themes";
 import type { SignupForm } from "@/types/signup";
 import SignupTemplateHeader from "./SignupTemplateHeader";
@@ -19,11 +20,14 @@ export default function SignupPageRenderer({
   className?: string;
   imageLoading?: "eager" | "lazy";
 }) {
+  const design = getSignupDesign(form.appearance?.designId);
   return (
     <div
       className={`${styles.page} ${className}`}
       style={resolveSignupThemeStyle(form)}
       data-signup-theme={form.appearance?.themeId || "legacy"}
+      data-signup-design={design?.id}
+      data-signup-composition={design?.composition}
     >
       <div className={styles.sheet}>
         <SignupTemplateHeader form={form} actions={actions} imageLoading={imageLoading} />

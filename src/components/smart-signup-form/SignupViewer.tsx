@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import EventDeleteModal from "@/components/EventDeleteModal";
 import EventGuestPlanningNotes from "@/components/event-templates/EventGuestPlanningNotes";
+import { getSignupDesign } from "@/lib/signup-designs";
 import { signupResponsesCsv } from "@/lib/signup-export";
 import { resolveSignupThemeStyle } from "@/lib/signup-themes";
 import { signupWindowMessage } from "@/lib/signup-validation";
@@ -657,6 +658,7 @@ const SignupViewer: React.FC<Props> = ({
   return (
     <section
       style={resolveSignupThemeStyle(form)}
+      data-signup-board={getSignupDesign(form.appearance?.designId)?.board}
       className={`${themeStyles.board} rounded-2xl border border-[var(--signup-border)] bg-[var(--signup-surface)] p-5 sm:p-6 space-y-5 shadow-sm`}
     >
       <header className="space-y-2">
@@ -810,7 +812,7 @@ const SignupViewer: React.FC<Props> = ({
       )}
       <div className="space-y-5">
         {form.sections.map((section) => (
-          <div key={section.id} className="space-y-3">
+          <div key={section.id} className="space-y-3" data-signup-section>
             <div>
               <h3 className="text-base font-semibold text-[var(--signup-text)]">{section.title}</h3>
               {section.description && (
@@ -818,7 +820,7 @@ const SignupViewer: React.FC<Props> = ({
               )}
             </div>
             <div data-signup-slots data-layout={form.appearance?.slotLayout || "rows"}>
-              {section.slots.map((slot) => {
+              {section.slots.map((slot, slotIndex) => {
                 const key = slotKey(section.id, slot.id);
                 const isSelected = Boolean(selectedSlots[key]);
                 const capacity = getSlotCapacity(slot);
@@ -838,6 +840,7 @@ const SignupViewer: React.FC<Props> = ({
                   <div
                     key={slot.id}
                     data-signup-slot
+                    data-selected={isSelected || undefined}
                     className={`rounded-xl border px-4 py-3.5 transition ${
                       isSelected
                         ? "border-[var(--signup-accent)] bg-[var(--signup-soft)] shadow-sm"
@@ -846,6 +849,9 @@ const SignupViewer: React.FC<Props> = ({
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="space-y-1.5">
+                        <span className={themeStyles.slotNumber} aria-hidden="true">
+                          {String(slotIndex + 1).padStart(2, "0")}
+                        </span>
                         <div className="text-sm font-medium text-[var(--signup-text)]">
                           {slot.label}
                         </div>
@@ -897,6 +903,7 @@ const SignupViewer: React.FC<Props> = ({
                           />
                         )}
                         <SlotControl
+                          data-signup-select
                           type="button"
                           className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                             isSelected

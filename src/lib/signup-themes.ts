@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { getSignupDesign, SIGNUP_DESIGN_PALETTES } from "@/lib/signup-designs";
 import type {
   SignupAppearance,
   SignupFontPair,
@@ -111,6 +112,7 @@ export const SIGNUP_THEMES: readonly SignupTheme[] = [
 ];
 
 export const SIGNUP_HEADER_LAYOUTS: { id: SignupHeaderLayout; name: string }[] = [
+  { id: "designed", name: "Original design" },
   { id: "header-3", name: "Wide cover" },
   { id: "header-1", name: "Photo on left" },
   { id: "header-2", name: "Photo on right" },
@@ -143,19 +145,42 @@ export const SIGNUP_FONT_PAIRS: {
     heading: '"Josefin Slab", Georgia, serif',
     body: '"Josefin Sans", system-ui, sans-serif',
   },
+  {
+    id: "classic",
+    name: "Classic",
+    heading: 'Georgia, "Times New Roman", serif',
+    body: '"Josefin Sans", system-ui, sans-serif',
+  },
+  {
+    id: "literary",
+    name: "Literary",
+    heading: 'Georgia, "Times New Roman", serif',
+    body: 'Georgia, "Times New Roman", serif',
+  },
+  {
+    id: "display",
+    name: "Bold",
+    heading: '"Josefin Sans", system-ui, sans-serif',
+    body: "system-ui, sans-serif",
+  },
 ];
 export const getSignupTheme = (id?: string | null) =>
   SIGNUP_THEMES.find((theme) => theme.id === id);
-export function createSignupAppearance(id: SignupThemeId): SignupAppearance {
+export function createSignupAppearance(
+  id: SignupThemeId,
+  designId = `editorial--${id}`,
+): SignupAppearance {
   const theme = getSignupTheme(id) || SIGNUP_THEMES[0];
+  const design = getSignupDesign(designId);
   return {
     version: 1,
     themeId: theme.id,
     themeRevision: 1,
+    ...(design ? { designId: design.id } : {}),
     palette: "original",
-    fontPair: theme.fontPair,
-    headerLayout: theme.headerLayout,
-    slotLayout: "cards",
+    fontPair: design?.fontPair || theme.fontPair,
+    headerLayout: design ? "designed" : theme.headerLayout,
+    slotLayout: design?.board === "ledger" || design?.board === "menu" ? "rows" : "cards",
     density: "comfortable",
     imagePosition: { x: 50, y: 50 },
   };
@@ -166,7 +191,8 @@ export function normalizeSignupAppearance(value: unknown): SignupAppearance | nu
   const raw = value as Record<string, unknown>;
   const theme = typeof raw.themeId === "string" ? getSignupTheme(raw.themeId) : null;
   if (!theme) return null;
-  const base = createSignupAppearance(theme.id);
+  const design = typeof raw.designId === "string" ? getSignupDesign(raw.designId) : undefined;
+  const base = createSignupAppearance(theme.id, design?.id || "");
   const position =
     raw.imagePosition && typeof raw.imagePosition === "object"
       ? (raw.imagePosition as Record<string, unknown>)
@@ -175,13 +201,16 @@ export function normalizeSignupAppearance(value: unknown): SignupAppearance | nu
     typeof value === "number" && Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 50;
   return {
     ...base,
+    designId: design?.id,
     palette: raw.palette === "soft" || raw.palette === "ink" ? raw.palette : "original",
     fontPair: SIGNUP_FONT_PAIRS.some((pair) => pair.id === raw.fontPair)
       ? (raw.fontPair as SignupFontPair)
       : base.fontPair,
     headerLayout: SIGNUP_HEADER_LAYOUTS.some((layout) => layout.id === raw.headerLayout)
       ? (raw.headerLayout as SignupHeaderLayout)
-      : base.headerLayout,
+      : design
+        ? "designed"
+        : theme.headerLayout,
     slotLayout: raw.slotLayout === "rows" ? "rows" : "cards",
     density: raw.density === "compact" ? "compact" : "comfortable",
     ...(typeof raw.accent === "string" && /^#[0-9a-f]{6}$/i.test(raw.accent)
@@ -215,7 +244,10 @@ export function applySignupTheme(form: SignupForm, id: SignupThemeId): SignupFor
       backgroundCss: null,
       textColor1: null,
       textColor2: null,
-      templateId: theme.headerLayout === "none" ? "header-3" : theme.headerLayout,
+      templateId:
+        theme.headerLayout === "none" || theme.headerLayout === "designed"
+          ? "header-3"
+          : theme.headerLayout,
       backgroundImage: { name: theme.name, type: "image/webp", dataUrl: theme.artwork },
       images: [],
     },
@@ -225,6 +257,8 @@ export function applySignupTheme(form: SignupForm, id: SignupThemeId): SignupFor
 export function resolveSignupThemeStyle(form: SignupForm): CSSProperties {
   const appearance = normalizeSignupAppearance(form.appearance);
   const theme = getSignupTheme(appearance?.themeId) || SIGNUP_THEMES[0];
+  const design = getSignupDesign(appearance?.designId);
+  const colors = design ? SIGNUP_DESIGN_PALETTES[design.palette] : theme;
   const font =
     SIGNUP_FONT_PAIRS.find((pair) => pair.id === appearance?.fontPair) || SIGNUP_FONT_PAIRS[0];
   const custom = appearance?.accent;
@@ -232,21 +266,22 @@ export function resolveSignupThemeStyle(form: SignupForm): CSSProperties {
     custom && signupContrast(custom, "#FFFFFF") >= 4.5
       ? custom
       : appearance?.palette === "ink"
-        ? theme.ink
-        : theme.accent;
+        ? colors.ink
+        : colors.accent;
   return {
     "--signup-page": appearance
       ? appearance.palette === "soft"
-        ? theme.soft
-        : theme.page
+        ? colors.soft
+        : colors.page
       : form.header?.backgroundColor || "#F5F5F4",
-    "--signup-surface": "#FFFFFF",
-    "--signup-text": appearance ? theme.ink : "#222D40",
-    "--signup-muted": "#5D625F",
-    "--signup-border": "#DEDCD5",
+    "--signup-surface": design ? SIGNUP_DESIGN_PALETTES[design.palette].surface : "#FFFFFF",
+    "--signup-text": appearance ? colors.ink : "#222D40",
+    "--signup-muted": design ? `color-mix(in srgb, ${colors.ink} 80%, ${colors.page})` : "#5D625F",
+    "--signup-border": design ? `color-mix(in srgb, ${colors.ink} 24%, ${colors.page})` : "#DEDCD5",
     "--signup-accent": accent,
     "--signup-on-accent": "#FFFFFF",
-    "--signup-soft": theme.soft,
+    "--signup-soft": colors.soft,
+    "--signup-secondary": design ? SIGNUP_DESIGN_PALETTES[design.palette].secondary : theme.soft,
     "--signup-focus": accent,
     "--signup-heading-font": font.heading,
     "--signup-body-font": font.body,
