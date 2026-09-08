@@ -1,3 +1,4 @@
+import { getGoogleCalendarRefreshToken } from "@/lib/google-calendar-connection";
 import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
 import { google } from "googleapis";
 import { getServerSession } from "next-auth";
@@ -8,7 +9,6 @@ import { buildAutoCalendarEvent, type CalendarFlyer } from "@/lib/calendar-auto-
 import { invalidateUserDashboard } from "@/lib/dashboard-cache";
 import {
   getEventHistoryById,
-  getGoogleRefreshToken,
   getMicrosoftRefreshToken,
   getUserByEmail,
   updateEventHistoryDataMerge,
@@ -329,7 +329,7 @@ export async function POST(request: Request) {
   const data: JsonRecord = isRecord(row.data) ? row.data : {};
   const user = await getUserByEmail(email);
   const [googleRefreshToken, microsoftRefreshToken] = await Promise.all([
-    getGoogleRefreshToken(email),
+    getGoogleCalendarRefreshToken(email),
     getMicrosoftRefreshToken(email),
   ]);
   const preferred = String(user?.preferred_provider || "").toLowerCase();

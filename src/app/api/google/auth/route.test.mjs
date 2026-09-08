@@ -13,7 +13,8 @@ test("calendar connection requests a refresh token and the narrow event scope", 
 });
 
 test("calendar connection is stored against the signed-in Envitefy account", () => {
-  assert.match(callbackSource, /const sessionEmail = sessionEmailFromJwt \|\| tokenEmail/);
-  assert.doesNotMatch(callbackSource, /const sessionEmail = tokenEmail \|\| sessionEmailFromJwt/);
+  assert.match(callbackSource, /const sessionEmail = account.email/);
+  assert.match(callbackSource, /readCalendarOAuthState\(request, account, "google"\)/);
+  assert.doesNotMatch(callbackSource, /cookieRefresh|sessionEmailFromJwt|tokenEmail/);
   assert.match(callbackSource, /googleAuth", debug\.tokenPersisted \? "stored" : "not-stored"/);
 });

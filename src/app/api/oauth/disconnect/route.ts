@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
+import { finishCalendarOAuth } from "@/lib/calendar-oauth-state";
 import {
   deleteStoredOAuthTokens,
   getGoogleRefreshToken,
@@ -49,7 +50,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unsupported provider" }, { status: 400 });
   }
 
-  if (!provider || provider === "google") {
+  // Google revocation affects the entire Google account's app grant, including
+  // connections from other Envitefy accounts. Calendar Settings unlinks locally;
+  // the explicit all-provider privacy disconnect retains global revocation.
+  if (!provider) {
     await revokeGoogleToken(await getGoogleRefreshToken(authUser.email));
   }
   const deleted = await deleteStoredOAuthTokens(authUser.email, provider);
@@ -82,5 +86,7 @@ export async function POST(request: Request) {
       maxAge: 0,
     });
   }
+  if (!provider || provider === "google") finishCalendarOAuth(response, "google");
+  if (!provider || provider === "microsoft") finishCalendarOAuth(response, "microsoft");
   return response;
 }

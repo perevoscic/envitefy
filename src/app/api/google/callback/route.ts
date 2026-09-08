@@ -1,11 +1,12 @@
 import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getAuthenticatedRequestUser } from "@/lib/auth";
+import { finishCalendarOAuth, readCalendarOAuthState } from "@/lib/calendar-oauth-state";
 import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
 import { absoluteUrl } from "@/lib/absolute-url";
 import { resolveSourceIntent } from "@/lib/concierge/creation-intent";
-import { getGoogleRefreshToken, saveGoogleRefreshToken, updatePreferredProviderByEmail, getUserIdByEmail, insertEventHistory } from "@/lib/db";
+import { saveGoogleRefreshToken, updatePreferredProviderByEmail, insertEventHistory } from "@/lib/db";
 import { hasGoogleCalendarEventWriteScope } from "@/lib/google-calendar-oauth";
 
 export const runtime = "nodejs";
@@ -13,55 +14,18 @@ export const runtime = "nodejs";
 type GoogleCallbackDebug = {
   callbackReached: true;
   hasRefreshToken: boolean;
-  hasCookieRefresh: boolean;
   hasAccessToken: boolean;
-  tokenEmail: string | null;
   sessionEmail: string | null;
   tokenPersisted: boolean;
-  calendarScopeGranted: boolean | null;
+  calendarScopeGranted: boolean;
   persistError: string | null;
 };
 
 function googleAuthFailureReason(debug: GoogleCallbackDebug): string {
-  if (debug.calendarScopeGranted === false) return "missing-calendar-scope";
+  if (!debug.calendarScopeGranted) return "missing-calendar-scope";
   if (debug.persistError) return "persist-error";
-  if (debug.hasRefreshToken || debug.hasCookieRefresh) return "missing-email";
+  if (debug.hasRefreshToken) return "persist-error";
   return "missing-refresh-token";
-}
-
-function readCookie(header: string | null, name: string): string | null {
-  if (!header) return null;
-  const pairs = header.split(";");
-  for (const part of pairs) {
-    const [rawKey, ...rest] = part.trim().split("=");
-    if (!rawKey) continue;
-    if (rawKey === name) {
-      const value = rest.join("=");
-      try {
-        return decodeURIComponent(value || "");
-      } catch {
-        return value || "";
-      }
-    }
-  }
-  return null;
-}
-
-function emailFromIdToken(idToken?: string | null): string | undefined {
-  if (!idToken) return undefined;
-  const parts = idToken.split(".");
-  if (parts.length < 2) return undefined;
-  const segment = parts[1];
-  const paddingLength = (4 - (segment.length % 4)) % 4;
-  const padded = segment + "=".repeat(paddingLength);
-  try {
-    const json = Buffer.from(padded.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
-    const payload = JSON.parse(json);
-    const email = payload?.email;
-    return typeof email === "string" && email.trim().length ? email.toLowerCase() : undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 function normalizeInternalRedirect(value: unknown): string | null {
@@ -76,35 +40,6 @@ function normalizeInternalRedirect(value: unknown): string | null {
   return value;
 }
 
-function applyGoogleRefreshCookie(response: NextResponse, refresh: string | undefined) {
-  if (!refresh) return response;
-  response.cookies.set({
-    name: "g_refresh",
-    value: refresh,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-  });
-  return response;
-}
-
-async function emailFromGoogle(accessToken?: string | null): Promise<string | undefined> {
-  if (!accessToken) return undefined;
-  try {
-    const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!response.ok) return undefined;
-    const data = await response.json();
-    const email = data?.email;
-    return typeof email === "string" && email.trim().length ? email.toLowerCase() : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 export async function GET(request: Request) {
   if (!CONNECTED_CALENDAR_SYNC_ENABLED) {
     return NextResponse.redirect(new URL("/settings#calendars", request.url));
@@ -113,60 +48,39 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
-    const state = searchParams.get("state");
-    if (!code) return NextResponse.json({ error: "Missing code" }, { status: 400 });
-
+    const account = await getAuthenticatedRequestUser(request);
+    if (!account.ok) {
+      return NextResponse.json({ error: "Sign in before connecting a calendar" }, { status: 401 });
+    }
+    const connection = await readCalendarOAuthState(request, account, "google");
+    if (!connection) {
+      return NextResponse.json({ error: "Calendar connection expired or account changed. Reconnect from Settings." }, { status: 400 });
+    }
+    if (!code) return finishCalendarOAuth(
+      NextResponse.json({ error: "Google Calendar authorization was not completed" }, { status: 400 }), "google",
+    );
+    const state = connection.payload;
     const oAuth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID!,
       process.env.GOOGLE_CLIENT_SECRET!,
-      process.env.GOOGLE_REDIRECT_URI!
+      process.env.GOOGLE_REDIRECT_URI!,
     );
-    const secret =
-      process.env.AUTH_SECRET ??
-      process.env.NEXTAUTH_SECRET ??
-      (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
-    const tokenData = await getToken({ req: request as any, secret }).catch(() => null);
-    const sessionEmailFromJwt =
-      (tokenData as any)?.email && typeof (tokenData as any)?.email === "string"
-        ? ((tokenData as any)?.email as string).toLowerCase()
-        : undefined;
-
     const { tokens } = await oAuth2Client.getToken(code);
-
-    let refresh = tokens.refresh_token || undefined;
-    const cookieRefresh = readCookie(request.headers.get("cookie"), "g_refresh");
-    if (!refresh && cookieRefresh) {
-      refresh = cookieRefresh;
-    }
-
-    const tokenEmail =
-      emailFromIdToken(tokens.id_token) || (await emailFromGoogle(tokens.access_token));
-    // A user may connect a Google Calendar whose address differs from their Envitefy login.
-    // Persist the calendar token against the authenticated Envitefy account so connection
-    // status and background sync can find it after OAuth returns.
-    const sessionEmail = sessionEmailFromJwt || tokenEmail;
+    // Only use credentials returned by this account-bound connection attempt.
+    // An old cookie or stored token may belong to a different Google calendar.
+    const refresh = tokens.refresh_token || undefined;
+    const sessionEmail = account.email;
     const debug: GoogleCallbackDebug = {
       callbackReached: true,
       hasRefreshToken: Boolean(tokens.refresh_token),
-      hasCookieRefresh: Boolean(cookieRefresh),
       hasAccessToken: Boolean(tokens.access_token),
-      tokenEmail: tokenEmail ?? null,
       sessionEmail: sessionEmail ?? null,
       tokenPersisted: false,
-      calendarScopeGranted:
-        typeof tokens.scope === "string"
-          ? hasGoogleCalendarEventWriteScope(tokens.scope)
-          : null,
+      calendarScopeGranted: hasGoogleCalendarEventWriteScope(tokens.scope),
       persistError: null,
     };
 
     try {
-      if (!refresh && sessionEmail) {
-        const storedRefresh = await getGoogleRefreshToken(sessionEmail);
-        if (storedRefresh) {
-          refresh = storedRefresh;
-        }
-      }
       if (debug.calendarScopeGranted === false) {
         debug.persistError = "Google Calendar event permission was not granted";
       } else if (refresh && sessionEmail) {
@@ -175,11 +89,6 @@ export async function GET(request: Request) {
         await updatePreferredProviderByEmail({
           email: sessionEmail,
           preferredProvider: "google",
-        }).catch((error: unknown) => {
-          if (error instanceof Error && error.message === "No local account found for this email") {
-            return;
-          }
-          throw error;
         });
       }
     } catch (error) {
@@ -201,8 +110,9 @@ export async function GET(request: Request) {
           if (!debug.tokenPersisted) {
             redirectUrl.searchParams.set("googleAuthReason", googleAuthFailureReason(debug));
           }
-          return applyGoogleRefreshCookie(NextResponse.redirect(redirectUrl), refresh);
+          return finishCalendarOAuth(NextResponse.redirect(redirectUrl), "google");
         }
+        if (!debug.calendarScopeGranted) throw new Error("Calendar permission was not granted");
         const reminders = Array.isArray(decoded?.reminders)
           ? decoded.reminders
               .map((entry: any) => {
@@ -259,10 +169,7 @@ export async function GET(request: Request) {
 
         // Save to Envitefy history
         try {
-          let userId: string | null = null;
-          if (sessionEmail) {
-            userId = await getUserIdByEmail(sessionEmail);
-          }
+          const userId = account.userId;
           // Try to detect category from the normalized event data
           let category: string | null = null;
           try {
@@ -327,7 +234,7 @@ export async function GET(request: Request) {
         if (!state) {
           openUrl.searchParams.set("googleAuth", debug.tokenPersisted ? "stored" : "not-stored");
         }
-        return applyGoogleRefreshCookie(NextResponse.redirect(openUrl), refresh);
+        return finishCalendarOAuth(NextResponse.redirect(openUrl), "google");
       } catch {
         // Fall through to home if creation fails
       }
@@ -338,7 +245,7 @@ export async function GET(request: Request) {
     if (!debug.tokenPersisted) {
       homeUrl.searchParams.set("googleAuthReason", googleAuthFailureReason(debug));
     }
-    return applyGoogleRefreshCookie(NextResponse.redirect(homeUrl), refresh);
+    return finishCalendarOAuth(NextResponse.redirect(homeUrl), "google");
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });

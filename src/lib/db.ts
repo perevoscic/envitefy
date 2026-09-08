@@ -1328,8 +1328,9 @@ export async function saveMicrosoftRefreshToken(
   email: string,
   refreshToken: string,
 ): Promise<void> {
-  const lower = email.toLowerCase();
+  const lower = email.trim().toLowerCase();
   const userId = await getUserIdByEmail(lower);
+  if (!userId) throw new Error("No local account found for this email");
   await query(
     `insert into oauth_tokens (email, provider, refresh_token, user_id, updated_at, created_at)
      values ($1, 'microsoft', $2, $3, now(), now())
@@ -1342,9 +1343,10 @@ export async function saveMicrosoftRefreshToken(
 }
 
 export async function getMicrosoftRefreshToken(email: string): Promise<string | null> {
-  const lower = email.toLowerCase();
+  const lower = email.trim().toLowerCase();
   try {
     const userId = await getUserIdByEmail(lower);
+    if (!userId) return null;
     if (userId) {
       const res = await query<{ refresh_token: string }>(
         `select refresh_token from oauth_tokens where provider = 'microsoft' and user_id = $1 limit 1`,
@@ -1353,7 +1355,7 @@ export async function getMicrosoftRefreshToken(email: string): Promise<string | 
       if (res.rows[0]?.refresh_token) return res.rows[0].refresh_token;
     }
     const res = await query<{ refresh_token: string }>(
-      `select refresh_token from oauth_tokens where provider = 'microsoft' and email = $1 limit 1`,
+      `select refresh_token from oauth_tokens where provider = 'microsoft' and user_id is null and email = $1 limit 1`,
       [lower],
     );
     return res.rows[0]?.refresh_token || null;
@@ -1370,8 +1372,9 @@ export async function getMicrosoftRefreshToken(email: string): Promise<string | 
 }
 
 export async function saveGoogleRefreshToken(email: string, refreshToken: string): Promise<void> {
-  const lower = email.toLowerCase();
+  const lower = email.trim().toLowerCase();
   const userId = await getUserIdByEmail(lower);
+  if (!userId) throw new Error("No local account found for this email");
   await query(
     `insert into oauth_tokens (email, provider, refresh_token, user_id, updated_at, created_at)
      values ($1, 'google', $2, $3, now(), now())
@@ -1384,9 +1387,10 @@ export async function saveGoogleRefreshToken(email: string, refreshToken: string
 }
 
 export async function getGoogleRefreshToken(email: string): Promise<string | null> {
-  const lower = email.toLowerCase();
+  const lower = email.trim().toLowerCase();
   try {
     const userId = await getUserIdByEmail(lower);
+    if (!userId) return null;
     if (userId) {
       const res = await query<{ refresh_token: string }>(
         `select refresh_token from oauth_tokens where provider = 'google' and user_id = $1 limit 1`,
@@ -1395,7 +1399,7 @@ export async function getGoogleRefreshToken(email: string): Promise<string | nul
       if (res.rows[0]?.refresh_token) return res.rows[0].refresh_token;
     }
     const res = await query<{ refresh_token: string }>(
-      `select refresh_token from oauth_tokens where provider = 'google' and email = $1 limit 1`,
+      `select refresh_token from oauth_tokens where provider = 'google' and user_id is null and email = $1 limit 1`,
       [lower],
     );
     return res.rows[0]?.refresh_token || null;
@@ -1416,9 +1420,17 @@ export async function deleteStoredOAuthTokens(
   provider?: "google" | "microsoft",
 ): Promise<number> {
   const lower = email.trim().toLowerCase();
+  const userId = await getUserIdByEmail(lower);
+  if (!userId) return 0;
   const result = provider
-    ? await query(`delete from oauth_tokens where email = $1 and provider = $2`, [lower, provider])
-    : await query(`delete from oauth_tokens where email = $1`, [lower]);
+    ? await query(
+        `delete from oauth_tokens where (user_id = $1 or (user_id is null and email = $2)) and provider = $3`,
+        [userId, lower, provider],
+      )
+    : await query(
+        `delete from oauth_tokens where user_id = $1 or (user_id is null and email = $2)`,
+        [userId, lower],
+      );
   return result.rowCount || 0;
 }
 

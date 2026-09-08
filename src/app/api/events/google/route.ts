@@ -1,9 +1,9 @@
 import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
 import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getAuthenticatedRequestUser } from "@/lib/auth";
+import { getGoogleCalendarRefreshToken } from "@/lib/google-calendar-connection";
 import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
-import { getGoogleRefreshToken } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -12,37 +12,10 @@ export async function POST(request: NextRequest) {
   if (pausedResponse) return pausedResponse;
 
   try {
-    const secret =
-      process.env.AUTH_SECRET ??
-      process.env.NEXTAUTH_SECRET ??
-      (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
-    const tokenData = await getToken({ req: request as any, secret });
-    const providers = (tokenData as any)?.providers || {};
-    const email = (tokenData as any)?.email as string | undefined;
-    const g = providers.google || {};
-    let refreshToken: string | undefined;
-    let accessToken: string | undefined;
-    const expiresAt = g.expiresAt as number | undefined;
-
-    // Signed-in calendar access follows the database so disconnect takes effect immediately.
-    if (email) {
-      try {
-        refreshToken = (await getGoogleRefreshToken(email)) || undefined;
-      } catch {}
-    } else {
-      refreshToken = (g.refreshToken as string | undefined) || request.cookies.get("g_refresh")?.value;
-      accessToken = g.accessToken as string | undefined;
-    }
-    if (!refreshToken && !accessToken) {
-      // Check if token exists but expired
-      const isTokenExpired = expiresAt && expiresAt < Date.now();
-      if (tokenData && isTokenExpired) {
-        return NextResponse.json({ error: "Token expired, please reconnect" }, { status: 401 });
-      }
-      const reason = tokenData ? "Google not connected" : "Unauthorized";
-      const status = tokenData ? 400 : 401;
-      return NextResponse.json({ error: reason }, { status });
-    }
+    const account = await getAuthenticatedRequestUser(request);
+    if (!account.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const refreshToken = await getGoogleCalendarRefreshToken(account.email);
+    if (!refreshToken) return NextResponse.json({ error: "Google not connected" }, { status: 400 });
 
     const body: NormalizedEvent & { intakeId?: string | null } = await request.json();
     const requestBody = toGoogleEvent(body);
@@ -52,28 +25,7 @@ export async function POST(request: NextRequest) {
       process.env.GOOGLE_CLIENT_SECRET!,
       process.env.GOOGLE_REDIRECT_URI!
     );
-    
-    // Check if access token is expired and refresh if needed
-    const isAccessTokenExpired = expiresAt && expiresAt < Date.now();
-    if (refreshToken) {
-      oAuth2Client.setCredentials({ refresh_token: refreshToken });
-      // If access token expired, refresh it automatically
-      if (isAccessTokenExpired && accessToken) {
-        try {
-          const { credentials } = await oAuth2Client.refreshAccessToken();
-          oAuth2Client.setCredentials(credentials);
-        } catch (refreshErr: any) {
-          // Refresh failed - token may be revoked
-          console.warn("[google/events] Token refresh failed:", refreshErr?.message);
-          return NextResponse.json({ error: "Token expired, please reconnect" }, { status: 401 });
-        }
-      }
-    } else if (accessToken && !isAccessTokenExpired) {
-      oAuth2Client.setCredentials({ access_token: accessToken, expiry_date: expiresAt });
-    } else if (accessToken && isAccessTokenExpired) {
-      // Access token expired but no refresh token available
-      return NextResponse.json({ error: "Token expired, please reconnect" }, { status: 401 });
-    }
+    oAuth2Client.setCredentials({ refresh_token: refreshToken });
 
     const calendar = google.calendar({ version: "v3", auth: oAuth2Client });
     const created = await calendar.events.insert({

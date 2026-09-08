@@ -7,6 +7,7 @@ import {
   useEffect,
   useState,
   useMemo,
+  useRef,
   ReactNode,
 } from "react";
 import { useSession } from "next-auth/react";
@@ -76,6 +77,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     apple: false,
   });
   const [calendarConnectionsLoaded, setCalendarConnectionsLoaded] = useState(false);
+  const calendarRequestRef = useRef(0);
 
   const sessionUser = (session?.user || null) as SessionUserWithAdmin | null;
   const isAdmin = Boolean(sessionUser?.isAdmin);
@@ -93,6 +95,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   }, [displayName]);
 
   const fetchConnectedCalendars = useCallback(async () => {
+    const requestId = ++calendarRequestRef.current;
     if (status !== "authenticated") {
       setConnectedCalendars({ google: false, microsoft: false, apple: false });
       setCalendarConnectionsLoaded(false);
@@ -105,18 +108,18 @@ export function MenuProvider({ children }: { children: ReactNode }) {
         cache: "no-store",
       });
       if (!response.ok) throw new Error("Failed to load calendar connections");
-      const payload = await response.json().catch(() => ({}));
+      const payload = await response.json();
+      if (requestId !== calendarRequestRef.current) return;
       setConnectedCalendars({
         google: Boolean(payload?.google),
         microsoft: Boolean(payload?.microsoft),
         apple: Boolean(payload?.apple),
       });
-    } catch {
-      setConnectedCalendars({ google: false, microsoft: false, apple: false });
-    } finally {
       setCalendarConnectionsLoaded(true);
+    } catch {
+      if (requestId === calendarRequestRef.current) setCalendarConnectionsLoaded(false);
     }
-  }, [status]);
+  }, [status, session?.user?.email]);
 
   const handleCalendarConnect = useCallback(
     (_provider: CalendarProviderKey) => {
@@ -130,7 +133,9 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (status === "authenticated") fetchConnectedCalendars();
+    setConnectedCalendars({ google: false, microsoft: false, apple: false });
+    void fetchConnectedCalendars();
+    return () => { calendarRequestRef.current++; };
   }, [status, fetchConnectedCalendars]);
 
   const value = useMemo(

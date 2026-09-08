@@ -1,6 +1,7 @@
 import { getCalendarSyncPauseResponse } from "@/lib/calendar-sync-pause";
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getAuthenticatedRequestUser } from "@/lib/auth";
+import { getGoogleCalendarRefreshToken } from "@/lib/google-calendar-connection";
 import { google } from "googleapis";
 import { NormalizedEvent, toGoogleEvent } from "@/lib/mappers";
 
@@ -15,33 +16,10 @@ export async function POST(request: NextRequest) {
   if (pausedResponse) return pausedResponse;
 
   try {
-    const secret =
-      process.env.AUTH_SECRET ??
-      process.env.NEXTAUTH_SECRET ??
-      (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
-    const tokenData = await getToken({ req: request as any, secret });
-    const providers = (tokenData as any)?.providers || {};
-    const email = (tokenData as any)?.email as string | undefined;
-    const g = providers.google || {};
-    let refreshToken: string | undefined;
-    let accessToken: string | undefined;
-    const expiresAt = g.expiresAt as number | undefined;
-
-    // Signed-in calendar access follows the database so disconnect takes effect immediately.
-    if (email) {
-      try {
-        const { getGoogleRefreshToken } = await import("@/lib/db");
-        refreshToken = (await getGoogleRefreshToken(email)) || undefined;
-      } catch {}
-    } else {
-      refreshToken = (g.refreshToken as string | undefined) || request.cookies.get("g_refresh")?.value;
-      accessToken = g.accessToken as string | undefined;
-    }
-    if (!refreshToken && !accessToken) {
-      const reason = tokenData ? "Google not connected" : "Unauthorized";
-      const status = tokenData ? 400 : 401;
-      return NextResponse.json({ error: reason }, { status });
-    }
+    const account = await getAuthenticatedRequestUser(request);
+    if (!account.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const refreshToken = await getGoogleCalendarRefreshToken(account.email);
+    if (!refreshToken) return NextResponse.json({ error: "Google not connected" }, { status: 400 });
 
     const body: BulkBody = await request.json();
     const items = Array.isArray(body?.events) ? body.events : [];
@@ -54,11 +32,7 @@ export async function POST(request: NextRequest) {
       process.env.GOOGLE_CLIENT_SECRET!,
       process.env.GOOGLE_REDIRECT_URI!
     );
-    if (refreshToken) {
-      oAuth2Client.setCredentials({ refresh_token: refreshToken });
-    } else if (accessToken) {
-      oAuth2Client.setCredentials({ access_token: accessToken, expiry_date: expiresAt });
-    }
+    oAuth2Client.setCredentials({ refresh_token: refreshToken });
 
     const calendar = google.calendar({ version: "v3", auth: oAuth2Client });
 

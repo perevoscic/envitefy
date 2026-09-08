@@ -1,7 +1,7 @@
+import { getGoogleCalendarRefreshToken } from "@/lib/google-calendar-connection";
 import { NextResponse } from "next/server";
 import { getAuthenticatedRequestUser } from "@/lib/auth";
 import {
-  getGoogleRefreshToken,
   getMicrosoftRefreshToken,
   getUserByEmail,
   updatePreferredProviderByEmail,
@@ -79,7 +79,7 @@ export async function PUT(req: Request) {
       }
       const providerConnected =
         preferredProvider === "google"
-          ? Boolean(await getGoogleRefreshToken(email))
+          ? Boolean(await getGoogleCalendarRefreshToken(email))
           : Boolean(await getMicrosoftRefreshToken(email));
       if (!providerConnected) {
         return NextResponse.json(

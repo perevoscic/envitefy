@@ -5,7 +5,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { getToken } from "next-auth/jwt";
 import { cookies } from "next/headers";
 import { TEMPLATE_KEYS } from "@/config/feature-visibility";
-import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, saveGoogleRefreshToken, getGoogleRefreshToken, getMicrosoftRefreshToken, getUserIdByEmail, updateFeatureVisibilityByEmail } from "@/lib/db";
+import { getUserByEmail, verifyPassword, getIsAdminByEmail, createOrUpdateOAuthUser, getUserIdByEmail, updateFeatureVisibilityByEmail } from "@/lib/db";
 import {
   describeDatabaseError,
   isDatabaseUnavailableError,
@@ -302,7 +302,9 @@ export function getAuthOptions(): NextAuthOptions {
         try {
           const email = (user?.email as string) || (token?.email as string) || null;
           const tokenAny = token as any;
-          tokenAny.providers = tokenAny.providers || {};
+          // Calendar credentials live only in account-scoped storage, never the sign-in JWT.
+          delete tokenAny.providers;
+          delete tokenAny.providerTokensCheckedAt;
           if (email) {
             const resolvedUserId =
               (await getUserIdByEmail(email).catch(() => null)) ||
@@ -317,7 +319,6 @@ export function getAuthOptions(): NextAuthOptions {
           const now = Date.now();
           const ADMIN_CLAIM_REFRESH_MS = 15 * 60 * 1000;
           const ACCESS_METADATA_REFRESH_MS = 15 * 60 * 1000;
-          const PROVIDER_TOKEN_REFRESH_MS = 60 * 60 * 1000;
           const lastAdminCheckAt =
             typeof tokenAny?.isAdminCheckedAt === "number"
               ? tokenAny.isAdminCheckedAt
@@ -375,86 +376,7 @@ export function getAuthOptions(): NextAuthOptions {
           }
 
           if (account?.provider) {
-            // OAuth sign-in: store provider tokens from the OAuth account
             tokenAny.provider = account.provider;
-            const prev = tokenAny.providers[account.provider] || {};
-            const accessToken = (account as any)?.access_token ?? prev.accessToken;
-            const refreshToken = (account as any)?.refresh_token ?? prev.refreshToken;
-            const expiresAtSeconds =
-              typeof (account as any)?.expires_at === 'number'
-                ? (account as any).expires_at
-                : undefined;
-            const expiresAt =
-              typeof expiresAtSeconds === 'number'
-                ? expiresAtSeconds * 1000
-                : prev.expiresAt;
-
-            tokenAny.providers[account.provider] = {
-              ...prev,
-              accessToken,
-              refreshToken,
-              expiresAt,
-            };
-
-            if (account.provider === 'google' && email && (account as any)?.refresh_token) {
-              try {
-                await saveGoogleRefreshToken(email, (account as any).refresh_token as string);
-              } catch (err) {
-                const message = describeDatabaseError(err);
-                if (isTransientDbError(err)) {
-                  console.warn("[auth] saveGoogleRefreshToken skipped: database unavailable", message);
-                } else {
-                  console.error("[auth] saveGoogleRefreshToken failed", message);
-                }
-              }
-            }
-          }
-          
-          // Periodically refresh provider token presence from DB so every request
-          // does not issue two extra token lookups in hot paths.
-          const lastProviderTokenCheckAt =
-            typeof tokenAny?.providerTokensCheckedAt === "number"
-              ? tokenAny.providerTokensCheckedAt
-              : 0;
-          const shouldRefreshProviderTokens =
-            Boolean(email) &&
-            (account?.provider != null ||
-              tokenAny.providerTokensCheckedAt === undefined ||
-              now - lastProviderTokenCheckAt > PROVIDER_TOKEN_REFRESH_MS);
-
-          if (
-            email &&
-            shouldRefreshProviderTokens &&
-            (!tokenAny.providers?.google?.refreshToken ||
-              !tokenAny.providers?.microsoft?.refreshToken)
-          ) {
-            try {
-              if (!tokenAny.providers?.google?.refreshToken) {
-                const googleRefresh = await getGoogleRefreshToken(email);
-                if (googleRefresh) {
-                  tokenAny.providers.google = tokenAny.providers.google || {};
-                  tokenAny.providers.google.refreshToken = googleRefresh;
-                }
-              }
-              if (!tokenAny.providers?.microsoft?.refreshToken) {
-                const microsoftRefresh = await getMicrosoftRefreshToken(email);
-                if (microsoftRefresh) {
-                  tokenAny.providers.microsoft = tokenAny.providers.microsoft || {};
-                  tokenAny.providers.microsoft.refreshToken = microsoftRefresh;
-                  tokenAny.providers.microsoft.connected = true;
-                }
-              }
-            } catch (err) {
-              const message = describeDatabaseError(err);
-              if (isTransientDbError(err)) {
-                console.warn("[auth] stored provider token lookup skipped: database unavailable", message);
-              } else {
-                console.error("[auth] failed to load stored provider tokens", message);
-              }
-              // Continue even if loading fails - database lookup in /api/calendars will handle it
-            } finally {
-              tokenAny.providerTokensCheckedAt = now;
-            }
           }
         } catch (err) {
           const message = describeDatabaseError(err);

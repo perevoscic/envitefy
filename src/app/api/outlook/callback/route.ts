@@ -1,6 +1,7 @@
 import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getAuthenticatedRequestUser } from "@/lib/auth";
+import { finishCalendarOAuth, readCalendarOAuthState } from "@/lib/calendar-oauth-state";
 import { saveMicrosoftRefreshToken, updatePreferredProviderByEmail } from "@/lib/db";
 import { absoluteUrl } from "@/lib/absolute-url";
 
@@ -34,7 +35,15 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
-    const redirectPath = readRedirectPath(searchParams.get("state"));
+    const account = await getAuthenticatedRequestUser(request);
+    if (!account.ok) {
+      return NextResponse.json({ error: "Sign in before connecting a calendar" }, { status: 401 });
+    }
+    const connection = await readCalendarOAuthState(request, account, "microsoft");
+    if (!connection) {
+      return NextResponse.json({ error: "Calendar connection expired or account changed. Reconnect from Settings." }, { status: 400 });
+    }
+    const redirectPath = readRedirectPath(connection.payload);
     if (!code) {
       if (redirectPath) {
         const redirectUrl = new URL(await absoluteUrl(redirectPath));
@@ -43,7 +52,7 @@ export async function GET(request: Request) {
           "outlookAuthReason",
           searchParams.get("error") || "missing_code",
         );
-        return NextResponse.redirect(redirectUrl);
+        return finishCalendarOAuth(NextResponse.redirect(redirectUrl), "microsoft");
       }
       return NextResponse.json({ error: "Missing code" }, { status: 400 });
     }
@@ -68,28 +77,25 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: text || "Token exchange failed" }, { status: 500 });
     }
 
-    const tokens: { access_token?: string; refresh_token?: string } = await tokenResp.json();
+    const tokens: { access_token?: string; refresh_token?: string; scope?: string } = await tokenResp.json();
     const refresh = tokens.refresh_token;
     if (!refresh) return NextResponse.json({ error: "No refresh token" }, { status: 400 });
+    // Microsoft may omit scope when it matches the fixed scopes requested by /auth.
+    const grantedScopes = tokens.scope ?? "Calendars.ReadWrite";
+    if (!grantedScopes.split(/\s+/).some((scope) =>
+      decodeURIComponent(scope).toLowerCase() === "calendars.readwrite" ||
+      decodeURIComponent(scope).toLowerCase() === "https://graph.microsoft.com/calendars.readwrite"
+    )) {
+      return finishCalendarOAuth(NextResponse.json({ error: "Calendar permission was not granted" }, { status: 400 }), "microsoft");
+    }
 
     // Persist refresh token to the database for the signed-in user and set preference
     let tokenPersisted = false;
     try {
-      const secret =
-        process.env.AUTH_SECRET ??
-        process.env.NEXTAUTH_SECRET ??
-        (process.env.NODE_ENV === "production" ? undefined : "dev-build-secret");
-      const tokenData = await getToken({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        req: request as any,
-        secret,
-      });
-      const email = (tokenData as any)?.email as string | undefined;
-      if (email) {
-        await saveMicrosoftRefreshToken(email, refresh);
-        await updatePreferredProviderByEmail({ email, preferredProvider: "microsoft" });
-        tokenPersisted = true;
-      }
+      const email = account.email;
+      await saveMicrosoftRefreshToken(email, refresh);
+      await updatePreferredProviderByEmail({ email, preferredProvider: "microsoft" });
+      tokenPersisted = true;
     } catch {
       // ignore persistence errors
     }
@@ -101,17 +107,7 @@ export async function GET(request: Request) {
         redirectUrl.searchParams.set("outlookAuthReason", "token_not_persisted");
       }
     }
-    const response = NextResponse.redirect(redirectUrl);
-    response.cookies.set({
-      name: "o_refresh",
-      value: refresh,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365
-    });
-    return response;
+    return finishCalendarOAuth(NextResponse.redirect(redirectUrl), "microsoft");
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });

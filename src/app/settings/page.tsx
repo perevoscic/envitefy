@@ -91,7 +91,7 @@ type ApiState<T> = { loading: boolean; error: string | null; data?: T };
 type CalendarConnectionMessage = { kind: "success" | "error"; text: string };
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
 
   // Profile form state
   const [firstName, setFirstName] = useState("");
@@ -120,6 +120,8 @@ export default function SettingsPage() {
   });
   const autoClearedProviderRef = useRef<CalendarProvider | null>(null);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
+  const [connectionsVerified, setConnectionsVerified] = useState(false);
+  const calendarRequestRef = useRef(0);
   const [disconnectingProvider, setDisconnectingProvider] =
     useState<ConnectedCalendarProvider | null>(null);
   const [disconnectPromptProvider, setDisconnectPromptProvider] =
@@ -296,31 +298,29 @@ export default function SettingsPage() {
   };
 
   const fetchConnectedCalendars = useCallback(async () => {
+    const requestId = ++calendarRequestRef.current;
     setConnectionsLoading(true);
     try {
-      const res = await fetch("/api/calendars", { credentials: "include" });
+      const res = await fetch("/api/calendars", { credentials: "include", cache: "no-store" });
       if (!res.ok) {
-        setConnectedCalendars({
-          google: false,
-          microsoft: false,
-          apple: false,
-        });
-        return;
+        throw new Error("Calendar connections could not be verified");
       }
-      const json = await res.json().catch(() => ({}));
+      const json = await res.json();
+      if (requestId !== calendarRequestRef.current) return;
       setConnectedCalendars({
         google: Boolean(json?.google),
         microsoft: Boolean(json?.microsoft),
         apple: Boolean(json?.apple),
       });
+      setConnectionsVerified(true);
     } catch {
-      setConnectedCalendars({
-        google: false,
-        microsoft: false,
-        apple: false,
+      if (requestId !== calendarRequestRef.current) return;
+      setConnectionsVerified(false);
+      setCalendarConnectionMessage({
+        kind: "error", text: "Calendar connections could not be checked. Please try Refresh again.",
       });
     } finally {
-      setConnectionsLoading(false);
+      if (requestId === calendarRequestRef.current) setConnectionsLoading(false);
     }
   }, []);
 
@@ -395,7 +395,7 @@ export default function SettingsPage() {
       }
       setCalendarConnectionMessage({
         kind: "success",
-        text: `${label} disconnected. Background calendar sync is now off.`,
+        text: `${label} disconnected from this Envitefy account.`,
       });
       await fetchConnectedCalendars();
       setDisconnectPromptProvider(null);
@@ -500,8 +500,11 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    void fetchConnectedCalendars();
-  }, [fetchConnectedCalendars]);
+    setConnectedCalendars({ google: false, microsoft: false, apple: false });
+    setConnectionsVerified(false);
+    if (sessionStatus === "authenticated") void fetchConnectedCalendars();
+    return () => { calendarRequestRef.current++; };
+  }, [fetchConnectedCalendars, sessionStatus, session?.user?.email]);
 
   useEffect(() => {
     const onFocus = () => {
@@ -514,7 +517,7 @@ export default function SettingsPage() {
   }, [fetchConnectedCalendars]);
 
   useEffect(() => {
-    if (connectionsLoading) return;
+    if (connectionsLoading || !connectionsVerified) return;
     const invalidProvider = preferredProviderInvalid ? normalizeProvider(preferredProvider) : null;
     if (!invalidProvider) {
       autoClearedProviderRef.current = null;
@@ -551,7 +554,7 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [connectionsLoading, preferredProvider, preferredProviderInvalid]);
+  }, [connectionsLoading, connectionsVerified, preferredProvider, preferredProviderInvalid]);
 
   async function onSaveProfile(e: React.FormEvent) {
     e.preventDefault();

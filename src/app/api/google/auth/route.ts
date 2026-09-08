@@ -2,6 +2,8 @@ import { CONNECTED_CALENDAR_SYNC_ENABLED } from "@/config/calendar-sync";
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { GOOGLE_CALENDAR_EVENT_WRITE_SCOPE } from "@/lib/google-calendar-oauth";
+import { getAuthenticatedRequestUser } from "@/lib/auth";
+import { createCalendarOAuthState, setCalendarOAuthCookie } from "@/lib/calendar-oauth-state";
 
 export const runtime = "nodejs";
 
@@ -17,6 +19,10 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/settings#calendars", request.url));
   }
 
+  const account = await getAuthenticatedRequestUser(request);
+  if (!account.ok) {
+    return NextResponse.json({ error: "Sign in before connecting a calendar" }, { status: 401 });
+  }
   const { searchParams } = new URL(request.url);
   const includeAnalyticsScope = searchParams.get("analytics") === "1";
   const explicitState = searchParams.get("state") || undefined;
@@ -27,7 +33,9 @@ export async function GET(request: Request) {
           encodeURIComponent(JSON.stringify({ type: "oauth_redirect", next: nextPath })),
         ).toString("base64")
       : undefined;
-  const state = explicitState ?? redirectState;
+  const { state, nonce } = await createCalendarOAuthState(
+    account, "google", explicitState ?? redirectState ?? null,
+  );
   const oAuth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID!,
     process.env.GOOGLE_CLIENT_SECRET!,
@@ -53,8 +61,8 @@ export async function GET(request: Request) {
     ...(includeAnalyticsScope && process.env.GOOGLE_ANALYTICS_OAUTH_EMAIL
       ? { login_hint: process.env.GOOGLE_ANALYTICS_OAUTH_EMAIL }
       : {}),
-    ...(state ? { state } : {}),
+    state,
   });
-  return NextResponse.redirect(url);
+  return setCalendarOAuthCookie(NextResponse.redirect(url), "google", nonce);
 }
 

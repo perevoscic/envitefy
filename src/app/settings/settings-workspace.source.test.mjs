@@ -75,7 +75,7 @@ test("only connected calendars can be selected and persisted as the default", ()
   assert.match(source, /Apple Calendar remains available as a one-event/);
 
   assert.match(profileRouteSource, /if \(preferredProvider === "apple"\)/);
-  assert.match(profileRouteSource, /getGoogleRefreshToken\(email\)/);
+  assert.match(profileRouteSource, /getGoogleCalendarRefreshToken\(email\)/);
   assert.match(profileRouteSource, /getMicrosoftRefreshToken\(email\)/);
   assert.match(profileRouteSource, /Connect this calendar before setting it as your default/);
 });
@@ -108,10 +108,10 @@ test("provider disconnect removes only that calendar without ending the account 
   assert.match(disconnectRouteSource, /preferredProvider: null/);
   assert.match(disconnectRouteSource, /reauthenticationRequired: !provider/);
   assert.match(disconnectRouteSource, /provider === "google" \? "g_refresh" : "o_refresh"/);
-  assert.match(calendarsRouteSource, /googleConnected = Boolean\(await getGoogleRefreshToken\(email\)\)/);
+  assert.match(calendarsRouteSource, /getGoogleCalendarRefreshToken\(email\)/);
   assert.match(
     calendarsRouteSource,
-    /microsoftConnected = Boolean\(await getMicrosoftRefreshToken\(email\)\)/,
+    /getMicrosoftRefreshToken\(email\)/,
   );
   assert.match(calendarsRouteSource, /apple: false/);
 });
