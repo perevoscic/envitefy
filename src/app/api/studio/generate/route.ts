@@ -7,7 +7,8 @@ import { parseStudioGenerateRequest, type StudioGenerateFailureResponse } from "
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 600;
+// Vercel Hobby with Fluid compute supports at most 300 seconds per function.
+export const maxDuration = 300;
 
 function buildFailureResponse(
   status: number,
